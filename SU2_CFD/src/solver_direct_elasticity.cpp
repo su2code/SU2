@@ -2132,7 +2132,7 @@ void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
       
       // This works only for matching meshes
       
-      for (iDim=0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++){
         Residual[iDim]=tn_f[iVertex][iDim];
       }
       
@@ -2201,7 +2201,7 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry, CConfig *f
       solVel = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel();
       valPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
       
-      for (iDim=0; iDim<nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++){
         valPred[iDim] = solDisp[iDim] + Delta_t*solVel[iDim];
       }
       
@@ -2216,7 +2216,7 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry, CConfig *f
       solVel_tn = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel_time_n();
       valPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
       
-      for (iDim=0; iDim<nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++){
         valPred[iDim] = solDisp[iDim] + 0.5*Delta_t*(3*solVel[iDim]-solVel_tn[iDim]);
       }
       
@@ -2304,7 +2304,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
         dispCalc = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
         dispCalc_Old = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Old();
         
-        for (iDim=0; iDim < nDim; iDim++){
+        for (iDim = 0; iDim < nDim; iDim++){
           
           /*--- Compute the deltaU and deltaU_n+1 ---*/
           deltaU[iDim] = dispCalc_Old[iDim] - dispPred_Old[iDim];
@@ -2401,7 +2401,7 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry, CConfig *fea_con
       fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Old(dispCalc);
       
       /*--- Apply the Aitken relaxation ---*/
-      for (iDim=0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++){
         dispPred[iDim] = (1.0 - WAitken)*dispPred[iDim] + WAitken*dispCalc[iDim];
       }
       

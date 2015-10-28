@@ -846,12 +846,6 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \return Value of the linearized pressure.
-	 */		
-	virtual su2double GetDeltaPressure(void);
-
-	/*!
-	 * \brief A virtual member.
 	 * \param[in] val_vector - Direction of projection.
 	 * \return Value of the projected velocity.
 	 */		
@@ -3707,105 +3701,6 @@ public:
 	 * \return Pointer to the Eddy Viscosity Sensitivity.
 	 */
 	su2double *GetEddyViscSens(void);
-};
-
-/*! 
- * \class CLinPotentialVariable
- * \brief Main class for defining the variables of the linearized potential equation.
- * \ingroup Potential_Flow_Equation
- * \author F. Palacios
- * \version 4.0.1 "Cardinal"
- */
-class CLinPotentialVariable : public CVariable {
-public:	
-};
-
-/*! 
- * \class CLinEulerVariable
- * \brief Main class for defining the variables of the linearized Euler's equations.
- * \ingroup Euler_Equations
- * \author F. Palacios
- * \version 4.0.1 "Cardinal"
- */
-class CLinEulerVariable : public CVariable {
-private:
-	su2double *DeltaU;			/*!< \brief Vector of the linearized variables. */
-	su2double *ForceProj_Vector;		/*!< \brief Vector d. */
-	su2double DeltaPressure;	/*!< \brief Linearized pressure variable. */
-
-public:
-
-	/*!
-	 * \brief Constructor of the class. 
-	 */		
-	CLinEulerVariable(void);
-
-	/*!
-	 * \overload
-	 * \param[in] val_deltarho - Value of the linearized density (initialization value).
-	 * \param[in] val_deltavel - Value of the linearized velocity (initialization value).
-	 * \param[in] val_deltae - Value of the linearized energy (initialization value).
-	 * \param[in] val_nDim - Number of dimensions of the problem.		 
-	 * \param[in] val_nvar - Number of variables of the problem.	
-	 * \param[in] config - Definition of the particular problem.
-	 */		
-	CLinEulerVariable(su2double val_deltarho, su2double *val_deltavel, su2double val_deltae, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-
-	/*!
-	 * \overload
-	 * \param[in] val_solution - Pointer to the linearized value (initialization value).
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */	
-	CLinEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class. 
-	 */	
-	~CLinEulerVariable(void);
-
-	/*!
-	 * \brief Set the value of the linearized velocity.
-	 * \param[in] val_deltavel - Value of the linearized velocity.
-	 */	
-	void SetDeltaVel_Old(su2double *val_deltavel);
-
-	/*!
-	 * \brief Set the value of the force projection vector.
-	 * \param[in] val_ForceProj_Vector - Pointer to the force projection vector.
-	 */		
-	void SetForceProj_Vector(su2double *val_ForceProj_Vector);
-
-	/*!
-	 * \brief Get the value of the force projection vector.
-	 * \return Pointer to the force projection vector.
-	 */		
-	su2double *GetForceProj_Vector(void);
-
-	/*!
-	 * \brief Set the value of the linearized pressure.
-	 * \param[in] val_velocity - Value of the velocity.
-	 * \param[in] Gamma - The ratio of specific heats.
-	 */		
-	void SetDeltaPressure(su2double *val_velocity, su2double Gamma);
-
-	/*!
-	 * \brief Get the value of the linearized pressure.
-	 * \return Value of the linearized pressure.
-	 */		
-	su2double GetDeltaPressure(void);
-};
-
-/*! 
- * \class CLinNSVariable
- * \brief Main class for defining the variables of the linearized Navier-Stokes' equations.
- * \ingroup Navier_Stokes_Equations
- * \author F. Palacios
- * \version 4.0.1 "Cardinal"
- */
-class CLinNSVariable : public CLinEulerVariable {
-public:
 };
 
 /*! 

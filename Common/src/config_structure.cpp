@@ -114,15 +114,13 @@ void CConfig::SetPointersNull(void) {
   Marker_Euler=NULL;          Marker_FarField=NULL;         Marker_Custom=NULL;
   Marker_SymWall=NULL;        Marker_Pressure=NULL;         Marker_PerBound=NULL;
   Marker_PerDonor=NULL;       Marker_NearFieldBound=NULL;   Marker_InterfaceBound=NULL;
-  Marker_Dirichlet=NULL;      Marker_Dirichlet_Elec=NULL;   Marker_Inlet=NULL;
+  Marker_Dirichlet=NULL;      Marker_Inlet=NULL;
   Marker_Supersonic_Inlet=NULL;    Marker_Outlet=NULL;      Marker_Out_1D=NULL;
   Marker_Isothermal=NULL;     Marker_HeatFlux=NULL;         Marker_EngineInflow=NULL;
   Marker_EngineBleed=NULL;  Marker_Supersonic_Outlet=NULL;
-  Marker_IsothermalCatalytic=NULL; Marker_IsothermalNonCatalytic=NULL;
-  Marker_HeatFluxNonCatalytic=NULL; Marker_HeatFluxCatalytic=NULL;
   Marker_EngineExhaust=NULL; Marker_Displacement=NULL;     Marker_Load=NULL;
   Marker_Load_Dir=NULL;   	  Marker_Load_Sine=NULL; 		Marker_Clamped=NULL;
-  Marker_FlowLoad=NULL;       Marker_Neumann=NULL;          Marker_Neumann_Elec=NULL;
+  Marker_FlowLoad=NULL;       Marker_Neumann=NULL;
   Marker_All_TagBound=NULL;        Marker_CfgFile_TagBound=NULL;       Marker_All_KindBC=NULL;
   Marker_CfgFile_KindBC=NULL;    Marker_All_SendRecv=NULL; Marker_All_PerBound=NULL;
   Marker_FSIinterface=NULL;
@@ -139,7 +137,7 @@ void CConfig::SetPointersNull(void) {
   Heat_Flux=NULL;             Displ_Value=NULL;             Load_Value=NULL;
   FlowLoad_Value=NULL;        Periodic_RotCenter=NULL;      Periodic_RotAngles=NULL;
   Periodic_Translation=NULL;  Periodic_Center=NULL;         Periodic_Rotation=NULL;
-  Periodic_Translate=NULL;    Wall_Catalycity=NULL;
+  Periodic_Translate=NULL;
 
   Load_Dir=NULL;	          Load_Dir_Value=NULL;          Load_Dir_Multiplier=NULL;
   Load_Sine_Dir=NULL;	      Load_Sine_Amplitude=NULL;     Load_Sine_Frequency=NULL;
@@ -153,7 +151,6 @@ void CConfig::SetPointersNull(void) {
   RefOriginMoment_Z=NULL;   CFL_AdaptParam=NULL;            CFL=NULL;
   PlaneTag=NULL;
   Kappa_Flow=NULL;    Kappa_AdjFlow=NULL;
-  Kappa_LinFlow=NULL;
   Section_Location=NULL;
   U_FreeStreamND=NULL;
 
@@ -175,18 +172,6 @@ void CConfig::SetPointersNull(void) {
   
   ExtIter = 0;
   IntIter = 0;
-  
-  /*--- Reacting chemistry, collisions, plasma ---*/
-
-  Reactions=NULL;                 Omega00=NULL;               Omega11=NULL;
-  Gas_Composition=NULL;           Enthalpy_Formation=NULL;    Blottner=NULL;
-  Species_Ref_Temperature=NULL;   Species_Ref_Viscosity=NULL; nElStates=NULL;
-  CharElTemp=NULL;                degen=NULL;
-  Molar_Mass=NULL;                Particle_Mass=NULL;
-  ArrheniusCoefficient=NULL;    ArrheniusEta=NULL;    ArrheniusTheta=NULL;
-  CharVibTemp=NULL;             RotationModes=NULL;   Ref_Temperature=NULL;
-  Tcf_a=NULL;    Tcf_b=NULL;    Tcb_a=NULL;    Tcb_b=NULL;
-  Diss=NULL;
   
 }
 
@@ -230,7 +215,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n Default: NO_SOLVER \ingroup Config*/
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
-  addMathProblemOption("MATH_PROBLEM" , Adjoint, false , Linearized, false, Restart_Flow, false, DiscreteAdjoint, false);
+  addMathProblemOption("MATH_PROBLEM" , Adjoint, false , Restart_Flow, false, DiscreteAdjoint, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n Default: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
 
@@ -413,10 +398,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
   /* DESCRIPTION: Neumann boundary marker(s) */
   addStringListOption("MARKER_NEUMANN", nMarker_Neumann, Marker_Neumann);
-  /* DESCRIPTION: poisson dirichlet boundary marker(s) */
-  addStringDoubleListOption("ELEC_DIRICHLET", nMarker_Dirichlet_Elec, Marker_Dirichlet_Elec, Dirichlet_Value );
-  /* DESCRIPTION: poisson neumann boundary marker(s) */
-  addStringListOption("ELEC_NEUMANN", nMarker_Neumann_Elec, Marker_Neumann_Elec);
   /* DESCRIPTION: Custom boundary marker(s) */
   addStringListOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
   /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
@@ -460,21 +441,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_ISOTHERMAL DESCRIPTION: Isothermal wall boundary marker(s)\n
    * Format: ( isothermal marker, wall temperature (static), ... ) \ingroup Config  */
   addStringDoubleListOption("MARKER_ISOTHERMAL", nMarker_Isothermal, Marker_Isothermal, Isothermal_Temperature);
-  /*!\brief MARKER_ISOTHERMAL_NONCATALYTIC  \n DESCRIPTION: Isothermal wall boundary marker(s)\n
-   Format: ( isothermal marker, wall temperature (static), ... ) \ingroup Config */
-  addStringDoubleListOption("MARKER_ISOTHERMAL_NONCATALYTIC", nMarker_IsothermalNonCatalytic, Marker_IsothermalNonCatalytic, Isothermal_Temperature);
-  /*!\brief MARKER_ISOTHERMAL_CATALYTIC  \n DESCRIPTION: Isothermal wall boundary marker(s)
-   Format: ( isothermal marker, wall temperature (static), ... ) \ingroup Config */
-  addStringDoubleListOption("MARKER_ISOTHERMAL_CATALYTIC", nMarker_IsothermalCatalytic, Marker_IsothermalCatalytic, Isothermal_Temperature);
   /*!\brief MARKER_HEATFLUX  \n DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
-  /*!\brief MARKER_HEATFLUX_NONCATALYTIC \n DESCRIPTION: Specified heat flux wall boundary marker(s)
-   Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
-  addStringDoubleListOption("MARKER_HEATFLUX_NONCATALYTIC", nMarker_HeatFluxNonCatalytic, Marker_HeatFluxNonCatalytic, Heat_Flux);
-  /*!\brief MARKER_HEATFLUX_CATALYTIC \n DESCRIPTION: Specified heat flux wall boundary marker(s)
-   Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
-  addStringDoubleListOption("MARKER_HEATFLUX_CATALYTIC", nMarker_HeatFluxCatalytic, Marker_HeatFluxCatalytic, Heat_Flux);
   /*!\brief MARKER_ENGINE_INFLOW  \n DESCRIPTION: Engine inflow boundary marker(s)
    Format: ( nacelle inflow marker, fan face Mach, ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_ENGINE_INFLOW", nMarker_EngineInflow, Marker_EngineInflow, Inflow_Mach_Target);
@@ -565,8 +534,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_ADJFLOW", Kind_TimeIntScheme_AdjFlow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  addEnumOption("TIME_DISCRE_LIN", Kind_TimeIntScheme_LinFlow, Time_Int_Map, EULER_IMPLICIT);
-  /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_TURB", Kind_TimeIntScheme_Turb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_ADJTURB", Kind_TimeIntScheme_AdjTurb, Time_Int_Map, EULER_IMPLICIT);
@@ -650,8 +617,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("CAUCHY_FUNC_FLOW", Cauchy_Func_Flow, Objective_Map, DRAG_COEFFICIENT);
   /* DESCRIPTION: Adjoint functional for the Cauchy criteria */
   addEnumOption("CAUCHY_FUNC_ADJFLOW", Cauchy_Func_AdjFlow, Sens_Map, SENS_GEOMETRY);
-  /* DESCRIPTION: Linearized functional for the Cauchy criteria */
-  addEnumOption("CAUCHY_FUNC_LIN", Cauchy_Func_LinFlow, Linear_Obj_Map, DELTA_DRAG_COEFFICIENT);
 
   /*!\par CONFIG_CATEGORY: Multi-grid \ingroup Config*/
   /*--- Options related to Multi-grid ---*/
@@ -737,12 +702,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONV_NUM_METHOD_ADJTURB\n DESCRIPTION: Convective numerical method for the adjoint/turbulent problem \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
 
-  /* DESCRIPTION: Convective numerical method */
-  addConvectOption("CONV_NUM_METHOD_LIN", Kind_ConvNumScheme_LinFlow, Kind_Centered_LinFlow, Kind_Upwind_LinFlow);
-  default_vec_2d[0] = 0.15; default_vec_2d[1] = 0.02;
-  /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
-  addDoubleArrayOption("AD_COEFF_LIN", 2, Kappa_LinFlow, default_vec_2d);
-
   /*!\brief SPATIAL_ORDER_ADJLEVELSET
    *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n Default: 2ND_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_ADJLEVELSET", SpatialOrder_AdjLevelSet, SpatialOrder_Map, SECOND_ORDER);
@@ -819,14 +778,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRITE_CONV_FILENAME_FSI", Write_Conv_FSI, false);
   /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart flow input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n Default: solution_flow.dat \ingroup Config */
   addStringOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
-  /*!\brief SOLUTION_LIN_FILENAME  \n DESCRIPTION: Restart linear flow input file \ingroup Config*/
-  addStringOption("SOLUTION_LIN_FILENAME", Solution_LinFileName, string("solution_lin.dat"));
   /*!\brief SOLUTION_ADJ_FILENAME\n DESCRIPTION: Restart adjoint input file. Objective function abbreviation is expected. \ingroup Config*/
   addStringOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj.dat"));
   /*!\brief RESTART_FLOW_FILENAME \n DESCRIPTION: Output file restart flow \ingroup Config*/
   addStringOption("RESTART_FLOW_FILENAME", Restart_FlowFileName, string("restart_flow.dat"));
-  /*!\brief RESTART_LIN_FILENAME \n DESCRIPTION: Output file linear flow \ingroup Config*/
-  addStringOption("RESTART_LIN_FILENAME",Restart_LinFileName, string("restart_lin.dat"));
   /*!\brief RESTART_ADJ_FILENAME  \n DESCRIPTION: Output file restart adjoint. Objective function abbreviation will be appended. \ingroup Config*/
   addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
   /*!\brief RESTART_WAVE_FILENAME \n DESCRIPTION: Output file restart wave \ingroup Config*/
@@ -857,9 +812,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief VOLUME_ADJ_FILENAME
    *  \n DESCRIPTION: Output file adjoint (w/o extension) variables  \ingroup Config*/
   addStringOption("VOLUME_ADJ_FILENAME", Adj_FileName, string("adjoint"));
-  /*!\brief VOLUME_LIN_FILENAME
-   *  \n DESCRIPTION: Output file linear (w/o extension) variables  \ingroup Config*/
-  addStringOption("VOLUME_LIN_FILENAME", Lin_FileName, string("linearized"));
   /*!\brief GRAD_OBJFUNC_FILENAME
    *  \n DESCRIPTION: Output objective function gradient  \ingroup Config*/
   addStringOption("GRAD_OBJFUNC_FILENAME", ObjFunc_Grad_FileName, string("of_grad.dat"));
@@ -872,9 +824,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SURFACE_ADJ_FILENAME
    *  \n DESCRIPTION: Output file surface adjoint coefficient (w/o extension)  \ingroup Config*/
   addStringOption("SURFACE_ADJ_FILENAME", SurfAdjCoeff_FileName, string("surface_adjoint"));
-  /*!\brief SURFACE_LIN_FILENAME
-   *  \n DESCRIPTION: Output file surface linear coefficient (w/o extension)  \ingroup Config*/
-  addStringOption("SURFACE_LIN_FILENAME", SurfLinCoeff_FileName, string("surface_linear"));
   /*!\brief WRT_SOL_FREQ
    *  \n DESCRIPTION: Writing solution file frequency  \ingroup Config*/
   addUnsignedLongOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);
@@ -1046,14 +995,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
   /* DESCRIPTION: Equivalent area scaling factor */
   addDoubleOption("EA_SCALE_FACTOR", EA_ScaleFactor, 1.0);
-
-	/*!\par CONFIG_CATEGORY: Reacting Flow \ingroup Config*/
-  /*--- Options related to the reacting gas mixtures ---*/
-
-	/* DESCRIPTION: Specify chemical model for multi-species simulations */
-	addEnumOption("GAS_MODEL", Kind_GasModel, GasModel_Map, ARGON);
-	/* DESCRIPTION:  */
-	addDoubleListOption("GAS_COMPOSITION", nTemp, Gas_Composition);
 
 	/*!\par CONFIG_CATEGORY: Free surface simulation \ingroup Config*/
 	/*--- Options related to free surface simulation ---*/
@@ -1240,15 +1181,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Write extra output */
   addBoolOption("EXTRA_OUTPUT", ExtraOutput, false);
-
-  /* DESCRIPTION: Location of the turb model itself */
-  addStringOption("ML_TURB_MODEL_FILE", ML_Turb_Model_File, string("model.json"));
-
-  /* DESCRIPTION: what kind of input/output feature map is there */
-  addStringOption("ML_TURB_MODEL_FEATURESET", ML_Turb_Model_FeatureSet, string("none"));
-
-  /* DESCRIPTION: Extra values for ML Turb model */
-  addStringListOption("ML_TURB_MODEL_EXTRA", nML_Turb_Model_Extra, ML_Turb_Model_Extra);
 
   /*--- options related to the FFD problem ---*/
   /*!\par CONFIG_CATEGORY:FFD point inversion \ingroup Config*/
@@ -2232,8 +2164,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Kappa_1st_AdjFlow = Kappa_AdjFlow[0];
   Kappa_2nd_AdjFlow = Kappa_AdjFlow[1];
   Kappa_4th_AdjFlow = Kappa_AdjFlow[2];
-  Kappa_1st_LinFlow = Kappa_AdjFlow[0];
-  Kappa_4th_LinFlow = Kappa_AdjFlow[1];
   
   /*--- Make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth
    arrays consistent with nMGLevels ---*/
@@ -2354,10 +2284,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (Kind_Solver == EULER) Kind_Solver = ADJ_EULER;
     if (Kind_Solver == NAVIER_STOKES) Kind_Solver = ADJ_NAVIER_STOKES;
     if (Kind_Solver == RANS) Kind_Solver = ADJ_RANS;
-  }
-  
-  if (Linearized) {
-    if (Kind_Solver == EULER) Kind_Solver = LIN_EULER;
   }
   
   nCFL = nMGLevels+1;
@@ -2526,9 +2452,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_Pressure, iMarker_PerBound,
   iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
-  iMarker_Inlet, iMarker_Riemann, iMarker_Outlet, iMarker_Isothermal, iMarker_IsothermalCatalytic,
-  iMarker_IsothermalNonCatalytic, iMarker_HeatFlux, iMarker_HeatFluxNoncatalytic,
-  iMarker_HeatFluxCatalytic, iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust,
+  iMarker_Inlet, iMarker_Riemann, iMarker_Outlet, iMarker_Isothermal,
+  iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
@@ -2547,9 +2472,8 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound +
   nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
-  nMarker_Outlet + nMarker_Isothermal + nMarker_IsothermalNonCatalytic +
-  nMarker_IsothermalCatalytic + nMarker_HeatFlux + nMarker_HeatFluxNonCatalytic +
-  nMarker_HeatFluxCatalytic + nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
+  nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
+  nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir +
@@ -2768,33 +2692,9 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
-  for (iMarker_IsothermalCatalytic = 0; iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic; iMarker_IsothermalCatalytic++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_IsothermalCatalytic[iMarker_IsothermalCatalytic];
-    Marker_CfgFile_KindBC[iMarker_CfgFile] = ISOTHERMAL_CATALYTIC;
-    iMarker_CfgFile++;
-  }
-
-  for (iMarker_IsothermalNonCatalytic = 0; iMarker_IsothermalNonCatalytic < nMarker_IsothermalNonCatalytic; iMarker_IsothermalNonCatalytic++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_IsothermalNonCatalytic[iMarker_IsothermalNonCatalytic];
-    Marker_CfgFile_KindBC[iMarker_CfgFile] = ISOTHERMAL_NONCATALYTIC;
-    iMarker_CfgFile++;
-  }
-
   for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_HeatFlux[iMarker_HeatFlux];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = HEAT_FLUX;
-    iMarker_CfgFile++;
-  }
-
-  for (iMarker_HeatFluxCatalytic = 0; iMarker_HeatFluxCatalytic < nMarker_HeatFluxCatalytic; iMarker_HeatFluxCatalytic++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_HeatFluxCatalytic[iMarker_HeatFluxCatalytic];
-    Marker_CfgFile_KindBC[iMarker_CfgFile] = HEAT_FLUX_CATALYTIC;
-    iMarker_CfgFile++;
-  }
-
-  for (iMarker_HeatFluxNoncatalytic = 0; iMarker_HeatFluxNoncatalytic < nMarker_HeatFluxNonCatalytic; iMarker_HeatFluxNoncatalytic++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_HeatFluxNonCatalytic[iMarker_HeatFluxNoncatalytic];
-    Marker_CfgFile_KindBC[iMarker_CfgFile] = HEAT_FLUX_NONCATALYTIC;
     iMarker_CfgFile++;
   }
 
@@ -2902,8 +2802,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
   iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann, iMarker_Outlet,
-  iMarker_Isothermal, iMarker_IsothermalNonCatalytic, iMarker_IsothermalCatalytic,
-  iMarker_HeatFlux, iMarker_HeatFluxNonCatalytic, iMarker_HeatFluxCatalytic,
+  iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV,
@@ -3018,7 +2917,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "Continuous RANS adjoint equations." << endl;
 
         break;
-      case LIN_EULER: cout << "Linearized Euler equations." << endl; break;
 
     }
 
@@ -3053,15 +2951,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if (Restart) {
-      if (!Adjoint && !Linearized) cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+      if (!Adjoint) cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
       if (Adjoint) cout << "Read adjoint solution from: " << Solution_AdjFileName << "." << endl;
-      if (Linearized) cout << "Read linearized solution from: " << Solution_LinFileName << "." << endl;
     }
     else {
       cout << "No restart solution, use the values at infinity (freestream)." << endl;
     }
 
-    if (Adjoint || Linearized)
+    if (Adjoint)
       cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
 
     
@@ -3162,7 +3059,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 	if (val_software == SU2_MSH) {
 		switch (Kind_Adaptation) {
-		case FULL: case WAKE: case FULL_FLOW: case FULL_ADJOINT: case FULL_LINEAR: case SMOOTHING: case SUPERSONIC_SHOCK:
+		case FULL: case WAKE: case FULL_FLOW: case FULL_ADJOINT: case SMOOTHING: case SUPERSONIC_SHOCK:
 			break;
 		case GRAD_FLOW:
 			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
@@ -3170,7 +3067,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		case GRAD_ADJOINT:
 			cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
 			break;
-		case GRAD_FLOW_ADJ: case ROBUST: case COMPUTABLE_ROBUST: case COMPUTABLE: case REMAINING:
+		case GRAD_FLOW_ADJ: case ROBUST: case COMPUTABLE: case REMAINING:
 			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
 			cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
 			break;
@@ -3493,24 +3390,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
 
-    if (Kind_Solver == LIN_EULER) {
-
-      if (Kind_ConvNumScheme_LinFlow == SPACE_CENTERED) {
-        if (Kind_Centered_LinFlow == JST) {
-          cout << "Jameson-Schmidt-Turkel scheme for the linearized inviscid terms."<< endl;
-          cout << "JST viscous coefficients (1st, & 4th): " << Kappa_1st_LinFlow
-          << ", " << Kappa_4th_LinFlow <<"."<< endl;
-          cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
-          cout << "Second order integration." << endl;
-        }
-        if (Kind_Centered_LinFlow == LAX) {
-          cout << "Lax-Friedrich scheme for the linearized inviscid terms."<< endl;
-          cout << "First order integration." << endl;
-        }
-      }
-
-    }
-
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
         (Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS)) {
         cout << "Average of gradients with correction (viscous flow terms)." << endl;
@@ -3632,21 +3511,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
     }
 
-    if (Kind_Solver == LIN_EULER) {
-      switch (Kind_TimeIntScheme_LinFlow) {
-        case RUNGE_KUTTA_EXPLICIT:
-          cout << "Runge-Kutta explicit explicit method for the linearized equations." << endl;
-          cout << "Number of steps: " << nRKStep << endl;
-          cout << "Alpha coefficients: ";
-          for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
-            cout << "\t" << RK_Alpha_Step[iRKStep];
-          }
-          cout << endl;
-          break;
-        case EULER_EXPLICIT: cout << "Euler explicit method for the linearized equations." << endl; break;
-      }
-    }
-
     if (nMGLevels !=0) {
       
       if (nStartUpIter != 0) cout << "A total of " << nStartUpIter << " start up iterations on the fine grid."<< endl;
@@ -3662,7 +3526,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
       if (CFL_AdaptParam[0] == 1.0) cout << "No CFL adaptation." << endl;
       else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
-        <<", lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
+        <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
 
       if (nMGLevels !=0) {
         cout << "Multigrid Level:                  ";
@@ -3718,7 +3582,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
 
     if (ConvCriteria == CAUCHY) {
-      if (!Adjoint && !Linearized && !DiscreteAdjoint)
+      if (!Adjoint && !DiscreteAdjoint)
         switch (Cauchy_Func_Flow) {
           case LIFT_COEFFICIENT: cout << "Cauchy criteria for Lift using "
             << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
@@ -3734,21 +3598,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
         }
 
-      if (Linearized)
-        switch (Cauchy_Func_LinFlow) {
-          case DELTA_LIFT_COEFFICIENT: cout << "Cauchy criteria for linearized Lift using "
-            << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
-          case DELTA_DRAG_COEFFICIENT: cout << "Cauchy criteria for linearized Drag using "
-            << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
-        }
-
       cout << "Start convergence criteria at iteration " << StartConv_Iter<< "."<< endl;
       
     }
 
 
     if (ConvCriteria == RESIDUAL) {
-      if (!Adjoint && !Linearized && !DiscreteAdjoint) {
+      if (!Adjoint && !DiscreteAdjoint) {
         cout << "Reduce the density residual " << OrderMagResidual << " orders of magnitude."<< endl;
         cout << "The minimum bound for the density residual is 10^(" << MinLogResidual<< ")."<< endl;
         cout << "Start convergence criteria at iteration " << StartConv_Iter<< "."<< endl;
@@ -3757,11 +3613,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (Adjoint || DiscreteAdjoint) {
         cout << "Reduce the adjoint density residual " << OrderMagResidual << " orders of magnitude."<< endl;
         cout << "The minimum value for the adjoint density residual is 10^(" << MinLogResidual<< ")."<< endl;
-      }
-
-      if (Linearized) {
-        cout << "Reduce the linearized density residual " << OrderMagResidual << " orders of magnitude."<< endl;
-        cout << "The minimum value for the linearized density residual is 10^(" << MinLogResidual<< ")."<< endl;
       }
 
     }
@@ -3778,20 +3629,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case WAKE: cout << "Grid adaptation of the wake." << endl; break;
       case FULL_FLOW: cout << "Flow grid adaptation using a complete refinement." << endl; break;
       case FULL_ADJOINT: cout << "Adjoint grid adaptation using a complete refinement." << endl; break;
-      case FULL_LINEAR: cout << "Linear grid adaptation using a complete refinement." << endl; break;
       case GRAD_FLOW: cout << "Grid adaptation using gradient based strategy (density)." << endl; break;
       case GRAD_ADJOINT: cout << "Grid adaptation using gradient based strategy (adjoint density)." << endl; break;
       case GRAD_FLOW_ADJ: cout << "Grid adaptation using gradient based strategy (density and adjoint density)." << endl; break;
       case ROBUST: cout << "Grid adaptation using robust adaptation."<< endl; break;
       case COMPUTABLE: cout << "Grid adaptation using computable correction."<< endl; break;
-      case COMPUTABLE_ROBUST: cout << "Grid adaptation using computable correction."<< endl; break;
       case REMAINING: cout << "Grid adaptation using remaining error."<< endl; break;
       case SMOOTHING: cout << "Grid smoothing using an implicit method."<< endl; break;
       case SUPERSONIC_SHOCK: cout << "Grid adaptation for a supersonic shock at Mach: " << Mach <<"."<< endl; break;
     }
 
     switch (Kind_Adaptation) {
-      case GRAD_FLOW: case GRAD_ADJOINT: case GRAD_FLOW_ADJ: case ROBUST: case COMPUTABLE: case COMPUTABLE_ROBUST: case REMAINING:
+      case GRAD_FLOW: case GRAD_ADJOINT: case GRAD_FLOW_ADJ: case ROBUST: case COMPUTABLE: case REMAINING:
         cout << "Power of the dual volume in the adaptation sensor: " << DualVol_Power << endl;
         cout << "Percentage of new elements in the adaptation process: " << New_Elem_Adapt << "."<< endl;
         break;
@@ -3828,17 +3677,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Forces breakdown file name: " << Breakdown_FileName << "." << endl;
 
     if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
-      if (!Linearized && !Adjoint && !DiscreteAdjoint) {
+      if (!Adjoint && !DiscreteAdjoint) {
         cout << "Surface flow coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
         cout << "Flow variables file name: " << Flow_FileName << "." << endl;
         cout << "Restart flow file name: " << Restart_FlowFileName << "." << endl;
-      }
-
-      if (Linearized) {
-        cout << "Linearized flow solution file name: " << Solution_LinFileName << "." << endl;
-        cout << "Restart linearized flow file name: " << Restart_LinFileName << "." << endl;
-        cout << "Linearized variables file name: " << Lin_FileName << "." << endl;
-        cout << "Surface linearized coefficients file name: " << SurfLinCoeff_FileName << "." << endl;
       }
 
       if (Adjoint || DiscreteAdjoint) {
@@ -3898,7 +3740,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
     cout << "Restart flow file name: " << Restart_FlowFileName << "." << endl;
     if ((Kind_Adaptation == FULL_ADJOINT) || (Kind_Adaptation == GRAD_ADJOINT) || (Kind_Adaptation == GRAD_FLOW_ADJ) ||
-        (Kind_Adaptation == ROBUST) || (Kind_Adaptation == COMPUTABLE_ROBUST) || (Kind_Adaptation == COMPUTABLE) ||
+        (Kind_Adaptation == ROBUST) || (Kind_Adaptation == COMPUTABLE) ||
         (Kind_Adaptation == REMAINING)) {
       if (Kind_ObjFunc == DRAG_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
       if (Kind_ObjFunc == EQUIVALENT_AREA) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
@@ -4080,47 +3922,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  if (nMarker_IsothermalNonCatalytic != 0) {
-    cout << "Non-catalytic isothermal wall boundary marker(s): ";
-    for (iMarker_IsothermalNonCatalytic = 0; iMarker_IsothermalNonCatalytic < nMarker_IsothermalNonCatalytic; iMarker_IsothermalNonCatalytic++) {
-      cout << Marker_IsothermalNonCatalytic[iMarker_IsothermalNonCatalytic];
-      if (iMarker_IsothermalNonCatalytic < nMarker_IsothermalNonCatalytic-1) cout << ", ";
-      else cout <<"."<< endl;
-    }
-  }
-
-  if (nMarker_IsothermalCatalytic != 0) {
-    cout << "Catalytic isothermal wall boundary marker(s): ";
-    for (iMarker_IsothermalCatalytic = 0; iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic; iMarker_IsothermalCatalytic++) {
-      cout << Marker_IsothermalCatalytic[iMarker_IsothermalCatalytic];
-      if (iMarker_IsothermalCatalytic < nMarker_IsothermalCatalytic-1) cout << ", ";
-      else cout <<"."<< endl;
-    }
-  }
-
   if (nMarker_HeatFlux != 0) {
     cout << "Constant heat flux wall boundary marker(s): ";
     for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
       cout << Marker_HeatFlux[iMarker_HeatFlux];
       if (iMarker_HeatFlux < nMarker_HeatFlux-1) cout << ", ";
-      else cout <<"."<< endl;
-    }
-  }
-
-  if (nMarker_HeatFluxNonCatalytic != 0) {
-    cout << "Non-catalytic constant heat flux wall boundary marker(s): ";
-    for (iMarker_HeatFluxNonCatalytic = 0; iMarker_HeatFluxNonCatalytic < nMarker_HeatFluxNonCatalytic; iMarker_HeatFluxNonCatalytic++) {
-      cout << Marker_HeatFluxNonCatalytic[iMarker_HeatFluxNonCatalytic];
-      if (iMarker_HeatFluxNonCatalytic < nMarker_HeatFluxNonCatalytic-1) cout << ", ";
-      else cout <<"."<< endl;
-    }
-  }
-
-  if (nMarker_HeatFluxCatalytic != 0) {
-    cout << "Catalytic constant heat flux wall boundary marker(s): ";
-    for (iMarker_HeatFluxCatalytic = 0; iMarker_HeatFluxCatalytic < nMarker_HeatFluxCatalytic; iMarker_HeatFluxCatalytic++) {
-      cout << Marker_HeatFluxCatalytic[iMarker_HeatFluxCatalytic];
-      if (iMarker_HeatFluxCatalytic < nMarker_HeatFluxCatalytic-1) cout << ", ";
       else cout <<"."<< endl;
     }
   }
@@ -4281,7 +4087,7 @@ bool CConfig::TokenizeString(string & str, string & option_name,
     pos = value_part.find_first_of(delimiters, last_pos);
   }
   if (option_value.size() == 0) {
-    cerr << "Error inT okenizeString(): "
+    cerr << "Error in TokenizeString(): "
     << "option " << option_name << " in configuration file with no value assigned."
     << endl;
     throw(-1);
@@ -4413,7 +4219,6 @@ unsigned short CConfig::GetMarker_CfgFile_Plotting(string val_marker) {
   return Marker_CfgFile_Plotting[iMarker_CfgFile];
 }
 
-
 unsigned short CConfig::GetMarker_CfgFile_FSIinterface(string val_marker) {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
@@ -4455,36 +4260,6 @@ CConfig::~CConfig(void) {
   if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
   if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
   if (U_FreeStreamND!=NULL) delete [] U_FreeStreamND;
-
-  /*--- If allocated, delete arrays for Plasma solver ---*/
-  
-  if (Molar_Mass           != NULL) delete [] Molar_Mass;
-  if (Gas_Composition      != NULL) delete [] Gas_Composition;
-  if (Enthalpy_Formation   != NULL) delete [] Enthalpy_Formation;
-  if (ArrheniusCoefficient != NULL) delete [] ArrheniusCoefficient;
-  if (ArrheniusEta         != NULL) delete [] ArrheniusEta;
-  if (ArrheniusTheta       != NULL) delete [] ArrheniusTheta;
-  if (CharVibTemp          != NULL) delete [] CharVibTemp;
-  if (CharElTemp           != NULL) {
-    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      delete[] CharElTemp[iSpecies];
-    delete [] CharElTemp;
-  }
-  if (degen != NULL) {
-    for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      delete[] degen[iSpecies];
-    delete [] degen;
-  }
-  unsigned short ii, iReaction;
-  if (Reactions != NULL) {
-    for (iReaction = 0; iReaction < nReactions; iReaction++) {
-      for (ii = 0; ii < 2; ii++) {
-        delete [] Reactions[iReaction][ii];
-      }
-      delete[] Reactions[iReaction];
-    }
-    delete [] Reactions;
-  }
 
   /*--- Free memory for Aeroelastic problems. ---*/
   
@@ -4634,8 +4409,6 @@ CConfig::~CConfig(void) {
   if (Outlet_Pressure!=NULL)    delete[] Outlet_Pressure;
   if (Isothermal_Temperature!=NULL)    delete[] Isothermal_Temperature;
   if (Heat_Flux!=NULL)    delete[] Heat_Flux;
-  if (Heat_FluxNonCatalytic!=NULL)    delete[] Heat_FluxNonCatalytic;
-  if (Heat_FluxCatalytic!=NULL)    delete[] Heat_FluxCatalytic;
   if (Displ_Value!=NULL)    delete[] Displ_Value;
   if (Load_Value!=NULL)    delete[] Load_Value;
   if (Load_Dir!=NULL)    delete[] Load_Dir;
@@ -4656,12 +4429,12 @@ CConfig::~CConfig(void) {
   if (Section_Location!=NULL)    delete[] Section_Location;
   if (Kappa_Flow!=NULL      )    delete[] Kappa_Flow;
   if (Kappa_AdjFlow!=NULL             )    delete[] Kappa_AdjFlow;
-  if (Kappa_LinFlow!=NULL  )    delete[] Kappa_LinFlow;
   if (PlaneTag!=NULL)    delete[] PlaneTag;
   if (CFL_AdaptParam!=NULL)    delete[] CFL_AdaptParam;
   if (CFL!=NULL)    delete[] CFL;
   
   /*--- String markers ---*/
+  
   if (Marker_Euler!=NULL )              delete[] Marker_Euler;
   if (Marker_FarField!=NULL )           delete[] Marker_FarField;
   if (Marker_Custom!=NULL )             delete[] Marker_Custom;
@@ -4672,7 +4445,6 @@ CConfig::~CConfig(void) {
   if (Marker_NearFieldBound!=NULL )     delete[] Marker_NearFieldBound;
   if (Marker_InterfaceBound!=NULL )     delete[] Marker_InterfaceBound;
   if (Marker_Dirichlet!=NULL )          delete[] Marker_Dirichlet;
-  if (Marker_Dirichlet_Elec!=NULL )     delete[] Marker_Dirichlet_Elec;
   if (Marker_Inlet!=NULL )              delete[] Marker_Inlet;
   if (Marker_Supersonic_Inlet!=NULL )   delete[] Marker_Supersonic_Inlet;
   if (Marker_Supersonic_Outlet!=NULL )   delete[] Marker_Supersonic_Outlet;
@@ -4688,12 +4460,7 @@ CConfig::~CConfig(void) {
   if (Marker_Load_Sine!=NULL )               delete[] Marker_Load_Sine;
   if (Marker_FlowLoad!=NULL )           delete[] Marker_FlowLoad;
   if (Marker_Neumann!=NULL )            delete[] Marker_Neumann;
-  if (Marker_Neumann_Elec!=NULL )       delete[] Marker_Neumann_Elec;
-  if (Marker_IsothermalNonCatalytic!=NULL ) delete[] Marker_IsothermalNonCatalytic;
-  if (Marker_IsothermalCatalytic!=NULL )    delete[] Marker_IsothermalCatalytic;
   if (Marker_HeatFlux!=NULL )               delete[] Marker_HeatFlux;
-  if (Marker_HeatFluxNonCatalytic!=NULL )   delete[] Marker_HeatFluxNonCatalytic;
-  if (Marker_HeatFluxCatalytic!=NULL )      delete[] Marker_HeatFluxCatalytic;
 
 }
 
@@ -4703,12 +4470,14 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   char buffer[50];
 
   /*--- Check that a positive value iteration is requested (for now). ---*/
+  
   if (val_iter < 0) {
     cout << "Requesting a negative iteration number for the restart file!!" << endl;
     exit(EXIT_FAILURE);
   }
 
   /*--- Append iteration number for unsteady cases ---*/
+  
   if ((Wrt_Unsteady) || (Unsteady_Simulation == TIME_SPECTRAL)) {
     unsigned short lastindex = UnstFilename.find_last_of(".");
     UnstFilename = UnstFilename.substr(0, lastindex);
@@ -4782,8 +4551,6 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
     case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
     case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
-    case RUNTIME_LINPOT_SYS:    return LINFLOW_SOL;
-    case RUNTIME_LINFLOW_SYS:   return LINFLOW_SOL;
     case RUNTIME_MULTIGRID_SYS: return 0;
   }
   return 0;
@@ -4899,19 +4666,6 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               Kind_Upwind_AdjTurb, Kind_SlopeLimit_AdjTurb,
                               SpatialOrder_AdjTurb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTurb);
-      }
-      break;
-    case LIN_EULER:
-      if (val_system == RUNTIME_FLOW_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
-                              Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              SpatialOrder_Flow);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
-      }
-      if (val_system == RUNTIME_LINFLOW_SYS) {
-        SetKind_ConvNumScheme(Kind_ConvNumScheme_LinFlow, Kind_Centered_LinFlow,
-                              Kind_Upwind_LinFlow, NONE, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_LinFlow);
       }
       break;
     case POISSON_EQUATION:
@@ -5079,16 +4833,16 @@ unsigned short CConfig::GetMarker_Moving(string val_marker) {
 
 su2double CConfig::GetDirichlet_Value(string val_marker) {
   unsigned short iMarker_Dirichlet;
-  for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet_Elec; iMarker_Dirichlet++)
-    if (Marker_Dirichlet_Elec[iMarker_Dirichlet] == val_marker) break;
+  for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet; iMarker_Dirichlet++)
+    if (Marker_Dirichlet[iMarker_Dirichlet] == val_marker) break;
   return Dirichlet_Value[iMarker_Dirichlet];
 }
 
 bool CConfig::GetDirichlet_Boundary(string val_marker) {
   unsigned short iMarker_Dirichlet;
   bool Dirichlet = false;
-  for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet_Elec; iMarker_Dirichlet++)
-    if (Marker_Dirichlet_Elec[iMarker_Dirichlet] == val_marker) {
+  for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet; iMarker_Dirichlet++)
+    if (Marker_Dirichlet[iMarker_Dirichlet] == val_marker) {
       Dirichlet = true;
       break;
     }
@@ -5189,26 +4943,9 @@ unsigned short CConfig::GetKind_Data_Riemann(string val_marker) {
 su2double CConfig::GetIsothermal_Temperature(string val_marker) {
   unsigned short iMarker_Isothermal = 0;
 
-  if ((nMarker_Isothermal*nMarker_IsothermalCatalytic             != 0) ||
-      (nMarker_Isothermal*nMarker_IsothermalNonCatalytic          != 0) ||
-      (nMarker_IsothermalCatalytic*nMarker_IsothermalNonCatalytic != 0)   ) {
-    cout << "Mixed catalytic boundaries not supported!!" << endl;
-    exit(EXIT_FAILURE);
-  }
-
   if (nMarker_Isothermal > 0) {
     for (iMarker_Isothermal = 0; iMarker_Isothermal < nMarker_Isothermal; iMarker_Isothermal++)
       if (Marker_Isothermal[iMarker_Isothermal] == val_marker) break;
-  }
-
-  if (nMarker_IsothermalCatalytic > 0) {
-    for (iMarker_Isothermal = 0; iMarker_Isothermal < nMarker_IsothermalCatalytic; iMarker_Isothermal++)
-      if (Marker_IsothermalCatalytic[iMarker_Isothermal] == val_marker) break;
-  }
-
-  if (nMarker_IsothermalNonCatalytic > 0) {
-    for (iMarker_Isothermal = 0; iMarker_Isothermal < nMarker_IsothermalNonCatalytic; iMarker_Isothermal++)
-      if (Marker_IsothermalNonCatalytic[iMarker_Isothermal] == val_marker) break;
   }
 
   return Isothermal_Temperature[iMarker_Isothermal];
@@ -5217,26 +4954,9 @@ su2double CConfig::GetIsothermal_Temperature(string val_marker) {
 su2double CConfig::GetWall_HeatFlux(string val_marker) {
   unsigned short iMarker_HeatFlux = 0;
 
-  if ((nMarker_HeatFlux*nMarker_HeatFluxCatalytic             != 0) ||
-      (nMarker_HeatFlux*nMarker_HeatFluxNonCatalytic          != 0) ||
-      (nMarker_HeatFluxCatalytic*nMarker_HeatFluxNonCatalytic != 0)) {
-    cout << "Mixed catalytic boundaries not supported!!" << endl;
-    exit(EXIT_FAILURE);
-  }
-
   if (nMarker_HeatFlux > 0) {
   for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++)
     if (Marker_HeatFlux[iMarker_HeatFlux] == val_marker) break;
-  }
-
-  if (nMarker_HeatFluxCatalytic > 0) {
-    for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFluxCatalytic; iMarker_HeatFlux++)
-      if (Marker_HeatFluxCatalytic[iMarker_HeatFlux] == val_marker) break;
-  }
-
-  if (nMarker_HeatFluxNonCatalytic > 0) {
-    for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFluxNonCatalytic; iMarker_HeatFlux++)
-      if (Marker_HeatFluxNonCatalytic[iMarker_HeatFlux] == val_marker) break;
   }
 
   return Heat_Flux[iMarker_HeatFlux];

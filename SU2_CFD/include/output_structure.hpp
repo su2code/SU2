@@ -221,16 +221,6 @@ public:
 	 */
 	void SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone);
 
-	/*! 
-	 * \brief Create and write the file with linearized coefficient on the surface for serial computations
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] LinSolution - Linearized solution.
-	 * \param[in] val_filename - Name of the output file.
-	 * \param[in] iExtIter - Current external (time) iteration.
-	 */
-	void SetSurfaceCSV_Linearized(CConfig *config, CGeometry *geometry, CSolver *LinSolution, string val_filename, unsigned long iExtIter);
-
   /*!
 	 * \brief Merge the geometry into a data structure used for output file writing.
 	 * \param[in] config - Definition of the particular problem.

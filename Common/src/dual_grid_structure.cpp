@@ -362,7 +362,7 @@ CEdge::~CEdge() {
   
 }
 
-void CEdge::SetCG(su2double **val_coord) {
+void CEdge::SetCoord_CG(su2double **val_coord) {
 	unsigned short iDim, iNode;
 	
 	for (iDim = 0; iDim < nDim; iDim++) {

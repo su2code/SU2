@@ -155,7 +155,6 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
-    case LIN_EULER: euler = true; lin_euler = true; break;
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
@@ -232,14 +231,6 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       solver_container[iMGlevel][ADJTURB_SOL] = new CAdjTurbSolver(geometry[iMGlevel], config, iMGlevel);
     }
     
-    /*--- Allocate solution for linear problem (at the moment we use the same scheme as the adjoint problem) ---*/
-    if (lin_euler) {
-      solver_container[iMGlevel][LINFLOW_SOL] = new CLinEulerSolver(geometry[iMGlevel], config, iMGlevel);
-    }
-    if (lin_ns) {
-      cout <<"Equation not implemented." << endl; exit(EXIT_FAILURE); break;
-    }
-    
     if (disc_adj) {
       solver_container[iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
       if (turbulent)
@@ -281,7 +272,6 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
-    case LIN_EULER: euler = true; lin_euler = true; break;
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
@@ -306,10 +296,6 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   if (adj_ns) integration_container[ADJFLOW_SOL] = new CMultiGridIntegration(config);
   if (adj_turb) integration_container[ADJTURB_SOL] = new CSingleGridIntegration(config);
   
-  /*--- Allocate solution for linear problem (at the moment we use the same scheme as the adjoint problem) ---*/
-  if (lin_euler) integration_container[LINFLOW_SOL] = new CMultiGridIntegration(config);
-  if (lin_ns) { cout <<"Equation not implemented." << endl; exit(EXIT_FAILURE); }
-  
   if (disc_adj) integration_container[ADJFLOW_SOL] = new CIntegration(config);
   
 }
@@ -328,13 +314,12 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   nVar_Adj_Turb         = 0,
   nVar_Poisson          = 0,
   nVar_Wave             = 0,
-  nVar_Heat             = 0,
-  nVar_Lin_Flow         = 0;
+  nVar_Heat             = 0;
   
   su2double *constants = NULL;
   
   bool
-  euler, adj_euler, lin_euler,
+  euler, adj_euler,
   ns, adj_ns,
   turbulent, adj_turb,
   spalart_allmaras, neg_spalart_allmaras, menter_sst,
@@ -355,7 +340,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   poisson          = false;
   adj_euler        = false;   adj_ns           = false;  adj_turb         = false;
   wave             = false;   heat             = false;   fea              = false;   spalart_allmaras = false; neg_spalart_allmaras = false;
-  lin_euler        = false;   menter_sst       = false;
+  menter_sst       = false;
   transition       = false;
   template_solver  = false;
   
@@ -372,7 +357,6 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
-    case LIN_EULER: euler = true; lin_euler = true; break;
   }
   
   /*--- Assign turbulence model booleans --- */
@@ -405,10 +389,6 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   if (adj_euler)        nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_ns)           nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_turb)         nVar_Adj_Turb = solver_container[MESH_0][ADJTURB_SOL]->GetnVar();
-  
-  /*--- Number of variables for the linear problem ---*/
-  
-  if (lin_euler)  nVar_Lin_Flow = solver_container[MESH_0][LINFLOW_SOL]->GetnVar();
   
   /*--- Number of dimensions ---*/
   
@@ -947,33 +927,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
   }
-  
-  /*--- Solver definition for the linearized flow problem ---*/
-  if (lin_euler) {
     
-    /*--- Definition of the convective scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ConvNumScheme_LinFlow()) {
-      case NONE :
-        break;
-      case SPACE_CENTERED :
-        switch (config->GetKind_Centered_LinFlow()) {
-          case LAX : numerics_container[MESH_0][LINFLOW_SOL][CONV_TERM] = new CCentLax_LinFlow(nDim, nVar_Lin_Flow, config); break;
-          case JST : numerics_container[MESH_0][LINFLOW_SOL][CONV_TERM] = new CCentJST_LinFlow(nDim, nVar_Lin_Flow, config); break;
-          default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
-        }
-        for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics_container[iMGlevel][LINFLOW_SOL][CONV_TERM] = new CCentLax_LinFlow(nDim, nVar_Lin_Flow, config);
-        break;
-      default :
-        cout << "Convective scheme not implemented (lin_euler)." << endl; exit(EXIT_FAILURE);
-        break;
-    }
-    
-    /*--- Definition of the boundary condition method ---*/
-    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-      numerics_container[iMGlevel][LINFLOW_SOL][CONV_BOUND_TERM] = new CCentLax_LinFlow(nDim, nVar_Lin_Flow, config);
-  }
-  
   /*--- Solver definition for the turbulent adjoint problem ---*/
   if (adj_turb) {
     /*--- Definition of the convective scheme for each equation and mesh level ---*/

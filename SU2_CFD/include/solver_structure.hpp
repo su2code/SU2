@@ -694,38 +694,6 @@ public:
                                   CConfig *config,
                                   unsigned short val_marker);
   
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	virtual void BC_IsothermalCatalytic_Wall(CGeometry *geometry,
-                                           CSolver **solver_container,
-                                           CNumerics *conv_numerics,
-                                           CNumerics *visc_numerics,
-                                           CConfig *config,
-                                           unsigned short val_marker);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	virtual void BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
-                                              CSolver **solver_container,
-                                              CNumerics *conv_numerics,
-                                              CNumerics *visc_numerics,
-                                              CConfig *config,
-                                              unsigned short val_marker);
-    
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -739,39 +707,7 @@ public:
                                 CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config,
                                 unsigned short val_marker);
-  
-  /*!
-	 * \brief Impose a constant heat-flux condition at the wall.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] conv_numerics - Description of the numerical method for convective terms.
-   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	virtual void BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
-                                         CSolver **solver_container,
-                                         CNumerics *conv_numerics,
-                                         CNumerics *visc_numerics,
-                                         CConfig *config,
-                                         unsigned short val_marker);
-  
-  /*!
-	 * \brief Impose a constant heat-flux condition at the wall.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] conv_numerics - Description of the numerical method for convective terms.
-   * \param[in] visc_numerics - Description of the numerical method for viscous terms.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	virtual void BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
-                                            CSolver **solver_container,
-                                            CNumerics *conv_numerics,
-                                            CNumerics *visc_numerics,
-                                            CConfig *config,
-                                            unsigned short val_marker);
-    
+      
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1582,13 +1518,7 @@ public:
 	 * \param[in] val_cnearfieldpress - Value of the Near-Field pressure coefficient.
 	 */
 	virtual void SetTotal_CNearFieldOF(su2double val_cnearfieldpress);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \return Value of the linearized lift coefficient (inviscid contribution).
-	 */
-	virtual su2double GetTotal_CDeltaLift(void);
-    
+  
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the drag coefficient (inviscid + viscous contribution).
@@ -1642,13 +1572,7 @@ public:
 	 * \return Value of the wave strength.
 	 */
 	virtual su2double GetTotal_CHeat(void);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \return Value of the linearized drag coefficient (inviscid contribution).
-	 */
-	virtual su2double GetTotal_CDeltaDrag(void);
-    
+  
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the lift coefficient (inviscid contribution).
@@ -5415,130 +5339,6 @@ public:
 	 */
 	void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
     
-};
-
-/*!
- * \class CLinEulerSolver
- * \brief Main class for defining the linearized Euler solver.
- * \ingroup Euler_Equations
- * \author F. Palacios
- * \version 4.0.1 "Cardinal"
- */
-class CLinEulerSolver : public CSolver {
-private:
-	su2double DeltaRho_Inf,	/*!< \brief Linearized density variable at the infinity. */
-	DeltaE_Inf,				/*!< \brief Linearized energy at the infinity. */
-	*DeltaVel_Inf;			/*!< \brief Linearized velocity vector at the infinity. */
-	su2double *CDeltaDrag_Inv, /*!< \brief Linearized drag coefficient (inviscid contribution) for each boundary. */
-	*CDeltaLift_Inv,		/*!< \brief Linearized lift coefficient (inviscid contribution) for each boundary. */
-	*DeltaForceInviscid;	/*!< \brief Linearized inviscid force for each boundary. */
-	su2double AllBound_CDeltaDrag_Inv, /*!< \brief Total linearized drag coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CDeltaLift_Inv;		/*!< \brief Total linearized lift coefficient (inviscid contribution) for all the boundaries. */
-	su2double Total_CDeltaDrag,	/*!< \brief Total linearized drag coefficient for all the boundaries. */
-	Total_CDeltaLift;			/*!< \brief Total linearized lift coefficient for all the boundaries. */
-	su2double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-	su2double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
-    
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 */
-	CLinEulerSolver(void);
-    
-	/*!
-	 * \overload
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CLinEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CLinEulerSolver(void);
-    
-	/*!
-	 * \brief Compute the spatial integration using a centered scheme for the linearized equations.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 */
-	void Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                           unsigned short iMesh, unsigned short iRKStep);
-    
-	/*!
-	 * \brief Compute the undivided laplacian for the linearized solution.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
-    
-	/*!
-	 * \brief Impose via the residual the linearized Euler wall boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                       unsigned short val_marker);
-    
-	/*!
-	 * \brief Impose the far-field boundary condition using characteristics.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] conv_numerics - Description of the numerical method.
-	 * \param[in] visc_numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                      unsigned short val_marker);
-    
-	/*!
-	 * \brief Update the solution using a Runge-Kutta scheme.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 */
-	void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                              unsigned short iRKStep);
-    
-	/*!
-	 * \brief Restart residual.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-     * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
-    
-	/*!
-	 * \brief Compute the linearization of the pressure forces and all the adimensional coefficients.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-    
-	/*!
-	 * \brief Get the total non dimensional drag coefficient.
-	 * \return Value of the linearized drag coefficient (inviscid contribution).
-	 */
-	su2double GetTotal_CDeltaDrag(void);
-    
-	/*!
-	 * \brief Get the total non dimensional lift coefficient.
-	 * \return Value of the linearized lift coefficient (inviscid contribution).
-	 */
-	su2double GetTotal_CDeltaLift(void);
 };
 
 /*! \class CPoissonSolver

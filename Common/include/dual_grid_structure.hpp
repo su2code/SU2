@@ -755,7 +755,7 @@ public:
 	 * \brief Set the center of gravity of the edge.
 	 * \param[in] val_coord - Coordinates of all the nodes needed for computing the centre of gravity of an edge.
 	 */
-	void SetCG(su2double **val_coord);
+	void SetCoord_CG(su2double **val_coord);
 	
 	/*! 
 	 * \brief Obtain the centre of gravity of the edge.

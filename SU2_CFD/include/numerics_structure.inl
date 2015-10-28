@@ -241,11 +241,6 @@ inline void CNumerics::SetAdjointVar(su2double *val_psi_i, su2double *val_psi_j)
 	Psi_j = val_psi_j;
 }
 
-inline void CNumerics::SetLinearizedVar(su2double *val_deltau_i, su2double *val_deltau_j) {
-	DeltaU_i = val_deltau_i;
-	DeltaU_j = val_deltau_j;
-}
-
 inline void CNumerics::SetAdjointVarGradient(su2double **val_psivar_grad_i, su2double **val_psivar_grad_j) {
 	PsiVar_Grad_i = val_psivar_grad_i;
 	PsiVar_Grad_j = val_psivar_grad_j;

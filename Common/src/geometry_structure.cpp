@@ -840,7 +840,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config){
     unsigned short iMesh;
     geometry_container[MESH_0]->Set_MPI_Coord(config);
 
-    geometry_container[MESH_0]->SetCG();
+    geometry_container[MESH_0]->SetCoord_CG();
     geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
     geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
 
@@ -9324,7 +9324,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
   }
 }
 
-void CPhysicalGeometry::SetCG(void) {
+void CPhysicalGeometry::SetCoord_CG(void) {
   unsigned short nNode, iDim, iMarker, iNode;
   unsigned long elem_poin, edge_poin, iElem, iEdge;
   su2double **Coord;
@@ -9346,7 +9346,7 @@ void CPhysicalGeometry::SetCG(void) {
     
     /*--- Compute the element CG coordinates ---*/
     
-    elem[iElem]->SetCG(Coord);
+    elem[iElem]->SetCoord_CG(Coord);
     
     for (iNode = 0; iNode < nNode; iNode++)
       if (Coord[iNode] != NULL) delete[] Coord[iNode];
@@ -9370,8 +9370,8 @@ void CPhysicalGeometry::SetCG(void) {
       }
       /*--- Compute the element CG coordinates ---*/
       
-      bound[iMarker][iElem]->SetCG(Coord);
-      for (iNode=0; iNode < nNode; iNode++)
+      bound[iMarker][iElem]->SetCoord_CG(Coord);
+      for (iNode = 0; iNode < nNode; iNode++)
         if (Coord[iNode] != NULL) delete[] Coord[iNode];
       if (Coord != NULL) delete[] Coord;
     }
@@ -9387,15 +9387,15 @@ void CPhysicalGeometry::SetCG(void) {
     for (iNode = 0; iNode < nNode; iNode++) {
       edge_poin=edge[iEdge]->GetNode(iNode);
       Coord[iNode] = new su2double [nDim];
-      for (iDim = 0; iDim<nDim; iDim++)
+      for (iDim = 0; iDim < nDim; iDim++)
         Coord[iNode][iDim]=node[edge_poin]->GetCoord(iDim);
     }
     
     /*--- Compute the edge CG coordinates ---*/
     
-    edge[iEdge]->SetCG(Coord);
+    edge[iEdge]->SetCoord_CG(Coord);
     
-    for (iNode=0; iNode < nNode; iNode++)
+    for (iNode = 0; iNode < nNode; iNode++)
       if (Coord[iNode] != NULL) delete[] Coord[iNode];
     if (Coord != NULL) delete[] Coord;
   }
@@ -10970,7 +10970,7 @@ void CPhysicalGeometry::SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool ne
         
         /*--- Calculate Normal Vector ---*/
         
-        for (iDim=0; iDim<nDim; iDim++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
           p[0] = node[bound[iMarker][iElem]->GetNode(0)]      ->GetCoord(iDim);
           p[1] = node[bound[iMarker][iElem]->GetNode(1)]      ->GetCoord(iDim);
           p[2] = node[bound[iMarker][iElem]->GetNode(nNode-1)]->GetCoord(iDim);
@@ -10986,7 +10986,7 @@ void CPhysicalGeometry::SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool ne
         /*--- Print normal vector ---*/
         
         STL_File << "  facet normal ";
-        for (iDim=0; iDim<nDim; iDim++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
           STL_File << n[iDim]/a << " ";
         }
         STL_File << endl;
@@ -10997,7 +10997,7 @@ void CPhysicalGeometry::SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool ne
         
         /*--- Print Nodes for Facet ---*/
         
-        for (iNode=0; iNode<nNode; iNode++) {
+        for (iNode = 0; iNode < nNode; iNode++) {
           this_node = bound[iMarker][iElem]->GetNode(iNode);
           STL_File << "      vertex ";
           for (iDim = 0; iDim < nDim; iDim++)

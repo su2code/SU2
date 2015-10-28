@@ -6532,11 +6532,11 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
             DubDu[iVar][iVar]= 1.0;
           }
           
-          for (iDim = 0; iDim<nDim; iDim++)
+          for (iDim = 0; iDim < nDim; iDim++)
             for (jDim = 0; jDim<nDim; jDim++)
               DubDu[iDim+1][jDim+1] -= UnitNormal[iDim]*UnitNormal[jDim];
           DubDu[nVar-1][0] += 0.5*ProjVelocity_i*ProjVelocity_i;
-          for (iDim = 0; iDim<nDim; iDim++) {
+          for (iDim = 0; iDim < nDim; iDim++) {
             DubDu[nVar-1][iDim+1] -= ProjVelocity_i*UnitNormal[iDim];
           }
           
@@ -6964,7 +6964,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       
       /* --- Compute the internal state u_i --- */
       Velocity2_i = 0;
-      for (iDim=0; iDim < nDim; iDim++)
+      for (iDim = 0; iDim < nDim; iDim++)
       {
         Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
         Velocity2_i += Velocity_i[iDim]*Velocity_i[iDim];
@@ -10233,7 +10233,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     /*--- Recompute the edges and  dual mesh control volumes in the
      domain and on the boundaries. ---*/
     
-    geometry[MESH_0]->SetCG();
+    geometry[MESH_0]->SetCoord_CG();
     geometry[MESH_0]->SetControlVolume(config, UPDATE);
     geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
 

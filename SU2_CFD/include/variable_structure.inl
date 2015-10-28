@@ -243,8 +243,6 @@ inline su2double CVariable::GetPressure(void) { return 0; }
 
 inline su2double CVariable::GetPressureInc(void) { return 0; }
 
-inline su2double CVariable::GetDeltaPressure(void) { return 0; }
-
 inline su2double CVariable::GetProjVel(su2double *val_vector) { return 0; }
 
 inline su2double CVariable::GetProjVel(su2double *val_vector, unsigned short val_species) { return 0; }
@@ -819,14 +817,6 @@ inline void CAdjNSVariable::SetPhi_Old(su2double *val_phi) { for (unsigned short
 inline void CAdjNSVariable::SetVelSolutionOldDVector(void) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1] = ForceProj_Vector[iDim]; };
 
 inline void CAdjNSVariable::SetVelSolutionDVector(void) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution[iDim+1] = ForceProj_Vector[iDim]; };
-
-inline su2double *CLinEulerVariable::GetForceProj_Vector(void) { return ForceProj_Vector; }
-
-inline void CLinEulerVariable::SetForceProj_Vector(su2double *val_ForceProj_Vector) { for (unsigned short iDim = 0; iDim < nDim; iDim++) ForceProj_Vector[iDim] = val_ForceProj_Vector[iDim]; }
-
-inline void CLinEulerVariable::SetDeltaVel_Old(su2double *val_deltavel) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution_Old[iDim+1]=val_deltavel[iDim]; };
-
-inline su2double CLinEulerVariable::GetDeltaPressure(void) { return DeltaPressure; }
 
 inline void CFEAVariable::SetStress(unsigned short iVar, unsigned short jVar, su2double val_stress) { Stress[iVar][jVar] = val_stress; }
 
