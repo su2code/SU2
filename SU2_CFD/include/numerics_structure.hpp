@@ -4342,6 +4342,7 @@ protected:
 	su2double Mu;			/*!< \brief Lame's coeficient. */
 	su2double Lambda;		/*!< \brief Lame's coeficient. */
 	su2double Kappa;		/*!< \brief Compressibility constant. */
+	bool plane_stress;		/*!< \brief Checks if we are solving a plane stress case */
 
 	su2double **Ba_Mat,	 /*!< \brief Matrix B for node a - Auxiliary. */
 	**Bb_Mat;	 		 /*!< \brief Matrix B for node b - Auxiliary. */

@@ -40,6 +40,8 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 	Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
 	Kappa = config->GetBulk_Modulus_Struct();
 
+	plane_stress = (config->GetElas2D_Formulation() == PLANE_STRESS);
+
 	unsigned short iVar;
 
 	KAux_ab = new su2double* [nDim];
