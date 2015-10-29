@@ -43,6 +43,7 @@ namespace AD{
   /*--- Reference to the tape ---*/
 
   extern codi::ChunkTape<double, int>& globalTape;
+  extern bool Status;
 
 }
 
@@ -67,6 +68,8 @@ namespace AD{
 
   inline void RegisterOutput(su2double& data){AD::globalTape.registerOutput(data);}
 
+  inline void ResetInput(su2double &data){data.getGradientData() = 0;}
+
   inline void StartRecording(){AD::globalTape.setActive();}
 
   inline void StopRecording(){AD::globalTape.setPassive();}
@@ -75,6 +78,14 @@ namespace AD{
 
   inline void ComputeAdjoint(){AD::globalTape.evaluate();
                                adjointVectorPosition = 0;}
+
+  inline void Reset(){
+    if (inputValues.size() != 0){
+      globalTape.reset();
+      adjointVectorPosition = 0;
+      inputValues.clear();
+    }
+  }
 
   inline void delete_handler(void *handler){
     CheckpointHandler *checkpoint = static_cast<CheckpointHandler*>(handler);
@@ -89,6 +100,6 @@ namespace AD{
 template<class A> struct Impl_getValue<codi::Expression<double, A> > {
   typedef double OUT;
   static inline OUT getValue(const codi::Expression<double, A> &value) {
-    return value.cast().value();
+    return value.getValue();
   }
 };

@@ -3600,9 +3600,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
 
   bool isothermal = false;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)   )
+    if ((config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ))
       isothermal = true;
   
   /*--- Write file name with extension ---*/
@@ -3832,13 +3830,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool transition = (config[val_iZone]->GetKind_Trans_Model() == LM);
     bool isothermal = false;
     for (iMarker = 0; iMarker < config[val_iZone]->GetnMarker_All(); iMarker++)
-      if ((config[val_iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ||
-          (config[val_iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC) ||
-          (config[val_iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC))
+      if ((config[val_iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL))
         isothermal = true;
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
                       (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS));
     bool adjoint = config[val_iZone]->GetAdjoint() || config[val_iZone]->GetDiscrete_Adjoint();
+    bool disc_adj = config[val_iZone]->GetDiscrete_Adjoint();
     bool wave = (config[val_iZone]->GetKind_Solver() == WAVE_EQUATION);
     bool heat = (config[val_iZone]->GetKind_Solver() == HEAT_EQUATION);
     bool fea = (config[val_iZone]->GetKind_Solver() == LINEAR_ELASTICITY);
@@ -4450,6 +4447,17 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 cout << endl << "-------------------------------------------------------------------------" << endl;
                 cout << endl;
               }
+
+              break;
+
+            case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+               cout << endl;
+               cout << "------------------------ Discrete Adjoint Summary -----------------------" << endl;
+               cout << "Total Geometry Sensitivity (updated every "  << config[val_iZone]->GetWrt_Sol_Freq() << " iterations): ";
+               cout.precision(4);
+               cout.setf(ios::scientific, ios::floatfield);
+               cout << Total_Sens_Geo;
+               cout << endl << "-------------------------------------------------------------------------" << endl;
               break;
 
           }
@@ -4608,8 +4616,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             if (incompressible || freesurface) cout << "   Res[Psi_Press]" << "   Res[Psi_Velx]";
             else cout << "   Res[Psi_Rho]" << "     Res[Psi_E]";
-            cout << "      Sens_Geo" << "     Sens_Mach" << endl;
-            
+            if (disc_adj){
+              cout << "    Sens_Press" << "     Sens_Mach" << endl;
+            } else {
+              cout << "      Sens_Geo" << "     Sens_Mach" << endl;
+            }
             if (freesurface) {
               cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo" << "   Sens_Mach" << endl;
             }
@@ -4649,8 +4660,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (incompressible || freesurface) cout << "   Res[Psi_Velx]";
               else cout << "     Res[Psi_E]";
             }
-            cout << "     Sens_Geo" << "    Sens_Mach" << endl;
-            
+            if (disc_adj){
+              cout << "    Sens_Press" << "     Sens_Mach" << endl;
+            } else {
+              cout << "      Sens_Geo" << "     Sens_Mach" << endl;
+            }
             if (freesurface) {
               cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo" << "   Sens_Mach" << endl;
             }
@@ -4861,10 +4875,18 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.width(17); cout << log10(residual_adjflow[0]);
             cout.width(16); cout << log10(residual_adjflow[1]);
           }
-          cout.precision(4);
-          cout.setf(ios::scientific, ios::floatfield);
-          cout.width(14); cout << Total_Sens_Geo;
-          cout.width(14); cout << Total_Sens_Mach;
+
+          if (disc_adj){
+            cout.precision(4);
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(14); cout << Total_Sens_Press;
+            cout.width(14); cout << Total_Sens_Mach;
+          }else{
+            cout.precision(4);
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(14); cout << Total_Sens_Geo;
+            cout.width(14); cout << Total_Sens_Mach;
+          }
           cout << endl;
           cout.unsetf(ios_base::floatfield);
           
@@ -4913,10 +4935,18 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout.width(15); cout << log10(residual_adjflow[1]);
             }
           }
-          cout.precision(4);
-          cout.setf(ios::scientific, ios::floatfield);
-          cout.width(14); cout << Total_Sens_Geo;
-          cout.width(14); cout << Total_Sens_Mach;
+
+          if (disc_adj){
+            cout.precision(4);
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(14); cout << Total_Sens_Press;
+            cout.width(14); cout << Total_Sens_Mach;
+          }else{
+            cout.precision(4);
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(14); cout << Total_Sens_Geo;
+            cout.width(14); cout << Total_Sens_Mach;
+          }
           cout << endl;
           cout.unsetf(ios_base::floatfield);
           if (freesurface) {
@@ -6658,11 +6688,7 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
     
     if ((Boundary == EULER_WALL             ) ||
         (Boundary == HEAT_FLUX              ) ||
-        (Boundary == HEAT_FLUX_CATALYTIC    ) ||
-        (Boundary == HEAT_FLUX_NONCATALYTIC ) ||
         (Boundary == ISOTHERMAL             ) ||
-        (Boundary == ISOTHERMAL_CATALYTIC   ) ||
-        (Boundary == ISOTHERMAL_NONCATALYTIC) ||
         (Boundary == NEARFIELD_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         
@@ -6750,11 +6776,7 @@ void COutput::SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry
     
     if ((Boundary == EULER_WALL             ) ||
         (Boundary == HEAT_FLUX              ) ||
-        (Boundary == HEAT_FLUX_CATALYTIC    ) ||
-        (Boundary == HEAT_FLUX_NONCATALYTIC ) ||
         (Boundary == ISOTHERMAL             ) ||
-        (Boundary == ISOTHERMAL_CATALYTIC   ) ||
-        (Boundary == ISOTHERMAL_NONCATALYTIC) ||
         (Boundary == NEARFIELD_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         
@@ -6817,11 +6839,7 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
     
     if ((Boundary == EULER_WALL             ) ||
         (Boundary == HEAT_FLUX              ) ||
-        (Boundary == HEAT_FLUX_CATALYTIC    ) ||
-        (Boundary == HEAT_FLUX_NONCATALYTIC ) ||
         (Boundary == ISOTHERMAL             ) ||
-        (Boundary == ISOTHERMAL_CATALYTIC   ) ||
-        (Boundary == ISOTHERMAL_NONCATALYTIC) ||
         (Boundary == NEARFIELD_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         
@@ -6907,11 +6925,7 @@ void COutput::SetHeat_InverseDesign(CSolver *solver_container, CGeometry *geomet
     
     if ((Boundary == EULER_WALL             ) ||
         (Boundary == HEAT_FLUX              ) ||
-        (Boundary == HEAT_FLUX_CATALYTIC    ) ||
-        (Boundary == HEAT_FLUX_NONCATALYTIC ) ||
         (Boundary == ISOTHERMAL             ) ||
-        (Boundary == ISOTHERMAL_CATALYTIC   ) ||
-        (Boundary == ISOTHERMAL_NONCATALYTIC) ||
         (Boundary == NEARFIELD_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         

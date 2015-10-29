@@ -1,7 +1,7 @@
 /*!
- * \file variable_adjoint_discrete.cpp
- * \brief Main subroutines for the discrete adjoint variable structure.
- * \author T. Albring
+ * \file gauss_structure.cpp
+ * \brief Definition of the Gaussian Points structure for Finite Element applications
+ * \author R. Sanchez
  * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
@@ -28,49 +28,43 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "../include/variable_structure.hpp"
 
-CDiscAdjVariable::CDiscAdjVariable() : CVariable(){
+#include "../include/gauss_structure.hpp"
+
+CGaussVariable::CGaussVariable(void) {
+
+	GradNi_Xj = NULL;
+	GradNi_xj = NULL;
+	J_X = 0.0;
+	J_x = 0.0;
+	iGaussPoint = 0;
+	Ni = NULL;
 
 }
 
-CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_ndim,
-                               unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config){
+CGaussVariable::CGaussVariable(unsigned short val_iGauss, unsigned short val_nDim, unsigned short val_nNodes) {
 
-  bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-      || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+	 GradNi_Xj = new su2double* [val_nNodes];
+	 for (unsigned short iNode = 0; iNode < val_nNodes; iNode++)
+		 GradNi_Xj[iNode] = new su2double [val_nDim];
 
-  if (dual_time){
-    DualTime_Derivative = new su2double[nVar];
-    DualTime_Derivative_n = new su2double[nVar];
-  }
+	 GradNi_xj = new su2double* [val_nNodes];
+	 for (unsigned short iNode = 0; iNode < val_nNodes; iNode++)
+		 GradNi_xj[iNode] = new su2double [val_nDim];
 
-  Solution_Direct = new su2double[nVar];
+	 J_X = 0.0;
+	 J_x = 0.0;
 
-  Sensitivity = new su2double[nDim];
+	 iGaussPoint = val_iGauss;
 
-  unsigned short iVar,iDim;
+	 Ni = new su2double [val_nNodes];
 
-  for (iDim = 0; iDim < nDim; iDim++){
-    Sensitivity[iDim] = 0.0;
-  }
-
-  for (iVar = 0; iVar < nVar; iVar++){
-    Solution[iVar] = val_solution[iVar];
-  }
-
-
-  if (dual_time){
-    for (iVar = 0; iVar < nVar; iVar++){
-      Solution_time_n[iVar]  = 0.0;
-      Solution_time_n1[iVar] = 0.0;
-      DualTime_Derivative[iVar] = 0.0;
-      DualTime_Derivative_n[iVar] = 0.0;
-    }
-  }
 }
 
+CGaussVariable::~CGaussVariable(void) {
 
-CDiscAdjVariable::~CDiscAdjVariable(){
+  if (GradNi_Xj            != NULL) delete [] GradNi_Xj;
+  if (GradNi_xj            != NULL) delete [] GradNi_xj;
+  if (Ni            	   != NULL) delete [] Ni;
 
 }

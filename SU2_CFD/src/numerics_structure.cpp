@@ -283,13 +283,12 @@ void CNumerics::GetInviscidArtComp_FreeSurf_ProjFlux(su2double *val_density, su2
 		val_Proj_Flux[3] = rhow*val_velocity[0]*val_normal[0] + rhow*val_velocity[1]*val_normal[1] + (rhow*val_velocity[2]+(*val_pressure))*val_normal[2];
     val_Proj_Flux[4] = (*val_levelset)*ProjVel;
 	}
-
 }
 
 void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_energy,
                                    su2double *val_normal, su2double val_scale,
                                    su2double **val_Proj_Jac_Tensor) {
-  
+  AD_BEGIN_PASSIVE
   unsigned short iDim, jDim;
   su2double sqvel, proj_vel, phi, a1, a2;
   
@@ -320,7 +319,7 @@ void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_energ
   for (iDim = 0; iDim < nDim; iDim++)
     val_Proj_Jac_Tensor[nDim+1][iDim+1] = val_scale*(val_normal[iDim]*a1-a2*val_velocity[iDim]*proj_vel);
   val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale*Gamma*proj_vel;
-  
+  AD_END_PASSIVE
 }
 
 
@@ -328,6 +327,7 @@ void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_entha
 		su2double *val_chi, su2double *val_kappa,
 		su2double *val_normal, su2double val_scale,
 		su2double **val_Proj_Jac_Tensor) {
+  AD_BEGIN_PASSIVE
 	unsigned short iDim, jDim;
 	su2double sqvel, proj_vel, phi, a1, a2;
 
@@ -358,10 +358,12 @@ void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_entha
 	for (iDim = 0; iDim < nDim; iDim++)
 		val_Proj_Jac_Tensor[nDim+1][iDim+1] = val_scale*(val_normal[iDim]*a1-a2*val_velocity[iDim]*proj_vel);
 	val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale*(a2+1)*proj_vel;
+  AD_END_PASSIVE
 }
 
 void CNumerics::GetInviscidArtCompProjJac(su2double *val_density, su2double *val_velocity, su2double *val_betainc2, su2double *val_normal,
 		su2double val_scale, su2double **val_Proj_Jac_Tensor) {
+  AD_BEGIN_PASSIVE
 	unsigned short iDim;
 	su2double proj_vel;
 
@@ -403,7 +405,7 @@ void CNumerics::GetInviscidArtCompProjJac(su2double *val_density, su2double *val
 		val_Proj_Jac_Tensor[3][2] = val_scale*val_velocity[2]*val_normal[1];
 		val_Proj_Jac_Tensor[3][3] = val_scale*(val_velocity[2]*val_normal[2] + proj_vel);
 	}
-
+  AD_END_PASSIVE
 }
 
 void CNumerics::GetInviscidArtComp_FreeSurf_ProjJac(su2double *val_density, su2double *val_ddensity, su2double *val_velocity, su2double *val_betainc2, su2double *val_levelset, su2double *val_normal,

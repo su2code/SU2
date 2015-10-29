@@ -124,13 +124,6 @@ const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. 
 const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
 const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
 
-const su2double AVOGAD_CONSTANT = 6.0221415E26;	     /*!< \brief Avogardro's constant, number of particles in one kmole. */
-const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*! \brief Boltzmann's constant [J K^-1] */
-const su2double UNIVERSAL_GAS_CONSTANT = 8314.462175; /*! \brief Universal gas constant [J kmol^-1 K^-1] */
-const su2double ELECTRON_CHARGE = 1.60217646E-19;	   /*!< \brief Electronic charge constant. */
-const su2double ELECTRON_MASS = 9.10938188E-31;	     /*!< \brief Mass of an electron. */
-const su2double FREE_PERMITTIVITY = 8.8541878176E-12; /*!< \brief Premittivity of free space. */
-const su2double MAGNETIC_CONSTANT = 1.25663706E-6;    /*!< \brief magnetic permeability of free space. */
 const su2double STANDART_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 
 const su2double EPS = 1.0E-16;		   /*!< \brief Error scale. */
@@ -660,8 +653,6 @@ enum BC_TYPE {
   DISPLACEMENT_BOUNDARY = 14,		/*!< \brief Boundary displacement definition. */
   LOAD_BOUNDARY = 15,		/*!< \brief Boundary Load definition. */
   FLOWLOAD_BOUNDARY = 16,		/*!< \brief Boundary Load definition. */
-  ELEC_DIELEC_BOUNDARY = 17,	/*!< \brief Dipoisson boundary definition for the poissonal potential. */
-  ELEC_NEUMANN = 18,		/*!< \brief Boundary Neumann definition. */
   SUPERSONIC_INLET = 19,		/*!< \brief Boundary supersonic inlet definition. */
   SUPERSONIC_OUTLET = 20,		/*!< \brief Boundary supersonic inlet definition. */
   ENGINE_INFLOW = 21,		/*!< \brief Boundary nacelle inflow. */
@@ -671,10 +662,6 @@ enum BC_TYPE {
   ISOTHERMAL = 25,      /*!< \brief No slip isothermal wall boundary condition. */
   HEAT_FLUX  = 26,      /*!< \brief No slip constant heat flux wall boundary condition. */
   PRESSURE_BOUNDARY = 27,   	/*!< \brief Pressure boundary condition. */
-  HEAT_FLUX_NONCATALYTIC = 28, /*!< \brief No-slip, constant heat flux, noncatalytic bc. */
-  HEAT_FLUX_CATALYTIC= 29, /*!< \brief No-slip, constant heat flux, catalytic bc. */
-  ISOTHERMAL_NONCATALYTIC = 30, /*!< \brief No-slip, constant temperature, noncatalytic bc. */
-  ISOTHERMAL_CATALYTIC = 31, /*!< \brief No-slip, constant temperature, catalytic bc. */
   ACTDISK_INLET = 32,	/*!< \brief Actuator disk inlet boundary definition. */
   ACTDISK_OUTLET = 33,	/*!< \brief Actuator disk outlet boundary definition. */
   CLAMPED_BOUNDARY = 34,		/*!< \brief Clamped Boundary definition. */
@@ -862,7 +849,6 @@ enum ENUM_ADAPT {
   GRAD_FLOW = 5,		/*!< \brief Do a gradient based grid adaptation of the flow grid. */
   GRAD_ADJOINT = 6,		/*!< \brief Do a gradient based grid adaptation of the adjoint grid. */
   GRAD_FLOW_ADJ = 7,		/*!< \brief Do a gradient based grid adaptation of the flow and adjoint grid. */
-  ROBUST = 8,			/*!< \brief Apply a robust grid adaptation (residual based). */
   COMPUTABLE = 9,		/*!< \brief Apply a computable error grid adaptation. */
   REMAINING = 10,		/*!< \brief Apply a remaining error grid adaptation. */
   WAKE = 12,			/*!< \brief Do a grid refinement on the wake. */
@@ -878,7 +864,6 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
 ("GRAD_FLOW", GRAD_FLOW)
 ("GRAD_ADJOINT", GRAD_ADJOINT)
 ("GRAD_FLOW_ADJ", GRAD_FLOW_ADJ)
-("ROBUST", ROBUST)
 ("COMPUTABLE", COMPUTABLE)
 ("REMAINING", REMAINING)
 ("WAKE", WAKE)

@@ -3781,6 +3781,7 @@ public:
 class CDiscAdjVariable : public CVariable {
 private:
     su2double* Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
+    su2double* Solution_Direct;
     su2double* DualTime_Derivative;
     su2double* DualTime_Derivative_n;
 
@@ -3826,9 +3827,9 @@ public:
 
     su2double GetDual_Time_Derivative_n(unsigned short iVar);
 
-    void SetAdjointExtraVariables(su2double *adj_sol);
+    void SetSolution_Direct(su2double *sol);
 
-    void GetAdjointExtraVariables(su2double *adj_sol);
+    su2double* GetSolution_Direct();
 };
 
 
