@@ -2524,9 +2524,9 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   if (compressible) {
     
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
+      Sens_BPress[iMarker] = 0.0;
       if (config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW){
-        Sens_BPress[iMarker] = 0.0;
+
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
@@ -2549,7 +2549,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 
             SoundSpeed = solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
             Mach = (sqrt(Velocity2))/SoundSpeed;
-            if (Mach<1.0)
+            if (Mach<1.0 && Mach>0.0)
               Sens_BPress[iMarker]+=Psi[nDim+1]*SoundSpeed*(Mach-1/Mach)/Gamma_Minus_One;
           }
         }
@@ -5824,7 +5824,6 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   Total_Sens_AoA = 0.0;
   Total_Sens_Press = 0.0;
   Total_Sens_Temp = 0.0;
-  Total_Sens_BPress = 0.0;
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
@@ -6334,14 +6333,12 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   su2double MyTotal_Sens_AoA   = Total_Sens_AoA;     Total_Sens_AoA = 0.0;
   su2double MyTotal_Sens_Press = Total_Sens_Press;   Total_Sens_Press = 0.0;
   su2double MyTotal_Sens_Temp  = Total_Sens_Temp;    Total_Sens_Temp = 0.0;
-  su2double MyTotal_Sens_BPress = Total_Sens_BPress;   Total_Sens_BPress = 0.0;
   
   SU2_MPI::Allreduce(&MyTotal_Sens_Geo, &Total_Sens_Geo, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotal_Sens_Mach, &Total_Sens_Mach, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotal_Sens_AoA, &Total_Sens_AoA, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotal_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotal_Sens_BPress, &Total_Sens_BPress, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   
 #endif
   
