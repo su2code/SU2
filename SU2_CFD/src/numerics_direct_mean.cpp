@@ -989,9 +989,9 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     sq_vel_i += Velocity_i[iDim]*Velocity_i[iDim];
   }
   Pressure_i = V_i[nDim+1];
-  Density_i = V_i[nDim+2];
+  Density_i  = V_i[nDim+2];
   Enthalpy_i = V_i[nDim+3];
-  Energy_i = Enthalpy_i - Pressure_i/Density_i;
+  Energy_i   = Enthalpy_i - Pressure_i/Density_i;
   SoundSpeed_i = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_i-0.5*sq_vel_i)));
   
   /*--- Primitive variables at point j ---*/
@@ -1002,9 +1002,9 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     sq_vel_j += Velocity_j[iDim]*Velocity_j[iDim];
   }
   Pressure_j = V_j[nDim+1];
-  Density_j = V_j[nDim+2];
+  Density_j  = V_j[nDim+2];
   Enthalpy_j = V_j[nDim+3];
-  Energy_j = Enthalpy_j - Pressure_j/Density_j;
+  Energy_j   = Enthalpy_j - Pressure_j/Density_j;
   SoundSpeed_j = sqrt(fabs(Gamma*Gamma_Minus_One*(Energy_j-0.5*sq_vel_j)));
   
   /*--- Projected velocities ---*/
@@ -1015,28 +1015,29 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
   }
   
-  /*--- Roe's aveaging ---*/
+  /*--- Mean Roe variables iPoint and jPoint ---*/
   
   Rrho = sqrt(fabs(Density_j/Density_i));
   tmp = 1.0/(1.0+Rrho);
   for (iDim = 0; iDim < nDim; iDim++)
-    velRoe[iDim] = tmp*(Velocity_i[iDim] + Velocity_j[iDim]*Rrho);
+    RoeVelocity[iDim] = tmp*(Velocity_i[iDim] + Velocity_j[iDim]*Rrho);
   
-  uRoe  = 0.0;
+  RoeProjVelocity  = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
-    uRoe += velRoe[iDim]*UnitNormal[iDim];
+    RoeProjVelocity += RoeVelocity[iDim]*UnitNormal[iDim];
   
-  gamPdivRho = tmp*((Gamma*Pressure_i/Density_i+0.5*(Gamma-1.0)*sq_vel_i) + (Gamma*Pressure_j/Density_j+0.5*(Gamma-1.0)*sq_vel_j)*Rrho);
+  RoeEnthalpy = (Rrho*Enthalpy_j+Enthalpy_i)/(Rrho+1);
+  
   sq_velRoe = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
-    sq_velRoe += velRoe[iDim]*velRoe[iDim];
+    sq_velRoe += RoeVelocity[iDim]*RoeVelocity[iDim];
   
-  cRoe  = sqrt(fabs(gamPdivRho - ((Gamma+Gamma)*0.5-1.0)*0.5*sq_velRoe));
+  RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_velRoe)));
   
   /*--- Speed of sound at L and R ---*/
   
-  sL = min(uRoe-cRoe, ProjVelocity_i-SoundSpeed_i);
-  sR = max(uRoe+cRoe, ProjVelocity_j+SoundSpeed_j);
+  sL = min(RoeProjVelocity-RoeSoundSpeed, ProjVelocity_i-SoundSpeed_i);
+  sR = max(RoeProjVelocity+RoeSoundSpeed, ProjVelocity_j+SoundSpeed_j);
   
   /*--- speed of contact surface ---*/
   
@@ -1096,36 +1097,19 @@ void CUpwHLLC_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     val_residual[iVar] *= Area;
 
   if (implicit) {
-    
-    /*--- Mean Roe variables iPoint and jPoint ---*/
-    
-    R = sqrt(fabs(Density_j/Density_i));
-    RoeDensity = R*Density_i;
-    sq_vel = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      RoeVelocity[iDim] = (R*Velocity_j[iDim]+Velocity_i[iDim])/(R+1);
-      sq_vel += RoeVelocity[iDim]*RoeVelocity[iDim];
-    }
-    RoeEnthalpy = (R*Enthalpy_j+Enthalpy_i)/(R+1);
-    RoeSoundSpeed = sqrt(fabs((Gamma-1)*(RoeEnthalpy-0.5*sq_vel)));
-    
+       
     /*--- Compute P and Lambda (do it with the Normal) ---*/
-    
+
+    RoeDensity = Rrho*Density_i;
+
     GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
-    
-    ProjVelocity = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      ProjVelocity   += RoeVelocity[iDim]*UnitNormal[iDim];
-      ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
-      ProjVelocity_j += Velocity_j[iDim]*UnitNormal[iDim];
-    }
-    
+        
     /*--- Flow eigenvalues and Entropy correctors ---*/
     
     for (iDim = 0; iDim < nDim; iDim++)
-      Lambda[iDim] = ProjVelocity;
-    Lambda[nVar-2]  = ProjVelocity + RoeSoundSpeed;
-    Lambda[nVar-1] = ProjVelocity - RoeSoundSpeed;
+      Lambda[iDim] = RoeProjVelocity;
+    Lambda[nVar-2] = RoeProjVelocity + RoeSoundSpeed;
+    Lambda[nVar-1] = RoeProjVelocity - RoeSoundSpeed;
     
     /*--- Compute inverse P ---*/
     
