@@ -1654,7 +1654,19 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   
-  
+  /*--- Check for Fluid model consistency ---*/
+
+  if (standard_air){
+	if (Gamma != 1.4 || Gas_Constant != 287.058){
+		//cout << "Warning! Trying to specify non-coherent ratio of specific heats or specific gas constant!" << endl;
+		//cout << "Re-setting to default values!";
+		//cout << "Specific heats ratio: 1.4" << endl;
+		//cout << "Specific gas constant: 287.058" << endl;
+
+		Gamma = 1.4;
+		Gas_Constant = 287.058;
+        }
+  }
   /*--- Check for Measurement System ---*/
   
   if (SystemMeasurements == US && !standard_air) {
@@ -1666,12 +1678,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (!ideal_gas) {
     if (Kind_ConvNumScheme_Flow != SPACE_UPWIND) {
-      cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
+      cout << "Only ROE Upwind and HLLC Upwind scheme can be used for Non-Ideal Compressible Fluids" << endl;
       exit(EXIT_FAILURE);
     }
     else {
-      if (Kind_Upwind_Flow != ROE) {
-        cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
+      if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC) {
+        cout << "Only ROE Upwind and HLLC Upwind scheme can be used for Non-Ideal Compressible Fluids" << endl;
         exit(EXIT_FAILURE);
       }
     }
@@ -1681,11 +1693,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (!ideal_gas) {
     if (nMarker_Inlet != 0) {
-      cout << "Riemann Boundary conditions must be used for inlet and outlet with Not Ideal Compressible Fluids " << endl;
+      cout << "Riemann Boundary conditions must be used for inlet and outlet with Non-ideal Compressible Fluids " << endl;
       exit(EXIT_FAILURE);
     }
     if (nMarker_Outlet != 0) {
-      cout << "Riemann Boundary conditions must be used outlet with Not Ideal Compressible Fluids " << endl;
+      cout << "Riemann Boundary conditions must be used outlet with Non-Ideal Compressible Fluids " << endl;
       exit(EXIT_FAILURE);
     }
     
