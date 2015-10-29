@@ -225,7 +225,7 @@ void CVanDerWaalsGas::SetTDState_rhoT (su2double rho, su2double T) {
 
 void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
 
-	su2double T, rho, v, cons_P, cons_s;
+	su2double T, rho, cons_P, cons_s;
 	su2double x1,x2, fx1, fx2,f, fmid, T1,T2, rtb, dx, xmid;
 	su2double toll = 1e-5, FACTOR=0.2;
 	unsigned short count=0, NTRY=10, ITMAX=100;

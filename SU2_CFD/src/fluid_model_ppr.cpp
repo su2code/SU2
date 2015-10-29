@@ -323,7 +323,7 @@ void CPengRobinson::SetTDState_rhoT (su2double rho, su2double T) {
 void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 
 	su2double T, rho, v, cons_P, cons_s, fv, A;
-	su2double x1,x2, fx1, fx2,f, fmid, T1,T2, rtb, dx, xmid, sqrt2=sqrt(2.0);
+	su2double x1,x2, fx1, fx2,f, fmid, rtb, dx, xmid, sqrt2=sqrt(2.0);
 	su2double toll = 1e-5, FACTOR=0.2;
 	unsigned short count=0, NTRY=10, ITMAX=100;
 
@@ -387,7 +387,7 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 		}
 
 	rho = 1.0/xmid;
-	T= T = T_P_rho(P, rho);
+	T = T_P_rho(P, rho);
 	SetTDState_rhoT(rho, T);
 //	cout << xmid << " "<< T<< " "<< Pressure<< " "<< P << " "<< Entropy << " "<< s <<endl;
 

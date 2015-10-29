@@ -4313,7 +4313,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     bool turbo = config[val_iZone]->GetBoolTurboPerf();
     string inMarker_Tag, outMarker_Tag;
-    unsigned short nMarkerTP = config[val_iZone]->Get_nMarkerTurboPerf();
 
     bool output_per_surface = false;
     if (config[val_iZone]->GetnMarker_Monitoring() > 1) output_per_surface = true;
