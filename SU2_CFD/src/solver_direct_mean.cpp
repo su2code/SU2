@@ -7125,7 +7125,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
   su2double *Normal, *FlowDirMix, TangVelocity, NormalVelocity;
   Normal = new su2double[nDim];
-
+  su2double ext_flow_angle;
   
   Velocity_i = new su2double[nDim];
   Velocity_b = new su2double[nDim];
@@ -7266,7 +7266,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           /*--- Non-dim. the inputs if necessary. ---*/
           P_Total = ExtAveragedTotPressure[val_marker];
           T_Total = ExtAveragedTotTemperature[val_marker];
-          double ext_flow_angle;
           ext_flow_angle = atan(ExtAveragedTangVelocity[val_marker]/ExtAveragedNormalVelocity[val_marker]);
           FlowDirMix[0] = cos(ext_flow_angle);
           FlowDirMix[1] = sin(ext_flow_angle);
@@ -7722,7 +7721,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker) {
 
     unsigned long iVertex, iPoint, nVert;
-    unsigned short iDim, iVar, iMarker, counter = 0;
+    unsigned short iDim, iVar;
     unsigned short mixing_process = config->GetKind_MixingProcess();
     su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL, *Normal, *gridVel,
 		  Area, TotalArea, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, UnitNormal[3];
@@ -7941,7 +7940,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 	  AveragedNormalMach[val_Marker] = AveragedNormalVelocity[val_Marker]/AveragedSoundSpeed[val_Marker];
 
 
-	if (isnan(AveragedDensity[val_Marker]) or isnan(AveragedEnthalpy[val_Marker]))
+	if ((AveragedDensity[val_Marker]!= AveragedDensity[val_Marker]) or (AveragedEnthalpy[val_Marker]!=AveragedEnthalpy[val_Marker]))
 		cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(val_Marker)<< endl;
 
 	/*--- Free locally allocated memory ---*/
@@ -8026,7 +8025,7 @@ void CEulerSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Av
     FluidModel->SetTDState_Prho(*pressure, *density);
     su2double enthalpy = FluidModel->GetStaticEnergy() + (*pressure)/(*density);
     *valfunc = val_Averaged_Flux[nDim+1]/val_Averaged_Flux[0] - enthalpy - velsq/2;
-    if (isnan(*valfunc)) cout << " mixedout root func gives nan: " << endl;
+    if (*valfunc!=*valfunc) cout << " mixedout root func gives nan: " << endl;
 
 
     /*--- Free locally allocated memory ---*/
@@ -8046,12 +8045,12 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
                               CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim, iVar, jVar, kVar;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double P_Total, T_Total, P_static, T_static, Rho_static, *Mach, *Flow_Dir, Area, UnitNormal[3];
+  su2double  Area, UnitNormal[3];
 
   su2double *Velocity_b, Velocity2_b, Enthalpy_b, Energy_b, StaticEnergy_b, Density_b, Kappa_b, Chi_b, Pressure_b, Temperature_b;
   su2double *Velocity_i, Velocity2_i, Enthalpy_i, Energy_i, StaticEnergy_i, Density_i, Kappa_i, Chi_i, Pressure_i, SoundSpeed_i;
   su2double Pressure_e;
-  su2double ProjGridVel, ProjVelocity_i, ProjVelocity_b;
+  su2double ProjVelocity_i;
   su2double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **DubDu, *dw, *u_b;
   su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
@@ -8060,9 +8059,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   bool grid_movement        = config->GetGrid_Movement();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
-  bool gravity = (config->GetGravityForce());
   bool tkeNeeded = ((config->GetKind_Solver() == RANS) && (config->GetKind_Turb_Model() == SST));
-  bool count;
   su2double *Normal;
 
   Normal = new su2double[nDim];
@@ -8087,13 +8084,12 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   }
 
   /*--- new declarations ---*/
-  signed long nboundaryvertex=0;
   std::vector<std::complex<su2double> > c4k ;//    std::complex<su2double> c3k[nVertex-OddEven]=0;
   std::vector<std::complex<su2double> > c2k ;//    std::complex<su2double> c3k[nVertex-OddEven]=0;
   std::vector<std::complex<su2double> > c3k ;//    std::complex<su2double> c3k[nVertex-OddEven]=0;
 
   su2double  deltaDensity, deltaPressure, AvgMach, deltaTangVelocity, deltaNormalVelocity, cc,rhoc,c1j,c2j,c3j,c4j,
-  	  	  	 avg_c1, avg_c2, avg_c3, avg_c4,TangVelocity, NormalVelocity, TangVelocity_In, NormalVelocity_In, GilesBeta, c4js, dc4js, *delta_c, **R_Matrix, *deltaprim;
+  	  	  	 avg_c1, avg_c2, avg_c3, avg_c4,TangVelocity, NormalVelocity, GilesBeta, c4js, dc4js, *delta_c, **R_Matrix, *deltaprim;
 
 
   delta_c = new su2double[nVar];
@@ -8223,16 +8219,18 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 		  avg_c4 = rhoc*(AveragedNormalVelocity[val_marker]+ExtAveragedNormalVelocity[val_marker]) -(AveragedPressure[val_marker]-ExtAveragedPressure[val_marker]);
 
-		  /* --- Non reflecting supersonic component ---*/
-
-		  if (AvgMach > 1.001) {
-			  GilesBeta = -copysign(1.0, AveragedTangVelocity[val_marker])*sqrt(pow(AvgMach,2)-1.0);
+		  /* --- implementation of supersonic NRBC ---*/
+		  if (AvgMach > 1.001){
+			  if (AveragedTangVelocity[val_marker] >= 0.0){
+				  GilesBeta= -sqrt(pow(AvgMach,2)-1.0);
+			  }else{
+				  GilesBeta= sqrt(pow(AvgMach,2)-1.0);
+			  }
 			  c4js= (2.0 * AveragedNormalMach[val_marker])/(GilesBeta - AveragedTangMach[val_marker])*c2j - (GilesBeta+AveragedTangMach[val_marker])/(GilesBeta-AveragedTangMach[val_marker])*c3j;
 			  dc4js = c4js;
-		  }else{
-			  dc4js = 0.0;
-		  }
-		  delta_c[0] = c1j;
+      	  }else{
+      		  dc4js = 0.0;
+     	  }		  delta_c[0] = c1j;
 		  delta_c[1] = c2j;
 		  delta_c[2] = c3j;
 		  delta_c[3] = avg_c4 + dc4js;
@@ -8260,9 +8258,13 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 		  /* --- implementation of supersonic NRBC ---*/
 		  if (AvgMach > 1.001){
-		  GilesBeta = -copysign(1.0, AveragedTangVelocity[val_marker])*sqrt(pow(AvgMach,2)-1.0);
-		  c4js= (2.0 * AveragedNormalMach[val_marker])/(GilesBeta - AveragedTangMach[val_marker])*c2j - (GilesBeta+AveragedTangMach[val_marker])/(GilesBeta-AveragedTangMach[val_marker])*c3j;
-		  dc4js = c4js;
+			  if (AveragedTangVelocity[val_marker] >= 0.0){
+				  GilesBeta= -sqrt(pow(AvgMach,2)-1.0);
+			  }else{
+				  GilesBeta= sqrt(pow(AvgMach,2)-1.0);
+			  }
+			  c4js= (2.0 * AveragedNormalMach[val_marker])/(GilesBeta - AveragedTangMach[val_marker])*c2j - (GilesBeta+AveragedTangMach[val_marker])/(GilesBeta-AveragedTangMach[val_marker])*c3j;
+			  dc4js = c4js;
       	  }else{
       		  dc4js = 0.0;
      	  }
@@ -8351,6 +8353,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 	  FluidModel->SetTDState_Prho(Pressure_b, Density_b);
 	  Energy_b = FluidModel->GetStaticEnergy() + 0.5*Velocity2_b;
 	  StaticEnergy_b = FluidModel->GetStaticEnergy();
+	  Temperature_b= FluidModel->GetTemperature();
 
 	  /*--- Compute the thermodynamic state in u_b ---*/
 
@@ -8371,6 +8374,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       /*--- Residual contribution due to grid motion ---*/
 
       if (grid_movement) {
+    	gridVel = geometry->node[iPoint]->GetGridVel();
         su2double projVelocity = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           projVelocity +=  gridVel[iDim]*Normal[iDim];
@@ -8419,6 +8423,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         if (grid_movement)
         {
           su2double projVelocity = 0.0;
+          gridVel = geometry->node[iPoint]->GetGridVel();
           for (iDim = 0; iDim < nDim; iDim++)
         	  projVelocity +=  gridVel[iDim]*Normal[iDim];
           for (iVar = 0; iVar < nVar; iVar++){

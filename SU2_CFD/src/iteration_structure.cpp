@@ -554,13 +554,10 @@ void CMeanFlowIteration::InitializeVortexDistribution(unsigned long &nVortex, ve
 
 void CMeanFlowIteration::SetMixingPlane(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, unsigned short iZone) {
 
-	unsigned short mixing_zone, ass_mixing_zone, jZone;
-	unsigned short nDim = geometry_container[ZONE_0][MESH_0]->GetnDim();
+	unsigned short jZone;
 	unsigned short nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
-	unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
 	int intMarker, extMarker, intMarkerMix;
 	string intMarker_Tag, extMarker_Tag;
-	su2double *averaged_flux, *ext_averaged_flux;
 
 	/*-- Loop on all the boundary to find MIXING_PLANE boundary --*/
 	for (intMarker = 0; intMarker < config_container[iZone]->GetnMarker_All(); intMarker++) {
@@ -583,7 +580,7 @@ void CMeanFlowIteration::SetMixingPlane(CGeometry ***geometry_container, CSolver
 
 void CMeanFlowIteration::SetTurboPerformance(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, COutput *output, unsigned short iZone) {
 
-	unsigned short  jZone, inMarker, outMarker, inMarkerTP, outMarkerTP, Kind_TurboPerf;
+	unsigned short  jZone, inMarker, outMarker, inMarkerTP, Kind_TurboPerf;
 	unsigned short nZone = geometry_container[iZone][MESH_0]->GetnZone();
 	string inMarker_Tag, outMarker_Tag;
 
