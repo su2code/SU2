@@ -207,11 +207,6 @@ int main(int argc, char *argv[]) {
 				cin.get();
 				exit(1);
 				break;
-			case ROBUST:
-				grid_adaptation->GetFlowResidual(geometry_container[ZONE_0], config_container[ZONE_0]);
-				grid_adaptation->GetAdjResidual(geometry_container[ZONE_0], config_container[ZONE_0]);
-				grid_adaptation->SetIndicator_Robust(geometry_container[ZONE_0], config_container[ZONE_0]);
-				break;
 			default :
 				cout << "The adaptation is not defined" << endl;
 		}
@@ -261,8 +256,7 @@ int main(int argc, char *argv[]) {
 			grid_adaptation->SetRestart_FlowSolution(config_container[ZONE_0], geo_adapt, config_container[ZONE_0]->GetRestart_FlowFileName());
 		
 		if ((config_container[ZONE_0]->GetKind_Adaptation() == GRAD_FLOW_ADJ) || (config_container[ZONE_0]->GetKind_Adaptation() == GRAD_ADJOINT)
-				|| (config_container[ZONE_0]->GetKind_Adaptation() == FULL_ADJOINT) || (config_container[ZONE_0]->GetKind_Adaptation() == ROBUST)
-				|| (config_container[ZONE_0]->GetKind_Adaptation() == COMPUTABLE) ||
+				|| (config_container[ZONE_0]->GetKind_Adaptation() == FULL_ADJOINT) || (config_container[ZONE_0]->GetKind_Adaptation() == COMPUTABLE) ||
 				(config_container[ZONE_0]->GetKind_Adaptation() == REMAINING))
 			grid_adaptation->SetRestart_AdjSolution(config_container[ZONE_0], geo_adapt, config_container[ZONE_0]->GetRestart_AdjFileName());
 		
