@@ -385,7 +385,7 @@ su2double CEdge::GetVolume(su2double *val_coord_Edge_CG, su2double *val_coord_Fa
 	vec_d[1] = -(vec_a[0]*vec_b[2]-vec_a[2]*vec_b[0]);
 	vec_d[2] = vec_a[0]*vec_b[1]-vec_a[1]*vec_b[0];
 
-	Local_Volume = fabs(vec_c[0]*vec_d[0] + vec_c[1]*vec_d[1] + vec_c[2]*vec_d[2])/6.0;
+	Local_Volume = (vec_c[0]*vec_d[0] + vec_c[1]*vec_d[1] + vec_c[2]*vec_d[2])/6.0;
 	
 	return Local_Volume;
 }
@@ -399,7 +399,7 @@ su2double CEdge::GetVolume(su2double *val_coord_Edge_CG, su2double *val_coord_El
 		vec_b[iDim] = val_coord_Edge_CG[iDim]-val_coord_Point[iDim];
 	}
 
-	Local_Volume = 0.5*fabs(vec_a[0]*vec_b[1]-vec_a[1]*vec_b[0]);
+	Local_Volume = 0.5*(vec_a[0]*vec_b[1]-vec_a[1]*vec_b[0]);
 	
 	return Local_Volume;
 }
