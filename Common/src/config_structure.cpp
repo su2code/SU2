@@ -2419,6 +2419,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       exit(EXIT_FAILURE);
     }
 #endif
+
+    /* --- Disable writing of limiters if enabled --- */
+    Wrt_Limiters = false;
+
     switch(Kind_Solver){
       case EULER:
         Kind_Solver = DISC_ADJ_EULER;
@@ -3067,7 +3071,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		case GRAD_ADJOINT:
 			cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
 			break;
-		case GRAD_FLOW_ADJ: case ROBUST: case COMPUTABLE: case REMAINING:
+		case GRAD_FLOW_ADJ: case COMPUTABLE: case REMAINING:
 			cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
 			cout << "Read adjoint flow solution from: " << Solution_AdjFileName << "." << endl;
 			break;
@@ -3632,7 +3636,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case GRAD_FLOW: cout << "Grid adaptation using gradient based strategy (density)." << endl; break;
       case GRAD_ADJOINT: cout << "Grid adaptation using gradient based strategy (adjoint density)." << endl; break;
       case GRAD_FLOW_ADJ: cout << "Grid adaptation using gradient based strategy (density and adjoint density)." << endl; break;
-      case ROBUST: cout << "Grid adaptation using robust adaptation."<< endl; break;
       case COMPUTABLE: cout << "Grid adaptation using computable correction."<< endl; break;
       case REMAINING: cout << "Grid adaptation using remaining error."<< endl; break;
       case SMOOTHING: cout << "Grid smoothing using an implicit method."<< endl; break;
@@ -3640,7 +3643,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     switch (Kind_Adaptation) {
-      case GRAD_FLOW: case GRAD_ADJOINT: case GRAD_FLOW_ADJ: case ROBUST: case COMPUTABLE: case REMAINING:
+      case GRAD_FLOW: case GRAD_ADJOINT: case GRAD_FLOW_ADJ: case COMPUTABLE: case REMAINING:
         cout << "Power of the dual volume in the adaptation sensor: " << DualVol_Power << endl;
         cout << "Percentage of new elements in the adaptation process: " << New_Elem_Adapt << "."<< endl;
         break;
@@ -3740,8 +3743,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
     cout << "Restart flow file name: " << Restart_FlowFileName << "." << endl;
     if ((Kind_Adaptation == FULL_ADJOINT) || (Kind_Adaptation == GRAD_ADJOINT) || (Kind_Adaptation == GRAD_FLOW_ADJ) ||
-        (Kind_Adaptation == ROBUST) || (Kind_Adaptation == COMPUTABLE) ||
-        (Kind_Adaptation == REMAINING)) {
+        (Kind_Adaptation == COMPUTABLE) || (Kind_Adaptation == REMAINING)) {
       if (Kind_ObjFunc == DRAG_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
       if (Kind_ObjFunc == EQUIVALENT_AREA) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
       if (Kind_ObjFunc == NEARFIELD_PRESSURE) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;

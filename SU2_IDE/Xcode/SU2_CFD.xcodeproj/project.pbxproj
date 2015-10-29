@@ -15,6 +15,9 @@
 		0530E57017FDF7D300733CE8 /* numerics_direct_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530E56F17FDF7D300733CE8 /* numerics_direct_elasticity.cpp */; };
 		0530E57217FDF7D800733CE8 /* numerics_direct_poisson.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530E57117FDF7D800733CE8 /* numerics_direct_poisson.cpp */; };
 		05755F0A1A54AC4500600019 /* output_su2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05755F091A54AC4500600019 /* output_su2.cpp */; };
+		05AF9F201BE1E1830062E1F1 /* element_linear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05AF9F1D1BE1E1830062E1F1 /* element_linear.cpp */; settings = {ASSET_TAGS = (); }; };
+		05AF9F211BE1E1830062E1F1 /* element_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05AF9F1E1BE1E1830062E1F1 /* element_structure.cpp */; settings = {ASSET_TAGS = (); }; };
+		05AF9F221BE1E1830062E1F1 /* gauss_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05AF9F1F1BE1E1830062E1F1 /* gauss_structure.cpp */; settings = {ASSET_TAGS = (); }; };
 		05E6DB9217EB61E600FA1F7E /* config_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB8917EB61E600FA1F7E /* config_structure.cpp */; };
 		05E6DB9317EB61E600FA1F7E /* dual_grid_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB8A17EB61E600FA1F7E /* dual_grid_structure.cpp */; };
 		05E6DB9417EB61E600FA1F7E /* geometry_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB8B17EB61E600FA1F7E /* geometry_structure.cpp */; };
@@ -99,6 +102,9 @@
 		0541ABEE1370F5A6002D668B /* SU2_CFD */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_CFD; sourceTree = BUILT_PRODUCTS_DIR; };
 		0541C14E1A7EA6970095A680 /* config_template_basic.cfg */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_template_basic.cfg; path = ../../config_template_basic.cfg; sourceTree = "<group>"; };
 		05755F091A54AC4500600019 /* output_su2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = output_su2.cpp; path = ../../SU2_CFD/src/output_su2.cpp; sourceTree = "<group>"; };
+		05AF9F1D1BE1E1830062E1F1 /* element_linear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = element_linear.cpp; path = ../../Common/src/element_linear.cpp; sourceTree = "<group>"; };
+		05AF9F1E1BE1E1830062E1F1 /* element_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = element_structure.cpp; path = ../../Common/src/element_structure.cpp; sourceTree = "<group>"; };
+		05AF9F1F1BE1E1830062E1F1 /* gauss_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gauss_structure.cpp; path = ../../Common/src/gauss_structure.cpp; sourceTree = "<group>"; };
 		05E6DA9F17EB603F00FA1F7E /* config_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = config_structure.inl; path = ../../Common/include/config_structure.inl; sourceTree = "<group>"; };
 		05E6DAA017EB603F00FA1F7E /* dual_grid_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = dual_grid_structure.inl; path = ../../Common/include/dual_grid_structure.inl; sourceTree = "<group>"; };
 		05E6DAA117EB603F00FA1F7E /* geometry_structure.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = geometry_structure.inl; path = ../../Common/include/geometry_structure.inl; sourceTree = "<group>"; };
@@ -449,6 +455,16 @@
 			name = Include;
 			sourceTree = "<group>";
 		};
+		05AF9F1C1BE1E1770062E1F1 /* FEA */ = {
+			isa = PBXGroup;
+			children = (
+				05AF9F1D1BE1E1830062E1F1 /* element_linear.cpp */,
+				05AF9F1E1BE1E1830062E1F1 /* element_structure.cpp */,
+				05AF9F1F1BE1E1830062E1F1 /* gauss_structure.cpp */,
+			);
+			name = FEA;
+			sourceTree = "<group>";
+		};
 		05D28619178BCA1200DD76AE /* Numerics */ = {
 			isa = PBXGroup;
 			children = (
@@ -505,6 +521,7 @@
 		08FB7795FE84155DC02AAC07 /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				05AF9F1C1BE1E1770062E1F1 /* FEA */,
 				05E6DBEC17EB62A100FA1F7E /* SU2_CFD.cpp */,
 				05E6DB8917EB61E600FA1F7E /* config_structure.cpp */,
 				05E6DBBC17EB62A000FA1F7E /* definition_structure.cpp */,
@@ -1350,12 +1367,14 @@
 				05E6DB9317EB61E600FA1F7E /* dual_grid_structure.cpp in Sources */,
 				05E6DB9417EB61E600FA1F7E /* geometry_structure.cpp in Sources */,
 				05E6DB9517EB61E600FA1F7E /* grid_adaptation_structure.cpp in Sources */,
+				05AF9F221BE1E1830062E1F1 /* gauss_structure.cpp in Sources */,
 				0530E57017FDF7D300733CE8 /* numerics_direct_elasticity.cpp in Sources */,
 				0530E56A17FDF7AC00733CE8 /* solver_direct_elasticity.cpp in Sources */,
 				05E6DB9617EB61E600FA1F7E /* grid_movement_structure.cpp in Sources */,
 				05E6DB9717EB61E600FA1F7E /* linear_solvers_structure.cpp in Sources */,
 				05E6DB9817EB61E600FA1F7E /* matrix_structure.cpp in Sources */,
 				05E6DB9917EB61E600FA1F7E /* primal_grid_structure.cpp in Sources */,
+				05AF9F201BE1E1830062E1F1 /* element_linear.cpp in Sources */,
 				05E6DB9A17EB61E600FA1F7E /* vector_structure.cpp in Sources */,
 				05E6DC0117EB62A100FA1F7E /* definition_structure.cpp in Sources */,
 				05E6DC0317EB62A100FA1F7E /* integration_structure.cpp in Sources */,
@@ -1368,6 +1387,7 @@
 				05E6DC0717EB62A100FA1F7E /* numerics_adjoint_levelset.cpp in Sources */,
 				05E6DC0817EB62A100FA1F7E /* numerics_adjoint_mean.cpp in Sources */,
 				0530E56817FDF79500733CE8 /* solver_direct_poisson.cpp in Sources */,
+				05AF9F211BE1E1830062E1F1 /* element_structure.cpp in Sources */,
 				E9AA98A71BB3436900B7FE37 /* driver_structure.cpp in Sources */,
 				05E6DC0B17EB62A100FA1F7E /* numerics_adjoint_turbulent.cpp in Sources */,
 				05F108A41978D2F200F2F288 /* transport_model.cpp in Sources */,

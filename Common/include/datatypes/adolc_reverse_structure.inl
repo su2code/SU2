@@ -67,6 +67,10 @@ namespace AD{
 
   inline void RegisterOutput(su2double& data){double temp; data >>= temp;}
 
+  inline void ResetInput(su2double &data){}
+
+  inline void Reset(){}
+
   inline void StartRecording(){trace_on(1,1);}
 
   inline void StopRecording(){trace_off();}

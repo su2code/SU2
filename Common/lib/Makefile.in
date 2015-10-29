@@ -177,7 +177,10 @@ am__libSU2_a_SOURCES_DIST =  \
 	../include/matrix_structure.hpp \
 	../include/matrix_structure.inl ../include/mpi_structure.hpp \
 	../include/mpi_structure.inl ../include/datatype_structure.hpp \
-	../include/datatype_structure.inl ../src/config_structure.cpp \
+	../include/datatype_structure.inl \
+	../include/gauss_structure.hpp ../include/gauss_structure.inl \
+	../include/element_structure.hpp \
+	../include/element_structure.inl ../src/config_structure.cpp \
 	../src/dual_grid_structure.cpp ../src/geometry_structure.cpp \
 	../src/grid_adaptation_structure.cpp \
 	../src/grid_movement_structure.cpp \
@@ -185,7 +188,8 @@ am__libSU2_a_SOURCES_DIST =  \
 	../src/primal_grid_structure.cpp ../src/vector_structure.cpp \
 	../src/matrix_structure.cpp ../src/mpi_structure.cpp \
 	../src/linear_solvers_structure_b.cpp \
-	../src/datatype_structure.cpp
+	../src/datatype_structure.cpp ../src/gauss_structure.cpp \
+	../src/element_structure.cpp ../src/element_linear.cpp
 am__objects_1 = libSU2_a-config_structure.$(OBJEXT) \
 	libSU2_a-dual_grid_structure.$(OBJEXT) \
 	libSU2_a-geometry_structure.$(OBJEXT) \
@@ -197,7 +201,10 @@ am__objects_1 = libSU2_a-config_structure.$(OBJEXT) \
 	libSU2_a-matrix_structure.$(OBJEXT) \
 	libSU2_a-mpi_structure.$(OBJEXT) \
 	libSU2_a-linear_solvers_structure_b.$(OBJEXT) \
-	libSU2_a-datatype_structure.$(OBJEXT)
+	libSU2_a-datatype_structure.$(OBJEXT) \
+	libSU2_a-gauss_structure.$(OBJEXT) \
+	libSU2_a-element_structure.$(OBJEXT) \
+	libSU2_a-element_linear.$(OBJEXT)
 @BUILD_NORMAL_TRUE@am_libSU2_a_OBJECTS = $(am__objects_1)
 libSU2_a_OBJECTS = $(am_libSU2_a_OBJECTS)
 libSU2_AD_a_AR = $(AR) $(ARFLAGS)
@@ -232,7 +239,10 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../include/matrix_structure.hpp \
 	../include/matrix_structure.inl ../include/mpi_structure.hpp \
 	../include/mpi_structure.inl ../include/datatype_structure.hpp \
-	../include/datatype_structure.inl ../src/config_structure.cpp \
+	../include/datatype_structure.inl \
+	../include/gauss_structure.hpp ../include/gauss_structure.inl \
+	../include/element_structure.hpp \
+	../include/element_structure.inl ../src/config_structure.cpp \
 	../src/dual_grid_structure.cpp ../src/geometry_structure.cpp \
 	../src/grid_adaptation_structure.cpp \
 	../src/grid_movement_structure.cpp \
@@ -240,7 +250,8 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../src/primal_grid_structure.cpp ../src/vector_structure.cpp \
 	../src/matrix_structure.cpp ../src/mpi_structure.cpp \
 	../src/linear_solvers_structure_b.cpp \
-	../src/datatype_structure.cpp
+	../src/datatype_structure.cpp ../src/gauss_structure.cpp \
+	../src/element_structure.cpp ../src/element_linear.cpp
 am__objects_2 = libSU2_AD_a-config_structure.$(OBJEXT) \
 	libSU2_AD_a-dual_grid_structure.$(OBJEXT) \
 	libSU2_AD_a-geometry_structure.$(OBJEXT) \
@@ -252,7 +263,10 @@ am__objects_2 = libSU2_AD_a-config_structure.$(OBJEXT) \
 	libSU2_AD_a-matrix_structure.$(OBJEXT) \
 	libSU2_AD_a-mpi_structure.$(OBJEXT) \
 	libSU2_AD_a-linear_solvers_structure_b.$(OBJEXT) \
-	libSU2_AD_a-datatype_structure.$(OBJEXT)
+	libSU2_AD_a-datatype_structure.$(OBJEXT) \
+	libSU2_AD_a-gauss_structure.$(OBJEXT) \
+	libSU2_AD_a-element_structure.$(OBJEXT) \
+	libSU2_AD_a-element_linear.$(OBJEXT)
 @BUILD_REVERSE_TRUE@am_libSU2_AD_a_OBJECTS = $(am__objects_2)
 libSU2_AD_a_OBJECTS = $(am_libSU2_AD_a_OBJECTS)
 libSU2_DIRECTDIFF_a_AR = $(AR) $(ARFLAGS)
@@ -288,7 +302,10 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../include/matrix_structure.hpp \
 	../include/matrix_structure.inl ../include/mpi_structure.hpp \
 	../include/mpi_structure.inl ../include/datatype_structure.hpp \
-	../include/datatype_structure.inl ../src/config_structure.cpp \
+	../include/datatype_structure.inl \
+	../include/gauss_structure.hpp ../include/gauss_structure.inl \
+	../include/element_structure.hpp \
+	../include/element_structure.inl ../src/config_structure.cpp \
 	../src/dual_grid_structure.cpp ../src/geometry_structure.cpp \
 	../src/grid_adaptation_structure.cpp \
 	../src/grid_movement_structure.cpp \
@@ -296,7 +313,8 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../src/primal_grid_structure.cpp ../src/vector_structure.cpp \
 	../src/matrix_structure.cpp ../src/mpi_structure.cpp \
 	../src/linear_solvers_structure_b.cpp \
-	../src/datatype_structure.cpp
+	../src/datatype_structure.cpp ../src/gauss_structure.cpp \
+	../src/element_structure.cpp ../src/element_linear.cpp
 am__objects_3 = libSU2_DIRECTDIFF_a-config_structure.$(OBJEXT) \
 	libSU2_DIRECTDIFF_a-dual_grid_structure.$(OBJEXT) \
 	libSU2_DIRECTDIFF_a-geometry_structure.$(OBJEXT) \
@@ -308,7 +326,10 @@ am__objects_3 = libSU2_DIRECTDIFF_a-config_structure.$(OBJEXT) \
 	libSU2_DIRECTDIFF_a-matrix_structure.$(OBJEXT) \
 	libSU2_DIRECTDIFF_a-mpi_structure.$(OBJEXT) \
 	libSU2_DIRECTDIFF_a-linear_solvers_structure_b.$(OBJEXT) \
-	libSU2_DIRECTDIFF_a-datatype_structure.$(OBJEXT)
+	libSU2_DIRECTDIFF_a-datatype_structure.$(OBJEXT) \
+	libSU2_DIRECTDIFF_a-gauss_structure.$(OBJEXT) \
+	libSU2_DIRECTDIFF_a-element_structure.$(OBJEXT) \
+	libSU2_DIRECTDIFF_a-element_linear.$(OBJEXT)
 @BUILD_DIRECTDIFF_TRUE@am_libSU2_DIRECTDIFF_a_OBJECTS =  \
 @BUILD_DIRECTDIFF_TRUE@	$(am__objects_3)
 libSU2_DIRECTDIFF_a_OBJECTS = $(am_libSU2_DIRECTDIFF_a_OBJECTS)
@@ -556,6 +577,10 @@ lib_sources = \
   ../include/mpi_structure.inl \
   ../include/datatype_structure.hpp \
   ../include/datatype_structure.inl \
+  ../include/gauss_structure.hpp \
+  ../include/gauss_structure.inl \
+  ../include/element_structure.hpp \
+  ../include/element_structure.inl \
   ../src/config_structure.cpp \
   ../src/dual_grid_structure.cpp \
   ../src/geometry_structure.cpp \
@@ -567,7 +592,10 @@ lib_sources = \
   ../src/matrix_structure.cpp \
   ../src/mpi_structure.cpp \
   ../src/linear_solvers_structure_b.cpp \
-  ../src/datatype_structure.cpp 
+  ../src/datatype_structure.cpp \
+  ../src/gauss_structure.cpp \
+  ../src/element_structure.cpp \
+  ../src/element_linear.cpp 
 
 
 # always link to built dependencies from ./externals
@@ -664,6 +692,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_AD_a-config_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_AD_a-datatype_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_AD_a-dual_grid_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_AD_a-element_linear.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_AD_a-element_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_AD_a-gauss_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_AD_a-geometry_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_AD_a-grid_adaptation_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_AD_a-grid_movement_structure.Po@am__quote@
@@ -676,6 +707,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-config_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-datatype_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-dual_grid_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-element_linear.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-element_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-grid_adaptation_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-grid_movement_structure.Po@am__quote@
@@ -688,6 +722,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-config_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-datatype_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-dual_grid_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-element_linear.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-element_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-gauss_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-geometry_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-grid_adaptation_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-grid_movement_structure.Po@am__quote@
@@ -880,6 +917,48 @@ libSU2_a-datatype_structure.obj: ../src/datatype_structure.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-datatype_structure.obj `if test -f '../src/datatype_structure.cpp'; then $(CYGPATH_W) '../src/datatype_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/datatype_structure.cpp'; fi`
 
+libSU2_a-gauss_structure.o: ../src/gauss_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-gauss_structure.o -MD -MP -MF $(DEPDIR)/libSU2_a-gauss_structure.Tpo -c -o libSU2_a-gauss_structure.o `test -f '../src/gauss_structure.cpp' || echo '$(srcdir)/'`../src/gauss_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-gauss_structure.Tpo $(DEPDIR)/libSU2_a-gauss_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gauss_structure.cpp' object='libSU2_a-gauss_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-gauss_structure.o `test -f '../src/gauss_structure.cpp' || echo '$(srcdir)/'`../src/gauss_structure.cpp
+
+libSU2_a-gauss_structure.obj: ../src/gauss_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-gauss_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_a-gauss_structure.Tpo -c -o libSU2_a-gauss_structure.obj `if test -f '../src/gauss_structure.cpp'; then $(CYGPATH_W) '../src/gauss_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gauss_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-gauss_structure.Tpo $(DEPDIR)/libSU2_a-gauss_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gauss_structure.cpp' object='libSU2_a-gauss_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-gauss_structure.obj `if test -f '../src/gauss_structure.cpp'; then $(CYGPATH_W) '../src/gauss_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gauss_structure.cpp'; fi`
+
+libSU2_a-element_structure.o: ../src/element_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-element_structure.o -MD -MP -MF $(DEPDIR)/libSU2_a-element_structure.Tpo -c -o libSU2_a-element_structure.o `test -f '../src/element_structure.cpp' || echo '$(srcdir)/'`../src/element_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-element_structure.Tpo $(DEPDIR)/libSU2_a-element_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/element_structure.cpp' object='libSU2_a-element_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-element_structure.o `test -f '../src/element_structure.cpp' || echo '$(srcdir)/'`../src/element_structure.cpp
+
+libSU2_a-element_structure.obj: ../src/element_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-element_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_a-element_structure.Tpo -c -o libSU2_a-element_structure.obj `if test -f '../src/element_structure.cpp'; then $(CYGPATH_W) '../src/element_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/element_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-element_structure.Tpo $(DEPDIR)/libSU2_a-element_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/element_structure.cpp' object='libSU2_a-element_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-element_structure.obj `if test -f '../src/element_structure.cpp'; then $(CYGPATH_W) '../src/element_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/element_structure.cpp'; fi`
+
+libSU2_a-element_linear.o: ../src/element_linear.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-element_linear.o -MD -MP -MF $(DEPDIR)/libSU2_a-element_linear.Tpo -c -o libSU2_a-element_linear.o `test -f '../src/element_linear.cpp' || echo '$(srcdir)/'`../src/element_linear.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-element_linear.Tpo $(DEPDIR)/libSU2_a-element_linear.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/element_linear.cpp' object='libSU2_a-element_linear.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-element_linear.o `test -f '../src/element_linear.cpp' || echo '$(srcdir)/'`../src/element_linear.cpp
+
+libSU2_a-element_linear.obj: ../src/element_linear.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-element_linear.obj -MD -MP -MF $(DEPDIR)/libSU2_a-element_linear.Tpo -c -o libSU2_a-element_linear.obj `if test -f '../src/element_linear.cpp'; then $(CYGPATH_W) '../src/element_linear.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/element_linear.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-element_linear.Tpo $(DEPDIR)/libSU2_a-element_linear.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/element_linear.cpp' object='libSU2_a-element_linear.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-element_linear.obj `if test -f '../src/element_linear.cpp'; then $(CYGPATH_W) '../src/element_linear.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/element_linear.cpp'; fi`
+
 libSU2_AD_a-config_structure.o: ../src/config_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_AD_a-config_structure.o -MD -MP -MF $(DEPDIR)/libSU2_AD_a-config_structure.Tpo -c -o libSU2_AD_a-config_structure.o `test -f '../src/config_structure.cpp' || echo '$(srcdir)/'`../src/config_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_AD_a-config_structure.Tpo $(DEPDIR)/libSU2_AD_a-config_structure.Po
@@ -1048,6 +1127,48 @@ libSU2_AD_a-datatype_structure.obj: ../src/datatype_structure.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_AD_a-datatype_structure.obj `if test -f '../src/datatype_structure.cpp'; then $(CYGPATH_W) '../src/datatype_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/datatype_structure.cpp'; fi`
 
+libSU2_AD_a-gauss_structure.o: ../src/gauss_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_AD_a-gauss_structure.o -MD -MP -MF $(DEPDIR)/libSU2_AD_a-gauss_structure.Tpo -c -o libSU2_AD_a-gauss_structure.o `test -f '../src/gauss_structure.cpp' || echo '$(srcdir)/'`../src/gauss_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_AD_a-gauss_structure.Tpo $(DEPDIR)/libSU2_AD_a-gauss_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gauss_structure.cpp' object='libSU2_AD_a-gauss_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_AD_a-gauss_structure.o `test -f '../src/gauss_structure.cpp' || echo '$(srcdir)/'`../src/gauss_structure.cpp
+
+libSU2_AD_a-gauss_structure.obj: ../src/gauss_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_AD_a-gauss_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_AD_a-gauss_structure.Tpo -c -o libSU2_AD_a-gauss_structure.obj `if test -f '../src/gauss_structure.cpp'; then $(CYGPATH_W) '../src/gauss_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gauss_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_AD_a-gauss_structure.Tpo $(DEPDIR)/libSU2_AD_a-gauss_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gauss_structure.cpp' object='libSU2_AD_a-gauss_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_AD_a-gauss_structure.obj `if test -f '../src/gauss_structure.cpp'; then $(CYGPATH_W) '../src/gauss_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gauss_structure.cpp'; fi`
+
+libSU2_AD_a-element_structure.o: ../src/element_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_AD_a-element_structure.o -MD -MP -MF $(DEPDIR)/libSU2_AD_a-element_structure.Tpo -c -o libSU2_AD_a-element_structure.o `test -f '../src/element_structure.cpp' || echo '$(srcdir)/'`../src/element_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_AD_a-element_structure.Tpo $(DEPDIR)/libSU2_AD_a-element_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/element_structure.cpp' object='libSU2_AD_a-element_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_AD_a-element_structure.o `test -f '../src/element_structure.cpp' || echo '$(srcdir)/'`../src/element_structure.cpp
+
+libSU2_AD_a-element_structure.obj: ../src/element_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_AD_a-element_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_AD_a-element_structure.Tpo -c -o libSU2_AD_a-element_structure.obj `if test -f '../src/element_structure.cpp'; then $(CYGPATH_W) '../src/element_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/element_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_AD_a-element_structure.Tpo $(DEPDIR)/libSU2_AD_a-element_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/element_structure.cpp' object='libSU2_AD_a-element_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_AD_a-element_structure.obj `if test -f '../src/element_structure.cpp'; then $(CYGPATH_W) '../src/element_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/element_structure.cpp'; fi`
+
+libSU2_AD_a-element_linear.o: ../src/element_linear.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_AD_a-element_linear.o -MD -MP -MF $(DEPDIR)/libSU2_AD_a-element_linear.Tpo -c -o libSU2_AD_a-element_linear.o `test -f '../src/element_linear.cpp' || echo '$(srcdir)/'`../src/element_linear.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_AD_a-element_linear.Tpo $(DEPDIR)/libSU2_AD_a-element_linear.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/element_linear.cpp' object='libSU2_AD_a-element_linear.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_AD_a-element_linear.o `test -f '../src/element_linear.cpp' || echo '$(srcdir)/'`../src/element_linear.cpp
+
+libSU2_AD_a-element_linear.obj: ../src/element_linear.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_AD_a-element_linear.obj -MD -MP -MF $(DEPDIR)/libSU2_AD_a-element_linear.Tpo -c -o libSU2_AD_a-element_linear.obj `if test -f '../src/element_linear.cpp'; then $(CYGPATH_W) '../src/element_linear.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/element_linear.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_AD_a-element_linear.Tpo $(DEPDIR)/libSU2_AD_a-element_linear.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/element_linear.cpp' object='libSU2_AD_a-element_linear.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_AD_a-element_linear.obj `if test -f '../src/element_linear.cpp'; then $(CYGPATH_W) '../src/element_linear.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/element_linear.cpp'; fi`
+
 libSU2_DIRECTDIFF_a-config_structure.o: ../src/config_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-config_structure.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-config_structure.Tpo -c -o libSU2_DIRECTDIFF_a-config_structure.o `test -f '../src/config_structure.cpp' || echo '$(srcdir)/'`../src/config_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-config_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-config_structure.Po
@@ -1215,6 +1336,48 @@ libSU2_DIRECTDIFF_a-datatype_structure.obj: ../src/datatype_structure.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/datatype_structure.cpp' object='libSU2_DIRECTDIFF_a-datatype_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-datatype_structure.obj `if test -f '../src/datatype_structure.cpp'; then $(CYGPATH_W) '../src/datatype_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/datatype_structure.cpp'; fi`
+
+libSU2_DIRECTDIFF_a-gauss_structure.o: ../src/gauss_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-gauss_structure.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_structure.Tpo -c -o libSU2_DIRECTDIFF_a-gauss_structure.o `test -f '../src/gauss_structure.cpp' || echo '$(srcdir)/'`../src/gauss_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gauss_structure.cpp' object='libSU2_DIRECTDIFF_a-gauss_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-gauss_structure.o `test -f '../src/gauss_structure.cpp' || echo '$(srcdir)/'`../src/gauss_structure.cpp
+
+libSU2_DIRECTDIFF_a-gauss_structure.obj: ../src/gauss_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-gauss_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_structure.Tpo -c -o libSU2_DIRECTDIFF_a-gauss_structure.obj `if test -f '../src/gauss_structure.cpp'; then $(CYGPATH_W) '../src/gauss_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gauss_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gauss_structure.cpp' object='libSU2_DIRECTDIFF_a-gauss_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-gauss_structure.obj `if test -f '../src/gauss_structure.cpp'; then $(CYGPATH_W) '../src/gauss_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gauss_structure.cpp'; fi`
+
+libSU2_DIRECTDIFF_a-element_structure.o: ../src/element_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-element_structure.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-element_structure.Tpo -c -o libSU2_DIRECTDIFF_a-element_structure.o `test -f '../src/element_structure.cpp' || echo '$(srcdir)/'`../src/element_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-element_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-element_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/element_structure.cpp' object='libSU2_DIRECTDIFF_a-element_structure.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-element_structure.o `test -f '../src/element_structure.cpp' || echo '$(srcdir)/'`../src/element_structure.cpp
+
+libSU2_DIRECTDIFF_a-element_structure.obj: ../src/element_structure.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-element_structure.obj -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-element_structure.Tpo -c -o libSU2_DIRECTDIFF_a-element_structure.obj `if test -f '../src/element_structure.cpp'; then $(CYGPATH_W) '../src/element_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/element_structure.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-element_structure.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-element_structure.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/element_structure.cpp' object='libSU2_DIRECTDIFF_a-element_structure.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-element_structure.obj `if test -f '../src/element_structure.cpp'; then $(CYGPATH_W) '../src/element_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/element_structure.cpp'; fi`
+
+libSU2_DIRECTDIFF_a-element_linear.o: ../src/element_linear.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-element_linear.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-element_linear.Tpo -c -o libSU2_DIRECTDIFF_a-element_linear.o `test -f '../src/element_linear.cpp' || echo '$(srcdir)/'`../src/element_linear.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-element_linear.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-element_linear.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/element_linear.cpp' object='libSU2_DIRECTDIFF_a-element_linear.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-element_linear.o `test -f '../src/element_linear.cpp' || echo '$(srcdir)/'`../src/element_linear.cpp
+
+libSU2_DIRECTDIFF_a-element_linear.obj: ../src/element_linear.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-element_linear.obj -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-element_linear.Tpo -c -o libSU2_DIRECTDIFF_a-element_linear.obj `if test -f '../src/element_linear.cpp'; then $(CYGPATH_W) '../src/element_linear.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/element_linear.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-element_linear.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-element_linear.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/element_linear.cpp' object='libSU2_DIRECTDIFF_a-element_linear.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-element_linear.obj `if test -f '../src/element_linear.cpp'; then $(CYGPATH_W) '../src/element_linear.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/element_linear.cpp'; fi`
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique

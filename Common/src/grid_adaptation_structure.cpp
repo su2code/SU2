@@ -1571,14 +1571,12 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 			(config->GetKind_Adaptation() == FULL_ADJOINT) ||
 			(config->GetKind_Adaptation() == GRAD_ADJOINT) ||
 			(config->GetKind_Adaptation() == GRAD_FLOW_ADJ) ||
-			(config->GetKind_Adaptation() == ROBUST) ||
 			(config->GetKind_Adaptation() == REMAINING) ||
 			(config->GetKind_Adaptation() == COMPUTABLE)) Restart_Flow = true;
 	
 	if ((config->GetKind_Adaptation() == FULL_ADJOINT) ||
 			(config->GetKind_Adaptation() == GRAD_ADJOINT) ||
 			(config->GetKind_Adaptation() == GRAD_FLOW_ADJ) ||
-			(config->GetKind_Adaptation() == ROBUST) ||
 			(config->GetKind_Adaptation() == REMAINING) ||
 			(config->GetKind_Adaptation() == COMPUTABLE)) Restart_Adjoint = true;
 		
@@ -2257,14 +2255,12 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 			(config->GetKind_Adaptation() == FULL_ADJOINT) ||
 			(config->GetKind_Adaptation() == GRAD_ADJOINT) ||
 			(config->GetKind_Adaptation() == GRAD_FLOW_ADJ) ||
-			(config->GetKind_Adaptation() == ROBUST) ||
 			(config->GetKind_Adaptation() == REMAINING) ||
 			(config->GetKind_Adaptation() == COMPUTABLE)) Restart_Flow = true;
 	
 	if ((config->GetKind_Adaptation() == FULL_ADJOINT) ||
 			(config->GetKind_Adaptation() == GRAD_ADJOINT) ||
 			(config->GetKind_Adaptation() == GRAD_FLOW_ADJ) ||
-			(config->GetKind_Adaptation() == ROBUST) ||
 			(config->GetKind_Adaptation() == REMAINING) ||
 			(config->GetKind_Adaptation() == COMPUTABLE)) Restart_Adjoint = true;
 		
