@@ -179,21 +179,35 @@ void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element){
 
 void CFEM_LinearElasticity::Compute_Constitutive_Matrix(void){
 
-	/*--- Assuming plane strain ---*/
+     /*--- Compute the D Matrix (for plane stress and 2-D)---*/
+
 
 	if (nDim == 2){
-		D_Mat[0][0] = Lambda + 2.0*Mu;	D_Mat[0][1] = Lambda;            D_Mat[0][2] = 0.0;
-		D_Mat[1][0] = Lambda;           D_Mat[1][1] = Lambda + 2.0*Mu;   D_Mat[1][2] = 0.0;
-		D_Mat[2][0] = 0.0;              D_Mat[2][1] = 0.0;               D_Mat[2][2] = Mu;
+		if (plane_stress){
+
+			/*--- We enable plane stress cases ---*/
+
+			D_Mat[0][0] = E/(1-Nu*Nu);	  		D_Mat[0][1] = (E*Nu)/(1-Nu*Nu);  D_Mat[0][2] = 0.0;
+			D_Mat[1][0] = (E*Nu)/(1-Nu*Nu);    	D_Mat[1][1] = E/(1-Nu*Nu);   	 D_Mat[1][2] = 0.0;
+			D_Mat[2][0] = 0.0;               	D_Mat[2][1] = 0.0;               D_Mat[2][2] = ((1-Nu)*E)/(2*(1-Nu*Nu));
+		}
+		else{
+			/*--- Assuming plane strain as a general case ---*/
+
+			D_Mat[0][0] = Lambda + 2.0*Mu;	D_Mat[0][1] = Lambda;            D_Mat[0][2] = 0.0;
+			D_Mat[1][0] = Lambda;           D_Mat[1][1] = Lambda + 2.0*Mu;   D_Mat[1][2] = 0.0;
+			D_Mat[2][0] = 0.0;              D_Mat[2][1] = 0.0;               D_Mat[2][2] = Mu;
+		}
+
 	}
 	else if (nDim == 3){
 
-	    D_Mat[0][0] = Lambda + 2.0*Mu;	D_Mat[0][1] = Lambda;			D_Mat[0][2] = Lambda;			D_Mat[0][3] = 0.0;	D_Mat[0][4] = 0.0;	D_Mat[0][5] = 0.0;
-	    D_Mat[1][0] = Lambda;			D_Mat[1][1] = Lambda + 2.0*Mu;	D_Mat[1][2] = Lambda;			D_Mat[1][3] = 0.0;	D_Mat[1][4] = 0.0;	D_Mat[1][5] = 0.0;
-	    D_Mat[2][0] = Lambda;			D_Mat[2][1] = Lambda;			D_Mat[2][2] = Lambda + 2.0*Mu;	D_Mat[2][3] = 0.0;	D_Mat[2][4] = 0.0;	D_Mat[2][5] = 0.0;
-	    D_Mat[3][0] = 0.0;				D_Mat[3][1] = 0.0;				D_Mat[3][2] = 0.0;				D_Mat[3][3] = Mu;	D_Mat[3][4] = 0.0;	D_Mat[3][5] = 0.0;
-	    D_Mat[4][0] = 0.0;				D_Mat[4][1] = 0.0;				D_Mat[4][2] = 0.0;				D_Mat[4][3] = 0.0;	D_Mat[4][4] = Mu;	D_Mat[4][5] = 0.0;
-	    D_Mat[5][0] = 0.0;				D_Mat[5][1] = 0.0;				D_Mat[5][2] = 0.0;				D_Mat[5][3] = 0.0;	D_Mat[5][4] = 0.0;	D_Mat[5][5] = Mu;
+		D_Mat[0][0] = Lambda + 2.0*Mu;	D_Mat[0][1] = Lambda;			D_Mat[0][2] = Lambda;			D_Mat[0][3] = 0.0;	D_Mat[0][4] = 0.0;	D_Mat[0][5] = 0.0;
+		D_Mat[1][0] = Lambda;			D_Mat[1][1] = Lambda + 2.0*Mu;	D_Mat[1][2] = Lambda;			D_Mat[1][3] = 0.0;	D_Mat[1][4] = 0.0;	D_Mat[1][5] = 0.0;
+		D_Mat[2][0] = Lambda;			D_Mat[2][1] = Lambda;			D_Mat[2][2] = Lambda + 2.0*Mu;	D_Mat[2][3] = 0.0;	D_Mat[2][4] = 0.0;	D_Mat[2][5] = 0.0;
+		D_Mat[3][0] = 0.0;				D_Mat[3][1] = 0.0;				D_Mat[3][2] = 0.0;				D_Mat[3][3] = Mu;	D_Mat[3][4] = 0.0;	D_Mat[3][5] = 0.0;
+		D_Mat[4][0] = 0.0;				D_Mat[4][1] = 0.0;				D_Mat[4][2] = 0.0;				D_Mat[4][3] = 0.0;	D_Mat[4][4] = Mu;	D_Mat[4][5] = 0.0;
+		D_Mat[5][0] = 0.0;				D_Mat[5][1] = 0.0;				D_Mat[5][2] = 0.0;				D_Mat[5][3] = 0.0;	D_Mat[5][4] = 0.0;	D_Mat[5][5] = Mu;
 
 	}
 
