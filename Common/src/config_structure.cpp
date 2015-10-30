@@ -1658,11 +1658,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (standard_air){
 	if (Gamma != 1.4 || Gas_Constant != 287.058){
-		//cout << "Warning! Trying to specify non-coherent ratio of specific heats or specific gas constant!" << endl;
-		//cout << "Re-setting to default values!";
-		//cout << "Specific heats ratio: 1.4" << endl;
-		//cout << "Specific gas constant: 287.058" << endl;
-
 		Gamma = 1.4;
 		Gas_Constant = 287.058;
         }
