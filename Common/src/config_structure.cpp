@@ -187,6 +187,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   su2double default_vec_3d[3];
   su2double default_vec_4d[4];
+  su2double default_vec_5d[5];
   su2double default_vec_2d[2];
   su2double default_vec_6d[6];
   
@@ -727,6 +728,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief OBJECTIVE_FUNCTION
    *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n Default: DRAG_COEFFICIENT \ingroup Config*/
   addEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, DRAG_COEFFICIENT);
+
+  default_vec_5d[0]=0.0; default_vec_5d[1]=0.0; default_vec_5d[2]=0.0;
+  default_vec_5d[3]=0.0;  default_vec_5d[4]=0.0;
+  /*!\brief OBJ_CHAIN_RULE_COEFF
+  * \n DESCRIPTION: Coefficients defining the objective function gradient using the chain rule
+  * with area-averaged outlet primitive variables. \ingroup Config   */
+  addDoubleArrayOption("OBJ_CHAIN_RULE_COEFF",5,Obj_ChainRuleCoeff,default_vec_5d);
 
   default_vec_2d[0] = 0.0; default_vec_2d[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
@@ -1471,7 +1479,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Make sure that 1D outputs are written when objective function requires ---*/
   
-  if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE) {
+  if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE || Kind_ObjFunc == OUTLET_CHAIN_RULE) {
     Wrt_1D_Output = YES;
     Marker_Out_1D = Marker_Monitoring;
     nMarker_Out_1D = nMarker_Monitoring;
@@ -3233,6 +3241,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
       case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
       case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
+      case OUTLET_CHAIN_RULE:       cout << "Objective function defined by chain rule." << endl; break;
 		}
 
 	}
@@ -4527,8 +4536,9 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case FIGURE_OF_MERIT:         AdjExt = "_merit";    break;
       case FREE_SURFACE:            AdjExt = "_fs";       break;
       case AVG_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
-      case AVG_OUTLET_PRESSURE:     AdjExt = "_pe";       break;
-      case MASS_FLOW_RATE:          AdjExt = "_mfr";      break;
+      case AVG_OUTLET_PRESSURE:      AdjExt = "_pe";       break;
+      case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
+      case OUTLET_CHAIN_RULE:       AdjExt = "_chn";       break;
     }
     Filename.append(AdjExt);
 
