@@ -68,6 +68,7 @@ private:
 	su2double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
 	su2double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   su2double AdjointLimit; /*!< \brief Adjoint variable limit */
+  su2double* Obj_ChainRuleCoeff; /*!< \brief Array defining objective function for adjoint problem based on chain rule in terms of gradient w.r.t. density, velocity, pressure */
   bool MG_AdjointFlow; /*!< \brief MG with the adjoint flow problem */
   su2double* Subsonic_Engine_Box; /*!< \brief Coordinates of the box subsonic region */
   su2double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
@@ -733,13 +734,13 @@ private:
   long Visualize_CV; /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
   bool DeadLoad; /*!< Application of dead loads to the FE analysis */
-    su2double Newmark_alpha,			/*!< \brief Parameter alpha for Newmark method. */
-      Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
-    bool Gradual_Load,		/*!< \brief Apply the load gradually. */
-      Ramp_Load;				/*!< \brief Apply the load with linear increases. */
-    su2double Ramp_Time;			/*!< \brief Time until the maximum load is applied. */
-    su2double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
-    unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
+  su2double Newmark_alpha,			/*!< \brief Parameter alpha for Newmark method. */
+  Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
+  bool Gradual_Load,		/*!< \brief Apply the load gradually. */
+  Ramp_Load;				/*!< \brief Apply the load with linear increases. */
+  su2double Ramp_Time;			/*!< \brief Time until the maximum load is applied. */
+  su2double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
+  unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
@@ -3575,6 +3576,15 @@ public:
 	 * \return Kind of objective function.
 	 */
 	unsigned short GetKind_ObjFunc(void);
+
+	/*!
+	 * \author H. Kline
+	 * \brief Get the coefficients of the objective defined by the chain rule with primitive variables.
+   * \note This objective is only applicable to gradient calculations. Objective value must be
+   * calculated using the area averaged outlet values of density, velocity, and pressure.
+   * Gradients are w.r.t density, velocity[3], and pressure. when 2D gradient w.r.t. 3rd component of velocity set to 0.
+	 */
+	su2double GetCoeff_ObjChainRule(unsigned short iVar);
 
 	/*!
 	 * \brief Get the kind of sensitivity smoothing technique.

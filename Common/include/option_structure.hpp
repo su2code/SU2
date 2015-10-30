@@ -841,8 +841,10 @@ enum ENUM_OBJECTIVE {
   MAX_THICK_SEC5 = 27,           /*!< \brief Maximum thickness in section 5. */
   AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
   AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
-  MASS_FLOW_RATE = 30           /*!< \brief Mass Flow Rate objective function definition. */
+  MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
+  OUTLET_CHAIN_RULE=31          /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
 };
+
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
 ("DRAG", DRAG_COEFFICIENT)
 ("LIFT", LIFT_COEFFICIENT)
@@ -873,7 +875,8 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("MAX_THICK_SEC5", MAX_THICK_SEC5)
 ("AVG_TOTAL_PRESSURE", AVG_TOTAL_PRESSURE)
 ("AVG_OUTLET_PRESSURE", AVG_OUTLET_PRESSURE)
-("MASS_FLOW_RATE", MASS_FLOW_RATE);
+("MASS_FLOW_RATE", MASS_FLOW_RATE)
+("OUTLET_CHAIN_RULE", OUTLET_CHAIN_RULE);
 
 /*!
  * \brief types of residual criteria equations
