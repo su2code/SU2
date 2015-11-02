@@ -113,6 +113,8 @@ void CMeanFlowIteration::Preprocess(COutput *output,
 	if(config_container[val_iZone]->GetBoolMixingPlane())
 		SetMixingPlane(geometry_container, solver_container, config_container, val_iZone);
 
+	/*--- Compute turboperformance ---*/
+
 	if(config_container[val_iZone]->GetBoolTurboPerf())
 		SetTurboPerformance(geometry_container, solver_container, config_container, output, val_iZone);
 	}

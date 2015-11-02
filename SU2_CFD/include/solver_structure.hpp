@@ -957,11 +957,11 @@ public:
 	virtual void BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                               CConfig *config, unsigned short val_marker);
 	/*!
-	 * \brief It avarage the fluxes value along a boundary.
+	 * \brief It performs the average value along a boundary.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
      * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 * \param[in] val_marker - Surface marker where the average is evaluated.
 	 */
 	virtual void Mixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker);
 
@@ -984,6 +984,7 @@ public:
 	 * \param[in] density - value of the mixed-out avaraged density.
 	 */
 	virtual void MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -993,7 +994,6 @@ public:
 	 * \param[in]  c4k - Fourier transformation coefficients.
 	 * \param[in]  nboundaryvertex - pithcwise ordered vertex.
 	 */
-
 	virtual void Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<su2double> > &c4k,signed long &nboundaryvertex);
 
 	/*!
@@ -1040,14 +1040,14 @@ public:
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Enthalpy on the surface <i>val_marker</i>.
+	  * \return Value of the Average Velocity on the surface <i>val_marker</i>.
 	  */
 	 virtual su2double* GetAveragedVelocity(unsigned short valMarker);
 
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Enthalpy on the surface <i>val_marker</i>.
+	  * \return Value of the Average Grid Velocity on the surface <i>val_marker</i>.
 	  */
 	 virtual su2double* GetAveragedGridVelocity(unsigned short valMarker);
 
@@ -1061,21 +1061,21 @@ public:
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Density on the surface <i>val_marker</i>.
+	  * \return Value of the Average Total Temperature on the surface <i>val_marker</i>.
 	  */
 	 virtual su2double GetAveragedTotTemperature(unsigned short valMarker);
 
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
 	  */
 	 virtual su2double GetAveragedTotPressure(unsigned short valMarker);
 
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the flow angle on the surface <i>val_marker</i>.
 	  */
 	 virtual su2double GetFlowAngle(unsigned short valMarker);
 
@@ -1096,133 +1096,133 @@ public:
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Mass flow on the surface <i>val_marker</i>..
 	  */
 	 virtual su2double GetMassFlow(unsigned short valMarker);
 
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of Total Pressure Loss for turbomachinery performance.
 	  */
 	 virtual su2double GetTotalPressureLoss(unsigned short inMarkerTP);
 
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Kinetic energy loss for turbomachinery performance.
 	  */
 	 virtual su2double GetKineticEnergyLoss(unsigned short inMarkerTP);
 
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Total-total efficiency for turbomachinery performance.
 	  */
 	 virtual su2double GetTotalTotalEfficiency(unsigned short inMarkerTP);
 
 	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Total-static efficiency for turbomachinery performance.
 	  */
 	 virtual su2double GetTotalStaticEfficiency(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
+	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Eulerian Work for turbomachinery performance.
 	  */
 	 virtual su2double GetEulerianWork(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
+	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Inlet Total Enthalpy for turbomachinery performance.
 	  */
 	 virtual su2double GetTotalEnthalpyIn(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
+	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Inlet Flow Angle for turbomachinery performance.
 	  */
 	 virtual su2double GetFlowAngleIn(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
+	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Outlet Flow Angle for turbomachinery performance.
 	  */
 	 virtual su2double GetFlowAngleOut(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
+	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Inlet Mass Flow for turbomachinery performance.
 	  */
 	 virtual su2double GetMassFlowIn(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
+	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Outlet Mass FlowS for turbomachinery performance.
 	  */
 	 virtual su2double GetMassFlowOut(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
+	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Inlet Mach for turbomachinery performance.
 	  */
 	 virtual su2double GetMachIn(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
+	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Outlet Mach for turbomachinery performance.
 	  */
 	 virtual su2double GetMachOut(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
+	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the normal component of the Inlet Mach for turbomachinery performance.
 	  */
 	 virtual su2double GetNormalMachIn(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
+	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the normal component of the Outlet Mach for turbomachinery performance.
 	  */
 	 virtual su2double GetNormalMachOut(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
+	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Outlet Static Enthalpy for turbomachinery performance.
 	  */
 	 virtual su2double GetEnthalpyOut(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
+	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Outlet Isentropic Velocity for turbomachinery performance.
 	  */
 	 virtual su2double GetVelocityOutIs(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
+	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Outlet Pressure for turbomachinery performance.
 	  */
 	 virtual su2double GetPressureOut(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
+	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Pressure ratio for turbomachinery performance.
 	  */
 	 virtual su2double GetPressureRatio(unsigned short inMarkerTP);
 
@@ -3601,140 +3601,140 @@ public:
 	 su2double GetAveragedTotPressure(unsigned short valMarker);
 
 	 /*!
-	  * \brief.
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide Total Pressure Losses (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of Total Pressure Losses.
 	  */
 	 su2double GetTotalPressureLoss(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide Kinetic Energy Losses (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the Kinetic Energy Losses.
 	  */
 	 su2double GetKineticEnergyLoss(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+		* \brief Provide Total-Total Efficiency (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the Total-Total Efficiency.
 	  */
 	 su2double GetTotalTotalEfficiency(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide Total-Static Efficiency (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the Total-Static Efficiency.
 	  */
 	 su2double GetTotalStaticEfficiency(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide the Eulerian Work (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the Eulerian Work.
 	  */
 	 su2double GetEulerianWork(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide the Inlet Total Enthalpy (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the Inlet Total Enthalpy.
 	  */
 	 su2double GetTotalEnthalpyIn(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide the Inlet Flow Angle (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the Inlet Flow Angle.
 	  */
 	 su2double GetFlowAngleIn(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide the Outlet Flow Angle (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the Outlet FLow Angle.
 	  */
 	 su2double GetFlowAngleOut(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide the Inlet Mass Flow (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the Inlet Mass Flow.
 	  */
 	 su2double GetMassFlowIn(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide the Outlet Mass Flow (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the Outlet Mass Flow.
 	  */
 	 su2double GetMassFlowOut(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide the Inlet Mach number (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the Inlet Mach number.
 	  */
 	 su2double GetMachIn(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide the Outlet Mach number (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the Outlet Mach number.
 	  */
 	 su2double GetMachOut(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide the normal component of the Inlet Mach number (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the normal component of the Inlet Mach number.
 	  */
 	 su2double GetNormalMachIn(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide the normal component of the Outlet Mach number (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the normal component of the Outlet Mach number.
 	  */
 	 su2double GetNormalMachOut(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide the Outlet Enthalpy (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the Outlet Enthalpy.
 	  */
 	 su2double GetEnthalpyOut(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide the Isentropic Outlet Velocity (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the Isentropic Outlet Velocity.
 	  */
 	 su2double GetVelocityOutIs(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide the Outlet Pressure (turbomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the Outlet Pressure.
 	  */
 	 su2double GetPressureOut(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief .
-	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \brief Provide Pressure Ratio (tubomachinery performance).
+	  * \param[in] inMarkerTP - turboperformance marker.
+	  * \return Value of the Pressure Ratio.
 	  */
 	 su2double GetPressureRatio(unsigned short inMarkerTP);
 
 	 /*!
-	  * \brief Provide the average density at the boundary of interest.
+	  * \brief Provide Averaged Total Temperature at the boundary of interest.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Density on the surface <i>val_marker</i>.
 	  */
 	 su2double GetAveragedTotTemperature(unsigned short valMarker);
 
 	 /*!
-	  * \brief Provide the average pressure at the boundary of interest.
+	  * \brief Provide the Average pressure at the boundary of interest.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
 	  */
@@ -3769,30 +3769,30 @@ public:
 	 su2double GetAveragedNormalMach(unsigned short valMarker);
 
 	 /*!
-	  * \brief Provide the average pressure at the boundary of interest.
+	  * \brief Provide the average enthalpy at the boundary of interest.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Average Enthalpy on the surface <i>val_marker</i>.
 	  */
 	 su2double GetAveragedEnthalpy(unsigned short valMarker);
 
 	 /*!
 	  * \brief Provide the average pressure at the boundary of interest.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Average Entropy on the surface <i>val_marker</i>.
 	  */
 	 su2double GetAveragedEntropy(unsigned short valMarker);
 
 	 /*!
 	  * \brief Provide the average pressure at the boundary of interest.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Components of the Average Velocity on the surface <i>val_marker</i>.
 	  */
 	 su2double* GetAveragedVelocity(unsigned short valMarker);
 
 	 /*!
-	  * \brief Provide the average pressure at the boundary of interest.
+	  * \brief Provide the average grid velocity at the boundary of interest.
 	  * \param[in] val_marker - bound marker.
-	  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+	  * \return Value of the Average Grid Velocity on the surface <i>val_marker</i>.
 	  */
 	 su2double* GetAveragedGridVelocity(unsigned short valMarker);
 
