@@ -160,7 +160,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
   }
   
-  /*--- Assign turbulence model booleans --- */
+  /*--- Assign turbulence model booleans ---*/
   
   if (turbulent)
     switch (config->GetKind_Turb_Model()) {
@@ -359,7 +359,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
   }
   
-  /*--- Assign turbulence model booleans --- */
+  /*--- Assign turbulence model booleans ---*/
   
   if (turbulent)
     switch (config->GetKind_Turb_Model()) {
@@ -1252,8 +1252,6 @@ void CSpectralDriver::SetTimeSpectral(CGeometry ***geometry_container, CSolver *
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  /*--- Local variables and initialization ---*/
-  //unsigned short iVar, kZone, jZone, iMGlevel;
   unsigned short iVar, jZone, kZone, iMGlevel;
   unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
   unsigned long iPoint;

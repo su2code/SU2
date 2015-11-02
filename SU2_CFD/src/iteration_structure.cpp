@@ -1102,7 +1102,7 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
       cout << "Direct iteration to store computational graph." << endl;
     }
 
-    /* --- Record one mean flow iteration with flow variables as input --- */
+    /*--- Record one mean flow iteration with flow variables as input ---*/
 
     SetRecording(output, integration_container, geometry_container, solver_container, numerics_container,
                  config_container, surface_movement, grid_movement, FFDBox, val_iZone, FLOW_VARIABLES);
@@ -1166,7 +1166,7 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
   if (((unsigned short)(ExtIter+1) >= config_container[val_iZone]->GetnExtIter()) ||
       ((ExtIter % config_container[val_iZone]->GetWrt_Sol_Freq() == 0))){
 
-    /* --- Record one mean flow iteration with geometry variables as input --- */
+    /*--- Record one mean flow iteration with geometry variables as input ---*/
 
     SetRecording(output, integration_container, geometry_container, solver_container, numerics_container,
                  config_container, surface_movement, volume_grid_movement, FFDBox, val_iZone, GEOMETRY_VARIABLES);
@@ -1179,7 +1179,7 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
 
     AD::ComputeAdjoint();
 
-    /* --- Extract the sensitivities (adjoint of node coordinates) ---*/
+    /*--- Extract the sensitivities (adjoint of node coordinates) ---*/
 
     solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[val_iZone][MESH_0],config_container[val_iZone]);
     
@@ -1205,7 +1205,7 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
 
   AD::Reset();
 
-  /*--- Update geometry to set all indices to zero --- */
+  /*--- Update geometry to set all indices to zero ---*/
 
   geometry_container[val_iZone][MESH_0]->UpdateGeometry(geometry_container[val_iZone], config_container[val_iZone]);
 
@@ -1214,7 +1214,7 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
                               config_container,surface_movement,grid_movement,FFDBox,val_iZone);
 
-  /*--- Prepare for recording --- */
+  /*--- Prepare for recording ---*/
 
   for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++){
 
@@ -1229,11 +1229,11 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
 
   AD::StartRecording();
 
-  /*--- Register flow variables and compute coupling or update the geometry --- */
+  /*--- Register flow variables and compute coupling or update the geometry ---*/
 
   RegisterInput(solver_container, geometry_container, config_container, val_iZone, kind_recording);
 
-  /* --- Run the direct iteration --- */
+  /*--- Run the direct iteration ---*/
 
   meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
                               config_container,surface_movement,grid_movement,FFDBox, val_iZone);
@@ -1287,7 +1287,7 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
   
       geometry_container[iZone][MESH_0]->RegisterCoordinates(config_container[iZone]);
   
-      /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) --- */
+      /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
     
       geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone], config_container[iZone]);
 

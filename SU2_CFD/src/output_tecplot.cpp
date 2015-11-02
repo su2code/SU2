@@ -33,7 +33,6 @@
 
 void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
   
-  /*--- Local variables and initialization ---*/
   unsigned short iDim, iVar, nDim = geometry->GetnDim();
   unsigned short Kind_Solver = config->GetKind_Solver();
   

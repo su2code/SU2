@@ -57,7 +57,7 @@ namespace adtl{
   }
 }
 
-/* --- We need additional functions that are not defined yet --- */
+/*--- We need additional functions that are not defined yet ---*/
 
 inline su2double min(const su2double& a, const su2double& b){ return fmin(a,b);}
 inline su2double max(const su2double& a, const su2double& b){ return fmax(a,b);}

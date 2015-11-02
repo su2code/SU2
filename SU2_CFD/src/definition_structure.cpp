@@ -79,6 +79,7 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
   }
   
   /*--- For time spectral integration, nZones = nTimeInstances. ---*/
+  
   if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
     nZone = config->GetnTimeInstances();
   }

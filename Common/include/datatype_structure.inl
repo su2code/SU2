@@ -31,7 +31,7 @@
 #pragma once
 
 
-/* --- Explicit cast functions --- */
+/*--- Explicit cast functions ---*/
 
 namespace SU2_TYPE{
   inline int Int(const su2double& data){
@@ -43,7 +43,7 @@ namespace SU2_TYPE{
   }
 }
 
-/* --- Default implementation if reverse mode is disabled --- */
+/*--- Default implementation if reverse mode is disabled ---*/
 
 #if !defined ADOLC_REVERSE_TYPE && \
     !defined CODI_REVERSE_TYPE
@@ -67,7 +67,7 @@ namespace AD{
 #endif
 
 
-/* --- Special handling of the sprint routine for non-primitive types. --- */
+/*--- Special handling of the sprint routine for non-primitive types. ---*/
 
 #if  defined ADOLC_REVERSE_TYPE || \
      defined ADOLC_FORWARD_TYPE || \
@@ -75,8 +75,8 @@ namespace AD{
      defined CODI_REVERSE_TYPE  || \
      defined CODI_FORWARD_TYPE
 
-/* --- This objective is used for primitive types,
- * where the output type of the getValue coincides with the input type. --- */
+/*--- This objective is used for primitive types,
+ * where the output type of the getValue coincides with the input type. ---*/
 
 template< typename IN > struct Impl_getValue {
   typedef IN OUT;
@@ -85,8 +85,8 @@ template< typename IN > struct Impl_getValue {
   }
 };
 
-/* --- This objective is used for non-primitive types,
- * where the output type is double and the input type is su2double. --- */
+/*--- This objective is used for non-primitive types,
+ * where the output type is double and the input type is su2double. ---*/
 
 template<> struct Impl_getValue<su2double> {
   typedef double OUT;
@@ -96,10 +96,10 @@ template<> struct Impl_getValue<su2double> {
 };
 
 /*--- Other objects are implemented in the corresponding header files of the datatypes.
- *  For example there may be an expression in the argument. --- */
+ *  For example there may be an expression in the argument. ---*/
 
 
-/*--- Terminating definition of sprintfOver --- */
+/*--- Terminating definition of sprintfOver ---*/
 
 inline void sprintfOver(char * str, const char * format) {
   sprintf(str, format);

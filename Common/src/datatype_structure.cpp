@@ -43,19 +43,19 @@ namespace AD {
 }
 #elif defined ADOLC_REVERSE_TYPE
 namespace AD{
-  /* --- Stores a copy of the input variables (since they might be overwritten) --- */
+  /*--- Stores a copy of the input variables (since they might be overwritten) ---*/
 
   std::vector<double> inputVariables;
 
-  /* --- Stores the seeding vector for the adjoint computation (adjoints of output variables) --- */
+  /*--- Stores the seeding vector for the adjoint computation (adjoints of output variables) ---*/
 
   std::vector<double> seedVector;
 
-  /* --- The current position in the adjoint vector --- */
+  /*--- The current position in the adjoint vector ---*/
 
   int adjointVector_Position = 0;
 
-  /* --- Holds the adjoint values of the input variables after the adjoint computation --- */
+  /*--- Holds the adjoint values of the input variables after the adjoint computation ---*/
 
   double* adjointVector = NULL;
 
@@ -70,16 +70,16 @@ namespace AD{
   void ComputeAdjoint(){
     size_t tape_stats[STAT_SIZE];
 
-    /* --- Get information about the current number of inputs/outputs --- */
+    /*--- Get information about the current number of inputs/outputs ---*/
 
     tapestats(1, tape_stats);
 
-    /* --- Create temporary arrays to hold the adjoints of the input/output variables --- */
+    /*--- Create temporary arrays to hold the adjoints of the input/output variables ---*/
 
     double* gradient = new double[tape_stats[0]];
     double* adjoint  = new double[tape_stats[1]];
 
-    /* --- Initialize the adjoint values --- */
+    /*--- Initialize the adjoint values ---*/
 
     for (int i = 0; i < tape_stats[0]; ++i) {
       gradient[i] = 0.0;
@@ -89,7 +89,7 @@ namespace AD{
       adjoint[i] = seedVector[i];
     }
 
-    /* --- Reverse interpretation of the computational graph --- */
+    /*--- Reverse interpretation of the computational graph ---*/
 
     fos_reverse(1,tape_stats[1], tape_stats[0],adjoint, gradient);
 

@@ -31,7 +31,6 @@
 
 #include "../include/mpi_structure.hpp"
 
-
 #ifdef HAVE_MPI
 
 #if defined COMPLEX_TYPE || defined ADOLC_FORWARD_TYPE || defined CODI_FORWARD_TYPE
@@ -48,30 +47,30 @@ void CAuxMPIWrapper::Isend(void *buf, int count, MPI_Datatype datatype,
 
     unsigned long iVal;
 
-    /* --- Create request object for Complex communication --- */
+    /*--- Create request object for Complex communication ---*/
 
     MPI_Request* RequestAux = new MPI_Request;
 
-    /* --- Create buffer objects (Note: they will be deleted in the wait routine!) --- */
+    /*--- Create buffer objects (Note: they will be deleted in the wait routine!) ---*/
 
     double *ValueBuffer = new double[count];
     double *AuxBuffer   = new double[count];
     su2double *SendBuffer = static_cast<su2double*>(buf);
 
 
-    /* --- Extract real value and imag value --- */
+    /*--- Extract real value and imag value ---*/
 
     for (iVal = 0; iVal < count; iVal++) {
       ValueBuffer[iVal] = SU2_TYPE::GetValue(SendBuffer[iVal]);
       AuxBuffer[iVal]   = SU2_TYPE::GetSecondary(SendBuffer[iVal]);
     }
 
-    /* ---  Send real value and imag value --- */
+    /*---  Send real value and imag value ---*/
 
     MPI_Isend(ValueBuffer,count,datatype,dest,tag,comm,request);
     MPI_Isend(AuxBuffer,count,datatype,dest,tag+100,comm,RequestAux);
 
-    /* --- Create info object for wait routine to find the request for the aux var --- */
+    /*--- Create info object for wait routine to find the request for the aux var ---*/
 
     CommInfo info;
     info.ValueBuffer      = ValueBuffer;
@@ -81,7 +80,7 @@ void CAuxMPIWrapper::Isend(void *buf, int count, MPI_Datatype datatype,
     info.count            = count;
     info.Type             = ISEND;
 
-    /* --- Insert info object into global map -- */
+    /*--- Insert info object into global map -- */
 
     CommInfoMap.insert(std::pair<MPI_Request*, CommInfo>(request,info));
 
@@ -96,22 +95,22 @@ void CAuxMPIWrapper::Irecv(void *buf, int count, MPI_Datatype datatype,
   } else {
     unsigned long iVal;
 
-    /* --- Create request object for Complex communication --- */
+    /*--- Create request object for Complex communication ---*/
 
     MPI_Request* RequestAux = new MPI_Request;
 
-    /* --- Create buffer objects (Note: they will be deleted in the wait routine!) --- */
+    /*--- Create buffer objects (Note: they will be deleted in the wait routine!) ---*/
 
     double *ValueBuffer = new double[count];
     double *AuxBuffer   = new double[count];
     su2double *RecvBuffer = static_cast<su2double*>(buf);
 
-    /* ---  Recv real value and imag value --- */
+    /*---  Recv real value and imag value ---*/
 
     MPI_Irecv(ValueBuffer,count,datatype,source,tag,comm,request);
     MPI_Irecv(AuxBuffer,count,datatype,source,tag+100,comm,RequestAux);
 
-    /* --- Create info object for wait routine to find the request for the aux var --- */
+    /*--- Create info object for wait routine to find the request for the aux var ---*/
 
     CommInfo info;
     info.ValueBuffer      = ValueBuffer;
@@ -121,7 +120,7 @@ void CAuxMPIWrapper::Irecv(void *buf, int count, MPI_Datatype datatype,
     info.count            = count;
     info.Type             = IRECV;
 
-    /* --- Insert info object into global map -- */
+    /*--- Insert info object into global map -- */
 
     CommInfoMap.insert(std::pair<MPI_Request*, CommInfo>(request,info));
 
@@ -130,11 +129,11 @@ void CAuxMPIWrapper::Irecv(void *buf, int count, MPI_Datatype datatype,
 
 void CAuxMPIWrapper::Wait(MPI_Request *request, MPI_Status *status) {
 
-  /* --- First wait for send/recv of normal value operation to finish --- */
+  /*--- First wait for send/recv of normal value operation to finish ---*/
 
   MPI_Wait(request, status);
 
-  /* Search for request in case there is also a aux. request and finalize this comm. --- */
+  /* Search for request in case there is also a aux. request and finalize this comm. ---*/
 
   if((CommInfoIterator = CommInfoMap.find(request)) != CommInfoMap.end()) {
     FinalizeCommunication(CommInfoIterator);
@@ -145,7 +144,7 @@ void CAuxMPIWrapper::Wait(MPI_Request *request, MPI_Status *status) {
 void CAuxMPIWrapper::FinalizeCommunication(
   std::map<MPI_Request *, CommInfo>::iterator &CommInfoIt) {
 
-  /*--- Get info about communication --- */
+  /*--- Get info about communication ---*/
 
   CommInfo info = CommInfoIt->second;
   double *ValueBuffer   = info.ValueBuffer;
@@ -155,7 +154,7 @@ void CAuxMPIWrapper::FinalizeCommunication(
   MPI_Request *RequestAux = info.RequestAux;
   unsigned long iVal, count = info.count;
 
-  /* --- Wait for aux. request --- */
+  /*--- Wait for aux. request ---*/
 
   MPI_Wait(RequestAux,&status);
 
@@ -170,12 +169,12 @@ void CAuxMPIWrapper::FinalizeCommunication(
     break;
   }
 
-  /* --- Delete buffer --- */
+  /*--- Delete buffer ---*/
 
   delete [] ValueBuffer;
   delete [] AuxBuffer;
 
-  /* --- Delete Request --- */
+  /*--- Delete Request ---*/
 
   delete RequestAux;
   CommInfoMap.erase(CommInfoIt);
@@ -185,11 +184,11 @@ void CAuxMPIWrapper::FinalizeCommunication(
 void CAuxMPIWrapper::Waitall(int nrequests, MPI_Request *request,
                                  MPI_Status *status) {
 
-  /* --- Wait for normal requests to finish ---*/
+  /*--- Wait for normal requests to finish ---*/
 
   MPI_Waitall(nrequests, request, status);
 
-  /* --- Wait for aux. requests and finish communication --- */
+  /*--- Wait for aux. requests and finish communication ---*/
 
   for (unsigned int iVal = 0; iVal < nrequests; iVal++) {
     if((CommInfoIterator = CommInfoMap.find(&request[iVal])) != CommInfoMap.end()) {
@@ -201,11 +200,11 @@ void CAuxMPIWrapper::Waitall(int nrequests, MPI_Request *request,
 void CAuxMPIWrapper::Waitany(int nrequests, MPI_Request *request,
                              int *index, MPI_Status *status){
 
-  /* --- Wait for any normal request to finish ---*/
+  /*--- Wait for any normal request to finish ---*/
 
   MPI_Waitany(nrequests, request, index, status);
 
-  /* --- Wait for particular aux. request and finish communication --- */
+  /*--- Wait for particular aux. request and finish communication ---*/
 
   if((CommInfoIterator = CommInfoMap.find(&request[*index])) != CommInfoMap.end()) {
     FinalizeCommunication(CommInfoIterator);

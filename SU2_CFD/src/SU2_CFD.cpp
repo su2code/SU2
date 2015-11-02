@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
     if (rank == MASTER_NODE)
       cout << "Computing wall distances." << endl;
 
-    if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
+    if ((config_container[iZone]->GetKind_Solver() == RANS) ||
         (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
         (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
       geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
