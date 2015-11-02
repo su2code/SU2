@@ -41,8 +41,8 @@
 
 #ifdef HAVE_MPI
 
-/* --- Depending on the datatype used, the correct MPI wrapper class is defined.
- * For the default (double type) case this results in using the normal MPI routines. --- */
+/*--- Depending on the datatype used, the correct MPI wrapper class is defined.
+ * For the default (double type) case this results in using the normal MPI routines. ---*/
 
 #if defined COMPLEX_TYPE  || \
     defined ADOLC_FORWARD_TYPE || \

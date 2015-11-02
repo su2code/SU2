@@ -3898,7 +3898,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     }
   }
   
-  /*--- Get the global to local mapping --- */
+  /*--- Get the global to local mapping ---*/
   
   for (iPoint = 0; iPoint < nPointTotal_r_tot; iPoint++) {
     Global_to_local_Point_recv[Local_to_Global_Point[iPoint]] = iPoint;
@@ -6703,9 +6703,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
    Parallel version by Thomas D. Economon, February 2015. ---*/
   
 #ifdef HAVE_CGNS
-  
-  /*--- Local variables and initialization ---*/
-  
+    
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short VTK_Type = 0, iMarker = 0;
@@ -10917,7 +10915,7 @@ void CPhysicalGeometry::SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool ne
    endfacet
    ...
    end solid
-   --- */
+   ---*/
   
   /*--- Open the STL file ---*/
   
@@ -12370,7 +12368,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
 
     if (grid_movement) {skipVar += nDim;}
 
-    /* --- Sensitivity in normal direction --- */
+    /*--- Sensitivity in normal direction ---*/
 
     skipVar += 1;
 
@@ -13655,9 +13653,9 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
     
   }
   
-  return agglomerate_CV;
-  
   delete [] copy_marker;
+
+  return agglomerate_CV;
 
 }
 

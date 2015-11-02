@@ -2000,7 +2000,7 @@ private:
   Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
   RoeProjVelocity, ProjVelocity_i, ProjVelocity_j;
   unsigned short iDim, iVar, jVar, kVar;
-  su2double Rrho, tmp, velRoe[3], sq_velRoe, sL, sR, sM, pStar, invSLmSs, sLmuL, rhoSL, rhouSL[3],
+  su2double Rrho, tmp, sq_velRoe, sL, sR, sM, pStar, invSLmSs, sLmuL, rhoSL, rhouSL[3],
   eSL, invSRmSs, sRmuR, rhoSR, rhouSR[3], eSR;
   
 public:

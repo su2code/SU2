@@ -15,9 +15,9 @@
 		0530E57017FDF7D300733CE8 /* numerics_direct_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530E56F17FDF7D300733CE8 /* numerics_direct_elasticity.cpp */; };
 		0530E57217FDF7D800733CE8 /* numerics_direct_poisson.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0530E57117FDF7D800733CE8 /* numerics_direct_poisson.cpp */; };
 		05755F0A1A54AC4500600019 /* output_su2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05755F091A54AC4500600019 /* output_su2.cpp */; };
-		05AF9F201BE1E1830062E1F1 /* element_linear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05AF9F1D1BE1E1830062E1F1 /* element_linear.cpp */; settings = {ASSET_TAGS = (); }; };
-		05AF9F211BE1E1830062E1F1 /* element_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05AF9F1E1BE1E1830062E1F1 /* element_structure.cpp */; settings = {ASSET_TAGS = (); }; };
-		05AF9F221BE1E1830062E1F1 /* gauss_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05AF9F1F1BE1E1830062E1F1 /* gauss_structure.cpp */; settings = {ASSET_TAGS = (); }; };
+		05AF9F201BE1E1830062E1F1 /* element_linear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05AF9F1D1BE1E1830062E1F1 /* element_linear.cpp */; };
+		05AF9F211BE1E1830062E1F1 /* element_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05AF9F1E1BE1E1830062E1F1 /* element_structure.cpp */; };
+		05AF9F221BE1E1830062E1F1 /* gauss_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05AF9F1F1BE1E1830062E1F1 /* gauss_structure.cpp */; };
 		05E6DB9217EB61E600FA1F7E /* config_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB8917EB61E600FA1F7E /* config_structure.cpp */; };
 		05E6DB9317EB61E600FA1F7E /* dual_grid_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB8A17EB61E600FA1F7E /* dual_grid_structure.cpp */; };
 		05E6DB9417EB61E600FA1F7E /* geometry_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB8B17EB61E600FA1F7E /* geometry_structure.cpp */; };
@@ -426,10 +426,10 @@
 		0541ABE51370DC5E002D668B /* Include */ = {
 			isa = PBXGroup;
 			children = (
-				E9AA98A81BB3438F00B7FE37 /* driver_structure.hpp */,
-				E941BB951B71D1AB005C6C06 /* datatype_structure.hpp */,
 				E941BB971B71D1AB005C6C06 /* datatypes */,
 				E941BBA41B71D1AB005C6C06 /* linear_solvers_structure_b.hpp */,
+				E941BB951B71D1AB005C6C06 /* datatype_structure.hpp */,
+				E9AA98A81BB3438F00B7FE37 /* driver_structure.hpp */,
 				E941BBA51B71D1AB005C6C06 /* mpi_structure.hpp */,
 				05F1089E1978D2CE00F2F288 /* fluid_model.hpp */,
 				05F1089F1978D2CE00F2F288 /* transport_model.hpp */,
@@ -521,7 +521,6 @@
 		08FB7795FE84155DC02AAC07 /* Source */ = {
 			isa = PBXGroup;
 			children = (
-				05AF9F1C1BE1E1770062E1F1 /* FEA */,
 				05E6DBEC17EB62A100FA1F7E /* SU2_CFD.cpp */,
 				05E6DB8917EB61E600FA1F7E /* config_structure.cpp */,
 				05E6DBBC17EB62A000FA1F7E /* definition_structure.cpp */,
@@ -529,6 +528,7 @@
 				05E6DBC017EB62A100FA1F7E /* iteration_structure.cpp */,
 				E941BB8F1B71D124005C6C06 /* datatype_structure.cpp */,
 				E941BB911B71D124005C6C06 /* mpi_structure.cpp */,
+				05AF9F1C1BE1E1770062E1F1 /* FEA */,
 				0530E57417FDF9CC00733CE8 /* LinearSolver */,
 				0530E57317FDF97F00733CE8 /* Geometry */,
 				052D51AB17A22E24003BE8B2 /* Output */,
@@ -1562,11 +1562,22 @@
 		1DEB923608733DC60010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_IMPLICIT_SIGN_CONVERSION = YES;
+				CLANG_WARN_NULLABLE_TO_NONNULL_CONVERSION = YES;
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
-				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = "";
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_SHADOW = YES;
+				GCC_WARN_SIGN_COMPARE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_LABEL = YES;
+				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -1576,8 +1587,19 @@
 		1DEB923708733DC60010E9CD /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_IMPLICIT_SIGN_CONVERSION = YES;
+				CLANG_WARN_NULLABLE_TO_NONNULL_CONVERSION = YES;
+				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_SHADOW = YES;
+				GCC_WARN_SIGN_COMPARE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_LABEL = YES;
+				GCC_WARN_UNUSED_PARAMETER = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;

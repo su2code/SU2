@@ -93,7 +93,7 @@ namespace AD{
   }
 }
 
-/* --- Object for the definition of getValue used in the printfOver definition.
+/*--- Object for the definition of getValue used in the printfOver definition.
  * Necessary for cases where the argument of sprintfOver is an expression, e.g:
  * SPRINTF("Residual: %d", log10(Residual)) ---*/
 

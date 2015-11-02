@@ -13,6 +13,8 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -111,48 +113,48 @@ void CConfig::SetPointersNull(void) {
 
   /*--- Marker Pointers ---*/
 
-  Marker_Euler=NULL;          Marker_FarField=NULL;         Marker_Custom=NULL;
-  Marker_SymWall=NULL;        Marker_Pressure=NULL;         Marker_PerBound=NULL;
-  Marker_PerDonor=NULL;       Marker_NearFieldBound=NULL;   Marker_InterfaceBound=NULL;
-  Marker_Dirichlet=NULL;      Marker_Inlet=NULL;
-  Marker_Supersonic_Inlet=NULL;    Marker_Outlet=NULL;      Marker_Out_1D=NULL;
-  Marker_Isothermal=NULL;     Marker_HeatFlux=NULL;         Marker_EngineInflow=NULL;
-  Marker_EngineBleed=NULL;  Marker_Supersonic_Outlet=NULL;
-  Marker_EngineExhaust=NULL; Marker_Displacement=NULL;     Marker_Load=NULL;
-  Marker_Load_Dir=NULL;   	  Marker_Load_Sine=NULL; 		Marker_Clamped=NULL;
-  Marker_FlowLoad=NULL;       Marker_Neumann=NULL;
-  Marker_All_TagBound=NULL;        Marker_CfgFile_TagBound=NULL;       Marker_All_KindBC=NULL;
-  Marker_CfgFile_KindBC=NULL;    Marker_All_SendRecv=NULL; Marker_All_PerBound=NULL;
-  Marker_FSIinterface=NULL;	Marker_Riemann=NULL;
+  Marker_Euler = NULL;            Marker_FarField = NULL;           Marker_Custom = NULL;
+  Marker_SymWall = NULL;          Marker_Pressure = NULL;           Marker_PerBound = NULL;
+  Marker_PerDonor = NULL;         Marker_NearFieldBound = NULL;     Marker_InterfaceBound = NULL;
+  Marker_Dirichlet = NULL;        Marker_Inlet = NULL;
+  Marker_Supersonic_Inlet = NULL; Marker_Outlet = NULL;             Marker_Out_1D = NULL;
+  Marker_Isothermal = NULL;       Marker_HeatFlux = NULL;           Marker_EngineInflow = NULL;
+  Marker_EngineBleed = NULL;      Marker_Supersonic_Outlet = NULL;
+  Marker_EngineExhaust = NULL;    Marker_Displacement = NULL;       Marker_Load = NULL;
+  Marker_Load_Dir = NULL;         Marker_Load_Sine = NULL;          Marker_Clamped = NULL;
+  Marker_FlowLoad = NULL;         Marker_Neumann = NULL;
+  Marker_All_TagBound = NULL;     Marker_CfgFile_TagBound = NULL;   Marker_All_KindBC = NULL;
+  Marker_CfgFile_KindBC = NULL;   Marker_All_SendRecv = NULL;       Marker_All_PerBound = NULL;
+  Marker_FSIinterface = NULL;     Marker_Riemann = NULL;
 
   /*--- Boundary Condition settings ---*/
 
-  Dirichlet_Value=NULL;       Exhaust_Temperature_Target=NULL;
-  Exhaust_Pressure_Target=NULL;         Inlet_Ttotal=NULL;            Inlet_Ptotal=NULL;
-  Inlet_FlowDir=NULL;         Inlet_Temperature=NULL;       Inlet_Pressure=NULL;
-  Inlet_Velocity=NULL;        Inflow_Mach_Target=NULL;     Inflow_Mach=NULL;
-  Inflow_Pressure=NULL;       Bleed_Temperature_Target=NULL;       Bleed_Temperature=NULL;
-  Bleed_MassFlow_Target=NULL; Bleed_MassFlow=NULL;          Exhaust_Pressure=NULL; Exhaust_Temperature=NULL;
-  Bleed_Pressure=NULL;        Outlet_Pressure=NULL;         Isothermal_Temperature=NULL;
-  Heat_Flux=NULL;             Displ_Value=NULL;             Load_Value=NULL;
-  FlowLoad_Value=NULL;        Periodic_RotCenter=NULL;      Periodic_RotAngles=NULL;
-  Periodic_Translation=NULL;  Periodic_Center=NULL;         Periodic_Rotation=NULL;
-  Periodic_Translate=NULL;
+  Dirichlet_Value = NULL;         Exhaust_Temperature_Target = NULL;
+  Exhaust_Pressure_Target = NULL; Inlet_Ttotal = NULL;              Inlet_Ptotal = NULL;
+  Inlet_FlowDir = NULL;           Inlet_Temperature = NULL;         Inlet_Pressure = NULL;
+  Inlet_Velocity = NULL;          Inflow_Mach_Target = NULL;        Inflow_Mach = NULL;
+  Inflow_Pressure = NULL;         Bleed_Temperature_Target = NULL;  Bleed_Temperature = NULL;
+  Bleed_MassFlow_Target = NULL;   Bleed_MassFlow = NULL;            Exhaust_Pressure = NULL; Exhaust_Temperature = NULL;
+  Bleed_Pressure = NULL;          Outlet_Pressure = NULL;           Isothermal_Temperature = NULL;
+  Heat_Flux = NULL;               Displ_Value = NULL;               Load_Value = NULL;
+  FlowLoad_Value = NULL;          Periodic_RotCenter = NULL;        Periodic_RotAngles = NULL;
+  Periodic_Translation = NULL;    Periodic_Center = NULL;           Periodic_Rotation = NULL;
+  Periodic_Translate = NULL;
 
-  Load_Dir=NULL;	          Load_Dir_Value=NULL;          Load_Dir_Multiplier=NULL;
-  Load_Sine_Dir=NULL;	      Load_Sine_Amplitude=NULL;     Load_Sine_Frequency=NULL;
+  Load_Dir = NULL;	          Load_Dir_Value = NULL;          Load_Dir_Multiplier = NULL;
+  Load_Sine_Dir = NULL;	      Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
 
   /*--- Miscellaneous/unsorted ---*/
 
-  Aeroelastic_plunge=NULL;    Aeroelastic_pitch=NULL;
-  MassFrac_FreeStream=NULL;
-  Velocity_FreeStream=NULL;
-  RefOriginMoment=NULL;     RefOriginMoment_X=NULL;  RefOriginMoment_Y=NULL;
-  RefOriginMoment_Z=NULL;   CFL_AdaptParam=NULL;            CFL=NULL;
-  PlaneTag=NULL;
-  Kappa_Flow=NULL;    Kappa_AdjFlow=NULL;
-  Section_Location=NULL;
-  U_FreeStreamND=NULL;
+  Aeroelastic_plunge = NULL;    Aeroelastic_pitch = NULL;
+  MassFrac_FreeStream = NULL;
+  Velocity_FreeStream = NULL;
+  RefOriginMoment = NULL;     RefOriginMoment_X=NULL;  RefOriginMoment_Y=NULL;
+  RefOriginMoment_Z=NULL;   CFL_AdaptParam = NULL;            CFL=NULL;
+  PlaneTag = NULL;
+  Kappa_Flow = NULL;    Kappa_AdjFlow = NULL;
+  Section_Location = NULL;
+  U_FreeStreamND = NULL;
 
   /*--- Moving mesh pointers ---*/
 
@@ -237,7 +239,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par CONFIG_CATEGORY: FluidModel \ingroup Config*/
   /*!\brief FLUID_MODEL \n DESCRIPTION: Fluid model \n OPTIONS: See \link FluidModel_Map \endlink \n Default: STANDARD_AIR \ingroup Config*/
   addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, STANDARD_AIR);
-
 
 
   /*!\par CONFIG_CATEGORY: Freestream Conditions \ingroup Config*/
@@ -761,8 +762,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SENS_REMOVE_SHARP
    * DESCRIPTION: Remove sharp edges from the sensitivity evaluation  \n Format: SENS_REMOVE_SHARP = YES \n Default: NO \ingroup Config*/
   addBoolOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, false);
-  /* DESCRIPTION: P-norm for heat-flux based objective functions. */
-	addDoubleOption("PNORM_HEATFLUX", pnorm_heat, 1.0);
 
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
@@ -1084,9 +1083,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par CONFIG_CATEGORY: Rotorcraft problem \ingroup Config*/
   /*--- option related to rotorcraft problems ---*/
 
-  /* DESCRIPTION: MISSING --- */
+  /* DESCRIPTION: MISSING ---*/
   addDoubleOption("CYCLIC_PITCH", Cyclic_Pitch, 0.0);
-  /* DESCRIPTION: MISSING --- */
+  /* DESCRIPTION: MISSING ---*/
   addDoubleOption("COLLECTIVE_PITCH", Collective_Pitch, 0.0);
 
 
@@ -2403,7 +2402,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         exit(EXIT_FAILURE);
       }
 #endif
-    /*--- Initialize the derivative values --- */
+    /*--- Initialize the derivative values ---*/
     switch (DirectDiff) {
       case D_MACH:
         SU2_TYPE::SetDerivative(Mach, 1.0);
@@ -2435,7 +2434,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
 #endif
 
-    /* --- Disable writing of limiters if enabled --- */
+    /*--- Disable writing of limiters if enabled ---*/
     Wrt_Limiters = false;
 
     switch(Kind_Solver){
@@ -4274,10 +4273,10 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
 
 CConfig::~CConfig(void) {
   
-  if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
-  if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
-  if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
-  if (U_FreeStreamND!=NULL) delete [] U_FreeStreamND;
+  if (RK_Alpha_Step != NULL) delete [] RK_Alpha_Step;
+  if (MG_PreSmooth != NULL) delete [] MG_PreSmooth;
+  if (MG_PostSmooth != NULL) delete [] MG_PostSmooth;
+  if (U_FreeStreamND != NULL) delete [] U_FreeStreamND;
 
   /*--- Free memory for Aeroelastic problems. ---*/
   
@@ -4368,117 +4367,117 @@ CConfig::~CConfig(void) {
 
   /*--- Marker pointers ---*/
   
-  if (Marker_CfgFile_Out_1D!=NULL)   delete[] Marker_CfgFile_Out_1D;
-  if (Marker_All_Out_1D!=NULL)      delete[] Marker_All_Out_1D;
-  if (Marker_CfgFile_GeoEval!=NULL)  delete[] Marker_CfgFile_GeoEval;
-  if (Marker_All_GeoEval!=NULL)     delete[] Marker_All_GeoEval;
-  if (Marker_CfgFile_TagBound!=NULL)      delete[] Marker_CfgFile_TagBound;
-  if (Marker_All_TagBound!=NULL)         delete[] Marker_All_TagBound;
-  if (Marker_CfgFile_KindBC!=NULL) delete[] Marker_CfgFile_KindBC;
-  if (Marker_All_KindBC!=NULL)    delete[] Marker_All_KindBC;
-  if (Marker_CfgFile_Monitoring!=NULL)    delete[] Marker_CfgFile_Monitoring;
-  if (Marker_All_Monitoring!=NULL)   delete[] Marker_All_Monitoring;
-  if (Marker_CfgFile_Designing!=NULL) delete[] Marker_CfgFile_Designing;
-  if (Marker_All_Designing!=NULL)    delete[] Marker_All_Designing;
-  if (Marker_CfgFile_Plotting!=NULL)  delete[] Marker_CfgFile_Plotting;
-  if (Marker_CfgFile_FSIinterface!=NULL)  delete[] Marker_CfgFile_FSIinterface;
-  if (Marker_All_Plotting!=NULL)     delete[] Marker_All_Plotting;
-  if (Marker_All_FSIinterface!=NULL)     delete[] Marker_All_FSIinterface;
+  if (Marker_CfgFile_Out_1D != NULL)   delete[] Marker_CfgFile_Out_1D;
+  if (Marker_All_Out_1D != NULL)      delete[] Marker_All_Out_1D;
+  if (Marker_CfgFile_GeoEval != NULL)  delete[] Marker_CfgFile_GeoEval;
+  if (Marker_All_GeoEval != NULL)     delete[] Marker_All_GeoEval;
+  if (Marker_CfgFile_TagBound != NULL)      delete[] Marker_CfgFile_TagBound;
+  if (Marker_All_TagBound != NULL)         delete[] Marker_All_TagBound;
+  if (Marker_CfgFile_KindBC != NULL) delete[] Marker_CfgFile_KindBC;
+  if (Marker_All_KindBC != NULL)    delete[] Marker_All_KindBC;
+  if (Marker_CfgFile_Monitoring != NULL)    delete[] Marker_CfgFile_Monitoring;
+  if (Marker_All_Monitoring != NULL)   delete[] Marker_All_Monitoring;
+  if (Marker_CfgFile_Designing != NULL) delete[] Marker_CfgFile_Designing;
+  if (Marker_All_Designing != NULL)    delete[] Marker_All_Designing;
+  if (Marker_CfgFile_Plotting != NULL)  delete[] Marker_CfgFile_Plotting;
+  if (Marker_CfgFile_FSIinterface != NULL)  delete[] Marker_CfgFile_FSIinterface;
+  if (Marker_All_Plotting != NULL)     delete[] Marker_All_Plotting;
+  if (Marker_All_FSIinterface != NULL)     delete[] Marker_All_FSIinterface;
   if (Marker_CfgFile_DV!=NULL)        delete[] Marker_CfgFile_DV;
   if (Marker_All_DV!=NULL)           delete[] Marker_All_DV;
-  if (Marker_CfgFile_Moving!=NULL)   delete[] Marker_CfgFile_Moving;
-  if (Marker_All_Moving!=NULL)      delete[] Marker_All_Moving;
-  if (Marker_CfgFile_PerBound!=NULL) delete[] Marker_CfgFile_PerBound;
-  if (Marker_All_PerBound!=NULL)    delete[] Marker_All_PerBound;
+  if (Marker_CfgFile_Moving != NULL)   delete[] Marker_CfgFile_Moving;
+  if (Marker_All_Moving != NULL)      delete[] Marker_All_Moving;
+  if (Marker_CfgFile_PerBound != NULL) delete[] Marker_CfgFile_PerBound;
+  if (Marker_All_PerBound != NULL)    delete[] Marker_All_PerBound;
 
   if (Marker_DV!=NULL)               delete[] Marker_DV;
-  if (Marker_Moving!=NULL)           delete[] Marker_Moving;
-  if (Marker_Monitoring!=NULL)      delete[] Marker_Monitoring;
-  if (Marker_Designing!=NULL)       delete[] Marker_Designing;
-  if (Marker_GeoEval!=NULL)         delete[] Marker_GeoEval;
-  if (Marker_Plotting!=NULL)        delete[] Marker_Plotting;
-  if (Marker_FSIinterface!=NULL)        delete[] Marker_FSIinterface;
-  if (Marker_All_SendRecv!=NULL)    delete[] Marker_All_SendRecv;
+  if (Marker_Moving != NULL)           delete[] Marker_Moving;
+  if (Marker_Monitoring != NULL)      delete[] Marker_Monitoring;
+  if (Marker_Designing != NULL)       delete[] Marker_Designing;
+  if (Marker_GeoEval != NULL)         delete[] Marker_GeoEval;
+  if (Marker_Plotting != NULL)        delete[] Marker_Plotting;
+  if (Marker_FSIinterface != NULL)        delete[] Marker_FSIinterface;
+  if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
 
-  if (EA_IntLimit!=NULL)    delete[] EA_IntLimit;
-  if (Hold_GridFixed_Coord!=NULL)    delete[] Hold_GridFixed_Coord ;
-  if (Subsonic_Engine_Box!=NULL)    delete[] Subsonic_Engine_Box ;
-  if (DV_Value!=NULL)    delete[] DV_Value;
-  if (Design_Variable!=NULL)    delete[] Design_Variable;
-  if (Dirichlet_Value!=NULL)    delete[] Dirichlet_Value;
-  if (Exhaust_Temperature_Target!=NULL)    delete[]  Exhaust_Temperature_Target;
-  if (Exhaust_Pressure_Target!=NULL)    delete[]  Exhaust_Pressure_Target;
-  if (Inlet_Ttotal!=NULL)    delete[]  Inlet_Ttotal;
-  if (Inlet_Ptotal!=NULL)    delete[]  Inlet_Ptotal;
-  if (Inlet_FlowDir!=NULL)    delete[] Inlet_FlowDir;
-  if (Inlet_Temperature!=NULL)    delete[] Inlet_Temperature;
-  if (Inlet_Pressure!=NULL)    delete[] Inlet_Pressure;
-  if (Inlet_Velocity!=NULL)    delete[] Inlet_Velocity ;
-  if (Inflow_Mach_Target!=NULL)    delete[] Inflow_Mach_Target;
-  if (Inflow_Mach!=NULL)    delete[]  Inflow_Mach;
-  if (Inflow_Pressure!=NULL)    delete[] Inflow_Pressure;
-  if (Bleed_MassFlow_Target!=NULL)    delete[] Bleed_MassFlow_Target;
-  if (Bleed_MassFlow!=NULL)    delete[]  Bleed_MassFlow;
-  if (Bleed_Temperature_Target!=NULL)    delete[] Bleed_Temperature_Target;
-  if (Bleed_Temperature!=NULL)    delete[]  Bleed_Temperature;
-  if (Bleed_Pressure!=NULL)    delete[] Bleed_Pressure;
-  if (Exhaust_Pressure!=NULL)    delete[] Exhaust_Pressure;
-  if (Exhaust_Temperature!=NULL)    delete[] Exhaust_Temperature;
-  if (Outlet_Pressure!=NULL)    delete[] Outlet_Pressure;
-  if (Isothermal_Temperature!=NULL)    delete[] Isothermal_Temperature;
-  if (Heat_Flux!=NULL)    delete[] Heat_Flux;
-  if (Displ_Value!=NULL)    delete[] Displ_Value;
-  if (Load_Value!=NULL)    delete[] Load_Value;
-  if (Load_Dir!=NULL)    delete[] Load_Dir;
-  if (Load_Dir_Multiplier!=NULL)    delete[] Load_Dir_Multiplier;
-  if (Load_Dir_Value!=NULL)    delete[] Load_Dir_Value;
-  if (Load_Sine_Amplitude!=NULL)    delete[] Load_Sine_Amplitude;
-  if (Load_Sine_Frequency!=NULL)    delete[] Load_Sine_Frequency;
-  if (FlowLoad_Value!=NULL)    delete[] FlowLoad_Value;
-  if (Periodic_RotCenter!=NULL)    delete[] Periodic_RotCenter;
-  if (Periodic_RotAngles!=NULL)    delete[] Periodic_RotAngles;
-  if (Periodic_Translation!=NULL)    delete[] Periodic_Translation;
-  if (Periodic_Center!=NULL)    delete[] Periodic_Center;
-  if (Periodic_Rotation!=NULL)    delete[] Periodic_Rotation;
-  if (Periodic_Translate!=NULL)    delete[] Periodic_Translate;
+  if (EA_IntLimit != NULL)    delete[] EA_IntLimit;
+  if (Hold_GridFixed_Coord != NULL)    delete[] Hold_GridFixed_Coord ;
+  if (Subsonic_Engine_Box != NULL)    delete[] Subsonic_Engine_Box ;
+  if (DV_Value != NULL)    delete[] DV_Value;
+  if (Design_Variable != NULL)    delete[] Design_Variable;
+  if (Dirichlet_Value != NULL)    delete[] Dirichlet_Value;
+  if (Exhaust_Temperature_Target != NULL)    delete[]  Exhaust_Temperature_Target;
+  if (Exhaust_Pressure_Target != NULL)    delete[]  Exhaust_Pressure_Target;
+  if (Inlet_Ttotal != NULL)    delete[]  Inlet_Ttotal;
+  if (Inlet_Ptotal != NULL)    delete[]  Inlet_Ptotal;
+  if (Inlet_FlowDir != NULL)    delete[] Inlet_FlowDir;
+  if (Inlet_Temperature != NULL)    delete[] Inlet_Temperature;
+  if (Inlet_Pressure != NULL)    delete[] Inlet_Pressure;
+  if (Inlet_Velocity != NULL)    delete[] Inlet_Velocity ;
+  if (Inflow_Mach_Target != NULL)    delete[] Inflow_Mach_Target;
+  if (Inflow_Mach != NULL)    delete[]  Inflow_Mach;
+  if (Inflow_Pressure != NULL)    delete[] Inflow_Pressure;
+  if (Bleed_MassFlow_Target != NULL)    delete[] Bleed_MassFlow_Target;
+  if (Bleed_MassFlow != NULL)    delete[]  Bleed_MassFlow;
+  if (Bleed_Temperature_Target != NULL)    delete[] Bleed_Temperature_Target;
+  if (Bleed_Temperature != NULL)    delete[]  Bleed_Temperature;
+  if (Bleed_Pressure != NULL)    delete[] Bleed_Pressure;
+  if (Exhaust_Pressure != NULL)    delete[] Exhaust_Pressure;
+  if (Exhaust_Temperature != NULL)    delete[] Exhaust_Temperature;
+  if (Outlet_Pressure != NULL)    delete[] Outlet_Pressure;
+  if (Isothermal_Temperature != NULL)    delete[] Isothermal_Temperature;
+  if (Heat_Flux != NULL)    delete[] Heat_Flux;
+  if (Displ_Value != NULL)    delete[] Displ_Value;
+  if (Load_Value != NULL)    delete[] Load_Value;
+  if (Load_Dir != NULL)    delete[] Load_Dir;
+  if (Load_Dir_Multiplier != NULL)    delete[] Load_Dir_Multiplier;
+  if (Load_Dir_Value != NULL)    delete[] Load_Dir_Value;
+  if (Load_Sine_Amplitude != NULL)    delete[] Load_Sine_Amplitude;
+  if (Load_Sine_Frequency != NULL)    delete[] Load_Sine_Frequency;
+  if (FlowLoad_Value != NULL)    delete[] FlowLoad_Value;
+  if (Periodic_RotCenter != NULL)    delete[] Periodic_RotCenter;
+  if (Periodic_RotAngles != NULL)    delete[] Periodic_RotAngles;
+  if (Periodic_Translation != NULL)    delete[] Periodic_Translation;
+  if (Periodic_Center != NULL)    delete[] Periodic_Center;
+  if (Periodic_Rotation != NULL)    delete[] Periodic_Rotation;
+  if (Periodic_Translate != NULL)    delete[] Periodic_Translate;
 
   if (ParamDV!=NULL  )    delete[] ParamDV;
-  if (MG_CorrecSmooth!=NULL    )    delete[] MG_CorrecSmooth;
-  if (Section_Location!=NULL)    delete[] Section_Location;
-  if (Kappa_Flow!=NULL      )    delete[] Kappa_Flow;
-  if (Kappa_AdjFlow!=NULL             )    delete[] Kappa_AdjFlow;
-  if (PlaneTag!=NULL)    delete[] PlaneTag;
-  if (CFL_AdaptParam!=NULL)    delete[] CFL_AdaptParam;
+  if (MG_CorrecSmooth != NULL    )    delete[] MG_CorrecSmooth;
+  if (Section_Location != NULL)    delete[] Section_Location;
+  if (Kappa_Flow != NULL      )    delete[] Kappa_Flow;
+  if (Kappa_AdjFlow != NULL             )    delete[] Kappa_AdjFlow;
+  if (PlaneTag != NULL)    delete[] PlaneTag;
+  if (CFL_AdaptParam != NULL)    delete[] CFL_AdaptParam;
   if (CFL!=NULL)    delete[] CFL;
   
   /*--- String markers ---*/
   
-  if (Marker_Euler!=NULL )              delete[] Marker_Euler;
-  if (Marker_FarField!=NULL )           delete[] Marker_FarField;
-  if (Marker_Custom!=NULL )             delete[] Marker_Custom;
-  if (Marker_SymWall!=NULL )            delete[] Marker_SymWall;
-  if (Marker_Pressure!=NULL )           delete[] Marker_Pressure;
-  if (Marker_PerBound!=NULL )           delete[] Marker_PerBound;
-  if (Marker_PerDonor!=NULL )           delete[] Marker_PerDonor;
-  if (Marker_NearFieldBound!=NULL )     delete[] Marker_NearFieldBound;
-  if (Marker_InterfaceBound!=NULL )     delete[] Marker_InterfaceBound;
-  if (Marker_Dirichlet!=NULL )          delete[] Marker_Dirichlet;
-  if (Marker_Inlet!=NULL )              delete[] Marker_Inlet;
-  if (Marker_Supersonic_Inlet!=NULL )   delete[] Marker_Supersonic_Inlet;
-  if (Marker_Supersonic_Outlet!=NULL )   delete[] Marker_Supersonic_Outlet;
-  if (Marker_Outlet!=NULL )             delete[] Marker_Outlet;
-  if (Marker_Out_1D!=NULL )             delete[] Marker_Out_1D;
-  if (Marker_Isothermal!=NULL )         delete[] Marker_Isothermal;
-  if (Marker_EngineInflow!=NULL )      delete[] Marker_EngineInflow;
-  if (Marker_EngineBleed!=NULL )      delete[] Marker_EngineBleed;
-  if (Marker_EngineExhaust!=NULL )     delete[] Marker_EngineExhaust;
-  if (Marker_Displacement!=NULL )       delete[] Marker_Displacement;
-  if (Marker_Load!=NULL )               delete[] Marker_Load;
-  if (Marker_Load_Dir!=NULL )               delete[] Marker_Load_Dir;
-  if (Marker_Load_Sine!=NULL )               delete[] Marker_Load_Sine;
-  if (Marker_FlowLoad!=NULL )           delete[] Marker_FlowLoad;
-  if (Marker_Neumann!=NULL )            delete[] Marker_Neumann;
-  if (Marker_HeatFlux!=NULL )               delete[] Marker_HeatFlux;
+  if (Marker_Euler != NULL )              delete[] Marker_Euler;
+  if (Marker_FarField != NULL )           delete[] Marker_FarField;
+  if (Marker_Custom != NULL )             delete[] Marker_Custom;
+  if (Marker_SymWall != NULL )            delete[] Marker_SymWall;
+  if (Marker_Pressure != NULL )           delete[] Marker_Pressure;
+  if (Marker_PerBound != NULL )           delete[] Marker_PerBound;
+  if (Marker_PerDonor != NULL )           delete[] Marker_PerDonor;
+  if (Marker_NearFieldBound != NULL )     delete[] Marker_NearFieldBound;
+  if (Marker_InterfaceBound != NULL )     delete[] Marker_InterfaceBound;
+  if (Marker_Dirichlet != NULL )          delete[] Marker_Dirichlet;
+  if (Marker_Inlet != NULL )              delete[] Marker_Inlet;
+  if (Marker_Supersonic_Inlet != NULL )   delete[] Marker_Supersonic_Inlet;
+  if (Marker_Supersonic_Outlet != NULL )   delete[] Marker_Supersonic_Outlet;
+  if (Marker_Outlet != NULL )             delete[] Marker_Outlet;
+  if (Marker_Out_1D != NULL )             delete[] Marker_Out_1D;
+  if (Marker_Isothermal != NULL )         delete[] Marker_Isothermal;
+  if (Marker_EngineInflow != NULL )      delete[] Marker_EngineInflow;
+  if (Marker_EngineBleed != NULL )      delete[] Marker_EngineBleed;
+  if (Marker_EngineExhaust != NULL )     delete[] Marker_EngineExhaust;
+  if (Marker_Displacement != NULL )       delete[] Marker_Displacement;
+  if (Marker_Load != NULL )               delete[] Marker_Load;
+  if (Marker_Load_Dir != NULL )               delete[] Marker_Load_Dir;
+  if (Marker_Load_Sine != NULL )               delete[] Marker_Load_Sine;
+  if (Marker_FlowLoad != NULL )           delete[] Marker_FlowLoad;
+  if (Marker_Neumann != NULL )            delete[] Marker_Neumann;
+  if (Marker_HeatFlux != NULL )               delete[] Marker_HeatFlux;
 
 }
 

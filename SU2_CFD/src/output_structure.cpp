@@ -3510,19 +3510,19 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
 
 void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
   
+  unsigned short iDim, nDim = geometry->GetnDim();
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  /*--- Local variables and initialization ---*/
-  
-  unsigned short iDim, nDim = geometry->GetnDim();
-  
   /*--- The master node alone owns all data found in this routine. ---*/
+  
   if (rank == MASTER_NODE) {
     
     /*--- Deallocate memory for coordinate data ---*/
+    
     for (iDim = 0; iDim < nDim; iDim++) {
       delete [] Coords[iDim];
     }
@@ -4310,7 +4310,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 case 2: SPRINTF (turb_resid, ", %12.10f, %12.10f", log10(residual_turbulent[0]), log10(residual_turbulent[1])); break;
               }
             }
-            /*---- Averaged stagnation pressure at an exit ---- */
+            /*---- Averaged stagnation pressure at an exit ----*/
             if (output_1d) {
               SPRINTF( oneD_outputs, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", OneD_AvgStagPress, OneD_AvgMach, OneD_AvgTemp, OneD_MassFlowRate, OneD_FluxAvgPress, OneD_FluxAvgDensity, OneD_FluxAvgVelocity, OneD_FluxAvgEntalpy);
             }

@@ -2335,10 +2335,11 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   LevelSet, Target_LevelSet, eps, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru, dp_drv,
   dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3], scale = 1.0;
   su2double RefVel2, RefDensity, Mach2Vel, *Velocity_Inf, factor;
-  su2double Velocity2, Mach, SoundSpeed, Velocity[nDim];
+  su2double Velocity2, Mach, SoundSpeed, *Velocity;
   
   USens = new su2double[nVar];
-  
+  Velocity = new su2double[nDim];
+
   su2double Gas_Constant    = config->GetGas_ConstantND();
   bool compressible      = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible    = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -2812,6 +2813,8 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 #endif
   
   delete [] USens;
+  delete [] Velocity;
+  
 }
 
 void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
@@ -4457,8 +4460,8 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       Riemann=0.0, Entropy=0.0, Density_Outlet = 0.0, Vn_rel=0.0;
   su2double Area, UnitNormal[3];
   su2double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
-  su2double dpterm,Mach_Exit_Normal=0.0;
-  su2double a1=0.0,a2=0.0,a3=0.0,a4=0.0,dPdn=0.0, drhodn=0.0; /*Placeholder terms to simplify expression/ repeated terms*/
+  su2double Mach_Exit_Normal=0.0;
+  su2double a1=0.0, a4=0.0; /*Placeholder terms to simplify expression/ repeated terms*/
   su2double ProjGridVel = 0.0;
   su2double densgrad, pressgrad, velgrad;
   
@@ -5163,7 +5166,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned short iDim, iVar, iMarker, nLineLets;
   ifstream restart_file;
   string filename, AdjExt;
-  su2double dull_val, Area=0.0, *Normal=NULL, myArea_Monitored;
+  su2double dull_val, Area=0.0, *Normal = NULL, myArea_Monitored;
   bool restart = config->GetRestart();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);

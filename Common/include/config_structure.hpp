@@ -14,6 +14,8 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -565,8 +567,7 @@ private:
 	Viscosity_FreeStreamND,    /*!< \brief Farfield viscosity value (external flow). */
 	Tke_FreeStreamND,    /*!< \brief Farfield kinetic energy (external flow). */
   Omega_FreeStreamND, /*!< \brief Specific dissipation (external flow). */
-  Omega_FreeStream, /*!< \brief Specific dissipation (external flow). */
-  pnorm_heat;           /*!< \brief pnorm for heat-flux objective functions. */
+  Omega_FreeStream; /*!< \brief Specific dissipation (external flow). */
 	su2double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
 	MaterialDensity;								/*!< \brief Material density. */

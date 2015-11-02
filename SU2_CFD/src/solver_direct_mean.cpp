@@ -402,7 +402,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   switch(direct_diff){
     case NO_DERIVATIVE:
-      /* --- Default ---*/
+      /*--- Default ---*/
       break;
     case D_DENSITY:
       SU2_TYPE::SetDerivative(Density_Inf, 1.0);
@@ -3044,7 +3044,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   if (freesurface) { SetFreeSurface_Distance(geometry, config); }
 
-  /*--- Set the primitive variables --- */
+  /*--- Set the primitive variables ---*/
 
   ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
 
@@ -6982,7 +6982,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       /*--- Retrieve solution at this boundary node ---*/
       V_domain = node[iPoint]->GetPrimitive();
       
-      /* --- Compute the internal state u_i --- */
+      /*--- Compute the internal state u_i ---*/
       Velocity2_i = 0;
       for (iDim = 0; iDim < nDim; iDim++)
       {
@@ -7028,7 +7028,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           P_Total /= config->GetPressure_Ref();
           T_Total /= config->GetTemperature_Ref();
           
-          /* --- Computes the total state --- */
+          /*--- Computes the total state ---*/
           
           FluidModel->SetTDState_PT(P_Total, T_Total);
           
@@ -7036,7 +7036,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           
           Entropy_e = FluidModel->GetEntropy();
           
-          /* --- Compute the boundary state u_e --- */
+          /*--- Compute the boundary state u_e ---*/
           
           Velocity2_e = Velocity2_i;
           
@@ -7110,11 +7110,11 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           P_static /= config->GetPressure_Ref();
           T_static /= config->GetTemperature_Ref();
           
-          /* --- Computes the total state --- */
+          /*--- Computes the total state ---*/
           
           FluidModel->SetTDState_PT(P_static, T_static);
           
-          /* --- Compute the boundary state u_e --- */
+          /*--- Compute the boundary state u_e ---*/
           
           Velocity2_e = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
@@ -7144,10 +7144,10 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           P_static /= config->GetPressure_Ref();
           Rho_static /= config->GetDensity_Ref();
           
-          /* --- Computes the total state --- */
+          /*--- Computes the total state ---*/
           
           FluidModel->SetTDState_Prho(P_static, Rho_static);
-          /* --- Compute the boundary state u_e --- */
+          /*--- Compute the boundary state u_e ---*/
           
           Velocity2_e = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
@@ -8983,7 +8983,7 @@ void CEulerSolver::BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_contain
 void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                 CConfig *config, unsigned short val_marker) {
 
-  /*--- Call the Euler residual --- */
+  /*--- Call the Euler residual ---*/
 
   BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
 
@@ -11225,7 +11225,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 
   if (freesurface) { SetFreeSurface_Distance(geometry, config); }
 
-  /*--- Set the primitive variables --- */
+  /*--- Set the primitive variables ---*/
 
   ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
 

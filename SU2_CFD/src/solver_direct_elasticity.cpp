@@ -1251,7 +1251,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     }
   }
   
-  /* --- Initialize the stress and the number of elements connected to each node ---*/
+  /*--- Initialize the stress and the number of elements connected to each node ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     node[iPoint]->Initialize_Connectivity();
     for (iDim = 0; iDim < nDim; iDim++){
@@ -1370,19 +1370,19 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   }
   
   
-  /* --- Variable to store the number of elements connected to each node ---*/
+  /*--- Variable to store the number of elements connected to each node ---*/
   
   su2double nElPerNode=0;
   
-  /* --- For the number of nodes in the mesh ---*/
+  /*--- For the number of nodes in the mesh ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
-    /* --- Get the stresses, added up from all the elements that connect to the node ---*/
+    /*--- Get the stresses, added up from all the elements that connect to the node ---*/
     
     Stress     = node[iPoint]->GetStress();
     nElPerNode = node[iPoint]->Get_Connectivity();
     
-    /* --- Compute the stress averaged from all the elements connecting to the node and the Von Mises stress ---*/
+    /*--- Compute the stress averaged from all the elements connecting to the node and the Von Mises stress ---*/
     
     if (geometry->GetnDim() == 2) {
       
