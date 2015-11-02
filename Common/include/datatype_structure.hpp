@@ -38,6 +38,7 @@
 /*--- Depending on the datatype defined during the configuration, include the correct datatype
  * definition. Each file uses a typedef from the specific datatype to su2double and implements
  * the routines defined in the namespace SU2_TYPE below. ---*/
+
 #if defined COMPLEX_TYPE
 #include "datatypes/complex_structure.hpp"
 #define SPRINTF sprintfOver
@@ -59,6 +60,7 @@
 #endif
 
 /*--- This type can be used for (rare) compatiblity cases or for computations that are intended to be (always) passive. ---*/
+
 typedef double passivedouble;
 
 /*!
