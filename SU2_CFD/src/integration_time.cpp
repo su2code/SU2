@@ -853,49 +853,54 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
+  unsigned short FinestMesh = config[iZone]->GetFinestMesh();
+
   /*--- Preprocessing ---*/
   
-  solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], MESH_0, 0, RunTime_EqSystem, false);
+  solver_container[iZone][FinestMesh][SolContainer_Position]->Preprocessing(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], FinestMesh, 0, RunTime_EqSystem, false);
   
   /*--- Set the old solution ---*/
   
-  solver_container[iZone][MESH_0][SolContainer_Position]->Set_OldSolution(geometry[iZone][MESH_0]);
+  solver_container[iZone][FinestMesh][SolContainer_Position]->Set_OldSolution(geometry[iZone][FinestMesh]);
   
   /*--- Time step evaluation ---*/
   
-  solver_container[iZone][MESH_0][SolContainer_Position]->SetTime_Step(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], MESH_0, 0);
+  solver_container[iZone][FinestMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], FinestMesh, 0);
   
   /*--- Space integration ---*/
   
-  Space_Integration(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][SolContainer_Position],
-                    config[iZone], MESH_0, NO_RK_ITER, RunTime_EqSystem);
+  Space_Integration(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], numerics_container[iZone][FinestMesh][SolContainer_Position],
+                    config[iZone], FinestMesh, NO_RK_ITER, RunTime_EqSystem);
   
   /*--- Time integration ---*/
   
-  Time_Integration(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], NO_RK_ITER,
+  Time_Integration(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], NO_RK_ITER,
                    RunTime_EqSystem, Iteration);
   
   /*--- Postprocessing ---*/
   
-  solver_container[iZone][MESH_0][SolContainer_Position]->Postprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], MESH_0);
+  solver_container[iZone][FinestMesh][SolContainer_Position]->Postprocessing(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], FinestMesh);
   
   /*--- Compute adimensional parameters and the convergence monitor ---*/
   
   switch (RunTime_EqSystem) {
-    case RUNTIME_WAVE_SYS:    monitor = log10(solver_container[iZone][MESH_0][WAVE_SOL]->GetRes_RMS(0));    break;
-    case RUNTIME_FEA_SYS:     monitor = log10(solver_container[iZone][MESH_0][FEA_SOL]->GetRes_RMS(0));     break;
-    case RUNTIME_HEAT_SYS:    monitor = log10(solver_container[iZone][MESH_0][HEAT_SOL]->GetRes_RMS(0));    break;
-    case RUNTIME_POISSON_SYS: monitor = log10(solver_container[iZone][MESH_0][POISSON_SOL]->GetRes_RMS(0)); break;
+    case RUNTIME_WAVE_SYS:    monitor = log10(solver_container[iZone][FinestMesh][WAVE_SOL]->GetRes_RMS(0));    break;
+    case RUNTIME_FEA_SYS:     monitor = log10(solver_container[iZone][FinestMesh][FEA_SOL]->GetRes_RMS(0));     break;
+    case RUNTIME_HEAT_SYS:    monitor = log10(solver_container[iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0));    break;
+    case RUNTIME_POISSON_SYS: monitor = log10(solver_container[iZone][FinestMesh][POISSON_SOL]->GetRes_RMS(0)); break;
   }
   
   /*--- Convergence strategy ---*/
   
-  Convergence_Monitoring(geometry[iZone][MESH_0], config[iZone], Iteration, monitor, MESH_0);
+  Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
   
   /*--- If turbulence model, copy the eddy viscosity to the coarse levels ---*/
   
   if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
-    for (iMesh = 0; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
+    for (iMesh = FinestMesh; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
+      if ((config[iZone]->GetMGCycle() == FULLMG_CYCLE) || config[iZone]->GetLowFidelitySim()){
+        SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
+      }
       SetRestricted_EddyVisc(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
     }
   }

@@ -42,6 +42,8 @@
 #include <cstdlib>
 
 #include "../../Common/include/config_structure.hpp"
+#include "../../Common/include/gauss_structure.hpp"
+#include "../../Common/include/element_structure.hpp"
 #include "numerics_machine_learning.hpp"
 #include "numerics_machine_learning_turbulent.hpp"
 #include "variable_structure.hpp"
@@ -2137,11 +2139,11 @@ private:
   su2double *delta_wave, *delta_vel;
   su2double *Lambda, *Epsilon;
   su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel, sq_vel_i, sq_vel_j, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
+  su2double sq_vel_i, sq_vel_j, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
+  RoeProjVelocity, ProjVelocity_i, ProjVelocity_j;
   unsigned short iDim, iVar, jVar, kVar;
-  su2double Rrho, tmp, velRoe[3], uRoe, gamPdivRho, sq_velRoe, cRoe, sL, sR, sM, pStar, invSLmSs, sLmuL, rhoSL, rhouSL[3],
+  su2double Rrho, tmp, velRoe[3], sq_velRoe, sL, sR, sM, pStar, invSLmSs, sLmuL, rhoSL, rhouSL[3],
   eSL, invSRmSs, sRmuR, rhoSR, rhouSR[3], eSR;
   
 public:
@@ -2167,6 +2169,74 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CUpwGeneralHLLC_Flow
+ * \brief Class for solving an approximate Riemann AUSM.
+ * \ingroup ConvDiscr
+ * \author F. Palacios, based on the Joe code implementation
+ * \version 4.0.1 "Cardinal"
+ */
+class CUpwGeneralHLLC_Flow : public CNumerics {
+private:
+  bool implicit;
+  unsigned short iDim, iVar, jVar, kVar;
+  
+  su2double *Diff_U;
+  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
+  su2double *ProjFlux_i, *ProjFlux_j;
+  su2double *delta_wave, *delta_vel;
+  su2double *Lambda, *Epsilon;
+  su2double **P_Tensor, **invP_Tensor;
+  
+  su2double sq_vel_i, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i, ProjVelocity_i, StaticEnthalpy_i, StaticEnergy_i;
+  su2double sq_vel_j, Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, ProjVelocity_j, StaticEnthalpy_j, StaticEnergy_j;
+  
+  su2double sq_velRoe, Proj_ModJac_Tensor_ij, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeSoundSpeed2, RoeProjVelocity;
+  su2double Kappa_i, Kappa_j, Chi_i, Chi_j, RoeKappa, RoeChi, RoeKappaStaticEnthalpy;
+
+  su2double sL, sR, sM, pStar, invSLmSs, sLmuL, rhoSL, rhouSL[3], Rrho, eSL, invSRmSs, sRmuR, rhoSR, rhouSR[3], eSR, kappa;
+
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwGeneralHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+
+   * \brief Destructor of the class.
+   */
+  ~CUpwGeneralHLLC_Flow(void);
+  
+  /*!
+
+   * \brief Compute the Roe's flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
+   /*!
+
+   * \brief Compute the Average quantities for a general fluid flux between two nodes i and j.
+
+   * Using the approach of Vinokur and Montagne'
+
+   */
+  
+  void VinokurMontagne();
+
 };
 
 /*!

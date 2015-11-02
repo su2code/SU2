@@ -827,6 +827,8 @@ inline void CConfig::SetKind_TimeIntScheme(unsigned short val_kind_timeintscheme
 
 inline unsigned short CConfig::GetKind_ObjFunc(void) {return Kind_ObjFunc; }
 
+inline su2double CConfig::GetCoeff_ObjChainRule(unsigned short iVar) {return Obj_ChainRuleCoeff[iVar]; }
+
 inline unsigned short CConfig::GetKind_SensSmooth(void) {return Kind_SensSmooth; }
 
 inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Simulation; }

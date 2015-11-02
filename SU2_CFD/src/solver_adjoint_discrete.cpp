@@ -354,6 +354,15 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
   case EQUIVALENT_AREA:
       ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
       break;
+  case AVG_TOTAL_PRESSURE:
+    ObjFunc_Value = direct_solver->GetOneD_TotalPress();
+    break;
+  case AVG_OUTLET_PRESSURE:
+    ObjFunc_Value = direct_solver->GetOneD_FluxAvgPress();
+    break;
+  case MASS_FLOW_RATE:
+    ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
+    break;
  /*--- Template for new objective functions where TemplateObjFunction()
   *  is the routine that returns the obj. function value. The computation
   * must be done while the tape is active, i.e. between AD::StartRecording() and

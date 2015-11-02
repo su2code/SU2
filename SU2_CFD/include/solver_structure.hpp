@@ -47,6 +47,8 @@
 #include "fluid_model.hpp"
 #include "numerics_structure.hpp"
 #include "variable_structure.hpp"
+#include "../../Common/include/gauss_structure.hpp"
+#include "../../Common/include/element_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/matrix_structure.hpp"
@@ -2195,6 +2197,14 @@ public:
 	 *         (inviscid + viscous contribution).
 	 */
 	virtual su2double GetTotal_Sens_Temp(void);
+
+	/*!
+	 * \author H. Kline
+	 * \brief Set the total back pressure sensitivity coefficient.
+	 * \return Value of the back pressure sensitivity coefficient
+	 *         (inviscid + viscous contribution).
+	 */
+	virtual su2double GetTotal_Sens_BPress(void);
     
 	/*!
 	 * \brief A virtual member.
@@ -5598,12 +5608,14 @@ protected:
 	*Sens_Geo,			/*!< \brief Shape sensitivity coefficient for each boundary. */
 	*Sens_Press,			/*!< \brief Pressure sensitivity coefficient for each boundary. */
 	*Sens_Temp,			/*!< \brief Temperature sensitivity coefficient for each boundary. */
+	*Sens_BPress,     /*!< \brief Back pressure sensitivity coefficient for each boundary. */
 	**CSensitivity;		/*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
 	su2double Total_Sens_Mach;	/*!< \brief Total mach sensitivity coefficient for all the boundaries. */
 	su2double Total_Sens_AoA;		/*!< \brief Total angle of attack sensitivity coefficient for all the boundaries. */
 	su2double Total_Sens_Geo;		/*!< \brief Total shape sensitivity coefficient for all the boundaries. */
 	su2double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
 	su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
+	su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to back pressure. */
 	su2double *iPoint_UndLapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	*jPoint_UndLapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	bool space_centered;  /*!< \brief True if space centered scheeme used. */
@@ -5614,7 +5626,8 @@ protected:
   su2double *FlowPrimVar_i,	/*!< \brief Store the flow solution at point i. */
 	*FlowPrimVar_j;        /*!< \brief Store the flow solution at point j. */
 
-  su2double pnorm;
+  su2double pnorm,
+  Area_Monitored; /*!< \brief Store the total area of the monitored outflow surface (used for normalization in continuous adjoint outflow conditions) */
     
 public:
     
@@ -6034,6 +6047,14 @@ public:
 	 *         (inviscid + viscous contribution).
 	 */
 	su2double GetTotal_Sens_Temp(void);
+
+	/*!
+	 * \author H. Kline
+	 * \brief Set the total Back pressure number sensitivity coefficient.
+	 * \return Value of the Back sensitivity coefficient
+	 *         (inviscid + viscous contribution).
+	 */
+	su2double GetTotal_Sens_BPress(void);
   
 	/*!
 	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
@@ -8537,12 +8558,14 @@ protected:
 	*Sens_Geo,			/*!< \brief Shape sensitivity coefficient for each boundary. */
 	*Sens_Press,			/*!< \brief Pressure sensitivity coefficient for each boundary. */
 	*Sens_Temp,			/*!< \brief Temperature sensitivity coefficient for each boundary. */
+	*Sens_BPress,      /*!< \brief Back Pressure sensitivity coefficient for each boundary. */
 	**CSensitivity;		/*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
 	su2double Total_Sens_Mach;	/*!< \brief Total mach sensitivity coefficient for all the boundaries. */
 	su2double Total_Sens_AoA;		/*!< \brief Total angle of attack sensitivity coefficient for all the boundaries. */
 	su2double Total_Sens_Geo;		/*!< \brief Total shape sensitivity coefficient for all the boundaries. */
 	su2double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
 	su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
+	su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to back pressure. */
 	su2double *iPoint_UndLapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	*jPoint_UndLapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	bool space_centered;  /*!< \brief True if space centered scheeme used. */
@@ -8793,6 +8816,14 @@ public:
 	 *         (inviscid + viscous contribution).
 	 */
 	su2double GetTotal_Sens_Temp(void);
+
+  /*!
+   * \author H. Kline
+   * \brief Set the total Back pressure sensitivity coefficient.
+   * \return Value of the Back sensitivity coefficient
+   *         (inviscid + viscous contribution).
+   */
+  su2double GetTotal_Sens_BPress(void);
   
   /*!
 	 * \brief Set the initial condition for the Euler Equations.
@@ -8922,6 +8953,7 @@ private:
   su2double Total_Sens_Geo;		/*!< \brief Total shape sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
   su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
+  su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to outlet pressure. */
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
   su2double Mach, Alpha, Beta, Pressure, Temperature;
   unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
@@ -9045,6 +9077,14 @@ public:
    *         (inviscid + viscous contribution).
    */
   su2double GetTotal_Sens_Temp(void);
+
+  /*!
+   * \author H. Kline
+   * \brief Set the total Back pressure number sensitivity coefficient.
+   * \return Value of the Back sensitivity coefficient
+   *         (inviscid + viscous contribution).
+   */
+  su2double GetTotal_Sens_BPress(void);
 
   /*!
    * \brief Get the shape sensitivity coefficient.

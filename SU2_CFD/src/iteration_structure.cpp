@@ -1506,6 +1506,13 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
 
   /*--- Register flow variables and objective function as output ---*/
 
+  /*--- For flux-avg or area-avg objective functions the 1D values must be calculated first ---*/
+  if (config_container[val_iZone]->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE ||
+      config_container[val_iZone]->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
+      config_container[val_iZone]->GetKind_ObjFunc()==MASS_FLOW_RATE)
+    output->OneDimensionalOutput(solver_container[val_iZone][MESH_0][FLOW_SOL],
+        geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
+
   RegisterOutput(solver_container, geometry_container, config_container, val_iZone);
 
   /*--- Stop the recording ---*/
@@ -1564,11 +1571,11 @@ void CDiscAdjMeanFlowIteration::RegisterOutput(CSolver ****solver_container, CGe
 
   solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],config_container[iZone]);
 
-      if (turbulent){
-    solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],
-                                                                     config_container[iZone]);
-    }
+    if (turbulent){
+  solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],
+                                                                   config_container[iZone]);
   }
+}
   
 void CDiscAdjMeanFlowIteration::InitializeAdjoint(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
   
