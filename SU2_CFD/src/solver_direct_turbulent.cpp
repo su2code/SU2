@@ -1016,7 +1016,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   
   /*--- Single grid simulation ---*/
   
-  if (iMesh == MESH_0) {
+  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
     
     /*--- Define some auxiliar vector related with the residual ---*/
     

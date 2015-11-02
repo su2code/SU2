@@ -349,6 +349,10 @@ int main(int argc, char *argv[]) {
           case AVG_TOTAL_PRESSURE :
             if (iDV == 0) Gradient_file << "Average total presure grad. using disc. adj."<< endl;
             cout << "Average total pressure gradient: "<< Gradient << "." << endl; break;
+          case OUTLET_CHAIN_RULE :
+            if (iDV == 0) Gradient_file << "Chain rule grad. using cont. adj."<< endl;
+            cout << "Gradient by chain rule: "<< Gradient << "." << endl; break;
+
 
         }
 
@@ -638,6 +642,9 @@ int main(int argc, char *argv[]) {
           case AVG_TOTAL_PRESSURE :
             if (iDV == 0) Gradient_file << "Average total presure grad. using cont. adj."<< endl;
             cout << "Average total pressure gradient: "<< Gradient << "." << endl; break;
+          case OUTLET_CHAIN_RULE :
+             if (iDV == 0) Gradient_file << "Chain rule grad. using cont. adj."<< endl;
+             cout << "Gradient by chain rule: "<< Gradient << "." << endl; break;
 
         }
 
