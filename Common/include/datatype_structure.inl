@@ -76,7 +76,7 @@ namespace AD{
      defined CODI_FORWARD_TYPE
 
 /*--- This objective is used for primitive types,
- * where the output type of the getValue coincides with the input type. ---*/
+ where the output type of the getValue coincides with the input type. ---*/
 
 template< typename IN > struct Impl_getValue {
   typedef IN OUT;
@@ -86,7 +86,7 @@ template< typename IN > struct Impl_getValue {
 };
 
 /*--- This objective is used for non-primitive types,
- * where the output type is double and the input type is su2double. ---*/
+ where the output type is double and the input type is su2double. ---*/
 
 template<> struct Impl_getValue<su2double> {
   typedef double OUT;
@@ -96,13 +96,13 @@ template<> struct Impl_getValue<su2double> {
 };
 
 /*--- Other objects are implemented in the corresponding header files of the datatypes.
- *  For example there may be an expression in the argument. ---*/
+ For example there may be an expression in the argument. ---*/
 
 
 /*--- Terminating definition of sprintfOver ---*/
 
 inline void sprintfOver(char * str, const char * format) {
-  sprintf(str, format);
+  sprintf(str, "%s", format);
 }
 
 
