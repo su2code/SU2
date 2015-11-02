@@ -123,7 +123,7 @@ void CConfig::SetPointersNull(void) {
   Marker_FlowLoad=NULL;       Marker_Neumann=NULL;
   Marker_All_TagBound=NULL;        Marker_CfgFile_TagBound=NULL;       Marker_All_KindBC=NULL;
   Marker_CfgFile_KindBC=NULL;    Marker_All_SendRecv=NULL; Marker_All_PerBound=NULL;
-  Marker_FSIinterface=NULL;
+  Marker_FSIinterface=NULL;	Marker_Riemann=NULL;
 
   /*--- Boundary Condition settings ---*/
 
@@ -1563,7 +1563,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   
-  
+  /*--- Check for Fluid model consistency ---*/
+
+  if (standard_air){
+	if (Gamma != 1.4 || Gas_Constant != 287.058){
+		Gamma = 1.4;
+		Gas_Constant = 287.058;
+        }
+  }
   /*--- Check for Measurement System ---*/
   
   if (SystemMeasurements == US && !standard_air) {
@@ -1571,30 +1578,30 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     exit(EXIT_FAILURE);
   }
   
-  /*--- Check for Convective scheme available for NICF ---*/
+  /*--- Check for Convective scheme available for NICFD ---*/
   
   if (!ideal_gas) {
     if (Kind_ConvNumScheme_Flow != SPACE_UPWIND) {
-      cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
+      cout << "Only ROE Upwind and HLLC Upwind scheme can be used for Non-Ideal Compressible Fluids" << endl;
       exit(EXIT_FAILURE);
     }
     else {
-      if (Kind_Upwind_Flow != ROE) {
-        cout << "Only ROE Upwind scheme can be used for Not Ideal Compressible Fluids" << endl;
+      if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC) {
+        cout << "Only ROE Upwind and HLLC Upwind scheme can be used for Non-Ideal Compressible Fluids" << endl;
         exit(EXIT_FAILURE);
       }
     }
   }
   
-  /*--- Check for Boundary condition available for NICF ---*/
+  /*--- Check for Boundary condition available for NICFD ---*/
   
   if (!ideal_gas) {
     if (nMarker_Inlet != 0) {
-      cout << "Riemann Boundary conditions must be used for inlet and outlet with Not Ideal Compressible Fluids " << endl;
+      cout << "Riemann Boundary conditions must be used for inlet and outlet with Non-ideal Compressible Fluids " << endl;
       exit(EXIT_FAILURE);
     }
     if (nMarker_Outlet != 0) {
-      cout << "Riemann Boundary conditions must be used outlet with Not Ideal Compressible Fluids " << endl;
+      cout << "Riemann Boundary conditions must be used outlet with Non-Ideal Compressible Fluids " << endl;
       exit(EXIT_FAILURE);
     }
     
