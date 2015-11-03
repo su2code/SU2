@@ -2917,7 +2917,7 @@ public:
     this->marker_turboIn = new string[nVals];
     this->marker_turboOut = new string[nVals];
     this->field = new unsigned short[nVals];
-    for (int i = 0; i < nVals; i++)
+    for (unsigned long i = 0; i < nVals; i++)
     	if (this->m.find(option_value[mod_num*i + 2]) == m.end()) {
     		string str;
     		str.append(this->name);
@@ -2926,7 +2926,7 @@ public:
     		str.append(". Check current SU2 options in config_template.cfg.");
     		return str;
     	}
-    for (int i = 0; i < nVals; i++) {
+    for (unsigned long i = 0; i < nVals; i++) {
       this->marker_turboIn[i].assign(option_value[mod_num*i]);
       this->marker_turboOut[i].assign(option_value[mod_num*i+1]);
       Tenum val = this->m[option_value[mod_num*i + 2]];
