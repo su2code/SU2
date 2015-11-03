@@ -87,7 +87,7 @@ void CVolumetricMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config) {
   /*--- After moving all nodes, update the dual mesh. Recompute the edges and
    dual mesh control volumes in the domain and on the boundaries. ---*/
   
-	geometry->SetCG();
+	geometry->SetCoord_CG();
 	geometry->SetControlVolume(config, UPDATE);
 	geometry->SetBoundControlVolume(config, UPDATE);
   
@@ -198,7 +198,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
       precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
 
     } else if (Derivative && (config->GetKind_SU2() == SU2_DOT)) {
-      /* --- Build the ILU preconditioner for the transposed system --- */
+      /*--- Build the ILU preconditioner for the transposed system ---*/
 
       StiffMatrix.BuildILUPreconditioner(true);
       mat_vec = new CSysMatrixVectorProductTransposed(StiffMatrix, geometry, config);
@@ -3123,7 +3123,7 @@ void CSurfaceMovement::SetSurface_Derivative(CGeometry *geometry, CConfig *confi
 
     DV_Value = config->GetDV_Value(iDV);
 
-    /* --- If value of the design variable is not 0.0 we apply the differentation.
+    /*--- If value of the design variable is not 0.0 we apply the differentation.
      *     Note if multiple variables are non-zero, we end up with the sum of all the derivatives. ---*/
 
     if (DV_Value != 0.0){
@@ -3136,7 +3136,7 @@ void CSurfaceMovement::SetSurface_Derivative(CGeometry *geometry, CConfig *confi
     }
   }
 
-  /* --- Run the surface deformation with DV_Value = 0.0 (no deformation at all) ---*/
+  /*--- Run the surface deformation with DV_Value = 0.0 (no deformation at all) ---*/
 
   SetSurface_Deformation(geometry, config);
 }
@@ -5361,7 +5361,7 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, u
     Omega  = (config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref());
     psi = Omega*(dt*ExtIter);
     
-    /* --- Correct for the airfoil starting position (This is hardcoded in here) --- */
+    /*--- Correct for the airfoil starting position (This is hardcoded in here) ---*/
     if (Monitoring_Tag == "Airfoil1") {
       psi = psi + 0.0;
     }

@@ -319,21 +319,6 @@ def main():
     test_list.append(contadj_incomp_cylinder)
 
     ######################################
-    ### Thermochemical Nonequilibrium  ###
-    ######################################
-
-    # RAM-C II Sphere-Cone -- 61km Altitude
-    ramc           = TestCase('ramc')
-    ramc.cfg_dir   = "tne2/ramc"
-    ramc.cfg_file  = "ramc61km.cfg"
-    ramc.test_iter = 25
-    ramc.test_vals = [-4.643029, 2.849441, -4.443852, 0.000313] #last 4 columns
-    ramc.su2_exec  = "parallel_computation.py -f"
-    ramc.timeout   = 1600
-    ramc.tol       = 0.00001
-    test_list.append(ramc)
-
-    ######################################
     ### Moving Wall                    ###
     ######################################
 

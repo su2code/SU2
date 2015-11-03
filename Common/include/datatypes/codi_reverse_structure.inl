@@ -4,7 +4,7 @@
  * \author T. Albring
  * \version 4.0.1 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -93,7 +93,7 @@ namespace AD{
   }
 }
 
-/* --- Object for the definition of getValue used in the printfOver definition.
+/*--- Object for the definition of getValue used in the printfOver definition.
  * Necessary for cases where the argument of sprintfOver is an expression, e.g:
  * SPRINTF("Residual: %d", log10(Residual)) ---*/
 

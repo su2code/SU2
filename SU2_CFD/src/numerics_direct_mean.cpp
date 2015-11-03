@@ -13,6 +13,8 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -2326,7 +2328,7 @@ void CUpwGeneralRoe_Flow::ComputeRoeAverage() {
 CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   /*--- Set booleans from CConfig settings ---*/
-	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
   /*--- Allocate arrays ---*/
 	Diff_U   = new su2double [nVar];
@@ -2469,7 +2471,7 @@ void CUpwMSW_Flow::ComputeResidual(su2double *val_residual,
     Velst_j[iDim] = Vst_j[iDim+1];
   }
   
-  /*--- Flow eigenvalues at i (Lambda+) --- */
+  /*--- Flow eigenvalues at i (Lambda+) ---*/
   
   for (iDim = 0; iDim < nDim; iDim++) {
   Lambda_i[iDim]      = 0.5*(ProjVelst_i + fabs(ProjVelst_i));

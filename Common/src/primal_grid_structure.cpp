@@ -51,7 +51,7 @@ CPrimalGrid::~CPrimalGrid() {
    
 }
 
-void CPrimalGrid::SetCG(su2double **val_coord) {
+void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
 	unsigned short iDim, iNode, NodeFace, iFace;
 	
 	for (iDim = 0; iDim < nDim; iDim++) {

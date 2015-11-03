@@ -100,8 +100,6 @@ inline void CNumerics::ComputeChemistry(su2double *val_residual, su2double **val
 
 inline void CNumerics::GetKeqConstants(su2double *A, unsigned short val_reaction, CConfig *config) { }
 
-inline void CNumerics::ComputeSourceViscous(su2double *val_residual, CConfig *config) { }
-
 inline su2double CNumerics::GetPrecond_Beta() { return 0; }
 
 inline void CNumerics::SetRhosIndex(unsigned short val_Index) { RHOS_INDEX = val_Index; }
@@ -241,11 +239,6 @@ inline void CNumerics::SetDistance(su2double val_dist_i, su2double val_dist_j) {
 inline void CNumerics::SetAdjointVar(su2double *val_psi_i, su2double *val_psi_j) {
 	Psi_i = val_psi_i;
 	Psi_j = val_psi_j;
-}
-
-inline void CNumerics::SetLinearizedVar(su2double *val_deltau_i, su2double *val_deltau_j) {
-	DeltaU_i = val_deltau_i;
-	DeltaU_j = val_deltau_j;
 }
 
 inline void CNumerics::SetAdjointVarGradient(su2double **val_psivar_grad_i, su2double **val_psivar_grad_j) {
@@ -456,20 +449,6 @@ inline su2double CSourcePieceWise_TurbSA_Neg::GetProduction(void) { return Produ
 inline su2double CSourcePieceWise_TurbSA_Neg::GetDestruction(void) { return Destruction; }
 
 inline su2double CSourcePieceWise_TurbSA_Neg::GetCrossProduction(void) { return CrossProduction; }
-
-inline void CSourcePieceWise_TurbML::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
-
-inline void CSourcePieceWise_TurbML::SetProduction(su2double val_production) { Production = val_production; }
-
-inline void CSourcePieceWise_TurbML::SetDestruction(su2double val_destruction) { Destruction = val_destruction; }
-
-inline void CSourcePieceWise_TurbML::SetCrossProduction(su2double val_crossproduction) { CrossProduction = val_crossproduction; }
-
-inline su2double CSourcePieceWise_TurbML::GetProduction(void) { return Production; }
-
-inline su2double CSourcePieceWise_TurbML::GetDestruction(void) { return Destruction; }
-
-inline su2double CSourcePieceWise_TurbML::GetCrossProduction(void) { return CrossProduction; }
 
 inline su2double CUpwTurkel_Flow::GetPrecond_Beta() { return Beta; }
 

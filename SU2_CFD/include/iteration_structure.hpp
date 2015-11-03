@@ -14,6 +14,8 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -273,99 +275,6 @@ public:
   void SetTurboPerformance(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, COutput *output, unsigned short iZone);
 
 
-};
-
-/*!
- * \class CTNE2Iteration
- * \brief Class for driving an iteration of the TNE2 system.
- * \author T. Economon
- * \version 4.0.1 "Cardinal"
- */
-class CTNE2Iteration : public CIteration {
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CTNE2Iteration(CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CTNE2Iteration(void);
-  
-  /*!
-   * \brief Preprocessing to prepare for an iteration of the physics.
-   * \param[in] ??? - Description here.
-   */
-  void Preprocess(COutput *output,
-                  CIntegration ***integration_container,
-                  CGeometry ***geometry_container,
-                  CSolver ****solver_container,
-                  CNumerics *****numerics_container,
-                  CConfig **config_container,
-                  CSurfaceMovement **surface_movement,
-                  CVolumetricMovement **grid_movement,
-                  CFreeFormDefBox*** FFDBox,
-                  unsigned short val_iZone);
-  
-  /*!
-   * \brief Perform a single iteration of the TNE2 system.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   */
-  void Iterate(COutput *output,
-               CIntegration ***integration_container,
-               CGeometry ***geometry_container,
-               CSolver ****solver_container,
-               CNumerics *****numerics_container,
-               CConfig **config_container,
-               CSurfaceMovement **surface_movement,
-               CVolumetricMovement **grid_movement,
-               CFreeFormDefBox*** FFDBox,
-               unsigned short val_iZone);
-  
-  /*!
-   * \brief Updates the containers for the TNE2 system.
-   * \param[in] ??? - Description here.
-   */
-  void Update(COutput *output,
-              CIntegration ***integration_container,
-              CGeometry ***geometry_container,
-              CSolver ****solver_container,
-              CNumerics *****numerics_container,
-              CConfig **config_container,
-              CSurfaceMovement **surface_movement,
-              CVolumetricMovement **grid_movement,
-              CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone);
-  
-  /*!
-   * \brief Monitors the convergence and other metrics for the TNE2 system.
-   * \param[in] ??? - Description here.
-   */
-  void Monitor();
-  
-  /*!
-   * \brief Outputs desired files and quantities for the TNE2 system.
-   * \param[in] ??? - Description here.
-   */
-  void Output();
-  
-  /*!
-   * \brief Postprocesses the TNE2 system before heading to another physics system or the next iteration.
-   * \param[in] ??? - Description here.
-   */
-  void Postprocess();
-  
 };
 
 /*!
@@ -834,99 +743,6 @@ public:
 };
 
 /*!
- * \class CAdjTNE2Iteration
- * \brief Class for driving an iteration of the adjoint TNE2 system.
- * \author T. Economon
- * \version 4.0.1 "Cardinal"
- */
-class CAdjTNE2Iteration : public CIteration {
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAdjTNE2Iteration(CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAdjTNE2Iteration(void);
-  
-  /*!
-   * \brief Preprocessing to prepare for an iteration of the physics.
-   * \param[in] ??? - Description here.
-   */
-  void Preprocess(COutput *output,
-                  CIntegration ***integration_container,
-                  CGeometry ***geometry_container,
-                  CSolver ****solver_container,
-                  CNumerics *****numerics_container,
-                  CConfig **config_container,
-                  CSurfaceMovement **surface_movement,
-                  CVolumetricMovement **grid_movement,
-                  CFreeFormDefBox*** FFDBox,
-                  unsigned short val_iZone);
-  
-  /*!
-   * \brief Perform a single iteration of the adjoint TNE2 system.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   */
-  void Iterate(COutput *output,
-               CIntegration ***integration_container,
-               CGeometry ***geometry_container,
-               CSolver ****solver_container,
-               CNumerics *****numerics_container,
-               CConfig **config_container,
-               CSurfaceMovement **surface_movement,
-               CVolumetricMovement **grid_movement,
-               CFreeFormDefBox*** FFDBox,
-               unsigned short val_iZone);
-  
-  /*!
-   * \brief Updates the containers for the adjoint TNE2 system.
-   * \param[in] ??? - Description here.
-   */
-  void Update(COutput *output,
-              CIntegration ***integration_container,
-              CGeometry ***geometry_container,
-              CSolver ****solver_container,
-              CNumerics *****numerics_container,
-              CConfig **config_container,
-              CSurfaceMovement **surface_movement,
-              CVolumetricMovement **grid_movement,
-              CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone);
-  
-  /*!
-   * \brief Monitors the convergence and other metrics for the adjoint TNE2 system.
-   * \param[in] ??? - Description here.
-   */
-  void Monitor();
-  
-  /*!
-   * \brief Outputs desired files and quantities for the adjoint TNE2 system.
-   * \param[in] ??? - Description here.
-   */
-  void Output();
-  
-  /*!
-   * \brief Postprocesses the adjoint TNE2 system before heading to another physics system or the next iteration.
-   * \param[in] ??? - Description here.
-   */
-  void Postprocess();
-  
-};
-
-/*!
  * \class CDiscAdjMeanFlowIteration
  * \brief Class for driving an iteration of the discrete adjoint mean flow system.
  * \author T. Economon
@@ -1091,21 +907,6 @@ public:
                       unsigned short kind_recording);
 };
 
-/*!
- * \brief Perform a single iteration of the mean flow system.
- * \param[in] output - Pointer to the COutput class.
- * \param[in] integration_container - Container vector with all the integration methods.
- * \param[in] geometry_container - Geometrical definition of the problem.
- * \param[in] solver_container - Container vector with all the solutions.
- * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
- * \param[in] config_container - Definition of the particular problem.
- * \param[in] surface_movement - Surface movement classes of the problem.
- * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] FFDBox - FFD FFDBoxes of the problem.
- */
-void MeanFlowIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
-             CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-             CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*!
  * \brief Iteration function for Fluid-Structure Interaction applications.
@@ -1143,26 +944,3 @@ void FluidStructureIteration(COutput *output, CIntegration ***integration_contai
 void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_movement, 
                       CVolumetricMovement *grid_movement, CFreeFormDefBox **FFDBox,
                       CSolver ***solver_container, CConfig *config_container, unsigned short iZone, unsigned long IntIter, unsigned long ExtIter);
-
-/*!
- * \brief Computation and storage of the average value at the mixing plane interfaces.
- * \author S. Vitale
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] CSolver - Definition of the particular problem.
- * \param[in] config - Definition of the particular problem.
- * \param[in] nZone - Total number of zones (periodic instances).
- * \param[in] iZone - Total number of zones (periodic instances).
- */
-void SetMixingPlane(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, unsigned short nZone, unsigned short iZone);
-
-/*!
- * \brief Computation and storage of the average value at the mixing plane interfaces.
- * \author S. Vitale
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] CSolver - Definition of the particular problem.
- * \param[in] config - Definition of the particular problem.
- * \param[in] nZone - Total number of zones (periodic instances).
- * \param[in] iZone - Total number of zones (periodic instances).
- */
-void SetTurboPerformance(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, COutput *output, unsigned short iZone);
-
