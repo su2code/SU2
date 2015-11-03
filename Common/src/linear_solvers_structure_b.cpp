@@ -13,6 +13,8 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -31,9 +33,10 @@
 #include "../include/linear_solvers_structure.hpp"
 #include "../include/vector_structure.hpp"
 #include "../include/matrix_structure.hpp"
+
 #ifdef CODI_REVERSE_TYPE
 void CSysSolve_b::Solve_b(AD::CheckpointHandler* data){
-  /* --- Extract data from the checkpoint handler --- */
+  /*--- Extract data from the checkpoint handler ---*/
 
   int *LinSysRes_Indices;
   int *LinSysSol_Indices;
@@ -64,7 +67,7 @@ void CSysSolve_b::Solve_b(AD::CheckpointHandler* data){
   unsigned long MaxIter = config->GetLinear_Solver_Iter();
   su2double SolverTol = config->GetLinear_Solver_Error();
 
-  /* --- Initialize the right-hand side with the gradient of the solution of the primal linear system --- */
+  /*--- Initialize the right-hand side with the gradient of the solution of the primal linear system ---*/
 
   for (i = 0; i < size; i ++){
     int& index = LinSysSol_Indices[i];
@@ -72,7 +75,7 @@ void CSysSolve_b::Solve_b(AD::CheckpointHandler* data){
     LinSysSol_b[i] = 0.0;
     AD::globalTape.gradient(index) = 0.0;
   }
-  /* --- Set up preconditioner and matrix-vector product --- */
+  /*--- Set up preconditioner and matrix-vector product ---*/
 
   CPreconditioner* precond  = NULL;
 
@@ -89,7 +92,7 @@ void CSysSolve_b::Solve_b(AD::CheckpointHandler* data){
 
   CSysSolve *solver = new CSysSolve;
 
-  /* --- Solve the system --- */
+  /*--- Solve the system ---*/
 
   switch(config->GetKind_DiscAdj_Linear_Solver()){
     case FGMRES:
@@ -101,7 +104,7 @@ void CSysSolve_b::Solve_b(AD::CheckpointHandler* data){
   }
 
 
-  /* --- Update the gradients of the right-hand side of the primal linear system --- */
+  /*--- Update the gradients of the right-hand side of the primal linear system ---*/
 
   for (i = 0; i < size; i ++){
     int& index = LinSysRes_Indices[i];

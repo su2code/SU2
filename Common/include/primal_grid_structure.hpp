@@ -101,7 +101,7 @@ public:
 	 * \brief Set the center of gravity of an element (including edges).
 	 * \param[in] val_coord - Coordinates of the element.
 	 */
-	void SetCG(su2double **val_coord);
+	void SetCoord_CG(su2double **val_coord);
 	
 	/*!
 	 * \brief Get the center of gravity of an element (including edges).

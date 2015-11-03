@@ -122,7 +122,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	} else {
     
     cout << "Heat restart file not currently configured!!" << endl;
-    exit(EXIT_FAILURE);
     
 		string mesh_filename = config->GetSolution_FlowFileName();
 		ifstream restart_file;
@@ -145,6 +144,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 			node[iPoint] = new CHeatVariable(Solution, nDim, nVar, config);
 		}
 		restart_file.close();
+    
 	}
   
 }

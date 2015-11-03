@@ -29,7 +29,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../include/element_structure.hpp"
 
 unsigned short CElement::nDim = 0;
