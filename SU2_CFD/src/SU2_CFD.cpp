@@ -277,6 +277,13 @@ int main(int argc, char *argv[]) {
   if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
     ExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
   
+
+  /*--- Initiate value at each interface for the mixing plane ---*/
+  if(config_container[ZONE_0]->GetBoolMixingPlane())
+  	for (iZone = 0; iZone < nZone; iZone++)
+  	  iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+
+
   /*--- Main external loop of the solver. Within this loop, each iteration ---*/
   
   if (rank == MASTER_NODE)
@@ -313,8 +320,7 @@ int main(int argc, char *argv[]) {
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
     
     /*--- Set the value of the external iteration. ---*/
-    
-    config_container[ZONE_0]->SetExtIter(ExtIter);
+	for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetExtIter(ExtIter);
     
     /*--- Read the target pressure ---*/
     

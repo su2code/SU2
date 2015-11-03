@@ -667,7 +667,8 @@ enum BC_TYPE {
   CLAMPED_BOUNDARY = 34,		/*!< \brief Clamped Boundary definition. */
   LOAD_DIR_BOUNDARY = 35,		/*!< \brief Boundary Load definition. */
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
-  SEND_RECEIVE = 99		/*!< \brief Boundary send-receive definition. */
+  NRBC_BOUNDARY= 37,   /*!< \brief NRBC Boundary definition. */
+  SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 
 
@@ -699,7 +700,7 @@ static const map<string, ENUM_AITKEN> AitkenForm_Map = CCreateMap<string, ENUM_A
 
 
 /*!
- * \brief types inlet boundary treatments
+ * \brief types Riemann boundary treatments
  */
 enum RIEMANN_TYPE {
   TOTAL_CONDITIONS_PT = 1,		/*!< \brief User specifies total pressure, total temperature, and flow direction. */
@@ -707,7 +708,9 @@ enum RIEMANN_TYPE {
   STATIC_PRESSURE = 3,           /*!< \brief User specifies static pressure. */
   TOTAL_SUPERSONIC_INFLOW = 4,	/*!< \brief User specifies total pressure, total temperature and Velocity components. */
   STATIC_SUPERSONIC_INFLOW_PT = 5, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
-  STATIC_SUPERSONIC_INFLOW_PD = 6 /*!< \brief User specifies static pressure, static temperature, and Mach components. */
+  STATIC_SUPERSONIC_INFLOW_PD = 6, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
+  MIXING_IN = 7, /*!< \brief User does not specify anything information are retrieved from the other domain */
+  MIXING_OUT = 8 /*!< \brief User does not specify anything information are retrieved from the other domain */
 };
 
 static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>
@@ -716,7 +719,49 @@ static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_
 ("STATIC_PRESSURE", STATIC_PRESSURE)
 ("TOTAL_SUPERSONIC_INFLOW", TOTAL_SUPERSONIC_INFLOW)
 ("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
-("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD);
+("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD)
+("MIXING_IN", MIXING_IN)
+("MIXING_OUT", MIXING_OUT);
+
+
+static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYPE>
+("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
+("DENSITY_VELOCITY", DENSITY_VELOCITY)
+("STATIC_PRESSURE", STATIC_PRESSURE)
+("TOTAL_SUPERSONIC_INFLOW", TOTAL_SUPERSONIC_INFLOW)
+("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
+("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD)
+("MIXING_IN", MIXING_IN)
+("MIXING_OUT", MIXING_OUT);
+
+
+/*!
+ * \brief types of mixing process for averaging quantities at the boundaries.
+ */
+enum MIXINGPROCESS_TYPE {
+  ALGEBRAIC_AVERAGE = 1,		/*!< \brief an algebraic average is computed at the boundary of interest. */
+  AREA_AVERAGE = 2,           /*!< \brief an area average is computed at the boundary of interest. */
+  MIXEDOUT_AVERAGE = 3		 /*!< \brief an mixed-out average is computed at the boundary of interest. */
+};
+
+static const map<string, MIXINGPROCESS_TYPE> MixingProcess_Map = CCreateMap<string, MIXINGPROCESS_TYPE>
+("ALGEBRAIC_AVERAGE", ALGEBRAIC_AVERAGE)
+("AREA_AVERAGE", AREA_AVERAGE)
+("MIXEDOUT_AVERAGE",  MIXEDOUT_AVERAGE);
+
+/*!
+ * \brief types of Turbomachinery performance indicators.
+ */
+enum TURBO_PERFORMANCE_TYPE {
+  BLADE   = 1,		/*!< \brief Turbomachinery blade performances. */
+  STAGE = 2,      /*!< \brief Turbomachinery blade stage performances. */
+  TURBINE              = 3		/*!< \brief Turbomachinery turbine performances. */
+};
+
+static const map<string, TURBO_PERFORMANCE_TYPE> TurboPerformance_Map = CCreateMap<string, TURBO_PERFORMANCE_TYPE>
+("BLADE", BLADE)
+("STAGE", STAGE)
+("TURBINE", TURBINE);
 
 /*!
  * \brief types inlet boundary treatments
@@ -728,6 +773,7 @@ enum INLET_TYPE {
 static const map<string, INLET_TYPE> Inlet_Map = CCreateMap<string, INLET_TYPE>
 ("TOTAL_CONDITIONS", TOTAL_CONDITIONS)
 ("MASS_FLOW", MASS_FLOW);
+
 
 /*!
  * \brief types of geometric entities based on VTK nomenclature
@@ -2237,6 +2283,7 @@ public:
 template <class Tenum>
 class COptionRiemann : public COptionBase{
 
+protected:
   map<string, Tenum> m;
   string name; // identifier for the option
   unsigned short & size;
@@ -2339,6 +2386,127 @@ public:
     this->size = 0; // There is no default value for list
   }
 };
+
+template <class Tenum>
+class COptionNRBC : public COptionRiemann<Tenum> {
+
+public:
+	  COptionNRBC(string option_field_name, unsigned short & nMarker_NRBC, string* & Marker_NRBC, unsigned short* & option_field,
+			  	  const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir): COptionRiemann<Tenum>(option_field_name, nMarker_NRBC,  Marker_NRBC, option_field,
+			  	   m, var1, var2,FlowDir){}
+	  ~COptionNRBC() {};
+
+};
+//template <class Tenum>
+//class COptionNRBC : public COptionBase{
+//
+//  map<string, Tenum> m;
+//  unsigned short* & field; // Reference to the fieldname
+//  string name; // identifier for the option
+//  unsigned short & size;
+//  string * & marker;
+//  su2double * & var1;
+//  su2double * & var2;
+//  su2double ** & flowdir;
+//
+//public:
+//  COptionNRBC(string option_field_name, unsigned short & nMarker_NRBC, string* & Marker_NRBC, unsigned short* & option_field, const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir) : size(nMarker_NRBC),
+//  	  	  	  	  marker(Marker_NRBC), field(option_field), var1(var1), var2(var2), flowdir(FlowDir) {
+//    this->name = option_field_name;
+//    this->m = m;
+//  }
+//  ~COptionNRBC() {};
+//
+//  string SetValue(vector<string> option_value) {
+//
+//    unsigned long totalVals = option_value.size();
+//    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
+//      this->size = 0;
+//      this->marker = NULL;
+//      this->field = 0;
+//      this->var1 = NULL;
+//      this->var2 = NULL;
+//      this->flowdir = NULL;
+//      return "";
+//    }
+//
+//    if (totalVals % 7 != 0) {
+//      string newstring;
+//      newstring.append(this->name);
+//      newstring.append(": must have a number of entries divisible by 7");
+//      this->size = 0;
+//      this->marker = NULL;
+//      this->var1 = NULL;
+//      this->var2 = NULL;
+//      this->flowdir = NULL;
+//      this->field = NULL;
+//      return newstring;
+//    }
+//
+//    unsigned long nVals = totalVals / 7;
+//    this->size = nVals;
+//    this->marker = new string[nVals];
+//    this->var1 = new su2double[nVals];
+//    this->var2 = new su2double[nVals];
+//    this->flowdir = new su2double*[nVals];
+//    this->field = new unsigned short[nVals];
+//
+//    for (int i = 0; i < nVals; i++) {
+//      this->flowdir[i] = new su2double[3];
+//    }
+//
+//    for (int i = 0; i < nVals; i++) {
+//      this->marker[i].assign(option_value[7*i]);
+//        // Check to see if the enum value is in the map
+//    if (this->m.find(option_value[7*i + 1]) == m.end()) {
+//      string str;
+//      str.append(this->name);
+//      str.append(": invalid option value ");
+//      str.append(option_value[0]);
+//      str.append(". Check current SU2 options in config_template.cfg.");
+//      return str;
+//    }
+//      Tenum val = this->m[option_value[7*i + 1]];
+//      this->field[i] = val;
+//
+//      istringstream ss_1st(option_value[7*i + 2]);
+//      if (!(ss_1st >> this->var1[i])) {
+//        return badValue(option_value, "NRBC", this->name);
+//      }
+//      istringstream ss_2nd(option_value[7*i + 3]);
+//      if (!(ss_2nd >> this->var2[i])) {
+//        return badValue(option_value, "NRBC", this->name);
+//      }
+//      istringstream ss_3rd(option_value[7*i + 4]);
+//      if (!(ss_3rd >> this->flowdir[i][0])) {
+//        return badValue(option_value, "NRBC", this->name);
+//      }
+//      istringstream ss_4th(option_value[7*i + 5]);
+//      if (!(ss_4th >> this->flowdir[i][1])) {
+//        return badValue(option_value, "NRBC", this->name);
+//      }
+//      istringstream ss_5th(option_value[7*i + 6]);
+//      if (!(ss_5th >> this->flowdir[i][2])) {
+//        return badValue(option_value, "NRBC", this->name);
+//      }
+//    }
+//
+//    return "";
+//  }
+//
+//  void SetDefault() {
+//    this->marker = NULL;
+//    this->var1 = NULL;
+//    this->var2 = NULL;
+//    this->flowdir = NULL;
+//    this->size = 0; // There is no default value for list
+//  }
+//};
+
+
+
+
+
 
 //Inlet condition where the input direction is assumed
 class COptionExhaust : public COptionBase{
@@ -2639,6 +2807,145 @@ public:
   }
 };
 
+
+class COptionMixingPlane : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker_bound;
+  string * & marker_donor;
+
+public:
+  COptionMixingPlane(const string option_field_name, unsigned short & nMarker_MixBound,
+                  string* & Marker_MixBound, string* & Marker_MixDonor) : size(nMarker_MixBound), marker_bound(Marker_MixBound), marker_donor(Marker_MixDonor) {
+    this->name = option_field_name;
+  }
+
+  ~COptionMixingPlane() {};
+  string SetValue(vector<string> option_value) {
+
+    const int mod_num = 2;
+
+    unsigned long totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->size = 0;
+      this->marker_bound = NULL;
+      this->marker_donor = NULL;
+      return "";
+    }
+
+    if (totalVals % mod_num != 0) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 11");
+      this->size = 0;
+      this->marker_bound = NULL;
+      this->marker_donor = NULL;
+      return newstring;
+    }
+
+    unsigned long nVals = 2 * (totalVals / mod_num); // To account for periodic and donor
+    this->size = nVals;
+    this->marker_bound = new string[nVals];
+    this->marker_donor = new string[nVals];
+
+
+    for (unsigned short i = 0; i < (nVals/2); i++) {
+      this->marker_bound[i].assign(option_value[mod_num*i]);
+      this->marker_donor[i].assign(option_value[mod_num*i+1]);
+     }
+
+    for (unsigned long i = (nVals/2); i < nVals; i++) {
+      this->marker_bound[i].assign(option_value[mod_num*(i-nVals/2)+1]);
+      this->marker_donor[i].assign(option_value[mod_num*(i-nVals/2)]);
+      }
+
+
+
+    return "";
+  }
+
+  void SetDefault() {
+    this->size = 0;
+    this->marker_bound = NULL;
+    this->marker_donor = NULL;
+  }
+};
+
+template <class Tenum>
+class COptionTurboPerformance : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker_turboIn;
+  string * & marker_turboOut;
+  map<string, Tenum> m;
+  unsigned short* & field; // Reference to the fieldname
+
+public:
+  COptionTurboPerformance(const string option_field_name, unsigned short & nMarker_TurboPerf,
+                  string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut, unsigned short* & option_field, const map<string, Tenum> m) : size(nMarker_TurboPerf), marker_turboIn(Marker_TurboBoundIn), marker_turboOut(Marker_TurboBoundOut), field(option_field) {
+    this->name = option_field_name;
+    this->m = m;
+  }
+
+  ~COptionTurboPerformance() {};
+  string SetValue(vector<string> option_value) {
+
+    const int mod_num = 3;
+
+    unsigned long totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->size = 0;
+      this->marker_turboIn= NULL;
+      this->marker_turboOut = NULL;
+      this->field = NULL;
+      return "";
+    }
+
+    if (totalVals % mod_num != 0) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 11");
+      this->size = 0;
+      this->marker_turboIn= NULL;
+      this->marker_turboOut = NULL;;
+      this->field = NULL;
+      return newstring;
+    }
+
+    unsigned long nVals = totalVals / mod_num;
+    this->size = nVals;
+    this->marker_turboIn = new string[nVals];
+    this->marker_turboOut = new string[nVals];
+    this->field = new unsigned short[nVals];
+    for (int i = 0; i < nVals; i++)
+    	if (this->m.find(option_value[mod_num*i + 2]) == m.end()) {
+    		string str;
+    		str.append(this->name);
+    		str.append(": invalid option value ");
+    		str.append(option_value[0]);
+    		str.append(". Check current SU2 options in config_template.cfg.");
+    		return str;
+    	}
+    for (int i = 0; i < nVals; i++) {
+      this->marker_turboIn[i].assign(option_value[mod_num*i]);
+      this->marker_turboOut[i].assign(option_value[mod_num*i+1]);
+      Tenum val = this->m[option_value[mod_num*i + 2]];
+      this->field[i] = val;
+     }
+
+
+    return "";
+  }
+
+  void SetDefault() {
+    this->size = 0;
+    this->marker_turboIn= NULL;
+    this->marker_turboOut = NULL;
+    this->field = NULL;
+  }
+};
+
+
 class COptionPython : public COptionBase{
   string name;
 public:
@@ -2655,6 +2962,8 @@ public:
     return;
   };
 };
+
+
 
 class COptionActuatorDisk : public COptionBase{
   string name; // identifier for the option

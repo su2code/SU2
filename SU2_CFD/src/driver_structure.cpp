@@ -113,7 +113,7 @@ CDriver::CDriver(CIteration **iteration_container,
     if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
     
   }
-  
+
 }
 
 
@@ -183,6 +183,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     /*--- Allocate solution for direct problem, and run the preprocessing and postprocessing ---*/
     if (euler) {
       solver_container[iMGlevel][FLOW_SOL] = new CEulerSolver(geometry[iMGlevel], config, iMGlevel);
+      solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
     if (ns) {
       solver_container[iMGlevel][FLOW_SOL] = new CNSSolver(geometry[iMGlevel], config, iMGlevel);
