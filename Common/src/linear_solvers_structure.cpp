@@ -13,6 +13,8 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -614,12 +616,12 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   if (config->GetDiscrete_Adjoint()){
 #ifdef CODI_REVERSE_TYPE
 
-   /* --- Check whether the tape is active, i.e. if it is recording and store the status --- */
+   /*--- Check whether the tape is active, i.e. if it is recording and store the status ---*/
 
     TapeActive = AD::globalTape.isActive();
 
 
-    /* --- Stop the recording for the linear solver --- */
+    /*--- Stop the recording for the linear solver ---*/
 
     AD::StopRecording();
 #endif
@@ -714,11 +716,11 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
 
   if(TapeActive){
 
-    /* --- Prepare the externally differentiated linear solver --- */
+    /*--- Prepare the externally differentiated linear solver ---*/
 
     SetExternalSolve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
-    /* --- Start recording if it was stopped for the linear solver --- */
+    /*--- Start recording if it was stopped for the linear solver ---*/
 
     AD::StartRecording();
   }
@@ -756,7 +758,7 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
     LinSysSol_Indices[i] = LinSysSol[i].getGradientData();
   }
 
-  /*--- Push the data to the checkpoint handler for access in the reverse sweep --- */
+  /*--- Push the data to the checkpoint handler for access in the reverse sweep ---*/
 
   AD::CheckpointHandler* dataHandler = new AD::CheckpointHandler;
 
@@ -770,7 +772,7 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
   dataHandler->addData(geometry);
   dataHandler->addData(config);
 
-  /* --- Build preconditioner for the transposed Jacobian ---*/
+  /*--- Build preconditioner for the transposed Jacobian ---*/
 
   switch(config->GetKind_DiscAdj_Linear_Prec()){
     case ILU:
@@ -784,7 +786,7 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
       exit(EXIT_FAILURE);
   }
 
-  /* --- Push the external function to the AD tape --- */
+  /*--- Push the external function to the AD tape ---*/
 
   AD::globalTape.pushExternalFunction(&CSysSolve_b::Solve_b, dataHandler, &CSysSolve_b::Delete_b);
 

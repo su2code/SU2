@@ -14,6 +14,8 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -220,16 +222,6 @@ public:
 	 * \param[in] val_iZone - Current zone number in the grid file.
 	 */
 	void SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone);
-
-	/*! 
-	 * \brief Create and write the file with linearized coefficient on the surface for serial computations
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] LinSolution - Linearized solution.
-	 * \param[in] val_filename - Name of the output file.
-	 * \param[in] iExtIter - Current external (time) iteration.
-	 */
-	void SetSurfaceCSV_Linearized(CConfig *config, CGeometry *geometry, CSolver *LinSolution, string val_filename, unsigned long iExtIter);
 
   /*!
 	 * \brief Merge the geometry into a data structure used for output file writing.

@@ -119,7 +119,6 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 	} else {
     
     cout << "Wave restart file not currently configured!!" << endl;
-    exit(EXIT_FAILURE);
     
 		string mesh_filename = config->GetSolution_FlowFileName();
 		ifstream restart_file;
@@ -193,8 +192,6 @@ void CWaveSolver::Source_Residual(CGeometry *geometry,
                                     CNumerics *numerics, CNumerics *second_numerics,
                                     CConfig   *config, 
                                     unsigned short iMesh) {
-
-  /* Local variables and initialization */
   
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0;
   su2double a[3] = {0.0,0.0,0.0}, b[3] = {0.0,0.0,0.0}, Area_Local, Time_Num;
@@ -287,8 +284,6 @@ void CWaveSolver::Viscous_Residual(CGeometry *geometry,
                                     CNumerics *numerics,
                                     CConfig   *config, 
                                     unsigned short iMesh, unsigned short iRKStep) {
-  
-  /* Local variables and initialization */
   
 	unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, iPoint, total_index;
 	su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, wave_speed_2;

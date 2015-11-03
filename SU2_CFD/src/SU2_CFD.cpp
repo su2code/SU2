@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
     if (rank == MASTER_NODE)
       cout << "Computing wall distances." << endl;
 
-    if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
+    if ((config_container[iZone]->GetKind_Solver() == RANS) ||
         (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
         (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
       geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
@@ -390,8 +390,6 @@ int main(int argc, char *argv[]) {
     switch (config_container[ZONE_0]->GetKind_Solver()) {
       case EULER: case NAVIER_STOKES: case RANS:
         StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
-      case TNE2_EULER: case TNE2_NAVIER_STOKES:
-        StopCalc = integration_container[ZONE_0][TNE2_SOL]->GetConvergence(); break;
       case WAVE_EQUATION:
         StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
       case HEAT_EQUATION:
@@ -403,8 +401,6 @@ int main(int argc, char *argv[]) {
       case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
         StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
-      case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
-        StopCalc = integration_container[ZONE_0][ADJTNE2_SOL]->GetConvergence(); break;
     }
     
     /*--- Solution output. Determine whether a solution needs to be written
