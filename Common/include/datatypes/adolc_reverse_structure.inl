@@ -4,7 +4,7 @@
  * \author T. Albring
  * \version 4.0.1 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -31,19 +31,19 @@
 #pragma once
 
 namespace AD{
-  /* --- Stores a copy of the input variables (since they might be overwritten) --- */
+  /*--- Stores a copy of the input variables (since they might be overwritten) ---*/
 
   extern std::vector<double> inputVariables;
 
-  /* --- Stores the seeding vector for the adjoint computation (adjoints of output variables) --- */
+  /*--- Stores the seeding vector for the adjoint computation (adjoints of output variables) ---*/
 
   extern std::vector<double> seedVector;
 
-  /* --- The current position in the adjoint vector --- */
+  /*--- The current position in the adjoint vector ---*/
 
   extern int adjointVector_Position;
 
-  /* --- Holds the adjoint values of the input variables after the adjoint computation --- */
+  /*--- Holds the adjoint values of the input variables after the adjoint computation ---*/
 
   extern double* adjointVector;
 
@@ -77,7 +77,7 @@ namespace AD{
 
 }
 
-/* --- We need additional functions that are not defined yet --- */
+/*--- We need additional functions that are not defined yet ---*/
 
 inline su2double min(const su2double& a, const su2double& b){ return fmin(a,b);}
 

@@ -14,6 +14,8 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -250,99 +252,6 @@ public:
    * \param[in] r_core - Vector of vortex core size.
    */
   void InitializeVortexDistribution(unsigned long &nVortex, vector<su2double>& x0, vector<su2double>& y0, vector<su2double>& vort_strength, vector<su2double>& r_core);
-  
-};
-
-/*!
- * \class CTNE2Iteration
- * \brief Class for driving an iteration of the TNE2 system.
- * \author T. Economon
- * \version 4.0.1 "Cardinal"
- */
-class CTNE2Iteration : public CIteration {
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CTNE2Iteration(CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CTNE2Iteration(void);
-  
-  /*!
-   * \brief Preprocessing to prepare for an iteration of the physics.
-   * \param[in] ??? - Description here.
-   */
-  void Preprocess(COutput *output,
-                  CIntegration ***integration_container,
-                  CGeometry ***geometry_container,
-                  CSolver ****solver_container,
-                  CNumerics *****numerics_container,
-                  CConfig **config_container,
-                  CSurfaceMovement **surface_movement,
-                  CVolumetricMovement **grid_movement,
-                  CFreeFormDefBox*** FFDBox,
-                  unsigned short val_iZone);
-  
-  /*!
-   * \brief Perform a single iteration of the TNE2 system.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   */
-  void Iterate(COutput *output,
-               CIntegration ***integration_container,
-               CGeometry ***geometry_container,
-               CSolver ****solver_container,
-               CNumerics *****numerics_container,
-               CConfig **config_container,
-               CSurfaceMovement **surface_movement,
-               CVolumetricMovement **grid_movement,
-               CFreeFormDefBox*** FFDBox,
-               unsigned short val_iZone);
-  
-  /*!
-   * \brief Updates the containers for the TNE2 system.
-   * \param[in] ??? - Description here.
-   */
-  void Update(COutput *output,
-              CIntegration ***integration_container,
-              CGeometry ***geometry_container,
-              CSolver ****solver_container,
-              CNumerics *****numerics_container,
-              CConfig **config_container,
-              CSurfaceMovement **surface_movement,
-              CVolumetricMovement **grid_movement,
-              CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone);
-  
-  /*!
-   * \brief Monitors the convergence and other metrics for the TNE2 system.
-   * \param[in] ??? - Description here.
-   */
-  void Monitor();
-  
-  /*!
-   * \brief Outputs desired files and quantities for the TNE2 system.
-   * \param[in] ??? - Description here.
-   */
-  void Output();
-  
-  /*!
-   * \brief Postprocesses the TNE2 system before heading to another physics system or the next iteration.
-   * \param[in] ??? - Description here.
-   */
-  void Postprocess();
   
 };
 
@@ -805,99 +714,6 @@ public:
   
   /*!
    * \brief Postprocesses the adjoint mean flow system before heading to another physics system or the next iteration.
-   * \param[in] ??? - Description here.
-   */
-  void Postprocess();
-  
-};
-
-/*!
- * \class CAdjTNE2Iteration
- * \brief Class for driving an iteration of the adjoint TNE2 system.
- * \author T. Economon
- * \version 4.0.1 "Cardinal"
- */
-class CAdjTNE2Iteration : public CIteration {
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAdjTNE2Iteration(CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAdjTNE2Iteration(void);
-  
-  /*!
-   * \brief Preprocessing to prepare for an iteration of the physics.
-   * \param[in] ??? - Description here.
-   */
-  void Preprocess(COutput *output,
-                  CIntegration ***integration_container,
-                  CGeometry ***geometry_container,
-                  CSolver ****solver_container,
-                  CNumerics *****numerics_container,
-                  CConfig **config_container,
-                  CSurfaceMovement **surface_movement,
-                  CVolumetricMovement **grid_movement,
-                  CFreeFormDefBox*** FFDBox,
-                  unsigned short val_iZone);
-  
-  /*!
-   * \brief Perform a single iteration of the adjoint TNE2 system.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   */
-  void Iterate(COutput *output,
-               CIntegration ***integration_container,
-               CGeometry ***geometry_container,
-               CSolver ****solver_container,
-               CNumerics *****numerics_container,
-               CConfig **config_container,
-               CSurfaceMovement **surface_movement,
-               CVolumetricMovement **grid_movement,
-               CFreeFormDefBox*** FFDBox,
-               unsigned short val_iZone);
-  
-  /*!
-   * \brief Updates the containers for the adjoint TNE2 system.
-   * \param[in] ??? - Description here.
-   */
-  void Update(COutput *output,
-              CIntegration ***integration_container,
-              CGeometry ***geometry_container,
-              CSolver ****solver_container,
-              CNumerics *****numerics_container,
-              CConfig **config_container,
-              CSurfaceMovement **surface_movement,
-              CVolumetricMovement **grid_movement,
-              CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone);
-  
-  /*!
-   * \brief Monitors the convergence and other metrics for the adjoint TNE2 system.
-   * \param[in] ??? - Description here.
-   */
-  void Monitor();
-  
-  /*!
-   * \brief Outputs desired files and quantities for the adjoint TNE2 system.
-   * \param[in] ??? - Description here.
-   */
-  void Output();
-  
-  /*!
-   * \brief Postprocesses the adjoint TNE2 system before heading to another physics system or the next iteration.
    * \param[in] ??? - Description here.
    */
   void Postprocess();

@@ -4,7 +4,7 @@
  * \author T. Albring
  * \version 4.0.1 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -57,7 +57,7 @@ namespace adtl{
   }
 }
 
-/* --- We need additional functions that are not defined yet --- */
+/*--- We need additional functions that are not defined yet ---*/
 
 inline su2double min(const su2double& a, const su2double& b){ return fmin(a,b);}
 inline su2double max(const su2double& a, const su2double& b){ return fmax(a,b);}

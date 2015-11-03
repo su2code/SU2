@@ -540,74 +540,6 @@ void CMeanFlowIteration::InitializeVortexDistribution(unsigned long &nVortex, ve
   
 }
 
-
-CTNE2Iteration::CTNE2Iteration(CConfig *config) : CIteration(config) { }
-CTNE2Iteration::~CTNE2Iteration(void) { }
-void CTNE2Iteration::Preprocess(COutput *output,
-                                CIntegration ***integration_container,
-                                CGeometry ***geometry_container,
-                                CSolver ****solver_container,
-                                CNumerics *****numerics_container,
-                                CConfig **config_container,
-                                CSurfaceMovement **surface_movement,
-                                CVolumetricMovement **grid_movement,
-                                CFreeFormDefBox*** FFDBox,
-                                unsigned short val_iZone) { }
-void CTNE2Iteration::Iterate(COutput *output,
-                             CIntegration ***integration_container,
-                             CGeometry ***geometry_container,
-                             CSolver ****solver_container,
-                             CNumerics *****numerics_container,
-                             CConfig **config_container,
-                             CSurfaceMovement **surface_movement,
-                             CVolumetricMovement **grid_movement,
-                             CFreeFormDefBox*** FFDBox,
-                             unsigned short val_iZone) {
-  
-  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-    /*--- Set the value of the internal iteration ---*/
-    IntIter = ExtIter;
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
-    
-    /*--- Set the initial condition ---*/
-  solver_container[val_iZone][MESH_0][TNE2_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
-    
-    /*--- Update global parameters ---*/
-  if (config_container[val_iZone]->GetKind_Solver() == TNE2_EULER)
-    config_container[val_iZone]->SetGlobalParam(TNE2_EULER, RUNTIME_TNE2_SYS, ExtIter);
-  if (config_container[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)
-    config_container[val_iZone]->SetGlobalParam(TNE2_NAVIER_STOKES, RUNTIME_TNE2_SYS, ExtIter);
-    
-    /*--- Solve the inviscid or viscous two-temperature flow equations (one iteration) ---*/
-  integration_container[val_iZone][TNE2_SOL]->MultiGrid_Iteration(geometry_container, solver_container,
-                                                                numerics_container, config_container,
-                                                                  RUNTIME_TNE2_SYS, IntIter, val_iZone);
-  
-  
-}
-void CTNE2Iteration::Update(COutput *output,
-                            CIntegration ***integration_container,
-                            CGeometry ***geometry_container,
-                            CSolver ****solver_container,
-                            CNumerics *****numerics_container,
-                            CConfig **config_container,
-                            CSurfaceMovement **surface_movement,
-                            CVolumetricMovement **grid_movement,
-                            CFreeFormDefBox*** FFDBox,
-                            unsigned short val_iZone)      { }
-void CTNE2Iteration::Monitor()     { }
-void CTNE2Iteration::Output()      { }
-void CTNE2Iteration::Postprocess() { }
-
-
 CWaveIteration::CWaveIteration(CConfig *config) : CIteration(config) { }
 CWaveIteration::~CWaveIteration(void) { }
 void CWaveIteration::Preprocess(COutput *output,
@@ -1137,135 +1069,6 @@ void CAdjMeanFlowIteration::Monitor()     { }
 void CAdjMeanFlowIteration::Output()      { }
 void CAdjMeanFlowIteration::Postprocess() { }
 
-
-CAdjTNE2Iteration::CAdjTNE2Iteration(CConfig *config) : CIteration(config) { }
-CAdjTNE2Iteration::~CAdjTNE2Iteration(void) { }
-void CAdjTNE2Iteration::Preprocess(COutput *output,
-                                   CIntegration ***integration_container,
-                                   CGeometry ***geometry_container,
-                                   CSolver ****solver_container,
-                                   CNumerics *****numerics_container,
-                                   CConfig **config_container,
-                                   CSurfaceMovement **surface_movement,
-                                   CVolumetricMovement **grid_movement,
-                                   CFreeFormDefBox*** FFDBox,
-                                   unsigned short val_iZone) { }
-void CAdjTNE2Iteration::Iterate(COutput *output,
-                                CIntegration ***integration_container,
-                                CGeometry ***geometry_container,
-                                CSolver ****solver_container,
-                                CNumerics *****numerics_container,
-                                CConfig **config_container,
-                                CSurfaceMovement **surface_movement,
-                                CVolumetricMovement **grid_movement,
-                                CFreeFormDefBox*** FFDBox,
-                                unsigned short val_iZone) {
-  
-  unsigned short iMesh;
-  unsigned long IntIter, ExtIter;
-  int rank;
-  
-  /*--- Initialize parameters ---*/
-  IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  ExtIter = config_container[ZONE_0]->GetExtIter();
-  rank    = MASTER_NODE;
-  
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-    /*--- Continuous adjoint two-temperature equations  ---*/
-    if (ExtIter == 0) {
-      
-      /*--- Set the value of the internal iteration ---*/
-      IntIter = ExtIter;
-      
-      /*--- Set the initial condition ---*/
-    solver_container[val_iZone][MESH_0][TNE2_SOL]->SetInitialCondition(geometry_container[val_iZone],
-                                                                       solver_container[val_iZone],
-                                                                       config_container[val_iZone], ExtIter);
-      
-      /*--- Update global parameters ---*/
-    if (config_container[val_iZone]->GetKind_Solver() == ADJ_TNE2_EULER)
-      config_container[val_iZone]->SetGlobalParam(TNE2_EULER,
-                                                RUNTIME_TNE2_SYS, ExtIter);
-    else if (config_container[val_iZone]->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES)
-      config_container[val_iZone]->SetGlobalParam(ADJ_TNE2_NAVIER_STOKES,
-                                                RUNTIME_TNE2_SYS, ExtIter);
-      
-      /*--- Perform one iteration of the gov. eqns. to store data ---*/
-    if (rank == MASTER_NODE && val_iZone == ZONE_0)
-        cout << "Single iteration of the direct solver to store flow data...";
-    integration_container[val_iZone][TNE2_SOL]->MultiGrid_Iteration(geometry_container,
-                                                                  solver_container,
-                                                                  numerics_container,
-                                                                  config_container,
-                                                                  RUNTIME_TNE2_SYS,
-                                                                    IntIter, val_iZone);
-    if (rank == MASTER_NODE && val_iZone == ZONE_0)
-        cout << " Done." << endl;
-      
-      /*--- Compute gradients of the flow variables, this is necessary for
-       sensitivity computation, note that in the direct Euler problem we
-       are not computing the gradients of the primitive variables ---*/
-    if (config_container[val_iZone]->GetKind_Gradient_Method() == GREEN_GAUSS)
-      solver_container[val_iZone][MESH_0][TNE2_SOL]->SetPrimitive_Gradient_GG(geometry_container[val_iZone][MESH_0],
-                                                                              config_container[val_iZone]);
-    if (config_container[val_iZone]->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
-      solver_container[val_iZone][MESH_0][TNE2_SOL]->SetPrimitive_Gradient_LS(geometry_container[val_iZone][MESH_0],
-                                                                              config_container[val_iZone]);
-      
-      /*--- Set contribution from cost function for boundary conditions ---*/
-    for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++) {
-        
-        /*--- Set the value of the non-dimensional coefficients in the coarse
-         levels, using the fine level solution ---*/
-      solver_container[val_iZone][iMesh][TNE2_SOL]->SetTotal_CDrag(solver_container[val_iZone][MESH_0][TNE2_SOL]->GetTotal_CDrag());
-      solver_container[val_iZone][iMesh][TNE2_SOL]->SetTotal_CLift(solver_container[val_iZone][MESH_0][TNE2_SOL]->GetTotal_CLift());
-      solver_container[val_iZone][iMesh][TNE2_SOL]->SetTotal_CT(solver_container[val_iZone][MESH_0][TNE2_SOL]->GetTotal_CT());
-      solver_container[val_iZone][iMesh][TNE2_SOL]->SetTotal_CQ(solver_container[val_iZone][MESH_0][TNE2_SOL]->GetTotal_CQ());
-        
-        /*--- Compute the adjoint boundary condition on Euler walls ---*/
-      solver_container[val_iZone][iMesh][ADJTNE2_SOL]->SetForceProj_Vector(geometry_container[val_iZone][iMesh],
-                                                                           solver_container[val_iZone][iMesh],
-                                                                           config_container[val_iZone]);
-      }
-    }
-    
-    /*--- Set the value of the internal iteration ---*/
-    IntIter = ExtIter;
-    
-  if (config_container[val_iZone]->GetKind_Solver() == ADJ_TNE2_EULER)
-    config_container[val_iZone]->SetGlobalParam(ADJ_TNE2_EULER,
-                                              RUNTIME_ADJTNE2_SYS, ExtIter);
-  if (config_container[val_iZone]->GetKind_Solver() == ADJ_TNE2_NAVIER_STOKES)
-    config_container[val_iZone]->SetGlobalParam(ADJ_TNE2_NAVIER_STOKES,
-                                              RUNTIME_ADJTNE2_SYS, ExtIter);
-    
-    /*--- Iteration of the flow adjoint problem ---*/
-  integration_container[val_iZone][ADJTNE2_SOL]->MultiGrid_Iteration(geometry_container,
-                                                                   solver_container,
-                                                                   numerics_container,
-                                                                   config_container,
-                                                                   RUNTIME_ADJTNE2_SYS,
-                                                                     IntIter, val_iZone);
-  
-}
-void CAdjTNE2Iteration::Update(COutput *output,
-                               CIntegration ***integration_container,
-                               CGeometry ***geometry_container,
-                               CSolver ****solver_container,
-                               CNumerics *****numerics_container,
-                               CConfig **config_container,
-                               CSurfaceMovement **surface_movement,
-                               CVolumetricMovement **grid_movement,
-                               CFreeFormDefBox*** FFDBox,
-                               unsigned short val_iZone)      { }
-void CAdjTNE2Iteration::Monitor()     { }
-void CAdjTNE2Iteration::Output()      { }
-void CAdjTNE2Iteration::Postprocess() { }
-
-
 CDiscAdjMeanFlowIteration::CDiscAdjMeanFlowIteration(CConfig *config) : CIteration(config), CurrentRecording(NONE){
 
   meanflow_iteration = new CMeanFlowIteration(config);
@@ -1273,6 +1076,7 @@ CDiscAdjMeanFlowIteration::CDiscAdjMeanFlowIteration(CConfig *config) : CIterati
   turbulent = config->GetKind_Solver() == DISC_ADJ_RANS;
 
 }
+
 CDiscAdjMeanFlowIteration::~CDiscAdjMeanFlowIteration(void) { }
 void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
                                            CIntegration ***integration_container,
@@ -1298,7 +1102,7 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
       cout << "Direct iteration to store computational graph." << endl;
     }
 
-    /* --- Record one mean flow iteration with flow variables as input --- */
+    /*--- Record one mean flow iteration with flow variables as input ---*/
 
     SetRecording(output, integration_container, geometry_container, solver_container, numerics_container,
                  config_container, surface_movement, grid_movement, FFDBox, val_iZone, FLOW_VARIABLES);
@@ -1327,13 +1131,7 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
                                         CFreeFormDefBox*** FFDBox,
                                         unsigned short val_iZone) {
   
-  unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
-  unsigned short ExtIter = config_container[val_iZone]->GetExtIter();
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
     
   /*--- Set the adjoint values of the flow and objective function ---*/
 
@@ -1351,7 +1149,7 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
   solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry_container[val_iZone][MESH_0],
                                                                   config_container[val_iZone]);
 
-  if (turbulent){
+  if (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_RANS) {
     solver_container[val_iZone][MESH_0][ADJTURB_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][MESH_0],
                                                                               config_container[val_iZone]);
   }
@@ -1368,7 +1166,7 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
   if (((unsigned short)(ExtIter+1) >= config_container[val_iZone]->GetnExtIter()) ||
       ((ExtIter % config_container[val_iZone]->GetWrt_Sol_Freq() == 0))){
 
-    /* --- Record one mean flow iteration with geometry variables as input --- */
+    /*--- Record one mean flow iteration with geometry variables as input ---*/
 
     SetRecording(output, integration_container, geometry_container, solver_container, numerics_container,
                  config_container, surface_movement, volume_grid_movement, FFDBox, val_iZone, GEOMETRY_VARIABLES);
@@ -1381,11 +1179,12 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
 
     AD::ComputeAdjoint();
 
-    /* --- Extract the sensitivities (adjoint of node coordinates) ---*/
+    /*--- Extract the sensitivities (adjoint of node coordinates) ---*/
 
     solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[val_iZone][MESH_0],config_container[val_iZone]);
     
   }
+  
 }
 
 void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
@@ -1406,7 +1205,7 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
 
   AD::Reset();
 
-  /*--- Update geometry to set all indices to zero --- */
+  /*--- Update geometry to set all indices to zero ---*/
 
   geometry_container[val_iZone][MESH_0]->UpdateGeometry(geometry_container[val_iZone], config_container[val_iZone]);
 
@@ -1415,7 +1214,7 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
                               config_container,surface_movement,grid_movement,FFDBox,val_iZone);
 
-  /*--- Prepare for recording --- */
+  /*--- Prepare for recording ---*/
 
   for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++){
 
@@ -1430,11 +1229,11 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
 
   AD::StartRecording();
 
-  /*--- Register flow variables and compute coupling or update the geometry --- */
+  /*--- Register flow variables and compute coupling or update the geometry ---*/
 
   RegisterInput(solver_container, geometry_container, config_container, val_iZone, kind_recording);
 
-  /* --- Run the direct iteration --- */
+  /*--- Run the direct iteration ---*/
 
   meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
                               config_container,surface_movement,grid_movement,FFDBox, val_iZone);
@@ -1488,7 +1287,7 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
   
       geometry_container[iZone][MESH_0]->RegisterCoordinates(config_container[iZone]);
   
-      /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) --- */
+      /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
     
       geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone], config_container[iZone]);
 

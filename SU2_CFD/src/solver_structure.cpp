@@ -834,11 +834,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
     switch (Boundary) {
       case EULER_WALL:
       case HEAT_FLUX:
-      case HEAT_FLUX_CATALYTIC:
-      case HEAT_FLUX_NONCATALYTIC:
       case ISOTHERMAL:
-      case ISOTHERMAL_CATALYTIC:
-      case ISOTHERMAL_NONCATALYTIC:
         
         /*--- Loop over points on the surface (Least-Squares approximation) ---*/
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -1343,8 +1339,8 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
           
           /*--- Calculate forces for the Typical Section Wing Model taking into account rotation ---*/
           
-          /* --- Note that the calculation of the forces and the subsequent displacements ...
-           is only correct for the airfoil that starts at the 0 degree position --- */
+          /*--- Note that the calculation of the forces and the subsequent displacements ...
+           is only correct for the airfoil that starts at the 0 degree position ---*/
           
           if (config->GetKind_GridMovement(ZONE_0) == AEROELASTIC_RIGID_MOTION) {
             su2double Omega, dt, psi;
@@ -1352,7 +1348,7 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
             Omega  = (config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref());
             psi = Omega*(dt*ExtIter);
             
-            /* --- Correct for the airfoil starting position (This is hardcoded in here) --- */
+            /*--- Correct for the airfoil starting position (This is hardcoded in here) ---*/
             if (Monitoring_Tag == "Airfoil1") {
               psi = psi + 0.0;
             }

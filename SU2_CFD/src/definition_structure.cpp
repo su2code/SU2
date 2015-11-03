@@ -79,6 +79,7 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
   }
   
   /*--- For time spectral integration, nZones = nTimeInstances. ---*/
+  
   if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
     nZone = config->GetnTimeInstances();
   }
@@ -280,7 +281,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     /*--- Compute cell center of gravity ---*/
     
     if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-    geometry[iZone][MESH_0]->SetCG();
+    geometry[iZone][MESH_0]->SetCoord_CG();
     
     /*--- Create the control volume structures ---*/
     
