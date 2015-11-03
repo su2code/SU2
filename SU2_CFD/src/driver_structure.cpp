@@ -123,7 +123,6 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   unsigned short iMGlevel;
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
-  lin_euler, lin_ns,
   poisson, wave, fea, heat,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj;
@@ -132,7 +131,6 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   
   euler            = false;  ns              = false;  turbulent = false;
   adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
-  lin_euler        = false;  lin_ns          = false;
   spalart_allmaras = false;  menter_sst      = false;
   poisson          = false;  neg_spalart_allmaras = false;
   wave             = false;  disc_adj        = false;
@@ -244,14 +242,14 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
                                         CGeometry **geometry, CConfig *config) {
   
   bool
-  euler, adj_euler, lin_euler,
-  ns, adj_ns, lin_ns,
+  euler, adj_euler,
+  ns, adj_ns,
   turbulent, adj_turb,
   poisson, wave, fea, heat, template_solver, transition, disc_adj;
   
   /*--- Initialize some useful booleans ---*/
-  euler            = false; adj_euler        = false; lin_euler         = false;
-  ns               = false; adj_ns           = false; lin_ns            = false;
+  euler            = false; adj_euler        = false;
+  ns               = false; adj_ns           = false;
   turbulent        = false; adj_turb         = false;
   poisson          = false; disc_adj         = false;
   wave             = false;
