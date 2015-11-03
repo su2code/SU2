@@ -430,8 +430,17 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    a unit vector. \ingroup Config*/
   addInletOption("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
 
-  /* DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. */
+  /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. */
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
+  /*!\brief MARKER_NRBC \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. */
+  addNRBCOption("MARKER_NRBC", nMarker_NRBC, Marker_NRBC, Kind_Data_NRBC, NRBC_Map, NRBC_Var1, NRBC_Var2, NRBC_FlowDir);
+  /*!\brief MIXING_PROCESS_TYPE \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries.
+    \n OPTIONS: see \link MixingProcess_Map \endlink \n Default: AREA_AVERAGE */
+  addEnumOption("MIXING_PROCESS_TYPE", Kind_MixingProcess, MixingProcess_Map, AREA_AVERAGE);
+  /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. */
+  addMixingPlaneOption("MARKER_MIXINGPLANE", nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
+  /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. */
+  addTurboPerfOption("MARKER_TURBO_PERFORMANCE", nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut, Kind_TurboPerformance, TurboPerformance_Map);
   /*!\brief MARKER_SUPERSONIC_INLET  \n DESCRIPTION: Supersonic inlet boundary marker(s) \n   Format: (inlet marker, temperature, static pressure, velocity_x,   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
   addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
                  Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
@@ -1596,16 +1605,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (!ideal_gas) {
     if (nMarker_Inlet != 0) {
-      cout << "Riemann Boundary conditions must be used for inlet and outlet with Non-ideal Compressible Fluids " << endl;
+      cout << "Riemann Boundary conditions or NRBC must be used for inlet and outlet with Not Ideal Compressible Fluids " << endl;
       exit(EXIT_FAILURE);
     }
     if (nMarker_Outlet != 0) {
-      cout << "Riemann Boundary conditions must be used outlet with Non-Ideal Compressible Fluids " << endl;
+      cout << "Riemann Boundary conditions or NRBC must be used outlet with Not Ideal Compressible Fluids " << endl;
       exit(EXIT_FAILURE);
     }
     
     if (nMarker_FarField != 0) {
-      cout << "Far Field BC is not generalized for Not Ideal Compressible Fluids " << endl;
+      cout << "Riemann Boundary conditions or NRBC must be used outlet with Not Ideal Compressible Fluids " << endl;
       exit(EXIT_FAILURE);
     }
     
@@ -2470,7 +2479,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_Pressure, iMarker_PerBound,
   iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
-  iMarker_Inlet, iMarker_Riemann, iMarker_Outlet, iMarker_Isothermal,
+  iMarker_Inlet, iMarker_Riemann, iMarker_NRBC, iMarker_Outlet, iMarker_Isothermal,
   iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
@@ -2490,7 +2499,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound +
   nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
-  nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
+  nMarker_NRBC + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
@@ -2636,6 +2645,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
   for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Riemann[iMarker_Riemann];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = RIEMANN_BOUNDARY;
+    iMarker_CfgFile++;
+  }
+
+  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_NRBC[iMarker_NRBC];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = NRBC_BOUNDARY;
     iMarker_CfgFile++;
   }
 
@@ -2819,8 +2834,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
-  iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann, iMarker_Outlet,
-  iMarker_Isothermal, iMarker_HeatFlux,
+  iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
+  iMarker_NRBC, iMarker_MixBound, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV,
@@ -3876,6 +3891,24 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
   
+  if (nMarker_NRBC != 0) {
+      cout << "NRBC boundary marker(s): ";
+      for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++) {
+        cout << Marker_NRBC[iMarker_NRBC];
+        if (iMarker_NRBC < nMarker_NRBC-1) cout << ", ";
+        else cout <<"."<< endl;
+    }
+  }
+
+  if (nMarker_MixBound != 0) {
+      cout << "MixingPlane boundary marker(s): ";
+      for (iMarker_MixBound = 0; iMarker_MixBound < nMarker_MixBound; iMarker_MixBound++) {
+        cout << Marker_MixBound[iMarker_MixBound];
+        if (iMarker_MixBound < nMarker_MixBound-1) cout << ", ";
+        else cout <<"."<< endl;
+    }
+  }
+
   if (nMarker_EngineInflow != 0) {
     cout << "Engine inflow boundary marker(s): ";
     for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
@@ -4510,6 +4543,21 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   return UnstFilename;
 }
 
+string CConfig::GetRestart_FlowFileName(string val_filename, int val_iZone) {
+
+    string multizone_filename = val_filename;
+    char buffer[50];
+    
+    if (GetnZone() > 1){
+        unsigned short lastindex = multizone_filename.find_last_of(".");
+        multizone_filename = multizone_filename.substr(0, lastindex);
+        SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
+        multizone_filename.append(string(buffer));
+    }
+    
+    return multizone_filename;
+}
+
 string CConfig::GetObjFunc_Extension(string val_filename) {
 
   string AdjExt, Filename = val_filename;
@@ -4958,7 +5006,38 @@ unsigned short CConfig::GetKind_Data_Riemann(string val_marker) {
   return Kind_Data_Riemann[iMarker_Riemann];
 }
 
+
+su2double CConfig::GetNRBC_Var1(string val_marker) {
+  unsigned short iMarker_NRBC;
+  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
+    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
+  return NRBC_Var1[iMarker_NRBC];
+}
+
+su2double CConfig::GetNRBC_Var2(string val_marker) {
+  unsigned short iMarker_NRBC;
+  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
+    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
+  return NRBC_Var2[iMarker_NRBC];
+}
+
+su2double* CConfig::GetNRBC_FlowDir(string val_marker) {
+  unsigned short iMarker_NRBC;
+  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
+    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
+  return NRBC_FlowDir[iMarker_NRBC];
+}
+
+unsigned short CConfig::GetKind_Data_NRBC(string val_marker) {
+  unsigned short iMarker_NRBC;
+  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
+    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
+  return Kind_Data_NRBC[iMarker_NRBC];
+}
+
+
 su2double CConfig::GetIsothermal_Temperature(string val_marker) {
+
   unsigned short iMarker_Isothermal = 0;
 
   if (nMarker_Isothermal > 0) {

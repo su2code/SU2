@@ -253,6 +253,28 @@ public:
    */
   void InitializeVortexDistribution(unsigned long &nVortex, vector<su2double>& x0, vector<su2double>& y0, vector<su2double>& vort_strength, vector<su2double>& r_core);
   
+  /*!
+   * \brief compute and set mixing-plane quantities at the interface between two adjacent zone.
+   * \author S. Vitale
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - zone of the problem.
+   */
+  void SetMixingPlane(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, unsigned short iZone);
+
+  /*!
+   * \brief compute and set mixing-plane quantities at the interface between two adjacent zone.
+   * \author S. Vitale
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] output - Definition of the output for the particular problem.
+   * \param[in] iZone - zone of the problem.
+   */
+  void SetTurboPerformance(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, COutput *output, unsigned short iZone);
+
+
 };
 
 /*!
@@ -885,21 +907,6 @@ public:
                       unsigned short kind_recording);
 };
 
-/*!
- * \brief Perform a single iteration of the mean flow system.
- * \param[in] output - Pointer to the COutput class.
- * \param[in] integration_container - Container vector with all the integration methods.
- * \param[in] geometry_container - Geometrical definition of the problem.
- * \param[in] solver_container - Container vector with all the solutions.
- * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
- * \param[in] config_container - Definition of the particular problem.
- * \param[in] surface_movement - Surface movement classes of the problem.
- * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] FFDBox - FFD FFDBoxes of the problem.
- */
-void MeanFlowIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
-             CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
-             CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
 
 /*!
  * \brief Iteration function for Fluid-Structure Interaction applications.

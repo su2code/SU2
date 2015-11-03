@@ -697,6 +697,26 @@ inline unsigned short CConfig::GetKind_Upwind_AdjTurb(void) { return Kind_Upwind
 
 inline unsigned short CConfig::GetKind_Inlet(void) { return Kind_Inlet; }
 
+inline unsigned short CConfig::GetKind_MixingProcess(void) { return Kind_MixingProcess; }
+
+inline bool CConfig::GetBoolMixingPlane(void) { return (nMarker_MixBound !=0);}
+
+inline bool CConfig::GetBoolTurboPerf(void) { return (nMarker_TurboPerf !=0);}
+
+inline string CConfig::GetMarker_MixingPlane_Bound(unsigned short index) {return Marker_MixBound[index];}
+
+inline string CConfig::GetMarker_MixingPlane_Donor(unsigned short index) {return Marker_MixDonor[index];}
+
+inline unsigned short CConfig::Get_nMarkerMixingPlane(void) { return nMarker_MixBound;}
+
+inline unsigned short CConfig::Get_nMarkerTurboPerf(void) { return nMarker_TurboPerf;}
+
+inline string CConfig::GetMarker_TurboPerf_BoundIn(unsigned short index) {return Marker_TurboBoundIn[index];}
+
+inline string CConfig::GetMarker_TurboPerf_BoundOut(unsigned short index) {return Marker_TurboBoundOut[index];}
+
+inline unsigned short CConfig::GetKind_TurboPerf(unsigned short index) {return Kind_TurboPerformance[index];}
+
 inline unsigned short CConfig::GetnSections(void) { return nSections; }
 
 inline unsigned short CConfig::GetnVolSections(void) { return nVolSections; }
