@@ -7254,7 +7254,7 @@ su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, s
 	
   /*--- External iteration ---*/
 
-	for (iter = 0; iter < it_max*Random_Trials; iter++) {
+	for (iter = 0; iter < (unsigned long)it_max*Random_Trials; iter++) {
 		  
 		/*--- The independent term of the solution of our system is -Gradient(sol_old) ---*/
 
@@ -7340,7 +7340,7 @@ su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, s
 
   /*--- The code has hit the max number of iterations ---*/
 
-  if (iter == it_max*Random_Trials) {
+  if (iter == (unsigned long)it_max*Random_Trials) {
     cout << "Unknown point: (" << xyz[0] <<", "<< xyz[1] <<", "<< xyz[2] <<"). Increase the value of FFD_ITERATIONS." << endl;
   }
   

@@ -33,7 +33,7 @@
 #pragma once
 
 #include "./mpi_structure.hpp"
-
+#include <limits>
 #include <iostream>
 #include <cmath>
 #include <cstdlib>
@@ -43,6 +43,9 @@
 #include "vector_structure.hpp"
 
 using namespace std;
+
+const su2double eps = numeric_limits<su2double>::epsilon(); /*!< \brief machine epsilon */
+
 
 /*!
  * \class CSysMatrix

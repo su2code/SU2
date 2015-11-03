@@ -34,7 +34,7 @@
 
 
 #include <climits>
-#include <limits>
+// #include <limits>
 #include <cmath>
 #include <vector>
 #include <iostream>
@@ -45,8 +45,6 @@
 #include "./mpi_structure.hpp"
 
 using namespace std;
-
-const su2double eps = numeric_limits<su2double>::epsilon(); /*!< \brief machine epsilon */
 
 /*!
  * \class CSysVector

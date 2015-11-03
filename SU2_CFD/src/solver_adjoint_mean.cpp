@@ -4456,12 +4456,12 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   unsigned long iVertex, iPoint, Point_Normal;
   su2double Pressure=0.0, P_Exit=0.0, Velocity[3], Velocity2 = 0.0;
   su2double Density=0.0, Height=0.0;
-  su2double Vn = 0.0, SoundSpeed = 0.0, Mach_Exit=0.0,  LevelSet=0.0, Vn_Exit=0.0,
+  su2double Vn = 0.0, SoundSpeed = 0.0,  LevelSet=0.0, Vn_Exit=0.0,
       Riemann=0.0, Entropy=0.0, Density_Outlet = 0.0, Vn_rel=0.0;
   su2double Area, UnitNormal[3];
   su2double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
   su2double Mach_Exit_Normal=0.0;
-  su2double a1=0.0, a4=0.0; /*Placeholder terms to simplify expression/ repeated terms*/
+  su2double a1=0.0; /*Placeholder terms to simplify expression/ repeated terms*/
   su2double ProjGridVel = 0.0;
   su2double densgrad, pressgrad, velgrad;
   
@@ -4549,7 +4549,6 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         Pressure = V_domain[nDim+1];
         SoundSpeed = sqrt(Pressure*Gamma/Density);
-        Mach_Exit  = sqrt(Velocity2)/SoundSpeed;
         Mach_Exit_Normal = Vn/SoundSpeed;
         
         /*--- Set Adjoint variables to 0 initially ---*/
@@ -4563,7 +4562,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Vn_rel = Vn_Exit-ProjGridVel;
           /*-- Some common terms --*/
           a1 = SoundSpeed*SoundSpeed/(Vn_rel)/Gamma_Minus_One;
-          a4 = Density*Vn_rel*(pow(SoundSpeed,2.0)-pow(Vn_rel,2.0));
+          //a4 = Density*Vn_rel*(pow(SoundSpeed,2.0)-pow(Vn_rel,2.0));
           
           /*--- Objective-dependent additions to energy term ---*/
           switch (config->GetKind_ObjFunc()){
