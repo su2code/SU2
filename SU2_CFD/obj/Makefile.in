@@ -146,6 +146,7 @@ am_____bin_SU2_CFD_SOURCES_DIST = ../include/definition_structure.hpp \
 	../src/solver_direct_poisson.cpp \
 	../src/solver_direct_elasticity.cpp \
 	../src/solver_direct_heat.cpp ../src/solver_direct_mean.cpp \
+	../src/solver_direct_mean_fem.cpp \
 	../src/solver_direct_transition.cpp \
 	../src/solver_direct_turbulent.cpp \
 	../src/solver_direct_wave.cpp ../src/solver_structure.cpp \
@@ -198,6 +199,7 @@ am__objects_1 = ___bin_SU2_CFD-definition_structure.$(OBJEXT) \
 	___bin_SU2_CFD-solver_direct_elasticity.$(OBJEXT) \
 	___bin_SU2_CFD-solver_direct_heat.$(OBJEXT) \
 	___bin_SU2_CFD-solver_direct_mean.$(OBJEXT) \
+	___bin_SU2_CFD-solver_direct_mean_fem.$(OBJEXT) \
 	___bin_SU2_CFD-solver_direct_transition.$(OBJEXT) \
 	___bin_SU2_CFD-solver_direct_turbulent.$(OBJEXT) \
 	___bin_SU2_CFD-solver_direct_wave.$(OBJEXT) \
@@ -267,6 +269,7 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST =  \
 	../src/solver_direct_poisson.cpp \
 	../src/solver_direct_elasticity.cpp \
 	../src/solver_direct_heat.cpp ../src/solver_direct_mean.cpp \
+	../src/solver_direct_mean_fem.cpp \
 	../src/solver_direct_transition.cpp \
 	../src/solver_direct_turbulent.cpp \
 	../src/solver_direct_wave.cpp ../src/solver_structure.cpp \
@@ -319,6 +322,7 @@ am__objects_2 = ___bin_SU2_CFD_AD-definition_structure.$(OBJEXT) \
 	___bin_SU2_CFD_AD-solver_direct_elasticity.$(OBJEXT) \
 	___bin_SU2_CFD_AD-solver_direct_heat.$(OBJEXT) \
 	___bin_SU2_CFD_AD-solver_direct_mean.$(OBJEXT) \
+	___bin_SU2_CFD_AD-solver_direct_mean_fem.$(OBJEXT) \
 	___bin_SU2_CFD_AD-solver_direct_transition.$(OBJEXT) \
 	___bin_SU2_CFD_AD-solver_direct_turbulent.$(OBJEXT) \
 	___bin_SU2_CFD_AD-solver_direct_wave.$(OBJEXT) \
@@ -386,6 +390,7 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST =  \
 	../src/solver_direct_poisson.cpp \
 	../src/solver_direct_elasticity.cpp \
 	../src/solver_direct_heat.cpp ../src/solver_direct_mean.cpp \
+	../src/solver_direct_mean_fem.cpp \
 	../src/solver_direct_transition.cpp \
 	../src/solver_direct_turbulent.cpp \
 	../src/solver_direct_wave.cpp ../src/solver_structure.cpp \
@@ -439,6 +444,7 @@ am__objects_3 =  \
 	___bin_SU2_CFD_DIRECTDIFF-solver_direct_elasticity.$(OBJEXT) \
 	___bin_SU2_CFD_DIRECTDIFF-solver_direct_heat.$(OBJEXT) \
 	___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean.$(OBJEXT) \
+	___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.$(OBJEXT) \
 	___bin_SU2_CFD_DIRECTDIFF-solver_direct_transition.$(OBJEXT) \
 	___bin_SU2_CFD_DIRECTDIFF-solver_direct_turbulent.$(OBJEXT) \
 	___bin_SU2_CFD_DIRECTDIFF-solver_direct_wave.$(OBJEXT) \
@@ -713,6 +719,7 @@ su2_cfd_sources = \
   ../src/solver_direct_elasticity.cpp \
   ../src/solver_direct_heat.cpp \
   ../src/solver_direct_mean.cpp \
+  ../src/solver_direct_mean_fem.cpp \
   ../src/solver_direct_transition.cpp \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_wave.cpp \
@@ -896,6 +903,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD-solver_direct_elasticity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD-solver_direct_heat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD-solver_direct_mean.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD-solver_direct_mean_fem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD-solver_direct_poisson.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD-solver_direct_transition.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD-solver_direct_turbulent.Po@am__quote@
@@ -951,6 +959,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_elasticity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_heat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_mean.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_mean_fem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_poisson.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_transition.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_turbulent.Po@am__quote@
@@ -1006,6 +1015,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_elasticity.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_heat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_poisson.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_transition.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_turbulent.Po@am__quote@
@@ -1530,6 +1540,20 @@ ___bin_SU2_CFD-solver_direct_mean.obj: ../src/solver_direct_mean.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_direct_mean.cpp' object='___bin_SU2_CFD-solver_direct_mean.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD-solver_direct_mean.obj `if test -f '../src/solver_direct_mean.cpp'; then $(CYGPATH_W) '../src/solver_direct_mean.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_mean.cpp'; fi`
+
+___bin_SU2_CFD-solver_direct_mean_fem.o: ../src/solver_direct_mean_fem.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD-solver_direct_mean_fem.o -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD-solver_direct_mean_fem.Tpo -c -o ___bin_SU2_CFD-solver_direct_mean_fem.o `test -f '../src/solver_direct_mean_fem.cpp' || echo '$(srcdir)/'`../src/solver_direct_mean_fem.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_CFD-solver_direct_mean_fem.Tpo $(DEPDIR)/___bin_SU2_CFD-solver_direct_mean_fem.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_direct_mean_fem.cpp' object='___bin_SU2_CFD-solver_direct_mean_fem.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD-solver_direct_mean_fem.o `test -f '../src/solver_direct_mean_fem.cpp' || echo '$(srcdir)/'`../src/solver_direct_mean_fem.cpp
+
+___bin_SU2_CFD-solver_direct_mean_fem.obj: ../src/solver_direct_mean_fem.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD-solver_direct_mean_fem.obj -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD-solver_direct_mean_fem.Tpo -c -o ___bin_SU2_CFD-solver_direct_mean_fem.obj `if test -f '../src/solver_direct_mean_fem.cpp'; then $(CYGPATH_W) '../src/solver_direct_mean_fem.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_mean_fem.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_CFD-solver_direct_mean_fem.Tpo $(DEPDIR)/___bin_SU2_CFD-solver_direct_mean_fem.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_direct_mean_fem.cpp' object='___bin_SU2_CFD-solver_direct_mean_fem.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD-solver_direct_mean_fem.obj `if test -f '../src/solver_direct_mean_fem.cpp'; then $(CYGPATH_W) '../src/solver_direct_mean_fem.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_mean_fem.cpp'; fi`
 
 ___bin_SU2_CFD-solver_direct_transition.o: ../src/solver_direct_transition.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD-solver_direct_transition.o -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD-solver_direct_transition.Tpo -c -o ___bin_SU2_CFD-solver_direct_transition.o `test -f '../src/solver_direct_transition.cpp' || echo '$(srcdir)/'`../src/solver_direct_transition.cpp
@@ -2301,6 +2325,20 @@ ___bin_SU2_CFD_AD-solver_direct_mean.obj: ../src/solver_direct_mean.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD_AD-solver_direct_mean.obj `if test -f '../src/solver_direct_mean.cpp'; then $(CYGPATH_W) '../src/solver_direct_mean.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_mean.cpp'; fi`
 
+___bin_SU2_CFD_AD-solver_direct_mean_fem.o: ../src/solver_direct_mean_fem.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD_AD-solver_direct_mean_fem.o -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_mean_fem.Tpo -c -o ___bin_SU2_CFD_AD-solver_direct_mean_fem.o `test -f '../src/solver_direct_mean_fem.cpp' || echo '$(srcdir)/'`../src/solver_direct_mean_fem.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_mean_fem.Tpo $(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_mean_fem.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_direct_mean_fem.cpp' object='___bin_SU2_CFD_AD-solver_direct_mean_fem.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD_AD-solver_direct_mean_fem.o `test -f '../src/solver_direct_mean_fem.cpp' || echo '$(srcdir)/'`../src/solver_direct_mean_fem.cpp
+
+___bin_SU2_CFD_AD-solver_direct_mean_fem.obj: ../src/solver_direct_mean_fem.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD_AD-solver_direct_mean_fem.obj -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_mean_fem.Tpo -c -o ___bin_SU2_CFD_AD-solver_direct_mean_fem.obj `if test -f '../src/solver_direct_mean_fem.cpp'; then $(CYGPATH_W) '../src/solver_direct_mean_fem.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_mean_fem.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_mean_fem.Tpo $(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_mean_fem.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_direct_mean_fem.cpp' object='___bin_SU2_CFD_AD-solver_direct_mean_fem.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD_AD-solver_direct_mean_fem.obj `if test -f '../src/solver_direct_mean_fem.cpp'; then $(CYGPATH_W) '../src/solver_direct_mean_fem.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_mean_fem.cpp'; fi`
+
 ___bin_SU2_CFD_AD-solver_direct_transition.o: ../src/solver_direct_transition.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD_AD-solver_direct_transition.o -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_transition.Tpo -c -o ___bin_SU2_CFD_AD-solver_direct_transition.o `test -f '../src/solver_direct_transition.cpp' || echo '$(srcdir)/'`../src/solver_direct_transition.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_transition.Tpo $(DEPDIR)/___bin_SU2_CFD_AD-solver_direct_transition.Po
@@ -3070,6 +3108,20 @@ ___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean.obj: ../src/solver_direct_mean.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_direct_mean.cpp' object='___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean.obj `if test -f '../src/solver_direct_mean.cpp'; then $(CYGPATH_W) '../src/solver_direct_mean.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_mean.cpp'; fi`
+
+___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.o: ../src/solver_direct_mean_fem.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.o -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.Tpo -c -o ___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.o `test -f '../src/solver_direct_mean_fem.cpp' || echo '$(srcdir)/'`../src/solver_direct_mean_fem.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.Tpo $(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_direct_mean_fem.cpp' object='___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.o `test -f '../src/solver_direct_mean_fem.cpp' || echo '$(srcdir)/'`../src/solver_direct_mean_fem.cpp
+
+___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.obj: ../src/solver_direct_mean_fem.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.obj -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.Tpo -c -o ___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.obj `if test -f '../src/solver_direct_mean_fem.cpp'; then $(CYGPATH_W) '../src/solver_direct_mean_fem.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_mean_fem.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.Tpo $(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_direct_mean_fem.cpp' object='___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ___bin_SU2_CFD_DIRECTDIFF-solver_direct_mean_fem.obj `if test -f '../src/solver_direct_mean_fem.cpp'; then $(CYGPATH_W) '../src/solver_direct_mean_fem.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_direct_mean_fem.cpp'; fi`
 
 ___bin_SU2_CFD_DIRECTDIFF-solver_direct_transition.o: ../src/solver_direct_transition.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ___bin_SU2_CFD_DIRECTDIFF-solver_direct_transition.o -MD -MP -MF $(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-solver_direct_transition.Tpo -c -o ___bin_SU2_CFD_DIRECTDIFF-solver_direct_transition.o `test -f '../src/solver_direct_transition.cpp' || echo '$(srcdir)/'`../src/solver_direct_transition.cpp
