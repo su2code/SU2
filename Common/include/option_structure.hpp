@@ -342,12 +342,14 @@ static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string
 enum ENUM_SPACE {
   NO_CONVECTIVE = 0, /*!< \brief No convective scheme is used. */
   SPACE_CENTERED = 1,		/*!< \brief Space centered convective numerical method. */
-  SPACE_UPWIND = 2		/*!< \brief Upwind convective numerical method. */
+  SPACE_UPWIND = 2,		/*!< \brief Upwind convective numerical method. */
+  FINITE_ELEMENT = 3		/*!< \brief Finite element convective numerical method. */
 };
 static const map<string, ENUM_SPACE> Space_Map = CCreateMap<string, ENUM_SPACE>
 ("NONE", NO_CONVECTIVE)
 ("SPACE_CENTERED", SPACE_CENTERED)
-("SPACE_UPWIND", SPACE_UPWIND);
+("SPACE_UPWIND", SPACE_UPWIND)
+("FINITE_ELEMENT", FINITE_ELEMENT);
 
 /*!
  * \brief types of fluid model
@@ -482,7 +484,6 @@ static const map<string, ENUM_GUST_DIR> Gust_Dir_Map = CCreateMap<string, ENUM_G
 ("X_DIR", X_DIR)
 ("Y_DIR", Y_DIR);
 
-// If you add to ENUM_CENTERED, you must also add the option to ENUM_CONVECTIVE
 /*!
  * \brief types of centered spatial discretizations
  */
@@ -498,8 +499,6 @@ static const map<string, ENUM_CENTERED> Centered_Map = CCreateMap<string, ENUM_C
 ("JST_KE", JST_KE)
 ("LAX-FRIEDRICH", LAX);
 
-
-// If you add to ENUM_UPWIND, you must also add the option to ENUM_CONVECTIVE
 /*!
  * \brief types of upwind spatial discretizations
  */
@@ -528,6 +527,17 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
 ("CUSP", CUSP)
 ("SCALAR_UPWIND", SCALAR_UPWIND)
 ("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE);
+
+/*!
+ * \brief types of centered spatial discretizations
+ */
+enum ENUM_FEM {
+  NO_FEM = 0,    /*!< \brief No finite element scheme is used. */
+  DG = 1,            /*!< \brief Discontinuous Galerkin numerical method. */
+};
+static const map<string, ENUM_FEM> FEM_Map = CCreateMap<string, ENUM_FEM>
+("NONE", NO_FEM)
+("DG", DG);
 
 /*!
  * \brief Spatial numerical order integration
@@ -1767,6 +1777,41 @@ public:
     this->centered = NO_CENTERED;
     this->upwind = NO_UPWIND;
     this->space = SPACE_CENTERED;
+  }
+};
+
+class COptionFEMConvect : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & space;
+  unsigned short & fem;
+  
+public:
+  COptionFEMConvect(string option_field_name, unsigned short & space_field, unsigned short & fem_field) : space(space_field), fem(fem_field) {
+    this->name = option_field_name;
+  }
+  
+  ~COptionFEMConvect() {};
+  string SetValue(vector<string> option_value) {
+    
+    string out = optionCheckMultipleValues(option_value, "unsigned short", this->name);
+    if (out.compare("") != 0) {
+      return out;
+    }
+    
+    if (FEM_Map.count(option_value[0])) {
+      this->space = Space_Map.find("FINITE_ELEMENT")->second;
+      this->fem = FEM_Map.find(option_value[0])->second;
+      return "";
+    }
+
+    // Make them defined in case something weird happens
+    this->fem = NO_FEM;
+    return badValue(option_value, "convect", this->name);
+    
+  }
+  
+  void SetDefault() {
+    this->fem = NO_FEM;
   }
 };
 

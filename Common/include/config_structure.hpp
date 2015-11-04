@@ -339,6 +339,7 @@ private:
 	Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
 	Kind_ConvNumScheme,			/*!< \brief Global definition of the convective term. */
 	Kind_ConvNumScheme_Flow,	/*!< \brief Centered or upwind scheme for the flow equations. */
+  Kind_ConvNumScheme_FEM_Flow,	/*!< \brief Finite element scheme for the flow equations. */
 	Kind_ConvNumScheme_Heat,	/*!< \brief Centered or upwind scheme for the flow equations. */
 	Kind_ConvNumScheme_AdjFlow,		/*!< \brief Centered or upwind scheme for the adjoint flow equations. */
 	Kind_ConvNumScheme_Turb,	/*!< \brief Centered or upwind scheme for the turbulence model. */
@@ -359,6 +360,7 @@ private:
 	Kind_Upwind_Turb,			/*!< \brief Upwind scheme for the turbulence model. */
 	Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
 	Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
+  Kind_FEM_Flow,			/*!< \brief Finite element scheme for the flow equations. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
 	Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
@@ -826,6 +828,13 @@ private:
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionConvect(name, space_field, centered_field, upwind_field);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  
+  void addConvectFEMOption(const string name, unsigned short & space_field, unsigned short & fem_field) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionFEMConvect(name, space_field, fem_field);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -3021,6 +3030,15 @@ public:
 	 * \return Kind of convective numerical scheme for the flow equations.
 	 */
 	unsigned short GetKind_ConvNumScheme_Flow(void);
+  
+  /*!
+   * \brief Get the kind of convective numerical scheme for the flow
+   *        equations (finite element).
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of convective numerical scheme for the flow equations.
+   */
+  unsigned short GetKind_ConvNumScheme_FEM_Flow(void);
 
 	/*!
 	 * \brief Get the kind of convective numerical scheme for the template
@@ -3080,6 +3098,14 @@ public:
 	 */
 	unsigned short GetKind_Upwind_AdjLevelSet(void);
 
+  /*!
+   * \brief Get the kind of finite element convective numerical scheme for the flow equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of finite element convective numerical scheme for the flow equations.
+   */
+  unsigned short GetKind_FEM_Flow(void);
+  
 	/*!
 	 * \brief Get the method for limiting the spatial gradients.
 	 * \return Method for limiting the spatial gradients.

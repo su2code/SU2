@@ -668,6 +668,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONV_NUM_METHOD_FLOW
    *  \n DESCRIPTION: Convective numerical method \n OPTIONS: See \link Upwind_Map \endlink , \link Centered_Map \endlink. \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
+  
+  /*!\brief CONV_NUM_METHOD_FEM_FLOW
+   *  \n DESCRIPTION: Convective numerical method \n OPTIONS: See \link Upwind_Map \endlink , \link Centered_Map \endlink. \ingroup Config*/
+  addConvectFEMOption("CONV_NUM_METHOD_FEM_FLOW", Kind_ConvNumScheme_FEM_Flow, Kind_FEM_Flow);
+  
   /*!\brief SPATIAL_ORDER_FLOW
    *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n Default: SECOND_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_FLOW", SpatialOrder_Flow, SpatialOrder_Map, SECOND_ORDER);
