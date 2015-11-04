@@ -122,6 +122,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   
   unsigned short iMGlevel;
   bool euler, ns, turbulent,
+  fem_euler, fem_ns, fem_turbulent,
   adj_euler, adj_ns, adj_turb,
   poisson, wave, fea, heat,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
@@ -129,8 +130,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   
   /*--- Initialize some useful booleans ---*/
   
-  euler            = false;  ns              = false;  turbulent = false;
-  adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
+  euler            = false;  ns              = false;  turbulent     = false;
+  fem_euler        = false;  fem_ns          = false;  fem_turbulent = false;
+  adj_euler        = false;  adj_ns          = false;  adj_turb      = false;
   spalart_allmaras = false;  menter_sst      = false;
   poisson          = false;  neg_spalart_allmaras = false;
   wave             = false;  disc_adj        = false;
@@ -146,6 +148,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case EULER : euler = true; break;
     case NAVIER_STOKES: ns = true; break;
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case FEM_EULER : fem_euler = true; break;
+    case FEM_NAVIER_STOKES: fem_ns = true; break;
+    case FEM_RANS : fem_ns = true; fem_turbulent = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -160,7 +165,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   
   /*--- Assign turbulence model booleans ---*/
   
-  if (turbulent)
+  if (turbulent || fem_turbulent)
     switch (config->GetKind_Turb_Model()) {
       case SA:     spalart_allmaras = true;     break;
       case SA_NEG: neg_spalart_allmaras = true; break;
@@ -170,7 +175,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     }
   
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
-   and potential are incompatible, they use the same position in sol container ---*/
+   and potential are incompatible, as they use the same position in sol container ---*/
   for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     
     /*--- Allocate solution for a template problem ---*/
@@ -205,6 +210,16 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       if (transition) {
         solver_container[iMGlevel][TRANS_SOL] = new CTransLMSolver(geometry[iMGlevel], config, iMGlevel);
       }
+    }
+    if (fem_euler) {
+      solver_container[iMGlevel][FEM_FLOW_SOL] = new CFEM_EulerSolver(geometry[iMGlevel], config, iMGlevel);
+      solver_container[iMGlevel][FEM_FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FEM_FLOW_SYS, false);
+    }
+    if (fem_ns) {
+      solver_container[iMGlevel][FEM_FLOW_SOL] = new CFEM_NSSolver(geometry[iMGlevel], config, iMGlevel);
+    }
+    if (fem_turbulent) {
+      cout << "Finite element turbulence model not yet implemented." << endl; exit(EXIT_FAILURE); break;
     }
     if (poisson) {
       solver_container[iMGlevel][POISSON_SOL] = new CPoissonSolver(geometry[iMGlevel], config);
@@ -1021,6 +1036,12 @@ void CDriver::Iteration_Preprocessing(CIteration **iteration_container, CConfig 
       iteration_container[iZone] = new CMeanFlowIteration(config[iZone]);
       break;
       
+    case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS:
+      if (rank == MASTER_NODE)
+        cout << ": finite element Euler/Navier-Stokes/RANS flow iteration." << endl;
+      iteration_container[iZone] = new CFEMFlowIteration(config[iZone]);
+      break;
+      
     case WAVE_EQUATION:
       if (rank == MASTER_NODE)
         cout << ": wave iteration." << endl;
@@ -1056,6 +1077,7 @@ void CDriver::Iteration_Preprocessing(CIteration **iteration_container, CConfig 
         cout << ": discrete adjoint Euler/Navier-Stokes/RANS flow iteration." << endl;
       iteration_container[iZone] = new CDiscAdjMeanFlowIteration(config[iZone]);
       break;
+
   }
   
 }

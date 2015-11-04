@@ -1404,6 +1404,83 @@ void CDiscAdjMeanFlowIteration::Monitor()     { }
 void CDiscAdjMeanFlowIteration::Output()      { }
 void CDiscAdjMeanFlowIteration::Postprocess() { }
 
+CFEMFlowIteration::CFEMFlowIteration(CConfig *config) : CIteration(config) { }
+CFEMFlowIteration::~CFEMFlowIteration(void) { }
+
+void CFEMFlowIteration::Preprocess(COutput *output,
+                                    CIntegration ***integration_container,
+                                    CGeometry ***geometry_container,
+                                    CSolver ****solver_container,
+                                    CNumerics *****numerics_container,
+                                    CConfig **config_container,
+                                    CSurfaceMovement **surface_movement,
+                                    CVolumetricMovement **grid_movement,
+                                    CFreeFormDefBox*** FFDBox,
+                                    unsigned short val_iZone) {
+  
+  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  
+  /*--- Set the initial condition ---*/
+  
+  solver_container[val_iZone][MESH_0][FEM_FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
+
+}
+
+void CFEMFlowIteration::Iterate(COutput *output,
+                                 CIntegration ***integration_container,
+                                 CGeometry ***geometry_container,
+                                 CSolver ****solver_container,
+                                 CNumerics *****numerics_container,
+                                 CConfig **config_container,
+                                 CSurfaceMovement **surface_movement,
+                                 CVolumetricMovement **grid_movement,
+                                 CFreeFormDefBox*** FFDBox,
+                                 unsigned short val_iZone) {
+  
+  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+#ifdef HAVE_MPI
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  /*--- Update global parameters ---*/
+  
+  if (config_container[val_iZone]->GetKind_Solver() == FEM_EULER)
+    config_container[val_iZone]->SetGlobalParam(FEM_EULER, RUNTIME_FEM_FLOW_SYS, ExtIter);
+  
+  if (config_container[val_iZone]->GetKind_Solver() == FEM_NAVIER_STOKES)
+    config_container[val_iZone]->SetGlobalParam(FEM_NAVIER_STOKES, RUNTIME_FEM_FLOW_SYS, ExtIter);
+  
+  if (config_container[val_iZone]->GetKind_Solver() == FEM_RANS)
+    config_container[val_iZone]->SetGlobalParam(FEM_RANS, RUNTIME_FEM_FLOW_SYS, ExtIter);
+  
+  /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
+  
+  integration_container[val_iZone][FEM_FLOW_SOL]->SingleGrid_Iteration(geometry_container,
+                                                                       solver_container,
+                                                                       numerics_container,
+                                                                       config_container,
+                                                                       RUNTIME_FEM_FLOW_SYS,
+                                                                       IntIter, val_iZone);
+  
+}
+
+void CFEMFlowIteration::Update(COutput *output,
+                                CIntegration ***integration_container,
+                                CGeometry ***geometry_container,
+                                CSolver ****solver_container,
+                                CNumerics *****numerics_container,
+                                CConfig **config_container,
+                                CSurfaceMovement **surface_movement,
+                                CVolumetricMovement **grid_movement,
+                                CFreeFormDefBox*** FFDBox,
+                                unsigned short val_iZone)      { }
+void CFEMFlowIteration::Monitor()     { }
+void CFEMFlowIteration::Output()      { }
+void CFEMFlowIteration::Postprocess() { }
+
 void FluidStructureIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                              CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
                              CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,

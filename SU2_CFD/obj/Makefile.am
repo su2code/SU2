@@ -102,6 +102,7 @@ su2_cfd_sources = \
   ../src/solver_direct_elasticity.cpp \
   ../src/solver_direct_heat.cpp \
   ../src/solver_direct_mean.cpp \
+  ../src/solver_direct_mean_fem.cpp \
   ../src/solver_direct_transition.cpp \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_wave.cpp \
