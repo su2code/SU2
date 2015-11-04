@@ -633,6 +633,8 @@ inline unsigned short CConfig::GetKind_TimeIntScheme_FEA(void) { return Kind_Tim
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Flow(void) { return Kind_ConvNumScheme_Flow; }
 
+inline unsigned short CConfig::GetKind_ConvNumScheme_FEM_Flow(void) { return Kind_ConvNumScheme_FEM_Flow; }
+
 inline unsigned short CConfig::GetKind_ConvNumScheme_AdjLevelSet(void) { return Kind_ConvNumScheme_AdjLevelSet; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Template(void) { return Kind_ConvNumScheme_Template; }
@@ -656,6 +658,8 @@ inline unsigned short CConfig::GetKind_SlopeLimit_AdjFlow(void) { return Kind_Sl
 inline unsigned short CConfig::GetKind_Upwind_Flow(void) { return Kind_Upwind_Flow; }
 
 inline unsigned short CConfig::GetKind_Upwind_AdjLevelSet(void) { return Kind_Upwind_AdjLevelSet; }
+
+inline unsigned short CConfig::GetKind_FEM_Flow(void) { return Kind_FEM_Flow; }
 
 inline su2double CConfig::GetKappa_1st_Flow(void) { return Kappa_1st_Flow; }
 

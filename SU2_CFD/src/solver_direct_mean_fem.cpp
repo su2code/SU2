@@ -1,7 +1,7 @@
 /*!
- * \file solution_direct_mean.cpp
- * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
- * \author F. Palacios, T. Economon
+ * \file solution_direct_mean_fem.cpp
+ * \brief Main subroutines for solving finite element flow problems (Euler, Navier-Stokes, etc.).
+ * \author J. Alonso, E. van der Weide, T. Economon
  * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
@@ -2197,8 +2197,8 @@ void CFEM_NSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     
     if (iMesh == MESH_0) {
       config->SetNonphysical_Points(ErrorCounter);
-      solver_container[FLOW_SOL]->SetStrainMag_Max(StrainMag_Max);
-      solver_container[FLOW_SOL]->SetOmega_Max(Omega_Max);
+      solver_container[FEM_FLOW_SOL]->SetStrainMag_Max(StrainMag_Max);
+      solver_container[FEM_FLOW_SOL]->SetOmega_Max(Omega_Max);
     }
     
   }
