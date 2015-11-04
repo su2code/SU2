@@ -983,12 +983,13 @@ void CUpwAUSMPlus_Flow::ComputeResidual(su2double *val_residual, su2double **val
 		dmRdj[iVar]        = 0;
 		Temp_Vector1[iVar] = 0;
 		Temp_Vector2[iVar] = 0;
-
-		for (jVar = 0; jVar < nVar; jVar++) {
-	        val_Jacobian_i[iVar][jVar] = 0;
-	        val_Jacobian_j[iVar][jVar] = 0;
-        }
-    }
+		if(implicit){
+			for (jVar = 0; jVar < nVar; jVar++) {
+	        	val_Jacobian_i[iVar][jVar] = 0;
+	        	val_Jacobian_j[iVar][jVar] = 0;
+        	}
+    	}
+	}
 
 
   Area = 0.0;
@@ -996,11 +997,11 @@ void CUpwAUSMPlus_Flow::ComputeResidual(su2double *val_residual, su2double **val
 	Area += Normal[iDim]*Normal[iDim];
   Area = sqrt(Area);
 
-  //-- Unit Normal ---//
+  /*--- Unit Normal ---*/
   for (iDim = 0; iDim < nDim; iDim++)
 	UnitNormal[iDim] = Normal[iDim]/Area;
 
-  //--- Primitive variables at point i ---//
+  /*--- Primitive variables at point i ---*/
   sq_vel_i = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
 	Velocity_i[iDim] = V_i[iDim+1];
@@ -1014,7 +1015,7 @@ void CUpwAUSMPlus_Flow::ComputeResidual(su2double *val_residual, su2double **val
   StaticEnergy_i = Energy_i - 0.5*sq_vel_i;
   StaticEnthalpy_i = Enthalpy_i - 0.5*sq_vel_i;
 
-  //--- Primitive variables at point j ---//
+  /*--- Primitive variables at point j ---*/
   sq_vel_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
 	Velocity_j[iDim] = V_j[iDim+1];
@@ -1029,7 +1030,7 @@ void CUpwAUSMPlus_Flow::ComputeResidual(su2double *val_residual, su2double **val
   StaticEnthalpy_j = Enthalpy_j - 0.5*sq_vel_j;
 
 
-  //--- Projected velocities ---//
+  /*--- Projected velocities ---*/
   ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
 	ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
@@ -1049,7 +1050,6 @@ void CUpwAUSMPlus_Flow::ComputeResidual(su2double *val_residual, su2double **val
   mR	= ProjVelocity_j/SoundSpeed_j;
 
 
-//enrico's parameters::
   if (fabs(mL) <= 1.0) mLP = 0.25*(mL+1.0)*(mL+1.0)*(1+0.5*(mL-1)*(mL-1));
   else mLP = 0.5*(mL+fabs(mL));
 
@@ -1136,15 +1136,12 @@ void CUpwAUSMPlus_Flow::ComputeResidual(su2double *val_residual, su2double **val
  	  dmLdi[nVar-1] =  -mL/SoundSpeed_i*(dcde_i/Density_i);
       dmRdj[nVar-1] =  -mR/SoundSpeed_j*(dcde_j/Density_j);
 
-  	// adding a*m+  , a*m-
 
  	  for (iVar = 0; iVar < nVar; iVar++) {
   	  	val_Jacobian_i[iVar][iVar] += 0.5 * (mF + Phi) * aF;
  	  	val_Jacobian_j[iVar][iVar] += 0.5 * (mF - Phi) * aF;
  	  }
 
- 	// adding dm+/dui * ui   * a, adding dm+/dur * ui   * a
- 	// defining ui = temp_vector1
 
   	  Temp_Vector1[0] = Density_i;
 
@@ -1158,9 +1155,6 @@ void CUpwAUSMPlus_Flow::ComputeResidual(su2double *val_residual, su2double **val
   	       val_Jacobian_j[iVar][jVar] += Temp_Vector1[iVar]*0.5 * aF *(1 + Phi/(mF+ 1e-15)) * dmFdmR * dmRdj[jVar];
   	  	}
   	  }
- 	// adding dPressure_i/dui * m+   *a, dPressure_j/duj * m-   *a
-  	// d[0 0 0 0 P_i]/ui = !=0 only in row nVar, Temp_Vector1 = row[nVar]
-  	// d[0 0 0 0 P_j]/uj = !=0 only in row nVar, Temp_Vector2 = row[nVar]
 
   	  Temp_Vector1[0] = dPdrho_e_i-StaticEnergy_i*dPde_rho_i/Density_i + 0.5*dPde_rho_i * sq_vel_i/Density_i;
   	  Temp_Vector2[0] = dPdrho_e_j-StaticEnergy_j*dPde_rho_j/Density_j + 0.5*dPde_rho_j * sq_vel_j/Density_j;
@@ -1174,8 +1168,6 @@ void CUpwAUSMPlus_Flow::ComputeResidual(su2double *val_residual, su2double **val
 
   	  for (iDim =0; iDim < nDim; iDim++) {
   	  	for (jVar=0; jVar<nVar; jVar++) {
-            //adding also first part of d(pF+)/dUi ====> dPressure_i/dui * pLP/Pressure_i,
-  	  	    //first part of d(pF-)/dUj ====> dPressure_j/duj * pRM/Pressure_j
  	  	    val_Jacobian_i[iDim+1][jVar] += Temp_Vector1[jVar]* pLP * UnitNormal[iDim]/Pressure_i ;
   	        val_Jacobian_j[iDim+1][jVar] += Temp_Vector2[jVar]* pRM * UnitNormal[iDim]/Pressure_j;
   	  	}
@@ -1185,18 +1177,14 @@ void CUpwAUSMPlus_Flow::ComputeResidual(su2double *val_residual, su2double **val
      	val_Jacobian_i[nVar-1][jVar] += 0.5* aF *(mF + Phi)*Temp_Vector1[jVar];
      	val_Jacobian_j[nVar-1][jVar] += 0.5* aF *(mF - Phi)*Temp_Vector2[jVar];
 
- 	  	// adding Pressure_v_i * dm+/dui   *a, dm-/dui*Pressure_v_r*a
         val_Jacobian_i[nVar-1][jVar] += 0.5 * aF *(1 + Phi/(mF+ 1e-15)) * dmFdmL * dmLdi[jVar] * Pressure_i;
         val_Jacobian_i[nVar-1][jVar] += 0.5 * aF *(1 - Phi/(mF+ 1e-15)) * dmFdmL * dmLdi[jVar] * Pressure_j;
 
-        // adding    Pressure_v_j * dm-/duj   *a, dm+/duj*Pressure_v_i   *a
         val_Jacobian_j[nVar-1][jVar] += 0.5 * aF *(1 - Phi/(mF+ 1e-15)) * dmFdmR * dmRdj[jVar] * Pressure_j;
         val_Jacobian_j[nVar-1][jVar] += 0.5 * aF *(1 + Phi/(mF+ 1e-15)) * dmFdmR * dmRdj[jVar] * Pressure_i;
-      }
+       }
 
 
-  	// adding dm-/dui * ur   *a, adding dm-/duj * ur   *a
-  	// defining ur = temp_vector1
 
   	  Temp_Vector1[0] = Density_j;
 
@@ -1211,7 +1199,6 @@ void CUpwAUSMPlus_Flow::ComputeResidual(su2double *val_residual, su2double **val
   	        val_Jacobian_j[iVar][jVar]+= Temp_Vector1[iVar]* 0.5 * aF *(1 - Phi/(mF+ 1e-15)) * dmFdmR * dmRdj[jVar];
   	  	}
   	  }
-  	// adding dpLP*unitnormal/dui, dpRM*unitnormal/duj
   	  for (iDim=0 ; iDim < nDim; iDim++) {
   	  	for (jVar = 0; jVar < nVar; jVar++) {
   	  		val_Jacobian_i[iDim+1][jVar]+= dpFdmL * dmLdi[jVar] * Pressure_i * UnitNormal[iDim];
@@ -1219,8 +1206,6 @@ void CUpwAUSMPlus_Flow::ComputeResidual(su2double *val_residual, su2double **val
   	  	}
       }
 
-      // Temp_Vector1 = (mp*ul + mp*(000pl) + mm*ur + mm*(000pr)
-  	  // Temp_Vector2 = dcl/dul, dcr/dur
 
   	  Temp_Vector1[0] = 0.5*(mF+Phi)*Density_i + 0.5*(mF-Phi)*Density_j;
       Temp_Vector2[0] = dcdrho_i + dcde_i*(sq_vel_i/Density_i -Energy_i/Density_i);
