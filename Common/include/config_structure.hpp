@@ -329,6 +329,7 @@ private:
 	Kind_SlopeLimit_AdjFlow,	/*!< \brief Slope limiter for the adjoint equation.*/
 	Kind_TimeNumScheme,			/*!< \brief Global explicit or implicit time integration. */
 	Kind_TimeIntScheme_Flow,	/*!< \brief Time integration for the flow equations. */
+  Kind_TimeIntScheme_FEM_Flow,	/*!< \brief Time integration for the flow equations. */
 	Kind_TimeIntScheme_AdjFlow,		/*!< \brief Time integration for the adjoint flow equations. */
 	Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
 	Kind_TimeIntScheme_AdjLevelSet,	/*!< \brief Time integration for the adjoint level set model. */
@@ -360,6 +361,7 @@ private:
 	Kind_Upwind_Turb,			/*!< \brief Upwind scheme for the turbulence model. */
 	Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
 	Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
+  Kind_FEM,			/*!< \brief Finite element scheme for the flow equations. */
   Kind_FEM_Flow,			/*!< \brief Finite element scheme for the flow equations. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
 	Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
@@ -1611,7 +1613,7 @@ public:
 	 * \param[in] val_kind_slopelimit - If upwind scheme, kind of slope limit.
 	 */
 	void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, unsigned short val_kind_centered,
-			unsigned short val_kind_upwind, unsigned short val_kind_slopelimit, unsigned short val_order_spatial_int);
+			unsigned short val_kind_upwind, unsigned short val_kind_slopelimit, unsigned short val_order_spatial_int, unsigned short val_kind_fem);
 
 	/*!
 	 * \brief Get the value of limiter coefficient.

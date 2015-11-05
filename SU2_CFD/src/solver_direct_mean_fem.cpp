@@ -61,7 +61,7 @@ CFEM_EulerSolver::CFEM_EulerSolver(void) : CSolver() {
 CFEM_EulerSolver::CFEM_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   
   unsigned long iPoint, index, counter_local = 0, counter_global = 0, iVertex;
-  unsigned short iVar, iDim, iMarker, nLineLets;
+  unsigned short iVar, iDim, iMarker;
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature, dull_val;
   ifstream restart_file;
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
@@ -164,48 +164,6 @@ CFEM_EulerSolver::CFEM_EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  
-  /*--- Jacobians and vector structures for implicit computations ---*/
-  
-  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
-    
-    Jacobian_i = new su2double* [nVar];
-    Jacobian_j = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_i[iVar] = new su2double [nVar];
-      Jacobian_j[iVar] = new su2double [nVar];
-    }
-    
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-    
-    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
-    
-  }
-  
-  else {
-    if (rank == MASTER_NODE) cout << "Explicit scheme. No Jacobian structure (Euler). MG level: " << iMesh <<"." << endl;
-  }
-  
-  /*--- Define some auxiliary vectors for computing flow variable
-   gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
-   c vector := transpose(WA)*(Wb) ---*/
-  
-  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    
-    Smatrix = new su2double* [nDim];
-    for (iDim = 0; iDim < nDim; iDim++)
-      Smatrix[iDim] = new su2double [nDim];
-    
-    cvector = new su2double* [nPrimVarGrad];
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      cvector[iVar] = new su2double [nDim];
-    
-  }
   
   /*--- Force definition and coefficient arrays for all of the markers ---*/
   
@@ -1198,7 +1156,7 @@ void CFEM_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solv
   
   /*--- Apply any problem-dependent initial conditions here. ---*/
   
-  if (rank == MASTER_NODE) cout << " Setting initial condition." << endl;
+  if (ExtIter == 0 && rank == MASTER_NODE) cout << " Setting initial condition." << endl;
   
 }
 
@@ -1287,6 +1245,8 @@ void CFEM_EulerSolver::Convective_Residual(CGeometry *geometry, CSolver **solver
   
   if (rank == MASTER_NODE) cout << " Computing convective residual." << endl;
   
+  // numerics holds the CDiscGalerkin class for compute residual here
+  
 }
 
 void CFEM_EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
@@ -1300,6 +1260,8 @@ void CFEM_EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
   /*--- Compute source residual and store here. ---*/
   
   if (rank == MASTER_NODE) cout << " Computing source residual." << endl;
+  
+  // numerics holds the CSourceFEM class for source resid here
   
 }
 
@@ -1663,7 +1625,6 @@ void CFEM_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solve
   /*--- Compute the root mean square residual ---*/
   
   SetResidual_RMS(geometry, config);
-  
   
 }
 
@@ -2250,6 +2211,7 @@ void CFEM_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container
 void CFEM_NSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
+  // numerics holds the CFEMVisc class for viscous resid here
   
 }
 

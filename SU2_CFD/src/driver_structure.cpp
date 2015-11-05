@@ -213,7 +213,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     }
     if (fem_euler) {
       solver_container[iMGlevel][FEM_FLOW_SOL] = new CFEM_EulerSolver(geometry[iMGlevel], config, iMGlevel);
-      solver_container[iMGlevel][FEM_FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FEM_FLOW_SYS, false);
+      solver_container[iMGlevel][FEM_FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
     if (fem_ns) {
       solver_container[iMGlevel][FEM_FLOW_SOL] = new CFEM_NSSolver(geometry[iMGlevel], config, iMGlevel);
@@ -314,8 +314,8 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   
   /*--- Allocate integration container for finite element flow solver. ---*/
   
-  if (fem_euler) integration_container[FEM_FLOW_SOL] = new CSingleGridIntegration(config);
-  if (fem_ns)    integration_container[FEM_FLOW_SOL] = new CSingleGridIntegration(config);
+  if (fem_euler) integration_container[FEM_FLOW_SOL] = new CMultiGridIntegration(config);
+  if (fem_ns)    integration_container[FEM_FLOW_SOL] = new CMultiGridIntegration(config);
   //if (fem_turbulent) integration_container[FEM_TURB_SOL] = new CSingleGridIntegration(config);
   
   /*--- Allocate solution for adjoint problem ---*/

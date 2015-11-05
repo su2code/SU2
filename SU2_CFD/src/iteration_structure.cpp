@@ -1448,21 +1448,21 @@ void CFEMFlowIteration::Iterate(COutput *output,
   /*--- Update global parameters ---*/
   
   if (config_container[val_iZone]->GetKind_Solver() == FEM_EULER)
-    config_container[val_iZone]->SetGlobalParam(FEM_EULER, RUNTIME_FEM_FLOW_SYS, ExtIter);
+    config_container[val_iZone]->SetGlobalParam(FEM_EULER, RUNTIME_FLOW_SYS, ExtIter);
   
   if (config_container[val_iZone]->GetKind_Solver() == FEM_NAVIER_STOKES)
-    config_container[val_iZone]->SetGlobalParam(FEM_NAVIER_STOKES, RUNTIME_FEM_FLOW_SYS, ExtIter);
+    config_container[val_iZone]->SetGlobalParam(FEM_NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
   
   if (config_container[val_iZone]->GetKind_Solver() == FEM_RANS)
-    config_container[val_iZone]->SetGlobalParam(FEM_RANS, RUNTIME_FEM_FLOW_SYS, ExtIter);
+    config_container[val_iZone]->SetGlobalParam(FEM_RANS, RUNTIME_FLOW_SYS, ExtIter);
   
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
   
-  integration_container[val_iZone][FEM_FLOW_SOL]->SingleGrid_Iteration(geometry_container,
+  integration_container[val_iZone][FEM_FLOW_SOL]->MultiGrid_Iteration(geometry_container,
                                                                        solver_container,
                                                                        numerics_container,
                                                                        config_container,
-                                                                       RUNTIME_FEM_FLOW_SYS,
+                                                                       RUNTIME_FLOW_SYS,
                                                                        IntIter, val_iZone);
   
 }
