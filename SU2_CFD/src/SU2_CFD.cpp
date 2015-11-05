@@ -380,7 +380,7 @@ int main(int argc, char *argv[]) {
     runtime->SetExtIter(ExtIter);
     
     /*--- Update the convergence history file (serial and parallel computations). ---*/
-    
+
     output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
                                 config_container, integration_container, false, UsedTime, ZONE_0);
     
@@ -396,6 +396,8 @@ int main(int argc, char *argv[]) {
     switch (config_container[ZONE_0]->GetKind_Solver()) {
       case EULER: case NAVIER_STOKES: case RANS:
         StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
+      case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS:
+        StopCalc = integration_container[ZONE_0][FEM_FLOW_SOL]->GetConvergence(); break;
       case WAVE_EQUATION:
         StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
       case HEAT_EQUATION:

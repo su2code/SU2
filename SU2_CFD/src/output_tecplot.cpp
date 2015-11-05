@@ -174,20 +174,23 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         Tecplot_File << ",\"Density\"";
       }
       
-      if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      if (((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) ||
+        ((Kind_Solver == FEM_EULER) || (Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_RANS)))  {
         Tecplot_File << ",\"Pressure\",\"Temperature\",\"Pressure_Coefficient\",\"Mach\"";
       }
       
-      if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS))  ||
+        ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_RANS))) {
         Tecplot_File << ",\"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Flux\", \"Y_Plus\"";
       }
       
-      if (Kind_Solver == RANS) {
+      if (Kind_Solver == RANS || Kind_Solver == FEM_RANS) {
         Tecplot_File << ", \"Eddy_Viscosity\"";
       }
       
       if (config->GetWrt_SharpEdges()) {
-        if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+        if (((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) ||
+          ((Kind_Solver == FEM_EULER) || (Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_RANS)))  {
           Tecplot_File << ", \"Sharp_Edge_Dist\"";
         }
       }
