@@ -1618,6 +1618,12 @@ public:
   virtual void Compute_NodalStress_Term(CElement *element_container);
 
   /*!
+   * \brief A virtual member to compute the plane stress term in an element for nonlinear structural problems
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_Plane_Stress_Term(CElement *element_container);
+
+  /*!
    * \brief A virtual member to compute the constitutive matrix in an element for structural problems
    * \param[in] config - Definition of the particular problem.
    */
@@ -4377,6 +4383,8 @@ public:
 
 	virtual void Compute_Averaged_NodalStress(CElement *element_container);
 
+	virtual void Compute_Plane_Stress_Term(CElement *element_container);
+
 	virtual void Compute_Constitutive_Matrix(CElement *element_container);
 
 	virtual void Compute_Stress_Tensor(CElement *element_container);
@@ -4442,7 +4450,9 @@ protected:
 	su2double **KAux_P_ab;			/*!< \brief Auxiliar matrix for the pressure term */
 	su2double *KAux_t_a;			/*!< \brief Auxiliar matrix for the pressure term */
 
-	su2double J_F;		 /*!< \brief Jacobian of the transformation (determinant of F) */
+	su2double J_F;		 			/*!< \brief Jacobian of the transformation (determinant of F) */
+
+	su2double f33;		 			/*!< \brief Plane stress term for non-linear 2D plane stress analysis */
 
 public:
 
@@ -4466,6 +4476,8 @@ public:
 	void Compute_NodalStress_Term(CElement *element_container);
 
 	void Compute_Averaged_NodalStress(CElement *element_container);
+
+	virtual void Compute_Plane_Stress_Term(CElement *element_container);
 
 	virtual void Compute_Constitutive_Matrix(CElement *element_container);
 
@@ -4498,6 +4510,8 @@ public:
 	 */
 	~CFEM_NeoHookean_Comp(void);
 
+	void Compute_Plane_Stress_Term(CElement *element_container);
+
 	void Compute_Constitutive_Matrix(CElement *element_container);
 
 	void Compute_Stress_Tensor(CElement *element_container);
@@ -4527,6 +4541,8 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CFEM_NeoHookean_Incomp(void);
+
+	void Compute_Plane_Stress_Term(CElement *element_container);
 
 	void Compute_Constitutive_Matrix(CElement *element_container);
 
