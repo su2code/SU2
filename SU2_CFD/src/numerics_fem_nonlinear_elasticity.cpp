@@ -61,6 +61,7 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 	}
 
 	J_F = 0.0;
+	f33 = 1.0;
 
 
 }
@@ -182,6 +183,17 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
 				F_Mat[2][2] = 1.0;
 			}
 
+		}
+
+		if (nDim == 2) {
+			if (plane_stress){
+				// Compute the value of the term 33 for the deformation gradient
+				Compute_Plane_Stress_Term(element);
+				F_Mat[2][2] = f33;
+			}
+			else{
+				F_Mat[2][2] = 1.0;
+			}
 		}
 
 		/*--- Determinant of F --> Jacobian of the transformation ---*/
@@ -479,6 +491,17 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element){
 
 		}
 
+		if (nDim == 2) {
+			if (plane_stress){
+				// Compute the value of the term 33 for the deformation gradient
+				Compute_Plane_Stress_Term(element);
+				F_Mat[2][2] = f33;
+			}
+			else{
+				F_Mat[2][2] = 1.0;
+			}
+		}
+
 		/*--- Determinant of F --> Jacobian of the transformation ---*/
 
 		J_F = 	F_Mat[0][0]*F_Mat[1][1]*F_Mat[2][2]+
@@ -580,6 +603,17 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 
 		}
 
+		if (nDim == 2) {
+			if (plane_stress){
+				// Compute the value of the term 33 for the deformation gradient
+				Compute_Plane_Stress_Term(element);
+				F_Mat[2][2] = f33;
+			}
+			else{
+				F_Mat[2][2] = 1.0;
+			}
+		}
+
 		/*--- Determinant of F --> Jacobian of the transformation ---*/
 
 		J_F = 	F_Mat[0][0]*F_Mat[1][1]*F_Mat[2][2]+
@@ -647,6 +681,40 @@ CFEM_NeoHookean_Comp::~CFEM_NeoHookean_Comp(void) {
 
 }
 
+void CFEM_NeoHookean_Comp::Compute_Plane_Stress_Term(CElement *element) {
+
+	su2double j_red = 1.0;
+	su2double fx = 0.0, fpx = 1.0;
+	su2double xkm1 = 1.0, xk = 1.0;
+	su2double cte = 0.0;
+
+	unsigned short iNR, nNR;
+	su2double NRTOL;
+
+	// Maximum number of iterations and tolerance (relative)
+	nNR = 10;
+	NRTOL = 1E-25;
+
+	// j_red: reduced jacobian, for the 2x2 submatrix of F
+	j_red = F_Mat[0][0] * F_Mat[1][1] - F_Mat[1][0] * F_Mat[0][1];
+	// cte: constant term in the NR method
+	cte = Lambda*log(j_red) - Mu;
+
+	// f(f33)  = mu*f33^2 + lambda*ln(f33) + (lambda*ln(j_red)-mu) = 0
+	// f'(f33) = 2*mu*f33 + lambda/f33
+
+	for (iNR = 0; iNR < nNR; iNR++){
+		fx  = Mu*pow(xk,2.0) + Lambda*log(xk) + cte;
+		fpx = 2*Mu*xk + (Lambda / xk);
+		xkm1 = xk - fx / fpx;
+		if (((xkm1 - xk) / xk) < NRTOL) break;
+		xk = xkm1;
+	}
+
+	f33 = xkm1;
+
+}
+
 void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(CElement *element) {
 
 	su2double Mu_p = 0.0, Lambda_p = 0.0;
@@ -695,6 +763,24 @@ void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element) {
 		}
 	}
 
+///	if (plane_stress) {
+//	cout << "Deformation gradient (F): " << endl;
+//	cout << F_Mat[0][0] << " " << F_Mat[0][1] << " " << F_Mat[0][2] << endl;
+//	cout << F_Mat[1][0] << " " << F_Mat[1][1] << " " << F_Mat[1][2] << endl;
+//	cout << F_Mat[2][0] << " " << F_Mat[2][1] << " " << F_Mat[2][2] << endl;
+//	cout << endl;
+//	cout << "Left Cauchy-Green tensor (b): " << endl;
+//	cout << b_Mat[0][0] << " " << b_Mat[0][1] << " " << b_Mat[0][2] << endl;
+//	cout << b_Mat[1][0] << " " << b_Mat[1][1] << " " << b_Mat[1][2] << endl;
+//	cout << b_Mat[2][0] << " " << b_Mat[2][1] << " " << b_Mat[2][2] << endl;
+//	cout << endl;
+//	cout << "Stress Tensor (sigma): " << endl;
+//	cout << Stress_Tensor[0][0] << " " << Stress_Tensor[0][1] << " " << Stress_Tensor[0][2] << endl;
+//	cout << Stress_Tensor[1][0] << " " << Stress_Tensor[1][1] << " " << Stress_Tensor[1][2] << endl;
+//	cout << Stress_Tensor[2][0] << " " << Stress_Tensor[2][1] << " " << Stress_Tensor[2][2] << endl;
+//	cout << endl;
+//	}
+
 }
 
 CFEM_NeoHookean_Incomp::CFEM_NeoHookean_Incomp(unsigned short val_nDim, unsigned short val_nVar,
@@ -704,6 +790,10 @@ CFEM_NeoHookean_Incomp::CFEM_NeoHookean_Incomp(unsigned short val_nDim, unsigned
 }
 
 CFEM_NeoHookean_Incomp::~CFEM_NeoHookean_Incomp(void) {
+
+}
+
+void CFEM_NeoHookean_Incomp::Compute_Plane_Stress_Term(CElement *element) {
 
 }
 
