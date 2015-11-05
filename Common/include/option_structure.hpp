@@ -289,7 +289,6 @@ static const map<string, ENUM_MEASUREMENTS> Measurements_Map = CCreateMap<string
  */
 enum RUNTIME_TYPE {
   RUNTIME_FLOW_SYS = 2,			  /*!< \brief One-physics case, the code is solving the flow equations (Euler and Navier-Stokes). */
-  RUNTIME_FEM_FLOW_SYS = 23,  /*!< \brief One-physics case, the code is solving the finite element flow equations (Euler and Navier-Stokes). */
   RUNTIME_TURB_SYS = 3,			  /*!< \brief One-physics case, the code is solving the turbulence model. */
   RUNTIME_POISSON_SYS = 4,    /*!< \brief One-physics case, the code is solving the poissonal potential equation. */
   RUNTIME_ADJPOT_SYS = 5,		  /*!< \brief One-physics case, the code is solving the adjoint potential flow equation. */
