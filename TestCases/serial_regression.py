@@ -442,6 +442,34 @@ def main():
     edge_PPR.timeout   = 1600
     edge_PPR.tol       = 0.00001
     test_list.append(edge_PPR)
+    
+    
+    ######################################
+    ### turboSU2                       ###
+    ######################################
+    
+    # Mini centrifugal turbine blade
+    centrifugal_blade           = TestCase('centrifugal_blade')
+    centrifugal_blade.cfg_dir   = "turbomachinery/centrifugal_blade"
+    centrifugal_blade.cfg_file  = "centrifugal_blade.cfg"
+    centrifugal_blade.test_iter = 100
+    centrifugal_blade.test_vals = [-9.106943, -0.460429, 1.069070e+01, 3.396010e-01] #last 4 columns
+    centrifugal_blade.su2_exec  = "SU2_CFD"
+    centrifugal_blade.timeout   = 1600
+    centrifugal_blade.tol       = 0.000001
+    test_list.append(centrifugal_blade) 
+    
+    
+    # Mini centrifugal turbine stage
+    centrifugal_stage           = TestCase('centrifugal_stage')
+    centrifugal_stage.cfg_dir   = "turbomachinery/centrifugal_stage"
+    centrifugal_stage.cfg_file  = "centrifugal_stage.cfg"
+    centrifugal_stage.test_iter = 100
+    centrifugal_stage.test_vals = [-10.166364, 1.621172, 2.206476e+01, 5.271075e-01] #last 4 columns
+    centrifugal_stage.su2_exec  = "SU2_CFD"
+    centrifugal_stage.timeout   = 1600
+    centrifugal_stage.tol       = 0.000001
+    test_list.append(centrifugal_stage) 
 
     ######################################
     ### RUN TESTS                      ###
