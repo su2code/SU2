@@ -3,7 +3,7 @@
 ## \file gradients.py
 #  \brief python package for gradients
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.0.1 "Cardinal"
+#  \version 4.0.2 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -85,6 +85,13 @@ def gradient( func_name, method, config, state=None ):
         # Adjoint Gradients
         if any([method == 'CONTINUOUS_ADJOINT', method == 'DISCRETE_ADJOINT']):
 
+            # If using chain rule
+            if config.OBJECTIVE_FUNCTION == 'OUTLET_CHAIN_RULE':
+                import downstream_function
+                chaingrad = downstream_function.downstream_gradient(config,state)
+                # Set coefficients for gradients
+                config.OBJ_CHAIN_RULE_COEFF = str(chaingrad)
+                
             # Aerodynamics
             if func_name in su2io.optnames_aero:
                 grads = adjoint( func_name, config, state )

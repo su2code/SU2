@@ -2,7 +2,7 @@
  * \file dual_grid_structure.inl
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -33,27 +33,27 @@
 
 inline void CPoint::SetElem(unsigned long val_elem) { Elem.push_back(val_elem); nElem = Elem.size(); }
 
-inline void CPoint::ResetBoundary(void) { if (vertex != NULL) delete [] vertex; Boundary = false; }
+inline void CPoint::ResetBoundary(void) { if (Vertex != NULL) delete [] Vertex; Boundary = false; }
 
 inline void CPoint::ResetElem(void) { Elem.clear(); nElem = 0; }
 
 inline void CPoint::ResetPoint(void) { Point.clear(); Edge.clear(); nPoint = 0; }
 
-inline su2double CPoint::GetCoord(unsigned short val_dim) { return coord[val_dim]; }
+inline su2double CPoint::GetCoord(unsigned short val_dim) { return Coord[val_dim]; }
 
-inline su2double *CPoint::GetCoord(void) { return coord; }
+inline su2double *CPoint::GetCoord(void) { return Coord; }
 
 inline bool CPoint::GetFlip_Orientation(void) { return Flip_Orientation; }
 
-inline void CPoint::SetCoord(unsigned short val_dim, su2double val_coord) { coord[val_dim] = val_coord; }
+inline void CPoint::SetCoord(unsigned short val_dim, su2double val_coord) { Coord[val_dim] = val_coord; }
 
 inline void CPoint::SetFlip_Orientation(void) { Flip_Orientation = true; }
 
-inline void CPoint::AddCoord(unsigned short val_dim, su2double val_coord) { coord[val_dim] += val_coord; }
+inline void CPoint::AddCoord(unsigned short val_dim, su2double val_coord) { Coord[val_dim] += val_coord; }
 
 inline void CPoint::SetCoord(su2double *val_coord) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
-		coord[iDim]=val_coord[iDim]; 
+		Coord[iDim]=val_coord[iDim];
 }
 
 inline void CPoint::SetnElem(unsigned short val_nElem) { nElem = val_nElem; }
@@ -94,9 +94,9 @@ inline void CPoint::SetVolume (su2double val_Volume) { Volume[0] = val_Volume; }
 
 inline void CPoint::SetMove(bool val_move) { Move = val_move; }
 
-inline su2double *CPoint::GetCoord_Old(void) { return Coord_old; }
+inline su2double *CPoint::GetCoord_Old(void) { return Coord_Old; }
 
-inline su2double *CPoint::GetCoord_Sum(void) { return Coord_sum; }
+inline su2double *CPoint::GetCoord_Sum(void) { return Coord_Sum; }
 
 inline su2double *CPoint::GetGridVel(void) { return GridVel; }
 
@@ -104,17 +104,17 @@ inline su2double **CPoint::GetGridVel_Grad(void) { return GridVel_Grad; }
 
 inline void CPoint::SetCoord_Old(su2double *val_coord_old) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Coord_old[iDim] = val_coord_old[iDim]; 
+		Coord_Old[iDim] = val_coord_old[iDim]; 
 }
 
 inline void CPoint::SetCoord_SumZero(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-	Coord_sum[iDim] = 0.0; 
+	Coord_Sum[iDim] = 0.0; 
 }
 
 inline void CPoint::AddCoord_Sum(su2double *val_coord_sum) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
-		Coord_sum[iDim] += val_coord_sum[iDim]; 
+		Coord_Sum[iDim] += val_coord_sum[iDim]; 
 }
 
 inline void CPoint::SetGridVel(unsigned short val_dim, su2double val_gridvel) { GridVel[val_dim] = val_gridvel; }
@@ -139,13 +139,13 @@ inline bool CPoint::GetAgglomerate_Indirect (void) { return Agglomerate_Indirect
 inline void CPoint::SetAgglomerate_Indirect(bool val_agglomerate) { Agglomerate_Indirect = val_agglomerate; };
 
 inline void CPoint::SetVertex(long val_vertex, unsigned short val_nmarker) { 
-	if (Boundary) vertex[val_nmarker] = val_vertex; 
+	if (Boundary) Vertex[val_nmarker] = val_vertex;
 }
 
 inline unsigned short CPoint::GetnChildren_CV (void) { return nChildren_CV; }
 
 inline long CPoint::GetVertex(unsigned short val_marker) { 
-	if (Boundary) return vertex[val_marker]; 
+	if (Boundary) return Vertex[val_marker];
 	else return -1; 
 }
 
@@ -168,7 +168,7 @@ inline su2double CPoint::GetVolume_nM1 (void) { return Volume[2]; }
 
 inline void CPoint::SetCoord_n (void) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Coord_n[iDim] = coord[iDim]; 
+		Coord_n[iDim] = Coord[iDim];
 }
 
 inline void CPoint::SetCoord_n1 (void) { 

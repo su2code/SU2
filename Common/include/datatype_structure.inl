@@ -2,9 +2,9 @@
  * \file datatype_structure.inl
  * \brief In-Line subroutines of the <i>datatype_structure.hpp</i> file.
  * \author T. Albring
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -31,7 +31,7 @@
 #pragma once
 
 
-/* --- Explicit cast functions --- */
+/*--- Explicit cast functions ---*/
 
 namespace SU2_TYPE{
   inline int Int(const su2double& data){
@@ -43,7 +43,7 @@ namespace SU2_TYPE{
   }
 }
 
-/* --- Default implementation if reverse mode is disabled --- */
+/*--- Default implementation if reverse mode is disabled ---*/
 
 #if !defined ADOLC_REVERSE_TYPE && \
     !defined CODI_REVERSE_TYPE
@@ -59,11 +59,15 @@ namespace AD{
   inline void ClearAdjoints(){}
 
   inline void ComputeAdjoint(){}
+
+  inline void Reset(){}
+
+  inline void ResetInput(su2double &data){}
 }
 #endif
 
 
-/* --- Special handling of the sprint routine for non-primitive types. --- */
+/*--- Special handling of the sprint routine for non-primitive types. ---*/
 
 #if  defined ADOLC_REVERSE_TYPE || \
      defined ADOLC_FORWARD_TYPE || \
@@ -71,8 +75,8 @@ namespace AD{
      defined CODI_REVERSE_TYPE  || \
      defined CODI_FORWARD_TYPE
 
-/* --- This objective is used for primitive types,
- * where the output type of the getValue coincides with the input type. --- */
+/*--- This objective is used for primitive types,
+ where the output type of the getValue coincides with the input type. ---*/
 
 template< typename IN > struct Impl_getValue {
   typedef IN OUT;
@@ -81,8 +85,8 @@ template< typename IN > struct Impl_getValue {
   }
 };
 
-/* --- This objective is used for non-primitive types,
- * where the output type is double and the input type is su2double. --- */
+/*--- This objective is used for non-primitive types,
+ where the output type is double and the input type is su2double. ---*/
 
 template<> struct Impl_getValue<su2double> {
   typedef double OUT;
@@ -92,13 +96,13 @@ template<> struct Impl_getValue<su2double> {
 };
 
 /*--- Other objects are implemented in the corresponding header files of the datatypes.
- *  For example there may be an expression in the argument. --- */
+ For example there may be an expression in the argument. ---*/
 
 
-/*--- Terminating definition of sprintfOver --- */
+/*--- Terminating definition of sprintfOver ---*/
 
 inline void sprintfOver(char * str, const char * format) {
-  sprintf(str, format);
+  sprintf(str, "%s", format);
 }
 
 
