@@ -705,18 +705,20 @@ static const map<string, ENUM_AITKEN> AitkenForm_Map = CCreateMap<string, ENUM_A
  * \brief types Riemann boundary treatments
  */
 enum RIEMANN_TYPE {
-  TOTAL_CONDITIONS_PT = 1,		/*!< \brief User specifies total pressure, total temperature, and flow direction. */
-  DENSITY_VELOCITY = 2,         /*!< \brief User specifies density and velocity, and flow direction. */
-  STATIC_PRESSURE = 3,           /*!< \brief User specifies static pressure. */
-  TOTAL_SUPERSONIC_INFLOW = 4,	/*!< \brief User specifies total pressure, total temperature and Velocity components. */
-  STATIC_SUPERSONIC_INFLOW_PT = 5, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
-  STATIC_SUPERSONIC_INFLOW_PD = 6, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
-  MIXING_IN = 7, /*!< \brief User does not specify anything information are retrieved from the other domain */
-  MIXING_OUT = 8 /*!< \brief User does not specify anything information are retrieved from the other domain */
+  TOTAL_CONDITIONS_PT = 1,				 /*!< \brief User specifies total pressure, total temperature, and flow direction. */
+	TOTAL_CONDITIONS_PD =2,     		 /*!< \brief User specifies total pressure, density and flow direction. */
+  DENSITY_VELOCITY = 3,       		 /*!< \brief User specifies density and velocity, and flow direction. */
+  STATIC_PRESSURE = 4,        	   /*!< \brief User specifies static pressure. */
+  TOTAL_SUPERSONIC_INFLOW = 5,	   /*!< \brief User specifies total pressure, total temperature and Velocity components. */
+  STATIC_SUPERSONIC_INFLOW_PT = 6, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
+  STATIC_SUPERSONIC_INFLOW_PD = 7, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
+  MIXING_IN = 8, 									 /*!< \brief User does not specify anything information are retrieved from the other domain */
+  MIXING_OUT = 9                   /*!< \brief User does not specify anything information are retrieved from the other domain */
 };
 
 static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>
 ("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
+("TOTAL_CONDITIONS_PD", TOTAL_CONDITIONS_PD)
 ("DENSITY_VELOCITY", DENSITY_VELOCITY)
 ("STATIC_PRESSURE", STATIC_PRESSURE)
 ("TOTAL_SUPERSONIC_INFLOW", TOTAL_SUPERSONIC_INFLOW)

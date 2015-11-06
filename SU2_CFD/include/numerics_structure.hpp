@@ -2004,6 +2004,63 @@ public:
 };
 
 /*!
+ * \class CUpwAUSMPlus_Flow
+ * \brief Class for solving an approximate Riemann AUSM plus, real gas.
+ */
+
+class CUpwAUSMPlus_Flow : public CNumerics {
+
+private:
+
+	bool implicit;
+	su2double *Diff_U;
+	su2double *Velocity_i, *Velocity_j, *RoeVelocity;
+	su2double *ProjFlux_i, *ProjFlux_j;
+	su2double *delta_wave, *delta_vel;
+	su2double *Lambda, *Epsilon;
+	su2double **P_Tensor, **invP_Tensor;
+	su2double sq_vel_i, sq_vel_j, sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+	Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
+	ProjVelocity, ProjVelocity_i, ProjVelocity_j, proj_delta_vel, delta_p, delta_rho;
+	unsigned short iDim, iVar, jVar, kVar;
+	su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
+
+	su2double dmFdmL, dmFdmR, dpFdmL, dpFdmR, aF;
+	su2double *dmLdi, *dmRdj, *Temp_Vector1, *Temp_Vector2;
+	su2double dPde_rho_i, dPde_rho_j, dPdrho_e_i, dPdrho_e_j, StaticEnergy_i, StaticEnergy_j, StaticEnthalpy_i, StaticEnthalpy_j;
+	su2double dcdrho_i, dcdrho_j, dcde_i, dcde_j;
+
+	//only temporary... VW gas derivative test
+
+	su2double dPdrhode, dPdedrho, dPde2, dPdrho2, a, b;
+
+public:
+
+
+	 /* \brief Constructor of the class.*/
+	 /* \param[in] val_nDim - Number of dimensions of the problem.*/
+	 /* \param[in] val_nVar - Number of variables of the problem.*/
+	 /* \param[in] config - Definition of the particular problem.*/
+
+	CUpwAUSMPlus_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+
+	 /* \brief Destructor of the class.*/
+
+	~CUpwAUSMPlus_Flow(void);
+
+
+	 /* \brief Compute the Roe's flux between two nodes i and j.*/
+	 /* \param[out] val_residual - Pointer to the total residual.*/
+	 /* \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).*/
+	 /* \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).*/
+	 /* \param[in] config - Definition of the particular problem.*/
+
+	void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+
+/*!
  * \class CUpwHLLC_Flow
  * \brief Class for solving an approximate Riemann AUSM.
  * \ingroup ConvDiscr

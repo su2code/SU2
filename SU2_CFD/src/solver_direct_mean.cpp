@@ -7096,7 +7096,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
                               CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim, iVar, jVar, kVar;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double P_Total, T_Total, P_static, T_static, Rho_static, *Mach, *Flow_Dir, Area, UnitNormal[3];
+  su2double P_Total, T_Total, Rho_Total, P_static, T_static, Rho_static, *Mach, *Flow_Dir, Area, UnitNormal[3];
   su2double *Velocity_b, Velocity2_b, Enthalpy_b, Energy_b, StaticEnergy_b, Density_b, Kappa_b, Chi_b, Pressure_b, Temperature_b;
   su2double *Velocity_e, Velocity2_e, VelMag_e, Enthalpy_e, Entropy_e, Energy_e = 0.0, StaticEnthalpy_e, StaticEnergy_e, Density_e = 0.0, Pressure_e;
   su2double *Velocity_i, Velocity2_i, Enthalpy_i, Energy_i, StaticEnergy_i, Density_i, Kappa_i, Chi_i, Pressure_i, SoundSpeed_i;
@@ -7236,6 +7236,38 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           if (tkeNeeded) Energy_e += GetTke_Inf();
           break;
           
+        case TOTAL_CONDITIONS_PD: //case TOTAL_SUPERSONIC_INFLOW:
+/*--- Retrieve the specified total conditions for this boundary. ---*/
+					if (gravity)
+						P_Total = config->GetRiemann_Var1(Marker_Tag)
+							- geometry->node[iPoint]->GetCoord(nDim - 1)
+							* STANDART_GRAVITY; /// check in which case is true (only free surface?)
+					else
+						P_Total = config->GetRiemann_Var1(Marker_Tag);
+					Rho_Total = config->GetRiemann_Var2(Marker_Tag);
+					Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
+					/*--- Non-dim. the inputs if necessary. ---*/
+					P_Total /= config->GetPressure_Ref();
+					Rho_Total /= config->GetDensity_Ref();
+					/* --- Computes the total state --- */
+					FluidModel->SetTDState_Prho(P_Total, Rho_Total);
+					Enthalpy_e = FluidModel->GetStaticEnergy()
+							+ FluidModel->GetPressure() / FluidModel->GetDensity();
+					Entropy_e = FluidModel->GetEntropy();
+					/* --- Compute the boundary state u_e --- */
+					Velocity2_e = Velocity2_i;
+					for (iDim = 0; iDim < nDim; iDim++) {
+						Velocity_e[iDim] = sqrt(Velocity2_e) * Flow_Dir[iDim];
+					}
+					StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+					FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
+					Density_e = FluidModel->GetDensity();
+					StaticEnergy_e = FluidModel->GetStaticEnergy();
+					Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
+					if (tkeNeeded)
+						Energy_e += GetTke_Inf();
+					break;
+
         case STATIC_SUPERSONIC_INFLOW_PT:
           
           /*--- Retrieve the specified total conditions for this boundary. ---*/

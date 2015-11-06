@@ -1095,10 +1095,11 @@ void CUpwAUSMPlus_Flow::ComputeResidual(su2double *val_residual, su2double **val
 	}
 	/*--- Jacobian for Equilibrium Real Gas ---*/
 	if (implicit) {
-
-		for (jVar = 0; jVar < nVar; jVar++) {
-			val_Jacobian_i[iVar][jVar] = 0;
-			val_Jacobian_j[iVar][jVar] = 0;
+		for (iVar = 0; iVar < nVar; iVar++) {
+			for (jVar = 0; jVar < nVar; jVar++) {
+				val_Jacobian_i[iVar][jVar] = 0;
+				val_Jacobian_j[iVar][jVar] = 0;
+			}
 		}
 
 		if (mL <= 1)
