@@ -6726,8 +6726,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   cgsize_t* cgsize; cgsize = new cgsize_t[3];
   ZoneType_t zonetype;
   DataType_t datatype;
-  su2double** coordArray = NULL;
-  su2double*** gridCoords = NULL;
+  passivedouble** coordArray = NULL;
+  passivedouble*** gridCoords = NULL;
   ElementType_t elemType;
   cgsize_t range_min, range_max, startE, endE;
   range_min = 1;
@@ -6891,8 +6891,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
     vertices     = new int[nzones];
     cells        = new int[nzones];
     boundVerts   = new int[nzones];
-    coordArray   = new su2double*[nzones];
-    gridCoords   = new su2double**[nzones];
+    coordArray   = new passivedouble*[nzones];
+    gridCoords   = new passivedouble**[nzones];
     elemTypeVTK  = new int*[nzones];
     elemIndex    = new int*[nzones];
     elemBegin    = new int*[nzones];
@@ -7007,14 +7007,14 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
       
       range_min = (cgsize_t)starting_node[rank]+1;
       range_max = (cgsize_t)ending_node[rank];
-      coordArray[j-1] = new su2double[local_node];
+      coordArray[j-1] = new passivedouble[local_node];
       
       /*--- Allocate memory for the 2-D array that will store the x, y,
        & z (if required) coordinates for writing into the SU2 mesh. ---*/
       
-      gridCoords[j-1] = new su2double*[ncoords];
+      gridCoords[j-1] = new passivedouble*[ncoords];
       for (int ii = 0; ii < ncoords; ii++) {
-        *(gridCoords[j-1]+ii) = new su2double[local_node];
+        *(gridCoords[j-1]+ii) = new passivedouble[local_node];
       }
       
       /*--- Loop over each set of coordinates. Note again
