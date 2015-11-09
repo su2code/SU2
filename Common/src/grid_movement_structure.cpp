@@ -3344,8 +3344,8 @@ void CSurfaceMovement::GetCartesianCoordCP(CGeometry *geometry, CConfig *config,
 
 void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *config, CFreeFormDefBox *FFDBox, unsigned short iFFDBox) {
   
-  su2double *Coord_0, *Coord_1;
-  unsigned short iMarker, iNode, jNode, lDegree, mDegree, nDegree;
+  su2double Coord_0[] = {0,0,0}, Coord_1[] = {0,0,0};
+  unsigned short iMarker, iNode, jNode, lDegree, mDegree, nDegree, iDim;
   unsigned long iElem, iPoint, jPoint;
   
   unsigned short Kind_SU2 = config->GetKind_SU2();
@@ -3441,8 +3441,10 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
             
             if (jPoint > iPoint) {
               
-              Coord_0 = geometry->node[iPoint]->GetCoord();
-              Coord_1 = geometry->node[jPoint]->GetCoord();
+              for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
+                Coord_0[iDim] = geometry->node[iPoint]->GetCoord()[iDim];
+                Coord_1[iDim] = geometry->node[jPoint]->GetCoord()[iDim];
+              }
               
               if (!IPlane_Intersect_A) {
                 if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_1_A, IPlane_Coord_2_A)) { IPlane_Intersect_A = true; }
@@ -6043,14 +6045,14 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 	
   string text_line, iTag;
 	ifstream mesh_file;
-	su2double coord[3];
+  su2double CPcoord[3], coord[] = {0,0,0};
 	unsigned short degree[3], iFFDBox, iCornerPoints, iControlPoints, iMarker, iDegree, jDegree, kDegree,
   iChar, LevelFFDBox, nParentFFDBox, iParentFFDBox, nChildFFDBox, iChildFFDBox, nMarker, *nCornerPoints,
   *nControlPoints;
 	unsigned long iSurfacePoints, iPoint, jPoint, iVertex, nVertex, nPoint, iElem = 0,
   nElem, my_nSurfPoints, nSurfPoints, *nSurfacePoints;
   
-  unsigned short nDim = geometry->GetnDim();
+  unsigned short nDim = geometry->GetnDim(), iDim;
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
@@ -6242,20 +6244,20 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
           if (nDim == 2) {
             if (iCornerPoints < nCornerPoints[iFFDBox]/SU2_TYPE::Int(2)) {
               getline(mesh_file, text_line); istringstream FFDBox_line(text_line);
-              FFDBox_line >> coord[0]; FFDBox_line >> coord[1]; coord[2] = -0.5;
+              FFDBox_line >> CPcoord[0]; FFDBox_line >> CPcoord[1]; CPcoord[2] = -0.5;
             }
             else {
-              coord[0] = FFDBox[iFFDBox]->GetCoordCornerPoints(0, iCornerPoints-nCornerPoints[iFFDBox]/SU2_TYPE::Int(2));
-              coord[1] = FFDBox[iFFDBox]->GetCoordCornerPoints(1, iCornerPoints-nCornerPoints[iFFDBox]/SU2_TYPE::Int(2));
-              coord[2] = 0.5;
+              CPcoord[0] = FFDBox[iFFDBox]->GetCoordCornerPoints(0, iCornerPoints-nCornerPoints[iFFDBox]/SU2_TYPE::Int(2));
+              CPcoord[1] = FFDBox[iFFDBox]->GetCoordCornerPoints(1, iCornerPoints-nCornerPoints[iFFDBox]/SU2_TYPE::Int(2));
+              CPcoord[2] = 0.5;
             }
           }
           else {
             getline(mesh_file, text_line); istringstream FFDBox_line(text_line);
-            FFDBox_line >> coord[0]; FFDBox_line >> coord[1]; FFDBox_line >> coord[2];
+            FFDBox_line >> CPcoord[0]; FFDBox_line >> CPcoord[1]; FFDBox_line >> CPcoord[2];
           }
           
-					FFDBox[iFFDBox]->SetCoordCornerPoints(coord, iCornerPoints);
+          FFDBox[iFFDBox]->SetCoordCornerPoints(CPcoord, iCornerPoints);
           
 				}
 				
@@ -6275,9 +6277,9 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
 				for (iControlPoints = 0; iControlPoints < nControlPoints[iFFDBox]; iControlPoints++) {
 					getline(mesh_file, text_line); istringstream FFDBox_line(text_line);
 					FFDBox_line >> iDegree; FFDBox_line >> jDegree; FFDBox_line >> kDegree; 
-					FFDBox_line >> coord[0]; FFDBox_line >> coord[1]; FFDBox_line >> coord[2]; 
-					FFDBox[iFFDBox]->SetCoordControlPoints(coord, iDegree, jDegree, kDegree); 
-					FFDBox[iFFDBox]->SetCoordControlPoints_Copy(coord, iDegree, jDegree, kDegree);
+          FFDBox_line >> CPcoord[0]; FFDBox_line >> CPcoord[1]; FFDBox_line >> CPcoord[2];
+          FFDBox[iFFDBox]->SetCoordControlPoints(CPcoord, iDegree, jDegree, kDegree);
+          FFDBox[iFFDBox]->SetCoordControlPoints_Copy(CPcoord, iDegree, jDegree, kDegree);
 				}
 				
 				getline (mesh_file, text_line);
@@ -6294,16 +6296,19 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
           if (config->GetMarker_All_TagBound(iTag) != -1) {
 
             iMarker = config->GetMarker_All_TagBound(iTag);
-            FFDBox_line >> coord[0]; FFDBox_line >> coord[1]; FFDBox_line >> coord[2];
+            FFDBox_line >> CPcoord[0]; FFDBox_line >> CPcoord[1]; FFDBox_line >> CPcoord[2];
             
             for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
               jPoint =  geometry->vertex[iMarker][iVertex]->GetNode();
               if (iPoint == geometry->node[jPoint]->GetGlobalIndex()) {
+                for (iDim = 0; iDim < nDim; iDim++){
+                  coord[iDim] = geometry->node[jPoint]->GetCoord()[iDim];
+                }
                 FFDBox[iFFDBox]->Set_MarkerIndex(iMarker);
                 FFDBox[iFFDBox]->Set_VertexIndex(iVertex);
                 FFDBox[iFFDBox]->Set_PointIndex(jPoint);
-                FFDBox[iFFDBox]->Set_ParametricCoord(coord);
-                FFDBox[iFFDBox]->Set_CartesianCoord(geometry->node[jPoint]->GetCoord());
+                FFDBox[iFFDBox]->Set_ParametricCoord(CPcoord);
+                FFDBox[iFFDBox]->Set_CartesianCoord(coord);
                 my_nSurfPoints++;
               }
             }
