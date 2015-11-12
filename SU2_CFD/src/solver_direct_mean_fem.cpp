@@ -368,18 +368,18 @@ CFEM_EulerSolver::CFEM_EulerSolver(CGeometry *geometry, CConfig *config, unsigne
       node[iPoint]->SetSolution_Old(Solution);
       counter_local++;
     }
+  }
     
-    /*--- Warning message about non-physical points ---*/
+  /*--- Warning message about non-physical points ---*/
     
-    if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
-      SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #else
-      counter_global = counter_local;
+    counter_global = counter_local;
 #endif
-      if ((rank == MASTER_NODE) && (counter_global != 0))
-        cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
-    }
+    if ((rank == MASTER_NODE) && (counter_global != 0))
+      cout << "Warning. The original solution contains "<< counter_global << " points that are not physical." << endl;
     
   }
   
