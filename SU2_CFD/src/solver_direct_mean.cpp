@@ -7688,6 +7688,14 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
   for (iVar=0;iVar<nVar;iVar++)
     TotalFlux[val_Marker][iVar]= 0.0;
   
+#ifdef HAVE_MPI
+  su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, *MyTotalFlux = NULL;
+  su2double MyTotalArea, *MyTotalNormal= NULL, *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL;
+  unsigned long My_nVert;
+#endif
+
+
+
   /*--- Loop over the vertices to compute the averaged quantities ---*/
   nVert = 0;
   for (iVertex = 0; iVertex < geometry->GetnVertex(val_Marker); iVertex++) {
@@ -7757,6 +7765,56 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
     }
   }
   
+  
+#ifdef HAVE_MPI
+
+  /*--- Add information using all the nodes ---*/
+
+  MyTotalDensity       = TotalDensity; 							TotalDensity         = 0;
+  MyTotalPressure      = TotalPressure;  					  TotalPressure        = 0;
+  MyTotalAreaDensity   = TotalAreaDensity; 					TotalAreaDensity     = 0;
+  MyTotalAreaPressure  = TotalAreaPressure;         TotalAreaPressure    = 0;
+  MyTotalArea          = TotalArea;                 TotalArea            = 0;
+  My_nVert						 = nVert;											nVert								 = 0;
+
+  SU2_MPI::Allreduce(&MyTotalDensity, &TotalDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotalPressure, &TotalPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotalAreaDensity, &TotalAreaDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotalAreaPressure, &TotalAreaPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotalArea, &TotalArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotalNormal, &TotalNormal, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&My_nVert, &nVert, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+  MyTotalFlux					 = new su2double[nVar];
+  MyTotalVelocity      = new su2double[nDim];
+  MyTotalAreaVelocity  = new su2double[nDim];
+  MyTotalNormal        = new su2double[nDim];
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+  	MyTotalFlux[iVar]  = TotalFlux[val_Marker][iVar];
+    TotalFlux[val_Marker][iVar]    = 0.0;
+  }
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+		MyTotalVelocity[iDim]      			  = TotalVelocity[iDim];
+		TotalVelocity[iVar]        			  = 0.0;
+		MyTotalAreaVelocity[iDim]  			  = TotalAreaVelocity[iDim];
+		TotalAreaVelocity[iDim]    				= 0.0;
+    MyTotalNormal[iDim]				 				= AveragedNormal[val_Marker][iDim];
+    AveragedNormal[val_Marker][iDim]  = 0.0;
+    }
+
+  SU2_MPI::Allreduce(MyTotalFlux, TotalFlux[val_Marker], nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(MyTotalVelocity, TotalVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(MyTotalAreaVelocity, TotalAreaVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(MyTotalNormal, AveragedNormal[val_Marker], nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+  delete [] MyTotalFlux; delete [] MyTotalVelocity; delete [] MyTotalAreaVelocity;
+  delete [] MyTotalNormal;
+
+#endif
+
+
   /*--- Compute the averaged value for the boundary of interest ---*/
   for (iDim = 0; iDim < nDim; iDim++){
     AveragedNormal[val_Marker][iDim] /=nVert;
@@ -7767,7 +7825,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
     for (iDim = 0; iDim < nDim; iDim++)
       AveragedGridVel[val_Marker][iDim] /=nVert;
   }
-  
+
   switch(mixing_process){
       
       
