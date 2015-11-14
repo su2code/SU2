@@ -36,29 +36,29 @@ int main(int argc, char *argv[]) {
   
   unsigned short iZone, nZone = SINGLE_ZONE;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
-	unsigned short iDV, iFFDBox, iPlane, nPlane, iVar;
-	su2double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
+  unsigned short iDV, iFFDBox, iPlane, nPlane, iVar;
+  su2double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
   **Plane_P0, **Plane_Normal, Volume = 0.0, Volume_New = 0.0, Volume_Grad = 0.0;
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   char config_file_name[MAX_STRING_SIZE];
- 	char *cstr;
-	ofstream Gradient_file, ObjFunc_file;
-	int rank = MASTER_NODE;
+  char *cstr;
+  ofstream Gradient_file, ObjFunc_file;
+  int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
   /*--- MPI initialization ---*/
-
+  
 #ifdef HAVE_MPI
-	SU2_MPI::Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  SU2_MPI::Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
   MPI_Comm_size(MPI_COMM_WORLD,&size);
 #endif
-	
-	/*--- Pointer to different structures that will be used throughout the entire code ---*/
   
-	CConfig **config_container          = NULL;
-	CGeometry **geometry_container      = NULL;
-	CSurfaceMovement *surface_movement  = NULL;
+  /*--- Pointer to different structures that will be used throughout the entire code ---*/
+  
+  CConfig **config_container          = NULL;
+  CGeometry **geometry_container      = NULL;
+  CSurfaceMovement *surface_movement  = NULL;
   CFreeFormDefBox** FFDBox            = NULL;
   
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
   
   if (argc == 2) { strcpy(config_file_name,argv[1]); }
   else { strcpy(config_file_name, "default.cfg"); }
-    
+  
   /*--- Definition of the containers per zones ---*/
   
   config_container = new CConfig*[nZone];
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
      read and stored. ---*/
     
     config_container[iZone] = new CConfig(config_file_name, SU2_GEO, iZone, nZone, 0, VERB_HIGH);
-        
+    
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
     
     CGeometry *geometry_aux = NULL;
@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
     /*--- Deallocate the memory of geometry_aux ---*/
     
     delete geometry_aux;
-
+    
     /*--- Add the Send/Receive boundaries ---*/
     
     geometry_container[iZone]->SetSendReceive(config_container[iZone]);
@@ -131,18 +131,18 @@ int main(int argc, char *argv[]) {
   /*--- Evaluation of the objective function ---*/
   
   if (rank == MASTER_NODE)
-		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
-
+    cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
+  
   /*--- Set the number of sections, and allocate the memory ---*/
   
   if (geometry_container[ZONE_0]->GetnDim() == 2) nPlane = 1;
   else nPlane = config_container[ZONE_0]->GetnSections();
-
+  
   Xcoord_Airfoil = new vector<su2double>[nPlane];
   Ycoord_Airfoil = new vector<su2double>[nPlane];
   Zcoord_Airfoil = new vector<su2double>[nPlane];
   Variable_Airfoil = new vector<su2double>[nPlane];
-
+  
   Plane_P0 = new su2double*[nPlane];
   Plane_Normal = new su2double*[nPlane];
   for(iPlane = 0; iPlane < nPlane; iPlane++ ) {
@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
   ObjectiveFunc = new su2double[nPlane*20];
   ObjectiveFunc_New = new su2double[nPlane*20];
   Gradient = new su2double[nPlane*20];
-
+  
   for (iVar = 0; iVar < nPlane*20; iVar++) {
     ObjectiveFunc[iVar] = 0.0;
     ObjectiveFunc_New[iVar] = 0.0;
@@ -191,11 +191,11 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
   geometry_container[ZONE_0]->ComputeSurf_Curvature(config_container[ZONE_0]);
   
-//  if (rank == MASTER_NODE) cout << "Writing a Tecplot file of the surface curvature." << endl;
-//  if (size > 1) SPRINTF (buffer_char, "_%d.plt", rank+1); else SPRINTF (buffer_char, ".plt");
-//  strcpy (out_file, "Surface_Curvature"); strcat(out_file, buffer_char); geometry_container[ZONE_0]->SetBoundTecPlot(out_file, true, config);
+  //  if (rank == MASTER_NODE) cout << "Writing a Tecplot file of the surface curvature." << endl;
+  //  if (size > 1) SPRINTF (buffer_char, "_%d.plt", rank+1); else SPRINTF (buffer_char, ".plt");
+  //  strcpy (out_file, "Surface_Curvature"); strcat(out_file, buffer_char); geometry_container[ZONE_0]->SetBoundTecPlot(out_file, true, config);
   
-	/*--- Create plane structure ---*/
+  /*--- Create plane structure ---*/
   
   if (rank == MASTER_NODE) cout << "Set plane structure." << endl;
   if (geometry_container[ZONE_0]->GetnDim() == 2) {
@@ -215,13 +215,13 @@ int main(int argc, char *argv[]) {
       Plane_P0[iPlane][config_container[ZONE_0]->GetAxis_Orientation()] = MinPlane + iPlane*(MaxPlane - MinPlane)/su2double(nPlane-1);
     }
   }
-
+  
   /*--- Create airfoil section structure ---*/
   
   if (rank == MASTER_NODE) cout << "Set airfoil section structure." << endl;
   for (iPlane = 0; iPlane < nPlane; iPlane++) {
     geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], MinXCoord, MaxXCoord, NULL,
-                                     Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], true, config_container[ZONE_0]);
+                                                       Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], true, config_container[ZONE_0]);
   }
   
   /*--- Compute the internal volume of a 3D body. ---*/
@@ -231,35 +231,42 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE)
     cout << endl <<"-------------------- Objective function evaluation ----------------------" << endl;
-
+  
   if (rank == MASTER_NODE) {
     
     /*--- Evaluate objective function ---*/
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
-
+      
       if (Xcoord_Airfoil[iPlane].size() != 0) {
         
         cout << "\nSection " << (iPlane+1) << ". Plane (yCoord): " << Plane_P0[iPlane][1] << "." << endl;
         
-        ObjectiveFunc[iPlane]           = geometry_container[ZONE_0]->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-        ObjectiveFunc[1*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.250000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-        ObjectiveFunc[2*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.333333, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-        ObjectiveFunc[3*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.500000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-        ObjectiveFunc[4*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.666666, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-        ObjectiveFunc[5*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.750000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-        ObjectiveFunc[6*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-        ObjectiveFunc[7*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_AoA(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-        ObjectiveFunc[8*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
-        
-        cout << "Maximum thickness: "   << ObjectiveFunc[iPlane] << "." << endl;
-        cout << "1/4 chord thickness: " << ObjectiveFunc[1*nPlane+iPlane] << "." << endl;
-        cout << "1/3 chord thickness: " << ObjectiveFunc[2*nPlane+iPlane] << "." << endl;
-        cout << "1/2 chord thickness: " << ObjectiveFunc[3*nPlane+iPlane] << "." << endl;
-        cout << "2/3 chord thickness: " << ObjectiveFunc[4*nPlane+iPlane] << "." << endl;
-        cout << "3/4 chord thickness: " << ObjectiveFunc[5*nPlane+iPlane] << "." << endl;
-        cout << "Area: "                << ObjectiveFunc[6*nPlane+iPlane] << "." << endl;
-        cout << "Twist angle: "     << ObjectiveFunc[7*nPlane+iPlane] << "." << endl;
-        cout << "Chord: "               << ObjectiveFunc[8*nPlane+iPlane] << "." << endl;
+        if (!config_container[ZONE_0]->GetMinDelta_NACA0012()) {
+          ObjectiveFunc[iPlane]           = geometry_container[ZONE_0]->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+          ObjectiveFunc[1*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.250000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+          ObjectiveFunc[2*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.333333, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+          ObjectiveFunc[3*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.500000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+          ObjectiveFunc[4*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.666666, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+          ObjectiveFunc[5*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.750000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+          ObjectiveFunc[6*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+          ObjectiveFunc[7*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_AoA(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+          ObjectiveFunc[8*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+          
+          cout << "Maximum thickness: "   << ObjectiveFunc[iPlane] << "." << endl;
+          cout << "1/4 chord thickness: " << ObjectiveFunc[1*nPlane+iPlane] << "." << endl;
+          cout << "1/3 chord thickness: " << ObjectiveFunc[2*nPlane+iPlane] << "." << endl;
+          cout << "1/2 chord thickness: " << ObjectiveFunc[3*nPlane+iPlane] << "." << endl;
+          cout << "2/3 chord thickness: " << ObjectiveFunc[4*nPlane+iPlane] << "." << endl;
+          cout << "3/4 chord thickness: " << ObjectiveFunc[5*nPlane+iPlane] << "." << endl;
+          cout << "Area: "                << ObjectiveFunc[6*nPlane+iPlane] << "." << endl;
+          cout << "Twist angle: "         << ObjectiveFunc[7*nPlane+iPlane] << "." << endl;
+          cout << "Chord: "               << ObjectiveFunc[8*nPlane+iPlane] << "." << endl;
+          
+        } else {
+          ObjectiveFunc[9*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_NACA0012(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+          cout << "Min. Delta NACA 0012: "<< ObjectiveFunc[9*nPlane+iPlane] << "." << endl;
+          
+        }
         
       }
       
@@ -272,13 +279,13 @@ int main(int argc, char *argv[]) {
     cout << "\nInternal volume: " << Volume << "." << endl;
     
     /*--- Write the objective function in a external file ---*/
-		cstr = new char [config_container[ZONE_0]->GetObjFunc_Value_FileName().size()+1];
-		strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Value_FileName().c_str());
-		ObjFunc_file.open(cstr, ios::out);
+    cstr = new char [config_container[ZONE_0]->GetObjFunc_Value_FileName().size()+1];
+    strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Value_FileName().c_str());
+    ObjFunc_file.open(cstr, ios::out);
     ObjFunc_file << "TITLE = \"SU2_GEO Simulation\"" << endl;
     
     if (geometry_container[ZONE_0]->GetnDim() == 2) {
-      ObjFunc_file << "VARIABLES = \"MAX_THICKNESS\",\"1/4_THICKNESS\",\"1/3_THICKNESS\",\"1/2_THICKNESS\",\"2/3_THICKNESS\",\"3/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\",\"VOLUME\"" << endl;
+      ObjFunc_file << "VARIABLES = \"MAX_THICKNESS\",\"1/4_THICKNESS\",\"1/3_THICKNESS\",\"1/2_THICKNESS\",\"2/3_THICKNESS\",\"3/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\",\"DELTA_NACA0012\",\"VOLUME\"" << endl;
     }
     else if (geometry_container[ZONE_0]->GetnDim() == 3) {
       ObjFunc_file << "VARIABLES = ";
@@ -291,42 +298,43 @@ int main(int argc, char *argv[]) {
       for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"AREA_SEC"<< (iPlane+1) << "\", ";
       for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"AOA_SEC"<< (iPlane+1) << "\", ";
       for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"CHORD_SEC"<< (iPlane+1) << "\", ";
+      for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"DELTA_NACA0012_SEC"<< (iPlane+1) << "\", ";
       ObjFunc_file << "\"VOLUME\"" << endl;
     }
     
     ObjFunc_file << "ZONE T= \"Geometrical variables (value)\"" << endl;
     
-    for (iPlane = 0; iPlane < nPlane*9; iPlane++)
+    for (iPlane = 0; iPlane < nPlane*10; iPlane++)
       ObjFunc_file << ObjectiveFunc[iPlane] <<", ";
     ObjFunc_file << Volume << endl;
-
+    
     ObjFunc_file.close();
     
-	}
-	
-	if (config_container[ZONE_0]->GetGeometryMode() == GRADIENT) {
-		
-		/*--- Definition of the Class for surface deformation ---*/
-		surface_movement = new CSurfaceMovement();
+  }
+  
+  if (config_container[ZONE_0]->GetGeometryMode() == GRADIENT) {
+    
+    /*--- Definition of the Class for surface deformation ---*/
+    surface_movement = new CSurfaceMovement();
     
     /*--- Copy coordinates to the surface structure ---*/
     surface_movement->CopyBoundary(geometry_container[ZONE_0], config_container[ZONE_0]);
-		
-		/*--- Definition of the FFD deformation class ---*/
-		FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
-		
-		if (rank == MASTER_NODE)
-			cout << endl <<"------------- Gradient evaluation using finite differences --------------" << endl;
-
-		/*--- Write the gradient in a external file ---*/
-		if (rank == MASTER_NODE) {
-			cstr = new char [config_container[ZONE_0]->GetObjFunc_Grad_FileName().size()+1];
-			strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str());
-			Gradient_file.open(cstr, ios::out);
-		}
-		
-		for (iDV = 0; iDV < config_container[ZONE_0]->GetnDV(); iDV++) {
-			   
+    
+    /*--- Definition of the FFD deformation class ---*/
+    FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
+    
+    if (rank == MASTER_NODE)
+      cout << endl <<"------------- Gradient evaluation using finite differences --------------" << endl;
+    
+    /*--- Write the gradient in a external file ---*/
+    if (rank == MASTER_NODE) {
+      cstr = new char [config_container[ZONE_0]->GetObjFunc_Grad_FileName().size()+1];
+      strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str());
+      Gradient_file.open(cstr, ios::out);
+    }
+    
+    for (iDV = 0; iDV < config_container[ZONE_0]->GetnDV(); iDV++) {
+      
       /*--- Free Form deformation based ---*/
       
       if ((config_container[ZONE_0]->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
@@ -468,7 +476,7 @@ int main(int argc, char *argv[]) {
       /*--- Create airfoil structure ---*/
       for (iPlane = 0; iPlane < nPlane; iPlane++) {
         geometry_container[ZONE_0]->ComputeAirfoil_Section(Plane_P0[iPlane], Plane_Normal[iPlane], MinXCoord, MaxXCoord, NULL,
-                                         Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], false, config_container[ZONE_0]);
+                                                           Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], Variable_Airfoil[iPlane], false, config_container[ZONE_0]);
       }
       
       /*--- Compute the gradient for the volume. In 2D this is just
@@ -476,8 +484,8 @@ int main(int argc, char *argv[]) {
       
       if (geometry_container[ZONE_0]->GetnDim() == 3) Volume_New = geometry_container[ZONE_0]->Compute_Volume(config_container[ZONE_0], false);
       
-			/*--- Compute gradient ---*/
-			if (rank == MASTER_NODE) {
+      /*--- Compute gradient ---*/
+      if (rank == MASTER_NODE) {
         
         delta_eps = config_container[ZONE_0]->GetDV_Value(iDV);
         
@@ -492,49 +500,56 @@ int main(int argc, char *argv[]) {
           exit(1);
 #endif
         }
-
+        
         for (iPlane = 0; iPlane < nPlane; iPlane++) {
           
           if (Xcoord_Airfoil[iPlane].size() != 0) {
             
             cout << "\nSection " << (iPlane+1) << ". Plane (yCoord): " << Plane_P0[iPlane][1] << "." << endl;
             
-            ObjectiveFunc_New[iPlane] = geometry_container[ZONE_0]->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
-            Gradient[iPlane] = (ObjectiveFunc_New[iPlane] - ObjectiveFunc[iPlane]) / delta_eps;
-            
-            ObjectiveFunc_New[1*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.250000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
-            Gradient[1*nPlane + iPlane] = (ObjectiveFunc_New[1*nPlane + iPlane] - ObjectiveFunc[1*nPlane + iPlane]) / delta_eps;
-            
-            ObjectiveFunc_New[2*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.333333, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
-            Gradient[2*nPlane + iPlane] = (ObjectiveFunc_New[2*nPlane + iPlane] - ObjectiveFunc[2*nPlane + iPlane]) / delta_eps;
-            
-            ObjectiveFunc_New[3*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.500000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
-            Gradient[3*nPlane + iPlane] = (ObjectiveFunc_New[3*nPlane + iPlane] - ObjectiveFunc[3*nPlane + iPlane]) / delta_eps;
-            
-            ObjectiveFunc_New[4*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.666666, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
-            Gradient[4*nPlane + iPlane] = (ObjectiveFunc_New[4*nPlane + iPlane] - ObjectiveFunc[4*nPlane + iPlane]) / delta_eps;
-            
-            ObjectiveFunc_New[5*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.750000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
-            Gradient[5*nPlane + iPlane] = (ObjectiveFunc_New[5*nPlane + iPlane] - ObjectiveFunc[5*nPlane + iPlane]) / delta_eps;
-            
-            ObjectiveFunc_New[6*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
-            Gradient[6*nPlane + iPlane] = (ObjectiveFunc_New[6*nPlane + iPlane] - ObjectiveFunc[6*nPlane + iPlane]) / delta_eps;
-            
-            ObjectiveFunc_New[7*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_AoA(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
-            Gradient[7*nPlane + iPlane] = (ObjectiveFunc_New[7*nPlane + iPlane] - ObjectiveFunc[7*nPlane + iPlane]) / delta_eps;
-            
-            ObjectiveFunc_New[8*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
-            Gradient[8*nPlane + iPlane] = (ObjectiveFunc_New[8*nPlane + iPlane] - ObjectiveFunc[8*nPlane + iPlane]) / delta_eps;
-            
-            cout << "Maximum thickness gradient: "    << Gradient[iPlane] << "." << endl;
-            cout << "1/4 chord thickness gradient: "  << Gradient[1*nPlane + iPlane] << "." << endl;
-            cout << "1/3 chord thickness gradient: "  << Gradient[2*nPlane + iPlane] << "." << endl;
-            cout << "1/2 chord thickness gradient: "  << Gradient[3*nPlane + iPlane] << "." << endl;
-            cout << "2/3 chord thickness gradient: "  << Gradient[4*nPlane + iPlane] << "." << endl;
-            cout << "3/4 chord thickness gradient: "  << Gradient[5*nPlane + iPlane] << "." << endl;
-            cout << "Area gradient: "                 << Gradient[6*nPlane + iPlane] << "." << endl;
-            cout << "Twist angle gradient: "      << Gradient[7*nPlane + iPlane] << "." << endl;
-            cout << "Chord gradient: "                << Gradient[8*nPlane + iPlane] << "." << endl;
+            if (!config_container[ZONE_0]->GetMinDelta_NACA0012()) {
+              ObjectiveFunc_New[iPlane] = geometry_container[ZONE_0]->Compute_MaxThickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+              Gradient[iPlane] = (ObjectiveFunc_New[iPlane] - ObjectiveFunc[iPlane]) / delta_eps;
+              
+              ObjectiveFunc_New[1*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.250000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+              Gradient[1*nPlane + iPlane] = (ObjectiveFunc_New[1*nPlane + iPlane] - ObjectiveFunc[1*nPlane + iPlane]) / delta_eps;
+              
+              ObjectiveFunc_New[2*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.333333, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+              Gradient[2*nPlane + iPlane] = (ObjectiveFunc_New[2*nPlane + iPlane] - ObjectiveFunc[2*nPlane + iPlane]) / delta_eps;
+              
+              ObjectiveFunc_New[3*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.500000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+              Gradient[3*nPlane + iPlane] = (ObjectiveFunc_New[3*nPlane + iPlane] - ObjectiveFunc[3*nPlane + iPlane]) / delta_eps;
+              
+              ObjectiveFunc_New[4*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.666666, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+              Gradient[4*nPlane + iPlane] = (ObjectiveFunc_New[4*nPlane + iPlane] - ObjectiveFunc[4*nPlane + iPlane]) / delta_eps;
+              
+              ObjectiveFunc_New[5*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Thickness(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, 0.750000, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+              Gradient[5*nPlane + iPlane] = (ObjectiveFunc_New[5*nPlane + iPlane] - ObjectiveFunc[5*nPlane + iPlane]) / delta_eps;
+              
+              ObjectiveFunc_New[6*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Area(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, config_container[ZONE_0], Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+              Gradient[6*nPlane + iPlane] = (ObjectiveFunc_New[6*nPlane + iPlane] - ObjectiveFunc[6*nPlane + iPlane]) / delta_eps;
+              
+              ObjectiveFunc_New[7*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_AoA(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+              Gradient[7*nPlane + iPlane] = (ObjectiveFunc_New[7*nPlane + iPlane] - ObjectiveFunc[7*nPlane + iPlane]) / delta_eps;
+              
+              ObjectiveFunc_New[8*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+              Gradient[8*nPlane + iPlane] = (ObjectiveFunc_New[8*nPlane + iPlane] - ObjectiveFunc[8*nPlane + iPlane]) / delta_eps;
+              
+              cout << "Maximum thickness gradient: "    << Gradient[iPlane] << "." << endl;
+              cout << "1/4 chord thickness gradient: "  << Gradient[1*nPlane + iPlane] << "." << endl;
+              cout << "1/3 chord thickness gradient: "  << Gradient[2*nPlane + iPlane] << "." << endl;
+              cout << "1/2 chord thickness gradient: "  << Gradient[3*nPlane + iPlane] << "." << endl;
+              cout << "2/3 chord thickness gradient: "  << Gradient[4*nPlane + iPlane] << "." << endl;
+              cout << "3/4 chord thickness gradient: "  << Gradient[5*nPlane + iPlane] << "." << endl;
+              cout << "Area gradient: "                 << Gradient[6*nPlane + iPlane] << "." << endl;
+              cout << "Twist angle gradient: "      << Gradient[7*nPlane + iPlane] << "." << endl;
+              cout << "Chord gradient: "                << Gradient[8*nPlane + iPlane] << "." << endl;
+              
+            } else {
+              ObjectiveFunc_New[9*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+              Gradient[9*nPlane + iPlane] = (ObjectiveFunc_New[9*nPlane + iPlane] - ObjectiveFunc[9*nPlane + iPlane]) / delta_eps;
+              cout << "Min. delta NACA 0012 gradient: "                << Gradient[9*nPlane + iPlane] << "." << endl;
+            }
             
           }
           
@@ -546,12 +561,12 @@ int main(int argc, char *argv[]) {
         if (geometry_container[ZONE_0]->GetnDim() == 2) Volume_New = ObjectiveFunc_New[6];
         Volume_Grad = (Volume_New - Volume)/ delta_eps;
         cout << "\nInternal volume gradient: " << Volume_Grad << "." << endl;
- 				
+        
         if (iDV == 0) {
           Gradient_file << "TITLE = \"SU2_GEO Simulation\"" << endl;
-
+          
           if (geometry_container[ZONE_0]->GetnDim() == 2) {
-            Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",\"MAX_THICKNESS\",\"1/4_THICKNESS\",\"1/3_THICKNESS\",\"1/2_THICKNESS\",\"2/3_THICKNESS\",\"3/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\",\"VOLUME\"" << endl;
+            Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",\"MAX_THICKNESS\",\"1/4_THICKNESS\",\"1/3_THICKNESS\",\"1/2_THICKNESS\",\"2/3_THICKNESS\",\"3/4_THICKNESS\",\"AREA\",\"AOA\",\"CHORD\",\"DELTA_NACA0012\",\"VOLUME\"" << endl;
           }
           else if (geometry_container[ZONE_0]->GetnDim() == 3) {
             Gradient_file << "VARIABLES = \"DESIGN_VARIABLE\",";
@@ -564,6 +579,7 @@ int main(int argc, char *argv[]) {
             for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"AREA_SEC"<< (iPlane+1) << "\", ";
             for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"AOA_SEC"<< (iPlane+1) << "\", ";
             for (iPlane = 0; iPlane < nPlane; iPlane++) Gradient_file << "\"CHORD_SEC"<< (iPlane+1) << "\", ";
+            for (iPlane = 0; iPlane < nPlane; iPlane++) ObjFunc_file << "\"DELTA_NACA0012_SEC"<< (iPlane+1) << "\", ";
             Gradient_file << "\"VOLUME\"" << endl;
           }
           
@@ -572,21 +588,21 @@ int main(int argc, char *argv[]) {
         }
         
         Gradient_file << (iDV) <<", ";
-        for (iPlane = 0; iPlane < nPlane*9; iPlane++)
+        for (iPlane = 0; iPlane < nPlane*10; iPlane++)
           Gradient_file << Gradient[iPlane] <<", ";
         Gradient_file << Volume_Grad << endl;
         
-				if (iDV != (config_container[ZONE_0]->GetnDV()-1)) cout <<"-------------------------------------------------------------------------" << endl;
-				
-			}
-
-		}
-		
-		if (rank == MASTER_NODE)
-			Gradient_file.close();
+        if (iDV != (config_container[ZONE_0]->GetnDV()-1)) cout <<"-------------------------------------------------------------------------" << endl;
+        
+      }
+      
+    }
     
-	}
-		
+    if (rank == MASTER_NODE)
+      Gradient_file.close();
+    
+  }
+  
   /*--- Deallocate memory ---*/
   
   delete [] Xcoord_Airfoil;
@@ -623,9 +639,9 @@ int main(int argc, char *argv[]) {
   
   /*--- Exit the solver cleanly ---*/
   
-	if (rank == MASTER_NODE)
-		cout << endl <<"------------------------- Exit Success (SU2_GEO) ------------------------" << endl << endl;
-
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------------- Exit Success (SU2_GEO) ------------------------" << endl << endl;
+  
   
   /*--- Finalize MPI parallelization ---*/
   
@@ -633,6 +649,6 @@ int main(int argc, char *argv[]) {
   MPI_Finalize();
 #endif
   
-	return EXIT_SUCCESS;
-	
+  return EXIT_SUCCESS;
+  
 }

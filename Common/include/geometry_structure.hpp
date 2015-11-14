@@ -641,6 +641,12 @@ public:
   virtual su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface);
 
   /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual su2double Compute_NACA0012(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface);
+  
+  /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
    * \param[in] original_surface - <code>TRUE</code> if this is the undeformed surface; otherwise <code>FALSE</code>.
@@ -1398,6 +1404,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   su2double Compute_Chord(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface);
+  
+  /*!
+   * \brief Compute the minimum delta change in position for every node on a section.
+   * \param[in] config - Definition of the particular problem.
+   */
+  su2double Compute_NACA0012(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface);
   
   /*!
    * \brief Find the minimum thickness of the airfoil.

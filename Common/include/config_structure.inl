@@ -1017,6 +1017,8 @@ inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
 
 inline bool CConfig::GetPlot_Section_Forces(void) { return Plot_Section_Forces; }
 
+inline bool CConfig::GetMinDelta_NACA0012(void) { return MinDelta_NACA0012; }
+
 inline bool CConfig::GetWrt_1D_Output(void) { return Wrt_1D_Output; }
 
 inline vector<vector<su2double> > CConfig::GetAeroelastic_np1(unsigned short iMarker) {return Aeroelastic_np1[iMarker]; }

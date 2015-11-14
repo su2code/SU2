@@ -12592,6 +12592,36 @@ su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane
   
 }
 
+su2double CPhysicalGeometry::Compute_NACA0012(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) {
+  
+  unsigned long iVertex;
+  su2double MinDelta, Distance, xCoord = 0.0, yCoord = 0.0, yNACA = 0.0;
+  
+  /*--- Find the leading and trailing edges and compute the angle of attack ---*/
+  MinDelta = 0.0;
+  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
+    
+    xCoord = Xcoord_Airfoil[iVertex];
+    yCoord = Ycoord_Airfoil[iVertex];
+    
+    yNACA = 0.6*(0.2969*sqrt(xCoord) - 0.1260*xCoord - 0.3516*pow(xCoord,2.0) + 0.2843*pow(xCoord,3.0) - 0.1036*pow(xCoord,4.0));
+    
+    /*--- Compute the distance between the current geometry and the analytic
+     NACA 0012 definition (closed trailing edge). Note that we are assuming
+     that the current yCoord has not crossed the x-axis in our sign check. ---*/
+    if (yCoord > 0.0) {
+      Distance = yCoord - yNACA;
+    } else {
+      Distance = yNACA - yCoord;
+    }
+    
+    if (MinDelta > Distance) { MinDelta = Distance; }
+  }
+  
+  return MinDelta;
+  
+}
+
 su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, su2double Location, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) {
   unsigned long iVertex, jVertex, n_Upper, n_Lower, Trailing_Point, Leading_Point;
   su2double Thickness_Location, Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, Thickness_Value = 0.0, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, zp1, zpn, Chord, MaxDistance, Distance, AoA;

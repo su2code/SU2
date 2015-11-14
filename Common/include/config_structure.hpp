@@ -522,6 +522,7 @@ private:
 	Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
   Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
+  MinDelta_NACA0012,         /*!< \brief Bool to enable geometry comparison to analytic NACA 0012 */
 	Wrt_1D_Output;                /*!< \brief Write average stagnation pressure specified markers. */
   unsigned short Console_Output_Verb;  /*!< \brief Level of verbosity for console output */
 	su2double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
@@ -2236,6 +2237,12 @@ public:
 	 */
 	bool GetPlot_Section_Forces(void);
 
+  /*!
+   * \brief Get information about computing difference with the analytic NACA 0012 thickness.
+   * \return <code>TRUE</code> means that sectional force files will be written for specified markers.
+   */
+  bool GetMinDelta_NACA0012(void);
+  
   /*!
    * \brief Get information about writing average stagnation pressure
    * \return <code>TRUE</code> means that the average stagnation pressure will be output for specified markers.
