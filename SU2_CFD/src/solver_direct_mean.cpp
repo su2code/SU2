@@ -7824,6 +7824,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 
 #endif
 
+  cout << TotalFlux[val_Marker][0]<< " after allreduce in processor " << rank<< " in boundary "<< config->GetMarker_All_TagBound(val_Marker)<< endl;
 
   /*--- Compute the averaged value for the boundary of interest ---*/
   for (iDim = 0; iDim < nDim; iDim++){
