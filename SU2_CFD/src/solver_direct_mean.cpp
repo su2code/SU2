@@ -7654,7 +7654,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool grid_movement        = config->GetGrid_Movement();
   su2double TotalDensity, TotalPressure, *TotalVelocity, TotalNormal, avgVel2, avgTotalEnthaply;
-  
+  int rank = MASTER_NODE;
   /*-- Variables declaration and allocation ---*/
   Velocity = new su2double[nDim];
   Normal = new su2double[nDim];
@@ -7692,6 +7692,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
   su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, *MyTotalFlux = NULL;
   su2double MyTotalArea, *MyTotalNormal= NULL, *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL;
   unsigned long My_nVert;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
 
@@ -7769,6 +7770,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 #ifdef HAVE_MPI
 
   /*--- Add information using all the nodes ---*/
+//  cout << TotalFlux[val_Marker][0]<< " in processor " << rank<< endl;
 
   MyTotalDensity       = TotalDensity; 							TotalDensity         = 0;
   MyTotalPressure      = TotalPressure;  					  TotalPressure        = 0;
@@ -7785,16 +7787,21 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
   SU2_MPI::Allreduce(&MyTotalNormal, &TotalNormal, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&My_nVert, &nVert, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
+
+//  cout << TotalAreaDensity<< " total area density in processor " << rank<< endl;
+
   MyTotalFlux					 = new su2double[nVar];
   MyTotalVelocity      = new su2double[nDim];
   MyTotalAreaVelocity  = new su2double[nDim];
   MyTotalNormal        = new su2double[nDim];
 
+  cout << TotalFlux[val_Marker][0]<< " before total in processor " << rank<< endl;
   for (iVar = 0; iVar < nVar; iVar++) {
   	MyTotalFlux[iVar]  = TotalFlux[val_Marker][iVar];
     TotalFlux[val_Marker][iVar]    = 0.0;
   }
 
+  cout << MyTotalFlux[0]<< " after my total in processor " << rank<< endl;
   for (iDim = 0; iDim < nDim; iDim++) {
 		MyTotalVelocity[iDim]      			  = TotalVelocity[iDim];
 		TotalVelocity[iVar]        			  = 0.0;
@@ -7811,6 +7818,9 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 
   delete [] MyTotalFlux; delete [] MyTotalVelocity; delete [] MyTotalAreaVelocity;
   delete [] MyTotalNormal;
+
+  cout << TotalFlux[val_Marker][0]<< " after allreduce in processor " << rank<< " in boundary "<< config->GetMarker_All_TagBound(val_Marker)<< endl;
+//  cout << AveragedNormal[val_Marker][0]<< " in processor " << rank<< endl;
 
 #endif
 
@@ -8067,7 +8077,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   }
   
   
-  Mixing_Process(geometry, solver_container,  config, val_marker);
+//  Mixing_Process(geometry, solver_container,  config, val_marker);
   
   cc = AveragedSoundSpeed[val_marker]*AveragedSoundSpeed[val_marker];
   rhoc = AveragedSoundSpeed[val_marker]*AveragedDensity[val_marker];
