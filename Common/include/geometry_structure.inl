@@ -201,7 +201,7 @@ inline su2double CGeometry::Compute_Thickness(su2double *Plane_P0, su2double *Pl
 
 inline su2double CGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
 
-inline su2double CGeometry::Compute_NACA0012(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) { return 0; }
+inline su2double CGeometry::Compute_NACA0012(CGeometry *geometry, CConfig *config, bool val_original_surface) { return 0; }
 
 inline su2double CGeometry::Compute_Volume(CConfig *config, bool original_surface) { return 0; }
 

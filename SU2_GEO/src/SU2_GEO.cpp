@@ -263,7 +263,7 @@ int main(int argc, char *argv[]) {
           cout << "Chord: "               << ObjectiveFunc[8*nPlane+iPlane] << "." << endl;
           
         } else {
-          ObjectiveFunc[9*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_NACA0012(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], true);
+          ObjectiveFunc[9*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_NACA0012(geometry_container[ZONE_0],config_container[ZONE_0], true);
           cout << "Min. Delta NACA 0012: "<< ObjectiveFunc[9*nPlane+iPlane] << "." << endl;
           
         }
@@ -471,7 +471,7 @@ int main(int argc, char *argv[]) {
       
       /*--- Design variable not implement ---*/
       
-      else { cout << "Design Variable not implement yet" << endl; }
+      else { cout << "Design Variable not implemented yet" << endl; }
       
       /*--- Create airfoil structure ---*/
       for (iPlane = 0; iPlane < nPlane; iPlane++) {
@@ -546,9 +546,9 @@ int main(int argc, char *argv[]) {
               cout << "Chord gradient: "                << Gradient[8*nPlane + iPlane] << "." << endl;
               
             } else {
-              ObjectiveFunc_New[9*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_Chord(Plane_P0[iPlane], Plane_Normal[iPlane], iPlane, Xcoord_Airfoil[iPlane], Ycoord_Airfoil[iPlane], Zcoord_Airfoil[iPlane], false);
+              ObjectiveFunc_New[9*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_NACA0012(geometry_container[ZONE_0], config_container[ZONE_0], false);
               Gradient[9*nPlane + iPlane] = (ObjectiveFunc_New[9*nPlane + iPlane] - ObjectiveFunc[9*nPlane + iPlane]) / delta_eps;
-              cout << "Min. delta NACA 0012 gradient: "                << Gradient[9*nPlane + iPlane] << "." << endl;
+              cout << "Min. delta NACA 0012 gradient: "                << Gradient[9*nPlane + iPlane] << "." << " " << ObjectiveFunc_New[9*nPlane + iPlane]<<"  "<<ObjectiveFunc[9*nPlane + iPlane]<< endl;
             }
             
           }
