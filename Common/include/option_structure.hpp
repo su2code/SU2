@@ -764,7 +764,7 @@ static const map<string, TURBO_PERFORMANCE_TYPE> TurboPerformance_Map = CCreateM
 ("TURBINE", TURBINE);
 
 /*!
- * \brief types of Turbomachinery performance indicators.
+ * \brief types of Turbomachinery performance flag.
  */
 enum TURBO_MARKER_TYPE{
   INFLOW   = 1,		/*!< \brief flag for inflow marker for compute turboperformance. */

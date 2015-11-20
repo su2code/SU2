@@ -452,6 +452,8 @@ private:
   *Marker_All_GeoEval,       /*!< \brief Global index for geometrical evaluation. */
   *Marker_All_Plotting,        /*!< \brief Global index for plotting using the grid information. */
   *Marker_All_FSIinterface,        /*!< \brief Global index for FSI interface markers using the grid information. */
+	*Marker_All_TurboPerformance,        /*!< \brief Global index for Turbo performance markers using the grid information. */
+	*Marker_All_TurboPerformanceFlag,        /*!< \brief Global index for Turbo performance markers using the grid information. */
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
@@ -461,6 +463,8 @@ private:
   *Marker_CfgFile_GeoEval,      /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_Plotting,     /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_FSIinterface,     /*!< \brief Global index for FSI interface using the config information. */
+	*Marker_CfgFile_TurboPerformance,     /*!< \brief Global index for TurboPerformance  using the config information. */
+	*Marker_CfgFile_TurboPerformanceFlag,     /*!< \brief Global index for TurboPerformance flag using the config information. */
   *Marker_CfgFile_Out_1D,      /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
@@ -2396,6 +2400,20 @@ public:
 	void SetMarker_All_FSIinterface(unsigned short val_marker, unsigned short val_fsiinterface);
 
 	/*!
+	 * \brief Set if a marker <i>val_marker</i> is part of the Turbo Performance (read from the config file).
+	 * \param[in] val_marker - Index of the marker in which we are interested.
+	 * \param[in] val_turboperf - 0 if not part of TurboPerformance or greater than 1 if it is part.
+	 */
+	void SetMarker_All_TurboPerformance(unsigned short val_marker, unsigned short val_turboperf);
+
+	/*!
+	 * \brief Set a flag to the marker <i>val_marker</i> part of the Turbo Performance (read from the config file).
+	 * \param[in] val_marker - Index of the marker in which we are interested.
+	 * \param[in] val_turboperflag - 0 if is not part of the Turbo Performance, flag INFLOW or OUTFLOW if it is part.
+	 */
+	void SetMarker_All_TurboPerformanceFlag(unsigned short val_marker, unsigned short val_turboperflag) ;
+
+	/*!
 	 * \brief Set if a marker <i>val_marker</i> is going to be affected by design variables <i>val_moving</i>
 	 *        (read from the config file).
 	 * \param[in] val_marker - Index of the marker in which we are interested.
@@ -2477,6 +2495,19 @@ public:
 	 */
 	unsigned short GetMarker_All_FSIinterface(unsigned short val_marker);
 
+	/*!
+	 * \brief Get the Turbo Performance information for a marker <i>val_marker</i>.
+	 * \param[in] val_marker value of the marker on the grid.
+	 * \return 0 if is not part of the Turbo Performance and greater than 1 if it is part.
+	 */
+	unsigned short GetMarker_All_TurboPerformance(unsigned short val_marker);
+
+	/*!
+	 * \brief Get the Turbo Performance flag information for a marker <i>val_marker</i>.
+	 * \param[in] val_marker value of the marker on the grid.
+	 * \return 0 if is not part of the Turbo Performance, flag INFLOW or OUTFLOW if it is part.
+	 */
+	unsigned short GetMarker_All_TurboPerformanceFlag(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the number of FSI interface markers <i>val_marker</i>.
@@ -4265,6 +4296,18 @@ public:
 	 * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */
 	unsigned short GetMarker_CfgFile_FSIinterface(string val_marker);
+
+	/*!
+	 * \brief Get the TurboPerformance information from the config definition for the marker <i>val_marker</i>.
+	 * \return TurboPerformance information of the boundary in the config information for the marker <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_CfgFile_TurboPerformance(string val_marker);
+
+	/*!
+	 * \brief Get the TurboPerformance flag information from the config definition for the marker <i>val_marker</i>.
+	 * \return TurboPerformance flag information of the boundary in the config information for the marker <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_CfgFile_TurboPerformanceFlag(string val_marker);
 
   /*!
    * \brief Get the 1-D output (ie, averaged pressure) information from the config definition for the marker <i>val_marker</i>.

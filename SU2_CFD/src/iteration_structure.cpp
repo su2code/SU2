@@ -114,7 +114,11 @@ void CMeanFlowIteration::Preprocess(COutput *output,
   /*--- Compute turboperformance ---*/
   
   if(config_container[val_iZone]->GetBoolTurboPerf()){
-    SetTurboPerformance(geometry_container, solver_container, config_container, output, val_iZone);
+#ifdef HAVE_MPI
+  	SetMPITurboPerformance(geometry_container, solver_container, config_container, output, val_iZone);
+#else
+  	SetTurboPerformance(geometry_container, solver_container, config_container, output, val_iZone);
+#endif
   }
 }
 
@@ -605,8 +609,19 @@ void CMeanFlowIteration::SetTurboPerformance(CGeometry ***geometry_container, CS
 
 void CMeanFlowIteration::SetMPITurboPerformance(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, COutput *output, unsigned short iZone) {
 
-
-
+  unsigned short  iMarker, inflowMarker, outletMarker, inMarkerTP, Kind_TurboPerf;
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  /*-- Loop on all the boundary to find MIXING_PLANE boundary --*/
+  for (iMarker = 0; iMarker < config_container[iZone]->GetnMarker_All(); iMarker++)
+    for (inMarkerTP=1; inMarkerTP < config_container[iZone]->Get_nMarkerTurboPerf()+1; inMarkerTP++)
+//      if (config_container[iZone]->GetMarker_All_TurboPerformance(iMarker) == inMarkerTP) {
+//      	if (config_container[iZone]->GetMarker_All_TurboPerformanceFlag(iMarker) == INFLOW)
+//      	 solver_container[iZone][MESH_0][FLOW_SOL]->Mixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], iMarker);
+      		cout<< config_container[iZone]->GetMarker_All_TagBound(iMarker) << " in processor " << rank << " turb " << config_container[iZone]->GetMarker_All_TurboPerformance(iMarker) <<" with FLAG "  << config_container[iZone]->GetMarker_All_TurboPerformanceFlag(iMarker) <<endl;
+//      }
 }
 
 
