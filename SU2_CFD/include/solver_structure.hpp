@@ -1244,6 +1244,13 @@ public:
 	 * \param[in] inMarker - marker related to the inlet.
 	 * \param[in] outMarker - marker related to the outlet.
 	 */
+	virtual void MPITurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf, unsigned short inMarkerTP);
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] solver - solver containing the outlet information.
+	 * \param[in] inMarker - marker related to the inlet.
+	 * \param[in] outMarker - marker related to the outlet.
+	 */
 	virtual void StoreTurboPerformance(CSolver *solver, unsigned short inMarkerTP);
 
 
@@ -3817,6 +3824,14 @@ public:
 	 * \param[in] outMarker - marker related to the outlet.
 	 */
 	void TurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf , unsigned short inMarkerTP );
+
+	/*!
+	 * \brief Compute turbomachinery performance.
+	 * \param[in] solver - solver containing the outlet information.
+	 * \param[in] inMarker - marker related to the inlet.
+	 * \param[in] outMarker - marker related to the outlet.
+	 */
+	void MPITurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf , unsigned short inMarkerTP );
 
 	/*!
 	 * \brief Compute turbomachinery performance.

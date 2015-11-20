@@ -4665,6 +4665,12 @@ void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned s
   
 }
 
+void CEulerSolver::MPITurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf, unsigned short inMarkerTP ){
+
+}
+
+
+
 void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iRKStep) {
   su2double *Residual, *Res_TruncError, Vol, Delta, Res;
@@ -7795,13 +7801,13 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
   MyTotalAreaVelocity  = new su2double[nDim];
   MyTotalNormal        = new su2double[nDim];
 
-  cout << TotalFlux[val_Marker][0]<< " before total in processor " << rank<< endl;
+//  cout << TotalFlux[val_Marker][0]<< " before total in processor " << rank<< endl;
   for (iVar = 0; iVar < nVar; iVar++) {
   	MyTotalFlux[iVar]  = TotalFlux[val_Marker][iVar];
     TotalFlux[val_Marker][iVar]    = 0.0;
   }
 
-  cout << MyTotalFlux[0]<< " after my total in processor " << rank<< endl;
+//  cout << MyTotalFlux[0]<< " after my total in processor " << rank<< endl;
   for (iDim = 0; iDim < nDim; iDim++) {
 		MyTotalVelocity[iDim]      			  = TotalVelocity[iDim];
 		TotalVelocity[iVar]        			  = 0.0;
@@ -7819,12 +7825,12 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
   delete [] MyTotalFlux; delete [] MyTotalVelocity; delete [] MyTotalAreaVelocity;
   delete [] MyTotalNormal;
 
-  cout << TotalFlux[val_Marker][0]<< " after allreduce in processor " << rank<< " in boundary "<< config->GetMarker_All_TagBound(val_Marker)<< endl;
+//  cout << TotalFlux[val_Marker][0]<< " after allreduce in processor " << rank<< " in boundary "<< config->GetMarker_All_TagBound(val_Marker)<< endl;
 //  cout << AveragedNormal[val_Marker][0]<< " in processor " << rank<< endl;
 
 #endif
 
-  cout << TotalFlux[val_Marker][0]<< " after allreduce in processor " << rank<< " in boundary "<< config->GetMarker_All_TagBound(val_Marker)<< endl;
+//  cout << TotalFlux[val_Marker][0]<< " after allreduce in processor " << rank<< " in boundary "<< config->GetMarker_All_TagBound(val_Marker)<< endl;
 
   /*--- Compute the averaged value for the boundary of interest ---*/
   for (iDim = 0; iDim < nDim; iDim++){
