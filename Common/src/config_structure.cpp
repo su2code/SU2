@@ -2484,7 +2484,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
-  iMarker_Clamped, iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine,
+  iMarker_Clamped, iMarker_FSIinterface, iMarker_TurboPerformance, iMarker_Load_Dir, iMarker_Load_Sine,
   iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
 
   int size = SINGLE_NODE;
@@ -2516,60 +2516,68 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   /*--- Allocate the memory (markers in each domain) ---*/
   
-  Marker_All_TagBound   = new string[nMarker_All];			    // Store the tag that correspond with each marker.
-  Marker_All_SendRecv   = new short[nMarker_All];						// +#domain (send), -#domain (receive).
-  Marker_All_KindBC     = new unsigned short[nMarker_All];	// Store the kind of boundary condition.
-  Marker_All_Monitoring = new unsigned short[nMarker_All];	// Store whether the boundary should be monitored.
-  Marker_All_Designing  = new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
-  Marker_All_Plotting   = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
-  Marker_All_FSIinterface   = new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
-  Marker_All_GeoEval    = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
-  Marker_All_DV         = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
-  Marker_All_Moving     = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
-  Marker_All_PerBound   = new short[nMarker_All];						// Store whether the boundary belongs to a periodic boundary.
-  Marker_All_Out_1D     = new unsigned short[nMarker_All];  // Store whether the boundary belongs to a 1-d output boundary.
+  Marker_All_TagBound   						= new string[nMarker_All];			    // Store the tag that correspond with each marker.
+  Marker_All_SendRecv   						= new short[nMarker_All];						// +#domain (send), -#domain (receive).
+  Marker_All_KindBC     						= new unsigned short[nMarker_All];	// Store the kind of boundary condition.
+  Marker_All_Monitoring 						= new unsigned short[nMarker_All];	// Store whether the boundary should be monitored.
+  Marker_All_Designing  						= new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
+  Marker_All_Plotting   						= new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
+  Marker_All_FSIinterface   				= new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
+  Marker_All_TurboPerformance       = new unsigned short[nMarker_All];	// Store whether the boundary is in needed for Turbo Performance computations.
+  Marker_All_TurboPerformanceFlag   = new unsigned short[nMarker_All];	// Store whether the boundary has a flag for Turbo Performance computations.
+  Marker_All_GeoEval    						= new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
+  Marker_All_DV         						= new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
+  Marker_All_Moving     						= new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
+  Marker_All_PerBound   						= new short[nMarker_All];						// Store whether the boundary belongs to a periodic boundary.
+  Marker_All_Out_1D     						= new unsigned short[nMarker_All];  // Store whether the boundary belongs to a 1-d output boundary.
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
-    Marker_All_TagBound[iMarker_All]   = "SEND_RECEIVE";
-    Marker_All_SendRecv[iMarker_All]   = 0;
-    Marker_All_KindBC[iMarker_All]     = 0;
-    Marker_All_Monitoring[iMarker_All] = 0;
-    Marker_All_GeoEval[iMarker_All]    = 0;
-    Marker_All_Designing[iMarker_All]  = 0;
-    Marker_All_Plotting[iMarker_All]   = 0;
-    Marker_All_FSIinterface[iMarker_All]   = 0;
-    Marker_All_DV[iMarker_All]         = 0;
-    Marker_All_Moving[iMarker_All]     = 0;
-    Marker_All_PerBound[iMarker_All]   = 0;
-    Marker_All_Out_1D[iMarker_All]     = 0;
+    Marker_All_TagBound[iMarker_All]   						= "SEND_RECEIVE";
+    Marker_All_SendRecv[iMarker_All]   						= 0;
+    Marker_All_KindBC[iMarker_All]     						= 0;
+    Marker_All_Monitoring[iMarker_All] 						= 0;
+    Marker_All_GeoEval[iMarker_All]    						= 0;
+    Marker_All_Designing[iMarker_All]  						= 0;
+    Marker_All_Plotting[iMarker_All]   						= 0;
+    Marker_All_FSIinterface[iMarker_All]   				= 0;
+    Marker_All_TurboPerformance[iMarker_All]  		= 0;
+    Marker_All_TurboPerformanceFlag[iMarker_All]  = 0;
+    Marker_All_DV[iMarker_All]         						= 0;
+    Marker_All_Moving[iMarker_All]     						= 0;
+    Marker_All_PerBound[iMarker_All]   						= 0;
+    Marker_All_Out_1D[iMarker_All]     						= 0;
   }
 
   /*--- Allocate the memory (markers in the config file) ---*/
 
-  Marker_CfgFile_TagBound   = new string[nMarker_CfgFile];
-  Marker_CfgFile_KindBC     = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Monitoring = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Designing  = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Plotting   = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_GeoEval    = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_FSIinterface	= new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_DV         = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Moving     = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_PerBound   = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Out_1D     = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_TagBound   					= new string[nMarker_CfgFile];
+  Marker_CfgFile_KindBC    	 					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Monitoring 					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Designing  					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Plotting   					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_GeoEval    					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_FSIinterface					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_TurboPerformance			= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_TurboPerformanceFlag	= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_DV         					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Moving     					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_PerBound   					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Out_1D     					= new unsigned short[nMarker_CfgFile];
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile]   = "SEND_RECEIVE";
-    Marker_CfgFile_KindBC[iMarker_CfgFile]     = 0;
-    Marker_CfgFile_Monitoring[iMarker_CfgFile] = 0;
-    Marker_CfgFile_GeoEval[iMarker_CfgFile]    = 0;
-    Marker_CfgFile_Designing[iMarker_CfgFile]  = 0;
-    Marker_CfgFile_Plotting[iMarker_CfgFile]   = 0;
-    Marker_CfgFile_FSIinterface[iMarker_CfgFile]   = 0;
-    Marker_CfgFile_DV[iMarker_CfgFile]         = 0;
-    Marker_CfgFile_Moving[iMarker_CfgFile]     = 0;
-    Marker_CfgFile_PerBound[iMarker_CfgFile]   = 0;
-    Marker_CfgFile_Out_1D[iMarker_CfgFile]     = 0;
+    Marker_CfgFile_TagBound[iMarker_CfgFile]   						= "SEND_RECEIVE";
+    Marker_CfgFile_KindBC[iMarker_CfgFile]     						= 0;
+    Marker_CfgFile_Monitoring[iMarker_CfgFile] 						= 0;
+    Marker_CfgFile_GeoEval[iMarker_CfgFile]    						= 0;
+    Marker_CfgFile_Designing[iMarker_CfgFile]  						= 0;
+    Marker_CfgFile_Plotting[iMarker_CfgFile]   						= 0;
+    Marker_CfgFile_FSIinterface[iMarker_CfgFile]   				= 0;
+    Marker_CfgFile_TurboPerformance[iMarker_CfgFile]			= 0;
+    Marker_CfgFile_TurboPerformanceFlag[iMarker_CfgFile]	= 0;
+    Marker_CfgFile_DV[iMarker_CfgFile]         						= 0;
+    Marker_CfgFile_Moving[iMarker_CfgFile]     						= 0;
+    Marker_CfgFile_PerBound[iMarker_CfgFile]   						= 0;
+    Marker_CfgFile_Out_1D[iMarker_CfgFile]     						= 0;
   }
 
   /*--- Populate the marker information in the config file (all domains) ---*/
@@ -2805,6 +2813,26 @@ void CConfig::SetMarkers(unsigned short val_software) {
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_FSIinterface[iMarker_FSIinterface])
       	indexMarker=(int)(iMarker_FSIinterface/2+1);
         Marker_CfgFile_FSIinterface[iMarker_CfgFile] = indexMarker;
+  }
+
+  /*--- Identification of TurboPerformance markers and flag them---*/
+
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+	unsigned short indexMarker=0;
+	Marker_CfgFile_TurboPerformance[iMarker_CfgFile] = NO;
+	Marker_CfgFile_TurboPerformanceFlag[iMarker_CfgFile] = NO;
+    for (iMarker_TurboPerformance = 0; iMarker_TurboPerformance < nMarker_TurboPerf; iMarker_TurboPerformance++){
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundIn[iMarker_TurboPerformance]){
+      	indexMarker=(int)(iMarker_TurboPerformance+1);
+        Marker_CfgFile_TurboPerformance[iMarker_CfgFile] = indexMarker;
+        Marker_CfgFile_TurboPerformanceFlag[iMarker_CfgFile] = INFLOW;
+      }
+    	if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundOut[iMarker_TurboPerformance]){
+				indexMarker=(int)(iMarker_TurboPerformance+1);
+				Marker_CfgFile_TurboPerformance[iMarker_CfgFile] = indexMarker;
+				Marker_CfgFile_TurboPerformanceFlag[iMarker_CfgFile] = OUTFLOW;
+    	}
+    }
   }
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
@@ -4274,6 +4302,20 @@ unsigned short CConfig::GetMarker_CfgFile_FSIinterface(string val_marker) {
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_FSIinterface[iMarker_CfgFile];
+}
+
+unsigned short CConfig::GetMarker_CfgFile_TurboPerformance(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_TurboPerformance[iMarker_CfgFile];
+}
+
+unsigned short CConfig::GetMarker_CfgFile_TurboPerformanceFlag(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_TurboPerformanceFlag[iMarker_CfgFile];
 }
 
 unsigned short CConfig::GetMarker_CfgFile_Out_1D(string val_marker) {

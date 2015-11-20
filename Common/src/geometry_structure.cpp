@@ -5881,6 +5881,8 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
       config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
       config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
+      config->SetMarker_All_TurboPerformance(iMarker, config->GetMarker_CfgFile_TurboPerformance(Marker_Tag));
+      config->SetMarker_All_TurboPerformanceFlag(iMarker, config->GetMarker_CfgFile_TurboPerformanceFlag(Marker_Tag));
       config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -5897,7 +5899,9 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_GeoEval(iMarker, NO);
       config->SetMarker_All_Designing(iMarker, NO);
       config->SetMarker_All_Plotting(iMarker, NO);
-	  config->SetMarker_All_FSIinterface(iMarker, NO);
+      config->SetMarker_All_FSIinterface(iMarker, NO);
+      config->SetMarker_All_TurboPerformance(iMarker, NO);
+      config->SetMarker_All_TurboPerformanceFlag(iMarker, NO);
       config->SetMarker_All_DV(iMarker, NO);
       config->SetMarker_All_Moving(iMarker, NO);
       config->SetMarker_All_PerBound(iMarker, NO);
@@ -6577,6 +6581,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
             config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
 			      config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
+			      config->SetMarker_All_TurboPerformance(iMarker, config->GetMarker_CfgFile_TurboPerformance(Marker_Tag));
+			      config->SetMarker_All_TurboPerformanceFlag(iMarker, config->GetMarker_CfgFile_TurboPerformanceFlag(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -8201,7 +8207,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
             config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
             config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
-			config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
+            config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
+			      config->SetMarker_All_TurboPerformance(iMarker, config->GetMarker_CfgFile_TurboPerformance(Marker_Tag));
+			      config->SetMarker_All_TurboPerformanceFlag(iMarker, config->GetMarker_CfgFile_TurboPerformanceFlag(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));

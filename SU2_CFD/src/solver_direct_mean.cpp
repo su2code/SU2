@@ -7776,7 +7776,8 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
 #ifdef HAVE_MPI
 
   /*--- Add information using all the nodes ---*/
-//  cout << TotalFlux[val_Marker][0]<< " in processor " << rank<< endl;
+//  if (rank == MASTER_NODE)
+//  	cout << TotalFlux[val_Marker][0]<< " in processor " << rank<< endl;
 
   MyTotalDensity       = TotalDensity; 							TotalDensity         = 0;
   MyTotalPressure      = TotalPressure;  					  TotalPressure        = 0;
@@ -7825,7 +7826,8 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
   delete [] MyTotalFlux; delete [] MyTotalVelocity; delete [] MyTotalAreaVelocity;
   delete [] MyTotalNormal;
 
-//  cout << TotalFlux[val_Marker][0]<< " after allreduce in processor " << rank<< " in boundary "<< config->GetMarker_All_TagBound(val_Marker)<< endl;
+//  if (rank == MASTER_NODE)
+//  	cout << TotalFlux[val_Marker][0]<< " after allreduce in processor " << rank<< " in boundary "<< config->GetMarker_All_TagBound(val_Marker)<< endl;
 //  cout << AveragedNormal[val_Marker][0]<< " in processor " << rank<< endl;
 
 #endif

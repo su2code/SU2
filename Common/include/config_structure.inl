@@ -783,6 +783,10 @@ inline void CConfig::SetMarker_All_Plotting(unsigned short val_marker, unsigned 
 
 inline void CConfig::SetMarker_All_FSIinterface(unsigned short val_marker, unsigned short val_fsiinterface) { Marker_All_FSIinterface[val_marker] = val_fsiinterface; }
 
+inline void CConfig::SetMarker_All_TurboPerformance(unsigned short val_marker, unsigned short val_turboperf) { Marker_All_TurboPerformance[val_marker] = val_turboperf; }
+
+inline void CConfig::SetMarker_All_TurboPerformanceFlag(unsigned short val_marker, unsigned short val_turboperflag) { Marker_All_TurboPerformanceFlag[val_marker] = val_turboperflag; }
+
 inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short val_DV) { Marker_All_DV[val_marker] = val_DV; }
 
 inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }
@@ -808,6 +812,10 @@ inline void CConfig::SetMarker_All_SendRecv(unsigned short val_marker, short val
 inline unsigned short CConfig::GetMarker_All_Plotting(unsigned short val_marker) { return Marker_All_Plotting[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_All_FSIinterface(unsigned short val_marker) { return Marker_All_FSIinterface[val_marker]; }
+
+inline unsigned short CConfig::GetMarker_All_TurboPerformance(unsigned short val_marker) { return Marker_All_TurboPerformance[val_marker]; }
+
+inline unsigned short CConfig::GetMarker_All_TurboPerformanceFlag(unsigned short val_marker) { return Marker_All_TurboPerformanceFlag[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_n_FSIinterface(void) { return nMarker_FSIinterface; }
 
