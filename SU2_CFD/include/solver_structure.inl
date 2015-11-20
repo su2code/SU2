@@ -616,6 +616,8 @@ inline void CSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf, unsigned short inMarkerTP ){ }
 
+inline void CSolver::MPITurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf, unsigned short inMarkerTP ){ }
+
 inline void CSolver::StoreTurboPerformance(CSolver *solver, unsigned short inMarkerTP ){ }
 
 inline void CSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) { }

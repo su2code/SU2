@@ -114,7 +114,6 @@ void CMeanFlowIteration::Preprocess(COutput *output,
   /*--- Compute turboperformance ---*/
   
   if(config_container[val_iZone]->GetBoolTurboPerf()){
-  	cout<< " turbo is true"<<endl;
     SetTurboPerformance(geometry_container, solver_container, config_container, output, val_iZone);
   }
 }
@@ -605,25 +604,6 @@ void CMeanFlowIteration::SetTurboPerformance(CGeometry ***geometry_container, CS
   }
 
 void CMeanFlowIteration::SetMPITurboPerformance(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, COutput *output, unsigned short iZone) {
-
-  unsigned short  jZone, inMarker, outMarker, inMarkerTP, Kind_TurboPerf;
-  unsigned short nZone = geometry_container[iZone][MESH_0]->GetnZone();
-  string inMarker_Tag, outMarker_Tag;
-
-  /*-- Loop on all the boundary to find MIXING_PLANE boundary --*/
-  for (inMarker = 0; inMarker < config_container[iZone]->GetnMarker_All(); inMarker++)
-    for (inMarkerTP=0; inMarkerTP < config_container[iZone]->Get_nMarkerTurboPerf(); inMarkerTP++){
-    	if (config_container[iZone]->GetMarker_All_TagBound(inMarker) == config_container[iZone]->GetMarker_TurboPerf_BoundOut(inMarkerTP) )
-				solver_container[jZone][MESH_0][FLOW_SOL]->Mixing_Process(geometry_container[jZone][MESH_0], solver_container[jZone][MESH_0], config_container[jZone], outMarker);
-
-      if (config_container[iZone]->GetMarker_All_TagBound(inMarker) == config_container[iZone]->GetMarker_TurboPerf_BoundIn(inMarkerTP) ){
-        solver_container[iZone][MESH_0][FLOW_SOL]->Mixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], inMarker);
-        Kind_TurboPerf = config_container[iZone]->GetKind_TurboPerf(inMarkerTP);
-        solver_container[iZone][MESH_0][FLOW_SOL]->MPITurboPerformance(geometry_container, config_container, inMarker, Kind_TurboPerf, inMarkerTP);
-        solver_container[ZONE_0][MESH_0][FLOW_SOL]->StoreTurboPerformance(solver_container[iZone][MESH_0][FLOW_SOL], inMarkerTP);
-      }
-
-    }
 
 
 
