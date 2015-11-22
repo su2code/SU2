@@ -7130,25 +7130,26 @@ su2double *CFreeFormDefBox::EvalCartesianCoord(su2double *ParamCoord) {
 
 su2double CFreeFormDefBox::GetBernstein(short val_n, short val_i, su2double val_t) {
   
-	su2double value = 0.0;
-
-	if (val_i > val_n) { value = 0.0; return value; }
+  su2double value = 0.0;
   
-	if (val_i == 0) {
-		if ((val_t == 0) || (val_t == 1)) value = 0.0;
-		else value = Binomial(val_n, val_i) * pow(val_t, val_i) * pow(1.0 - val_t, val_n - val_i);
-	}
-	else if (val_i == val_n) {
-		if (val_t == 0) value = 0.0;
-		else if (val_t == 1) value = 1.0;
-		else value = pow(val_t, val_n);
-	}
+  if (val_i > val_n) { value = 0.0; return value; }
+  
+  if (val_i == 0) {
+    if (val_t == 0) value = 1.0;
+    else if (val_t == 1) value = 0.0;
+    else value = Binomial(val_n, val_i) * pow(val_t, val_i) * pow(1.0 - val_t, val_n - val_i);
+  }
+  else if (val_i == val_n) {
+    if (val_t == 0) value = 0.0;
+    else if (val_t == 1) value = 1.0;
+    else value = pow(val_t, val_n);
+  }
   else {
     if ((val_t == 0) || (val_t == 1)) value = 0.0;
-    else value = Binomial(val_n, val_i) * pow(val_t, val_i) * pow(1.0-val_t, val_n - val_i);
+    value = Binomial(val_n, val_i) * pow(val_t, val_i) * pow(1.0-val_t, val_n - val_i);
   }
-	
-	return value;
+  
+  return value;
   
 }
 
