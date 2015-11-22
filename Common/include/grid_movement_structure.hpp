@@ -528,7 +528,7 @@ public:
 	 * \param[in] m - Lower coefficient.
 	 * \return Value of the binomial coefficient n over m.
 	 */		
-	unsigned long Binomial(unsigned short n, unsigned short m);
+	su2double Binomial(unsigned short n, unsigned short m);
 	
 	/*! 
 	 * \brief Get the order in the l direction of the FFD FFDBox.

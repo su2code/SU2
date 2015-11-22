@@ -7132,20 +7132,24 @@ su2double CFreeFormDefBox::GetBernstein(short val_n, short val_i, su2double val_
   
 	su2double value = 0.0;
 
-	if (val_i > val_n) { value = 0; return value; }
+	if (val_i > val_n) { value = 0.0; return value; }
+  
 	if (val_i == 0) {
-		if (val_t == 0) value = 1;
-		else if (val_t == 1) value = 0;
-		else value = Binomial(val_n, val_i)*(pow(val_t, val_i)) * pow(1.0 - val_t, val_n - val_i);
+		if ((val_t == 0) || (val_t == 1)) value = 0.0;
+		else value = Binomial(val_n, val_i) * pow(val_t, val_i) * pow(1.0 - val_t, val_n - val_i);
 	}
 	else if (val_i == val_n) {
-		if (val_t == 0) value = 0;
-		else if (val_t == 1) value = 1;
+		if (val_t == 0) value = 0.0;
+		else if (val_t == 1) value = 1.0;
 		else value = pow(val_t, val_n);
 	}
-	else value = Binomial(val_n, val_i)*(pow(val_t, val_i)) * pow(1.0-val_t, val_n - val_i);
+  else {
+    if ((val_t == 0) || (val_t == 1)) value = 0.0;
+    else value = Binomial(val_n, val_i) * pow(val_t, val_i) * pow(1.0-val_t, val_n - val_i);
+  }
 	
 	return value;
+  
 }
 
 su2double CFreeFormDefBox::GetBernsteinDerivative(short val_n, short val_i, 
@@ -7355,20 +7359,28 @@ su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, s
   
 }
 
-unsigned long CFreeFormDefBox::Binomial(unsigned short n, unsigned short m) {
+su2double CFreeFormDefBox::Binomial(unsigned short n, unsigned short m) {
   
   unsigned short i, j;
-  unsigned long binomial[1000];
+  su2double result;
   
-	binomial[0] = 1;
-	for (i = 1; i <= n; ++i) {
-		binomial[i] = 1;
-		for (j = i-1U; j > 0; --j) {
-			binomial[j] += binomial[j-1U];
+  su2double *binomial = new su2double [n+1];
+  
+  binomial[0] = 1.0;
+  for (i = 1; i <= n; ++i) {
+    binomial[i] = 1.0;
+    for (j = i-1U; j > 0; --j) {
+      binomial[j] += binomial[j-1U];
     }
-	}
-
-	return binomial[m];
+  }
+  
+  result = binomial[m];
+  if (fabs(result) < EPS*EPS) { result = 0.0; }
+  
+  delete [] binomial;
+  
+  return result;
+  
   
 }
 
