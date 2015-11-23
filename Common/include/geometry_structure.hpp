@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -63,7 +65,7 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  */
 class CGeometry {
 protected:
@@ -370,7 +372,7 @@ public:
 	/*! 
 	 * \brief A virtual member.
 	 */		
-	virtual void SetCG(void);
+	virtual void SetCoord_CG(void);
 
 	/*! 
 	 * \brief A virtual member.
@@ -899,7 +901,7 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  */
 class CPhysicalGeometry : public CGeometry {
 
@@ -1071,7 +1073,7 @@ public:
 	/*! 
 	 * \brief Set the center of gravity of the face, elements and edges.
 	 */
-	void SetCG(void);
+	void SetCoord_CG(void);
 
 	/*! 
 	 * \brief Set the edge structure of the control volume.
@@ -1451,7 +1453,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1627,7 +1629,7 @@ public:
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1673,7 +1675,7 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {

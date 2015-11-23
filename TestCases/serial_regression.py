@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 4.0.1 "Cardinal"
+#  \version 4.0.2 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -317,19 +317,6 @@ def main():
     contadj_incomp_cylinder.tol       = 0.00001
     test_list.append(contadj_incomp_cylinder)
 
-    ######################################
-    ### Thermochemical Nonequilibrium  ###
-    ######################################
-    ramc           = TestCase('ramc')
-    ramc.cfg_dir   = "tne2/ramc"
-    ramc.cfg_file  = "ramc61km.cfg"
-    ramc.test_iter = 25
-    ramc.test_vals = [-4.643029, 2.849441, -4.443852, 0.000313] #last 4 columns
-    ramc.su2_exec  = "SU2_CFD"
-    ramc.timeout   = 1600
-    ramc.tol       = 0.00001
-    test_list.append(ramc)
-
 #    ######################################
 #    ### Spectral Method                ###
 #    ######################################
@@ -439,7 +426,7 @@ def main():
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
     edge_VW.test_iter = 100
-    edge_VW.test_vals = [-1.448387, 4.749040, -0.000046, 0.000000] #last 4 columns
+    edge_VW.test_vals = [-5.055874, 1.117978, -0.000009, 0.000000] #last 4 columns
     edge_VW.su2_exec  = "SU2_CFD"
     edge_VW.timeout   = 1600
     edge_VW.tol       = 0.00001
@@ -450,11 +437,39 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 100
-    edge_PPR.test_vals = [-1.998340, 4.172354, -0.000056, 0.000000] #last 4 columns
+    edge_PPR.test_vals = [-5.484387, 0.656352, -0.000037, 0.000000] #last 4 columns
     edge_PPR.su2_exec  = "SU2_CFD"
     edge_PPR.timeout   = 1600
     edge_PPR.tol       = 0.00001
     test_list.append(edge_PPR)
+    
+    
+    ######################################
+    ### turboSU2                       ###
+    ######################################
+    
+    # Mini centrifugal turbine blade
+    centrifugal_blade           = TestCase('centrifugal_blade')
+    centrifugal_blade.cfg_dir   = "turbomachinery/centrifugal_blade"
+    centrifugal_blade.cfg_file  = "centrifugal_blade.cfg"
+    centrifugal_blade.test_iter = 100
+    centrifugal_blade.test_vals = [-9.106943, -0.460429, 1.069070e+01, 3.396010e-01] #last 4 columns
+    centrifugal_blade.su2_exec  = "SU2_CFD"
+    centrifugal_blade.timeout   = 1600
+    centrifugal_blade.tol       = 0.000001
+    test_list.append(centrifugal_blade) 
+    
+    
+    # Mini centrifugal turbine stage
+    centrifugal_stage           = TestCase('centrifugal_stage')
+    centrifugal_stage.cfg_dir   = "turbomachinery/centrifugal_stage"
+    centrifugal_stage.cfg_file  = "centrifugal_stage.cfg"
+    centrifugal_stage.test_iter = 100
+    centrifugal_stage.test_vals = [-10.166364, 1.621172, 2.206476e+01, 5.271075e-01] #last 4 columns
+    centrifugal_stage.su2_exec  = "SU2_CFD"
+    centrifugal_stage.timeout   = 1600
+    centrifugal_stage.tol       = 0.000001
+    test_list.append(centrifugal_stage) 
 
     ######################################
     ### RUN TESTS                      ###

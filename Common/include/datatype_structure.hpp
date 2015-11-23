@@ -3,9 +3,9 @@
  * \brief Headers for generalized datatypes.
  *        The subroutines and functions are in the <i>datatype_structure.cpp</i> file.
  * \author T. Albring
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -38,6 +38,7 @@
 /*--- Depending on the datatype defined during the configuration, include the correct datatype
  * definition. Each file uses a typedef from the specific datatype to su2double and implements
  * the routines defined in the namespace SU2_TYPE below. ---*/
+
 #if defined COMPLEX_TYPE
 #include "datatypes/complex_structure.hpp"
 #define SPRINTF sprintfOver
@@ -58,7 +59,8 @@
 #include "datatypes/primitive_structure.hpp"
 #endif
 
-/* --- This type can be used for (rare) compatiblity cases or for computations that are intended to be (always) passive. --- */
+/*--- This type can be used for (rare) compatiblity cases or for computations that are intended to be (always) passive. ---*/
+
 typedef double passivedouble;
 
 /*!
@@ -66,7 +68,7 @@ typedef double passivedouble;
  * \brief Namespace for defining the datatype wrapper routines; this class features as a base class for
  * type interfaces for non-primitive dataypes e.g. used by AD, complex etc.
  * \author T. Albring
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  */
 namespace SU2_TYPE{
   /*!
@@ -167,7 +169,33 @@ namespace AD{
    */
   void ComputeAdjoint();
 
+  /*!
+   * \brief Reset the tape structure to be ready for a new recording.
+   */
+  void Reset();
+
+  /*!
+   * \brief Reset the variable (set index to zero).
+   */
+  void ResetInput(su2double &data);
+
 }
+
+#ifdef CODI_REVERSE_TYPE
+#define AD_BEGIN_PASSIVE         \
+  if(AD::globalTape.isActive()) {\
+     AD::globalTape.setPassive();\
+     AD::Status = true;          \
+  }
+#define AD_END_PASSIVE           \
+  if(AD::Status) {               \
+     AD::globalTape.setActive(); \
+     AD::Status = false;         \
+  }
+#else
+#define AD_BEGIN_PASSIVE
+#define AD_END_PASSIVE
+#endif
 #include "datatype_structure.inl"
 
 

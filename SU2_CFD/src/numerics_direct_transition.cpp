@@ -2,7 +2,7 @@
  * \file numerics_direct_transition.cpp
  * \brief This file contains all the convective term discretization.
  * \author A. Aranake
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -113,7 +115,7 @@ void CUpwSca_TransLM::ComputeResidual(su2double *val_residual, su2double **val_J
 		val_Jacobian_i[1][1] = a0;
 		val_Jacobian_j[1][1] = a1;
     
-    /* --- Zero out off-diagonal terms just in case ---*/
+    /*--- Zero out off-diagonal terms just in case ---*/
 		val_Jacobian_i[0][1] = 0;
 		val_Jacobian_j[0][1] = 0;
     val_Jacobian_i[1][0] = 0;

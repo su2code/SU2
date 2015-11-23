@@ -2,7 +2,7 @@
  * fluid_model_ppr.cpp
  * \brief Source of the Peng-Robinson model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,11 +62,14 @@ su2double CPengRobinson::alpha2(su2double T) {
 }
 
 su2double CPengRobinson::T_v_h(su2double v, su2double h) {
-	su2double fv, A, B, C, T, d;
+	su2double fv, A, B, C, T, d, atanh;
 	su2double sqrt2=sqrt(2.0);
 
 	d = (v*v+2*b*v-b*b);
-	fv = atanh( b*sqrt2 / (v + b));
+  
+  atanh = (log(1.0+( b*sqrt2 / (v + b))) - log(1.0-( b*sqrt2 / (v + b))))/2.0;
+  
+	fv = atanh;
 
 	A = Gas_Constant*(1 / Gamma_Minus_One + v/(v-b)) - a*v*k*k / (TstarCrit * d);
 	B = a*k*(k+1)/sqrt(TstarCrit) *( fv/(b*sqrt2) + 2*v/d );
@@ -75,18 +80,36 @@ su2double CPengRobinson::T_v_h(su2double v, su2double h) {
 	return T*T;
 }
 
+su2double CPengRobinson::T_P_rho(su2double P, su2double rho){
+	su2double A, B, C, T, vb1, vb2;
+	vb1 = (1/rho -b);
+	vb2 = (1/rho/rho + 2*b/rho - b*b);
+
+	A =   Gas_Constant/vb1 - a*k*k/TstarCrit/vb2;
+
+	B =   2*a*k*(k+1)/sqrt(TstarCrit)/vb2;
+
+	C = - P - a*(1+k)*(1+k)/vb2;
+
+	T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A);
+	T *= T;
+	return T;
+}
+
 void CPengRobinson::SetTDState_rhoe (su2double rho, su2double e ) {
 
     su2double DpDd_T, DpDT_d, DeDd_T, Cv;
-    su2double A, B, C, sqrt2, fv, a2T, rho2;
+    su2double A, B, C, sqrt2, fv, a2T, rho2, atanh;
 
     Density = rho;
     StaticEnergy = e;
 
     rho2 = rho*rho;
-    sqrt2=sqrt(2);
+    sqrt2=sqrt(2.0);
 
-    fv = atanh( rho * b * sqrt2/(1 + rho*b));
+    atanh = (log(1.0+( rho * b * sqrt2/(1 + rho*b))) - log(1.0-( rho * b * sqrt2/(1 + rho*b))))/2.0;
+  
+    fv = atanh;
     
     A = Gas_Constant / Gamma_Minus_One;
     B = a*k*(k+1)*fv/(b*sqrt2*sqrt(TstarCrit));
@@ -127,9 +150,9 @@ void CPengRobinson::SetTDState_rhoe (su2double rho, su2double e ) {
 
 void CPengRobinson::SetTDState_PT (su2double P, su2double T ) {
 	su2double toll= 1e-6;
-	su2double A, B, Z, DZ=1.0, F, F1;
+	su2double A, B, Z, DZ=1.0, F, F1, atanh;
 	su2double rho, fv, e;
-	su2double sqrt2=sqrt(2);
+	su2double sqrt2=sqrt(2.0);
 	unsigned short nmax = 20, count=0;
 
 	A= a*alpha2(T)*P/(T*Gas_Constant)/(T*Gas_Constant);
@@ -155,9 +178,12 @@ void CPengRobinson::SetTDState_PT (su2double P, su2double T ) {
 
 
 	rho= P/(Zed*Gas_Constant*T);
-	fv = atanh( rho * b * sqrt2/(1 + rho*b));
+  
+  atanh = (log(1.0+( rho * b * sqrt2/(1 + rho*b))) - log(1.0-( rho * b * sqrt2/(1 + rho*b))))/2.0;
+  
+	fv = atanh;
 
-        e = T*Gas_Constant/Gamma_Minus_One - a*(k+1)*sqrt( alpha2(T) )*fv / (b*sqrt2);
+  e = T*Gas_Constant/Gamma_Minus_One - a*(k+1)*sqrt( alpha2(T) )*fv / (b*sqrt2);
 
 	SetTDState_rhoe(rho, e);
 }
@@ -173,7 +199,7 @@ void CPengRobinson::SetTDState_Prho (su2double P, su2double rho ) {
 void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 
 	su2double T, fv, sqrt2=sqrt(2.0), A;
-	su2double f, v;
+	su2double f, v, atanh;
 	su2double x1, x2, xmid, dx, fx1, fx2, fmid, rtb;
 	su2double toll = 1e-9, FACTOR=0.2;
 	su2double cons_s, cons_h;
@@ -195,10 +221,16 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 
 
 	T = T_v_h(x1, h);
-	fv = atanh( b*sqrt2 / (x1 + b));
+  
+  atanh = (log(1.0+( b*sqrt2 / (x1 + b))) - log(1.0-( b*sqrt2 / (x1 + b))))/2.0;
+	fv = atanh;
+  
 	fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 	T = T_v_h(x2, h);
-	fv = atanh( b*sqrt2 / (x2 + b));
+  
+  atanh = (log(1.0+( b*sqrt2 / (x2 + b))) - log(1.0-( b*sqrt2 / (x2 + b))))/2.0;
+	fv = atanh;
+  
 	fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 
 	// zbrac algorithm NR
@@ -208,12 +240,14 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 			if (fabs(fx1) < fabs(fx2)) {
 				x1 += FACTOR*(x1-x2);
 				T = T_v_h(x1, h);
-				fv = atanh( b*sqrt2/(x1 + b));
+        atanh = (log(1.0+( b*sqrt2/(x1 + b))) - log(1.0-( b*sqrt2/(x1 + b))))/2.0;
+				fv = atanh;
 				fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 			} else{
 				x2 += FACTOR*(x2-x1);
 				T = T_v_h(x2, h);
-				fv = atanh( b*sqrt2/(x2 + b));
+        atanh = (log(1.0+( b*sqrt2/(x2 + b))) - log(1.0-( b*sqrt2/(x2 + b))))/2.0;
+        fv = atanh;
 				fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 			}
 		}
@@ -231,7 +265,8 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 	do{
 		xmid=rtb+(dx *= 0.5);
 		T = T_v_h(xmid, h);
-		fv = atanh( b* sqrt2/(xmid + b));
+    atanh = (log(1.0+( b* sqrt2/(xmid + b))) - log(1.0-( b* sqrt2/(xmid + b))))/2.0;
+		fv = atanh;
 		fmid= A*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 
 		if (fmid <= 0.0) rtb=xmid;
@@ -242,7 +277,8 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 	if (countrtb==ITMAX) {
 		cout <<"Too many bisections in rtbis" << endl;
 //			do{
-//					fv = atanh( b/v* sqrt2/(1 + b/v));
+//          atanh = (log(1.0+( b/v* sqrt2/(1 + b/v))) - log(1.0-( b/v* sqrt2/(1 + b/v))))/2.0;
+//					fv = atanh;
 //					T=T_v_h(v, h);
 //					f = A*log(T) + Gas_Constant*log(v - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 //					f1= Gas_Constant/(v-b)+ a*sqrt(alpha2(T)) *k/(sqrt(T*TstarCrit)*(v*v - b*b - 2*v*b));
@@ -265,7 +301,7 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 	cons_h= abs(((StaticEnergy + Pressure/Density) - h)/h);
 	cons_s= abs((Entropy-s)/s);
 
-	if (cons_h >1e-4 or cons_s >1e-4) {
+	if (cons_h >1e-4 || cons_s >1e-4) {
 		cout<< "TD consistency not verified in hs call"<< endl;
 			 //cout <<"Before  "<< h <<" "<< s << endl;
 			 //cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy << fmid <<" "<< f<< " "<< countrtb<<" "<< countnw<< endl;
@@ -277,7 +313,7 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 void CPengRobinson::SetEnergy_Prho (su2double P, su2double rho) {
 
     su2double ad;
-    su2double A, B, C, T, vb1, vb2;
+    su2double A, B, C, T, vb1, vb2, atanh;
     vb1 = (1/rho -b);
     vb2 = (1/rho/rho + 2*b/rho - b*b);
 
@@ -290,20 +326,100 @@ void CPengRobinson::SetEnergy_Prho (su2double P, su2double rho) {
     T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A);
     T *= T;
 
-    ad = a*(k+1)*sqrt( alpha2(T) ) / ( b*sqrt(2) ) * atanh( rho * b * sqrt(2)/(1 + rho*b) ) ;
+    atanh = (log(1.0+( rho * b * sqrt(2.0)/(1 + rho*b) )) - log(1.0-( rho * b * sqrt(2.0)/(1 + rho*b) )))/2.0;
+    ad = a*(k+1)*sqrt( alpha2(T) ) / ( b*sqrt(2.0) ) * atanh ;
 
     StaticEnergy = T * Gas_Constant / Gamma_Minus_One - ad;
 
 }
 
 void CPengRobinson::SetTDState_rhoT (su2double rho, su2double T) {
-	su2double fv, e;
+	su2double fv, e, atanh;
 
-	fv = atanh( rho * b * sqrt(2)/(1 + rho*b));
-	e = T*Gas_Constant/Gamma_Minus_One - a*(k+1)*sqrt( alpha2(T) ) / ( b*sqrt(2) ) * fv;
+  atanh = (log(1.0+( rho * b * sqrt(2.0)/(1 + rho*b))) - log(1.0-( rho * b * sqrt(2.0)/(1 + rho*b))))/2.0;
+	fv = atanh;
+	e = T*Gas_Constant/Gamma_Minus_One - a*(k+1)*sqrt( alpha2(T) ) / ( b*sqrt(2.0) ) * fv;
 	SetTDState_rhoe(rho, e);
 }
 
+void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 
+	su2double T, rho, v, cons_P, cons_s, fv, A;
+	su2double x1,x2, fx1, fx2,f, fmid, rtb, dx, xmid, sqrt2=sqrt(2.0);
+	su2double toll = 1e-5, FACTOR=0.2;
+	unsigned short count=0, NTRY=10, ITMAX=100;
+
+	A = Gas_Constant / Gamma_Minus_One;
+	T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
+	v = (T*Gas_Constant)/P;
+
+	if(Zed<0.9999){
+		x1 = Zed*v;
+		x2 = v;
+
+	}else{
+		x1 = 0.2*v;
+		x2 = v;
+	}
+	T = T_P_rho(P,1.0/x1);
+	fv = atanh( b*sqrt2 / (x1 + b));
+	fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+	T = T_P_rho(P,1.0/x2);
+	fv = atanh( b*sqrt2 / (x2 + b));
+	fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+
+	// zbrac algorithm NR
+
+	for (int j=1;j<=NTRY;j++) {
+		if (fx1*fx2 > 0.0){
+			if (fabs(fx1) < fabs(fx2)){
+				x1 += FACTOR*(x1-x2);
+				T = T_P_rho(P,1.0/x1);
+				fv = atanh( b*sqrt2 / (x1 + b));
+				fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+			}else{
+				T = T_P_rho(P,1.0/x2);
+				fv = atanh( b*sqrt2 / (x2 + b));
+				fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+				}
+		}
+	}
+
+
+	// rtbis algorithm NR
+
+	f=fx1;
+	fmid=fx2;
+	if (f*fmid >= 0.0){
+		cout<< "Root must be bracketed for bisection in rtbis"<< endl;
+		SetTDState_rhoT(Density, Temperature);
+	}
+	rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+	do{
+		xmid=rtb+(dx *= 0.5);
+		T = T_P_rho(P,1.0/xmid);
+		fv = atanh( b*sqrt2 / (xmid + b));
+		fmid = A*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
+		if (fmid <= 0.0) rtb=xmid;
+		count++;
+		}while(abs(fmid) > toll && count<ITMAX);
+
+		if(count==ITMAX){
+			cout <<"Too many bisections in rtbis" << endl;
+		}
+
+	rho = 1.0/xmid;
+	T = T_P_rho(P, rho);
+	SetTDState_rhoT(rho, T);
+//	cout << xmid << " "<< T<< " "<< Pressure<< " "<< P << " "<< Entropy << " "<< s <<endl;
+
+	cons_P= abs((Pressure -P)/P);
+	cons_s= abs((Entropy-s)/s);
+
+	if(cons_P >1e-3 or cons_s >1e-3){
+		cout<< "TD consistency not verified in hs call"<< endl;
+	}
+
+}
 
 
