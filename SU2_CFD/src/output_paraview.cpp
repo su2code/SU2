@@ -2,7 +2,7 @@
  * \file output_paraview.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -33,7 +33,6 @@
 
 void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
     
-	/*--- Local variables and initialization ---*/
 	unsigned short iDim, iVar, nDim = geometry->GetnDim();
 	unsigned short Kind_Solver = config->GetKind_Solver();
     
@@ -818,7 +817,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 
 void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol, bool new_file) {
   
-	/*--- Local variables and initialization ---*/
 	unsigned short iDim, iVar, nDim = geometry->GetnDim();
 	unsigned short Kind_Solver = config->GetKind_Solver();
   
@@ -1573,6 +1571,6 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
 	Paraview_File.close();
   
   if (surf_sol)  delete [] LocalIndex;
-  if (SurfacePoint!=NULL) delete [] SurfacePoint;
+  if (SurfacePoint != NULL) delete [] SurfacePoint;
   
 }

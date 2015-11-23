@@ -2,7 +2,7 @@
  * \file solution_direct_elasticity.cpp
  * \brief Main subrotuines for solving the linear elasticity equation.
  * \author F. Palacios, R. Sanchez
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1251,7 +1251,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
     }
   }
   
-  /* --- Initialize the stress and the number of elements connected to each node ---*/
+  /*--- Initialize the stress and the number of elements connected to each node ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     node[iPoint]->Initialize_Connectivity();
     for (iDim = 0; iDim < nDim; iDim++){
@@ -1370,19 +1370,19 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   }
   
   
-  /* --- Variable to store the number of elements connected to each node ---*/
+  /*--- Variable to store the number of elements connected to each node ---*/
   
   su2double nElPerNode=0;
   
-  /* --- For the number of nodes in the mesh ---*/
+  /*--- For the number of nodes in the mesh ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
-    /* --- Get the stresses, added up from all the elements that connect to the node ---*/
+    /*--- Get the stresses, added up from all the elements that connect to the node ---*/
     
     Stress     = node[iPoint]->GetStress();
     nElPerNode = node[iPoint]->Get_Connectivity();
     
-    /* --- Compute the stress averaged from all the elements connecting to the node and the Von Mises stress ---*/
+    /*--- Compute the stress averaged from all the elements connecting to the node and the Von Mises stress ---*/
     
     if (geometry->GetnDim() == 2) {
       
@@ -2132,7 +2132,7 @@ void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
       
       // This works only for matching meshes
       
-      for (iDim=0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++){
         Residual[iDim]=tn_f[iVertex][iDim];
       }
       
@@ -2201,7 +2201,7 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry, CConfig *f
       solVel = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel();
       valPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
       
-      for (iDim=0; iDim<nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++){
         valPred[iDim] = solDisp[iDim] + Delta_t*solVel[iDim];
       }
       
@@ -2216,7 +2216,7 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry, CConfig *f
       solVel_tn = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Vel_time_n();
       valPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
       
-      for (iDim=0; iDim<nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++){
         valPred[iDim] = solDisp[iDim] + 0.5*Delta_t*(3*solVel[iDim]-solVel_tn[iDim]);
       }
       
@@ -2304,7 +2304,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
         dispCalc = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
         dispCalc_Old = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Old();
         
-        for (iDim=0; iDim < nDim; iDim++){
+        for (iDim = 0; iDim < nDim; iDim++){
           
           /*--- Compute the deltaU and deltaU_n+1 ---*/
           deltaU[iDim] = dispCalc_Old[iDim] - dispPred_Old[iDim];
@@ -2401,7 +2401,7 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry, CConfig *fea_con
       fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Old(dispCalc);
       
       /*--- Apply the Aitken relaxation ---*/
-      for (iDim=0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < nDim; iDim++){
         dispPred[iDim] = (1.0 - WAitken)*dispPred[iDim] + WAitken*dispCalc[iDim];
       }
       
