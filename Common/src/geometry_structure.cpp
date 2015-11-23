@@ -12594,89 +12594,48 @@ su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane
 
 su2double CPhysicalGeometry::Compute_NACA0012(CGeometry *geometry, CConfig *config, bool val_original_surface) {
   
-//  unsigned long iVertex;
-//  su2double MinDelta, Distance, xCoord = 0.0, yCoord = 0.0, yNACA = 0.0;
-//  
-//  /*--- Find the leading and trailing edges and compute the angle of attack ---*/
-//  MinDelta = 0.0;
-//  for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-//    
-//    xCoord = Xcoord_Airfoil[iVertex];
-//    yCoord = Ycoord_Airfoil[iVertex];
-//    
-//    yNACA = 0.6*(0.2969*sqrt(xCoord) - 0.1260*xCoord - 0.3516*pow(xCoord,2.0) + 0.2843*pow(xCoord,3.0) - 0.1036*pow(xCoord,4.0));
-//    
-//    /*--- Compute the distance between the current geometry and the analytic
-//     NACA 0012 definition (closed trailing edge). Note that we are assuming
-//     that the current yCoord has not crossed the x-axis in our sign check. ---*/
-//    if (yCoord > 0.0) {
-//      Distance = yCoord - yNACA;
-//    } else {
-//      Distance = yNACA - yCoord;
-//    }
-//    cout << MinDelta << "   " << Distance << endl;
-//    if (MinDelta > Distance) { MinDelta = Distance; }
-//  }
-//  
-  unsigned long iVertex;
   unsigned short iMarker;
+  unsigned long iVertex, iPoint;
   su2double MinDelta = 1e6, Distance, xCoord = 0.0, yCoord = 0.0, yNACA = 0.0;
-  su2double *VarCoord, *Coord, *Normal, Ycurv, Yesp;
+  su2double *VarCoord, *Coord, *Normal;
   
-  su2double Ya = config->GetParamDV(0,0) / 100.0; /*--- Maximum camber as a fraction of the chord
-                                                   (100 m is the first of the four digits) ---*/
-  su2double Xa = config->GetParamDV(0,1) / 10.0; /*--- Location of maximum camber as a fraction of
-                                                  the chord (10 p is the second digit in the NACA xxxx description) ---*/
-  su2double t = config->GetParamDV(0,2) / 100.0; /*--- Maximum thickness as a fraction of the
-                                                  chord (so 100 t gives the last two digits in
-                                                  the NACA 4-digit denomination) ---*/
-		
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+  /*--- Compute the distance between the current geometry and the analytic
+   NACA 0012 definition (closed trailing edge definition). ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      //VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
       if (config->GetMarker_All_GeoEval(iMarker) == YES) {
-        Coord = geometry->vertex[iMarker][iVertex]->GetCoord();
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        Coord  = geometry->node[iPoint]->GetCoord();
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
         
-        //if (Coord[0] < Xa) Ycurv = (2.0*Xa*Coord[0]-pow(Coord[0],2.0))*(Ya/pow(Xa,2.0));
-        //else Ycurv = ((1.0-2.0*Xa)+2.0*Xa*Coord[0]-pow(Coord[0],2.0))*(Ya/pow((1.0-Xa), 2.0));
-        
-        //Yesp = t*(1.4845*sqrt(Coord[0])-0.6300*Coord[0]-1.7580*pow(Coord[0],2.0)+
-        //          1.4215*pow(Coord[0],3.0)-0.518*pow(Coord[0],4.0));
-        
-        //if (Normal[1] > 0) VarCoord[1] =  (Ycurv + Yesp) - Coord[1];
-        //if (Normal[1] < 0) VarCoord[1] =  (Ycurv - Yesp) - Coord[1];
-        
+        /*--- Store the x- and y-coordinate. ---*/
         xCoord = Coord[0];
         yCoord = Coord[1];
         
+        /*--- Adjust the coordinates if we are computing the gradient (we
+         have applied a DV perturbation and stored the dX in VarCoord). ---*/
         if (val_original_surface == false) {
           VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
           xCoord += VarCoord[0];
           yCoord += VarCoord[1];
         }
         
-        yNACA = 0.6*(0.2969*sqrt(xCoord) - 0.1260*xCoord - 0.3516*pow(xCoord,2.0) + 0.2843*pow(xCoord,3.0) - 0.1036*pow(xCoord,4.0));
-        
-        /*--- Compute the distance between the current geometry and the analytic
-         NACA 0012 definition (closed trailing edge). Note that we are assuming
-         that the current yCoord has not crossed the x-axis in our sign check. ---*/
-        
-        //if (Normal[1] > 0) VarCoord[1] =  (Ycurv + Yesp) - Coord[1];
-        //if (Normal[1] < 0) VarCoord[1] =  (Ycurv - Yesp) - Coord[1];
-        
-        //if (yCoord > 0.0) {
+        /*--- Compute the analytic y-coord of the NACA 0012 surface. Note
+         that this is the adjusted equation to have y = 0.0 at x = 1.0. ---*/
+        yNACA = 0.6*(0.2969*sqrt(xCoord)-0.1260*xCoord - 0.3516*pow(xCoord,2.0)
+                     + 0.2843*pow(xCoord,3.0) - 0.1036*pow(xCoord,4.0));
+
         if (Normal[1] > 0) {
           Distance = yCoord - yNACA;
         } else {
           Distance = yNACA - yCoord;
         }
-        cout << MinDelta << "   " << Distance << "  " << yCoord << endl;
         if (MinDelta > Distance) { MinDelta = Distance; }
-        
       }
-      //boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
     }
+  }
   
   return MinDelta;
   

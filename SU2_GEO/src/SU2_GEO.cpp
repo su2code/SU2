@@ -548,7 +548,6 @@ int main(int argc, char *argv[]) {
             } else {
               ObjectiveFunc_New[9*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_NACA0012(geometry_container[ZONE_0], config_container[ZONE_0], false);
               Gradient[9*nPlane + iPlane] = (ObjectiveFunc_New[9*nPlane + iPlane] - ObjectiveFunc[9*nPlane + iPlane]) / delta_eps;
-              cout << "Min. delta NACA 0012 gradient: "                << Gradient[9*nPlane + iPlane] << "." << " " << ObjectiveFunc_New[9*nPlane + iPlane]<<"  "<<ObjectiveFunc[9*nPlane + iPlane]<< endl;
             }
             
           }
