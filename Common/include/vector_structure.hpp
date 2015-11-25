@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include "./mpi_structure.hpp"
 
 #include <climits>
 #include <cmath>
@@ -40,8 +41,6 @@
 #include <iomanip>
 #include <string>
 #include <cstdlib>
-
-#include "./mpi_structure.hpp"
 
 using namespace std;
 
