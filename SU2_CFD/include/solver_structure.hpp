@@ -903,6 +903,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the average is evaluated.
 	 */
 	virtual void Mixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker);
+	virtual void MPIMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag);
 
 	/*!
 	 * \brief it performs a mixed out average of the nodes of a boundary.
@@ -1244,7 +1245,7 @@ public:
 	 * \param[in] inMarker - marker related to the inlet.
 	 * \param[in] outMarker - marker related to the outlet.
 	 */
-	virtual void MPITurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf, unsigned short inMarkerTP);
+	virtual void MPITurboPerformance(CConfig *config);
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] solver - solver containing the outlet information.
@@ -3476,6 +3477,7 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
 	void Mixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker);
+	void MPIMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag);
 
 	/*!
 	 * \brief it performs a mixed out average of the nodes of a boundary.
@@ -3831,7 +3833,7 @@ public:
 	 * \param[in] inMarker - marker related to the inlet.
 	 * \param[in] outMarker - marker related to the outlet.
 	 */
-	void MPITurboPerformance(CSolver *solver,  CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf , unsigned short inMarkerTP );
+	void MPITurboPerformance(CConfig *config);
 
 	/*!
 	 * \brief Compute turbomachinery performance.

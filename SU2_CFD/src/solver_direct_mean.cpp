@@ -4665,10 +4665,192 @@ void CEulerSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned s
   
 }
 
-void CEulerSolver::MPITurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf, unsigned short inMarkerTP ){
+void CEulerSolver::MPITurboPerformance(CConfig *config){
 
+	unsigned short iMarker, iMarkerTP;
+	su2double  avgVel2In, avgVel2Out,avgVelRel2In, avgVelRel2Out, avgGridVel2In, avgGridVel2Out, avgTotalEnthalpyIn= 0.0,avgTotalRothalpyIn,
+	avgTotalEnthalpyOut, avgTotalRothalpyOut, avgTotalEnthalpyOutIs, avgEnthalpyOut, avgEnthalpyOutIs,
+	avgPressureOut, avgTotalRelPressureIn, avgTotalRelPressureOut, avgEntropyIn, avgEntropyOut;
+	unsigned short iDim, i;
+
+	int rank = MASTER_NODE, rankIn = MASTER_NODE, rankOut= MASTER_NODE;
+	int size = SINGLE_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  su2double *TurbPerfIn= NULL,*TurbPerfOut= NULL;
+  su2double *TotTurbPerfIn = NULL,*TotTurbPerfOut = NULL;
+  TurbPerfIn = new su2double[4];
+  TurbPerfOut = new su2double[6];
+  for (i=0;i<4;i++)
+  	TurbPerfIn[i]= 0.0;
+  for (i=0;i<6;i++)
+		TurbPerfOut[i]= 0.0;
+#endif
+
+  avgTotalRothalpyIn     = -1.0;
+  avgTotalEnthalpyIn		 = -1.0;
+  avgEntropyIn           = -1.0;
+  avgTotalRelPressureIn  = -1.0;
+  avgTotalRothalpyOut    = -1.0;
+	avgTotalEnthalpyOut    = -1.0;
+	avgTotalRelPressureOut = -1.0;
+	avgPressureOut				 = -1.0;
+	avgEnthalpyOut				 = -1.0;
+	avgGridVel2Out				 = -1.0;
+
+
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+		for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++)
+			if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
+				if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == INFLOW){
+					/*--- compute or retrieve inlet information ---*/
+					avgVelRel2In= 0.0;
+					avgGridVel2In= 0.0;
+					avgVel2In= 0.0;
+					for (iDim = 0; iDim < nDim; iDim++){
+						avgVelRel2In +=( AveragedVelocity[iMarker][iDim] - AveragedGridVel[iMarker][iDim])*( AveragedVelocity[iMarker][iDim] - AveragedGridVel[iMarker][iDim]);
+						avgGridVel2In += AveragedGridVel[iMarker][iDim]*AveragedGridVel[iMarker][iDim];
+						avgVel2In += AveragedVelocity[iMarker][iDim]*AveragedVelocity[iMarker][iDim];
+					}
+
+					avgTotalRothalpyIn = AveragedEnthalpy[iMarker] + 0.5*avgVelRel2In - 0.5*avgGridVel2In;
+					avgTotalEnthalpyIn = AveragedEnthalpy[iMarker] + 0.5*avgVel2In;
+					avgEntropyIn = AveragedEntropy[iMarker];
+					FluidModel->SetTDState_hs(avgTotalRothalpyIn, avgEntropyIn);
+					avgTotalRelPressureIn  = FluidModel->GetPressure();
+
+#ifdef HAVE_MPI
+					TurbPerfIn[0] = avgTotalRothalpyIn;
+					TurbPerfIn[1] = avgTotalEnthalpyIn;
+					TurbPerfIn[2] = avgEntropyIn;
+					TurbPerfIn[3] = avgTotalRelPressureIn;
+#endif
+				}
+
+
+				if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == OUTFLOW){
+				 /*--- compute or retrieve outlet information ---*/
+					avgVelRel2Out = 0.0;
+					avgGridVel2Out = 0.0;
+					avgVel2Out = 0.0;
+					for (iDim = 0; iDim < nDim; iDim++){
+						avgVelRel2Out += ( AveragedVelocity[iMarker][iDim] - AveragedGridVel[iMarker][iDim])*( AveragedVelocity[iMarker][iDim] - AveragedGridVel[iMarker][iDim]);
+						avgGridVel2Out += AveragedGridVel[iMarker][iDim]*AveragedGridVel[iMarker][iDim];
+						avgVel2Out += AveragedVelocity[iMarker][iDim]*AveragedVelocity[iMarker][iDim];
+					}
+					avgTotalRothalpyOut = AveragedEnthalpy[iMarker] + 0.5*avgVelRel2Out - 0.5*avgGridVel2Out;
+					avgTotalEnthalpyOut = AveragedEnthalpy[iMarker] + 0.5*avgVel2Out;
+					avgEntropyOut = AveragedEntropy[iMarker];
+					avgEnthalpyOut = AveragedEnthalpy[iMarker];
+					FluidModel->SetTDState_hs(avgTotalRothalpyOut, avgEntropyOut);
+					avgTotalRelPressureOut  =  FluidModel->GetPressure();
+					avgPressureOut= AveragedPressure[iMarker];
+#ifdef HAVE_MPI
+					TurbPerfOut[0] = avgTotalRothalpyOut;
+					TurbPerfOut[1] = avgTotalEnthalpyOut;
+					TurbPerfOut[2] = avgTotalRelPressureOut;
+					TurbPerfOut[3] = avgPressureOut;
+					TurbPerfOut[4] = avgEnthalpyOut;
+					TurbPerfOut[5] = avgGridVel2Out;
+#endif
+
+				}
+			}
+
+
+#ifdef HAVE_MPI
+	if (rank == MASTER_NODE){
+	  TotTurbPerfIn = new su2double[4*size];
+	  TotTurbPerfOut = new su2double[6*size];
+	  for (i=0;i<4*size;i++)
+	  	TotTurbPerfIn[i]= -1.0;
+	  for (i=0;i<6*size;i++)
+			TotTurbPerfOut[i]= -1.0;
+	}
+	SU2_MPI::Gather(TurbPerfIn, 4, MPI_DOUBLE, TotTurbPerfIn, size*4, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+	SU2_MPI::Gather(TurbPerfOut, 6, MPI_DOUBLE, TotTurbPerfOut, size*6, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+	delete [] TurbPerfIn, delete [] TurbPerfOut;
+
+	if (rank == MASTER_NODE){
+		for (i=0;i<size;i++){
+			if(TotTurbPerfIn[4*i] > 0.0){
+				avgTotalRothalpyIn 		 = 0.0;
+				avgTotalRothalpyIn 		 = TotTurbPerfIn[4*i];
+				avgTotalEnthalpyIn 		 = 0.0;
+				avgTotalEnthalpyIn 		 = TotTurbPerfIn[4*i+1];
+				avgEntropyIn 					 = 0.0;
+				avgEntropyIn 			     = TotTurbPerfIn[4*i+2];
+				avgTotalRelPressureIn  = 0.0;
+				avgTotalRelPressureIn  = TotTurbPerfIn[4*i+3];
+			}
+
+			if(TotTurbPerfOut[6*i] > 0.0){
+				avgTotalRothalpyOut    = 0.0;
+				avgTotalRothalpyOut    = TotTurbPerfOut[6*i];
+				avgTotalEnthalpyOut    = 0.0;
+				avgTotalEnthalpyOut    = TotTurbPerfOut[6*i+1];
+				avgTotalRelPressureOut = 0.0;
+				avgTotalRelPressureOut = TotTurbPerfOut[6*i+2];
+				avgPressureOut				 = 0.0;
+				avgPressureOut				 = TotTurbPerfOut[6*i+3];
+				avgEnthalpyOut				 = 0.0;
+				avgEnthalpyOut				 = TotTurbPerfOut[6*i+4];
+				avgGridVel2Out				 = 0.0;
+				avgGridVel2Out				 = TotTurbPerfOut[6*i+5];
+			}
+		}
+
+		delete [] TotTurbPerfIn, delete [] TotTurbPerfOut;
+	}
+#endif
+	if (rank == MASTER_NODE){
+				/*--- compute outlet isoentropic conditions ---*/
+				FluidModel->SetTDState_Ps(avgPressureOut, avgEntropyIn);
+				avgEnthalpyOutIs = FluidModel->GetStaticEnergy() + avgPressureOut/FluidModel->GetDensity();
+				avgTotalEnthalpyOutIs = avgEnthalpyOutIs + 0.5*avgVel2Out;
+
+				/*--- store turboperformance informations ---*/
+				PressureOut[0] = avgPressureOut;
+				PressureRatio[0] = avgTotalRelPressureIn/avgPressureOut;
+
+				switch(config->GetKind_TurboPerf(0)){
+					case BLADE:
+
+						TotalPressureLoss[0] = (avgTotalRelPressureIn - avgTotalRelPressureOut)/(avgTotalRelPressureOut - avgPressureOut) ;
+						KineticEnergyLoss[0] = (avgEnthalpyOut - avgEnthalpyOutIs)/(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out);
+						EulerianWork[0] = avgTotalEnthalpyIn - avgTotalEnthalpyOut;
+						TotalEnthalpyIn[0] = avgTotalRothalpyIn;
+//						FlowAngleIn[iMarkerTP -1]= FlowAngle[inMarker];
+//						FlowAngleOut[iMarkerTP -1]= solver->GetFlowAngle(outMarker);
+//						MassFlowIn[iMarkerTP -1]= MassFlow[inMarker];
+//						MassFlowOut[iMarkerTP -1]= solver->GetMassFlow(outMarker);
+//						MachIn[iMarkerTP -1]= AveragedMach[inMarker];
+//						MachOut[iMarkerTP -1]= solver->GetAveragedMach(outMarker);
+//						NormalMachIn[iMarkerTP -1]= AveragedNormalMach[inMarker];
+//						NormalMachOut[iMarkerTP -1]= solver->GetAveragedNormalMach(outMarker);
+						EnthalpyOut[0]= avgEnthalpyOut;
+						VelocityOutIs[0]=sqrt(2.0*(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out));
+						break;
+
+					case STAGE: case TURBINE:
+
+						TotalTotalEfficiency[0] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgTotalEnthalpyOutIs);
+						TotalStaticEfficiency[0] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgEnthalpyOutIs);
+						TotalEnthalpyIn[0]= avgTotalEnthalpyIn;
+						EnthalpyOut[0] = avgTotalEnthalpyOut;
+						break;
+
+					default:
+						cout << "Warning! Invalid TurboPerformance option!" << endl;
+						exit(EXIT_FAILURE);
+						break;
+				}
+
+
+	}
 }
-
 
 
 void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
@@ -7694,14 +7876,6 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
   for (iVar=0;iVar<nVar;iVar++)
     TotalFlux[val_Marker][iVar]= 0.0;
   
-#ifdef HAVE_MPI
-  su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, *MyTotalFlux = NULL;
-  su2double MyTotalArea, *MyTotalNormal= NULL, *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL;
-  unsigned long My_nVert;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-
 
   /*--- Loop over the vertices to compute the averaged quantities ---*/
   nVert = 0;
@@ -7772,67 +7946,10 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
     }
   }
   
-  
-#ifdef HAVE_MPI
-
-  /*--- Add information using all the nodes ---*/
-//  if (rank == MASTER_NODE)
-//  	cout << TotalFlux[val_Marker][0]<< " in processor " << rank<< endl;
-
-  MyTotalDensity       = TotalDensity; 							TotalDensity         = 0;
-  MyTotalPressure      = TotalPressure;  					  TotalPressure        = 0;
-  MyTotalAreaDensity   = TotalAreaDensity; 					TotalAreaDensity     = 0;
-  MyTotalAreaPressure  = TotalAreaPressure;         TotalAreaPressure    = 0;
-  MyTotalArea          = TotalArea;                 TotalArea            = 0;
-  My_nVert						 = nVert;											nVert								 = 0;
-
-  SU2_MPI::Allreduce(&MyTotalDensity, &TotalDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalPressure, &TotalPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalAreaDensity, &TotalAreaDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalAreaPressure, &TotalAreaPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalArea, &TotalArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&MyTotalNormal, &TotalNormal, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&My_nVert, &nVert, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-
-
-//  cout << TotalAreaDensity<< " total area density in processor " << rank<< endl;
-
-  MyTotalFlux					 = new su2double[nVar];
-  MyTotalVelocity      = new su2double[nDim];
-  MyTotalAreaVelocity  = new su2double[nDim];
-  MyTotalNormal        = new su2double[nDim];
-
-//  cout << TotalFlux[val_Marker][0]<< " before total in processor " << rank<< endl;
-  for (iVar = 0; iVar < nVar; iVar++) {
-  	MyTotalFlux[iVar]  = TotalFlux[val_Marker][iVar];
-    TotalFlux[val_Marker][iVar]    = 0.0;
-  }
-
-//  cout << MyTotalFlux[0]<< " after my total in processor " << rank<< endl;
-  for (iDim = 0; iDim < nDim; iDim++) {
-		MyTotalVelocity[iDim]      			  = TotalVelocity[iDim];
-		TotalVelocity[iVar]        			  = 0.0;
-		MyTotalAreaVelocity[iDim]  			  = TotalAreaVelocity[iDim];
-		TotalAreaVelocity[iDim]    				= 0.0;
-    MyTotalNormal[iDim]				 				= AveragedNormal[val_Marker][iDim];
-    AveragedNormal[val_Marker][iDim]  = 0.0;
-    }
-
-  SU2_MPI::Allreduce(MyTotalFlux, TotalFlux[val_Marker], nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MyTotalVelocity, TotalVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MyTotalAreaVelocity, TotalAreaVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(MyTotalNormal, AveragedNormal[val_Marker], nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-  delete [] MyTotalFlux; delete [] MyTotalVelocity; delete [] MyTotalAreaVelocity;
-  delete [] MyTotalNormal;
-
-//  if (rank == MASTER_NODE)
-//  	cout << TotalFlux[val_Marker][0]<< " after allreduce in processor " << rank<< " in boundary "<< config->GetMarker_All_TagBound(val_Marker)<< endl;
-//  cout << AveragedNormal[val_Marker][0]<< " in processor " << rank<< endl;
-
-#endif
-
-//  cout << TotalFlux[val_Marker][0]<< " after allreduce in processor " << rank<< " in boundary "<< config->GetMarker_All_TagBound(val_Marker)<< endl;
+//  cout << TotalAreaDensity << " tad " << endl;
+//  cout << TotalAreaPressure << " tap " <<endl;
+//  cout << TotalArea << " ta " << endl;
+//  cout << nVert << " nVert " << endl;
 
   /*--- Compute the averaged value for the boundary of interest ---*/
   for (iDim = 0; iDim < nDim; iDim++){
@@ -7938,6 +8055,319 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
   delete [] TotalAreaVelocity;
 }
 
+
+void CEulerSolver::MPIMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag) {
+
+  unsigned long iVertex, iPoint, nVert;
+  unsigned short iDim, iVar, iMarker, iMarkerTP;
+  unsigned short mixing_process = config->GetKind_MixingProcess();
+  su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL, *Normal, *gridVel,
+  Area, TotalArea, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, UnitNormal[3];
+  string Marker_Tag, Monitoring_Tag;
+  su2double val_init_pressure;
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool grid_movement        = config->GetGrid_Movement();
+  su2double TotalDensity, TotalPressure, *TotalVelocity, *TotalNormal, avgVel2, avgTotalEnthaply, *TotalFluxes, *TotalGridVel;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  /*-- Variables declaration and allocation ---*/
+  Velocity = new su2double[nDim];
+  Normal = new su2double[nDim];
+  TotalVelocity = new su2double[nDim];
+  TotalAreaVelocity = new su2double[nDim];
+  TotalNormal = new su2double[nDim];
+  TotalGridVel = new su2double[nDim];
+  TotalFluxes = new su2double[nVar];
+
+
+
+
+
+#ifdef HAVE_MPI
+  su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, *MyTotalFluxes = NULL;
+  su2double MyTotalArea, *MyTotalNormal= NULL,*MyTotalGridVel= NULL, *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL;
+  unsigned long My_nVert;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
+  /*--- Forces initialization for contenitors ---*/
+  for (iVar=0;iVar<nVar;iVar++)
+    TotalFluxes[iVar]= 0.0;
+  for (iDim=0; iDim<nDim; iDim++) {
+      TotalVelocity[iDim]=0.0;
+      TotalAreaVelocity[iDim]=0.0;
+      TotalNormal[iDim]=0.0;
+      TotalGridVel[iDim]=0.0;
+  }
+
+  TotalDensity = 0.0;
+  TotalPressure = 0.0;
+  TotalAreaPressure=0.0;
+  TotalAreaDensity=0.0;
+  TotalArea = 0.0;
+  nVert = 0;
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    /*--- Loop over the vertices to compute the averaged quantities ---*/
+    for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++)
+      if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP)
+        if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+
+      	for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+      		iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+					/*--- Compute the integral fluxes for the boundaries ---*/
+					if (compressible) {
+						Pressure = node[iPoint]->GetPressure();
+						Density = node[iPoint]->GetDensity();
+						Enthalpy = node[iPoint]->GetEnthalpy();
+					}
+					else {
+						cout << "!!! Mixing process for incompressible and freesurface does not available yet !!! " << endl;
+						cout << "Press any key to exit..." << endl;
+						cin.get();
+						exit(1);
+					}
+
+					/*--- Note that the fluxes from halo cells are discarded ---*/
+					if ( (geometry->node[iPoint]->GetDomain())  ) {
+						nVert++;
+
+						/*--- Normal vector for this vertex (negate for outward convention) ---*/
+						geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+						for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+						Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+						su2double VelNormal = 0.0, VelSq = 0.0;
+						for (iDim = 0; iDim < nDim; iDim++) {
+							UnitNormal[iDim] = Normal[iDim]/Area;
+							Velocity[iDim] = node[iPoint]->GetPrimitive(iDim+1);
+							VelNormal += UnitNormal[iDim]*Velocity[iDim];
+							VelSq += Velocity[iDim]*Velocity[iDim];
+						}
+
+
+						/*--- Compute the integral fluxes for the boundary of interest ---*/
+
+						if ((mixing_process == AREA_AVERAGE) || (mixing_process == MIXEDOUT_AVERAGE)){
+
+							TotalFluxes[0] += Area*(Density*VelNormal );
+							for (iDim = 1; iDim < nDim+1; iDim++)
+								TotalFluxes[iDim] += Area*(Density*VelNormal*Velocity[iDim -1] + Pressure*UnitNormal[iDim -1] );
+							TotalFluxes[nDim+1] += Area*(Density*VelNormal*Enthalpy );
+
+							TotalArea += Area;
+							TotalAreaPressure += Area*Pressure;
+							TotalAreaDensity  += Area*Density;
+							for (iDim = 0; iDim < nDim; iDim++)
+								TotalAreaVelocity[iDim] += Area*Velocity[iDim];
+
+						}else{
+
+							TotalDensity += Density;
+							TotalPressure += Pressure;
+							for (iDim = 0; iDim < nDim; iDim++)
+								TotalVelocity[iDim] += Velocity[iDim];
+
+
+						}
+						for (iDim = 0; iDim < nDim; iDim++) TotalNormal[iDim] +=Normal[iDim];
+						if (grid_movement){
+							gridVel = geometry->node[iPoint]->GetGridVel();
+							for (iDim = 0; iDim < nDim; iDim++)
+								TotalGridVel[iDim] +=gridVel[iDim];
+						}
+					}
+				}
+
+			}
+
+  }
+//  cout << TotalAreaDensity << " tad before in proc" << rank <<endl;
+//  cout << TotalAreaPressure << " tap before in proc" << rank <<endl;
+//  cout << TotalArea << " ta before in proc" << rank <<endl;
+//  cout << nVert << " nVert before in proc" << rank <<endl;
+#ifdef HAVE_MPI
+
+	/*--- Add information using all the nodes ---*/
+
+	MyTotalDensity       = TotalDensity; 							TotalDensity         = 0;
+	MyTotalPressure      = TotalPressure;  					  TotalPressure        = 0;
+	MyTotalAreaDensity   = TotalAreaDensity; 					TotalAreaDensity     = 0;
+	MyTotalAreaPressure  = TotalAreaPressure;         TotalAreaPressure    = 0;
+	MyTotalArea          = TotalArea;                 TotalArea            = 0;
+	My_nVert						 = nVert;											nVert								 = 0;
+
+	SU2_MPI::Allreduce(&MyTotalDensity, &TotalDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	SU2_MPI::Allreduce(&MyTotalPressure, &TotalPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	SU2_MPI::Allreduce(&MyTotalAreaDensity, &TotalAreaDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	SU2_MPI::Allreduce(&MyTotalAreaPressure, &TotalAreaPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	SU2_MPI::Allreduce(&MyTotalArea, &TotalArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	SU2_MPI::Allreduce(&My_nVert, &nVert, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+
+
+	MyTotalFluxes					 = new su2double[nVar];
+	MyTotalVelocity        = new su2double[nDim];
+	MyTotalAreaVelocity    = new su2double[nDim];
+	MyTotalNormal          = new su2double[nDim];
+	MyTotalGridVel				 = new su2double[nDim];
+
+	for (iVar = 0; iVar < nVar; iVar++) {
+		MyTotalFluxes[iVar]  = TotalFluxes[iVar];
+		TotalFluxes[iVar]    = 0.0;
+	}
+
+	for (iDim = 0; iDim < nDim; iDim++) {
+		MyTotalVelocity[iDim]      			  = TotalVelocity[iDim];
+		TotalVelocity[iVar]        			  = 0.0;
+		MyTotalAreaVelocity[iDim]  			  = TotalAreaVelocity[iDim];
+		TotalAreaVelocity[iDim]    				= 0.0;
+		MyTotalNormal[iDim]				 				= TotalNormal[iDim];
+		TotalNormal[iDim] 								= 0.0;
+		MyTotalGridVel[iDim] 							= TotalGridVel[iDim];
+		TotalGridVel[iDim]								= 0.0;
+		}
+
+	SU2_MPI::Allreduce(MyTotalFluxes, TotalFluxes, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	SU2_MPI::Allreduce(MyTotalVelocity, TotalVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	SU2_MPI::Allreduce(MyTotalAreaVelocity, TotalAreaVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	SU2_MPI::Allreduce(MyTotalNormal, TotalNormal, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	SU2_MPI::Allreduce(MyTotalGridVel, TotalGridVel, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+	delete [] MyTotalFluxes; delete [] MyTotalVelocity; delete [] MyTotalAreaVelocity;
+	delete [] MyTotalNormal; delete [] MyTotalGridVel;
+
+#endif
+
+//  cout << TotalAreaDensity << " tad after in proc" << rank <<endl;
+//  cout << TotalAreaPressure << " tap after in proc" << rank <<endl;
+//  cout << TotalArea << " ta after in proc" << rank <<endl;
+//  cout << nVert << " nVert after in proc" << rank <<endl;
+//  cout << TotalFluxes[0] << " TF 0 after in proc" << rank <<endl;
+
+
+
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+		for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++)
+			if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP)
+				if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+
+
+					/*--- Compute the averaged value for the boundary of interest ---*/
+					su2double Normal2 = 0.0;
+					for (iDim = 0; iDim < nDim; iDim++){
+						TotalNormal[iDim] /=nVert;
+						Normal2 += TotalNormal[iDim]*TotalNormal[iDim];
+					}
+					for (iDim = 0; iDim < nDim; iDim++) AveragedNormal[iMarker][iDim] = TotalNormal[iDim]/sqrt(Normal2);
+					if (grid_movement){
+						for (iDim = 0; iDim < nDim; iDim++)AveragedGridVel[iMarker][iDim] =TotalGridVel[iDim]/nVert;
+					}
+
+					switch(mixing_process){
+						case ALGEBRAIC_AVERAGE:
+							AveragedDensity[iMarker] = TotalDensity / nVert;
+							AveragedPressure[iMarker] = TotalPressure / nVert;
+							for (iDim = 0; iDim < nDim; iDim++)
+								AveragedVelocity[iMarker][iDim] = TotalVelocity[iDim] / nVert;
+							break;
+
+						case AREA_AVERAGE:
+							AveragedDensity[iMarker] = TotalAreaDensity / TotalArea;
+							AveragedPressure[iMarker] = TotalAreaPressure / TotalArea;
+							for (iDim = 0; iDim < nDim; iDim++)
+								AveragedVelocity[iMarker][iDim] = TotalAreaVelocity[iDim] / TotalArea;
+							break;
+
+						case MIXEDOUT_AVERAGE:
+							for (iVar = 0; iVar<nVar; iVar++){
+								AveragedFlux[iMarker][iVar] = TotalFluxes[iVar]/TotalArea;
+							}
+							val_init_pressure = TotalAreaPressure/TotalArea;
+
+							if (abs(AveragedFlux[iMarker][0])<(10.0e-9)*TotalAreaDensity) {
+								cout << "Mass flux is 0.0 so a Area Averaged algorithm is used for the Mixing Procees" << endl;
+								AveragedDensity[iMarker] = TotalAreaDensity / TotalArea;
+								AveragedPressure[iMarker] = TotalAreaPressure / TotalArea;
+								for (iDim = 0; iDim < nDim; iDim++)
+									AveragedVelocity[iMarker][iDim] = TotalAreaVelocity[iDim] / TotalArea;
+
+							}else {
+								MixedOut_Average (val_init_pressure, AveragedFlux[iMarker], AveragedNormal[iMarker], &AveragedPressure[iMarker], &AveragedDensity[iMarker]);
+								for (iDim = 1; iDim < nDim +1;iDim++)
+									AveragedVelocity[iMarker][iDim-1]= ( AveragedFlux[iMarker][iDim] - AveragedPressure[iMarker]*AveragedNormal[iMarker][iDim-1] ) / AveragedFlux[iMarker][0];
+							}
+							break;
+
+
+						default:
+							cout << "Warning! Invalid MIXING_PROCESS input!" << endl;
+							exit(EXIT_FAILURE);
+							break;
+					}
+
+					/* --- compute static averaged quantities ---*/
+					FluidModel->SetTDState_Prho(AveragedPressure[iMarker], AveragedDensity[iMarker]);
+					AveragedEnthalpy[iMarker] = FluidModel->GetStaticEnergy() + AveragedPressure[iMarker]/AveragedDensity[iMarker];
+					AveragedSoundSpeed[iMarker] = FluidModel->GetSoundSpeed();
+					AveragedEntropy[iMarker] = FluidModel->GetEntropy();
+					AveragedNormalVelocity[iMarker]= AveragedNormal[iMarker][0]*AveragedVelocity[iMarker][0] + AveragedNormal[iMarker][1]*AveragedVelocity[iMarker][1];
+					AveragedTangVelocity[iMarker]= AveragedNormal[iMarker][0]*AveragedVelocity[iMarker][1] - AveragedNormal[iMarker][1]*AveragedVelocity[iMarker][0];
+					MassFlow[iMarker]= AveragedDensity[iMarker]*AveragedNormalVelocity[iMarker]*TotalArea;
+					FlowAngle[iMarker]= atan(AveragedTangVelocity[iMarker]/AveragedNormalVelocity[iMarker]);
+
+					/* --- compute total averaged quantities ---*/
+					avgVel2 = 0.0;
+					for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AveragedVelocity[iMarker][iDim]*AveragedVelocity[iMarker][iDim];
+
+					avgTotalEnthaply = AveragedEnthalpy[iMarker] + 0.5*avgVel2;
+					FluidModel->SetTDState_hs(avgTotalEnthaply,AveragedEntropy[iMarker]);
+					AveragedTotTemperature[iMarker] = FluidModel->GetTemperature();
+					AveragedTotPressure[iMarker] = FluidModel->GetPressure();
+
+					if(grid_movement){
+						AveragedTangGridVelocity[iMarker] = AveragedNormal[iMarker][0]*AveragedGridVel[iMarker][1]-AveragedNormal[iMarker][1]*AveragedGridVel[iMarker][0];
+						AveragedMach[iMarker] = sqrt(AveragedNormalVelocity[iMarker]*AveragedNormalVelocity[iMarker] + (AveragedTangVelocity[iMarker] - AveragedTangGridVelocity[iMarker])*(AveragedTangVelocity[iMarker] - AveragedTangGridVelocity[iMarker]));
+						AveragedMach[iMarker] /= AveragedSoundSpeed[iMarker];
+						AveragedTangMach[iMarker] = (AveragedTangVelocity[iMarker] - AveragedTangGridVelocity[iMarker])/AveragedSoundSpeed[iMarker];
+						FlowAngle[iMarker]= atan((AveragedTangVelocity[iMarker] - AveragedTangGridVelocity[iMarker])/AveragedNormalVelocity[iMarker]);
+
+					}else{
+						AveragedMach[iMarker] = 0.0;
+						for (iDim = 0; iDim < nDim; iDim++) {
+							AveragedMach[iMarker] += AveragedVelocity[iMarker][iDim]*AveragedVelocity[iMarker][iDim];
+						}
+						AveragedMach[iMarker] = sqrt(AveragedMach[iMarker])/AveragedSoundSpeed[iMarker];
+						AveragedTangMach[iMarker] = AveragedTangVelocity[iMarker]/AveragedSoundSpeed[iMarker];
+
+					}
+
+					AveragedNormalMach[iMarker] = AveragedNormalVelocity[iMarker]/AveragedSoundSpeed[iMarker];
+
+
+					if ((AveragedDensity[iMarker]!= AveragedDensity[iMarker]) or (AveragedEnthalpy[iMarker]!=AveragedEnthalpy[iMarker]))
+#ifdef HAVE_MPI
+						if(size > 1 && rank == MASTER_NODE) cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
+						else cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
+
+#else
+					cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
+#endif
+				}
+  /*--- Free locally allocated memory ---*/
+//  MPI_Comm_free(&marker_comm);
+  delete [] Velocity;
+  delete [] Normal;
+  delete [] TotalVelocity;
+  delete [] TotalAreaVelocity;
+  delete [] TotalFluxes;
+  delete [] TotalNormal;
+  delete [] TotalGridVel;
+}
+
+
 void CEulerSolver::MixedOut_Average (su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal,
                                      su2double *pressure_mix, su2double *density_mix) {
   
@@ -7993,26 +8423,45 @@ void CEulerSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Av
   
   su2double *vel;
   vel = new su2double[nDim];
-  
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
   
   *valfunc = 0.0;
   *density = 0.0;
   
   velnormal = 0.0;
   velsq = 0.0;
-  
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     vel[iDim]  = (val_Averaged_Flux[iDim+1] - (*pressure)*val_normal[iDim]) / val_Averaged_Flux[0];
     velnormal += val_normal[iDim]*vel[iDim];
     velsq += vel[iDim]*vel[iDim];
   }
   *density = val_Averaged_Flux[0] / velnormal;
-  if (*density <= 0) cout << " desnity in mixedout routine negative : " << endl;
+  if (*density <= 0)
+#ifdef HAVE_MPI
+		if(size > 1 && rank == MASTER_NODE)cout << " desnity in mixedout routine negative : " << endl;
+		else cout << " desnity in mixedout routine negative : " << endl;
+
+#else
+  	cout << " desnity in mixedout routine negative : " << endl;
+#endif
   FluidModel->SetTDState_Prho(*pressure, *density);
   su2double enthalpy = FluidModel->GetStaticEnergy() + (*pressure)/(*density);
   *valfunc = val_Averaged_Flux[nDim+1]/val_Averaged_Flux[0] - enthalpy - velsq/2;
-  if (*valfunc!=*valfunc) cout << " mixedout root func gives nan: " << endl;
-  
+  if (*valfunc!=*valfunc)
+#ifdef HAVE_MPI
+		if(size > 1 && rank == MASTER_NODE) cout << " mixedout root func gives nan: " << endl;
+		else cout << " mixedout root func gives nan: " << endl;
+
+#else
+  cout << " mixedout root func gives nan: " << endl;
+#endif
   
   /*--- Free locally allocated memory ---*/
   delete [] vel;
