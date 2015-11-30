@@ -1,4 +1,4 @@
-./bootstrap
-./configure --with-FluidProp-lib=$FLUIDPROP/lib --with-FluidProp-include=$FLUIDPROP/api/c 
-make
+sudo ./bootstrap
+sudo ./configure --with-FluidProp-lib=/home/tvanderstelt/Work/FP2016/Targets/Linux64/lib --with-FluidProp-include=/home/tvanderstelt/Work/FP2016/Targets/Linux64/api/c 
+sudo make
 sudo make install

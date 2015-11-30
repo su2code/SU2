@@ -2048,7 +2048,9 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
           printf("Density_FreeStream = %f\n",Density_FreeStream);
         }
         else {
+          //printf("SetTDState 1 ...: %f, %f\n", Pressure_FreeStream, Density_FreeStream);
           FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+          //printf("SetTDState 1 finished!\n");
           Temperature_FreeStream = FluidModel->GetTemperature();
           config->SetTemperature_FreeStream(Temperature_FreeStream);
           //printf("Pressure_FreeStream    = %f\n",Pressure_FreeStream);
@@ -2437,6 +2439,10 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
             cout << "Sutherland constant (non-dim): "<< config->GetMu_SND()<< endl;
             break;
             
+          case FLUIDPROP_VISCOSITY:
+            cout << "Viscosity Model: FLUIDPROP "<< endl;
+            break;
+            
         }
         switch (config->GetKind_ConductivityModel()) {
             
@@ -2449,6 +2455,10 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
             cout << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< endl;
             cout << "Molecular Conductivity: " << config->GetKt_ConstantND()*Conductivity_Ref<< " W/m^2.K." << endl;
             cout << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< endl;
+            break;
+            
+          case FLUIDPROP_CONDUCTIVITY:
+            cout << "Conductivity Model: FLUIDPROP "<< endl;
             break;
             
         }

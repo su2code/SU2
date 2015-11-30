@@ -28,9 +28,10 @@
  */
 
 #include "../include/transport_model.hpp"
+
+#ifdef HAVE_FluidProp
 #include "fluidprop.h"
-
-
+#endif
 
 /* ------------------------------------------------- */
 /* ----------- Dynamic Viscosity Models ------------ */
@@ -103,32 +104,29 @@ CFluidPropViscosity::CFluidPropViscosity(void) : CViscosityModel() {
 
 }
 
-CFluidPropViscosity::CFluidPropViscosity(double mu_ref, double t_ref, double s) : CViscosityModel() {
-
-}
-
 CFluidPropViscosity::~CFluidPropViscosity(void) { }
 
 
 void CFluidPropViscosity::SetViscosity(double T, double rho) {
 
-	Mu = 0.0; //call_fluidprop;
+        double deta_dT, deta_drho, lambda, dlambda_dT, dlambda_drho, sigma; 
+        fluidprop_alltransprops( "Td", T, rho, &Mu, &deta_dT, &deta_drho, &lambda, &dlambda_dT, &dlambda_drho, &sigma); 
 
-	const char* pair;
-//        if (SinglePhaseOnly)
-//           pair = "Td_1ph";
-//        else
-    pair = "Td_1ph";
-
-	Mu = fluidprop_viscosity ( pair, T, rho );
-
+        if (strcmp( fluidprop_geterror(), "No errors")) {
+           printf( "FluidProp error message: %s\n", fluidprop_geterror());
+	   printf( "T = %f, rho = %f, mu = %f\n", T, rho, Mu);
+        }
 }
 
 void CFluidPropViscosity::SetDerViscosity(double T, double rho)  {
 
-	dmudrho_T = 0.0;
-	dmudT_rho = 0.0;
+        double eta, lambda, dlambda_dT, dlambda_drho, sigma; 
+        fluidprop_alltransprops( "Td", T, rho, &eta, &dmudT_rho, &dmudrho_T, &lambda, &dlambda_dT, &dlambda_drho, &sigma); 
 
+        if (strcmp( fluidprop_geterror(), "No errors")) {
+           printf( "FluidProp error message: %s\n", fluidprop_geterror());
+	   printf( "T = %f, rho = %f, dmudT_rho = %f, dmudrho_dT = %f\n", T, rho, dmudT_rho, dmudT_rho);
+        }
 }
 
 /* ------------------------------------------------- */
@@ -203,23 +201,24 @@ CFluidPropConductivity::CFluidPropConductivity(double pr_const) : CConductivityM
 
 void CFluidPropConductivity::SetConductivity(double T, double rho, double mu, double cp) {
 
-	Kt = 0.0; //call_to_fluidprop
+        double eta, deta_dT, deta_drho, dlambda_dT, dlambda_drho, sigma; 
+        fluidprop_alltransprops( "Td", T, rho, &eta, &deta_dT, &deta_drho, &Kt, &dlambda_dT, &dlambda_drho, &sigma); 
 
-	const char* pair;
-//        if (SinglePhaseOnly)
-//           pair = "Td_1ph";
-//        else
-    pair = "Td_1ph";
-
-	Kt = fluidprop_thermcond ( pair, T, rho );
-
+        if (strcmp( fluidprop_geterror(), "No errors")) {
+           printf( "FluidProp error message: %s\n", fluidprop_geterror());
+	   printf( "T = %f, rho = %f, Kt = %f\n", T, rho, Kt);
+        }
 }
 
 void CFluidPropConductivity::SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp) {
 
-	dktdrho_T = 0.0;
-	dktdT_rho = 0.0;
+        double eta, deta_dT, deta_drho, lambda, sigma; 
+        fluidprop_alltransprops( "Td", T, rho, &eta, &deta_dT, &deta_drho, &lambda, &dktdT_rho, &dktdrho_T, &sigma); 
 
+        if (strcmp( fluidprop_geterror(), "No errors")) {
+           printf( "FluidProp error message: %s\n", fluidprop_geterror());
+	   printf( "T = %f, rho = %f, dktdT_rho = %f, dktdrho_dT = %f\n", T, rho, dktdT_rho, dktdT_rho);
+        }
 }
 
 CFluidPropConductivity::~CFluidPropConductivity(void) { }

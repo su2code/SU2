@@ -180,21 +180,12 @@ public:
  */
 class CFluidPropViscosity : public CViscosityModel {
 protected:
-	double   	 Mu_ref,		/*!< \brief Internal Energy. */
-				 T_ref, 		/*!< \brief DpDd_e. */
-				 S; 			/*!< \brief DpDe_d. */
 
 public:
-
 		/*!
 		 * \brief Constructor of the class.
 		 */
-	    CFluidPropViscosity(void);
-
-	    /*!
-		 * \brief Constructor of the class.
-		 */
-		CFluidPropViscosity(double mu_ref, double t_ref, double s);
+	         CFluidPropViscosity(void);
 
 		/*!
 		 * \brief Destructor of the class.
@@ -210,7 +201,6 @@ public:
 		 * \brief Set Viscosity Derivatives.
 		 */
 		void SetDerViscosity(double T, double rho);
-
 };
 
 
@@ -343,14 +333,14 @@ public:
  */
 class CFluidPropConductivity : public CConductivityModel {
 protected:
-	double   	 Pr_const;		/*!< \brief Prandtl's number. */
+		double Pr_const;		/*!< \brief Prandtl's number. */
 
 public:
 
 		/*!
 		 * \brief Constructor of the class.
 		 */
-	    CFluidPropConductivity(void);
+	    	CFluidPropConductivity(void);
 
 		/*!
 		 * \brief Destructor of the class.
@@ -360,7 +350,7 @@ public:
 		/*!
 		 * \brief Constructor of the class.
 		 */
-	    CFluidPropConductivity(double pr_const);
+	    	CFluidPropConductivity(double pr_const);
 
 		/*!
 		 * \brief Set Thermal conductivity.
@@ -373,7 +363,6 @@ public:
 		 * \brief Set Thermal conductivity derivatives.
 		 */
 		void SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp);
-
 };
 
 

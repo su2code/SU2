@@ -56,6 +56,7 @@ CFluidModel::~CFluidModel(void) {
   }
 
 void CFluidModel::SetLaminarViscosityModel (CConfig *config) {
+
 	switch (config->GetKind_ViscosityModel()) {
 
 	case CONSTANT_VISCOSITY:
@@ -64,14 +65,16 @@ void CFluidModel::SetLaminarViscosityModel (CConfig *config) {
 	case SUTHERLAND:
 		LaminarViscosity = new CSutherland(config->GetMu_RefND(), config->GetMu_Temperature_RefND(), config->GetMu_SND());
 		break;
+	//Presently, it is not possible to connect the FluidProp transport property model to other FluidModels than FluidProp
 	//case FLUIDPROP_VISCOSITY:
-	//	LaminarViscosity = new CFluidPropViscosity();
-	//	break;
+	//LaminarViscosity = new CFluidPropViscosity();
+	//break;
 
 	}
 }
 
 void CFluidModel::SetThermalConductivityModel (CConfig *config) {
+
 	switch (config->GetKind_ConductivityModel()) {
 
 	case CONSTANT_CONDUCTIVITY:
@@ -80,9 +83,10 @@ void CFluidModel::SetThermalConductivityModel (CConfig *config) {
 	case CONSTANT_PRANDTL:
 		ThermalConductivity = new CConstantPrandtl( config->GetPrandtl_Lam() );
 		break;
+	//Presently, it is not possible to connect the FluidProp transport property model to other FluidModels than FluidProp
 	//case FLUIDPROP_CONDUCTIVITY:
-	//	LaminarViscosity = new CFluidPropViscosity();
-	//	break;
+	//ThermalConductivity = new CFluidPropConductivity();
+	//break;
 
 	}
 }

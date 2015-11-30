@@ -64,11 +64,11 @@ double   	 StaticEnergy,			/*!< \brief Internal Energy. */
 			 dPde_rho, 				/*!< \brief DpDe_d. */
 			 dTdrho_e, 				/*!< \brief DTDd_e. */
 			 dTde_rho, 				/*!< \brief DTDe_d. */
-             Cp,                    /*!< \brief Specific Heat Capacity at constant pressure. */
-			 Mu,					/*!< \brief Specific Heat Capacity at constant pressure. */
+             		 Cp, 			                /*!< \brief Specific Heat Capacity at constant pressure. */
+		     Mu,				/*!< \brief Specific Heat Capacity at constant pressure. */
 		     dmudrho_T, 			/*!< \brief Specific Heat Capacity at constant pressure. */
 		     dmudT_rho,				/*!< \brief Specific Heat Capacity at constant pressure. */
-		     Kt,					/*!< \brief Specific Heat Capacity at constant pressure. */
+		     Kt,				/*!< \brief Specific Heat Capacity at constant pressure. */
 		     dktdrho_T, 			/*!< \brief Specific Heat Capacity at constant pressure. */
 		     dktdT_rho;				/*!< \brief Specific Heat Capacity at constant pressure. */
 
@@ -611,6 +611,16 @@ public:
      *
      */
     void SetTDState_NonDim();
+
+    /*!
+     * \brief Set viscosity model.
+     */
+    void SetLaminarViscosityModel (CConfig *config);
+
+    /*!
+     * \brief Set thermal conductivity model.
+     */
+    void SetThermalConductivityModel (CConfig *config);
 };
 
 #endif

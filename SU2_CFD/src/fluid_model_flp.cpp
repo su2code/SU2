@@ -135,6 +135,38 @@ CFluidProp::~CFluidProp(void) {
 
 }
 
+/*void CFluidProp::SwitchLuTOn()
+{
+        // Prepare composition array's for fluidprop_setfluid 
+	char LocalComp[20][LEN_COMPONENTS];
+	double LocalConc[20];
+	for( int i = 0; i < nComp; i++) {
+	   strcpy( LocalComp[i], Comp[i].c_str());
+	   LocalConc[i] = Conc[i];
+	}
+
+        // Define the working fluid 
+	fluidprop_setfluid( ThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc);
+
+        // Reread the table 
+        fluidprop_usetable( TableName.c_str());
+}
+
+void CFluidProp::SwitchLuTOff()
+{
+        string NoLuTThermoLib = ThermoLib.substr(4,ThermoLib.lenght()+4);
+
+        // Prepare composition array's for fluidprop_setfluid 
+	char LocalComp[20][LEN_COMPONENTS];
+	double LocalConc[20];
+	for( int i = 0; i < nComp; i++) {
+	   strcpy( LocalComp[i], Comp[i].c_str());
+	   LocalConc[i] = Conc[i];
+	}
+
+        // Define the working fluid 
+	fluidprop_setfluid( NoLuTThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc);
+}*/
 
 void CFluidProp::SetTDState_rhoe (double rho, double e ){
 
@@ -328,6 +360,39 @@ void CFluidProp::SetTDState_NonDim () {
 	dPde_rho = dPde_rho/dPde_rho_ref;
 	dTdrho_e = dTdrho_e/dTdrho_e_ref;
 	dTde_rho = dTde_rho/dTde_rho_ref;
+}
+
+void CFluidProp::SetLaminarViscosityModel (CConfig *config) {
+        
+	switch (config->GetKind_ViscosityModel()) {
+
+		case CONSTANT_VISCOSITY:
+			LaminarViscosity = new CConstantViscosity( config->GetMu_ConstantND() );
+			break;
+		case SUTHERLAND:
+			LaminarViscosity = new CSutherland(config->GetMu_RefND(), config->GetMu_Temperature_RefND(), config->GetMu_SND());
+			break;
+		case FLUIDPROP_VISCOSITY:
+			LaminarViscosity = new CFluidPropViscosity();
+			break;
+
+	}
+}
+
+void CFluidProp::SetThermalConductivityModel (CConfig *config) {
+
+	switch (config->GetKind_ConductivityModel()) {
+
+		case CONSTANT_CONDUCTIVITY:
+			ThermalConductivity = new CConstantConductivity( config->GetKt_ConstantND() );
+			break;
+		case CONSTANT_PRANDTL:
+			ThermalConductivity = new CConstantPrandtl( config->GetPrandtl_Lam() );
+			break;
+		case FLUIDPROP_CONDUCTIVITY:
+			ThermalConductivity = new CFluidPropConductivity();
+			break;
+	}
 }
 
 #endif

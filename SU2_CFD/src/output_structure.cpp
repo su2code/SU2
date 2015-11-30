@@ -5581,6 +5581,10 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
             Breakdown_file << "Sutherland constant (non-dim): "<< config[val_iZone]->GetMu_SND()<< endl;
             break;
             
+          case FLUIDPROP_VISCOSITY:
+            Breakdown_file << "Viscosity Model: FLUIDPROP "<< endl;
+            break;
+            
         }
         switch (config[val_iZone]->GetKind_ConductivityModel()) {
             
@@ -5593,6 +5597,10 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
             Breakdown_file << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< endl;
             Breakdown_file << "Molecular Conductivity: " << config[val_iZone]->GetKt_ConstantND()*config[val_iZone]->GetConductivity_Ref()<< " W/m^2.K." << endl;
             Breakdown_file << "Molecular Conductivity (non-dim): " << config[val_iZone]->GetKt_ConstantND()<< endl;
+            break;
+            
+          case FLUIDPROP_CONDUCTIVITY:
+            Breakdown_file << "Conductivity Model: FLUIDPROP "<< endl;
             break;
             
         }
