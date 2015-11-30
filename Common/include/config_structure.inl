@@ -787,6 +787,10 @@ inline void CConfig::SetMarker_All_TurboPerformance(unsigned short val_marker, u
 
 inline void CConfig::SetMarker_All_TurboPerformanceFlag(unsigned short val_marker, unsigned short val_turboperflag) { Marker_All_TurboPerformanceFlag[val_marker] = val_turboperflag; }
 
+#ifdef HAVE_MPI
+inline void CConfig::SetTurboPerfMPI_Comm(MPI_Comm comm_turboperf) {COMM_TurboPerf = comm_turboperf;}
+inline MPI_Comm CConfig::GetTurboPerfMPI_Comm(){return COMM_TurboPerf;}
+#endif
 inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short val_DV) { Marker_All_DV[val_marker] = val_DV; }
 
 inline void CConfig::SetMarker_All_Moving(unsigned short val_marker, unsigned short val_moving) { Marker_All_Moving[val_marker] = val_moving; }

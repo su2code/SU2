@@ -681,7 +681,9 @@ private:
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
-  
+#ifdef HAVE_MPI
+  MPI_Comm COMM_TurboPerf;
+#endif
   /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -2413,6 +2415,15 @@ public:
 	 */
 	void SetMarker_All_TurboPerformanceFlag(unsigned short val_marker, unsigned short val_turboperflag) ;
 
+	/*!
+	 * \brief Set a flag to the marker <i>val_marker</i> part of the Turbo Performance (read from the config file).
+	 * \param[in] val_marker - Index of the marker in which we are interested.
+	 * \param[in] val_turboperflag - 0 if is not part of the Turbo Performance, flag INFLOW or OUTFLOW if it is part.
+	 */
+#ifdef HAVE_MPI
+	void SetTurboPerfMPI_Comm(MPI_Comm comm_turboperf) ;
+	MPI_Comm GetTurboPerfMPI_Comm();
+#endif
 	/*!
 	 * \brief Set if a marker <i>val_marker</i> is going to be affected by design variables <i>val_moving</i>
 	 *        (read from the config file).
