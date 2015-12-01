@@ -1,5 +1,5 @@
-#include "../SU2_CFD/include/SU2_CFD.hpp"
-#include "SU2_API.h"
+#include "../../SU2_CFD/include/SU2_CFD.hpp"
+#include "../include/SU2_API.h"
 #include <stdlib.h>
 
 using namespace std;
