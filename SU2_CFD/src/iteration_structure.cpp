@@ -117,9 +117,9 @@ void CMeanFlowIteration::Preprocess(COutput *output,
 #ifdef HAVE_MPI
   	int size = SINGLE_NODE;
   	MPI_Comm_size(MPI_COMM_WORLD, &size);
-  	if(size > 1)
+ 	if(size > 1)
   		SetMPITurboPerformance(geometry_container, solver_container, config_container, output, val_iZone);
-  	else
+ 	else
   		SetTurboPerformance(geometry_container, solver_container, config_container, output, val_iZone);
 #else
   	SetTurboPerformance(geometry_container, solver_container, config_container, output, val_iZone);

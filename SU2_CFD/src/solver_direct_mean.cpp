@@ -4671,7 +4671,7 @@ void CEulerSolver::MPITurboPerformance(CConfig *config){
 	su2double  avgVel2In, avgVel2Out,avgVelRel2In, avgVelRel2Out, avgGridVel2In, avgGridVel2Out, avgTotalEnthalpyIn= 0.0,avgTotalRothalpyIn,
 	avgTotalEnthalpyOut, avgTotalRothalpyOut, avgTotalEnthalpyOutIs, avgEnthalpyOut, avgEnthalpyOutIs,
 	avgPressureOut, avgTotalRelPressureIn, avgTotalRelPressureOut, avgEntropyIn, avgEntropyOut;
-	unsigned short iDim, i;
+	unsigned short iDim, i, n1, n2;
 
 	int rank = MASTER_NODE, rankIn = MASTER_NODE, rankOut= MASTER_NODE;
 	int size = SINGLE_NODE;
@@ -4681,12 +4681,15 @@ void CEulerSolver::MPITurboPerformance(CConfig *config){
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   su2double *TurbPerfIn= NULL,*TurbPerfOut= NULL;
   su2double *TotTurbPerfIn = NULL,*TotTurbPerfOut = NULL;
+  n1 = 4*size;
+  n2 = 6*size;
   TurbPerfIn = new su2double[4];
   TurbPerfOut = new su2double[6];
+
   for (i=0;i<4;i++)
-  	TurbPerfIn[i]= 0.0;
+  	TurbPerfIn[i]= -1.0;
   for (i=0;i<6;i++)
-		TurbPerfOut[i]= 0.0;
+		TurbPerfOut[i]= -1.0;
 #endif
 
   avgTotalRothalpyIn     = -1.0;
@@ -4723,6 +4726,7 @@ void CEulerSolver::MPITurboPerformance(CConfig *config){
 
 #ifdef HAVE_MPI
 					TurbPerfIn[0] = avgTotalRothalpyIn;
+//					cout << " check "<< TurbPerfIn[0]<< endl;
 					TurbPerfIn[1] = avgTotalEnthalpyIn;
 					TurbPerfIn[2] = avgEntropyIn;
 					TurbPerfIn[3] = avgTotalRelPressureIn;
@@ -4761,20 +4765,22 @@ void CEulerSolver::MPITurboPerformance(CConfig *config){
 
 
 #ifdef HAVE_MPI
-	if (rank == MASTER_NODE){
-	  TotTurbPerfIn = new su2double[4*size];
-	  TotTurbPerfOut = new su2double[6*size];
-	  for (i=0;i<4*size;i++)
-	  	TotTurbPerfIn[i]= -1.0;
-	  for (i=0;i<6*size;i++)
-			TotTurbPerfOut[i]= -1.0;
+if (rank == MASTER_NODE){
+  TotTurbPerfIn = new su2double[n1];
+  TotTurbPerfOut = new su2double[n2];
+  for (i=0;i<n1;i++)
+  	TotTurbPerfIn[i]= -1.0;
+  for (i=0;i<n2;i++)
+		TotTurbPerfOut[i]= -1.0;
 	}
-	SU2_MPI::Gather(TurbPerfIn, 4, MPI_DOUBLE, TotTurbPerfIn, size*4, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-	SU2_MPI::Gather(TurbPerfOut, 6, MPI_DOUBLE, TotTurbPerfOut, size*6, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+	SU2_MPI::Gather(TurbPerfIn, 4, MPI_DOUBLE, TotTurbPerfIn, 4, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+	SU2_MPI::Gather(TurbPerfOut, 6, MPI_DOUBLE,TotTurbPerfOut, 6, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+
 	delete [] TurbPerfIn, delete [] TurbPerfOut;
 
-	if (rank == MASTER_NODE){
+if (rank == MASTER_NODE){
 		for (i=0;i<size;i++){
+//			cout << " check after  in"<< TotTurbPerfIn[4*i]<< endl;
 			if(TotTurbPerfIn[4*i] > 0.0){
 				avgTotalRothalpyIn 		 = 0.0;
 				avgTotalRothalpyIn 		 = TotTurbPerfIn[4*i];
@@ -4785,7 +4791,7 @@ void CEulerSolver::MPITurboPerformance(CConfig *config){
 				avgTotalRelPressureIn  = 0.0;
 				avgTotalRelPressureIn  = TotTurbPerfIn[4*i+3];
 			}
-
+//			cout << " check after out 2 "<< TotTurbPerfOut[6*i]<<endl;
 			if(TotTurbPerfOut[6*i] > 0.0){
 				avgTotalRothalpyOut    = 0.0;
 				avgTotalRothalpyOut    = TotTurbPerfOut[6*i];
@@ -4803,7 +4809,8 @@ void CEulerSolver::MPITurboPerformance(CConfig *config){
 		}
 
 		delete [] TotTurbPerfIn, delete [] TotTurbPerfOut;
-	}
+}
+
 #endif
 	if (rank == MASTER_NODE){
 				/*--- compute outlet isoentropic conditions ---*/
@@ -8016,6 +8023,10 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
   MassFlow[val_Marker]= AveragedDensity[val_Marker]*AveragedNormalVelocity[val_Marker]*TotalArea;
   FlowAngle[val_Marker]= atan(AveragedTangVelocity[val_Marker]/AveragedNormalVelocity[val_Marker]);
   
+  cout << "Averaged Pressure "<< AveragedPressure[val_Marker] << endl;
+  cout << "Averaged Density "<< AveragedDensity[val_Marker] << endl;
+  cout << "Averaged Velocity 0 "<< AveragedVelocity[val_Marker][0]<<endl;
+  cout << "Averaged Velocity 1 "<< AveragedVelocity[val_Marker][1]<<endl;
   /* --- compute total averaged quantities ---*/
   avgVel2 = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AveragedVelocity[val_Marker][iDim]*AveragedVelocity[val_Marker][iDim];
@@ -8318,6 +8329,10 @@ void CEulerSolver::MPIMixing_Process(CGeometry *geometry, CSolver **solver_conta
 					MassFlow[iMarker]= AveragedDensity[iMarker]*AveragedNormalVelocity[iMarker]*TotalArea;
 					FlowAngle[iMarker]= atan(AveragedTangVelocity[iMarker]/AveragedNormalVelocity[iMarker]);
 
+//				  cout << "Averaged Pressure "<< AveragedPressure[iMarker] << endl;
+//				  cout << "Averaged Density "<< AveragedDensity[iMarker] << endl;
+//				  cout << "Averaged Velocity 0 "<< AveragedVelocity[iMarker][0]<<endl;
+//				  cout << "Averaged Velocity 1 "<< AveragedVelocity[iMarker][1]<<endl;
 					/* --- compute total averaged quantities ---*/
 					avgVel2 = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AveragedVelocity[iMarker][iDim]*AveragedVelocity[iMarker][iDim];
