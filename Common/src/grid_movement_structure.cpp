@@ -5726,6 +5726,183 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   }
 }
 
+void CSurfaceMovement::SetFSIRigidBodyMotion(CGeometry *geometry, CConfig *config, double* Rigidisp, double* Center_n){
+
+  double *Coord, *Coord_n, newCoord[3], Center[3], VarCoord[3], rotCoord[3], r[3];
+  double rotMatrix[3][3] = {{0.0,0.0,0.0}, {0.0,0.0,0.0}, {0.0,0.0,0.0}};
+  double dX, dY, dZ, dTheta, dPhi, dPsi;
+  double cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
+  unsigned short iMarker, jMarker, Moving, iDim, nDim;
+  unsigned long iVertex, iPoint;
+  string Marker_Tag, Moving_Tag;
+  int rank;
+
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+	rank = MASTER_NODE;
+#endif
+
+  nDim = geometry->GetnDim();
+
+  /*--- Initialize the delta variation in coordinates ---*/
+  VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+  dX = Rigidisp[0]; dY = Rigidisp[1]; dZ = Rigidisp[2];
+  dTheta = Rigidisp[3]; dPhi = Rigidisp[4]; dPsi = Rigidisp[5];
+
+  /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+
+  cosTheta = cos(dTheta);  cosPhi = cos(dPhi);  cosPsi = cos(dPsi);
+  sinTheta = sin(dTheta);  sinPhi = sin(dPhi);  sinPsi = sin(dPsi);
+
+  /*--- Compute the rotation matrix. Note that the implicit
+  ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+
+  rotMatrix[0][0] = cosPhi*cosPsi;
+  rotMatrix[1][0] = cosPhi*sinPsi;
+  rotMatrix[2][0] = -sinPhi;
+
+  rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+  rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+  rotMatrix[2][1] = sinTheta*cosPhi;
+
+  rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+  rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+  rotMatrix[2][2] = cosTheta*cosPhi;
+
+  /*--- Store displacement of each node on the plunging surface ---*/
+  /*--- Loop over markers and find the particular marker(s) (surface) to plunge ---*/
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    Moving = config->GetMarker_All_Moving(iMarker);
+    if (Moving == YES) {
+
+      for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+        Moving_Tag = config->GetMarker_Moving(jMarker);
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+
+        if (Marker_Tag == Moving_Tag) {
+
+
+          Center[0] = config->GetMotion_Origin_X(jMarker);
+          Center[1] = config->GetMotion_Origin_Y(jMarker);
+          Center[2] = config->GetMotion_Origin_Z(jMarker);
+
+            //cout << " " << endl;
+            //cout << "Current position of the motion center" << endl;
+            //cout << Center[0] << " " << Center[1] << " " << Center[2] << endl;
+            //cout << " " << endl;
+            //cout << "Previous position (n-1) of the motion center" << endl;
+            //cout << Center_n[0] << " " << Center_n[1] << " " << Center_n[2] << endl;
+
+          /*--- Compute delta change in the position in the x, y, & z directions. ---*/
+
+          for(iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            Coord = geometry->node[iPoint]->GetCoord();
+	    /*--- In case of unsteady computation we need to take into account the coordinates at the previous FSI iter and the coordinates at the previous time step ---*/
+            if(config->GetUnsteady_Simulation()){
+              Coord_n = geometry->node[iPoint]->GetCoord_n();
+              for(iDim=0; iDim < nDim; iDim++){
+                r[iDim] = (Coord_n[iDim]-Center_n[iDim]);
+                //VarCoord[iDim] = Rigidisp[iDim]-Coord[iDim]+Coord_n[iDim];
+              }
+
+              rotCoord[0] = rotMatrix[0][0]*r[0]
+              + rotMatrix[0][1]*r[1]
+              + rotMatrix[0][2]*r[2];
+
+              rotCoord[1] = rotMatrix[1][0]*r[0]
+              + rotMatrix[1][1]*r[1]
+              + rotMatrix[1][2]*r[2];
+
+              rotCoord[2] = rotMatrix[2][0]*r[0]
+              + rotMatrix[2][1]*r[1]
+              + rotMatrix[2][2]*r[2];
+
+              for(iDim=0; iDim < nDim; iDim++){
+                newCoord[iDim] = Center_n[iDim] + Rigidisp[iDim] + rotCoord[iDim];
+                VarCoord[iDim] = newCoord[iDim] - Coord[iDim];
+              }
+
+            }
+	    /*--- In case of steady computation ---*/
+            else{
+              for(iDim=0; iDim < nDim; iDim++)
+                VarCoord[iDim] = Rigidisp[iDim];
+            }
+
+            /*--- Set node displacement for volume deformation ---*/
+            geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+
+
+          }
+        }
+      }
+    }
+  }
+
+  #ifdef HAVE_MPI
+/*--- Synchronization point ---*/
+  MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
+  /*--- When updating the origins it is assumed that all markers have the
+   same plunging movement, because we use the last VarCoord set ---*/
+
+  /*--- Set the mesh motion center to the new location after
+   incrementing the position with the translation. This new
+   location will be used for subsequent mesh motion for the given marker.---*/
+
+  for (jMarker=0; jMarker<config->GetnMarker_Moving(); jMarker++) {
+
+    /*-- Check if we want to update the motion origin for the given marker ---*/
+
+    if (config->GetMoveMotion_Origin(jMarker) == YES) {
+      if(rank == MASTER_NODE){
+        cout << "Updating the motion center" << endl;
+        cout << "jMarker : " << jMarker << endl;
+      }
+      Center[0] = Center_n[0] + Rigidisp[0];
+      Center[1] = Center_n[1] + Rigidisp[1];
+      Center[2] = Center_n[2] + Rigidisp[2];
+      if (rank == MASTER_NODE){
+        //cout << "New location of the center" << endl;
+        //cout << Center[0] << " " << Center[1] << " " << Center[2] << endl;
+      }
+      config->SetMotion_Origin_X(jMarker, Center[0]);
+      config->SetMotion_Origin_Y(jMarker, Center[1]);
+      config->SetMotion_Origin_Z(jMarker, Center[2]);
+    }
+  }
+
+  /*--- Set the moment computation center to the new location after
+   incrementing the position with the plunging. ---*/
+
+  for (jMarker=0; jMarker<config->GetnMarker_Monitoring(); jMarker++) {
+    if (rank == MASTER_NODE){
+      cout << "Updating the moment computation center" << endl;
+      cout << "jMarker : " << jMarker << endl;
+    }
+    Center[0] = Center_n[0] + Rigidisp[0];
+    Center[1] = Center_n[1] + Rigidisp[1];
+    Center[2] = Center_n[2] + Rigidisp[2];
+    if (rank == MASTER_NODE){
+        //cout << "New location of the center" << endl;
+        //cout << Center[0] << " " << Center[1] << " " << Center[2] << endl;
+      }
+    config->SetRefOriginMoment_X(jMarker, Center[0]);
+    config->SetRefOriginMoment_Y(jMarker, Center[1]);
+    config->SetRefOriginMoment_Z(jMarker, Center[2]);
+  }
+
+#ifdef HAVE_MPI
+/*--- Synchronization point ---*/
+  MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
+}
+
 void CSurfaceMovement::SetNACA_4Digits(CGeometry *boundary, CConfig *config) {
 	unsigned long iVertex;
 	unsigned short iMarker;

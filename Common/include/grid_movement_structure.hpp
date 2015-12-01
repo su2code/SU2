@@ -1193,6 +1193,8 @@ public:
    * \param[in] iter - Current physical time iteration.
 	 */
   void SetExternal_Deformation(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter);
+
+  void SetFSIRigidBodyMotion(CGeometry *geometry, CConfig *config, double* Rigidisp, double* Center_n); //This will disappear
   
 	/*! 
 	 * \brief Set a displacement for surface movement.

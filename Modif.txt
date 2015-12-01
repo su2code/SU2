@@ -1,0 +1,6 @@
+File from the source code that have been modified for FSI computations :
+
+-output_structure.cpp : only in SetConvHistory_Body starting from /*--- Write the solution on the screen and history file ---*/, add some if() above several instructions in order to output information at the right moment
+
+-grid_movement_structure.cpp / .hpp : add function SetFSIRigidBodyMotion() but will disappear because not used anymore with the new (current) version
+
