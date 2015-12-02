@@ -739,7 +739,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   else least_squares = false;
   
   /*--- Perform the MPI communication of the solution ---*/
-  
+//TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart
+  Set_MPI_Solution(geometry, config);
   Set_MPI_Solution(geometry, config);
   
 }
@@ -12834,6 +12835,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Perform the MPI communication of the solution ---*/
   
+//TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart
+  Set_MPI_Solution(geometry, config);
   Set_MPI_Solution(geometry, config);
   
 }
