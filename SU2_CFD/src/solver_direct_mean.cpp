@@ -7464,7 +7464,13 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
             Velocity_e[1]= UnitNormal[1]*NormalVelocity + UnitNormal[0]*TangVelocity;
           }else{
             for (iDim = 0; iDim < nDim; iDim++)
-              Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
+            	Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
+
+//            	NormalVelocity= -sqrt(Velocity2_e)*Flow_Dir[0];
+//            	TangVelocity= -sqrt(Velocity2_e)*Flow_Dir[1];
+//							Velocity_e[0]= UnitNormal[0]*NormalVelocity - UnitNormal[1]*TangVelocity;
+//							Velocity_e[1]= UnitNormal[1]*NormalVelocity + UnitNormal[0]*TangVelocity;
+//              Velocity_e[2] = sqrt(Velocity2_e)*Flow_Dir[2];
           }
           StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
           FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
@@ -8006,7 +8012,9 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
     AveragedNormal[val_Marker][iDim] /=nVert;
     TotalNormal+= AveragedNormal[val_Marker][iDim]*AveragedNormal[val_Marker][iDim];
   }
-  for (iDim = 0; iDim < nDim; iDim++) AveragedNormal[val_Marker][iDim] /=sqrt(TotalNormal);
+  for (iDim = 0; iDim < nDim; iDim++){ AveragedNormal[val_Marker][iDim] /=sqrt(TotalNormal);
+//  cout <<" normal vector "<< AveragedNormal[val_Marker][iDim] << " comp "<< iDim <<endl;
+  }
   if (grid_movement){
     for (iDim = 0; iDim < nDim; iDim++)
       AveragedGridVel[val_Marker][iDim] /=nVert;
@@ -8275,7 +8283,7 @@ void CEulerSolver::MPIMixing_Process(CGeometry *geometry, CSolver **solver_conta
 
 	for (iDim = 0; iDim < nDim; iDim++) {
 		MyTotalVelocity[iDim]      			  = TotalVelocity[iDim];
-		TotalVelocity[iVar]        			  = 0.0;
+		TotalVelocity[iDim]        			  = 0.0;
 		MyTotalAreaVelocity[iDim]  			  = TotalAreaVelocity[iDim];
 		TotalAreaVelocity[iDim]    				= 0.0;
 		MyTotalNormal[iDim]				 				= TotalNormal[iDim];
@@ -8315,7 +8323,8 @@ void CEulerSolver::MPIMixing_Process(CGeometry *geometry, CSolver **solver_conta
 						TotalNormal[iDim] /=nVert;
 						Normal2 += TotalNormal[iDim]*TotalNormal[iDim];
 					}
-					for (iDim = 0; iDim < nDim; iDim++) AveragedNormal[iMarker][iDim] = TotalNormal[iDim]/sqrt(Normal2);
+					for (iDim = 0; iDim < nDim; iDim++)AveragedNormal[iMarker][iDim] = TotalNormal[iDim]/sqrt(Normal2);
+
 					if (grid_movement){
 						for (iDim = 0; iDim < nDim; iDim++)AveragedGridVel[iMarker][iDim] =TotalGridVel[iDim]/nVert;
 					}

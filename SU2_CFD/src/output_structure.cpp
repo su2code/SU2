@@ -4684,7 +4684,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 //            if (!fluid_structure) {
               if (incompressible) cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
               else if (freesurface) cout << "   Res[Press]" << "     Res[Dist]" << "   CLift(Total)" << "     CLevelSet" << endl;
-              else if (rotating_frame && nDim == 3) cout << "     Res[Rho]" << "     Res[RhoE]" << " CThrust(Total)" << " CTorque(Total)" << endl;
+              else if (rotating_frame && nDim == 3 && !turbo) cout << "     Res[Rho]" << "     Res[RhoE]" << " CThrust(Total)" << " CTorque(Total)" << endl;
               else if (aeroelastic) cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
               else if (equiv_area) cout << "     Res[Rho]" << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
               else if (turbo)
@@ -4745,7 +4745,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             
             if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
-            else if (rotating_frame && nDim == 3 ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
+            else if (rotating_frame && nDim == 3 && !turbo ) cout << "   CThrust(Total)" << "   CTorque(Total)" << endl;
             else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
             else if (equiv_area) cout << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
             else if (turbo)
@@ -4929,7 +4929,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
 //          else if (fluid_structure) { cout.width(14); cout << log10(residual_fea[0]); }
           
-          if (rotating_frame && nDim == 3 ) {
+          if (rotating_frame && nDim == 3 && !turbo ) {
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(15); cout << Total_CT;
             cout.width(15); cout << Total_CQ;
@@ -5000,7 +5000,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
           if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
           
-          if (rotating_frame && nDim == 3 ) {
+          if (rotating_frame && nDim == 3 && !turbo ) {
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(15); cout << Total_CT; cout.width(15);
             cout << Total_CQ;
