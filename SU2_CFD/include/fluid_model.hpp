@@ -30,6 +30,9 @@
  */
 
 #pragma once
+
+#include "../../Common/include/mpi_structure.hpp"
+
 #include <stdio.h>
 #include <string.h>
 #include <iostream>
