@@ -7463,14 +7463,14 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
             Velocity_e[0]= UnitNormal[0]*NormalVelocity - UnitNormal[1]*TangVelocity;
             Velocity_e[1]= UnitNormal[1]*NormalVelocity + UnitNormal[0]*TangVelocity;
           }else{
-//            for (iDim = 0; iDim < nDim; iDim++)
-//            	Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
+            for (iDim = 0; iDim < nDim; iDim++)
+            	Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
 
-						NormalVelocity= -sqrt(Velocity2_e)*Flow_Dir[0];
-						TangVelocity= -sqrt(Velocity2_e)*Flow_Dir[1];
-						Velocity_e[0]= UnitNormal[0]*NormalVelocity - UnitNormal[1]*TangVelocity;
-						Velocity_e[1]= UnitNormal[1]*NormalVelocity + UnitNormal[0]*TangVelocity;
-						Velocity_e[2] = sqrt(Velocity2_e)*Flow_Dir[2];
+//						NormalVelocity= -sqrt(Velocity2_e)*Flow_Dir[0];
+//						TangVelocity= -sqrt(Velocity2_e)*Flow_Dir[1];
+//						Velocity_e[0]= UnitNormal[0]*NormalVelocity - UnitNormal[1]*TangVelocity;
+//						Velocity_e[1]= UnitNormal[1]*NormalVelocity + UnitNormal[0]*TangVelocity;
+//						Velocity_e[2] = sqrt(Velocity2_e)*Flow_Dir[2];
           }
           StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
           FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
@@ -8414,13 +8414,14 @@ void CEulerSolver::MPIMixing_Process(CGeometry *geometry, CSolver **solver_conta
 					AveragedNormalMach[iMarker] = AveragedNormalVelocity[iMarker]/AveragedSoundSpeed[iMarker];
 
 
-					if ((AveragedDensity[iMarker]!= AveragedDensity[iMarker]) or (AveragedEnthalpy[iMarker]!=AveragedEnthalpy[iMarker]))
 #ifdef HAVE_MPI
+					if ((AveragedDensity[iMarker]!= AveragedDensity[iMarker]) || (AveragedEnthalpy[iMarker]!=AveragedEnthalpy[iMarker])){
 						if(size > 1 && rank == MASTER_NODE) cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
 						else cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
-
+					}
 #else
-					cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
+					if ((AveragedDensity[iMarker]!= AveragedDensity[iMarker])||(AveragedEnthalpy[iMarker]!=AveragedEnthalpy[iMarker]))
+						cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
 #endif
 				}
   /*--- Free locally allocated memory ---*/
@@ -8510,7 +8511,7 @@ void CEulerSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Av
     velsq += vel[iDim]*vel[iDim];
   }
   *density = val_Averaged_Flux[0] / velnormal;
-  if (*density <= 0)
+  if (*density <= 0){
 #ifdef HAVE_MPI
 		if(size > 1 && rank == MASTER_NODE)cout << " desnity in mixedout routine negative : " << endl;
 		else cout << " desnity in mixedout routine negative : " << endl;
@@ -8518,10 +8519,11 @@ void CEulerSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Av
 #else
   	cout << " desnity in mixedout routine negative : " << endl;
 #endif
+  }
   FluidModel->SetTDState_Prho(*pressure, *density);
   su2double enthalpy = FluidModel->GetStaticEnergy() + (*pressure)/(*density);
   *valfunc = val_Averaged_Flux[nDim+1]/val_Averaged_Flux[0] - enthalpy - velsq/2;
-  if (*valfunc!=*valfunc)
+  if (*valfunc!=*valfunc){
 #ifdef HAVE_MPI
 		if(size > 1 && rank == MASTER_NODE) cout << " mixedout root func gives nan: " << endl;
 		else cout << " mixedout root func gives nan: " << endl;
@@ -8529,7 +8531,7 @@ void CEulerSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Av
 #else
   cout << " mixedout root func gives nan: " << endl;
 #endif
-  
+  }
   /*--- Free locally allocated memory ---*/
   delete [] vel;
   
