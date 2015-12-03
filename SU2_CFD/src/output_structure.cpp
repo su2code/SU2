@@ -4540,23 +4540,23 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 											cout << "   Total Pressure Loss(%)" << "   Kinetic Energy Loss(%)" << "            Eulerian Work" << endl;
 											cout.width(25); cout << TotalPressureLoss[iMarker_Monitoring]*100.0;
 											cout.width(25); cout << KineticEnergyLoss[iMarker_Monitoring]*100.0;
-											cout.width(25); cout << EulerianWork[iMarker_Monitoring];
+											cout.width(25); cout << EulerianWork[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref();
 											cout << endl;
 											cout << endl;
 											cout << "     Total Inlet Enthalpy" << "          Outlet Enthalpy" << "            D_MassFlow(%)" <<  endl;
-											cout.width(25); cout << TotalEnthalpyIn[iMarker_Monitoring];
-											cout.width(25); cout << EnthalpyOut[iMarker_Monitoring];
+											cout.width(25); cout << TotalEnthalpyIn[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref();
+											cout.width(25); cout << EnthalpyOut[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref();
 											cout.width(25); cout << abs((MassFlowIn[iMarker_Monitoring] + MassFlowOut[iMarker_Monitoring])/MassFlowIn[iMarker_Monitoring])*100.0;
 											cout << endl;
 											cout << endl;
 											cout << "   Isentropic Outlet Vel." << "         Inlet Flow Angle" << "        Outlet Flow Angle" <<endl;
-											cout.width(25); cout << VelocityOutIs[iMarker_Monitoring];
+											cout.width(25); cout << VelocityOutIs[iMarker_Monitoring]*config[ZONE_0]->GetVelocity_Ref();
 											cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleIn[iMarker_Monitoring];
 											cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleOut[iMarker_Monitoring];
 											cout << endl;
 											cout << endl;
 											cout << "          Inlet Mass Flow"<< "               Inlet Mach" << "              Outlet Mach" << endl;
-											cout.width(25); cout << MassFlowIn[iMarker_Monitoring];
+											cout.width(25); cout << MassFlowIn[iMarker_Monitoring]*config[ZONE_0]->GetVelocity_Ref()*config[ZONE_0]->GetDensity_Ref();
 											cout.width(25); cout << MachIn[iMarker_Monitoring];
 											cout.width(25); cout << MachOut[iMarker_Monitoring];
 											cout << endl;
@@ -4949,7 +4949,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           			break;
           		case STAGE: case TURBINE:
           			cout.width(15); cout << TotalStaticEfficiency[0]*100.0;
-          			cout.width(15); cout << PressureOut[0];
+          			cout.width(15); cout << PressureOut[0]*config[ZONE_0]->GetPressure_Ref();
           			break;
           		default:
           			break;
@@ -5019,7 +5019,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         			break;
         		case STAGE: case TURBINE:
         			cout.width(15); cout << TotalStaticEfficiency[0]*100.0;
-					cout.width(15); cout << PressureOut[0];
+					cout.width(15); cout << PressureOut[0]*config[ZONE_0]->GetPressure_Ref();
 					break;
         		default:
         			break;
