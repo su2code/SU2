@@ -203,7 +203,7 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 	su2double x1, x2, xmid, dx, fx1, fx2, fmid, rtb;
 	su2double toll = 1e-9, FACTOR=0.2;
 	su2double cons_s, cons_h;
-	unsigned short countrtb=0, NTRY=10, ITMAX=100;
+	unsigned short countrtb=0, NTRY=100, ITMAX=100;
 
 	A = Gas_Constant / Gamma_Minus_One;
 	T = h*Gamma_Minus_One/Gas_Constant/Gamma;
@@ -347,7 +347,7 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 	su2double T, rho, v, cons_P, cons_s, fv, A;
 	su2double x1,x2, fx1, fx2,f, fmid, rtb, dx, xmid, sqrt2=sqrt(2.0);
 	su2double toll = 1e-5, FACTOR=0.2;
-	unsigned short count=0, NTRY=10, ITMAX=100;
+	unsigned short count=0, NTRY=100, ITMAX=100;
 
 	A = Gas_Constant / Gamma_Minus_One;
 	T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );

@@ -125,7 +125,7 @@ void CVanDerWaalsGas::SetTDState_hs (su2double h, su2double s ) {
     su2double v, T, rho, f, fmid, rtb;
     su2double x1,x2,xmid, dx, fx1, fx2;
     su2double toll = 1e-5, FACTOR=0.2;
-    unsigned short count=0, NTRY=10, ITMAX=100;
+    unsigned short count=0, NTRY=100, ITMAX=100;
     su2double cons_s, cons_h;
 
 //    cout <<"Before  "<< h <<" "<< s << endl;
@@ -230,7 +230,7 @@ void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
 	su2double T, rho, cons_P, cons_s;
 	su2double x1,x2, fx1, fx2,f, fmid, T1,T2, rtb, dx, xmid;
 	su2double toll = 1e-5, FACTOR=0.2;
-	unsigned short count=0, NTRY=10, ITMAX=100;
+	unsigned short count=0, NTRY=100, ITMAX=100;
 
 	T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
     rho = P/(T*Gas_Constant);
