@@ -2413,17 +2413,8 @@ public:
 	 * \param[in] val_marker - Index of the marker in which we are interested.
 	 * \param[in] val_turboperflag - 0 if is not part of the Turbo Performance, flag INFLOW or OUTFLOW if it is part.
 	 */
-	void SetMarker_All_TurboPerformanceFlag(unsigned short val_marker, unsigned short val_turboperflag) ;
+	void SetMarker_All_TurboPerformanceFlag(unsigned short val_marker, unsigned short val_turboperflag);
 
-	/*!
-	 * \brief Set a flag to the marker <i>val_marker</i> part of the Turbo Performance (read from the config file).
-	 * \param[in] val_marker - Index of the marker in which we are interested.
-	 * \param[in] val_turboperflag - 0 if is not part of the Turbo Performance, flag INFLOW or OUTFLOW if it is part.
-	 */
-#ifdef HAVE_MPI
-	void SetTurboPerfMPI_Comm(MPI_Comm comm_turboperf) ;
-	MPI_Comm GetTurboPerfMPI_Comm();
-#endif
 	/*!
 	 * \brief Set if a marker <i>val_marker</i> is going to be affected by design variables <i>val_moving</i>
 	 *        (read from the config file).

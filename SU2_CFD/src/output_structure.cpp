@@ -4568,7 +4568,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 											cout << endl;
 											cout << "           Pressure Ratio" << "         Outlet Pressure" << endl;
 											cout.width(25); cout << PressureRatio[iMarker_Monitoring];
-											cout.width(25); cout << PressureOut[iMarker_Monitoring];
+											cout.width(25); cout << PressureOut[iMarker_Monitoring]*config[ZONE_0]->GetPressure_Ref();
 											cout << endl;
 											cout << endl << "-------------------------------------------------------------------------" << endl;
 											cout << endl;

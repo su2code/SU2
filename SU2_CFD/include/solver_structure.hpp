@@ -903,6 +903,14 @@ public:
 	 * \param[in] val_marker - Surface marker where the average is evaluated.
 	 */
 	virtual void Mixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker);
+
+	/*!
+	 * \brief It performs the average value along a boundary.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+     * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the average is evaluated.
+	 */
 	virtual void MPIMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag);
 
 	/*!
@@ -1241,9 +1249,7 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] solver - solver containing the outlet information.
-	 * \param[in] inMarker - marker related to the inlet.
-	 * \param[in] outMarker - marker related to the outlet.
+	 * \param[in] config - contains config file information.
 	 */
 	virtual void MPITurboPerformance(CConfig *config);
 	/*!
@@ -3477,6 +3483,14 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
 	void Mixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker);
+
+	/*!
+	 * \brief It avarage the fluxes value along a boundary.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+     * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
 	void MPIMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag);
 
 	/*!
@@ -3829,9 +3843,7 @@ public:
 
 	/*!
 	 * \brief Compute turbomachinery performance.
-	 * \param[in] solver - solver containing the outlet information.
-	 * \param[in] inMarker - marker related to the inlet.
-	 * \param[in] outMarker - marker related to the outlet.
+	 * \param[in] config - contains config file information.
 	 */
 	void MPITurboPerformance(CConfig *config);
 
