@@ -1403,6 +1403,10 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           boundary_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
           for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
             boundary_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
+
+          if (bound[iMarker][iElem_Bound]->GetVTK_Type() == VERTEX){
+            boundary_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
+          }
           boundary_file	<< iElem_Bound << endl;
         }
       }
@@ -11496,7 +11500,7 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
   unsigned short iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_Coord = NULL, *Buffer_Send_Coord = NULL, *Coord = NULL, *newCoord = NULL;
-  
+  su2double *translation;
   newCoord = new su2double[nDim];
   
 #ifdef HAVE_MPI
@@ -11563,6 +11567,7 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
         /*--- Retrieve the supplied periodic information. ---*/
         
         angles = config->GetPeriodicRotation(iPeriodic_Index);
+        translation = config->GetPeriodicTranslate(iPeriodic_Index);
         
         /*--- Store angles separately for clarity. ---*/
         
@@ -11588,9 +11593,9 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
         
         if (nDim == 2) {
           newCoord[0] = (rotMatrix[0][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
-                         rotMatrix[0][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]);
+                         rotMatrix[0][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]) - translation[0];
           newCoord[1] = (rotMatrix[1][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
-                         rotMatrix[1][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]);
+                         rotMatrix[1][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]) - translation[1];
         }
         else {
           newCoord[0] = (rotMatrix[0][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
