@@ -1763,11 +1763,22 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 }
 
 void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR, GridVel_Index;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double rotMatrix[3][3], *transl, *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL, *Solution = NULL;
   
   Solution = new su2double[nVar];
+
+  GridVel_Index = 2*nDim;
+
+  if (config->GetKind_Turb_Model() == SA){
+    GridVel_Index += 1;
+  }else if (config->GetKind_Turb_Model() == SST){
+    GridVel_Index += 2;
+  }
+  if (config->GetKind_Regime() != INCOMPRESSIBLE){
+    GridVel_Index += 1;
+  }
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
@@ -1876,6 +1887,13 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
                               rotMatrix[0][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex]);
           Solution[nDim+2] = (rotMatrix[1][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
                               rotMatrix[1][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex]);
+
+          if (config->GetGrid_Movement()){
+            Solution[GridVel_Index + 1] = (rotMatrix[0][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                           rotMatrix[0][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex]);
+            Solution[GridVel_Index + 2] = (rotMatrix[1][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                           rotMatrix[1][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex]);
+          }
         } else {
           
           /*--- Coords ---*/
@@ -1901,6 +1919,18 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
           Solution[nDim+3] = (rotMatrix[2][0]*Buffer_Receive_U[nDim+1*nVertexR+iVertex] +
                               rotMatrix[2][1]*Buffer_Receive_U[nDim+2*nVertexR+iVertex] +
                               rotMatrix[2][2]*Buffer_Receive_U[nDim+3*nVertexR+iVertex]);
+
+          if (config->GetGrid_Movement()){
+            Solution[GridVel_Index+1] = (rotMatrix[0][0]*Buffer_Receive_U[GridVel_Index+1*nVertexR+iVertex] +
+                                         rotMatrix[0][1]*Buffer_Receive_U[GridVel_Index+2*nVertexR+iVertex] +
+                                         rotMatrix[0][2]*Buffer_Receive_U[GridVel_Index+3*nVertexR+iVertex]);
+            Solution[GridVel_Index+2] = (rotMatrix[1][0]*Buffer_Receive_U[GridVel_Index+1*nVertexR+iVertex] +
+                                         rotMatrix[1][1]*Buffer_Receive_U[GridVel_Index+2*nVertexR+iVertex] +
+                                         rotMatrix[1][2]*Buffer_Receive_U[GridVel_Index+3*nVertexR+iVertex]);
+            Solution[GridVel_Index+3] = (rotMatrix[2][0]*Buffer_Receive_U[GridVel_Index+1*nVertexR+iVertex] +
+                                         rotMatrix[2][1]*Buffer_Receive_U[GridVel_Index+2*nVertexR+iVertex] +
+                                         rotMatrix[2][2]*Buffer_Receive_U[GridVel_Index+3*nVertexR+iVertex]);
+          }
         }
         
         /*--- Copy transformed conserved variables back into buffer. ---*/
