@@ -116,9 +116,12 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   
   /*--- Write the node coordinates ---*/
   
-  output_file << "NPOIN= " << nGlobal_Poin<< endl;
+  output_file << "NPOIN= " << nGlobal_Doma;
+  if (geometry->GetGlobal_nPointDomain() != nGlobal_Doma)
+    output_file << "\t" << geometry->GetGlobal_nPointDomain();
+  output_file << endl;
 
-  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+  for (iPoint = 0; iPoint < nGlobal_Doma; iPoint++) {
      for (iDim = 0; iDim < nDim; iDim++)
       output_file << scientific << Coords[iDim][iPoint] << "\t";
     output_file << iPoint << endl;
@@ -163,6 +166,10 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
           output_file << "MARKER_TAG= " << Marker_Tag << endl;
           output_file << "MARKER_ELEMS= " << nElem_Bound_<< endl;
           
+          if (Marker_Tag == "SEND_RECEIVE"){
+            if (config->GetMarker_All_SendRecv(iMarker) > 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
+            if (config->GetMarker_All_SendRecv(iMarker) < 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
+          }
           for (iElem_Bound = 0; iElem_Bound < nElem_Bound_; iElem_Bound++) {
             
             getline(input_file, text_line);
@@ -184,6 +191,9 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
                 bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
                 output_file << "\t" << vnodes_quad[0] << "\t" << vnodes_quad[1] << "\t" << vnodes_quad[2] << "\t" << vnodes_quad[3] << endl;
                 break;
+              case VERTEX:
+                bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
+                output_file << "\t" << vnodes_edge[0] <<  "\t" << vnodes_edge[1] <<endl;
             }
           }
       }

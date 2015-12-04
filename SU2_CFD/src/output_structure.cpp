@@ -850,6 +850,8 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
+
+  unsigned short kind_SU2 = config->GetKind_SU2();
   
 #ifndef HAVE_MPI
   
@@ -859,6 +861,8 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   unsigned short iMarker;
   unsigned long iVertex, nTotalPoints = 0;
   int SendRecv;
+
+  bool isPeriodic;
   
   /*--- First, create a structure to locate any periodic halo nodes ---*/
   int *Local_Halo = new int[geometry->GetnPoint()];
@@ -870,9 +874,19 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
       SendRecv = config->GetMarker_All_SendRecv(iMarker);
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-            (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1) &&
-            (SendRecv < 0)) {
+
+        /* --- For SU2_CFD and SU2_SOL we want to remove the periodic halo nodes,
+         * but for SU2_DEF we want them to be included, therefore the definition of a periodic point
+         * is different in each case --- */
+
+        if (kind_SU2 == SU2_DEF){
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0));
+        }else{
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
+        }
+
+        if (isPeriodic && (SendRecv < 0)) {
           Local_Halo[iPoint] = false;
         }
       }
@@ -963,9 +977,20 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
         
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
-          if (isPeriodic) Local_Halo[iPoint] = false;
+
+          /* --- For SU2_CFD and SU2_SOL we want to remove the periodic halo nodes,
+           * but for SU2_DEF we want them to be included, therefore the definition of a periodic point
+           * is different in each case --- */
+
+          if (kind_SU2 == SU2_DEF){
+            isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0));
+          }else{
+            isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+                          (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
+          }
+          if (isPeriodic){
+            Local_Halo[iPoint] = false;
+          }
         }
       }
     }
@@ -1127,7 +1152,9 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   unsigned long MaxLocalElem = 0, iGlobal_Index, jPoint, kPoint;
   
   bool Wrt_Halo = config->GetWrt_Halo();
-  bool *Write_Elem = NULL, notPeriodic, notHalo, addedPeriodic;
+  bool *Write_Elem = NULL, notPeriodic, notHalo, addedPeriodic, isPeriodic;
+
+  unsigned short kind_SU2 = config->GetKind_SU2();
 
   int *Conn_Elem = NULL;
 
@@ -1214,30 +1241,34 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   
   vector<unsigned long> Added_Periodic;
   Added_Periodic.clear();
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-      SendRecv = config->GetMarker_All_SendRecv(iMarker);
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-            (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 0) &&
-            (SendRecv < 0)) {
-          Added_Periodic.push_back(geometry->node[iPoint]->GetGlobalIndex());
+
+  if (kind_SU2 != SU2_DEF){
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
+        SendRecv = config->GetMarker_All_SendRecv(iMarker);
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+              (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 0) &&
+              (SendRecv < 0)) {
+            Added_Periodic.push_back(geometry->node[iPoint]->GetGlobalIndex());
+          }
         }
       }
     }
   }
-  
+
   /*--- Now we communicate this information to all processors, so that they
    can force the removal of these particular nodes by flagging them as halo
    points. In general, this should be a small percentage of the total mesh,
    so the communication/storage costs here shouldn't be prohibitive. ---*/
-  
+
   /*--- First communicate the number of points that each rank has found ---*/
   unsigned long nAddedPeriodic = 0, maxAddedPeriodic = 0;
   unsigned long Buffer_Send_nAddedPeriodic[1], *Buffer_Recv_nAddedPeriodic = NULL;
   Buffer_Recv_nAddedPeriodic = new unsigned long[size];
-  
+
   nAddedPeriodic = Added_Periodic.size();
   Buffer_Send_nAddedPeriodic[0] = nAddedPeriodic;
 
@@ -1294,10 +1325,17 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         notHalo = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() == 0) &&
                    (SendRecv < 0) && (rank > RecvFrom));
         
-        /*--- We want to keep the periodic nodes that were part of the original domain ---*/
-        notPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                       (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1) &&
-                       (SendRecv < 0));
+        /*--- We want to keep the periodic nodes that were part of the original domain.
+         *    For SU2_DEF we want to keep all periodic nodes. ---*/
+
+        if (kind_SU2 == SU2_DEF){
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0));
+        }else{
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
+        }
+
+        notPeriodic = (isPeriodic && (SendRecv < 0));
         
         /*--- Lastly, check that this isn't an added periodic point that
          we will forcibly remove. Use the communicated list of these points. ---*/
