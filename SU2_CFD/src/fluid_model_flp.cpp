@@ -61,25 +61,14 @@ CFluidProp::CFluidProp( string thermolib, int ncomp, string* comp, double* conc,
 	printf("SetFluid...\n");
 	fluidprop_setfluid( ThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc );
 
-        // Table generator
-        /*fluidprop_setunits( "SI", " ", " ", " ");
-        string table_name      = "CO2_table";
-        string table_type      = "consistent";  // or "non-consisent"
-        string interpol_method = "bicubic2";
-        string mesh_name       = "CO2_mesh";
-        string search_alg      = "kdtree"; 
-        int    phase           = 2;             // phase = 1 --> grid covers only single phase area, phase = 2 --> grid includes 2-phase VLE area
-        fluidprop_settable( table_name.c_str(), table_type.c_str(), interpol_method.c_str(), mesh_name.c_str(), search_alg.c_str(), phase);
-        printf( "FluidProp error message: %s\n", fluidprop_geterror());
-	fluidprop_setfluid( ThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc );*/
-        //throw(-1);
-
 	// In case of using LuT, read the table
         bool LuT = ThermoLib.substr(0,3) == "LuT";
-        if (LuT) printf("UseTable...\n");
-        if (LuT) fluidprop_usetable( TableName.c_str());
-        //if (LuT) fluidprop_setfluid( ThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc );
-        if (LuT) printf("UseTable finished!\n");
+        if (LuT) {
+           printf("UseTable...\n");
+           fluidprop_usetable( TableName.c_str());
+           printf("UseTable finished!\n");
+        }
+        LuTSwitchedOn = LuT;
 
         if (strcmp( fluidprop_geterror(), "No errors")) {
            printf( "FluidProp error message: %s\n", fluidprop_geterror());
@@ -92,7 +81,7 @@ CFluidProp::CFluidProp( string thermolib, int ncomp, string* comp, double* conc,
            
            // Set reference state for non-dimensionalization 
            fluidprop_setrefstate_nondim( T_ref, P_ref, 1./rho_ref);
-           
+
            if (strcmp( fluidprop_geterror(), "No errors")) {
               printf( "FluidProp error message: %s\n", fluidprop_geterror());
               throw(-1);
@@ -135,38 +124,77 @@ CFluidProp::~CFluidProp(void) {
 
 }
 
-/*void CFluidProp::SwitchLuTOn()
-{
-        // Prepare composition array's for fluidprop_setfluid 
-	char LocalComp[20][LEN_COMPONENTS];
-	double LocalConc[20];
-	for( int i = 0; i < nComp; i++) {
-	   strcpy( LocalComp[i], Comp[i].c_str());
-	   LocalConc[i] = Conc[i];
-	}
-
-        // Define the working fluid 
-	fluidprop_setfluid( ThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc);
-
-        // Reread the table 
-        fluidprop_usetable( TableName.c_str());
-}
-
 void CFluidProp::SwitchLuTOff()
 {
-        string NoLuTThermoLib = ThermoLib.substr(4,ThermoLib.lenght()+4);
+    // When the look-up table (LuT) approach is used this method switches off the LuT 
+    // and selects the fluid property sub-library that was used to build to table.
 
-        // Prepare composition array's for fluidprop_setfluid 
-	char LocalComp[20][LEN_COMPONENTS];
-	double LocalConc[20];
-	for( int i = 0; i < nComp; i++) {
-	   strcpy( LocalComp[i], Comp[i].c_str());
-	   LocalConc[i] = Conc[i];
+    if (LuTSwitchedOn) {
+
+        bool LuT = ThermoLib.substr(0,3) == "LuT";
+
+        if (LuT) {
+ 
+           string NoLuTThermoLib = ThermoLib.substr(4,ThermoLib.length());
+
+           // Prepare composition array's for fluidprop_setfluid 
+	   char LocalComp[20][LEN_COMPONENTS];
+   	   double LocalConc[20];
+	   for( int i = 0; i < nComp; i++) {
+	      strcpy( LocalComp[i], Comp[i].c_str());
+	      LocalConc[i] = Conc[i];
+	   }
+
+           // Define the working fluid 
+	   fluidprop_setfluid( NoLuTThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc);
+
+           if (strcmp( fluidprop_geterror(), "No errors")) {
+              printf( "FluidProp error message: %s\n", fluidprop_geterror());
+	      printf( "Switch from LuT to TdL %s failed...\n", NoLuTThermoLib.c_str());
+           }
+           else if (ErrorLevel > 0) printf( "LuT switched off...\n");
+       }
+
+       LuTSwitchedOn = false;
+    }
+}
+
+
+void CFluidProp::SwitchLuTOn()
+{
+    // When the look-up table (LuT) approach is used then this method switches on the LuT 
+    // after it has been swtiched off by the SwitchLuTOff() mehtod.
+
+    if (!LuTSwitchedOn) {
+
+        bool LuT = ThermoLib.substr(0,3) == "LuT";
+
+        if (LuT) {
+ 
+	   // Prepare composition array's for fluidprop_setfluid 
+	   char LocalComp[20][LEN_COMPONENTS];
+	   double LocalConc[20];
+	   for( int i = 0; i < nComp; i++) {
+	      strcpy( LocalComp[i], Comp[i].c_str());
+	      LocalConc[i] = Conc[i];
+	   }
+
+	   // Define the working fluid 
+	   fluidprop_setfluid( ThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc);
+
+           if (strcmp( fluidprop_geterror(), "No errors")) {
+              printf( "FluidProp error message: %s\n", fluidprop_geterror());
+	      printf( "Switch from TdL to LuT %s failed...\n", ThermoLib.c_str());
+           }
+           else if (ErrorLevel > 0) printf( "LuT switched on...\n");
+
+	   // Reread the table: is this necessary if the table has already been read before? 
+	   fluidprop_usetable( TableName.c_str());
 	}
 
-        // Define the working fluid 
-	fluidprop_setfluid( NoLuTThermoLib.c_str(), nComp, LocalComp[0], LEN_COMPONENTS, LocalConc);
-}*/
+        LuTSwitchedOn = true;
+    }
+}
 
 void CFluidProp::SetTDState_rhoe (double rho, double e ){
 
@@ -347,19 +375,6 @@ void CFluidProp::SetTDState_rhoT (double rho, double T ){
            printf( "FluidProp error message: %s\n", fluidprop_geterror());
 	   printf( "rho = %f, T = %f, u = %f\n", rho, T, output.u);
         }
-}
-
-void CFluidProp::SetTDState_NonDim () {
-
-	Pressure = Pressure/P_ref;
-	Temperature = Temperature/T_ref;
-	Density = Density/rho_ref;
-	StaticEnergy = StaticEnergy/e_ref;
-	SoundSpeed2 = SoundSpeed2/pow(v_ref,2);
-	dPdrho_e = dPdrho_e/dPdrho_e_ref;
-	dPde_rho = dPde_rho/dPde_rho_ref;
-	dTdrho_e = dTdrho_e/dTdrho_e_ref;
-	dTde_rho = dTde_rho/dTde_rho_ref;
 }
 
 void CFluidProp::SetLaminarViscosityModel (CConfig *config) {

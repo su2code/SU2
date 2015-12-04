@@ -526,23 +526,15 @@ protected:
     double* Conc;         /*!< \brief Concentrations. */
     bool SinglePhaseOnly; /*!< \brief Single phase only: indicates that no phase equilibria are considered. */
     string TableName;     /*!< \brief Name of look-up table. */
-
-    int ErrorLevel;       /*!< \brief Error level diagnostics flag. */
     
-    double P_ref;
-    double v_ref;
-    double e_ref;
-    double T_ref;
-    double rho_ref;
-    double h_ref;
-    double s_ref;
-    double dPdrho_e_ref;
-    double dPde_rho_ref;
-    double dTdrho_e_ref;
-    double dTde_rho_ref;
+    int ErrorLevel;       /*!< \brief Error level diagnostics flag. */
 
 private:
     
+    bool LuTSwitchedOn;   /*!< \brief LuT indicator. */
+    void SwitchLuTOff();
+    void SwitchLuTOn();
+
 public:
     
     /*!
@@ -605,12 +597,6 @@ public:
      *
      */
     void SetTDState_rhoT (double rho, double T );
-
-    /*!
-     * \brief virtual member that would be different for each gas model implemented
-     *
-     */
-    void SetTDState_NonDim();
 
     /*!
      * \brief Set viscosity model.
