@@ -9,7 +9,7 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - hlkline@stanford.edu
   
 branches:
     only:
