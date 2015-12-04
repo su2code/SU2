@@ -129,6 +129,9 @@ AC_ARG_ENABLE(SOL,
 AC_ARG_ENABLE(GEO,
    	AS_HELP_STRING([--disable-GEO], [build the SU2_GEO executable (default = yes)]),
 	[build_GEO=$enableval], [build_GEO="yes"])
+AC_ARG_ENABLE(API,
+   	AS_HELP_STRING([--disable-API], [build the SU2_API wrapper (default = yes)]),
+	[build_API=$enableval], [build_API="yes"])
 AC_ARG_ENABLE(complex,
     AS_HELP_STRING([--enable-complex], [build executables with complex datatype (default = no)]),
     [build_COMPLEX="yes"], [build_COMPLEX="no"])
@@ -550,6 +553,7 @@ AM_CONDITIONAL([BUILD_MSH],[test $build_MSH != "no"])
 AM_CONDITIONAL([BUILD_DEF],[test $build_DEF != "no"])
 AM_CONDITIONAL([BUILD_SOL],[test $build_SOL != "no"])
 AM_CONDITIONAL([BUILD_GEO],[test $build_GEO != "no"])
+AM_CONDITIONAL([BUILD_API],[test $build_API != "no"])
 
 ###########################
 
@@ -557,6 +561,7 @@ AC_OUTPUT(Makefile \
         externals/Makefile \
 	Common/lib/Makefile \
 	SU2_CFD/obj/Makefile \
+        SU2_API/obj/Makefile \
 	SU2_DOT/obj/Makefile \
 	SU2_MSH/obj/Makefile \
 	SU2_DEF/obj/Makefile \
@@ -639,6 +644,7 @@ Build Configuration Summary:
     Build SU2_DEF:        $build_DEF
     Build SU2_SOL:        $build_SOL
     Build SU2_GEO:        $build_GEO
+    Build SU2_API:	  $build_API
 
 Please be sure to add the [\$]SU2_HOME and [\$]SU2_RUN environment variables,
 and update your [\$]PATH (and [\$]PYTHONPATH if applicable) with [\$]SU2_RUN.

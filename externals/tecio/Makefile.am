@@ -58,9 +58,9 @@ pkg_sources  = \
 ######################################################################
 AUTOMAKE_OPTIONS = subdir-objects
 
-AM_CPPFLAGS  = $(pkg_cppflags) # any defined package-specific include paths
-AM_CFLAGS    =
-AM_CXXFLAGS  =
+AM_CPPFLAGS  = $(pkg_cppflags) -fPIC # any defined package-specific include paths
+AM_CFLAGS    = -fPIC
+AM_CXXFLAGS  = -fPIC
 AM_LDFLAGS   = $(libmesh_LDFLAGS)
 
 noinst_LIBRARIES = libtecio.a

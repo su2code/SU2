@@ -101,7 +101,7 @@ lib_sources = \
   ../src/element_structure.cpp \
   ../src/element_linear.cpp 
 
-lib_cxxflags =
+lib_cxxflags = -fPIC
 lib_ldadd =
 
 # always link to built dependencies from ./externals
