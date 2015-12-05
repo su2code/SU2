@@ -2335,7 +2335,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   LevelSet, Target_LevelSet, eps, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru, dp_drv,
   dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3], scale = 1.0;
   su2double RefVel2, RefDensity, Mach2Vel, *Velocity_Inf, factor;
-  su2double Velocity2, Mach, SoundSpeed, *Velocity;
+  su2double Vn, SoundSpeed, *Velocity;
   
   USens = new su2double[nVar];
   Velocity = new su2double[nDim];
@@ -2569,7 +2569,9 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
                   Sens_BPress[iMarker]+=0.5*Velocity[iDim]*Velocity[iDim]/(Vn*Vn);
               }
             }
-        Total_Sens_BPress+= Sens_BPress[iMarker] * scale * factor;
+          }
+          Total_Sens_BPress+= Sens_BPress[iMarker] * scale * factor;
+        }
       }
 
       if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD || config->GetMarker_All_KindBC(iMarker) == INLET_FLOW
