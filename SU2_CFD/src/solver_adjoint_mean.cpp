@@ -333,7 +333,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==OUTLET_CHAIN_RULE || config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
+  if (config->GetKind_ObjFunc()==OUTFLOW_GENERALIZED || config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
     config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
     for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
       if (config->GetMarker_All_Monitoring(iMarker) == YES){
@@ -2377,7 +2377,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
       (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
 
  if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-     (ObjFunc == OUTLET_CHAIN_RULE)) factor = 1.0/Area_Monitored;
+     (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
   
   /*--- Initialize sensitivities to zero ---*/
   
@@ -4582,7 +4582,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           a1 = Gamma_Minus_One/(Vn_rel*Vn_rel-SoundSpeed*SoundSpeed);
 
           switch (config->GetKind_ObjFunc()){
-          case OUTLET_CHAIN_RULE:
+          case OUTFLOW_GENERALIZED:
             velgrad = 0.0;
             for (iDim=0; iDim<nDim; iDim++) velgrad += UnitNormal[iDim]*config->GetCoeff_ObjChainRule(iDim+1);
             densgrad = config->GetCoeff_ObjChainRule(0);
@@ -4714,7 +4714,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       case MASS_FLOW_RATE:
         Psi_outlet[0]+=1;
         break;
-      case OUTLET_CHAIN_RULE:
+      case OUTFLOW_GENERALIZED:
         densgrad = config->GetCoeff_ObjChainRule(0);
         pressgrad = config->GetCoeff_ObjChainRule(4);
         velgrad = 0.0;    // v dot dgdv
@@ -5451,7 +5451,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==OUTLET_CHAIN_RULE || config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
+  if (config->GetKind_ObjFunc()==OUTFLOW_GENERALIZED || config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
     config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
     for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
       if (config->GetMarker_All_Monitoring(iMarker) == YES){
@@ -5859,7 +5859,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
       (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
 
  if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-     (ObjFunc == OUTLET_CHAIN_RULE)) factor = 1.0/Area_Monitored;
+     (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
 
 
   /*--- Compute gradient of the grid velocity, if applicable ---*/

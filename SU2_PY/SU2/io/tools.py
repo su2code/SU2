@@ -535,7 +535,7 @@ def get_dvMap():
                15  : "FFD_CONTROL_POINT_2D"  ,
                16  : "FFD_CAMBER_2D"         ,
                17  : "FFD_THICKNESS_2D"      ,
-               18  : "CUSTOM"                ,
+               19  : "CUSTOM"                ,
                101 : "MACH_NUMBER"           ,
                102 : "AOA"                    }
     
