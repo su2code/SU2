@@ -114,6 +114,7 @@ public:
 	CPoint** node;			/*!< \brief Node vector (dual grid information). */
 	CEdge** edge;			/*!< \brief Edge vector (dual grid information). */
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
+	CVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
 	unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
 	unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
 	vector<unsigned long> PeriodicPoint[MAX_NUMBER_PERIODIC][2];			/*!< \brief PeriodicPoint[Periodic bc] and return the point that 
@@ -363,6 +364,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetVertex(CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetTurboVertex(CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -1069,6 +1076,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void SetVertex(CConfig *config);
+
+	/*!
+	 * \brief Set turbo boundary vertex.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetTurboVertex(CConfig *config);
 
 	/*! 
 	 * \brief Set the center of gravity of the face, elements and edges.

@@ -159,6 +159,8 @@ inline void CGeometry::SetVertex(void) { }
 
 inline void CGeometry::SetVertex(CConfig *config) { }
 
+inline void CGeometry::SetTurboVertex(CConfig *config) { }
+
 inline void CGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) { }
 
 inline void CGeometry::SetCoord_CG(void) { }

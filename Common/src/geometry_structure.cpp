@@ -9300,6 +9300,10 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
   }
 }
 
+void CPhysicalGeometry::SetTurboVertex(CConfig *config) {
+
+
+}
 void CPhysicalGeometry::SetCoord_CG(void) {
   unsigned short nNode, iDim, iMarker, iNode;
   unsigned long elem_poin, edge_poin, iElem, iEdge;
