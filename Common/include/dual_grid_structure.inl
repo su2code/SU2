@@ -336,4 +336,16 @@ inline unsigned long CVertex::GetNormal_Neighbor(void) { return Normal_Neighbor;
 
 inline void CVertex::SetNormal_Neighbor(unsigned long val_Normal_Neighbor) { Normal_Neighbor = val_Normal_Neighbor; }
 
+inline void CTurboVertex::SetTurboNormal(su2double *val_normal ){
+	unsigned short iDim;
+	for(iDim= 0; iDim < nDim; iDim++)
+		TurboNormal[iDim] = val_normal[iDim];
+}
+
+inline void CTurboVertex::GetNormal(su2double *val_normal) {
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		val_normal[iDim] = TurboNormal[iDim];
+}
+
+inline su2double *CVertex::GetNormal(void) { return TurboNormal; }
 
