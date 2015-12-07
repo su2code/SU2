@@ -4480,7 +4480,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   su2double Mach_Exit_Normal=0.0;
   su2double a1=0.0; /*Placeholder terms to simplify expression/ repeated terms*/
   su2double ProjGridVel = 0.0;
-  su2double densgrad, pressgrad, velgrad, velgradcross,normgrad;
+  su2double densgrad, pressgrad, velgrad;
 
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);

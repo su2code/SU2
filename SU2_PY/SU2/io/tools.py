@@ -249,7 +249,7 @@ optnames_aero = [ "LIFT"                    ,
                   "AVG_OUTLET_DENSITY"      ,
                   "AVG_OUTLET_VELOCITY"     ,
                   "MASS_FLOW_RATE"          ,
-                  "OUTLET_CHAIN_RULE"       ,
+                  "OUTFLOW_GENERALIZED"     ,
                   "EQUIVALENT_AREA"         ,
                   "NEARFIELD_PRESSURE"      ,
                   "INVERSE_DESIGN_PRESSURE" ,
@@ -473,7 +473,7 @@ def get_adjointSuffix(objective_function=None):
                  "AVG_TOTAL_PRESSURE"      : "pt"        ,
                  "AVG_OUTLET_PRESSURE"     : "pe"        ,
                  "MASS_FLOW_RATE"          : "mfr"       ,
-                 "OUTLET_CHAIN_RULE"       : "chn"       ,
+                 "OUTFLOW_GENERALIZED"       : "chn"       ,
                  "FREE_SURFACE"            : "fs"       }
     
     # if none or false, return map
@@ -616,7 +616,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
             if key == "INV_DESIGN_HEATFLUX"     :
                 header.append(r',"Grad_HeatFlux_Diff"')
                 write_format.append(", %.10f")
-            if key =="OUTLET_CHAIN_RULE"    :
+            if key =="OUTFLOW_GENERALIZED"    :
                 header.append(r',"Grad_Chain_Rule"')
                 write_format.append(", %.10f")
 
@@ -738,7 +738,7 @@ def get_optFileFormat(plot_format,special_cases=None):
         if key == "INV_DESIGN_HEATFLUX"     :
             header_list.extend(["HeatFlux_Diff"])
             write_format.append(r', %.10f')
-        if key =="OUTLET_CHAIN_RULE"    :
+        if key =="OUTFLOW_GENERALIZED"    :
             header_list.exted(["Chain_Rule"])
             write_format.append([r", %.10f"])
 
@@ -794,7 +794,7 @@ def get_specialCases(config):
                           '1D_OUTPUT'                        ,
                           'INV_DESIGN_CP'                    ,
                           'INV_DESIGN_HEATFLUX'              ,
-                          'OUTLET_CHAIN_RULE'                ]
+                          'OUTFLOW_GENERALIZED'                ]
     
     special_cases = []
     for key in all_special_cases:

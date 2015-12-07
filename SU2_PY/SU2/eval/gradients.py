@@ -86,7 +86,7 @@ def gradient( func_name, method, config, state=None ):
         if any([method == 'CONTINUOUS_ADJOINT', method == 'DISCRETE_ADJOINT']):
 
             # If using chain rule
-            if config.OBJECTIVE_FUNCTION == 'OUTLET_CHAIN_RULE':
+            if config.OBJECTIVE_FUNCTION == 'OUTFLOW_GENERALIZED':
                 import downstream_function
                 chaingrad = downstream_function.downstream_gradient(config,state)
                 # Set coefficients for gradients
@@ -124,7 +124,7 @@ def gradient( func_name, method, config, state=None ):
             custom_dv=1
             for idv in range(n_dv):
                 if (config.DV_KIND[idv] == 'CUSTOM'):
-                    grads['OUTLET_CHAIN_RULE'][idv] = chaingrad[4+custom_dv]
+                    grads['OUTFLOW_GENERALIZED'][idv] = chaingrad[4+custom_dv]
                     custom_dv = custom_dv+1
         # store
         state['GRADIENTS'].update(grads)
@@ -573,7 +573,7 @@ def findiff( config, state=None, step=1e-4 ):
                         
                 # Use custom DV
                 if (konfig.DV_KIND[i_dv] == 'CUSTOM'):
-                    grads['OUTLET_CHAIN_RULE'][i_dv] = chaingrad[4+custom_dv]
+                    grads['OUTFLOW_GENERALIZED'][i_dv] = chaingrad[4+custom_dv]
                     custom_dv = custom_dv+1
                     
                 #: for each grad name

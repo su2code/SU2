@@ -97,7 +97,7 @@ def continuous_adjoint( filename           ,
         SU2.io.restart2solution(config,state)
 
     # If using chain rule update coefficients using gradients as defined in downstream_function (local file)
-    if config.OBJECTIVE_FUNCTION == 'OUTLET_CHAIN_RULE':
+    if config.OBJECTIVE_FUNCTION == 'OUTFLOW_GENERALIZED':
         import downstream_function # Must be defined in run folder
         chaingrad = downstream_function.downstream_gradient(config,state,step)
         # Set coefficients for gradients
