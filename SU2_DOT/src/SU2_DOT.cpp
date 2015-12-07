@@ -509,6 +509,9 @@ int main(int argc, char *argv[]) {
         surface_movement->SetParabolic(geometry_container[ZONE_0], config_container[ZONE_0]);
       }
 
+      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == CUSTOM)
+        cout <<"Custom design variable will be used in external script" << endl;
+
       /*--- Design variable not implement ---*/
 
       else { cout << "Design Variable not implement yet" << endl; }
