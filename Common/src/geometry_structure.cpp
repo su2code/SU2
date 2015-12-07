@@ -9300,9 +9300,128 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
   }
 }
 
-void CPhysicalGeometry::SetTurboVertex(CConfig *config) {
+void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_flag) {
+	unsigned long  iPoint, iVertex;
+	unsigned short iMarker, iMarkerTP, iSpan, jSpan;
+	su2double min, max, *coord, *span, delta, dist;
+	int rank = MASTER_NODE;
+	min = 10.0E+06;
+	max = -10.0E+06;
+	span    		= new su2double[15];
+	if (marker_flag == INFLOW){
+		MinSpan = new su2double[nMarker];
+		MaxSpan = new su2double[nMarker];
+		nVertexSpan = new unsigned long* [nMarker];
+		for (iMarker = 0; iMarker < nMarker; iMarker++){
+			MinSpan[iMarker]= min;
+			MinSpan[iMarker]= max;
+			nVertexSpan[iMarker] = new unsigned long[15];
+			for(iSpan = 0; iSpan < 15; iSpan++)
+				nVertexSpan[iMarker][iSpan] = 0;
+		}
+	}
+
+#ifdef HAVE_MPI
+  su2double MyMax, MyMin;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+	/*--- compute minimum and max value on span-wise for Inflow or Outflow ---*/
+	for (iMarker = 0; iMarker < nMarker; iMarker++)
+		for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++)
+			if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP)
+				if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag)
+					for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+							iPoint = vertex[iMarker][iVertex]->GetNode();
+							coord = node[iPoint]->GetCoord();
+							if (coord[2] < min) min = coord[2];
+							if (coord[2] > max) max = coord[2];
+					}
+
+#ifdef HAVE_MPI
+	MyMin= min;			min = 0;
+	MyMax= max;			max = 0;
+  SU2_MPI::Allreduce(&MyMin, &min, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+	SU2_MPI::Allreduce(&MyMax, &max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#endif
+
+//	/*--- store the minSpan and  maxSpan info for for Inflow or Outflow ---*/
+//		for (iMarker = 0; iMarker < nMarker; iMarker++)
+//			for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++)
+//				if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP)
+//					if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+//						MinSpan[iMarker]= min;
+//						MaxSpan[iMarker]= max;
+//					}
+	delta = (max - min)/14;
+	for(iSpan = 0; iSpan < 15; iSpan++){
+		span[iSpan]= min + delta*iSpan;
+	}
+	for (iMarker = 0; iMarker < nMarker; iMarker++)
+		for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++)
+			if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP)
+				if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+//					cout << nVertex[iMarker] << " on flag " << marker_flag<< endl;
+					for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+						dist = 10E+06;
+						jSpan = -1;
+						iPoint = vertex[iMarker][iVertex]->GetNode();
+						coord = node[iPoint]->GetCoord();
+						for(iSpan = 0; iSpan < 15; iSpan++){
+						  if (dist > (abs(coord[2]-span[iSpan]))){
+						  	dist= abs(coord[2]-span[iSpan]);
+						  	jSpan=iSpan;
+						  }
+						}
+						nVertexSpan[iMarker][jSpan]++;
+					}
+				}
+//	for(iSpan = 0; iSpan < 15; iSpan++){
+//		cout << nVertexSpan[iSpan]<< " on span " << iSpan<< endl;
+//	}
+  turbovertex = new CTurboVertex***[nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+		turbovertex[iMarker] = new CTurboVertex** [15];
+    for(iSpan = 0; iSpan < 15; iSpan++){
+    	turbovertex[iMarker][iSpan] = new CTurboVertex* [nVertexSpan[iMarker][iSpan]];
+    	nVertexSpan[iMarker][iSpan] = 0;
+    }
+    for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++)
+			if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP)
+				if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+					for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+						dist = 10E+06;
+						jSpan = -1;
+						iPoint = vertex[iMarker][iVertex]->GetNode();
+						coord = node[iPoint]->GetCoord();
+						for(iSpan = 0; iSpan < 15; iSpan++){
+							if (dist > (abs(coord[2]-span[iSpan]))){
+								dist= abs(coord[2]-span[iSpan]);
+								jSpan=iSpan;
+							}
+						}
+						turbovertex[iMarker][jSpan][nVertexSpan[iMarker][jSpan]] = new CTurboVertex(iPoint, nDim);
+						nVertexSpan[iMarker][jSpan]++;
+
+					}
+//					checking
+//					for(iSpan = 1; iSpan < 14; iSpan++){
+//						for(iVertex = 0; iVertex<nVertexSpan[iMarker][iSpan]; iVertex++){
+//							iPoint = turbovertex[iMarker][iSpan][iVertex]->GetNode();
+//							coord = node[iPoint]->GetCoord();
+//							if (node[iPoint]->GetDomain()){
+//								cout<< coord[2]<< " in iVertex "<< iVertex<< " in span " <<iSpan<< " in Marker " << iMarker << endl;
+//							}
+//						}
+//						cout<< " "<<endl;
+//					}
+				}
+  }
 
 
+
+
+
+	delete [] span;
 }
 void CPhysicalGeometry::SetCoord_CG(void) {
   unsigned short nNode, iDim, iMarker, iNode;

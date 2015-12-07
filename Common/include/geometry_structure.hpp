@@ -369,7 +369,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetTurboVertex(CConfig *config);
+	virtual void SetTurboVertex(CConfig *config, unsigned short marker_flag);
 
 	/*! 
 	 * \brief A virtual member.
@@ -916,9 +916,11 @@ class CPhysicalGeometry : public CGeometry {
 	long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
 	unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
 	unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
-    unsigned long *adj_counter; /*!< \brief Adjacency counter. */
-    unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
+  unsigned long *adj_counter; /*!< \brief Adjacency counter. */
+  unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
   su2double* Sensitivity; /*! <\brief Vector holding the sensitivities at each point. */
+  su2double *MinSpan, *MaxSpan;
+  unsigned long **nVertexSpan;
 
 public:
   
@@ -1081,7 +1083,7 @@ public:
 	 * \brief Set turbo boundary vertex.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetTurboVertex(CConfig *config);
+	void SetTurboVertex(CConfig *config, unsigned short marker_flag);
 
 	/*! 
 	 * \brief Set the center of gravity of the face, elements and edges.

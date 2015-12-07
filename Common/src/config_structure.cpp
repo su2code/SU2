@@ -1589,16 +1589,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check for Convective scheme available for NICFD ---*/
   
   if (!ideal_gas) {
-    if (Kind_ConvNumScheme_Flow != SPACE_UPWIND) {
-      cout << "Only ROE Upwind and HLLC Upwind scheme can be used for Non-Ideal Compressible Fluids" << endl;
-      exit(EXIT_FAILURE);
-    }
-    else {
-      if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC) {
-        cout << "Only ROE Upwind and HLLC Upwind scheme can be used for Non-Ideal Compressible Fluids" << endl;
-        exit(EXIT_FAILURE);
-      }
-    }
+		if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
+			cout << "Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids" << endl;
+			exit(EXIT_FAILURE);
+		}
+
   }
   
   /*--- Check for Boundary condition available for NICFD ---*/
