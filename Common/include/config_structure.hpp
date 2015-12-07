@@ -151,6 +151,7 @@ private:
 	nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
 	nMarker_MixBound,				/*!< \brief Number of mixing boundary markers. */
 	nMarker_TurboPerf,				/*!< \brief Number of mixing boundary markers. */
+	nSpanWiseSections,			/*!< \brief Number of spanwise sections to compute 3D BC and Performance for turbomachinery   */
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
@@ -3371,11 +3372,18 @@ public:
 	 * \return boolean.
 	 */
 	bool GetBoolTurboPerf(void);
-    /*!
+
+	/*!
 	 * \brief number Turbomachinery performance option specified from config file.
 	 * \return number of bound.
 	 */
 	unsigned short Get_nMarkerTurboPerf(void);
+
+  /*!
+   * \brief number span-wise sections to compute 3D BC and performance for turbomachinery.
+   * \return number of span-wise sections.
+   */
+	unsigned short Get_nSpanWiseSections(void);
 
     /*!
 	 * \brief get inlet bounds name for Turbomachinery performance calculation.

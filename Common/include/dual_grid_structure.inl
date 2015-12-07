@@ -342,10 +342,10 @@ inline void CTurboVertex::SetTurboNormal(su2double *val_normal ){
 		TurboNormal[iDim] = val_normal[iDim];
 }
 
-inline void CTurboVertex::GetNormal(su2double *val_normal) {
+inline void CTurboVertex::GetTurboNormal(su2double *val_normal) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		val_normal[iDim] = TurboNormal[iDim];
 }
 
-inline su2double *CVertex::GetNormal(void) { return TurboNormal; }
+inline su2double *CTurboVertex::GetTurboNormal(void) { return TurboNormal; }
 
