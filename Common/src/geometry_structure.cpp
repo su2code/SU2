@@ -9302,12 +9302,13 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_flag) {
 	unsigned long  iPoint, iVertex;
-	unsigned short iMarker, iMarkerTP, iSpan, jSpan;
-	su2double min, max, *coord, *span, delta, dist;
+	unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim;
+	su2double min, max, *coord, *span, delta, dist, Normal2, *Normal;
 	int rank = MASTER_NODE;
 	min = 10.0E+06;
 	max = -10.0E+06;
 	span    		= new su2double[15];
+	Normal      = new su2double[3];
 	if (marker_flag == INFLOW){
 		MinSpan = new su2double[nMarker];
 		MaxSpan = new su2double[nMarker];
@@ -9400,6 +9401,18 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 							}
 						}
 						turbovertex[iMarker][jSpan][nVertexSpan[iMarker][jSpan]] = new CTurboVertex(iPoint, nDim);
+						Normal2 = 0.0;
+						for(iDim = 0; iDim < 2; iDim++) Normal2 += coord[iDim]*coord[iDim];
+						if (marker_flag == INFLOW){
+							Normal[0] = -coord[0]/sqrt(Normal2);
+							Normal[1] = -coord[1]/sqrt(Normal2);
+							if(nDim == 3) Normal[2] = 0.0;
+						}else{
+							Normal[0] = coord[0]/sqrt(Normal2);
+							Normal[1] = coord[1]/sqrt(Normal2);
+							if(nDim == 3) Normal[2] = 0.0;
+						}
+						turbovertex[iMarker][jSpan][nVertexSpan[iMarker][jSpan]]->SetTurboNormal(Normal);
 						nVertexSpan[iMarker][jSpan]++;
 
 					}
@@ -9422,6 +9435,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 
 
 	delete [] span;
+	delete [] Normal;
 }
 void CPhysicalGeometry::SetCoord_CG(void) {
   unsigned short nNode, iDim, iMarker, iNode;

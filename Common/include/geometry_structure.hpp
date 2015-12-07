@@ -114,7 +114,7 @@ public:
 	CPoint** node;			/*!< \brief Node vector (dual grid information). */
 	CEdge** edge;			/*!< \brief Edge vector (dual grid information). */
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
-	CVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
+	CTurboVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
 	unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
 	unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
 	vector<unsigned long> PeriodicPoint[MAX_NUMBER_PERIODIC][2];			/*!< \brief PeriodicPoint[Periodic bc] and return the point that 

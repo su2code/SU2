@@ -1107,6 +1107,25 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CTurboVertex(void);
+
+	/*!
+	 * \brief set Normal in the turbomachinery frame of reference.
+	 * \param[in] val_normal - normal vector.
+	 */
+	void SetTurboNormal(su2double *val_normal);
+
+
+	/*!
+	 * \brief Copy the the turbo normal vector of a face.
+	 * \param[in] val_normal - Vector where the subroutine is goint to copy the normal (dimensionaless).
+	 */
+	void GetTurboNormal(su2double *val_normal);
+
+	/*!
+	 * \brief Get the turbo normal to a face where turboperformance are computed .
+	 * \return Dimensionaless normal vector, the modulus is the area of the face.
+	 */
+	su2double *GetTurboNormal(void);
 };
 
 #include "dual_grid_structure.inl"
