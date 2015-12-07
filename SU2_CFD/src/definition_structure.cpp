@@ -308,7 +308,8 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     if ((config[iZone]->GetnMGLevels() != 0) && (rank == MASTER_NODE))
       cout << "Setting the multigrid structure." << endl;
     
-    geometry[iZone][MESH_0]->SetTurboVertex(config[iZone]);
+    geometry[iZone][MESH_0]->SetTurboVertex(config[iZone], INFLOW);
+    geometry[iZone][MESH_0]->SetTurboVertex(config[iZone], OUTFLOW);
 
   }
   

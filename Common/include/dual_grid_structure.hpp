@@ -868,7 +868,7 @@ public:
  * \version 4.0.2 "Cardinal"
  */
 class CVertex : public CDualGrid {
-private:
+protected:
 	unsigned long *Nodes;	/*!< \brief Vector to store the global nodes of an element. */
 	su2double *Normal;			/*!< \brief Normal coordinates of the element and its center of gravity. */
 	su2double Aux_Var;			/*!< \brief Auxiliar variable defined only on the surface. */
@@ -1083,6 +1083,30 @@ public:
 	 */
 	unsigned long GetNormal_Neighbor(void);
 	
+};
+
+/*!
+ * \class CTurboVertex
+ * \brief Class for vertex definition for turbomachinery (equivalent to edges, but for the boundaries).
+ * \author S. Vitale
+ * \version 4.0.2 "Cardinal"
+ */
+class CTurboVertex : public CVertex {
+private:
+	su2double *TurboNormal;			/*!< \brief Normal for computing correct turbomachinery quantities. */
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_point - Node of the vertex.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 */
+	CTurboVertex(unsigned long val_point, unsigned short val_nDim);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CTurboVertex(void);
 };
 
 #include "dual_grid_structure.inl"
