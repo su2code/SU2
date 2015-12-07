@@ -25,9 +25,9 @@ def objective(config, state, d_in ):
 
   # Values from history file
   rho3 = state['HISTORY']['DIRECT']['FLUXAVG_OUTLET_DENSITY'][-1]+d_in[0];
-  V3 = float(state['HISTORY']['DIRECT']['AVG_OUTLET_VELOCITY'][-1])+d_in[1]
+  M3 = float(state['HISTORY']['DIRECT']['AVG_OUTLET_MACH'][-1])+d_in[1]
   P3 = state['HISTORY']['DIRECT']['AVG_OUTLET_PRESSURE'][-1]+d_in[4];
-
+  
   # CUSTOM DV: Always set to their initial values within this file as well as within the config file
   CustomDV = 3.0
   CustomDV2 = 3.0
@@ -52,7 +52,7 @@ def objective(config, state, d_in ):
 
   a0 = np.sqrt(T0*1.4*287.87)
   # Here is a random function to act a placeholder.
-  obj_val = (P3/P0)+(V3/a0-rho3)+CustomDV-rho3/T0+rho3*P3-CustomDV2/2
+  obj_val = (P3/P0)+(M3-rho3)+CustomDV-rho3/T0+rho3*P3-CustomDV2/2
 
   return obj_val
 
