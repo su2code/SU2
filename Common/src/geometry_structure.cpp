@@ -9302,12 +9302,14 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_flag) {
 	unsigned long  iPoint, iVertex;
-	unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim;
+	unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim, nSpanWiseSections;
 	su2double min, max, *coord, *span, delta, dist, Normal2, *Normal;
 	int rank = MASTER_NODE;
 	min = 10.0E+06;
 	max = -10.0E+06;
-	span    		= new su2double[15];
+	nSpanWiseSections = config->Get_nSpanWiseSections();
+
+	span    		= new su2double[nSpanWiseSections];
 	Normal      = new su2double[3];
 	if (marker_flag == INFLOW){
 		MinSpan = new su2double[nMarker];
@@ -9316,8 +9318,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 		for (iMarker = 0; iMarker < nMarker; iMarker++){
 			MinSpan[iMarker]= min;
 			MinSpan[iMarker]= max;
-			nVertexSpan[iMarker] = new unsigned long[15];
-			for(iSpan = 0; iSpan < 15; iSpan++)
+			nVertexSpan[iMarker] = new unsigned long[nSpanWiseSections];
+			for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++)
 				nVertexSpan[iMarker][iSpan] = 0;
 		}
 	}
@@ -9353,8 +9355,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 //						MinSpan[iMarker]= min;
 //						MaxSpan[iMarker]= max;
 //					}
-	delta = (max - min)/14;
-	for(iSpan = 0; iSpan < 15; iSpan++){
+	delta = (max - min)/(nSpanWiseSections -1);
+	for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 		span[iSpan]= min + delta*iSpan;
 	}
 	for (iMarker = 0; iMarker < nMarker; iMarker++)
@@ -9367,7 +9369,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 						jSpan = -1;
 						iPoint = vertex[iMarker][iVertex]->GetNode();
 						coord = node[iPoint]->GetCoord();
-						for(iSpan = 0; iSpan < 15; iSpan++){
+						for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 						  if (dist > (abs(coord[2]-span[iSpan]))){
 						  	dist= abs(coord[2]-span[iSpan]);
 						  	jSpan=iSpan;
@@ -9376,13 +9378,13 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 						nVertexSpan[iMarker][jSpan]++;
 					}
 				}
-//	for(iSpan = 0; iSpan < 15; iSpan++){
+//	for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 //		cout << nVertexSpan[iSpan]<< " on span " << iSpan<< endl;
 //	}
   turbovertex = new CTurboVertex***[nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++){
-		turbovertex[iMarker] = new CTurboVertex** [15];
-    for(iSpan = 0; iSpan < 15; iSpan++){
+		turbovertex[iMarker] = new CTurboVertex** [nSpanWiseSections];
+    for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
     	turbovertex[iMarker][iSpan] = new CTurboVertex* [nVertexSpan[iMarker][iSpan]];
     	nVertexSpan[iMarker][iSpan] = 0;
     }
@@ -9394,7 +9396,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 						jSpan = -1;
 						iPoint = vertex[iMarker][iVertex]->GetNode();
 						coord = node[iPoint]->GetCoord();
-						for(iSpan = 0; iSpan < 15; iSpan++){
+						for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 							if (dist > (abs(coord[2]-span[iSpan]))){
 								dist= abs(coord[2]-span[iSpan]);
 								jSpan=iSpan;
@@ -9417,7 +9419,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 
 					}
 //					checking
-//					for(iSpan = 1; iSpan < 14; iSpan++){
+//					for(iSpan = 1; iSpan < nSpanWiseSections-1; iSpan++){
 //						for(iVertex = 0; iVertex<nVertexSpan[iMarker][iSpan]; iVertex++){
 //							iPoint = turbovertex[iMarker][iSpan][iVertex]->GetNode();
 //							coord = node[iPoint]->GetCoord();
