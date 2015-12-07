@@ -252,11 +252,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
 
-  /*!\brief CRITICAL_TEMPERATURE\n DESCRIPTION: Critical Temperature, default value for AIR \n Default: 131.00 \ingroup Config*/
+  /* DESCRIPTION: Critical Temperature, default value for AIR */
   addDoubleOption("CRITICAL_TEMPERATURE", Temperature_Critical, 131.00);
-  /*!\brief CRITICALPRESSURE\n DESCRIPTION: Critical Pressure, default value for MDM \n Default 358850.0 \ingroup Config*/
+  /* DESCRIPTION: Critical Pressure, default value for MDM */
   addDoubleOption("CRITICAL_PRESSURE", Pressure_Critical, 3588550.0);
-  /*!\breif CRITICAL_DENSITY\n DESCRIPTION: Critical Density, default value for MDM \n Default: 263.0*/
+  /* DESCRIPTION: Critical Density, default value for MDM */
   addDoubleOption("CRITICAL_DENSITY", Density_Critical, 263.0);
 
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
@@ -306,7 +306,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("MACH_NUMBER", Mach, 0.0);
   /*!\brief INIT_OPTION \n DESCRIPTION: Init option to choose between Reynolds or thermodynamics quantities for initializing the solution \n OPTIONS: see \link InitOption_Map \endlink \n DEFAULT REYNOLDS \ingroup Config*/
   addEnumOption("INIT_OPTION", Kind_InitOption, InitOption_Map, REYNOLDS);
-  /*!\brief FREESTREAM_OPTION \n DESCRIPTION: Free-stream option to choose between density and temperature for initializing the solution \ingroup Config */
+  /* DESCRIPTION: Free-stream option to choose between density and temperature for initializing the solution */
   addEnumOption("FREESTREAM_OPTION", Kind_FreeStreamOption, FreeStreamOption_Map, TEMPERATURE_FS);
   /*!\brief FREESTREAM_PRESSURE\n DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_PRESSURE", Pressure_FreeStream, 101325.0);
@@ -398,14 +398,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_FSI_INTERFACE", nMarker_FSIinterface, Marker_FSIinterface);
   /*!\brief MARKER_DIRICHLET  \n DESCRIPTION: Dirichlet boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_DIRICHLET", nMarker_Dirichlet, Marker_Dirichlet);
-  /*!\brief MARKER_NEUMAN\n DESCRIPTION: Neumann boundary marker(s) \ingroup Config*/
+  /* DESCRIPTION: Neumann boundary marker(s) */
   addStringListOption("MARKER_NEUMANN", nMarker_Neumann, Marker_Neumann);
   /* DESCRIPTION: Custom boundary marker(s) */
   addStringListOption("MARKER_CUSTOM", nMarker_Custom, Marker_Custom);
-  /*!\brief MARKER_PERIODIC\n DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
+  /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
-   rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) \ingroup Config*/
+   rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) */
   addPeriodicOption("MARKER_PERIODIC", nMarker_PerBound, Marker_PerBound, Marker_PerDonor,
                     Periodic_RotCenter, Periodic_RotAngles, Periodic_Translation);
 
@@ -507,7 +507,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("MAX_DELTA_TIME", Max_DeltaTime, 1000000);
   /* DESCRIPTION: Activate The adaptive CFL number. */
   addBoolOption("CFL_ADAPT", CFL_Adapt, false);
-  /* !\brief CFL_ADAPT_PARAM\n
+  /* !\brief CFL_ADAPT_PARAM
    * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max) )
    * Factor down generally >1.0, factor up generally < 1.0 to cause the CFL to increase when residual is decreasing,
    * and decrease when the residual is increasing or stalled. \ingroup Config*/
@@ -607,40 +607,40 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONV_CRITERIA
    *  \n DESCRIPTION: Convergence criteria \n OPTIONS: see \link Converge_Crit_Map \endlink \n Default: RESIDUAL \ingroup Config*/
   addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
-  /*\brief RESIDUAL_REDUCTION\n DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) \ingroup Config*/
+  /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
   addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 3.0);
-  /*!\brief RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual) \ingroup Config*/
+  /* DESCRIPTION: Min value of the residual (log10 of the residual) */
   addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -8.0);
   /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
   addDoubleOption("RESIDUAL_REDUCTION_FSI", OrderMagResidualFSI, 3.0);
   /* DESCRIPTION: Min value of the residual (log10 of the residual) */
   addDoubleOption("RESIDUAL_MINVAL_FSI", MinLogResidualFSI, -5.0);
-  /*!\brief RESIDUAL_FUNC_FLOW\n DESCRIPTION: Flow functional for the Residual criteria \n Default RHO_RESIDUAL \ingroup Config*/
+  /* DESCRIPTION: Flow functional for the Residual criteria */
   addEnumOption("RESIDUAL_FUNC_FLOW", Residual_Func_Flow, Residual_Map, RHO_RESIDUAL);
-  /*!\brief STARTCONV_ITER\n DESCRIPTION: Iteration number to begin convergence monitoring \ingroup Config*/
+  /* DESCRIPTION: Iteration number to begin convergence monitoring */
   addUnsignedLongOption("STARTCONV_ITER", StartConv_Iter, 5);
-  /*!\brief CAUCHY_ELEMS\n DESCRIPTION: Number of elements to apply the cauchy criteria \n Default 100 \ingroup Config*/
+  /* DESCRIPTION: Number of elements to apply the criteria */
   addUnsignedShortOption("CAUCHY_ELEMS", Cauchy_Elems, 100);
-  /*!\brief CAUCHY_EPS\n DESCRIPTION: Epsilon to control the series convergence \n Default 1e-10 \ingroup Config*/
+  /* DESCRIPTION: Epsilon to control the series convergence */
   addDoubleOption("CAUCHY_EPS", Cauchy_Eps, 1E-10);
   /*!\brief CAUCHY_FUNC_FLOW
    *  \n DESCRIPTION: Flow functional for the Cauchy criteria \n OPTIONS: see \link Objective_Map \endlink \n Default: DRAG_COEFFICIENT \ingroup Config*/
   addEnumOption("CAUCHY_FUNC_FLOW", Cauchy_Func_Flow, Objective_Map, DRAG_COEFFICIENT);
-  /*!\brief CAUCHY_FUNC_ADJFLOW\n DESCRIPTION: Adjoint functional for the Cauchy criteria \n Options: see \link Sens_Map \endlink \n Default SENS_GEOMETRY \ingroup Config*/
+  /* DESCRIPTION: Adjoint functional for the Cauchy criteria */
   addEnumOption("CAUCHY_FUNC_ADJFLOW", Cauchy_Func_AdjFlow, Sens_Map, SENS_GEOMETRY);
 
   /*!\par CONFIG_CATEGORY: Multi-grid \ingroup Config*/
   /*--- Options related to Multi-grid ---*/
 
-  /*!\brief START_UP_ITER\n DESCRIPTION: Start up iterations using the fine grid only \n Default: 0 \ingroup Config*/
+  /* DESCRIPTION: Start up iterations using the fine grid only */
   addUnsignedShortOption("START_UP_ITER", nStartUpIter, 0);
-  /*!\brief MGLEVEL\n DESCRIPTION: Multi-grid Levels \ingroup Config*/
+  /* DESCRIPTION: Multi-grid Levels */
   addUnsignedShortOption("MGLEVEL", nMGLevels, 0);
-  /*!\brief MGCYCLE\n DESCRIPTION: Multi-grid cycle\n Default V_CYCLE \ingroup Config*/
+  /* DESCRIPTION: Multi-grid cycle */
   addEnumOption("MGCYCLE", MGCycle, MG_Cycle_Map, V_CYCLE);
-  /*!\brief MG_PRE_SMOOTH\n DESCRIPTION: Multi-grid pre-smoothing level \ingroup Config*/
+  /* DESCRIPTION: Multi-grid pre-smoothing level */
   addUShortListOption("MG_PRE_SMOOTH", nMG_PreSmooth, MG_PreSmooth);
-  /*!\brief MG_POST_SMOOTH\n DESCRIPTION: Multi-grid post-smoothing level \ingroup Config*/
+  /* DESCRIPTION: Multi-grid post-smoothing level */
   addUShortListOption("MG_POST_SMOOTH", nMG_PostSmooth, MG_PostSmooth);
   /* DESCRIPTION: Jacobi implicit smoothing of the correction */
   addUShortListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth, MG_CorrecSmooth);
@@ -731,9 +731,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par CONFIG_CATEGORY: Adjoint and Gradient \ingroup Config*/
   /*--- Options related to the adjoint and gradient ---*/
 
-  /*!\brief LIMIT_ADJFLOW\n DESCRIPTION: Limit value for the adjoint variable \ingroup Config*/
+  /* DESCRIPTION: Limit value for the adjoint variable */
   addDoubleOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
-  /*!|brief MG_ADJFLOW\n DESCRIPTION: Multigrid with the adjoint problem\n Default TRUE \ingroup Config */
+  /* DESCRIPTION: Multigrid with the adjoint problem */
   addBoolOption("MG_ADJFLOW", MG_AdjointFlow, true);
   /*!\brief OBJECTIVE_FUNCTION
    *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n Default: DRAG_COEFFICIENT \ingroup Config*/
