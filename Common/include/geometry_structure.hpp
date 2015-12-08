@@ -919,8 +919,7 @@ class CPhysicalGeometry : public CGeometry {
   unsigned long *adj_counter; /*!< \brief Adjacency counter. */
   unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
   su2double* Sensitivity; /*! <\brief Vector holding the sensitivities at each point. */
-  su2double *MinSpan, *MaxSpan;
-  unsigned long **nVertexSpan;
+  unsigned long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker (also halo nodes included) */
 
 public:
   
