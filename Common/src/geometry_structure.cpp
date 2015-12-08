@@ -9478,17 +9478,16 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 							}
 						}
 					}
+					for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+						delete [] ordered[iSpan];
+						delete [] disordered[iSpan];
+						delete [] checkAssign[iSpan];
+					}
 				}
 			}
 		}
 	}
 
-
-for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-  	 delete [] ordered[iSpan];
-		 delete [] disordered[iSpan];
-		 delete [] checkAssign[iSpan];
-  }
   delete [] ordered;
 	delete [] disordered;
 	delete [] checkAssign;
