@@ -3526,7 +3526,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                    CConfig *config, unsigned short iMesh) {
   
-  su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, RoeVelocity[3] = {0.0,0.0,0.0}, R, sq_vel, RoeEnthalpy,
+  double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, RoeVelocity[3] = {0.0,0.0,0.0}, R, sq_vel, RoeEnthalpy,
   *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, YDistance, GradHidrosPress, sqvel, Non_Physical = 1.0;
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
@@ -3542,7 +3542,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   bool grid_movement    = config->GetGrid_Movement();
   bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
   bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
-  
+  bool low_mach_corr    = config->Low_Mach_Correction();
+
   /*--- Loop over all the edges ---*/
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -3570,10 +3571,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     
     V_i = node[iPoint]->GetPrimitive(); V_j = node[jPoint]->GetPrimitive();
     S_i = node[iPoint]->GetSecondary(); S_j = node[jPoint]->GetSecondary();
-    
+
     /*--- The zero order reconstruction includes the gradient
-     of the hydrostatic pressure constribution ---*/
-    
+     of the hydrostatic pressure contribution ---*/
+
     if (freesurface) {
       
       YDistance = 0.5*(geometry->node[jPoint]->GetCoord(nDim-1)-geometry->node[iPoint]->GetCoord(nDim-1));
@@ -3581,14 +3582,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       Primitive_i[0] = V_i[0] - GradHidrosPress*YDistance;
       GradHidrosPress = node[jPoint]->GetDensityInc()/(config->GetFroude()*config->GetFroude());
       Primitive_j[0] = V_j[0] + GradHidrosPress*YDistance;
-      
+    
       for (iVar = 1; iVar < nPrimVar; iVar++) {
         Primitive_i[iVar] = V_i[iVar]+EPS;
         Primitive_j[iVar] = V_j[iVar]+EPS;
       }
       
     }
-    
+
     /*--- High order reconstruction using MUSCL strategy ---*/
     
     if (second_order) {
@@ -3621,16 +3622,41 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
         }
       }
-      
+
       /*--- Recompute the extrapolated quantities in a
        thermodynamic consistent way  ---*/
-      
-      if (!ideal_gas) { ComputeConsExtrapolation(config); }
+
+      if (!ideal_gas || low_mach_corr) { ComputeConsExtrapolation(config); }
+
+      /*--- Low-Mach number correction ---*/
+
+      if (low_mach_corr) {
+        double z, sq_vel_i = 0.0, sq_vel_j = 0.0, mach_i, mach_j, Energy_i, Energy_j, SoundSpeed_i, SoundSpeed_j;
+
+        mach_i = sqrt(sq_vel_i)/Primitive_i[nDim+4];
+        mach_j = sqrt(sq_vel_j)/Primitive_j[nDim+4];
+
+        z = min(max(mach_i,mach_j),1.0);
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+        	Primitive_i[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 + z * \
+        			( Primitive_i[iDim+1] - Primitive_j[iDim+1] )/2.0;
+        	sq_vel_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
+        	Primitive_j[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 + z * \
+        			( Primitive_j[iDim+1] - Primitive_i[iDim+1] )/2.0;
+        	sq_vel_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
+        }
+
+        FluidModel->SetEnergy_Prho(Primitive_i[iDim+1],Primitive_i[iDim+2]);
+        Primitive_i[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_i[nDim+1]/Primitive_i[nDim+2] + 0.5*sq_vel_i;
+        FluidModel->SetEnergy_Prho(Primitive_j[iDim+1],Primitive_j[iDim+2]);
+        Primitive_j[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_j[nDim+1]/Primitive_j[nDim+2] + 0.5*sq_vel_j;
+      }
       
       /*--- Check for non-physical solutions after reconstruction. If found,
        use the cell-average value of the solution. This results in a locally
        first-order approximation, but this is typically only active
-       during the start-up of a calculation. If non-physical, use the
+       during the start-up of a calculation. If non-physical, use the 
        cell-averaged state. ---*/
       
       if (compressible) {
@@ -3670,7 +3696,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         if (compressible) { Secondary_j[0] = S_j[0]; Secondary_j[1] = S_j[1]; }
         counter_local++;
       }
-      
+
       numerics->SetPrimitive(Primitive_i, Primitive_j);
       numerics->SetSecondary(Secondary_i, Secondary_j);
       
@@ -3691,7 +3717,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Compute the residual ---*/
     
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
-    
+
     /*--- Update residual value ---*/
     
     LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -3719,7 +3745,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
-    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #else
     counter_global = counter_local;
 #endif
