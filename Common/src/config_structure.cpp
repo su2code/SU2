@@ -1633,6 +1633,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
   
+  /*--- Force number of span-wise section to 1 if 2D case ---*/
+  if(val_nDim ==2) nSpanWiseSections=1;
+
+
+
   /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
    that we also set the Grid_Movement flag to false. We initialize to the
    number of zones here, because we are guaranteed to at least have one. ---*/
