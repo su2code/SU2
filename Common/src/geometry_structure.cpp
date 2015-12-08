@@ -9300,7 +9300,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
   }
 }
 
-void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_flag) {
+void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_flag, bool allocate) {
 	unsigned long  iPoint, jPoint, iVertex, iSpanVertex, jSpanVertex,kSpanVertex, **ordered, **disordered;
 	unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim, nSpanWiseSections;
 	su2double min, max, *coord, *span, delta, dist, Normal2, *Normal, target;
@@ -9324,7 +9324,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 
 	/*--- Initialize the new Vertex structure.
 	 * 		The if statement ensures that these vectors are initialized only once	 ---*/
-	if (marker_flag == INFLOW){
+	if (allocate){
 		nVertexSpan = new unsigned long* [nMarker];
 		turbovertex = new CTurboVertex***[nMarker];
 		for (iMarker = 0; iMarker < nMarker; iMarker++){
