@@ -2,7 +2,7 @@
  * \file solution_direct_poisson.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -210,7 +210,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //				Coord_1 = geometry->node[Point_1]->GetCoord();
 //				Coord_2 = geometry->node[Point_2]->GetCoord();
 //        
-//				for (iDim=0; iDim < nDim; iDim++) {
+//				for (iDim = 0; iDim < nDim; iDim++) {
 //					a[iDim] = Coord_0[iDim]-Coord_2[iDim];
 //					b[iDim] = Coord_1[iDim]-Coord_2[iDim];
 //				}
@@ -253,7 +253,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //					Coord_1 = geometry->node[Point_1]->GetCoord();
 //					Coord_2 = geometry->node[Point_2]->GetCoord();
 //          
-//					for (iDim=0; iDim < nDim; iDim++) {
+//					for (iDim = 0; iDim < nDim; iDim++) {
 //						a[iDim] = Coord_0[iDim]-Coord_2[iDim];
 //						b[iDim] = Coord_1[iDim]-Coord_2[iDim];
 //					}

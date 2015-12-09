@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the sparse matrices-by-blocks.
  *        The subroutines and functions are in the <i>matrix_structure.cpp</i> file.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -33,7 +33,7 @@
 #pragma once
 
 #include "./mpi_structure.hpp"
-
+#include <limits>
 #include <iostream>
 #include <cmath>
 #include <cstdlib>
@@ -44,15 +44,18 @@
 
 using namespace std;
 
+const su2double eps = numeric_limits<su2double>::epsilon(); /*!< \brief machine epsilon */
+
+
 /*!
  * \class CSysMatrix
  * \brief Main class for defining sparse matrices-by-blocks
  with compressed row format.
  * \author A. Bueno, F. Palacios
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  */
 class CSysMatrix {
-protected:
+private:
 	unsigned long nPoint,   /*!< \brief Number of points in the grid. */
 	nPointDomain,           /*!< \brief Number of points in the grid. */
 	nVar,                   /*!< \brief Number of variables. */
@@ -242,7 +245,6 @@ public:
 	 * \return Solution of the linear system (overwritten on rhs).
 	 */
   void Gauss_Elimination(unsigned long block_i, su2double* rhs, bool transposed = false);
-
   
 	/*!
 	 * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i, i) subblock and rhs.
@@ -637,7 +639,7 @@ private:
 	CSysMatrix* sparse_matrix; /*!< \brief pointer to matrix that defines the preconditioner. */
   CGeometry* geometry; /*!< \brief pointer to matrix that defines the geometry. */
 	CConfig* config; /*!< \brief pointer to matrix that defines the config. */
-
+  
 public:
 	
 	/*!
@@ -689,6 +691,5 @@ public:
 	 */
 	void operator()(const CSysVector & u, CSysVector & v) const;
 };
-
 
 #include "matrix_structure.inl"

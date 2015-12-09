@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -176,7 +176,10 @@ int main(int argc, char *argv[]) {
     
     /*--- Computation of wall distances for turbulence modeling ---*/
     
-    if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
+    if (rank == MASTER_NODE)
+      cout << "Computing wall distances." << endl;
+
+    if ((config_container[iZone]->GetKind_Solver() == RANS) ||
         (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
         (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
       geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
@@ -286,6 +289,11 @@ int main(int argc, char *argv[]) {
 		  && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
 	  	  ExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
 
+  /*--- Initiate value at each interface for the mixing plane ---*/
+  if(config_container[ZONE_0]->GetBoolMixingPlane())
+  	for (iZone = 0; iZone < nZone; iZone++)
+  	  iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+
   /*--- Main external loop of the solver. Within this loop, each iteration ---*/
   
   if (rank == MASTER_NODE)
@@ -317,8 +325,8 @@ int main(int argc, char *argv[]) {
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
     
     /*--- Set the value of the external iteration. ---*/
-    for (iZone = 0; iZone < nZone; iZone++)
-    	config_container[iZone]->SetExtIter(ExtIter);
+	for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetExtIter(ExtIter);
+
     
     /*--- Read the target pressure ---*/
     
@@ -333,17 +341,7 @@ int main(int argc, char *argv[]) {
                                     geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
-    
-//    if (fsi){
-//      config_container[ZONE_1]->SetExtIter(ExtIter);
-//      FluidStructureIteration(output, integration_container, geometry_container,
-//                              solver_container, numerics_container, config_container,
-//                              surface_movement, grid_movement, FFDBox,
-//                              iFluidIt, nFluidIt);
-//    }
-//
-//    else {
-      
+
       /*--- Run a single iteration of the problem using the driver class. ---*/
 
       driver->Run(iteration_container, output, integration_container,
@@ -351,7 +349,6 @@ int main(int argc, char *argv[]) {
                   config_container, surface_movement, grid_movement, FFDBox,
                   interpolator_container, transfer_container);
       
-//    }
     
     /*--- Synchronization point after a single solver iteration. Compute the
      wall clock time required. ---*/
@@ -413,8 +410,6 @@ int main(int argc, char *argv[]) {
     switch (config_container[ZONE_0]->GetKind_Solver()) {
       case EULER: case NAVIER_STOKES: case RANS:
         StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
-      case TNE2_EULER: case TNE2_NAVIER_STOKES:
-        StopCalc = integration_container[ZONE_0][TNE2_SOL]->GetConvergence(); break;
       case WAVE_EQUATION:
         StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
       case HEAT_EQUATION:
@@ -429,8 +424,6 @@ int main(int argc, char *argv[]) {
       case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
         StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
-      case ADJ_TNE2_EULER: case ADJ_TNE2_NAVIER_STOKES:
-        StopCalc = integration_container[ZONE_0][ADJTNE2_SOL]->GetConvergence(); break;
     }
     
     /*--- Solution output. Determine whether a solution needs to be written
@@ -466,9 +459,10 @@ int main(int argc, char *argv[]) {
             integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], solver_container[ZONE_0][MESH_1][FLOW_SOL], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
             integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
             solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Set_MPI_Solution(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
-            solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS, false);
+            solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS, true);
           }
-          
+
+
           if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
           
           /*--- Execute the routine for writing restart, volume solution,

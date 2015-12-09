@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 4.0.1 "Cardinal"
+#  \version 4.0.2 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -48,7 +48,7 @@ def main():
     discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
     discadj_naca0012.test_iter = 100
-    discadj_naca0012.test_vals = [-3.606963,-9.034619,2.1299e-02,0.0000e+00] #last 4 columns
+    discadj_naca0012.test_vals = [-3.606963,-9.034619,-3.3385e-07,1.8777e-01] #last 4 columns
     discadj_naca0012.su2_exec  = "parallel_computation.py -f"
     discadj_naca0012.timeout   = 1600
     discadj_naca0012.tol       = 0.00001
@@ -63,7 +63,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-1.751829,0.485848,8.4873e+00,0.0000e+00] #last 4 columns
+    discadj_rans_naca0012_sa.test_vals = [-1.751829, 0.485848, 0.182890, -0.383520] #last 4 columns
     discadj_rans_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001
@@ -74,7 +74,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-1.653636,-0.502900,7.0581e+00,0.0000e+00] #last 4 columns
+    discadj_rans_naca0012_sst.test_vals = [-1.653638,-0.502899,1.3126e-01,-4.7494e-01] #last 4 columns
     discadj_rans_naca0012_sst.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001

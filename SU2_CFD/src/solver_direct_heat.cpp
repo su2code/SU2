@@ -2,7 +2,7 @@
  * \file solution_direct_heat.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -122,7 +122,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 	} else {
     
     cout << "Heat restart file not currently configured!!" << endl;
-    exit(EXIT_FAILURE);
     
 		string mesh_filename = config->GetSolution_FlowFileName();
 		ifstream restart_file;
@@ -145,6 +144,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 			node[iPoint] = new CHeatVariable(Solution, nDim, nVar, config);
 		}
 		restart_file.close();
+    
 	}
   
 }

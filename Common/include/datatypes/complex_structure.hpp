@@ -2,9 +2,9 @@
  * \file complex_structure.hpp
  * \brief Headers for complex datatype definition.
  * \author T. Albring
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -34,7 +34,7 @@
 class CComplexType;
 typedef CComplexType su2double;
 
-/* --- So the real() statement can be used even with the double type.
+/*--- So the real() statement can be used even with the double type.
    Eases the implementation of some operators. ---*/
 inline double real(const double& r);
 
@@ -43,7 +43,7 @@ inline double real(const double& r);
  * \brief Class for defining the complex datatype for complex step gradient computation.
  * Based on complexify.h by Peter Sturdza.
  * \author T. Albring
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  */
 
 class CComplexType : public std::complex<double> {
@@ -64,11 +64,11 @@ public:
 
   operator short() {return short(this->real());}
 
-  /* --- To get rid of some ambiguities, we need to reimplement some operators
-   * (although they are already implemented for std::complex). --- */
+  /*--- To get rid of some ambiguities, we need to reimplement some operators
+   * (although they are already implemented for std::complex). ---*/
 
-  /* --- Comparison operators (they are defined by comparing only the real parts
-   * as we assume a very small imag. step ( < 1e-50)--- */
+  /*--- Comparison operators (they are defined by comparing only the real parts
+   * as we assume a very small imag. step ( < 1e-50)---*/
 
   template<typename T, typename Z>
   friend bool operator==(const Z&, const T&);
@@ -88,7 +88,7 @@ public:
   template<typename T, typename Z>
   friend bool operator>=(const Z&, const T&);
 
-  /* --- Basic arithmetic (some are templated to work with double, int, long int etc.) --- */
+  /*--- Basic arithmetic (some are templated to work with double, int, long int etc.) ---*/
 
   CComplexType operator+() const;
 
@@ -127,7 +127,7 @@ public:
   friend CComplexType operator/(const T&, const CComplexType&);
 
 
-  /* --- From <math.h> --- */
+  /*--- From <math.h> ---*/
 
   friend CComplexType sin(const CComplexType&);
   friend CComplexType sinh(const CComplexType&);

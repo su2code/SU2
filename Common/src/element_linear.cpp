@@ -1,8 +1,8 @@
 /*!
  * \file element_linear.cpp
- * \brief Definition of the linear element structure
+ * \brief Definition of the linear element structure for structural applications
  * \author R. Sanchez
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

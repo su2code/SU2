@@ -736,6 +736,9 @@ void CIsoparametric::Isoparameters(su2double* isoparams,
   su2double Q[m*m], R[m*m], A[n0*m];
   su2double x2[n0];
 
+  /*--- TODO: check/modify this value ---*/
+  su2double eps = 1E-10;
+
   /*--- n0: # of dimensions + 1. n: n0 less any degenerate rows ---*/
   n=n0;
   m0=m;

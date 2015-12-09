@@ -81,6 +81,9 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	unsigned long iPoint;
 	unsigned short iVar, jVar, iDim, jDim, nKindElements;
 
+	unsigned short iZone = config->GetiZone();
+	unsigned short nZone = geometry->GetnZone();
+
 	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);							// Dynamic simulations.
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
 	bool fsi = config->GetFSI_Simulation();												// FSI simulation
@@ -174,6 +177,10 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 		/*--- Restart the solution from file information ---*/
 
 		filename = config->GetSolution_FEMFileName();
+
+		/*--- If multizone, append zone name ---*/
+	    if (nZone > 1)
+	      filename = config->GetMultizone_FileName(filename, iZone);
 
 	    if (dynamic) {
 

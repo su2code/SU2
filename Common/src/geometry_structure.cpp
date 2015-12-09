@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -714,7 +714,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
         Segment[0] = Xcoord[jVertex] - Xcoord[iVertex];
         Segment[1] = Ycoord[jVertex] - Ycoord[iVertex];
         Segment[2] = Zcoord[jVertex] - Zcoord[iVertex];
-        Dist_Value = (pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
+        Dist_Value = sqrt(pow(Segment[0], 2.0) + pow(Segment[1], 2.0) + pow(Segment[2], 2.0));
         if (Dist_Value < 1E-6) {
           Duplicate.push_back (jVertex);
         }
@@ -840,7 +840,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config){
     unsigned short iMesh;
     geometry_container[MESH_0]->Set_MPI_Coord(config);
 
-    geometry_container[MESH_0]->SetCG();
+    geometry_container[MESH_0]->SetCoord_CG();
     geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
     geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
 
@@ -874,7 +874,6 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   
   /*--- Allocate surface curvature ---*/
   K = new su2double [nPoint];
-
   for (iPoint = 0; iPoint < nPoint; iPoint++) K[iPoint] = 0.0;
   
   if (nDim == 2) {
@@ -1236,6 +1235,8 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
           Dist += (Coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex+iVertex)*nDim+iDim])*
           (Coord[iDim]-Buffer_Receive_Coord[(iProcessor*MaxLocalVertex+iVertex)*nDim+iDim]);
         }
+        if (Dist!=0.0) Dist = sqrt(Dist);
+        else Dist = 0.0;
         if (Dist < MinDist) MinDist = Dist;
       }
     }
@@ -3897,7 +3898,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     }
   }
   
-  /*--- Get the global to local mapping --- */
+  /*--- Get the global to local mapping ---*/
   
   for (iPoint = 0; iPoint < nPointTotal_r_tot; iPoint++) {
     Global_to_local_Point_recv[Local_to_Global_Point[iPoint]] = iPoint;
@@ -6702,9 +6703,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
    Parallel version by Thomas D. Economon, February 2015. ---*/
   
 #ifdef HAVE_CGNS
-  
-  /*--- Local variables and initialization ---*/
-  
+    
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short VTK_Type = 0, iMarker = 0;
@@ -6727,8 +6726,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   cgsize_t* cgsize; cgsize = new cgsize_t[3];
   ZoneType_t zonetype;
   DataType_t datatype;
-  su2double** coordArray = NULL;
-  su2double*** gridCoords = NULL;
+  passivedouble** coordArray = NULL;
+  passivedouble*** gridCoords = NULL;
   ElementType_t elemType;
   cgsize_t range_min, range_max, startE, endE;
   range_min = 1;
@@ -6892,8 +6891,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
     vertices     = new int[nzones];
     cells        = new int[nzones];
     boundVerts   = new int[nzones];
-    coordArray   = new su2double*[nzones];
-    gridCoords   = new su2double**[nzones];
+    coordArray   = new passivedouble*[nzones];
+    gridCoords   = new passivedouble**[nzones];
     elemTypeVTK  = new int*[nzones];
     elemIndex    = new int*[nzones];
     elemBegin    = new int*[nzones];
@@ -7008,14 +7007,14 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
       
       range_min = (cgsize_t)starting_node[rank]+1;
       range_max = (cgsize_t)ending_node[rank];
-      coordArray[j-1] = new su2double[local_node];
+      coordArray[j-1] = new passivedouble[local_node];
       
       /*--- Allocate memory for the 2-D array that will store the x, y,
        & z (if required) coordinates for writing into the SU2 mesh. ---*/
       
-      gridCoords[j-1] = new su2double*[ncoords];
+      gridCoords[j-1] = new passivedouble*[ncoords];
       for (int ii = 0; ii < ncoords; ii++) {
-        *(gridCoords[j-1]+ii) = new su2double[local_node];
+        *(gridCoords[j-1]+ii) = new passivedouble[local_node];
       }
       
       /*--- Loop over each set of coordinates. Note again
@@ -8656,17 +8655,11 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   
   su2double *coord, dist;
-  su2double dist2, diff;
+  passivedouble dist2, diff;
   unsigned short iDim, iMarker;
   unsigned long iPoint, iVertex, nVertex_SolidWall, iVertex_nearestWall = 0;
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  if (rank == MASTER_NODE)
-    cout << "Computing wall distances." << endl;
-  
+
+
 #ifndef HAVE_MPI
   
   /*--- Compute the total number of nodes on no-slip boundaries ---*/
@@ -8674,11 +8667,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   nVertex_SolidWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC)     ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC)    ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)   )
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              )
       nVertex_SolidWall += GetnVertex(iMarker);
   
   /*--- Allocate an array to hold boundary node coordinates ---*/
@@ -8693,11 +8682,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   nVertex_SolidWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-       (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC)     ||
-       (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC)    ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)   )
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              )
       for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
@@ -8771,11 +8756,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC)     ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC)    ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)   )
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              )
       nLocalVertex_NS += GetnVertex(iMarker);
   
   /*--- Communicate to all processors the total number of no-slip boundary
@@ -8804,11 +8785,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
   nVertex_SolidWall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC)     ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC)    ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)   )
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              )
       for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++)
@@ -8891,11 +8868,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     
     if (((Boundary == EULER_WALL)              ||
          (Boundary == HEAT_FLUX)               ||
-         (Boundary == HEAT_FLUX_CATALYTIC)     ||
-         (Boundary == HEAT_FLUX_NONCATALYTIC)  ||
          (Boundary == ISOTHERMAL)              ||
-         (Boundary == ISOTHERMAL_CATALYTIC)    ||
-         (Boundary == ISOTHERMAL_NONCATALYTIC) ||
          (Boundary == LOAD_BOUNDARY)           ||
          (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
@@ -8919,11 +8892,7 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
     
     if (((Boundary == EULER_WALL)              ||
          (Boundary == HEAT_FLUX)               ||
-         (Boundary == HEAT_FLUX_CATALYTIC)     ||
-         (Boundary == HEAT_FLUX_NONCATALYTIC)  ||
          (Boundary == ISOTHERMAL)              ||
-         (Boundary == ISOTHERMAL_CATALYTIC)    ||
-         (Boundary == ISOTHERMAL_NONCATALYTIC) ||
          (Boundary == LOAD_BOUNDARY)           ||
          (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES))
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
@@ -9323,7 +9292,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
   }
 }
 
-void CPhysicalGeometry::SetCG(void) {
+void CPhysicalGeometry::SetCoord_CG(void) {
   unsigned short nNode, iDim, iMarker, iNode;
   unsigned long elem_poin, edge_poin, iElem, iEdge;
   su2double **Coord;
@@ -9345,7 +9314,7 @@ void CPhysicalGeometry::SetCG(void) {
     
     /*--- Compute the element CG coordinates ---*/
     
-    elem[iElem]->SetCG(Coord);
+    elem[iElem]->SetCoord_CG(Coord);
     
     for (iNode = 0; iNode < nNode; iNode++)
       if (Coord[iNode] != NULL) delete[] Coord[iNode];
@@ -9369,8 +9338,8 @@ void CPhysicalGeometry::SetCG(void) {
       }
       /*--- Compute the element CG coordinates ---*/
       
-      bound[iMarker][iElem]->SetCG(Coord);
-      for (iNode=0; iNode < nNode; iNode++)
+      bound[iMarker][iElem]->SetCoord_CG(Coord);
+      for (iNode = 0; iNode < nNode; iNode++)
         if (Coord[iNode] != NULL) delete[] Coord[iNode];
       if (Coord != NULL) delete[] Coord;
     }
@@ -9386,15 +9355,15 @@ void CPhysicalGeometry::SetCG(void) {
     for (iNode = 0; iNode < nNode; iNode++) {
       edge_poin=edge[iEdge]->GetNode(iNode);
       Coord[iNode] = new su2double [nDim];
-      for (iDim = 0; iDim<nDim; iDim++)
+      for (iDim = 0; iDim < nDim; iDim++)
         Coord[iNode][iDim]=node[edge_poin]->GetCoord(iDim);
     }
     
     /*--- Compute the edge CG coordinates ---*/
     
-    edge[iEdge]->SetCG(Coord);
+    edge[iEdge]->SetCoord_CG(Coord);
     
-    for (iNode=0; iNode < nNode; iNode++)
+    for (iNode = 0; iNode < nNode; iNode++)
       if (Coord[iNode] != NULL) delete[] Coord[iNode];
     if (Coord != NULL) delete[] Coord;
   }
@@ -9507,8 +9476,8 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
               for (jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
                 jPoint = vertex[jMarker][jVertex]->GetNode();
                 Coord_j = node[jPoint]->GetCoord();
-                if (nDim == 2) dist = (pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
-                if (nDim == 3) dist = (pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
+                if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
+                if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
                 if (dist < mindist) {mindist = dist; pPoint = jPoint;}
               }
           maxdist = max(maxdist, mindist);
@@ -9619,7 +9588,7 @@ void CPhysicalGeometry::MatchInterface(CConfig *config) {
                 dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
                   Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Interface+jVertex)*nDim+iDim];
                   dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
-                }
+                } dist = sqrt(dist);
                 
                 if (((dist < mindist) && (iProcessor != rank)) ||
                     ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
@@ -9693,8 +9662,8 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
               for (jVertex = 0; jVertex < nVertex[jMarker]; jVertex++) {
                 jPoint = vertex[jMarker][jVertex]->GetNode();
                 Coord_j = node[jPoint]->GetCoord();
-                if (nDim == 2) dist = (pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
-                if (nDim == 3) dist = (pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
+                if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
+                if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
                 if (dist < mindist) { mindist = dist; pPoint = jPoint; }
               }
           maxdist = max(maxdist, mindist);
@@ -9807,7 +9776,7 @@ void CPhysicalGeometry::MatchNearField(CConfig *config) {
                 dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
                   Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NearField+jVertex)*nDim+iDim];
                   dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
-                }
+                } dist = sqrt(dist);
                 
                 if (((dist < mindist) && (iProcessor != rank)) ||
                     ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
@@ -9984,8 +9953,8 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
                     Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_ActDisk+jVertex)*nDim+iDim];
                     dist += pow(Coord_j[iDim]-Coord_i[iDim], 2.0);
                   }
+                  dist = sqrt(dist);
                   
-
                   if (dist < mindist) {
                     mindist = dist; pProcessor = iProcessor; pPoint = jPoint;
                     if (dist == 0.0) break;
@@ -10160,7 +10129,7 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
             dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
               Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Zone+jVertex)*nDim+iDim];
               dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
-            }
+            } dist = sqrt(dist);
             
             if (((dist < mindist) && (iProcessor != rank)) ||
                 ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
@@ -10957,7 +10926,7 @@ void CPhysicalGeometry::SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool ne
    endfacet
    ...
    end solid
-   --- */
+   ---*/
   
   /*--- Open the STL file ---*/
   
@@ -10980,7 +10949,7 @@ void CPhysicalGeometry::SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool ne
         
         /*--- Calculate Normal Vector ---*/
         
-        for (iDim=0; iDim<nDim; iDim++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
           p[0] = node[bound[iMarker][iElem]->GetNode(0)]      ->GetCoord(iDim);
           p[1] = node[bound[iMarker][iElem]->GetNode(1)]      ->GetCoord(iDim);
           p[2] = node[bound[iMarker][iElem]->GetNode(nNode-1)]->GetCoord(iDim);
@@ -10996,7 +10965,7 @@ void CPhysicalGeometry::SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool ne
         /*--- Print normal vector ---*/
         
         STL_File << "  facet normal ";
-        for (iDim=0; iDim<nDim; iDim++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
           STL_File << n[iDim]/a << " ";
         }
         STL_File << endl;
@@ -11007,7 +10976,7 @@ void CPhysicalGeometry::SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool ne
         
         /*--- Print Nodes for Facet ---*/
         
-        for (iNode=0; iNode<nNode; iNode++) {
+        for (iNode = 0; iNode < nNode; iNode++) {
           this_node = bound[iMarker][iElem]->GetNode(iNode);
           STL_File << "      vertex ";
           for (iDim = 0; iDim < nDim; iDim++)
@@ -11870,8 +11839,8 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
           for (iDim = 0; iDim < nDim; iDim++) {
             dist += (Coord_j[iDim]-rotCoord[iDim])*(Coord_j[iDim]-rotCoord[iDim]);
           }
+          dist = sqrt(dist);
           
-
           /*---  Store vertex information if this is the closest
            point found thus far. ---*/
           if (dist < mindist) { mindist = dist; pPoint = jPoint; }
@@ -12152,11 +12121,7 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
   nVertex_Wall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC)     ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC)    ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
       nVertex_Wall += nVertex[iMarker];
   
@@ -12172,11 +12137,7 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
   iVertex_Wall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC)     ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC)    ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -12418,7 +12379,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
 
     if (grid_movement) {skipVar += nDim;}
 
-    /* --- Sensitivity in normal direction --- */
+    /*--- Sensitivity in normal direction ---*/
 
     skipVar += 1;
 
@@ -12501,7 +12462,7 @@ su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double
   
   MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
   for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-    Distance = (pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
     
@@ -12608,7 +12569,7 @@ su2double CPhysicalGeometry::Compute_AoA(su2double *Plane_P0, su2double *Plane_N
   /*--- Find the leading and trailing edges and compute the angle of attack ---*/
   MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
   for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-    Distance = (pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
     
@@ -12629,7 +12590,7 @@ su2double CPhysicalGeometry::Compute_Chord(su2double *Plane_P0, su2double *Plane
   MaxDistance = 0.0; Trailing_Point = 0;
   for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
     
-    Distance = (pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
     
@@ -12651,7 +12612,7 @@ su2double CPhysicalGeometry::Compute_Thickness(su2double *Plane_P0, su2double *P
   
   MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
   for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-    Distance = (pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
     
@@ -12781,7 +12742,7 @@ su2double CPhysicalGeometry::Compute_Area(su2double *Plane_P0, su2double *Plane_
   
   MaxDistance = 0.0; Trailing_Point = 0; Leading_Point = 0;
   for (iVertex = 1; iVertex < Xcoord_Airfoil.size(); iVertex++) {
-    Distance = (pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
+    Distance = sqrt(pow(Xcoord_Airfoil[iVertex] - Xcoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Ycoord_Airfoil[iVertex] - Ycoord_Airfoil[Trailing_Point], 2.0) +
                     pow(Zcoord_Airfoil[iVertex] - Zcoord_Airfoil[Trailing_Point], 2.0));
     
@@ -13702,10 +13663,10 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short mark
     else { agglomerate_CV = true; }
     
   }
+  
+  delete [] copy_marker;
 
   return agglomerate_CV;
-
-  delete [] copy_marker;
 
 }
 
@@ -14394,11 +14355,7 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
   nVertex_Wall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC)     ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC)    ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
       nVertex_Wall += nVertex[iMarker];
   
@@ -14414,11 +14371,7 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
   iVertex_Wall = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC)     ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC)  ||
         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC)    ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC) ||
         (config->GetMarker_All_KindBC(iMarker) == EULER_WALL)                )
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         iPoint = vertex[iMarker][iVertex]->GetNode();
