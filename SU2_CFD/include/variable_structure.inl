@@ -537,6 +537,8 @@ inline su2double *CVariable::GetEddyViscSens(void) { return NULL; }
 
 inline void CVariable::SetSolution_time_n(void) { }
 
+inline void CVariable::SetSolution_time_n(unsigned short val_var, su2double val_solution_time_n) { }
+
 inline void CVariable::SetSolution_Vel(su2double *val_solution_vel) { }
 
 inline void CVariable::SetSolution_Vel(unsigned short val_var, su2double val_solution_vel) { }
@@ -932,6 +934,8 @@ inline void CFEM_ElasVariable::SetSolution_time_n(void) {
 inline void CFEM_ElasVariable::SetSolution_time_n(su2double *val_solution_time_n) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Solution_time_n[iVar] = val_solution_time_n[iVar];
 }
+
+inline void CFEM_ElasVariable::SetSolution_time_n(unsigned short val_var, su2double val_solution_time_n) { Solution_time_n[val_var] = val_solution_time_n; }
 
 inline void CFEM_ElasVariable::SetSolution_Vel(unsigned short val_var, su2double val_solution_vel) { Solution_Vel[val_var] = val_solution_vel; }
 
