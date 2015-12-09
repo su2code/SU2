@@ -1,8 +1,8 @@
 /*!
  * \file element_structure.cpp
- * \brief Definition of the finite element structure (elements)
+ * \brief Definition of the Finite Element structure (elements)
  * \author R. Sanchez
- * \version 4.0.0 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -28,7 +28,6 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 #include "../include/element_structure.hpp"
 

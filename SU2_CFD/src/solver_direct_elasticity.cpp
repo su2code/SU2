@@ -2,7 +2,11 @@
  * \file solution_direct_elasticity.cpp
  * \brief Main subrotuines for solving the linear elasticity equation.
  * \author F. Palacios, R. Sanchez
+<<<<<<< HEAD
  * \version 4.0.1 "Cardinal"
+=======
+ * \version 4.0.2 "Cardinal"
+>>>>>>> develop
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1574,7 +1578,7 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
         
       }
       
-      
+
       /*--- Solve the linear dynamic system ---*/
       
       CSysSolve femSystem;
@@ -1889,7 +1893,7 @@ void CFEASolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) {
 void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry,
                              CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics) {
   
-  
+
   unsigned short nVertexFlow, iVertex, nMarkerFSIint, iDim, jDim;
   unsigned short markFlow, iPoint, iMarkerFSIint;
   unsigned short nMarkerFlow, iMarkerFlow;
@@ -1954,7 +1958,7 @@ void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
     Velocity2_ND += Velocity_ND[iDim]*Velocity_ND[iDim];
   }
   
-  
+
   factorForces = Density_Real*Velocity2_Real/(Density_ND*Velocity2_ND);
   
   /*--- Loop over all the markers on the interface ---*/
@@ -1965,15 +1969,13 @@ void CFEASolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry,
     nMarkerFlow=flow_geometry[MESH_0]->GetnMarker();
     
     /*--- Identification of the markers ---*/
-    
-    
+
     markFlow = 0;
     for (iMarkerFlow=0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
       if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSIint+1)){
         markFlow=iMarkerFlow;
       }
     }
-    
     
     nVertexFlow = flow_geometry[MESH_0]->GetnVertex(markFlow);
     
@@ -2381,7 +2383,7 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry, CConfig *f
       for (iDim=0; iDim<nDim; iDim++){
         valPred[iDim] = solDisp[iDim] + Delta_t*solVel[iDim];
       }
-      
+
     }
     else if (predOrder==2) {
       
@@ -2464,6 +2466,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
         dispCalc_Old = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Old();
         
         for (iDim=0; iDim < nDim; iDim++){
+
           
           /*--- Compute the deltaU and deltaU_n+1 ---*/
           deltaU[iDim] = dispCalc_Old[iDim] - dispPred_Old[iDim];
@@ -2518,7 +2521,6 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry, CConfig *fea_con
   nPoint = fea_geometry[MESH_0]->GetnPoint();
   nDim = fea_geometry[MESH_0]->GetnDim();
   
-  
   RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
   
   /*--- Only when there is movement it makes sense to update the solutions... ---*/
@@ -2565,6 +2567,7 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry, CConfig *fea_con
     
   }
   
+
 }
 
 void CFEASolver::Update_StructSolution(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) {
@@ -2580,3 +2583,4 @@ void CFEASolver::Update_StructSolution(CGeometry **fea_geometry, CConfig *fea_co
   }
   
 }
+

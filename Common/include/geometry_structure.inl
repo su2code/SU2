@@ -2,7 +2,7 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -161,7 +161,7 @@ inline void CGeometry::SetVertex(CConfig *config) { }
 
 inline void CGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) { }
 
-inline void CGeometry::SetCG(void) { }
+inline void CGeometry::SetCoord_CG(void) { }
 
 inline void CGeometry::SetControlVolume(CConfig *config, unsigned short action) { }
 

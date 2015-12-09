@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
   /*--- Compute center of gravity ---*/
   
   if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-  geometry_container[ZONE_0]->SetCG();
+  geometry_container[ZONE_0]->SetCoord_CG();
   
   /*--- Create the dual control volume structures ---*/
   
@@ -349,6 +349,10 @@ int main(int argc, char *argv[]) {
           case AVG_TOTAL_PRESSURE :
             if (iDV == 0) Gradient_file << "Average total presure grad. using disc. adj."<< endl;
             cout << "Average total pressure gradient: "<< Gradient << "." << endl; break;
+          case OUTLET_CHAIN_RULE :
+            if (iDV == 0) Gradient_file << "Chain rule grad. using cont. adj."<< endl;
+            cout << "Gradient by chain rule: "<< Gradient << "." << endl; break;
+
 
         }
 
@@ -640,6 +644,9 @@ int main(int argc, char *argv[]) {
           case AVG_TOTAL_PRESSURE :
             if (iDV == 0) Gradient_file << "Average total presure grad. using cont. adj."<< endl;
             cout << "Average total pressure gradient: "<< Gradient << "." << endl; break;
+          case OUTLET_CHAIN_RULE :
+             if (iDV == 0) Gradient_file << "Chain rule grad. using cont. adj."<< endl;
+             cout << "Gradient by chain rule: "<< Gradient << "." << endl; break;
 
         }
 

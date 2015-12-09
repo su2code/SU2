@@ -2,7 +2,7 @@
  * \file solver_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author F. Palacios, T. Economon
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -834,11 +834,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
     switch (Boundary) {
       case EULER_WALL:
       case HEAT_FLUX:
-      case HEAT_FLUX_CATALYTIC:
-      case HEAT_FLUX_NONCATALYTIC:
       case ISOTHERMAL:
-      case ISOTHERMAL_CATALYTIC:
-      case ISOTHERMAL_NONCATALYTIC:
         
         /*--- Loop over points on the surface (Least-Squares approximation) ---*/
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -1343,8 +1339,8 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
           
           /*--- Calculate forces for the Typical Section Wing Model taking into account rotation ---*/
           
-          /* --- Note that the calculation of the forces and the subsequent displacements ...
-           is only correct for the airfoil that starts at the 0 degree position --- */
+          /*--- Note that the calculation of the forces and the subsequent displacements ...
+           is only correct for the airfoil that starts at the 0 degree position ---*/
           
           if (config->GetKind_GridMovement(ZONE_0) == AEROELASTIC_RIGID_MOTION) {
             su2double Omega, dt, psi;
@@ -1352,7 +1348,7 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
             Omega  = (config->GetRotation_Rate_Z(ZONE_0)/config->GetOmega_Ref());
             psi = Omega*(dt*ExtIter);
             
-            /* --- Correct for the airfoil starting position (This is hardcoded in here) --- */
+            /*--- Correct for the airfoil starting position (This is hardcoded in here) ---*/
             if (Monitoring_Tag == "Airfoil1") {
               psi = psi + 0.0;
             }
@@ -1466,7 +1462,6 @@ void CSolver::SetUpTypicalSectionWingModel(vector<vector<su2double> >& Phi, vect
   
 }
 
-
 void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su2double Cm, CConfig *config, unsigned short iMarker, vector<su2double>& displacements) {
   
   /*--- The aeroelastic model solved in this routine is the typical section wing model
@@ -1552,7 +1547,6 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
   /*--- Transform back from the generalized coordinates to get the actual displacements in plunge and pitch  q = Phi*eta ---*/
   vector<su2double> q(2,0.0);
   vector<su2double> q_dot(2,0.0);
-
   for (int i=0; i<2; i++) {
     q[i] = 0;
     q_dot[i] = 0;
@@ -1606,6 +1600,10 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry->GetnZone();
+
+
   /*--- Define geometry constants in the solver structure ---*/
   
   nDim = geometry->GetnDim();
@@ -1627,16 +1625,22 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   } else if (fem){
 	filename = config->GetRestart_FEMFileName();
   } else {
-	filename = config->GetRestart_FlowFileName();
+    filename = config->GetRestart_FlowFileName();
   }
-  
+
+
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  
+
   if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
+  
+  /*--- Multizone problems require the number of the zone to be appended. ---*/
+  
+  if (nZone > 1)
+	filename = config->GetMultizone_FileName(filename, iZone);
   
   /*--- Open the restart file ---*/
   
@@ -1691,7 +1695,6 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
    restart file (without including the PointID) ---*/
   
   nVar = config->fields.size() - 1;
-
   su2double *Solution = new su2double[nVar];
   
   /*--- Read all lines in the restart file ---*/
@@ -1921,14 +1924,17 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry[iZone]->GetnZone();
+
   /*--- Retrieve filename from config ---*/
   if (config->GetAdjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
-	filename = config->GetRestart_FEMFileName();
+	filename = config->GetSolution_FEMFileName();
   } else {
-	filename = config->GetRestart_FlowFileName();
+    filename = config->GetSolution_FlowFileName();
   }
   
   /*--- Unsteady problems require an iteration number to be appended. ---*/
@@ -1938,6 +1944,9 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
   
+  if (nZone > 1)
+	filename = config->GetMultizone_FileName(filename, iZone);
+
   /*--- Open the restart file ---*/
   solution_file.open(filename.data(), ios::in);
   
@@ -1956,7 +1965,6 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Set the number of variables, one per field in the
    restart file (without including the PointID) ---*/
   nVar = config->fields.size() - 1;
-
   su2double *Solution = new su2double[nVar];
   
   /*--- In case this is a parallel simulation, we need to perform the
@@ -2028,14 +2036,17 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
 
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry->GetnZone();
+
   /*--- Retrieve filename from config ---*/
   if (config->GetAdjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
-	filename = config->GetRestart_FEMFileName();
+	filename = config->GetSolution_FEMFileName();
   } else {
-	filename = config->GetRestart_FlowFileName();
+	filename = config->GetSolution_FlowFileName();
   }
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
@@ -2044,6 +2055,9 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
+
+  if (nZone > 1)
+	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Open the restart file ---*/
   solution_file.open(filename.data(), ios::in);
