@@ -2,7 +2,7 @@
  * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.0.1 "Cardinal"
+ * \version 4.0.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -33,7 +33,6 @@
 
 void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
   
-  /*--- Local variables and initialization ---*/
   unsigned short iDim, iVar, nDim = geometry->GetnDim();
   unsigned short Kind_Solver = config->GetKind_Solver();
   
@@ -193,16 +192,6 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         }
       }
       
-      if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
-        Tecplot_File << ",\"Mach\",\"Pressure\",\"Temperature\",\"Temperature_ve\"";
-      }
-      
-      if (Kind_Solver == TNE2_NAVIER_STOKES) {
-        for (unsigned short iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
-          Tecplot_File << ",\"DiffusionCoeff_" << iSpecies << "\"";
-        Tecplot_File << ",\"Laminar_Viscosity\",\"ThermConductivity\",\"ThermConductivity_ve\"";
-      }
-      
       if (Kind_Solver == POISSON_EQUATION) {
         unsigned short iDim;
         for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
@@ -211,9 +200,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
       
       if (( Kind_Solver == ADJ_EULER              ) ||
           ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
-          ( Kind_Solver == ADJ_RANS               ) ||
-          ( Kind_Solver == ADJ_TNE2_EULER         ) ||
-          ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
+          ( Kind_Solver == ADJ_RANS               )   ) {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
       }
 
@@ -2650,18 +2637,6 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
       }
     }
     
-    if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
-      variables << "Mach Pressure Temperature Temperature_ve ";
-      *NVar += 4;
-    }
-    
-    if (Kind_Solver == TNE2_NAVIER_STOKES) {
-      for (iVar = 0; iVar < config->GetnSpecies(); iVar++)
-        variables << "DiffusionCoeff_" << iVar << " ";
-      variables << "Laminar_Viscosity ThermConductivity ThermConductivity_ve";
-      *NVar += 4;
-    }
-    
     if (Kind_Solver == POISSON_EQUATION) {
       for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
         variables << "poissonField_" << iDim+1 << " ";
@@ -2671,9 +2646,7 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
     
     if (( Kind_Solver == ADJ_EULER              ) ||
         ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
-        ( Kind_Solver == ADJ_RANS               ) ||
-        ( Kind_Solver == ADJ_TNE2_EULER         ) ||
-        ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
+        ( Kind_Solver == ADJ_RANS               )   ) {
       variables << "Surface_Sensitivity Solution_Sensor ";
       *NVar += 2;
     }

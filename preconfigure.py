@@ -1,11 +1,11 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 ## \file configure.py
 #  \brief An extended configuration script.
 #  \author T. Albring
-#  \version 4.0.1 "Cardinal"
+#  \version 4.0.2 "Cardinal"
 #
-# SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+# SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
 #
 # SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -110,7 +110,7 @@ def main():
     argument_dict = dict(zip(args[::2],args[1::2]))
 
     # Set the default installation path (if not set with --prefix)
-    argument_dict['--prefix'] = argument_dict.get('--prefix', check_output('pwd').rstrip())
+    argument_dict['--prefix'] = argument_dict.get('--prefix', os.getcwd().rstrip())
 
 
     if not options.check:
@@ -347,13 +347,13 @@ def init_codi(argument_dict, modes, mpi_support = False, update = False):
     # Build AdjointMPI if MPI Support is requested. If a C compiler was specified as an argument use it here.
     if mpi_support:
         os.chdir('adjointmpi')
-        configure_ampi = './configure --prefix=' + check_output('pwd').rstrip()
+        configure_ampi = './configure --prefix=' + os.getcwd().rstrip()
         if any([not os.path.exists('libAMPI.a'), update]):
             if not argument_dict.get('--with-cc', ' ') == ' ':
                 configure_ampi = configure_ampi + ' --with-mpicc=' + argument_dict['--with-cc']
             print '\nConfiguring and building AdjointMPI in externals/' + alt_name_ampi
             print '====================================================================='
-            run_command(configure_ampi + ' && make clean && make', check_output('pwd').rstrip() + '/preconf_ampi.log', check_output('pwd').rstrip() + '/preconf_ampi.err', os.environ)
+            run_command(configure_ampi + ' && make clean && make', os.getcwd().rstrip() + '/preconf_ampi.log', os.getcwd().rstrip() + '/preconf_ampi.err', os.environ)
         os.chdir(os.pardir)
 
     os.chdir(os.pardir)
@@ -461,8 +461,8 @@ def configure(argument_dict,
                 print ''
 
             print '====================================================================='
-            log = check_output('pwd').rstrip() + '/conf_'+ key+'.log'
-            err = check_output('pwd').rstrip() + '/conf_'+ key+'.err'
+            log = os.getcwd().rstrip() + '/conf_'+ key+'.log'
+            err = os.getcwd().rstrip() + '/conf_'+ key+'.err'
 
             if not os.path.exists(key):
                 os.mkdir(key)
@@ -499,7 +499,7 @@ def configure(argument_dict,
            '\tBased on the input to this configuration, add these lines to your .bashrc file: \n' \
            '\n' \
            '\texport SU2_RUN="'+argument_dict['--prefix']+'/bin"\n' \
-           '\texport SU2_HOME="'+check_output('pwd').rstrip()+'"\n' \
+           '\texport SU2_HOME="'+os.getcwd().rstrip()+'"\n' \
            '\texport PATH=$PATH:$SU2_RUN\n' \
            '\texport PYTHONPATH=$PYTHONPATH:$SU2_RUN\n'
 
@@ -560,13 +560,13 @@ def header():
 
     print '-------------------------------------------------------------------------\n'\
           '|    ___ _   _ ___                                                      | \n'\
-          '|   / __| | | |_  )   Release 4.0.1 \'Cardinal\'                          | \n'\
+          '|   / __| | | |_  )   Release 4.0.2 \'Cardinal\'                          | \n'\
           '|   \__ \ |_| |/ /                                                      | \n'\
           '|   |___/\___//___|   Pre-configuration Script                          | \n'\
           '|                                                                       | \n'\
           '------------------------------------------------------------------------- \n'\
-          '| SU2 Lead Dev.: Dr. Francisco Palacios (francisco.palacios@boeing.com).| \n'\
-          '|                Dr. Thomas D. Economon (economon@stanford.edu).        | \n'\
+          '| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com| \n'\
+          '|                Dr. Thomas D. Economon, economon@stanford.edu          | \n'\
           '------------------------------------------------------------------------- \n'\
           '| SU2 Developers:                                                       | \n'\
           '| - Prof. Juan J. Alonso\'s group at Stanford University.                | \n'\
