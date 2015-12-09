@@ -555,6 +555,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       node[iPoint] = new CEulerVariable(Density_Inf, Velocity_Inf, Energy_Inf, nDim, nVar, config);
     
   } else {
+
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+    if (nZone > 1)
+	  filename = config->GetMultizone_FileName(filename, iZone);
     
     /*--- Modify file name for an unsteady restart ---*/
     
@@ -568,8 +573,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
-    if (nZone > 1)
-      filename= config->GetMultizone_FileName(filename, iZone);
     
     /*--- Open the restart file, throw an error if this fails. ---*/
     
@@ -12365,7 +12368,12 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     /*--- Modify file name for an unsteady restart ---*/
     
     if (dual_time) {
-      
+
+      /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+      if (nZone > 1)
+    	filename = config->GetMultizone_FileName(filename, iZone);
+
       if (adjoint) {
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
       } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
@@ -12376,9 +12384,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
       
     }
-    
-    if (nZone > 1)
-      filename= config->GetMultizone_FileName(filename, iZone);
     
     /*--- Open the restart file, throw an error if this fails. ---*/
     

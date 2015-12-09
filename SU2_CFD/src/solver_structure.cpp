@@ -1628,6 +1628,10 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
     filename = config->GetRestart_FlowFileName();
   }
 
+  /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+  if (nZone > 1)
+	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
 
@@ -1636,11 +1640,6 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
-  
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-  
-  if (nZone > 1)
-	filename = config->GetMultizone_FileName(filename, iZone);
   
   /*--- Open the restart file ---*/
   
@@ -1932,20 +1931,22 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
-	filename = config->GetSolution_FEMFileName();
+	filename = config->GetRestart_FEMFileName();
   } else {
-    filename = config->GetSolution_FlowFileName();
+    filename = config->GetRestart_FlowFileName();
   }
   
+  /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+  if (nZone > 1)
+	filename = config->GetMultizone_FileName(filename, iZone);
+
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
-  
-  if (nZone > 1)
-	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Open the restart file ---*/
   solution_file.open(filename.data(), ios::in);
@@ -2044,10 +2045,15 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
-	filename = config->GetSolution_FEMFileName();
+	filename = config->GetRestart_FEMFileName();
   } else {
-	filename = config->GetSolution_FlowFileName();
+	filename = config->GetRestart_FlowFileName();
   }
+
+  /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+  if (nZone > 1)
+	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
@@ -2055,9 +2061,6 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
-
-  if (nZone > 1)
-	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Open the restart file ---*/
   solution_file.open(filename.data(), ios::in);
