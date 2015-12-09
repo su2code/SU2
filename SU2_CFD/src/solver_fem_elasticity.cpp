@@ -466,6 +466,10 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	Set_MPI_Solution(geometry, config);
 
+	/*--- If dynamic, we also need to communicate the old solution ---*/
+
+	if(dynamic) Set_MPI_Solution_Old(geometry, config);
+
 }
 
 CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
@@ -617,6 +621,98 @@ void CFEM_ElasticitySolver::Set_MPI_Solution(CGeometry *geometry, CConfig *confi
 	            	node[iPoint]->SetSolution_Accel(iVar, SolRest[iVar+2*nVar]);
 	            }
 
+	        }
+
+	      }
+
+	      /*--- Deallocate receive buffer ---*/
+	      delete [] Buffer_Receive_U;
+
+	    }
+
+	  }
+
+}
+
+void CFEM_ElasticitySolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) {
+
+
+	  unsigned short iVar, iMarker, MarkerS, MarkerR;
+	  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+	  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+
+	  unsigned short nSolVar;
+
+	  nSolVar = 3 * nVar;
+
+	#ifdef HAVE_MPI
+	  int send_to, receive_from;
+	  MPI_Status status;
+	#endif
+
+	  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+	    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+	        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+	      MarkerS = iMarker;  MarkerR = iMarker+1;
+
+	#ifdef HAVE_MPI
+	      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+	      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+	#endif
+
+	      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+	      nBufferS_Vector = nVertexS*nSolVar;     nBufferR_Vector = nVertexR*nSolVar;
+
+	      /*--- Allocate Receive and send buffers  ---*/
+	      Buffer_Receive_U = new su2double [nBufferR_Vector];
+	      Buffer_Send_U = new su2double[nBufferS_Vector];
+
+	      /*--- Copy the solution that should be sent ---*/
+	      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+	        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+	        for (iVar = 0; iVar < nVar; iVar++){
+	        		Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution_time_n(iVar);
+	        		Buffer_Send_U[(iVar+nVar)*nVertexS+iVertex] = node[iPoint]->GetSolution_Vel_time_n(iVar);
+	        		Buffer_Send_U[(iVar+2*nVar)*nVertexS+iVertex] = node[iPoint]->GetSolution_Accel_time_n(iVar);
+	        	}
+	      }
+
+	#ifdef HAVE_MPI
+
+	      /*--- Send/Receive information using Sendrecv ---*/
+	      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+	                   Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+
+	#else
+
+	      /*--- Receive information without MPI ---*/
+	      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+	        for (iVar = 0; iVar < nSolVar; iVar++)
+	          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+	      }
+
+	#endif
+
+	      /*--- Deallocate send buffer ---*/
+	      delete [] Buffer_Send_U;
+
+	      /*--- Do the coordinate transformation ---*/
+	      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+
+	        /*--- Find point and its type of transformation ---*/
+	        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+
+	        /*--- Copy solution variables. ---*/
+	        for (iVar = 0; iVar < nSolVar; iVar++)
+	        	SolRest[iVar] = Buffer_Receive_U[iVar*nVertexR+iVertex];
+
+	        /*--- Store received values back into the variable. ---*/
+	        for (iVar = 0; iVar < nVar; iVar++){
+	          node[iPoint]->SetSolution_time_n(iVar, SolRest[iVar]);
+	          node[iPoint]->SetSolution_Vel_time_n(iVar, SolRest[iVar+nVar]);
+	          node[iPoint]->SetSolution_Accel_time_n(iVar, SolRest[iVar+2*nVar]);
 	        }
 
 	      }
@@ -2019,6 +2115,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 				TimeRes_Aux.SetBlock(iPoint, Residual);
 			}
 		}
+
 		/*--- Once computed, compute M*TimeRes_Aux ---*/
 		MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
 		/*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
