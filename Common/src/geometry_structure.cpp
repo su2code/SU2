@@ -1416,6 +1416,10 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           boundary_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
           for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
             boundary_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
+
+          if (bound[iMarker][iElem_Bound]->GetVTK_Type() == VERTEX){
+            boundary_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
+          }
           boundary_file	<< iElem_Bound << endl;
         }
       }
