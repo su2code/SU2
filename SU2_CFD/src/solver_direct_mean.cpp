@@ -6433,6 +6433,10 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
         for (iDim = 0; iDim < nDim; iDim++) {
           Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
           
+          Xcoord = geometry->node[iPoint]->GetCoord(0);
+          if (Xcoord < 0.01 || Xcoord > 0.99){
+          }
+          
           ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
           VelMagnitude2_i += Velocity_i[iDim]*Velocity_i[iDim];
         }
