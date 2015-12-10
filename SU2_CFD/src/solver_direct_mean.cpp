@@ -11427,8 +11427,11 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   string UnstExt, text_line;
   ifstream restart_file;
   
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry[iZone]->GetnZone();
+
   string restart_filename = config->GetSolution_FlowFileName();
-  
+
   Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     Coord[iDim] = 0.0;
@@ -11438,6 +11441,11 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+  if (nZone > 1)
+	restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
+
   /*--- Modify file name for an unsteady restart ---*/
   
   if (dual_time)

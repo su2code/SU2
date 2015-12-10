@@ -1910,10 +1910,20 @@ void CFSIDriver::Run(CIteration **iteration_container,
 	unsigned long iFSIIter = 0;
 	unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
 
+
 	int rank = MASTER_NODE;
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+
+	 /*--- If there is a restart, we need to get the old geometry from the fluid field ---*/
+	 bool restart = (config_container[ZONE_FLOW]->GetRestart() || config_container[ZONE_FLOW]->GetRestart_Flow());
+	 unsigned long ExtIter = config_container[ZONE_FLOW]->GetExtIter();
+
+	 if (restart && (long)ExtIter == config_container[ZONE_FLOW]->GetUnst_RestartIter()){
+		unsigned short ZONE_FLOW = 0;
+		solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Restart_OldGeometry(geometry_container[ZONE_FLOW][MESH_0],config_container[ZONE_FLOW]);
+	 }
 
 	/*-----------------------------------------------------------------*/
 	/*---------------- Predict structural displacements ---------------*/
@@ -1927,7 +1937,7 @@ void CFSIDriver::Run(CIteration **iteration_container,
 	while (iFSIIter < nFSIIter){
 
 		/*-----------------------------------------------------------------*/
-		/*------------------------ Update mesh ----------------------------*/
+		/*------------------- Transfer Displacements ----------------------*/
 		/*-----------------------------------------------------------------*/
 
 		Transfer_Displacements(output, integration_container, geometry_container,
@@ -2077,7 +2087,7 @@ void CFSIDriver::Transfer_Displacements(COutput *output, CIntegration ***integra
 					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
 					config_container[donorZone], config_container[targetZone]);
 			/*--- Set the volume deformation for the fluid zone ---*/
-			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+//			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
 
 		}
 		else {
@@ -2085,7 +2095,7 @@ void CFSIDriver::Transfer_Displacements(COutput *output, CIntegration ***integra
 					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
 					config_container[donorZone], config_container[targetZone]);
 			/*--- Set the volume deformation for the fluid zone ---*/
-			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+//			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
 
 		}
 		break;
@@ -2095,7 +2105,7 @@ void CFSIDriver::Transfer_Displacements(COutput *output, CIntegration ***integra
 					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
 					config_container[donorZone], config_container[targetZone]);
 			/*--- Set the volume deformation for the fluid zone ---*/
-			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+//			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
 		}
 		else {
 			cout << "Scatter method not implemented for non-matching meshes. Exiting..." << endl;
@@ -2112,7 +2122,7 @@ void CFSIDriver::Transfer_Displacements(COutput *output, CIntegration ***integra
 					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
 					config_container[donorZone], config_container[targetZone]);
 			/*--- Set the volume deformation for the fluid zone ---*/
-			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+//			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
 		}
 		break;
 	case LEGACY_METHOD:
