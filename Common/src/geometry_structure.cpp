@@ -9339,6 +9339,10 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 		}
 	}
 
+	//TODO (turbo) this works only for centrifugal blade rotating around the Z-Axes.
+	//TODO (turbo) it makes the assumptions that the X-coordinate of each point at
+  //             the boundary is positive so that the reordering algorithm pitch wise can be based on the Y-coordinate.
+	//						 It may work also for centripetal blade
 
   if (nDim == 2){
 
@@ -9346,31 +9350,49 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 			for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
 				if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
 					if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
-						turbovertex[iMarker][0] = new CTurboVertex* [nVertex[iMarker]];
+
+						/*--- find the local minimum pitch-wise for each processor, in this case is not needed to find a global one
+						 * the global reordering will be done at solver level when these pitch-wise order will be used for computing NRBC---*/
 						min = 10E+06;
+						jVertex = 0;
+
 						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 							iPoint = vertex[iMarker][iVertex]->GetNode();
-							coord = node[iPoint]->GetCoord();
-							if (coord[1]<min){
-								min= coord[1];
-								jPoint = iPoint;
+
+							/*--- only physical point need to be stored in the turbovertex structure ---*/
+							if(node[iPoint]->GetDomain()){
+								coord = node[iPoint]->GetCoord();
+								jVertex++;
+								if (coord[1]<min){
+									min= coord[1];
+									jPoint = iPoint;
+								}
 							}
 						}
+						/*--- store the number of local physical vertex and initiate turbovertex pointer---*/
+						nVertexSpan[iMarker][0] = jVertex;
+						turbovertex[iMarker][0] = new CTurboVertex* [nVertexSpan[iMarker][0]];
+
+						/*--- reordering pitch-wise, storing in the turbovertex structure, compute normal for the turbo frame of reference---*/
+						jVertex = 0;
 						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-							turbovertex[iMarker][0][iVertex] = new CTurboVertex(jPoint, nDim);
-							coord = node[jPoint]->GetCoord();
-							Normal2 = 0.0;
-							for(iDim = 0; iDim < nDim; iDim++) Normal2 +=coord[iDim]*coord[iDim];
-							if (marker_flag == INFLOW){
-								Normal[0] = -coord[0]/sqrt(Normal2);
-								Normal[1] = -coord[1]/sqrt(Normal2);
-							}else{
-								Normal[0] = coord[0]/sqrt(Normal2);
-								Normal[1] = coord[1]/sqrt(Normal2);
+							if(node[jPoint]->GetDomain()){
+								turbovertex[iMarker][0][iVertex] = new CTurboVertex(jPoint, nDim);
+								coord = node[jPoint]->GetCoord();
+								Normal2 = 0.0;
+								for(iDim = 0; iDim < nDim; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+								if (marker_flag == INFLOW){
+									Normal[0] = -coord[0]/sqrt(Normal2);
+									Normal[1] = -coord[1]/sqrt(Normal2);
+								}else{
+									Normal[0] = coord[0]/sqrt(Normal2);
+									Normal[1] = coord[1]/sqrt(Normal2);
+								}
+								turbovertex[iMarker][0][iVertex]->SetTurboNormal(Normal);
+								jVertex++;
+								target = coord[1];
+//								cout <<  " pitch wise " << coord[1]<<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
 							}
-							turbovertex[iMarker][0][iVertex]->SetTurboNormal(Normal);
-							target = coord[1];
-							cout <<  " pitch wise " << coord[1]<<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
 							dist = 10E+06;
 							for(jVertex = 0; jVertex<nVertex[iMarker]; jVertex++){
 								coord = node[vertex[iMarker][jVertex]->GetNode()]->GetCoord();
@@ -9379,6 +9401,12 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 									jPoint =vertex[iMarker][jVertex]->GetNode();
 								}
 							}
+						}
+// Final test to check that everything is working perhaps can be useful to print this in  a file always for double checking!
+						for (iVertex = 0; iVertex < nVertexSpan[iMarker][0]; iVertex++) {
+							iPoint = turbovertex[iMarker][0][iVertex]->GetNode();
+							coord = node[iPoint]->GetCoord();
+							cout <<  " pitch wise " << coord[1]<<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
 						}
 					}
 				}
@@ -9482,7 +9510,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 						//             the boundary is positive so that the reordering algorithm can be based on the Y-coordinate.
 						for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 
-							/*--- find the local minimum pitch-wise, in this case is not needed to find a global one
+							/*--- find the local minimum pitch-wise for each processor, in this case is not needed to find a global one
 							 * the global reordering will be done at solver level when these pitch-wise order will be used for computing NRBC---*/
 							min = 10E+06;
 							for(iSpanVertex = 0; iSpanVertex < nVertexSpan[iMarker][iSpan]; iSpanVertex++){
