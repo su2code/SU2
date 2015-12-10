@@ -9402,12 +9402,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 								}
 							}
 						}
-// Final test to check that everything is working perhaps can be useful to print this in  a file always for double checking!
-						for (iVertex = 0; iVertex < nVertexSpan[iMarker][0]; iVertex++) {
-							iPoint = turbovertex[iMarker][0][iVertex]->GetNode();
-							coord = node[iPoint]->GetCoord();
-							cout <<  " pitch wise " << coord[1]<<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
-						}
 					}
 				}
 			}
@@ -9456,14 +9450,18 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 							dist = 10E+06;
 							jSpan = -1;
 							iPoint = vertex[iMarker][iVertex]->GetNode();
-							coord = node[iPoint]->GetCoord();
-							for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-								if (dist > (abs(coord[2]-span[iSpan]))){
-									dist= abs(coord[2]-span[iSpan]);
-									jSpan=iSpan;
+
+							/*--- only physical point are counted ---*/
+							if(node[iPoint]->GetDomain()){
+								coord = node[iPoint]->GetCoord();
+								for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+									if (dist > (abs(coord[2]-span[iSpan]))){
+										dist= abs(coord[2]-span[iSpan]);
+										jSpan=iSpan;
+									}
 								}
+								nVertexSpan[iMarker][jSpan]++;
 							}
-							nVertexSpan[iMarker][jSpan]++;
 						}
 
 						/*--- initialize the CTurboVertex pointers and auxiliary pointers  ---*/
@@ -9481,28 +9479,21 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 							dist = 10E+06;
 							jSpan = -1;
 							iPoint = vertex[iMarker][iVertex]->GetNode();
-							coord = node[iPoint]->GetCoord();
-							for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-								if (dist > (abs(coord[2]-span[iSpan]))){
-									dist= abs(coord[2]-span[iSpan]);
-									jSpan=iSpan;
+
+							/*--- only physical point are stored ---*/
+							if(node[iPoint]->GetDomain()){
+								coord = node[iPoint]->GetCoord();
+								for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+									if (dist > (abs(coord[2]-span[iSpan]))){
+										dist= abs(coord[2]-span[iSpan]);
+										jSpan=iSpan;
+									}
 								}
+								disordered[jSpan][nVertexSpan[iMarker][jSpan]] = iPoint;
+								checkAssign[jSpan][nVertexSpan[iMarker][jSpan]] = false;
+								nVertexSpan[iMarker][jSpan]++;
 							}
-							disordered[jSpan][nVertexSpan[iMarker][jSpan]] = iPoint;
-							checkAssign[jSpan][nVertexSpan[iMarker][jSpan]] = false;
-							nVertexSpan[iMarker][jSpan]++;
 						}
-//					checking
-//					for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-//						for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
-//							iPoint = disordered[iSpan][iSpanVertex];
-//							coord = node[iPoint]->GetCoord();
-//							//if (node[iPoint]->GetDomain()){
-//								cout<< coord[2]<< " in iVertex "<< iSpanVertex<< " in span " <<iSpan<< " in Marker " << iMarker << " in rank " << rank  <<  endl;
-//							//}
-//						}
-//						cout<< " number of element "<< nVertexSpan[iMarker][iSpan] << " in span "<<iSpan<< " in Marker " << iMarker << " in rank " << rank  <<  endl;
-//					}
 
 						/*--- using the auxiliary container reordered the vertexes pitch-wise direction at each span ---*/
 						//TODO (turbo) this works only for centrifugal blade rotating around the Z-Axes.
@@ -9523,7 +9514,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 							}
 
 							/*--- reordering pitch-wise algorithm, store the ordered vertexes span-wise and pitch-wise
-							 * in the CTurboVertex container in  and compute the normal in an appropriate turbo frame of references---*/
+							 * in the CTurboVertex container and compute the normal in an appropriate turbo frame of references---*/
 							//TODO (turbo) ordering algorithm works only on Y direction (read above)
 							//TODO (turbo) normal computation valid only for centrifugal.
 							for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
@@ -9545,7 +9536,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 								}
 								turbovertex[iMarker][iSpan][iSpanVertex]->SetTurboNormal(Normal);
 								target = coord[1];
-										cout << "in Span " << iSpan << " pitch wise " << coord[1]<<" in Marker " << iMarker << " in rank " << rank <<endl;
 								for(jSpanVertex = 0; jSpanVertex<nVertexSpan[iMarker][iSpan]; jSpanVertex++){
 									coord = node[disordered[iSpan][jSpanVertex]]->GetCoord();
 									if(dist >= (coord[1] - target) && !checkAssign[iSpan][jSpanVertex] && (coord[1] - target) >= 0.0){
@@ -9565,6 +9555,19 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 			}
 		}
   }
+
+////			FINAL TEST
+//  for (iMarker = 0; iMarker < nMarker; iMarker++){
+//  	for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+//  		for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
+//  			iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
+//  			coord = node[iPoint]->GetCoord();
+//  			cout <<"span " <<iSpan << " pitch wise " << coord[1]<<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
+//
+//  		}
+//  	}
+//  }
+
   delete [] ordered;
 	delete [] disordered;
 	delete [] checkAssign;
