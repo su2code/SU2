@@ -452,7 +452,13 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
 	void Set_OldSolution(CGeometry *geometry);
-    
+
+	/*!
+	 * \brief Load the geometries at the previous time states n and nM1.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 */
+	void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.

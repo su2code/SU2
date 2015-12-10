@@ -11437,7 +11437,7 @@ void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
     Coord_nM1 = node[iPoint]->GetCoord_n1();
     Coord_n   = node[iPoint]->GetCoord_n();
     Coord_nP1 = node[iPoint]->GetCoord();
-    
+
     /*--- Unsteady time step ---*/
     
     TimeStep = config->GetDelta_UnstTimeND();

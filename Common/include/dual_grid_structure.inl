@@ -176,6 +176,16 @@ inline void CPoint::SetCoord_n1 (void) {
 		Coord_n1[iDim] = Coord_n[iDim]; 
 }
 
+inline void CPoint::SetCoord_n(su2double *val_coord) { 
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Coord_n[iDim] = val_coord[iDim]; 
+}
+
+inline void CPoint::SetCoord_n1(su2double *val_coord) { 
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Coord_n1[iDim] = val_coord[iDim]; 
+}
+
 inline void CPoint::SetCoord_p1(su2double *val_coord) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Coord_p1[iDim] = val_coord[iDim]; 

@@ -538,6 +538,18 @@ public:
 	 * \brief Set the coordinates of the control volume at time n-1.
 	 */
 	void SetCoord_n1(void);
+
+	/*!
+	 * \brief Set the coordinates of the control volume at time n, for restart cases.
+	 * \param[in] val_coord - Value of the grid coordinates at time n.
+	 */
+	void SetCoord_n(su2double *val_coord);
+
+	/*!
+	 * \brief Set the coordinates of the control volume at time n-1, for restart cases.
+	 * \param[in] val_coord - Value of the grid coordinates at time n-1.
+	 */
+	void SetCoord_n1(su2double *val_coord);
   
 	/*! 
 	 * \brief Set the coordinates of the control volume at time n+1.
