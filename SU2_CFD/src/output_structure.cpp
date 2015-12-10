@@ -7846,4 +7846,3 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
 #endif
   
 }
-

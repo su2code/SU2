@@ -999,7 +999,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("GUST_BEGIN_LOC", Gust_Begin_Loc, 0.0);
   /* DESCRIPTION: Direction of the gust X or Y dir */
   addEnumOption("GUST_DIR", Gust_Dir, Gust_Dir_Map, Y_DIR);
-
+ 
 
   /*!\par CONFIG_CATEGORY: Equivalent Area \ingroup Config*/
   /*--- Options related to the equivalent area ---*/
@@ -1558,7 +1558,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Decide whether we should be writing unsteady solution files. ---*/
   
   if (Unsteady_Simulation == STEADY ||
-      Unsteady_Simulation == TIME_STEPPING ||
       Unsteady_Simulation == TIME_SPECTRAL  ||
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
@@ -1569,7 +1568,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	  else { Wrt_Dynamic = true; }
 
   }
-
   
   /*--- Check for Fluid model consistency ---*/
 
@@ -1579,6 +1577,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 		Gas_Constant = 287.058;
         }
   }
+
   /*--- Check for Measurement System ---*/
   
   if (SystemMeasurements == US && !standard_air) {
@@ -3570,11 +3569,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << endl;
       }
 
-      cout << "Courant-Friedrichs-Lewy number:   ";
+			/*--- Show CFL value on a separate line only when is not using time stepping ---*/
+			if (Unsteady_Simulation != TIME_STEPPING){
+			cout << "Courant-Friedrichs-Lewy number:   ";
       cout.precision(3);
-      cout.width(6); cout << CFL[0];
+      cout.width(6);
+			cout << CFL[0];
       cout << endl;
-
+			}
+			
       if (nMGLevels !=0) {
         cout.precision(3);
         cout << "MG PreSmooth coefficients:        ";
