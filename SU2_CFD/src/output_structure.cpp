@@ -1105,6 +1105,9 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
       for (iPoint = 0; iPoint < Buffer_Recv_nPoin[iProcessor]; iPoint++) {
         /*--- Get global index, then loop over each variable and store ---*/
         iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+        if (iGlobal_Index >= nGlobal_Poin){
+          cout << iGlobal_Index << " " << nGlobal_Poin << endl;
+        }
         Coords[0][iGlobal_Index] = Buffer_Recv_X[jPoint];
         Coords[1][iGlobal_Index] = Buffer_Recv_Y[jPoint];
         if (nDim == 3) Coords[2][iGlobal_Index] = Buffer_Recv_Z[jPoint];

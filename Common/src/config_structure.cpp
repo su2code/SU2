@@ -155,6 +155,7 @@ void CConfig::SetPointersNull(void) {
   Kappa_Flow = NULL;    Kappa_AdjFlow = NULL;
   Section_Location = NULL;
   U_FreeStreamND = NULL;
+  Design_Variable = NULL;
 
   /*--- Moving mesh pointers ---*/
 

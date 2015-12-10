@@ -194,6 +194,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
               case VERTEX:
                 bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
                 output_file << "\t" << vnodes_edge[0] <<  "\t" << vnodes_edge[1] <<endl;
+                break;
             }
           }
       }
