@@ -9482,9 +9482,10 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 						/*--- initialize the CTurboVertex pointers and auxiliary pointers  ---*/
 						for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 							turbovertex[iMarker][iSpan] = new CTurboVertex* [nVertexSpan[iMarker][iSpan]];
-							ordered[iSpan]     = new unsigned long [nVertexSpan[iMarker][iSpan]];
-							disordered[iSpan]  = new unsigned long [nVertexSpan[iMarker][iSpan]];
-							checkAssign[iSpan]     = new bool [nVertexSpan[iMarker][iSpan]];
+							ordered[iSpan]     					= new unsigned long [nVertexSpan[iMarker][iSpan]];
+							disordered[iSpan]  					= new unsigned long [nVertexSpan[iMarker][iSpan]];
+							checkAssign[iSpan]     			= new bool [nVertexSpan[iMarker][iSpan]];
+							area[iSpan]				 					= new su2double [nVertexSpan[iMarker][iSpan]];
 							nVertexSpan[iMarker][iSpan] = 0;
 						}
 
@@ -9504,7 +9505,17 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 										jSpan=iSpan;
 									}
 								}
-								disordered[jSpan][nVertexSpan[iMarker][jSpan]] = iPoint;
+
+								/*--- compute the face area associated with the vertex ---*/
+								vertex[iMarker][iVertex]->GetNormal(NormalArea);
+								Area = 0.0;
+								for (iDim = 0; iDim < nDim; iDim++)
+									Area += NormalArea[iDim]*NormalArea[iDim];
+								Area = sqrt(Area);
+
+								/*--- store all the all the info into the auxiliary containers ---*/
+								disordered[jSpan][nVertexSpan[iMarker][jSpan]] 	= iPoint;
+								area[jSpan][nVertexSpan[iMarker][jSpan]]				= Area;
 								checkAssign[jSpan][nVertexSpan[iMarker][jSpan]] = false;
 								nVertexSpan[iMarker][jSpan]++;
 							}
@@ -9536,6 +9547,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 								dist = 10E+06;
 								ordered[iSpan][iSpanVertex] = disordered[iSpan][kSpanVertex];
 								turbovertex[iMarker][iSpan][iSpanVertex] = new CTurboVertex(ordered[iSpan][iSpanVertex], nDim);
+								turbovertex[iMarker][iSpan][iSpanVertex]->SetArea(area[iSpan][kSpanVertex]);
 								checkAssign[iSpan][kSpanVertex] = true;
 								coord = node[ordered[iSpan][iSpanVertex]]->GetCoord();
 								Normal2 = 0.0;
