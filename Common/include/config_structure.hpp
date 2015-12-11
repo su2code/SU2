@@ -69,6 +69,9 @@ private:
 	su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
 	su2double OrderMagResidualFSI; /*!< \brief Order of magnitude reduction. */
 	su2double MinLogResidualFSI; /*!< \brief Minimum value of the log residual. */
+	su2double Res_FEM_UTOL; 		/*!< \brief UTOL criteria for structural FEM. */
+	su2double Res_FEM_RTOL; 		/*!< \brief RTOL criteria for structural FEM. */
+	su2double Res_FEM_ETOL; 		/*!< \brief ETOL criteria for structural FEM. */
 	su2double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
 	su2double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   su2double AdjointLimit; /*!< \brief Adjoint variable limit */
@@ -273,9 +276,11 @@ private:
 	unsigned long ExtIter;			/*!< \brief Current external iteration number. */
 	unsigned long IntIter;			/*!< \brief Current internal iteration number. */
 	unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
+	unsigned long Dyn_nIntIter;			/*!< \brief Number of internal iterations (Newton-Raphson Method for nonlinear structural analysis). */
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
-	unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
+  long Dyn_RestartIter;			/*!< \brief Iteration number to restart a dynamic structural analysis. */
+  unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
 	su2double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
 	unsigned short nMGLevels;		/*!< \brief Number of multigrid levels (coarse levels). */
 	unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
@@ -337,6 +342,7 @@ private:
 	Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
 	Kind_TimeIntScheme_Poisson,	/*!< \brief Time integration for the wave equations. */
 	Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
+	Kind_SpaceIteScheme_FEA,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
 	Kind_ConvNumScheme,			/*!< \brief Global definition of the convective term. */
 	Kind_ConvNumScheme_Flow,	/*!< \brief Centered or upwind scheme for the flow equations. */
 	Kind_ConvNumScheme_Heat,	/*!< \brief Centered or upwind scheme for the flow equations. */
@@ -362,6 +368,7 @@ private:
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
 	Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
+  Kind_TransferMethod,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
   SpatialOrder,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_Flow,		/*!< \brief Order of the spatial numerical integration.*/
 	SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
@@ -369,6 +376,9 @@ private:
 	SpatialOrder_AdjTurb,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjLevelSet;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
+  unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
+  Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
+  Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
@@ -491,6 +501,7 @@ private:
 	Solution_FlowFileName,			/*!< \brief Flow solution input file. */
 	Solution_LinFileName,			/*!< \brief Linearized flow solution input file. */
 	Solution_AdjFileName,			/*!< \brief Adjoint solution input file for drag functional. */
+	Solution_FEMFileName,			/*!< \brief Adjoint solution input file for drag functional. */
 	Flow_FileName,					/*!< \brief Flow variables output file. */
 	Structure_FileName,					/*!< \brief Structure variables output file. */
 	SurfStructure_FileName,					/*!< \brief Surface structure variables output file. */
@@ -507,6 +518,7 @@ private:
 	Restart_WaveFileName,			/*!< \brief Restart file for wave variables. */
 	Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
 	Restart_AdjFileName,			/*!< \brief Restart file for adjoint variables, drag functional. */
+	Restart_FEMFileName,			/*!< \brief Restart file for FEM elasticity. */
 	Adj_FileName,					/*!< \brief Output file with the adjoint variables. */
 	ObjFunc_Grad_FileName,			/*!< \brief Gradient of the objective function. */
 	ObjFunc_Value_FileName,			/*!< \brief Objective function. */
@@ -582,7 +594,8 @@ private:
   Omega_FreeStream; /*!< \brief Specific dissipation (external flow). */
 	su2double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
-	MaterialDensity;								/*!< \brief Material density. */
+	MaterialDensity,								/*!< \brief Material density. */
+	Bulk_Modulus_Struct;				/*!< \brief Bulk modulus (on the structural side). */
 	unsigned short Kind_2DElasForm;			/*!< \brief Kind of bidimensional elasticity solver. */
 	unsigned short nIterFSI;	/*!< \brief Number of maximum number of subiterations in a FSI problem. */
 	su2double AitkenStatRelax;			/*!< \brief Aitken's relaxation factor (if set as static) */
@@ -664,14 +677,22 @@ private:
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
   long Visualize_CV; /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
-  bool DeadLoad; /*!< Application of dead loads to the FE analysis */
+  bool DeadLoad; 		/*!< Application of dead loads to the FE analysis */
+  bool MatchingMesh; 	/*!< Matching mesh (while implementing interpolation procedures). */
+  bool SteadyRestart; 	/*!< Restart from a steady state for FSI problems. */
   su2double Newmark_alpha,			/*!< \brief Parameter alpha for Newmark method. */
   Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
+  unsigned short nIntCoeffs;	/*!< \brief Number of integration coeffs for structural calculations. */
+  su2double *Int_Coeffs;		/*!< \brief Time integration coefficients for structural method. */
   bool Gradual_Load,		/*!< \brief Apply the load gradually. */
   Ramp_Load;				/*!< \brief Apply the load with linear increases. */
+  bool IncrementalLoad;		/*!< \brief Apply the load in increments (for nonlinear structural analysis). */
+  unsigned long IncLoad_Nincrements; /*!< \brief Number of increments. */
+  su2double *IncLoad_Criteria;	/*!< \brief Criteria for the application of incremental loading. */
   su2double Ramp_Time;			/*!< \brief Time until the maximum load is applied. */
   su2double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
+  unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
@@ -1520,6 +1541,12 @@ public:
 	 */
 	su2double GetElasticyMod(void);
 
+	/*!
+	 * \brief Get the value of the bulk modulus on the structural side.
+	 * \return Value of the bulk modulus on the structural side.
+	 */
+	su2double GetBulk_Modulus_Struct(void);
+
     /*!
 	 * \brief Formulation for 2D elasticity (plane stress - strain)
 	 * \return Flag to 2D elasticity model.
@@ -1537,6 +1564,24 @@ public:
 	 * \return Value of the Material Density.
 	 */
 	su2double GetMaterialDensity(void);
+
+    /*!
+	 * \brief Compressibility/incompressibility of the solids analysed using the structural solver.
+	 * \return Compressible or incompressible.
+	 */
+	unsigned short GetMaterialCompressibility(void);
+
+    /*!
+	 * \brief Compressibility/incompressibility of the solids analysed using the structural solver.
+	 * \return Compressible or incompressible.
+	 */
+	unsigned short GetMaterialModel(void);
+
+    /*!
+	 * \brief Geometric conditions for the structural solver.
+	 * \return Small or large deformation structural analysis.
+	 */
+	unsigned short GetGeometricConditions(void);
 
 	/*!
 	 * \brief Get the reference length for computing moment (the default value is 1).
@@ -2090,6 +2135,12 @@ public:
 	 */
 	unsigned long GetUnst_nIntIter(void);
 
+	/*!
+	 * \brief Get the number of internal iterations for the Newton-Raphson Method in nonlinear structural applications.
+	 * \return Number of internal iterations.
+	 */
+	unsigned long GetDyn_nIntIter(void);
+
   /*!
 	 * \brief Get the restart iteration number for unsteady simulations.
 	 * \return Restart iteration number for unsteady simulations.
@@ -2101,6 +2152,12 @@ public:
 	 * \return Starting direct iteration number for the unsteady adjoint.
 	 */
   long GetUnst_AdjointIter(void);
+
+  /*!
+	 * \brief Get the restart iteration number for dynamic structural simulations.
+	 * \return Restart iteration number for dynamic structural simulations.
+	 */
+  long GetDyn_RestartIter(void);
 
 	/*!
 	 * \brief Retrieves the number of periodic time instances for Time Spectral.
@@ -3014,6 +3071,23 @@ public:
 	unsigned short GetKind_TimeIntScheme_Template(void);
 
 	/*!
+	 * \brief Get the kind of integration scheme (explicit or implicit)
+	 *        for the flow equations.
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of integration scheme for the plasma equations.
+	 */
+	unsigned short GetKind_SpaceIteScheme_FEA(void);
+
+	/*!
+	 * \brief Get the kind of transfer method we want to use for multiphysics problems
+	 * \note This value is obtained from the config file, and it is constant
+	 *       during the computation.
+	 * \return Kind of transfer method for multiphysics problems
+	 */
+	unsigned short GetKind_TransferMethod(void);
+
+	/*!
 	 * \brief Get the kind of convective numerical scheme for the flow
 	 *        equations (centered or upwind).
 	 * \note This value is obtained from the config file, and it is constant
@@ -3640,6 +3714,12 @@ public:
 	string GetSolution_AdjFileName(void);
 
 	/*!
+	 * \brief Get the name of the file with the solution of the structural problem.
+	 * \return Name of the file with the solution of the structural problem.
+	 */
+	string GetSolution_FEMFileName(void);
+
+	/*!
 	 * \brief Get the name of the file with the residual of the problem.
 	 * \return Name of the file with the residual of the problem.
 	 */
@@ -3736,10 +3816,10 @@ public:
 	string GetRestart_HeatFileName(void);
 
 	/*!
-	 * \brief Get the name of the restart file for the flow variables.
+	 * \brief Append the zone index to the restart or the solution files.
 	 * \return Name of the restart file for the flow variables.
 	 */
-	string GetRestart_FlowFileName(string val_filename, int val_iZone);
+	string GetMultizone_FileName(string val_filename, int val_iZone);
     
     /*!
 	 * \brief Get the name of the restart file for the flow variables.
@@ -3752,6 +3832,12 @@ public:
 	 * \return Name of the restart file for the adjoint variables (drag objective function).
 	 */
 	string GetRestart_AdjFileName(void);
+
+	/*!
+	 * \brief Get the name of the restart file for the flow variables.
+	 * \return Name of the restart file for the flow variables.
+	 */
+	string GetRestart_FEMFileName(void);
 
 	/*!
 	 * \brief Get the name of the file with the adjoint variables.
@@ -4332,7 +4418,25 @@ public:
 	 * \return Value of the minimum residual value (log10 scale).
 	 */
 	su2double GetMinLogResidualFSI(void);
-  
+
+	/*!
+	 * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
+	 * \return Value of Res_FEM_UTOL (log10 scale).
+	 */
+	su2double GetResidual_FEM_UTOL(void);
+
+	/*!
+	 * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
+	 * \return Value of Res_FEM_UTOL (log10 scale).
+	 */
+	su2double GetResidual_FEM_RTOL(void);
+
+	/*!
+	 * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
+	 * \return Value of Res_FEM_UTOL (log10 scale).
+	 */
+	su2double GetResidual_FEM_ETOL(void);
+
   /*!
    * \brief Value of the damping factor for the engine inlet bc.
    * \return Value of the damping factor.
@@ -5192,6 +5296,21 @@ public:
 	bool GetDeadLoad(void);
 
 	/*!
+	  * \brief Identifies if the mesh is matching or not (temporary, while implementing interpolation procedures).
+	  * \return <code>TRUE</code> if the mesh is matching, <code>FALSE</code> otherwise.
+	  */
+
+	bool GetMatchingMesh(void);
+
+	/*!
+	  * \brief Identifies if we want to restart from a steady or an unsteady solution.
+	  * \return <code>TRUE</code> if we restart from steady state solution, <code>FALSE</code> otherwise.
+	  */
+
+	bool GetSteadyRestart(void);
+
+
+	/*!
 	 * \brief Provides information about the time integration of the structural analysis, and change the write in the output
 	 *        files information about the iteration.
 	 * \return The kind of time integration: Static or dynamic analysis
@@ -5238,6 +5357,19 @@ public:
 	su2double GetNewmark_delta(void);
 
 	/*!
+	 * \brief Get the number of integration coefficients provided by the user.
+	 * \return Number of integration coefficients.
+	 */
+	unsigned short GetnIntCoeffs(void);
+
+	/*!
+	 * \brief Get the integration coefficients for the Generalized Alpha - Newmark integration integration scheme.
+	 * \param[in] val_coeff - Index of the coefficient.
+	 * \return Alpha coefficient for the Runge-Kutta integration scheme.
+	 */
+	su2double Get_Int_Coeffs(unsigned short val_coeff);
+
+	/*!
 	 * \brief Check if the user wants to apply the load gradually.
 	 * \return 	<code>TRUE</code> means that the load is to be applied gradually.
 	 */
@@ -5271,7 +5403,25 @@ public:
 	 * \brief Check if the simulation we are running is a FSI simulation
 	 * \return Value of the physical time in an unsteady simulation.
 	 */
-	bool GetFSI_Simulation(void);
+	 bool GetFSI_Simulation(void);
+
+	/*!
+	 * \brief Check if we want to apply an incremental load to the nonlinear structural simulation
+	 * \return <code>TRUE</code> means that the load is to be applied in increments.
+	 */
+	 bool GetIncrementalLoad(void);
+
+	/*!
+	 * \brief Get the number of increments for an incremental load.
+	 * \return 	Number of increments.
+	 */
+	 unsigned long GetNumberIncrements(void);
+
+	/*!
+	 * \brief Get the value of the criteria for applying incremental loading.
+	 * \return Value of the log10 of the residual.
+	 */
+	 su2double GetIncLoad_Criteria(unsigned short val_var);
 
 	/*!
 	 * \brief Get the relaxation method chosen for the simulation
@@ -5279,6 +5429,10 @@ public:
 	 */
 	unsigned short GetRelaxation_Method_FSI(void);
 
+	/*!
+	 * \brief Get the interpolation method used for matching between zones.
+	 */
+	inline unsigned short GetKindInterpolation(void);
 
 
 };

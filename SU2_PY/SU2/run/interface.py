@@ -88,15 +88,15 @@ def CFD(config):
 
         processes = konfig['NUMBER_PART']
 
-        the_Command = 'SU2_CFD_AD ' + tempname
+        the_Command = 'SU2_CFD_DIRECTDIFF ' + tempname
 
     elif discrete_adjoint:
-        tempname = 'config_CFD_AD.cfg'
+        tempname = 'config_CFD_REVERSE.cfg'
         konfig.dump(tempname)
 
         processes = konfig['NUMBER_PART']
 
-        the_Command = 'SU2_CFD_AD ' + tempname
+        the_Command = 'SU2_CFD_REVERSE ' + tempname
 
     else:
         tempname = 'config_CFD.cfg'
@@ -112,6 +112,50 @@ def CFD(config):
     #os.remove(tempname)
     
     return
+
+def FSI(config):
+    """ run SU2_FSI
+        partitions set by config.NUMBER_PART
+    """
+    konfig = copy.deepcopy(config)
+    
+    direct_diff = not konfig.get('DIRECT_DIFF',"") in ["NONE", ""]
+
+    discrete_adjoint = konfig.MATH_PROBLEM == 'DISCRETE_ADJOINT'
+
+    if direct_diff:
+        tempname = 'config_FSI_DIRECTDIFF.cfg'
+
+        konfig.dump(tempname)
+
+        processes = konfig['NUMBER_PART']
+
+        the_Command = 'SU2_FSI_DIRECTDIFF ' + tempname
+
+    elif discrete_adjoint:
+        tempname = 'config_FSI_REVERSE.cfg'
+        konfig.dump(tempname)
+
+        processes = konfig['NUMBER_PART']
+
+        the_Command = 'SU2_FSI_REVERSE ' + tempname
+
+    else:
+        tempname = 'config_FSI.cfg'
+        konfig.dump(tempname)
+    
+        processes = konfig['NUMBER_PART']
+    
+        the_Command = 'SU2_FSI ' + tempname
+
+    the_Command = build_command( the_Command , processes )
+    run_command( the_Command )
+    
+    #os.remove(tempname)
+    
+    return
+
+
 
 def MSH(config):
     """ run SU2_MSH
@@ -166,12 +210,12 @@ def DOT(config):
 
     if discrete_adjoint:
 
-        tempname = 'config_DOT_AD.cfg'
+        tempname = 'config_DOT_REVERSE.cfg'
         konfig.dump(tempname)
 
         processes = konfig['NUMBER_PART']
 
-        the_Command = 'SU2_DOT_AD ' + tempname
+        the_Command = 'SU2_DOT_REVERSE ' + tempname
     else:
     
         tempname = 'config_DOT.cfg'

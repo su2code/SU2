@@ -71,6 +71,8 @@ int main(int argc, char *argv[]) {
   CSurfaceMovement **surface_movement   = NULL;
   CVolumetricMovement **grid_movement   = NULL;
   CFreeFormDefBox*** FFDBox             = NULL;
+  CInterpolator ***interpolator_container = NULL;
+  CTransfer ***transfer_container         = NULL;
   
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
    file is specified, default.cfg is used) ---*/
@@ -99,6 +101,8 @@ int main(int argc, char *argv[]) {
   surface_movement      = new CSurfaceMovement*[nZone];
   grid_movement         = new CVolumetricMovement*[nZone];
   FFDBox                = new CFreeFormDefBox**[nZone];
+  interpolator_container= new CInterpolator**[nZone];
+  transfer_container    = new CTransfer**[nZone];
   
   for (iZone = 0; iZone < nZone; iZone++) {
     solver_container[iZone]       = NULL;
@@ -109,6 +113,8 @@ int main(int argc, char *argv[]) {
     surface_movement[iZone]       = NULL;
     grid_movement[iZone]          = NULL;
     FFDBox[iZone]                 = NULL;
+	interpolator_container[iZone] = NULL;
+	transfer_container[iZone]     = NULL;
   }
   
   /*--- Loop over all zones to initialize the various classes. In most
@@ -155,7 +161,7 @@ int main(int argc, char *argv[]) {
     geometry_container[iZone][MESH_0]->SetBoundaries(config_container[iZone]);
     
   }
-  
+
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
   
@@ -200,7 +206,8 @@ int main(int argc, char *argv[]) {
    solver types from the config, instantiate the appropriate driver for the problem. ---*/
   
   Driver_Preprocessing(&driver, iteration_container, solver_container,
-                       geometry_container, integration_container, numerics_container, config_container, nZone);
+                       geometry_container, integration_container, numerics_container,
+                       interpolator_container, transfer_container, config_container, nZone, nDim);
   
   
   /*--- Instantiate the geometry movement classes for the solution of unsteady
@@ -252,14 +259,14 @@ int main(int argc, char *argv[]) {
   
   /*--- Coupling between zones (limited to two zones at the moment) ---*/
   
-  if (nZone == 2) {
-    if (rank == MASTER_NODE)
-      cout << endl <<"--------------------- Setting Coupling Between Zones --------------------" << endl;
-    geometry_container[ZONE_0][MESH_0]->MatchZone(config_container[ZONE_0], geometry_container[ZONE_1][MESH_0],
-                                                  config_container[ZONE_1], ZONE_0, nZone);
-    geometry_container[ZONE_1][MESH_0]->MatchZone(config_container[ZONE_1], geometry_container[ZONE_0][MESH_0],
-                                                  config_container[ZONE_0], ZONE_1, nZone);
-  }
+//  if (nZone == 2) {
+//    if (rank == MASTER_NODE)
+//      cout << endl <<"--------------------- Setting Coupling Between Zones --------------------" << endl;
+//    geometry_container[ZONE_0][MESH_0]->MatchZone(config_container[ZONE_0], geometry_container[ZONE_1][MESH_0],
+//                                                  config_container[ZONE_1], ZONE_0, nZone);
+//    geometry_container[ZONE_1][MESH_0]->MatchZone(config_container[ZONE_1], geometry_container[ZONE_0][MESH_0],
+//                                                  config_container[ZONE_0], ZONE_1, nZone);
+//  }
   
   /*--- Definition of the output class (one for all zones). The output class
    manages the writing of all restart, volume solution, surface solution,
@@ -277,12 +284,15 @@ int main(int argc, char *argv[]) {
   if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
     ExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
   
+  /*--- Check for a dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
+  if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY
+		  && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
+	  	  ExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
 
   /*--- Initiate value at each interface for the mixing plane ---*/
   if(config_container[ZONE_0]->GetBoolMixingPlane())
   	for (iZone = 0; iZone < nZone; iZone++)
   	  iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
-
 
   /*--- Main external loop of the solver. Within this loop, each iteration ---*/
   
@@ -298,12 +308,7 @@ int main(int argc, char *argv[]) {
 #endif
   
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
-  
-  unsigned short iFluidIt, nFluidIt;
-  
-  iFluidIt=0;
-  nFluidIt=config_container[ZONE_0]->GetnIterFSI();
-  
+
   /*--- This is temporal and just to check. It will have to be added to the regular history file ---*/
   
   ofstream historyFile_FSI;
@@ -316,11 +321,12 @@ int main(int argc, char *argv[]) {
     historyFile_FSI << "Time,Iteration,Aitken,URes,logResidual,orderMagnResidual" << endl;
     historyFile_FSI.close();
   }
-  
+
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
     
     /*--- Set the value of the external iteration. ---*/
 	for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetExtIter(ExtIter);
+
     
     /*--- Read the target pressure ---*/
     
@@ -335,24 +341,14 @@ int main(int argc, char *argv[]) {
                                     geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
-    
-    if (fsi){
-      config_container[ZONE_1]->SetExtIter(ExtIter);
-      FluidStructureIteration(output, integration_container, geometry_container,
-                              solver_container, numerics_container, config_container,
-                              surface_movement, grid_movement, FFDBox,
-                              iFluidIt, nFluidIt);
-    }
-    
-    else {
-      
+
       /*--- Run a single iteration of the problem using the driver class. ---*/
-      
+
       driver->Run(iteration_container, output, integration_container,
                   geometry_container, solver_container, numerics_container,
-                  config_container, surface_movement, grid_movement, FFDBox);
+                  config_container, surface_movement, grid_movement, FFDBox,
+                  interpolator_container, transfer_container);
       
-    }
     
     /*--- Synchronization point after a single solver iteration. Compute the
      wall clock time required. ---*/
@@ -379,10 +375,28 @@ int main(int argc, char *argv[]) {
     runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
     runtime->SetExtIter(ExtIter);
     
-    /*--- Update the convergence history file (serial and parallel computations). ---*/
-    
-    output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
-                                config_container, integration_container, false, UsedTime, ZONE_0);
+	/*--- Update the convergence history file (serial and parallel computations). ---*/
+	if (fsi){
+		if (rank == MASTER_NODE) cout << "---------------------------------------------------------------------------" << endl;
+		for (iZone = 0; iZone < nZone; iZone++){
+			if (iZone == 0 && rank == MASTER_NODE) cout << "Fluid convergence: " << endl;
+			else if (iZone == 1 && rank == MASTER_NODE) cout << "Structural convergence: " << endl;
+			output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+					config_container, integration_container, false, UsedTime, iZone);
+		}
+
+		if (rank == MASTER_NODE)cout << "---------------------------------------------------------------------------" << endl;
+	}
+	else {
+		output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+				config_container, integration_container, false, UsedTime, ZONE_0);
+
+	}
+
+//    /*--- Update the convergence history file (serial and parallel computations). ---*/
+//
+//    output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+//                                config_container, integration_container, false, UsedTime, ZONE_0);
     
     /*--- Evaluate the new CFL number (adaptive). ---*/
     
@@ -404,6 +418,9 @@ int main(int argc, char *argv[]) {
         // This is a temporal fix, while we code the non-linear solver
         //	        StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
         StopCalc = false; break;
+	  case FEM_ELASTICITY:
+	    StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
+	    StopCalc = false; break;
       case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
         StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
@@ -429,7 +446,10 @@ int main(int argc, char *argv[]) {
                              ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
         
         ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
-         ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
+        ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
+
+		(((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
+		 ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
           
           /*--- Low-fidelity simulations (using a coarser multigrid level
            approximation to the solution) require an interpolation back to the

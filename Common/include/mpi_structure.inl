@@ -100,6 +100,7 @@ inline void CMPIWrapper::Allgather(void *sendbuf, int sendcnt, MPI_Datatype send
   MPI_Allgather(sendbuf,sendcnt,sendtype, recvbuf, recvcnt, recvtype, comm);
 }
 
+
 inline void CMPIWrapper::Sendrecv(void *sendbuf, int sendcnt, MPI_Datatype sendtype,
                                   int dest, int sendtag, void *recvbuf, int recvcnt,
                                   MPI_Datatype recvtype,int source, int recvtag,

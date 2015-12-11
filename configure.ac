@@ -35,8 +35,8 @@
 # METIS & TECIO integration added by Ben Kirk, 3/24/2014
 # LAPACK connection added by Teus van der Stelt, 11/13/2014
 # ParMETIS integration added by Ben Kirk & Thomas D. Economon, 2/3/2015
-#
-################################################################################
+# SU2_FSI integration added by Ruben Sanchez, 5/19/2015
+##########################
 
 AC_INIT([SU2], [4.0.2], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
@@ -51,6 +51,8 @@ SU2_SET_COMPILERS
 AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_PROG_MKDIR_P
+AC_PROG_CXX
+
 #PKG_PROG_PKG_CONFIG
 
 # --------------------------------------------------------------
@@ -114,6 +116,9 @@ AC_ARG_WITH(LAPACK-include,
 AC_ARG_ENABLE(CFD,
    	AS_HELP_STRING([--disable-CFD], [build the SU2_CFD executable (default = yes)]),
 	[build_CFD=$enableval], [build_CFD="yes"])
+AC_ARG_ENABLE(FSI,
+   	AS_HELP_STRING([--disable-FSI], [build the SU2_FSI executable (default = yes)]),
+	[build_FSI=$enableval], [build_FSI="yes"])
 AC_ARG_ENABLE(DOT,
    	AS_HELP_STRING([--disable-DOT], [build the SU2_DOT executable (default = yes)]),
 	[build_DOT=$enableval], [build_DOT="yes"])
@@ -545,6 +550,7 @@ fi
 ###########################
 
 AM_CONDITIONAL([BUILD_CFD],[test $build_CFD != "no"])
+AM_CONDITIONAL([BUILD_FSI],[test $build_FSI != "no"])
 AM_CONDITIONAL([BUILD_DOT],[test $build_DOT != "no"])
 AM_CONDITIONAL([BUILD_MSH],[test $build_MSH != "no"])
 AM_CONDITIONAL([BUILD_DEF],[test $build_DEF != "no"])
@@ -557,6 +563,7 @@ AC_OUTPUT(Makefile \
         externals/Makefile \
 	Common/lib/Makefile \
 	SU2_CFD/obj/Makefile \
+	SU2_FSI/obj/Makefile \
 	SU2_DOT/obj/Makefile \
 	SU2_MSH/obj/Makefile \
 	SU2_DEF/obj/Makefile \
@@ -634,6 +641,7 @@ Build Configuration Summary:
     External libs:        $su2_externals_LIBS
 
     Build SU2_CFD:        $build_CFD
+    Build SU2_FSI:        $build_FSI
     Build SU2_DOT:        $build_DOT
     Build SU2_MSH:        $build_MSH
     Build SU2_DEF:        $build_DEF
