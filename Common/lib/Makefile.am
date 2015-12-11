@@ -31,6 +31,7 @@
 #
 ################################################################################
 
+AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
 noinst_LIBRARIES =
@@ -81,6 +82,7 @@ lib_sources = \
   ../include/mpi_structure.inl \
   ../include/datatype_structure.hpp \
   ../include/datatype_structure.inl \
+  ../include/interpolation_structure.hpp \
   ../include/gauss_structure.hpp \
   ../include/gauss_structure.inl \
   ../include/element_structure.hpp \
@@ -99,7 +101,8 @@ lib_sources = \
   ../src/datatype_structure.cpp \
   ../src/gauss_structure.cpp \
   ../src/element_structure.cpp \
-  ../src/element_linear.cpp 
+  ../src/element_linear.cpp \
+  ../src/interpolation_structure.cpp
 
 lib_cxxflags =
 lib_ldadd =
