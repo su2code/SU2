@@ -521,13 +521,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		AverageFlux[iMarker] 			= new su2double* [nSpanWiseSections];
-		TotalFlux[iMarker] 					= new su2double* [nSpanWiseSections];
+		SpanTotalFlux[iMarker] 					= new su2double* [nSpanWiseSections];
 		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++) {
 			AverageFlux[iMarker][iSpan] 					= new su2double [nVar];
-			TotalFlux[iMarker][iSpan] 						= new su2double [nVar];
+			SpanTotalFlux[iMarker][iSpan] 						= new su2double [nVar];
 			for (iVar = 0; iVar < nVar; iVar++) {
 				AverageFlux[iMarker][iSpan][iVar] 				= 0.0;
-				TotalFlux[iMarker][iSpan][iVar] 					= 0.0;
+				SpanTotalFlux[iMarker][iSpan][iVar] 					= 0.0;
 			}
 		}
 	}
@@ -8559,25 +8559,9 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_c
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
-  /*--- Forces initialization for contenitors ---*/
-  for (iVar=0;iVar<nVar;iVar++)
-    TotalFluxes[iVar]= 0.0;
-  for (iDim=0; iDim<nDim; iDim++) {
-      TotalVelocity[iDim]=0.0;
-      TotalAreaVelocity[iDim]=0.0;
-      TotalNormal[iDim]=0.0;
-      TotalGridVel[iDim]=0.0;
-  }
-
-  TotalDensity = 0.0;
-  TotalPressure = 0.0;
-  TotalAreaPressure=0.0;
-  TotalAreaDensity=0.0;
-  TotalArea = 0.0;
-  nVert = 0;
-
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
-    /*--- Forces initialization for contenitors ---*/
+
+  	/*--- Forces initialization for contenitors ---*/
     for (iVar=0;iVar<nVar;iVar++)
       TotalFluxes[iVar]= 0.0;
     for (iDim=0; iDim<nDim; iDim++) {
@@ -8616,15 +8600,12 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_c
 								exit(1);
 							}
 
-							nVert++;
 
 							/*--- Normal vector for this vertex (negate for outward convention) ---*/
-							geometry->turbovertex[iMarker][iSpan][iVertex]->GetNormal(Normal);
-							for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-							Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+							geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(Normal);
+							Area = geometry->turbovertex[iMarker][iSpan][iVertex]->GetArea();
 							su2double VelNormal = 0.0, VelSq = 0.0;
 							for (iDim = 0; iDim < nDim; iDim++) {
-								UnitNormal[iDim] = Normal[iDim]/Area;
 								Velocity[iDim] = node[iPoint]->GetPrimitive(iDim+1);
 								VelNormal += UnitNormal[iDim]*Velocity[iDim];
 								VelSq += Velocity[iDim]*Velocity[iDim];
@@ -8640,7 +8621,6 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_c
 									TotalFluxes[iDim] += Area*(Density*VelNormal*Velocity[iDim -1] + Pressure*UnitNormal[iDim -1] );
 								TotalFluxes[nDim+1] += Area*(Density*VelNormal*Enthalpy );
 
-								TotalArea += Area;
 								TotalAreaPressure += Area*Pressure;
 								TotalAreaDensity  += Area*Density;
 								for (iDim = 0; iDim < nDim; iDim++)
@@ -8655,17 +8635,11 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_c
 
 
 							}
-							for (iDim = 0; iDim < nDim; iDim++) TotalNormal[iDim] +=Normal[iDim];
-							if (grid_movement){
-								gridVel = geometry->node[iPoint]->GetGridVel();
-								for (iDim = 0; iDim < nDim; iDim++)
-									TotalGridVel[iDim] +=gridVel[iDim];
-							}
-					}
-				}
-			}
-		}
-	}
+    				}
+    			}
+    		}
+    	}
+    }
 
 #ifdef HAVE_MPI
 
@@ -13022,13 +12996,13 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		AverageFlux[iMarker] 			= new su2double* [nSpanWiseSections];
-		TotalFlux[iMarker] 					= new su2double* [nSpanWiseSections];
+		SpanTotalFlux[iMarker] 					= new su2double* [nSpanWiseSections];
 		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++) {
 			AverageFlux[iMarker][iSpan] 					= new su2double [nVar];
-			TotalFlux[iMarker][iSpan] 						= new su2double [nVar];
+			SpanTotalFlux[iMarker][iSpan] 						= new su2double [nVar];
 			for (iVar = 0; iVar < nVar; iVar++) {
 				AverageFlux[iMarker][iSpan][iVar] 				= 0.0;
-				TotalFlux[iMarker][iSpan][iVar] 					= 0.0;
+				SpanTotalFlux[iMarker][iSpan][iVar] 					= 0.0;
 		  }
 	  }
 	}
