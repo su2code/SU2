@@ -914,6 +914,15 @@ public:
 	virtual void MPIMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag);
 
 	/*!
+	 * \brief It performs the average value along a boundary.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+     * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the average is evaluated.
+	 */
+	virtual void MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag);
+
+	/*!
 	 * \brief it performs a mixed out average of the nodes of a boundary.
 	 * \param[in] val_init_pressure -  initial pressure value
 	 * \param[in] val_Averaged_Flux - flux averaged values.
@@ -2928,6 +2937,33 @@ protected:
 		  *AveragedEntropy,
 		  *MassFlow,
 		  *FlowAngle;
+  su2double ***AverageVelocity,
+  	  	 ***AverageNormal,
+		 ***AverageGridVel,
+  	  	  ***AverageFlux,
+		  ***SpanTotalFlux,
+		  **SpanTotalArea,
+		  **AverageNormalVelocity,
+		  **ExtAverageNormalVelocity,
+		  **AverageTangVelocity,
+		  **ExtAverageTangVelocity,
+		  **AverageTangGridVelocity,
+		  **AverageMach,
+		  **AverageNormalMach,
+		  **AverageTangMach,
+		  **AverageEnthalpy,
+		  **AveragePressure,
+		  **AverageTotTemperature,
+		  **AverageTotPressure,
+		  **ExtAveragePressure,
+		  **ExtAverageTotTemperature,
+		  **ExtAverageTotPressure,
+		  **AverageDensity,
+		  **ExtAverageDensity,
+		  **AverageSoundSpeed,
+		  **AverageEntropy,
+		  **SpanMassFlow,
+		  **SpanFlowAngle;
   su2double *TotalStaticEfficiency,
   	  	  	*TotalTotalEfficiency,
 			*KineticEnergyLoss,
@@ -3492,6 +3528,16 @@ public:
 	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
 	 */
 	void MPIMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag);
+
+
+	/*!
+	 * \brief It computes average quantities along the span for turbomachinery analysis.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+     * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag);
 
 	/*!
 	 * \brief it performs a mixed out average of the nodes of a boundary.
