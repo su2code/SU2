@@ -613,7 +613,7 @@ void CIsoparametric::Isoparameters(su2double *isoparams, unsigned short nDim,
   su2double x[n0], x_tmp[n0];
   su2double Q[m0*m0], R[m0*m0], A[n0*m0];
   su2double x2[n0];
-
+  su2double eps = 1E-10;
   bool test[n0], testi[n0];
   m=m0; n=n0;
   /*--- Create Matrix A: 1st row all 1's, 2nd row x coordinates, 3rd row y coordinates, etc ---*/
@@ -778,8 +778,6 @@ void CIsoparametric::Isoparameters(su2double *isoparams, unsigned short nDim,
 }
 
 
-CMirror::CMirror(void):  CInterpolator(){ }
-
 /* Nearest Neighbor Interpolator */
 CMirror::CMirror(CGeometry ***geometry_container, CConfig **config,  unsigned int iZone, unsigned int jZone) :  CInterpolator(geometry_container, config, iZone, jZone){
 
@@ -791,6 +789,39 @@ CMirror::CMirror(CGeometry ***geometry_container, CConfig **config,  unsigned in
 CMirror::~CMirror(){}
 
 void CMirror::Set_TransferCoeff(CConfig **config){
+  unsigned long iVertex, jVertex;
+   unsigned long jPoint, iPoint, tPoint, nTargets;
+   unsigned short iDim, donorindex=0, iFace;
+
+   unsigned short nDim = donor_geometry->GetnDim();
+
+   unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;
+   unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;
+
+   int markDonor=0, markTarget=0;
+
+   long donor_elem=0, temp_donor=0;
+   unsigned int nNodes=0;
+   /*--- Restricted to 2-zone for now ---*/
+   unsigned int nFaces=1; //For 2D cases, we want to look at edges, not faces, as the 'interface'
+   bool face_on_marker=true;
+
+   unsigned long iVertexDonor, iPointDonor = 0;
+   unsigned long iVertexTarget, iPointTarget = 0;
+   unsigned long pPoint = 0, Global_Point = 0;
+   unsigned long jGlobalPoint = 0, pGlobalPoint = 0;
+   int iProcessor, pProcessor = 0;
+
+   unsigned long nLocalVertex_Donor = 0, nLocalVertex_Target = 0;
+   unsigned long nGlobalVertex_Donor = 0, MaxLocalVertex_Donor = 0;
+
+   unsigned long Global_Point_Donor;
+   int Donor_Processor;
+
+   int rank = MASTER_NODE;
+   int nProcessor = SINGLE_NODE;
+
+   su2double coeff;
 
   /*--- Number of markers on the interface ---*/
   nMarkerInt = (config[targetZone]->GetMarker_n_FSIinterface())/2;
@@ -824,7 +855,7 @@ void CMirror::Set_TransferCoeff(CConfig **config){
       nNodes = 0;
       for (jVertex = 0; jVertex<donor_geometry->GetnVertex(markDonor); jVertex++) {
         jPoint =donor_geometry->vertex[markDonor][jVertex]->GetNode(); // Local index of jVertex
-        nTargets = donor_geometry->vertex[markDonor][jVertex]->GetnDonorPoint();
+        nTargets = donor_geometry->vertex[markDonor][jVertex]->GetnDonorPoints();
         for (unsigned short iTarget=0; iTarget<nTargets; iTarget++){
           tPoint = donor_geometry->vertex[markDonor][jVertex]->GetInterpDonorPoint(iTarget);
           if (tPoint==iPoint){
@@ -839,7 +870,7 @@ void CMirror::Set_TransferCoeff(CConfig **config){
 
       for (jVertex = 0; jVertex<donor_geometry->GetnVertex(markDonor); jVertex++) {
         jPoint =donor_geometry->vertex[markDonor][jVertex]->GetNode(); // Local index of jVertex
-        nTargets = donor_geometry->vertex[markDonor][jVertex]->GetnDonorPoint();
+        nTargets = donor_geometry->vertex[markDonor][jVertex]->GetnDonorPoints();
         for (unsigned short iTarget=0; iTarget<nTargets; iTarget++){
           tPoint = donor_geometry->vertex[markDonor][jVertex]->GetInterpDonorPoint(iTarget);
           if (tPoint==iPoint){

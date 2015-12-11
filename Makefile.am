@@ -45,6 +45,10 @@ if BUILD_CFD
 SUBDIRS +=SU2_CFD/obj
 endif
 
+if BUILD_FSI
+SUBDIRS +=SU2_FSI/obj
+endif
+
 if BUILD_DOT
 SUBDIRS +=SU2_DOT/obj
 endif
