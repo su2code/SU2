@@ -1124,7 +1124,7 @@ public:
 	/*!
 	 * \brief get face Area associate to the vertex.
 	 */
-	void GetArea(void);
+	su2double GetArea(void);
 
 	/*!
 	 * \brief Copy the the turbo normal vector of a face.

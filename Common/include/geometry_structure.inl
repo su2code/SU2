@@ -163,6 +163,8 @@ inline void CGeometry::SetVertex(CConfig *config) { }
 
 inline void CGeometry::SetTurboVertex(CConfig *config, unsigned short marker_flag, bool allocate) { }
 
+inline void CGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_flag, bool allocate) { }
+
 inline void CGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) { }
 
 inline void CGeometry::SetCoord_CG(void) { }

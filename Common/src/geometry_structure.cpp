@@ -9301,9 +9301,9 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 }
 
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_flag, bool allocate) {
-	unsigned long  iPoint, jPoint, iVertex, jVertex, iSpanVertex, jSpanVertex,kSpanVertex, **ordered, **disordered, **area;
+	unsigned long  iPoint, jPoint, iVertex, jVertex, iSpanVertex, jSpanVertex,kSpanVertex, **ordered, **disordered;
 	unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim, nSpanWiseSections;
-	su2double min, max, *coord, *span, delta, dist, Normal2, *Normal, *NormalArea, target, Area;
+	su2double min, max, *coord, *span, delta, dist, Normal2, *Normal, *NormalArea, target, **area, Area;
 	int rank = MASTER_NODE;
 	bool **checkAssign;
 	min = 10.0E+06;
@@ -9595,12 +9595,60 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 //  		}
 //  	}
 //  }
+
   delete [] area;
   delete [] ordered;
 	delete [] disordered;
 	delete [] checkAssign;
 	delete [] span;
 	delete [] Normal;
+}
+
+void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_flag, bool allocate) {
+
+	unsigned short iMarker, iMarkerTP, iSpan, iDim;
+	unsigned long nVert;
+	su2double *Normal, *gridVel, TotalArea;
+  su2double *TotalNormal, *TotalGridVel;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  /*-- Variables declaration and allocation ---*/
+  TotalNormal = new su2double[nDim];
+  TotalGridVel = new su2double[nDim];
+
+  unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
+  bool grid_movement        = config->GetGrid_Movement();
+#ifdef HAVE_MPI
+  su2double MyTotalArea, *MyTotalNormal= NULL,*MyTotalGridVel= NULL;
+  unsigned long My_nVert;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
+
+  for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
+
+  	/*--- Forces initialization for contenitors to zero ---*/
+    for (iDim=0; iDim<nDim; iDim++) {
+        TotalNormal[iDim]=0.0;
+        TotalGridVel[iDim]=0.0;
+    }
+    TotalArea = 0.0;
+    nVert = 0;
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    	for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
+    		if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
+    			if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+
+    			}
+    		}
+    	}
+    }
+  }
+  delete [] TotalNormal;
+  delete []TotalGridVel;
+
 }
 
 void CPhysicalGeometry::SetCoord_CG(void) {
