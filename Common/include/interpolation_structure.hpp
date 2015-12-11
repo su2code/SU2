@@ -159,7 +159,7 @@ public:
 };
 
 /*!
- * \brief Consistent and Conservative interpolation
+ * \brief Isoparametric interpolation
  */
 class CIsoparametric : public CInterpolator {
 public:
@@ -204,8 +204,42 @@ public:
    * of the edge is then stored in iFace, and the global index of the node (from which the edge
    * is referenced)
    */
-  void Isoparameters(su2double* isoparams,
-      unsigned short nDim, long donor_elem,  unsigned short iFace,
-      unsigned int nDonorPoints,  su2double* xj);
+  void Isoparameters(su2double* isoparams,unsigned short nDim, unsigned short nDonor, su2double *X, su2double *xj);
+
+};
+
+/*!
+ * \brief Mirror interpolation: copy point linking and coefficient values from the opposing mesh
+ * Assumes that the oppoosing mesh has already run interpolation. (otherwise this will result in empty/trivial interpolation)
+ */
+class CMirror : public CInterpolator {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] geometry_container
+   * \param[in] config - config container
+   * \param[in] iZone - First zone
+   * \param[in] jZone - Second zone
+   *
+   * Data is set in geometry[targetZone]
+   *
+   */
+  CMirror(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CMirror(void);
+
+  /*!
+   * \brief Set up transfer matrix defining relation between two meshes
+   * \param[in] Zones - list of zones to use for interpolation. in the order: [Recipient/Target, Donor ]
+   * \param[in] config - config container
+   *
+   * Data is set in geometry[targetZone]
+   */
+  void Set_TransferCoeff(CConfig **config);
+
 
 };
