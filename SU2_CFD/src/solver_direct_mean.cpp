@@ -104,7 +104,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
+	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = config->GetAdjoint();
   string filename = config->GetSolution_FlowFileName();
   
@@ -556,7 +557,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     
   } else {
     
-    /*--- Modify file name for an unsteady restart ---*/
+    /*--- Modify file name for a dual-time unsteady restart ---*/
     
     if (dual_time) {
       
@@ -571,7 +572,19 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     if (nZone >1)
       filename= config->GetRestart_FlowFileName(filename, iZone);
     
-    /*--- Open the restart file, throw an error if this fails. ---*/
+		/*--- Modify file name for a time stepping unsteady restart ---*/
+		
+		if (time_stepping) {
+			if (adjoint) {
+				Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
+			} else {
+				Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+			}
+			filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+		}
+		
+		
+		/*--- Open the restart file, throw an error if this fails. ---*/
     
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
@@ -2770,7 +2783,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   bool rans = ((config->GetKind_Solver() == RANS) ||
                (config->GetKind_Solver() == ADJ_RANS) ||
                (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool gravity = (config->GetGravityForce() == YES);
   bool engine_intake = config->GetEngine_Intake();
@@ -3253,6 +3266,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement = config->GetGrid_Movement();
+	bool time_steping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
@@ -3424,7 +3438,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   
   /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
   
-  if (config->GetUnsteady_Simulation() == TIME_STEPPING) {
+  if (time_steping) {
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Global_Delta_Time;
@@ -3432,8 +3446,19 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     Global_Delta_Time = rbuf_time;
 #endif
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      node[iPoint]->SetDelta_Time(Global_Delta_Time);
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+			/*--- If the CFL is set to zero, it uses the defined unsteady time step, otherwise
+			 it computes the time step based on the CFL ---*/
+			/*--- Sets the regular CFL equal to the unsteady CFL ---*/
+			
+			config->SetCFL(iMesh,config->GetUnst_CFL());
+			
+			if (config->GetCFL(iMesh) == 0.0){
+				node[iPoint]->SetDelta_Time(config->GetDelta_UnstTime());
+			} else {
+				node[iPoint]->SetDelta_Time(Global_Delta_Time);
+			}
+		}
   }
   
   /*--- Recompute the unsteady time step for the dual time strategy
@@ -11116,6 +11141,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   bool grid_movement  = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   string UnstExt, text_line;
   ifstream restart_file;
   
@@ -11132,7 +11158,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   
   /*--- Modify file name for an unsteady restart ---*/
   
-  if (dual_time)
+  if (dual_time || time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
   
   /*--- Open the restart file, and throw an error if this fails. ---*/
@@ -11544,6 +11570,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = config->GetAdjoint();
   string filename = config->GetSolution_FlowFileName();
@@ -12069,6 +12096,18 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     
     if (nZone >1)
       filename= config->GetRestart_FlowFileName(filename, iZone);
+		
+		
+		/*--- Modify file name for a simple unsteady restart ---*/
+		
+		if (time_stepping) {
+			if (adjoint) {
+				Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
+			} else {
+				Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+			}
+			filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+		}
     
     /*--- Open the restart file, throw an error if this fails. ---*/
     
