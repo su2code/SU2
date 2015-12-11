@@ -349,3 +349,7 @@ inline void CTurboVertex::GetTurboNormal(su2double *val_normal) {
 
 inline su2double *CTurboVertex::GetTurboNormal(void) { return TurboNormal; }
 
+inline void CTurboVertex::SetArea(su2double val_area){Area = val_area};
+
+inline su2double CTurboVertex::GetArea(void) { return Area; }
+

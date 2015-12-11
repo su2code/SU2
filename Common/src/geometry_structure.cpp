@@ -9301,9 +9301,9 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 }
 
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_flag, bool allocate) {
-	unsigned long  iPoint, jPoint, iVertex, jVertex, iSpanVertex, jSpanVertex,kSpanVertex, **ordered, **disordered;
+	unsigned long  iPoint, jPoint, iVertex, jVertex, iSpanVertex, jSpanVertex,kSpanVertex, **ordered, **disordered, **area;
 	unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim, nSpanWiseSections;
-	su2double min, max, *coord, *span, delta, dist, Normal2, *Normal, target;
+	su2double min, max, *coord, *span, delta, dist, Normal2, *Normal, *NormalArea, target, Area;
 	int rank = MASTER_NODE;
 	bool **checkAssign;
 	min = 10.0E+06;
@@ -9320,6 +9320,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 	Normal      = new su2double[3];
 	ordered     = new unsigned long* [nSpanWiseSections];
 	disordered     = new unsigned long* [nSpanWiseSections];
+	area 					= new su2double* [nSpanWiseSections];
+
 	checkAssign       = new bool* [nSpanWiseSections];
 
 	/*--- Initialize the new Vertex structure.
@@ -9366,18 +9368,25 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 								if (coord[1]<min){
 									min= coord[1];
 									jPoint = iPoint;
+
+									/*--- store also the face area associated with the vertex ---*/
+									vertex[iMarker][iVertex]->GetNormal(NormalArea);
+									Area = 0.0;
+									for (iDim = 0; iDim < nDim; iDim++)
+										Area += NormalArea[iDim]*NormalArea[iDim];
+									Area = sqrt(Area);
 								}
 							}
 						}
 						/*--- store the number of local physical vertex and initiate turbovertex pointer---*/
 						nVertexSpan[iMarker][0] = jVertex;
 						turbovertex[iMarker][0] = new CTurboVertex* [nVertexSpan[iMarker][0]];
-
 						/*--- reordering pitch-wise, storing in the turbovertex structure, compute normal for the turbo frame of reference---*/
 						jVertex = 0;
 						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 							if(node[jPoint]->GetDomain()){
 								turbovertex[iMarker][0][iVertex] = new CTurboVertex(jPoint, nDim);
+								turbovertex[iMarker][0][iVertex]->SetArea(Area);
 								coord = node[jPoint]->GetCoord();
 								Normal2 = 0.0;
 								for(iDim = 0; iDim < nDim; iDim++) Normal2 +=coord[iDim]*coord[iDim];
@@ -9391,7 +9400,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 								turbovertex[iMarker][0][iVertex]->SetTurboNormal(Normal);
 								jVertex++;
 								target = coord[1];
-//								cout <<  " pitch wise " << coord[1]<<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
 							}
 							dist = 10E+06;
 							for(jVertex = 0; jVertex<nVertex[iMarker]; jVertex++){
@@ -9399,6 +9407,13 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 								if(dist > (coord[1] - target) && (coord[1] - target) > 0.0){
 									dist= coord[1] - target;
 									jPoint =vertex[iMarker][jVertex]->GetNode();
+
+									/*--- store also the face area associated with the vertex ---*/
+									vertex[iMarker][iVertex]->GetNormal(NormalArea);
+									Area = 0.0;
+									for (iDim = 0; iDim < nDim; iDim++)
+										Area += NormalArea[iDim]*NormalArea[iDim];
+									Area = sqrt(Area);
 								}
 							}
 						}
@@ -9549,6 +9564,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 							delete [] ordered[iSpan];
 							delete [] disordered[iSpan];
 							delete [] checkAssign[iSpan];
+							delete [] area[iSpan];
 						}
 					}
 				}
@@ -9567,7 +9583,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 //  		}
 //  	}
 //  }
-
+  delete [] area;
   delete [] ordered;
 	delete [] disordered;
 	delete [] checkAssign;

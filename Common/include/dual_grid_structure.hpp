@@ -1094,6 +1094,7 @@ public:
 class CTurboVertex : public CVertex {
 private:
 	su2double *TurboNormal;			/*!< \brief Normal for computing correct turbomachinery quantities. */
+	su2double Area;							/*!< \brief Value of the face area associated to the vertex */
 public:
 
 	/*!
@@ -1114,6 +1115,16 @@ public:
 	 */
 	void SetTurboNormal(su2double *val_normal);
 
+	/*!
+	 * \brief set face Area.
+	 * \param[in] val_area - value of the face area.
+	 */
+	void SetArea(su2double val_area);
+
+	/*!
+	 * \brief get face Area associate to the vertex.
+	 */
+	void GetArea(void);
 
 	/*!
 	 * \brief Copy the the turbo normal vector of a face.
