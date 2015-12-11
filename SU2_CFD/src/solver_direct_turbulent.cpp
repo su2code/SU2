@@ -2345,6 +2345,7 @@ void CTurbSASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+	bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
   string UnstExt, text_line;
   ifstream restart_file;
   string restart_filename = config->GetSolution_FlowFileName();
@@ -2354,7 +2355,7 @@ void CTurbSASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 #endif
   
   /*--- Modify file name for an unsteady restart ---*/
-  if (dual_time)
+  if (dual_time|| time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
   
   /*--- Open the restart file, throw an error if this fails. ---*/
@@ -2469,7 +2470,8 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  
+	bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -2620,7 +2622,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     string filename = config->GetSolution_FlowFileName();
     
     /*--- Modify file name for an unsteady restart ---*/
-    if (dual_time) {
+    if (dual_time || time_stepping) {
       int Unst_RestartIter;
       if (adjoint) {
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;

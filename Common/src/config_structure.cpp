@@ -1558,7 +1558,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Decide whether we should be writing unsteady solution files. ---*/
   
   if (Unsteady_Simulation == STEADY ||
-      Unsteady_Simulation == TIME_STEPPING ||
       Unsteady_Simulation == TIME_SPECTRAL  ||
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
@@ -3570,10 +3569,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << endl;
       }
 
-      cout << "Courant-Friedrichs-Lewy number:   ";
-      cout.precision(3);
-      cout.width(6); cout << CFL[0];
-      cout << endl;
+			if (Unsteady_Simulation != TIME_STEPPING){
+				cout << "Courant-Friedrichs-Lewy number:   ";
+				cout.precision(3);
+				cout.width(6); cout << CFL[0];
+				cout << endl;
+			}
+			
 
       if (nMGLevels !=0) {
         cout.precision(3);
