@@ -116,6 +116,7 @@ public:
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
 	CTurboVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
 	unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
+  unsigned long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker (also halo nodes included) */
 	unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
 	vector<unsigned long> PeriodicPoint[MAX_NUMBER_PERIODIC][2];			/*!< \brief PeriodicPoint[Periodic bc] and return the point that 
 																			 must be sent [0], and the image point in the periodic bc[1]. */
@@ -212,6 +213,13 @@ public:
 	 * \return Number of vertices.
 	 */
 	unsigned long GetnVertex(unsigned short val_marker);
+
+	/*!
+	 * \brief Get number of vertices.
+	 * \param[in] val_marker - Marker of the boundary.
+	 * \return Number of vertices.
+	 */
+	unsigned long GetnVertexSpan(unsigned short val_marker, unsigned short val_span);
 
 	/*! 
 	 * \brief Get the edge index from using the nodes of the edge.
@@ -919,7 +927,6 @@ class CPhysicalGeometry : public CGeometry {
   unsigned long *adj_counter; /*!< \brief Adjacency counter. */
   unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
   su2double* Sensitivity; /*! <\brief Vector holding the sensitivities at each point. */
-  unsigned long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker (also halo nodes included) */
 
 public:
   

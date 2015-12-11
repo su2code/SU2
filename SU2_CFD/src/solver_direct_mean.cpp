@@ -92,7 +92,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   
   unsigned long iPoint, index, counter_local = 0, counter_global = 0, iVertex;
-  unsigned short iVar, iDim, iMarker, nLineLets;
+  unsigned short iVar, iSpan, iDim, iMarker, nLineLets;
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature, dull_val;
   int Unst_RestartIter;
   ifstream restart_file;
@@ -110,6 +110,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
+  unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -492,6 +494,114 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   AveragedNormalMach = new su2double[nMarker];
   AveragedTangMach = new su2double[nMarker];
   
+  /*--- Initializate quantities for the mixing process span-wise*/
+
+	AverageVelocity 		= new su2double** [nMarker];
+	AverageNormal 			= new su2double** [nMarker];
+	AverageGridVel 		= new su2double** [nMarker];
+
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
+		AverageVelocity[iMarker] 	= new su2double* [nSpanWiseSections];
+		AverageNormal[iMarker] 		= new su2double* [nSpanWiseSections];
+		AverageGridVel[iMarker] 		= new su2double* [nSpanWiseSections];
+		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+			AverageVelocity[iMarker][iSpan] 			= new su2double [nDim];
+			AverageNormal[iMarker][iSpan] 				= new su2double [nDim];
+			AverageGridVel[iMarker][iSpan] 			= new su2double [nDim];
+			for (iDim = 0; iDim < nDim; iDim++) {
+				AverageVelocity[iMarker][iSpan][iDim] 		= 0.0;
+				AverageNormal[iMarker][iSpan][iDim] 			= 0.0;
+				AverageGridVel[iMarker][iSpan][iDim] 		= 0.0;
+			}
+		}
+	}
+
+	AverageFlux 				= new su2double** [nMarker];
+	SpanTotalFlux 					= new su2double** [nMarker];
+
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
+		AverageFlux[iMarker] 			= new su2double* [nSpanWiseSections];
+		TotalFlux[iMarker] 					= new su2double* [nSpanWiseSections];
+		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++) {
+			AverageFlux[iMarker][iSpan] 					= new su2double [nVar];
+			TotalFlux[iMarker][iSpan] 						= new su2double [nVar];
+			for (iVar = 0; iVar < nVar; iVar++) {
+				AverageFlux[iMarker][iSpan][iVar] 				= 0.0;
+				TotalFlux[iMarker][iSpan][iVar] 					= 0.0;
+			}
+		}
+	}
+
+	AverageNormalVelocity 							= new su2double* [nMarker];
+	AverageTangVelocity 								= new su2double* [nMarker];
+	ExtAverageNormalVelocity 					= new su2double* [nMarker];
+	ExtAverageTangVelocity 						= new su2double* [nMarker];
+	SpanMassFlow														= new su2double* [nMarker];
+	SpanFlowAngle														= new su2double* [nMarker];
+	AverageEnthalpy  									= new su2double* [nMarker];
+	AveragePressure  									= new su2double* [nMarker];
+	AverageTotPressure  								= new su2double* [nMarker];
+	AverageTotTemperature  						= new su2double* [nMarker];
+	ExtAverageTotPressure  						= new su2double* [nMarker];
+	ExtAverageTotTemperature  					= new su2double* [nMarker];
+	ExtAveragePressure  								= new su2double* [nMarker];
+	AverageDensity   									= new su2double* [nMarker];
+	ExtAverageDensity   								= new su2double* [nMarker];
+	AverageSoundSpeed									= new su2double* [nMarker];
+	AverageEntropy   									= new su2double* [nMarker];
+	AverageTangGridVelocity 						= new su2double* [nMarker];
+	AverageMach 												= new su2double* [nMarker];
+	AverageNormalMach 									= new su2double* [nMarker];
+	AverageTangMach 										= new su2double* [nMarker];
+
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
+		AverageNormalVelocity[iMarker] 						= new su2double [nSpanWiseSections];
+		AverageTangVelocity[iMarker] 							= new su2double [nSpanWiseSections];
+		ExtAverageNormalVelocity[iMarker] 					= new su2double [nSpanWiseSections];
+		ExtAverageTangVelocity[iMarker] 						= new su2double [nSpanWiseSections];
+		SpanMassFlow[iMarker]														= new su2double [nSpanWiseSections];
+		SpanFlowAngle[iMarker]													= new su2double [nSpanWiseSections];
+		AverageEnthalpy[iMarker]  									= new su2double [nSpanWiseSections];
+		AveragePressure[iMarker]  									= new su2double [nSpanWiseSections];
+		AverageTotPressure[iMarker]  							= new su2double [nSpanWiseSections];
+		AverageTotTemperature[iMarker]  						= new su2double [nSpanWiseSections];
+		ExtAverageTotPressure[iMarker]  						= new su2double [nSpanWiseSections];
+		ExtAverageTotTemperature[iMarker]  				= new su2double [nSpanWiseSections];
+		ExtAveragePressure[iMarker]  							= new su2double [nSpanWiseSections];
+		AverageDensity[iMarker]   									= new su2double [nSpanWiseSections];
+		ExtAverageDensity[iMarker]   							= new su2double [nSpanWiseSections];
+		AverageSoundSpeed[iMarker]									= new su2double [nSpanWiseSections];
+		AverageEntropy[iMarker]   									= new su2double [nSpanWiseSections];
+		AverageTangGridVelocity[iMarker] 					= new su2double [nSpanWiseSections];
+		AverageMach[iMarker] 											= new su2double [nSpanWiseSections];
+		AverageNormalMach[iMarker] 								= new su2double [nSpanWiseSections];
+		AverageTangMach[iMarker] 									= new su2double [nSpanWiseSections];
+		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++) {
+			AverageNormalVelocity[iMarker][iSpan] 									= 0.0;
+			AverageTangVelocity[iMarker][iSpan] 										= 0.0;
+			ExtAverageNormalVelocity[iMarker][iSpan] 								= 0.0;
+			ExtAverageTangVelocity[iMarker][iSpan] 									= 0.0;
+			SpanMassFlow[iMarker][iSpan]														= 0.0;
+			SpanFlowAngle[iMarker][iSpan]														= 0.0;
+			AverageEnthalpy[iMarker][iSpan]  												= 0.0;
+			AveragePressure[iMarker][iSpan]  												= 0.0;
+			AverageTotPressure[iMarker][iSpan]  										= 0.0;
+			AverageTotTemperature[iMarker][iSpan]  									= 0.0;
+			ExtAverageTotPressure[iMarker][iSpan]  									= 0.0;
+			ExtAverageTotTemperature[iMarker][iSpan]  							= 0.0;
+			ExtAveragePressure[iMarker][iSpan]  										= 0.0;
+			AverageDensity[iMarker][iSpan]   												= 0.0;
+			ExtAverageDensity[iMarker][iSpan]   										= 0.0;
+			AverageSoundSpeed[iMarker][iSpan]												= 0.0;
+			AverageEntropy[iMarker][iSpan]   												= 0.0;
+			AverageTangGridVelocity[iMarker][iSpan] 								= 0.0;
+			AverageMach[iMarker][iSpan] 														= 0.0;
+			AverageNormalMach[iMarker][iSpan] 											= 0.0;
+			AverageTangMach[iMarker][iSpan]													= 0.0;
+		}
+	}
+
+
   
   /*--- Initializate quantities for turboperformace ---*/
   
@@ -8413,6 +8523,331 @@ void CEulerSolver::MPIMixing_Process(CGeometry *geometry, CSolver **solver_conta
 }
 
 
+void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag) {
+
+  unsigned long iVertex, iPoint, nVert;
+  unsigned short iDim, iVar, iMarker, iMarkerTP, iSpan;
+  unsigned short mixing_process = config->GetKind_MixingProcess();
+  su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL, *Normal, *gridVel,
+  Area, TotalArea, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, UnitNormal[3];
+  string Marker_Tag, Monitoring_Tag;
+  su2double val_init_pressure;
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool grid_movement        = config->GetGrid_Movement();
+  su2double TotalDensity, TotalPressure, *TotalVelocity, *TotalNormal, avgVel2, avgTotalEnthaply, *TotalFluxes, *TotalGridVel;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  /*-- Variables declaration and allocation ---*/
+  Velocity = new su2double[nDim];
+  Normal = new su2double[nDim];
+  TotalVelocity = new su2double[nDim];
+  TotalAreaVelocity = new su2double[nDim];
+  TotalNormal = new su2double[nDim];
+  TotalGridVel = new su2double[nDim];
+  TotalFluxes = new su2double[nVar];
+
+  unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
+
+
+
+
+#ifdef HAVE_MPI
+  su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, *MyTotalFluxes = NULL;
+  su2double MyTotalArea, *MyTotalNormal= NULL,*MyTotalGridVel= NULL, *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL;
+  unsigned long My_nVert;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
+  /*--- Forces initialization for contenitors ---*/
+  for (iVar=0;iVar<nVar;iVar++)
+    TotalFluxes[iVar]= 0.0;
+  for (iDim=0; iDim<nDim; iDim++) {
+      TotalVelocity[iDim]=0.0;
+      TotalAreaVelocity[iDim]=0.0;
+      TotalNormal[iDim]=0.0;
+      TotalGridVel[iDim]=0.0;
+  }
+
+  TotalDensity = 0.0;
+  TotalPressure = 0.0;
+  TotalAreaPressure=0.0;
+  TotalAreaDensity=0.0;
+  TotalArea = 0.0;
+  nVert = 0;
+
+  for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
+    /*--- Forces initialization for contenitors ---*/
+    for (iVar=0;iVar<nVar;iVar++)
+      TotalFluxes[iVar]= 0.0;
+    for (iDim=0; iDim<nDim; iDim++) {
+        TotalVelocity[iDim]=0.0;
+        TotalAreaVelocity[iDim]=0.0;
+        TotalNormal[iDim]=0.0;
+        TotalGridVel[iDim]=0.0;
+    }
+
+    TotalDensity = 0.0;
+    TotalPressure = 0.0;
+    TotalAreaPressure=0.0;
+    TotalAreaDensity=0.0;
+    TotalArea = 0.0;
+    nVert = 0;
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    	for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
+    		if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
+    			if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+
+    				/*--- Loop over the vertices to sum all the quantities pithc-wise ---*/
+    				for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
+							iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
+
+							/*--- Compute the integral fluxes for the boundaries ---*/
+							if (compressible) {
+								Pressure = node[iPoint]->GetPressure();
+								Density = node[iPoint]->GetDensity();
+								Enthalpy = node[iPoint]->GetEnthalpy();
+							}
+							else {
+								cout << "!!! Mixing process for incompressible and freesurface does not available yet !!! " << endl;
+								cout << "Press any key to exit..." << endl;
+								cin.get();
+								exit(1);
+							}
+
+							nVert++;
+
+							/*--- Normal vector for this vertex (negate for outward convention) ---*/
+							geometry->turbovertex[iMarker][iSpan][iVertex]->GetNormal(Normal);
+							for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+							Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+							su2double VelNormal = 0.0, VelSq = 0.0;
+							for (iDim = 0; iDim < nDim; iDim++) {
+								UnitNormal[iDim] = Normal[iDim]/Area;
+								Velocity[iDim] = node[iPoint]->GetPrimitive(iDim+1);
+								VelNormal += UnitNormal[iDim]*Velocity[iDim];
+								VelSq += Velocity[iDim]*Velocity[iDim];
+							}
+
+
+							/*--- Compute the integral fluxes for the boundary of interest ---*/
+
+							if ((mixing_process == AREA_AVERAGE) || (mixing_process == MIXEDOUT_AVERAGE)){
+
+								TotalFluxes[0] += Area*(Density*VelNormal );
+								for (iDim = 1; iDim < nDim+1; iDim++)
+									TotalFluxes[iDim] += Area*(Density*VelNormal*Velocity[iDim -1] + Pressure*UnitNormal[iDim -1] );
+								TotalFluxes[nDim+1] += Area*(Density*VelNormal*Enthalpy );
+
+								TotalArea += Area;
+								TotalAreaPressure += Area*Pressure;
+								TotalAreaDensity  += Area*Density;
+								for (iDim = 0; iDim < nDim; iDim++)
+									TotalAreaVelocity[iDim] += Area*Velocity[iDim];
+
+							}else{
+
+								TotalDensity += Density;
+								TotalPressure += Pressure;
+								for (iDim = 0; iDim < nDim; iDim++)
+									TotalVelocity[iDim] += Velocity[iDim];
+
+
+							}
+							for (iDim = 0; iDim < nDim; iDim++) TotalNormal[iDim] +=Normal[iDim];
+							if (grid_movement){
+								gridVel = geometry->node[iPoint]->GetGridVel();
+								for (iDim = 0; iDim < nDim; iDim++)
+									TotalGridVel[iDim] +=gridVel[iDim];
+							}
+					}
+				}
+			}
+		}
+	}
+
+#ifdef HAVE_MPI
+
+		/*--- Add information using all the nodes ---*/
+
+		MyTotalDensity       = TotalDensity; 							TotalDensity         = 0;
+		MyTotalPressure      = TotalPressure;  					  TotalPressure        = 0;
+		MyTotalAreaDensity   = TotalAreaDensity; 					TotalAreaDensity     = 0;
+		MyTotalAreaPressure  = TotalAreaPressure;         TotalAreaPressure    = 0;
+		MyTotalArea          = TotalArea;                 TotalArea            = 0;
+		My_nVert						 = nVert;											nVert								 = 0;
+
+		SU2_MPI::Allreduce(&MyTotalDensity, &TotalDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		SU2_MPI::Allreduce(&MyTotalPressure, &TotalPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		SU2_MPI::Allreduce(&MyTotalAreaDensity, &TotalAreaDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		SU2_MPI::Allreduce(&MyTotalAreaPressure, &TotalAreaPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		SU2_MPI::Allreduce(&MyTotalArea, &TotalArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		SU2_MPI::Allreduce(&My_nVert, &nVert, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+
+
+		MyTotalFluxes					 = new su2double[nVar];
+		MyTotalVelocity        = new su2double[nDim];
+		MyTotalAreaVelocity    = new su2double[nDim];
+		MyTotalNormal          = new su2double[nDim];
+		MyTotalGridVel				 = new su2double[nDim];
+
+		for (iVar = 0; iVar < nVar; iVar++) {
+			MyTotalFluxes[iVar]  = TotalFluxes[iVar];
+			TotalFluxes[iVar]    = 0.0;
+		}
+
+		for (iDim = 0; iDim < nDim; iDim++) {
+			MyTotalVelocity[iDim]      			  = TotalVelocity[iDim];
+			TotalVelocity[iDim]        			  = 0.0;
+			MyTotalAreaVelocity[iDim]  			  = TotalAreaVelocity[iDim];
+			TotalAreaVelocity[iDim]    				= 0.0;
+			MyTotalNormal[iDim]				 				= TotalNormal[iDim];
+			TotalNormal[iDim] 								= 0.0;
+			MyTotalGridVel[iDim] 							= TotalGridVel[iDim];
+			TotalGridVel[iDim]								= 0.0;
+			}
+
+		SU2_MPI::Allreduce(MyTotalFluxes, TotalFluxes, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		SU2_MPI::Allreduce(MyTotalVelocity, TotalVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		SU2_MPI::Allreduce(MyTotalAreaVelocity, TotalAreaVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		SU2_MPI::Allreduce(MyTotalNormal, TotalNormal, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		SU2_MPI::Allreduce(MyTotalGridVel, TotalGridVel, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+		delete [] MyTotalFluxes; delete [] MyTotalVelocity; delete [] MyTotalAreaVelocity;
+		delete [] MyTotalNormal; delete [] MyTotalGridVel;
+
+#endif
+
+
+		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+			for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
+				if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
+					if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+
+
+						/*--- Compute the averaged value for the boundary of interest ---*/
+						su2double Normal2 = 0.0;
+						for (iDim = 0; iDim < nDim; iDim++){
+							TotalNormal[iDim] /=nVert;
+							Normal2 += TotalNormal[iDim]*TotalNormal[iDim];
+						}
+						for (iDim = 0; iDim < nDim; iDim++)AverageNormal[iMarker][iSpan][iDim] = TotalNormal[iDim]/sqrt(Normal2);
+
+						if (grid_movement){
+							for (iDim = 0; iDim < nDim; iDim++)AverageGridVel[iMarker][iSpan][iDim] =TotalGridVel[iDim]/nVert;
+						}
+
+						switch(mixing_process){
+							case ALGEBRAIC_AVERAGE:
+								AverageDensity[iMarker][iSpan] = TotalDensity / nVert;
+								AveragePressure[iMarker][iSpan] = TotalPressure / nVert;
+								for (iDim = 0; iDim < nDim; iDim++)
+									AverageVelocity[iMarker][iSpan][iDim] = TotalVelocity[iDim] / nVert;
+								break;
+
+							case AREA_AVERAGE:
+								AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
+								AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
+								for (iDim = 0; iDim < nDim; iDim++)
+									AverageVelocity[iMarker][iSpan][iDim] = TotalAreaVelocity[iDim] / TotalArea;
+								break;
+
+							case MIXEDOUT_AVERAGE:
+								for (iVar = 0; iVar<nVar; iVar++){
+									AverageFlux[iMarker][iSpan][iVar] = TotalFluxes[iVar]/TotalArea;
+								}
+								val_init_pressure = TotalAreaPressure/TotalArea;
+
+								if (abs(AverageFlux[iMarker][iSpan][0])<(10.0e-9)*TotalAreaDensity) {
+									cout << "Mass flux is 0.0 so a Area Averaged algorithm is used for the Mixing Procees" << endl;
+									AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
+									AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
+									for (iDim = 0; iDim < nDim; iDim++)
+										AverageVelocity[iMarker][iSpan][iDim] = TotalAreaVelocity[iDim] / TotalArea;
+
+								}else {
+									MixedOut_Average (val_init_pressure, AverageFlux[iMarker][iSpan], AverageNormal[iMarker][iSpan], &AveragePressure[iMarker][iSpan], &AverageDensity[iMarker][iSpan]);
+									for (iDim = 1; iDim < nDim +1;iDim++)
+										AverageVelocity[iMarker][iSpan][iDim-1]= ( AverageFlux[iMarker][iSpan][iDim] - AveragePressure[iMarker][iSpan]*AverageNormal[iMarker][iSpan][iDim-1] ) / AverageFlux[iMarker][iSpan][0];
+								}
+								break;
+
+
+							default:
+								cout << "Warning! Invalid MIXING_PROCESS input!" << endl;
+								exit(EXIT_FAILURE);
+								break;
+						}
+
+						/* --- compute static averaged quantities ---*/
+						FluidModel->SetTDState_Prho(AveragePressure[iMarker][iSpan], AverageDensity[iMarker][iSpan]);
+						AverageEnthalpy[iMarker][iSpan] = FluidModel->GetStaticEnergy() + AveragePressure[iMarker][iSpan]/AverageDensity[iMarker][iSpan];
+						AverageSoundSpeed[iMarker][iSpan] = FluidModel->GetSoundSpeed();
+						AverageEntropy[iMarker][iSpan] = FluidModel->GetEntropy();
+						AverageNormalVelocity[iMarker][iSpan]= AverageNormal[iMarker][iSpan][0]*AverageVelocity[iMarker][iSpan][0] + AverageNormal[iMarker][iSpan][1]*AverageVelocity[iMarker][iSpan][1];
+						AverageTangVelocity[iMarker][iSpan]= AverageNormal[iMarker][iSpan][0]*AverageVelocity[iMarker][iSpan][1] - AverageNormal[iMarker][iSpan][1]*AverageVelocity[iMarker][iSpan][0];
+						SpanMassFlow[iMarker][iSpan]= AverageDensity[iMarker][iSpan]*AverageNormalVelocity[iMarker][iSpan]*TotalArea;
+						SpanFlowAngle[iMarker][iSpan]= atan(AverageTangVelocity[iMarker][iSpan]/AverageNormalVelocity[iMarker][iSpan]);
+
+						/* --- compute total averaged quantities ---*/
+						avgVel2 = 0.0;
+						for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AverageVelocity[iMarker][iSpan][iDim]*AverageVelocity[iMarker][iSpan][iDim];
+
+						avgTotalEnthaply = AverageEnthalpy[iMarker][iSpan] + 0.5*avgVel2;
+						FluidModel->SetTDState_hs(avgTotalEnthaply,AverageEntropy[iMarker][iSpan]);
+						AverageTotTemperature[iMarker][iSpan] = FluidModel->GetTemperature();
+						AverageTotPressure[iMarker][iSpan] = FluidModel->GetPressure();
+
+						if(grid_movement){
+							AverageTangGridVelocity[iMarker][iSpan] = AverageNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
+							AverageMach[iMarker][iSpan] = sqrt(AverageNormalVelocity[iMarker][iSpan]*AverageNormalVelocity[iMarker][iSpan] + (AverageTangVelocity[iMarker][iSpan] - AverageTangGridVelocity[iMarker][iSpan])*(AverageTangVelocity[iMarker][iSpan] - AverageTangGridVelocity[iMarker][iSpan]));
+							AverageMach[iMarker][iSpan] /= AverageSoundSpeed[iMarker][iSpan];
+							AverageTangMach[iMarker][iSpan] = (AverageTangVelocity[iMarker][iSpan] - AverageTangGridVelocity[iMarker][iSpan])/AverageSoundSpeed[iMarker][iSpan];
+							SpanFlowAngle[iMarker][iSpan]= atan((AverageTangVelocity[iMarker][iSpan] - AverageTangGridVelocity[iMarker][iSpan])/AverageNormalVelocity[iMarker][iSpan]);
+
+						}else{
+							AverageMach[iMarker][iSpan] = 0.0;
+							for (iDim = 0; iDim < nDim; iDim++) {
+								AverageMach[iMarker][iSpan] += AverageVelocity[iMarker][iSpan][iDim]*AverageVelocity[iMarker][iSpan][iDim];
+							}
+							AverageMach[iMarker][iSpan] = sqrt(AverageMach[iMarker][iSpan])/AverageSoundSpeed[iMarker][iSpan];
+							AverageTangMach[iMarker][iSpan] = AverageTangVelocity[iMarker][iSpan]/AverageSoundSpeed[iMarker][iSpan];
+
+						}
+
+						AverageNormalMach[iMarker][iSpan] = AverageNormalVelocity[iMarker][iSpan]/AverageSoundSpeed[iMarker][iSpan];
+
+
+#ifdef HAVE_MPI
+						if ((AverageDensity[iMarker][iSpan]!= AverageDensity[iMarker][iSpan]) || (AverageEnthalpy[iMarker][iSpan]!=AverageEnthalpy[iMarker][iSpan])){
+							if(size > 1 && rank == MASTER_NODE) cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
+							else cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
+						}
+#else
+						if ((AverageDensity[iMarker][iSpan]!= AverageDensity[iMarker][iSpan])||(AverageEnthalpy[iMarker][iSpan]!=AverageEnthalpy[iMarker][iSpan]))
+							cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
+#endif
+					}
+				}
+			}
+		}
+  }
+
+  /*--- Free locally allocated memory ---*/
+//  MPI_Comm_free(&marker_comm);
+  delete [] Velocity;
+  delete [] Normal;
+  delete [] TotalVelocity;
+  delete [] TotalAreaVelocity;
+  delete [] TotalFluxes;
+  delete [] TotalNormal;
+  delete [] TotalGridVel;
+}
+
+
+
 void CEulerSolver::MixedOut_Average (su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal,
                                      su2double *pressure_mix, su2double *density_mix) {
   
@@ -12104,7 +12539,7 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CEulerSolver() {
   
   unsigned long iPoint, index, counter_local = 0, counter_global = 0, iVertex;
-  unsigned short iVar, iDim, iMarker, nLineLets;
+  unsigned short iVar, iSpan, iDim, iMarker, nLineLets;
   su2double Density, Velocity2, Pressure, Temperature, dull_val, StaticEnergy;
   int Unst_RestartIter;
   ifstream restart_file;
@@ -12122,6 +12557,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
+  unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -12559,6 +12995,114 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   AveragedTangMach = new su2double[nMarker];
   
   
+  /*--- Initializate quantities for the mixing process span-wise*/
+
+	AverageVelocity 		= new su2double** [nMarker];
+	AverageNormal 			= new su2double** [nMarker];
+	AverageGridVel 		= new su2double** [nMarker];
+
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
+		AverageVelocity[iMarker] 	= new su2double* [nSpanWiseSections];
+		AverageNormal[iMarker] 		= new su2double* [nSpanWiseSections];
+		AverageGridVel[iMarker] 		= new su2double* [nSpanWiseSections];
+		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+			AverageVelocity[iMarker][iSpan] 			= new su2double [nDim];
+			AverageNormal[iMarker][iSpan] 				= new su2double [nDim];
+			AverageGridVel[iMarker][iSpan] 			= new su2double [nDim];
+			for (iDim = 0; iDim < nDim; iDim++) {
+				AverageVelocity[iMarker][iSpan][iDim] 		= 0.0;
+				AverageNormal[iMarker][iSpan][iDim] 			= 0.0;
+				AverageGridVel[iMarker][iSpan][iDim] 		= 0.0;
+			}
+		}
+	}
+
+	AverageFlux 				= new su2double** [nMarker];
+	SpanTotalFlux 					= new su2double** [nMarker];
+
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
+		AverageFlux[iMarker] 			= new su2double* [nSpanWiseSections];
+		TotalFlux[iMarker] 					= new su2double* [nSpanWiseSections];
+		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++) {
+			AverageFlux[iMarker][iSpan] 					= new su2double [nVar];
+			TotalFlux[iMarker][iSpan] 						= new su2double [nVar];
+			for (iVar = 0; iVar < nVar; iVar++) {
+				AverageFlux[iMarker][iSpan][iVar] 				= 0.0;
+				TotalFlux[iMarker][iSpan][iVar] 					= 0.0;
+		  }
+	  }
+	}
+
+	AverageNormalVelocity 							= new su2double* [nMarker];
+	AverageTangVelocity 								= new su2double* [nMarker];
+	ExtAverageNormalVelocity 					= new su2double* [nMarker];
+	ExtAverageTangVelocity 						= new su2double* [nMarker];
+	SpanMassFlow														= new su2double* [nMarker];
+	SpanFlowAngle														= new su2double* [nMarker];
+	AverageEnthalpy  									= new su2double* [nMarker];
+	AveragePressure  									= new su2double* [nMarker];
+	AverageTotPressure  								= new su2double* [nMarker];
+	AverageTotTemperature  						= new su2double* [nMarker];
+	ExtAverageTotPressure  						= new su2double* [nMarker];
+	ExtAverageTotTemperature  					= new su2double* [nMarker];
+	ExtAveragePressure  								= new su2double* [nMarker];
+	AverageDensity   									= new su2double* [nMarker];
+	ExtAverageDensity   								= new su2double* [nMarker];
+	AverageSoundSpeed									= new su2double* [nMarker];
+	AverageEntropy   									= new su2double* [nMarker];
+	AverageTangGridVelocity 						= new su2double* [nMarker];
+	AverageMach 												= new su2double* [nMarker];
+	AverageNormalMach 									= new su2double* [nMarker];
+	AverageTangMach 										= new su2double* [nMarker];
+
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
+		AverageNormalVelocity[iMarker] 						= new su2double [nSpanWiseSections];
+		AverageTangVelocity[iMarker] 							= new su2double [nSpanWiseSections];
+		ExtAverageNormalVelocity[iMarker] 					= new su2double [nSpanWiseSections];
+		ExtAverageTangVelocity[iMarker] 						= new su2double [nSpanWiseSections];
+		SpanMassFlow[iMarker]														= new su2double [nSpanWiseSections];
+		SpanFlowAngle[iMarker]													= new su2double [nSpanWiseSections];
+		AverageEnthalpy[iMarker]  									= new su2double [nSpanWiseSections];
+		AveragePressure[iMarker]  									= new su2double [nSpanWiseSections];
+		AverageTotPressure[iMarker]  							= new su2double [nSpanWiseSections];
+		AverageTotTemperature[iMarker]  						= new su2double [nSpanWiseSections];
+		ExtAverageTotPressure[iMarker]  						= new su2double [nSpanWiseSections];
+		ExtAverageTotTemperature[iMarker]  				= new su2double [nSpanWiseSections];
+		ExtAveragePressure[iMarker]  							= new su2double [nSpanWiseSections];
+		AverageDensity[iMarker]   									= new su2double [nSpanWiseSections];
+		ExtAverageDensity[iMarker]   							= new su2double [nSpanWiseSections];
+		AverageSoundSpeed[iMarker]									= new su2double [nSpanWiseSections];
+		AverageEntropy[iMarker]   									= new su2double [nSpanWiseSections];
+		AverageTangGridVelocity[iMarker] 					= new su2double [nSpanWiseSections];
+		AverageMach[iMarker] 											= new su2double [nSpanWiseSections];
+		AverageNormalMach[iMarker] 								= new su2double [nSpanWiseSections];
+		AverageTangMach[iMarker] 									= new su2double [nSpanWiseSections];
+		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++) {
+			AverageNormalVelocity[iMarker][iSpan] 									= 0.0;
+			AverageTangVelocity[iMarker][iSpan] 										= 0.0;
+			ExtAverageNormalVelocity[iMarker][iSpan] 								= 0.0;
+			ExtAverageTangVelocity[iMarker][iSpan] 									= 0.0;
+			SpanMassFlow[iMarker][iSpan]														= 0.0;
+			SpanFlowAngle[iMarker][iSpan]														= 0.0;
+			AverageEnthalpy[iMarker][iSpan]  												= 0.0;
+			AveragePressure[iMarker][iSpan]  												= 0.0;
+			AverageTotPressure[iMarker][iSpan]  										= 0.0;
+			AverageTotTemperature[iMarker][iSpan]  									= 0.0;
+			ExtAverageTotPressure[iMarker][iSpan]  									= 0.0;
+			ExtAverageTotTemperature[iMarker][iSpan]  							= 0.0;
+			ExtAveragePressure[iMarker][iSpan]  										= 0.0;
+			AverageDensity[iMarker][iSpan]   												= 0.0;
+			ExtAverageDensity[iMarker][iSpan]   										= 0.0;
+			AverageSoundSpeed[iMarker][iSpan]												= 0.0;
+			AverageEntropy[iMarker][iSpan]   												= 0.0;
+			AverageTangGridVelocity[iMarker][iSpan] 								= 0.0;
+			AverageMach[iMarker][iSpan] 														= 0.0;
+			AverageNormalMach[iMarker][iSpan] 											= 0.0;
+			AverageTangMach[iMarker][iSpan]													= 0.0;
+		}
+	}
+
+
   /*--- Initializate quantities for turboperformace ---*/
   
   TotalStaticEfficiency = new su2double[nMarkerTurboPerf];
