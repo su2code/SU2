@@ -3447,12 +3447,12 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     Global_Delta_Time = rbuf_time;
 #endif
     for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-			/*--- If the CFL is set to zero, it uses the defined unsteady time step, otherwise
-			 it computes the time step based on the CFL ---*/
-			/*--- Sets the regular CFL equal to the unsteady CFL ---*/
 			
+			/*--- Sets the regular CFL equal to the unsteady CFL ---*/
 			config->SetCFL(iMesh,config->GetUnst_CFL());
 			
+			/*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step, otherwise
+			 it computes the time step based on the unsteady CFL ---*/
 			if (config->GetCFL(iMesh) == 0.0){
 				node[iPoint]->SetDelta_Time(config->GetDelta_UnstTime());
 			} else {
