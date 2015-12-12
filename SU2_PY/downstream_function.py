@@ -30,6 +30,7 @@ def objective(config, state, d_in ):
   
   # CUSTOM DV: Always set to their initial values within this file as well as within the config file
   CustomDV = 3.0
+  CustomDV2 = 3.0
   FFD_occured = 0
 
   for iDV in range(len(config.DV_KIND)):
@@ -47,7 +48,7 @@ def objective(config, state, d_in ):
 
   if (len(d_in)>5):
     CustomDV = CustomDV + d_in[5]
-
+    CustomDV2 = CustomDV2 + d_in[6]
 
   a0 = np.sqrt(T0*1.4*287.87)
   # Here is a random function to act a placeholder.
@@ -75,6 +76,9 @@ def downstream_gradient(config,state,step=1e-8):
   d_in[1]=0.0
   d_in[5]=step
   dJd1 = (objective(config,state,d_in)-J0)/step
-  gradient = (dJdrho,dJdu,0.0,0.0,dJdP,dJd1)
+  d_in[5]=0.0
+  d_in[6]=step
+  dJd2 = (objective(config,state,d_in)-J0)/step
+  gradient = (dJdrho,dJdu,0.0,0.0,dJdP,dJd1, dJd2)
 
   return gradient
