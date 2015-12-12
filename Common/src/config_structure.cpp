@@ -1240,8 +1240,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Requested accuracy */
   addPythonOption("OPT_ACCURACY");
   
-  /* DESCRIPTION: Setup for design variables */
-  addPythonOption("BOUND_DV");
+  /* DESCRIPTION: Setup for design variables (upper bound) */
+  addPythonOption("OPT_BOUND_UPPER");
+  
+  /* DESCRIPTION: Setup for design variables (lower bound) */
+  addPythonOption("OPT_BOUND_LOWER");
   
   /* DESCRIPTION: Current value of the design variables */
   addPythonOption("DV_VALUE_NEW");
