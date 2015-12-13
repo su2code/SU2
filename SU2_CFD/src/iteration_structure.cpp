@@ -114,6 +114,10 @@ void CMeanFlowIteration::Preprocess(COutput *output,
   /*--- Compute turboperformance ---*/
   
   if(config_container[val_iZone]->GetBoolTurboPerf()){
+  	if(ExtIter == 0){
+  		geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],INFLOW, true);
+  		geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],OUTFLOW, true);
+  	}
 #ifdef HAVE_MPI
   	int size = SINGLE_NODE;
   	MPI_Comm_size(MPI_COMM_WORLD, &size);

@@ -5399,6 +5399,22 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << Global_nPoint << " vertices including ghost points. " << endl;
   
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      config->SetMarker_All_SendRecv(iMarker, Marker_All_SendRecv[iMarker]);
+    }
+
+  /*--- initialize pointers for turbomachinery computations  ---*/
+  nVertexSpan = new unsigned long* [nMarker];
+	turbovertex = new CTurboVertex***[nMarker];
+	AverageNormal = new su2double**[nMarker];
+	AverageGridVel = new su2double**[nMarker];
+	for (iMarker = 0; iMarker < nMarker; iMarker++){
+		nVertexSpan[iMarker] 		= NULL;
+		turbovertex[iMarker] 		= NULL;
+		AverageNormal[iMarker]	= NULL;
+		AverageGridVel[iMarker] = NULL;
+	}
   /*--- Release all of the temporary memory ---*/
   
   delete [] nDim_s;
@@ -9329,8 +9345,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 	//TODO (turbo) put some of this allocation on the Class constructor.
 	//TODO (turbo) generalize for different number of section for inlet and outlet.
 	if (allocate){
-		nVertexSpan = new unsigned long* [nMarker];
-		turbovertex = new CTurboVertex***[nMarker];
 		for (iMarker = 0; iMarker < nMarker; iMarker++){
 			nVertexSpan[iMarker] = new unsigned long[nSpanWiseSections];
 			turbovertex[iMarker] = new CTurboVertex** [nSpanWiseSections];
@@ -9607,9 +9621,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_flag, bool allocate) {
 
 	unsigned short iMarker, iMarkerTP, iSpan, iDim;
-	unsigned long nVert;
+	unsigned long nVert, iVertex, iPoint;
 	su2double *Normal, *gridVel, TotalArea;
-  su2double *TotalNormal, *TotalGridVel;
+  su2double *TotalNormal, *TotalGridVel, Area;
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   /*-- Variables declaration and allocation ---*/
@@ -9625,7 +9639,29 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
+  /*--- Intialization of the vector for the interested boudary ---*/
+  if(allocate){
+  	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+			for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
+				if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
+					if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+						AverageNormal[iMarker] 		= new su2double *[nSpanWiseSections];
+						AverageGridVel[iMarker] 	= new su2double *[nSpanWiseSections];
+						for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
+							AverageNormal[iMarker][iSpan] 	= new su2double [nDim];
+							AverageGridVel[iMarker][iSpan] 	= new su2double [nDim];
+							for(iDim=0; iDim < nDim; iDim++){
+								AverageNormal[iMarker][iSpan][iDim]	  = 0.0;
+								AverageGridVel[iMarker][iSpan][iDim]	= 0.0;
+							}
+						}
+					}
+				}
+			}
+  	}
+  }
 
+  /*--- start computing the average quantities span wise --- */
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
 
   	/*--- Forces initialization for contenitors to zero ---*/
@@ -9640,11 +9676,67 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
     	for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
     		if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
     			if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+    				nVert = nVertexSpan[iMarker][iSpan];
+    				for(iVertex = 0; iVertex < nVertexSpan[iMarker][iSpan]; iVertex++){
+    					iPoint = turbovertex[iMarker][iSpan][iVertex]->GetNode();
+    					turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(Normal);
+    					Area = turbovertex[iMarker][iSpan][iVertex]->GetArea();
 
+    					for (iDim = 0; iDim < nDim; iDim++) TotalNormal[iDim] +=Normal[iDim];
+							if (grid_movement){
+								gridVel = node[iPoint]->GetGridVel();
+								for (iDim = 0; iDim < nDim; iDim++)	TotalGridVel[iDim] +=gridVel[iDim];
+							}
+    				}
     			}
     		}
     	}
     }
+
+#ifdef HAVE_MPI
+
+		MyTotalArea          = TotalArea;                 TotalArea            = 0;
+		My_nVert						 = nVert;											nVert								 = 0;
+		SU2_MPI::Allreduce(&MyTotalArea, &TotalArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		SU2_MPI::Allreduce(&My_nVert, &nVert, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+		MyTotalNormal          = new su2double[nDim];
+		MyTotalGridVel				 = new su2double[nDim];
+
+		for (iDim = 0; iDim < nDim; iDim++) {
+			MyTotalNormal[iDim]				 				= TotalNormal[iDim];
+			TotalNormal[iDim] 								= 0.0;
+			MyTotalGridVel[iDim] 							= TotalGridVel[iDim];
+			TotalGridVel[iDim]								= 0.0;
+		}
+
+		SU2_MPI::Allreduce(MyTotalNormal, TotalNormal, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		SU2_MPI::Allreduce(MyTotalGridVel, TotalGridVel, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+		delete [] MyTotalNormal; delete [] MyTotalGridVel;
+
+#endif
+
+		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+			for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
+				if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
+					if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+
+						/*--- Compute the averaged value for the boundary of interest ---*/
+						su2double Normal2 = 0.0;
+						for (iDim = 0; iDim < nDim; iDim++){
+							TotalNormal[iDim] /=nVert;
+							Normal2 += TotalNormal[iDim]*TotalNormal[iDim];
+						}
+						for (iDim = 0; iDim < nDim; iDim++)AverageNormal[iMarker][iSpan][iDim] = TotalNormal[iDim]/sqrt(Normal2);
+
+						if (grid_movement){
+							for (iDim = 0; iDim < nDim; iDim++)AverageGridVel[iMarker][iSpan][iDim] =TotalGridVel[iDim]/nVert;
+						}
+					}
+				}
+			}
+		}
   }
   delete [] TotalNormal;
   delete []TotalGridVel;

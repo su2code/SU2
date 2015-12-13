@@ -117,7 +117,9 @@ public:
 	CTurboVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
 	unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
   unsigned long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker (also halo nodes included) */
-	unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
+	su2double *** AverageNormal; /*! <\brief Average boundary normal*/
+	su2double *** AverageGridVel; /*! <\brief Average boundary normal*/
+  unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
 	vector<unsigned long> PeriodicPoint[MAX_NUMBER_PERIODIC][2];			/*!< \brief PeriodicPoint[Periodic bc] and return the point that 
 																			 must be sent [0], and the image point in the periodic bc[1]. */
 	vector<unsigned long> PeriodicElem[MAX_NUMBER_PERIODIC];				/*!< \brief PeriodicElem[Periodic bc] and return the elements that 
