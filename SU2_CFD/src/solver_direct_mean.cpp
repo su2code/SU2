@@ -8553,8 +8553,7 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_c
 
 #ifdef HAVE_MPI
   su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, *MyTotalFluxes = NULL;
-  su2double MyTotalArea, *MyTotalNormal= NULL,*MyTotalGridVel= NULL, *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL;
-  unsigned long My_nVert;
+  su2double *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -8649,23 +8648,16 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_c
 		MyTotalPressure      = TotalPressure;  					  TotalPressure        = 0;
 		MyTotalAreaDensity   = TotalAreaDensity; 					TotalAreaDensity     = 0;
 		MyTotalAreaPressure  = TotalAreaPressure;         TotalAreaPressure    = 0;
-		MyTotalArea          = TotalArea;                 TotalArea            = 0;
-		My_nVert						 = nVert;											nVert								 = 0;
 
 		SU2_MPI::Allreduce(&MyTotalDensity, &TotalDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 		SU2_MPI::Allreduce(&MyTotalPressure, &TotalPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 		SU2_MPI::Allreduce(&MyTotalAreaDensity, &TotalAreaDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 		SU2_MPI::Allreduce(&MyTotalAreaPressure, &TotalAreaPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-		SU2_MPI::Allreduce(&MyTotalArea, &TotalArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-		SU2_MPI::Allreduce(&My_nVert, &nVert, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-
 
 
 		MyTotalFluxes					 = new su2double[nVar];
 		MyTotalVelocity        = new su2double[nDim];
 		MyTotalAreaVelocity    = new su2double[nDim];
-		MyTotalNormal          = new su2double[nDim];
-		MyTotalGridVel				 = new su2double[nDim];
 
 		for (iVar = 0; iVar < nVar; iVar++) {
 			MyTotalFluxes[iVar]  = TotalFluxes[iVar];
@@ -8677,20 +8669,14 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_c
 			TotalVelocity[iDim]        			  = 0.0;
 			MyTotalAreaVelocity[iDim]  			  = TotalAreaVelocity[iDim];
 			TotalAreaVelocity[iDim]    				= 0.0;
-			MyTotalNormal[iDim]				 				= TotalNormal[iDim];
-			TotalNormal[iDim] 								= 0.0;
-			MyTotalGridVel[iDim] 							= TotalGridVel[iDim];
-			TotalGridVel[iDim]								= 0.0;
-			}
+		}
 
 		SU2_MPI::Allreduce(MyTotalFluxes, TotalFluxes, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 		SU2_MPI::Allreduce(MyTotalVelocity, TotalVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 		SU2_MPI::Allreduce(MyTotalAreaVelocity, TotalAreaVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-		SU2_MPI::Allreduce(MyTotalNormal, TotalNormal, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-		SU2_MPI::Allreduce(MyTotalGridVel, TotalGridVel, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
 		delete [] MyTotalFluxes; delete [] MyTotalVelocity; delete [] MyTotalAreaVelocity;
-		delete [] MyTotalNormal; delete [] MyTotalGridVel;
+
 
 #endif
 
@@ -8701,18 +8687,7 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_c
 					if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
 
 
-						/*--- Compute the averaged value for the boundary of interest ---*/
-						su2double Normal2 = 0.0;
-						for (iDim = 0; iDim < nDim; iDim++){
-							TotalNormal[iDim] /=nVert;
-							Normal2 += TotalNormal[iDim]*TotalNormal[iDim];
-						}
-						for (iDim = 0; iDim < nDim; iDim++)AverageNormal[iMarker][iSpan][iDim] = TotalNormal[iDim]/sqrt(Normal2);
-
-						if (grid_movement){
-							for (iDim = 0; iDim < nDim; iDim++)AverageGridVel[iMarker][iSpan][iDim] =TotalGridVel[iDim]/nVert;
-						}
-
+						/*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
 						switch(mixing_process){
 							case ALGEBRAIC_AVERAGE:
 								AverageDensity[iMarker][iSpan] = TotalDensity / nVert;

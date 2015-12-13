@@ -310,9 +310,6 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     
     geometry[iZone][MESH_0]->SetTurboVertex(config[iZone], INFLOW, true);
     geometry[iZone][MESH_0]->SetTurboVertex(config[iZone], OUTFLOW, false);
-    geometry[iZone][MESH_0]->SetAvgTurboValue(config[iZone],INFLOW, true);
-    geometry[iZone][MESH_0]->SetAvgTurboValue(config[iZone],OUTFLOW, true);
-
   }
   
   /*--- Loop over all the new grid ---*/
