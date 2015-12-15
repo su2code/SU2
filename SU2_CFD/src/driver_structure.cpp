@@ -2015,6 +2015,16 @@ void CFSIDriver::Run(CIteration **iteration_container,
 	}
 
 	/*-----------------------------------------------------------------*/
+  	/*------------------ Update coupled solver ------------------------*/
+	/*-----------------------------------------------------------------*/
+
+	Update(output, integration_container, geometry_container,
+           solver_container, numerics_container, config_container,
+           surface_movement, grid_movement, FFDBox, transfer_container,
+           ZONE_FLOW, ZONE_STRUCT);
+
+
+	/*-----------------------------------------------------------------*/
   	/*-------------------- Update fluid solver ------------------------*/
 	/*-----------------------------------------------------------------*/
 
@@ -2241,6 +2251,38 @@ void CFSIDriver::Relaxation_Displacements(COutput *output, CGeometry ***geometry
 
 void CFSIDriver::Relaxation_Tractions(COutput *output, CGeometry ***geometry_container, CSolver ****solver_container,
 			CConfig **config_container, unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter){
+
+}
+
+void CFSIDriver::Update(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+			 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+			 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+			 CTransfer ***transfer_container, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT){
+
+	unsigned long IntIter = 0; // This doesn't affect here but has to go into the function
+	unsigned long ExtIter = config_container[ZONE_FLOW]->GetExtIter();
+
+
+	/*-----------------------------------------------------------------*/
+	/*--------------------- Enforce continuity ------------------------*/
+	/*-----------------------------------------------------------------*/
+
+	/*--- Enforces that the geometry of the flow corresponds to the converged, relaxed solution ---*/
+
+	/*-------------------- Transfer the displacements --------------------*/
+
+	Transfer_Displacements(output, integration_container, geometry_container,
+            solver_container, numerics_container, config_container,
+            surface_movement, grid_movement, FFDBox, transfer_container,
+            ZONE_STRUCT, ZONE_FLOW);
+
+	/*-------------------- Set the grid movement -------------------------*/
+
+	SetGrid_Movement(geometry_container[ZONE_FLOW], surface_movement[ZONE_FLOW],
+				grid_movement[ZONE_FLOW], FFDBox[ZONE_FLOW], solver_container[ZONE_FLOW], config_container[ZONE_FLOW],
+				ZONE_FLOW, IntIter, ExtIter);
+
+	/*----------- Store the solution_pred as solution_pred_old --------------*/
 
 }
 

@@ -691,6 +691,7 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CC
 void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
 	unsigned long iPoint;
+	bool fsi = config->GetFSI_Simulation();
 
 	/*--- Update the solution according to the integration scheme used ---*/
 
@@ -698,8 +699,10 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
 		case (CD_EXPLICIT):
 		  break;
 		case (NEWMARK_IMPLICIT):
+		  if (fsi) solver_container[FEA_SOL]->ImplicitNewmark_Relaxation(geometry, solver_container, config);
 		  break;
 		case (GENERALIZED_ALPHA):
+		  //if (fsi)	solver_container[FEA_SOL]->Update_StructSolution(geometry, solver_container, config);
 		  solver_container[FEA_SOL]->GeneralizedAlpha_UpdateSolution(geometry, solver_container, config);
 		  solver_container[FEA_SOL]->GeneralizedAlpha_UpdateLoads(geometry, solver_container, config);
 		  break;
@@ -713,8 +716,6 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
 		solver_container[FEA_SOL]->node[iPoint]->SetSolution_Accel_time_n();
 
 	}
-
-	  bool fsi = config->GetFSI_Simulation();
 
 	  /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
 

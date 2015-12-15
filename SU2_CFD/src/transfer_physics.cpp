@@ -223,8 +223,11 @@ void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_soluti
 					   	   	   	   	   	   	   	          unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct){
 
 
-	su2double *DisplacementDonor, *DisplacementDonor_Prev;
+	su2double *Displacement, *DisplacementDonor, *DisplacementDonor_Prev;
 	unsigned short iVar;
+
+    /*--- The displacements come from the predicted solution ---*/
+	Displacement = struct_solution->node[Point_Struct]->GetSolution();
 
     /*--- The displacements come from the predicted solution ---*/
     DisplacementDonor = struct_solution->node[Point_Struct]->GetSolution_Pred();
@@ -234,6 +237,13 @@ void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_soluti
 	for (iVar = 0; iVar < nVar; iVar++){
 		Donor_Variable[iVar] = DisplacementDonor[iVar] - DisplacementDonor_Prev[iVar];
 	}
+
+	if (Point_Struct == 15){
+		cout << "-------------------------------NODE 15: -----------------------------------------" << endl;
+		cout << "Displacement: " << Displacement[0] << " , " << Displacement[1] << endl;
+		cout << "DisplacementDonor: " << DisplacementDonor[0] << " , " << DisplacementDonor[1] << endl;
+		cout << "DisplacementDonor_Prev: " << DisplacementDonor_Prev[0] << " , " << DisplacementDonor_Prev[1] << endl;
+ 	}
 
 }
 

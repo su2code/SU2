@@ -217,6 +217,16 @@ public:
   virtual void Relaxation_Tractions(COutput *output, CGeometry ***geometry_container, CSolver ****solver_container,
 			CConfig **config_container, unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter){};
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] zoneFlow - zone of the flow equations.
+   * \param[in] zoneStruct - zone of the structural equations.
+   */
+  virtual void Update(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+		     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+			 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+			 CTransfer ***transfer_container, unsigned short zoneFlow, unsigned short zoneStruct){};
+
 };
 /*!
  * \class CSingleZoneDriver
@@ -563,5 +573,15 @@ public:
    */
   void Relaxation_Tractions(COutput *output, CGeometry ***geometry_container, CSolver ****solver_container,
 			CConfig **config_container, unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter);
+
+  /*!
+   * \brief Enforce the coupling condition at the end of the time step
+   * \param[in] zoneFlow - zone of the flow equations.
+   * \param[in] zoneStruct - zone of the structural equations.
+   */
+  void Update(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+		     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+			 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+			 CTransfer ***transfer_container, unsigned short zoneFlow, unsigned short zoneStruct);
 
 };
