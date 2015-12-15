@@ -943,6 +943,14 @@ public:
 	virtual void MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density);
 
 	/*!
+	 * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
+	 * \param[in] cartesianVelocity - cartesian components of velocity vector.
+	 * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
+	 * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
+	 */
+	virtual void ComputeTurboVelocity(su2double* cartesianVelocity, su2double* turboNormal, su2double* turboVelocity);
+
+	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -2938,16 +2946,13 @@ protected:
 		  *MassFlow,
 		  *FlowAngle;
   su2double ***AverageVelocity,
-  	  	 ***AverageNormal,
 		 ***AverageGridVel,
   	  	  ***AverageFlux,
 		  ***SpanTotalFlux,
-		  **SpanTotalArea,
 		  **AverageNormalVelocity,
 		  **ExtAverageNormalVelocity,
 		  **AverageTangVelocity,
 		  **ExtAverageTangVelocity,
-		  **AverageTangGridVelocity,
 		  **AverageMach,
 		  **AverageNormalMach,
 		  **AverageTangMach,
@@ -3553,11 +3558,19 @@ public:
 	 * \brief it finds the root of an implicit equation that relates pressure and density.
 	 * \param[in] pressure - pressure value
 	 * \param[in] val_Averaged_Flux - flux averaged values.
-     * \param[in] val_normal - normal vector.
-     * \param[in] valfunc - Description of the numerical method.
+   * \param[in] val_normal - normal vector.
+   * \param[in] valfunc - Description of the numerical method.
 	 * \param[in] density - value of the mixed-out avaraged density.
 	 */
 	void MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density);
+
+	/*!
+	 * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
+	 * \param[in] cartesianVelocity - cartesian components of velocity vector.
+	 * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
+	 * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
+	 */
+	void ComputeTurboVelocity(su2double* cartesianVelocity, su2double* turboNormal, su2double* turboVelocity);
 
 	/*!
 	 * \brief it performs a fourier transformation of a characteristic value.
