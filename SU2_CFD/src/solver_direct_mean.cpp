@@ -3526,7 +3526,7 @@ void CEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_conta
 void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                    CConfig *config, unsigned short iMesh) {
   
-  double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, RoeVelocity[3] = {0.0,0.0,0.0}, R, sq_vel, RoeEnthalpy,
+  su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, RoeVelocity[3] = {0.0,0.0,0.0}, R, sq_vel, RoeEnthalpy,
   *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, YDistance, GradHidrosPress, sqvel, Non_Physical = 1.0;
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
@@ -3631,7 +3631,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Low-Mach number correction ---*/
 
       if (low_mach_corr) {
-        double z, sq_vel_i = 0.0, sq_vel_j = 0.0, mach_i, mach_j, Energy_i, Energy_j, SoundSpeed_i, SoundSpeed_j;
+        su2double z, sq_vel_i = 0.0, sq_vel_j = 0.0, mach_i, mach_j, Energy_i, Energy_j, SoundSpeed_i, SoundSpeed_j;
 
         mach_i = sqrt(sq_vel_i)/Primitive_i[nDim+4];
         mach_j = sqrt(sq_vel_j)/Primitive_j[nDim+4];
