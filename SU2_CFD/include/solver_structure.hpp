@@ -1255,6 +1255,15 @@ public:
 	 */
 	virtual void ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -7424,6 +7433,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
 	/*!
 	 * \brief Iterate using an implicit Generalized Alpha solver.

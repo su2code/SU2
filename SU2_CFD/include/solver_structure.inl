@@ -656,6 +656,8 @@ inline void CSolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **so
 
 inline void CSolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
+inline void CSolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
 inline void CSolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }

@@ -2226,6 +2226,78 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
 
 }
 
+void CFEM_ElasticitySolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+    unsigned short iVar;
+	unsigned long iPoint;
+    su2double *valSolutionPred;
+
+	bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);		// Geometrically linear problems
+	bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
+	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);					// Dynamic simulations.
+
+	/*--- Update solution and set it to be the solution after applying relaxation---*/
+
+    for (iPoint=0; iPoint < nPointDomain; iPoint++){
+
+    	valSolutionPred = node[iPoint]->GetSolution_Pred();
+
+		node[iPoint]->SetSolution(valSolutionPred);
+    }
+
+	/*--- Compute velocities and accelerations ---*/
+
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+		for (iVar = 0; iVar < nVar; iVar++) {
+
+			/*--- Acceleration component of the solution ---*/
+			/*--- U''(t+dt) = a0*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
+
+			Solution[iVar]=a_dt[0]*(node[iPoint]->GetSolution(iVar) -
+									node[iPoint]->GetSolution_time_n(iVar)) -
+						   a_dt[2]* node[iPoint]->GetSolution_Vel_time_n(iVar) -
+						   a_dt[3]* node[iPoint]->GetSolution_Accel_time_n(iVar);
+		}
+
+		/*--- Set the acceleration in the node structure ---*/
+
+		node[iPoint]->SetSolution_Accel(Solution);
+
+		for (iVar = 0; iVar < nVar; iVar++) {
+
+			/*--- Velocity component of the solution ---*/
+			/*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
+
+			Solution[iVar]=node[iPoint]->GetSolution_Vel_time_n(iVar)+
+						   a_dt[6]* node[iPoint]->GetSolution_Accel_time_n(iVar) +
+						   a_dt[7]* node[iPoint]->GetSolution_Accel(iVar);
+
+		}
+
+		/*--- Set the velocity in the node structure ---*/
+
+		node[iPoint]->SetSolution_Vel(Solution);
+
+	}
+
+
+	/*--- Perform the MPI communication of the solution ---*/
+
+	Set_MPI_Solution(geometry, config);
+
+	/*--- After the solution has been communicated, set the 'old' predicted solution as the solution ---*/
+	/*--- Loop over n points (as we have already communicated everything ---*/
+
+	for (iPoint = 0; iPoint < nPoint; iPoint++) {
+		for (iVar = 0; iVar < nVar; iVar++) {
+			node[iPoint]->SetSolution_Pred_Old(iVar,node[iPoint]->GetSolution(iVar));
+		}
+	}
+
+
+}
+
 
 void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
@@ -3346,8 +3418,6 @@ void CFEM_ElasticitySolver::Update_StructSolution(CGeometry **fea_geometry,
     unsigned long iPoint;
     su2double *valSolutionPred;
 
-    /*--- TODO: I don't think I'm using this routine right now, but I may need to use it after SetAitken_Relaxation... ---*/
-
     for (iPoint=0; iPoint < nPointDomain; iPoint++){
 
     	valSolutionPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
@@ -3355,6 +3425,11 @@ void CFEM_ElasticitySolver::Update_StructSolution(CGeometry **fea_geometry,
 		fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution(valSolutionPred);
 
     }
+
+	/*--- Perform the MPI communication of the solution, displacements only ---*/
+    // TODO: check if this is needed, as the solution is also communicated when u' and u'' are computed
+
+	Set_MPI_Solution_DispOnly(fea_geometry[MESH_0], fea_config);
 
 }
 
