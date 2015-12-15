@@ -571,6 +571,8 @@ inline void CSolver::MixedOut_Average (su2double val_init_pressure, su2double *v
 
 inline void CSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density){}
 
+inline void CSolver::ComputeTurboVelocity(su2double* cartesianVelocity, su2double* turboNormal, su2double* turboVelocity){}
+
 inline void CSolver::Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config,
 		                               unsigned short val_Marker, vector<std::complex<su2double> > &c4k,signed long &nboundaryvertex){}
 

@@ -116,9 +116,13 @@ public:
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
 	CTurboVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
 	unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
-  unsigned long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker (also halo nodes included) */
-	su2double *** AverageNormal; /*! <\brief Average boundary normal*/
-	su2double *** AverageGridVel; /*! <\brief Average boundary normal*/
+  unsigned long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker.  */
+  unsigned long **nTotVertexSpan; /*! <\brief number of vertexes at each span wise section for each marker.  */
+	su2double *** AverageTurboNormal; /*! <\brief Average boundary normal at each span wise section for each marker in the turbomachinery frame of reference.*/
+	su2double *** AverageNormal; /*! <\brief Average boundary normal at each span wise section for each marker.*/
+	su2double *** AverageGridVel; /*! <\brief Average boundary grid velocity at each span wise section for each marker.*/
+	su2double ** AverageTangGridVel; /*! <\brief Average tangential rotational speed at each span wise section for each marker.*/
+	su2double ** SpanArea; /*! <\brief Area at each span wise section for each marker.*/
   unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
 	vector<unsigned long> PeriodicPoint[MAX_NUMBER_PERIODIC][2];			/*!< \brief PeriodicPoint[Periodic bc] and return the point that 
 																			 must be sent [0], and the image point in the periodic bc[1]. */
@@ -917,6 +921,49 @@ public:
    * \param val - Value of the sensitivity
    */
   virtual void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val);
+
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+  virtual su2double* GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+  virtual su2double* GetAverageNormal(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+	virtual su2double GetSpanArea(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+	virtual su2double GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+	virtual unsigned long GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+  virtual su2double* GetAverageGridVel(unsigned short val_marker, unsigned short val_span);
+
 };
 
 /*!
@@ -1480,6 +1527,49 @@ public:
    * \param[in] val - Value of the sensitivity.
    */
   void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val);
+
+  /*!
+	 * \brief Get the average normal at a specific span for a given marker in the turbomachinery reference of frame.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+  su2double* GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief Get the average normal at a specific span for a given marker.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+  su2double* GetAverageNormal(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief A value of the total area for each span.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+	su2double GetSpanArea(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief A value of the average tangential rotational velocity for each span.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+	su2double GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief A total number of vertex independently from the MPI partions.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+	unsigned long GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span);
+
+
+  /*!
+	 * \brief Get the average grid velocity at a specific span for a given marker.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+  su2double* GetAverageGridVel(unsigned short val_marker, unsigned short val_span);
 
 };
 
