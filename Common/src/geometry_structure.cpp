@@ -9342,6 +9342,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 	/*--- Initialize auxiliary pointers ---*/
 	span    					= new su2double[nSpanWiseSections];
 	TurboNormal      	= new su2double[nDim];
+	NormalArea				= new su2double[nDim];
 	ordered     			= new unsigned long* [nSpanWiseSections];
 	disordered     		= new unsigned long* [nSpanWiseSections];
 	area 							= new su2double* [nSpanWiseSections];
@@ -9642,6 +9643,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 	delete [] span;
 	delete [] TurboNormal;
 	delete [] unitnormal;
+	delete [] NormalArea;
 }
 
 void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_flag, bool allocate) {
@@ -9655,7 +9657,9 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
   /*-- Variables declaration and allocation ---*/
   TotalTurboNormal = new su2double[nDim];
   TotalNormal			 = new su2double[nDim];
+  TurboNormal			 = new su2double[nDim];
   TotalGridVel 		 = new su2double[nDim];
+  Normal					 = new su2double[nDim];
 
   unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
   bool grid_movement        = config->GetGrid_Movement();
@@ -9799,7 +9803,9 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 
   delete [] TotalTurboNormal;
   delete [] TotalNormal;
-  delete []TotalGridVel;
+  delete [] TotalGridVel;
+  delete [] TurboNormal;
+  delete [] Normal;
 
 }
 
