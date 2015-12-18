@@ -9394,10 +9394,13 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 
 									/*--- store also the face area associated with the vertex ---*/
 									vertex[iMarker][iVertex]->GetNormal(NormalArea);
+									for (iDim = 0; iDim < nDim; iDim++) NormalArea[iDim] = -NormalArea[iDim];
 									Area = 0.0;
 									for (iDim = 0; iDim < nDim; iDim++)
 										Area += NormalArea[iDim]*NormalArea[iDim];
 									Area = sqrt(Area);
+									for (iDim = 0; iDim < nDim; iDim++) NormalArea[iDim] /= Area;
+
 								}
 							}
 						}
@@ -9433,7 +9436,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 									jPoint =vertex[iMarker][jVertex]->GetNode();
 
 									/*--- store also the face area associated with the vertex ---*/
-									vertex[iMarker][iVertex]->GetNormal(NormalArea);
+									vertex[iMarker][jVertex]->GetNormal(NormalArea);
 									for (iDim = 0; iDim < nDim; iDim++) NormalArea[iDim] = -NormalArea[iDim];
 									Area = 0.0;
 									for (iDim = 0; iDim < nDim; iDim++)
@@ -9722,6 +9725,12 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
     					iPoint = turbovertex[iMarker][iSpan][iVertex]->GetNode();
     					turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
     					turbovertex[iMarker][iSpan][iVertex]->GetNormal(Normal);
+//    					cout<< "Normal "<< Normal[0]<<endl;
+//    					cout<< "TurboNormal "<< TurboNormal[0]<<endl;
+//    					cout<< "Normal 1 "<< Normal[1]<<endl;
+//							cout<< "TurboNormal 1 "<< TurboNormal[1]<<endl;
+//							cout<< " coord x " << node[iPoint]->GetCoord()[0]<<endl;
+//							cout<< " coord y " << node[iPoint]->GetCoord()[1]<<endl;
     					Area = turbovertex[iMarker][iSpan][iVertex]->GetArea();
 
     					for (iDim = 0; iDim < nDim; iDim++) {
@@ -9752,7 +9761,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 		for (iDim = 0; iDim < nDim; iDim++) {
 			MyTotalTurboNormal[iDim]				 				= TotalTurboNormal[iDim];
 			TotalTurboNormal[iDim] 									= 0.0;
-			MyTotalNormal[iDim]							 				= TotalTurboNormal[iDim];
+			MyTotalNormal[iDim]							 				= TotalNormal[iDim];
 			TotalNormal[iDim] 											= 0.0;
 			MyTotalGridVel[iDim] 										= TotalGridVel[iDim];
 			TotalGridVel[iDim]											= 0.0;
@@ -9773,6 +9782,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 
 
 						SpanArea[iMarker][iSpan]										= TotalArea;
+						cout<< " Area Span " << SpanArea[iMarker][iSpan]<<endl;
 						nTotVertexSpan[iMarker][iSpan]							= nVert;
 						/*--- Compute the averaged value for the boundary of interest ---*/
 						turboNormal2 = 0.0;
