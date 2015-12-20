@@ -283,12 +283,14 @@ static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENU
  */
 enum ENUM_INTERPOLATOR {
   NEAREST_NEIGHBOR = 0,   /*!< \brief Nearest Neigbhor interpolation */
-  ISOPARAMETRIC = 1, /*!< \brief Consistent & Conservative interpolation (S.A. Brown 1997) */
+  ISOPARAMETRIC = 1, /*!< \brief Isoparametric interpolation */
+  CONSISTCONSERVE = 2,/*!< \brief Consistent & Conservative interpolation (S.A. Brown 1997). Utilizes Isoparametric interpolation. */
 };
 
 static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string, ENUM_INTERPOLATOR>
 ("NEAREST_NEIGHBOR", NEAREST_NEIGHBOR)
-("ISOPARAMETRIC", ISOPARAMETRIC);
+("ISOPARAMETRIC", ISOPARAMETRIC)
+("CONSISTCONSERVE", CONSISTCONSERVE);
 
 
 /*!
