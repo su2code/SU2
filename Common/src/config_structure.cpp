@@ -1490,7 +1490,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Make sure that 1D outputs are written when objective function requires ---*/
   
-  if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE || Kind_ObjFunc == OUTLET_CHAIN_RULE) {
+  if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE || Kind_ObjFunc == OUTFLOW_GENERALIZED) {
     Wrt_1D_Output = YES;
     Marker_Out_1D = Marker_Monitoring;
     nMarker_Out_1D = nMarker_Monitoring;
@@ -3150,6 +3150,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case FFD_CONTROL_SURFACE:   cout << "FFD (control surface) <-> "; break;
           case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
           case FFD_THICKNESS:         cout << "FFD (thickness) <-> "; break;
+          case CUSTOM:                cout << "Custom DV <-> "; break;
         }
         
         for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
@@ -3177,6 +3178,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             (Design_Variable[iDV] ==  FFD_TWIST_ANGLE) ||
             (Design_Variable[iDV] ==  FFD_ROTATION) ||
             (Design_Variable[iDV] ==  FFD_CONTROL_SURFACE) ) nParamDV = 7;
+        if (Design_Variable[iDV] ==  CUSTOM) nParamDV = 1;
 
         for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
 
@@ -3264,7 +3266,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
       case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
       case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
-      case OUTLET_CHAIN_RULE:       cout << "Objective function defined by chain rule." << endl; break;
+      case OUTFLOW_GENERALIZED:     cout << "Generalized outflow objective function." << endl; break;
 		}
 
 	}
@@ -4597,7 +4599,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case AVG_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
       case AVG_OUTLET_PRESSURE:      AdjExt = "_pe";       break;
       case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
-      case OUTLET_CHAIN_RULE:       AdjExt = "_chn";       break;
+      case OUTFLOW_GENERALIZED:       AdjExt = "_chn";       break;
     }
     Filename.append(AdjExt);
 
