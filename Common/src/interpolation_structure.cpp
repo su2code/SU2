@@ -272,8 +272,6 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 						  dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
 					  }
 
-//					  if (((dist < mindist) && (iProcessor != rank)) ||
-//						  ((dist < mindist) && (iProcessor == rank) && (Point_Donor != Point_Target))) {
 					  if (dist < mindist) {
 						  mindist = dist; pProcessor = iProcessor; pGlobalPoint = Global_Point_Donor;
 					  }
@@ -507,42 +505,6 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
               /*--- Store info ---*/
               donor_elem = temp_donor;
 
-              // Debugging check
-              /*
-              cout <<"debug check" <<endl;
-              Coord = target_geometry->vertex[markTarget][iVertex]->GetCoord();
-              for (iDim=0; iDim<nDim; iDim++)
-                Coord[iDim]=0;
-
-              for (donorindex=0; donorindex< nNodes; donorindex++){
-                //--- If 3D loop over a face. if 2D loop over an element ---
-                if (nDim==3){
-                  jPoint = donor_geometry->elem[temp_donor]->GetNode(donor_geometry->elem[temp_donor]->GetFaces(iFace,donorindex));
-                }
-                else{
-                  inode = donor_geometry->node[iNearestNode]->GetEdge(iFace);
-                  jPoint = donor_geometry->edge[inode]->GetNode(donorindex);
-                }
-                Coord_j = donor_geometry->node[jPoint]->GetCoord();
-
-                cout <<" isoparam: " << myCoeff[donorindex] <<" Coord: ";
-                for (iDim=0; iDim<nDim; iDim++)
-                  cout << X[iDim*nNodes+donorindex]<< " ";
-                cout << endl;
-
-
-                for (iDim=0; iDim<nDim; iDim++){
-                  Coord[iDim]+=myCoeff[donorindex]*Coord_j[iDim];
-                }
-
-              }
-              Coord_j = donor_geometry->node[iNearestNode]->GetCoord();
-
-              for (iDim=0; iDim<nDim; iDim++){
-                cout << " iso " << Coord[iDim] <<" proj " << projected_point[iDim] <<" NN " <<  Coord_j[iDim] << endl;
-              }
-              */
-
               target_geometry->vertex[markTarget][iVertex]->SetDonorElem(donor_elem); // in 2D is nearest neighbor
               target_geometry->vertex[markTarget][iVertex]->SetDonorFace(iFace); // in 2D is the edge
               target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nNodes);
@@ -727,78 +689,41 @@ void CIsoparametric::Isoparameters(su2double *isoparams, unsigned short nDim,
     }
 
   /*--- Isoparametric coefficients have been calculated. Run checks to eliminate outside-element issues ---*/
-//    su2double tol = 1e-13; // hardcoded tolerance
-//    /*--- Check 0: normalize to 1: corrects for points not in face---*/
-    if (nDonor==4){
-      su2double xi, eta;
-      xi = (1.0-isoparams[0]/isoparams[1])/(1.0+isoparams[0]/isoparams[1]);
-      eta = 1- isoparams[0]*4/(1-xi);
-      if (xi>1.0) xi=1.0;
-      if (xi<-1.0) xi=-1.0;
-      if (eta>1.0) eta=1.0;
-      if (eta<-1.0) eta=-1.0;
-      isoparams[0]=0.25*(1-xi)*(1-eta);
-      isoparams[1]=0.25*(1+xi)*(1-eta);
-      isoparams[2]=0.25*(1+xi)*(1+eta);
-      isoparams[3]=0.25*(1-xi)*(1+eta);
-    }
-    if (nDonor==3){
-      for (i=1; i< nDonor; i++){
-        if (isoparams[i]<0) isoparams[i]=0;
-        if (isoparams[i]>1) isoparams[i]=1;
+  if (nDonor==4){
+    su2double xi, eta;
+    xi = (1.0-isoparams[0]/isoparams[1])/(1.0+isoparams[0]/isoparams[1]);
+    eta = 1- isoparams[0]*4/(1-xi);
+    if (xi>1.0) xi=1.0;
+    if (xi<-1.0) xi=-1.0;
+    if (eta>1.0) eta=1.0;
+    if (eta<-1.0) eta=-1.0;
+    isoparams[0]=0.25*(1-xi)*(1-eta);
+    isoparams[1]=0.25*(1+xi)*(1-eta);
+    isoparams[2]=0.25*(1+xi)*(1+eta);
+    isoparams[3]=0.25*(1-xi)*(1+eta);
+  }
+  if (nDonor<4){
+    tmp = 0.0; // value for normalization
+    tmp2=0; // check for maximum value, to be used to id nearest neighbor if necessary
+    j=0; // index for maximum value
+    for (i=0; i< nDonor; i++){
+      if (isoparams[i]>tmp2){
+        j=i;
+        tmp2=isoparams[i];
       }
+      if (isoparams[i]<0) isoparams[i]=0; // Eliminate negative values
+      if (isoparams[i]>1) isoparams[i]=1;
+      tmp +=isoparams[i];
     }
-//    tmp=0;
-//    for (i=0; i<m; i++){
-//      //if (isoparams[i]<-1) isoparams[i]=0;
-//      tmp+=isoparams[i]*isoparams[i];
-//    }
-//    tmp = pow(tmp,0.5);
-//    for (i=0; i<m; i++){
-//      isoparams[i] /= tmp;
-//    }
-    /*--- Check 1: if close to 0, replace with 0 ---*/
-//    for (i=0; i<m; i++){
-//      if (abs(isoparams[i])< tol )
-//        isoparams[i]=0;
-//    }
-    /*--- Check 2: if > 1, point is ouside face, not really represented accurately ---*/
-//    bool inside_face = true;
-//    for (i=0; i<m; i++){
-//      if (isoparams[i]> 1. or  isoparams[i]<-0. )
-//        inside_face = false;
-//    }
-//    if (!inside_face){
-//      //cout <<"Reverted to nearest neighbor " << m0 << endl;
-//      /*--- Revert to nearest neighbor ---*/
-//      tmp=1E6;  k=0;
-//      for (i=0; i<m0; i++){
-//        tmp2=0.0;
-//
-//        for (j=0;j<nDim;j++)
-//          tmp2+=pow((X[i*m0+j]-xj[j]),2.0);
-//
-//        if (tmp2<tmp){
-//          tmp=tmp2;
-//          k=i;
-//        }
-//        isoparams[i]=0;
-//      }
-//      isoparams[k]=1.0;
-//    }
-    /*--- Check 4: print the result ---
-    if (nDim==2)
-      n0=2;
-    for (k=0; k<m0; k++){
-      cout <<" iDim " << k <<" Coord " << xj[k] <<" ";
-      tmp =0;
-      for (i=0; i<n0; i++){
+    if (tmp>0)
+      for (i=0; i< nDonor; i++)
+        isoparams[i]=isoparams[i]/tmp;
+    else{
+      isoparams[j]=1.0;
+    }
+  }
 
-        tmp+=isoparams[i]*(X[i*m0+k]);
-      }
-      cout << tmp << endl;
-    }
-     */
+
 
 }
 
