@@ -620,6 +620,8 @@ void CMeanFlowIteration::SetMPITurboPerformance(CGeometry ***geometry_container,
 
 solver_container[iZone][MESH_0][FLOW_SOL]->MPIMixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], INFLOW);
 solver_container[iZone][MESH_0][FLOW_SOL]->MPIMixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], OUTFLOW);
+solver_container[iZone][MESH_0][FLOW_SOL]->MPISpanMixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], INFLOW);
+solver_container[iZone][MESH_0][FLOW_SOL]->MPISpanMixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], OUTFLOW);
 solver_container[iZone][MESH_0][FLOW_SOL]->MPITurboPerformance(config_container[iZone]);
 
 }
