@@ -8493,7 +8493,14 @@ void CEulerSolver::MPIMixing_Process(CGeometry *geometry, CSolver **solver_conta
 					}
 
 					AveragedNormalMach[iMarker] = AveragedNormalVelocity[iMarker]/AveragedSoundSpeed[iMarker];
-
+//					cout<<" Avg Density "<< AveragedDensity[iMarker]<<endl;
+//					cout<<" Avg Pressure "<< AveragedPressure[iMarker]<<endl;
+//					cout<<" Avg  x Velocity "<< AveragedVelocity[iMarker][0]<<endl;
+//					cout<<" Avg  y Velocity "<< AveragedVelocity[iMarker][1]<<endl;
+//					cout<<" Avg  Normal Velocity "<< AveragedNormalVelocity[iMarker]<<endl;
+//					cout<<" Avg  Tang Velocity "<< AveragedTangVelocity[iMarker]<<endl;
+//					cout<<" Avg Mach number "<< AveragedMach[iMarker]<<endl;
+//					cout<<" Avg Tang Mach number "<< AveragedTangMach[iMarker]<<endl;
 
 #ifdef HAVE_MPI
 					if ((AveragedDensity[iMarker]!= AveragedDensity[iMarker]) || (AveragedEnthalpy[iMarker]!=AveragedEnthalpy[iMarker])){
@@ -8522,7 +8529,7 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_c
   unsigned long iVertex, iPoint, nVert;
   unsigned short iDim, iVar, iMarker, iMarkerTP, iSpan;
   unsigned short mixing_process = config->GetKind_MixingProcess();
-  su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL, *Normal, *gridVel,
+  su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL, *gridVel,
   Area, TotalArea, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, *UnitNormal;
   string Marker_Tag, Monitoring_Tag;
   su2double val_init_pressure;
@@ -8533,7 +8540,7 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_c
   int size = SINGLE_NODE;
   /*-- Variables declaration and allocation ---*/
   Velocity 							= new su2double[nDim];
-  Normal 								= new su2double[nDim];
+  UnitNormal 						= new su2double[nDim];
   TotalVelocity 				= new su2double[nDim];
   TotalAreaVelocity 		= new su2double[nDim];
   TotalFluxes 					= new su2double[nVar];
@@ -8565,8 +8572,6 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_c
     TotalPressure = 0.0;
     TotalAreaPressure=0.0;
     TotalAreaDensity=0.0;
-    TotalArea = 0.0;
-    nVert = 0;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
     	for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
@@ -8764,7 +8769,14 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_c
 						}
 
 						AverageNormalMach[iMarker][iSpan] = AverageNormalVelocity[iMarker][iSpan]/AverageSoundSpeed[iMarker][iSpan];
-
+//						cout<<" Avg Density Span "<< AverageDensity[iMarker][iSpan]<<endl;
+//						cout<<" Avg Pressure Span "<< AveragePressure[iMarker][iSpan]<<endl;
+//						cout<<" Avg  x Velocity Span "<< AverageVelocity[iMarker][iSpan][0]<<endl;
+//						cout<<" Avg  y Velocity Span "<< AverageVelocity[iMarker][iSpan][1]<<endl;
+//						cout<<" Avg  Normal Velocity Span "<< AverageNormalVelocity[iMarker][iSpan]<<endl;
+//						cout<<" Avg  Tang Velocity Span "<< AverageTangVelocity[iMarker][iSpan]<<endl;
+//						cout<<" Avg Mach number Span "<< AverageMach[iMarker][iSpan]<<endl;
+//						cout<<" Avg Tang Mach number Span "<< AverageTangMach[iMarker][iSpan]<<endl;
 
 #ifdef HAVE_MPI
 						if ((AverageDensity[iMarker][iSpan]!= AverageDensity[iMarker][iSpan]) || (AverageEnthalpy[iMarker][iSpan]!=AverageEnthalpy[iMarker][iSpan])){
@@ -8784,7 +8796,7 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_c
   /*--- Free locally allocated memory ---*/
 //  MPI_Comm_free(&marker_comm);
   delete [] Velocity;
-  delete [] Normal;
+  delete [] UnitNormal;
   delete [] TotalVelocity;
   delete [] TotalAreaVelocity;
   delete [] TotalFluxes;

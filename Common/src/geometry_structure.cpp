@@ -9355,11 +9355,17 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 	//TODO (turbo) generalize for different number of section for inlet and outlet.
 	if (allocate){
 		for (iMarker = 0; iMarker < nMarker; iMarker++){
-			nVertexSpan[iMarker] = new unsigned long[nSpanWiseSections];
-			turbovertex[iMarker] = new CTurboVertex** [nSpanWiseSections];
-			for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-				nVertexSpan[iMarker][iSpan] = 0;
-				turbovertex[iMarker][iSpan] = NULL;
+			for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
+				if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
+					if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+						nVertexSpan[iMarker] = new unsigned long[nSpanWiseSections];
+						turbovertex[iMarker] = new CTurboVertex** [nSpanWiseSections];
+						for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+							nVertexSpan[iMarker][iSpan] = 0;
+							turbovertex[iMarker][iSpan] = NULL;
+						}
+					}
+				}
 			}
 		}
 	}
@@ -9689,12 +9695,12 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 							AverageTurboNormal[iMarker][iSpan] 					= new su2double [nDim];
 							AverageNormal[iMarker][iSpan]			 					= new su2double [nDim];
 							AverageGridVel[iMarker][iSpan] 	  					= new su2double [nDim];
-							AverageTangGridVel[iMarker][iSpan]						= 0.0;
+							AverageTangGridVel[iMarker][iSpan]					= 0.0;
 							SpanArea[iMarker][iSpan]										= 0.0;
 							nTotVertexSpan[iMarker][iSpan]							= 0;
 							for(iDim=0; iDim < nDim; iDim++){
 								AverageTurboNormal[iMarker][iSpan][iDim]	  = 0.0;
-								AverageNormal[iMarker][iSpan][iDim]	  = 0.0;
+								AverageNormal[iMarker][iSpan][iDim]	  			= 0.0;
 								AverageGridVel[iMarker][iSpan][iDim]				= 0.0;
 							}
 						}
@@ -9732,7 +9738,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 //							cout<< " coord x " << node[iPoint]->GetCoord()[0]<<endl;
 //							cout<< " coord y " << node[iPoint]->GetCoord()[1]<<endl;
     					Area = turbovertex[iMarker][iSpan][iVertex]->GetArea();
-
+    					TotalArea += Area;
     					for (iDim = 0; iDim < nDim; iDim++) {
     						TotalTurboNormal[iDim]  +=TurboNormal[iDim];
     						TotalNormal[iDim] 			+=Normal[iDim];
@@ -9782,8 +9788,9 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 
 
 						SpanArea[iMarker][iSpan]										= TotalArea;
-						cout<< " Area Span " << SpanArea[iMarker][iSpan]<<endl;
+//						cout<< "Area Span " << SpanArea[iMarker][iSpan]<< " in span " << iSpan <<" in rank " <<rank << endl;
 						nTotVertexSpan[iMarker][iSpan]							= nVert;
+//						cout<< "nVertex " << nTotVertexSpan[iMarker][iSpan]<< " in span " << iSpan <<" in rank " <<rank << endl;
 						/*--- Compute the averaged value for the boundary of interest ---*/
 						turboNormal2 = 0.0;
 						Normal2 		= 0.0;
@@ -9800,11 +9807,12 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 						if (grid_movement){
 							for (iDim = 0; iDim < nDim; iDim++)AverageGridVel[iMarker][iSpan][iDim] =TotalGridVel[iDim]/nVert;
 							AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
+//							cout << "average  Tang grid Vel "<<AverageTangGridVel[iMarker][iSpan]<< " in span " << iSpan << " in rank " <<rank <<endl;
 						}
-						for (iDim = 0; iDim < nDim; iDim++){
-							cout << "average turbo normal "<<AverageTurboNormal[iMarker][iSpan][iDim]<<endl;
-							cout << "average  normal "<<AverageNormal[iMarker][iSpan][iDim]<<endl;
-						}
+//						for (iDim = 0; iDim < nDim; iDim++){
+//							cout << "average turbo normal "<<AverageTurboNormal[iMarker][iSpan][iDim]<< " in span " << iSpan <<" in rank " <<rank <<endl;
+//							cout << "average  normal "<<AverageNormal[iMarker][iSpan][iDim]<< " in span " << iSpan <<" in rank " <<rank <<endl;
+//						}
 					}
 				}
 			}
