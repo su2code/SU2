@@ -353,3 +353,7 @@ inline void CTurboVertex::SetArea(su2double val_area){Area = val_area;}
 
 inline su2double CTurboVertex::GetArea(void) { return Area; }
 
+inline void CTurboVertex::SetOldVertex(unsigned long val_vertex){OldVertex = val_vertex;}
+
+inline unsigned long CTurboVertex::GetOldVertex(void) { return OldVertex; }
+
