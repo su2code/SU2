@@ -1095,6 +1095,7 @@ class CTurboVertex : public CVertex {
 private:
 	su2double *TurboNormal;			/*!< \brief Normal for computing correct turbomachinery quantities. */
 	su2double Area;							/*!< \brief Value of the face area associated to the vertex */
+	unsigned long OldVertex;    /*!< \brief Value of the vertex numeration before the ordering */
 public:
 
 	/*!
@@ -1137,6 +1138,17 @@ public:
 	 * \return Dimensionaless normal vector, the modulus is the area of the face.
 	 */
 	su2double *GetTurboNormal(void);
+
+	/*!
+	 * \brief set vertex value not ordered.
+	 * \param[in] val_vertex - value of the vertex before ordering.
+	 */
+	void SetOldVertex(unsigned long val_vertex);
+
+	/*!
+	 * \brief retrieve vertex value not ordered.
+	 */
+	unsigned long GetOldVertex(void);
 };
 
 #include "dual_grid_structure.inl"
