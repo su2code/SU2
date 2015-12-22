@@ -12597,7 +12597,7 @@ su2double CPhysicalGeometry::Compute_NACA0012(CGeometry *geometry, CConfig *conf
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
   su2double MinDelta = 1e6, Distance, xCoord = 0.0, yCoord = 0.0, yNACA = 0.0;
-  su2double k = 10.0;
+  su2double k = 5.0;
   su2double *VarCoord, *Coord, *Normal;
   
   /*--- Compute the distance between the current geometry and the analytic
@@ -12629,17 +12629,20 @@ su2double CPhysicalGeometry::Compute_NACA0012(CGeometry *geometry, CConfig *conf
                      + 0.2843*pow(xCoord,3.0) - 0.1036*pow(xCoord,4.0));
         
         /*--- Use a Heaviside function approximation ---*/
-        Distance = 1.0 / (1.0 + exp(-2.0 * k * (yCoord - yNACA)));
+        //Distance = 1.0 / (1.0 + exp(-2.0 * k * (yCoord - yNACA)));
+        Distance = yCoord - yNACA;
         
         /*--- Store the minimum value (i.e., the location that is the 
          farthest below the NACA 0012) ---*/
         if (MinDelta > Distance) { MinDelta = Distance; }
+        //if (Distance < 0.0) { MinDelta += Distance; }
         
       }
     }
   }
   
   return MinDelta;
+  //return 1.0 / (1.0 + exp(-2.0 * k * (MinDelta)));
   
 }
 
