@@ -339,6 +339,8 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
   su2double projected_point[nDim];
   su2double tmp, tmp2;
 
+  Coord = new su2double[nDim];
+
   /*--- Number of markers on the interface ---*/
   nMarkerInt = (config[targetZone]->GetMarker_n_FSIinterface())/2;
   nMarkerDonor  =  config[donorZone]->GetnMarker_All();
@@ -480,7 +482,11 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
             Isoparameters(myCoeff,nDim, nNodes, X, projected_point);
             /*--- Recalculate the dist using the isoparametric representation ---*/
             dist = 0.0;
-            Coord = target_geometry->vertex[markTarget][iVertex]->GetCoord();
+
+            for (iDim=0; iDim<nDim; iDim++){
+              Coord[iDim] = target_geometry->vertex[markTarget][iVertex]->GetCoord(iDim);
+            }
+
             for(donorindex=0; donorindex< nNodes; donorindex++){
               if (nDim==3){
                 jPoint = donor_geometry->elem[temp_donor]->GetNode(donor_geometry->elem[temp_donor]->GetFaces(iFace,donorindex));
@@ -504,7 +510,6 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
               mindist = dist;
               /*--- Store info ---*/
               donor_elem = temp_donor;
-
               target_geometry->vertex[markTarget][iVertex]->SetDonorElem(donor_elem); // in 2D is nearest neighbor
               target_geometry->vertex[markTarget][iVertex]->SetDonorFace(iFace); // in 2D is the edge
               target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nNodes);
@@ -512,18 +517,6 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
           }
         }
       }
-
-      /*--- If nDonorPoints ==0, no match was found, set nearest neighbor ---*/
-      //unsigned long gpoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
-      //cout <<" Nearest Neighbor for target g.i " << target_geometry->node[gpoint]->GetGlobalIndex() <<" is "<< donor_geometry->node[iNearestNode]->GetGlobalIndex() << "; d = " << mindist<< endl;
-
-      if (target_geometry->vertex[markTarget][iVertex]->GetnDonorPoints()==0){
-        nNodes=1;
-        target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nNodes);
-        donor_elem = -1;
-        myCoeff[0] = 1;
-      }
-
 
       /*--- Set the appropriate amount of memory ---*/
       target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
@@ -547,29 +540,19 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
           jPoint = iNearestNode; // If no matching element is found, revert to Nearest Neighbor
 
         /*--- jPoint must be converted to global index ---*/
-        //ivtx = donor_geometry->node[jPoint]->GetVertex(markDonor);
-        //donor_geometry->vertex[markDonor][ivtx]->IncrementnDonor();
-
         pGlobalPoint = donor_geometry->node[jPoint]->GetGlobalIndex();
+
         target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(donorindex,pGlobalPoint);
         target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(donorindex,myCoeff[donorindex]);
         target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(donorindex, MASTER_NODE);
 
-        /* From NN
-        target_geometry->vertex[markTarget][iVertexTarget]->SetInterpDonorPoint(donorindex, pGlobalPoint);
-        target_geometry->vertex[markTarget][iVertexTarget]->SetInterpDonorProcessor(donorindex, pProcessor);
-        target_geometry->vertex[markTarget][iVertexTarget]->SetDonorCoeff(donorindex,1.0);
-         */
-
         // FOR PARALELL:
         //target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProc(donorindex,proc);
-        //cout <<" myCoeff  " << myCoeff[donorindex] << " ";
+
       }
-      //cout << endl;
     }
-
   }
-
+  delete [] Coord;
 }
 
 void CIsoparametric::Isoparameters(su2double *isoparams, unsigned short nDim,
@@ -584,13 +567,14 @@ void CIsoparametric::Isoparameters(su2double *isoparams, unsigned short nDim,
   su2double eps = 1E-10;
   bool test[n0], testi[n0];
   m=m0; n=n0;
-  /*--- Create Matrix A: 1st row all 1's, 2nd row x coordinates, 3rd row y coordinates, etc ---*/
+  if (nDonor>2){
+    /*--- Create Matrix A: 1st row all 1's, 2nd row x coordinates, 3rd row y coordinates, etc ---*/
     /*--- Right hand side is [1, \vec{x}']'---*/
     for (i=0; i<m; i++){
       isoparams[i]=0;
       A[i]=1.0;
       for (j=0; j<n; j++)
-        A[j*m+i+1]=X[j*m+i];
+        A[(j+1)*m+i]=X[j*m+i];
     }
 
     /*j,n: dimension. i,m: # neighbor point*/
@@ -687,12 +671,28 @@ void CIsoparametric::Isoparameters(su2double *isoparams, unsigned short nDim,
       for (j=0; j<i; j++)
         x_tmp[j]=x_tmp[j]-R[j*m+i]*isoparams[i];
     }
+  }
+  else{
+    tmp =  pow(X[0*nDonor+0]- X[0*nDonor+1],2.0);
+    tmp += pow(X[1*nDonor+0]- X[1*nDonor+1],2.0);
+    tmp = sqrt(tmp);
 
+    tmp2 = pow(X[0*nDonor+0] - xj[0],2.0);
+    tmp2 += pow(X[1*nDonor+0] - xj[1],2.0);
+    tmp2 = sqrt(tmp2);
+    isoparams[1] = tmp2/tmp;
+
+    tmp2 = pow(X[0*nDonor+1] - xj[0],2.0);
+    tmp2 += pow(X[1*nDonor+1] - xj[1],2.0);
+    tmp2 = sqrt(tmp2);
+    isoparams[0] = tmp2/tmp;
+  }
   /*--- Isoparametric coefficients have been calculated. Run checks to eliminate outside-element issues ---*/
   if (nDonor==4){
+    /*-- Bilinear coordinates, bounded by [-1,1] ---*/
     su2double xi, eta;
     xi = (1.0-isoparams[0]/isoparams[1])/(1.0+isoparams[0]/isoparams[1]);
-    eta = 1- isoparams[0]*4/(1-xi);
+    eta = 1- isoparams[2]*4/(1+xi);
     if (xi>1.0) xi=1.0;
     if (xi<-1.0) xi=-1.0;
     if (eta>1.0) eta=1.0;
@@ -701,8 +701,10 @@ void CIsoparametric::Isoparameters(su2double *isoparams, unsigned short nDim,
     isoparams[1]=0.25*(1+xi)*(1-eta);
     isoparams[2]=0.25*(1+xi)*(1+eta);
     isoparams[3]=0.25*(1-xi)*(1+eta);
+
   }
   if (nDonor<4){
+
     tmp = 0.0; // value for normalization
     tmp2=0; // check for maximum value, to be used to id nearest neighbor if necessary
     j=0; // index for maximum value
@@ -711,7 +713,8 @@ void CIsoparametric::Isoparameters(su2double *isoparams, unsigned short nDim,
         j=i;
         tmp2=isoparams[i];
       }
-      if (isoparams[i]<0) isoparams[i]=0; // Eliminate negative values
+      // [0,1]
+      if (isoparams[i]<0) isoparams[i]=0;
       if (isoparams[i]>1) isoparams[i]=1;
       tmp +=isoparams[i];
     }
@@ -722,8 +725,6 @@ void CIsoparametric::Isoparameters(su2double *isoparams, unsigned short nDim,
       isoparams[j]=1.0;
     }
   }
-
-
 
 }
 
