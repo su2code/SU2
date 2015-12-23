@@ -39,6 +39,7 @@ int main(int argc, char *argv[]) {
   unsigned short iDV, iFFDBox, iPlane, nPlane, iVar;
   su2double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
   **Plane_P0, **Plane_Normal, Volume = 0.0, Volume_New = 0.0, Volume_Grad = 0.0;
+  su2double MinDelta = 1e6, MinDelta_New = 1e6;
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   char config_file_name[MAX_STRING_SIZE];
   char *cstr;
@@ -229,6 +230,9 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE)  cout << "Computing the internal volume." << endl;
   if (geometry_container[ZONE_0]->GetnDim() == 3) Volume = geometry_container[ZONE_0]->Compute_Volume(config_container[ZONE_0], true);
   
+  if (config_container[ZONE_0]->GetMinDelta_NACA0012())
+    MinDelta = geometry_container[ZONE_0]->Compute_NACA0012(geometry_container[ZONE_0],config_container[ZONE_0], true);
+  
   if (rank == MASTER_NODE)
     cout << endl <<"-------------------- Objective function evaluation ----------------------" << endl;
   
@@ -263,7 +267,7 @@ int main(int argc, char *argv[]) {
           cout << "Chord: "               << ObjectiveFunc[8*nPlane+iPlane] << "." << endl;
           
         } else {
-          ObjectiveFunc[9*nPlane+iPlane]  = geometry_container[ZONE_0]->Compute_NACA0012(geometry_container[ZONE_0],config_container[ZONE_0], true);
+          ObjectiveFunc[9*nPlane+iPlane] = MinDelta;
           cout << "Min. Delta NACA 0012: "<< ObjectiveFunc[9*nPlane+iPlane] << "." << endl;
           
         }
@@ -484,6 +488,9 @@ int main(int argc, char *argv[]) {
       
       if (geometry_container[ZONE_0]->GetnDim() == 3) Volume_New = geometry_container[ZONE_0]->Compute_Volume(config_container[ZONE_0], false);
       
+      if (config_container[ZONE_0]->GetMinDelta_NACA0012())
+      MinDelta_New = geometry_container[ZONE_0]->Compute_NACA0012(geometry_container[ZONE_0], config_container[ZONE_0], false);
+      
       /*--- Compute gradient ---*/
       if (rank == MASTER_NODE) {
         
@@ -546,7 +553,7 @@ int main(int argc, char *argv[]) {
               cout << "Chord gradient: "                << Gradient[8*nPlane + iPlane] << "." << endl;
               
             } else {
-              ObjectiveFunc_New[9*nPlane + iPlane] = geometry_container[ZONE_0]->Compute_NACA0012(geometry_container[ZONE_0], config_container[ZONE_0], false);
+              ObjectiveFunc_New[9*nPlane + iPlane] = MinDelta_New;
               Gradient[9*nPlane + iPlane] = (ObjectiveFunc_New[9*nPlane + iPlane] - ObjectiveFunc[9*nPlane + iPlane]) / delta_eps;
               cout << "Min. Delta NACA 0012 gradient: " << Gradient[9*nPlane + iPlane] << "." << endl;
             }

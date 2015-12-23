@@ -12596,7 +12596,8 @@ su2double CPhysicalGeometry::Compute_NACA0012(CGeometry *geometry, CConfig *conf
   
   unsigned short iMarker;
   unsigned long iVertex, iPoint;
-  su2double MinDelta = 1e6, Distance, xCoord = 0.0, yCoord = 0.0, yNACA = 0.0;
+  su2double Distance = 0.0, xCoord = 0.0, yCoord = 0.0, yNACA = 0.0;
+  su2double MinDelta, MyMinDelta = 1e6;
   su2double k = 5.0;
   su2double *VarCoord, *Coord, *Normal;
   
@@ -12634,12 +12635,18 @@ su2double CPhysicalGeometry::Compute_NACA0012(CGeometry *geometry, CConfig *conf
         
         /*--- Store the minimum value (i.e., the location that is the 
          farthest below the NACA 0012) ---*/
-        if (MinDelta > Distance) { MinDelta = Distance; }
+        if (MyMinDelta > Distance) { MyMinDelta = Distance; }
         //if (Distance < 0.0) { MinDelta += Distance; }
         
       }
     }
   }
+  
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&MyMinDelta, &MinDelta, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+#else
+  MinDelta = MyMinDelta;
+#endif
   
   return MinDelta;
   //return 1.0 / (1.0 + exp(-2.0 * k * (MinDelta)));
