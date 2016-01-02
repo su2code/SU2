@@ -2113,7 +2113,17 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 								 	 + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);	//a3*U''(t)
 				}
 				TimeRes_Aux.SetBlock(iPoint, Residual);
+				if (iPoint == 15){
+					cout << "-------------------------------NODE 15: Residual -----------------------------------------" << endl;
+					cout << "a_dt: " << a_dt[0] << " , " << a_dt[2] << " , " << a_dt[3] << endl;
+					cout << "Solution time n: " << node[iPoint]->GetSolution_time_n(0) << " , " << node[iPoint]->GetSolution_time_n(1) << endl;
+					cout << "Solution: " << node[iPoint]->GetSolution(0) << " , " << node[iPoint]->GetSolution(1) << endl;
+					cout << "Velocity time n: " << node[iPoint]->GetSolution_Vel_time_n(0) << " , " << node[iPoint]->GetSolution_Vel_time_n(1) << endl;
+					cout << "Accel time n: " << node[iPoint]->GetSolution_Accel_time_n(0) << " , " << node[iPoint]->GetSolution_Accel_time_n(1) << endl;
+
+			 	}
 			}
+
 		}
 
 		/*--- Once computed, compute M*TimeRes_Aux ---*/
@@ -2124,6 +2134,13 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 			/*--- TODO: Do I have to scale this one? I don't think so... ---*/
 			Res_Time_Cont = TimeRes.GetBlock(iPoint);
 			LinSysRes.AddBlock(iPoint, Res_Time_Cont);
+
+			if (iPoint == 15){
+				cout << "-------------------------------NODE 15: -----------------------------------------" << endl;
+				cout << "Res_Time_Cont: " << Res_Time_Cont[0] << " , " << Res_Time_Cont[1] << endl;
+				cout << "LinSysRes: " << LinSysRes.GetBlock(iPoint,0) << " , " << LinSysRes.GetBlock(iPoint,0) << endl;
+		 	}
+
 			/*--- External surface load contribution ---*/
 			if (incremental_load){
 				for (iVar = 0; iVar < nVar; iVar++){
@@ -2134,6 +2151,8 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 				Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
 			}
 			LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
+
+
 
 			/*--- Add FSI contribution ---*/
 			if (fsi) {
@@ -2147,6 +2166,12 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 					Res_FSI_Cont = node[iPoint]->Get_FlowTraction();
 				}
 				LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
+
+				if (iPoint == 15){
+					cout << "-------------------------------NODE 15: -----------------------------------------" << endl;
+					cout << "Res_FSI_Cont: " << Res_FSI_Cont[0] << " , " << Res_FSI_Cont[1] << endl;
+					cout << "LinSysRes: " << LinSysRes.GetBlock(iPoint,0) << " , " << LinSysRes.GetBlock(iPoint,0) << endl;
+			 	}
 			}
 		}
 	}

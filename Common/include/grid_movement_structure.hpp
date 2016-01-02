@@ -748,6 +748,8 @@ protected:
 	unsigned long nPoint;		/*!< \brief Number of points. */
 	unsigned long nPointDomain;		/*!< \brief Number of points in the domain. */
 
+	unsigned long nIterMesh;	/*!< \brief Number of iterations in the mesh update. +*/
+
   CSysMatrix StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
   CSysVector LinSysSol;
   CSysVector LinSysRes;
@@ -1037,6 +1039,18 @@ public:
 	 */
 	su2double Determinant_3x3(su2double A00, su2double A01, su2double A02, su2double A10, su2double A11, su2double A12, su2double A20, su2double A21, su2double A22);
 
+
+	/*!
+	 * \brief Store the number of iterations when moving the mesh.
+	 * \param[in] val_nIterMesh - Number of iterations.
+	 */
+	void Set_nIterMesh(unsigned long val_nIterMesh);
+
+	/*!
+	 * \brief Retrieve the number of iterations when moving the mesh.
+	 * \param[out] Number of iterations.
+	 */
+	unsigned long Get_nIterMesh(void);
 };
 
 /*! 
