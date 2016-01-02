@@ -404,8 +404,6 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 			  target_geometry->vertex[markTarget][iVertexTarget]->SetInterpDonorPoint(iDonor, pGlobalPoint);
 			  target_geometry->vertex[markTarget][iVertexTarget]->SetInterpDonorProcessor(iDonor, pProcessor);
 			  target_geometry->vertex[markTarget][iVertexTarget]->SetDonorCoeff(iDonor,1.0);
-
-//	      unsigned long gpoint = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
 	      //cout <<" Nearest Neighbor for target g.i " << target_geometry->node[Point_Target]->GetGlobalIndex() <<" is "<< pGlobalPoint << "; d = " << mindist<< endl;
 		  }
 	  }
@@ -682,8 +680,6 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
       Buffer_Receive_FaceProc[iVertex] = Buffer_Send_FaceProc[iVertex];
 #endif
 
-    cout <<"MaxFaceDonor = " << MaxFace_Donor <<" MaxLocalVertex_Donor = " << MaxLocalVertex_Donor << " MaxFaceNodes_Donor " << MaxFaceNodes_Donor << endl;
-    cout <<rank <<"nLocalFaceDonor = " << nLocalFace_Donor <<" Buffer_Receive_nVertex_Donor[rank] = " << nLocalVertex_Donor << " nLocalFaceNodes_Donor " << nLocalFaceNodes_Donor << endl;
     /*--- Loop over the vertices on the target Marker ---*/
     for (iVertex = 0; iVertex<target_geometry->GetnVertex(markTarget); iVertex++) {
       mindist=1E6;
@@ -691,9 +687,9 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
         storeCoeff[iCoeff]=0;
       }
       Point_Target = target_geometry->vertex[markTarget][iVertex]->GetNode();
-      cout << "GlobalIndex " << target_geometry->node[Point_Target]->GetGlobalIndex() << " Boundary " << iMarkerInt << endl;
+
       if (target_geometry->node[Point_Target]->GetDomain()) {
-        cout <<" on domain " << markTarget<< " rank " << rank << endl;
+
         Coord_i = target_geometry->vertex[markTarget][iVertex]->GetCoord();
         /*---Loop over the faces previously communicated/stored ---*/
         for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
@@ -772,14 +768,13 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
         /*--- Set the appropriate amount of memory and fill ---*/
         nNodes =target_geometry->vertex[markTarget][iVertex]->GetnDonorPoints();
         target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
-        cout <<rank << " nNodes " << nNodes << " connected to GI " <<  target_geometry->node[Point_Target]->GetGlobalIndex() << endl;
+
         for (iDonor=0; iDonor<nNodes; iDonor++){
           target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(iDonor,storeGlobal[iDonor]);
-          cout <<" " << storeGlobal[iDonor] <<" " << storeCoeff[iDonor] <<";";
+          //cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;
           target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor,storeCoeff[iDonor]);
           target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, storeProc[iDonor]);
         }
-        cout << endl;
       }
     }
 
@@ -1215,7 +1210,7 @@ void CMirror::Set_TransferCoeff(CConfig **config){
                 target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint(iDonor,pGlobalPoint);
                 target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor,coeff);
                 target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, iProcessor);
-                cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;
+                //cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;
                 iDonor++;
               }
             }
