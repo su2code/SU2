@@ -507,27 +507,40 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
      */
     nVertexDonor = 0;
     nVertexTarget = 0;
+    markDonor = -1;
+    markTarget = -1;
+
     /*--- ... the marker markDonor ... ---*/
-    for (iMarkerDonor=0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
-      if ( config[donorZone]->GetMarker_All_FSIinterface(iMarkerDonor) == (iMarkerInt)){
-        markDonor=iMarkerDonor;
+    for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+      /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
+      if (config[donorZone]->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ){
+        /*--- We have identified the identifier for the structural marker ---*/
+        markDonor = iMarkerDonor;
+        /*--- Store the number of local points that belong to markDonor ---*/
         nVertexDonor = donor_geometry->GetnVertex(iMarkerDonor);
         break;
       }
-      else{
+      else {
+        /*--- If the tag hasn't matched any tag within the donor markers ---*/
+        markDonor = -1;
         nVertexDonor = 0;
       }
     }
 
-    /*--- ... the marker markTarget. ---*/
-    for (iMarkerTarget=0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
-      if (config[targetZone]->GetMarker_All_FSIinterface(iMarkerTarget) == (iMarkerInt)){
-        markTarget=iMarkerTarget;
-        nVertexTarget = 0;
+    /*--- On the target side ---*/
+    for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
+      if (config[targetZone]->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ){
+        /*--- We have identified the identifier for the target marker ---*/
+        markTarget = iMarkerTarget;
+        /*--- Store the number of local points that belong to markTarget ---*/
+        nVertexTarget = target_geometry->GetnVertex(iMarkerTarget);
         break;
       }
-      else{
+      else {
+        /*--- If the tag hasn't matched any tag within the Flow markers ---*/
         nVertexTarget = 0;
+        markTarget = -1;
       }
     }
 
@@ -669,7 +682,8 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
       Buffer_Receive_FaceProc[iVertex] = Buffer_Send_FaceProc[iVertex];
 #endif
 
-    //cout <<"MaxFaceDonor = " << MaxFace_Donor <<" MaxLocalVertex_Donor = " << MaxLocalVertex_Donor << " MaxFaceNodes_Donor " << MaxFaceNodes_Donor << endl;
+    cout <<"MaxFaceDonor = " << MaxFace_Donor <<" MaxLocalVertex_Donor = " << MaxLocalVertex_Donor << " MaxFaceNodes_Donor " << MaxFaceNodes_Donor << endl;
+    cout <<rank <<"nLocalFaceDonor = " << nLocalFace_Donor <<" Buffer_Receive_nVertex_Donor[rank] = " << nLocalVertex_Donor << " nLocalFaceNodes_Donor " << nLocalFaceNodes_Donor << endl;
     /*--- Loop over the vertices on the target Marker ---*/
     for (iVertex = 0; iVertex<target_geometry->GetnVertex(markTarget); iVertex++) {
       mindist=1E6;
@@ -677,8 +691,9 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
         storeCoeff[iCoeff]=0;
       }
       Point_Target = target_geometry->vertex[markTarget][iVertex]->GetNode();
+      cout << "GlobalIndex " << target_geometry->node[Point_Target]->GetGlobalIndex() << " Boundary " << iMarkerInt << endl;
       if (target_geometry->node[Point_Target]->GetDomain()) {
-
+        cout <<" on domain " << markTarget<< " rank " << rank << endl;
         Coord_i = target_geometry->vertex[markTarget][iVertex]->GetCoord();
         /*---Loop over the faces previously communicated/stored ---*/
         for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
@@ -995,6 +1010,7 @@ void CMirror::Set_TransferCoeff(CConfig **config){
   unsigned int nFaces=1; //For 2D cases, we want to look at edges, not faces, as the 'interface'
   bool face_on_marker=true;
 
+  unsigned long nVertexDonor = 0, nVertexTarget= 0;
   unsigned long iVertexDonor, Point_Donor = 0;
   unsigned long iVertexTarget, iPointTarget = 0;
   unsigned long pPoint = 0, Global_Point = 0;
@@ -1029,18 +1045,38 @@ void CMirror::Set_TransferCoeff(CConfig **config){
      * -Find nearest element and allocate enough space in the aero grid donor point info
      *    -set the transfer coefficient values
      */
-
-    /*--- ... the marker markDonor ... ---*/
-    for (iMarkerDonor=0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
-      if ( config[donorZone]->GetMarker_All_FSIinterface(iMarkerDonor) == (iMarkerInt)){
-        markDonor=iMarkerDonor;
+    markDonor = -1;
+    markTarget = -1;
+    for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+      /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
+      if (config[donorZone]->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ){
+        /*--- We have identified the identifier for the structural marker ---*/
+        markDonor = iMarkerDonor;
+        /*--- Store the number of local points that belong to markDonor ---*/
+        nVertexDonor = donor_geometry->GetnVertex(iMarkerDonor);
+        break;
+      }
+      else {
+        /*--- If the tag hasn't matched any tag within the donor markers ---*/
+        markDonor = -1;
+        nVertexDonor = 0;
       }
     }
 
-    /*--- ... the marker markTarget. ---*/
-    for (iMarkerTarget=0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
-      if (config[targetZone]->GetMarker_All_FSIinterface(iMarkerTarget) == (iMarkerInt)){
-        markTarget=iMarkerTarget;
+    /*--- On the target side ---*/
+    for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
+      if (config[targetZone]->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ){
+        /*--- We have identified the identifier for the target marker ---*/
+        markTarget = iMarkerTarget;
+        /*--- Store the number of local points that belong to markTarget ---*/
+        nVertexTarget = target_geometry->GetnVertex(iMarkerTarget);
+        break;
+      }
+      else {
+        /*--- If the tag hasn't matched any tag within the Flow markers ---*/
+        nVertexTarget = 0;
+        markTarget = -1;
       }
     }
 
