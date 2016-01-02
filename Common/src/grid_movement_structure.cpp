@@ -48,6 +48,8 @@ CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) :
 	  nPoint = geometry->GetnPoint();
 	  nPointDomain = geometry->GetnPointDomain();
 
+	  nIterMesh = 0;
+
 	  /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
 
 	  config->SetKind_Linear_Solver_Prec(LU_SGS);
@@ -286,6 +288,10 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     MinVolume = Check_Grid(geometry);
     
+    /*--- Set number of iterations in the mesh update. ---*/
+
+    Set_nIterMesh(Tot_Iter);
+
     if (rank == MASTER_NODE) {
       cout << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter
       << ". Linear iter.: " << Tot_Iter << ". ";

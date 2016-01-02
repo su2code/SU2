@@ -2223,7 +2223,9 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
   
   unsigned short iDim, iMGlevel, nMGlevels = config_container->GetnMGLevels();
   unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(iZone);
+  unsigned long nIterMesh;
   unsigned long iPoint;
+  bool stat_mesh = true;
   bool adjoint = config_container->GetAdjoint();
   bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
   
@@ -2544,10 +2546,17 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       grid_movement->SetVolume_Deformation(geometry_container[MESH_0],
                                            config_container, true);
 
-      if (!adjoint) {
+      nIterMesh = grid_movement->Get_nIterMesh();
+      stat_mesh = (nIterMesh == 0);
+
+      if (!adjoint && !stat_mesh) {
         if (rank == MASTER_NODE)
           cout << "Computing grid velocities by finite differencing." << endl;
         geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
+      }
+      else if (stat_mesh){
+          if (rank == MASTER_NODE)
+            cout << "The mesh is up-to-date. Using previously stored grid velocities." << endl;
       }
 
       /*--- Update the multigrid structure after moving the finest grid,
