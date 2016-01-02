@@ -1161,14 +1161,10 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 			((first_iter && initial_calc) || (restart && initial_calc_restart))
 	){
 
-		cout << "I'm not the one messing it up" << endl;
 		/*--- We need to do the preprocessing to compute the Mass Matrix and integration constants ---*/
 		solver_container[val_iZone][MESH_0][FEA_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],
 				config_container[val_iZone], numerics_container[val_iZone][MESH_0][FEA_SOL], MESH_0, 0, RUNTIME_FEA_SYS, false);
 
-	}
-	else{
-		cout << "I'm messing it up" << endl;
 	}
 
 }
