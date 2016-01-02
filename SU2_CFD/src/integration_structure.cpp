@@ -218,13 +218,13 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 	  bool restart = config->GetRestart();																	// Restart solution
 	  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());	// Restart iteration
 
-	  /*--- Compute Mass Matrix ---*/
-	  /*--- The mass matrix is computed only once, at the beginning of the calculation, no matter whether the ---*/
-	  /*--- problem is linear or nonlinear ---*/
-	  if ((dynamic && initial_calc && first_iter) ||
-		  (dynamic && restart && initial_calc_restart && first_iter)){
-		  solver_container[MainSolver]->Compute_MassMatrix(geometry, solver_container, numerics[VISC_TERM], config);
-	  }
+//	  /*--- Compute Mass Matrix ---*/
+//	  /*--- The mass matrix is computed only once, at the beginning of the calculation, no matter whether the ---*/
+//	  /*--- problem is linear or nonlinear ---*/
+//	  if ((dynamic && initial_calc && first_iter) ||
+//		  (dynamic && restart && initial_calc_restart && first_iter)){
+//		  solver_container[MainSolver]->Compute_MassMatrix(geometry, solver_container, numerics[VISC_TERM], config);
+//	  }
 	  /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed ---*/
 	  /*--- This is done only once, at the beginning of the calculation. From then on, K is constant ---*/
 	  if ((linear_analysis && initial_calc) ||
