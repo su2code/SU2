@@ -55,6 +55,10 @@ void CUpwSca_TurbSA::ComputeResidual(su2double *val_residual, su2double **val_Ja
   
   q_ij = 0.0;
   
+  AD::StartPreacc(AD::CArray1D(V_i, nDim+1), AD::CArray1D(V_j, nDim+1),
+                  TurbVar_i[0],TurbVar_j[0],
+                  AD::CArray1D(Normal, nDim));
+  
   if (grid_movement) {
     for (iDim = 0; iDim < nDim; iDim++) {
       Velocity_i[iDim] = V_i[iDim+1] - GridVel_i[iDim];
@@ -78,6 +82,7 @@ void CUpwSca_TurbSA::ComputeResidual(su2double *val_residual, su2double **val_Ja
     val_Jacobian_j[0][0] = a1;
   }
   
+  AD::EndPreacc(val_residual[0]);
 }
 
 CAvgGrad_TurbSA::CAvgGrad_TurbSA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -109,6 +114,11 @@ CAvgGrad_TurbSA::~CAvgGrad_TurbSA(void) {
 
 void CAvgGrad_TurbSA::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
+  AD::StartPreacc(AD::CArray1D(Coord_i, nDim), AD::CArray1D(Coord_j, nDim),
+                  AD::CArray1D(Normal, nDim),
+                  AD::CArray1D(V_i, nDim+7), AD::CArray1D(V_j, nDim+7),
+                  AD::CArray2D(TurbVar_Grad_i, nVar, nDim), AD::CArray2D(TurbVar_Grad_j, nVar, nDim));
+
   if (incompressible) {
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
@@ -157,6 +167,8 @@ void CAvgGrad_TurbSA::ComputeResidual(su2double *val_residual, su2double **Jacob
     Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Kappa[0]+nu_e*proj_vector_ij)/sigma;
   }
   
+  AD::EndPreacc(AD::CArray1D(val_residual, nVar));
+
 }
 
 CAvgGrad_TurbSA_Neg::CAvgGrad_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -190,6 +202,11 @@ CAvgGrad_TurbSA_Neg::~CAvgGrad_TurbSA_Neg(void) {
 
 void CAvgGrad_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
+  AD::StartPreacc(AD::CArray1D(Coord_i, nDim), AD::CArray1D(Coord_j, nDim),
+                  AD::CArray1D(Normal, nDim),
+                  AD::CArray1D(V_i, nDim+7), AD::CArray1D(V_j, nDim+7),
+                  AD::CArray2D(TurbVar_Grad_i, nVar, nDim), AD::CArray2D(TurbVar_Grad_j, nVar, nDim));
+
   if (incompressible) {
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
@@ -250,6 +267,8 @@ void CAvgGrad_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2double **J
     Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Kappa[0]+nu_e*proj_vector_ij)/sigma;
   }
   
+  AD::EndPreacc(AD::CArray1D(val_residual, nVar));
+
 }
 
 CAvgGradCorrected_TurbSA::CAvgGradCorrected_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
@@ -284,6 +303,12 @@ CAvgGradCorrected_TurbSA::~CAvgGradCorrected_TurbSA(void) {
 
 void CAvgGradCorrected_TurbSA::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
+  AD::StartPreacc(AD::CArray1D(Coord_i, nDim), AD::CArray1D(Coord_j, nDim),
+                  AD::CArray1D(Normal, nDim),
+                  AD::CArray1D(V_i, nDim+7), AD::CArray1D(V_j, nDim+7),
+                  AD::CArray1D(TurbVar_i, nVar), AD::CArray1D(TurbVar_j, nVar),
+                  AD::CArray2D(TurbVar_Grad_i, nVar, nDim), AD::CArray2D(TurbVar_Grad_j, nVar, nDim));
+
   if (incompressible) {
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
@@ -337,6 +362,7 @@ void CAvgGradCorrected_TurbSA::ComputeResidual(su2double *val_residual, su2doubl
     Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]+nu_e*proj_vector_ij)/sigma;
   }
   
+  AD::EndPreacc(AD::CArray1D(val_residual, nVar));
 }
 
 CAvgGradCorrected_TurbSA_Neg::CAvgGradCorrected_TurbSA_Neg(unsigned short val_nDim, unsigned short val_nVar,
@@ -373,6 +399,12 @@ CAvgGradCorrected_TurbSA_Neg::~CAvgGradCorrected_TurbSA_Neg(void) {
 
 void CAvgGradCorrected_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
   
+  AD::StartPreacc(AD::CArray1D(Coord_i, nDim), AD::CArray1D(Coord_j, nDim),
+                  AD::CArray1D(Normal, nDim),
+                  AD::CArray1D(V_i, nDim+7), AD::CArray1D(V_j, nDim+7),
+                  AD::CArray1D(TurbVar_i, nVar), AD::CArray1D(TurbVar_j, nVar),
+                  AD::CArray2D(TurbVar_Grad_i, nVar, nDim), AD::CArray2D(TurbVar_Grad_j, nVar, nDim));
+
   if (incompressible) {
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
@@ -438,6 +470,8 @@ void CAvgGradCorrected_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2d
     Jacobian_j[0][0] = (0.5*Proj_Mean_GradTurbVar_Corrected[0]+nu_e*proj_vector_ij)/sigma;
   }
   
+  AD::EndPreacc(AD::CArray1D(val_residual, nVar));
+
 }
 
 CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim, unsigned short val_nVar,
@@ -466,6 +500,13 @@ CSourcePieceWise_TurbSA::~CSourcePieceWise_TurbSA(void) { }
 
 void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
+//  AD::StartPreacc(AD::CArray1D(V_i, nDim+6),
+//                  AD::CArray1D(Vorticity_i, nDim),
+//                  StrainMag_i,
+//                  TurbVar_i[0],
+//                  AD::CArray1D(TurbVar_Grad_i[0], nDim),
+//                  Volume, dist_i);
+
   if (incompressible) {
     Density_i = V_i[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];
@@ -555,6 +596,8 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
     val_Jacobian_i[0][0] -= cw1*(dfw*TurbVar_i[0] +	2.0*fw)*TurbVar_i[0]/dist_i_2*Volume;
     
   }
+
+//  AD::EndPreacc(val_residual[0]);
   
 }
 
@@ -586,6 +629,13 @@ CSourcePieceWise_TurbSA_Neg::~CSourcePieceWise_TurbSA_Neg(void) {
 
 void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
+  AD::StartPreacc(AD::CArray1D(V_i, nDim+6),
+                  AD::CArray1D(Vorticity_i, nDim),
+                  StrainMag_i,
+                  TurbVar_i[0],
+                  AD::CArray1D(TurbVar_Grad_i[0], nDim),
+                  Volume, dist_i);
+
   if (incompressible) {
     Density_i = V_i[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];
@@ -737,6 +787,10 @@ CUpwSca_TurbSST::~CUpwSca_TurbSST(void) {
 
 void CUpwSca_TurbSST::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
+  AD::StartPreacc(AD::CArray1D(V_i, nDim+3), AD::CArray1D(V_j, nDim+3),
+                  AD::CArray1D(TurbVar_i,2),AD::CArray1D(TurbVar_j,2),
+                  AD::CArray1D(Normal, nDim));
+
   if (incompressible) {
     Density_i = V_i[nDim+1];
     Density_j = V_j[nDim+1];
@@ -775,6 +829,8 @@ void CUpwSca_TurbSST::ComputeResidual(su2double *val_residual, su2double **val_J
     val_Jacobian_j[0][0] = a1;		val_Jacobian_j[0][1] = 0.0;
     val_Jacobian_j[1][0] = 0.0;		val_Jacobian_j[1][1] = a1;
   }
+
+  AD::EndPreacc(AD::CArray1D(val_residual, 2));
   
 }
 
@@ -819,6 +875,12 @@ void CAvgGrad_TurbSST::ComputeResidual(su2double *val_residual, su2double **Jaco
   su2double sigma_kine_i, sigma_kine_j, sigma_omega_i, sigma_omega_j;
   su2double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
   
+  AD::StartPreacc(AD::CArray1D(Coord_i, nDim), AD::CArray1D(Coord_j, nDim),
+                  AD::CArray1D(Normal, nDim),
+                  AD::CArray1D(V_i, nDim+7), AD::CArray1D(V_j, nDim+7),
+                  AD::CArray2D(TurbVar_Grad_i, nVar, nDim), AD::CArray2D(TurbVar_Grad_j, nVar, nDim),
+                  F1_i,F1_j);
+
   if (incompressible) {
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
@@ -877,6 +939,8 @@ void CAvgGrad_TurbSST::ComputeResidual(su2double *val_residual, su2double **Jaco
     Jacobian_j[0][0] = diff_kine*proj_vector_ij/Density_j; 		Jacobian_j[0][1] = 0.0;
     Jacobian_j[1][0] = 0.0;									    Jacobian_j[1][1] = diff_omega*proj_vector_ij/Density_j;
   }
+
+  AD::EndPreacc(AD::CArray1D(val_residual, 2));
   
 }
 
@@ -922,6 +986,13 @@ void CAvgGradCorrected_TurbSST::ComputeResidual(su2double *val_residual, su2doub
   su2double sigma_kine_i, sigma_kine_j, sigma_omega_i, sigma_omega_j;
   su2double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
   
+  AD::StartPreacc(AD::CArray1D(Coord_i, nDim), AD::CArray1D(Coord_j, nDim),
+                  AD::CArray1D(Normal, nDim),
+                  AD::CArray1D(V_i, nDim+7), AD::CArray1D(V_j, nDim+7),
+                  AD::CArray2D(TurbVar_Grad_i, nVar, nDim), AD::CArray2D(TurbVar_Grad_j, nVar, nDim),
+                  AD::CArray1D(TurbVar_i, nVar), AD::CArray1D(TurbVar_j ,nVar),
+                  F1_i,F1_j);
+
   if (incompressible) {
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
@@ -984,6 +1055,8 @@ void CAvgGradCorrected_TurbSST::ComputeResidual(su2double *val_residual, su2doub
     Jacobian_j[1][0] = 0.0;									    Jacobian_j[1][1] = diff_omega*proj_vector_ij/Density_j;
   }
   
+  AD::EndPreacc(AD::CArray1D(val_residual, nVar));
+
 }
 
 CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double *constants,
@@ -1006,6 +1079,14 @@ CSourcePieceWise_TurbSST::~CSourcePieceWise_TurbSST(void) { }
 
 void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
+  AD::StartPreacc(AD::CArray1D(V_i, nDim+7),
+                  StrainMag_i,
+                  AD::CArray1D(TurbVar_i, nVar),
+                  AD::CArray2D(TurbVar_Grad_i, nVar, nDim),
+                  Volume, dist_i,
+                  F1_i, F2_i, CDkw_i,
+                  AD::CArray2D(PrimVar_Grad_i, nDim+1, nDim));
+
   unsigned short iDim;
   su2double alfa_blended, beta_blended;
   su2double diverg, pk, pw, zeta;
@@ -1064,6 +1145,8 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     val_Jacobian_i[1][0] = 0.0;                               val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
   }
   
+  AD::EndPreacc(AD::CArray1D(val_residual, nVar));
+
 }
 
 CUpwSca_TurbML::CUpwSca_TurbML(unsigned short val_nDim, unsigned short val_nVar,
