@@ -569,6 +569,8 @@ bool CNSVariable::SetStrainMag(bool val_limiter) {
   su2double Div;
   unsigned short iDim;
   
+  AD::StartPreacc(AD::CArray2D(Gradient_Primitive, nDim+1, nDim));
+
   Div = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Div += Gradient_Primitive[iDim+1][iDim];
@@ -592,6 +594,8 @@ bool CNSVariable::SetStrainMag(bool val_limiter) {
   }
   
   StrainMag = sqrt(2.0*StrainMag);
+
+  AD::EndPreacc(StrainMag);
 
   return false;
   
