@@ -34,7 +34,3 @@
 #include "tools/dataStore.hpp"
 
 typedef codi::RealReverse su2double;
-
-namespace AD{
-  typedef codi::DataStore CheckpointHandler;
-}

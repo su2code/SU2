@@ -30,24 +30,6 @@
  */
 #pragma once
 
-namespace AD{
-
-  /*--- Stores the indices of the input variables (they might be overwritten) ---*/
-
-  extern std::vector<unsigned int> inputValues;
-
-  /*--- Current position inside the adjoint vector ---*/
-
-  extern int adjointVectorPosition;
-
-  /*--- Reference to the tape ---*/
-
-  extern codi::ChunkTape<double, int>& globalTape;
-  extern bool Status;
-
-}
-
-
 namespace SU2_TYPE{
   inline void SetValue(su2double& data, const double &val){data.setValue(val);}
 
@@ -60,37 +42,6 @@ namespace SU2_TYPE{
   inline double GetDerivative(const su2double& data){return AD::globalTape.getGradient(AD::inputValues[AD::adjointVectorPosition++]);}
 
   inline void SetDerivative(su2double& data, const double &val){data.setGradient(val);}
-}
-namespace AD{
-
-  inline void RegisterInput(su2double &data){AD::globalTape.registerInput(data);
-                                             inputValues.push_back(data.getGradientData());}
-
-  inline void RegisterOutput(su2double& data){AD::globalTape.registerOutput(data);}
-
-  inline void ResetInput(su2double &data){data.getGradientData() = 0;}
-
-  inline void StartRecording(){AD::globalTape.setActive();}
-
-  inline void StopRecording(){AD::globalTape.setPassive();}
-
-  inline void ClearAdjoints(){AD::globalTape.clearAdjoints(); }
-
-  inline void ComputeAdjoint(){AD::globalTape.evaluate();
-                               adjointVectorPosition = 0;}
-
-  inline void Reset(){
-    if (inputValues.size() != 0){
-      globalTape.reset();
-      adjointVectorPosition = 0;
-      inputValues.clear();
-    }
-  }
-
-  inline void delete_handler(void *handler){
-    CheckpointHandler *checkpoint = static_cast<CheckpointHandler*>(handler);
-    checkpoint->clear();
-  }
 }
 
 /*--- Object for the definition of getValue used in the printfOver definition.
