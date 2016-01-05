@@ -22,7 +22,7 @@ AC_DEFUN([CONFIGURE_CODI],
 
         if test "$build_CODI_FORWARD" == "yes"
         then
-           DIRECTDIFF_CXX="-std=c++0x -DCODI_FORWARD_TYPE -I\$(top_srcdir)/externals/codi/include"
+           DIRECTDIFF_CXX="-DCODI_FORWARD_TYPE -I\$(top_srcdir)/externals/codi/include"
            build_DIRECTDIFF=yes
            build_REVERSE=no
            build_NORMAL=no
