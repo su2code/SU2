@@ -186,10 +186,10 @@ void CTurbSSTVariable::SetBlendingFunc(su2double val_viscosity, su2double val_di
   
 	/*--- F1 ---*/
   
-	arg2A = sqrt(Solution[0])/(beta_star*Solution[1]*val_dist);
-	arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Solution[1]);
+  arg2A = sqrt(Solution[0])/(beta_star*Solution[1]*val_dist+EPS*EPS);
+  arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Solution[1]+EPS*EPS);
 	arg2 = max(arg2A, arg2B);
-	arg1 = min(arg2, 4.0*val_density*sigma_om2*Solution[0] / (CDkw*val_dist*val_dist));
+  arg1 = min(arg2, 4.0*val_density*sigma_om2*Solution[0] / (CDkw*val_dist*val_dist+EPS*EPS));
 	F1 = tanh(pow(arg1, 4.0));
   
 	/*--- F2 ---*/
