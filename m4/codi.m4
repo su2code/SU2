@@ -28,7 +28,7 @@ AC_DEFUN([CONFIGURE_CODI],
            build_NORMAL=no
         elif test "$build_CODI_REVERSE" == "yes"
         then
-           REVERSE_CXX="-std=c++0x -DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/codi/include"
+           REVERSE_CXX="-DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/codi/include"
            if test "$enablempi" == "yes"
            then
               AC_CHECK_FILE([$AMPIlib], [have_AMPIlib='yes'], [have_AMPIlib='no'])
