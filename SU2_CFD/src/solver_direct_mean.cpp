@@ -3656,7 +3656,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Low-Mach number correction ---*/
 
       if (low_mach_corr) {
-        su2double z, sq_vel_i = 0.0, sq_vel_j = 0.0, mach_i, mach_j, Energy_i, Energy_j, SoundSpeed_i, SoundSpeed_j;
+        su2double z, sq_vel_i = 0.0, sq_vel_j = 0.0, mach_i, mach_j;
 
         mach_i = sqrt(sq_vel_i)/Primitive_i[nDim+4];
         mach_j = sqrt(sq_vel_j)/Primitive_j[nDim+4];
