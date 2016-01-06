@@ -3102,7 +3102,6 @@ AM_BACKSLASH='\'
 
 
 # AC_CONFIG_HEADERS([config.h])
-CXXFLAGS="$CXXFLAGS -std=gnu++0x"
 DEPDIR="${am__leading_dot}deps"
 
 ac_config_commands="$ac_config_commands depfiles"
@@ -4563,6 +4562,7 @@ fi
 
 #PKG_PROG_PKG_CONFIG
 
+CXXFLAGS="$CXXFLAGS -std=c++0x"
 # --------------------------------------------------------------
 # Check for important type sizes
 # --------------------------------------------------------------
@@ -6497,7 +6497,7 @@ fi
            build_NORMAL=no
         elif test "$build_CODI_REVERSE" == "yes"
         then
-           REVERSE_CXX="-std=c++0x -DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/codi/include"
+           REVERSE_CXX="-DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/codi/include"
            if test "$enablempi" == "yes"
            then
               as_ac_File=`$as_echo "ac_cv_file_$AMPIlib" | $as_tr_sh`

@@ -47,13 +47,13 @@ AM_INIT_AUTOMAKE([foreign])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES(yes)])
 
 # AC_CONFIG_HEADERS([config.h])
-CXXFLAGS="$CXXFLAGS -std=gnu++0x"
 SU2_SET_COMPILERS
 AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_PROG_MKDIR_P
 #PKG_PROG_PKG_CONFIG
 
+CXXFLAGS="$CXXFLAGS -std=c++0x"
 # --------------------------------------------------------------
 # Check for important type sizes
 # --------------------------------------------------------------
