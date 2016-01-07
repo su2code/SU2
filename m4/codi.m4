@@ -22,13 +22,13 @@ AC_DEFUN([CONFIGURE_CODI],
 
         if test "$build_CODI_FORWARD" == "yes"
         then
-           DIRECTDIFF_CXX="-DCODI_FORWARD_TYPE -I\$(top_srcdir)/externals/codi/include"
+           DIRECTDIFF_CXX="-std=c++0x -DCODI_FORWARD_TYPE -I\$(top_srcdir)/externals/codi/include"
            build_DIRECTDIFF=yes
            build_REVERSE=no
            build_NORMAL=no
         elif test "$build_CODI_REVERSE" == "yes"
         then
-           REVERSE_CXX="-DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/codi/include"
+           REVERSE_CXX="-std=c++0x -DCODI_REVERSE_TYPE -I\$(top_srcdir)/externals/codi/include"
            if test "$enablempi" == "yes"
            then
               AC_CHECK_FILE([$AMPIlib], [have_AMPIlib='yes'], [have_AMPIlib='no'])

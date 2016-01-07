@@ -54,7 +54,8 @@ CPrimalGrid::~CPrimalGrid() {
 void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
 	unsigned short iDim, iNode, NodeFace, iFace;
 	
-  AD::StartPreacc(AD::CArray2D(val_coord, GetnNodes(), nDim));
+  AD::StartPreacc();
+  AD::SetPreaccIn(val_coord, GetnNodes(), nDim);
 
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Coord_CG[iDim] = 0.0;
@@ -71,7 +72,9 @@ void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
 			}
 		}
 
-    AD::EndPreacc(AD::CArray1D(Coord_CG, nDim), AD::CArray2D(Coord_FaceElems_CG, GetnFaces(), nDim));
+  AD::SetPreaccOut(Coord_CG, nDim);
+  AD::SetPreaccOut(Coord_FaceElems_CG, GetnFaces(), nDim);
+  AD::EndPreacc();
 
 }
 

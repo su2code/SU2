@@ -47,7 +47,7 @@ namespace AD {
   bool Status = false;
   bool PreaccActive = false;
 
-  void Preaccumulate(){
+  void EndPreacc(){
 
     if(PreaccActive){
       unsigned short iVarOut, iVarIn;
