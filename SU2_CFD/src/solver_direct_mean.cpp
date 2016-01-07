@@ -7902,7 +7902,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
   AveragedNormalMach[val_Marker] = AveragedNormalVelocity[val_Marker]/AveragedSoundSpeed[val_Marker];
   
   
-  if ((AveragedDensity[val_Marker]!= AveragedDensity[val_Marker]) or (AveragedEnthalpy[val_Marker]!=AveragedEnthalpy[val_Marker]))
+  if ((AveragedDensity[val_Marker]!= AveragedDensity[val_Marker]) || (AveragedEnthalpy[val_Marker]!=AveragedEnthalpy[val_Marker]))
     cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(val_Marker)<< endl;
   
   /*--- Free locally allocated memory ---*/
