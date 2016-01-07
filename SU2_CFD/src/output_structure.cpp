@@ -3716,7 +3716,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
       if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
       if (output_1d) ConvHist_file[0] << oneD_outputs;
-      if (output_massflow and !output_1d)  ConvHist_file[0]<< mass_flow_rate;
+      if (output_massflow && !output_1d)  ConvHist_file[0]<< mass_flow_rate;
       if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_flow_coeff;
       ConvHist_file[0] << end;
       if (freesurface) {
@@ -3794,7 +3794,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         break;
     }
   }
-  if (output_massflow and !output_1d) {
+  if (output_massflow && !output_1d) {
     switch (config[val_iZone]->GetKind_Solver()) {
       case EULER:                   case NAVIER_STOKES:                   case RANS:
       case ADJ_EULER:               case ADJ_NAVIER_STOKES:               case ADJ_RANS:
@@ -4913,7 +4913,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_1d) ConvHist_file[0] << oneD_outputs;
-            if (output_massflow and !output_1d) ConvHist_file[0] << massflow_outputs;
+            if (output_massflow && !output_1d) ConvHist_file[0] << massflow_outputs;
             if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
