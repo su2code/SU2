@@ -53,24 +53,30 @@ namespace AD{
   }
 
   inline void SetPreaccIn(const su2double &data){
-    if (data.getGradientData() != 0){
-      localInputValues.push_back(data.getGradientData());
+    if (PreaccActive){
+      if (data.getGradientData() != 0){
+        localInputValues.push_back(data.getGradientData());
+      }
     }
   }
 
   inline void SetPreaccIn(su2double* data, const int size){
-    for (unsigned short i = 0; i < size; i++){
-      if (data[i].getGradientData() != 0){
-        localInputValues.push_back(data[i].getGradientData());
+    if (PreaccActive){
+      for (unsigned short i = 0; i < size; i++){
+        if (data[i].getGradientData() != 0){
+          localInputValues.push_back(data[i].getGradientData());
+        }
       }
     }
   }
 
   inline void SetPreaccIn(su2double** data, const int size_x, const int size_y){
-    for (unsigned short i = 0; i < size_x; i++){
-      for (unsigned short j = 0; j < size_y; j++){
-        if (data[i][j].getGradientData() != 0){
-          localInputValues.push_back(data[i][j].getGradientData());
+    if (PreaccActive){
+      for (unsigned short i = 0; i < size_x; i++){
+        for (unsigned short j = 0; j < size_y; j++){
+          if (data[i][j].getGradientData() != 0){
+            localInputValues.push_back(data[i][j].getGradientData());
+          }
         }
       }
     }
@@ -84,24 +90,30 @@ namespace AD{
   }
 
   inline void SetPreaccOut(su2double& data){
-    if (data.getGradientData() != 0){
-      localOutputValues.push_back(&data);
+    if (PreaccActive){
+      if (data.getGradientData() != 0){
+        localOutputValues.push_back(&data);
+      }
     }
   }
 
   inline void SetPreaccOut(su2double* data, const int size){
-    for (unsigned short i = 0; i < size; i++){
-      if (data[i].getGradientData() != 0){
-        localOutputValues.push_back(&data[i]);
+    if (PreaccActive){
+      for (unsigned short i = 0; i < size; i++){
+        if (data[i].getGradientData() != 0){
+          localOutputValues.push_back(&data[i]);
+        }
       }
     }
   }
 
   inline void SetPreaccOut(su2double** data, const int size_x, const int size_y){
-    for (unsigned short i = 0; i < size_x; i++){
-      for (unsigned short j = 0; j < size_y; j++){
-        if (data[i][j].getGradientData() != 0){
-          localOutputValues.push_back(&data[i][j]);
+    if (PreaccActive){
+      for (unsigned short i = 0; i < size_x; i++){
+        for (unsigned short j = 0; j < size_y; j++){
+          if (data[i][j].getGradientData() != 0){
+            localOutputValues.push_back(&data[i][j]);
+          }
         }
       }
     }
