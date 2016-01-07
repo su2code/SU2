@@ -416,7 +416,7 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 	cons_P= abs((Pressure -P)/P);
 	cons_s= abs((Entropy-s)/s);
 
-	if(cons_P >1e-3 or cons_s >1e-3){
+	if(cons_P >1e-3 || cons_s >1e-3){
 		cout<< "TD consistency not verified in hs call"<< endl;
 	}
 

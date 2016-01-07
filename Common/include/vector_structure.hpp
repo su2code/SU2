@@ -86,6 +86,7 @@ public:
   /*!
    * \brief constructor of the class.
    * \param[in] numBlk - number of blocks locally
+   * \param[in] numBlkDomain
    * \param[in] numVar - number of variables in each block
    * \param[in] val - default value for elements
    */
@@ -127,6 +128,7 @@ public:
   /*!
    * \brief Initialize the class.
    * \param[in] numBlk - number of blocks locally
+   * \param[in] numBlkDomain
    * \param[in] numVar - number of variables in each block
    * \param[in] val - default value for elements
    */
@@ -310,6 +312,7 @@ public:
   /*!
 	 * \brief Set the velocity residual to zero.
 	 * \param[in] val_ipoint - index of the point where set the residual.
+	 * \param[in] val_var - inde of the residual to be set.
 	 */
   void SetBlock_Zero(unsigned long val_ipoint, unsigned short val_var);
 	

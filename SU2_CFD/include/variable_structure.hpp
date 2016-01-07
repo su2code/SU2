@@ -250,6 +250,8 @@ public:
 	 * \param[in] val_solution - Value of the solution change.
 	 * \param[in] val_density - Value of the density.
 	 * \param[in] val_density_old - Value of the old density.
+   * \param[in] lowerlimit - Lower value.
+   * \param[in] upperlimit - Upper value.
 	 */
 	void AddConservativeSolution(unsigned short val_var, su2double val_solution,
 			su2double val_density, su2double val_density_old, su2double lowerlimit,
@@ -472,6 +474,7 @@ public:
   
   /*!
 	 * \brief Set the value of the limiter.
+	 * \param[in] val_species - Index of the species .
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_limiter - Value of the limiter for the index <i>val_var</i>.
 	 */
@@ -479,7 +482,7 @@ public:
   
   /*!
 	 * \brief Set the value of the limiter.
-   * \param[in] val_species - Value of the limiter for the index <i>val_var</i>.
+   * \param[in] val_species - Index of the species .
 	 * \param[in] val_var - Index of the variable.
 	 */
   virtual su2double GetLimiterPrimitive(unsigned short val_species, unsigned short val_var);
@@ -703,7 +706,7 @@ public:
 	/*!
 	 * \brief Set pressure sensor.
 	 * \param[in] val_sensor - Value of the pressure sensor.
-	 * \param[in] val_sensor - Index of the Species.
+	 * \param[in] iSpecies - Index of the species.
 	 */
 	virtual void SetSensor(su2double val_sensor, unsigned short iSpecies);
 
@@ -994,7 +997,6 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] val_dim - Index of the dimension.
 	 * \return Value of the vorticity.
 	 */		
 	virtual su2double *GetVorticity(void);
@@ -1256,17 +1258,25 @@ public:
   
   /*!
 	 * \brief A virtual member.
+	 * \param[in] V
 	 * \param[in] config - Configuration settings
+	 * \param[in] dPdU
 	 */
 	virtual void CalcdPdU(su2double *V, CConfig *config, su2double *dPdU);
   
   /*!
    * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   * \param[in] V
+   * \param[in] config - Configuration settings
+   * \param[in] dTdU
    */
   virtual void CalcdTdU(su2double *V, CConfig *config, su2double *dTdU);
   
   /*!
    * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   * \param[in] V
+   * \param[in] config - Configuration settings
+   * \param[in] dTdU
    */
   virtual void CalcdTvedU(su2double *V, CConfig *config, su2double *dTdU);
   
@@ -1341,6 +1351,7 @@ public:
   /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration parameters.
+	 * \param[in] Coord - Physical coordinates.
 	 */
 	virtual void SetPrimitive(CConfig *config, su2double *Coord);
 	
@@ -1475,7 +1486,7 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] thermalConductivity
 	 */
 	virtual void SetThermalConductivity(su2double thermalConductivity);
   
@@ -1487,7 +1498,7 @@ public:
   
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] Cp - Constant pressure specific heat.
 	 */
 	virtual void SetSpecificHeatCp(su2double Cp);
 
@@ -1699,6 +1710,7 @@ public:
 
 	/*!
 	 * \brief A virtual member.
+	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_source - Value of the time spectral source.
 	 */
 	virtual void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
@@ -1711,6 +1723,7 @@ public:
 	/*!
 	 * \brief Set the Eddy Viscosity Sensitivity of the problem.
 	 * \param[in] val_EddyViscSens - Eddy Viscosity Sensitivity.
+	 * \param[in] numTotalVar - Number of variables.
 	 */
 	virtual void SetEddyViscSens(su2double *val_EddyViscSens, unsigned short numTotalVar);
 
@@ -1739,13 +1752,12 @@ public:
 
 	/*!
 	 * \brief Set the value of the old solution.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
 	 */
 	virtual void SetSolution_time_n(void);
 
 	/*!
 	 * \brief Set the value of the old solution.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 * \param[in] val_solution_time_n - Pointer to the residual vector.
 	 */
 	virtual void SetSolution_time_n(su2double *val_solution_time_n);
 
@@ -1759,26 +1771,25 @@ public:
 	/*!
 	 * \overload
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_solution - Value of the solution for the index <i>val_var</i>.
+	 * \param[in] val_solution_vel - Value of the solution for the index <i>val_var</i>.
 	 */
 	virtual void SetSolution_Vel(unsigned short val_var, su2double val_solution_vel);
 
 	/*!
 	 * \brief Set the value of the velocity (Structural Analysis) at time n.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 * \param[in] val_solution_vel_time_n - Value of the old solution.
 	 */
 	virtual void SetSolution_Vel_time_n(su2double *val_solution_vel_time_n);
 
 	/*!
 	 * \brief Set the value of the velocity (Structural Analysis) at time n.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
 	 */
 	virtual void SetSolution_Vel_time_n(void);
 
 	/*!
 	 * \overload
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_solution_old - Value of the old solution for the index <i>val_var</i>.
+	 * \param[in] val_solution_vel_time_n - Value of the old solution for the index <i>val_var</i>.
 	 */
 	virtual void SetSolution_Vel_time_n(unsigned short val_var, su2double val_solution_vel_time_n);
 
@@ -1818,33 +1829,32 @@ public:
 
 	/*!
 	 * \brief Set the value of the acceleration (Structural Analysis).
-	 * \param[in] val_solution - Solution of the problem (acceleration).
+	 * \param[in] val_solution_accel - Solution of the problem (acceleration).
 	 */
 	virtual void SetSolution_Accel(su2double *val_solution_accel);
 
 	/*!
 	 * \overload
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_solution - Value of the solution for the index <i>val_var</i>.
+	 * \param[in] val_solution_accel - Value of the solution for the index <i>val_var</i>.
 	 */
 	virtual void SetSolution_Accel(unsigned short val_var, su2double val_solution_accel);
 
 	/*!
 	 * \brief Set the value of the acceleration (Structural Analysis) at time n.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 * \param[in] val_solution_accel_time_n - Pointer to the residual vector.
 	 */
 	virtual void SetSolution_Accel_time_n(su2double *val_solution_accel_time_n);
 
 	/*!
 	 * \brief Set the value of the acceleration (Structural Analysis) at time n.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
 	 */
 	virtual void SetSolution_Accel_time_n(void);
 
 	/*!
 	 * \overload
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_solution_old - Value of the old solution for the index <i>val_var</i>.
+	 * \param[in] val_solution_accel_time_n - Value of the old solution for the index <i>val_var</i>.
 	 */
 	virtual void SetSolution_Accel_time_n(unsigned short val_var, su2double val_solution_accel_time_n);
 
@@ -1882,7 +1892,7 @@ public:
 
 	/*!
 	 * \brief  A virtual member. Set the value of the old solution.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 * \param[in] val_solution_pred - Pointer to the residual vector.
 	 */
 	virtual void SetSolution_Pred(su2double *val_solution_pred);
 
@@ -1906,7 +1916,7 @@ public:
 
 	/*!
 	 * \brief  A virtual member. Set the value of the old solution.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 * \param[in] val_solution_pred_Old - Pointer to the residual vector.
 	 */
 	virtual void SetSolution_Pred_Old(su2double *val_solution_pred_Old);
 
@@ -2420,7 +2430,7 @@ public:
 
 	/*!
 	 * \brief Set the value of the old solution.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 * \param[in] val_solution_pred - Pointer to the residual vector.
 	 */
 	void SetSolution_Pred(su2double *val_solution_pred);
 
@@ -2444,7 +2454,7 @@ public:
 
 	/*!
 	 * \brief Set the value of the old solution.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 * \param[in] val_solution_pred_Old - Pointer to the residual vector.
 	 */
 	void SetSolution_Pred_Old(su2double *val_solution_pred_Old);
 
@@ -3366,6 +3376,7 @@ public:
 	/*!
 	 * \overload
 	 * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
+	 * \param[in] val_intermittency
 	 * \param[in] val_REth
 	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
@@ -3422,8 +3433,10 @@ public:
 	 * \overload
 	 * \param[in] val_rho_kine - Turbulent variable value (initialization value).
 	 * \param[in] val_rho_omega - Turbulent variable value (initialization value).
+   * \param[in] val_muT - Turbulent variable value (initialization value).
 	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] constants -
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	CTurbSSTVariable(su2double val_rho_kine, su2double val_rho_omega, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,

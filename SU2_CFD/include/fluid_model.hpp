@@ -431,8 +431,8 @@ public:
 
 		/*!
 		 * \brief Set the Dimensionless State using Pressure and Entropy
-		 * \param[in] th1 - first thermodynamic variable (P).
-		 * \param[in] th2 - second thermodynamic variable (s).
+		 * \param[in] P - first thermodynamic variable (P).
+		 * \param[in] s - second thermodynamic variable (s).
 		 */
 
 		void SetTDState_Ps (su2double P, su2double s );
