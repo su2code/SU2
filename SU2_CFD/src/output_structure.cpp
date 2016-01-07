@@ -5399,6 +5399,9 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     *Surface_CLift = NULL, *Surface_CDrag = NULL, *Surface_CSideForce = NULL, *Surface_CEff = NULL, *Surface_CFx = NULL, *Surface_CFy = NULL,  *Surface_CFz = NULL, *Surface_CMx = NULL, *Surface_CMy = NULL, *Surface_CMz = NULL,
     *Surface_CLift_Inv = NULL, *Surface_CDrag_Inv = NULL, *Surface_CSideForce_Inv = NULL, *Surface_CEff_Inv = NULL, *Surface_CFx_Inv = NULL, *Surface_CFy_Inv = NULL,  *Surface_CFz_Inv = NULL, *Surface_CMx_Inv = NULL, *Surface_CMy_Inv = NULL, *Surface_CMz_Inv = NULL;
     time_t now = time(0);
+    
+    /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
+     the two lines below that use the dt variable. ---*/
     string dt = ctime(&now); dt[24] = '.';
 
     /*--- Allocate memory for the coefficients being monitored ---*/

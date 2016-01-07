@@ -2851,6 +2851,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_ActDisk_Outlet;
   
   time_t now = time(0);
+  
+  /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
+   the two lines below that use the dt variable. ---*/
   string dt = ctime(&now); dt[24] = '.';
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
