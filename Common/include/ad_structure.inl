@@ -144,6 +144,8 @@ namespace AD{
 
   inline void SetPreaccOut(su2double** data, const int size_x, const int size_y){}
 
+  inline void StartPreacc(){}
+
   inline void EndPreacc(){}
 #endif
 }
