@@ -299,7 +299,16 @@ public:
   
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
-   * \param[in] ??? - Description here.
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] surface_movement - Surface movement classes of the problem.
+   * \param[in] grid_movement - Volume grid movement classes of the problem.
+   * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] val_iZone - zone of the problem.
    */
   void Preprocess(COutput *output,
                   CIntegration ***integration_container,
@@ -323,6 +332,7 @@ public:
    * \param[in] surface_movement - Surface movement classes of the problem.
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] val_iZone - zone of the problem.
    */
   void Iterate(COutput *output,
                CIntegration ***integration_container,
@@ -337,7 +347,16 @@ public:
   
   /*!
    * \brief Updates the containers for the wave system.
-   * \param[in] ??? - Description here.
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] surface_movement - Surface movement classes of the problem.
+   * \param[in] grid_movement - Volume grid movement classes of the problem.
+   * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] val_iZone - zone of the problem.
    */
   void Update(COutput *output,
               CIntegration ***integration_container,
@@ -352,19 +371,16 @@ public:
   
   /*!
    * \brief Monitors the convergence and other metrics for the wave system.
-   * \param[in] ??? - Description here.
    */
   void Monitor();
   
   /*!
    * \brief Outputs desired files and quantities for the wave system.
-   * \param[in] ??? - Description here.
    */
   void Output();
   
   /*!
    * \brief Postprocesses the wave system before heading to another physics system or the next iteration.
-   * \param[in] ??? - Description here.
    */
   void Postprocess();
   

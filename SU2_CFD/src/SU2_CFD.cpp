@@ -409,28 +409,41 @@ int main(int argc, char *argv[]) {
         StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
     }
     
-    /*--- Solution output. Determine whether a solution needs to be written
-     after the current iteration, and if so, execute the output file writing
-     routines. ---*/
-    
-    if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) ||
-        
-        ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
-         !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-           (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND))) ||
-        
-        (StopCalc) ||
-        
-        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) &&
-         ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
-        
-        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (!fsi) &&
-         ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
-                             ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-        
-        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
-         ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
-          
+		/*--- Solution output. Determine whether a solution needs to be written
+		 after the current iteration, and if so, execute the output file writing
+		 routines. ---*/
+		
+		if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter())
+				
+				||
+				
+				((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
+				 !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+					 (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) ||
+					 (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)))
+				
+				||
+				
+				(StopCalc)
+				
+				||
+				
+				(((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+				 (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
+				 ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))
+				
+				||
+				
+				((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (!fsi) &&
+				 ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
+														 ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
+				
+				||
+				
+				((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
+				 ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
+
+					
           /*--- Low-fidelity simulations (using a coarser multigrid level
            approximation to the solution) require an interpolation back to the
            finest grid. ---*/

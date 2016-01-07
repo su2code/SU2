@@ -1283,11 +1283,12 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
     
     solver_container[val_iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
     
-    if (turbulent){
-      solver_container[val_iZone][iMesh][ADJTURB_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
-    }
   }
-  
+
+  if (turbulent){
+    solver_container[val_iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
+  }
+
   /*--- Start the recording of all operations ---*/
   
   AD::StartRecording();

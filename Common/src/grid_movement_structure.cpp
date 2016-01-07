@@ -1776,40 +1776,40 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 			}
     }
   }
-	
+
   /*--- Set to zero displacements of the normal component for the symmetry plane condition ---*/
-  
+
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ) {
-      
-			for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = 0.0;
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				VarCoord = geometry->node[iPoint]->GetCoord();
-				for (iDim = 0; iDim < nDim; iDim++)
-					MeanCoord[iDim] += VarCoord[iDim]*VarCoord[iDim];
-			}
-			for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = sqrt(MeanCoord[iDim]);
-			if (nDim==3){
-        if ((MeanCoord[0] <= MeanCoord[1]) && (MeanCoord[0] <= MeanCoord[2])) axis = 0;
-        if ((MeanCoord[1] <= MeanCoord[0]) && (MeanCoord[1] <= MeanCoord[2])) axis = 1;
-        if ((MeanCoord[2] <= MeanCoord[0]) && (MeanCoord[2] <= MeanCoord[1])) axis = 2;
-			}
-			else{
-			  if ((MeanCoord[0] <= MeanCoord[1]) ) axis = 0;
-        if ((MeanCoord[1] <= MeanCoord[0]) ) axis = 1;
-			}
-						
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				total_index = iPoint*nDim + axis;
-				LinSysRes[total_index] = 0.0;
-				LinSysSol[total_index] = 0.0;
-				StiffMatrix.DeleteValsRowi(total_index);
-			}
-		}
+	  if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ) {
+
+	    for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = 0.0;
+	    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+	      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+	      VarCoord = geometry->node[iPoint]->GetCoord();
+	      for (iDim = 0; iDim < nDim; iDim++)
+	        MeanCoord[iDim] += VarCoord[iDim]*VarCoord[iDim];
+	    }
+	    for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = sqrt(MeanCoord[iDim]);
+	    if (nDim==3){
+	      if ((MeanCoord[0] <= MeanCoord[1]) && (MeanCoord[0] <= MeanCoord[2])) axis = 0;
+	      if ((MeanCoord[1] <= MeanCoord[0]) && (MeanCoord[1] <= MeanCoord[2])) axis = 1;
+	      if ((MeanCoord[2] <= MeanCoord[0]) && (MeanCoord[2] <= MeanCoord[1])) axis = 2;
+	    }
+	    else{
+	      if ((MeanCoord[0] <= MeanCoord[1]) ) axis = 0;
+	      if ((MeanCoord[1] <= MeanCoord[0]) ) axis = 1;
+	    }
+
+	    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+	      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+	      total_index = iPoint*nDim + axis;
+	      LinSysRes[total_index] = 0.0;
+	      LinSysSol[total_index] = 0.0;
+	      StiffMatrix.DeleteValsRowi(total_index);
+	    }
+	  }
 	}
-  
+
 	/*--- Set the known displacements, note that some points of the moving surfaces
    could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
   
@@ -3102,6 +3102,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         cout << "No surface deformation (scaling, rotation, or translation)." << endl;
     }
   }
+  else if (config->GetDesign_Variable(0) == CUSTOM and rank == MASTER_NODE)
+    cout <<"Custom design variable will be used in external script" << endl;
   
   /*--- Design variable not implement ---*/
 

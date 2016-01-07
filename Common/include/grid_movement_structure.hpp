@@ -788,6 +788,7 @@ public:
   /*!
 	 * \brief Compute the stiffness matrix for grid deformation using spring analogy.
 	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
 	 * \return Value of the length of the smallest edge of the grid.
 	 */
 	su2double SetFEAMethodContributions_Elem(CGeometry *geometry, CConfig *config);
@@ -795,16 +796,24 @@ public:
   /*!
 	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
 	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
 	 * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
+   * \param[in] PointCorners - Index values for element corners
+   * \param[in] nNodes - Number of nodes defining the element.
+   * \param[in] scale
 	 */
   void SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3], unsigned short nNodes, su2double scale);
 	
   /*!
 	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
 	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
 	 * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
+   * \param[in] PointCorners - Index values for element corners
+   * \param[in] nNodes - Number of nodes defining the element.
+   * \param[in] scale
 	 */
   void SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3], unsigned short nNodes, su2double scale);
   
@@ -812,7 +821,7 @@ public:
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
+   * \param[in] Zeta - Local coordinates.
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
@@ -822,7 +831,7 @@ public:
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
+   * \param[in] Zeta - Local coordinates.
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
@@ -832,7 +841,7 @@ public:
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
+   * \param[in] Zeta - Local coordinates.
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
@@ -842,7 +851,7 @@ public:
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
+   * \param[in] Zeta - Local coordinates.
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
@@ -906,8 +915,8 @@ public:
 	 * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
-   * \param[in] PointCorners
-   * \param[in] nNodes
+   * \param[in] PointCorners - Index values for element corners
+   * \param[in] nNodes - Number of nodes defining the element.
 	 */
   void AddFEA_StiffMatrix(CGeometry *geometry, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], unsigned short nNodes);
   
