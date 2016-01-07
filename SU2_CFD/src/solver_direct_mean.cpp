@@ -3631,26 +3631,35 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Low-Mach number correction ---*/
 
       if (low_mach_corr) {
-        su2double z, sq_vel_i = 0.0, sq_vel_j = 0.0, mach_i, mach_j, Energy_i, Energy_j, SoundSpeed_i, SoundSpeed_j;
-
-        mach_i = sqrt(sq_vel_i)/Primitive_i[nDim+4];
-        mach_j = sqrt(sq_vel_j)/Primitive_j[nDim+4];
-
-        z = min(max(mach_i,mach_j),1.0);
+        su2double z, velocity2_i = 0.0, velocity2_j = 0.0, mach_i, mach_j, vel_i_corr[3], vel_j_corr[3];
 
         for (iDim = 0; iDim < nDim; iDim++) {
-        	Primitive_i[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 + z * \
-        			( Primitive_i[iDim+1] - Primitive_j[iDim+1] )/2.0;
-        	sq_vel_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
-        	Primitive_j[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 + z * \
-        			( Primitive_j[iDim+1] - Primitive_i[iDim+1] )/2.0;
-        	sq_vel_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
+          velocity2_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
+          velocity2_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
+        }
+        mach_i = sqrt(velocity2_i)/Primitive_i[nDim+4];
+        mach_j = sqrt(velocity2_j)/Primitive_j[nDim+4];
+
+        z = min(max(mach_i,mach_j),1.0);
+        velocity2_i = 0.0;
+        velocity2_j = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+        	vel_i_corr[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
+        			+ z * ( Primitive_i[iDim+1] - Primitive_j[iDim+1] )/2.0;
+        	vel_j_corr[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
+        			+ z * ( Primitive_j[iDim+1] - Primitive_i[iDim+1] )/2.0;
+
+        	velocity2_j += vel_j_corr[iDim+1]*vel_j_corr[iDim+1];
+        	velocity2_i += vel_i_corr[iDim+1]*vel_i_corr[iDim+1];
+
+        	Primitive_i[iDim+1] = vel_i_corr[iDim+1];
+        	Primitive_j[iDim+1] = vel_j_corr[iDim+1];
         }
 
-        FluidModel->SetEnergy_Prho(Primitive_i[iDim+1],Primitive_i[iDim+2]);
-        Primitive_i[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_i[nDim+1]/Primitive_i[nDim+2] + 0.5*sq_vel_i;
-        FluidModel->SetEnergy_Prho(Primitive_j[iDim+1],Primitive_j[iDim+2]);
-        Primitive_j[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_j[nDim+1]/Primitive_j[nDim+2] + 0.5*sq_vel_j;
+        FluidModel->SetEnergy_Prho(Primitive_i[nDim+1],Primitive_i[nDim+2]);
+        Primitive_i[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_i[nDim+1]/Primitive_i[nDim+2] + 0.5*velocity2_i;
+        FluidModel->SetEnergy_Prho(Primitive_j[nDim+1],Primitive_j[nDim+2]);
+        Primitive_j[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_j[nDim+1]/Primitive_j[nDim+2] + 0.5*velocity2_j;
       }
       
       /*--- Check for non-physical solutions after reconstruction. If found,
