@@ -768,7 +768,7 @@ class CDiscAdjMeanFlowIteration : public CIteration {
 
 private:
 
-  CIteration* meanflow_iteration; /*!< \brief Pointer to the mean flow iteration class. */
+  CMeanFlowIteration* meanflow_iteration; /*!< \brief Pointer to the mean flow iteration class. */
   unsigned short CurrentRecording; /*!< \brief Stores the current status of the recording. */
   bool turbulent;       /*!< \brief Stores the turbulent flag. */
 
@@ -777,9 +777,10 @@ private:
     FLOW_VARIABLES = 1, /*!< \brief Indicates that the current recording
                                     can be used to compute the gradients with respect
                                     to the conservative flow variables. */
-    GEOMETRY_VARIABLES = 2 /*!< \brief Indicates that the current recording
+    GEOMETRY_VARIABLES = 2, /*!< \brief Indicates that the current recording
                                        can be used to compute the gradients with respect
                                        to the geometry variables. */
+    ALL_VARIABLES = 3,
   };
 
 
@@ -921,6 +922,22 @@ public:
                       CFreeFormDefBox*** FFDBox,
                       unsigned short val_iZone,
                       unsigned short kind_recording);
+
+  /*!
+   * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions
+   * (e.g. turbulent variables, normals, volumes).
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] kind_recording - The kind of recording (geometry or flow).
+   */
+  void SetDependencies(CSolver ****solver_container,
+                       CGeometry ***geometry_container,
+                       CConfig **config_container,
+                       unsigned short iZone,
+                       unsigned short kind_recording);
+
 };
 
 

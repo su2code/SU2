@@ -43,35 +43,9 @@ namespace SU2_TYPE{
   }
 }
 
-/*--- Default implementation if reverse mode is disabled ---*/
-
-#if !defined ADOLC_REVERSE_TYPE && \
-    !defined CODI_REVERSE_TYPE
-namespace AD{
-  inline void RegisterInput(su2double &data){}
-
-  inline void RegisterOutput(su2double& data){}
-
-  inline void StartRecording(){}
-
-  inline void StopRecording(){}
-
-  inline void ClearAdjoints(){}
-
-  inline void ComputeAdjoint(){}
-
-  inline void Reset(){}
-
-  inline void ResetInput(su2double &data){}
-}
-#endif
-
-
 /*--- Special handling of the sprint routine for non-primitive types. ---*/
 
-#if  defined ADOLC_REVERSE_TYPE || \
-     defined ADOLC_FORWARD_TYPE || \
-     defined COMPLEX_TYPE       || \
+#if  defined COMPLEX_TYPE       || \
      defined CODI_REVERSE_TYPE  || \
      defined CODI_FORWARD_TYPE
 
