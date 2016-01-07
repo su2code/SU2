@@ -70,10 +70,12 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
 
-  AD::StartPreacc(AD::CArray1D(Normal, nDim),
-                  AD::CArray1D(V_i, nDim+5), AD::CArray1D(V_j, nDim+5),
-                  Sensor_i, Sensor_j, Lambda_i, Lambda_j,
-                  AD::CArray1D(Und_Lapl_i, nVar), AD::CArray1D(Und_Lapl_j, nVar));
+  AD::StartPreacc();
+  AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(V_i, nDim+5); AD::SetPreaccIn(V_j, nDim+5);
+  AD::SetPreaccIn(Sensor_i);    AD::SetPreaccIn(Sensor_j);
+  AD::SetPreaccIn(Lambda_i);    AD::SetPreaccIn(Lambda_j);
+  AD::SetPreaccIn(Und_Lapl_i, nVar); AD::SetPreaccIn(Und_Lapl_j, nVar);
 
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
   
@@ -217,7 +219,8 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     
   }
 
-  AD::EndPreacc(AD::CArray1D(val_residual, nVar));
+  AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();
 }
 
 CCentJST_KE_Flow::CCentJST_KE_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -258,10 +261,12 @@ void CCentJST_KE_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
 
-  AD::StartPreacc(AD::CArray1D(Normal, nDim),
-                  AD::CArray1D(V_i, nDim+5), AD::CArray1D(V_j, nDim+5),
-                  Sensor_i, Sensor_j, Lambda_i, Lambda_j,
-                  AD::CArray1D(Und_Lapl_i, nVar), AD::CArray1D(Und_Lapl_j, nVar));
+  AD::StartPreacc();
+  AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(V_i, nDim+5); AD::SetPreaccIn(V_j, nDim+5);
+  AD::SetPreaccIn(Sensor_i);    AD::SetPreaccIn(Sensor_j);
+  AD::SetPreaccIn(Lambda_i);    AD::SetPreaccIn(Lambda_j);
+  AD::SetPreaccIn(Und_Lapl_i, nVar); AD::SetPreaccIn(Und_Lapl_j, nVar);
 
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
 
@@ -402,7 +407,8 @@ void CCentJST_KE_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
   }
 
-  AD::EndPreacc(AD::CArray1D(val_residual, nVar));
+  AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();
 
 }
 
@@ -1790,7 +1796,8 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
   su2double ProjGridVel = 0.0;
   
-  AD::StartPreacc(AD::CArray1D(V_i, nDim+4), AD::CArray1D(V_j, nDim+4), AD::CArray1D(Normal, nDim));
+  AD::StartPreacc();
+  AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
 
   /*--- Face area (norm or the normal vector) ---*/
   
@@ -1857,7 +1864,8 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
         val_Jacobian_j[iVar][iVar] = 0.0;
       }
     }
-    AD::EndPreacc(AD::CArray1D(val_residual, nVar));
+    AD::SetPreaccOut(val_residual, nVar);
+    AD::EndPreacc();
     return;
   }
 
@@ -2013,7 +2021,8 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
     
   }
   
-  AD::EndPreacc(AD::CArray1D(val_residual, nVar));
+  AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();
 
 }
 
@@ -3684,13 +3693,15 @@ CAvgGradCorrected_Flow::~CAvgGradCorrected_Flow(void) {
 }
 void CAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
-  AD::StartPreacc(AD::CArray1D(V_i, nDim+9),   AD::CArray1D(V_j, nDim+9),
-                  AD::CArray1D(Coord_i, nDim), AD::CArray1D(Coord_j, nDim),
-                  AD::CArray2D(PrimVar_Grad_i, nDim+1, nDim),
-                  AD::CArray2D(PrimVar_Grad_j, nDim+1, nDim),
-                  AD::CArray1D(PrimVar_Lim_i, nDim+1), AD::CArray1D(PrimVar_Lim_j, nDim+1),
-                  turb_ke_i, turb_ke_j,
-                  AD::CArray1D(Normal, nDim));
+  AD::StartPreacc();
+  AD::SetPreaccIn(V_i, nDim+9);   AD::SetPreaccIn(V_j, nDim+9);
+  AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+  AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
+  AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
+  AD::SetPreaccIn(PrimVar_Lim_i, nDim+1);
+  AD::SetPreaccIn(PrimVar_Lim_j, nDim+1);
+  AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
+  AD::SetPreaccIn(Normal, nDim);
 
 	/*--- Normalized normal vector ---*/
   
@@ -3781,8 +3792,9 @@ void CAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double 
 		}
     
 	}
-  
-  AD::EndPreacc(AD::CArray1D(val_residual, nVar));
+
+  AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();
   
 }
 
@@ -3953,13 +3965,14 @@ CGeneralAvgGradCorrected_Flow::~CGeneralAvgGradCorrected_Flow(void) {
 
 void CGeneralAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
-  AD::StartPreacc(AD::CArray1D(V_i, nDim+9), AD::CArray1D(V_j, nDim+9),
-                  AD::CArray1D(Coord_i, nDim), AD::CArray1D(Coord_j, nDim),
-                  AD::CArray1D(S_i, 4), AD::CArray1D(S_j, 4),
-                  AD::CArray2D(PrimVar_Grad_i, nDim+1, nDim),
-                  AD::CArray2D(PrimVar_Grad_j, nDim+1, nDim),
-                  turb_ke_i, turb_ke_j,
-                  AD::CArray1D(Normal, nDim));
+  AD::StartPreacc();
+  AD::SetPreaccIn(V_i, nDim+9); AD::SetPreaccIn(V_j, nDim+9);
+  AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+  AD::SetPreaccIn(S_i, 4); AD::SetPreaccIn(S_j, 4);
+  AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
+  AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
+  AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
+  AD::SetPreaccIn(Normal, nDim);
 
   /*--- Normalized normal vector ---*/
   
@@ -4052,7 +4065,8 @@ void CGeneralAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2
     
   }
 
-  AD::EndPreacc(AD::CArray1D(val_residual, nVar));
+  AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();
   
 }
 

@@ -53,7 +53,6 @@ AC_PROG_RANLIB
 AC_PROG_MKDIR_P
 #PKG_PROG_PKG_CONFIG
 
-CXXFLAGS="$CXXFLAGS -std=c++0x"
 # --------------------------------------------------------------
 # Check for important type sizes
 # --------------------------------------------------------------

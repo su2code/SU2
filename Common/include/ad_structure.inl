@@ -52,87 +52,61 @@ namespace AD{
     }
   }
 
-  inline void SetPreaccInput(const su2double &data){
+  inline void SetPreaccIn(const su2double &data){
     if (data.getGradientData() != 0){
       localInputValues.push_back(data.getGradientData());
     }
   }
 
-  inline void SetPreaccInput(const CArray1D& data){
-    for (unsigned short i = 0; i < data.size; i++){
-      if (data.vec[i].getGradientData() != 0){
-        localInputValues.push_back(data.vec[i].getGradientData());
+  inline void SetPreaccIn(su2double* data, const int size){
+    for (unsigned short i = 0; i < size; i++){
+      if (data[i].getGradientData() != 0){
+        localInputValues.push_back(data[i].getGradientData());
       }
     }
   }
 
-  inline void SetPreaccInput(const CArray2D& data){
-    for (unsigned short i = 0; i < data.size_x; i++){
-      for (unsigned short j = 0; j < data.size_y; j++){
-        if (data.mat[i][j].getGradientData() != 0){
-          localInputValues.push_back(data.mat[i][j].getGradientData());
+  inline void SetPreaccIn(su2double** data, const int size_x, const int size_y){
+    for (unsigned short i = 0; i < size_x; i++){
+      for (unsigned short j = 0; j < size_y; j++){
+        if (data[i][j].getGradientData() != 0){
+          localInputValues.push_back(data[i][j].getGradientData());
         }
       }
     }
   }
 
-  inline void SetPreaccInput_Variadic(){}
-
-  template <typename Arg1, typename ... Args>
-  inline void SetPreaccInput_Variadic(const Arg1& arg1, Args& ... args){
-    SetPreaccInput(arg1);
-    SetPreaccInput_Variadic(args...);
-  }
-
-  template <typename ... Args>
-  inline void StartPreacc(Args && ... args){
+  inline void StartPreacc(){
     if (globalTape.isActive()){
-      SetPreaccInput_Variadic(args...);
       StartPosition = globalTape.getPosition();
       PreaccActive = true;
     }
   }
 
-  inline void SetPreaccOutput(su2double& data){
+  inline void SetPreaccOut(su2double& data){
     if (data.getGradientData() != 0){
       localOutputValues.push_back(&data);
     }
   }
 
-  inline void SetPreaccOutput(CArray1D& data){
-    for (unsigned short i = 0; i < data.size; i++){
-      if (data.vec[i].getGradientData() != 0){
-        localOutputValues.push_back(&data.vec[i]);
+  inline void SetPreaccOut(su2double* data, const int size){
+    for (unsigned short i = 0; i < size; i++){
+      if (data[i].getGradientData() != 0){
+        localOutputValues.push_back(&data[i]);
       }
     }
   }
 
-  inline void SetPreaccOutput(CArray2D& data){
-    for (unsigned short i = 0; i < data.size_x; i++){
-      for (unsigned short j = 0; j < data.size_y; j++){
-        if (data.mat[i][j].getGradientData() != 0){
-          localOutputValues.push_back(&data.mat[i][j]);
+  inline void SetPreaccOut(su2double** data, const int size_x, const int size_y){
+    for (unsigned short i = 0; i < size_x; i++){
+      for (unsigned short j = 0; j < size_y; j++){
+        if (data[i][j].getGradientData() != 0){
+          localOutputValues.push_back(&data[i][j]);
         }
       }
     }
   }
 
-  inline void SetPreaccOutput_Variadic(){}
-
-  template <typename Arg1, typename ... Args>
-  inline void SetPreaccOutput_Variadic(Arg1& arg1, Args& ... args){
-    SetPreaccOutput(arg1);
-    SetPreaccOutput_Variadic(args...);
-  }
-
-
-  template <typename ... Args>
-  inline void EndPreacc(Args && ... args){
-    if (PreaccActive){
-      SetPreaccOutput_Variadic(args...);
-      Preaccumulate();
-    }
-  }
 
   inline void delete_handler(void *handler){
     CheckpointHandler *checkpoint = static_cast<CheckpointHandler*>(handler);
@@ -158,35 +132,18 @@ namespace AD{
 
   inline void ResetInput(su2double &data){}
 
-  inline void Preaccumulate(){}
+  inline void SetPreaccIn(const su2double &data){}
 
-  inline void SetPreaccInput(const su2double &data){}
+  inline void SetPreaccIn(su2double* data, const int size){}
 
-  inline void SetPreaccInput(const CArray1D &data){}
+  inline void SetPreaccIn(su2double** data, const int size_x, const int size_y){}
 
-  inline void SetPreaccInput(const CArray2D &data){}
+  inline void SetPreaccOut(su2double &data){}
 
-  inline void SetPreaccInput_Variadic(){}
+  inline void SetPreaccOut(su2double* data, const int size){}
 
-  template <typename Arg1, typename ... Args>
-  inline void SetPreaccInput_Variadic(const Arg1& arg1, Args& ... args){}
+  inline void SetPreaccOut(su2double** data, const int size_x, const int size_y){}
 
-  template <typename ... Args>
-  inline void StartPreacc(Args && ... args){}
-
-  inline void SetPreaccOutput(su2double &data){}
-
-  inline void SetPreaccOutput(CArray1D &data){}
-
-  inline void SetPreaccOutput(CArray2D &data){}
-
-  inline void SetPreaccOutput_Variadic(){}
-
-  template <typename Arg1, typename ... Args>
-  inline void SetPreaccOutput_Variadic(Arg1& arg1, Args& ... args){}
-
-  template <typename ... Args>
-  inline void EndPreacc(Args && ... args){}
-
+  inline void EndPreacc(){}
 #endif
 }
