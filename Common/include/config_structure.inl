@@ -392,6 +392,8 @@ inline string CConfig::GetTagFFDBox(unsigned short val_ffd) {	return TagFFDBox[v
 
 inline unsigned short CConfig::GetnDV(void) {	return nDV; }
 
+inline unsigned short CConfig::GetnDV_Value(unsigned short iDV) {	return nDV_Value[iDV]; }
+
 inline unsigned short CConfig::GetnFFDBox(void) {	return nFFDBox; }
 
 inline unsigned short CConfig::GetFFD_Continuity(void) { return FFD_Continuity; }
@@ -917,9 +919,9 @@ inline su2double CConfig::GetTotal_UnstTime(void) { return Total_UnstTime; }
 
 inline bool CConfig::GetEngine_Intake(void) { return Engine_Intake; }
 
-inline su2double CConfig::GetDV_Value(unsigned short val_dv) { return DV_Value[val_dv]; }
+inline su2double CConfig::GetDV_Value(unsigned short val_dv, unsigned short val_value) { return DV_Value[val_dv][val_value]; }
 
-inline void CConfig::SetDV_Value(unsigned short val_dv, su2double val) { DV_Value[val_dv] = val; }
+inline void CConfig::SetDV_Value(unsigned short val_dv, unsigned short val_ind, su2double val) { DV_Value[val_dv][val_ind] = val; }
 
 inline su2double CConfig::GetOrderMagResidual(void) { return OrderMagResidual; }
 

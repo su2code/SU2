@@ -3119,22 +3119,24 @@ void CSurfaceMovement::SetSurface_Derivative(CGeometry *geometry, CConfig *confi
 
   su2double DV_Value = 0.0;
 
-  unsigned short iDV = 0;
+  unsigned short iDV = 0, iDV_Value = 0;
 
   for (iDV = 0; iDV < config->GetnDV(); iDV++){
+    for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++){
 
-    DV_Value = config->GetDV_Value(iDV);
+      DV_Value = config->GetDV_Value(iDV, iDV_Value);
 
-    /*--- If value of the design variable is not 0.0 we apply the differentation.
+      /*--- If value of the design variable is not 0.0 we apply the differentation.
      *     Note if multiple variables are non-zero, we end up with the sum of all the derivatives. ---*/
 
-    if (DV_Value != 0.0){
+      if (DV_Value != 0.0){
 
-      DV_Value = 0.0;
+        DV_Value = 0.0;
 
-      SU2_TYPE::SetDerivative(DV_Value, 1.0);
+        SU2_TYPE::SetDerivative(DV_Value, 1.0);
 
-      config->SetDV_Value(iDV, DV_Value);
+        config->SetDV_Value(iDV, iDV_Value, DV_Value);
+      }
     }
   }
 
@@ -3742,12 +3744,25 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
   if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
     
     /*--- Compute deformation ---*/
-    
-    Ampl = config->GetDV_Value(iDV);
-    
-    movement[0] = config->GetParamDV(iDV, 3)*Ampl;
-    movement[1] = config->GetParamDV(iDV, 4)*Ampl;
-    movement[2] = 0.0;
+
+    /*--- If we have only design value, than this value is the amplitude,
+     * otherwise we have a general movement. ---*/
+
+    if (config->GetnDV_Value(iDV) == 1){
+
+      Ampl = config->GetDV_Value(iDV);
+
+      movement[0] = config->GetParamDV(iDV, 3)*Ampl;
+      movement[1] = config->GetParamDV(iDV, 4)*Ampl;
+      movement[2] = 0.0;
+
+    } else {
+
+      movement[0] = config->GetDV_Value(iDV, 0);
+      movement[1] = config->GetDV_Value(iDV, 1);
+      movement[2] = 0.0;
+
+    }
     
     index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
     index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
@@ -3845,12 +3860,25 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
 	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
     
     /*--- Compute deformation ---*/
-    
-		Ampl = config->GetDV_Value(iDV);
 
-    movement[0] = config->GetParamDV(iDV, 4)*Ampl;
-		movement[1] = config->GetParamDV(iDV, 5)*Ampl;
-		movement[2] = config->GetParamDV(iDV, 6)*Ampl;
+    /*--- If we have only design value, than this value is the amplitude,
+     * otherwise we have a general movement. ---*/
+
+    if (config->GetnDV_Value(iDV) == 1) {
+
+      Ampl = config->GetDV_Value(iDV);
+
+      movement[0] = config->GetParamDV(iDV, 4)*Ampl;
+      movement[1] = config->GetParamDV(iDV, 5)*Ampl;
+      movement[2] = config->GetParamDV(iDV, 6)*Ampl;
+
+    } else {
+
+      movement[0] = config->GetDV_Value(iDV, 0);
+      movement[1] = config->GetDV_Value(iDV, 1);
+      movement[2] = config->GetDV_Value(iDV, 2);
+
+    }
 
     index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
     index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
