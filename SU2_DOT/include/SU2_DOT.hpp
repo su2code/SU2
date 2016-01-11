@@ -44,3 +44,9 @@
 #include "../../Common/include/grid_movement_structure.hpp"
 
 using namespace std;
+
+void SetProjection_Continuous(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file);
+
+void SetProjection_Discrete(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file);
+
+void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_file);

@@ -114,7 +114,7 @@ private:
 	unsigned short Dynamic_Analysis;	/*!< \brief Static or dynamic structural analysis. */
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
-	su2double *DV_Value;		/*!< \brief Previous value of the design variable. */
+  su2double **DV_Value;		/*!< \brief Previous value of the design variable. */
 	su2double LimiterCoeff;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
 	su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
@@ -289,6 +289,7 @@ private:
 	Unst_CFL;		/*!< \brief Unsteady CFL number. */
 	bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
 	unsigned short nDV;		/*!< \brief Number of design variables. */
+  unsigned short* nDV_Value;		/*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
   unsigned short nFFDBox;		/*!< \brief Number of ffd boxes. */
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
 	unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
@@ -847,6 +848,14 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
+  void addDVValueOption(const string name, unsigned short* & nDVValue_field, su2double** & valueDV, unsigned short & nDV_field,  su2double** & paramDV,
+                        unsigned short* & design_variable) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionDVValue(name, nDVValue_field, valueDV, nDV_field, paramDV, design_variable);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+
   void addFFDDefOption(const string name, unsigned short & nFFD_field, su2double** & coordFFD, string* & FFDTag) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
@@ -1982,6 +1991,12 @@ public:
 	 */
 	unsigned short GetnDV(void);
   
+  /*!
+   * \brief Get the number of design variables.
+   * \return Number of the design variables.
+   */
+  unsigned short GetnDV_Value(unsigned short iDV);
+
   /*!
    * \brief Get the number of design variables.
    * \return Number of the design variables.
@@ -3886,16 +3901,17 @@ public:
 	/*!
 	 * \brief Value of the design variable step, we use this value in design problems.
 	 * \param[in] val_dv - Number of the design variable that we want to read.
+   * \param[in] val_value - Value of the design variable that we want to read.
 	 * \return Design variable step.
 	 */
-	su2double GetDV_Value(unsigned short val_dv);
+  su2double GetDV_Value(unsigned short val_dv, unsigned short val_val = 0);
 
   /*!
    * \brief Set the value of the design variable step, we use this value in design problems.
    * \param[in] val_dv - Number of the design variable that we want to read.
    * \param[in] val    - Value of the design variable.
    */
-  void SetDV_Value(unsigned short val_dv, su2double val);
+  void SetDV_Value(unsigned short val_dv, unsigned short val_ind, su2double val);
 
 	/*!
 	 * \brief Get information about the grid movement.
