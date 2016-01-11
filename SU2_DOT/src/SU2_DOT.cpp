@@ -514,8 +514,10 @@ int main(int argc, char *argv[]) {
 
       /*--- Design variable not implement ---*/
 
-      else { cout << "Design Variable not implement yet" << endl; }
-
+      else {
+        if (rank == MASTER_NODE)
+          cout << "Design Variable not implemented yet" << endl;
+      }
 
       /*--- Continuous adjoint gradient computation ---*/
       if (rank == MASTER_NODE)
