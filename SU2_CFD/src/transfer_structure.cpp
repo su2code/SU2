@@ -969,7 +969,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
 				Point_Target = target_geometry->vertex[Marker_Target][iVertex]->GetNode();
 
-				cout << "Target Point " << target_geometry->node[Point_Target]->GetGlobalIndex();
+				cout << "Target Point " << Point_Target;
 
 				/*--- If this processor owns the node ---*/
 				if (target_geometry->node[Point_Target]->GetDomain()){

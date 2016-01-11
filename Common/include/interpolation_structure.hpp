@@ -205,7 +205,7 @@ public:
    * \param[in] iZone_1 - zone index of the element to use for interpolation (the DONOR zone)
    * \param[in] donor_elem - element index of the element to use for interpolation (or global index of a point in 2D)
    * \param[in[ nDonorPoints - number of donor points in the element.
-   * \param[in[ xj - point projected onto the plane of the donor element.
+   * \param[in] xj - point projected onto the plane of the donor element.
    * \param[out] isoparams - isoparametric coefficients. Must be allocated to size nNodes ahead of time. (size> nDonors)
    *
    * If the problem is 2D, the 'face' projected onto is actually an edge; the local index

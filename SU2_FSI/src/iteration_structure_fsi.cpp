@@ -404,7 +404,7 @@ void FEM_Update(COutput *output, CIntegration ***integration_container, CGeometr
 
 	if (dynamic){
 		for (iZone = nFluidZone; iZone < nTotalZone; iZone++) {
-			integration_container[iZone][FEA_SOL]->SetFEM_StructuralSolver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
+			integration_container[iZone][FEA_SOL]->SetFEM_StructuralSolver(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0][FEA_SOL], config_container[iZone], MESH_0);
 			integration_container[iZone][FEA_SOL]->SetConvergence(false);
 		}
 
