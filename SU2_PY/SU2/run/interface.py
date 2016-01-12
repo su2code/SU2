@@ -50,10 +50,15 @@ base_Command = os.path.join(SU2_RUN,'%s')
 
 # check for slurm
 slurm_job = os.environ.has_key('SLURM_JOBID')
-    
+
+#check for tacc
+tacc_job = os.environ.has_key('TACC_PUBLIC_MACHINE')
+
 # set mpi command
 if slurm_job:
     mpi_Command = 'srun -n %i %s'
+    if tacc_job:
+        mpi_Command = 'ibrun -o 0 -n %i %s'
 elif not which('mpirun') is None:
     mpi_Command = 'mpirun -n %i %s'
 elif not which('mpiexec') is None:
