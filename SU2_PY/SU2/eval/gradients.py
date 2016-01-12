@@ -482,7 +482,7 @@ def findiff( config, state=None, step=1e-4 ):
     konfig = copy.deepcopy(config)
 
     # check deformation setup
-    n_dv = len(Definition_DV['KIND'])
+    n_dv = sum(Definition_DV['SIZE'])
     deform_set = konfig['DV_KIND'] == Definition_DV['KIND']
     if not deform_set: 
         dvs_base = [0.0] * n_dv
@@ -777,7 +777,7 @@ def directdiff( config, state=None ):
     # local config
     konfig = copy.deepcopy(config)
 
-    n_dv = len(Definition_DV['KIND'])
+    n_dv = sum(Definition_DV['SIZE'])
 
     # initialize gradients
     func_keys = su2io.grad_names_map.keys()
