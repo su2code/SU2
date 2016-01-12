@@ -509,13 +509,15 @@ int main(int argc, char *argv[]) {
         surface_movement->SetParabolic(geometry_container[ZONE_0], config_container[ZONE_0]);
       }
 
-      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == CUSTOM)
+      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == CUSTOM and rank==MASTER_NODE)
         cout <<"Custom design variable will be used in external script" << endl;
 
       /*--- Design variable not implement ---*/
 
-      else { cout << "Design Variable not implement yet" << endl; }
-
+      else {
+        if (rank == MASTER_NODE)
+          cout << "Design Variable not implemented yet" << endl;
+      }
 
       /*--- Continuous adjoint gradient computation ---*/
       if (rank == MASTER_NODE)
