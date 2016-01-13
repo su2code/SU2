@@ -119,15 +119,18 @@ void CAvgGrad_TurbSA::ComputeResidual(su2double *val_residual, su2double **Jacob
   AD::StartPreacc();
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
   AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim); AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
 
   if (incompressible) {
+    AD::SetPreaccIn(V_i, nDim+5); AD::SetPreaccIn(V_j, nDim+5);
+
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
     Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   }
-  else {
+  else {    
+    AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
+
     Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
     Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
@@ -213,11 +216,15 @@ void CAvgGrad_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2double **J
   AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim); AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
 
   if (incompressible) {
+    AD::SetPreaccIn(V_i, nDim+5);   AD::SetPreaccIn(V_j, nDim+5);
+
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
     Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   }
   else {
+    AD::SetPreaccIn(V_i, nDim+7);   AD::SetPreaccIn(V_j, nDim+7);
+
     Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
     Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
@@ -317,11 +324,15 @@ void CAvgGradCorrected_TurbSA::ComputeResidual(su2double *val_residual, su2doubl
   AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim); AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
 
   if (incompressible) {
+    AD::SetPreaccIn(V_i, nDim+5);   AD::SetPreaccIn(V_j, nDim+5);
+
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
     Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   }
   else {
+    AD::SetPreaccIn(V_i, nDim+7);   AD::SetPreaccIn(V_j, nDim+7);
+
     Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
     Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
@@ -415,11 +426,15 @@ void CAvgGradCorrected_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2d
   AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim); AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
 
   if (incompressible) {
+    AD::SetPreaccIn(V_i, nDim+5); AD::SetPreaccIn(V_j, nDim+5);
+
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
     Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   }
   else {
+    AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
+
     Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
     Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
@@ -803,17 +818,21 @@ CUpwSca_TurbSST::~CUpwSca_TurbSST(void) {
 void CUpwSca_TurbSST::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nDim+3);
-  AD::SetPreaccIn(V_j, nDim+3);
   AD::SetPreaccIn(TurbVar_i,2);
   AD::SetPreaccIn(TurbVar_j,2);
   AD::SetPreaccIn(Normal, nDim);
 
   if (incompressible) {
+    AD::SetPreaccIn(V_i, nDim+2);
+    AD::SetPreaccIn(V_j, nDim+2);
+
     Density_i = V_i[nDim+1];
     Density_j = V_j[nDim+1];
   }
   else {
+    AD::SetPreaccIn(V_i, nDim+3);
+    AD::SetPreaccIn(V_j, nDim+3);
+
     Density_i = V_i[nDim+2];
     Density_j = V_j[nDim+2];
   }
@@ -902,11 +921,15 @@ void CAvgGrad_TurbSST::ComputeResidual(su2double *val_residual, su2double **Jaco
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
 
   if (incompressible) {
+    AD::SetPreaccIn(V_i, nDim+5); AD::SetPreaccIn(V_j, nDim+5);
+
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
     Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   }
   else {
+    AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
+
     Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
     Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
@@ -1016,11 +1039,15 @@ void CAvgGradCorrected_TurbSST::ComputeResidual(su2double *val_residual, su2doub
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
 
   if (incompressible) {
+    AD::SetPreaccIn(V_i, nDim+5); AD::SetPreaccIn(V_j, nDim+5);
+
     Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
     Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
   }
   else {
+    AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
+
     Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
     Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
@@ -1103,7 +1130,6 @@ CSourcePieceWise_TurbSST::~CSourcePieceWise_TurbSST(void) { }
 void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nDim+7);
   AD::SetPreaccIn(StrainMag_i);
   AD::SetPreaccIn(TurbVar_i, nVar);
   AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim);
@@ -1116,11 +1142,15 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
   su2double diverg, pk, pw, zeta;
   
   if (incompressible) {
+    AD::SetPreaccIn(V_i, nDim+5);
+
     Density_i = V_i[nDim+1];
     Laminar_Viscosity_i = V_i[nDim+3];
     Eddy_Viscosity_i = V_i[nDim+4];
   }
   else {
+    AD::SetPreaccIn(V_i, nDim+7);
+
     Density_i = V_i[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+5];
     Eddy_Viscosity_i = V_i[nDim+6];
