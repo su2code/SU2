@@ -3109,7 +3109,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 
   else {
     if (rank == MASTER_NODE)
-      cout << "Design Variable not implement yet" << endl;
+      cout << "Design Variable not implemented yet" << endl;
   }
   
 }

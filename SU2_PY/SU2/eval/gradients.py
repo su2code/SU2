@@ -261,10 +261,10 @@ def adjoint( func_name, config, state=None ):
             # # RUN ADJOINT SOLUTION # #
             info = su2run.adjoint(config)
             su2io.restart2solution(config,info)
-            info = su2run.projection(config,state)
+            state.update(info)
 
             # Gradient Projection
-            info = su2run.projection(config)
+            info = su2run.projection(config,state)
             state.update(info)
 
             # solution files to push
