@@ -6620,9 +6620,9 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   unsigned long iVertex, iPoint;
   unsigned short iDim, iMarker, Out1D;
   su2double *Normal = NULL, Area = 0.0, UnitNormal[3],
-  Tot_Pressure, Mach, Temperature, Pressure = 0.0, Velocity2, Enthalpy, RhoUA, U,// local values at each node (Velocity2 = V^2). U = normal velocity
+  Tot_Pressure, Mach, Temperature, Pressure = 0.0, Velocity2, Enthalpy, RhoUA, U, Density = 0.0, // local values at each node (Velocity2 = V^2). U = normal velocity
   AveragePt = 0.0, AverageMach = 0.0, AverageTemperature = 0.0, MassFlowRate = 0.0, // Area Averaged value ( sum / A )
-  VelocityRef = 0.0, EnthalpyRef = 0.0, DensityRef = 0.0, PressureRef = 0.0; // Flux conserved values. TemperatureRef follows ideal gas
+  VelocityRef = 0.0, EnthalpyRef = 0.0, DensityRef = 0.0, PressureRef = 0.0;// Flux conserved values. TemperatureRef follows ideal gas
   su2double TotalArea=0.0;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -6657,8 +6657,14 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
           for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
           
-          if (compressible)                    Pressure = solver_container->node[iPoint]->GetPressure();
-          if (incompressible || freesurface)   Pressure = solver_container->node[iPoint]->GetPressureInc();
+          if (compressible) {
+            Pressure = solver_container->node[iPoint]->GetPressure();
+            Density  = solver_container->node[iPoint]->GetDensity();
+          }
+          if (incompressible || freesurface) {
+            Pressure = solver_container->node[iPoint]->GetPressureInc();
+            Density  = solver_container->node[iPoint]->GetDensityInc();
+          }
           
           /*-- Find velocity normal to the marked surface/opening --*/
           
@@ -6674,7 +6680,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           
           Mach = (sqrt(Velocity2))/ solver_container->node[iPoint]->GetSoundSpeed();
           //Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),( Gamma/(Gamma-1.0) ) );
-          Tot_Pressure = Pressure + 0.5*solver_container->node[iPoint]->GetDensity()*Velocity2;
+          Tot_Pressure = Pressure + 0.5*Density*Velocity2;
 
           AveragePt += Tot_Pressure * Area;
           TotalArea += Area;
