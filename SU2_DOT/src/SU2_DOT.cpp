@@ -458,7 +458,7 @@ void SetProjection_Continuous(CGeometry *geometry, CConfig *config, CSurfaceMove
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&my_Gradient, &Gradient[iDV][0], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
-      Gradient = my_Gradient;
+    Gradient[iDV][0] = my_Gradient;
 #endif
   }
 
@@ -478,7 +478,7 @@ void SetProjection_Continuous(CGeometry *geometry, CConfig *config, CSurfaceMove
 void SetProjection_Discrete(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file){
 
   su2double DV_Value, *VarCoord, Sensitivity, **Gradient;
-  unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value;
+  unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value, my_Gradient;
   unsigned long iVertex, nVertex, iPoint;
 
   int rank = MASTER_NODE;
@@ -555,7 +555,7 @@ void SetProjection_Discrete(CGeometry *geometry, CConfig *config, CSurfaceMoveme
         }
       }
     }
-    }
+  }
     
   /*--- Compute derivatives and extract gradient ---*/
     
@@ -566,7 +566,12 @@ void SetProjection_Discrete(CGeometry *geometry, CConfig *config, CSurfaceMoveme
     
     for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
       DV_Value = config->GetDV_Value(iDV, iDV_Value);
-      Gradient[iDV][iDV_Value] = SU2_TYPE::GetDerivative(DV_Value);
+      my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&my_Gradient, &Gradient[iDV][iDV_Value], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+      Gradient[iDV][iDV_Value] = my_Gradient;
+#endif
     }
   }
 
