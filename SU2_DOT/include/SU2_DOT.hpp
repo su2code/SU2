@@ -42,6 +42,7 @@
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
+#include "../../SU2_CFD/include/output_structure.hpp"
 
 using namespace std;
 

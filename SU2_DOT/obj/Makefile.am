@@ -44,7 +44,20 @@ bin_PROGRAMS += ../bin/SU2_DOT_AD
 endif
 
 su2_dot_sources = ../include/SU2_DOT.hpp \
+                  ../../SU2_CFD/include/output_structure.hpp \
+                  ../../SU2_CFD/include/solver_structure.hpp \
+                  ../../SU2_CFD/include/variable_structure.hpp \
+		  ../../SU2_CFD/src/variable_structure.cpp \
+                  ../../SU2_CFD/src/solver_structure.cpp \
+                  ../../SU2_CFD/src/output_structure.cpp \
+                  ../../SU2_CFD/src/output_tecplot.cpp \
+                  ../../SU2_CFD/src/output_paraview.cpp \
+                  ../../SU2_CFD/src/output_fieldview.cpp \
+                  ../../SU2_CFD/src/output_cgns.cpp \
+                  ../../SU2_CFD/src/output_su2.cpp \
 		../src/SU2_DOT.cpp
+
+
 
 su2_dot_cxx_flags = 
 su2_dot_ldadd =

@@ -1586,6 +1586,35 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
 
+CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names){
+
+  unsigned long iPoint;
+  unsigned short iVar;
+
+  config->fields = field_names;
+
+  Solution = new su2double[nVar];
+
+  for (iVar = 0; iVar < nVar; iVar++){
+    Solution[iVar] = 0.0;
+  }
+
+  /*--- Define geometry constants in the solver structure ---*/
+
+  nDim = geometry->GetnDim();
+
+  /*--- Allocate the node variables ---*/
+
+  node = new CVariable*[geometry->GetnPoint()];
+
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+
+    node[iPoint] = new CBaselineVariable(Solution, nVar, config);
+
+  }
+
+}
+
 CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   
   int rank = MASTER_NODE;
