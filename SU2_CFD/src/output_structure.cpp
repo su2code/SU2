@@ -7860,3 +7860,95 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   
 }
 
+void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone){
+
+  unsigned short iMarker,iDim, nDim, iVar, nMarker, nVar;
+  unsigned long iVertex, iPoint, nPoint, nVertex;
+  su2double *Normal, Prod, Sens = 0.0, SensDim, Area;
+
+  unsigned short iZone;
+
+  CSolver **solver = new CSolver*[val_nZone];
+
+  for (iZone = 0; iZone < val_nZone; iZone++) {
+
+
+    nPoint = geometry[iZone]->GetnPoint();
+    nDim   = geometry[iZone]->GetnDim();
+    nMarker = config[iZone]->GetnMarker_All();
+    nVar = nDim + 1;
+
+    /* --- We create a baseline solver to easily merge the sensitivity information --- */
+
+    vector<string> fieldnames;
+    fieldnames.push_back("\"Point\",");
+    fieldnames.push_back("\"x\",");
+    fieldnames.push_back("\"y\",");
+    if (nDim == 3){
+      fieldnames.push_back("\"z\",");
+    }
+    fieldnames.push_back("\"Sensitivity_x\",");
+    fieldnames.push_back("\"Sensitivity_y\",");
+    if (nDim == 3){
+      fieldnames.push_back("\"Sensitivity_z\",");
+    }
+    fieldnames.push_back("\"Sensitivity\"");
+
+    solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], nVar+nDim, fieldnames);
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      for (iDim = 0; iDim < nDim; iDim++){
+        solver[iZone]->node[iPoint]->SetSolution(iDim, geometry[iZone]->node[iPoint]->GetCoord(iDim));
+      }
+      for (iVar = 0; iVar < nDim; iVar++){
+        solver[iZone]->node[iPoint]->SetSolution(iVar+nDim, geometry[iZone]->GetSensitivity(iPoint, iVar));
+      }
+    }
+
+    /*--- Compute the sensitivity in normal direction ---*/
+
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+
+      if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )){
+
+        nVertex = geometry[iZone]->GetnVertex(iMarker);
+
+        for (iVertex = 0; iVertex < nVertex; iVertex++){
+          iPoint = geometry[iZone]->vertex[iMarker][iVertex]->GetNode();
+          Normal = geometry[iZone]->vertex[iMarker][iVertex]->GetNormal();
+          Prod = 0.0;
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++){
+
+            /*--- Retrieve the gradient calculated with discrete adjoint method --- */
+
+            SensDim = geometry[iZone]->GetSensitivity(iPoint, iDim);
+
+            /*--- Calculate scalar product for projection onto the normal vector ---*/
+
+            Prod += Normal[iDim]*SensDim;
+
+            Area += Normal[iDim]*Normal[iDim];
+          }
+
+          Area = sqrt(Area);
+
+          /*--- Projection of the gradient onto the normal vector of the surface ---*/
+
+          Sens = Prod/Area;
+
+          solver[iZone]->node[iPoint]->SetSolution(2*nDim, Sens);
+
+        }
+      }
+    }
+  }
+
+  /*--- Merge the information and write the output files ---*/
+
+  SetBaselineResult_Files(solver,geometry, config, 0, val_nZone);
+
+}
+

@@ -845,6 +845,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SURFACE_ADJ_FILENAME
    *  \n DESCRIPTION: Output file surface adjoint coefficient (w/o extension)  \ingroup Config*/
   addStringOption("SURFACE_ADJ_FILENAME", SurfAdjCoeff_FileName, string("surface_adjoint"));
+  /*!\brief SURFACE_SENS_FILENAME_FILENAME
+   *  \n DESCRIPTION: Output file surface sensitivity (discrete adjoint) (w/o extension)  \ingroup Config*/
+  addStringOption("SURFACE_SENS_FILENAME", SurfSens_FileName, string("surface_sens"));
+  /*!\brief VOLUME_SENS_FILENAME
+   *  \n DESCRIPTION: Output file volume sensitivity (discrete adjoint))  \ingroup Config*/
+  addStringOption("VOLUME_SENS_FILENAME", VolSens_FileName, string("volume_sens"));
   /*!\brief WRT_SOL_FREQ
    *  \n DESCRIPTION: Writing solution file frequency  \ingroup Config*/
   addUnsignedLongOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);

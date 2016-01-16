@@ -63,6 +63,10 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   if (Kind_Solver == POISSON_EQUATION)
     filename = config->GetStructure_FileName().c_str();
+
+  if (config->GetKind_SU2() == SU2_DOT){
+    filename = config->GetVolSens_FileName().c_str();
+  }
   
   strcpy (cstr, filename.c_str());
   
@@ -151,7 +155,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
    be provided here, and its values must be written in the variables
    section below (typically padded with zeros.) ---*/
   
-  if (config->GetKind_SU2() == SU2_SOL) {
+  if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
     
     /*--- If SU2_SOL called this routine, we already have a set of output
      variables with the appropriate string tags stored in the config class. ---*/
@@ -257,7 +261,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
     FieldView_File << "Nodes\t" << nGlobal_Poin << endl;
 
     for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (config->GetKind_SU2() != SU2_SOL) {
+      if ((config->GetKind_SU2() != SU2_SOL) && (config->GetKind_SU2() != SU2_DOT)) {
         for (iDim = 0; iDim < nDim; iDim++)
           FieldView_File << scientific << Coords[iDim][iPoint] << "\t";
       }
@@ -275,7 +279,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
     FieldView_File << "Nodes\t" << nGlobal_Poin*2 << endl;
 
     for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (config->GetKind_SU2() != SU2_SOL) {
+      if ((config->GetKind_SU2() != SU2_SOL) && (config->GetKind_SU2() != SU2_DOT)) {
         for (iDim = 0; iDim < nDim; iDim++)
           FieldView_File << scientific << Coords[iDim][iPoint] << "\t";
       }
@@ -286,7 +290,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
       FieldView_File << scientific << "0.0" << endl;
     }
     for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-      if (config->GetKind_SU2() != SU2_SOL) {
+      if ((config->GetKind_SU2() != SU2_SOL) && (config->GetKind_SU2() != SU2_DOT)) {
         for (iDim = 0; iDim < nDim; iDim++)
           FieldView_File << scientific << Coords[iDim][iPoint] << "\t";
       }
@@ -431,7 +435,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   /*--- Loop over the vars/residuals and write the values to file ---*/
   
-  if (config->GetKind_SU2() != SU2_SOL) {
+  if ((config->GetKind_SU2() != SU2_SOL) && (config->GetKind_SU2() != SU2_DOT)) {
     for (iVar = 0; iVar < nvars; iVar++) {
       for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
         FieldView_File << scientific << Data[iVar][iPoint] << endl;

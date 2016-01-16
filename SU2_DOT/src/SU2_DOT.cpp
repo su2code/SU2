@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
   geometry_container[ZONE_0]->SetPoint_Connectivity();
-  
+
   /*--- Check the orientation before computing geometrical quantities ---*/
   
   if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
@@ -162,6 +162,9 @@ int main(int argc, char *argv[]) {
 
     if (rank == MASTER_NODE) cout << "Setting mesh sensitivity." << endl;
     mesh_movement->SetVolume_Deformation(geometry_container[ZONE_0], config_container[ZONE_0], false, true);
+
+    COutput *output = new COutput();
+    output->SetSensitivity_Files(geometry_container, config_container, nZone);
   }
   
 	/*--- Definition of the Class for surface deformation ---*/
@@ -477,8 +480,8 @@ void SetProjection_Continuous(CGeometry *geometry, CConfig *config, CSurfaceMove
 
 void SetProjection_Discrete(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file){
 
-  su2double DV_Value, *VarCoord, Sensitivity, **Gradient;
-  unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value, my_Gradient;
+  su2double DV_Value, *VarCoord, Sensitivity, **Gradient, my_Gradient;
+  unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value;
   unsigned long iVertex, nVertex, iPoint;
 
   int rank = MASTER_NODE;
