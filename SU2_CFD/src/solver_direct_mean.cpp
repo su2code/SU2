@@ -8541,6 +8541,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   Pressure, Density, Energy, *Flow_Dir, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
   alpha, aa, bb, cc, dd, Area, UnitNormal[3];
   su2double *V_inlet, *V_domain;
+	su2double Coord[3];
   
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement        = config->GetGrid_Movement();
@@ -8571,7 +8572,12 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     
     if (geometry->node[iPoint]->GetDomain()) {
       
-      /*--- Index of the closest interior node ---*/
+			/*--- Get the coordinates of the node ---*/
+			
+			for (iDim = 0; iDim < nDim; iDim++)
+			Coord[iDim] = geometry->node[iPoint]->GetCoord(iDim);
+			
+			/*--- Index of the closest interior node ---*/
       
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
