@@ -329,6 +329,7 @@ private:
   Kind_DiscAdj_Linear_Prec,  /*!< \brief Preconditioner of the discrete adjoint linear solver. */
 	Kind_SlopeLimit,				/*!< \brief Global slope limiter. */
 	Kind_SlopeLimit_Flow,		/*!< \brief Slope limiter for flow equations.*/
+    Kind_OptProblem,            /*!< \brief Type of Optimization problem (eg. shape or flow control).*/
 	Kind_SlopeLimit_Turb,		/*!< \brief Slope limiter for the turbulence equation.*/
 	Kind_SlopeLimit_AdjLevelSet,		/*!< \brief Slope limiter for the adjoint level set equation.*/
 	Kind_SlopeLimit_AdjTurb,	/*!< \brief Slope limiter for the adjoint turbulent equation.*/
@@ -3112,6 +3113,14 @@ public:
 	 * \return Method for limiting the spatial gradients solving the flow equations.
 	 */
 	unsigned short GetKind_SlopeLimit_Flow(void);
+
+
+    /*!
+     * \brief Get the type of optimization problem
+     * \return  the type of optimization problem
+     */
+    unsigned short GetKind_Opt_Problem(void);
+
 
   /*!
 	 * \brief Get the method for limiting the spatial gradients.

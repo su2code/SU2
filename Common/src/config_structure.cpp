@@ -685,6 +685,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
+
+  /*!\brief OPT_PROBLEM_TYPE
+   *  \n DESCRIPTION: Type of Design Probelm \n OPTIONS: See \link OptProblem_Type  \endlink \n DEFAULT: SHAPE_OPT  \ingroup Config*/
+  addEnumOption("OPT_PROBLEM_TYPE", Kind_OptProblem, OptProblem_Map, SHAPE_OPT);
+
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /*!\brief AD_COEFF_FLOW \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients \ingroup Config*/
   addDoubleArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
