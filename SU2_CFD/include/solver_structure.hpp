@@ -7393,7 +7393,7 @@ private:
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
   su2double Mach, Alpha, Beta, Pressure, Temperature;
   unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
-
+  su2double **Total_Sens_FlowParam, **Total_Sens_FlowDir;
 public:
 
   /*!
