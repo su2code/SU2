@@ -104,7 +104,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
       case INLET_FLOW:
         solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        break;
+        break;   
+      case INLET_FLOW_UNST:
+      solver_container[MainSolver]->BC_Inlet_Unst(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+      break;
       case SUPERSONIC_INLET:
         solver_container[MainSolver]->BC_Supersonic_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;

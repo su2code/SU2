@@ -817,6 +817,8 @@ inline unsigned short CConfig::GetMarker_All_Moving(unsigned short val_marker) {
 
 inline unsigned short CConfig::GetnMarker_All(void) { return nMarker_All; }
 
+inline unsigned short CConfig::GetnMarker_InletUnst(void) { return nMarker_InletUnst; }
+
 inline unsigned short CConfig::GetnMarker_Max(void) { return nMarker_Max; }
 
 inline unsigned short CConfig::GetnMarker_EngineInflow(void) {	return nMarker_EngineInflow; }

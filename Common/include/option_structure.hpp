@@ -668,6 +668,7 @@ enum BC_TYPE {
   LOAD_DIR_BOUNDARY = 35,		/*!< \brief Boundary Load definition. */
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
   NRBC_BOUNDARY= 37,   /*!< \brief NRBC Boundary definition. */
+  INLET_FLOW_UNST = 38,   /*!< \brief Boundary inlet flow definition for UNSTEADY flow actuation. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 
@@ -2282,6 +2283,99 @@ public:
     this->size = 0; // There is no default value for list
   }
 };
+
+
+class COptionInletUnst : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker;
+  su2double * & rho;
+  su2double ** & flowparam;
+  su2double ** & flowdir;
+
+public:
+  COptionInletUnst(string option_field_name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, su2double* & Rho, su2double** & FlowParam, su2double** & FlowDir) : size(nMarker_Inlet), marker(Marker_Inlet), rho(Rho), flowparam(FlowParam), flowdir(FlowDir) {
+    this->name = option_field_name;
+  }
+
+  ~COptionInletUnst() {};
+  string SetValue(vector<string> option_value) {
+
+    unsigned short totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->size = 0;
+      this->marker = NULL;
+      this->rho = NULL;
+      this->flowparam = NULL;
+      this->flowdir = NULL;
+      return "";
+    }
+
+    if (totalVals % 7 != 0) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 7");
+      this->size = 0;
+      this->marker = NULL;
+      this->rho = NULL;
+      this->flowparam = NULL;
+      this->flowdir = NULL;
+      return newstring;
+    }
+
+    unsigned short nVals = totalVals / 7;
+    this->size = nVals;
+    this->marker = new string[nVals];
+    this->rho = new su2double[nVals];
+    this->flowparam = new su2double*[nVals];
+    this->flowdir = new su2double*[nVals];
+    for (unsigned long i = 0; i < nVals; i++) {
+      this->flowdir[i] = new su2double[2];
+      this->flowparam[i] = new su2double[3];
+    }
+
+    for (unsigned long i = 0; i < nVals; i++) {
+      this->marker[i].assign(option_value[7*i]);
+      istringstream ss_1st(option_value[7*i + 1]);
+      if (!(ss_1st >> this->rho[i])) {
+        return badValue(option_value, "inlet", this->name);
+      }
+
+      istringstream ss_2nd(option_value[7*i + 2]);
+      if (!(ss_2nd >> this->flowparam[i][0])) {
+        return badValue(option_value, "inlet", this->name);
+      }
+      istringstream ss_3rd(option_value[7*i + 3]);
+      if (!(ss_3rd >> this->flowparam [i][1])) {
+        return badValue(option_value, "inlet", this->name);
+      }
+      istringstream ss_4th(option_value[7*i + 4]);
+      if (!(ss_4th >> this->flowparam [i][2])) {
+        return badValue(option_value, "inlet", this->name);
+      }
+
+      istringstream ss_5th(option_value[7*i + 5]);
+      if (!(ss_5th >> this->flowdir[i][0])) {
+        return badValue(option_value, "inlet", this->name);
+      }
+      istringstream ss_6th(option_value[7*i + 6]);
+      if (!(ss_6th >> this->flowdir[i][1])) {
+        return badValue(option_value, "inlet", this->name);
+      }
+    }
+
+    return "";
+  }
+
+  void SetDefault() {
+    this->marker = NULL;
+    this->rho = NULL;
+    this->flowparam = NULL;
+    this->flowdir = NULL;
+    this->size = 0; // There is no default value for list
+  }
+};
+
 
 template <class Tenum>
 class COptionRiemann : public COptionBase{

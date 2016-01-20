@@ -533,7 +533,10 @@ inline void CSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_cont
 
 inline void CSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										 CConfig *config, unsigned short val_marker) { }
-                     
+
+inline void CSolver::BC_Inlet_Unst(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                                         CConfig *config, unsigned short val_marker) { }
+
 inline void CSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										  CConfig *config, unsigned short val_marker) { }
                       

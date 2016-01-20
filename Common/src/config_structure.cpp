@@ -433,6 +433,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    a unit vector. \ingroup Config*/
   addInletOption("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
 
+
+  /*!\brief MARKER_INLET  \n DESCRIPTION: Inlet boundary marker(s) for UNSTEADY flow actuaion with the following formats,
+   Total Conditions: (inlet marker, inlet density, actuation parameters, flow_angles ... ) where flow_angles is
+   a unit vector wrt averaged surface normal of a given inlet.
+  */
+  addInletUnstOption("MARKER_INLET_UNST", nMarker_InletUnst, Marker_InletUnst, Inlet_RhoUnst, Inlet_FlowParamUnst, Inlet_FlowDirUnst);
+
   /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector.
    * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
@@ -2511,7 +2518,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir +
-  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
+  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D + nMarker_InletUnst;
   
   /*--- Add the possible send/receive domains ---*/
 
@@ -2648,6 +2655,13 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_KindBC[iMarker_CfgFile] = INLET_FLOW;
     iMarker_CfgFile++;
   }
+
+  for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_InletUnst; iMarker_Inlet++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_InletUnst[iMarker_Inlet];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = INLET_FLOW_UNST;
+    iMarker_CfgFile++;
+  }
+
 
   for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Riemann[iMarker_Riemann];
@@ -4951,11 +4965,27 @@ su2double CConfig::GetInlet_Ttotal(string val_marker) {
   return Inlet_Ttotal[iMarker_Inlet];
 }
 
+su2double CConfig::GetInlet_RhoUnst(string val_marker) {
+  unsigned short iMarker_Inlet;
+  for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_InletUnst; iMarker_Inlet++)
+    if (Marker_InletUnst[iMarker_Inlet] == val_marker) break;
+  return Inlet_RhoUnst[iMarker_Inlet];
+}
+
+
 su2double CConfig::GetInlet_Ptotal(string val_marker) {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
   return Inlet_Ptotal[iMarker_Inlet];
+}
+
+
+su2double* CConfig::GetInlet_FlowParamUnst(string val_marker) {
+  unsigned short iMarker_Inlet;
+  for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_InletUnst; iMarker_Inlet++)
+    if (Marker_InletUnst[iMarker_Inlet] == val_marker) break;
+  return Inlet_FlowParamUnst[iMarker_Inlet];
 }
 
 su2double* CConfig::GetInlet_FlowDir(string val_marker) {
@@ -4964,6 +4994,14 @@ su2double* CConfig::GetInlet_FlowDir(string val_marker) {
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
   return Inlet_FlowDir[iMarker_Inlet];
 }
+
+su2double* CConfig::GetInlet_FlowDirUnst(string val_marker) {
+  unsigned short iMarker_Inlet;
+  for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_InletUnst; iMarker_Inlet++)
+    if (Marker_InletUnst[iMarker_Inlet] == val_marker) break;
+  return Inlet_FlowDirUnst[iMarker_Inlet];
+}
+
 
 su2double CConfig::GetInlet_Temperature(string val_marker) {
   unsigned short iMarker_Supersonic_Inlet;
