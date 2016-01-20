@@ -645,6 +645,8 @@ inline unsigned short CConfig::GetKind_SlopeLimit(void) { return Kind_SlopeLimit
 
 inline unsigned short CConfig::GetKind_SlopeLimit_Flow(void) { return Kind_SlopeLimit_Flow; }
 
+inline unsigned short CConfig::GetKind_Opt_Problem(void) { return  Kind_OptProblem; }
+
 inline unsigned short CConfig::GetKind_SlopeLimit_Turb(void) { return Kind_SlopeLimit_Turb; }
 
 inline unsigned short CConfig::GetKind_SlopeLimit_AdjLevelSet(void) { return Kind_SlopeLimit_AdjLevelSet; }
