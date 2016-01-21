@@ -946,8 +946,6 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
 	bool incremental_load = config_container[val_iZone]->GetIncrementalLoad();							// If an incremental load is applied
 
-	/*--- TODO: Convergence only checked for val_iZone ---*/
-
 	/*--- This is to prevent problems when running a linear solver ---*/
 	if (!nonlinear) incremental_load = false;
 

@@ -41,7 +41,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 	Total_CFEA = 0.0;
 	WAitken_Dyn = 0.0;
 	WAitken_Dyn_tn1 = 0.0;
-	loadIncrement = 0.0;
+	loadIncrement = 1.0;
 
 	element_container = NULL;
 	node = NULL;
@@ -1792,9 +1792,13 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
 	bool first_iter = (config->GetIntIter() == 0);
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);		// Nonlinear analysis.
 
-	su2double solNorm = 0.0;
+	su2double solNorm = 0.0, solNorm_recv = 0.0;
 
-	// TODO: Check communication here to ensure the residuals are the same
+    int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
 	if (nonlinear_analysis){
 
@@ -1821,11 +1825,22 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
 					solNorm += node[iPoint]->GetSolution(iVar) * node[iPoint]->GetSolution(iVar);
 				}
 			}
-			Conv_Ref[0] = max(sqrt(solNorm), EPS);							// Norm of the solution vector
+
+			// We need to communicate the norm of the solution and compute the RMS throughout the different processors
+
+			#ifdef HAVE_MPI
+					/*--- We sum the squares of the norms across the different processors ---*/
+					SU2_MPI::Allreduce(&solNorm, &solNorm_recv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+			#else
+					solNorm_recv         = solNorm;
+			#endif
+
+			Conv_Ref[0] = max(sqrt(solNorm_recv), EPS);						// Norm of the solution vector
 
 			Conv_Check[0] = LinSysSol.norm() / Conv_Ref[0];					// Norm of the delta-solution vector
 			Conv_Check[1] = LinSysRes.norm() / Conv_Ref[1];					// Norm of the residual
 			Conv_Check[2] = dotProd(LinSysSol, LinSysRes) / Conv_Ref[2];	// Position for the energy tolerance
+
 		}
 
 		/*--- MPI solution ---*/
@@ -1891,11 +1906,15 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
 
 	su2double TotalLoad;
 
-  bool Gradual_Load = config->GetGradual_Load();
+	bool Sigmoid_Load = config->GetSigmoid_Load();
+	su2double Sigmoid_Time = config->GetSigmoid_Time();
+	su2double Sigmoid_K = config->GetSigmoid_K();
+	su2double SigAux = 0.0;
+
 	su2double CurrentTime=config->GetCurrent_DynTime();
 	su2double ModAmpl, NonModAmpl;
 
-  bool Ramp_Load = config->GetRamp_Load();
+	bool Ramp_Load = config->GetRamp_Load();
 	su2double Ramp_Time = config->GetRamp_Time();
 
 	if (Ramp_Load){
@@ -1903,8 +1922,11 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
 		NonModAmpl=LoadDirVal*LoadDirMult;
 		TotalLoad=min(ModAmpl,NonModAmpl);
 	}
-	else if (Gradual_Load){
-		ModAmpl=2*((1/(1+exp(-1*CurrentTime)))-0.5);
+	else if (Sigmoid_Load){
+		SigAux = CurrentTime/ Sigmoid_Time;
+		ModAmpl = (1 / (1+exp(-1*Sigmoid_K*(SigAux - 0.5)) ) );
+		ModAmpl = max(ModAmpl,0.0);
+		ModAmpl = min(ModAmpl,1.0);
 		TotalLoad=ModAmpl*LoadDirVal*LoadDirMult;
 	}
 	else{
@@ -3268,9 +3290,14 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 	su2double Static_Time=fea_config->GetStatic_Time();
 	su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn;
 
+	int rank = MASTER_NODE;
+	#ifdef HAVE_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+
     ofstream historyFile_FSI;
 	bool writeHistFSI = fea_config->GetWrite_Conv_FSI();
-	if (writeHistFSI){
+	if (writeHistFSI && (rank == MASTER_NODE)){
 		char cstrFSI[200];
 		string filenameHistFSI = fea_config->GetConv_FileName_FSI();
 		strcpy (cstrFSI, filenameHistFSI.data());
@@ -3293,7 +3320,7 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 			WAitkDyn = max(WAitkDyn, 0.1);
 
 			SetWAitken_Dyn(WAitkDyn);
-			if (writeHistFSI){
+			if (writeHistFSI && (rank == MASTER_NODE)){
 				historyFile_FSI << " " << endl ;
 				historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
 				historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
@@ -3337,17 +3364,17 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 
 				WAitkDyn = GetWAitken_Dyn();
 
-			//TODO: double check this.
-			if (rbuf_denAitk > 1E-8){
-				WAitkDyn = - 1.0 * WAitkDyn * rbuf_numAitk / rbuf_denAitk ;
-			}
+				//TODO: double check this.
+				if (rbuf_denAitk > 1E-15){
+					WAitkDyn = - 1.0 * WAitkDyn * rbuf_numAitk / rbuf_denAitk ;
+				}
 
 				WAitkDyn = max(WAitkDyn, 0.1);
 				WAitkDyn = min(WAitkDyn, 1.0);
 
 				SetWAitken_Dyn(WAitkDyn);
 
-				if (writeHistFSI){
+				if (writeHistFSI && (rank == MASTER_NODE)){
 					historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
 					historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
 					historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn << "," ;
@@ -3357,7 +3384,7 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 
 	}
 
-	if (writeHistFSI){historyFile_FSI.close();}
+	if (writeHistFSI && (rank == MASTER_NODE)){historyFile_FSI.close();}
 
 }
 
