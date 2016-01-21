@@ -313,7 +313,7 @@ int main(int argc, char *argv[]) {
   
   ofstream historyFile_FSI;
   bool writeHistFSI = config_container[ZONE_0]->GetWrite_Conv_FSI();
-  if (writeHistFSI){
+  if (writeHistFSI && (rank == MASTER_NODE)){
     char cstrFSI[200];
     string filenameHistFSI = config_container[ZONE_0]->GetConv_FileName_FSI();
     strcpy (cstrFSI, filenameHistFSI.data());
@@ -376,18 +376,18 @@ int main(int argc, char *argv[]) {
     runtime->SetExtIter(ExtIter);
     
 	/*--- Update the convergence history file (serial and parallel computations). ---*/
-	if (fsi){
-		if (rank == MASTER_NODE) cout << "---------------------------------------------------------------------------" << endl;
-		for (iZone = 0; iZone < nZone; iZone++){
-			if (iZone == 0 && rank == MASTER_NODE) cout << "Fluid convergence: " << endl;
-			else if (iZone == 1 && rank == MASTER_NODE) cout << "Structural convergence: " << endl;
-			output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
-					config_container, integration_container, false, UsedTime, iZone);
-		}
-
-		if (rank == MASTER_NODE)cout << "---------------------------------------------------------------------------" << endl;
-	}
-	else {
+//	if (fsi){
+//		if (rank == MASTER_NODE) cout << "---------------------------------------------------------------------------" << endl;
+//		for (iZone = 0; iZone < nZone; iZone++){
+//			if (iZone == 0 && rank == MASTER_NODE) cout << "Fluid convergence: " << endl;
+//			else if (iZone == 1 && rank == MASTER_NODE) cout << "Structural convergence: " << endl;
+//			output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+//					config_container, integration_container, false, UsedTime, iZone);
+//		}
+//
+//		if (rank == MASTER_NODE)cout << "---------------------------------------------------------------------------" << endl;
+//	}
+	if (!fsi){
 		output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
 				config_container, integration_container, false, UsedTime, ZONE_0);
 

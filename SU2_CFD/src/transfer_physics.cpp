@@ -84,11 +84,25 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 	bool Ramp_Load = struct_config->GetRamp_Load();
 	su2double Ramp_Time = struct_config->GetRamp_Time();
 
+    bool Sigmoid_Load = struct_config->GetSigmoid_Load();
+	su2double Sigmoid_Time = struct_config->GetSigmoid_Time();
+	su2double Sigmoid_K = struct_config->GetSigmoid_K();
+	su2double SigAux = 0.0;
+
 	if (CurrentTime <= Static_Time){ ModAmpl=0.0; }
 	else if((CurrentTime > Static_Time) &&
 			(CurrentTime <= (Static_Time + Ramp_Time)) &&
 			(Ramp_Load)){
 		ModAmpl = (CurrentTime-Static_Time) / Ramp_Time;
+		ModAmpl = max(ModAmpl,0.0);
+		ModAmpl = min(ModAmpl,1.0);
+		Physical_Constants[1] = ModAmpl;
+	}
+	else if((CurrentTime > Static_Time) &&
+			(CurrentTime <= (Static_Time + Sigmoid_Time)) &&
+			(Sigmoid_Load)){
+		SigAux = (CurrentTime-Static_Time) / Sigmoid_Time;
+		ModAmpl = (1 / (1+exp(-1*Sigmoid_K*(SigAux - 0.5)) ) );
 		ModAmpl = max(ModAmpl,0.0);
 		ModAmpl = min(ModAmpl,1.0);
 		Physical_Constants[1] = ModAmpl;
@@ -238,12 +252,12 @@ void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_soluti
 		Donor_Variable[iVar] = DisplacementDonor[iVar] - DisplacementDonor_Prev[iVar];
 	}
 
-	if (Point_Struct == 15){
-		cout << "-------------------------------NODE 15: -----------------------------------------" << endl;
-		cout << "Displacement: " << Displacement[0] << " , " << Displacement[1] << endl;
-		cout << "DisplacementDonor: " << DisplacementDonor[0] << " , " << DisplacementDonor[1] << endl;
-		cout << "DisplacementDonor_Prev: " << DisplacementDonor_Prev[0] << " , " << DisplacementDonor_Prev[1] << endl;
- 	}
+//	if (Point_Struct == 15){
+//		cout << "-------------------------------NODE 15: -----------------------------------------" << endl;
+//		cout << "Displacement: " << Displacement[0] << " , " << Displacement[1] << endl;
+//		cout << "DisplacementDonor: " << DisplacementDonor[0] << " , " << DisplacementDonor[1] << endl;
+//		cout << "DisplacementDonor_Prev: " << DisplacementDonor_Prev[0] << " , " << DisplacementDonor_Prev[1] << endl;
+// 	}
 
 }
 

@@ -1154,11 +1154,15 @@ inline unsigned short CConfig::GetnIntCoeffs(void) { return nIntCoeffs; }
 
 inline su2double CConfig::Get_Int_Coeffs(unsigned short val_coeff) { return Int_Coeffs[val_coeff]; }
 
-inline bool CConfig::GetGradual_Load(void) { return Gradual_Load; }
+inline bool CConfig::GetSigmoid_Load(void) { return Sigmoid_Load; }
 
 inline bool CConfig::GetRamp_Load(void) { return Ramp_Load; }
 
 inline su2double CConfig::GetRamp_Time(void) { return Ramp_Time; }
+
+inline su2double CConfig::GetSigmoid_Time(void) { return Sigmoid_Time; }
+
+inline su2double CConfig::GetSigmoid_K(void) { return Sigmoid_K; }
 
 inline su2double CConfig::GetStatic_Time(void) { return Static_Time; }
 

@@ -4157,6 +4157,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool fem = (config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY);					// FEM structural solver.
 	bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
 	bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
+
+    bool fsi = (config[val_iZone]->GetFSI_Simulation());					// FEM structural solver.
     
     bool turbo = config[val_iZone]->GetBoolTurboPerf();
     string inMarker_Tag, outMarker_Tag;
@@ -5027,7 +5029,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
         }
 	   }
-       else if (fem){
+       else if (fem && !fsi){
     		if (dynamic){
     			cout << endl << "Simulation time: " << config[val_iZone]->GetCurrent_DynTime() << ". Time step: " << config[val_iZone]->GetDelta_DynTime() << ".";
     		}
@@ -5174,14 +5176,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
           case FEM_ELASTICITY :
             if (!nonlinear_analysis) cout << endl << " Iter" << "    Time(s)";
-            else cout << endl << " IntIter" << "  ExtIter";
+            else cout << endl << " IntIter" << " ExtIter";
 
             if (linear_analysis){
                 if (nDim == 2) cout << "    Res[Displx]" << "    Res[Disply]" << "   CFEM(Total)"<<  endl;
                 if (nDim == 3) cout << "    Res[Displx]" << "    Res[Disply]" << "    Res[Displz]" << "   CFEM(Total)"<<  endl;
             }
             else if (nonlinear_analysis){
-                cout << "     Res[UTOL]" << "      Res[RTOL]" << "      Res[ETOL]"  << "   CFEM(Total)"<<  endl;
+                cout << "      Res[UTOL]" << "      Res[RTOL]" << "      Res[ETOL]"  << "   CFEM(Total)"<<  endl;
             }
            break;
 

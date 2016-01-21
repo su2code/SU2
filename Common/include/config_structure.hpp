@@ -684,12 +684,14 @@ private:
   Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
   unsigned short nIntCoeffs;	/*!< \brief Number of integration coeffs for structural calculations. */
   su2double *Int_Coeffs;		/*!< \brief Time integration coefficients for structural method. */
-  bool Gradual_Load,		/*!< \brief Apply the load gradually. */
+  bool Sigmoid_Load,		/*!< \brief Apply the load using a sigmoid. */
   Ramp_Load;				/*!< \brief Apply the load with linear increases. */
   bool IncrementalLoad;		/*!< \brief Apply the load in increments (for nonlinear structural analysis). */
   unsigned long IncLoad_Nincrements; /*!< \brief Number of increments. */
   su2double *IncLoad_Criteria;	/*!< \brief Criteria for the application of incremental loading. */
   su2double Ramp_Time;			/*!< \brief Time until the maximum load is applied. */
+  su2double Sigmoid_Time;			/*!< \brief Time until the maximum load is applied, using a sigmoid. */
+  su2double Sigmoid_K;			/*!< \brief Sigmoid parameter determining its steepness. */
   su2double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
@@ -5373,7 +5375,7 @@ public:
 	 * \brief Check if the user wants to apply the load gradually.
 	 * \return 	<code>TRUE</code> means that the load is to be applied gradually.
 	 */
-	 bool GetGradual_Load(void);
+	 bool GetSigmoid_Load(void);
 
 	/*!
 	 * \brief Check if the user wants to apply the load as a ramp.
@@ -5386,6 +5388,18 @@ public:
 	 * \return 	Value of the max time while the load is linearly increased
 	 */
 	 su2double GetRamp_Time(void);
+
+	/*!
+	 * \brief Get the maximum time of the sigmoid.
+	 * \return 	Value of the max time while the load is increased using a sigmoid
+	 */
+	 su2double GetSigmoid_Time(void);
+
+	/*!
+	 * \brief Get the sigmoid parameter.
+	 * \return 	Parameter of steepness of the sigmoid
+	 */
+	 su2double GetSigmoid_K(void);
 
 	/*!
 	 * \brief Get the maximum time of the ramp.
