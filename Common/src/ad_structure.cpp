@@ -54,63 +54,63 @@ namespace AD {
       unsigned short nVarOut, nVarIn;
       int index_out, index_in;
 
-      nVarOut = localOutputValues.size();
-      nVarIn  = localInputValues.size();
+//      nVarOut = localOutputValues.size();
+//      nVarIn  = localInputValues.size();
 
-      /*--- Store the current position of the tape ---*/
+//      /*--- Store the current position of the tape ---*/
 
-      EndPosition = globalTape.getPosition();
+//      EndPosition = globalTape.getPosition();
 
-      /*--- Allocate local memory on the stack (does not need to be deleted at the end of the routine!) ---*/
+//      /*--- Allocate local memory on the stack (does not need to be deleted at the end of the routine!) ---*/
 
-      double* local_jacobi     = (double*)alloca(sizeof(double)*(nVarOut*nVarIn));
-      unsigned short* nNonzero = (unsigned short*)alloca(sizeof(unsigned short)*nVarOut);
+//      double* local_jacobi     = (double*)alloca(sizeof(double)*(nVarOut*nVarIn));
+//      unsigned short* nNonzero = (unsigned short*)alloca(sizeof(unsigned short)*nVarOut);
 
-      /*--- Compute the local Jacobi matrix of the code between the start and end position
-       * using the inputs and outputs declared with StartPreacc(...)/EndPreacc(...) ---*/
+//      /*--- Compute the local Jacobi matrix of the code between the start and end position
+//       * using the inputs and outputs declared with StartPreacc(...)/EndPreacc(...) ---*/
 
-      for (iVarOut = 0; iVarOut < nVarOut; iVarOut++){
-        nNonzero[iVarOut] = 0;
-        index_out = localOutputValues[iVarOut]->getGradientData();
+//      for (iVarOut = 0; iVarOut < nVarOut; iVarOut++){
+//        nNonzero[iVarOut] = 0;
+//        index_out = localOutputValues[iVarOut]->getGradientData();
 
-        globalTape.setGradient(index_out, 1.0);
-        globalTape.evaluate(EndPosition, StartPosition);
+//        globalTape.setGradient(index_out, 1.0);
+//        globalTape.evaluate(EndPosition, StartPosition);
 
-        for (iVarIn= 0; iVarIn < nVarIn; iVarIn++){
-          index_in =  localInputValues[iVarIn];
-          local_jacobi[iVarOut*nVarIn+iVarIn] = globalTape.getGradient(index_in);
-          if (local_jacobi[iVarOut*nVarIn+iVarIn] != 0.0){
-            nNonzero[iVarOut]++;
-          }
-          globalTape.setGradient(index_in, 0.0);
-        }
-        globalTape.setGradient(index_out, 0.0);
-        globalTape.clearAdjoints(EndPosition, StartPosition);
-      }
+//        for (iVarIn= 0; iVarIn < nVarIn; iVarIn++){
+//          index_in =  localInputValues[iVarIn];
+//          local_jacobi[iVarOut*nVarIn+iVarIn] = globalTape.getGradient(index_in);
+//          if (local_jacobi[iVarOut*nVarIn+iVarIn] != 0.0){
+//            nNonzero[iVarOut]++;
+//          }
+//          globalTape.setGradient(index_in, 0.0);
+//        }
+//        globalTape.setGradient(index_out, 0.0);
+//        globalTape.clearAdjoints(EndPosition, StartPosition);
+//      }
 
-      /*--- Reset the tape to the starting position (to reuse the part of the tape) ---*/
+//      /*--- Reset the tape to the starting position (to reuse the part of the tape) ---*/
 
-      if (nVarOut > 0){
-        globalTape.reset(StartPosition);
-      }
+//      if (nVarOut > 0){
+//        globalTape.reset(StartPosition);
+//      }
 
-      /*--- For each output create a statement on the tape and push the corresponding Jacobi entries.
-       * Note that the output variables need a new index since we did a reset of the tape section. ---*/
+//      /*--- For each output create a statement on the tape and push the corresponding Jacobi entries.
+//       * Note that the output variables need a new index since we did a reset of the tape section. ---*/
 
-      for (iVarOut = 0; iVarOut < nVarOut; iVarOut++){
-        index_out = 0;
-        if (nNonzero[iVarOut] != 0){
-          globalTape.store(index_out, nNonzero[iVarOut]);
-          for (iVarIn = 0; iVarIn < nVarIn; iVarIn++){
-            index_in =  localInputValues[iVarIn];
-           globalTape.pushJacobi(local_jacobi[iVarOut*nVarIn+iVarIn],
-               local_jacobi[iVarOut*nVarIn+iVarIn], local_jacobi[iVarOut*nVarIn+iVarIn], index_in);
-          }
-        }
-        localOutputValues[iVarOut]->getGradientData() = index_out;
-      }
+//      for (iVarOut = 0; iVarOut < nVarOut; iVarOut++){
+//        index_out = 0;
+//        if (nNonzero[iVarOut] != 0){
+//          globalTape.store(index_out, nNonzero[iVarOut]);
+//          for (iVarIn = 0; iVarIn < nVarIn; iVarIn++){
+//            index_in =  localInputValues[iVarIn];
+//           globalTape.pushJacobi(local_jacobi[iVarOut*nVarIn+iVarIn],
+//               local_jacobi[iVarOut*nVarIn+iVarIn], local_jacobi[iVarOut*nVarIn+iVarIn], index_in);
+//          }
+//        }
+//        localOutputValues[iVarOut]->getGradientData() = index_out;
+//      }
 
-      /* --- Clear local vectors and reset indicator ---*/
+//      /* --- Clear local vectors and reset indicator ---*/
 
       localInputValues.clear();
       localOutputValues.clear();

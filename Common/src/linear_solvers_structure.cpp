@@ -613,19 +613,19 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
 
   bool TapeActive = NO;
 
-  if (config->GetDiscrete_Adjoint()){
-#ifdef CODI_REVERSE_TYPE
+//  if (config->GetDiscrete_Adjoint()){
+//#ifdef CODI_REVERSE_TYPE
 
-   /*--- Check whether the tape is active, i.e. if it is recording and store the status ---*/
+//   /*--- Check whether the tape is active, i.e. if it is recording and store the status ---*/
 
-    TapeActive = AD::globalTape.isActive();
+//    TapeActive = AD::globalTape.isActive();
 
 
-    /*--- Stop the recording for the linear solver ---*/
+//    /*--- Stop the recording for the linear solver ---*/
 
-    AD::StopRecording();
-#endif
-  }
+//    AD::StopRecording();
+//#endif
+//  }
 
   /*--- Solve the linear system using a Krylov subspace method ---*/
   
@@ -714,16 +714,16 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   }
 
 
-  if(TapeActive){
+//  if(TapeActive){
 
-    /*--- Prepare the externally differentiated linear solver ---*/
+//    /*--- Prepare the externally differentiated linear solver ---*/
 
-    SetExternalSolve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+//    SetExternalSolve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
-    /*--- Start recording if it was stopped for the linear solver ---*/
+//    /*--- Start recording if it was stopped for the linear solver ---*/
 
-    AD::StartRecording();
-  }
+//    AD::StartRecording();
+//  }
 
   return IterLinSol;
   
