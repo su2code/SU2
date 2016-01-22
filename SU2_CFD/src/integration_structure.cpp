@@ -820,7 +820,7 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
 	su2double Static_Time=fea_config->GetStatic_Time();
     su2double deltaU, deltaURad, deltaURes, deltaURes_recv = 0.0;
 
-   	magResidualFSI_criteria = fea_config->GetOrderMagResidualFSI();
+   	magResidualFSI_criteria = -1*fea_config->GetOrderMagResidualFSI();
    	logResidualFSI_criteria = fea_config->GetMinLogResidualFSI();
 
     deltaURes = 0.0;
@@ -900,14 +900,14 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
 			logResidualFSI_initial = log10(FEA_check[0]);
 			logResidualFSI = log10(deltaURes_recv);
 
-			magResidualFSI=fabs(logResidualFSI-logResidualFSI_initial);
+			magResidualFSI=logResidualFSI-logResidualFSI_initial;
 
 			if (writeHistFSI && (rank == MASTER_NODE)){
 			historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI << "," ;
 			historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << magResidualFSI ;
 			}
 
-			if ((logResidualFSI < logResidualFSI_criteria) || (magResidualFSI > magResidualFSI_criteria)) Convergence_FSI = true;
+			if ((logResidualFSI < logResidualFSI_criteria) || (magResidualFSI < magResidualFSI_criteria)) Convergence_FSI = true;
 		}
 
 		if (writeHistFSI && (rank == MASTER_NODE)){ historyFile_FSI << endl;}
@@ -949,7 +949,7 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
 
     unsigned long nFSIIter = fea_config->GetnIterFSI();
 
-    if ((Convergence_FSI) || (iFSIIter == (nFSIIter - 1))){
+    if (rank == MASTER_NODE){
 
         su2double WAitken;
         unsigned short RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
@@ -977,7 +977,9 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
         cout.width(8); cout << iFSIIter;
         cout.width(8); cout << iExtIter;
         cout.width(15); cout << WAitken;
-        cout.width(15); cout << logResidualFSI;
+        cout.width(15);
+        if (iFSIIter == 1) cout << logResidualFSI_initial;
+        else cout << logResidualFSI;
         cout.width(15); cout << magResidualFSI;
     	cout << endl << "------------------------------------------------------------------------- ";
     	cout << endl;

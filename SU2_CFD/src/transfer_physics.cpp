@@ -252,12 +252,6 @@ void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_soluti
 		Donor_Variable[iVar] = DisplacementDonor[iVar] - DisplacementDonor_Prev[iVar];
 	}
 
-//	if (Point_Struct == 15){
-//		cout << "-------------------------------NODE 15: -----------------------------------------" << endl;
-//		cout << "Displacement: " << Displacement[0] << " , " << Displacement[1] << endl;
-//		cout << "DisplacementDonor: " << DisplacementDonor[0] << " , " << DisplacementDonor[1] << endl;
-//		cout << "DisplacementDonor_Prev: " << DisplacementDonor_Prev[0] << " , " << DisplacementDonor_Prev[1] << endl;
-// 	}
 
 }
 
