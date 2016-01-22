@@ -4516,6 +4516,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   case D_DESIGN:
                     cout << "Design Variables." << endl;
                     break;
+                  case D_FLOWCONTROL:
+                    cout << "Flow Control Parameters." << endl;
+                    break;
                   default:
                     break;
                   }

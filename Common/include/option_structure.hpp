@@ -1209,7 +1209,8 @@ enum ENUM_DIRECTDIFF_VAR {
   D_SIDESLIP = 7,
   D_VISCOSITY = 8,
   D_REYNOLDS = 9,
-  D_DESIGN = 10
+  D_DESIGN = 10,
+  D_FLOWCONTROL = 11
 };
 static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<string, ENUM_DIRECTDIFF_VAR>
 ("NONE", NO_DERIVATIVE)
@@ -1222,7 +1223,8 @@ static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<st
 ("SIDESLIP", D_SIDESLIP)
 ("VISCOSITY", D_VISCOSITY)
 ("REYNOLDS", D_REYNOLDS)
-("DESIGN_VARIABLES", D_DESIGN);
+("DESIGN_VARIABLES", D_DESIGN)
+("FLOW_CONTROL", D_FLOWCONTROL);
 
 /*!
  * \brief types of schemes for dynamic structural computations
