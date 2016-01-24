@@ -12023,6 +12023,31 @@ void CEulerSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config)
   
 }
 
+void CEulerSolver::SetFreeStream_Solution(CConfig *config){
+
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  unsigned long iPoint;
+  unsigned short iDim;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    if (compressible){
+      node[iPoint]->SetSolution(0, Density_Inf);
+      for (iDim = 0; iDim < nDim; iDim++){
+        node[iPoint]->SetSolution(iDim+1, Density_Inf*Velocity_Inf[iDim]);
+      }
+      node[iPoint]->SetSolution(nVar-1, Density_Inf*Energy_Inf);
+    }
+    if (incompressible){
+      node[iPoint]->SetSolution(0, Pressure_Inf);
+      for (iDim = 0; iDim < nDim; iDim++){
+        node[iPoint]->SetSolution(iDim+1, Density_Inf*Velocity_Inf[iDim]);
+      }
+    }
+  }
+}
+
 CNSSolver::CNSSolver(void) : CEulerSolver() {
   
   /*--- Basic array initialization ---*/
