@@ -8920,6 +8920,8 @@ void CEulerSolver::BC_Inlet_Unst(CGeometry *geometry, CSolver **solver_container
   Pressure, Density, Energy, *Flow_Dir, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
   alpha, aa, bb, cc, dd, Area, UnitNormal[3], Flow_Dir_Unst[3];
   su2double *V_inlet, *V_domain;
+  su2double Physical_dt,Physical_t, V_amp, freq, phi, n_x, n_y, beta, gamma;
+  su2double *Flow_Angles, *Flow_Params;
 
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement        = config->GetGrid_Movement();
@@ -8934,13 +8936,14 @@ void CEulerSolver::BC_Inlet_Unst(CGeometry *geometry, CSolver **solver_container
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
+
   su2double *Normal = new su2double[nDim];
-  su2double Physical_dt,Physical_t, V_amp, freq, phi, n_x, n_y, beta, gamma;
-  su2double *Flow_Angles, *Flow_Params;
-  su2double PI=3.14159265;
+
   unsigned long ExtIter = config->GetExtIter();
   Physical_dt = config->GetDelta_UnstTimeND();
   Physical_t  = (ExtIter+1)*Physical_dt;
+
+
 
   /*--- Loop over all the vertices on this boundary marker ---*/
 
@@ -9171,8 +9174,8 @@ void CEulerSolver::BC_Inlet_Unst(CGeometry *geometry, CSolver **solver_container
           Flow_Angles = config->GetInlet_FlowDirUnst(Marker_Tag);
           beta = Flow_Angles[0];
           gamma = Flow_Angles[1];
-          Flow_Dir_Unst[0]=cos(beta*PI/180)*n_x+sin(beta*PI/180)*n_y;
-          Flow_Dir_Unst[1]=-sin(beta*PI/180)*n_x+cos(beta*PI/180)*n_y;
+          Flow_Dir_Unst[0]=cos(beta*PI_NUMBER/180)*n_x+sin(beta*PI_NUMBER/180)*n_y;
+          Flow_Dir_Unst[1]=-sin(beta*PI_NUMBER/180)*n_x+cos(beta*PI_NUMBER/180)*n_y;
 
         /*Compute the velocity magnitude */
           Flow_Params = config->GetInlet_FlowParamUnst(Marker_Tag);
