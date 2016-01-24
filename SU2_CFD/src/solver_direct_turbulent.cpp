@@ -1106,13 +1106,14 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = (config->GetAdjoint()) || (config->GetDiscrete_Adjoint());
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -1256,10 +1257,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     ifstream restart_file;
     string filename = config->GetSolution_FlowFileName();
     su2double Density, StaticEnergy, Laminar_Viscosity, nu, nu_hat, muT = 0.0, U[5];
-    
+    int Unst_RestartIter;
+
     /*--- Modify file name for an unsteady restart ---*/
     if (dual_time) {
-      int Unst_RestartIter;
       if (adjoint) {
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
       } else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
@@ -1268,6 +1269,18 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
+
+    /*--- Modify file name for a simple unsteady restart ---*/
+
+    if (time_stepping) {
+      if (adjoint) {
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
+      } else {
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      }
+      filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+    }
+
     if (nZone >1)
       filename= config->GetRestart_FlowFileName(filename, iZone);
   
@@ -2469,7 +2482,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = (config->GetAdjoint()) || (config->GetDiscrete_Adjoint());
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
