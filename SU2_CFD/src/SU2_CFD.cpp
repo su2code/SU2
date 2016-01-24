@@ -478,6 +478,11 @@ int main(int argc, char *argv[]) {
             output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
           }
+          if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) &&
+              (config_container[ZONE_0]->GetKind_Opt_Problem() == FLOW_CONTROL) &&
+              (config_container[ZONE_0]->GetDiscrete_Adjoint())){
+            output->SetFlowControl_Sens(solver_container, config_container, ZONE_0);
+          }
           
           if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
           

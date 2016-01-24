@@ -7857,3 +7857,36 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
   
 }
 
+void COutput::SetFlowControl_Sens(CSolver ****solver_container, CConfig **config, unsigned short val_iZone){
+
+  ofstream FlowControl_file;
+
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
+  unsigned short iVar, iMarker_InletUnst, nMarker_InletUnst = config[val_iZone]->GetnMarker_InletUnst();
+
+  string Filename = "control_sens.dat";
+
+  Filename = config[val_iZone]->GetObjFunc_Extension(Filename);
+
+  if (rank == MASTER_NODE){
+    FlowControl_file.open(Filename.c_str(), ios::out);
+    FlowControl_file.precision(6);
+
+    for (iMarker_InletUnst = 0; iMarker_InletUnst < nMarker_InletUnst; iMarker_InletUnst++){
+      for (iVar = 0; iVar < 3 ; iVar++){
+        FlowControl_file << solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_FlowParam(iMarker_InletUnst, iVar) << " ";
+      }
+      for (iVar = 0; iVar < 2 ; iVar++){
+        FlowControl_file << solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_FlowDir(iMarker_InletUnst, iVar) << " ";
+      }
+      FlowControl_file << endl;
+    }
+    FlowControl_file.close();
+  }
+}
