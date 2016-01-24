@@ -2706,6 +2706,22 @@ public:
    */
   virtual void SetFreeStream_Solution(CConfig *config);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] iMarker - Unsteady inlet marker.
+   * \param[in] iParam - Parameter index.
+   * \return Flow control sensitivity of parameter iParam on marker iMarker.
+   */
+  virtual su2double GetTotal_Sens_FlowParam(unsigned short iMarker, unsigned short iParam);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iMarker - Unsteady inlet marker.
+   * \param[in] iDir - Flow direction index.
+   * \return Flow control sensitivity of flow direction iDir on marker iMarker.
+   */
+  virtual su2double GetTotal_Sens_FlowDir(unsigned short iMarker, unsigned short iDir);
+
 };
 
 /*!
@@ -7425,8 +7441,10 @@ private:
   su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to outlet pressure. */
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
   su2double Mach, Alpha, Beta, Pressure, Temperature;
-  unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
-  su2double **Total_Sens_FlowParam, **Total_Sens_FlowDir;
+  unsigned short nMarker, nMarker_InletUnst;				/*!< \brief Total number of markers using the grid information. */
+  su2double **Total_Sens_FlowParam, **Total_Sens_FlowDir,
+            **Local_Sens_FlowParam, **Local_Sens_FlowDir,
+            **my_Local_Sens_FlowParam, **my_Local_Sens_FlowDir;
 public:
 
   /*!
@@ -7546,6 +7564,22 @@ public:
    *         (inviscid + viscous contribution).
    */
   su2double GetTotal_Sens_Temp(void);
+
+  /*!
+   * \brief Get the total sensitivity of the flow control parameters.
+   * \param[in] iMarker - Unsteady inlet marker.
+   * \param[in] iParam - Parameter index.
+   * \return Flow control sensitivity of parameter iParam on marker iMarker.
+   */
+  su2double GetTotal_Sens_FlowParam(unsigned short iMarker, unsigned short iParam);
+
+  /*!
+   * \brief Get the total sensitivity of the flow control direction.
+   * \param[in] iMarker - Unsteady inlet marker.
+   * \param[in] iDir - Flow direction index.
+   * \return Flow control sensitivity of flow direction iDir on marker iMarker.
+   */
+  su2double GetTotal_Sens_FlowDir(unsigned short iMarker, unsigned short iDir);
 
   /*!
    * \author H. Kline
