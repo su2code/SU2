@@ -2699,6 +2699,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetFreeStream_Solution(CConfig *config);
+
 };
 
 /*!
@@ -4483,6 +4490,12 @@ public:
    * \param[in] Value of freestream temperature.
    */
   void SetTemperature_Inf(su2double t_inf);
+
+  /*!
+   * \brief Set the solution using the Freestream values.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetFreeStream_Solution(CConfig *config);
 };
 
 /*!
@@ -5090,7 +5103,12 @@ public:
 	 */
 	void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
 
-    
+  /*!
+   * \brief Set the solution using the Freestream values.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetFreeStream_Solution(CConfig *config);
+
 };
 
 /*!
@@ -5412,6 +5430,21 @@ public:
 	 * \return A pointer to an array containing a set of constants
 	 */
 	su2double* GetConstants();
+
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+
+  /*!
+   * \brief Set the solution using the Freestream values.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetFreeStream_Solution(CConfig *config);
     
 };
 

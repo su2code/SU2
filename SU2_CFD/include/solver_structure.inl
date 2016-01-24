@@ -1132,3 +1132,16 @@ inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
 inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){}
 
+inline void CSolver::SetFreeStream_Solution(CConfig *config){}
+
+inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config){
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint]->SetSolution(0, nu_tilde_Inf);
+}
+
+inline void CTurbSSTSolver::SetFreeStream_Solution(CConfig *config){
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+    node[iPoint]->SetSolution(0, kine_Inf);
+    node[iPoint]->SetSolution(1, omega_Inf);
+  }
+}
