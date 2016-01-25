@@ -3,7 +3,7 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.0.2 "Cardinal"
+#  \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -249,9 +249,9 @@ def aerodynamics( config, state=None ):
         if state['FUNCTIONS'].has_key(key):
             funcs[key] = state['FUNCTIONS'][key]
             
-    if config.OBJECTIVE_FUNCTION == 'OUTLET_CHAIN_RULE':    
+    if config.OBJECTIVE_FUNCTION == 'OUTFLOW_GENERALIZED':    
         import downstream_function
-        state['FUNCTIONS']['OUTLET_CHAIN_RULE']=downstream_function.downstream_function(config,state)
+        state['FUNCTIONS']['OUTFLOW_GENERALIZED']=downstream_function.downstream_function(config,state)
 
     return funcs
 
