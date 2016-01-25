@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -977,6 +977,8 @@ inline bool CConfig::GetAdaptBoundary(void) { return AdaptBoundary; }
 inline bool CConfig::GetPoissonSolver(void) { return PoissonSolver; }
 
 inline bool CConfig::Low_Mach_Preconditioning(void) { return Low_Mach_Precon; }
+
+inline bool CConfig::Low_Mach_Correction(void) { return Low_Mach_Corr; } 
 
 inline bool CConfig::GetGravityForce(void) { return GravityForce; }
 
