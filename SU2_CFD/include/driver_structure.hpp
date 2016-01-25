@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -50,7 +50,7 @@ using namespace std;
  * \class CDriver
  * \brief Parent class for driving an iteration of a single or multi-zone problem.
  * \author T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CDriver {
 protected:
@@ -217,12 +217,22 @@ public:
   virtual void Relaxation_Tractions(COutput *output, CGeometry ***geometry_container, CSolver ****solver_container,
 			CConfig **config_container, unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter){};
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] zoneFlow - zone of the flow equations.
+   * \param[in] zoneStruct - zone of the structural equations.
+   */
+  virtual void Update(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+		     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+			 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+			 CTransfer ***transfer_container, unsigned short zoneFlow, unsigned short zoneStruct){};
+
 };
 /*!
  * \class CSingleZoneDriver
  * \brief Class for driving an iteration of the physics within a single zone.
  * \author T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CSingleZoneDriver : public CDriver {
 public:
@@ -288,7 +298,7 @@ public:
  * \class CMultiZoneDriver
  * \brief Class for driving an iteration of the physics within multiple zones.
  * \author T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CMultiZoneDriver : public CDriver {
 public:
@@ -353,7 +363,7 @@ public:
  * \class CSpectralDriver
  * \brief Class for driving an iteration of a spectral method problem using multiple zones.
  * \author T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CSpectralDriver : public CDriver {
 public:
@@ -448,7 +458,7 @@ public:
  * \class CFSIDriver
  * \brief Class for driving a BGS iteration for a fluid-structure interaction problem in multiple zones.
  * \author R. Sanchez.
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CFSIDriver : public CDriver {
 public:
@@ -563,5 +573,15 @@ public:
    */
   void Relaxation_Tractions(COutput *output, CGeometry ***geometry_container, CSolver ****solver_container,
 			CConfig **config_container, unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter);
+
+  /*!
+   * \brief Enforce the coupling condition at the end of the time step
+   * \param[in] zoneFlow - zone of the flow equations.
+   * \param[in] zoneStruct - zone of the structural equations.
+   */
+  void Update(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+		     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+			 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+			 CTransfer ***transfer_container, unsigned short zoneFlow, unsigned short zoneStruct);
 
 };

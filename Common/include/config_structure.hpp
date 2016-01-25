@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -55,7 +55,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 
 class CConfig {
@@ -95,6 +95,7 @@ private:
   Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
 	PoissonSolver,			/*!< \brief Flag to know if we are solving  poisson forces  in plasma solver. */
 	Low_Mach_Precon,		/*!< \brief Flag to know if we are using a low Mach number preconditioner. */
+	Low_Mach_Corr,			/*!< \brief Flag to know if we are using a low Mach number correction. */
 	GravityForce,			/*!< \brief Flag to know if the gravity force is incuded in the formulation. */
 	SmoothNumGrid,			/*!< \brief Smooth the numerical grid. */
 	AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
@@ -684,12 +685,14 @@ private:
   Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
   unsigned short nIntCoeffs;	/*!< \brief Number of integration coeffs for structural calculations. */
   su2double *Int_Coeffs;		/*!< \brief Time integration coefficients for structural method. */
-  bool Gradual_Load,		/*!< \brief Apply the load gradually. */
+  bool Sigmoid_Load,		/*!< \brief Apply the load using a sigmoid. */
   Ramp_Load;				/*!< \brief Apply the load with linear increases. */
   bool IncrementalLoad;		/*!< \brief Apply the load in increments (for nonlinear structural analysis). */
   unsigned long IncLoad_Nincrements; /*!< \brief Number of increments. */
   su2double *IncLoad_Criteria;	/*!< \brief Criteria for the application of incremental loading. */
   su2double Ramp_Time;			/*!< \brief Time until the maximum load is applied. */
+  su2double Sigmoid_Time;			/*!< \brief Time until the maximum load is applied, using a sigmoid. */
+  su2double Sigmoid_K;			/*!< \brief Sigmoid parameter determining its steepness. */
   su2double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
@@ -4235,6 +4238,12 @@ public:
 	bool Low_Mach_Preconditioning(void);
 
 	/*!
+	 * \brief Get information about the Low Mach Correction
+	 * \return <code>TRUE</code> if we are using low Mach correction; otherwise <code>FALSE</code>.
+	 */
+	bool Low_Mach_Correction(void);
+
+	/*!
 	 * \brief Get information about the poisson solver condition
 	 * \return <code>TRUE</code> if it is a poisson solver condition; otherwise <code>FALSE</code>.
 	 */
@@ -5373,7 +5382,7 @@ public:
 	 * \brief Check if the user wants to apply the load gradually.
 	 * \return 	<code>TRUE</code> means that the load is to be applied gradually.
 	 */
-	 bool GetGradual_Load(void);
+	 bool GetSigmoid_Load(void);
 
 	/*!
 	 * \brief Check if the user wants to apply the load as a ramp.
@@ -5386,6 +5395,18 @@ public:
 	 * \return 	Value of the max time while the load is linearly increased
 	 */
 	 su2double GetRamp_Time(void);
+
+	/*!
+	 * \brief Get the maximum time of the sigmoid.
+	 * \return 	Value of the max time while the load is increased using a sigmoid
+	 */
+	 su2double GetSigmoid_Time(void);
+
+	/*!
+	 * \brief Get the sigmoid parameter.
+	 * \return 	Parameter of steepness of the sigmoid
+	 */
+	 su2double GetSigmoid_K(void);
 
 	/*!
 	 * \brief Get the maximum time of the ramp.

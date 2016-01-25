@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -258,15 +258,17 @@ int main(int argc, char *argv[]) {
   }
   
   /*--- Coupling between zones (limited to two zones at the moment) ---*/
+
+  bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
   
-//  if (nZone == 2) {
-//    if (rank == MASTER_NODE)
-//      cout << endl <<"--------------------- Setting Coupling Between Zones --------------------" << endl;
-//    geometry_container[ZONE_0][MESH_0]->MatchZone(config_container[ZONE_0], geometry_container[ZONE_1][MESH_0],
-//                                                  config_container[ZONE_1], ZONE_0, nZone);
-//    geometry_container[ZONE_1][MESH_0]->MatchZone(config_container[ZONE_1], geometry_container[ZONE_0][MESH_0],
-//                                                  config_container[ZONE_0], ZONE_1, nZone);
-//  }
+  if ((nZone == 2) && !(fsi)) {
+    if (rank == MASTER_NODE)
+      cout << endl <<"--------------------- Setting Coupling Between Zones --------------------" << endl;
+    geometry_container[ZONE_0][MESH_0]->MatchZone(config_container[ZONE_0], geometry_container[ZONE_1][MESH_0],
+                                                  config_container[ZONE_1], ZONE_0, nZone);
+    geometry_container[ZONE_1][MESH_0]->MatchZone(config_container[ZONE_1], geometry_container[ZONE_0][MESH_0],
+                                                  config_container[ZONE_0], ZONE_1, nZone);
+  }
   
   /*--- Definition of the output class (one for all zones). The output class
    manages the writing of all restart, volume solution, surface solution,
@@ -306,14 +308,12 @@ int main(int argc, char *argv[]) {
 #else
   StartTime = MPI_Wtime();
 #endif
-  
-  bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
 
   /*--- This is temporal and just to check. It will have to be added to the regular history file ---*/
   
   ofstream historyFile_FSI;
   bool writeHistFSI = config_container[ZONE_0]->GetWrite_Conv_FSI();
-  if (writeHistFSI){
+  if (writeHistFSI && (rank == MASTER_NODE)){
     char cstrFSI[200];
     string filenameHistFSI = config_container[ZONE_0]->GetConv_FileName_FSI();
     strcpy (cstrFSI, filenameHistFSI.data());
@@ -376,18 +376,18 @@ int main(int argc, char *argv[]) {
     runtime->SetExtIter(ExtIter);
     
 	/*--- Update the convergence history file (serial and parallel computations). ---*/
-	if (fsi){
-		if (rank == MASTER_NODE) cout << "---------------------------------------------------------------------------" << endl;
-		for (iZone = 0; iZone < nZone; iZone++){
-			if (iZone == 0 && rank == MASTER_NODE) cout << "Fluid convergence: " << endl;
-			else if (iZone == 1 && rank == MASTER_NODE) cout << "Structural convergence: " << endl;
-			output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
-					config_container, integration_container, false, UsedTime, iZone);
-		}
-
-		if (rank == MASTER_NODE)cout << "---------------------------------------------------------------------------" << endl;
-	}
-	else {
+//	if (fsi){
+//		if (rank == MASTER_NODE) cout << "---------------------------------------------------------------------------" << endl;
+//		for (iZone = 0; iZone < nZone; iZone++){
+//			if (iZone == 0 && rank == MASTER_NODE) cout << "Fluid convergence: " << endl;
+//			else if (iZone == 1 && rank == MASTER_NODE) cout << "Structural convergence: " << endl;
+//			output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+//					config_container, integration_container, false, UsedTime, iZone);
+//		}
+//
+//		if (rank == MASTER_NODE)cout << "---------------------------------------------------------------------------" << endl;
+//	}
+	if (!fsi){
 		output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
 				config_container, integration_container, false, UsedTime, ZONE_0);
 
@@ -426,31 +426,46 @@ int main(int argc, char *argv[]) {
         StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
     }
     
-    /*--- Solution output. Determine whether a solution needs to be written
-     after the current iteration, and if so, execute the output file writing
-     routines. ---*/
-    
-    if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) ||
-        
-        ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
-         !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-           (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND))) ||
-        
-        (StopCalc) ||
-        
-        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) &&
-         ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
-        
-        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (!fsi) &&
-         ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
-                             ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-        
-        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
-        ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
+		/*--- Solution output. Determine whether a solution needs to be written
+		 after the current iteration, and if so, execute the output file writing
+		 routines. ---*/
+		
+		if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter())
+				
+				||
+				
+				((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
+				 !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+					 (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) ||
+					 (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)))
+				
+				||
+				
+				(StopCalc)
+				
+				||
+				
+				(((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+				 (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
+				 ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))
+				
+				||
+				
+				((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (!fsi) &&
+				 ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
+														 ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
+				
+				||
+				
+				((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
+				 ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
 
-		(((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
-		 ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
-          
+				||
+
+				(((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
+						 ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))){
+
+					
           /*--- Low-fidelity simulations (using a coarser multigrid level
            approximation to the solution) require an interpolation back to the
            finest grid. ---*/

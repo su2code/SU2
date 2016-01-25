@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1921,10 +1921,20 @@ void CFSIDriver::Run(CIteration **iteration_container,
 	unsigned long iFSIIter = 0;
 	unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
 
+
 	int rank = MASTER_NODE;
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
+
+	 /*--- If there is a restart, we need to get the old geometry from the fluid field ---*/
+	 bool restart = (config_container[ZONE_FLOW]->GetRestart() || config_container[ZONE_FLOW]->GetRestart_Flow());
+	 unsigned long ExtIter = config_container[ZONE_FLOW]->GetExtIter();
+
+	 if (restart && (long)ExtIter == config_container[ZONE_FLOW]->GetUnst_RestartIter()){
+		unsigned short ZONE_FLOW = 0;
+		solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Restart_OldGeometry(geometry_container[ZONE_FLOW][MESH_0],config_container[ZONE_FLOW]);
+	 }
 
 	/*-----------------------------------------------------------------*/
 	/*---------------- Predict structural displacements ---------------*/
@@ -1938,7 +1948,7 @@ void CFSIDriver::Run(CIteration **iteration_container,
 	while (iFSIIter < nFSIIter){
 
 		/*-----------------------------------------------------------------*/
-		/*------------------------ Update mesh ----------------------------*/
+		/*------------------- Transfer Displacements ----------------------*/
 		/*-----------------------------------------------------------------*/
 
 		Transfer_Displacements(output, integration_container, geometry_container,
@@ -2016,6 +2026,16 @@ void CFSIDriver::Run(CIteration **iteration_container,
 	}
 
 	/*-----------------------------------------------------------------*/
+  	/*------------------ Update coupled solver ------------------------*/
+	/*-----------------------------------------------------------------*/
+
+	Update(output, integration_container, geometry_container,
+           solver_container, numerics_container, config_container,
+           surface_movement, grid_movement, FFDBox, transfer_container,
+           ZONE_FLOW, ZONE_STRUCT);
+
+
+	/*-----------------------------------------------------------------*/
   	/*-------------------- Update fluid solver ------------------------*/
 	/*-----------------------------------------------------------------*/
 
@@ -2088,7 +2108,7 @@ void CFSIDriver::Transfer_Displacements(COutput *output, CIntegration ***integra
 					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
 					config_container[donorZone], config_container[targetZone]);
 			/*--- Set the volume deformation for the fluid zone ---*/
-			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+//			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
 
 		}
 		else {
@@ -2096,7 +2116,7 @@ void CFSIDriver::Transfer_Displacements(COutput *output, CIntegration ***integra
 					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
 					config_container[donorZone], config_container[targetZone]);
 			/*--- Set the volume deformation for the fluid zone ---*/
-			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+//			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
 
 		}
 		break;
@@ -2106,7 +2126,7 @@ void CFSIDriver::Transfer_Displacements(COutput *output, CIntegration ***integra
 					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
 					config_container[donorZone], config_container[targetZone]);
 			/*--- Set the volume deformation for the fluid zone ---*/
-			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+//			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
 		}
 		else {
 			cout << "Scatter method not implemented for non-matching meshes. Exiting..." << endl;
@@ -2123,7 +2143,7 @@ void CFSIDriver::Transfer_Displacements(COutput *output, CIntegration ***integra
 					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
 					config_container[donorZone], config_container[targetZone]);
 			/*--- Set the volume deformation for the fluid zone ---*/
-			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+//			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
 		}
 		break;
 	case LEGACY_METHOD:
@@ -2242,6 +2262,38 @@ void CFSIDriver::Relaxation_Displacements(COutput *output, CGeometry ***geometry
 
 void CFSIDriver::Relaxation_Tractions(COutput *output, CGeometry ***geometry_container, CSolver ****solver_container,
 			CConfig **config_container, unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter){
+
+}
+
+void CFSIDriver::Update(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+			 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+			 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+			 CTransfer ***transfer_container, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT){
+
+	unsigned long IntIter = 0; // This doesn't affect here but has to go into the function
+	unsigned long ExtIter = config_container[ZONE_FLOW]->GetExtIter();
+
+
+	/*-----------------------------------------------------------------*/
+	/*--------------------- Enforce continuity ------------------------*/
+	/*-----------------------------------------------------------------*/
+
+	/*--- Enforces that the geometry of the flow corresponds to the converged, relaxed solution ---*/
+
+	/*-------------------- Transfer the displacements --------------------*/
+
+	Transfer_Displacements(output, integration_container, geometry_container,
+            solver_container, numerics_container, config_container,
+            surface_movement, grid_movement, FFDBox, transfer_container,
+            ZONE_STRUCT, ZONE_FLOW);
+
+	/*-------------------- Set the grid movement -------------------------*/
+
+	SetGrid_Movement(geometry_container[ZONE_FLOW], surface_movement[ZONE_FLOW],
+				grid_movement[ZONE_FLOW], FFDBox[ZONE_FLOW], solver_container[ZONE_FLOW], config_container[ZONE_FLOW],
+				ZONE_FLOW, IntIter, ExtIter);
+
+	/*----------- Store the solution_pred as solution_pred_old --------------*/
 
 }
 

@@ -2,7 +2,7 @@
  * fluid_model_ppr.cpp
  * \brief Source of the Peng-Robinson model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -344,7 +344,7 @@ void CPengRobinson::SetTDState_rhoT (su2double rho, su2double T) {
 
 void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 
-	su2double T, rho, v, cons_P, cons_s, fv, A;
+	su2double T, rho, v, cons_P, cons_s, fv, A, atanh;
 	su2double x1,x2, fx1, fx2,f, fmid, rtb, dx, xmid, sqrt2=sqrt(2.0);
 	su2double toll = 1e-5, FACTOR=0.2;
 	unsigned short count=0, NTRY=10, ITMAX=100;
@@ -362,10 +362,16 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 		x2 = v;
 	}
 	T = T_P_rho(P,1.0/x1);
-	fv = atanh( b*sqrt2 / (x1 + b));
+  
+  atanh = (log(1.0 + ( b*sqrt2 / (x1 + b) )) - log(1.0-( b*sqrt2 / (x1 + b) )))/2.0;
+  fv = atanh;
+  
 	fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 	T = T_P_rho(P,1.0/x2);
-	fv = atanh( b*sqrt2 / (x2 + b));
+  
+  atanh = (log(1.0 + ( b*sqrt2 / (x2 + b) )) - log(1.0-( b*sqrt2 / (x2 + b) )))/2.0;
+  fv = atanh;
+
 	fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 
 	// zbrac algorithm NR
@@ -375,11 +381,17 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 			if (fabs(fx1) < fabs(fx2)){
 				x1 += FACTOR*(x1-x2);
 				T = T_P_rho(P,1.0/x1);
-				fv = atanh( b*sqrt2 / (x1 + b));
+        
+        atanh = (log(1.0 + ( b*sqrt2 / (x1 + b) )) - log(1.0-( b*sqrt2 / (x1 + b) )))/2.0;
+        fv = atanh;
+        
 				fx1 = A*log(T) + Gas_Constant*log(x1 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 			}else{
 				T = T_P_rho(P,1.0/x2);
-				fv = atanh( b*sqrt2 / (x2 + b));
+        
+        atanh = (log(1.0 + ( b*sqrt2 / (x2 + b) )) - log(1.0-( b*sqrt2 / (x2 + b) )))/2.0;
+        fv = atanh;
+
 				fx2 = A*log(T) + Gas_Constant*log(x2 - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 				}
 		}
@@ -398,7 +410,10 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 	do{
 		xmid=rtb+(dx *= 0.5);
 		T = T_P_rho(P,1.0/xmid);
-		fv = atanh( b*sqrt2 / (xmid + b));
+    
+    atanh = (log(1.0 + ( b*sqrt2 / (xmid + b) )) - log(1.0-( b*sqrt2 / (xmid + b) )))/2.0;
+    fv = atanh;
+    
 		fmid = A*log(T) + Gas_Constant*log(xmid - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
 		if (fmid <= 0.0) rtb=xmid;
 		count++;
@@ -416,7 +431,7 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 	cons_P= abs((Pressure -P)/P);
 	cons_s= abs((Entropy-s)/s);
 
-	if(cons_P >1e-3 or cons_s >1e-3){
+	if(cons_P >1e-3 || cons_s >1e-3){
 		cout<< "TD consistency not verified in hs call"<< endl;
 	}
 

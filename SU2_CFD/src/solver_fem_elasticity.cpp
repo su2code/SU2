@@ -41,7 +41,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 	Total_CFEA = 0.0;
 	WAitken_Dyn = 0.0;
 	WAitken_Dyn_tn1 = 0.0;
-	loadIncrement = 0.0;
+	loadIncrement = 1.0;
 
 	element_container = NULL;
 	node = NULL;
@@ -1023,6 +1023,7 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 		(dynamic && restart && initial_calc_restart && first_iter)) {
 		MassMatrix.SetValZero();
 		Compute_IntegrationConstants(config);
+		Compute_MassMatrix(geometry, solver_container, numerics[VISC_TERM], config);
 	}
 
 	/*
@@ -1791,9 +1792,13 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
 	bool first_iter = (config->GetIntIter() == 0);
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);		// Nonlinear analysis.
 
-	su2double solNorm = 0.0;
+	su2double solNorm = 0.0, solNorm_recv = 0.0;
 
-	// TODO: Check communication here to ensure the residuals are the same
+    int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
 	if (nonlinear_analysis){
 
@@ -1820,11 +1825,22 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
 					solNorm += node[iPoint]->GetSolution(iVar) * node[iPoint]->GetSolution(iVar);
 				}
 			}
-			Conv_Ref[0] = max(sqrt(solNorm), EPS);							// Norm of the solution vector
+
+			// We need to communicate the norm of the solution and compute the RMS throughout the different processors
+
+			#ifdef HAVE_MPI
+					/*--- We sum the squares of the norms across the different processors ---*/
+					SU2_MPI::Allreduce(&solNorm, &solNorm_recv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+			#else
+					solNorm_recv         = solNorm;
+			#endif
+
+			Conv_Ref[0] = max(sqrt(solNorm_recv), EPS);						// Norm of the solution vector
 
 			Conv_Check[0] = LinSysSol.norm() / Conv_Ref[0];					// Norm of the delta-solution vector
 			Conv_Check[1] = LinSysRes.norm() / Conv_Ref[1];					// Norm of the residual
 			Conv_Check[2] = dotProd(LinSysSol, LinSysRes) / Conv_Ref[2];	// Position for the energy tolerance
+
 		}
 
 		/*--- MPI solution ---*/
@@ -1890,11 +1906,15 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
 
 	su2double TotalLoad;
 
-  bool Gradual_Load = config->GetGradual_Load();
+	bool Sigmoid_Load = config->GetSigmoid_Load();
+	su2double Sigmoid_Time = config->GetSigmoid_Time();
+	su2double Sigmoid_K = config->GetSigmoid_K();
+	su2double SigAux = 0.0;
+
 	su2double CurrentTime=config->GetCurrent_DynTime();
 	su2double ModAmpl, NonModAmpl;
 
-  bool Ramp_Load = config->GetRamp_Load();
+	bool Ramp_Load = config->GetRamp_Load();
 	su2double Ramp_Time = config->GetRamp_Time();
 
 	if (Ramp_Load){
@@ -1902,8 +1922,11 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
 		NonModAmpl=LoadDirVal*LoadDirMult;
 		TotalLoad=min(ModAmpl,NonModAmpl);
 	}
-	else if (Gradual_Load){
-		ModAmpl=2*((1/(1+exp(-1*CurrentTime)))-0.5);
+	else if (Sigmoid_Load){
+		SigAux = CurrentTime/ Sigmoid_Time;
+		ModAmpl = (1 / (1+exp(-1*Sigmoid_K*(SigAux - 0.5)) ) );
+		ModAmpl = max(ModAmpl,0.0);
+		ModAmpl = min(ModAmpl,1.0);
 		TotalLoad=ModAmpl*LoadDirVal*LoadDirMult;
 	}
 	else{
@@ -2114,6 +2137,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 				}
 				TimeRes_Aux.SetBlock(iPoint, Residual);
 			}
+
 		}
 
 		/*--- Once computed, compute M*TimeRes_Aux ---*/
@@ -2124,6 +2148,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 			/*--- TODO: Do I have to scale this one? I don't think so... ---*/
 			Res_Time_Cont = TimeRes.GetBlock(iPoint);
 			LinSysRes.AddBlock(iPoint, Res_Time_Cont);
+
 			/*--- External surface load contribution ---*/
 			if (incremental_load){
 				for (iVar = 0; iVar < nVar; iVar++){
@@ -2222,6 +2247,78 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
 	/*--- Perform the MPI communication of the solution ---*/
 
 	Set_MPI_Solution(geometry, config);
+
+
+}
+
+void CFEM_ElasticitySolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+
+    unsigned short iVar;
+	unsigned long iPoint;
+    su2double *valSolutionPred;
+
+	bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);		// Geometrically linear problems
+	bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
+	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);					// Dynamic simulations.
+
+	/*--- Update solution and set it to be the solution after applying relaxation---*/
+
+    for (iPoint=0; iPoint < nPointDomain; iPoint++){
+
+    	valSolutionPred = node[iPoint]->GetSolution_Pred();
+
+		node[iPoint]->SetSolution(valSolutionPred);
+    }
+
+	/*--- Compute velocities and accelerations ---*/
+
+	for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+		for (iVar = 0; iVar < nVar; iVar++) {
+
+			/*--- Acceleration component of the solution ---*/
+			/*--- U''(t+dt) = a0*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
+
+			Solution[iVar]=a_dt[0]*(node[iPoint]->GetSolution(iVar) -
+									node[iPoint]->GetSolution_time_n(iVar)) -
+						   a_dt[2]* node[iPoint]->GetSolution_Vel_time_n(iVar) -
+						   a_dt[3]* node[iPoint]->GetSolution_Accel_time_n(iVar);
+		}
+
+		/*--- Set the acceleration in the node structure ---*/
+
+		node[iPoint]->SetSolution_Accel(Solution);
+
+		for (iVar = 0; iVar < nVar; iVar++) {
+
+			/*--- Velocity component of the solution ---*/
+			/*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
+
+			Solution[iVar]=node[iPoint]->GetSolution_Vel_time_n(iVar)+
+						   a_dt[6]* node[iPoint]->GetSolution_Accel_time_n(iVar) +
+						   a_dt[7]* node[iPoint]->GetSolution_Accel(iVar);
+
+		}
+
+		/*--- Set the velocity in the node structure ---*/
+
+		node[iPoint]->SetSolution_Vel(Solution);
+
+	}
+
+
+	/*--- Perform the MPI communication of the solution ---*/
+
+	Set_MPI_Solution(geometry, config);
+
+	/*--- After the solution has been communicated, set the 'old' predicted solution as the solution ---*/
+	/*--- Loop over n points (as we have already communicated everything ---*/
+
+	for (iPoint = 0; iPoint < nPoint; iPoint++) {
+		for (iVar = 0; iVar < nVar; iVar++) {
+			node[iPoint]->SetSolution_Pred_Old(iVar,node[iPoint]->GetSolution(iVar));
+		}
+	}
 
 
 }
@@ -3193,9 +3290,14 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 	su2double Static_Time=fea_config->GetStatic_Time();
 	su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn;
 
+	int rank = MASTER_NODE;
+	#ifdef HAVE_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+
     ofstream historyFile_FSI;
 	bool writeHistFSI = fea_config->GetWrite_Conv_FSI();
-	if (writeHistFSI){
+	if (writeHistFSI && (rank == MASTER_NODE)){
 		char cstrFSI[200];
 		string filenameHistFSI = fea_config->GetConv_FileName_FSI();
 		strcpy (cstrFSI, filenameHistFSI.data());
@@ -3218,7 +3320,7 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 			WAitkDyn = max(WAitkDyn, 0.1);
 
 			SetWAitken_Dyn(WAitkDyn);
-			if (writeHistFSI){
+			if (writeHistFSI && (rank == MASTER_NODE)){
 				historyFile_FSI << " " << endl ;
 				historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
 				historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
@@ -3262,17 +3364,17 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 
 				WAitkDyn = GetWAitken_Dyn();
 
-			//TODO: double check this.
-			if (rbuf_denAitk > 1E-8){
-				WAitkDyn = - 1.0 * WAitkDyn * rbuf_numAitk / rbuf_denAitk ;
-			}
+				//TODO: double check this.
+				if (rbuf_denAitk > 1E-15){
+					WAitkDyn = - 1.0 * WAitkDyn * rbuf_numAitk / rbuf_denAitk ;
+				}
 
 				WAitkDyn = max(WAitkDyn, 0.1);
 				WAitkDyn = min(WAitkDyn, 1.0);
 
 				SetWAitken_Dyn(WAitkDyn);
 
-				if (writeHistFSI){
+				if (writeHistFSI && (rank == MASTER_NODE)){
 					historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
 					historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
 					historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn << "," ;
@@ -3282,7 +3384,7 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 
 	}
 
-	if (writeHistFSI){historyFile_FSI.close();}
+	if (writeHistFSI && (rank == MASTER_NODE)){historyFile_FSI.close();}
 
 }
 
@@ -3346,8 +3448,6 @@ void CFEM_ElasticitySolver::Update_StructSolution(CGeometry **fea_geometry,
     unsigned long iPoint;
     su2double *valSolutionPred;
 
-    /*--- TODO: I don't think I'm using this routine right now, but I may need to use it after SetAitken_Relaxation... ---*/
-
     for (iPoint=0; iPoint < nPointDomain; iPoint++){
 
     	valSolutionPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
@@ -3355,6 +3455,11 @@ void CFEM_ElasticitySolver::Update_StructSolution(CGeometry **fea_geometry,
 		fea_solution[MESH_0][FEA_SOL]->node[iPoint]->SetSolution(valSolutionPred);
 
     }
+
+	/*--- Perform the MPI communication of the solution, displacements only ---*/
+    // TODO: check if this is needed, as the solution is also communicated when u' and u'' are computed
+
+	Set_MPI_Solution_DispOnly(fea_geometry[MESH_0], fea_config);
 
 }
 

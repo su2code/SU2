@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -946,8 +946,6 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
 	bool incremental_load = config_container[val_iZone]->GetIncrementalLoad();							// If an incremental load is applied
 
-	/*--- TODO: Convergence only checked for val_iZone ---*/
-
 	/*--- This is to prevent problems when running a linear solver ---*/
 	if (!nonlinear) incremental_load = false;
 
@@ -1156,7 +1154,8 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 
 
 	}
-	else if ( (nonlinear && statTime) &&
+	else if (
+			(nonlinear && statTime) &&
 			((first_iter && initial_calc) || (restart && initial_calc_restart))
 	){
 
@@ -1454,13 +1453,18 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
                                            CFreeFormDefBox*** FFDBox,
                                            unsigned short val_iZone) {
   
+  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned short ExtIter = config_container[val_iZone]->GetExtIter();
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+  if (ExtIter == 0){
+    if (config_container[val_iZone]->GetGrid_Movement()) {
+      SetGrid_Movement(geometry_container[val_iZone], surface_movement[val_iZone], grid_movement[val_iZone], FFDBox[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_iZone, IntIter, ExtIter);
+    }
+  }
   if (CurrentRecording != FLOW_VARIABLES){
     
     if ((rank == MASTER_NODE) && (ExtIter == 0)){
@@ -1528,7 +1532,7 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
   integration_container[val_iZone][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[val_iZone][MESH_0],config_container[val_iZone],
                                                                         ExtIter,log10(solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
   
-  if (((unsigned short)(ExtIter+1) >= config_container[val_iZone]->GetnExtIter()) ||
+  if ((ExtIter+1 >= config_container[val_iZone]->GetnExtIter()) || (integration_container[val_iZone][ADJFLOW_SOL]->GetConvergence()) ||
       ((ExtIter % config_container[val_iZone]->GetWrt_Sol_Freq() == 0))){
     
     /*--- Record one mean flow iteration with geometry variables as input ---*/
@@ -1564,15 +1568,26 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
                                              unsigned short val_iZone,
                                              unsigned short kind_recording)      {
   
+  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned short iMesh;
   
   /*--- Reset the tape ---*/
   
   AD::Reset();
   
-  /*--- Update geometry to set all indices to zero ---*/
+  for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++){
   
-  geometry_container[val_iZone][MESH_0]->UpdateGeometry(geometry_container[val_iZone], config_container[val_iZone]);
+    solver_container[val_iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
+
+  }
+
+  if (turbulent){
+    solver_container[val_iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
+  }
+
+  /*--- Clear indices of coupling variables ---*/
+
+  SetDependencies(solver_container, geometry_container, config_container, val_iZone, ALL_VARIABLES);
   
   /*--- Run one iteration while tape is passive - this clears all indices ---*/
   
@@ -1585,18 +1600,23 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
     
     solver_container[val_iZone][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
     
-    if (turbulent){
-      solver_container[val_iZone][iMesh][ADJTURB_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
-    }
   }
-  
+
+  if (turbulent){
+    solver_container[val_iZone][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
+  }
+
   /*--- Start the recording of all operations ---*/
   
   AD::StartRecording();
   
-  /*--- Register flow variables and compute coupling or update the geometry ---*/
+  /*--- Register flow variables ---*/
   
   RegisterInput(solver_container, geometry_container, config_container, val_iZone, kind_recording);
+  
+  /*--- Compute coupling or update the geometry ---*/
+
+  SetDependencies(solver_container, geometry_container, config_container, val_iZone, kind_recording);
   
   /*--- Run the direct iteration ---*/
   
@@ -1627,7 +1647,7 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
 void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
   
   
-  if (kind_recording == FLOW_VARIABLES){
+  if (kind_recording == FLOW_VARIABLES || kind_recording == ALL_VARIABLES){
     
     /*--- Register flow and turbulent variables as input ---*/
     
@@ -1638,13 +1658,6 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
     if (turbulent){
       solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
-    
-    /*--- Compute coupling between flow and turbulent equations ---*/
-    
-    if (turbulent){
-      solver_container[iZone][MESH_0][FLOW_SOL]->SetPrimitive_Variables(solver_container[iZone][MESH_0], config_container[iZone], false);
-      solver_container[iZone][MESH_0][TURB_SOL]->Postprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
-    }
   }
   else if (kind_recording == GEOMETRY_VARIABLES){
     
@@ -1652,12 +1665,31 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
     
     geometry_container[iZone][MESH_0]->RegisterCoordinates(config_container[iZone]);
     
+  }
+
+}
+
+void CDiscAdjMeanFlowIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
+
+
+  if ((kind_recording == GEOMETRY_VARIABLES) || (kind_recording == ALL_VARIABLES)){
+
+     if (config_container[iZone]->GetKind_GridMovement(iZone) == ROTATING_FRAME){
+       geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone],iZone);
+     }
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
     
     geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone], config_container[iZone]);
     
   }
-  
+
+  /*--- Compute coupling between flow and turbulent equations ---*/
+
+  if (turbulent){
+    solver_container[iZone][MESH_0][FLOW_SOL]->SetPrimitive_Variables(solver_container[iZone][MESH_0], config_container[iZone], false);
+    solver_container[iZone][MESH_0][TURB_SOL]->Postprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
+  }
+
 }
 
 void CDiscAdjMeanFlowIteration::RegisterOutput(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
@@ -2223,7 +2255,9 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
   
   unsigned short iDim, iMGlevel, nMGlevels = config_container->GetnMGLevels();
   unsigned short Kind_Grid_Movement = config_container->GetKind_GridMovement(iZone);
+  unsigned long nIterMesh;
   unsigned long iPoint;
+  bool stat_mesh = true;
   bool adjoint = config_container->GetAdjoint();
   bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
   
@@ -2532,6 +2566,38 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       
       break;
       
+    case FLUID_STRUCTURE:
+
+      if (rank == MASTER_NODE)
+        cout << endl << "Deforming the grid for Fluid-Structure Interaction applications." << endl;
+
+      /*--- Deform the volume grid around the new boundary locations ---*/
+
+      if (rank == MASTER_NODE)
+        cout << "Deforming the volume grid." << endl;
+      grid_movement->SetVolume_Deformation(geometry_container[MESH_0],
+                                           config_container, true);
+
+      nIterMesh = grid_movement->Get_nIterMesh();
+      stat_mesh = (nIterMesh == 0);
+
+      if (!adjoint && !stat_mesh) {
+        if (rank == MASTER_NODE)
+          cout << "Computing grid velocities by finite differencing." << endl;
+        geometry_container[MESH_0]->SetGridVelocity(config_container, ExtIter);
+      }
+      else if (stat_mesh){
+          if (rank == MASTER_NODE)
+            cout << "The mesh is up-to-date. Using previously stored grid velocities." << endl;
+      }
+
+      /*--- Update the multigrid structure after moving the finest grid,
+       including computing the grid velocities on the coarser levels. ---*/
+
+      grid_movement->UpdateMultiGrid(geometry_container, config_container);
+
+      break;
+
     case NO_MOVEMENT: case GUST: default:
       
       /*--- There is no mesh motion specified for this zone. ---*/
