@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -48,7 +48,7 @@ using namespace std;
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CDualGrid{
 protected:
@@ -133,7 +133,7 @@ public:
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CPoint : public CDualGrid {
 private:
@@ -538,6 +538,18 @@ public:
 	 * \brief Set the coordinates of the control volume at time n-1.
 	 */
 	void SetCoord_n1(void);
+
+	/*!
+	 * \brief Set the coordinates of the control volume at time n, for restart cases.
+	 * \param[in] val_coord - Value of the grid coordinates at time n.
+	 */
+	void SetCoord_n(su2double *val_coord);
+
+	/*!
+	 * \brief Set the coordinates of the control volume at time n-1, for restart cases.
+	 * \param[in] val_coord - Value of the grid coordinates at time n-1.
+	 */
+	void SetCoord_n1(su2double *val_coord);
   
 	/*! 
 	 * \brief Set the coordinates of the control volume at time n+1.
@@ -728,7 +740,7 @@ public:
  * \class CEdge
  * \brief Class for defining an edge.
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CEdge : public CDualGrid {
 private:
@@ -865,7 +877,7 @@ public:
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CVertex : public CDualGrid {
 private:

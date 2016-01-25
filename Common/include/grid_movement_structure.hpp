@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -40,6 +40,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <cmath>
+
 #include <ctime>
 
 #include "geometry_structure.hpp"
@@ -55,7 +56,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CGridMovement {
 public:
@@ -83,7 +84,7 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -737,7 +738,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -747,6 +748,8 @@ protected:
   
 	unsigned long nPoint;		/*!< \brief Number of points. */
 	unsigned long nPointDomain;		/*!< \brief Number of points in the domain. */
+
+	unsigned long nIterMesh;	/*!< \brief Number of iterations in the mesh update. +*/
 
   CSysMatrix StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
   CSysVector LinSysSol;
@@ -788,6 +791,7 @@ public:
   /*!
 	 * \brief Compute the stiffness matrix for grid deformation using spring analogy.
 	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
 	 * \return Value of the length of the smallest edge of the grid.
 	 */
 	su2double SetFEAMethodContributions_Elem(CGeometry *geometry, CConfig *config);
@@ -795,16 +799,24 @@ public:
   /*!
 	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
 	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
 	 * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
+   * \param[in] PointCorners - Index values for element corners
+   * \param[in] nNodes - Number of nodes defining the element.
+   * \param[in] scale
 	 */
   void SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3], unsigned short nNodes, su2double scale);
 	
   /*!
 	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
 	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
 	 * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
+   * \param[in] PointCorners - Index values for element corners
+   * \param[in] nNodes - Number of nodes defining the element.
+   * \param[in] scale
 	 */
   void SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3], unsigned short nNodes, su2double scale);
   
@@ -812,7 +824,7 @@ public:
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
+   * \param[in] Zeta - Local coordinates.
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
@@ -822,7 +834,7 @@ public:
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
+   * \param[in] Zeta - Local coordinates.
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
@@ -832,7 +844,7 @@ public:
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
+   * \param[in] Zeta - Local coordinates.
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
@@ -842,7 +854,7 @@ public:
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
+   * \param[in] Zeta - Local coordinates.
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
@@ -906,8 +918,8 @@ public:
 	 * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
-   * \param[in] PointCorners
-   * \param[in] nNodes
+   * \param[in] PointCorners - Index values for element corners
+   * \param[in] nNodes - Number of nodes defining the element.
 	 */
   void AddFEA_StiffMatrix(CGeometry *geometry, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], unsigned short nNodes);
   
@@ -1037,13 +1049,25 @@ public:
 	 */
 	su2double Determinant_3x3(su2double A00, su2double A01, su2double A02, su2double A10, su2double A11, su2double A12, su2double A20, su2double A21, su2double A22);
 
+
+	/*!
+	 * \brief Store the number of iterations when moving the mesh.
+	 * \param[in] val_nIterMesh - Number of iterations.
+	 */
+	void Set_nIterMesh(unsigned long val_nIterMesh);
+
+	/*!
+	 * \brief Retrieve the number of iterations when moving the mesh.
+	 * \param[out] Number of iterations.
+	 */
+	unsigned long Get_nIterMesh(void);
 };
 
 /*! 
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CSurfaceMovement : public CGridMovement {
 protected:

@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -978,6 +978,8 @@ inline bool CConfig::GetPoissonSolver(void) { return PoissonSolver; }
 
 inline bool CConfig::Low_Mach_Preconditioning(void) { return Low_Mach_Precon; }
 
+inline bool CConfig::Low_Mach_Correction(void) { return Low_Mach_Corr; } 
+
 inline bool CConfig::GetGravityForce(void) { return GravityForce; }
 
 inline bool CConfig::GetSmoothNumGrid(void) { return SmoothNumGrid; }
@@ -1154,11 +1156,15 @@ inline unsigned short CConfig::GetnIntCoeffs(void) { return nIntCoeffs; }
 
 inline su2double CConfig::Get_Int_Coeffs(unsigned short val_coeff) { return Int_Coeffs[val_coeff]; }
 
-inline bool CConfig::GetGradual_Load(void) { return Gradual_Load; }
+inline bool CConfig::GetSigmoid_Load(void) { return Sigmoid_Load; }
 
 inline bool CConfig::GetRamp_Load(void) { return Ramp_Load; }
 
 inline su2double CConfig::GetRamp_Time(void) { return Ramp_Time; }
+
+inline su2double CConfig::GetSigmoid_Time(void) { return Sigmoid_Time; }
+
+inline su2double CConfig::GetSigmoid_K(void) { return Sigmoid_K; }
 
 inline su2double CConfig::GetStatic_Time(void) { return Static_Time; }
 

@@ -2,7 +2,7 @@
  * \file solution_direct_elasticity.cpp
  * \brief Main subrotuines for solving the linear elasticity equation.
  * \author F. Palacios, R. Sanchez
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -962,7 +962,7 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CN
   
   su2double TotalLoad;
   
-  bool Gradual_Load = config->GetGradual_Load();
+  bool Sigmoid_Load = config->GetSigmoid_Load();
   su2double CurrentTime=config->GetCurrent_DynTime();
   su2double ModAmpl, NonModAmpl;
   
@@ -974,7 +974,7 @@ void CFEASolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CN
     NonModAmpl=LoadDirVal*LoadDirMult;
     TotalLoad=min(ModAmpl,NonModAmpl);
   }
-  else if (Gradual_Load){
+  else if (Sigmoid_Load){
     ModAmpl=2*((1/(1+exp(-1*CurrentTime)))-0.5);
     TotalLoad=ModAmpl*LoadDirVal*LoadDirMult;
   }

@@ -3,7 +3,7 @@
 ## \file project.py
 #  \brief package for optimization projects
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.0.2 "Cardinal"
+#  \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -116,7 +116,7 @@ class Project(object):
             state  = copy.deepcopy(state)
             state  = su2io.State(state)
         state.find_files(config)
-        if config.OBJECTIVE_FUNCTION == 'OUTLET_CHAIN_RULE':
+        if config.OBJECTIVE_FUNCTION == 'OUTFLOW_GENERALIZED':
             state.FILES['DownstreamFunction'] = 'downstream_function.py'
         if 'MESH' not in state.FILES:
             raise Exception , 'Could not find mesh file: %s' % config.MESH_FILENAME

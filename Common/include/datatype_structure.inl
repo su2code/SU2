@@ -2,7 +2,7 @@
  * \file datatype_structure.inl
  * \brief In-Line subroutines of the <i>datatype_structure.hpp</i> file.
  * \author T. Albring
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -43,35 +43,9 @@ namespace SU2_TYPE{
   }
 }
 
-/*--- Default implementation if reverse mode is disabled ---*/
-
-#if !defined ADOLC_REVERSE_TYPE && \
-    !defined CODI_REVERSE_TYPE
-namespace AD{
-  inline void RegisterInput(su2double &data){}
-
-  inline void RegisterOutput(su2double& data){}
-
-  inline void StartRecording(){}
-
-  inline void StopRecording(){}
-
-  inline void ClearAdjoints(){}
-
-  inline void ComputeAdjoint(){}
-
-  inline void Reset(){}
-
-  inline void ResetInput(su2double &data){}
-}
-#endif
-
-
 /*--- Special handling of the sprint routine for non-primitive types. ---*/
 
-#if  defined ADOLC_REVERSE_TYPE || \
-     defined ADOLC_FORWARD_TYPE || \
-     defined COMPLEX_TYPE       || \
+#if  defined COMPLEX_TYPE       || \
      defined CODI_REVERSE_TYPE  || \
      defined CODI_FORWARD_TYPE
 

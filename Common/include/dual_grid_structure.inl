@@ -2,7 +2,7 @@
  * \file dual_grid_structure.inl
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -174,6 +174,16 @@ inline void CPoint::SetCoord_n (void) {
 inline void CPoint::SetCoord_n1 (void) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Coord_n1[iDim] = Coord_n[iDim]; 
+}
+
+inline void CPoint::SetCoord_n(su2double *val_coord) { 
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Coord_n[iDim] = val_coord[iDim]; 
+}
+
+inline void CPoint::SetCoord_n1(su2double *val_coord) { 
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Coord_n1[iDim] = val_coord[iDim]; 
 }
 
 inline void CPoint::SetCoord_p1(su2double *val_coord) { 

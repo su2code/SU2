@@ -3,7 +3,7 @@
 ## \file configure.py
 #  \brief An extended configuration script.
 #  \author T. Albring
-#  \version 4.0.2 "Cardinal"
+#  \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -278,7 +278,7 @@ def init_codi(argument_dict, modes, mpi_support = False, update = False):
     
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_codi = '38dd2f9115f161d31b07acaf3dd5d47fcbbb12e2'
+    sha_version_codi = 'c2d20c161f21a895702d00d6a9f5098b69adab28'
     github_repo_codi = 'https://github.com/scicompkl/CoDiPack'
     sha_version_ampi = '31b2267c3a55a391a37d830369f2e0dba09008d1'
     github_repo_ampi = 'https://github.com/michel2323/AdjointMPI'
@@ -560,7 +560,7 @@ def header():
 
     print '-------------------------------------------------------------------------\n'\
           '|    ___ _   _ ___                                                      | \n'\
-          '|   / __| | | |_  )   Release 4.0.2 \'Cardinal\'                          | \n'\
+          '|   / __| | | |_  )   Release 4.1.0 \'Cardinal\'                          | \n'\
           '|   \__ \ |_| |/ /                                                      | \n'\
           '|   |___/\___//___|   Pre-configuration Script                          | \n'\
           '|                                                                       | \n'\
