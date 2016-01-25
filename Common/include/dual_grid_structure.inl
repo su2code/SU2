@@ -347,6 +347,10 @@ inline void CTurboVertex::GetTurboNormal(su2double *val_normal) {
 		val_normal[iDim] = TurboNormal[iDim];
 }
 
+inline void CTurboVertex::SetGlobalVertexIndex(int globalindex){ GlobalIndex = globalindex;}
+
+inline int CTurboVertex::GetGlobalVertexIndex(void){return GlobalIndex;}
+
 inline su2double *CTurboVertex::GetTurboNormal(void) { return TurboNormal; }
 
 inline void CTurboVertex::SetArea(su2double val_area){Area = val_area;}

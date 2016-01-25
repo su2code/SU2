@@ -1060,7 +1060,7 @@ public:
 	 * \param[in] val_normal - value of the unit normal.
 	 * \param[out] R_Matrix - Pointer to the matrix of conversion from entropic to conserved variables.
 	 */
-	void GetRMatrix(su2double val_soundspeed, su2double val_density, su2double* val_normal, su2double **R_Matrix);
+	void GetRMatrix(su2double val_soundspeed, su2double val_density, su2double **R_Matrix);
 
 
 
@@ -1071,7 +1071,7 @@ public:
 	 * \param[in] val_normal - value of the unit normal.
 	 * \param[out] L_Matrix - Pointer to the matrix of conversion from conserved to entropic variables.
 	 */
-	void GetLMatrix(su2double val_soundspeed, su2double val_density, su2double* val_normal, su2double **L_Matrix);
+	void GetLMatrix(su2double val_soundspeed, su2double val_density, su2double **L_Matrix);
 
 	/*!
 	 * \brief Computation of the matrix Td, this matrix diagonalize the preconditioned conservative Jacobians

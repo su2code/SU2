@@ -571,8 +571,6 @@ inline void CSolver::MixedOut_Average (su2double val_init_pressure, su2double *v
 
 inline void CSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density){}
 
-inline void CSolver::ComputeTurboVelocity(su2double* cartesianVelocity, su2double* turboNormal, su2double* turboVelocity){}
-
 inline void CSolver::Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config,
 		                               unsigned short val_Marker, vector<std::complex<su2double> > &c4k,signed long &nboundaryvertex){}
 
@@ -622,7 +620,7 @@ inline void CSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf, unsigned short inMarkerTP ){ }
 
-inline void CSolver::MPITurboPerformance(CConfig *config){ }
+inline void CSolver::MPITurboPerformance(CConfig *config, CGeometry *geometry){ }
 
 inline void CSolver::StoreTurboPerformance(CSolver *solver, unsigned short inMarkerTP ){ }
 
@@ -1012,6 +1010,28 @@ inline void CEulerSolver::StoreTurboPerformance(CSolver *solver, unsigned short 
 	PressureRatio[inMarkerTP] = solver->GetPressureRatio(inMarkerTP);
 
 }
+
+inline void CEulerSolver::ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity){
+
+	turboVelocity[0] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
+	turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
+	if(nDim == 3)
+		turboVelocity[2] = cartesianVelocity[2];
+
+}
+
+inline void CEulerSolver::ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity){
+
+	cartesianVelocity[0] =  turboVelocity[0]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
+	cartesianVelocity[1] =  turboVelocity[0]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
+	if(nDim == 3)
+		cartesianVelocity[2] = turboVelocity[2];
+
+}
+
+
+
+
 
 inline su2double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
