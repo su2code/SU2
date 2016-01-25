@@ -943,14 +943,6 @@ public:
 	virtual void MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density);
 
 	/*!
-	 * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
-	 * \param[in] cartesianVelocity - cartesian components of velocity vector.
-	 * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
-	 * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
-	 */
-	virtual void ComputeTurboVelocity(su2double* cartesianVelocity, su2double* turboNormal, su2double* turboVelocity);
-
-	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -1267,8 +1259,9 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] config - contains config file information.
+	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
-	virtual void MPITurboPerformance(CConfig *config);
+	virtual void MPITurboPerformance(CConfig *config, CGeometry *geometry);
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] solver - solver containing the outlet information.
@@ -3570,7 +3563,15 @@ public:
 	 * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
 	 * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
 	 */
-	void ComputeTurboVelocity(su2double* cartesianVelocity, su2double* turboNormal, su2double* turboVelocity);
+	void ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity);
+
+	/*!
+	 * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
+	 * \param[in] cartesianVelocity - cartesian components of velocity vector.
+	 * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
+	 * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
+	 */
+	void ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity);
 
 	/*!
 	 * \brief it performs a fourier transformation of a characteristic value.
@@ -3903,8 +3904,9 @@ public:
 	/*!
 	 * \brief Compute turbomachinery performance.
 	 * \param[in] config - contains config file information.
+	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
-	void MPITurboPerformance(CConfig *config);
+	void MPITurboPerformance(CConfig *config, CGeometry *geometry);
 
 	/*!
 	 * \brief Compute turbomachinery performance.

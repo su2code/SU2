@@ -116,15 +116,15 @@ void CMeanFlowIteration::Preprocess(COutput *output,
   if(config_container[val_iZone]->GetBoolTurboPerf()){
   	if(ExtIter == 0){
   		geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],INFLOW, true);
-  		geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],OUTFLOW, true);
+  	  geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],OUTFLOW, true);
   	}
 #ifdef HAVE_MPI
   	int size = SINGLE_NODE;
   	MPI_Comm_size(MPI_COMM_WORLD, &size);
- 	if(size > 1)
+// 	if(size > 1)
   		SetMPITurboPerformance(geometry_container, solver_container, config_container, output, val_iZone);
- 	else
-  		SetTurboPerformance(geometry_container, solver_container, config_container, output, val_iZone);
+// 	else
+//  		SetTurboPerformance(geometry_container, solver_container, config_container, output, val_iZone);
 #else
   	SetTurboPerformance(geometry_container, solver_container, config_container, output, val_iZone);
 #endif
@@ -618,11 +618,11 @@ void CMeanFlowIteration::SetTurboPerformance(CGeometry ***geometry_container, CS
 
 void CMeanFlowIteration::SetMPITurboPerformance(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, COutput *output, unsigned short iZone) {
 
-solver_container[iZone][MESH_0][FLOW_SOL]->MPIMixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], INFLOW);
-solver_container[iZone][MESH_0][FLOW_SOL]->MPIMixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], OUTFLOW);
+//solver_container[iZone][MESH_0][FLOW_SOL]->MPIMixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], INFLOW);
+//solver_container[iZone][MESH_0][FLOW_SOL]->MPIMixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], OUTFLOW);
 solver_container[iZone][MESH_0][FLOW_SOL]->MPISpanMixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], INFLOW);
 solver_container[iZone][MESH_0][FLOW_SOL]->MPISpanMixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], OUTFLOW);
-solver_container[iZone][MESH_0][FLOW_SOL]->MPITurboPerformance(config_container[iZone]);
+solver_container[iZone][MESH_0][FLOW_SOL]->MPITurboPerformance(config_container[iZone], geometry_container[iZone][MESH_0]);
 
 }
 

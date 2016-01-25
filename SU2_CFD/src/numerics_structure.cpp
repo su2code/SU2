@@ -936,36 +936,12 @@ void CNumerics::GetRMatrix(su2double val_pressure, su2double val_soundspeed, su2
 
 
 
-void CNumerics::GetRMatrix(su2double val_soundspeed, su2double val_density, su2double* val_normal, su2double **R_Matrix) {
+void CNumerics::GetRMatrix(su2double val_soundspeed, su2double val_density, su2double **R_Matrix) {
 
+	su2double cc, rhoc;
+	cc = val_soundspeed*val_soundspeed;
+	rhoc = val_density/val_soundspeed;
 	if (nDim == 2) {
-
-
-
-//		R_Matrix[0][0] = 1.0;
-//		R_Matrix[0][1] = 0.0;
-//		R_Matrix[0][2] = 0.5*val_density/val_soundspeed;
-//		R_Matrix[0][3] = 0.5*val_density/val_soundspeed;
-//
-//		R_Matrix[1][0] = 0.0;
-//		R_Matrix[1][1] = val_normal[1];
-//		R_Matrix[1][2] = 0.5*val_normal[0];
-//		R_Matrix[1][3] = -0.5*val_normal[0];
-//
-//		R_Matrix[2][0] = 0.0;
-//		R_Matrix[2][1] = -val_normal[0];
-//		R_Matrix[2][2] = 0.5*val_normal[1];
-//		R_Matrix[2][3] = -0.5*val_normal[1];
-//
-//		R_Matrix[3][0] = 0.0;
-//		R_Matrix[3][1] = 0.0;
-//		R_Matrix[3][2] = 0.5*val_density*val_soundspeed;
-//		R_Matrix[3][3] = 0.5*val_density*val_soundspeed;
-
-		su2double cc, rhoc;
-		cc = val_soundspeed*val_soundspeed;
-		rhoc = val_density/val_soundspeed;
-
 		R_Matrix[0][0] = -1.0/cc;
 		R_Matrix[0][1] = 0.0;
 		R_Matrix[0][2] = 0.5/cc;
@@ -989,101 +965,100 @@ void CNumerics::GetRMatrix(su2double val_soundspeed, su2double val_density, su2d
 	}
 	else {
 
-//		sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1]+val_velocity[2]*val_velocity[2];
-//
-//		R_Matrix[0][0] =  0.5*gm1*sqvel;
-//		R_Matrix[0][1] = -val_velocity[0]*gm1;
-//		R_Matrix[0][2] = -val_velocity[1]*gm1;
-//		R_Matrix[0][3] = -val_velocity[2]*gm1;
-//		R_Matrix[0][4] = gm1;
-//
-//		R_Matrix[1][0] = -val_velocity[0]/val_density;
-//		R_Matrix[1][1] = 1.0/val_density;
-//		R_Matrix[1][2] = 0.0;
-//		R_Matrix[1][3] = 0.0;
-//		R_Matrix[1][4] = 0.0;
-//
-//		R_Matrix[2][0] = -val_velocity[1]/val_density;
-//		R_Matrix[2][1] = 0.0;
-//		R_Matrix[2][2] = 1.0/val_density;
-//		R_Matrix[2][3] = 0.0;
-//		R_Matrix[2][4] = 0.0;
-//
-//		R_Matrix[3][0] = -val_velocity[2]/val_density;
-//		R_Matrix[3][1] = 0.0;
-//		R_Matrix[3][2] = 0.0;
-//		R_Matrix[3][3] = 1.0/val_density;
-//		R_Matrix[3][4] = 0.0;
-//
-//		R_Matrix[4][0] = 0.5*gm1*sqvel/val_pressure - Gamma/val_density;
-//		R_Matrix[4][1] = -gm1*val_velocity[0]/val_pressure;
-//		R_Matrix[4][2] = -gm1*val_velocity[1]/val_pressure;
-//		R_Matrix[4][3] = -gm1*val_velocity[2]/val_pressure;
-//		R_Matrix[4][4] = gm1/val_pressure;
+
+
+		R_Matrix[0][0] = -1.0/cc;
+		R_Matrix[0][1] = 0.0;
+		R_Matrix[0][2] = 0.0;
+		R_Matrix[0][3] = 0.5/cc;
+		R_Matrix[0][4] = 0.5/cc;
+
+		R_Matrix[1][0] = 0.0;
+		R_Matrix[1][1] = 0.0;
+		R_Matrix[1][2] = 0.0;
+		R_Matrix[1][3] = 0.5/rhoc;
+		R_Matrix[1][4] = -0.5/rhoc;
+
+		R_Matrix[2][0] = 0.0;
+		R_Matrix[2][1] = 1.0/rhoc;
+		R_Matrix[2][2] = 0.0;
+		R_Matrix[2][3] = 0.0;
+		R_Matrix[2][4] = 0.0;
+
+		R_Matrix[3][0] = 0.0;
+		R_Matrix[3][1] = 0.0;
+		R_Matrix[3][2] = 1.0/rhoc;
+		R_Matrix[3][3] = 0.0;
+		R_Matrix[3][4] = 0.0;
+
+		R_Matrix[4][0] = 0.0;
+		R_Matrix[4][1] = 0.0;
+		R_Matrix[4][2] = 0.0;
+		R_Matrix[4][3] = 0.5;
+		R_Matrix[4][4] = 0.5;
 
 	}
 
 }
 
-void CNumerics::GetLMatrix(su2double val_soundspeed, su2double val_density, su2double* val_normal, su2double **L_Matrix) {
+void CNumerics::GetLMatrix(su2double val_soundspeed, su2double val_density, su2double **L_Matrix) {
 
+	su2double cc, rhoc;
+	cc = val_soundspeed*val_soundspeed;
+	rhoc = val_density/val_soundspeed;
 	if (nDim == 2) {
 
-
-
-		L_Matrix[0][0] = 1.0;
+		L_Matrix[0][0] = -cc;
 		L_Matrix[0][1] = 0.0;
 		L_Matrix[0][2] = 0.0;
-		L_Matrix[0][3] = -0.5/val_soundspeed/val_soundspeed;
+		L_Matrix[0][3] = 1.0;
 
 		L_Matrix[1][0] = 0.0;
-		L_Matrix[1][1] = val_normal[1];
-		L_Matrix[1][2] = -val_normal[0];
+		L_Matrix[1][1] = 0.0;
+		L_Matrix[1][2] = rhoc;
 		L_Matrix[1][3] = 0.0;
 
 		L_Matrix[2][0] = 0.0;
-		L_Matrix[2][1] = val_normal[0];
-		L_Matrix[2][2] = val_normal[1];
-		L_Matrix[2][3] = 1.0/val_density/val_soundspeed;
+		L_Matrix[2][1] = rhoc;
+		L_Matrix[2][2] = 0.0;
+		L_Matrix[2][3] = 1.0;
 
 		L_Matrix[3][0] = 0.0;
-		L_Matrix[3][1] = -val_normal[0];
-		L_Matrix[3][2] = -val_normal[1];
-		L_Matrix[3][3] = 1.0/val_density/val_soundspeed;
+		L_Matrix[3][1] = -rhoc;
+		L_Matrix[3][2] = 0.0;
+		L_Matrix[3][3] = 1.0;
 	}
 	else {
 
-//		sqvel = val_velocity[0]*val_velocity[0]+val_velocity[1]*val_velocity[1]+val_velocity[2]*val_velocity[2];
-//
-//		R_Matrix[0][0] =  0.5*gm1*sqvel;
-//		R_Matrix[0][1] = -val_velocity[0]*gm1;
-//		R_Matrix[0][2] = -val_velocity[1]*gm1;
-//		R_Matrix[0][3] = -val_velocity[2]*gm1;
-//		R_Matrix[0][4] = gm1;
-//
-//		R_Matrix[1][0] = -val_velocity[0]/val_density;
-//		R_Matrix[1][1] = 1.0/val_density;
-//		R_Matrix[1][2] = 0.0;
-//		R_Matrix[1][3] = 0.0;
-//		R_Matrix[1][4] = 0.0;
-//
-//		R_Matrix[2][0] = -val_velocity[1]/val_density;
-//		R_Matrix[2][1] = 0.0;
-//		R_Matrix[2][2] = 1.0/val_density;
-//		R_Matrix[2][3] = 0.0;
-//		R_Matrix[2][4] = 0.0;
-//
-//		R_Matrix[3][0] = -val_velocity[2]/val_density;
-//		R_Matrix[3][1] = 0.0;
-//		R_Matrix[3][2] = 0.0;
-//		R_Matrix[3][3] = 1.0/val_density;
-//		R_Matrix[3][4] = 0.0;
-//
-//		R_Matrix[4][0] = 0.5*gm1*sqvel/val_pressure - Gamma/val_density;
-//		R_Matrix[4][1] = -gm1*val_velocity[0]/val_pressure;
-//		R_Matrix[4][2] = -gm1*val_velocity[1]/val_pressure;
-//		R_Matrix[4][3] = -gm1*val_velocity[2]/val_pressure;
-//		R_Matrix[4][4] = gm1/val_pressure;
+		L_Matrix[0][0] = -cc;
+		L_Matrix[0][1] = 0.0;
+		L_Matrix[0][2] = 0.0;
+		L_Matrix[0][3] = 0.0;
+		L_Matrix[0][4] = 1.0;
+
+		L_Matrix[1][0] = 0.0;
+		L_Matrix[1][1] = 0.0;
+		L_Matrix[1][2] = rhoc;
+		L_Matrix[1][3] = 0.0;
+		L_Matrix[1][4] = 0.0;
+
+		L_Matrix[2][0] = 0.0;
+		L_Matrix[2][1] = 0.0;
+		L_Matrix[2][2] = 0.0;
+		L_Matrix[2][3] = rhoc;
+		L_Matrix[2][4] = 0.0;
+
+		L_Matrix[3][0] = 0.0;
+		L_Matrix[3][1] = rhoc;
+		L_Matrix[3][2] = 0.0;
+		L_Matrix[3][3] = 0.0;
+		L_Matrix[3][4] = 1.0;
+
+		L_Matrix[4][0] = 0.0;
+		L_Matrix[4][1] = -rhoc;
+		L_Matrix[4][2] = 0.0;
+		L_Matrix[4][3] = 0.0;
+		L_Matrix[4][4] = 1.0;
 
 	}
 
