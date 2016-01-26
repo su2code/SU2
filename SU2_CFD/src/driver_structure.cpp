@@ -46,6 +46,8 @@ CDriver::CDriver(CIteration **iteration_container,
   unsigned short iMesh, iZone, jZone, iSol;
   unsigned short nZone, nDim;
   
+  bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -122,15 +124,15 @@ CDriver::CDriver(CIteration **iteration_container,
   
 	/*--- Definition of the interface and transfer conditions between different zones.
 	 *--- The transfer container is defined for zones paired one to one.
-	 *--- This only works for a multizone problem (nZone > 1).
+	 *--- This only works for a multizone FSI problem (nZone > 1).
 	 *--- Also, at the moment this capability is limited to two zones (nZone < 3).
 	 *--- This will change in the future. ---*/
 
-	if (rank == MASTER_NODE)
+	if ((rank == MASTER_NODE) && (fsi))
 		cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
 
 
-	if ((nZone > 1) && (nZone < 3)) {
+	if (((nZone > 1) && (nZone < 3)) && (fsi)) {
 
 		for (iZone = 0; iZone < nZone; iZone++){
 			transfer_container[iZone] = new CTransfer*[nZone];
