@@ -41,7 +41,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config){
 
 CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh){
 
-  unsigned short iVar, iMarker, iDim;
+  unsigned short iVar, iMarker, iDim, iParam;
   bool restart = config->GetRestart();
 
   unsigned long iVertex, iPoint, index;
@@ -109,37 +109,20 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
 
   Local_Sens_FlowParam = NULL;
-  Local_Sens_FlowDir   = NULL;
   Total_Sens_FlowParam = NULL;
-  Total_Sens_FlowDir   = NULL;
-  my_Local_Sens_FlowParam = NULL;
-  my_Local_Sens_FlowDir   = NULL;
-
 
   if (config->GetKind_Opt_Problem() == FLOW_CONTROL){
-    Local_Sens_FlowParam = new su2double*[nMarker_InletUnst];
-    Local_Sens_FlowDir   = new su2double*[nMarker_InletUnst];
-    Total_Sens_FlowParam = new su2double*[nMarker_InletUnst];
-    Total_Sens_FlowDir   = new su2double*[nMarker_InletUnst];
-    my_Local_Sens_FlowParam = new su2double*[nMarker_InletUnst];
-    my_Local_Sens_FlowDir   = new su2double*[nMarker_InletUnst];
+    Local_Sens_FlowParam = new su2double*[nMarker];
+    Total_Sens_FlowParam = new su2double*[nMarker];
 
-    for (iMarker = 0; iMarker < nMarker_InletUnst; iMarker++){
-      Total_Sens_FlowParam[iMarker]    = new su2double[3];
-      Local_Sens_FlowParam[iMarker]    = new su2double[3];
-      my_Local_Sens_FlowParam[iMarker] = new su2double[3];
-      for (iVar = 0; iVar < 3; iVar++){
-        Local_Sens_FlowParam[iMarker][iVar]    = 0.0;
-        Total_Sens_FlowParam[iMarker][iVar]    = 0.0;
-        my_Local_Sens_FlowParam[iMarker][iVar] = 0.0;
-      }
-      Total_Sens_FlowDir[iMarker]    = new su2double[2];
-      Local_Sens_FlowDir[iMarker]    = new su2double[2];
-      my_Local_Sens_FlowDir[iMarker] = new su2double[2];
-      for (iVar = 0; iVar < 2; iVar++){
-        Local_Sens_FlowDir[iMarker][iVar] = 0.0;
-        Total_Sens_FlowDir[iMarker][iVar] = 0.0;
-        my_Local_Sens_FlowDir[iMarker][iVar] = 0.0;
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+      if(config->GetMarker_All_KindBC(iMarker) ==  INLET_FLOW_UNST){
+        Total_Sens_FlowParam[iMarker]    = new su2double[5];
+        Local_Sens_FlowParam[iMarker]    = new su2double[5];
+        for (iParam = 0; iParam < 5; iParam++){
+          Local_Sens_FlowParam[iMarker][iParam]    = 0.0;
+          Total_Sens_FlowParam[iMarker][iParam]    = 0.0;
+        }
       }
     }
   }
@@ -299,7 +282,8 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
   string Marker_Tag;
-  su2double *FlowParam, *FlowDir;
+  su2double *FlowParam;
+  unsigned short iMarker, iParam;
 
   /*--- Register farfield values as input ---*/
 
@@ -345,19 +329,15 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   /*--- Register flow control parameters as input ---*/
 
-  if((config->GetKind_Regime() == INCOMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && (config->GetKind_Opt_Problem() == FLOW_CONTROL)){
-    for (int iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  if((KindDirect_Solver == RUNTIME_FLOW_SYS) && (config->GetKind_Opt_Problem() == FLOW_CONTROL)){
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) ==  INLET_FLOW_UNST) {
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         FlowParam  =  config->GetInlet_FlowParamUnst(Marker_Tag);
-        FlowDir    =  config->GetInlet_FlowDirUnst(Marker_Tag);
-
         if (!reset){
-          AD::RegisterInput(FlowParam[0]);
-          AD::RegisterInput(FlowParam[1]);
-          AD::RegisterInput(FlowParam[2]);
-          AD::RegisterInput(FlowDir[0]);
-          AD::RegisterInput(FlowDir[1]);
+          for (iParam = 0; iParam < 5; iParam++){
+            AD::RegisterInput(FlowParam[iParam]);
+          }
         }
       }
     }
@@ -540,8 +520,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
   string Marker_Tag;
   su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
-  su2double *FlowParam, *FlowDir;
-  unsigned short iMarker_InletUnst = 0, iMarker;
+  su2double *FlowParam;
+  unsigned short iMarker_InletUnst = 0, iMarker, iParam;
 
   /*--- Extract the adjoint values of the farfield values ---*/
 
@@ -566,45 +546,41 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
   /*--- Extract adjoint values of flow control parameters ---*/
 
-  if((config->GetKind_Regime() == INCOMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && (config->GetKind_Opt_Problem() == FLOW_CONTROL)){
+  if((KindDirect_Solver == RUNTIME_FLOW_SYS) && (config->GetKind_Opt_Problem() == FLOW_CONTROL)){
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) ==  INLET_FLOW_UNST) {
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         FlowParam  =  config->GetInlet_FlowParamUnst(Marker_Tag);
-        FlowDir    =  config->GetInlet_FlowDirUnst(Marker_Tag);
-        my_Local_Sens_FlowParam[iMarker_InletUnst][0]  = SU2_TYPE::GetDerivative( FlowParam[0]   );
-        my_Local_Sens_FlowParam[iMarker_InletUnst][1]  = SU2_TYPE::GetDerivative( FlowParam[1]   );
-        my_Local_Sens_FlowParam[iMarker_InletUnst][2]  = SU2_TYPE::GetDerivative( FlowParam[2]   );
-        my_Local_Sens_FlowDir[iMarker_InletUnst][0]    = SU2_TYPE::GetDerivative( FlowDir[0]     );
-        my_Local_Sens_FlowDir[iMarker_InletUnst][1]    = SU2_TYPE::GetDerivative( FlowDir[1]    );
-
+        for (iParam = 0; iParam < 5; iParam++){
+          Local_Sens_FlowParam[iMarker_InletUnst][iParam]  = SU2_TYPE::GetDerivative( FlowParam[iParam] );
+        }
         iMarker_InletUnst++;
       }
     }
-
-    for (iMarker_InletUnst = 0; iMarker_InletUnst < nMarker_InletUnst; iMarker_InletUnst++){
-
-#ifdef HAVE_MPI
-      SU2_MPI::Allreduce(my_Local_Sens_FlowParam[iMarker_InletUnst],  Local_Sens_FlowParam[iMarker_InletUnst],  3, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-      SU2_MPI::Allreduce(my_Local_Sens_FlowDir[iMarker_InletUnst],   Local_Sens_FlowDir[iMarker_InletUnst],   2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-      Local_Sens_FlowParam[0]  = my_Local_Sens_FlowParam[0];
-      Local_Sens_FlowParam[1]  = my_Local_Sens_FlowParam[1];
-      Local_Sens_FlowParam[2]  = my_Local_Sens_FlowParam[2];
-      Local_Sens_FlowDir[0]    = my_Local_Sens_FlowDir[0];
-      Local_Sens_FlowDir[1]    = my_Local_Sens_FlowDir[1];
-#endif
-      Total_Sens_FlowParam[iMarker_InletUnst][0] += Local_Sens_FlowParam[iMarker_InletUnst][0];
-      Total_Sens_FlowParam[iMarker_InletUnst][1] += Local_Sens_FlowParam[iMarker_InletUnst][1];
-      Total_Sens_FlowParam[iMarker_InletUnst][2] += Local_Sens_FlowParam[iMarker_InletUnst][2];
-      Total_Sens_FlowDir[iMarker_InletUnst][0]   += Local_Sens_FlowDir[iMarker_InletUnst][0];
-      Total_Sens_FlowDir[iMarker_InletUnst][1]   += Local_Sens_FlowDir[iMarker_InletUnst][1];
-    }
   }
-
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
 
+}
+
+void CDiscAdjSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh){
+
+  unsigned short iMarker, iMarker_InletUnst = 0, iParam;
+
+
+  if((KindDirect_Solver == RUNTIME_FLOW_SYS) && (config->GetKind_Opt_Problem() == FLOW_CONTROL)){
+
+    /*--- Update the total flow control sensitivities ---*/
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) ==  INLET_FLOW_UNST) {
+        for (iParam = 0; iParam < 5; iParam++){
+          Total_Sens_FlowParam[iMarker_InletUnst][iParam] += Local_Sens_FlowParam[iMarker_InletUnst][iParam];
+        }
+        iMarker_InletUnst++;
+      }
+    }
+  }
 }
 
 void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){

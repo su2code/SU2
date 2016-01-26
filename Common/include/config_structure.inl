@@ -709,6 +709,8 @@ inline string CConfig::GetMarker_MixingPlane_Bound(unsigned short index) {return
 
 inline string CConfig::GetMarker_MixingPlane_Donor(unsigned short index) {return Marker_MixDonor[index];}
 
+inline string CConfig::GetMarker_InletUnst(unsigned short index) { return Marker_InletUnst[index];}
+
 inline unsigned short CConfig::Get_nMarkerMixingPlane(void) { return nMarker_MixBound;}
 
 inline unsigned short CConfig::Get_nMarkerTurboPerf(void) { return nMarker_TurboPerf;}

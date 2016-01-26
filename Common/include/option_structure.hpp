@@ -2306,10 +2306,9 @@ class COptionInletUnst : public COptionBase{
   string * & marker;
   su2double * & rho;
   su2double ** & flowparam;
-  su2double ** & flowdir;
 
 public:
-  COptionInletUnst(string option_field_name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, su2double* & Rho, su2double** & FlowParam, su2double** & FlowDir) : size(nMarker_Inlet), marker(Marker_Inlet), rho(Rho), flowparam(FlowParam), flowdir(FlowDir) {
+  COptionInletUnst(string option_field_name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, su2double* & Rho, su2double** & FlowParam) : size(nMarker_Inlet), marker(Marker_Inlet), rho(Rho), flowparam(FlowParam) {
     this->name = option_field_name;
   }
 
@@ -2322,7 +2321,6 @@ public:
       this->marker = NULL;
       this->rho = NULL;
       this->flowparam = NULL;
-      this->flowdir = NULL;
       return "";
     }
 
@@ -2334,7 +2332,6 @@ public:
       this->marker = NULL;
       this->rho = NULL;
       this->flowparam = NULL;
-      this->flowdir = NULL;
       return newstring;
     }
 
@@ -2343,10 +2340,8 @@ public:
     this->marker = new string[nVals];
     this->rho = new su2double[nVals];
     this->flowparam = new su2double*[nVals];
-    this->flowdir = new su2double*[nVals];
     for (unsigned long i = 0; i < nVals; i++) {
-      this->flowdir[i] = new su2double[2];
-      this->flowparam[i] = new su2double[3];
+      this->flowparam[i] = new su2double[5];
     }
 
     for (unsigned long i = 0; i < nVals; i++) {
@@ -2355,7 +2350,6 @@ public:
       if (!(ss_1st >> this->rho[i])) {
         return badValue(option_value, "inlet", this->name);
       }
-
       istringstream ss_2nd(option_value[7*i + 2]);
       if (!(ss_2nd >> this->flowparam[i][0])) {
         return badValue(option_value, "inlet", this->name);
@@ -2368,13 +2362,12 @@ public:
       if (!(ss_4th >> this->flowparam [i][2])) {
         return badValue(option_value, "inlet", this->name);
       }
-
       istringstream ss_5th(option_value[7*i + 5]);
-      if (!(ss_5th >> this->flowdir[i][0])) {
+      if (!(ss_5th >> this->flowparam[i][3])) {
         return badValue(option_value, "inlet", this->name);
       }
       istringstream ss_6th(option_value[7*i + 6]);
-      if (!(ss_6th >> this->flowdir[i][1])) {
+      if (!(ss_6th >> this->flowparam[i][4])) {
         return badValue(option_value, "inlet", this->name);
       }
     }
@@ -2386,7 +2379,6 @@ public:
     this->marker = NULL;
     this->rho = NULL;
     this->flowparam = NULL;
-    this->flowdir = NULL;
     this->size = 0; // There is no default value for list
   }
 };
