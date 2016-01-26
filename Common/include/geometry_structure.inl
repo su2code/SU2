@@ -91,6 +91,8 @@ inline void CGeometry::Set_MPI_Coord(CConfig *config) { }
 
 inline void CGeometry::Set_MPI_GridVel(CConfig *config) { } 
 
+inline void CGeometry::Set_MPI_OldCoord(CConfig *config) { } 
+
 inline void CGeometry::SetPeriodicBoundary(CConfig *config) { }
 
 inline void CGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config) { }
