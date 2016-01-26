@@ -118,6 +118,7 @@ public:
 	unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
   unsigned long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker.  */
   unsigned long **nTotVertexSpan; /*! <\brief number of vertexes at each span wise section for each marker.  */
+  unsigned long nVertexSpanMax[3]; /*! <\brief max number of vertexes for each span section for each marker flag.  */
 	su2double *** AverageTurboNormal; /*! <\brief Average boundary normal at each span wise section for each marker in the turbomachinery frame of reference.*/
 	su2double *** AverageNormal; /*! <\brief Average boundary normal at each span wise section for each marker.*/
 	su2double *** AverageGridVel; /*! <\brief Average boundary grid velocity at each span wise section for each marker.*/
@@ -226,6 +227,20 @@ public:
 	 * \return Number of vertices.
 	 */
 	unsigned long GetnVertexSpan(unsigned short val_marker, unsigned short val_span);
+
+	/*!
+	 * \brief Get number of vertices.
+	 * \param[in] val_marker - Marker of the boundary.
+	 * \return Number of vertices.
+	 */
+	unsigned long GetnVertexSpanMax(unsigned short marker_flag);
+
+	/*!
+	 * \brief Get number of vertices.
+	 * \param[in] val_marker - Marker of the boundary.
+	 * \return Number of vertices.
+	 */
+	void SetnVertexSpanMax(unsigned short marker_flag, unsigned long nVertMax);
 
 	/*! 
 	 * \brief Get the edge index from using the nodes of the edge.

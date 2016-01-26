@@ -9665,10 +9665,10 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 
   	nvertMPI = 0;
   	for(iSpan=0; iSpan<size; iSpan++){
-  		cout << ymin[imin]<<endl;
-  		cout << nvertex_glob[imin]<<endl;
+//  		cout << ymin[imin]<<endl;
+//  		cout << nvertex_glob[imin]<<endl;
    		nvertex_out[imin]= nvertMPI;
-   		cout << nvertex_out[imin]<<endl;
+//   		cout << nvertex_out[imin]<<endl;
    		nvertMPI += nvertex_glob[imin];
     	target = ymin[imin];
     	dist =  10.0E+06;
@@ -9703,28 +9703,28 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
   }
 
 //			FINAL TEST
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
-  	for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
-			if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
-				if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
-					for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-						for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
-							iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
-							coord = node[iPoint]->GetCoord();
-							//if(rank == 3)
-							cout <<"span " <<iSpan << " pitch wise " << coord[1]<< " local index " << iSpanVertex << " global index " << turbovertex[iMarker][iSpan][iSpanVertex]->GetGlobalVertexIndex() <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
-							//check if the old vertex work ass well
-							iVertex = turbovertex[iMarker][iSpan][iSpanVertex]->GetOldVertex();
-							iPoint = vertex[iMarker][iVertex]->GetNode();
-							coord = node[iPoint]->GetCoord();
-							//if(rank == 3)
-							//cout <<"old vertex check in Span  " <<iSpan << " pitch wise " << coord[1]<< " in vertex " << iVertex <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
-						}
-					}
-				}
-  		}
-  	}
- }
+//  for (iMarker = 0; iMarker < nMarker; iMarker++){
+//  	for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
+//			if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
+//				if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+//					for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+//						for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
+//							iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
+//							coord = node[iPoint]->GetCoord();
+//							//if(rank == 3)
+//							cout <<"span " <<iSpan << " pitch wise " << coord[1]<< " local index " << iSpanVertex << " global index " << turbovertex[iMarker][iSpan][iSpanVertex]->GetGlobalVertexIndex() <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
+//							//check if the old vertex work ass well
+//							iVertex = turbovertex[iMarker][iSpan][iSpanVertex]->GetOldVertex();
+//							iPoint = vertex[iMarker][iVertex]->GetNode();
+//							coord = node[iPoint]->GetCoord();
+//							//if(rank == 3)
+//							//cout <<"old vertex check in Span  " <<iSpan << " pitch wise " << coord[1]<< " in vertex " << iVertex <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
+//						}
+//					}
+//				}
+//  		}
+//  	}
+// }
 
   delete [] area;
   delete [] ordered;
@@ -9739,7 +9739,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_flag, bool allocate) {
 
 	unsigned short iMarker, iMarkerTP, iSpan, iDim;
-	unsigned long nVert, iVertex, iPoint;
+	unsigned long nVert, nVertMax, iVertex, iPoint;
 	su2double *TurboNormal, *Normal, turboNormal2, Normal2, *gridVel, TotalArea;
   su2double *TotalTurboNormal,*TotalNormal, *TotalGridVel, Area;
   int rank = MASTER_NODE;
@@ -9791,6 +9791,8 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
   	}
   }
 
+  /* --- need to define this to avoid dead-locking in the MPI part of the function Preprocess_BC_NR ---*/
+  nVertMax = 0;
   /*--- start computing the average quantities span wise --- */
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
 
@@ -9861,6 +9863,10 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 		delete [] MyTotalTurboNormal;delete [] MyTotalNormal; delete [] MyTotalGridVel;
 
 #endif
+		/*--- to be set for all the processor ---*/
+		if(nVert > nVertMax){
+			SetnVertexSpanMax(marker_flag,nVert);
+		}
 
 		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
 			for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){

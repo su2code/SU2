@@ -151,6 +151,10 @@ inline unsigned long CGeometry::GetnVertex(unsigned short val_marker) { return n
 
 inline unsigned long CGeometry::GetnVertexSpan(unsigned short val_marker, unsigned short val_span) { return nVertexSpan[val_marker][val_span]; }
 
+inline unsigned long CGeometry::GetnVertexSpanMax(unsigned short marker_flag){return nVertexSpanMax[marker_flag];}
+
+inline void CGeometry::SetnVertexSpanMax(unsigned short marker_flag, unsigned long nVertMax){nVertexSpanMax[marker_flag] = nVertMax;}
+
 inline unsigned long CGeometry::GetnEdge(void) { return nEdge; }
 
 inline bool CGeometry::FindFace(unsigned long first_elem, unsigned long second_elem, unsigned short &face_first_elem, unsigned short &face_second_elem) {return 0;}
