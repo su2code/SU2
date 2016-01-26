@@ -567,15 +567,12 @@ inline void CSolver::MPIMixing_Process(CGeometry *geometry, CSolver **solver_con
 
 inline void CSolver::MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag){}
 
+inline void CSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag){}
+
 inline void CSolver::MixedOut_Average (su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *pressure_mix, su2double *density_mix){}
 
 inline void CSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density){}
 
-inline void CSolver::Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-		                               unsigned short val_Marker, vector<std::complex<su2double> > &c4k,signed long &nboundaryvertex){}
-
-inline void CSolver::Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker,
-		                              vector<std::complex<su2double> >& c2k,vector<std::complex<su2double> >& c3k,signed long& nboundaryvertex) {}
 inline void CSolver::SetExtAveragedValue(CSolver *solver_container, unsigned short intMarker,  unsigned short extMarker){ }
 
 inline void CSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }

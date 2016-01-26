@@ -8907,13 +8907,100 @@ void CEulerSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Av
 }
 
 
-void CEulerSolver::Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<su2double> >& c4k,signed long& nboundaryvertex) {
+void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag) {
   /* Implementation of Fuorier Transformations for non-regfelcting BC will come soon */
+	su2double c4j, cc, rhoc, AvgMach, Pressure_i, deltaPressure, NormalVelocity, deltaNormalVelocity, c4temp,jk_nVert, *turboNormal, *turboVelocity, *Velocity_i;
+	unsigned short iMarker, iSpan, iMarkerTP, iDim;
+	unsigned long iVertex, iPoint, nVert, kstart, kend, k;
+	unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
+	int j;
+	int rank = MASTER_NODE;
+	turboNormal 	= new su2double[nDim];
+	turboVelocity = new su2double[nDim];
+	Velocity_i 		= new su2double[nDim];
+	complex<su2double> I,c4ktemp;
+
+	I = complex<su2double>(0.0,1.0);
+
+#ifdef HAVE_MPI
+  su2double MyIm, MyRe, Im, Re;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+#endif
+
+	nVert	= geometry->GetnVertexSpanMax(marker_flag);
+	kstart = 1;
+	kend = nVert/2 - 1;
+
+	std::vector<std::complex<su2double> > ck(kend);
+	for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
+		for(k=kstart; k < kend+1; k++){
+			c4ktemp = complex<su2double>(0.0,0.0);
+			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+				for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
+					if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
+						if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+
+							cc = AverageSoundSpeed[iMarker][iSpan]*AverageSoundSpeed[iMarker][iSpan];
+							rhoc = AverageSoundSpeed[iMarker][iSpan]*AverageDensity[iMarker][iSpan];
+							AvgMach = AverageMach[iMarker][iSpan];
+							nVert = geometry->GetnTotVertexSpan(iMarker,iSpan);
+							for (iVertex = 0; iVertex < geometry->nVertexSpan[iMarker][iSpan]; iVertex++) {
+
+								/*--- find the node related to the vertex ---*/
+								iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
+								j			 = geometry->turbovertex[iMarker][iSpan][iVertex]->GetGlobalVertexIndex();
+								geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(turboNormal);
+								/*--- Compute the internal state _i ---*/
+								for (iDim = 0; iDim < nDim; iDim++)
+								{
+									Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
+								}
+								Pressure_i = node[iPoint]->GetPressure();
+								ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity);
+								NormalVelocity	= turboVelocity[0];
+								deltaPressure = Pressure_i - AveragePressure[iMarker][iSpan];
+								deltaNormalVelocity= NormalVelocity - AverageNormalVelocity[iMarker][iSpan];
+								c4j=-rhoc*deltaNormalVelocity + deltaPressure;
+								jk_nVert = j*k/su2double(nVert);
+//								cout << jk_nVert<< " j " << j << " k " << k << " nVert " << nVert << endl;
+								c4ktemp +=  1.0/(nVert)*c4j*exp(-I*PI_NUMBER*2.0*jk_nVert);
+							}
+						}
+					}
+				}
+			}
+
+#ifdef HAVE_MPI
+			MyRe = c4ktemp.real(); Re = 0.0;
+			MyIm = c4ktemp.imag(); Im = 0.0;
+			c4ktemp = complex<su2double>(0.0,0.0);
+
+			SU2_MPI::Allreduce(&MyRe, &Re, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+			SU2_MPI::Allreduce(&MyIm, &Im, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+			c4ktemp = complex<su2double>(Re,Im);
+#endif
+
+		 ck[k-1]= c4ktemp;
+		 if(rank == MASTER_NODE)
+			 cout << "real "<< ck[k-1].real()<< " imag "<< ck[k-1].imag() << " at k "<< k << endl;
+		}
+
+
+
+	}
+
+	delete [] turboVelocity;
+	delete [] turboNormal;
+	delete [] Velocity_i;
+
+
+
+
 }
 
-void CEulerSolver::Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<su2double> >& c2k,vector<std::complex<su2double> >& c3k,signed long& nboundaryvertex) {
-  /* Implementation of Fuorier Transformations for non-regfelcting BC will come soon */
-}
+
 
 void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {

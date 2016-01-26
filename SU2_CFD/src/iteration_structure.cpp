@@ -123,6 +123,7 @@ void CMeanFlowIteration::Preprocess(COutput *output,
   	MPI_Comm_size(MPI_COMM_WORLD, &size);
 // 	if(size > 1)
   		SetMPITurboPerformance(geometry_container, solver_container, config_container, output, val_iZone);
+
 // 	else
 //  		SetTurboPerformance(geometry_container, solver_container, config_container, output, val_iZone);
 #else
@@ -623,6 +624,8 @@ void CMeanFlowIteration::SetMPITurboPerformance(CGeometry ***geometry_container,
 solver_container[iZone][MESH_0][FLOW_SOL]->MPISpanMixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], INFLOW);
 solver_container[iZone][MESH_0][FLOW_SOL]->MPISpanMixing_Process(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], OUTFLOW);
 solver_container[iZone][MESH_0][FLOW_SOL]->MPITurboPerformance(config_container[iZone], geometry_container[iZone][MESH_0]);
+solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessBC_NonReflecting(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], INFLOW);
+//solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessBC_NonReflecting(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], config_container[iZone], OUTFLOW);
 
 }
 

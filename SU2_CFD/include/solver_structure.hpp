@@ -922,6 +922,16 @@ public:
 	 */
 	virtual void MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag);
 
+
+	/*!
+	 * \brief It computes Fourier transformation for the needed quantities along the pitch for each span in turbomachinery analysis.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] marker_flag - Surface marker flag where the function is applied.
+	 */
+	virtual void PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag);
+
 	/*!
 	 * \brief it performs a mixed out average of the nodes of a boundary.
 	 * \param[in] val_init_pressure -  initial pressure value
@@ -941,29 +951,6 @@ public:
 	 * \param[in] density - value of the mixed-out avaraged density.
 	 */
 	virtual void MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 * \param[in]  c4k - Fourier transformation coefficients.
-	 * \param[in]  nboundaryvertex - pithcwise ordered vertex.
-	 */
-	virtual void Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<su2double> > &c4k,signed long &nboundaryvertex);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 * \param[in]  c2k - Fourier transformation coefficients.
-	 * \param[in]  c3k - Fourier transformation coefficients.
-	 * \param[in]  nboundaryvertex - pithcwise ordered vertex.
-	 */
-	virtual void Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<su2double> >& c2k,vector<std::complex<su2double> >& c3k,signed long& nboundaryvertex);
 
 	/*!
 	 * \brief A virtual member.
@@ -3527,16 +3514,23 @@ public:
 	 */
 	void MPIMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag);
 
-
 	/*!
 	 * \brief It computes average quantities along the span for turbomachinery analysis.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
      * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 * \param[in] marker_flag - Surface marker flag where the function is applied.
 	 */
 	void MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag);
 
+	/*!
+	 * \brief It computes Fourier transformation for the needed quantities along the pitch for each span in turbomachinery analysis.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+     * \param[in] config - Definition of the particular problem.
+	 * \param[in] marker_flag - Surface marker flag where the function is applied.
+	 */
+	void PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag);
 	/*!
 	 * \brief it performs a mixed out average of the nodes of a boundary.
 	 * \param[in] val_init_pressure -  initial pressure value
@@ -3572,29 +3566,6 @@ public:
 	 * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
 	 */
 	void ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity);
-
-	/*!
-	 * \brief it performs a fourier transformation of a characteristic value.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 * \param[in]  c4k - Fourier transformation coefficients.
-	 * \param[in]  nboundaryvertex - pithcwise ordered vertex.
-	 */
-	void Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<su2double> > &c4k,signed long &nboundaryvertex);
-
-	/*!
-	 * \brief it performs a fourier transformation of a characteristic value.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 * \param[in]  c2k - Fourier transformation coefficients.
-	 * \param[in]  c3k - Fourier transformation coefficients.
-	 * \param[in]  nboundaryvertex - pithcwise ordered vertex.
-	 */
-	void Boundary_Fourier(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker, vector<std::complex<su2double> >& c2k,vector<std::complex<su2double> >& c3k,signed long& nboundaryvertex);
 
 	/*!
 	 * \brief A virtual member.
