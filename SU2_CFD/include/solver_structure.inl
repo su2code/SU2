@@ -1148,9 +1148,5 @@ inline void CTurbSSTSolver::SetFreeStream_Solution(CConfig *config){
 
 inline su2double CSolver::GetTotal_Sens_FlowParam(unsigned short iMarker, unsigned short iParam){return 0.0;}
 
-inline su2double CSolver::GetTotal_Sens_FlowDir(unsigned short iMarker, unsigned short iDir){return 0.0;}
-
 inline su2double CDiscAdjSolver::GetTotal_Sens_FlowParam(unsigned short iMarker, unsigned short iParam){return Total_Sens_FlowParam[iMarker][iParam];}
-
-inline su2double CDiscAdjSolver::GetTotal_Sens_FlowDir(unsigned short iMarker, unsigned short iDir){return Total_Sens_FlowDir[iMarker][iDir];}
 

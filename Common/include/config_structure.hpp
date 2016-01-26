@@ -230,7 +230,6 @@ private:
 	su2double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
     su2double **Inlet_FlowParamUnst;  /*!< \brief Specified actuation parameters for UNSTEADY inlet boundaries. */
     su2double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
-    su2double **Inlet_FlowDirUnst;  /*!< \brief Specified 2 flow direction angles wrt the averaged surface normal for UNSTEADY inlet boundaries. */
 	su2double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
 	su2double *Inlet_Pressure;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
 	su2double **Inlet_Velocity;  /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
@@ -884,10 +883,10 @@ private:
   }
 
   void addInletUnstOption(const string name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
-                                 su2double* & Rho, su2double** & FlowParam, su2double** & FlowDir) {
+                                 su2double* & Rho, su2double** & FlowParam) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionInletUnst(name, nMarker_Inlet, Marker_Inlet, Rho, FlowParam , FlowDir);
+    COptionBase* val = new COptionInletUnst(name, nMarker_Inlet, Marker_Inlet, Rho, FlowParam);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -2318,6 +2317,14 @@ public:
 	 *         has the marker <i>val_marker</i>.
 	 */
 	string GetMarker_EngineExhaust(unsigned short val_marker);
+
+  /*!
+   * \brief Get the index of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Value of the index that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_InletUnst(unsigned short val_marker);
 
     /*!
 	 * \brief Get the name of the surface defined in the geometry file.
@@ -4644,14 +4651,6 @@ public:
 	 * \return The flow direction vector.
 	 */
 	su2double* GetInlet_FlowDir(string val_index);
-
-    /*!
-     * \brief Get the flow angles wrt inlet surface normal at an inlet boundary (UNSTEADY).
-     * \param[in] val_index - Index corresponding to the inlet boundary.
-     * \return The flow direction vector.
-     */
-    su2double* GetInlet_FlowDirUnst(string val_index);
-
 
 	/*!
 	 * \brief Get the back pressure (static) at an outlet boundary.

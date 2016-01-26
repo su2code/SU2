@@ -1471,7 +1471,14 @@ void CDiscAdjMeanFlowIteration::Update(COutput *output,
                                        CSurfaceMovement **surface_movement,
                                        CVolumetricMovement **grid_movement,
                                        CFreeFormDefBox*** FFDBox,
-                                       unsigned short val_iZone)      { }
+                                       unsigned short val_iZone)      {
+
+  solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->Postprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0);
+
+  if (turbulent){
+    solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->Postprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0);
+  }
+}
 void CDiscAdjMeanFlowIteration::Monitor()     { }
 void CDiscAdjMeanFlowIteration::Output()      { }
 void CDiscAdjMeanFlowIteration::Postprocess() { }
