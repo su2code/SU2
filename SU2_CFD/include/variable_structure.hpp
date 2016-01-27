@@ -4,7 +4,7 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -49,7 +49,7 @@ using namespace std;
  * \class CVariable
  * \brief Main class for defining the variables.
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CVariable {
 protected:
@@ -250,6 +250,8 @@ public:
 	 * \param[in] val_solution - Value of the solution change.
 	 * \param[in] val_density - Value of the density.
 	 * \param[in] val_density_old - Value of the old density.
+   * \param[in] lowerlimit - Lower value.
+   * \param[in] upperlimit - Upper value.
 	 */
 	void AddConservativeSolution(unsigned short val_var, su2double val_solution,
 			su2double val_density, su2double val_density_old, su2double lowerlimit,
@@ -472,6 +474,7 @@ public:
   
   /*!
 	 * \brief Set the value of the limiter.
+	 * \param[in] val_species - Index of the species .
 	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_limiter - Value of the limiter for the index <i>val_var</i>.
 	 */
@@ -479,7 +482,7 @@ public:
   
   /*!
 	 * \brief Set the value of the limiter.
-   * \param[in] val_species - Value of the limiter for the index <i>val_var</i>.
+   * \param[in] val_species - Index of the species .
 	 * \param[in] val_var - Index of the variable.
 	 */
   virtual su2double GetLimiterPrimitive(unsigned short val_species, unsigned short val_var);
@@ -703,7 +706,7 @@ public:
 	/*!
 	 * \brief Set pressure sensor.
 	 * \param[in] val_sensor - Value of the pressure sensor.
-	 * \param[in] val_sensor - Index of the Species.
+	 * \param[in] iSpecies - Index of the species.
 	 */
 	virtual void SetSensor(su2double val_sensor, unsigned short iSpecies);
 
@@ -994,7 +997,6 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] val_dim - Index of the dimension.
 	 * \return Value of the vorticity.
 	 */		
 	virtual su2double *GetVorticity(void);
@@ -1256,17 +1258,25 @@ public:
   
   /*!
 	 * \brief A virtual member.
+	 * \param[in] V
 	 * \param[in] config - Configuration settings
+	 * \param[in] dPdU
 	 */
 	virtual void CalcdPdU(su2double *V, CConfig *config, su2double *dPdU);
   
   /*!
    * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   * \param[in] V
+   * \param[in] config - Configuration settings
+   * \param[in] dTdU
    */
   virtual void CalcdTdU(su2double *V, CConfig *config, su2double *dTdU);
   
   /*!
    * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
+   * \param[in] V
+   * \param[in] config - Configuration settings
+   * \param[in] dTdU
    */
   virtual void CalcdTvedU(su2double *V, CConfig *config, su2double *dTdU);
   
@@ -1341,6 +1351,7 @@ public:
   /*!
 	 * \brief A virtual member.
 	 * \param[in] config - Configuration parameters.
+	 * \param[in] Coord - Physical coordinates.
 	 */
 	virtual void SetPrimitive(CConfig *config, su2double *Coord);
 	
@@ -1475,7 +1486,7 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] thermalConductivity
 	 */
 	virtual void SetThermalConductivity(su2double thermalConductivity);
   
@@ -1487,7 +1498,7 @@ public:
   
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] Cp - Constant pressure specific heat.
 	 */
 	virtual void SetSpecificHeatCp(su2double Cp);
 
@@ -1699,6 +1710,7 @@ public:
 
 	/*!
 	 * \brief A virtual member.
+	 * \param[in] val_var - Index of the variable.
 	 * \param[in] val_source - Value of the time spectral source.
 	 */
 	virtual void SetTimeSpectral_Source(unsigned short val_var, su2double val_source);
@@ -1711,6 +1723,7 @@ public:
 	/*!
 	 * \brief Set the Eddy Viscosity Sensitivity of the problem.
 	 * \param[in] val_EddyViscSens - Eddy Viscosity Sensitivity.
+	 * \param[in] numTotalVar - Number of variables.
 	 */
 	virtual void SetEddyViscSens(su2double *val_EddyViscSens, unsigned short numTotalVar);
 
@@ -1739,13 +1752,12 @@ public:
 
 	/*!
 	 * \brief Set the value of the old solution.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
 	 */
 	virtual void SetSolution_time_n(void);
 
 	/*!
 	 * \brief Set the value of the old solution.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 * \param[in] val_solution_time_n - Pointer to the residual vector.
 	 */
 	virtual void SetSolution_time_n(su2double *val_solution_time_n);
 
@@ -1759,26 +1771,25 @@ public:
 	/*!
 	 * \overload
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_solution - Value of the solution for the index <i>val_var</i>.
+	 * \param[in] val_solution_vel - Value of the solution for the index <i>val_var</i>.
 	 */
 	virtual void SetSolution_Vel(unsigned short val_var, su2double val_solution_vel);
 
 	/*!
 	 * \brief Set the value of the velocity (Structural Analysis) at time n.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 * \param[in] val_solution_vel_time_n - Value of the old solution.
 	 */
 	virtual void SetSolution_Vel_time_n(su2double *val_solution_vel_time_n);
 
 	/*!
 	 * \brief Set the value of the velocity (Structural Analysis) at time n.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
 	 */
 	virtual void SetSolution_Vel_time_n(void);
 
 	/*!
 	 * \overload
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_solution_old - Value of the old solution for the index <i>val_var</i>.
+	 * \param[in] val_solution_vel_time_n - Value of the old solution for the index <i>val_var</i>.
 	 */
 	virtual void SetSolution_Vel_time_n(unsigned short val_var, su2double val_solution_vel_time_n);
 
@@ -1818,33 +1829,32 @@ public:
 
 	/*!
 	 * \brief Set the value of the acceleration (Structural Analysis).
-	 * \param[in] val_solution - Solution of the problem (acceleration).
+	 * \param[in] val_solution_accel - Solution of the problem (acceleration).
 	 */
 	virtual void SetSolution_Accel(su2double *val_solution_accel);
 
 	/*!
 	 * \overload
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_solution - Value of the solution for the index <i>val_var</i>.
+	 * \param[in] val_solution_accel - Value of the solution for the index <i>val_var</i>.
 	 */
 	virtual void SetSolution_Accel(unsigned short val_var, su2double val_solution_accel);
 
 	/*!
 	 * \brief Set the value of the acceleration (Structural Analysis) at time n.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 * \param[in] val_solution_accel_time_n - Pointer to the residual vector.
 	 */
 	virtual void SetSolution_Accel_time_n(su2double *val_solution_accel_time_n);
 
 	/*!
 	 * \brief Set the value of the acceleration (Structural Analysis) at time n.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
 	 */
 	virtual void SetSolution_Accel_time_n(void);
 
 	/*!
 	 * \overload
 	 * \param[in] val_var - Index of the variable.
-	 * \param[in] val_solution_old - Value of the old solution for the index <i>val_var</i>.
+	 * \param[in] val_solution_accel_time_n - Value of the old solution for the index <i>val_var</i>.
 	 */
 	virtual void SetSolution_Accel_time_n(unsigned short val_var, su2double val_solution_accel_time_n);
 
@@ -1882,7 +1892,7 @@ public:
 
 	/*!
 	 * \brief  A virtual member. Set the value of the old solution.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 * \param[in] val_solution_pred - Pointer to the residual vector.
 	 */
 	virtual void SetSolution_Pred(su2double *val_solution_pred);
 
@@ -1906,7 +1916,7 @@ public:
 
 	/*!
 	 * \brief  A virtual member. Set the value of the old solution.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 * \param[in] val_solution_pred_Old - Pointer to the residual vector.
 	 */
 	virtual void SetSolution_Pred_Old(su2double *val_solution_pred_Old);
 
@@ -2002,7 +2012,7 @@ public:
  * \class CBaselineVariable
  * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CBaselineVariable : public CVariable {
 public:
@@ -2032,7 +2042,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CPotentialVariable : public CVariable {
 	su2double *Charge_Density;
@@ -2076,7 +2086,7 @@ public:
  * \brief Main class for defining the variables of the wave equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CWaveVariable : public CVariable {
 protected:
@@ -2122,7 +2132,7 @@ public:
  * \brief Main class for defining the variables of the Heat equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CHeatVariable : public CVariable {
 protected:
@@ -2168,7 +2178,7 @@ public:
  * \brief Main class for defining the variables of the FEA equation solver.
  * \ingroup Structural Finite Element Analysis Variables
  * \author F. Palacios, R. Sanchez.
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CFEAVariable : public CVariable {
 protected:
@@ -2420,7 +2430,7 @@ public:
 
 	/*!
 	 * \brief Set the value of the old solution.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 * \param[in] val_solution_pred - Pointer to the residual vector.
 	 */
 	void SetSolution_Pred(su2double *val_solution_pred);
 
@@ -2444,7 +2454,7 @@ public:
 
 	/*!
 	 * \brief Set the value of the old solution.
-	 * \param[in] val_solution_old - Pointer to the residual vector.
+	 * \param[in] val_solution_pred_Old - Pointer to the residual vector.
 	 */
 	void SetSolution_Pred_Old(su2double *val_solution_pred_Old);
 
@@ -2527,7 +2537,7 @@ public:
  * \brief Main class for defining the variables of the Euler's solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CEulerVariable : public CVariable {
 protected:
@@ -3011,7 +3021,7 @@ public:
  * \brief Main class for defining the variables of the Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CNSVariable : public CEulerVariable {
 private:
@@ -3212,7 +3222,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CTurbVariable : public CVariable {
 protected:
@@ -3256,7 +3266,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 
 class CTurbSAVariable : public CTurbVariable {
@@ -3303,7 +3313,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 
 class CTurbMLVariable : public CTurbVariable {
@@ -3349,7 +3359,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 
 class CTransLMVariable : public CTurbVariable {
@@ -3366,6 +3376,7 @@ public:
 	/*!
 	 * \overload
 	 * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
+	 * \param[in] val_intermittency
 	 * \param[in] val_REth
 	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
@@ -3401,7 +3412,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 
 class CTurbSSTVariable : public CTurbVariable {
@@ -3422,8 +3433,10 @@ public:
 	 * \overload
 	 * \param[in] val_rho_kine - Turbulent variable value (initialization value).
 	 * \param[in] val_rho_omega - Turbulent variable value (initialization value).
+   * \param[in] val_muT - Turbulent variable value (initialization value).
 	 * \param[in] val_nDim - Number of dimensions of the problem.
 	 * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] constants -
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	CTurbSSTVariable(su2double val_rho_kine, su2double val_rho_omega, su2double val_muT, unsigned short val_nDim, unsigned short val_nvar,
@@ -3464,7 +3477,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CAdjEulerVariable : public CVariable {
 protected:
@@ -3586,7 +3599,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CAdjNSVariable : public CAdjEulerVariable {	
 private:
@@ -3658,7 +3671,7 @@ public:
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CAdjTurbVariable : public CVariable {
 protected:
@@ -3708,7 +3721,7 @@ public:
  * \brief Main class for defining the variables of the Level Set.
  * \ingroup LevelSet_Model
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CAdjLevelSetVariable : public CVariable {
 public:
@@ -3746,7 +3759,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CTemplateVariable : public CVariable {
 public:
@@ -3776,7 +3789,7 @@ public:
  * \brief Main class for defining the variables of the adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring.
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CDiscAdjVariable : public CVariable {
 private:

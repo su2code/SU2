@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -104,7 +104,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
+	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = config->GetAdjoint();
   string filename = config->GetSolution_FlowFileName();
   
@@ -556,7 +557,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     
   } else {
     
-    /*--- Modify file name for an unsteady restart ---*/
+    /*--- Modify file name for a dual-time unsteady restart ---*/
     
     if (dual_time) {
       
@@ -571,7 +572,19 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     if (nZone >1)
       filename= config->GetRestart_FlowFileName(filename, iZone);
     
-    /*--- Open the restart file, throw an error if this fails. ---*/
+		/*--- Modify file name for a time stepping unsteady restart ---*/
+		
+		if (time_stepping) {
+			if (adjoint) {
+				Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
+			} else {
+				Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+			}
+			filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+		}
+		
+		
+		/*--- Open the restart file, throw an error if this fails. ---*/
     
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
@@ -2770,7 +2783,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   bool rans = ((config->GetKind_Solver() == RANS) ||
                (config->GetKind_Solver() == ADJ_RANS) ||
                (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool gravity = (config->GetGravityForce() == YES);
   bool engine_intake = config->GetEngine_Intake();
@@ -3253,6 +3266,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement = config->GetGrid_Movement();
+	bool time_steping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
@@ -3424,7 +3438,7 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   
   /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
   
-  if (config->GetUnsteady_Simulation() == TIME_STEPPING) {
+  if (time_steping) {
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Global_Delta_Time;
@@ -3432,8 +3446,19 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
     SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     Global_Delta_Time = rbuf_time;
 #endif
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-      node[iPoint]->SetDelta_Time(Global_Delta_Time);
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+			
+			/*--- Sets the regular CFL equal to the unsteady CFL ---*/
+			config->SetCFL(iMesh,config->GetUnst_CFL());
+			
+			/*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step, otherwise
+			 it computes the time step based on the unsteady CFL ---*/
+			if (config->GetCFL(iMesh) == 0.0){
+				node[iPoint]->SetDelta_Time(config->GetDelta_UnstTime());
+			} else {
+				node[iPoint]->SetDelta_Time(Global_Delta_Time);
+			}
+		}
   }
   
   /*--- Recompute the unsteady time step for the dual time strategy
@@ -3542,7 +3567,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   bool grid_movement    = config->GetGrid_Movement();
   bool roe_turkel       = (config->GetKind_Upwind_Flow() == TURKEL);
   bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
-  
+  bool low_mach_corr    = config->Low_Mach_Correction();
+
   /*--- Loop over all the edges ---*/
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -3570,10 +3596,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     
     V_i = node[iPoint]->GetPrimitive(); V_j = node[jPoint]->GetPrimitive();
     S_i = node[iPoint]->GetSecondary(); S_j = node[jPoint]->GetSecondary();
-    
+
     /*--- The zero order reconstruction includes the gradient
-     of the hydrostatic pressure constribution ---*/
-    
+     of the hydrostatic pressure contribution ---*/
+
     if (freesurface) {
       
       YDistance = 0.5*(geometry->node[jPoint]->GetCoord(nDim-1)-geometry->node[iPoint]->GetCoord(nDim-1));
@@ -3581,14 +3607,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       Primitive_i[0] = V_i[0] - GradHidrosPress*YDistance;
       GradHidrosPress = node[jPoint]->GetDensityInc()/(config->GetFroude()*config->GetFroude());
       Primitive_j[0] = V_j[0] + GradHidrosPress*YDistance;
-      
+    
       for (iVar = 1; iVar < nPrimVar; iVar++) {
         Primitive_i[iVar] = V_i[iVar]+EPS;
         Primitive_j[iVar] = V_j[iVar]+EPS;
       }
       
     }
-    
+
     /*--- High order reconstruction using MUSCL strategy ---*/
     
     if (second_order) {
@@ -3621,16 +3647,50 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
         }
       }
-      
+
       /*--- Recompute the extrapolated quantities in a
        thermodynamic consistent way  ---*/
-      
-      if (!ideal_gas) { ComputeConsExtrapolation(config); }
+
+      if (!ideal_gas || low_mach_corr) { ComputeConsExtrapolation(config); }
+
+      /*--- Low-Mach number correction ---*/
+
+      if (low_mach_corr) {
+        su2double z, velocity2_i = 0.0, velocity2_j = 0.0, mach_i, mach_j, vel_i_corr[3], vel_j_corr[3];
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          velocity2_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
+          velocity2_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
+        }
+        mach_i = sqrt(velocity2_i)/Primitive_i[nDim+4];
+        mach_j = sqrt(velocity2_j)/Primitive_j[nDim+4];
+
+        z = min(max(mach_i,mach_j),1.0);
+        velocity2_i = 0.0;
+        velocity2_j = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+        	vel_i_corr[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
+        			+ z * ( Primitive_i[iDim+1] - Primitive_j[iDim+1] )/2.0;
+        	vel_j_corr[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
+        			+ z * ( Primitive_j[iDim+1] - Primitive_i[iDim+1] )/2.0;
+
+        	velocity2_j += vel_j_corr[iDim+1]*vel_j_corr[iDim+1];
+        	velocity2_i += vel_i_corr[iDim+1]*vel_i_corr[iDim+1];
+
+        	Primitive_i[iDim+1] = vel_i_corr[iDim+1];
+        	Primitive_j[iDim+1] = vel_j_corr[iDim+1];
+        }
+
+        FluidModel->SetEnergy_Prho(Primitive_i[nDim+1],Primitive_i[nDim+2]);
+        Primitive_i[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_i[nDim+1]/Primitive_i[nDim+2] + 0.5*velocity2_i;
+        FluidModel->SetEnergy_Prho(Primitive_j[nDim+1],Primitive_j[nDim+2]);
+        Primitive_j[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_j[nDim+1]/Primitive_j[nDim+2] + 0.5*velocity2_j;
+      }
       
       /*--- Check for non-physical solutions after reconstruction. If found,
        use the cell-average value of the solution. This results in a locally
        first-order approximation, but this is typically only active
-       during the start-up of a calculation. If non-physical, use the
+       during the start-up of a calculation. If non-physical, use the 
        cell-averaged state. ---*/
       
       if (compressible) {
@@ -3670,7 +3730,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         if (compressible) { Secondary_j[0] = S_j[0]; Secondary_j[1] = S_j[1]; }
         counter_local++;
       }
-      
+
       numerics->SetPrimitive(Primitive_i, Primitive_j);
       numerics->SetSecondary(Secondary_i, Secondary_j);
       
@@ -3691,7 +3751,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Compute the residual ---*/
     
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
-    
+
     /*--- Update residual value ---*/
     
     LinSysRes.AddBlock(iPoint, Res_Conv);
@@ -3719,7 +3779,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
-    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    MPI_Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #else
     counter_global = counter_local;
 #endif
@@ -4963,12 +5023,19 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
     r11 = 0.0; r12 = 0.0;   r13 = 0.0;    r22 = 0.0;
     r23 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
     
+    AD::StartPreacc();
+    AD::SetPreaccIn(PrimVar_i, nPrimVarGrad);
+    AD::SetPreaccIn(Coord_i, nDim);
+    
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
       Coord_j = geometry->node[jPoint]->GetCoord();
       
       PrimVar_j = node[jPoint]->GetPrimitive();
       
+      AD::SetPreaccIn(Coord_j, nDim);
+      AD::SetPreaccIn(PrimVar_j, nPrimVarGrad);
+
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
@@ -5060,6 +5127,8 @@ void CEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config
       }
     }
     
+    AD::SetPreaccOut(node[iPoint]->GetGradient_Primitive(), nPrimVarGrad, nDim);
+    AD::EndPreacc();
   }
   
   Set_MPI_Primitive_Gradient(geometry, config);
@@ -5191,8 +5260,20 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
       
+
+      AD::StartPreacc();
+      AD::SetPreaccIn(Gradient_i, nPrimVarGrad, nDim);
+      AD::SetPreaccIn(Gradient_j, nPrimVarGrad, nDim);
+      AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+
+
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
+
         /*--- Calculate the interface left gradient, delta- (dm) ---*/
         
         dm = 0.0;
@@ -5206,8 +5287,10 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
         
         limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
         
-        if (limiter < node[iPoint]->GetLimiter_Primitive(iVar))
+        if (limiter < node[iPoint]->GetLimiter_Primitive(iVar)){
           node[iPoint]->SetLimiter_Primitive(iVar, limiter);
+          AD::SetPreaccOut(node[iPoint]->GetLimiter_Primitive()[iVar]);
+        }
         
         /*-- Repeat for point j on the edge ---*/
         
@@ -5220,9 +5303,13 @@ void CEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) {
         
         limiter = ( dp*dp + 2.0*dp*dm + eps2 )/( dp*dp + dp*dm + 2.0*dm*dm + eps2);
         
-        if (limiter < node[jPoint]->GetLimiter_Primitive(iVar))
+        if (limiter < node[jPoint]->GetLimiter_Primitive(iVar)){
           node[jPoint]->SetLimiter_Primitive(iVar, limiter);
+          AD::SetPreaccOut(node[jPoint]->GetLimiter_Primitive()[iVar]);
+        }
       }
+
+      AD::EndPreacc();
       
     }
     
@@ -7851,7 +7938,7 @@ void CEulerSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_containe
   AveragedNormalMach[val_Marker] = AveragedNormalVelocity[val_Marker]/AveragedSoundSpeed[val_Marker];
   
   
-  if ((AveragedDensity[val_Marker]!= AveragedDensity[val_Marker]) or (AveragedEnthalpy[val_Marker]!=AveragedEnthalpy[val_Marker]))
+  if ((AveragedDensity[val_Marker]!= AveragedDensity[val_Marker]) || (AveragedEnthalpy[val_Marker]!=AveragedEnthalpy[val_Marker]))
     cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(val_Marker)<< endl;
   
   /*--- Free locally allocated memory ---*/
@@ -11116,6 +11203,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   bool grid_movement  = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   string UnstExt, text_line;
   ifstream restart_file;
   
@@ -11132,7 +11220,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   
   /*--- Modify file name for an unsteady restart ---*/
   
-  if (dual_time)
+  if (dual_time || time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
   
   /*--- Open the restart file, and throw an error if this fails. ---*/
@@ -11544,6 +11632,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = config->GetAdjoint();
   string filename = config->GetSolution_FlowFileName();
@@ -12069,6 +12158,18 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     
     if (nZone >1)
       filename= config->GetRestart_FlowFileName(filename, iZone);
+		
+		
+		/*--- Modify file name for a simple unsteady restart ---*/
+		
+		if (time_stepping) {
+			if (adjoint) {
+				Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
+			} else {
+				Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+			}
+			filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
+		}
     
     /*--- Open the restart file, throw an error if this fails. ---*/
     

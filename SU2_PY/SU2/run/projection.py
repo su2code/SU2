@@ -3,7 +3,7 @@
 ## \file projection.py
 #  \brief python package for running gradient projection
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.0.2 "Cardinal"
+#  \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -44,8 +44,8 @@ from interface import DOT as SU2_DOT
 #  Gradient Projection
 # ----------------------------------------------------------------------
 
-def projection( config, step = 1e-3 ):
-    """ info = SU2.run.projection(config,step=1e-3)
+def projection( config, state={}, step = 1e-3 ):
+    """ info = SU2.run.projection(config,state,step=1e-3)
         
         Runs an gradient projection with:
             SU2.run.decomp()
@@ -57,6 +57,7 @@ def projection( config, step = 1e-3 ):
             
         Inputs:
             config - an SU2 config
+            state  - only required when using external custom DV
             step   - a float or list of floats for geometry sensitivity
                      finite difference step
             
@@ -99,6 +100,18 @@ def projection( config, step = 1e-3 ):
     raw_gradients = su2io.read_gradients(grad_filename)
     os.remove(grad_filename)
     
+    info = su2io.State()
+    
+    if (objective == 'OUTFLOW_GENERALIZED') and ('CUSTOM' in konfig.DV_KIND):
+        import downstream_function # Must be defined in run folder
+        chaingrad = downstream_function.downstream_gradient(konfig,state,step)
+        n_dv = len(raw_gradients)
+        custom_dv=1
+        for idv in range(n_dv):
+            if (konfig.DV_KIND[idv] == 'CUSTOM'):
+                raw_gradients[idv] = chaingrad[4+custom_dv]
+                custom_dv = custom_dv+1
+    
     # Write Gradients
     data_plot = su2util.ordered_bunch()
     data_plot['VARIABLE']     = range(len(raw_gradients)) 
@@ -110,7 +123,6 @@ def projection( config, step = 1e-3 ):
     gradients = { objective : raw_gradients }
     
     # info out
-    info = su2io.State()
     info.GRADIENTS.update( gradients )
     
     return info

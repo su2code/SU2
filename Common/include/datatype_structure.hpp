@@ -3,7 +3,7 @@
  * \brief Headers for generalized datatypes.
  *        The subroutines and functions are in the <i>datatype_structure.cpp</i> file.
  * \author T. Albring
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -42,12 +42,6 @@
 #if defined COMPLEX_TYPE
 #include "datatypes/complex_structure.hpp"
 #define SPRINTF sprintfOver
-#elif defined ADOLC_FORWARD_TYPE
-#define SPRINTF sprintfOver
-#include "datatypes/adolc_forward_structure.hpp"
-#elif defined ADOLC_REVERSE_TYPE
-#define SPRINTF sprintfOver
-#include "datatypes/adolc_reverse_structure.hpp"
 #elif defined CODI_REVERSE_TYPE
 #define SPRINTF sprintfOver
 #include "datatypes/codi_reverse_structure.hpp"
@@ -59,6 +53,8 @@
 #include "datatypes/primitive_structure.hpp"
 #endif
 
+#include "ad_structure.hpp"
+
 /*--- This type can be used for (rare) compatiblity cases or for computations that are intended to be (always) passive. ---*/
 
 typedef double passivedouble;
@@ -68,7 +64,7 @@ typedef double passivedouble;
  * \brief Namespace for defining the datatype wrapper routines; this class features as a base class for
  * type interfaces for non-primitive dataypes e.g. used by AD, complex etc.
  * \author T. Albring
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 namespace SU2_TYPE{
   /*!
@@ -128,74 +124,6 @@ namespace SU2_TYPE{
   short Short(const su2double& data);
 }
 
-/*!
- * \namespace AD
- * \brief Contains routines for the reverse mode of AD.
- * In case there is no reverse type configured, they have no effect at all.
- */
-
-namespace AD{
-  /*!
-   * \brief Start the recording of the operations and involved variables.
-   * If called, the computational graph of all operations occuring after the call will be stored,
-   * starting with the variables registered with RegisterInput.
-   */
-  void StartRecording();
-
-  /*!
-   * \brief Stops the recording of the operations and variables.
-   */
-  void StopRecording();
-
-  /*!
-   * \brief Registers the variable as an input. I.e. as a leaf of the computational graph.
-   * \param[in] data - The variable to be registered as input.
-   */
-  void RegisterInput(su2double &data);
-
-  /*!
-   * \brief Registers the variable as an output. I.e. as the root of the computational graph.
-   * \param[in] data - The variable to be registered as output.
-   */
-  void RegisterOutput(su2double &data);
-
-  /*!
-   * \brief Clears the currently stored adjoints but keeps the computational graph.
-   */
-  void ClearAdjoints();
-
-  /*!
-   * \brief Computes the adjoints, i.e. the derivatives of the output with respect to the input variables.
-   */
-  void ComputeAdjoint();
-
-  /*!
-   * \brief Reset the tape structure to be ready for a new recording.
-   */
-  void Reset();
-
-  /*!
-   * \brief Reset the variable (set index to zero).
-   */
-  void ResetInput(su2double &data);
-
-}
-
-#ifdef CODI_REVERSE_TYPE
-#define AD_BEGIN_PASSIVE         \
-  if(AD::globalTape.isActive()) {\
-     AD::globalTape.setPassive();\
-     AD::Status = true;          \
-  }
-#define AD_END_PASSIVE           \
-  if(AD::Status) {               \
-     AD::globalTape.setActive(); \
-     AD::Status = false;         \
-  }
-#else
-#define AD_BEGIN_PASSIVE
-#define AD_END_PASSIVE
-#endif
 #include "datatype_structure.inl"
 
 
