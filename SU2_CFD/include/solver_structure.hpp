@@ -2967,7 +2967,9 @@ protected:
 			*NormalMachIn,
 			*NormalMachOut,
 			*VelocityOutIs;
-
+  complex<su2double> ***CkInflow,
+										 ***CkOutflow1,
+										 ***CkOutflow2;
 
 
 public:

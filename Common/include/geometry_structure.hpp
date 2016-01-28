@@ -236,6 +236,13 @@ public:
 	unsigned long GetnVertexSpanMax(unsigned short marker_flag);
 
 	/*!
+	 * \brief Get number of max frequencies for initializing the Fourier Coefficient for NR BC.
+	 * \param[in] marker_flag - Marker of the boundary.
+	 * \return Number of frequencies.
+	 */
+	unsigned long GetnFreqSpanMax(unsigned short marker_flag);
+
+	/*!
 	 * \brief Get number of vertices.
 	 * \param[in] val_marker - Marker of the boundary.
 	 * \return Number of vertices.
