@@ -4294,11 +4294,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
             
             /*--- Direct coefficients ---*/
-            SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
+            SPRINTF (direct_coeff, ", %12.12e, %12.12e, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
                      Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                      Total_CFz, Total_CEff);
             if (direct_diff != NO_DERIVATIVE){
-              SPRINTF (d_direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
+              SPRINTF (d_direct_coeff, ", %12.12e, %12.12e, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
                        D_Total_CLift, D_Total_CDrag, D_Total_CSideForce, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
                        D_Total_CFz, D_Total_CEff);
             }
@@ -4909,22 +4909,22 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case EULER : case NAVIER_STOKES:
           
           if (!DualTime_Iteration) {
-            if (compressible) ConvHist_file[0] << begin << direct_coeff << flow_resid;
-            if (incompressible) ConvHist_file[0] << begin << direct_coeff << flow_resid;
+            if (compressible) ConvHist_file[0] << begin   <<direct_coeff << flow_resid;
+            if (incompressible) ConvHist_file[0] << begin<< std::setprecision(12)  << direct_coeff << flow_resid;
             if (freesurface) ConvHist_file[0] << begin << direct_coeff << flow_resid << levelset_resid << end;
 //            if (fluid_structure) ConvHist_file[0] << fea_resid;
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_1d) ConvHist_file[0] << oneD_outputs;
             if (output_massflow && !output_1d) ConvHist_file[0] << massflow_outputs;
-            if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
+            if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << std::setprecision(12) <<d_direct_coeff;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
           
-          cout.precision(6);
+          cout.precision(12);
           cout.setf(ios::fixed, ios::floatfield);
-          cout.width(13); cout << log10(residual_flow[0]);
+          cout.width(19); cout << log10(residual_flow[0]);
 //          if (!fluid_structure && !equiv_area) {
           if (!equiv_area) {
             if (compressible) {
@@ -7911,11 +7911,11 @@ void COutput::SetFlowControl_Sens(CSolver ****solver_container, CConfig **config
     Filename = config[val_iZone]->GetObjFunc_Extension(Filename);
 
     FlowControl_file.open(Filename.c_str(), ios::out);
-    FlowControl_file.precision(6);
+    FlowControl_file.precision(12);
 
     for (iMarker_InletUnst = 0; iMarker_InletUnst < nMarker_InletUnst; iMarker_InletUnst++){
       for (iParam = 0; iParam < 5 ; iParam++){
-        FlowControl_file << Buffer_Recv_Sens_FlowParam[iMarker_InletUnst][iParam] << " ";
+        FlowControl_file << std::scientific<<Buffer_Recv_Sens_FlowParam[iMarker_InletUnst][iParam] << " ";
       }
       FlowControl_file << endl;
     }
