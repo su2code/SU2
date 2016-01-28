@@ -276,6 +276,7 @@ private:
 	unsigned long nExtIter;			/*!< \brief Number of external iterations. */
 	unsigned long ExtIter;			/*!< \brief Current external iteration number. */
 	unsigned long IntIter;			/*!< \brief Current internal iteration number. */
+	unsigned long FSIIter;			/*!< \brief Current Fluid Structure Interaction sub-iteration number. */
 	unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
 	unsigned long Dyn_nIntIter;			/*!< \brief Number of internal iterations (Newton-Raphson Method for nonlinear structural analysis). */
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
@@ -2189,20 +2190,32 @@ public:
 	void SetExtIter(unsigned long val_iter);
 
 	/*!
+	 * \brief Set the current FSI iteration number.
+	 * \param[in] val_iter - Current FSI iteration number.
+	 */
+	void SetFSIIter(unsigned long val_iter);
+
+	/*!
 	 * \brief Set the current internal iteration number.
 	 * \param[in] val_iter - Current external iteration number.
 	 */
 	void SetIntIter(unsigned long val_iter);
 
 	/*!
-	 * \brief Get the current internal iteration number.
+	 * \brief Get the current external iteration number.
 	 * \return Current external iteration.
 	 */
 	unsigned long GetExtIter(void);
 
 	/*!
-	 * \brief Get the current external iteration number.
-	 * \return Current external iteration.
+	 * \brief Get the current FSI iteration number.
+	 * \return Current FSI iteration.
+	 */
+	unsigned long GetFSIIter(void);
+
+	/*!
+	 * \brief Get the current internal iteration number.
+	 * \return Current internal iteration.
 	 */
 	unsigned long GetIntIter(void);
 
