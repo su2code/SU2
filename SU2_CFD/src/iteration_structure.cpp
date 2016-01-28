@@ -1235,7 +1235,7 @@ void CDiscAdjMeanFlowIteration::LoadCheckPoints(COutput *output,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-   cout<<"loading check points"<<endl;
+
   /*dual time stepping 1st or 2nd order */
   if (dual_time){
       int Direct_Iter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 1;
@@ -1247,7 +1247,7 @@ void CDiscAdjMeanFlowIteration::LoadCheckPoints(COutput *output,
           if (Direct_Iter>=2){
                 /*Load solution from 'TWO timesteps before'*/
                 if (rank == MASTER_NODE && val_iZone == ZONE_0)
-                  cout << endl << " Loading flow solution from direct iteration (d2, n-1) " << Direct_Iter-2 << "." << endl;
+                  cout << endl << " Loading flow solution from direct iteration " << Direct_Iter-2 << "." << endl;
                 solver_container[val_iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], Direct_Iter-2);
                 solver_container[val_iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0, Direct_Iter-2, RUNTIME_FLOW_SYS, false);
                 if (turbulent){
@@ -1261,7 +1261,7 @@ void CDiscAdjMeanFlowIteration::LoadCheckPoints(COutput *output,
           else{
               /*Set freestream condition in place for solution 'TWO timesteps before'*/
               if (rank == MASTER_NODE && val_iZone == ZONE_0)
-                cout << endl << " Setting freestream condition for direct iteration (d2, n-1) " << Direct_Iter-2 << "." << endl;
+                cout << endl << " Setting freestream condition for direct iteration " << Direct_Iter-2 << "." << endl;
               for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++){
                   solver_container[val_iZone][iMesh][FLOW_SOL]->SetFreeStream_Solution(config_container[val_iZone]);
                      if (turbulent){
@@ -1288,7 +1288,7 @@ void CDiscAdjMeanFlowIteration::LoadCheckPoints(COutput *output,
       if (Direct_Iter>=1){
           /*Load solution from 'ONE timestep before'*/
           if (rank == MASTER_NODE && val_iZone == ZONE_0)
-            cout << endl << " Loading flow solution from direct iteration (n)" << Direct_Iter-1 << "." << endl;
+            cout << endl << " Loading flow solution from direct iteration " << Direct_Iter-1 << "." << endl;
           solver_container[val_iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], Direct_Iter-1);
           solver_container[val_iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0, Direct_Iter-1, RUNTIME_FLOW_SYS, false);
           if (turbulent){
@@ -1373,7 +1373,6 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
                                         unsigned short val_iZone) {
   
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  // unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long IntIter=0, nIntIter = 1;
   bool dual_time_1st = (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST);
   bool dual_time_2nd = (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
