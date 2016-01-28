@@ -1907,9 +1907,10 @@ void CFSIDriver::Run(CIteration **iteration_container,
 	/*--- This will become more general, but we need to modify the configuration for that ---*/
 	unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
 	unsigned short iZone;
+	unsigned short nZone = config_container[ZONE_FLOW]->GetnZone();;
 
-	unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[IntIter]->SetIntIter(IntIter);
-	unsigned long iFSIIter = 0;
+	unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
+	unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
 	unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
 
 
@@ -1936,7 +1937,7 @@ void CFSIDriver::Run(CIteration **iteration_container,
             		      surface_movement, grid_movement, FFDBox,
             		      ZONE_STRUCT, ZONE_FLOW);
 
-	while (iFSIIter < nFSIIter){
+	while (FSIIter < nFSIIter){
 
 		/*-----------------------------------------------------------------*/
 		/*------------------- Transfer Displacements ----------------------*/
@@ -1997,22 +1998,22 @@ void CFSIDriver::Run(CIteration **iteration_container,
 		/*-----------------------------------------------------------------*/
 
 		Relaxation_Displacements(output, geometry_container, solver_container, config_container,
-								 ZONE_STRUCT, ZONE_FLOW, iFSIIter);
+								 ZONE_STRUCT, ZONE_FLOW, FSIIter);
 
 		/*-----------------------------------------------------------------*/
 		/*-------------------- Check convergence --------------------------*/
 		/*-----------------------------------------------------------------*/
 
 		integration_container[ZONE_STRUCT][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT],
-																solver_container[ZONE_STRUCT][MESH_0][FEA_SOL], iFSIIter);
+																solver_container[ZONE_STRUCT][MESH_0][FEA_SOL], FSIIter);
 
 		if (integration_container[ZONE_STRUCT][FEA_SOL]->GetConvergence_FSI()) break;
 
 		/*-----------------------------------------------------------------*/
-		/*--------------------- Update iFSIIter ---------------------------*/
+		/*--------------------- Update FSIIter ---------------------------*/
 		/*-----------------------------------------------------------------*/
 
-		iFSIIter++;
+		FSIIter++; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
 
 	}
 
@@ -2225,7 +2226,7 @@ void CFSIDriver::Transfer_Tractions(COutput *output, CIntegration ***integration
 }
 
 void CFSIDriver::Relaxation_Displacements(COutput *output, CGeometry ***geometry_container, CSolver ****solver_container,
-			CConfig **config_container, unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter){
+			CConfig **config_container, unsigned short donorZone, unsigned short targetZone, unsigned long FSIIter){
 
 #ifdef HAVE_MPI
 	int rank;
@@ -2237,7 +2238,7 @@ void CFSIDriver::Relaxation_Displacements(COutput *output, CGeometry ***geometry
 	/*------------------- Compute the coefficient ---------------------*/
 
 	solver_container[donorZone][MESH_0][FEA_SOL]->ComputeAitken_Coefficient(geometry_container[donorZone], config_container[donorZone],
-			solver_container[donorZone], iFSIIter);
+			solver_container[donorZone], FSIIter);
 
 	/*----------------- Set the relaxation parameter ------------------*/
 
@@ -2252,7 +2253,7 @@ void CFSIDriver::Relaxation_Displacements(COutput *output, CGeometry ***geometry
 }
 
 void CFSIDriver::Relaxation_Tractions(COutput *output, CGeometry ***geometry_container, CSolver ****solver_container,
-			CConfig **config_container, unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter){
+			CConfig **config_container, unsigned short donorZone, unsigned short targetZone, unsigned long FSIIter){
 
 }
 

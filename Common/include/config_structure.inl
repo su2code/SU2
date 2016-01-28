@@ -71,9 +71,13 @@ inline su2double CConfig::GetTimeSpectral_Period(void) { return TimeSpectral_Per
 
 inline void CConfig::SetExtIter(unsigned long val_iter) { ExtIter = val_iter; }
 
+inline void CConfig::SetFSIIter(unsigned long val_iter) { FSIIter = val_iter; }
+
 inline void CConfig::SetIntIter(unsigned long val_iter) { IntIter = val_iter; }
 
 inline unsigned long CConfig::GetExtIter(void) { return ExtIter; }
+
+inline unsigned long CConfig::GetFSIIter(void) { return FSIIter; }
 
 inline unsigned long CConfig::GetIntIter(void) { return IntIter; }
 
