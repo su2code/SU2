@@ -426,12 +426,20 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
 void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
   int rank = MASTER_NODE;
 
-  bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
-
+  bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING)||((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                                                                              (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  unsigned long N_avg =  config->GetUnst_AdjointnObjAvg();
+  unsigned short nExtIter = config->GetnExtIter();
+  unsigned short ExtIter = config->GetExtIter();
   su2double seeding = 1.0;
 
-  if (time_stepping){
-    seeding = 1.0/(su2double)config->GetnExtIter();
+  if (time_stepping ){
+      if (ExtIter<N_avg){
+        seeding = 1.0/((su2double)N_avg);
+        }
+      else{
+       seeding = 0.0;
+        }
   }
 
 #ifdef HAVE_MPI
@@ -597,6 +605,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
     }
     if (dual_time){
       for (iVar = 0; iVar < nVar; iVar++){
+      //cout<<"iVar= "<<iVar<<"iPoint= "<<iPoint<<"Value= "<<node[iPoint]->GetDual_Time_Derivative(iVar)<<endl;
         Solution[iVar] += node[iPoint]->GetDual_Time_Derivative(iVar);
       }
     }
@@ -695,4 +704,28 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 #else
   Total_Sens_Geo = Total_Sens_Geo_local;
 #endif
+}
+
+void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output){
+  bool dual_time_1st = (config_container->GetUnsteady_Simulation() == DT_STEPPING_1ST);
+  bool dual_time_2nd = (config_container->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool dual_time = (dual_time_1st || dual_time_2nd);
+  su2double *solution_n, *solution_n1;
+  unsigned long iPoint;
+  unsigned short iVar;
+  if (dual_time){
+      for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++){
+          solution_n = node[iPoint]->GetSolution_time_n();
+          solution_n1 = node[iPoint]->GetSolution_time_n1();
+
+          for (iVar=0; iVar < nVar; iVar++){
+//              cout<<"iVar= "<<iVar<<"iPoint= "<<iPoint<<"Value= "<<node[iPoint]->GetDual_Time_Derivative_n(iVar)<<endl;
+              node[iPoint]->SetDual_Time_Derivative(iVar, solution_n[iVar]+node[iPoint]->GetDual_Time_Derivative_n(iVar));
+              node[iPoint]->SetDual_Time_Derivative_n(iVar, solution_n1[iVar]);
+
+            }
+
+        }
+
+    }
 }
