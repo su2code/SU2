@@ -605,7 +605,6 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
     }
     if (dual_time){
       for (iVar = 0; iVar < nVar; iVar++){
-      //cout<<"iVar= "<<iVar<<"iPoint= "<<iPoint<<"Value= "<<node[iPoint]->GetDual_Time_Derivative(iVar)<<endl;
         Solution[iVar] += node[iPoint]->GetDual_Time_Derivative(iVar);
       }
     }
@@ -719,7 +718,6 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
           solution_n1 = node[iPoint]->GetSolution_time_n1();
 
           for (iVar=0; iVar < nVar; iVar++){
-//              cout<<"iVar= "<<iVar<<"iPoint= "<<iPoint<<"Value= "<<node[iPoint]->GetDual_Time_Derivative_n(iVar)<<endl;
               node[iPoint]->SetDual_Time_Derivative(iVar, solution_n[iVar]+node[iPoint]->GetDual_Time_Derivative_n(iVar));
               node[iPoint]->SetDual_Time_Derivative_n(iVar, solution_n1[iVar]);
 
