@@ -6230,8 +6230,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
        be element redundancy, since multiple ranks will store the same elems
        on the boundaries of the initial linear partitioning. ---*/
       
-      // TO DO: remove redundant edges (quads have extra diagonals for instance)
-      
       element_count=0; loc_element_count=0; ielem_div=0;
       while (ielem_div < nElem) {
         getline(mesh_file, text_line);
@@ -6313,9 +6311,12 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
                 elem_reqd = true;
-                for (unsigned long j=0; j<N_POINTS_QUADRILATERAL; j++) {
-                  if (i != j) adj_nodes[local_index].push_back(vnodes_quad[j]);
-                }
+                
+                /*--- Build adjacency assuming the VTK connectivity ---*/
+
+                adj_nodes[local_index].push_back(vnodes_quad[(i+1)%4]);
+                adj_nodes[local_index].push_back(vnodes_quad[(i+3)%4]);
+                
               }
             }
             
@@ -6407,9 +6408,18 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
                 elem_reqd = true;
-                for (unsigned long j=0; j<N_POINTS_HEXAHEDRON; j++) {
-                  if (i != j) adj_nodes[local_index].push_back(vnodes_hexa[j]);
+                
+                /*--- Build adjacency assuming the VTK connectivity ---*/
+                
+                if (i < 4) {
+                  adj_nodes[local_index].push_back(vnodes_hexa[(i+1)%4]);
+                  adj_nodes[local_index].push_back(vnodes_hexa[(i+3)%4]);
+                } else {
+                  adj_nodes[local_index].push_back(vnodes_hexa[(i-3)%4+4]);
+                  adj_nodes[local_index].push_back(vnodes_hexa[(i-1)%4+4]);
                 }
+                adj_nodes[local_index].push_back(vnodes_hexa[(i+4)%8]);
+                
               }
             }
             
@@ -6458,9 +6468,18 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
                 elem_reqd = true;
-                for (unsigned long j=0; j<N_POINTS_PRISM; j++) {
-                  if (i != j) adj_nodes[local_index].push_back(vnodes_prism[j]);
+                
+                /*--- Build adjacency assuming the VTK connectivity ---*/
+                
+                if (i < 3) {
+                  adj_nodes[local_index].push_back(vnodes_prism[(i+1)%3]);
+                  adj_nodes[local_index].push_back(vnodes_prism[(i+2)%3]);
+                } else {
+                  adj_nodes[local_index].push_back(vnodes_prism[(i-2)%3+3]);
+                  adj_nodes[local_index].push_back(vnodes_prism[(i-1)%3+3]);
                 }
+                adj_nodes[local_index].push_back(vnodes_prism[(i+3)%6]);
+                
               }
             }
             
@@ -6506,9 +6525,20 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
                 elem_reqd = true;
-                for (unsigned long j=0; j<N_POINTS_PYRAMID; j++) {
-                  if (i != j) adj_nodes[local_index].push_back(vnodes_pyramid[j]);
+                
+                /*--- Build adjacency assuming the VTK connectivity ---*/
+                
+                if (i < 4) {
+                  adj_nodes[local_index].push_back(vnodes_pyramid[(i+1)%4]);
+                  adj_nodes[local_index].push_back(vnodes_pyramid[(i+3)%4]);
+                  adj_nodes[local_index].push_back(vnodes_pyramid[4]);
+                } else {
+                  adj_nodes[local_index].push_back(vnodes_pyramid[0]);
+                  adj_nodes[local_index].push_back(vnodes_pyramid[1]);
+                  adj_nodes[local_index].push_back(vnodes_pyramid[2]);
+                  adj_nodes[local_index].push_back(vnodes_pyramid[3]);
                 }
+                
               }
             }
             
@@ -11331,7 +11361,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     
   /*--- Create some structures that ParMETIS needs for partitioning. ---*/
 
-    idx_t numflag, nparts, edgecut, wgtflag, ncon;
+  idx_t numflag, nparts, edgecut, wgtflag, ncon;
   idx_t *vtxdist     = new idx_t[size+1];
   idx_t *xadj_l      = new idx_t[xadj_size];
   idx_t *adjacency_l = new idx_t[adjacency_size];
@@ -11401,15 +11431,15 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
   delete [] tpwgts;
   
   }
-
+  
+#endif
+#endif
+  
   /*--- Delete the memory from the geometry class that carried the
-   adjacency structure. ---*/
+   adjacency structure. Note that this is done even in the serial case. ---*/
   
   delete [] xadj;
   delete [] adjacency;
-  
-#endif
-#endif
   
 }
 
