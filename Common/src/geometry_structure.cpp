@@ -7175,7 +7175,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           cg_error_exit();
         if (rank == MASTER_NODE) {
           cout << "Loading " << coordname;
-          cout << " values into linear partitions." << endl;
+          if (size > SINGLE_NODE) {
+            cout << " values into linear partitions." << endl;
+          } else {
+            cout << " values." << endl;
+          }
         }
         
         /*--- Always retrieve the grid coords in su2double precision. ---*/
@@ -7461,7 +7465,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         
         /*--- If we have found that this is a boundary section (we assume
          that internal cells and boundary cells do not exist in the same
-         section together), the master node read the boundary section.
+         section together), the master node reads the boundary section.
          Otherwise, we have all ranks read and communicate the internals. ---*/
         
         if (!isInternal[j-1][s-1]) {
@@ -7918,14 +7922,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
     if (nDim == 3) cout << "Three dimensional problem." << endl;
   }
   
-  /*--- Initialize some arrays for the adjacency information (ParMETIS). ---*/
+  /*--- Initialize an array for the adjacency information (ParMETIS). ---*/
   
-  unsigned long *adj_counter = new unsigned long[local_node];
-  unsigned long **adjacent_elem = new unsigned long*[local_node];
-  for (iPoint = 0; iPoint < local_node; iPoint++) {
-    adjacent_elem[iPoint] = new unsigned long[2000];
-    adj_counter[iPoint] = 0;
-  }
+  vector< vector<unsigned long> > adj_nodes(local_node, vector<unsigned long>(0));
   
   /*--- Store the total number of interior elements (global). ---*/
   
@@ -7975,6 +7974,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           /*--- Instantiate this element and build adjacency structure. ---*/
           
           switch(VTK_Type) {
+              
             case TRIANGLE:
               for ( int j = 0; j < N_POINTS_TRIANGLE; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
@@ -7984,16 +7984,18 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   for (unsigned short j=0; j<N_POINTS_TRIANGLE; j++) {
                     if (ii!=j) {
-                      adjacent_elem[vnodes_cgns[ii]-starting_node[rank]][adj_counter[vnodes_cgns[ii]-starting_node[rank]]]=vnodes_cgns[j];
-                      adj_counter[vnodes_cgns[ii]-starting_node[rank]]++;
+                      adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[j]);
                     }
                   }
                 }
               }
               Global_to_local_elem[global_id]=ielem;
               elem[ielem] = new CTriangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], nDim);
-              ielem++; nelem_triangle++; break;
+              ielem++; nelem_triangle++;
+              break;
+              
             case QUADRILATERAL:
+              
               for ( int j = 0; j < N_POINTS_QUADRILATERAL; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
@@ -8002,8 +8004,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   for (unsigned short j=0; j<N_POINTS_QUADRILATERAL; j++) {
                     if (ii!=j) {
-                      adjacent_elem[vnodes_cgns[ii]-starting_node[rank]][adj_counter[vnodes_cgns[ii]-starting_node[rank]]]=vnodes_cgns[j];
-                      adj_counter[vnodes_cgns[ii]-starting_node[rank]]++;
+                      adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[j]);
                     }
                   }
                 }
@@ -8012,7 +8013,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               elem[ielem] = new CQuadrilateral(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], nDim);
               ielem++; nelem_quad++;
               break;
+              
             case TETRAHEDRON:
+              
               for ( int j = 0; j < N_POINTS_TETRAHEDRON; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
@@ -8021,16 +8024,18 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   for (unsigned short j=0; j<N_POINTS_TETRAHEDRON; j++) {
                     if (ii!=j) {
-                      adjacent_elem[vnodes_cgns[ii]-starting_node[rank]][adj_counter[vnodes_cgns[ii]-starting_node[rank]]]=vnodes_cgns[j];
-                      adj_counter[vnodes_cgns[ii]-starting_node[rank]]++;
+                      adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[j]);
                     }
                   }
                 }
               }
               Global_to_local_elem[global_id]=ielem;
               elem[ielem] = new CTetrahedron(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3]);
-              ielem++; nelem_tetra++; break;
+              ielem++; nelem_tetra++;
+              break;
+              
             case HEXAHEDRON:
+              
               for ( int j = 0; j < N_POINTS_HEXAHEDRON; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
@@ -8039,8 +8044,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   for (unsigned short j=0; j<N_POINTS_HEXAHEDRON; j++) {
                     if (ii!=j) {
-                      adjacent_elem[vnodes_cgns[ii]-starting_node[rank]][adj_counter[vnodes_cgns[ii]-starting_node[rank]]]=vnodes_cgns[j];
-                      adj_counter[vnodes_cgns[ii]-starting_node[rank]]++;
+                      adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[j]);
                     }
                   }
                 }
@@ -8049,7 +8053,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               elem[ielem] = new CHexahedron(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4], vnodes_cgns[5], vnodes_cgns[6], vnodes_cgns[7]);
               ielem++; nelem_hexa++;
               break;
+              
             case PRISM:
+              
               for ( int j = 0; j < N_POINTS_PRISM; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
@@ -8058,8 +8064,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   for (unsigned short j=0; j<N_POINTS_PRISM; j++) {
                     if (ii!=j) {
-                      adjacent_elem[vnodes_cgns[ii]-starting_node[rank]][adj_counter[vnodes_cgns[ii]-starting_node[rank]]]=vnodes_cgns[j];
-                      adj_counter[vnodes_cgns[ii]-starting_node[rank]]++;
+                      adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[j]);
                     }
                   }
                 }
@@ -8068,7 +8073,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               elem[ielem] = new CPrism(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4], vnodes_cgns[5]);
               ielem++; nelem_prism++;
               break;
+              
             case PYRAMID:
+              
               for ( int j = 0; j < N_POINTS_PYRAMID; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
@@ -8077,8 +8084,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   for (unsigned short j=0; j<N_POINTS_PYRAMID; j++) {
                     if (ii!=j) {
-                      adjacent_elem[vnodes_cgns[ii]-starting_node[rank]][adj_counter[vnodes_cgns[ii]-starting_node[rank]]]=vnodes_cgns[j];
-                      adj_counter[vnodes_cgns[ii]-starting_node[rank]]++;
+                      adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[j]);
                     }
                   }
                 }
@@ -8087,6 +8093,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               elem[ielem] = new CPyramid(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4]);
               ielem++; nelem_pyramid++;
               break;
+              
             default:
               if (rank == MASTER_NODE)
                 cout << "Element type not suppported!" << endl;
@@ -8156,8 +8163,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   
   for (unsigned long i = 0; i < local_node; i++) {
     
-    for (unsigned long j=0; j<adj_counter[i]; j++) {
-      temp_adjacency.push_back(adjacent_elem[i][j]);
+    for (unsigned long j=0; j<adj_nodes[i].size(); j++) {
+      temp_adjacency.push_back(adj_nodes[i][j]);
     }
     
     sort(temp_adjacency.begin(), temp_adjacency.end());
@@ -8172,7 +8179,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
       adjac_vec.push_back(temp_adjacency[j]);
     }
     temp_adjacency.clear();
-    
+    adj_nodes[i].clear();
   }
   
   /*--- Now that we know the size, create the final adjacency array ---*/
@@ -8187,11 +8194,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   /*--- Free temporary memory used to build the adjacency. ---*/
   
   adjac_vec.clear();
-  delete[] adj_counter;
-  for (iPoint=0; iPoint<local_node; iPoint++) {
-    delete[] adjacent_elem[iPoint];
-  }
-  delete [] adjacent_elem;
+  adj_nodes.clear();
   
   /*--- Store the nodal coordinates from the linear partitioning. ---*/
 
@@ -8344,7 +8347,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
             config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
             config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
-			config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
+            config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
