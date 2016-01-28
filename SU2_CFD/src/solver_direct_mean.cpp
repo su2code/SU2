@@ -8936,7 +8936,8 @@ void CEulerSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Av
 
 void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag) {
   /* Implementation of Fuorier Transformations for non-regfelcting BC will come soon */
-	su2double c4j, cc, rhoc, AvgMach, Pressure_i, deltaPressure, NormalVelocity, deltaNormalVelocity, c4temp,jk_nVert, *turboNormal, *turboVelocity, *Velocity_i;
+	su2double cj_inf,cj_out1, cj_out2, cc, rhoc, AvgMach, Pressure_i, deltaPressure, NormalVelocity, deltaNormalVelocity, c4temp,jk_nVert, *turboNormal, *turboVelocity, *Velocity_i;
+	su2double deltaTangVelocity, TangVelocity;
 	unsigned short iMarker, iSpan, iMarkerTP, iDim;
 	unsigned long iVertex, iPoint, nVert, kstart, kend, k;
 	unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
@@ -8945,12 +8946,12 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **sol
 	turboNormal 	= new su2double[nDim];
 	turboVelocity = new su2double[nDim];
 	Velocity_i 		= new su2double[nDim];
-	complex<su2double> I, c4ktemp, *ck;
+	complex<su2double> I, cktemp_inf,cktemp_out1, cktemp_out2;
 
 	I = complex<su2double>(0.0,1.0);
 
 #ifdef HAVE_MPI
-  su2double MyIm, MyRe, Im, Re;
+  su2double MyIm_inf, MyRe_inf, Im_inf, Re_inf, MyIm_out1, MyRe_out1, Im_out1, Re_out1, MyIm_out2, MyRe_out2, Im_out2, Re_out2;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 #endif
@@ -8958,7 +8959,9 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **sol
   kend = geometry->GetnFreqSpanMax(marker_flag);
 	for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
 		for(k=1; k < kend+1; k++){
-			c4ktemp = complex<su2double>(0.0,0.0);
+			cktemp_inf = complex<su2double>(0.0,0.0);
+			cktemp_out1 = complex<su2double>(0.0,0.0);
+			cktemp_out2 = complex<su2double>(0.0,0.0);
 			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
 				for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
 					if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
@@ -8973,21 +8976,34 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **sol
 								/*--- find the node related to the vertex ---*/
 								iPoint = geometry->turbovertex[iMarker][iSpan][iVertex]->GetNode();
 								j			 = geometry->turbovertex[iMarker][iSpan][iVertex]->GetGlobalVertexIndex();
+
+
 								geometry->turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(turboNormal);
 								/*--- Compute the internal state _i ---*/
+
+								Pressure_i = node[iPoint]->GetPressure();
+
 								for (iDim = 0; iDim < nDim; iDim++)
 								{
 									Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
 								}
-								Pressure_i = node[iPoint]->GetPressure();
 								ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity);
 								NormalVelocity	= turboVelocity[0];
+								TangVelocity    = turboVelocity[1];
+
 								deltaPressure = Pressure_i - AveragePressure[iMarker][iSpan];
 								deltaNormalVelocity= NormalVelocity - AverageNormalVelocity[iMarker][iSpan];
-								c4j=-rhoc*deltaNormalVelocity + deltaPressure;
+								deltaTangVelocity= TangVelocity - AverageTangVelocity[iMarker][iSpan];
+
+								cj_out1= rhoc*deltaTangVelocity;
+								cj_out2=rhoc*deltaNormalVelocity + deltaPressure;
+								cj_inf=-rhoc*deltaNormalVelocity + deltaPressure;
+
 								jk_nVert = j*k/su2double(nVert);
 //								cout << jk_nVert<< " j " << j << " k " << k << " nVert " << nVert << endl;
-								c4ktemp +=  1.0/(nVert)*c4j*exp(-I*PI_NUMBER*2.0*jk_nVert);
+								cktemp_inf 	+=  1.0/(nVert)*cj_inf*exp(-I*PI_NUMBER*2.0*jk_nVert);
+								cktemp_out1 +=  1.0/(nVert)*cj_inf*exp(-I*PI_NUMBER*2.0*jk_nVert);
+								cktemp_out2 +=  1.0/(nVert)*cj_inf*exp(-I*PI_NUMBER*2.0*jk_nVert);
 							}
 						}
 					}
@@ -8995,23 +9011,42 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **sol
 			}
 
 #ifdef HAVE_MPI
-			MyRe = c4ktemp.real(); Re = 0.0;
-			MyIm = c4ktemp.imag(); Im = 0.0;
-			c4ktemp = complex<su2double>(0.0,0.0);
+			MyRe_inf = cktemp_inf.real(); Re_inf = 0.0;
+			MyIm_inf = cktemp_inf.imag(); Im_inf = 0.0;
+			cktemp_inf = complex<su2double>(0.0,0.0);
 
-			SU2_MPI::Allreduce(&MyRe, &Re, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-			SU2_MPI::Allreduce(&MyIm, &Im, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+			MyRe_out1 = cktemp_out1.real(); Re_out1 = 0.0;
+			MyIm_out1 = cktemp_out1.imag(); Im_out1 = 0.0;
+			cktemp_out1 = complex<su2double>(0.0,0.0);
 
-			c4ktemp = complex<su2double>(Re,Im);
+			MyRe_out2 = cktemp_out2.real(); Re_out2 = 0.0;
+			MyIm_out2 = cktemp_out2.imag(); Im_out2 = 0.0;
+			cktemp_out2 = complex<su2double>(0.0,0.0);
+
+			SU2_MPI::Allreduce(&MyRe_inf, &Re_inf, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+			SU2_MPI::Allreduce(&MyIm_inf, &Im_inf, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+			SU2_MPI::Allreduce(&MyRe_out1, &Re_out1, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+			SU2_MPI::Allreduce(&MyIm_out1, &Im_out1, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+			SU2_MPI::Allreduce(&MyRe_out2, &Re_out2, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+			SU2_MPI::Allreduce(&MyIm_out2, &Im_out2, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+			cktemp_inf = complex<su2double>(Re_inf,Im_inf);
+			cktemp_out1 = complex<su2double>(Re_out1,Im_out1);
+			cktemp_out2 = complex<su2double>(Re_out2,Im_out2);
 #endif
 
 			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
 				for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
 					if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
 						if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
-							CkInflow[iMarker][iSpan][k-1]= c4ktemp;
-								//if(rank == 2)
-									//cout << "real "<< CkInflow[iMarker][iSpan][k-1].real()<< " imag "<< CkInflow[iMarker][iSpan][k-1].imag() << " at k "<< k << endl;
+							if (marker_flag == INFLOW){
+								CkInflow[iMarker][iSpan][k-1]= cktemp_inf;
+								if(rank == 2)
+									cout << "real "<< CkInflow[iMarker][iSpan][k-1].real()<< " imag "<< CkInflow[iMarker][iSpan][k-1].imag() << " at k "<< k << endl;
+							}else{
+								CkOutflow1[iMarker][iSpan][k-1]=cktemp_out1;
+								CkOutflow2[iMarker][iSpan][k-1]=cktemp_out2;
+							}
 						}
 					}
 				}
