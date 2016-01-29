@@ -66,20 +66,14 @@ su2_fsi_ldadd += \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_structure.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_adjoint_levelset.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_adjoint_mean.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-numerics_adjoint_tne2.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_adjoint_turbulent.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_direct_poisson.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_direct_elasticity.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_direct_heat.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_direct_mean.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-numerics_direct_tne2.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_direct_transition.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_direct_turbulent.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_direct_wave.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-numerics_machine_learning.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-numerics_linearized_mean.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-numerics_linearized_turbulent.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-numerics_machine_learning_turbulent.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-numerics_template.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-output_cgns.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-output_structure.o \
@@ -90,19 +84,15 @@ su2_fsi_ldadd += \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_structure.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_adjoint_levelset.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_adjoint_mean.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-solver_adjoint_tne2.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_adjoint_turbulent.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_adjoint_discrete.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_direct_poisson.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_direct_elasticity.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_direct_heat.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_direct_mean.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-solver_direct_tne2.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_direct_transition.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_direct_turbulent.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_direct_wave.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-solver_linearized_mean.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-solver_linearized_turbulent.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-solver_template.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-transfer_physics.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-transfer_structure.o \
@@ -110,19 +100,15 @@ su2_fsi_ldadd += \
     ../../SU2_CFD/src/___bin_SU2_CFD-variable_structure.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-variable_adjoint_levelset.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-variable_adjoint_mean.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-variable_adjoint_tne2.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-variable_adjoint_turbulent.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-variable_adjoint_discrete.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-variable_direct_poisson.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-variable_direct_elasticity.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-variable_direct_heat.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-variable_direct_mean.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-variable_direct_tne2.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-variable_direct_transition.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-variable_direct_turbulent.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-variable_direct_wave.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-variable_linearized_mean.o \
-    ../../SU2_CFD/src/___bin_SU2_CFD-variable_linearized_turbulent.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-variable_fem_elasticity.o \
     ../../SU2_CFD/src/___bin_SU2_CFD-variable_template.o
 
