@@ -820,6 +820,8 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
 	su2double Static_Time=fea_config->GetStatic_Time();
     su2double deltaU, deltaURad, deltaURes, deltaURes_recv = 0.0;
 
+	bool stat_time = (CurrentTime <= Static_Time);
+
    	magResidualFSI_criteria = -1*fea_config->GetOrderMagResidualFSI();
    	logResidualFSI_criteria = fea_config->GetMinLogResidualFSI();
 
@@ -973,14 +975,26 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
     	cout << endl << "Simulation time: " << fea_config->GetCurrent_DynTime() << ". Time step: " << fea_config->GetDelta_DynTime() << ".";
         cout.precision(6);
     	cout << endl <<"---------------------- FSI Convergence Summary -------------------------- ";
-        cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" << "      Res[ATOL]"  << "      Res[OMAG]"<<  endl;
-        cout.width(8); cout << iFSIIter;
-        cout.width(8); cout << iExtIter;
-        cout.width(15); cout << WAitken;
-        cout.width(15);
-        if (iFSIIter == 1) cout << logResidualFSI_initial;
-        else cout << logResidualFSI;
-        cout.width(15); cout << magResidualFSI;
+    	if (stat_time){
+    		cout << endl <<" The structure is being held static. No convergence is checked.";
+    	}
+    	else{
+			if (iFSIIter == 0) cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" <<  endl;
+			else if (iFSIIter == 1) cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" << "      Res[ATOL]"  <<  endl;
+			else cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" << "      Res[ATOL]"  << "      Res[OMAG]"<<  endl;
+
+			cout.width(8); cout << iFSIIter;
+			cout.width(8); cout << iExtIter;
+			cout.width(15); cout << WAitken;
+			cout.width(15);
+			if (iFSIIter == 0) cout << " ";
+			else if (iFSIIter == 1) cout << logResidualFSI_initial;
+			else cout << logResidualFSI;
+			cout.width(15);
+			if (iFSIIter < 2) cout << " ";
+			else cout << magResidualFSI;
+    	}
+
     	cout << endl << "------------------------------------------------------------------------- ";
     	cout << endl;
     }
