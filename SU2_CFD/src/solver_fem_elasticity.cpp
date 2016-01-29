@@ -1626,7 +1626,8 @@ void CFEM_ElasticitySolver::Compute_IntegrationConstants(CConfig *config) {
 
 	su2double delta = config->GetNewmark_delta(), alpha = config->GetNewmark_alpha();
 
-	su2double beta = config->Get_Int_Coeffs(0), gamma =  config->Get_Int_Coeffs(1);
+	su2double beta = config->Get_Int_Coeffs(0);
+//	su2double gamma =  config->Get_Int_Coeffs(1);
 	su2double alpha_f = config->Get_Int_Coeffs(2), alpha_m =  config->Get_Int_Coeffs(3);
 
 	switch (config->GetKind_TimeIntScheme_FEA()) {
@@ -2257,10 +2258,6 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSol
 	unsigned long iPoint;
     su2double *valSolutionPred;
 
-	bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);		// Geometrically linear problems
-	bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
-	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);					// Dynamic simulations.
-
 	/*--- Update solution and set it to be the solution after applying relaxation---*/
 
     for (iPoint=0; iPoint < nPointDomain; iPoint++){
@@ -2340,7 +2337,7 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSol
 	bool restart = config->GetRestart();													// Restart solution
 	bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());	// Restart iteration
 
-	su2double alpha_f = config->Get_Int_Coeffs(2), alpha_m =  config->Get_Int_Coeffs(3);
+	su2double alpha_f = config->Get_Int_Coeffs(2);
 
 	bool incremental_load = config->GetIncrementalLoad();
 
@@ -2496,10 +2493,6 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry,
 
     unsigned short iVar;
 	unsigned long iPoint;
-
-	bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);		// Geometrically linear problems
-	bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Geometrically non-linear problems
-	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);					// Dynamic simulations.
 
 	su2double alpha_f = config->Get_Int_Coeffs(2), alpha_m =  config->Get_Int_Coeffs(3);
 

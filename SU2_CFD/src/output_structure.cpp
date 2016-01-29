@@ -2898,7 +2898,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 
             /*--- Load buffers with the three grid velocity components. ---*/
 
-        	Node_Vel = solver[CurrentIndex]->node[iPoint]->GetSolution_Vel();
+        	Node_Vel = solver[FEA_SOL]->node[iPoint]->GetSolution_Vel();
             Buffer_Send_Var[jPoint] = Node_Vel[0];
             Buffer_Send_Res[jPoint] = Node_Vel[1];
             if (geometry->GetnDim() == 3) Buffer_Send_Vol[jPoint] = Node_Vel[2];
@@ -2961,7 +2961,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 
             /*--- Load buffers with the three grid velocity components. ---*/
 
-        	Node_Accel = solver[CurrentIndex]->node[iPoint]->GetSolution_Accel();
+        	Node_Accel = solver[FEA_SOL]->node[iPoint]->GetSolution_Accel();
             Buffer_Send_Var[jPoint] = Node_Accel[0];
             Buffer_Send_Res[jPoint] = Node_Accel[1];
             if (geometry->GetnDim() == 3) Buffer_Send_Vol[jPoint] = Node_Accel[2];

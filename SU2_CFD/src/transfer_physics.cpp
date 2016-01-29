@@ -237,11 +237,8 @@ void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_soluti
 					   	   	   	   	   	   	   	          unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct){
 
 
-	su2double *Displacement, *DisplacementDonor, *DisplacementDonor_Prev;
+	su2double *DisplacementDonor, *DisplacementDonor_Prev;
 	unsigned short iVar;
-
-    /*--- The displacements come from the predicted solution ---*/
-	Displacement = struct_solution->node[Point_Struct]->GetSolution();
 
     /*--- The displacements come from the predicted solution ---*/
     DisplacementDonor = struct_solution->node[Point_Struct]->GetSolution_Pred();

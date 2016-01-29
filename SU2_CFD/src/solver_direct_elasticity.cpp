@@ -2217,9 +2217,9 @@ void CFEASolver::SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geome
 		su2double **Grad_PrimVar;
 		su2double Viscosity = 0.0;
 		su2double Tau[3][3];
-		su2double div_vel, Delta;
-		su2double Area;
-		su2double Pn;
+		su2double div_vel = 0.0, Delta = 0.0;
+		su2double Area = 0.0;
+		su2double Pn = 0.0;
 
 		/*--- Loop over the nodes in the fluid mesh, calculate the tf vector (unitary) ---*/
 		/*--- Here, we are looping over the fluid, and we find the pointer to the structure (donorVertex) ---*/
