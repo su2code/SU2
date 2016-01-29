@@ -193,6 +193,11 @@ int main(int argc, char *argv[]) {
     
   }
   
+  /*--- If activated by the compile directive, perform a partition analysis. ---*/
+#if PARTITION
+  Partition_Analysis(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+#endif
+  
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Driver Preprocessing --------------------------" << endl;
   
