@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -2445,7 +2445,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
     if (Kind_SU2 == SU2_CFD){
       cout << "SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!" << endl;
-      cout << "Please use SU2_CFD_REVERSE (configuration/compilation is done using the preconfigure.py script)." << endl;
+      cout << "Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)." << endl;
       exit(EXIT_FAILURE);
     }
 #endif
@@ -2850,12 +2850,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDisk_Inlet,
   iMarker_ActDisk_Outlet;
   
-  time_t now = time(0);
-  string dt = ctime(&now); dt[24] = '.';
+  
+  /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
+   the two lines below that use the dt variable. ---*/
+  //time_t now = time(0);
+  //string dt = ctime(&now); dt[24] = '.';
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 4.0.2  \"Cardinal\"                         |" << endl;
+  cout << "|   / __| | | |_  )   Release 4.1.0  \"Cardinal\"                         |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -2867,7 +2870,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   cout << "|                                                                       |" << endl;
-  cout << "|   Local date and time: " << dt << "                      |" << endl;
+  //cout << "|   Local date and time: " << dt << "                      |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|" << endl;
   cout << "|                Dr. Thomas D. Economon, economon@stanford.edu          |" << endl;

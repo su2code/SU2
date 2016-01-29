@@ -2,7 +2,7 @@
  * \file primal_grid_structure.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -54,6 +54,9 @@ CPrimalGrid::~CPrimalGrid() {
 void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
 	unsigned short iDim, iNode, NodeFace, iFace;
 	
+  AD::StartPreacc();
+  AD::SetPreaccIn(val_coord, GetnNodes(), nDim);
+
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Coord_CG[iDim] = 0.0;
 		for (iNode = 0; iNode < GetnNodes();  iNode++)
@@ -68,6 +71,11 @@ void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
 				Coord_FaceElems_CG[iFace][iDim] += val_coord[NodeFace][iDim]/su2double(GetnNodesFace(iFace));
 			}
 		}
+
+  AD::SetPreaccOut(Coord_CG, nDim);
+  AD::SetPreaccOut(Coord_FaceElems_CG, GetnFaces(), nDim);
+  AD::EndPreacc();
+
 }
 
 void CPrimalGrid::GetAllNeighbor_Elements() {

@@ -3,7 +3,7 @@
 ## \file change_version_number.py
 #  \brief Python script for updating the version number of the SU2 suite.
 #  \author A. Aranake
-#  \version 4.0.2 "Cardinal"
+#  \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -33,7 +33,7 @@
 import os,sys
 
 oldvers = '4.0.2 "Cardinal"'
-newvers = '4.0.2 "Cardinal"'
+newvers = '4.1.0 "Cardinal"'
 
 os.system('rm -rf version.txt')
 
