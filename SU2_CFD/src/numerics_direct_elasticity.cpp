@@ -916,7 +916,7 @@ void CGalerkin_FEA::SetFEA_StiffMassMatrix2D(su2double **StiffMatrix_Elem, su2do
 			D_Matrix[2][0] = 0.0;               	D_Matrix[2][1] = 0.0;               D_Matrix[2][2] = ((1-Nu)*E)/(2*(1-Nu*Nu));
 
 		}
-		else if (form2d==1){
+		else {
 
 			/*--- Compute the D Matrix (for plane strain and 2-D) as a function of Mu and Lambda---*/
 

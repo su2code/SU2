@@ -1588,7 +1588,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 	/*--- This function is intended for dual time simulations ---*/
 
-	unsigned long iPoint, index, counter_local = 0, counter_global = 0, iVertex;
+	unsigned long iPoint, index;
 
 	int Unst_RestartIter;
 	ifstream restart_file_n;

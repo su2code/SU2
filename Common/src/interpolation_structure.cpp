@@ -674,9 +674,9 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
     for (iFace=0; iFace<MaxFace_Donor; iFace++){
       Buffer_Receive_FaceIndex[iFace] = Buffer_Send_FaceIndex[iFace];
     }
-    for (iVertex = 0; iVertex < MaxFaceNodes_Donor; iVertx++)
+    for (iVertex = 0; iVertex < MaxFaceNodes_Donor; iVertex++)
       Buffer_Receive_FaceNodes[iVertex] = Buffer_Send_FaceNodes[iVertex];
-    for (iVertex = 0; iVertex < MaxFaceNodes_Donor; iVertx++)
+    for (iVertex = 0; iVertex < MaxFaceNodes_Donor; iVertex++)
       Buffer_Receive_FaceProc[iVertex] = Buffer_Send_FaceProc[iVertex];
 #endif
 
@@ -1169,7 +1169,7 @@ void CMirror::Set_TransferCoeff(CConfig **config){
     for (iFace=0; iFace<MaxFace_Donor; iFace++){
       Buffer_Receive_FaceIndex[iFace] = Buffer_Send_FaceIndex[iFace];
     }
-    for (iVertex = 0; iVertex < MaxFaceNodes_Donor; iVertx++){
+    for (iVertex = 0; iVertex < MaxFaceNodes_Donor; iVertex++){
       Buffer_Receive_FaceNodes[iVertex] = Buffer_Send_FaceNodes[iVertex];
       Buffer_Receive_GlobalPoint[iVertex] = Buffer_Send_GlobalPoint[iVertex];
       Buffer_Receive_Coeff[iVertex] = Buffer_Send_Coeff[iVertex];
