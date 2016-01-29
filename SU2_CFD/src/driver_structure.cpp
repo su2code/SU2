@@ -1161,28 +1161,28 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
 #endif
 
 	/*--- Coupling between zones (limited to two zones at the moment) ---*/
-	for (donorZone = 0; donorZone < nZone; donorZone++){
+	for (targetZone = 0; targetZone < nZone; targetZone++){
 
-		/*--- Initialize donor booleans ---*/
-		fluid_donor  = false;  structural_donor  = false;
-		matching_mesh = config_container[donorZone]->GetMatchingMesh();
+    /*--- Initialize target booleans ---*/
+    fluid_target  = false;  structural_target  = false;
 
-		/*--- Set the donor boolean: as of now, only Fluid-Structure Interaction considered ---*/
-		switch (config_container[donorZone]->GetKind_Solver()) {
-			case EULER : case NAVIER_STOKES: case RANS: fluid_donor  = true; 		break;
-			case FEM_ELASTICITY: 						structural_donor = true; 	break;
-		}
+    /*--- Set the target boolean: as of now, only Fluid-Structure Interaction considered ---*/
+    switch (config_container[targetZone]->GetKind_Solver()) {
+      case EULER : case NAVIER_STOKES: case RANS: fluid_target  = true;     break;
+      case FEM_ELASTICITY:            structural_target = true;   break;
+    }
 
-		for (targetZone = 0; targetZone < nZone; targetZone++){
+		for (donorZone = 0; donorZone < nZone; donorZone++){
+	    /*--- Initialize donor booleans ---*/
+	    fluid_donor  = false;  structural_donor  = false;
+	    matching_mesh = config_container[donorZone]->GetMatchingMesh();
 
-			/*--- Initialize donor booleans ---*/
-			fluid_target  = false;  structural_target  = false;
+	    /*--- Set the donor boolean: as of now, only Fluid-Structure Interaction considered ---*/
+	    switch (config_container[donorZone]->GetKind_Solver()) {
+	      case EULER : case NAVIER_STOKES: case RANS: fluid_donor  = true;    break;
+	      case FEM_ELASTICITY:            structural_donor = true;  break;
+	    }
 
-			/*--- Set the target boolean: as of now, only Fluid-Structure Interaction considered ---*/
-			switch (config_container[targetZone]->GetKind_Solver()) {
-				case EULER : case NAVIER_STOKES: case RANS: fluid_target  = true; 		break;
-				case FEM_ELASTICITY: 						structural_target = true; 	break;
-			}
 
 			/*--- Retrieve the number of conservative variables (for problems not involving structural analysis ---*/
 			if (!structural_donor && !structural_target){
@@ -1196,10 +1196,10 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
 			/*--- Interface conditions are only defined between different zones ---*/
 			if (donorZone != targetZone){
 
-				if (rank == MASTER_NODE) cout << "From zone " << donorZone << " to zone " << targetZone << ": " << endl;
+				if (rank == MASTER_NODE) cout << "From zone " << donorZone << " to zone " << targetZone << ": ";
 
 				/*--- Match Zones ---*/
-				if (rank == MASTER_NODE) cout << "Setting coupling ";
+				if (rank == MASTER_NODE) cout << "Setting coupling "<<endl;
 
 				/*--- If the mesh is matching: match points ---*/
 				if (matching_mesh){
@@ -1209,17 +1209,29 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
 				}
 				/*--- Else: interpolate ---*/
 				else {
-					if (rank == MASTER_NODE) cout << "between non-matching meshes ";
-					switch (config_container[donorZone]->GetKindInterpolation()){
-						case NEAREST_NEIGHBOR:
-							interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, donorZone, targetZone);
-							if (rank == MASTER_NODE) cout << "using a nearest-neighbor approach." << endl;
-							break;
-						case ISOPARAMETRIC:
-							interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
-							if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
-							break;
-					}
+          switch (config_container[donorZone]->GetKindInterpolation()){
+            case NEAREST_NEIGHBOR:
+              interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, donorZone, targetZone);
+              if (rank == MASTER_NODE) cout << "using a nearest-neighbor approach." << endl;
+              break;
+            case ISOPARAMETRIC:
+              interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
+              if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
+              break;
+            case CONSISTCONSERVE:
+              if (targetZone>0 && structural_target){
+                interpolator_container[donorZone][targetZone] = new CMirror(geometry_container, config_container, donorZone, targetZone);
+                if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
+              }
+              else{
+                interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
+                if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
+              }
+              if (targetZone==0 && structural_target){
+                if (rank == MASTER_NODE) cout << "Consistent and conservative interpolation assumes the structure model mesh is evaluated second. Somehow this has not happened. The isoparametric coefficients will be calculated for both meshes, and are not guaranteed to be consistent." << endl;
+              }
+              break;
+				  }
 				}
 
 				/*--- Initialize the appropriate transfer strategy ---*/
@@ -1247,7 +1259,6 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
 		}
 
 	}
-
 
 }
 
