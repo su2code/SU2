@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -3102,14 +3102,14 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         cout << "No surface deformation (scaling, rotation, or translation)." << endl;
     }
   }
-  else if (config->GetDesign_Variable(0) == CUSTOM and rank == MASTER_NODE)
+  else if (config->GetDesign_Variable(0) == CUSTOM && rank == MASTER_NODE)
     cout <<"Custom design variable will be used in external script" << endl;
   
   /*--- Design variable not implement ---*/
 
   else {
     if (rank == MASTER_NODE)
-      cout << "Design Variable not implement yet" << endl;
+      cout << "Design Variable not implemented yet" << endl;
   }
   
 }

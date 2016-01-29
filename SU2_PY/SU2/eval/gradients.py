@@ -3,7 +3,7 @@
 ## \file gradients.py
 #  \brief python package for gradients
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.0.2 "Cardinal"
+#  \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -261,10 +261,10 @@ def adjoint( func_name, config, state=None ):
             # # RUN ADJOINT SOLUTION # #
             info = su2run.adjoint(config)
             su2io.restart2solution(config,info)
-            info = su2run.projection(config,state)
+            state.update(info)
 
             # Gradient Projection
-            info = su2run.projection(config)
+            info = su2run.projection(config,state)
             state.update(info)
 
             # solution files to push

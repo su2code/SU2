@@ -2,7 +2,7 @@
  * \file mpi_structure.cpp
  * \brief Main subroutines for the mpi structures.
  * \author T. Albring
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -511,6 +511,6 @@ void CAuxMPIWrapper::Bcast(void *buf, int count, MPI_Datatype datatype,
 }
 #endif
 #ifdef CODI_REVERSE_TYPE
-#include "externals/ampi_interface_realreverse.cpp"
+#include "externals/ampi_interface_realreverse_old.cpp"
 #endif
 #endif
