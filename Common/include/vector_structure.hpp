@@ -2,8 +2,8 @@
  * \file vector_structure.hpp
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
- * \author F. Palacios, J. Hicken
- * \version 4.0.0 "Cardinal"
+ * \author F. Palacios, J. Hicken, T. Economon
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,9 +32,9 @@
 
 #pragma once
 
+#include "./mpi_structure.hpp"
 
 #include <climits>
-#include <limits>
 #include <cmath>
 #include <vector>
 #include <iostream>
@@ -40,17 +42,13 @@
 #include <string>
 #include <cstdlib>
 
-#include "./mpi_structure.hpp"
-
 using namespace std;
-
-const su2double eps = numeric_limits<su2double>::epsilon(); /*!< \brief machine epsilon */
 
 /*!
  * \class CSysVector
  * \brief Class for holding and manipulating vectors needed by linear solvers
  * \author J. Hicken.
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * We could use the STL vector as a base class here, but this gives us
  * more flexibility with the underlying data (e.g. we may decide to
@@ -63,7 +61,9 @@ private:
   
 	unsigned long nElm; /*!< \brief total number of elements (or number elements on this processor) */
 	unsigned long nElmDomain; /*!< \brief total number of elements (or number elements on this processor without Ghost cells) */
+#ifdef HAVE_MPI
   unsigned long nElmGlobal; /*!< \brief total number of elements over all processors */
+#endif
 	unsigned short nVar; /*!< \brief number of elements in a block */
 	unsigned long nBlk; /*!< \brief number of blocks (or number of blocks on this processor) */
 	unsigned long nBlkDomain; /*!< \brief number of blocks (or number of blocks on this processor without Ghost cells) */
@@ -86,6 +86,7 @@ public:
   /*!
    * \brief constructor of the class.
    * \param[in] numBlk - number of blocks locally
+   * \param[in] numBlkDomain
    * \param[in] numVar - number of variables in each block
    * \param[in] val - default value for elements
    */
@@ -127,6 +128,7 @@ public:
   /*!
    * \brief Initialize the class.
    * \param[in] numBlk - number of blocks locally
+   * \param[in] numBlkDomain
    * \param[in] numVar - number of variables in each block
    * \param[in] val - default value for elements
    */
@@ -310,6 +312,7 @@ public:
   /*!
 	 * \brief Set the velocity residual to zero.
 	 * \param[in] val_ipoint - index of the point where set the residual.
+	 * \param[in] val_var - inde of the residual to be set.
 	 */
   void SetBlock_Zero(unsigned long val_ipoint, unsigned short val_var);
 	
@@ -342,7 +345,7 @@ public:
  * \class CMatrixVectorProduct
  * \brief abstract base class for defining matrix-vector products
  * \author J. Hicken.
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * The Krylov-subspace solvers require only matrix-vector products and
  * not the actual matrix/Jacobian.  We need some way to indicate which
@@ -367,7 +370,7 @@ inline CMatrixVectorProduct::~CMatrixVectorProduct() {}
  * \class CPreconditioner
  * \brief abstract base class for defining preconditioning operation
  * \author J. Hicken.
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * See the remarks regarding the CMatrixVectorProduct class.  The same
  * idea applies here to the preconditioning operation.

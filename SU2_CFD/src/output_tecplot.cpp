@@ -2,7 +2,7 @@
  * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -33,7 +33,6 @@
 
 void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
   
-  /*--- Local variables and initialization ---*/
   unsigned short iDim, iVar, nDim = geometry->GetnDim();
   unsigned short Kind_Solver = config->GetKind_Solver();
   
@@ -193,16 +192,6 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         }
       }
       
-      if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
-        Tecplot_File << ",\"Mach\",\"Pressure\",\"Temperature\",\"Temperature_ve\"";
-      }
-      
-      if (Kind_Solver == TNE2_NAVIER_STOKES) {
-        for (unsigned short iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
-          Tecplot_File << ",\"DiffusionCoeff_" << iSpecies << "\"";
-        Tecplot_File << ",\"Laminar_Viscosity\",\"ThermConductivity\",\"ThermConductivity_ve\"";
-      }
-      
       if (Kind_Solver == POISSON_EQUATION) {
         unsigned short iDim;
         for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
@@ -211,9 +200,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
       
       if (( Kind_Solver == ADJ_EULER              ) ||
           ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
-          ( Kind_Solver == ADJ_RANS               ) ||
-          ( Kind_Solver == ADJ_TNE2_EULER         ) ||
-          ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
+          ( Kind_Solver == ADJ_RANS               )   ) {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
       }
 
@@ -659,7 +646,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
         geometry->elem[iElem]->GetNode(0)+1 <<" "<< geometry->elem[iElem]->GetNode(1)+1 <<" "<<
         geometry->elem[iElem]->GetNode(2)+1 <<" "<< geometry->elem[iElem]->GetNode(2)+1 << endl;
       }
-      if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+      if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
         Tecplot_File <<
         geometry->elem[iElem]->GetNode(0)+1 <<" "<< geometry->elem[iElem]->GetNode(1)+1 <<" "<<
         geometry->elem[iElem]->GetNode(2)+1 <<" "<< geometry->elem[iElem]->GetNode(3)+1 << endl;
@@ -950,8 +937,8 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
   
 #ifdef HAVE_TECIO
   
-  double   t;
-  INTEGER4 i, N, err, Debug, NPts, NElm, IsDouble, KMax;
+  passivedouble   t;
+  INTEGER4 i, err, Debug, NPts, NElm, IsDouble, KMax;
   INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;
   INTEGER4 *ShareFromZone = NULL, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
   string buffer, variables;
@@ -1010,7 +997,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
     if (nGlobal_Tria > 0) {
       
       /*--- Write the zone header information ---*/
-      ZoneType = FETRIANGLE; NElm = (INTEGER4)nGlobal_Tria; N = NElm*N_POINTS_TRIANGLE;
+      ZoneType = FETRIANGLE; NElm = (INTEGER4)nGlobal_Tria;
       
       err = TECZNE112((char*)"Triangle Elements",
                       &ZoneType,
@@ -1069,7 +1056,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
       
       /*--- Write the zone header information ---*/
       
-      ZoneType = FEQUADRILATERAL; NElm = (INTEGER4)nGlobal_Quad; N = NElm*N_POINTS_QUADRILATERAL;
+      ZoneType = FEQUADRILATERAL; NElm = (INTEGER4)nGlobal_Quad;
       
       err = TECZNE112((char*)"Quadrilateral Elements",
                       &ZoneType,
@@ -1128,7 +1115,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
       
       /*--- Write the zone header information ---*/
       
-      ZoneType = FETETRAHEDRON; NElm = (INTEGER4)nGlobal_Tetr; N = NElm*N_POINTS_TETRAHEDRON;
+      ZoneType = FETETRAHEDRON; NElm = (INTEGER4)nGlobal_Tetr;
       
       err = TECZNE112((char*)"Tetrahedral Elements",
                       &ZoneType,
@@ -1187,7 +1174,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
       
       /*--- Write the zone header information ---*/
       
-      ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Hexa; N = NElm*N_POINTS_HEXAHEDRON;
+      ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Hexa;
       
       err = TECZNE112((char*)"Hexahedral Elements",
                       &ZoneType,
@@ -1247,7 +1234,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
       
       /*--- Here, we reuse the hex implementation to write pyramid elements.
        Write the zone header information. ---*/
-      ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Pyra; N = NElm*N_POINTS_HEXAHEDRON;
+      ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Pyra;
       
       err = TECZNE112((char*)"Pyramid Elements",
                       &ZoneType,
@@ -1323,7 +1310,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
       
       /*--- Here, we reuse the hex implementation to write prism elements.
        Write the zone header information ---*/
-      ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Pris; N = NElm*N_POINTS_HEXAHEDRON;
+      ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Pris;
       
       err = TECZNE112((char*)"Prism Elements",
                       &ZoneType,
@@ -1411,8 +1398,8 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   
 #ifdef HAVE_TECIO
   
-  double   t;
-  INTEGER4 i, N, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
+  passivedouble   t;
+  INTEGER4 i, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
   INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;
   INTEGER4 *ShareFromZone = NULL, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
   string buffer, variables;
@@ -1428,7 +1415,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   Debug						= 0;
   IsDouble					= 1;
   NPts						= (INTEGER4)nGlobal_Poin;
-  t							= SU2_TYPE::GetPrimary(iExtIter*config->GetDelta_UnstTime());
+  t							= SU2_TYPE::GetValue(iExtIter*config->GetDelta_UnstTime());
   KMax						= 0;
   ICellMax					= 0;
   JCellMax					= 0;
@@ -1477,7 +1464,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   if (nGlobal_Tria > 0) {
     
     /*--- Write the zone header information ---*/
-    ZoneType = FETRIANGLE; NElm = (INTEGER4)nGlobal_Tria; N = NElm*N_POINTS_TRIANGLE;
+    ZoneType = FETRIANGLE; NElm = (INTEGER4)nGlobal_Tria;
     
     err = TECZNE112((char*)"Triangle Elements",
                     &ZoneType,
@@ -1548,7 +1535,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   if (nGlobal_Quad > 0) {
     
     /*--- Write the zone header information ---*/
-    ZoneType = FEQUADRILATERAL; NElm = (INTEGER4)nGlobal_Quad; N = NElm*N_POINTS_QUADRILATERAL;
+    ZoneType = FEQUADRILATERAL; NElm = (INTEGER4)nGlobal_Quad;
     
     err = TECZNE112((char*)"Quadrilateral Elements",
                     &ZoneType,
@@ -1617,7 +1604,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   if (nGlobal_Tetr > 0) {
     
     /*--- Write the zone header information ---*/
-    ZoneType = FETETRAHEDRON; NElm = (INTEGER4)nGlobal_Tetr; N = NElm*N_POINTS_TETRAHEDRON;
+    ZoneType = FETETRAHEDRON; NElm = (INTEGER4)nGlobal_Tetr;
     
     err = TECZNE112((char*)"Tetrahedral Elements",
                     &ZoneType,
@@ -1686,7 +1673,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   if (nGlobal_Hexa > 0) {
     
     /*--- Write the zone header information ---*/
-    ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Hexa; N = NElm*N_POINTS_HEXAHEDRON;
+    ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Hexa;
     
     err = TECZNE112((char*)"Hexahedral Elements",
                     &ZoneType,
@@ -1755,7 +1742,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   if (nGlobal_Pyra > 0) {
     
     /*--- Write the zone header information ---*/
-    ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Pyra; N = NElm*N_POINTS_HEXAHEDRON;
+    ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Pyra;
     
     err = TECZNE112((char*)"Pyramid Elements",
                     &ZoneType,
@@ -1824,7 +1811,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   if (nGlobal_Pris > 0) {
 
     /*--- Write the zone header information ---*/
-    ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Pris; N = NElm*N_POINTS_HEXAHEDRON;
+    ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Pris;
     
     err = TECZNE112((char*)"Prism Elements",
                     &ZoneType,
@@ -1903,8 +1890,8 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
   
 #ifdef HAVE_TECIO
   
-  double   t;
-  INTEGER4 i, N, err, Debug, NPts, NElm, IsDouble, KMax;
+  passivedouble   t;
+  INTEGER4 i, err, Debug, NPts, NElm, IsDouble, KMax;
   INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;
   INTEGER4 *ShareFromZone, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
   string buffer, variables;
@@ -2021,7 +2008,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
       }
       
       /*--- Write the zone header information ---*/
-      ZoneType = FELINESEG; NElm = (INTEGER4)nGlobal_Line; N = NElm*N_POINTS_LINE;
+      ZoneType = FELINESEG; NElm = (INTEGER4)nGlobal_Line;
       
       err = TECZNE112((char*)"Line Elements",
                       &ZoneType,
@@ -2079,7 +2066,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
       }
       
       /*--- Write the zone header information ---*/
-      ZoneType = FETRIANGLE; NElm = (INTEGER4)nGlobal_BoundTria; N = NElm*N_POINTS_TRIANGLE;
+      ZoneType = FETRIANGLE; NElm = (INTEGER4)nGlobal_BoundTria;
       
       err = TECZNE112((char*)"Triangle Elements",
                       &ZoneType,
@@ -2138,7 +2125,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
       }
       
       /*--- Write the zone header information ---*/
-      ZoneType = FEQUADRILATERAL; NElm = (INTEGER4)nGlobal_BoundQuad; N = NElm*N_POINTS_QUADRILATERAL;
+      ZoneType = FEQUADRILATERAL; NElm = (INTEGER4)nGlobal_BoundQuad;
       
       err = TECZNE112((char*)"Quadrilateral Elements",
                       &ZoneType,
@@ -2203,8 +2190,8 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   
 #ifdef HAVE_TECIO
   
-  double   t;
-  INTEGER4 i, N, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
+  passivedouble   t;
+  INTEGER4 i, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
   INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;
   INTEGER4 *ShareFromZone, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
   string buffer, variables;
@@ -2275,7 +2262,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   
   /*--- Collect surface coordinates into one array as well ---*/
   /*--- Note the -1 in the Coords/Data array in order to undo the 1-based indexing ---*/
-  su2double **Surf_Coords;
+  su2double **Surf_Coords = NULL;
   if (Wrt_Unsteady && GridMovement) {
     Surf_Coords = new su2double*[dims];
     for (iDim = 0; iDim < dims; iDim++)
@@ -2321,7 +2308,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   Debug						= 0;
   IsDouble					= 1;
   NPts						= (INTEGER4)nSurf_Poin;
-  t							= SU2_TYPE::GetPrimary(iExtIter*config->GetDelta_UnstTime());
+  t							= SU2_TYPE::GetValue(iExtIter*config->GetDelta_UnstTime());
   KMax						= 0;
   ICellMax					= 0;
   JCellMax					= 0;
@@ -2348,7 +2335,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   if (nGlobal_Line > 0) {
     
     /*--- Write the zone header information ---*/
-    ZoneType = FELINESEG; NElm = (INTEGER4)nGlobal_Line; N = NElm*N_POINTS_LINE;
+    ZoneType = FELINESEG; NElm = (INTEGER4)nGlobal_Line;
     
     err = TECZNE112((char*)"Line Elements",
                     &ZoneType,
@@ -2408,7 +2395,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   if (nGlobal_BoundTria > 0) {
     
     /*--- Write the zone header information ---*/
-    ZoneType = FETRIANGLE; NElm = (INTEGER4)nGlobal_BoundTria; N = NElm*N_POINTS_TRIANGLE;
+    ZoneType = FETRIANGLE; NElm = (INTEGER4)nGlobal_BoundTria;
     
     err = TECZNE112((char*)"Triangle Elements",
                     &ZoneType,
@@ -2468,7 +2455,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   if (nGlobal_BoundQuad > 0) {
     
     /*--- Write the zone header information ---*/
-    ZoneType = FEQUADRILATERAL; NElm = (INTEGER4)nGlobal_BoundQuad; N = NElm*N_POINTS_QUADRILATERAL;
+    ZoneType = FEQUADRILATERAL; NElm = (INTEGER4)nGlobal_BoundQuad;
     
     err = TECZNE112((char*)"Quadrilateral Elements",
                     &ZoneType,
@@ -2529,9 +2516,8 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   delete [] Surf_Data[iVar];
   delete [] Surf_Data;
   
-  if (Wrt_Unsteady && GridMovement) {
-    for (iDim = 0; iDim < dims; iDim++)
-    delete [] Surf_Coords[iDim];
+  if (Surf_Coords != NULL) {
+    for (iDim = 0; iDim < dims; iDim++) delete [] Surf_Coords[iDim];
     delete [] Surf_Coords;
   }
   delete [] LocalIndex;
@@ -2651,18 +2637,6 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
       }
     }
     
-    if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
-      variables << "Mach Pressure Temperature Temperature_ve ";
-      *NVar += 4;
-    }
-    
-    if (Kind_Solver == TNE2_NAVIER_STOKES) {
-      for (iVar = 0; iVar < config->GetnSpecies(); iVar++)
-        variables << "DiffusionCoeff_" << iVar << " ";
-      variables << "Laminar_Viscosity ThermConductivity ThermConductivity_ve";
-      *NVar += 4;
-    }
-    
     if (Kind_Solver == POISSON_EQUATION) {
       for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
         variables << "poissonField_" << iDim+1 << " ";
@@ -2672,9 +2646,7 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
     
     if (( Kind_Solver == ADJ_EULER              ) ||
         ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
-        ( Kind_Solver == ADJ_RANS               ) ||
-        ( Kind_Solver == ADJ_TNE2_EULER         ) ||
-        ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
+        ( Kind_Solver == ADJ_RANS               )   ) {
       variables << "Surface_Sensitivity Solution_Sensor ";
       *NVar += 2;
     }

@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 common library
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 4.0.0 "Cardinal"
+# \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -44,18 +44,16 @@ noinst_LIBRARIES += libSU2_DIRECTDIFF.a
 endif
 
 if BUILD_REVERSE
-noinst_LIBRARIES += libSU2_REVERSE.a
+noinst_LIBRARIES += libSU2_AD.a
 endif
 
 lib_sources = \
-  ../include/datatypes/adolc_f_structure.hpp \
-  ../include/datatypes/adolc_f_structure.inl \
-  ../include/datatypes/adolc_r_structure.hpp \
-  ../include/datatypes/adolc_r_structure.inl \
   ../include/datatypes/primitive_structure.hpp \
   ../include/datatypes/primitive_structure.inl \
   ../include/datatypes/complex_structure.hpp \
   ../include/datatypes/complex_structure.inl \
+  ../include/ad_structure.hpp \
+  ../include/ad_structure.inl \
   ../include/config_structure.hpp \
   ../include/config_structure.hpp \
   ../include/config_structure.inl \
@@ -81,6 +79,10 @@ lib_sources = \
   ../include/mpi_structure.inl \
   ../include/datatype_structure.hpp \
   ../include/datatype_structure.inl \
+  ../include/gauss_structure.hpp \
+  ../include/gauss_structure.inl \
+  ../include/element_structure.hpp \
+  ../include/element_structure.inl \
   ../src/config_structure.cpp \
   ../src/dual_grid_structure.cpp \
   ../src/geometry_structure.cpp \
@@ -92,7 +94,10 @@ lib_sources = \
   ../src/matrix_structure.cpp \
   ../src/mpi_structure.cpp \
   ../src/linear_solvers_structure_b.cpp \
-  ../src/datatype_structure.cpp 
+  ../src/ad_structure.cpp \
+  ../src/gauss_structure.cpp \
+  ../src/element_structure.cpp \
+  ../src/element_linear.cpp 
 
 lib_cxxflags =
 lib_ldadd =
@@ -144,8 +149,8 @@ libSU2_DIRECTDIFF_a_LIBADD =  ${lib_ldadd}
 endif
 
 if BUILD_REVERSE
-libSU2_REVERSE_a_SOURCES = $(lib_sources)
-libSU2_REVERSE_a_CXXFLAGS = @REVERSE_CXX@ ${lib_cxxflags}
-libSU2_REVERSE_a_LIBADD =  ${lib_ldadd}
+libSU2_AD_a_SOURCES = $(lib_sources)
+libSU2_AD_a_CXXFLAGS = @REVERSE_CXX@ ${lib_cxxflags}
+libSU2_AD_a_LIBADD =  ${lib_ldadd}
 endif
 

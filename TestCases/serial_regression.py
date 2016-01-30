@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 4.0.0 "Cardinal"
+#  \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -79,9 +79,9 @@ def main():
     # ONERA M6 Wing
     oneram6           = TestCase('oneram6')
     oneram6.cfg_dir   = "euler/oneram6"
-    oneram6.cfg_file  = "inv_ONERAM6_JST.cfg"
+    oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-2.157425, 3.304595, 0.271678, 0.018869] #last 4 columns
+    oneram6.test_vals = [-13.393130, -12.928941, 0.282557, 0.012706] #last 4 columns
     oneram6.su2_exec  = "SU2_CFD"
     oneram6.timeout   = 9600
     oneram6.tol       = 0.00001
@@ -160,24 +160,24 @@ def main():
     turb_oneram6.timeout   = 3200
     turb_oneram6.tol       = 0.00001
     test_list.append(turb_oneram6)
-    
-    # NACA0012 (SA, FUN3D results: CL=1.0983, CD=0.01242)
+
+    # NACA0012 (SA, FUN3D results for finest grid: CL=1.0983, CD=0.01242)
     turb_naca0012_sa           = TestCase('turb_naca0012_sa')
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
-    turb_naca0012_sa.test_iter = 20
-    turb_naca0012_sa.test_vals = [-6.607227, -9.778334, 1.098508, 0.012417] #last 4 columns
+    turb_naca0012_sa.test_iter = 10
+    turb_naca0012_sa.test_vals = [-12.000763, -9.145363, 1.070528, 0.019417] #last 4 columns
     turb_naca0012_sa.su2_exec  = "SU2_CFD"
     turb_naca0012_sa.timeout   = 3200
     turb_naca0012_sa.tol       = 0.00001
     test_list.append(turb_naca0012_sa)
     
-    # NACA0012 (SST, FUN3D results: CL=1.0840, CD=0.01253)
+    # NACA0012 (SST, FUN3D results for finest grid: CL=1.0840, CD=0.01253)
     turb_naca0012_sst           = TestCase('turb_naca0012_sst')
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
-    turb_naca0012_sst.test_iter = 20
-    turb_naca0012_sst.test_vals = [-8.290782, -1.743121, 1.084189, 0.012583] #last 4 columns
+    turb_naca0012_sst.test_iter = 10
+    turb_naca0012_sst.test_vals = [-15.039675, -7.219913, 1.059622, 0.019138] #last 4 columns
     turb_naca0012_sst.su2_exec  = "SU2_CFD"
     turb_naca0012_sst.timeout   = 3200
     turb_naca0012_sst.tol       = 0.00001
@@ -217,13 +217,23 @@ def main():
     contadj_oneram6           = TestCase('contadj_oneram6')
     contadj_oneram6.cfg_dir   = "cont_adj_euler/oneram6"
     contadj_oneram6.cfg_file  = "inv_ONERAM6.cfg"
-    contadj_oneram6.test_iter = 5
-    contadj_oneram6.test_vals = [-6.009929, -6.251311, -0.106940, 0.149230] #last 4 columns
+    contadj_oneram6.test_iter = 10
+    contadj_oneram6.test_vals = [-12.133352, -12.707213, 6.8590e-01, 1.4092e-01] #last 4 columns
     contadj_oneram6.su2_exec  = "SU2_CFD"
     contadj_oneram6.timeout   = 1600
     contadj_oneram6.tol       = 0.00001
-    #test_list.append(contadj_oneram6)
-    test_list.insert(0,contadj_oneram6) # This case requires a lot of memory. It is better for it to run first on TravisCI.
+    test_list.append(contadj_oneram6)
+
+    # Inviscid WEDGE: generalized adjoint and custom DV
+    contadj_wedge             = TestCase('contadj_wedge')
+    contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
+    contadj_wedge.cfg_file  = "inv_wedge_ROE.cfg"
+    contadj_wedge.test_iter = 10
+    contadj_wedge.test_vals = [-7.364977, -13.301134, 0.000266, 0.000000] #last 4 columns
+    contadj_wedge.su2_exec  = "SU2_CFD"
+    contadj_wedge.timeout   = 1600
+    contadj_wedge.tol       = 0.00001
+    test_list.append(contadj_wedge)
 
     ###################################
     ### Cont. adj. compressible N-S ###
@@ -318,19 +328,6 @@ def main():
     contadj_incomp_cylinder.tol       = 0.00001
     test_list.append(contadj_incomp_cylinder)
 
-    ######################################
-    ### Thermochemical Nonequilibrium  ###
-    ######################################
-    ramc           = TestCase('ramc')
-    ramc.cfg_dir   = "tne2/ramc"
-    ramc.cfg_file  = "ramc61km.cfg"
-    ramc.test_iter = 25
-    ramc.test_vals = [-4.643029, 2.849441, -4.443852, 0.000313] #last 4 columns
-    ramc.su2_exec  = "SU2_CFD"
-    ramc.timeout   = 1600
-    ramc.tol       = 0.00001
-    test_list.append(ramc)
-
 #    ######################################
 #    ### Spectral Method                ###
 #    ######################################
@@ -390,7 +387,7 @@ def main():
     sine_gust.cfg_dir   = "gust"
     sine_gust.cfg_file  = "inv_gust_NACA0012.cfg"
     sine_gust.test_iter = 5
-    sine_gust.test_vals = [-1.977531, 3.481790, -0.006226, -0.000973] #last 4 columns
+    sine_gust.test_vals = [-1.977531, 3.481790, -0.006222, -0.001342] #last 4 columns
     sine_gust.su2_exec  = "SU2_CFD"
     sine_gust.timeout   = 1600
     sine_gust.tol       = 0.00001
@@ -402,7 +399,7 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals = [0.077099, 0.036442, -1.684915e-03, -1.131746e-04] #last 4 columns
+    aeroelastic.test_vals = [0.077106, 0.036449, -1.684916e-03, -1.131735e-04] #last 4 columns
     aeroelastic.su2_exec  = "SU2_CFD"
     aeroelastic.timeout   = 1600
     aeroelastic.tol       = 0.000001
@@ -440,7 +437,7 @@ def main():
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
     edge_VW.test_iter = 100
-    edge_VW.test_vals = [-1.448387, 4.749040, -0.000046, 0.000000] #last 4 columns
+    edge_VW.test_vals = [-5.055874, 1.117978, -0.000009, 0.000000] #last 4 columns
     edge_VW.su2_exec  = "SU2_CFD"
     edge_VW.timeout   = 1600
     edge_VW.tol       = 0.00001
@@ -451,11 +448,39 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 100
-    edge_PPR.test_vals = [-1.998340, 4.172354, -0.000056, 0.000000] #last 4 columns
+    edge_PPR.test_vals = [-5.484387, 0.656352, -0.000037, 0.000000] #last 4 columns
     edge_PPR.su2_exec  = "SU2_CFD"
     edge_PPR.timeout   = 1600
     edge_PPR.tol       = 0.00001
     test_list.append(edge_PPR)
+    
+    
+    ######################################
+    ### turboSU2                       ###
+    ######################################
+    
+    # Mini centrifugal turbine blade
+    centrifugal_blade           = TestCase('centrifugal_blade')
+    centrifugal_blade.cfg_dir   = "turbomachinery/centrifugal_blade"
+    centrifugal_blade.cfg_file  = "centrifugal_blade.cfg"
+    centrifugal_blade.test_iter = 100
+    centrifugal_blade.test_vals = [-9.106943, -0.460429, 1.069070e+01, 3.396010e-01] #last 4 columns
+    centrifugal_blade.su2_exec  = "SU2_CFD"
+    centrifugal_blade.timeout   = 1600
+    centrifugal_blade.tol       = 0.000001
+    test_list.append(centrifugal_blade) 
+    
+    
+    # Mini centrifugal turbine stage
+    centrifugal_stage           = TestCase('centrifugal_stage')
+    centrifugal_stage.cfg_dir   = "turbomachinery/centrifugal_stage"
+    centrifugal_stage.cfg_file  = "centrifugal_stage.cfg"
+    centrifugal_stage.test_iter = 100
+    centrifugal_stage.test_vals = [-10.166364, 1.621172, 2.206476e+01, 5.271075e-01] #last 4 columns
+    centrifugal_stage.su2_exec  = "SU2_CFD"
+    centrifugal_stage.timeout   = 1600
+    centrifugal_stage.tol       = 0.000001
+    test_list.append(centrifugal_stage) 
 
     ######################################
     ### RUN TESTS                      ###

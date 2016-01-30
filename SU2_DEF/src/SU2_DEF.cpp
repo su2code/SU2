@@ -2,7 +2,7 @@
  * \file SU2_DEF.cpp
  * \brief Main file of Mesh Deformation Code (SU2_DEF).
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -34,11 +34,12 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
   
-  unsigned short iZone, nZone = SINGLE_ZONE;
+  unsigned short iZone, nZone = SINGLE_ZONE, iMarker;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   char config_file_name[MAX_STRING_SIZE];
   int rank = MASTER_NODE, size = SINGLE_NODE;
   string str;
+  bool allmoving=true;
 
   /*--- MPI initialization ---*/
 
@@ -147,7 +148,7 @@ int main(int argc, char *argv[]) {
   /*--- Compute center of gravity ---*/
   
   if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-  geometry_container[ZONE_0]->SetCG();
+  geometry_container[ZONE_0]->SetCoord_CG();
   
   /*--- Create the dual control volume structures ---*/
   
@@ -189,27 +190,36 @@ int main(int argc, char *argv[]) {
       cout << endl << "----------------------- Volumetric grid deformation ---------------------" << endl;
     
     /*--- Definition of the Class for grid movement ---*/
-    grid_movement = new CVolumetricMovement(geometry_container[ZONE_0]);
+    grid_movement = new CVolumetricMovement(geometry_container[ZONE_0], config_container[ZONE_0]);
     
   }
-  
+
+  /*--- For scale, translation and rotation if all boundaries are moving they are set via volume method
+   * Otherwise, the surface deformation has been set already in SetSurface_Deformation.  --- */
+  allmoving = true;
+  /*--- Loop over markers, set flag to false if any are not moving ---*/
+  for (iMarker = 0; iMarker < config_container[ZONE_0]->GetnMarker_All(); iMarker++){
+    if (config_container[ZONE_0]->GetMarker_All_DV(iMarker) == NO)
+      allmoving = false;
+  }
+
   /*--- Volumetric grid deformation/transformations ---*/
   
-  if (config_container[ZONE_0]->GetDesign_Variable(0) == SCALE) {
+  if (config_container[ZONE_0]->GetDesign_Variable(0) == SCALE and allmoving) {
     
     if (rank == MASTER_NODE)
       cout << "Performing a scaling of the volumetric grid." << endl;
     
     grid_movement->SetVolume_Scaling(geometry_container[ZONE_0], config_container[ZONE_0], false);
     
-  } else if (config_container[ZONE_0]->GetDesign_Variable(0) == TRANSLATION) {
+  } else if (config_container[ZONE_0]->GetDesign_Variable(0) == TRANSLATION and allmoving) {
     
     if (rank == MASTER_NODE)
       cout << "Performing a translation of the volumetric grid." << endl;
     
     grid_movement->SetVolume_Translation(geometry_container[ZONE_0], config_container[ZONE_0], false);
     
-  } else if (config_container[ZONE_0]->GetDesign_Variable(0) == ROTATION) {
+  } else if (config_container[ZONE_0]->GetDesign_Variable(0) == ROTATION and allmoving) {
     
     if (rank == MASTER_NODE)
       cout << "Performing a rotation of the volumetric grid." << endl;

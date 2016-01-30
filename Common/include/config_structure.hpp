@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,13 +55,15 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 
 class CConfig {
 private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
-  unsigned short Ref_NonDim; /*!< \brief Kind of of non dimensionalization.*/
+  unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
+  unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
+  unsigned short *Kind_TurboPerformance; /*!< \brief Kind of Turbomachinery performance calculation.*/
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
@@ -68,6 +72,7 @@ private:
 	su2double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
 	su2double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   su2double AdjointLimit; /*!< \brief Adjoint variable limit */
+  su2double* Obj_ChainRuleCoeff; /*!< \brief Array defining objective function for adjoint problem based on chain rule in terms of gradient w.r.t. density, velocity, pressure */
   bool MG_AdjointFlow; /*!< \brief MG with the adjoint flow problem */
   su2double* Subsonic_Engine_Box; /*!< \brief Coordinates of the box subsonic region */
   su2double* Hold_GridFixed_Coord; /*!< \brief Coordinates of the box to hold fixed the nbumerical grid */
@@ -81,13 +86,13 @@ private:
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
   InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   InvDesign_HeatFlux,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
-  Linearized,				/*!< \brief Flag to know if the code is solving a linearized problem. */
   Grid_Movement,			/*!< \brief Flag to know if there is grid movement. */
   Wind_Gust,              /*!< \brief Flag to know if there is a wind gust. */
   Aeroelastic_Simulation, /*!< \brief Flag to know if there is an aeroelastic simulation. */
   Rotating_Frame,			/*!< \brief Flag to know if there is a rotating frame. */
 	PoissonSolver,			/*!< \brief Flag to know if we are solving  poisson forces  in plasma solver. */
 	Low_Mach_Precon,		/*!< \brief Flag to know if we are using a low Mach number preconditioner. */
+	Low_Mach_Corr,			/*!< \brief Flag to know if we are using a low Mach number correction. */
 	GravityForce,			/*!< \brief Flag to know if the gravity force is incuded in the formulation. */
 	SmoothNumGrid,			/*!< \brief Smooth the numerical grid. */
 	AdaptBoundary,			/*!< \brief Adapt the elements on the boundary. */
@@ -145,23 +150,21 @@ private:
 	nMarker_SymWall,				/*!< \brief Number of symmetry wall markers. */
   nMarker_Pressure,				/*!< \brief Number of pressure wall markers. */
 	nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
+	nMarker_MixBound,				/*!< \brief Number of mixing boundary markers. */
+	nMarker_TurboPerf,				/*!< \brief Number of mixing boundary markers. */
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
-	nMarker_Dirichlet_Elec,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
 	nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
+	nMarker_NRBC,					/*!< \brief Number of NRBC flow markers. */
 	nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
   nMarker_Supersonic_Outlet,					/*!< \brief Number of supersonic outlet flow markers. */
   nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
 	nMarker_Out_1D,         /*!< \brief Number of outlet flow markers over which to calculate 1D outputs */
 	nMarker_Isothermal,     /*!< \brief Number of isothermal wall boundaries. */
-  nMarker_IsothermalNonCatalytic, /*!< \brief Number of constant temperature wall boundaries. */
-  nMarker_IsothermalCatalytic, /*!< \brief Number of constant temperature wall boundaries. */
 	nMarker_HeatFlux,       /*!< \brief Number of constant heat flux wall boundaries. */
-  nMarker_HeatFluxNonCatalytic, /*!< \brief Number of constant heat flux wall boundaries. */
-  nMarker_HeatFluxCatalytic, /*!< \brief Number of constant heat flux wall boundaries. */
 	nMarker_EngineExhaust,					/*!< \brief Number of nacelle exhaust flow markers. */
 	nMarker_EngineInflow,					/*!< \brief Number of nacelle inflow flow markers. */
   nMarker_EngineBleed,					/*!< \brief Number of nacelle inflow flow markers. */
@@ -172,10 +175,9 @@ private:
 	nMarker_Load_Sine,					/*!< \brief Number of load surface markers defined by magnitude and direction. */
 	nMarker_FlowLoad,					/*!< \brief Number of load surface markers. */
 	nMarker_Neumann,				/*!< \brief Number of Neumann flow markers. */
-	nMarker_Neumann_Elec,				/*!< \brief Number of Neumann flow markers. */
 	nMarker_All,					/*!< \brief Total number of markers using the grid information. */
   nMarker_Max,					/*!< \brief Max number of number of markers using the grid information. */
-  nMarker_Config;					/*!< \brief Total number of markers using the config file
+  nMarker_CfgFile;					/*!< \brief Total number of markers using the config file
 									(note that using parallel computation this number can be different
 									from nMarker_All). */
 	string *Marker_Euler,			/*!< \brief Euler wall markers. */
@@ -185,24 +187,24 @@ private:
   *Marker_Pressure,				/*!< \brief Pressure boundary markers. */
 	*Marker_PerBound,				/*!< \brief Periodic boundary markers. */
 	*Marker_PerDonor,				/*!< \brief Rotationally periodic boundary donor markers. */
+	*Marker_MixBound,				/*!< \brief MixingPlane boundary markers. */
+	*Marker_MixDonor,				/*!< \brief MixingPlane boundary donor markers. */
+	*Marker_TurboBoundIn,				/*!< \brief Turbomachinery performance boundary markers. */
+	*Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
 	*Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
   *Marker_ActDisk_Inlet,
   *Marker_ActDisk_Outlet,
 	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
-	*Marker_Dirichlet_Elec,				/*!< \brief Interface boundaries markers. */
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
 	*Marker_Riemann,					/*!< \brief Riemann markers. */
+	*Marker_NRBC,					/*!< \brief NRBC markers. */
 	*Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
   *Marker_Supersonic_Outlet,					/*!< \brief Supersonic outlet flow markers. */
   *Marker_Outlet,					/*!< \brief Outlet flow markers. */
 	*Marker_Out_1D,         /*!< \brief Outlet flow markers over which to calculate 1D output. */
 	*Marker_Isothermal,     /*!< \brief Isothermal wall markers. */
-  *Marker_IsothermalNonCatalytic,     /*!< \brief Isothermal wall markers. */
-  *Marker_IsothermalCatalytic,     /*!< \brief Isothermal wall markers. */
 	*Marker_HeatFlux,       /*!< \brief Constant heat flux wall markers. */
-  *Marker_HeatFluxNonCatalytic,       /*!< \brief Constant heat flux wall markers. */
-  *Marker_HeatFluxCatalytic,       /*!< \brief Constant heat flux wall markers. */
 	*Marker_EngineInflow,					/*!< \brief Engine Inflow flow markers. */
   *Marker_EngineBleed,					/*!< \brief Engine Inflow flow markers. */
   *Marker_EngineExhaust,					/*!< \brief Engine Exhaust flow markers. */
@@ -213,7 +215,6 @@ private:
 	*Marker_Load_Sine,					/*!< \brief Sine-wave loaded markers defined in cartesian coordinates. */
 	*Marker_FlowLoad,					/*!< \brief Flow Load markers. */
 	*Marker_Neumann,					/*!< \brief Neumann flow markers. */
-	*Marker_Neumann_Elec,					/*!< \brief Neumann flow markers. */
 	*Marker_All_TagBound;				/*!< \brief Global index for markers using grid information. */
 	su2double *Dirichlet_Value;    /*!< \brief Specified Dirichlet value at the boundaries. */
 	su2double *Exhaust_Temperature_Target;    /*!< \brief Specified total temperatures for nacelle boundaries. */
@@ -221,6 +222,8 @@ private:
 	su2double *Inlet_Ttotal;    /*!< \brief Specified total temperatures for inlet boundaries. */
 	su2double *Riemann_Var1, *Riemann_Var2;    /*!< \brief Specified values for Riemann boundary. */
 	su2double **Riemann_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
+	su2double *NRBC_Var1, *NRBC_Var2;    /*!< \brief Specified values for NRBC boundary. */
+	su2double **NRBC_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for NRBC boundaries. */
 	su2double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
 	su2double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
 	su2double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
@@ -238,10 +241,7 @@ private:
   su2double *Exhaust_Temperature;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Outlet_Pressure;    /*!< \brief Specified back pressures (static) for outlet boundaries. */
 	su2double *Isothermal_Temperature; /*!< \brief Specified isothermal wall temperatures (static). */
-  su2double *Wall_Catalycity; /*!< \brief Specified wall species mass-fractions for catalytic boundaries. */
 	su2double *Heat_Flux;  /*!< \brief Specified wall heat fluxes. */
-  su2double *Heat_FluxNonCatalytic;  /*!< \brief Specified wall heat fluxes. */
-  su2double *Heat_FluxCatalytic;  /*!< \brief Specified wall heat fluxes. */
 	su2double *Displ_Value;    /*!< \brief Specified displacement for displacement boundaries. */
 	su2double *Load_Value;    /*!< \brief Specified force for load boundaries. */
   su2double *Load_Dir_Value;    /*!< \brief Specified force for load boundaries defined in cartesian coordinates. */
@@ -324,8 +324,6 @@ private:
   Kind_DiscAdj_Linear_Prec,  /*!< \brief Preconditioner of the discrete adjoint linear solver. */
 	Kind_SlopeLimit,				/*!< \brief Global slope limiter. */
 	Kind_SlopeLimit_Flow,		/*!< \brief Slope limiter for flow equations.*/
-	Kind_SlopeLimit_TNE2,		/*!< \brief Slope limiter for flow equations.*/
-  Kind_SlopeLimit_AdjTNE2,		/*!< \brief Slope limiter for flow equations.*/
 	Kind_SlopeLimit_Turb,		/*!< \brief Slope limiter for the turbulence equation.*/
 	Kind_SlopeLimit_AdjLevelSet,		/*!< \brief Slope limiter for the adjoint level set equation.*/
 	Kind_SlopeLimit_AdjTurb,	/*!< \brief Slope limiter for the adjoint turbulent equation.*/
@@ -333,9 +331,6 @@ private:
 	Kind_TimeNumScheme,			/*!< \brief Global explicit or implicit time integration. */
 	Kind_TimeIntScheme_Flow,	/*!< \brief Time integration for the flow equations. */
 	Kind_TimeIntScheme_AdjFlow,		/*!< \brief Time integration for the adjoint flow equations. */
-  Kind_TimeIntScheme_TNE2,	/*!< \brief Time integration for the flow equations. */
-  Kind_TimeIntScheme_AdjTNE2, /*!< \brief Time integration for the flow equations. */
-	Kind_TimeIntScheme_LinFlow,		/*!< \brief Time integration for the linearized flow equations. */
 	Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
 	Kind_TimeIntScheme_AdjLevelSet,	/*!< \brief Time integration for the adjoint level set model. */
 	Kind_TimeIntScheme_AdjTurb,	/*!< \brief Time integration for the adjoint turbulence model. */
@@ -346,31 +341,22 @@ private:
 	Kind_ConvNumScheme,			/*!< \brief Global definition of the convective term. */
 	Kind_ConvNumScheme_Flow,	/*!< \brief Centered or upwind scheme for the flow equations. */
 	Kind_ConvNumScheme_Heat,	/*!< \brief Centered or upwind scheme for the flow equations. */
-	Kind_ConvNumScheme_TNE2,	/*!< \brief Centered or upwind scheme for the flow equations. */
 	Kind_ConvNumScheme_AdjFlow,		/*!< \brief Centered or upwind scheme for the adjoint flow equations. */
-  Kind_ConvNumScheme_AdjTNE2,		/*!< \brief Centered or upwind scheme for the adjoint TNE2 equations. */
-	Kind_ConvNumScheme_LinFlow,		/*!< \brief Centered or upwind scheme for the linearized flow equations. */
 	Kind_ConvNumScheme_Turb,	/*!< \brief Centered or upwind scheme for the turbulence model. */
 	Kind_ConvNumScheme_AdjTurb,	/*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
 	Kind_ConvNumScheme_AdjLevelSet,	/*!< \brief Centered or upwind scheme for the adjoint level set equation. */
 	Kind_ConvNumScheme_Template,	/*!< \brief Centered or upwind scheme for the level set equation. */
 	Kind_Centered,				/*!< \brief Centered scheme. */
 	Kind_Centered_Flow,			/*!< \brief Centered scheme for the flow equations. */
-	Kind_Centered_TNE2,			/*!< \brief Centered scheme for the flow equations. */
 	Kind_Centered_AdjLevelSet,			/*!< \brief Centered scheme for the level set equation. */
 	Kind_Centered_AdjFlow,			/*!< \brief Centered scheme for the adjoint flow equations. */
-  Kind_Centered_AdjTNE2,			/*!< \brief Centered scheme for the adjoint TNE2 equations. */
-	Kind_Centered_LinFlow,			/*!< \brief Centered scheme for the linearized flow equations. */
 	Kind_Centered_Turb,			/*!< \brief Centered scheme for the turbulence model. */
 	Kind_Centered_AdjTurb,		/*!< \brief Centered scheme for the adjoint turbulence model. */
 	Kind_Centered_Template,		/*!< \brief Centered scheme for the template model. */
 	Kind_Upwind,				/*!< \brief Upwind scheme. */
 	Kind_Upwind_Flow,			/*!< \brief Upwind scheme for the flow equations. */
-	Kind_Upwind_TNE2,			/*!< \brief Upwind scheme for the flow equations. */
 	Kind_Upwind_AdjLevelSet,			/*!< \brief Upwind scheme for the level set equations. */
 	Kind_Upwind_AdjFlow,			/*!< \brief Upwind scheme for the adjoint flow equations. */
-  Kind_Upwind_AdjTNE2,			/*!< \brief Upwind scheme for the adjoint TNE2 equations. */
-	Kind_Upwind_LinFlow,			/*!< \brief Upwind scheme for the linearized flow equations. */
 	Kind_Upwind_Turb,			/*!< \brief Upwind scheme for the turbulence model. */
 	Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
 	Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
@@ -380,21 +366,13 @@ private:
   SpatialOrder,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_Flow,		/*!< \brief Order of the spatial numerical integration.*/
 	SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
-	SpatialOrder_TNE2,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
 	SpatialOrder_AdjTurb,		/*!< \brief Order of the spatial numerical integration.*/
-	SpatialOrder_AdjTNE2,     /*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjLevelSet;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
-
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
-  string ML_Turb_Model_File;  /*!< \brief File containing turbulence model. */
-  string ML_Turb_Model_FeatureSet; /*! <\brief What are the input and ouput features > */
-  string *ML_Turb_Model_Extra; /*! <\brief Store for extra variables coming from ML turb model */
-  unsigned short nML_Turb_Model_Extra; /*!<\brief number of strings there */
-
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
-	Kind_Inlet, *Kind_Data_Riemann;           /*!< \brief Kind of inlet boundary treatment. */
+	Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
 	su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
@@ -410,24 +388,13 @@ private:
   unsigned short nSections,      /*!< \brief Number of section cuts to make when calculating internal volume. */
   nVolSections;               /*!< \brief Number of sections. */
 	su2double* Kappa_Flow,           /*!< \brief Numerical dissipation coefficients for the flow equations. */
-	*Kappa_AdjFlow,                  /*!< \brief Numerical dissipation coefficients for the adjoint equations. */
-  *Kappa_TNE2,             /*!< \brief Numerical dissipation coefficients for the TNE2 equations. */
-  *Kappa_AdjTNE2,          /*!< \brief Numerical dissipation coefficients for the adjoint TNE2 equations. */
-	*Kappa_LinFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
+	*Kappa_AdjFlow;                  /*!< \brief Numerical dissipation coefficients for the linearized equations. */
 	su2double Kappa_1st_AdjFlow,	/*!< \brief JST 1st order dissipation coefficient for adjoint flow equations (coarse multigrid levels). */
 	Kappa_2nd_AdjFlow,			/*!< \brief JST 2nd order dissipation coefficient for adjoint flow equations. */
 	Kappa_4th_AdjFlow,			/*!< \brief JST 4th order dissipation coefficient for adjoint flow equations. */
-	Kappa_1st_LinFlow,			/*!< \brief JST 1st order dissipation coefficient for linearized flow equations (coarse multigrid levels). */
-	Kappa_4th_LinFlow,			/*!< \brief JST 4th order dissipation coefficient for linearized flow equations. */
 	Kappa_1st_Flow,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
 	Kappa_2nd_Flow,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
-	Kappa_4th_Flow,			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
-	Kappa_1st_TNE2,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
-	Kappa_2nd_TNE2,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
-	Kappa_4th_TNE2,			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
-  Kappa_1st_AdjTNE2,			/*!< \brief JST 1st order dissipation coefficient for flow equations (coarse multigrid levels). */
-	Kappa_2nd_AdjTNE2,			/*!< \brief JST 2nd order dissipation coefficient for flow equations. */
-	Kappa_4th_AdjTNE2;			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
+	Kappa_4th_Flow;			/*!< \brief JST 4th order dissipation coefficient for flow equations. */
 
 	su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
 	Max_Beta_RoeTurkel;		/*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
@@ -455,7 +422,6 @@ private:
 	su2double *U_FreeStreamND;			/*!< \brief Reference variables at the infinity, free stream values. */
 	unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
 	Cauchy_Func_AdjFlow,				/*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
-	Cauchy_Func_LinFlow,				/*!< \brief Function where to apply the convergence criteria in the linearized problem. */
 	Cauchy_Elems;						/*!< \brief Number of elements to evaluate. */
 	unsigned short Residual_Func_Flow;	/*!< \brief Equation to apply residual convergence to. */
 	unsigned long StartConv_Iter;	/*!< \brief Start convergence criteria at iteration. */
@@ -541,18 +507,13 @@ private:
   Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
 	Restart_WaveFileName,			/*!< \brief Restart file for wave variables. */
 	Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
-	Restart_LinFileName,			/*!< \brief Restart file for linearized flow variables. */
 	Restart_AdjFileName,			/*!< \brief Restart file for adjoint variables, drag functional. */
 	Adj_FileName,					/*!< \brief Output file with the adjoint variables. */
-	Lin_FileName,					/*!< \brief Output file with the linearized variables. */
 	ObjFunc_Grad_FileName,			/*!< \brief Gradient of the objective function. */
 	ObjFunc_Value_FileName,			/*!< \brief Objective function. */
 	SurfFlowCoeff_FileName,			/*!< \brief Output file with the flow variables on the surface. */
 	SurfAdjCoeff_FileName,			/*!< \brief Output file with the adjoint variables on the surface. */
-	SurfLinCoeff_FileName,			/*!< \brief Output file with the linearized variables on the surface. */
 	New_SU2_FileName;        		/*!< \brief Output SU2 mesh file converted from CGNS format. */
-	unsigned short nSpecies, 		/*!< \brief No of species present in plasma */
-	nReactions;									/*!< \brief Number of reactions in chemical model. */
 	bool Low_MemoryOutput,      /*!< \brief Write a volume solution file */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
 	Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
@@ -564,30 +525,6 @@ private:
   Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
 	Wrt_1D_Output;                /*!< \brief Write average stagnation pressure specified markers. */
   unsigned short Console_Output_Verb;  /*!< \brief Level of verbosity for console output */
-	su2double *ArrheniusCoefficient,					/*!< \brief Arrhenius reaction coefficient */
-	*ArrheniusEta,								/*!< \brief Arrhenius reaction temperature exponent */
-	*ArrheniusTheta,							/*!< \brief Arrhenius reaction characteristic temperature */
-	*CharVibTemp,									/*!< \brief Characteristic vibrational temperature for e_vib */
-  *RotationModes,				/*!< \brief Rotational modes of energy storage */
-  *Ref_Temperature,   			/*!< \brief Reference temperature for thermodynamic relations */
-  *Tcf_a,   /*!< \brief Rate controlling temperature exponent (fwd) */
-  *Tcf_b,   /*!< \brief Rate controlling temperature exponent (fwd) */
-  *Tcb_a,   /*!< \brief Rate controlling temperature exponent (bkw) */
-  *Tcb_b,   /*!< \brief Rate controlling temperature exponent (bkw) */
-  *Diss;                /*!< \brief Dissociation potential. */
-	unsigned short nMass,                 /*!< \brief No of particle masses */
-	nTemp;						/*!< \brief No of freestream temperatures specified */
-  su2double *Particle_Mass,         /*!< \brief Mass of all particles present in the plasma */
-  *Molar_Mass,               /*!< \brief Molar mass of species in the plasma [kg/kmol] */
-  Mixture_Molar_mass,       /*!< \brief Molar mass of the multi-species fluid [kg/kmol] */
-  *Gas_Composition,          /*!< \brief Initial mass fractions of flow [dimensionless] */
-  *Enthalpy_Formation,     /*!< \brief Enthalpy of formation */
-  **Blottner,               /*!< \brief Blottner viscosity coefficients */
-  *Species_Ref_Temperature,  /*!< \brief Reference Temperature for viscosity of all particles present in the plasma */
-  *Species_Ref_Viscosity;    /*!< \brief Reference viscosity  of all particles present in the plasma */
-  unsigned short *nElStates; /*!< \brief Number of electron states. */
-  su2double **CharElTemp, /*!< \brief Characteristic temperature of electron states. */
-  **degen; /*!< \brief Degeneracy of electron states. */
 	su2double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
 	Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */
 	ArtComp_Factor,			/*!< \brief Value of the artificial compresibility factor for incompressible flows. */
@@ -643,11 +580,7 @@ private:
 	Viscosity_FreeStreamND,    /*!< \brief Farfield viscosity value (external flow). */
 	Tke_FreeStreamND,    /*!< \brief Farfield kinetic energy (external flow). */
   Omega_FreeStreamND, /*!< \brief Specific dissipation (external flow). */
-  Omega_FreeStream, /*!< \brief Specific dissipation (external flow). */
-  pnorm_heat;           /*!< \brief pnorm for heat-flux objective functions. */
-	int ***Reactions;					/*!< \brief Reaction map for chemically reacting, multi-species flows. */
-  su2double ***Omega00,        /*!< \brief Collision integrals (Omega(0,0)) */
-  ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
+  Omega_FreeStream; /*!< \brief Specific dissipation (external flow). */
 	su2double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
 	MaterialDensity;								/*!< \brief Material density. */
@@ -735,28 +668,28 @@ private:
   long Visualize_CV; /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
   bool DeadLoad; /*!< Application of dead loads to the FE analysis */
-    su2double Newmark_alpha,			/*!< \brief Parameter alpha for Newmark method. */
-      Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
-    bool Gradual_Load,		/*!< \brief Apply the load gradually. */
-      Ramp_Load;				/*!< \brief Apply the load with linear increases. */
-    su2double Ramp_Time;			/*!< \brief Time until the maximum load is applied. */
-    su2double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
-    unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
+  su2double Newmark_alpha,			/*!< \brief Parameter alpha for Newmark method. */
+  Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
+  bool Gradual_Load,		/*!< \brief Apply the load gradually. */
+  Ramp_Load;				/*!< \brief Apply the load with linear increases. */
+  su2double Ramp_Time;			/*!< \brief Time until the maximum load is applied. */
+  su2double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
+  unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
-  /*!< \brief param is a map from the option name (config file string) to a pointer to an option child class */
-//	map<string, CAnyOptionRef*> param;
-
-  /*!<brief all_options is a map containing all of the options. This is used during config file parsing
+  
+  /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map
-   there would be no list of all the config file options. > */
+   there would be no list of all the config file options. ---*/
+  
   map<string, bool> all_options;
 
-  /*<brief param is a map from the option name (config file string) to its decoder (the specific child
-   class of COptionBase that turns the string into a value) */
+  /*--- brief param is a map from the option name (config file string) to its decoder (the specific child
+   class of COptionBase that turns the string into a value) ---*/
+  
   map<string, COptionBase*> option_map;
 
 
@@ -775,6 +708,7 @@ private:
 
   /*!<\brief addDoubleOption creates a config file parser for an option with the given name whose
    value can be represented by a su2double.*/
+  
   void addDoubleOption(const string name, su2double & option_field, su2double default_value) {
     // Check if the key is already in the map. If this fails, it is coder error
     // and not user error, so throw.
@@ -899,12 +833,11 @@ private:
   }
 
   void addMathProblemOption(const string name, bool & Adjoint, const bool & Adjoint_default,
-                      bool & Linearized, const bool & Linearized_default,
-                            bool & Restart_Flow, const bool & Restart_Flow_default,
+                      bool & Restart_Flow, const bool & Restart_Flow_default,
                             bool &DiscreteAdjoint, const bool & DiscreteAdjoint_default) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, Linearized, Linearized_default, Restart_Flow, Restart_Flow_default, DiscreteAdjoint, DiscreteAdjoint_default);
+    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, Restart_Flow, Restart_Flow_default, DiscreteAdjoint, DiscreteAdjoint_default);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -954,6 +887,14 @@ private:
     COptionBase* val = new COptionRiemann<Tenum>(name, nMarker_Riemann, Marker_Riemann, option_field, enum_map, var1, var2, FlowDir);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
+  template <class Tenum>
+  void addNRBCOption(const string name, unsigned short & nMarker_NRBC, string * & Marker_NRBC, unsigned short* & option_field, const map<string, Tenum> & enum_map,
+                                 su2double* & var1, su2double* & var2, su2double** & FlowDir) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionNRBC<Tenum>(name, nMarker_NRBC, Marker_NRBC, option_field, enum_map, var1, var2, FlowDir);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
 
   void addExhaustOption(const string name, unsigned short & nMarker_Exhaust, string * & Marker_Exhaust,
                       su2double* & Ttotal, su2double* & Ptotal) {
@@ -977,6 +918,22 @@ private:
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionPeriodic(name, nMarker_PerBound, Marker_PerBound, Marker_PerDonor, RotCenter, RotAngles, Translation);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+
+  void addMixingPlaneOption(const string & name, unsigned short & nMarker_MixBound,
+                    string* & Marker_MixBound, string* & Marker_MixDonor){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionMixingPlane(name, nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+  template <class Tenum>
+  void addTurboPerfOption(const string & name, unsigned short & nMarker_TurboPerf,
+                    string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut,  unsigned short* & Kind_TurboPerformance, const map<string, Tenum> & TurboPerformance_Map){
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionTurboPerformance<Tenum>(name, nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut, Kind_TurboPerformance, TurboPerformance_Map );
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -2906,29 +2863,6 @@ public:
 	 */
 	unsigned short GetKind_Turb_Model(void);
 
-  /*!
-	 * \brief Get the file containing the ML model
-	 */
-	string GetML_Turb_Model_File(void);
-
-  /*!
-	 * \brief File containing a check for the proper creation of the turb model
-	 * \return Temporary ml->SU2 file name.
-	 */
-  string GetML_Turb_Model_FeatureSet(void);
-
-  /*!
-	 * \brief File containing a check for the proper creation of the turb model
-	 * \return Temporary ml->SU2 file name.
-	 */
-  string* GetML_Turb_Model_Extra(void);
-
-  /*!
-	 * \brief File containing a check for the proper creation of the turb model
-	 * \return Temporary ml->SU2 file name.
-	 */
-  unsigned short GetNumML_Turb_Model_Extra(void);
-
 	/*!
 	 * \brief Get the kind of the transition model.
 	 * \return Kind of the transion model.
@@ -3017,15 +2951,6 @@ public:
 	 *       linearized) that is being solved.
 	 * \return Kind of upwind scheme for the convective terms.
 	 */
-	unsigned short GetSpatialOrder_TNE2(void);
-
-  /*!
-	 * \brief Get the order of the spatial integration.
-	 * \note This is the information that the code will use, the method will
-	 *       change in runtime depending of the specific equation (direct, adjoint,
-	 *       linearized) that is being solved.
-	 * \return Kind of upwind scheme for the convective terms.
-	 */
 	unsigned short GetSpatialOrder_AdjLevelSet(void);
 
   /*!
@@ -3037,15 +2962,6 @@ public:
 	 */
 	unsigned short GetSpatialOrder_AdjFlow(void);
 
-  /*!
-	 * \brief Get the order of the spatial integration.
-	 * \note This is the information that the code will use, the method will
-	 *       change in runtime depending of the specific equation (direct, adjoint,
-	 *       linearized) that is being solved.
-	 * \return Kind of upwind scheme for the convective terms.
-	 */
-	unsigned short GetSpatialOrder_AdjTNE2(void);
-
 	/*!
 	 * \brief Get the kind of integration scheme (explicit or implicit)
 	 *        for the flow equations.
@@ -3054,15 +2970,6 @@ public:
 	 * \return Kind of integration scheme for the flow equations.
 	 */
 	unsigned short GetKind_TimeIntScheme_Flow(void);
-
-  /*!
-	 * \brief Get the kind of integration scheme (explicit or implicit)
-	 *        for the flow equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of integration scheme for the flow equations.
-	 */
-	unsigned short GetKind_TimeIntScheme_TNE2(void);
 
 	/*!
 	 * \brief Get the kind of integration scheme (explicit or implicit)
@@ -3118,24 +3025,6 @@ public:
 	 */
 	unsigned short GetKind_ConvNumScheme_Flow(void);
 
-  /*!
-	 * \brief Get the kind of convective numerical scheme for the flow
-	 *        equations (centered or upwind).
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of convective numerical scheme for the flow equations.
-	 */
-	unsigned short GetKind_ConvNumScheme_TNE2(void);
-
-  /*!
-	 * \brief Get the kind of convective numerical scheme for the flow
-	 *        equations (centered or upwind).
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of convective numerical scheme for the flow equations.
-	 */
-	unsigned short GetKind_ConvNumScheme_AdjTNE2(void);
-
 	/*!
 	 * \brief Get the kind of convective numerical scheme for the template
 	 *        equations (centered or upwind).
@@ -3162,22 +3051,6 @@ public:
 	 */
 	unsigned short GetKind_Centered_Flow(void);
 
-  /*!
-	 * \brief Get the kind of center convective numerical scheme for the two-temperature model.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of center convective numerical scheme for the flow equations.
-	 */
-	unsigned short GetKind_Centered_TNE2(void);
-
-  /*!
-	 * \brief Get the kind of center convective numerical scheme for the two-temperature model.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of center convective numerical scheme for the flow equations.
-	 */
-	unsigned short GetKind_Centered_AdjTNE2(void);
-
 	/*!
 	 * \brief Get the kind of center convective numerical scheme for the adjoint level set equations.
 	 * \note This value is obtained from the config file, and it is constant
@@ -3202,22 +3075,6 @@ public:
 	 */
 	unsigned short GetKind_Upwind_Flow(void);
 
-  /*!
-	 * \brief Get the kind of upwind convective numerical scheme for the flow equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of upwind convective numerical scheme for the flow equations.
-	 */
-	unsigned short GetKind_Upwind_TNE2(void);
-
-  /*!
-	 * \brief Get the kind of upwind convective numerical scheme for the flow equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of upwind convective numerical scheme for the flow equations.
-	 */
-	unsigned short GetKind_Upwind_AdjTNE2(void);
-
 	/*!
 	 * \brief Get the kind of upwind convective numerical scheme for the adjoint level set equation.
 	 * \note This value is obtained from the config file, and it is constant
@@ -3239,18 +3096,6 @@ public:
 	unsigned short GetKind_SlopeLimit_Flow(void);
 
   /*!
-	 * \brief Get the method for limiting the spatial gradients.
-	 * \return Method for limiting the spatial gradients solving the flow equations.
-	 */
-	unsigned short GetKind_SlopeLimit_TNE2(void);
-
-  /*!
-	 * \brief Get the method for limiting the spatial gradients.
-	 * \return Method for limiting the spatial gradients solving the flow equations.
-	 */
-	unsigned short GetKind_SlopeLimit_AdjTNE2(void);
-
-	/*!
 	 * \brief Get the method for limiting the spatial gradients.
 	 * \return Method for limiting the spatial gradients solving the turbulent equation.
 	 */
@@ -3293,25 +3138,6 @@ public:
 	 */
 	su2double GetKappa_4th_Flow(void);
 
-  /*!
-	 * \brief Value of the calibrated constant for the Lax method (center scheme).
-	 * \note This constant is used in coarse levels and with first order methods.
-	 * \return Calibrated constant for the Lax method.
-	 */
-	su2double GetKappa_1st_TNE2(void);
-
-	/*!
-	 * \brief Value of the calibrated constant for the JST method (center scheme).
-	 * \return Calibrated constant for the JST method for the flow equations.
-	 */
-	su2double GetKappa_2nd_TNE2(void);
-
-	/*!
-	 * \brief Value of the calibrated constant for the JST method (center scheme).
-	 * \return Calibrated constant for the JST method for the flow equations.
-	 */
-	su2double GetKappa_4th_TNE2(void);
-
 	/*!
 	 * \brief Get the kind of integration scheme (explicit or implicit)
 	 *        for the adjoint flow equations.
@@ -3320,15 +3146,6 @@ public:
 	 * \return Kind of integration scheme for the adjoint flow equations.
 	 */
 	unsigned short GetKind_TimeIntScheme_AdjFlow(void);
-
-  /*!
-	 * \brief Get the kind of integration scheme (explicit or implicit)
-	 *        for the adjoint flow equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of integration scheme for the adjoint flow equations.
-	 */
-	unsigned short GetKind_TimeIntScheme_AdjTNE2(void);
 
 	/*!
 	 * \brief Get the kind of convective numerical scheme for the adjoint flow
@@ -3372,70 +3189,6 @@ public:
 	 * \return Calibrated constant for the low order center method for the adjoint flow equations.
 	 */
 	su2double GetKappa_1st_AdjFlow(void);
-
-  /*!
-	 * \brief Value of the calibrated constant for the high order method (center scheme).
-	 * \return Calibrated constant for the high order center method for the adjoint flow equations.
-	 */
-	su2double GetKappa_2nd_AdjTNE2(void);
-
-	/*!
-	 * \brief Value of the calibrated constant for the high order method (center scheme).
-	 * \return Calibrated constant for the high order center method for the adjoint flow equations.
-	 */
-	su2double GetKappa_4th_AdjTNE2(void);
-
-	/*!
-	 * \brief Value of the calibrated constant for the low order method (center scheme).
-	 * \return Calibrated constant for the low order center method for the adjoint flow equations.
-	 */
-	su2double GetKappa_1st_AdjTNE2(void);
-
-	/*!
-	 * \brief Get the kind of integration scheme (explicit or implicit)
-	 *        for the linearized flow equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of integration scheme for the linearized flow equations.
-	 */
-	unsigned short GetKind_TimeIntScheme_LinFlow(void);
-
-	/*!
-	 * \brief Get the kind of convective numerical scheme for the linearized flow
-	 *        equations (centered or upwind).
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of convective numerical scheme for the linearized flow equations.
-	 */
-	unsigned short GetKind_ConvNumScheme_LinFlow(void);
-
-	/*!
-	 * \brief Get the kind of center convective numerical scheme for the linearized flow equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of center convective numerical scheme for the linearized flow equations.
-	 */
-	unsigned short GetKind_Centered_LinFlow(void);
-
-	/*!
-	 * \brief Get the kind of upwind convective numerical scheme for the linearized flow equations.
-	 * \note This value is obtained from the config file, and it is constant
-	 *       during the computation.
-	 * \return Kind of upwind convective numerical scheme for the linearized flow equations.
-	 */
-	unsigned short GetKind_Upwind_LinFlow(void);
-
-	/*!
-	 * \brief Value of the calibrated constant for the high order method (center scheme).
-	 * \return Calibrated constant for the high order center method for the linearized flow equations.
-	 */
-	su2double GetKappa_4th_LinFlow(void);
-
-	/*!
-	 * \brief Value of the calibrated constant for the low order method (center scheme).
-	 * \return Calibrated constant for the low order center method for the linearized flow equations.
-	 */
-	su2double GetKappa_1st_LinFlow(void);
 
 	/*!
 	 * \brief Get the kind of integration scheme (implicit)
@@ -3551,7 +3304,68 @@ public:
 	 */
 	unsigned short GetKind_Inlet(void);
 
-  /*!
+
+	/*!
+	 * \brief Get the kind of mixing process for averaging quantities at the boundaries.
+	 * \return Kind of mixing process.
+	 */
+	unsigned short GetKind_MixingProcess(void);
+
+	/*!
+     * \brief Verify if there is mixing plane interface specified from config file.
+	 * \return boolean.
+	 */
+	bool GetBoolMixingPlane(void);
+
+	/*!
+	 * \brief number mixing plane interface specified from config file.
+	 * \return number of bound.
+	 */
+    unsigned short Get_nMarkerMixingPlane(void);
+
+    /*!
+	 * \brief get bounds name of mixing plane interface.
+	 * \return name of the bound.
+	 */
+    string GetMarker_MixingPlane_Bound(unsigned short index);
+
+
+    /*!
+	 * \brief get bounds name of mixing plane interface.
+	 * \return name of the bound.
+	 */
+    string GetMarker_MixingPlane_Donor(unsigned short index);
+
+    /*!
+     * \brief Verify if there is Turbomachinery performance option specified from config file.
+	 * \return boolean.
+	 */
+	bool GetBoolTurboPerf(void);
+    /*!
+	 * \brief number Turbomachinery performance option specified from config file.
+	 * \return number of bound.
+	 */
+	unsigned short Get_nMarkerTurboPerf(void);
+
+    /*!
+	 * \brief get inlet bounds name for Turbomachinery performance calculation.
+	 * \return name of the bound.
+	 */
+	string GetMarker_TurboPerf_BoundIn(unsigned short index);
+
+	/*!
+	 * \brief get outlet bounds name for Turbomachinery performance calculation.
+	 * \return name of the bound.
+	 */
+	string GetMarker_TurboPerf_BoundOut(unsigned short index);
+
+	/*!
+	 * \brief get marker kind for Turbomachinery performance calculation.
+	 * \return kind index.
+	 */
+	unsigned short GetKind_TurboPerf(unsigned short index);
+
+    /*!
 	 * \brief Get the number of sections.
 	 * \return Number of sections
 	 */
@@ -3577,6 +3391,15 @@ public:
 	 * \return Kind of objective function.
 	 */
 	unsigned short GetKind_ObjFunc(void);
+
+	/*!
+	 * \author H. Kline
+	 * \brief Get the coefficients of the objective defined by the chain rule with primitive variables.
+   * \note This objective is only applicable to gradient calculations. Objective value must be
+   * calculated using the area averaged outlet values of density, velocity, and pressure.
+   * Gradients are w.r.t density, velocity[3], and pressure. when 2D gradient w.r.t. 3rd component of velocity set to 0.
+	 */
+	su2double GetCoeff_ObjChainRule(unsigned short iVar);
 
 	/*!
 	 * \brief Get the kind of sensitivity smoothing technique.
@@ -3696,12 +3519,6 @@ public:
 	su2double GetCharVibTemp(unsigned short iSpecies);
 
 	/*!
-	 * \brief Provides a table of equilibrium constants for a particular chemical reaction for a supplied gas model.
-	 * \return: Matrix of reaction constants
-	 */
-	void GetChemistryEquilConstants(su2double **RxnConstantTable, unsigned short iReaction);
-
-	/*!
 	 * \brief Provides the molar mass of each species present in multi species fluid
 	 * \return: Vector of molar mass of each species in kg/kmol
 	 */
@@ -3818,12 +3635,6 @@ public:
 	string GetSolution_FlowFileName(void);
 
 	/*!
-	 * \brief Get the name of the file with the solution of the linearized flow problem.
-	 * \return Name of the file with the solution of the linearized flow problem.
-	 */
-	string GetSolution_LinFileName(void);
-
-	/*!
 	 * \brief Get the name of the file with the solution of the adjoint flow problem
 	 *		  with drag objective function.
 	 * \return Name of the file with the solution of the adjoint flow problem with
@@ -3931,13 +3742,13 @@ public:
 	 * \brief Get the name of the restart file for the flow variables.
 	 * \return Name of the restart file for the flow variables.
 	 */
-	string GetRestart_FlowFileName(void);
-
-	/*!
-	 * \brief Get the name of the restart file for the linearized flow variables.
-	 * \return Name of the restart file for the linearized flow variables.
+	string GetRestart_FlowFileName(string val_filename, int val_iZone);
+    
+    /*!
+	 * \brief Get the name of the restart file for the flow variables.
+	 * \return Name of the restart file for the flow variables.
 	 */
-	string GetRestart_LinFileName(void);
+	string GetRestart_FlowFileName(void);
 
 	/*!
 	 * \brief Get the name of the restart file for the adjoint variables (drag objective function).
@@ -3950,12 +3761,6 @@ public:
 	 * \return Name of the file with the adjoint variables.
 	 */
 	string GetAdj_FileName(void);
-
-	/*!
-	 * \brief Get the name of the file with the linearized flow variables.
-	 * \return Name of the file with the linearized flow variables.
-	 */
-	string GetLin_FileName(void);
 
 	/*!
 	 * \brief Get the name of the file with the gradient of the objective function.
@@ -3980,12 +3785,6 @@ public:
 	 * \return Name of the file with the surface information for the adjoint problem.
 	 */
 	string GetSurfAdjCoeff_FileName(void);
-
-	/*!
-	 * \brief Get the name of the file with the surface information for the linearized flow problem.
-	 * \return Name of the file with the surface information for the linearized flow problem.
-	 */
-	string GetSurfLinCoeff_FileName(void);
 
   /*!
 	 * \brief Augment the input filename with the iteration number for an unsteady file.
@@ -4019,12 +3818,6 @@ public:
 	 * \return Functional that is going to be used to evaluate the adjoint flow convergence.
 	 */
 	unsigned short GetCauchy_Func_AdjFlow(void);
-
-	/*!
-	 * \brief Get functional that is going to be used to evaluate the linearized flow convergence.
-	 * \return Functional that is going to be used to evaluate the linearized flow convergence.
-	 */
-	unsigned short GetCauchy_Func_LinFlow(void);
 
 	/*!
 	 * \brief Get the number of iterations that are considered in the Cauchy convergence criteria.
@@ -4359,16 +4152,16 @@ public:
 	bool GetIsothermalWall(void);
 
 	/*!
-	 * \brief Get information about the catalytic wall condition
-	 * \return <code>TRUE</code> if it is a catalytic wall condition; otherwise <code>FALSE</code>.
-	 */
-	bool GetCatalyticWall(void);
-
-	/*!
 	 * \brief Get information about the Low Mach Preconditioning
 	 * \return <code>TRUE</code> if we are using low Mach preconditioner; otherwise <code>FALSE</code>.
 	 */
 	bool Low_Mach_Preconditioning(void);
+
+	/*!
+	 * \brief Get information about the Low Mach Correction
+	 * \return <code>TRUE</code> if we are using low Mach correction; otherwise <code>FALSE</code>.
+	 */
+	bool Low_Mach_Correction(void);
 
 	/*!
 	 * \brief Get information about the poisson solver condition
@@ -4853,6 +4646,35 @@ public:
 	unsigned short GetKind_Data_Riemann(string val_marker);
 
 	/*!
+	 * \brief Get the var 1 at NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 * \return The var1
+	 */
+	su2double GetNRBC_Var1(string val_marker);
+
+	/*!
+	 * \brief Get the var 2 at NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 * \return The var2
+	 */
+
+	su2double GetNRBC_Var2(string val_marker);
+
+	/*!
+	 * \brief Get the Flowdir at NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 * \return The Flowdir
+	 */
+	su2double* GetNRBC_FlowDir(string val_marker);
+
+	/*!
+	 * \brief Get Kind Data of NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 * \return Kind data
+	 */
+	unsigned short GetKind_Data_NRBC(string val_marker);
+
+	/*!
 	 * \brief Get the wall temperature (static) at an isothermal boundary.
 	 * \param[in] val_index - Index corresponding to the isothermal boundary.
 	 * \return The wall temperature.
@@ -4865,12 +4687,6 @@ public:
 	 * \return The heat flux.
 	 */
 	su2double GetWall_HeatFlux(string val_index);
-
-	/*!
-	 * \brief Get the wall heat flux on a constant heat flux boundary.
-	 * \return The heat flux.
-	 */
-	su2double *GetWall_Catalycity(void);
 
 	/*!
 	 * \brief Get the back pressure (static) at an outlet boundary.

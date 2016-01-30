@@ -2,9 +2,9 @@
  * \file codi_reverse_structure.inl
  * \brief Inline subroutines for <i>datatype_structure.hpp<i>.
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -30,27 +30,10 @@
  */
 #pragma once
 
-namespace AD{
-
-  /*--- Stores the indices of the input variables (they might be overwritten) ---*/
-
-  extern std::vector<unsigned int> inputValues;
-
-  /*--- Current position inside the adjoint vector ---*/
-
-  extern int adjointVectorPosition;
-
-  /*--- Reference to the tape ---*/
-
-  extern codi::ChunkTape<double, int>& globalTape;
-
-}
-
-
 namespace SU2_TYPE{
-  inline void SetPrimary(su2double& data, const double &val){data.setValue(val);}
+  inline void SetValue(su2double& data, const double &val){data.setValue(val);}
 
-  inline double GetPrimary(const su2double& data){return data.getValue();}
+  inline double GetValue(const su2double& data){return data.getValue();}
 
   inline void SetSecondary(su2double& data, const double &val){data.setGradient(val);}
 
@@ -60,35 +43,14 @@ namespace SU2_TYPE{
 
   inline void SetDerivative(su2double& data, const double &val){data.setGradient(val);}
 }
-namespace AD{
 
-  inline void RegisterInput(su2double &data){AD::globalTape.registerInput(data);
-                                             inputValues.push_back(data.getGradientData());}
-
-  inline void RegisterOutput(su2double& data){AD::globalTape.registerOutput(data);}
-
-  inline void StartRecording(){AD::globalTape.setActive();}
-
-  inline void StopRecording(){AD::globalTape.setPassive();}
-
-  inline void ClearAdjoints(){AD::globalTape.clearAdjoints(); }
-
-  inline void ComputeAdjoint(){AD::globalTape.evaluate();
-                               adjointVectorPosition = 0;}
-
-  inline void delete_handler(void *handler){
-    CheckpointHandler *checkpoint = static_cast<CheckpointHandler*>(handler);
-    checkpoint->clear();
-  }
-}
-
-/* --- Object for the definition of getValue used in the printfOver definition.
+/*--- Object for the definition of getValue used in the printfOver definition.
  * Necessary for cases where the argument of sprintfOver is an expression, e.g:
  * SPRINTF("Residual: %d", log10(Residual)) ---*/
 
 template<class A> struct Impl_getValue<codi::Expression<double, A> > {
   typedef double OUT;
   static inline OUT getValue(const codi::Expression<double, A> &value) {
-    return value.cast().value();
+    return value.getValue();
   }
 };

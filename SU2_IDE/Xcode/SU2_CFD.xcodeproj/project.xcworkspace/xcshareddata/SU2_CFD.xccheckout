@@ -11,7 +11,7 @@
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
 		<key>C9B96DB20CD3AFB04E19B3B0D563C5699EDA895C</key>
-		<string>https://github.com/su2code/SU2.git</string>
+		<string>https://github.com/su2code/su2.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
 	<string>SU2_IDE/Xcode/SU2_CFD.xcodeproj</string>
@@ -21,7 +21,7 @@
 		<string>../../../..</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
-	<string>https://github.com/su2code/SU2.git</string>
+	<string>https://github.com/su2code/su2.git</string>
 	<key>IDESourceControlProjectVersion</key>
 	<integer>111</integer>
 	<key>IDESourceControlProjectWCCIdentifier</key>
@@ -34,7 +34,7 @@
 			<key>IDESourceControlWCCIdentifierKey</key>
 			<string>C9B96DB20CD3AFB04E19B3B0D563C5699EDA895C</string>
 			<key>IDESourceControlWCCName</key>
-			<string>SU2</string>
+			<string>su2</string>
 		</dict>
 	</array>
 </dict>

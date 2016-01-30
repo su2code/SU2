@@ -2,7 +2,7 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 	unsigned short iDV, iFFDBox, iPlane, nPlane, iVar;
 	su2double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, MinPlane, MaxPlane, MinXCoord, MaxXCoord,
-  **Plane_P0, **Plane_Normal, Volume, Volume_New, Volume_Grad;
+  **Plane_P0, **Plane_Normal, Volume = 0.0, Volume_New = 0.0, Volume_Grad = 0.0;
   vector<su2double> *Xcoord_Airfoil, *Ycoord_Airfoil, *Zcoord_Airfoil, *Variable_Airfoil;
   char config_file_name[MAX_STRING_SIZE];
  	char *cstr;
@@ -179,7 +179,7 @@ int main(int argc, char *argv[]) {
   /*--- Compute center of gravity ---*/
   
   if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-  geometry_container[ZONE_0]->SetCG();
+  geometry_container[ZONE_0]->SetCoord_CG();
   
   /*--- Create the dual control volume structures ---*/
   
@@ -460,10 +460,15 @@ int main(int argc, char *argv[]) {
         }
         surface_movement->SetParabolic(geometry_container[ZONE_0], config_container[ZONE_0]);
       }
-      
+      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == CUSTOM and rank==MASTER_NODE)
+        cout <<"Custom design variable will be used in external script" << endl;
+
       /*--- Design variable not implement ---*/
       
-      else { cout << "Design Variable not implement yet" << endl; }
+      else {
+        if (rank==MASTER_NODE)
+          cout << "Design Variable not implemented yet" << endl;
+      }
       
       /*--- Create airfoil structure ---*/
       for (iPlane = 0; iPlane < nPlane; iPlane++) {

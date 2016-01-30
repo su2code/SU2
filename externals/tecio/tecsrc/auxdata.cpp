@@ -51,7 +51,7 @@ typedef struct _AuxData_s
     ArrayList_pa ItemList; /* <AuxDataItem_s *>[dynamic] */
 } AuxData_s;
 
-static Mutex_pa AuxDataMutex = NULL;
+//static Mutex_pa AuxDataMutex = NULL;
 
 
 /**

@@ -2,9 +2,9 @@
  * \file codi_forward_structure.hpp
  * \brief Header for codi forward type definition.
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
