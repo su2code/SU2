@@ -2916,7 +2916,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
      cout <<"based on the physical case: ";
   }
     switch (Kind_Solver) {
-      case EULER: case DISC_ADJ_EULER:
+      case EULER: case DISC_ADJ_EULER: case FEM_EULER:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         if (Kind_Regime == FREESURFACE) {
@@ -2925,7 +2925,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "The free surface is located at: " << FreeSurface_Zero <<", and its thickness is: " << FreeSurface_Thickness << "." << endl;
         }
         break;
-      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
+      case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: case FEM_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == FREESURFACE) {
@@ -2934,7 +2934,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "The free surface is located at: " << FreeSurface_Zero <<", and its thickness is: " << FreeSurface_Thickness << "." << endl;
         }
         break;
-      case RANS: case DISC_ADJ_RANS:
+      case RANS: case DISC_ADJ_RANS: FEM_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         if (Kind_Regime == FREESURFACE) {
@@ -3059,13 +3059,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
     cout<< endl;
 
-    cout << "Surface(s) belonging to the Fluid-Structure Interaction problem: ";
-    for (iMarker_FSIinterface = 0; iMarker_FSIinterface < nMarker_FSIinterface; iMarker_FSIinterface++) {
-      cout << Marker_FSIinterface[iMarker_FSIinterface];
-      if (iMarker_FSIinterface < nMarker_FSIinterface-1) cout << ", ";
-      else cout <<".";
+    if(nMarker_FSIinterface != 0) {
+      cout << "Surface(s) belonging to the Fluid-Structure Interaction problem: ";
+      for (iMarker_FSIinterface = 0; iMarker_FSIinterface < nMarker_FSIinterface; iMarker_FSIinterface++) {
+        cout << Marker_FSIinterface[iMarker_FSIinterface];
+        if (iMarker_FSIinterface < nMarker_FSIinterface-1) cout << ", ";
+        else cout <<".";
+      }
+      cout<<endl;
     }
-    cout<<endl;
 
     if (nMarker_DV != 0) {
       cout << "Surface(s) affected by the design variables: ";
@@ -3465,13 +3467,21 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       if (Kind_TimeIntScheme_AdjTurb == EULER_IMPLICIT) cout << "Euler implicit method for the turbulent adjoint equation." << endl;
     }
 
-    switch (Kind_Gradient_Method) {
-      case GREEN_GAUSS: cout << "Gradient computation using Green-Gauss theorem." << endl; break;
-      case WEIGHTED_LEAST_SQUARES: cout << "Gradient Computation using weighted Least-Squares method." << endl; break;
+    if(Kind_Solver != FEM_EULER && Kind_Solver != FEM_NAVIER_STOKES && Kind_Solver != FEM_RANS) {
+      switch (Kind_Gradient_Method) {
+        case GREEN_GAUSS: cout << "Gradient computation using Green-Gauss theorem." << endl; break;
+        case WEIGHTED_LEAST_SQUARES: cout << "Gradient Computation using weighted Least-Squares method." << endl; break;
+      }
     }
 
     if ((Kind_Regime == INCOMPRESSIBLE) || (Kind_Regime == FREESURFACE)) {
       cout << "Artificial compressibility factor: " << ArtComp_Factor << "." << endl;
+    }
+
+    if(Kind_Solver == FEM_EULER || Kind_Solver == FEM_NAVIER_STOKES || Kind_Solver == FEM_RANS) {
+      if(Kind_FEM_Flow == DG) {
+        cout << "Discontinuous Galerkin Finite element solver" << endl;
+      }
     }
 
     cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;
