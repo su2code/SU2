@@ -6267,7 +6267,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
                 elem_reqd = true;
-                for (unsigned long j=0; j<N_POINTS_TRIANGLE; j++) {
+                for (j=0; j<N_POINTS_TRIANGLE; j++) {
                   if (i != j) adj_nodes[local_index].push_back(vnodes_triangle[j]);
                 }
               }
@@ -6359,7 +6359,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
                 elem_reqd = true;
-                for (unsigned long j=0; j<N_POINTS_TETRAHEDRON; j++) {
+                for (j=0; j<N_POINTS_TETRAHEDRON; j++) {
                   if (i != j) adj_nodes[local_index].push_back(vnodes_tetra[j]);
                 }
               }
@@ -6567,8 +6567,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   }
   
   mesh_file.close();
-    
-    
+  
     if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << "Calling the partitioning functions." << endl;
     
@@ -6581,6 +6580,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
    proper format before sending the data to ParMETIS. We need to remove
    repeats and adjust the size of the array for each local node. ---*/
 
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << "Building the graph adjacency structure." << endl;
   
@@ -6588,9 +6590,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   vector<unsigned long> adjac_vec;
   unsigned long adj_elem_size;
   vector<unsigned long>::iterator it;
-  local_elem=loc_element_count;
   
-  xadj = new unsigned long [npoint_procs[rank]+1];
+  xadj = new idx_t [npoint_procs[rank]+1];
   xadj[0]=0;
   vector<unsigned long> temp_adjacency;
   unsigned long local_count=0;
@@ -6627,7 +6628,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
    is the array that we will feed to ParMETIS for partitioning. ---*/
   
   adj_elem_size = xadj[npoint_procs[rank]];
-  adjacency = new unsigned long[adj_elem_size];
+  adjacency = new idx_t [adj_elem_size];
   copy(adjac_vec.begin(), adjac_vec.end(), adjacency);
 
   xadj_size = npoint_procs[rank]+1;
@@ -6636,6 +6637,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- Free temporary memory used to build the adjacency. ---*/
   
   adjac_vec.clear();
+  
+#endif
+#endif
+  
   adj_nodes.clear();
   
   /*--- For now, the boundary marker information is still read by the
@@ -8206,6 +8211,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   
   no_of_local_elements = ielem;
   
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  
   /*--- Post process the adjacency information in order to get it into the
    proper format before sending the data to ParMETIS. We need to remove
    repeats and adjust the size of the array for each local node. ---*/
@@ -8217,9 +8225,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   vector<unsigned long> adjac_vec;
   unsigned long adj_elem_size;
   vector<unsigned long>::iterator it;
-  local_elem=ielem;
   
-  xadj = new unsigned long [npoint_procs[rank]+1];
+  xadj = new idx_t[npoint_procs[rank]+1];
   xadj[0]=0;
   vector<unsigned long> temp_adjacency;
   unsigned long local_count=0;
@@ -8248,7 +8255,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   /*--- Now that we know the size, create the final adjacency array ---*/
   
   adj_elem_size = xadj[npoint_procs[rank]];
-  adjacency = new unsigned long[adj_elem_size];
+  adjacency = new idx_t [adj_elem_size];
   copy(adjac_vec.begin(), adjac_vec.end(), adjacency);
   
   xadj_size = npoint_procs[rank]+1;
@@ -8257,6 +8264,10 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   /*--- Free temporary memory used to build the adjacency. ---*/
   
   adjac_vec.clear();
+  
+#endif
+#endif
+  
   adj_nodes.clear();
   
   /*--- Store the nodal coordinates from the linear partitioning. ---*/
@@ -11392,28 +11403,26 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
   
   if (size > SINGLE_NODE) {
     
-  /*--- Create some structures that ParMETIS needs for partitioning. ---*/
-
-  idx_t numflag, nparts, edgecut, wgtflag, ncon;
-  idx_t *vtxdist     = new idx_t[size+1];
-  idx_t *xadj_l      = new idx_t[xadj_size];
-  idx_t *adjacency_l = new idx_t[adjacency_size];
-  idx_t *elmwgt      = new idx_t[local_node];
-  idx_t *part        = new idx_t[local_node];
-
-  real_t ubvec;
-  real_t *tpwgts = new real_t[size];
-  
-  /*--- Some recommended defaults for the various ParMETIS options. ---*/
-  
-  wgtflag = 0;
-  numflag = 0;
-  ncon    = 1;
-  ubvec   = 1.05;
-  nparts  = (idx_t)size;
-  idx_t options[METIS_NOPTIONS];
-  METIS_SetDefaultOptions(options);
-  options[1] = 0;
+    /*--- Create some structures that ParMETIS needs for partitioning. ---*/
+    
+    idx_t numflag, nparts, edgecut, wgtflag, ncon;
+    
+    idx_t *vtxdist = new idx_t[size+1];
+    idx_t *part    = new idx_t[local_node];
+    
+    real_t ubvec;
+    real_t *tpwgts = new real_t[size];
+    
+    /*--- Some recommended defaults for the various ParMETIS options. ---*/
+    
+    wgtflag = 0;
+    numflag = 0;
+    ncon    = 1;
+    ubvec   = 1.05;
+    nparts  = (idx_t)size;
+    idx_t options[METIS_NOPTIONS];
+    METIS_SetDefaultOptions(options);
+    options[1] = 0;
     
     /*--- Fill the necessary ParMETIS data arrays. Note that xadj_size and
      adjacency_size are class data members that have been defined and set
@@ -11427,18 +11436,10 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     for (int i = 0; i < size; i++) {
       vtxdist[i+1] = (idx_t)ending_node[i];
     }
-
-    for (unsigned long i = 0; i < xadj_size; i++) {
-      xadj_l[i] = (idx_t)xadj[i];
-    }
-    
-    for (unsigned long i = 0; i < adjacency_size; i++) {
-      adjacency_l[i] = (idx_t)adjacency[i];
-    }
     
     /*--- Calling ParMETIS ---*/
     if (rank == MASTER_NODE) cout << "Calling ParMETIS..." << endl;
-    ParMETIS_V3_PartKway(vtxdist,xadj_l, adjacency_l, NULL, NULL, &wgtflag,
+    ParMETIS_V3_PartKway(vtxdist,xadj, adjacency, NULL, NULL, &wgtflag,
                          &numflag, &ncon, &nparts, tpwgts, &ubvec, options,
                          &edgecut, part, &comm);
     if (rank == MASTER_NODE) {
@@ -11454,25 +11455,22 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
       node[iPoint]->SetColor(part[iPoint]);
     }
     
-  /*--- Free all memory needed for the ParMETIS structures ---*/
-  
-  delete [] vtxdist;
-  delete [] xadj_l;
-  delete [] adjacency_l;
-  delete [] elmwgt;
-  delete [] part;
-  delete [] tpwgts;
-  
+    /*--- Free all memory needed for the ParMETIS structures ---*/
+    
+    delete [] vtxdist;
+    delete [] part;
+    delete [] tpwgts;
+    
   }
   
-#endif
-#endif
-  
   /*--- Delete the memory from the geometry class that carried the
-   adjacency structure. Note that this is done even in the serial case. ---*/
+   adjacency structure. ---*/
   
   delete [] xadj;
   delete [] adjacency;
+  
+#endif
+#endif
   
 }
 
