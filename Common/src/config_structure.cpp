@@ -540,7 +540,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Integer number of periodic time instances for Time Spectral */
   addUnsignedShortOption("TIME_INSTANCES", nTimeInstances, 1);
   /* DESCRIPTION: Time period for Time Spectral wihtout moving meshes */
-  addDoubleOption("SPECTRALMETHOD_PERIOD", SpectralMethod_Period, 0.0);
+  addDoubleOption("SPECTRALMETHOD_PERIOD", SpectralMethod_Period, -1.0);
   /* DESCRIPTION: Iteration number to begin unsteady restarts (dual time method) */
   addLongOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
@@ -2011,13 +2011,23 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
-  /*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
-   There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
-   The largest period of motion is the one to be used for time-spectral calculations. ---*/
-  
-  if (Unsteady_Simulation == SPECTRAL_METHOD) {
+  /*-- Setting Spectral method period from the config file */
+    
+    if (Unsteady_Simulation == SPECTRAL_METHOD) {
+        SpectralMethod_Period = GetSpectralMethod_Period();
+        if (SpectralMethod_Period < 0)  {
+            cout << "Not a valid value for time period!!" << endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    /*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
+     There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
+     The largest period of motion is the one to be used for time-spectral calculations. ---*/
+    
+  /*if (Unsteady_Simulation == SPECTRAL_METHOD) {
       if (!(GetGrid_Movement())) {
-          /* No grid movement - Time period from config file */
+          // No grid movement - Time period from config file //
           SpectralMethod_Period = GetSpectralMethod_Period();
       }
       
@@ -2026,7 +2036,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           su2double *periods;
           periods = new su2double[N_MOTION_TYPES];
           
-          /*--- rotation: ---*/
+          //--- rotation: ---//
           
           su2double Omega_mag_rot = sqrt(pow(Rotation_Rate_X[ZONE_0],2)+pow(Rotation_Rate_Y[ZONE_0],2)+pow(Rotation_Rate_Z[ZONE_0],2));
           if (Omega_mag_rot > 0)
@@ -2034,7 +2044,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           else
               periods[0] = 0.0;
           
-          /*--- pitching: ---*/
+          //--- pitching: ---//
           
           su2double Omega_mag_pitch = sqrt(pow(Pitching_Omega_X[ZONE_0],2)+pow(Pitching_Omega_Y[ZONE_0],2)+pow(Pitching_Omega_Z[ZONE_0],2));
           if (Omega_mag_pitch > 0)
@@ -2042,7 +2052,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           else
               periods[1] = 0.0;
           
-          /*--- plunging: ---*/
+          //--- plunging: ---//
           
           su2double Omega_mag_plunge = sqrt(pow(Plunging_Omega_X[ZONE_0],2)+pow(Plunging_Omega_Y[ZONE_0],2)+pow(Plunging_Omega_Z[ZONE_0],2));
           if (Omega_mag_plunge > 0)
@@ -2050,7 +2060,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           else
               periods[2] = 0.0;
           
-          /*--- determine which period is largest ---*/
+          //--- determine which period is largest ---//
           
           unsigned short iVar;
           SpectralMethod_Period = 0.0;
@@ -2062,7 +2072,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           delete periods;
       }
     
-  }
+  }*/
   
   /* Initialize the Harmonic balance Frequency pointer */
   if (Omega_HB == NULL) {
