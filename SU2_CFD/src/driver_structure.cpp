@@ -1205,7 +1205,7 @@ void CSpectralDriver::Run(CIteration **iteration_container,
    initialize the source terms, and compute any grid veocities, if necessary. ---*/
   
   if (ExtIter == 0) {
-      if (config_container[ZONE_0]->GetGrid_Movement()) {
+      if (config_container[ZONE_0]->GetGrid_Movement() && (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL)) {
           SetTimeSpectral_Velocities(geometry_container, config_container, nZone);
       }
     
@@ -1280,11 +1280,13 @@ void CSpectralDriver::SetSpectralMethod(CGeometry ***geometry_container, CSolver
   }
   
   /*--- Build the time-spectral operator matrix ---*/
-  ComputeTimeSpectral_Operator(D, period, nZone);
-    
-  /* Vector of frequency input values for HB method */
-  //su2double *Omega_HB = config_container[ZONE_0]->GetOmega_HB();
-  //ComputeHarmonicBalance_Operator(D, Omega_HB, period, nZone);
+  if (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL) {
+    ComputeTimeSpectral_Operator(D, period, nZone);
+  }
+  if (config_container[ZONE_0]->GetSpectralMethod_Type() == HARMONIC_BALANCE) {
+    su2double *Omega_HB = config_container[ZONE_0]->GetOmega_HB();
+    ComputeHarmonicBalance_Operator(D, Omega_HB, period, nZone);
+  }
     
   /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
   /*--- Loop over all grid levels ---*/
@@ -1340,29 +1342,6 @@ void CSpectralDriver::SetSpectralMethod(CGeometry ***geometry_container, CSolver
       }
     }
   }
-  
-  //	/*--- Loop over all grid levels ---*/
-  //	for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
-  //
-  //		/*--- Loop over each node in the volume mesh ---*/
-  //		for (iPoint = 0; iPoint < geometry_container[ZONE_0][iMGlevel]->GetnPoint(); iPoint++) {
-  //
-  //			for (iZone = 0; iZone < nZone; iZone++) {
-  //				for (iVar = 0; iVar < nVar; iVar++) Source[iVar] = 0.0;
-  //				for (jZone = 0; jZone < nZone; jZone++) {
-  //
-  //					/*--- Retrieve solution at this node in current zone ---*/
-  //					for (iVar = 0; iVar < nVar; iVar++) {
-  //						U[iVar] = solver_container[jZone][iMGlevel][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
-  //						Source[iVar] += U[iVar]*D[iZone][jZone];
-  //					}
-  //				}
-  //				/*--- Store sources for current iZone ---*/
-  //				for (iVar = 0; iVar < nVar; iVar++)
-  //					solver_container[iZone][iMGlevel][FLOW_SOL]->node[iPoint]->SetSpectralMethod_Source(iVar, Source[iVar]);
-  //			}
-  //		}
-  //	}
   
   /*--- Source term for a turbulence model ---*/
   if (config_container[ZONE_0]->GetKind_Solver() == RANS) {
