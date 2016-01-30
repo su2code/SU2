@@ -2,9 +2,9 @@
  * \file codi_forward_structure.inl
  * \brief Inline subroutines for <i>codi_forward_structure.hpp<i>.
  * \author T. Albring
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
- * SU2 Lead Developers: Dr. Francisco Palacios (francisco.palacios@boeing.com).
+ * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
  *
  * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
@@ -31,9 +31,9 @@
 #pragma once
 
 namespace SU2_TYPE{
-  inline void SetPrimary(su2double& data, const double &val){data.setValue(val);}
+  inline void SetValue(su2double& data, const double &val){data.setValue(val);}
 
-  inline double GetPrimary(const su2double& data){return data.getValue();}
+  inline double GetValue(const su2double& data){return data.getValue();}
 
   inline void SetSecondary(su2double& data, const double &val){data.setGradient(val);}
 

@@ -2,7 +2,7 @@
  * \file solution_direct_poisson.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -209,8 +209,8 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //				Coord_0 = geometry->node[Point_0]->GetCoord();
 //				Coord_1 = geometry->node[Point_1]->GetCoord();
 //				Coord_2 = geometry->node[Point_2]->GetCoord();
-//        
-//				for (iDim=0; iDim < nDim; iDim++) {
+//
+//				for (iDim = 0; iDim < nDim; iDim++) {
 //					a[iDim] = Coord_0[iDim]-Coord_2[iDim];
 //					b[iDim] = Coord_1[iDim]-Coord_2[iDim];
 //				}
@@ -242,8 +242,8 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //				LinSysRes.AddBlock(Point_0, &Source_Vector[0]);
 //				LinSysRes.AddBlock(Point_1, &Source_Vector[1]);
 //				LinSysRes.AddBlock(Point_2, &Source_Vector[2]);
-//        
-//				if (geometry->elem[iElem]->GetVTK_Type() == RECTANGLE) {
+//
+//				if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {
 //          
 //					Point_0 = geometry->elem[iElem]->GetNode(3);
 //					Point_1 = geometry->elem[iElem]->GetNode(0);
@@ -252,8 +252,8 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 //					Coord_0 = geometry->node[Point_0]->GetCoord();
 //					Coord_1 = geometry->node[Point_1]->GetCoord();
 //					Coord_2 = geometry->node[Point_2]->GetCoord();
-//          
-//					for (iDim=0; iDim < nDim; iDim++) {
+//
+//					for (iDim = 0; iDim < nDim; iDim++) {
 //						a[iDim] = Coord_0[iDim]-Coord_2[iDim];
 //						b[iDim] = Coord_1[iDim]-Coord_2[iDim];
 //					}

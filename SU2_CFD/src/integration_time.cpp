@@ -2,7 +2,7 @@
  * \file integration_time.cpp
  * \brief Time dependent numerical methods
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -53,8 +53,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
   const bool direct = ((config[iZone]->GetKind_Solver() == EULER)                         ||
                        (config[iZone]->GetKind_Solver() == NAVIER_STOKES)                 ||
                        (config[iZone]->GetKind_Solver() == RANS)                          ||
-                       (config[iZone]->GetKind_Solver() == TNE2_EULER)                    ||
-                       (config[iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES)            ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_EULER)                ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)        ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_RANS));
@@ -100,12 +98,12 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem,
                   Iteration, iZone);
-  
+
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
-  
-  solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0],
-                                                                        solver_container[iZone][MESH_0], config[iZone],
-                                                                        MESH_0, NO_RK_ITER, RunTime_EqSystem, true);
+
+   solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0],
+                                                                         solver_container[iZone][MESH_0], config[iZone],
+                                                                         MESH_0, NO_RK_ITER, RunTime_EqSystem, true);
   
   /*--- Compute non-dimensional parameters and the convergence monitor ---*/
   
@@ -284,11 +282,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     Boundary = config->GetMarker_All_KindBC(iMarker);
     if ((Boundary == HEAT_FLUX             ) ||
-        (Boundary == HEAT_FLUX_CATALYTIC   ) ||
-        (Boundary == HEAT_FLUX_NONCATALYTIC) ||
-        (Boundary == ISOTHERMAL            ) ||
-        (Boundary == ISOTHERMAL_CATALYTIC  ) ||
-        (Boundary == ISOTHERMAL_NONCATALYTIC)) {
+        (Boundary == ISOTHERMAL            )) {
       
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         
@@ -517,11 +511,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
@@ -568,11 +558,7 @@ void CMultiGridIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *s
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
       for (iVertex = 0; iVertex<geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
@@ -620,11 +606,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
       
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
@@ -762,82 +744,7 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       }
       
       break;
-      
-    case RUNTIME_TNE2_SYS:
-      
-      /*--- Calculate the inviscid and viscous forces ---*/
-      
-      solver_container[FinestMesh][TNE2_SOL]->Inviscid_Forces(geometry[FinestMesh], config);
-      solver_container[FinestMesh][TNE2_SOL]->Viscous_Forces(geometry[FinestMesh], config);
-      
-      /*--- Evaluate convergence monitor ---*/
-      
-      if (config->GetConvCriteria() == CAUCHY) {
-        if (config->GetCauchy_Func_Flow() == DRAG_COEFFICIENT) (*monitor) = solver_container[FinestMesh][TNE2_SOL]->GetTotal_CDrag();
-        if (config->GetCauchy_Func_Flow() == LIFT_COEFFICIENT) (*monitor) = solver_container[FinestMesh][TNE2_SOL]->GetTotal_CLift();
-      }
-      
-      if (config->GetConvCriteria() == RESIDUAL) {
-    	  if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(0));
-    	  else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
-    		  if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(3));
-    		  else (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(4));
-    	  }
-      }
-      
-      break;
-      
-    case RUNTIME_ADJTNE2_SYS:
-      
-      /*--- Calculate the inviscid and viscous sensitivities ---*/
-      
-      solver_container[FinestMesh][ADJTNE2_SOL]->Inviscid_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJTNE2_SOL][CONV_BOUND_TERM], config);
-      solver_container[FinestMesh][ADJTNE2_SOL]->Viscous_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJTNE2_SOL][CONV_BOUND_TERM], config);
-      
-      /*--- Smooth the inviscid and viscous sensitivities ---*/
-      
-      if (config->GetKind_SensSmooth() != NONE) solver_container[FinestMesh][ADJTNE2_SOL]->Smooth_Sensitivity(geometry[FinestMesh], solver_container[FinestMesh], numerics_container[FinestMesh][ADJTNE2_SOL][CONV_BOUND_TERM], config);
-      
-      /*--- Evaluate convergence monitor ---*/
-      
-      if (config->GetConvCriteria() == CAUCHY) {
-        if (config->GetCauchy_Func_AdjFlow() == SENS_GEOMETRY) (*monitor) = solver_container[FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Geo();
-        if (config->GetCauchy_Func_AdjFlow() == SENS_MACH) (*monitor) = solver_container[FinestMesh][ADJTNE2_SOL]->GetTotal_Sens_Mach();
-      }
-      
-      if (config->GetConvCriteria() == RESIDUAL) {
-    	  if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][ADJTNE2_SOL]->GetRes_RMS(0));
-    	  else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
-    		  if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][ADJTNE2_SOL]->GetRes_RMS(3));
-    		  else (*monitor) = log10(solver_container[FinestMesh][ADJTNE2_SOL]->GetRes_RMS(4));
-    	  }
-      }
-      
-      break;
-      
-    case RUNTIME_LINFLOW_SYS:
-      
-      /*--- Calculate the inviscid and viscous forces ---*/
-      
-      solver_container[FinestMesh][LINFLOW_SOL]->Inviscid_DeltaForces(geometry[FinestMesh], solver_container[FinestMesh], config);
-      solver_container[FinestMesh][LINFLOW_SOL]->Viscous_DeltaForces(geometry[FinestMesh], config);
-      
-      /*--- Evaluate convergence monitor ---*/
-      
-      if (config->GetConvCriteria() == CAUCHY) {
-        if (config->GetCauchy_Func_LinFlow() == DELTA_DRAG_COEFFICIENT) (*monitor) = solver_container[FinestMesh][LINFLOW_SOL]->GetTotal_CDeltaDrag();
-        if (config->GetCauchy_Func_LinFlow() == DELTA_LIFT_COEFFICIENT) (*monitor) = solver_container[FinestMesh][LINFLOW_SOL]->GetTotal_CDeltaLift();
-      }
-      
-      if (config->GetConvCriteria() == RESIDUAL) {
-    	  if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][LINFLOW_SOL]->GetRes_RMS(0));
-    	  else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
-    		  if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][LINFLOW_SOL]->GetRes_RMS(3));
-    		  else (*monitor) = log10(solver_container[FinestMesh][LINFLOW_SOL]->GetRes_RMS(4));
-    	  }
-      }
-      
-      break;
+          
   }
   
 }
@@ -853,49 +760,54 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
+  unsigned short FinestMesh = config[iZone]->GetFinestMesh();
+
   /*--- Preprocessing ---*/
   
-  solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], MESH_0, 0, RunTime_EqSystem, false);
+  solver_container[iZone][FinestMesh][SolContainer_Position]->Preprocessing(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], FinestMesh, 0, RunTime_EqSystem, false);
   
   /*--- Set the old solution ---*/
   
-  solver_container[iZone][MESH_0][SolContainer_Position]->Set_OldSolution(geometry[iZone][MESH_0]);
+  solver_container[iZone][FinestMesh][SolContainer_Position]->Set_OldSolution(geometry[iZone][FinestMesh]);
   
   /*--- Time step evaluation ---*/
   
-  solver_container[iZone][MESH_0][SolContainer_Position]->SetTime_Step(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], MESH_0, 0);
+  solver_container[iZone][FinestMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], FinestMesh, 0);
   
   /*--- Space integration ---*/
   
-  Space_Integration(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][SolContainer_Position],
-                    config[iZone], MESH_0, NO_RK_ITER, RunTime_EqSystem);
+  Space_Integration(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], numerics_container[iZone][FinestMesh][SolContainer_Position],
+                    config[iZone], FinestMesh, NO_RK_ITER, RunTime_EqSystem);
   
   /*--- Time integration ---*/
   
-  Time_Integration(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], NO_RK_ITER,
+  Time_Integration(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], NO_RK_ITER,
                    RunTime_EqSystem, Iteration);
   
   /*--- Postprocessing ---*/
   
-  solver_container[iZone][MESH_0][SolContainer_Position]->Postprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], MESH_0);
+  solver_container[iZone][FinestMesh][SolContainer_Position]->Postprocessing(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], FinestMesh);
   
   /*--- Compute adimensional parameters and the convergence monitor ---*/
   
   switch (RunTime_EqSystem) {
-    case RUNTIME_WAVE_SYS:    monitor = log10(solver_container[iZone][MESH_0][WAVE_SOL]->GetRes_RMS(0));    break;
-    case RUNTIME_FEA_SYS:     monitor = log10(solver_container[iZone][MESH_0][FEA_SOL]->GetRes_RMS(0));     break;
-    case RUNTIME_HEAT_SYS:    monitor = log10(solver_container[iZone][MESH_0][HEAT_SOL]->GetRes_RMS(0));    break;
-    case RUNTIME_POISSON_SYS: monitor = log10(solver_container[iZone][MESH_0][POISSON_SOL]->GetRes_RMS(0)); break;
+    case RUNTIME_WAVE_SYS:    monitor = log10(solver_container[iZone][FinestMesh][WAVE_SOL]->GetRes_RMS(0));    break;
+    case RUNTIME_FEA_SYS:     monitor = log10(solver_container[iZone][FinestMesh][FEA_SOL]->GetRes_RMS(0));     break;
+    case RUNTIME_HEAT_SYS:    monitor = log10(solver_container[iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0));    break;
+    case RUNTIME_POISSON_SYS: monitor = log10(solver_container[iZone][FinestMesh][POISSON_SOL]->GetRes_RMS(0)); break;
   }
   
   /*--- Convergence strategy ---*/
   
-  Convergence_Monitoring(geometry[iZone][MESH_0], config[iZone], Iteration, monitor, MESH_0);
+  Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
   
   /*--- If turbulence model, copy the eddy viscosity to the coarse levels ---*/
   
   if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
-    for (iMesh = 0; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
+    for (iMesh = FinestMesh; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
+      if ((config[iZone]->GetMGCycle() == FULLMG_CYCLE) || config[iZone]->GetLowFidelitySim()){
+        SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
+      }
       SetRestricted_EddyVisc(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
     }
   }
@@ -969,11 +881,7 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX              ) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_CATALYTIC    ) ||
-        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX_NONCATALYTIC ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_CATALYTIC   ) ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL_NONCATALYTIC)) {
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL             )) {
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         sol_coarse->node[Point_Coarse]->SetmuT(0);
@@ -994,7 +902,6 @@ CStructuralIntegration::~CStructuralIntegration(void) { }
 
 void CStructuralIntegration::Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container,
                                                   CNumerics *****numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
-  unsigned short iMesh;
   su2double monitor = 0.0;
 
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);

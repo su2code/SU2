@@ -2,7 +2,7 @@
  * \file primal_grid_structure.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -51,9 +51,12 @@ CPrimalGrid::~CPrimalGrid() {
    
 }
 
-void CPrimalGrid::SetCG(su2double **val_coord) {
+void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
 	unsigned short iDim, iNode, NodeFace, iFace;
 	
+  AD::StartPreacc();
+  AD::SetPreaccIn(val_coord, GetnNodes(), nDim);
+
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Coord_CG[iDim] = 0.0;
 		for (iNode = 0; iNode < GetnNodes();  iNode++)
@@ -68,6 +71,11 @@ void CPrimalGrid::SetCG(su2double **val_coord) {
 				Coord_FaceElems_CG[iFace][iDim] += val_coord[NodeFace][iDim]/su2double(GetnNodesFace(iFace));
 			}
 		}
+
+  AD::SetPreaccOut(Coord_CG, nDim);
+  AD::SetPreaccOut(Coord_FaceElems_CG, GetnFaces(), nDim);
+  AD::EndPreacc();
+
 }
 
 void CPrimalGrid::GetAllNeighbor_Elements() {
@@ -244,25 +252,25 @@ void CTriangle::Change_Orientation(void) {
   
 }
 
-unsigned short CRectangle::Faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
+unsigned short CQuadrilateral::Faces[4][2] = {{0,1},{1,2},{2,3},{3,0}};
 
-unsigned short CRectangle::Neighbor_Nodes[4][2] = {{1,3},{2,0},{3,1},{0,2}};
+unsigned short CQuadrilateral::Neighbor_Nodes[4][2] = {{1,3},{2,0},{3,1},{0,2}};
 
-unsigned short CRectangle::nNodesFace[4] = {2,2,2,2};
+unsigned short CQuadrilateral::nNodesFace[4] = {2,2,2,2};
 
-unsigned short CRectangle::nNeighbor_Nodes[4] = {2,2,2,2};
+unsigned short CQuadrilateral::nNeighbor_Nodes[4] = {2,2,2,2};
 
-unsigned short CRectangle::nFaces = 4;
+unsigned short CQuadrilateral::nFaces = 4;
 
-unsigned short CRectangle::nNodes = 4;
+unsigned short CQuadrilateral::nNodes = 4;
 
-unsigned short CRectangle::nNeighbor_Elements = 4;
+unsigned short CQuadrilateral::nNeighbor_Elements = 4;
 
-unsigned short CRectangle::VTK_Type = 9;
+unsigned short CQuadrilateral::VTK_Type = 9;
 
-unsigned short CRectangle::maxNodesFace = 2;
+unsigned short CQuadrilateral::maxNodesFace = 2;
 
-CRectangle::CRectangle(unsigned long val_point_0, unsigned long val_point_1,
+CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_point_1,
 					   unsigned long val_point_2, unsigned long val_point_3, unsigned short val_nDim) 
 : CPrimalGrid() {
 	unsigned short iDim, iFace, iNeighbor_Elements;
@@ -295,7 +303,7 @@ CRectangle::CRectangle(unsigned long val_point_0, unsigned long val_point_1,
   
 }
 
-CRectangle::~CRectangle() {
+CQuadrilateral::~CQuadrilateral() {
   unsigned short iFaces;
   
   for (iFaces = 0; iFaces < nFaces; iFaces++)
@@ -304,7 +312,7 @@ CRectangle::~CRectangle() {
   
 }
 
-void CRectangle::Change_Orientation(void) {
+void CQuadrilateral::Change_Orientation(void) {
 	unsigned long jPoint, Point_3;
 	jPoint = Nodes[1];
 	Point_3 = Nodes[3];

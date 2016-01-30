@@ -3,7 +3,7 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 4.0.0 "Cardinal"
+#  \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -61,7 +61,7 @@ def main():
     
     sys.stdout.write('\n-------------------------------------------------------------------------\n')
     sys.stdout.write('|    ___ _   _ ___                                                      |\n')
-    sys.stdout.write('|   / __| | | |_  )   Release 4.0.0 \"Cardinal\"                          |\n')
+    sys.stdout.write('|   / __| | | |_  )   Release 4.1.0 \"Cardinal\"                          |\n')
     sys.stdout.write('|   \\__ \\ |_| |/ /                                                      |\n')
     sys.stdout.write('|   |___/\\___//___|   Aerodynamic Shape Optimization Script             |\n')
     sys.stdout.write('|                                                                       |\n')
@@ -112,15 +112,16 @@ def shape_optimization( filename                ,
     if quiet: config.CONSOLE = 'CONCISE'
     config.GRADIENT_METHOD = gradient
     
-    its      = int ( config.OPT_ITERATIONS )
-    accu     = float ( config.OPT_ACCURACY )
-    bound_dv = float ( config.BOUND_DV )
-    def_dv   = config.DEFINITION_DV
-    n_dv     = len(def_dv['KIND'])
-    x0       = [0.0]*n_dv # initial design
-    xb_low   = [-float(bound_dv)]*n_dv # lower dv bound
-    xb_up    = [float(bound_dv)]*n_dv # upper dv bound
-    xb       = zip(xb_low,xb_up) # design bounds
+    its         = int ( config.OPT_ITERATIONS )
+    accu        = float ( config.OPT_ACCURACY )
+    bound_upper = float ( config.OPT_BOUND_UPPER )
+    bound_lower = float ( config.OPT_BOUND_LOWER )
+    def_dv      = config.DEFINITION_DV
+    n_dv        = len(def_dv['KIND'])
+    x0          = [0.0]*n_dv # initial design
+    xb_low      = [float(bound_lower)]*n_dv # lower dv bound
+    xb_up       = [float(bound_upper)]*n_dv # upper dv bound
+    xb          = zip(xb_low,xb_up) # design bounds
     
     # State
     state = SU2.io.State()

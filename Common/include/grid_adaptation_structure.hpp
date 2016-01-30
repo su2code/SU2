@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the numerical grid
  *        adaptation.
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -112,21 +112,7 @@ public:
 	 */	
 	void GetAdjResidual(CGeometry *geometry, CConfig *config);
 	
-	/*! 
-	 * \brief Read the flow solution from the restart file.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */	
-	void GetLinSolution(CGeometry *geometry, CConfig *config);
-	
-	/*! 
-	 * \brief Read the flow solution from the restart file.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */	
-	void GetLinResidual(CGeometry *geometry, CConfig *config);
-	
-	/*! 
+	/*!
 	 * \brief Do a complete adaptation of the computational grid.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] strength - Adaptation Strength.	 

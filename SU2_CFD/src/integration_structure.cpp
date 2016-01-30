@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -112,6 +114,14 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case SUPERSONIC_OUTLET:
         solver_container[MainSolver]->BC_Supersonic_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
+      case NRBC_BOUNDARY:
+      	if (MainSolver == FLOW_SOL)
+      		solver_container[MainSolver]->BC_NonReflecting(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+      	else if (MainSolver == TURB_SOL && config->GetKind_Data_NRBC(config->GetMarker_All_TagBound(iMarker)) == TOTAL_CONDITIONS_PT)
+      		solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+      	else if (MainSolver == TURB_SOL && config->GetKind_Data_NRBC(config->GetMarker_All_TagBound(iMarker)) == STATIC_PRESSURE)
+      		solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+      	break;
       case RIEMANN_BOUNDARY:
       	if (MainSolver == FLOW_SOL)
       		solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
@@ -172,27 +182,15 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case ISOTHERMAL:
         solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
-      case ISOTHERMAL_NONCATALYTIC:
-        solver_container[MainSolver]->BC_IsothermalNonCatalytic_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        break;
-      case ISOTHERMAL_CATALYTIC:
-        solver_container[MainSolver]->BC_IsothermalCatalytic_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        break;
       case HEAT_FLUX:
         solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        break;
-      case HEAT_FLUX_NONCATALYTIC:
-        solver_container[MainSolver]->BC_HeatFluxNonCatalytic_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        break;
-      case HEAT_FLUX_CATALYTIC:
-        solver_container[MainSolver]->BC_HeatFluxCatalytic_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
       case DIRICHLET:
         solver_container[MainSolver]->BC_Dirichlet(geometry, solver_container, config, iMarker);
         break;
       case CLAMPED_BOUNDARY:
-		solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-		break;
+        solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        break;
       case CUSTOM_BOUNDARY:
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
@@ -205,11 +203,11 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
   
 	unsigned short iMGLevel;
   
-	if ( ( ((RunTime_EqSystem == RUNTIME_ADJFLOW_SYS) ||
-          (RunTime_EqSystem == RUNTIME_LINFLOW_SYS)) && (Iteration == 0) ) ) {
+	if ( ( (RunTime_EqSystem == RUNTIME_ADJFLOW_SYS) && (Iteration == 0) ) ) {
 		for (iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
       
 			/*--- Set the time step in all the MG levels ---*/
+      
 			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTime_Step(geometry[iZone][iMGLevel], solver_container[iZone][iMGLevel], config[iZone], iMGLevel, Iteration);
       
 			/*--- Set the force coefficients ---*/
@@ -219,6 +217,7 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
 			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CQ());
       
 			/*--- Restrict solution and gradients to the coarse levels ---*/
+      
 			if (iMGLevel != config[iZone]->GetnMGLevels()) {
 				SetRestricted_Solution(RUNTIME_FLOW_SYS, solver_container[iZone][iMGLevel][FLOW_SOL], solver_container[iZone][iMGLevel+1][FLOW_SOL],
                                geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
@@ -227,30 +226,8 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
 			}
       
 		}
-  } else if ((RunTime_EqSystem == RUNTIME_ADJTNE2_SYS) && (Iteration == 0)) {
-    for (iMGLevel = 0; iMGLevel <= config[iZone]->GetnMGLevels(); iMGLevel++) {
-      
-			/*--- Set the time step in all the MG levels ---*/
-			solver_container[iZone][iMGLevel][TNE2_SOL]->SetTime_Step(geometry[iZone][iMGLevel],
-                                                                solver_container[iZone][iMGLevel],
-                                                                config[iZone], iMGLevel, Iteration);
-      
-			/*--- Set the force coefficients ---*/
-			solver_container[iZone][iMGLevel][TNE2_SOL]->SetTotal_CDrag(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CDrag());
-			solver_container[iZone][iMGLevel][TNE2_SOL]->SetTotal_CLift(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CLift());
-			solver_container[iZone][iMGLevel][TNE2_SOL]->SetTotal_CT(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CT());
-			solver_container[iZone][iMGLevel][TNE2_SOL]->SetTotal_CQ(solver_container[iZone][MESH_0][TNE2_SOL]->GetTotal_CQ());
-      
-			/*--- Restrict solution and gradients to the coarse levels ---*/
-			if (iMGLevel != config[iZone]->GetnMGLevels()) {
-				SetRestricted_Solution(RUNTIME_TNE2_SYS, solver_container[iZone][iMGLevel][TNE2_SOL], solver_container[iZone][iMGLevel+1][TNE2_SOL],
-                               geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
-				SetRestricted_Gradient(RUNTIME_TNE2_SYS, solver_container[iZone][iMGLevel][TNE2_SOL], solver_container[iZone][iMGLevel+1][TNE2_SOL],
-                               geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
-			}
-      
-		}
   }
+  
 }
 
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
@@ -500,7 +477,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
       
       /*--- Set plunge and pitch on the master node ---*/
       if (rank == MASTER_NODE) {
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iProcessor = 0; iProcessor < (unsigned long)nProcessor; iProcessor++) {
           if (owner_all[iProcessor] == 1) {
             config->SetAeroelastic_plunge(iMarker_Monitoring, plunge_all[iProcessor]);
             config->SetAeroelastic_pitch(iMarker_Monitoring, pitch_all[iProcessor]);
@@ -551,7 +528,6 @@ void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CC
 
 void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iFSIIter) {
 
-	unsigned short iCounter;
 	su2double FEA_check[2] = {0.0, 0.0};
 	su2double magResidualFSI, logResidualFSI_initial, logResidualFSI;
 	su2double magResidualFSI_criteria, logResidualFSI_criteria;
@@ -597,13 +573,12 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
 
 		for (iPoint=0; iPoint < nPoint; iPoint++){
 
-		deltaU = 0.0;
 		deltaURad = 0.0;
 
 		dispPred = fea_solver->node[iPoint]->GetSolution_Pred();
 		dispPred_Old = fea_solver->node[iPoint]->GetSolution_Pred_Old();
 
-			for (iDim=0; iDim < nDim; iDim++){
+			for (iDim = 0; iDim < nDim; iDim++){
 
 				/*--- Compute the deltaU, and add deltaU2 to deltaURad ---*/
 				deltaU = dispPred[iDim] - dispPred_Old[iDim];

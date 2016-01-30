@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -55,7 +55,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CGridMovement {
 public:
@@ -83,7 +83,7 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -527,8 +527,8 @@ public:
 	 * \param[in] n - Upper coefficient.
 	 * \param[in] m - Lower coefficient.
 	 * \return Value of the binomial coefficient n over m.
-	 */		
-	unsigned long Binomial(unsigned short n, unsigned short m);
+	 */
+	su2double Binomial(unsigned short n, unsigned short m);
 	
 	/*! 
 	 * \brief Get the order in the l direction of the FFD FFDBox.
@@ -737,7 +737,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -757,7 +757,7 @@ public:
 	/*! 
 	 * \brief Constructor of the class.
 	 */
-	CVolumetricMovement(CGeometry *geometry);
+	CVolumetricMovement(CGeometry *geometry, CConfig *config);
 	
 	/*! 
 	 * \brief Destructor of the class. 
@@ -788,6 +788,7 @@ public:
   /*!
 	 * \brief Compute the stiffness matrix for grid deformation using spring analogy.
 	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
 	 * \return Value of the length of the smallest edge of the grid.
 	 */
 	su2double SetFEAMethodContributions_Elem(CGeometry *geometry, CConfig *config);
@@ -795,16 +796,24 @@ public:
   /*!
 	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
 	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
 	 * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
+   * \param[in] PointCorners - Index values for element corners
+   * \param[in] nNodes - Number of nodes defining the element.
+   * \param[in] scale
 	 */
   void SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3], unsigned short nNodes, su2double scale);
 	
   /*!
 	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
 	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
 	 * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
+   * \param[in] PointCorners - Index values for element corners
+   * \param[in] nNodes - Number of nodes defining the element.
+   * \param[in] scale
 	 */
   void SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3], unsigned short nNodes, su2double scale);
   
@@ -812,7 +821,7 @@ public:
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
+   * \param[in] Zeta - Local coordinates.
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
@@ -822,7 +831,7 @@ public:
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
+   * \param[in] Zeta - Local coordinates.
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
@@ -832,7 +841,7 @@ public:
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
+   * \param[in] Zeta - Local coordinates.
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
@@ -842,7 +851,7 @@ public:
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
    * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
+   * \param[in] Zeta - Local coordinates.
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
@@ -864,7 +873,7 @@ public:
 	 * \param[in] CoordCorners - Coordiantes of the corners.
    * \param[in] DShapeFunction - Shape function information
 	 */
-  su2double ShapeFunc_Rectangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
+  su2double ShapeFunc_Quadrilateral(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
   
   /*!
 	 * \brief Compute the shape functions for hexahedron
@@ -900,14 +909,14 @@ public:
 	 * \brief Compute the shape functions for hexahedron
 	 * \param[in] CoordCorners - coordinates of the cornes of the hexahedron.
 	 */
-  su2double GetRectangle_Area(su2double CoordCorners[8][3]);
+  su2double GetQuadrilateral_Area(su2double CoordCorners[8][3]);
     
   /*!
 	 * \brief Add the stiffness matrix for a 2-D triangular element to the global stiffness matrix for the entire mesh (node-based).
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
-   * \param[in] PointCorners
-   * \param[in] nNodes
+   * \param[in] PointCorners - Index values for element corners
+   * \param[in] nNodes - Number of nodes defining the element.
 	 */
   void AddFEA_StiffMatrix(CGeometry *geometry, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], unsigned short nNodes);
   
@@ -1043,7 +1052,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CSurfaceMovement : public CGridMovement {
 protected:

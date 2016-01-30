@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 4.0.0 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
   /*--- Compute center of gravity ---*/
   
   if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-  geometry_container[ZONE_0]->SetCG();
+  geometry_container[ZONE_0]->SetCoord_CG();
   
   /*--- Create the dual control volume structures ---*/
   
@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
     if (rank == MASTER_NODE) cout << "Reading surface sensitivities at each node from file." << endl;
     geometry_container[ZONE_0]->SetBoundSensitivity(config_container[ZONE_0]);
   } else {
-    mesh_movement = new CVolumetricMovement(geometry_container[ZONE_0]);
+    mesh_movement = new CVolumetricMovement(geometry_container[ZONE_0], config_container[ZONE_0]);
     geometry_container[ZONE_0]->SetSensitivity(config_container[ZONE_0]);
 
     if (rank == MASTER_NODE) cout << "Setting mesh sensitivity." << endl;
@@ -254,7 +254,7 @@ int main(int argc, char *argv[]) {
           iPoint = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
           for (iDim = 0; iDim < geometry_container[ZONE_0]->GetnDim(); iDim++){
             SU2_TYPE::SetDerivative(geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetVarCoord()[iDim],
-                                  SU2_TYPE::GetPrimary(geometry_container[ZONE_0]->GetSensitivity(iPoint, iDim)));
+                                  SU2_TYPE::GetValue(geometry_container[ZONE_0]->GetSensitivity(iPoint, iDim)));
 
           }
         }
@@ -349,6 +349,10 @@ int main(int argc, char *argv[]) {
           case AVG_TOTAL_PRESSURE :
             if (iDV == 0) Gradient_file << "Average total presure grad. using disc. adj."<< endl;
             cout << "Average total pressure gradient: "<< Gradient << "." << endl; break;
+          case OUTFLOW_GENERALIZED :
+            if (iDV == 0) Gradient_file << "Generalized outflow gradient using cont. adj."<< endl;
+            cout << "Generalized outflow gradient: "<< Gradient << "." << endl; break;
+
 
         }
 
@@ -505,10 +509,15 @@ int main(int argc, char *argv[]) {
         surface_movement->SetParabolic(geometry_container[ZONE_0], config_container[ZONE_0]);
       }
 
+      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == CUSTOM and rank==MASTER_NODE)
+        cout <<"Custom design variable will be used in external script" << endl;
+
       /*--- Design variable not implement ---*/
 
-      else { cout << "Design Variable not implement yet" << endl; }
-
+      else {
+        if (rank == MASTER_NODE)
+          cout << "Design Variable not implemented yet" << endl;
+      }
 
       /*--- Continuous adjoint gradient computation ---*/
       if (rank == MASTER_NODE)
@@ -638,6 +647,9 @@ int main(int argc, char *argv[]) {
           case AVG_TOTAL_PRESSURE :
             if (iDV == 0) Gradient_file << "Average total presure grad. using cont. adj."<< endl;
             cout << "Average total pressure gradient: "<< Gradient << "." << endl; break;
+          case OUTFLOW_GENERALIZED :
+             if (iDV == 0) Gradient_file << "Generalized outflow gradient cont. adj."<< endl;
+             cout << "Generalized outflow gradient: "<< Gradient << "." << endl; break;
 
         }
 

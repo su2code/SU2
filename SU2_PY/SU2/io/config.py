@@ -3,7 +3,7 @@
 ## \file config.py
 #  \brief python package for config 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.0.0 "Cardinal"
+#  \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -529,8 +529,10 @@ def read_config(filename):
         data_dict['OPT_ITERATIONS'] = 100
     if not data_dict.has_key('OPT_ACCURACY'):
         data_dict['OPT_ACCURACY'] = 1e-10
-    if not data_dict.has_key('BOUND_DV'):
-        data_dict['BOUND_DV'] = 1e10
+    if not data_dict.has_key('OPT_BOUND_UPPER'):
+        data_dict['OPT_BOUND_UPPER'] = 1e10
+    if not data_dict.has_key('OPT_BOUND_LOWER'):
+        data_dict['OPT_BOUND_LOWER'] = -1e10
     
     return data_dict
     
