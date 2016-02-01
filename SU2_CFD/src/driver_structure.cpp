@@ -44,7 +44,7 @@ CDriver::CDriver(CIteration **iteration_container,
   
 
   unsigned short iMesh, iZone, jZone, iSol;
-  unsigned short nZone, nDim;
+  unsigned short nDim;
   
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
 
@@ -1918,7 +1918,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
 	/*--- This will become more general, but we need to modify the configuration for that ---*/
 	unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
 	unsigned short iZone;
-	unsigned short nZone = config_container[ZONE_FLOW]->GetnZone();;
 
 	unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
 	unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
