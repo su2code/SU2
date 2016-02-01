@@ -151,6 +151,8 @@ inline unsigned long CGeometry::GetnVertex(unsigned short val_marker) { return n
 
 inline unsigned long CGeometry::GetnVertexSpan(unsigned short val_marker, unsigned short val_span) { return nVertexSpan[val_marker][val_span]; }
 
+inline unsigned long CGeometry::GetnFreqSpan(unsigned short val_marker, unsigned short val_span) { return (nTotVertexSpan[val_marker][val_span]/2 -1); }
+
 inline unsigned long CGeometry::GetnVertexSpanMax(unsigned short marker_flag){return nVertexSpanMax[marker_flag];}
 
 inline unsigned long CGeometry::GetnFreqSpanMax(unsigned short marker_flag){return (nVertexSpanMax[marker_flag]/2 -1);}
