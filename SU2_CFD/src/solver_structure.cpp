@@ -1866,9 +1866,9 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
-	filename = config->GetRestart_FEMFileName();
+	filename = config->GetSolution_FEMFileName();
   } else {
-    filename = config->GetRestart_FlowFileName();
+    filename = config->GetSolution_FlowFileName();
   }
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
@@ -2174,9 +2174,9 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
-	filename = config->GetRestart_FEMFileName();
+	filename = config->GetSolution_FEMFileName();
   } else {
-    filename = config->GetRestart_FlowFileName();
+    filename = config->GetSolution_FlowFileName();
   }
   
   /*--- Multizone problems require the number of the zone to be appended. ---*/
