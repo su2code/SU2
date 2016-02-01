@@ -1064,6 +1064,27 @@ void CNumerics::GetLMatrix(su2double val_soundspeed, su2double val_density, su2d
 
 }
 
+void CNumerics::GetCharJump(su2double val_soundspeed, su2double val_density, su2double *delta_prim, su2double *delta_char){
+
+	su2double cc, rhoc;
+	cc = val_soundspeed*val_soundspeed;
+	rhoc = val_density/val_soundspeed;
+	if (nDim == 2) {
+
+		delta_char[0] = -cc*delta_prim[0] + delta_prim[3];
+		delta_char[1] = rhoc*delta_prim[2];
+		delta_char[2] = rhoc*delta_prim[1] + delta_prim[3];																	;
+		delta_char[3] = -rhoc*delta_prim[1] + delta_prim[3];
+	}else {
+		delta_char[0] = 0.0;
+		delta_char[1] = 0.0;
+		delta_char[2] = 0.0;
+		delta_char[3] = 0.0;
+		delta_char[4] = 0.0;
+	}
+
+}
+
 void CNumerics::GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* Lambda, su2double *val_normal,
 		su2double **val_absPeJac) {
 

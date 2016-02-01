@@ -9121,6 +9121,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   
   delta_c = new su2double[nVar];
   deltaprim = new su2double[nVar];
+  cj = new su2double[nVar];
   R_Matrix= new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++)
   {
@@ -9128,7 +9129,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   }
   
 	complex<su2double> I, c2ks, c2js, Beta_inf;
-	su2double c2js_Re;
+	su2double c2js_Re, dc2js;
 	I = complex<su2double>(0.0,1.0);
   
 //  Mixing_Process(geometry, solver_container,  config, val_marker);
@@ -9201,6 +9202,11 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 			ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity);
 			NormalVelocity	= turboVelocity[0];
 			TangVelocity		= turboVelocity[1];
+			deltaprim[0] = Density_i - AverageDensity[val_marker][iSpan];
+			deltaprim[1] = turboVelocity[0] - AverageNormalVelocity[val_marker][iSpan];
+			deltaprim[2] = turboVelocity[1] - AverageTangVelocity[val_marker][iSpan];
+			deltaprim[3] = Pressure_i - AveragePressure[val_marker][iSpan];
+			conv_numerics->GetCharJump(AverageSoundSpeed[val_marker][iSpan], AverageDensity[val_marker][iSpan], deltaprim, cj);
 
 			switch(config->GetKind_Data_NRBC(Marker_Tag))
 			{
@@ -9224,7 +9230,8 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 							c2ks = -CkInflow[val_marker][iSpan][k-1]*(Beta_inf + AverageTangMach[val_marker][iSpan])/( 1.0 + AverageNormalMach[val_marker][iSpan]);
 							c2js += c2ks*exp(I*PI_NUMBER*2.0*jk_nVert);
 						}
-						c2js_Re = c2js.real();
+						c2js_Re = 2.0*c2js.real();
+						dc2js		= c2js_Re - cj[1];
 					}else{
 						if (AverageTangVelocity[val_marker][iSpan] >= 0.0){
 							Beta_inf= -sqrt(pow(AvgMach,2)- 1.0);
@@ -9232,7 +9239,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 							Beta_inf= sqrt(pow(AvgMach,2)-1.0);
 						}
 					}
-
+					break;
 
 
 
@@ -9297,17 +9304,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 					Pressure_e = config->GetNRBC_Var1(Marker_Tag);
 					Pressure_e /= config->GetPressure_Ref();
 
-					/* --- Compute jump of primitive variable  --- */
-					deltaDensity = Density_i - AverageDensity[val_marker][iSpan];
-					deltaPressure = Pressure_i - AveragePressure[val_marker][iSpan];
-					deltaTangVelocity= TangVelocity - AverageTangVelocity[val_marker][iSpan];
-					deltaNormalVelocity= NormalVelocity - AverageNormalVelocity[val_marker][iSpan];
-
 					/* --- Compute characteristic jumps  --- */
-					c1j= -cc*deltaDensity +deltaPressure;
-					c2j= rhoc*deltaTangVelocity;
-					c3j=rhoc*deltaNormalVelocity + deltaPressure;
-					c4j=-rhoc*deltaNormalVelocity + deltaPressure;
 					avg_c4 = -2.0*(AveragePressure[val_marker][iSpan]-Pressure_e);
 
 					/* --- implementation of supersonic NRBC ---*/
@@ -9324,9 +9321,9 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 					}
 
 					/* --- Impose Outlet BC  --- */
-					delta_c[0] = c1j;
-					delta_c[1] = c2j;
-					delta_c[2] = c3j;
+					delta_c[0] = cj[0];
+					delta_c[1] = cj[1];
+					delta_c[2] = cj[2];
 					delta_c[3] = avg_c4 + dc4js;
 					break;
 
@@ -9340,7 +9337,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 			/*--- Compute primitive jump from characteristic variables  ---*/
 			for (iVar = 0; iVar < nVar; iVar++)
 			{
-				deltaprim[iVar]=0;
+				deltaprim[iVar]=0.0;
 				for (jVar = 0; jVar < nVar; jVar++)
 				{
 					deltaprim[iVar] +=  R_Matrix[iVar][jVar]*delta_c[jVar];
@@ -9593,6 +9590,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   
   delete []	delta_c;
   delete []	deltaprim;
+  delete []	cj;
   for (iVar = 0; iVar < nVar; iVar++)
   {
     delete [] R_Matrix[iVar];
