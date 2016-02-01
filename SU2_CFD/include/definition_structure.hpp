@@ -96,3 +96,10 @@ void Driver_Preprocessing(CDriver **driver,
  * \param[in] val_nZone - Total number of zones.
  */
 void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);
+
+/*!
+ * \brief Performs an analysis of the mesh partitions for distributed memory calculations.
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ */
+void Partition_Analysis(CGeometry *geometry, CConfig *config);
