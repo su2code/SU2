@@ -9001,9 +9001,10 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **sol
 
 								jk_nVert = j*k/su2double(nVert);
 //								cout << jk_nVert<< " j " << j << " k " << k << " nVert " << nVert << endl;
+								cktemp_out1 +=  1.0/(nVert)*cj_out1*exp(-I*PI_NUMBER*2.0*jk_nVert);
+								cktemp_out2 +=  1.0/(nVert)*cj_out2*exp(-I*PI_NUMBER*2.0*jk_nVert);
 								cktemp_inf 	+=  1.0/(nVert)*cj_inf*exp(-I*PI_NUMBER*2.0*jk_nVert);
-								cktemp_out1 +=  1.0/(nVert)*cj_inf*exp(-I*PI_NUMBER*2.0*jk_nVert);
-								cktemp_out2 +=  1.0/(nVert)*cj_inf*exp(-I*PI_NUMBER*2.0*jk_nVert);
+
 							}
 						}
 					}
@@ -9069,7 +9070,7 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **sol
 void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim, iVar, jVar, kVar, iSpan;
-  unsigned long iVertex, iPoint, Point_Normal, oldVertex;
+  unsigned long iVertex, iPoint, Point_Normal, oldVertex, k, kend;
   su2double  Area, *UnitNormal, *turboVelocity, *turboNormal;
   
   su2double *Velocity_b, Velocity2_b, Enthalpy_b, Energy_b, StaticEnergy_b, Density_b, Kappa_b, Chi_b, Pressure_b, Temperature_b;
@@ -9112,13 +9113,11 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   }
   
   /*--- new declarations ---*/
-  std::vector<std::complex<su2double> > c4k ;//    std::complex<su2double> c3k[nVertex-OddEven]=0;
-  std::vector<std::complex<su2double> > c2k ;//    std::complex<su2double> c3k[nVertex-OddEven]=0;
-  std::vector<std::complex<su2double> > c3k ;//    std::complex<su2double> c3k[nVertex-OddEven]=0;
   
-  su2double  deltaDensity, deltaPressure, AvgMach, deltaTangVelocity, deltaNormalVelocity, cc,rhoc,c1j,c2j,c3j,c4j,
+  su2double  deltaDensity, deltaPressure, AvgMach, deltaTangVelocity, deltaNormalVelocity, cc,rhoc,c1j,c2j,c3j,c4j,jk_nVert, *cj,
   avg_c1, avg_c2, avg_c3, avg_c4,TangVelocity, NormalVelocity, GilesBeta, c4js, dc4js, *delta_c, **R_Matrix, *deltaprim;
-  
+  int j;
+  unsigned long nVert;
   
   delta_c = new su2double[nVar];
   deltaprim = new su2double[nVar];
@@ -9128,20 +9127,24 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
     R_Matrix[iVar] = new su2double[nVar];
   }
   
+	complex<su2double> I, c2ks, c2js, Beta_inf;
+	su2double c2js_Re;
+	I = complex<su2double>(0.0,1.0);
   
 //  Mixing_Process(geometry, solver_container,  config, val_marker);
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
   	cc = AverageSoundSpeed[val_marker][iSpan]*AverageSoundSpeed[val_marker][iSpan];
   	rhoc = AverageSoundSpeed[val_marker][iSpan]*AverageDensity[val_marker][iSpan];
   	AvgMach = AverageMach[val_marker][iSpan];
-  
+  	nVert = geometry->GetnTotVertexSpan(val_marker,iSpan);
+  	kend = geometry->GetnFreqSpan(val_marker, iSpan);
   	conv_numerics->GetRMatrix(AverageSoundSpeed[val_marker][iSpan], AverageDensity[val_marker][iSpan], R_Matrix);
   
   	//  Boundary_Fourier(geometry, solver_container, config, val_marker, c4k, nboundaryvertex);
   	//  Boundary_Fourier(geometry, solver_container, config, val_marker, c2k,c3k,nboundaryvertex);
   
   	/*--- Loop over all the vertices on this boundary marker ---*/
-  
+
   	for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
 
   		/*--- using the other vertex information for retrieving some information ---*/
@@ -9205,6 +9208,34 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 					//TODO(turbo), generilize for 3D case
 					//TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
 					//TODO(turbo), implement not uniform inlet and radial equilibrium for the outlet
+
+				case TOTAL_CONDITIONS_PT:
+
+					if (AvgMach < 0.999){
+						if (AverageTangVelocity[val_marker][iSpan] >= 0.0){
+							Beta_inf= I*sqrt(1.0  - pow(AvgMach,2));
+						}else{
+							Beta_inf= -I*sqrt(1.0 - pow(AvgMach,2));
+						}
+						c2js 	= complex<su2double>(0.0,0.0);
+						j			 = geometry->turbovertex[val_marker][iSpan][iVertex]->GetGlobalVertexIndex();
+						for(k=1; k < kend+1; k++){
+							jk_nVert = j*k/su2double(nVert);
+							c2ks = -CkInflow[val_marker][iSpan][k-1]*(Beta_inf + AverageTangMach[val_marker][iSpan])/( 1.0 + AverageNormalMach[val_marker][iSpan]);
+							c2js += c2ks*exp(I*PI_NUMBER*2.0*jk_nVert);
+						}
+						c2js_Re = c2js.real();
+					}else{
+						if (AverageTangVelocity[val_marker][iSpan] >= 0.0){
+							Beta_inf= -sqrt(pow(AvgMach,2)- 1.0);
+						}else{
+							Beta_inf= sqrt(pow(AvgMach,2)-1.0);
+						}
+					}
+
+
+
+
 
 				case MIXING_IN:
 

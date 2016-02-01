@@ -229,6 +229,13 @@ public:
 	unsigned long GetnVertexSpan(unsigned short val_marker, unsigned short val_span);
 
 	/*!
+	 * \brief Get number of frequencies per span for NRBC.
+	 * \param[in] val_marker - Marker of the boundary.
+	 * \return Number of frequencies for NRBC.
+	 */
+	unsigned long GetnFreqSpan(unsigned short val_marker, unsigned short val_span);
+
+	/*!
 	 * \brief Get number of vertices.
 	 * \param[in] val_marker - Marker of the boundary.
 	 * \return Number of vertices.
