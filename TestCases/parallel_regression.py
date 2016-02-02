@@ -114,6 +114,17 @@ def main():
     cylinder.tol       = 0.00001
     test_list.append(cylinder)
 
+    # Laminar cylinder (low Mach correction)
+    cylinder_lowmach           = TestCase('cylinder_lowmach')
+    cylinder_lowmach.cfg_dir   = "navierstokes/cylinder"
+    cylinder_lowmach.cfg_file  = "cylinder_lowmach.cfg"
+    cylinder_lowmach.test_iter = 25
+    cylinder_lowmach.test_vals = [-6.846659, -1.384550, -1.207461, 75.974174] #last 4 columns
+    cylinder_lowmach.su2_exec  = "parallel_computation.py -f"
+    cylinder_lowmach.timeout   = 1600
+    cylinder_lowmach.tol       = 0.00001
+    test_list.append(cylinder_lowmach)
+
     ##########################
     ### Compressible RANS  ###
     ##########################
