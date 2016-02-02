@@ -82,6 +82,7 @@ def direct ( config ):
     
     # merge
     konfig['SOLUTION_FLOW_FILENAME'] = konfig['RESTART_FLOW_FILENAME'] 
+    konfig['SOLUTION_STRUCTURE_FILENAME'] = konfig['RESTART_STRUCTURE_FILENAME'] 
     su2merge(konfig)
     
     # filenames

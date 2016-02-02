@@ -235,6 +235,28 @@ def SOL(config):
     
     return
 
+def SOL_FSI(config):
+    """ run SU2_SOL for FSI problems
+      partitions set by config.NUMBER_PART
+    """
+  
+    konfig = copy.deepcopy(config)
+    
+    tempname = 'config_SOL.cfg'
+    konfig.dump(tempname)
+  
+    # must run with rank 1
+    processes = konfig['NUMBER_PART']
+    
+    the_Command = 'SU2_SOL ' + tempname + ' 2'
+    the_Command = build_command( the_Command , processes )
+    run_command( the_Command )
+    
+    #os.remove(tempname)
+    
+    return
+
+
 # ------------------------------------------------------------
 #  Helper functions
 # ------------------------------------------------------------
