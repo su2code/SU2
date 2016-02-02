@@ -682,6 +682,9 @@ private:
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
+  unsigned short Riemann_Solver_FEM; /*!< \brief Riemann solver chosen for the DG method. */
+  su2double Quadrature_Factor_Straight; /*!< \brief Factor applied during quadrature of straight elements. */
+  su2double Quadrature_Factor_Curved; /*!< \brief Factor applied during quadrature of straight elements */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map
@@ -5314,7 +5317,25 @@ public:
 	 */
 	unsigned short GetRelaxation_Method_FSI(void);
 
-
+  /*!
+   * \brief Get the kind of Riemann solver for the DG method (FEM flow solver).
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of Riemann solver for the DG method (FEM flow solver).
+   */
+  unsigned short GetRiemann_Solver_FEM(void);
+  
+  /*!
+   * \brief Factor applied during quadrature of straight elements.
+   * \return The specified straight element quadrature factor.
+   */
+  su2double GetQuadrature_Factor_Straight(void);
+  
+  /*!
+   * \brief Factor applied during quadrature of curved elements.
+   * \return The specified curved element quadrature factor.
+   */
+  su2double GetQuadrature_Factor_Curved(void);
 
 };
 

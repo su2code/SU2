@@ -512,7 +512,8 @@ enum ENUM_UPWIND {
   TURKEL = 7,                 /*!< \brief Roe-Turkel's upwind numerical method. */
   AUSMPWPLUS = 8,             /*!< \brief AUSMPW+ numerical method. */
   CUSP = 9,                   /*!< \brief Convective upwind and split pressure numerical method. */
-  CONVECTIVE_TEMPLATE = 10    /*!< \brief Template for new numerical method . */
+  VAN_LEER = 10,              /*!< \brief Van Leer method. */
+  CONVECTIVE_TEMPLATE = 11    /*!< \brief Template for new numerical method . */
 };
 static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIND>
 ("NONE", NO_UPWIND)
@@ -524,11 +525,12 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
 ("SW", SW)
 ("MSW", MSW)
 ("CUSP", CUSP)
+("VAN_LEER", VAN_LEER)
 ("SCALAR_UPWIND", SCALAR_UPWIND)
 ("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE);
 
 /*!
- * \brief types of centered spatial discretizations
+ * \brief types of FEM spatial discretizations
  */
 enum ENUM_FEM {
   NO_FEM = 0,    /*!< \brief No finite element scheme is used. */

@@ -1247,6 +1247,15 @@ void CFEM_EulerSolver::Convective_Residual(CGeometry *geometry, CSolver **solver
   
   // numerics holds the CDiscGalerkin class for compute residual here
   
+  if ((config->GetRiemann_Solver_FEM() == ROE) && (rank == MASTER_NODE))
+      cout << " Using a Roe Riemann solver for the DG method." << endl;
+  
+  su2double quad_fact_straight = config->GetQuadrature_Factor_Straight();
+  if (rank == MASTER_NODE) cout << " Quad factor straight: " << quad_fact_straight << endl;
+  
+  su2double quad_fact_curved = config->GetQuadrature_Factor_Curved();
+  if (rank == MASTER_NODE) cout << " Quad factor curved: " << quad_fact_curved << endl;
+  
 }
 
 void CFEM_EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
