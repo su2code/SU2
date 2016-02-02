@@ -1152,3 +1152,10 @@ inline su2double CConfig::GetMinLogResidualFSI(void) { return MinLogResidualFSI;
 inline unsigned short CConfig::GetDirectDiff(){ return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() {return DiscreteAdjoint;}
+
+inline unsigned short CConfig::GetRiemann_Solver_FEM() {return Riemann_Solver_FEM;}
+
+inline su2double CConfig::GetQuadrature_Factor_Straight() {return Quadrature_Factor_Straight;}
+
+inline su2double CConfig::GetQuadrature_Factor_Curved() {return Quadrature_Factor_Curved;}
+
