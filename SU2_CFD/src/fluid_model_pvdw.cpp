@@ -77,9 +77,6 @@ void CVanDerWaalsGas::SetTDState_PT (su2double P, su2double T ) {
 	A= a*P/(T*Gas_Constant)/(T*Gas_Constant);
 	B= b*P/(T*Gas_Constant);
 
-//    Z= max(B, 0.99);
-
-//	cout <<"Before  "<< P <<" "<< T << endl;
 	if (Zed > 0.1)
 		Z=min(Zed, 0.99);
 	else
@@ -108,7 +105,7 @@ void CVanDerWaalsGas::SetTDState_PT (su2double P, su2double T ) {
     su2double e = T*Gas_Constant/Gamma_Minus_One - a*Density;
 	SetTDState_rhoe(Density, e);
 
-//	cout <<"After  "<< Pressure <<" "<< Temperature << endl;
+
 
 }
 
@@ -128,7 +125,6 @@ void CVanDerWaalsGas::SetTDState_hs (su2double h, su2double s ) {
     unsigned short count=0, NTRY=100, ITMAX=100;
     su2double cons_s, cons_h;
 
-//    cout <<"Before  "<< h <<" "<< s << endl;
 
     T = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
     v =exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
@@ -190,25 +186,6 @@ void CVanDerWaalsGas::SetTDState_hs (su2double h, su2double s ) {
 	if (cons_h >1e-3 or cons_s >1e-3) {
 		cout<< "TD consistency not verified in hs call"<< endl;
 	}
-
-//	cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy<<" "<< fmid <<" "<< f<< " "<< count<< endl;
-
-
-
-
-//	T= (h+ 2*a/v)/Gas_Constant/(1/Gamma_Minus_One+ v/(v-b));
-//	do{
-//		f=  log(v-b) - s/Gas_Constant + log(T)/Gamma_Minus_One;
-//		f1= 1.0/(v-b);
-//		dv= f/f1;
-//		v-= 1.0*dv;
-//		T= (h+ 2*a/v)/Gas_Constant/(1/Gamma_Minus_One+ v/(v-b));
-//		count++;
-//	}while(abs(dv/v) > toll && count < nmax);
-
-
-
-
 
 }
 

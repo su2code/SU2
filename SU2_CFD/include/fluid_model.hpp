@@ -69,13 +69,17 @@ su2double   	 StaticEnergy,			/*!< \brief Internal Energy. */
 			 dPde_rho, 				/*!< \brief DpDe_d. */
 			 dTdrho_e, 				/*!< \brief DTDd_e. */
 			 dTde_rho, 				/*!< \brief DTDe_d. */
-             Cp,                    /*!< \brief Specific Heat Capacity at constant pressure. */
-			 Mu,					/*!< \brief Specific Heat Capacity at constant pressure. */
-		     dmudrho_T, 			/*!< \brief Specific Heat Capacity at constant pressure. */
-		     dmudT_rho,				/*!< \brief Specific Heat Capacity at constant pressure. */
-		     Kt,					/*!< \brief Specific Heat Capacity at constant pressure. */
-		     dktdrho_T, 			/*!< \brief Specific Heat Capacity at constant pressure. */
-		     dktdT_rho;				/*!< \brief Specific Heat Capacity at constant pressure. */
+			 dhdrho_P,				/*!< \brief DhDrho_p. */
+			 dhdP_rho,				/*!< \brief DhDp_rho. */
+			 dsdrho_P,				/*!< \brief DsDrho_p. */
+			 dsdP_rho,				/*!< \brief DsDp_rho. */
+       Cp,              /*!< \brief Specific Heat Capacity at constant pressure. */
+			 Mu,							/*!< \brief Laminar Viscosity. */
+			 dmudrho_T, 			/*!< \brief DmuDrho_T. */
+			 dmudT_rho,				/*!< \brief DmuDT_rho. */
+			 Kt,							/*!< \brief Thermal Conductivity. */
+			 dktdrho_T, 			/*!< \brief DKDrho_T. */
+			 dktdT_rho;				/*!< \brief DKDT_rho. */
 
 CViscosityModel *LaminarViscosity;	          /*!< \brief Laminar Viscosity Model */
 CConductivityModel *ThermalConductivity;	  /*!< \brief Thermal Conductivity Model */
@@ -163,6 +167,26 @@ public:
 		 * \brief Get fluid temperature partial derivative.
 		 */
 		su2double GetdTde_rho ();
+
+		/*!
+		 * \brief Get fluid pressure partial derivative.
+		 */
+		su2double Getdhdrho_P ();
+
+		/*!
+		 * \brief Get fluid pressure partial derivative.
+		 */
+		su2double GetdhdP_rho ();
+
+		/*!
+		 * \brief Get fluid temperature partial derivative.
+		 */
+		su2double Getdsdrho_P ();
+
+		/*!
+		 * \brief Get fluid temperature partial derivative.
+		 */
+		su2double GetdsdP_rho ();
 
 		/*!
 		 * \brief Get fluid dynamic viscosity partial derivative.
@@ -260,6 +284,16 @@ public:
 
 		virtual void SetTDState_Ps (su2double P, su2double s );
 
+
+		/*!
+		 * \brief virtual member that would be different for each gas model implemented
+		 * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+		 * \param[in] th1 - first thermodynamic variable (P).
+		 * \param[in] th2 - second thermodynamic variable (v).
+		 *
+		 */
+		virtual void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
+
 };
 
 
@@ -351,6 +385,15 @@ public:
 		 */
 
 		void SetTDState_Ps (su2double P, su2double s );
+
+		/*!
+		 * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
+		 * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+		 * \param[in] th1 - first thermodynamic variable (P).
+		 * \param[in] th2 - second thermodynamic variable (v).
+		 *
+		 */
+//		void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
 };
 
 
@@ -436,6 +479,15 @@ public:
 		 */
 
 		void SetTDState_Ps (su2double P, su2double s );
+
+		/*!
+		 * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
+		 * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+		 * \param[in] th1 - first thermodynamic variable (P).
+		 * \param[in] th2 - second thermodynamic variable (v).
+		 *
+		 */
+//		void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
 
 };
 
@@ -543,6 +595,15 @@ public:
 		 */
 
 		void SetTDState_Ps (su2double P, su2double s );
+
+		/*!
+		 * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
+		 * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+		 * \param[in] th1 - first thermodynamic variable (P).
+		 * \param[in] th2 - second thermodynamic variable (v).
+		 *
+		 */
+//		void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
 
 };
 
