@@ -499,26 +499,26 @@ def main():
     ##########################
 
     # Static beam, 3d
-    statbeam3d           = TestCase('statbeam3d')
-    statbeam3d.cfg_dir   = "fea_fsi/StatBeam_3d"
-    statbeam3d.cfg_file  = "configBeam_3d.cfg"
-    statbeam3d.test_iter = 0
-    statbeam3d.test_vals = [-8.498274, -8.230638, -8.123824, 6.4095e+04] #last 4 columns
-    statbeam3d.su2_exec  = "SU2_CFD"
-    statbeam3d.timeout   = 1600
-    statbeam3d.tol       = 0.00001
-    test_list.append(statbeam3d)
+    # statbeam3d           = TestCase('statbeam3d')
+    # statbeam3d.cfg_dir   = "fea_fsi/StatBeam_3d"
+    # statbeam3d.cfg_file  = "configBeam_3d.cfg"
+    # statbeam3d.test_iter = 0
+    # statbeam3d.test_vals = [-8.498274, -8.230638, -8.123824, 6.4095e+04] #last 4 columns
+    # statbeam3d.su2_exec  = "SU2_CFD"
+    # statbeam3d.timeout   = 1600
+    # statbeam3d.tol       = 0.00001
+    # test_list.append(statbeam3d)
 
     # Dynamic beam, 2d
-    dynbeam2d           = TestCase('dynbeam2d')
-    dynbeam2d.cfg_dir   = "fea_fsi/DynBeam_2d"
-    dynbeam2d.cfg_file  = "configBeam_2d.cfg"
-    dynbeam2d.test_iter = 6
-    dynbeam2d.test_vals = [-9.420640, -5.365872, -12.430382, 6.5210e+04] #last 4 columns
-    dynbeam2d.su2_exec  = "SU2_CFD"
-    dynbeam2d.timeout   = 1600
-    dynbeam2d.tol       = 0.00001
-    test_list.append(dynbeam2d)
+    # dynbeam2d           = TestCase('dynbeam2d')
+    # dynbeam2d.cfg_dir   = "fea_fsi/DynBeam_2d"
+    # dynbeam2d.cfg_file  = "configBeam_2d.cfg"
+    # dynbeam2d.test_iter = 6
+    # dynbeam2d.test_vals = [-9.420640, -5.365872, -12.430382, 6.5210e+04] #last 4 columns
+    # dynbeam2d.su2_exec  = "SU2_CFD"
+    # dynbeam2d.timeout   = 1600
+    # dynbeam2d.tol       = 0.00001
+    # test_list.append(dynbeam2d)
 
     # FSI, 2d
     # fsi2d           = TestCase('fsi2d')
