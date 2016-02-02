@@ -3644,12 +3644,11 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     filename= config->GetMultizone_FileName(filename, val_iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  
   if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
   } else if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  } else if (config->GetWrt_Dynamic()) {
+  } else if ((fem) && (config->GetWrt_Dynamic())) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
 

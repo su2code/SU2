@@ -2288,9 +2288,9 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
-	filename = config->GetRestart_FEMFileName();
+	filename = config->GetSolution_FEMFileName();
   } else {
-	filename = config->GetRestart_FlowFileName();
+	filename = config->GetSolution_FlowFileName();
   }
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/

@@ -136,7 +136,7 @@ void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element){
 	su2double val_Mab;
 
 	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements --*/
-	element->ComputeGrad_Linear();		/*--- Need to compute the gradients to obtain the Jacobian: TODO: this may be improved (another method only to compute J_X) ---*/
+	element->ComputeGrad_Linear();		/*--- Need to compute the gradients to obtain the Jacobian ---*/
 
 	nNode = element->GetnNodes();
 	nGauss = element->GetnGaussPoints();

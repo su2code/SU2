@@ -86,7 +86,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 	if (Kind_Solver == POISSON_EQUATION) strcpy (cstr, config->GetStructure_FileName().c_str());
     
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
-	if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS) &&
+	if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
         (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
 		SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
 		strcat(cstr, buffer);
@@ -1034,7 +1034,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
 	if (Kind_Solver == POISSON_EQUATION) strcpy (cstr, config->GetStructure_FileName().c_str());
   
 	/*--- Special cases where a number needs to be appended to the file name. ---*/
-	if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS) &&
+	if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
       (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
 		SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
 		strcat(cstr, buffer);

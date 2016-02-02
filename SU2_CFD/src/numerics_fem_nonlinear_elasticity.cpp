@@ -393,7 +393,6 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element){
 	if ((Vol_current > 0.0) && (Vol_reference > 0.0)) {
 
 		/*--- It is necessary to divide over the current volume to obtain the averaged gradients ---*/
-		/*--- TODO: Check this operation and add exit if the volumes are 0. ---*/
 		for (iNode = 0; iNode < nNode; iNode++){
 			for (iDim = 0; iDim < nDim; iDim++){
 				GradNi_Curr_Mat[iNode][iDim] = GradNi_Curr_Mat[iNode][iDim] / Vol_current;
@@ -405,8 +404,6 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element){
 		el_Pressure = Kappa * ((Vol_current / Vol_reference) - 1);
 
 		element->SetElement_Pressure(el_Pressure);
-
-//		cout << "ELEMENT PRESSURE: " << el_Pressure << endl;
 
 	}
 	else {
@@ -554,7 +551,7 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 
 	su2double Weight, Jac_x;
 
-	element->clearStress();				/*--- TODO: put these two together ---*/
+	element->clearStress();
 	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements --*/
 	element->ComputeGrad_NonLinear();
 

@@ -4,11 +4,11 @@ from interface import  \
     build_command     ,\
     run_command       ,\
     CFD               ,\
-    FSI               ,\
     MSH               ,\
     DEF               ,\
     DOT               ,\
-    SOL               ;
+    SOL               ,\
+    SOL_FSI           ;
 
 from direct     import direct
 from adjoint    import adjoint

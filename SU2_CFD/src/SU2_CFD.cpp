@@ -381,27 +381,13 @@ int main(int argc, char *argv[]) {
     runtime->SetExtIter(ExtIter);
     
 	/*--- Update the convergence history file (serial and parallel computations). ---*/
-//	if (fsi){
-//		if (rank == MASTER_NODE) cout << "---------------------------------------------------------------------------" << endl;
-//		for (iZone = 0; iZone < nZone; iZone++){
-//			if (iZone == 0 && rank == MASTER_NODE) cout << "Fluid convergence: " << endl;
-//			else if (iZone == 1 && rank == MASTER_NODE) cout << "Structural convergence: " << endl;
-//			output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
-//					config_container, integration_container, false, UsedTime, iZone);
-//		}
-//
-//		if (rank == MASTER_NODE)cout << "---------------------------------------------------------------------------" << endl;
-//	}
+
 	if (!fsi){
 		output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
 				config_container, integration_container, false, UsedTime, ZONE_0);
 
 	}
 
-//    /*--- Update the convergence history file (serial and parallel computations). ---*/
-//
-//    output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
-//                                config_container, integration_container, false, UsedTime, ZONE_0);
     
     /*--- Evaluate the new CFL number (adaptive). ---*/
     

@@ -1761,8 +1761,6 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 
 	bool incremental_load = config_container[ZONE_0]->GetIncrementalLoad();							// If an incremental load is applied
 
-	/*--- TODO: Convergence only checked for ZONE_0 ---*/
-
 	/*--- This is to prevent problems when running a linear solver ---*/
 	if (!nonlinear) incremental_load = false;
 

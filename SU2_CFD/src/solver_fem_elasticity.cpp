@@ -402,7 +402,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 			mZeros_Aux[iDim][jDim] = 0.0;
 			mId_Aux[iDim][jDim] = 0.0;
 		}
-		mId_Aux[iDim][iDim] = E;		// TODO: This works for clamped boundary conditions...
+		mId_Aux[iDim][iDim] = E;
 	}
 
 
@@ -1738,7 +1738,6 @@ void CFEM_ElasticitySolver::BC_Clamped(CGeometry *geometry, CSolver **solver_con
 
 	    	/*--- If the problem is dynamic ---*/
 	    	/*--- Enforce that in the previous time step all nodes had 0 U, U', U'' ---*/
-	    	/*--- TODO: Do I really need to do this? ---*/
 
 	    	if(dynamic){
 
@@ -2146,7 +2145,6 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 		/*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
 		for (iPoint = 0; iPoint < nPoint; iPoint++) {
 			/*--- Dynamic contribution ---*/
-			/*--- TODO: Do I have to scale this one? I don't think so... ---*/
 			Res_Time_Cont = TimeRes.GetBlock(iPoint);
 			LinSysRes.AddBlock(iPoint, Res_Time_Cont);
 
@@ -2163,7 +2161,6 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 
 			/*--- Add FSI contribution ---*/
 			if (fsi) {
-				/*--- TODO: It may be worthy restricting the flow traction to the boundary elements... ---*/
 				if (incremental_load){
 					for (iVar = 0; iVar < nVar; iVar++){
 						Res_FSI_Cont[iVar] = loadIncrement * node[iPoint]->Get_FlowTraction(iVar);
@@ -2417,7 +2414,6 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSol
 		/*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
 		for (iPoint = 0; iPoint < nPoint; iPoint++) {
 			/*--- Dynamic contribution ---*/
-			/*--- TODO: Do I have to scale this one? I don't think so... ---*/
 			Res_Time_Cont = TimeRes.GetBlock(iPoint);
 			LinSysRes.AddBlock(iPoint, Res_Time_Cont);
 			/*--- External surface load contribution ---*/
@@ -2437,7 +2433,6 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSol
 
 			/*--- Add FSI contribution ---*/
 			if (fsi) {
-				/*--- TODO: It may be worthy restricting the flow traction to the boundary elements... ---*/
 				if (incremental_load){
 					for (iVar = 0; iVar < nVar; iVar++){
 						Res_FSI_Cont[iVar] = loadIncrement * ( (1 - alpha_f) * node[iPoint]->Get_FlowTraction(iVar) +
@@ -2568,8 +2563,6 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CS
 		if (fsi) node[iPoint]->Set_FlowTraction_n();
 	}
 
-	/*--- TODO: Perform the MPI communication of the solution (I think this may be needed) ---*/
-
 }
 
 void CFEM_ElasticitySolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config){
@@ -2685,8 +2678,6 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 
 	unsigned long nVertexFEA, nVertexFlow;						// Number of vertices on FEA and Flow side
 
-	/*--- TODO: We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
-	/*--- This may be improved ---*/
 	for (iPoint = 0; iPoint < nPoint; iPoint++){
 		node[iPoint]->Clear_FlowTraction();
 	}
@@ -2821,8 +2812,6 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 
 	nProcessor = size;
 
-	/*--- TODO: We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
-	/*--- This may be improved ---*/
 	for (iPoint = 0; iPoint < nPoint; iPoint++){
 		node[iPoint]->Clear_FlowTraction();
 	}
@@ -2967,7 +2956,6 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 				if (incompressible){
 
 					Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressureInc();
-					// TODO: This can be taken out (one thing at a time!)
 					Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
 
 					if (viscous_flow){
@@ -2979,7 +2967,6 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 				else if (compressible){
 
 					Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
-					// TODO: This can be taken out (one thing at a time!)
 					Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
 
 					if (viscous_flow){
@@ -3357,7 +3344,6 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 
 				WAitkDyn = GetWAitken_Dyn();
 
-				//TODO: double check this.
 				if (rbuf_denAitk > 1E-15){
 					WAitkDyn = - 1.0 * WAitkDyn * rbuf_numAitk / rbuf_denAitk ;
 				}
@@ -3450,7 +3436,6 @@ void CFEM_ElasticitySolver::Update_StructSolution(CGeometry **fea_geometry,
     }
 
 	/*--- Perform the MPI communication of the solution, displacements only ---*/
-    // TODO: check if this is needed, as the solution is also communicated when u' and u'' are computed
 
 	Set_MPI_Solution_DispOnly(fea_geometry[MESH_0], fea_config);
 
