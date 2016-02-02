@@ -9136,13 +9136,15 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
   	cc = AverageSoundSpeed[val_marker][iSpan]*AverageSoundSpeed[val_marker][iSpan];
   	rhoc = AverageSoundSpeed[val_marker][iSpan]*AverageDensity[val_marker][iSpan];
+
   	AvgMach = AverageMach[val_marker][iSpan];
+
   	nVert = geometry->GetnTotVertexSpan(val_marker,iSpan);
   	kend = geometry->GetnFreqSpan(val_marker, iSpan);
+
   	conv_numerics->GetRMatrix(AverageSoundSpeed[val_marker][iSpan], AverageDensity[val_marker][iSpan], R_Matrix);
   
-  	//  Boundary_Fourier(geometry, solver_container, config, val_marker, c4k, nboundaryvertex);
-  	//  Boundary_Fourier(geometry, solver_container, config, val_marker, c2k,c3k,nboundaryvertex);
+
   
   	/*--- Loop over all the vertices on this boundary marker ---*/
 

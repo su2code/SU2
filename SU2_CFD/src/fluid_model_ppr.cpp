@@ -276,19 +276,8 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 	v = xmid;
 	if (countrtb==ITMAX) {
 		cout <<"Too many bisections in rtbis" << endl;
-//			do{
-//          atanh = (log(1.0+( b/v* sqrt2/(1 + b/v))) - log(1.0-( b/v* sqrt2/(1 + b/v))))/2.0;
-//					fv = atanh;
-//					T=T_v_h(v, h);
-//					f = A*log(T) + Gas_Constant*log(v - b) - a*sqrt(alpha2(T)) *k*fv/(b*sqrt2*sqrt(T*TstarCrit)) - s;
-//					f1= Gas_Constant/(v-b)+ a*sqrt(alpha2(T)) *k/(sqrt(T*TstarCrit)*(v*v - b*b - 2*v*b));
-//					dv= f/f1;
-//					v-= dv;
-//					countnw++;
-//			}while(abs(f/x2) > toll && countnw<ITMAXNW);
-//
-//		} else{
 	}
+
 	if (v!=v) {
 		cout <<"not physical solution found, h and s input " << h << " "<< s << endl;
 		SetTDState_rhoT(Density, Temperature);
@@ -303,9 +292,6 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 
 	if (cons_h >1e-4 || cons_s >1e-4) {
 		cout<< "TD consistency not verified in hs call"<< endl;
-			 //cout <<"Before  "<< h <<" "<< s << endl;
-			 //cout <<"After  "<< StaticEnergy + Pressure/Density <<" "<< Entropy << fmid <<" "<< f<< " "<< countrtb<<" "<< countnw<< endl;
-			 //getchar();
 	}
 }
 
@@ -411,7 +397,6 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 	rho = 1.0/xmid;
 	T = T_P_rho(P, rho);
 	SetTDState_rhoT(rho, T);
-//	cout << xmid << " "<< T<< " "<< Pressure<< " "<< P << " "<< Entropy << " "<< s <<endl;
 
 	cons_P= abs((Pressure -P)/P);
 	cons_s= abs((Entropy-s)/s);
