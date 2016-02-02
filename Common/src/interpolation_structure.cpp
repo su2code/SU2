@@ -99,8 +99,9 @@ void CInterpolator::Determine_ArraySize(bool faces, int markDonor, int markTarge
   unsigned long nLocalVertex_Donor = 0, nLocalFaceNodes_Donor=0, nLocalFace_Donor=0;
   unsigned long iVertex, iPointDonor = 0;
   /* Only needed if face data is also collected */
-  unsigned long inode, donor_elem, jElem, jPoint;
-  unsigned short iDim, iDonor;
+  unsigned long inode;
+  unsigned long donor_elem, jElem, jPoint;
+  unsigned short iDonor;
   unsigned int nFaces=0, iFace, nNodes=0;
   bool face_on_marker = true;
   int rank = MASTER_NODE;
@@ -192,7 +193,7 @@ void CInterpolator::Determine_ArraySize(bool faces, int markDonor, int markTarge
 }
 
 void CInterpolator::Collect_VertexInfo(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short nDim){
-  unsigned long nLocalVertex_Donor = 0, nLocalFaceNodes_Donor=0;
+  unsigned long nLocalVertex_Donor = 0;
   unsigned long iVertex, iPointDonor = 0, iVertexDonor, nBuffer_Coord, nBuffer_Point;
   unsigned short iDim;
   /* Only needed if face data is also collected */
@@ -270,7 +271,7 @@ CNearestNeighbor::~CNearestNeighbor(){}
 
 void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
-  unsigned long iVertex, jVertex;
+  unsigned long jVertex;
   unsigned short iDim;
   unsigned short nDim = donor_geometry->GetnDim();
 
@@ -279,18 +280,14 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
   int markDonor = -1, markTarget = -1;
 
   unsigned long nVertexDonor = 0, nVertexTarget= 0;
-  unsigned long Point_Donor = 0, Point_Target = 0;
-  unsigned long Vertex_Donor = 0, Vertex_Target = 0;
+  unsigned long Point_Target = 0;
 
-  unsigned long iVertexDonor, iPointDonor = 0;
-  unsigned long iVertexTarget, iPointTarget = 0;
-  unsigned long pPoint = 0, Global_Point = 0;
-  unsigned long jGlobalPoint = 0, pGlobalPoint = 0;
+  unsigned long iVertexTarget;
+  unsigned long pGlobalPoint = 0;
   int iProcessor, pProcessor = 0;
 
-  int Donor_Processor;
   unsigned short int iDonor = 0;
-  unsigned long nLocalVertex_Donor = 0, nLocalFaceNodes_Donor=0, nLocalFace_Donor=0, Global_Point_Donor;
+  unsigned long Global_Point_Donor;
 
   /*--- Number of markers on the FSI interface ---*/
   nMarkerInt     = (config[donorZone]->GetMarker_n_FSIinterface())/2;
@@ -378,7 +375,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
 			  /*--- Coordinates of the boundary point ---*/
 			  Coord_i = target_geometry->node[Point_Target]->GetCoord();
-			  mindist = 1E6; pProcessor = 0; pPoint = 0;
+			  mindist = 1E6; pProcessor = 0;
 
 			  /*--- Loop over all the boundaries to find the pair ---*/
 			  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
@@ -436,7 +433,7 @@ CIsoparametric::~CIsoparametric(){}
 
 void CIsoparametric::Set_TransferCoeff(CConfig **config){
   unsigned long iVertex, jVertex;
-  unsigned long jPoint, dPoint, inode, jElem, nElem;
+  unsigned long  dPoint, inode, jElem, nElem;
   unsigned short iDim, iDonor=0, iFace;
 
   unsigned short nDim = donor_geometry->GetnDim();
@@ -452,24 +449,18 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
   unsigned int nFaces=1; //For 2D cases, we want to look at edges, not faces, as the 'interface'
   bool face_on_marker=true;
 
-  unsigned long nVertexDonor = 0, nVertexTarget= 0;
-  unsigned long Point_Donor = 0, Point_Target = 0;
-  unsigned long Vertex_Donor = 0, Vertex_Target = 0;
+  unsigned long nVertexDonor = 0;
+  unsigned long Point_Target = 0;
 
   unsigned long iVertexDonor, iPointDonor = 0;
-  unsigned long iVertexTarget, iPointTarget = 0;
-  unsigned long pPoint = 0, Global_Point = 0;
-  unsigned long jGlobalPoint = 0, pGlobalPoint = 0;
-  int iProcessor, pProcessor = 0;
+  unsigned long jGlobalPoint = 0;
+  int iProcessor;
 
-  unsigned long nLocalVertex_Donor = 0, nLocalVertex_Target = 0;
   unsigned long nLocalFace_Donor = 0, nLocalFaceNodes_Donor=0;
 
-  unsigned long Global_Point_Donor;
   unsigned long faceindex;
-  int Donor_Processor;
 
-  su2double dist = 0.0, mindist=1E6, *Coord, *Coord_i, *Coord_j;
+  su2double dist = 0.0, mindist=1E6, *Coord, *Coord_i;
   su2double myCoeff[10]; // Maximum # of donor points
   su2double  *Normal;
   su2double projected_point[nDim];
@@ -477,8 +468,6 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
   su2double storeCoeff[10];
   unsigned long storeGlobal[10];
   int storeProc[10];
-
-  unsigned long nBuffer_Coord, nBuffer_Point;
 
   int rank = MASTER_NODE;
   int nProcessor = SINGLE_NODE;
@@ -504,7 +493,6 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
      *    -set the transfer coefficient values
      */
     nVertexDonor = 0;
-    nVertexTarget = 0;
     markDonor = -1;
     markTarget = -1;
 
@@ -531,13 +519,10 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
       if (config[targetZone]->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ){
         /*--- We have identified the identifier for the target marker ---*/
         markTarget = iMarkerTarget;
-        /*--- Store the number of local points that belong to markTarget ---*/
-        nVertexTarget = target_geometry->GetnVertex(iMarkerTarget);
         break;
       }
       else {
         /*--- If the tag hasn't matched any tag within the Flow markers ---*/
-        nVertexTarget = 0;
         markTarget = -1;
       }
     }
@@ -991,7 +976,7 @@ CMirror::~CMirror(){}
 
 void CMirror::Set_TransferCoeff(CConfig **config){
   unsigned long iVertex, jVertex;
-  unsigned long jPoint, iPoint, tPoint, nTargets;
+  unsigned long iPoint;
   unsigned short iDonor=0, iFace=0, iTarget=0;
 
   unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;
@@ -999,26 +984,16 @@ void CMirror::Set_TransferCoeff(CConfig **config){
 
   int markDonor=0, markTarget=0;
 
-  long donor_elem=0, temp_donor=0;
   unsigned int nNodes=0, iNodes=0;
-  /*--- Restricted to 2-zone for now ---*/
-  unsigned int nFaces=1; //For 2D cases, we want to look at edges, not faces, as the 'interface'
-  bool face_on_marker=true;
 
-  unsigned long nVertexDonor = 0, nVertexTarget= 0;
-  unsigned long iVertexDonor, Point_Donor = 0;
-  unsigned long iVertexTarget, iPointTarget = 0;
-  unsigned long pPoint = 0, Global_Point = 0;
-  unsigned long jGlobalPoint = 0, pGlobalPoint = 0;
-  int iProcessor, pProcessor = 0;
+  unsigned long Point_Donor = 0;
+  unsigned long Global_Point = 0;
+  unsigned long pGlobalPoint = 0;
+  int iProcessor;
 
-  unsigned long nLocalVertex_Donor = 0;
-  unsigned long MaxLocalVertex_Donor = 0;
   unsigned long nLocalFace_Donor = 0, nLocalFaceNodes_Donor=0;
 
-  unsigned long Global_Point_Donor;
   unsigned long faceindex;
-  int Donor_Processor;
 
   int rank = MASTER_NODE;
   int nProcessor = SINGLE_NODE;
@@ -1048,13 +1023,11 @@ void CMirror::Set_TransferCoeff(CConfig **config){
         /*--- We have identified the identifier for the structural marker ---*/
         markDonor = iMarkerDonor;
         /*--- Store the number of local points that belong to markDonor ---*/
-        nVertexDonor = donor_geometry->GetnVertex(iMarkerDonor);
         break;
       }
       else {
         /*--- If the tag hasn't matched any tag within the donor markers ---*/
         markDonor = -1;
-        nVertexDonor = 0;
       }
     }
 
@@ -1064,13 +1037,10 @@ void CMirror::Set_TransferCoeff(CConfig **config){
       if (config[targetZone]->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ){
         /*--- We have identified the identifier for the target marker ---*/
         markTarget = iMarkerTarget;
-        /*--- Store the number of local points that belong to markTarget ---*/
-        nVertexTarget = target_geometry->GetnVertex(iMarkerTarget);
         break;
       }
       else {
         /*--- If the tag hasn't matched any tag within the Flow markers ---*/
-        nVertexTarget = 0;
         markTarget = -1;
       }
     }
