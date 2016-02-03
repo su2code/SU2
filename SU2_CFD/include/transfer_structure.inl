@@ -1,9 +1,8 @@
 /*!
- * \file SU2_CFD.hpp
- * \brief Headers of the main subroutines of the code SU2_CFD.
- *        The subroutines and functions are in the <i>SU2_CFD.cpp</i> file.
- * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \file transfer_structure.inl
+ * \brief In-Line subroutines of the <i>transfer_structure.hpp</i> file.
+ * \author R. Sanchez
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,8 +12,6 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
- *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,21 +29,14 @@
 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+inline void CTransfer::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
+	   	   	   	   	   	   	   	   	   	     CGeometry *donor_geometry, CGeometry *target_geometry,
+											 CConfig *donor_config, CConfig *target_config) { }
 
-#include <ctime>
+inline void CTransfer::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, 
+								   	     CConfig *donor_config, unsigned long Marker_Donor, 
+										 unsigned long Vertex_Donor, unsigned long Point_Donor) { }
 
-#include "driver_structure.hpp"
-#include "solver_structure.hpp"
-#include "integration_structure.hpp"
-#include "output_structure.hpp"
-#include "numerics_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/grid_movement_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../../Common/include/interpolation_structure.hpp"
-#include "../include/definition_structure.hpp"
-#include "../include/iteration_structure.hpp"
-#include "../include/transfer_structure.hpp"
-
-using namespace std;
+inline void CTransfer::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
+										  CConfig *target_config, unsigned long Marker_Target,
+										  unsigned long Vertex_Target, unsigned long Point_Target) { }
