@@ -60,17 +60,17 @@ int main(int argc, char *argv[]) {
    heirarchy over all zones, multigrid levels, equation sets, and equation
    terms as described in the comments below. ---*/
   
-  CDriver *driver                       = NULL;
-  CIteration **iteration_container      = NULL;
-  COutput *output                       = NULL;
-  CIntegration ***integration_container = NULL;
-  CGeometry ***geometry_container       = NULL;
-  CSolver ****solver_container          = NULL;
-  CNumerics *****numerics_container     = NULL;
-  CConfig **config_container            = NULL;
-  CSurfaceMovement **surface_movement   = NULL;
-  CVolumetricMovement **grid_movement   = NULL;
-  CFreeFormDefBox*** FFDBox             = NULL;
+  CDriver *driver                         = NULL;
+  CIteration **iteration_container        = NULL;
+  COutput *output                         = NULL;
+  CIntegration ***integration_container   = NULL;
+  CGeometry ***geometry_container         = NULL;
+  CSolver ****solver_container            = NULL;
+  CNumerics *****numerics_container       = NULL;
+  CConfig **config_container              = NULL;
+  CSurfaceMovement **surface_movement     = NULL;
+  CVolumetricMovement **grid_movement     = NULL;
+  CFreeFormDefBox*** FFDBox               = NULL;
   CInterpolator ***interpolator_container = NULL;
   CTransfer ***transfer_container         = NULL;
   
@@ -92,17 +92,17 @@ int main(int argc, char *argv[]) {
   
   /*--- Definition and of the containers for all possible zones. ---*/
   
-  iteration_container   = new CIteration*[nZone];
-  solver_container      = new CSolver***[nZone];
-  integration_container = new CIntegration**[nZone];
-  numerics_container    = new CNumerics****[nZone];
-  config_container      = new CConfig*[nZone];
-  geometry_container    = new CGeometry**[nZone];
-  surface_movement      = new CSurfaceMovement*[nZone];
-  grid_movement         = new CVolumetricMovement*[nZone];
-  FFDBox                = new CFreeFormDefBox**[nZone];
-  interpolator_container= new CInterpolator**[nZone];
-  transfer_container    = new CTransfer**[nZone];
+  iteration_container    = new CIteration*[nZone];
+  solver_container       = new CSolver***[nZone];
+  integration_container  = new CIntegration**[nZone];
+  numerics_container     = new CNumerics****[nZone];
+  config_container       = new CConfig*[nZone];
+  geometry_container     = new CGeometry**[nZone];
+  surface_movement       = new CSurfaceMovement*[nZone];
+  grid_movement          = new CVolumetricMovement*[nZone];
+  FFDBox                 = new CFreeFormDefBox**[nZone];
+  interpolator_container = new CInterpolator**[nZone];
+  transfer_container     = new CTransfer**[nZone];
   
   for (iZone = 0; iZone < nZone; iZone++) {
     solver_container[iZone]       = NULL;
@@ -113,8 +113,8 @@ int main(int argc, char *argv[]) {
     surface_movement[iZone]       = NULL;
     grid_movement[iZone]          = NULL;
     FFDBox[iZone]                 = NULL;
-	interpolator_container[iZone] = NULL;
-	transfer_container[iZone]     = NULL;
+    interpolator_container[iZone] = NULL;
+    transfer_container[iZone]     = NULL;
   }
   
   /*--- Loop over all zones to initialize the various classes. In most
