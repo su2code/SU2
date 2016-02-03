@@ -692,6 +692,8 @@ public:
    * \param[in] ??? - Description here.
    */
   void Preprocess();
+  using CIteration::Preprocess;
+
 
   /*!
    * \brief Perform a single iteration for structural analysis using the Finite Element Method.

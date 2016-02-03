@@ -411,7 +411,6 @@ int main(int argc, char *argv[]) {
         StopCalc = false; break;
 	  case FEM_ELASTICITY:
 	    StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
-	    StopCalc = false; break;
       case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
         StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
