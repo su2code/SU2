@@ -4010,7 +4010,7 @@ class CGalerkin_FEA : public CNumerics {
   su2double Rho_s;		/*!< \brief Structural density. */
   su2double Mu;			/*!< \brief Lame's coeficient. */
   su2double Lambda;	/*!< \brief Lame's coeficient. */
-  su2double Density;	/*!< \brief Material density. */
+
 public:
   
   /*!
@@ -4215,7 +4215,7 @@ public:
 	virtual void Compute_Plane_Stress_Term(CElement *element_container);
 
 	virtual void Compute_Constitutive_Matrix(CElement *element_container);
-
+  
 	virtual void Compute_Stress_Tensor(CElement *element_container);
 
 };
@@ -4249,6 +4249,7 @@ public:
 	void Compute_Tangent_Matrix(CElement *element_container);
 
 	void Compute_Constitutive_Matrix(void);
+  using CNumerics::Compute_Constitutive_Matrix;
 
 	void Compute_Averaged_NodalStress(CElement *element_container);
 
@@ -4342,6 +4343,7 @@ public:
 	void Compute_Plane_Stress_Term(CElement *element_container);
 
 	void Compute_Constitutive_Matrix(CElement *element_container);
+  using CNumerics::Compute_Constitutive_Matrix;
 
 	void Compute_Stress_Tensor(CElement *element_container);
 
@@ -4374,6 +4376,7 @@ public:
 	void Compute_Plane_Stress_Term(CElement *element_container);
 
 	void Compute_Constitutive_Matrix(CElement *element_container);
+  using CNumerics::Compute_Constitutive_Matrix;
 
 	void Compute_Stress_Tensor(CElement *element_container);
 
