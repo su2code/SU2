@@ -3374,8 +3374,6 @@ public:
                       unsigned short val_marker);
     
 	/*!
-	 * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
-	 *
 	 * \brief Impose the boundary condition using characteristic recostruction.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -3388,8 +3386,6 @@ public:
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
 	/*!
-	 * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
-	 *
 	 * \brief Impose the boundary condition using characteristic recostruction.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -3400,6 +3396,14 @@ public:
 	 */
 	void BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+	/*!
+	 * \brief compute the Jacobian needed for NRBC inflow .
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 * \param[in] iSpan 		 - span section where is applied.
+	 * \param[in] alphaInBC  - angle input of the BC.
+	 * \param[out] R_c       - Jacobian of the residuals with respect to the characteristic variables.
+	 */
+	void ComputeResJacobianNRBC(unsigned short val_marker, unsigned short iSpan, su2double alphaInBC, su2double **R_c);
 
 
 	/*!
