@@ -304,7 +304,9 @@ int main(int argc, char *argv[]) {
 				if (StopCalc) break;
 			}
 
-		} else if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+		}
+    
+    else if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL) {
 
 			/*--- Time-spectral simulation: merge files for each time instance (each zone). ---*/
 			unsigned short nTimeSpectral = config_container[ZONE_0]->GetnTimeInstances();
@@ -332,7 +334,9 @@ int main(int argc, char *argv[]) {
 
 				output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iTimeSpectral, nZone);
 			}
-		} else if (config_container[ZONE_0]->GetWrt_Dynamic()){
+		}
+    
+    else if (config_container[ZONE_0]->GetWrt_Dynamic()){
 
 			/*--- Dynamic simulation: merge all unsteady time steps. First,
 			 find the frequency and total number of files to write. ---*/
@@ -391,7 +395,9 @@ int main(int argc, char *argv[]) {
 			  if (StopCalc) break;
 			}
 
-		  }  else {
+		  }
+    
+    else {
 
 			  /*--- Steady simulation: merge the single solution file. ---*/
 

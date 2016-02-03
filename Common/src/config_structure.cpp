@@ -1643,6 +1643,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	  if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
 	  else { Wrt_Dynamic = true; }
 
+  } else {
+    Wrt_Dynamic = false;
   }
 
   

@@ -67,7 +67,7 @@ def merge( config ):
     multizone_cases = su2io.get_multizone(konfig)
     
     # # MERGING # #
-    if  'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
+    if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
         merge_multizone(konfig)
     else:
         if 'WRT_UNSTEADY' in special_cases:

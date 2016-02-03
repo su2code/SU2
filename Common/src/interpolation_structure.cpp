@@ -463,7 +463,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
   su2double dist = 0.0, mindist=1E6, *Coord, *Coord_i;
   su2double myCoeff[10]; // Maximum # of donor points
   su2double  *Normal;
-  su2double projected_point[nDim];
+  su2double *projected_point = new su2double[nDim];
   su2double tmp, tmp2;
   su2double storeCoeff[10];
   unsigned long storeGlobal[10];
@@ -687,7 +687,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
             nNodes = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace+1] -
                     Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace];
 
-            su2double X[nNodes*nDim];
+            su2double *X = new su2double[nNodes*nDim];
             faceindex = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace]; // first index of this face
             for (iDonor=0; iDonor<nNodes; iDonor++){
               jVertex = Buffer_Receive_FaceNodes[iDonor+faceindex]; // index which points to the stored coordinates, global points
@@ -748,6 +748,8 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
                 storeProc[iDonor] = Buffer_Receive_FaceProc[faceindex+iDonor];
               }
             }
+          
+            delete [] X;
           }
         }
         /*--- Set the appropriate amount of memory and fill ---*/
@@ -789,15 +791,23 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
   }
   delete [] Coord;
   delete [] Normal;
+  
+  delete [] projected_point;
 }
 
 void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
     su2double *X, su2double *xj, su2double *isoparams){
   short iDonor,iDim,k; // indices
   su2double tmp, tmp2;
-  su2double x[nDim+1], x_tmp[nDim+1];
-  su2double Q[nDonor*nDonor], R[nDonor*nDonor], A[nDim+1*nDonor];
-  su2double x2[nDim+1];
+  
+  su2double *x     = new su2double[nDim+1];
+  su2double *x_tmp = new su2double[nDim+1];
+  su2double *Q     = new su2double[nDonor*nDonor];
+  su2double *R     = new su2double[nDonor*nDonor];
+  su2double *A     = new su2double[nDim+1*nDonor];
+  su2double *A2    = NULL;
+  su2double *x2    = new su2double[nDim+1];
+  
   su2double eps = 1E-10;
   bool test[nDim+1], testi[nDim+1];
   short n = nDim+1;
@@ -844,7 +854,7 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
     }
 
     /*--- Initialize A2 now that we might have a smaller system --*/
-    su2double A2[n*nDonor];
+    A2 = new su2double[n*nDonor];
     iDim=0;
     /*--- Copy only the rows that are non-degenerate ---*/
     for (k=0; k<nDim+1; k++){
@@ -960,6 +970,14 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
       isoparams[k]=1.0;
     }
   }
+  
+  delete [] x;
+  delete [] x_tmp;
+  delete [] Q;
+  delete [] R;
+  delete [] A;
+  if (A2 != NULL) delete [] A2;
+  delete [] x2;
 
 }
 
