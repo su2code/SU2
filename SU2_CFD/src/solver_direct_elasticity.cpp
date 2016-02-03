@@ -2129,7 +2129,9 @@ void CFEASolver::SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geome
 	bool viscous_flow        = ((flow_config->GetKind_Solver() == NAVIER_STOKES) ||
 			(flow_config->GetKind_Solver() == RANS) );
 
-	su2double Pinf;
+	su2double Pinf = 0.0;
+
+	markFlow=0;
 
 	su2double ModAmpl;
 	su2double CurrentTime=fea_config->GetCurrent_DynTime();
@@ -2214,7 +2216,7 @@ void CFEASolver::SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geome
 			normalsVertex_Unit[iVertex] = new su2double[nDim];
 		}
 
-		su2double **Grad_PrimVar;
+		su2double **Grad_PrimVar = NULL;
 		su2double Viscosity = 0.0;
 		su2double Tau[3][3];
 		su2double div_vel = 0.0, Delta = 0.0;
