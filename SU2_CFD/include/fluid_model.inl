@@ -41,6 +41,8 @@ inline double CFluidModel::GetdPdrho_e () { return dPdrho_e; }
 inline double CFluidModel::GetdPde_rho () { return dPde_rho; }
 inline double CFluidModel::GetdTdrho_e () { return dTdrho_e; }
 inline double CFluidModel::GetdTde_rho () { return dTde_rho; }
+inline void CFluidModel::SwitchLuTOff() {} 
+inline void CFluidModel::SwitchLuTOn() {} 
 
 inline double CFluidModel::GetLaminarViscosity () {
         LaminarViscosity->SetViscosity(Temperature, Density);

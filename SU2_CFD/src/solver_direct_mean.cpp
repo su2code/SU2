@@ -7031,6 +7031,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 				/* --- Computes the total state --- */
 				//FluidModel->SetTDState_PT(P_Total, T_Total);
 				//printf("P0 %f Rho %f\n", P_Total, Rho_Total );
+				FluidModel->SwitchLuTOff();
 				FluidModel->SetTDState_Prho(P_Total, Rho_Total);
 				Enthalpy_e = FluidModel->GetStaticEnergy()
 						+ FluidModel->GetPressure() / FluidModel->GetDensity();
@@ -7047,6 +7048,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 				Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
 				if (tkeNeeded)
 					Energy_e += GetTke_Inf();
+				FluidModel->SwitchLuTOn();
 				break;
 			case DENSITY_VELOCITY:
 				/*--- Retrieve the specified density and velocity magnitude ---*/

@@ -77,7 +77,7 @@ CConductivityModel *ThermalConductivity;	  /*!< \brief Thermal Conductivity Mode
 
 public:
 
-	/*!
+		/*!
 		 * \brief Constructor of the class.
 		 */
 		CFluidModel(void);
@@ -244,6 +244,10 @@ public:
 		 *
 		 */
 		virtual void SetTDState_rhoT (double rho, double T );
+
+		virtual void SwitchLuTOff();
+
+		virtual void SwitchLuTOn();
 
 };
 
@@ -532,11 +536,12 @@ protected:
 private:
     
     bool LuTSwitchedOn;   /*!< \brief LuT indicator. */
+
+public:
+
     void SwitchLuTOff();
     void SwitchLuTOn();
 
-public:
-    
     /*!
      * \brief Constructor of the class.
      */
