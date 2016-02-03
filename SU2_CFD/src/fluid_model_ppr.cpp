@@ -407,4 +407,21 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s){
 
 }
 
+void CPengRobinson::ComputeDerivativeNRBC_Prho(su2double P, su2double rho ){
+
+	su2double dPdT_rho,dPdrho_T, dPds_rho, der1_alpha;
+
+	SetTDState_Prho(P, rho);
+
+	der1_alpha =-k/(2*sqrt(TstarCrit*Temperature));
+	dPdT_rho= Gas_Constant*rho/(1.0 -rho*b) - 2*a*rho*rho*sqrt(alpha2(Temperature))*der1_alpha/(1+2*b*rho-b*b*rho*rho);
+	dPdrho_T= Gas_Constant*Temperature/(1.0 -rho*b)/(1.0 -rho*b) - 2.0*rho*a*alpha2(Temperature)*(1.0+b*rho)/(1+2*b*rho-b*b*rho*rho)/(1+2*b*rho-b*b*rho*rho);
+
+	dhdrho_P= -dPdrho_e/dPde_rho -P/rho/rho;
+  dhdP_rho= 1.0/dPde_rho +1.0/rho;
+  dPds_rho= rho*rho*(SoundSpeed2 - dPdrho_T)/dPdT_rho;
+  dsdP_rho= 1.0/dPds_rho;
+  dsdrho_P= -SoundSpeed2/dPds_rho;
+
+}
 

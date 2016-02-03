@@ -280,5 +280,20 @@ void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
 }
 
 
+void CVanDerWaalsGas::ComputeDerivativeNRBC_Prho(su2double P, su2double rho ){
 
+	su2double dPdT_rho,dPdrho_T, dPds_rho;
+
+	SetTDState_Prho(P, rho);
+
+	dPdT_rho= Gas_Constant*rho/(1.0 -rho*b);
+	dPdrho_T= Gas_Constant*Temperature/(1.0 -rho*b)/(1.0 -rho*b) -2.0*rho*a;
+
+	dhdrho_P= -dPdrho_e/dPde_rho -P/rho/rho;
+  dhdP_rho= 1.0/dPde_rho +1.0/rho;
+  dPds_rho= rho*rho*(SoundSpeed2 - dPdrho_T)/dPdT_rho;
+  dsdP_rho= 1.0/dPds_rho;
+  dsdrho_P= -SoundSpeed2/dPds_rho;
+
+}
 

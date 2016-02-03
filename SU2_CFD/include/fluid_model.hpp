@@ -393,7 +393,7 @@ public:
 		 * \param[in] th2 - second thermodynamic variable (v).
 		 *
 		 */
-//		void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
+		void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
 };
 
 
@@ -487,7 +487,7 @@ public:
 		 * \param[in] th2 - second thermodynamic variable (v).
 		 *
 		 */
-//		void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
+		void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
 
 };
 
@@ -603,7 +603,7 @@ public:
 		 * \param[in] th2 - second thermodynamic variable (v).
 		 *
 		 */
-//		void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
+    void ComputeDerivativeNRBC_Prho (su2double P, su2double rho );
 
 };
 
