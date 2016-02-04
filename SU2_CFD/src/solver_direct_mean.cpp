@@ -9042,8 +9042,8 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **sol
 						if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
 							if (marker_flag == INFLOW){
 								CkInflow[iMarker][iSpan][k-1]= cktemp_inf;
-								if(rank == 2)
-									cout << "real "<< CkInflow[iMarker][iSpan][k-1].real()<< " imag "<< CkInflow[iMarker][iSpan][k-1].imag() << " at k "<< k << endl;
+//								if(rank == 2)
+//									cout << "real "<< CkInflow[iMarker][iSpan][k-1].real()<< " imag "<< CkInflow[iMarker][iSpan][k-1].imag() << " at k "<< k << endl;
 							}else{
 								CkOutflow1[iMarker][iSpan][k-1]=cktemp_out1;
 								CkOutflow2[iMarker][iSpan][k-1]=cktemp_out2;
@@ -9065,26 +9065,20 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **sol
 
 }
 
-void CEulerSolver::ComputeResJacobianNRBC(unsigned short val_marker, unsigned short iSpan, su2double alphaInBC, su2double **R_c_inv){
-	su2double rhoc, cc, vt, vn, **R_c, **test, det;
+void CEulerSolver::ComputeResJacobianNRBC(su2double pressure, su2double density, su2double vn, su2double vt, su2double alphaInBC, su2double **R_c, su2double **R_c_inv){
+	su2double rhoc, cc, **test, det;
 	su2double dhdrho_P, dhdP_rho, dsdrho_P,dsdP_rho;
 	unsigned short iVar, jVar, kVar;
 
-	R_c= new su2double*[nVar-1];
 	test= new su2double*[nVar-1];
 	for (iVar = 0; iVar < nVar-1; iVar++)
 	{
-		R_c[iVar] = new su2double[nVar-1];
 		test[iVar] = new su2double[nVar-1];
 	}
 
-	cc   = AverageSoundSpeed[val_marker][iSpan]*AverageSoundSpeed[val_marker][iSpan];
-	rhoc = AverageSoundSpeed[val_marker][iSpan]*AverageDensity[val_marker][iSpan];
-	vn   = AverageNormalVelocity[val_marker][iSpan];
-	vt   = AverageTangVelocity[val_marker][iSpan];
-
-	FluidModel->ComputeDerivativeNRBC_Prho(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan]);
-
+	FluidModel->ComputeDerivativeNRBC_Prho(pressure, density);
+	cc   = FluidModel->GetSoundSpeed2();
+	rhoc = density*sqrt(cc);
 	dhdrho_P  = FluidModel->Getdhdrho_P();
 	dhdP_rho  = FluidModel->GetdhdP_rho();
 	dsdrho_P  = FluidModel->Getdsdrho_P();
@@ -9130,7 +9124,7 @@ void CEulerSolver::ComputeResJacobianNRBC(unsigned short val_marker, unsigned sh
 
 	}
 
-	// check inversion
+////	 check inversion
 //	for(iVar=0; iVar < nVar-1; iVar++){
 //		for(jVar=0; jVar < nVar-1; jVar++){
 //			test[iVar][jVar]= 0.0;
@@ -9149,10 +9143,8 @@ void CEulerSolver::ComputeResJacobianNRBC(unsigned short val_marker, unsigned sh
 
 	for (iVar = 0; iVar < nVar-1; iVar++)
 	{
-		delete [] R_c[iVar];
 		delete [] test[iVar];
 	}
-	delete [] R_c;
 	delete [] test;
 
 }
@@ -9164,7 +9156,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   su2double  Area, *UnitNormal, *turboVelocity, *turboNormal;
   
   su2double *Velocity_b, Velocity2_b, Enthalpy_b, Energy_b, StaticEnergy_b, Density_b, Kappa_b, Chi_b, Pressure_b, Temperature_b;
-  su2double *Velocity_i, Velocity2_i, Enthalpy_i, Energy_i, StaticEnergy_i, Density_i, Kappa_i, Chi_i, Pressure_i, SoundSpeed_i;
+  su2double *Velocity_i, Velocity2_i, Enthalpy_i, Energy_i, StaticEnergy_i, Density_i, Kappa_i, Chi_i, Pressure_i, SoundSpeed_i, Entropy_i;
   su2double Pressure_e;
   su2double ProjVelocity_i;
   su2double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **DubDu, *dw, *u_b;
@@ -9205,7 +9197,8 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   /*--- new declarations ---*/
   
   su2double  deltaDensity, deltaPressure, AvgMach, deltaTangVelocity, deltaNormalVelocity, cc,rhoc,c1j,c2j,c3j,c4j,jk_nVert, *cj,
-  avg_c1, avg_c2, avg_c3, avg_c4,TangVelocity, NormalVelocity, GilesBeta, c4js, dc4js, *delta_c, **R_Matrix, *deltaprim, **R_c_inv, alphaInBC;
+  avg_c1, avg_c2, avg_c3, avg_c4,TangVelocity, NormalVelocity, GilesBeta, c4js, dc4js, *delta_c, **R_Matrix, *deltaprim, **R_c_inv,**R_c, alphaIn_BC,
+	P_Total, T_Total, *FlowDir, Enthalpy_BC, Entropy_BC, *R, *c_avg,*dcjs, Beta_inf2, c2js_Re;
   int j;
   unsigned long nVert;
   
@@ -9213,18 +9206,25 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   deltaprim = new su2double[nVar];
   cj = new su2double[nVar];
   R_Matrix= new su2double*[nVar];
+  R_c= new su2double*[nVar-1];
   R_c_inv= new su2double*[nVar-1];
+  R = new su2double[nVar-1];
+  c_avg = new su2double[nVar];
+  dcjs = new su2double[nVar];
+
   for (iVar = 0; iVar < nVar; iVar++)
   {
     R_Matrix[iVar] = new su2double[nVar];
+    c_avg[iVar]    =  0.0;
+    dcjs[iVar]     =  0.0;
   }
   for (iVar = 0; iVar < nVar-1; iVar++)
   {
+    R_c[iVar] = new su2double[nVar-1];
     R_c_inv[iVar] = new su2double[nVar-1];
   }
-  
+
 	complex<su2double> I, c2ks, c2js, Beta_inf;
-	su2double c2js_Re, dc2js;
 	I = complex<su2double>(0.0,1.0);
   
 //  Mixing_Process(geometry, solver_container,  config, val_marker);
@@ -9238,9 +9238,40 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   	kend = geometry->GetnFreqSpan(val_marker, iSpan);
 
   	conv_numerics->GetRMatrix(AverageSoundSpeed[val_marker][iSpan], AverageDensity[val_marker][iSpan], R_Matrix);
-  	//if(config->GetMarker_All_TurboPerformanceFlag(val_marker) == INFLOW){
-  		ComputeResJacobianNRBC(val_marker, iSpan, 1.0, R_c_inv);
-  	//}
+
+  	if(config->GetMarker_All_TurboPerformanceFlag(val_marker) == INFLOW){
+
+  		/*--- Retrieve the specified total conditions for this inlet. ---*/
+  		P_Total  = config->GetNRBC_Var1(Marker_Tag);
+			T_Total  = config->GetNRBC_Var2(Marker_Tag);
+			FlowDir = config->GetNRBC_FlowDir(Marker_Tag);
+			alphaIn_BC = atan(FlowDir[1]/FlowDir[0]);
+
+      /*--- Non-dim. the inputs---*/
+      P_Total /= config->GetPressure_Ref();
+      T_Total /= config->GetTemperature_Ref();
+
+      /* --- Computes the total state --- */
+      FluidModel->SetTDState_PT(P_Total, T_Total);
+      Enthalpy_BC = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+      Entropy_BC = FluidModel->GetEntropy();
+
+      /* --- Computes the inverse matrix R_c --- */
+  		ComputeResJacobianNRBC(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan], AverageNormalVelocity[val_marker][iSpan], AverageTangVelocity[val_marker][iSpan], alphaIn_BC, R_c, R_c_inv);
+  		if (nDim == 2){
+  			R[0] = AverageEntropy[val_marker][iSpan] - Entropy_BC;
+  			R[1] = AverageTangVelocity[val_marker][iSpan] - tan(alphaIn_BC)*AverageNormalVelocity[val_marker][iSpan];
+  			R[2] = AverageEnthalpy[val_marker][iSpan] + 0.5*AvgMach*AvgMach*cc - Enthalpy_BC;
+  		}
+  		/* --- Compute the avg component  c_avg = R_c^-1 * R --- */
+  		for (iVar = 0; iVar < nVar-1; iVar++){
+  			c_avg[iVar] = 0.0;
+  			for (jVar = 0; jVar < nVar-1; jVar++){
+  				c_avg[iVar] += R_c_inv[iVar][jVar]*R[jVar];
+  		  }
+  		}
+
+  	}
 
   
   	/*--- Loop over all the vertices on this boundary marker ---*/
@@ -9288,7 +9319,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 			Pressure_i = FluidModel->GetPressure();
 			Enthalpy_i = Energy_i + Pressure_i/Density_i;
-
+			Entropy_i  = FluidModel->GetEntropy();
 			SoundSpeed_i = FluidModel->GetSoundSpeed();
 
 			Kappa_i = FluidModel->GetdPde_rho() / Density_i;
@@ -9316,28 +9347,44 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 				case TOTAL_CONDITIONS_PT:
 
-					if (AvgMach < 0.999){
-						if (AverageTangVelocity[val_marker][iSpan] >= 0.0){
-							Beta_inf= I*sqrt(1.0  - pow(AvgMach,2));
-						}else{
-							Beta_inf= -I*sqrt(1.0 - pow(AvgMach,2));
-						}
-						c2js 	= complex<su2double>(0.0,0.0);
-						j			 = geometry->turbovertex[val_marker][iSpan][iVertex]->GetGlobalVertexIndex();
-						for(k=1; k < kend+1; k++){
-							jk_nVert = j*k/su2double(nVert);
-							c2ks = -CkInflow[val_marker][iSpan][k-1]*(Beta_inf + AverageTangMach[val_marker][iSpan])/( 1.0 + AverageNormalMach[val_marker][iSpan]);
-							c2js += c2ks*exp(I*PI_NUMBER*2.0*jk_nVert);
-						}
-						c2js_Re = 2.0*c2js.real();
-						dc2js		= c2js_Re - cj[1];
-					}else{
-						if (AverageTangVelocity[val_marker][iSpan] >= 0.0){
-							Beta_inf= -sqrt(pow(AvgMach,2)- 1.0);
-						}else{
-							Beta_inf= sqrt(pow(AvgMach,2)-1.0);
-						}
-					}
+//					if (AvgMach < 0.999){
+//						if (AverageTangVelocity[val_marker][iSpan] >= 0.0){
+//							Beta_inf= I*sqrt(1.0  - pow(AvgMach,2));
+//						}else{
+//							Beta_inf= -I*sqrt(1.0 - pow(AvgMach,2));
+//						}
+//						c2js 	= complex<su2double>(0.0,0.0);
+//						j			 = geometry->turbovertex[val_marker][iSpan][iVertex]->GetGlobalVertexIndex();
+//						for(k=1; k < kend+1; k++){
+//							jk_nVert = j*k/su2double(nVert);
+//							c2ks = -CkInflow[val_marker][iSpan][k-1]*(Beta_inf + AverageTangMach[val_marker][iSpan])/( 1.0 + AverageNormalMach[val_marker][iSpan]);
+//							c2js += c2ks*exp(I*PI_NUMBER*2.0*jk_nVert);
+//						}
+//						c2js_Re = 2.0*c2js.real();
+//						dcjs[1]		= c2js_Re - cj[1];
+//					}else{
+//						if (AverageTangVelocity[val_marker][iSpan] >= 0.0){
+//							Beta_inf2= -sqrt(pow(AvgMach,2)- 1.0);
+//						}else{
+//							Beta_inf2= sqrt(pow(AvgMach,2)-1.0);
+//						}
+//						c2js_Re = -cj[3]*(Beta_inf2 + AverageTangMach[val_marker][iSpan])/( 1.0 + AverageNormalMach[val_marker][iSpan]);
+//						dcjs[1]		= c2js_Re - cj[1];
+//					}
+//
+//
+//					/*--- compute local change for first and third charchteristic ---*/
+//					ComputeResJacobianNRBC(Pressure_i, Density_i, turboVelocity[0], turboVelocity[1], atan(turboVelocity[1]/turboVelocity[0]), R_c, R_c_inv);
+//					R[0] = Entropy_i  - AverageEntropy[val_marker][iSpan];
+//					R[2] = Enthalpy_i - AverageEnthalpy[val_marker][iSpan] + 0.5*AvgMach*AvgMach*cc;
+//					dcjs[2] = ((R_c[2][0]*R_c[0][1]/R_c[0][0] - R_c[2][1])*dcjs[1] + (R_c[2][0]/R_c[0][0]*R[0] - R[2]))/(R_c[2][2] - R_c[2][0]*R_c[0][2]/R_c[0][0]);
+//					dcjs[0] = - (R_c[0][1]*dcjs[1] + R_c[0][2]*dcjs[2] + R[0])/R_c[0][0];
+
+					/* --- Impose Inlet BC  --- */
+					delta_c[0] = 1.0/nVert *(c_avg[0] + dcjs[0]);
+					delta_c[1] = 1.0/nVert *(c_avg[1] + dcjs[1]);
+					delta_c[2] = 1.0/nVert *(c_avg[2] + dcjs[2]);
+					delta_c[3] = cj[3];
 					break;
 
 
@@ -9476,7 +9523,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 					turboVelocity[0] = AverageNormalVelocity[val_marker][iSpan] - sigma*deltaprim[1];
 					turboVelocity[1] = AverageTangVelocity[val_marker][iSpan] - sigma*deltaprim[2];
 					break;
-				case MIXING_OUT: case STATIC_PRESSURE:
+				case MIXING_OUT: case STATIC_PRESSURE: case TOTAL_CONDITIONS_PT:
 					turboVelocity[0] = AverageNormalVelocity[val_marker][iSpan] + sigma*deltaprim[1];
 					turboVelocity[1] = AverageTangVelocity[val_marker][iSpan] + sigma*deltaprim[2];
 					break;
@@ -9697,10 +9744,15 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   for (iVar = 0; iVar < nVar-1; iVar++)
    {
      delete [] R_c_inv[iVar];
+     delete [] R_c[iVar];
    }
 
   delete [] R_Matrix;
+  delete [] R_c;
   delete [] R_c_inv;
+  delete [] R;
+  delete [] c_avg;
+  delete [] dcjs;
   
   
 }
