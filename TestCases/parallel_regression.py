@@ -114,6 +114,17 @@ def main():
     cylinder.tol       = 0.00001
     test_list.append(cylinder)
 
+    # Laminar cylinder (low Mach correction)
+    cylinder_lowmach           = TestCase('cylinder_lowmach')
+    cylinder_lowmach.cfg_dir   = "navierstokes/cylinder"
+    cylinder_lowmach.cfg_file  = "cylinder_lowmach.cfg"
+    cylinder_lowmach.test_iter = 25
+    cylinder_lowmach.test_vals = [-6.846659, -1.384550, -1.207461, 75.974174] #last 4 columns
+    cylinder_lowmach.su2_exec  = "parallel_computation.py -f"
+    cylinder_lowmach.timeout   = 1600
+    cylinder_lowmach.tol       = 0.00001
+    test_list.append(cylinder_lowmach)
+
     ##########################
     ### Compressible RANS  ###
     ##########################
@@ -420,6 +431,43 @@ def main():
     edge_PPR.timeout   = 1600
     edge_PPR.tol       = 0.00001
     test_list.append(edge_PPR)
+
+    ##########################
+    ### FEA - FSI          ###
+    ##########################   
+
+    # Static beam, 3d
+    statbeam3d           = TestCase('statbeam3d')
+    statbeam3d.cfg_dir   = "fea_fsi/StatBeam_3d"
+    statbeam3d.cfg_file  = "configBeam_3d.cfg"
+    statbeam3d.test_iter = 0
+    statbeam3d.test_vals = [-8.644911, -8.280115, -8.204380, 6.4095e+04] #last 4 columns
+    statbeam3d.su2_exec  = "parallel_computation_fsi.py -f"
+    statbeam3d.timeout   = 1600
+    statbeam3d.tol       = 0.00001
+    test_list.append(statbeam3d)
+
+    # Dynamic beam, 2d
+    dynbeam2d           = TestCase('dynbeam2d')
+    dynbeam2d.cfg_dir   = "fea_fsi/DynBeam_2d"
+    dynbeam2d.cfg_file  = "configBeam_2d.cfg"
+    dynbeam2d.test_iter = 6
+    dynbeam2d.test_vals = [-9.420641, -5.365871, -12.430382, 6.5210e+04] #last 4 columns
+    dynbeam2d.su2_exec  = "parallel_computation_fsi.py -f"
+    dynbeam2d.timeout   = 1600
+    dynbeam2d.tol       = 0.00001
+    test_list.append(dynbeam2d)
+
+    # FSI, 2d
+    fsi2d           = TestCase('fsi2d')
+    fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
+    fsi2d.cfg_file  = "configFSI_2D.cfg"
+    fsi2d.test_iter = 4
+    fsi2d.test_vals = [2, 0.500000, -7.779707,  -1.141608] #last 4 columns
+    fsi2d.su2_exec  = "parallel_computation_fsi.py -f"
+    fsi2d.timeout   = 1600
+    fsi2d.tol       = 0.00001
+    test_list.append(fsi2d)        
 
     ######################################
     ### RUN TESTS                      ###
