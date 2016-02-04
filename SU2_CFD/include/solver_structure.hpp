@@ -3403,7 +3403,7 @@ public:
 	 * \param[in] alphaInBC  - angle input of the BC.
 	 * \param[out] R_c       - Jacobian of the residuals with respect to the characteristic variables.
 	 */
-	void ComputeResJacobianNRBC(unsigned short val_marker, unsigned short iSpan, su2double alphaInBC, su2double **R_c);
+	void ComputeResJacobianNRBC(su2double pressure, su2double density, su2double vn, su2double vt, su2double alphaInBC, su2double **R_c, su2double **R_c_inv);
 
 
 	/*!
