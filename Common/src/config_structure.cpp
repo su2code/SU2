@@ -3489,7 +3489,19 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     if(Kind_Solver == FEM_EULER || Kind_Solver == FEM_NAVIER_STOKES || Kind_Solver == FEM_RANS) {
       if(Kind_FEM_Flow == DG) {
         cout << "Discontinuous Galerkin Finite element solver" << endl;
+
+        switch( Riemann_Solver_FEM ) {
+          case ROE:           cout << "Roe (with entropy fix) solver for inviscid fluxes over the faces" << endl; break;
+          case LAX_FRIEDRICH: cout << "Lax-Friedrich solver for inviscid fluxes over the faces" << endl; break;
+          case AUSM:          cout << "AUSM solver inviscid fluxes over the faces" << endl; break;
+          case AUSMPWPLUS:    cout << "AUSMPW+ solver inviscid fluxes over the faces" << endl; break;
+          case HLLC:          cout << "HLLC solver inviscid fluxes over the faces" << endl; break;
+          case VAN_LEER:      cout << "Van Leer solver inviscid fluxes over the faces" << endl; break;
+        }
       }
+
+      cout << "Quadrature factor for straight elements: " << Quadrature_Factor_Straight << endl;
+      cout << "Quadrature factor for curved elements: "   << Quadrature_Factor_Curved << endl;
     }
 
     cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;
