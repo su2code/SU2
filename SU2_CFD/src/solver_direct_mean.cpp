@@ -9066,50 +9066,94 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **sol
 }
 
 void CEulerSolver::ComputeResJacobianNRBC(unsigned short val_marker, unsigned short iSpan, su2double alphaInBC, su2double **R_c_inv){
- su2double rhoc, cc, vt, vn, **R_c;
- su2double dhdrho_P, dhdP_rho, dsdrho_P,dsdP_rho;
- unsigned short iVar;
+	su2double rhoc, cc, vt, vn, **R_c, **test, det;
+	su2double dhdrho_P, dhdP_rho, dsdrho_P,dsdP_rho;
+	unsigned short iVar, jVar, kVar;
 
- R_c= new su2double*[nVar-1];
- for (iVar = 0; iVar < nVar-1; iVar++)
- {
-	 R_c[iVar] = new su2double[nVar-1];
- }
+	R_c= new su2double*[nVar-1];
+	test= new su2double*[nVar-1];
+	for (iVar = 0; iVar < nVar-1; iVar++)
+	{
+		R_c[iVar] = new su2double[nVar-1];
+		test[iVar] = new su2double[nVar-1];
+	}
 
- cc   = AverageSoundSpeed[val_marker][iSpan]*AverageSoundSpeed[val_marker][iSpan];
- rhoc = AverageSoundSpeed[val_marker][iSpan]*AverageDensity[val_marker][iSpan];
- vn   = AverageNormalVelocity[val_marker][iSpan];
- vt   = AverageTangVelocity[val_marker][iSpan];
+	cc   = AverageSoundSpeed[val_marker][iSpan]*AverageSoundSpeed[val_marker][iSpan];
+	rhoc = AverageSoundSpeed[val_marker][iSpan]*AverageDensity[val_marker][iSpan];
+	vn   = AverageNormalVelocity[val_marker][iSpan];
+	vt   = AverageTangVelocity[val_marker][iSpan];
 
- FluidModel->ComputeDerivativeNRBC_Prho(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan]);
+	FluidModel->ComputeDerivativeNRBC_Prho(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan]);
 
- dhdrho_P  = FluidModel->Getdhdrho_P();
- dhdP_rho  = FluidModel->GetdhdP_rho();
- dsdrho_P  = FluidModel->Getdsdrho_P();
- dsdP_rho  = FluidModel->GetdsdP_rho();
+	dhdrho_P  = FluidModel->Getdhdrho_P();
+	dhdP_rho  = FluidModel->GetdhdP_rho();
+	dsdrho_P  = FluidModel->Getdsdrho_P();
+	dsdP_rho  = FluidModel->GetdsdP_rho();
 
- if (nDim == 2){
+	if (nDim == 2){
 
-	 R_c[0][0] = -1/cc*dsdrho_P;
-	 R_c[0][1] = 0.0;
-	 R_c[0][2] = 0.5/cc*dsdrho_P + 0.5*dsdP_rho;
+		R_c[0][0] = -1/cc*dsdrho_P;										//a11
+		R_c[0][1] = 0.0;																//a12
+		R_c[0][2] = 0.5/cc*dsdrho_P + 0.5*dsdP_rho;    //a13
 
-	 R_c[1][0] = 0.0;
-	 R_c[1][1] = 1/rhoc;
-	 R_c[1][2] = -0.5/rhoc*tan(alphaInBC);
+		R_c[1][0] = 0.0;																//a21
+		R_c[1][1] = 1/rhoc;														//a22
+		R_c[1][2] = -0.5/rhoc*tan(alphaInBC);          //a23
 
-	 R_c[2][0] = -1/cc*dhdrho_P;
-	 R_c[2][1] = vt/rhoc;
-	 R_c[2][2] = 0.5/cc*dhdrho_P + 0.5*vn/rhoc + 0.5*dhdP_rho;
-
- }
+		R_c[2][0] = -1/cc*dhdrho_P;                                //a31
+		R_c[2][1] = vt/rhoc;                                       //a32
+		R_c[2][2] = 0.5/cc*dhdrho_P + 0.5*vn/rhoc + 0.5*dhdP_rho;  //a33
 
 
- for (iVar = 0; iVar < nVar-1; iVar++)
+		det = R_c[0][0]*R_c[1][1]*R_c[2][2] - R_c[0][0]*R_c[2][1]*R_c[1][2] -  R_c[2][0]*R_c[1][1]*R_c[0][2];
+
+		R_c_inv[0][0]  = R_c[1][1]*R_c[2][2] - R_c[1][2]*R_c[2][1];
+		R_c_inv[0][0] /= det;
+		R_c_inv[0][1]  = R_c[0][2]*R_c[2][1];
+		R_c_inv[0][1] /= det;
+		R_c_inv[0][2]  = -R_c[0][2]*R_c[1][1];
+		R_c_inv[0][2] /= det;
+
+		R_c_inv[1][0]  = R_c[1][2]*R_c[2][0];
+		R_c_inv[1][0] /= det;
+		R_c_inv[1][1]  = R_c[0][0]*R_c[2][2] - R_c[0][2]*R_c[2][0];
+		R_c_inv[1][1] /= det;
+		R_c_inv[1][2]  = -R_c[0][0]*R_c[1][2];
+		R_c_inv[1][2] /= det;
+
+		R_c_inv[2][0]  = -R_c[1][1]*R_c[2][0];
+		R_c_inv[2][0] /= det;
+		R_c_inv[2][1]  = -R_c[0][0]*R_c[2][1];
+		R_c_inv[2][1] /= det;
+		R_c_inv[2][2]  = R_c[0][0]*R_c[1][1];
+		R_c_inv[2][2] /= det;
+
+	}
+
+	// check inversion
+//	for(iVar=0; iVar < nVar-1; iVar++){
+//		for(jVar=0; jVar < nVar-1; jVar++){
+//			test[iVar][jVar]= 0.0;
+//		}
+//	}
+//
+//
+//	for(iVar=0; iVar < nVar-1; iVar++){
+//		for(jVar=0; jVar < nVar-1; jVar++){
+//			for(kVar=0; kVar < nVar-1; kVar++){
+//				test[iVar][jVar] += R_c_inv[kVar][jVar]*R_c[iVar][kVar];
+//			}
+//			cout << test[iVar][jVar] << " i " << iVar << " j "<< jVar << endl;
+//		}
+//	}
+
+	for (iVar = 0; iVar < nVar-1; iVar++)
 	{
 		delete [] R_c[iVar];
+		delete [] test[iVar];
 	}
-  delete [] R_c;
+	delete [] R_c;
+	delete [] test;
 
 }
 
@@ -9161,7 +9205,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   /*--- new declarations ---*/
   
   su2double  deltaDensity, deltaPressure, AvgMach, deltaTangVelocity, deltaNormalVelocity, cc,rhoc,c1j,c2j,c3j,c4j,jk_nVert, *cj,
-  avg_c1, avg_c2, avg_c3, avg_c4,TangVelocity, NormalVelocity, GilesBeta, c4js, dc4js, *delta_c, **R_Matrix, *deltaprim, **R_c, alphaInBC;
+  avg_c1, avg_c2, avg_c3, avg_c4,TangVelocity, NormalVelocity, GilesBeta, c4js, dc4js, *delta_c, **R_Matrix, *deltaprim, **R_c_inv, alphaInBC;
   int j;
   unsigned long nVert;
   
@@ -9169,14 +9213,14 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   deltaprim = new su2double[nVar];
   cj = new su2double[nVar];
   R_Matrix= new su2double*[nVar];
-  R_c= new su2double*[nVar-1];
+  R_c_inv= new su2double*[nVar-1];
   for (iVar = 0; iVar < nVar; iVar++)
   {
     R_Matrix[iVar] = new su2double[nVar];
   }
   for (iVar = 0; iVar < nVar-1; iVar++)
   {
-    R_c[iVar] = new su2double[nVar-1];
+    R_c_inv[iVar] = new su2double[nVar-1];
   }
   
 	complex<su2double> I, c2ks, c2js, Beta_inf;
@@ -9194,9 +9238,9 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   	kend = geometry->GetnFreqSpan(val_marker, iSpan);
 
   	conv_numerics->GetRMatrix(AverageSoundSpeed[val_marker][iSpan], AverageDensity[val_marker][iSpan], R_Matrix);
-  	if(config->GetMarker_All_TurboPerformanceFlag(val_marker) == INFLOW){
-  		ComputeResJacobianNRBC(val_marker, iSpan, alphaInBC, R_c);
-  	}
+  	//if(config->GetMarker_All_TurboPerformanceFlag(val_marker) == INFLOW){
+  		ComputeResJacobianNRBC(val_marker, iSpan, 1.0, R_c_inv);
+  	//}
 
   
   	/*--- Loop over all the vertices on this boundary marker ---*/
@@ -9652,11 +9696,11 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   }
   for (iVar = 0; iVar < nVar-1; iVar++)
    {
-     delete [] R_c[iVar];
+     delete [] R_c_inv[iVar];
    }
 
   delete [] R_Matrix;
-  delete [] R_c;
+  delete [] R_c_inv;
   
   
 }
