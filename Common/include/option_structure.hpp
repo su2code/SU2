@@ -505,19 +505,21 @@ enum ENUM_UPWIND {
   NO_UPWIND = 0,              /*!< \brief No upwind scheme is used. */
   ROE = 1,                    /*!< \brief Roe's upwind numerical method. */
   SCALAR_UPWIND = 2,          /*!< \brief Scalar upwind numerical method. */
-  AUSM = 3,                   /*!< \brief AUSM numerical method. */
-  HLLC = 4,                   /*!< \brief HLLC numerical method. */
-  SW = 5,                     /*!< \brief Steger-Warming method. */
-  MSW = 6,                    /*!< \brief Modified Steger-Warming method. */
-  TURKEL = 7,                 /*!< \brief Roe-Turkel's upwind numerical method. */
-  AUSMPWPLUS = 8,             /*!< \brief AUSMPW+ numerical method. */
-  CUSP = 9,                   /*!< \brief Convective upwind and split pressure numerical method. */
-  VAN_LEER = 10,              /*!< \brief Van Leer method. */
-  CONVECTIVE_TEMPLATE = 11    /*!< \brief Template for new numerical method . */
+  LAX_FRIEDRICH = 3,          /*!< \brief Lax-Friedrich numerical method. */
+  AUSM = 4,                   /*!< \brief AUSM numerical method. */
+  HLLC = 5,                   /*!< \brief HLLC numerical method. */
+  SW = 6,                     /*!< \brief Steger-Warming method. */
+  MSW = 7,                    /*!< \brief Modified Steger-Warming method. */
+  TURKEL = 8,                 /*!< \brief Roe-Turkel's upwind numerical method. */
+  AUSMPWPLUS = 9,             /*!< \brief AUSMPW+ numerical method. */
+  CUSP = 10,                  /*!< \brief Convective upwind and split pressure numerical method. */
+  VAN_LEER = 11,              /*!< \brief Van Leer method. */
+  CONVECTIVE_TEMPLATE = 12    /*!< \brief Template for new numerical method . */
 };
 static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIND>
 ("NONE", NO_UPWIND)
 ("ROE", ROE)
+("LAX-FRIEDRICH", LAX_FRIEDRICH)
 ("TURKEL_PREC", TURKEL)
 ("AUSM", AUSM)
 ("AUSMPW+", AUSMPWPLUS)
