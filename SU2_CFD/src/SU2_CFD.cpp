@@ -396,7 +396,7 @@ int main(int argc, char *argv[]) {
     switch (config_container[ZONE_0]->GetKind_Solver()) {
       case EULER: case NAVIER_STOKES: case RANS:
         StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
-      case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS:
+      case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
         StopCalc = integration_container[ZONE_0][FEM_FLOW_SOL]->GetConvergence(); break;
       case WAVE_EQUATION:
         StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;

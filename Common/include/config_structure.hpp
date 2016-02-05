@@ -374,9 +374,10 @@ private:
 	SpatialOrder_AdjTurb,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjLevelSet;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
-  unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
-  unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
-	Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
+  unsigned short Kind_Turb_Model,			/*!< \brief Turbulent model definition. */
+  Kind_Trans_Model,			              /*!< \brief Transition model definition. */
+  Kind_SGS_Model,                   /*!< \brief LES SubGrid Scale model definition. */
+ 	Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;     /*!< \brief Kind of inlet boundary treatment. */
 	su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
@@ -2880,6 +2881,12 @@ public:
 	 * \return Kind of the transion model.
 	 */
 	unsigned short GetKind_Trans_Model(void);
+
+  /*!
+  * \brief Get the kind of the subgrid scale model.
+  * \return Kind of the subgrid scale model.
+  */
+ unsigned short GetKind_SGS_Model(void);
 
 	/*!
 	 * \brief Get the kind of adaptation technique.

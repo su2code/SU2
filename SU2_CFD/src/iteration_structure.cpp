@@ -1488,8 +1488,11 @@ void CFEMFlowIteration::Iterate(COutput *output,
   
   if (config_container[val_iZone]->GetKind_Solver() == FEM_RANS)
     config_container[val_iZone]->SetGlobalParam(FEM_RANS, RUNTIME_FLOW_SYS, ExtIter);
+
+  if (config_container[val_iZone]->GetKind_Solver() == FEM_LES)
+    config_container[val_iZone]->SetGlobalParam(FEM_LES, RUNTIME_FLOW_SYS, ExtIter);
   
-  /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
+  /*--- Solve the Euler, Navier-Stokes, RANS or LES equations (one iteration) ---*/
   
   integration_container[val_iZone][FEM_FLOW_SOL]->MultiGrid_Iteration(geometry_container,
                                                                        solver_container,
