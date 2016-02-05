@@ -181,6 +181,7 @@ enum ENUM_SOLVER {
   FEM_EULER = 38,							/*!< \brief Definition of the finite element Euler's solver. */
   FEM_NAVIER_STOKES = 39,					/*!< \brief Definition of the finite element Navier-Stokes' solver. */
   FEM_RANS = 40,								/*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  FEM_LES = 41,       /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
   POISSON_EQUATION = 4,       			/*!< \brief Definition of the poisson potential solver. */
   WAVE_EQUATION = 10,					/*!< \brief Definition of the wave solver. */
   HEAT_EQUATION = 29,					/*!< \brief Definition of the heat solver. */
@@ -203,6 +204,7 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("FEM_EULER", FEM_EULER)
 ("FEM_NAVIER_STOKES", FEM_NAVIER_STOKES)
 ("FEM_RANS", FEM_RANS)
+("FEM_LES", FEM_LES)
 ("POISSON_EQUATION", POISSON_EQUATION)
 ("ADJ_EULER", ADJ_EULER)
 ("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
@@ -595,6 +597,21 @@ enum ENUM_TRANS_MODEL {
 static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, ENUM_TRANS_MODEL>
 ("NONE", NO_TRANS_MODEL)
 ("LM", LM);
+
+/*!
+ * \brief types of subgrid scale models
+ */
+enum ENUM_SGS_MODEL {
+  NO_SGS_MODEL = 0, /*!< \brief No subgrid scale model. */
+  IMPLICIT_LES = 1, /*!< \brief Implicit LES, i.e. no explicit SGS model. */
+  SMAGORINSKY  = 2, /*!< \brief Smagorinsky SGS model. */
+  WALE         = 3  /*!< \brief Wall-Adapting Local Eddy-viscosity SGS model. */
+};
+static const map<string, ENUM_SGS_MODEL> SGS_Model_Map = CCreateMap<string, ENUM_SGS_MODEL>
+("NONE",         NO_SGS_MODEL)
+("IMPLICIT_LES", IMPLICIT_LES)
+("SMAGORINSKY",  SMAGORINSKY)
+("WALE",         WALE);
 
 /*!
  * \brief type of time integration schemes

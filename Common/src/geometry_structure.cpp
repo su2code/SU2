@@ -1287,29 +1287,50 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   string val_mesh_filename  = config->GetMesh_FileName();
   unsigned short val_format = config->GetMesh_FileFormat();
 
+  /*--- Determine whether or not a FEM discretization is used ---*/
+
+  const bool fem_solver = ((config->GetKind_Solver() == FEM_EULER)         ||
+                           (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
+                           (config->GetKind_Solver() == FEM_RANS)          ||
+                           (config->GetKind_Solver() == FEM_LES));
+
   /*--- Initialize counters for local/global points & elements ---*/
   
   if (rank == MASTER_NODE)
     cout << endl <<"---------------------- Read Grid File Information -----------------------" << endl;
-  
-  switch (val_format) {
-    case SU2:
-      Read_SU2_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
-      LocaNodes = local_node;
-      break;
-    case CGNS:
-      Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
-      LocaNodes = local_node;
-      break;
-    default:
-      if (rank == MASTER_NODE) cout << "Unrecognized mesh format specified!" << endl;
+
+  if( fem_solver ) {
+
+    cout << "Reading of the FEM grid not implemented yet" << endl;
+
 #ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE);
 #else
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
 #endif
-      break;
+
+  }
+  else {
+    switch (val_format) {
+      case SU2:
+        Read_SU2_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
+        LocaNodes = local_node;
+        break;
+      case CGNS:
+        Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
+        LocaNodes = local_node;
+        break;
+      default:
+        if (rank == MASTER_NODE) cout << "Unrecognized mesh format specified!" << endl;
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+        break;
+    }
   }
 
   /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
