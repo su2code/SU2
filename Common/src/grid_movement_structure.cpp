@@ -79,7 +79,13 @@ void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) 
 			if (fabs(new_coord) < EPS*EPS) new_coord = 0.0;
 			geometry->node[iPoint]->SetCoord(iDim, new_coord);
 		}
-  
+
+  /* --- LinSysSol contains the non-transformed displacements in the periodic halo cells.
+   * Hence we still need a communication of the transformed coordinates, otherwise periodicity
+   * is not maintained. ---*/
+
+  geometry->Set_MPI_Coord(config);
+
 }
 
 void CVolumetricMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config) {
@@ -1760,20 +1766,21 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   
   VarIncrement = 1.0/((su2double)config->GetGridDef_Nonlinear_Iter());
 	
-	/*--- As initialization, set to zero displacements of all the surfaces except the symmetry
-	 plane and the receive boundaries. ---*/
-	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-		if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) )
-        && (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE)) {
-			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-				for (iDim = 0; iDim < nDim; iDim++) {
-					total_index = iPoint*nDim + iDim;
-					LinSysRes[total_index] = 0.0;
-					LinSysSol[total_index] = 0.0;
+  /*--- As initialization, set to zero displacements of all the surfaces except the symmetry
+   plane, the receive boundaries and periodic boundaries. ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
+         (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          total_index = iPoint*nDim + iDim;
+          LinSysRes[total_index] = 0.0;
+          LinSysSol[total_index] = 0.0;
           StiffMatrix.DeleteValsRowi(total_index);
-				}
-			}
+        }
+      }
     }
   }
 
