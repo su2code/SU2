@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 
 	char config_file_name[MAX_STRING_SIZE], *cstr;
-	ofstream Gradient_file, Jacobian_file;
+  ofstream Gradient_file;
 	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
 
@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
   geometry_container[ZONE_0]->SetPoint_Connectivity();
-  
+
   /*--- Check the orientation before computing geometrical quantities ---*/
   
   if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
@@ -162,6 +162,9 @@ int main(int argc, char *argv[]) {
 
     if (rank == MASTER_NODE) cout << "Setting mesh sensitivity." << endl;
     mesh_movement->SetVolume_Deformation(geometry_container[ZONE_0], config_container[ZONE_0], false, true);
+
+    COutput *output = new COutput();
+    output->SetSensitivity_Files(geometry_container, config_container, nZone);
   }
   
 	/*--- Definition of the Class for surface deformation ---*/
@@ -181,47 +184,19 @@ int main(int argc, char *argv[]) {
 		cstr = new char [config_container[ZONE_0]->GetObjFunc_Grad_FileName().size()+1];
 		strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str());
 		Gradient_file.open(cstr, ios::out);
-    
-//    /*--- Write an additional file with the geometric Jacobian ---*/
-//    /*--- WARNING: This is only for serial calculations!!! ---*/
-//    /*--- WARNING: We should generalize this... ---*/
-//    if (size == SINGLE_NODE) {
-//      Jacobian_file.open("geo_jacobian.csv", ios::out);
-//      Jacobian_file.precision(15);
-//      
-//      /*--- Write the CSV file header ---*/
-//      Comma = false;
-//      for (iMarker = 0; iMarker < config_container[ZONE_0]->GetnMarker_All(); iMarker++) {
-//        if (config_container[ZONE_0]->GetMarker_All_DV(iMarker) == YES) {
-//          for (iVertex = 0; iVertex < geometry_container[ZONE_0]->nVertex[iMarker]; iVertex++) {
-//            iPoint = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
-//            if (!Comma) { Jacobian_file << "\t\"DesignVariable\""; Comma = true;}
-//            Jacobian_file  << ", " << "\t\"" << iPoint << "\"";
-//          }
-//        }
-//      }
-//      Jacobian_file << endl;
-//    }
-
 	}
 
   /*--- For the discrete projection method we use AD to compute the derivatives
    *  while the continuous projection uses finite differences ---*/
   
   if (config_container[ZONE_0]->GetDiscrete_Adjoint()){
-
-    SetProjection_Discrete(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
-
+    SetProjection_AD(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
   }else{
-
-    SetProjection_Continuous(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
-
+    SetProjection_FD(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
   }
+
 	if (rank == MASTER_NODE)
 		Gradient_file.close();
-
-  if (size == SINGLE_NODE)
-    Jacobian_file.close();
 
     /*--- Synchronization point after a single solver iteration. Compute the
      wall clock time required. ---*/
@@ -255,7 +230,7 @@ int main(int argc, char *argv[]) {
 
 }
 
-void SetProjection_Continuous(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file){
+void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file){
 
   unsigned short iDV, nDV, iFFDBox, nDV_Value, iMarker, iDim;
   unsigned long iVertex, iPoint;
@@ -287,7 +262,7 @@ void SetProjection_Continuous(CGeometry *geometry, CConfig *config, CSurfaceMove
   for (iDV = 0; iDV  < nDV; iDV++){
     nDV_Value = config->GetnDV_Value(iDV);
     if (nDV_Value != 1){
-      cout << "The continuous projection currently only supports a fixed direction of movement for FFD points." << endl;
+      cout << "The projection using finite differences currently only supports a fixed direction of movement for FFD points." << endl;
       exit(EXIT_FAILURE);
     }
     Gradient[iDV] = new su2double[nDV_Value];
@@ -295,7 +270,7 @@ void SetProjection_Continuous(CGeometry *geometry, CConfig *config, CSurfaceMove
 
   /*--- Continuous adjoint gradient computation ---*/
   if (rank == MASTER_NODE)
-    cout << "Evaluate functional gradient using the continuous adjoint strategy." << endl;
+    cout << "Evaluate functional gradient using Finite Differences." << endl;
 
   for (iDV = 0; iDV < nDV; iDV++) {
 
@@ -408,7 +383,7 @@ void SetProjection_Continuous(CGeometry *geometry, CConfig *config, CSurfaceMove
 
       else if (config->GetDesign_Variable(iDV) == CUSTOM){
 	if (rank == MASTER_NODE)
-        cout <<"Custom design variable will be used in external script" << endl;
+       	  cout <<"Custom design variable will be used in external script" << endl;
       }
       /*--- Design variable not implement ---*/
 
@@ -475,10 +450,10 @@ void SetProjection_Continuous(CGeometry *geometry, CConfig *config, CSurfaceMove
 }
 
 
-void SetProjection_Discrete(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file){
+void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file){
 
-  su2double DV_Value, *VarCoord, Sensitivity, **Gradient;
-  unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value, my_Gradient;
+  su2double DV_Value, *VarCoord, Sensitivity, **Gradient, my_Gradient;
+  unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value;
   unsigned long iVertex, nVertex, iPoint;
 
   int rank = MASTER_NODE;
@@ -504,7 +479,7 @@ void SetProjection_Discrete(CGeometry *geometry, CConfig *config, CSurfaceMoveme
   /*--- Discrete adjoint gradient computation ---*/
 
   if (rank == MASTER_NODE)
-    cout << "Evaluate functional gradient using the discrete adjoint strategy." << endl;
+    cout << "Evaluate functional gradient using Algorithmic Differentiation." << endl;
 
   /*--- Start recording of operations ---*/
 
@@ -574,21 +549,21 @@ void SetProjection_Discrete(CGeometry *geometry, CConfig *config, CSurfaceMoveme
 #endif
     }
   }
-    
+
   /*--- Print gradients to screen and file ---*/
-    
+
   OutputGradient(Gradient, config, Gradient_file);
 
   for (iDV = 0; iDV  < nDV; iDV++){
     delete [] Gradient[iDV];
   }
   delete [] Gradient;
-    }
-    
+}
+
 void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_file){
-    
+
   unsigned short nDV, iDV, iDV_Value, nDV_Value;
-	
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
