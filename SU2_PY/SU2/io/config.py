@@ -446,14 +446,18 @@ def read_config(filename):
             # unitary objective definition
             if case('OPT_OBJECTIVE'):
                 # remove white space
-                this_value = ''.join(this_value.split())                
-                # split by scale
-                this_value = this_value.split("*")
-                this_name  = this_value[0]
-                this_scale = 1.0
-                if len(this_value) > 1:
-                    this_scale = float( this_value[1] )
-                this_def = { this_name : {'SCALE':this_scale} }
+                this_value = ''.join(this_value.split())
+                #split by + 
+                this_def={}
+                this_value = this_value.split("+")
+                for  this_obj in this_value:       
+                    # split by scale
+                    this_obj = this_obj.split("*")
+                    this_name  = this_obj[0]
+                    this_scale = 1.0
+                    if len(this_value) > 1:
+                        this_scale = float( this_obj[1] )
+                    this_def.update({ this_name : {'SCALE':this_scale} })
                 # save to output dictionary
                 data_dict[this_param] = this_def
                 break
@@ -703,7 +707,6 @@ def write_config(filename,param_dict):
                 break
             
             if case("OPT_OBJECTIVE"):
-                assert len(new_value.keys())==1 , 'only one OPT_OBJECTIVE is currently supported'
                 i_name = 0
                 for name,value in new_value.iteritems():
                     if i_name>0: output_file.write("; ")

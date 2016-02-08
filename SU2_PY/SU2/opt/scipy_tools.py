@@ -96,8 +96,11 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     
     # scale accuracy
     obj = project.config['OPT_OBJECTIVE']
-    obj_scale = obj[obj.keys()[0]]['SCALE']
-    accu = accu*obj_scale
+    obj_scale = []
+    for this_obj in obj.keys():
+        obj_scale = obj_scale + [obj[obj.keys()[0]]['SCALE']]
+    
+    accu = accu*obj_scale[0]
 
     # scale accuracy
     eps = 1.0e-04
@@ -141,9 +144,10 @@ def obj_f(x,project):
         scipy_slsqp: minimize f(x), float
     """
         
-    obj = project.obj_f(x)
-    
-    obj = obj[0]
+    obj_list = project.obj_f(x)
+    obj = 0
+    for this_obj in obj_list:
+        obj = obj+this_obj
     
     return obj
 
@@ -157,9 +161,15 @@ def obj_df(x,project):
         scipy_slsqp: df(x), ndarray[dim]
     """    
     
-    dobj = project.obj_df(x)
+    dobj_list = project.obj_df(x)
+    dobj=[0.0]*len(dobj_list[0])
     
-    dobj = array( dobj[0] )
+    for this_dobj in dobj_list:
+        idv=0
+        for this_dv_dobj in this_dobj:
+            dobj[idv] = dobj[idv]+this_dv_dobj;
+            idv+=1
+    dobj = array( dobj )
     
     return dobj
 
