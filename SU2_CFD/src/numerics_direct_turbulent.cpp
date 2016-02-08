@@ -215,7 +215,6 @@ void CAvgGrad_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2double **J
   AD::StartPreacc();
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(V_i, nDim+7);   AD::SetPreaccIn(V_j, nDim+7);
   AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim); AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
 
   if (incompressible) {
@@ -322,7 +321,6 @@ void CAvgGradCorrected_TurbSA::ComputeResidual(su2double *val_residual, su2doubl
   AD::StartPreacc();
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(V_i, nDim+7);   AD::SetPreaccIn(V_j, nDim+7);
   AD::SetPreaccIn(TurbVar_i, nVar); AD::SetPreaccIn(TurbVar_j, nVar);
   AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim); AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
 
@@ -424,7 +422,6 @@ void CAvgGradCorrected_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2d
   AD::StartPreacc();
   AD::SetPreaccIn(Coord_i, nDim);  AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
   AD::SetPreaccIn(TurbVar_i, nVar); AD::SetPreaccIn(TurbVar_j, nVar);
   AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim); AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
 
@@ -921,7 +918,6 @@ void CAvgGrad_TurbSST::ComputeResidual(su2double *val_residual, su2double **Jaco
   AD::StartPreacc();
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
   AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim); AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
 
@@ -1038,7 +1034,6 @@ void CAvgGradCorrected_TurbSST::ComputeResidual(su2double *val_residual, su2doub
   AD::StartPreacc();
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
   AD::SetPreaccIn(TurbVar_Grad_i, nVar, nDim); AD::SetPreaccIn(TurbVar_Grad_j, nVar, nDim);
   AD::SetPreaccIn(TurbVar_i, nVar); AD::SetPreaccIn(TurbVar_j ,nVar);
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
