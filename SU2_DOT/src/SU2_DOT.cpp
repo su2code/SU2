@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
 
 	char config_file_name[MAX_STRING_SIZE], *cstr;
-	ofstream Gradient_file, Jacobian_file;
+  ofstream Gradient_file;
 	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
 
@@ -184,47 +184,19 @@ int main(int argc, char *argv[]) {
 		cstr = new char [config_container[ZONE_0]->GetObjFunc_Grad_FileName().size()+1];
 		strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str());
 		Gradient_file.open(cstr, ios::out);
-    
-//    /*--- Write an additional file with the geometric Jacobian ---*/
-//    /*--- WARNING: This is only for serial calculations!!! ---*/
-//    /*--- WARNING: We should generalize this... ---*/
-//    if (size == SINGLE_NODE) {
-//      Jacobian_file.open("geo_jacobian.csv", ios::out);
-//      Jacobian_file.precision(15);
-//      
-//      /*--- Write the CSV file header ---*/
-//      Comma = false;
-//      for (iMarker = 0; iMarker < config_container[ZONE_0]->GetnMarker_All(); iMarker++) {
-//        if (config_container[ZONE_0]->GetMarker_All_DV(iMarker) == YES) {
-//          for (iVertex = 0; iVertex < geometry_container[ZONE_0]->nVertex[iMarker]; iVertex++) {
-//            iPoint = geometry_container[ZONE_0]->vertex[iMarker][iVertex]->GetNode();
-//            if (!Comma) { Jacobian_file << "\t\"DesignVariable\""; Comma = true;}
-//            Jacobian_file  << ", " << "\t\"" << iPoint << "\"";
-//          }
-//        }
-//      }
-//      Jacobian_file << endl;
-//    }
-
 	}
 
   /*--- For the discrete projection method we use AD to compute the derivatives
    *  while the continuous projection uses finite differences ---*/
   
   if (config_container[ZONE_0]->GetDiscrete_Adjoint()){
-
-    SetProjection_Discrete(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
-
+    SetProjection_AD(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
   }else{
-
-    SetProjection_Continuous(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
-
+    SetProjection_FD(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
   }
+
 	if (rank == MASTER_NODE)
 		Gradient_file.close();
-
-  if (size == SINGLE_NODE)
-    Jacobian_file.close();
 
     /*--- Synchronization point after a single solver iteration. Compute the
      wall clock time required. ---*/
@@ -258,7 +230,7 @@ int main(int argc, char *argv[]) {
 
 }
 
-void SetProjection_Continuous(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file){
+void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file){
 
   unsigned short iDV, nDV, iFFDBox, nDV_Value, iMarker, iDim;
   unsigned long iVertex, iPoint;
@@ -290,19 +262,19 @@ void SetProjection_Continuous(CGeometry *geometry, CConfig *config, CSurfaceMove
   for (iDV = 0; iDV  < nDV; iDV++){
     nDV_Value = config->GetnDV_Value(iDV);
     if (nDV_Value != 1){
-      cout << "The continuous projection currently only supports a fixed direction of movement for FFD points." << endl;
+      cout << "The projection using finite differences currently only supports a fixed direction of movement for FFD points." << endl;
       exit(EXIT_FAILURE);
     }
     Gradient[iDV] = new su2double[nDV_Value];
-    }
+  }
 
   /*--- Continuous adjoint gradient computation ---*/
   if (rank == MASTER_NODE)
-    cout << "Evaluate functional gradient using the continuous adjoint strategy." << endl;
+    cout << "Evaluate functional gradient using Finite Differences." << endl;
 
   for (iDV = 0; iDV < nDV; iDV++) {
 
-      /*--- Free Form deformation based ---*/
+    /*--- Free Form deformation based ---*/
 
     if ((config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
         (config->GetDesign_Variable(iDV) == FFD_CAMBER_2D) ||
@@ -314,43 +286,43 @@ void SetProjection_Continuous(CGeometry *geometry, CConfig *config, CSurfaceMove
         (config->GetDesign_Variable(iDV) == FFD_CAMBER) ||
         (config->GetDesign_Variable(iDV) == FFD_THICKNESS) ) {
 
-        /*--- Read the FFD information in the first iteration ---*/
+      /*--- Read the FFD information in the first iteration ---*/
 
-        if (iDV == 0) {
+      if (iDV == 0) {
 
-          if (rank == MASTER_NODE)
-            cout << "Read the FFD information from mesh file." << endl;
+        if (rank == MASTER_NODE)
+          cout << "Read the FFD information from mesh file." << endl;
 
-          /*--- Read the FFD information from the grid file ---*/
+        /*--- Read the FFD information from the grid file ---*/
 
         surface_movement->ReadFFDInfo(geometry, config, FFDBox, config->GetMesh_FileName());
 
-          /*--- If the FFDBox was not defined in the input file ---*/
-          if (!surface_movement->GetFFDBoxDefinition() && (rank == MASTER_NODE)) {
-            cout << "The input grid doesn't have the entire FFD information!" << endl;
-            cout << "Press any key to exit..." << endl;
-            cin.get();
-          }
-
-          for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
-
-            if (rank == MASTER_NODE)
-              cout << "Check the FFD box intersections with the solid surfaces." << endl;
-
-          surface_movement->CheckFFDIntersections(geometry, config, FFDBox[iFFDBox], iFFDBox);
-
-          }
-
-          if (rank == MASTER_NODE)
-            cout <<"-------------------------------------------------------------------------" << endl;
-
+        /*--- If the FFDBox was not defined in the input file ---*/
+        if (!surface_movement->GetFFDBoxDefinition() && (rank == MASTER_NODE)) {
+          cout << "The input grid doesn't have the entire FFD information!" << endl;
+          cout << "Press any key to exit..." << endl;
+          cin.get();
         }
-
-        /*--- Apply the control point change ---*/
 
         for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
 
-          /*--- Reset FFD box ---*/
+          if (rank == MASTER_NODE)
+            cout << "Check the FFD box intersections with the solid surfaces." << endl;
+
+          surface_movement->CheckFFDIntersections(geometry, config, FFDBox[iFFDBox], iFFDBox);
+
+        }
+
+        if (rank == MASTER_NODE)
+          cout <<"-------------------------------------------------------------------------" << endl;
+
+      }
+
+      /*--- Apply the control point change ---*/
+
+      for (iFFDBox = 0; iFFDBox < surface_movement->GetnFFDBox(); iFFDBox++) {
+
+        /*--- Reset FFD box ---*/
 
         switch (config->GetDesign_Variable(iDV) ) {
           case FFD_CONTROL_POINT_2D : surface_movement->SetFFDCPChange_2D(geometry, config, FFDBox[iFFDBox], iDV, true); break;
@@ -363,70 +335,70 @@ void SetProjection_Continuous(CGeometry *geometry, CConfig *config, CSurfaceMove
           case FFD_CAMBER :           surface_movement->SetFFDCamber(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_THICKNESS :        surface_movement->SetFFDThickness(geometry, config, FFDBox[iFFDBox], iDV, true); break;
           case FFD_CONTROL_SURFACE :  surface_movement->SetFFDControl_Surface(geometry, config, FFDBox[iFFDBox], iDV, true); break;
-          }
+        }
 
-          /*--- Recompute cartesian coordinates using the new control points position ---*/
+        /*--- Recompute cartesian coordinates using the new control points position ---*/
 
         surface_movement->SetCartesianCoord(geometry, config, FFDBox[iFFDBox], iFFDBox);
 
-        }
-
       }
 
-      /*--- Hicks Henne design variable ---*/
+    }
+
+    /*--- Hicks Henne design variable ---*/
 
     else if (config->GetDesign_Variable(iDV) == HICKS_HENNE) {
       surface_movement->SetHicksHenne(geometry, config, iDV, true);
-      }
+    }
 
-      /*--- Displacement design variable ---*/
+    /*--- Displacement design variable ---*/
 
     else if (config->GetDesign_Variable(iDV) == TRANSLATION) {
       surface_movement->SetTranslation(geometry, config, iDV, true);
-      }
+    }
 
-      /*--- Scale design variable ---*/
+    /*--- Scale design variable ---*/
 
     else if (config->GetDesign_Variable(iDV) == SCALE) {
       surface_movement->SetScale(geometry, config, iDV, true);
-      }
+    }
 
-      /*--- Rotation design variable ---*/
+    /*--- Rotation design variable ---*/
 
     else if (config->GetDesign_Variable(iDV) == ROTATION) {
       surface_movement->SetRotation(geometry, config, iDV, true);
-      }
+    }
 
-      /*--- NACA_4Digits design variable ---*/
+    /*--- NACA_4Digits design variable ---*/
 
     else if (config->GetDesign_Variable(iDV) == NACA_4DIGITS) {
       surface_movement->SetNACA_4Digits(geometry, config);
-      }
+    }
 
-      /*--- Parabolic design variable ---*/
+    /*--- Parabolic design variable ---*/
 
     else if (config->GetDesign_Variable(iDV) == PARABOLIC) {
       surface_movement->SetParabolic(geometry, config);
-      }
+    }
 
-      else if (config->GetDesign_Variable(iDV) == CUSTOM){
-	if (rank == MASTER_NODE)
-       	  cout <<"Custom design variable will be used in external script" << endl;
-      }
-      /*--- Design variable not implement ---*/
+    else if (config->GetDesign_Variable(iDV) == CUSTOM){
+      if (rank == MASTER_NODE)
+        cout <<"Custom design variable will be used in external script" << endl;
+    }
+    /*--- Design variable not implement ---*/
 
-      else { cout << "Design Variable not implement yet" << endl; }
+    else { cout << "Design Variable not implement yet" << endl; }
 
-      /*--- Load the delta change in the design variable (finite difference step). ---*/
+    /*--- Load the delta change in the design variable (finite difference step). ---*/
 
     delta_eps = config->GetDV_Value(iDV);
     my_Gradient = 0.0; Gradient[iDV][0] = 0.0;
-      
-      /*--- Reset update points ---*/
+
+    /*--- Reset update points ---*/
 
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-        UpdatePoint[iPoint] = true;
-      
+      UpdatePoint[iPoint] = true;
+
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_DV(iMarker) == YES) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -438,25 +410,25 @@ void SetProjection_Continuous(CGeometry *geometry, CConfig *config, CSurfaceMove
             VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
             Sensitivity = geometry->vertex[iMarker][iVertex]->GetAuxVar();
 
-              dS = 0.0;
+            dS = 0.0;
             for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-                dS += Normal[iDim]*Normal[iDim];
-                deps[iDim] = VarCoord[iDim] / delta_eps;
-              }
-              dS = sqrt(dS);
-
-              dalpha_deps = 0.0;
-            for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-                dalpha[iDim] = Normal[iDim] / dS;
-                dalpha_deps -= dalpha[iDim]*deps[iDim];
-              }
-
-              my_Gradient += Sensitivity*dalpha_deps;
-              UpdatePoint[iPoint] = false;
+              dS += Normal[iDim]*Normal[iDim];
+              deps[iDim] = VarCoord[iDim] / delta_eps;
             }
+            dS = sqrt(dS);
+
+            dalpha_deps = 0.0;
+            for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
+              dalpha[iDim] = Normal[iDim] / dS;
+              dalpha_deps -= dalpha[iDim]*deps[iDim];
+            }
+
+            my_Gradient += Sensitivity*dalpha_deps;
+            UpdatePoint[iPoint] = false;
           }
         }
       }
+    }
 
 #ifdef HAVE_MPI
     SU2_MPI::Allreduce(&my_Gradient, &Gradient[iDV][0], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -471,14 +443,14 @@ void SetProjection_Continuous(CGeometry *geometry, CConfig *config, CSurfaceMove
 
   for (iDV = 0; iDV  < nDV; iDV++){
     delete [] Gradient[iDV];
-        }
+  }
   delete [] Gradient;
   delete [] UpdatePoint;
 
 }
 
 
-void SetProjection_Discrete(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file){
+void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file){
 
   su2double DV_Value, *VarCoord, Sensitivity, **Gradient, my_Gradient;
   unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value;
@@ -502,12 +474,12 @@ void SetProjection_Discrete(CGeometry *geometry, CConfig *config, CSurfaceMoveme
   for (iDV = 0; iDV  < nDV; iDV++){
     nDV_Value =  config->GetnDV_Value(iDV);
     Gradient[iDV] = new su2double[nDV_Value];
-      }
+  }
 
   /*--- Discrete adjoint gradient computation ---*/
 
   if (rank == MASTER_NODE)
-    cout << "Evaluate functional gradient using the discrete adjoint strategy." << endl;
+    cout << "Evaluate functional gradient using Algorithmic Differentiation." << endl;
 
   /*--- Start recording of operations ---*/
 
@@ -535,16 +507,16 @@ void SetProjection_Discrete(CGeometry *geometry, CConfig *config, CSurfaceMoveme
   }
   
   /*--- Call the surface deformation routine ---*/
-	
+
   surface_movement->SetSurface_Deformation(geometry, config);
-	
+
   /*--- Stop the recording --- */
-    
+
   AD::StopRecording();
-    
+
   /*--- Initialize the derivatives of the output of the surface deformation routine
    * with the discrete adjoints from the CFD solution ---*/
-    
+
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config->GetMarker_All_DV(iMarker) == YES) {
       nVertex = geometry->nVertex[iMarker];
@@ -559,11 +531,11 @@ void SetProjection_Discrete(CGeometry *geometry, CConfig *config, CSurfaceMoveme
       }
     }
   }
-    
+
   /*--- Compute derivatives and extract gradient ---*/
-    
+
   AD::ComputeAdjoint();
-	
+
   for (iDV = 0; iDV  < nDV; iDV++){
     nDV_Value =  config->GetnDV_Value(iDV);
     
@@ -571,7 +543,7 @@ void SetProjection_Discrete(CGeometry *geometry, CConfig *config, CSurfaceMoveme
       DV_Value = config->GetDV_Value(iDV, iDV_Value);
       my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&my_Gradient, &Gradient[iDV][iDV_Value], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(&my_Gradient, &Gradient[iDV][iDV_Value], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
       Gradient[iDV][iDV_Value] = my_Gradient;
 #endif
@@ -596,9 +568,9 @@ void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_fi
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 #endif
-    
+
   nDV = config->GetnDV();
-	
+
   /*--- Loop through all design variables and their gradients ---*/
 
   for (iDV = 0; iDV  < nDV; iDV++){
