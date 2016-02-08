@@ -76,6 +76,9 @@ void CCentJST_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   AD::SetPreaccIn(Sensor_i);    AD::SetPreaccIn(Sensor_j);
   AD::SetPreaccIn(Lambda_i);    AD::SetPreaccIn(Lambda_j);
   AD::SetPreaccIn(Und_Lapl_i, nVar); AD::SetPreaccIn(Und_Lapl_j, nVar);
+  if (grid_movement){
+    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+  }
 
   /*--- Pressure, density, enthalpy, energy, and velocity at points i and j ---*/
   
@@ -1798,7 +1801,9 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
   
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
-
+  if (grid_movement){
+  AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+  }
   /*--- Face area (norm or the normal vector) ---*/
   
   Area = 0.0;
@@ -2076,6 +2081,12 @@ CUpwGeneralRoe_Flow::~CUpwGeneralRoe_Flow(void) {
 
 void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
+  AD::StartPreacc();
+  AD::SetPreaccIn(V_i, nDim+4); AD::SetPreaccIn(V_j, nDim+4); AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(S_i, 2); AD::SetPreaccIn(S_j, 2);
+  if (grid_movement)
+    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+
   su2double U_i[5] = {0.0,0.0,0.0,0.0,0.0}, U_j[5] = {0.0,0.0,0.0,0.0,0.0};
 
 	/*--- Face area (norm or the normal vector) ---*/
@@ -2308,6 +2319,8 @@ void CUpwGeneralRoe_Flow::ComputeResidual(su2double *val_residual, su2double **v
 
 	}
 
+  AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();
 }
 
 

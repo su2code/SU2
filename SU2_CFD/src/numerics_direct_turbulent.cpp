@@ -59,6 +59,9 @@ void CUpwSca_TurbSA::ComputeResidual(su2double *val_residual, su2double **val_Ja
   AD::SetPreaccIn(V_i, nDim+1); AD::SetPreaccIn(V_j, nDim+1);
   AD::SetPreaccIn(TurbVar_i[0]); AD::SetPreaccIn(TurbVar_j[0]);
   AD::SetPreaccIn(Normal, nDim);
+  if (grid_movement){
+    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+  }
   
   if (grid_movement) {
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -821,7 +824,9 @@ void CUpwSca_TurbSST::ComputeResidual(su2double *val_residual, su2double **val_J
   AD::SetPreaccIn(TurbVar_i,2);
   AD::SetPreaccIn(TurbVar_j,2);
   AD::SetPreaccIn(Normal, nDim);
-
+  if (grid_movement){
+    AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
+  }
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+2);
     AD::SetPreaccIn(V_j, nDim+2);
