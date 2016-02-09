@@ -9198,7 +9198,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   
   su2double  deltaDensity, deltaPressure, AvgMach, deltaTangVelocity, deltaNormalVelocity, cc,rhoc,c1j,c2j,c3j,c4j,jk_nVert, *cj,
   avg_c1, avg_c2, avg_c3, avg_c4,TangVelocity, NormalVelocity, GilesBeta, c4js, dc4js, *delta_c, **R_Matrix, *deltaprim, **R_c_inv,**R_c, alphaIn_BC,
-	P_Total, T_Total, *FlowDir, Enthalpy_BC, Entropy_BC, *R, *c_avg,*dcjs, Beta_inf2, c2js_Re;
+	P_Total, T_Total, *FlowDir, Enthalpy_BC, Entropy_BC, *R, *c_avg,*dcjs, Beta_inf2, c2js_Re, avgVel2;
   int j;
   unsigned long nVert;
   
@@ -9258,13 +9258,15 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
       /* --- Computes the inverse matrix R_c --- */
   		ComputeResJacobianNRBC(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan], AverageNormalVelocity[val_marker][iSpan], AverageTangVelocity[val_marker][iSpan], alphaIn_BC, R_c, R_c_inv);
+  		avgVel2 = 0.0;
+  		for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AverageVelocity[val_marker][iSpan][iDim]*AverageVelocity[val_marker][iSpan][iDim];
   		if (nDim == 2){
   			R[0] = -(AverageEntropy[val_marker][iSpan] - Entropy_BC);
   			R[1] = -(AverageTangVelocity[val_marker][iSpan] - tan(alphaIn_BC)*AverageNormalVelocity[val_marker][iSpan]);
-  			R[2] = -(AverageEnthalpy[val_marker][iSpan] + 0.5*AvgMach*AvgMach*cc - Enthalpy_BC);
-  			cout << "Avg Entropy "<< AverageEntropy[val_marker][iSpan] << "BC Entropy "<< Entropy_BC <<endl;
-  			cout << "tan(alphaIn_AVG) "<< AverageTangVelocity[val_marker][iSpan]/AverageNormalVelocity[val_marker][iSpan] << " tan(alphaIn_BC) "<< tan(alphaIn_BC) <<endl;
-  			cout << "Avg Enthalpy "<< AverageEnthalpy[val_marker][iSpan] + 0.5*AvgMach*AvgMach*cc << "BC Enthalpy"<< Enthalpy_BC <<endl;
+  			R[2] = -(AverageEnthalpy[val_marker][iSpan] + 0.5*avgVel2 - Enthalpy_BC);
+//  			cout << "Avg Entropy "<< AverageEntropy[val_marker][iSpan] << "BC Entropy "<< Entropy_BC <<endl;
+//  			cout << "tan(alphaIn_AVG) "<< AverageTangVelocity[val_marker][iSpan]/AverageNormalVelocity[val_marker][iSpan] << " tan(alphaIn_BC) "<< tan(alphaIn_BC) <<endl;
+//  			cout << "Avg Enthalpy "<< AverageEnthalpy[val_marker][iSpan] + 0.5*avgVel2 << "BC Enthalpy"<< Enthalpy_BC <<endl;
 
   		}
   		/* --- Compute the avg component  c_avg = R_c^-1 * R --- */
