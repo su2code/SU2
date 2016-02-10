@@ -6172,10 +6172,14 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   mesh_file.close();
   strcpy (cstr, val_mesh_filename.c_str());
   
-  /*--- Initialize the vector for the adjacency information (ParMETIS). ---*/
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
   
+  /*--- Initialize the vector for the adjacency information (ParMETIS). ---*/
   vector< vector<unsigned long> > adj_nodes(local_node, vector<unsigned long>(0));
 
+#endif
+#endif
   
   mesh_file.open(cstr, ios::in);
 
@@ -6267,9 +6271,16 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
                 elem_reqd = true;
+                
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+                /*--- Build adjacency assuming the VTK connectivity ---*/
+                
                 for (j=0; j<N_POINTS_TRIANGLE; j++) {
                   if (i != j) adj_nodes[local_index].push_back(vnodes_triangle[j]);
                 }
+#endif
+#endif
               }
             }
             
@@ -6312,11 +6323,14 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                 
                 elem_reqd = true;
                 
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
 
                 adj_nodes[local_index].push_back(vnodes_quad[(i+1)%4]);
                 adj_nodes[local_index].push_back(vnodes_quad[(i+3)%4]);
-                
+#endif
+#endif
               }
             }
             
@@ -6359,9 +6373,16 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
                 elem_reqd = true;
+                
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+                /*--- Build adjacency assuming the VTK connectivity ---*/
+                
                 for (j=0; j<N_POINTS_TETRAHEDRON; j++) {
                   if (i != j) adj_nodes[local_index].push_back(vnodes_tetra[j]);
                 }
+#endif
+#endif
               }
             }
             
@@ -6409,6 +6430,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                 
                 elem_reqd = true;
                 
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
                 
                 if (i < 4) {
@@ -6419,7 +6442,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                   adj_nodes[local_index].push_back(vnodes_hexa[(i-1)%4+4]);
                 }
                 adj_nodes[local_index].push_back(vnodes_hexa[(i+4)%8]);
-                
+#endif
+#endif
               }
             }
             
@@ -6469,6 +6493,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                 
                 elem_reqd = true;
                 
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
                 
                 if (i < 3) {
@@ -6479,7 +6505,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                   adj_nodes[local_index].push_back(vnodes_prism[(i-1)%3+3]);
                 }
                 adj_nodes[local_index].push_back(vnodes_prism[(i+3)%6]);
-                
+#endif
+#endif
               }
             }
             
@@ -6526,6 +6553,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                 
                 elem_reqd = true;
                 
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
                 
                 if (i < 4) {
@@ -6538,7 +6567,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                   adj_nodes[local_index].push_back(vnodes_pyramid[2]);
                   adj_nodes[local_index].push_back(vnodes_pyramid[3]);
                 }
-                
+#endif
+#endif
               }
             }
             
@@ -6637,11 +6667,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- Free temporary memory used to build the adjacency. ---*/
   
   adjac_vec.clear();
-  
-#endif
-#endif
-  
   adj_nodes.clear();
+  
+#endif
+#endif
+  
   
   /*--- For now, the boundary marker information is still read by the
    master node alone (and eventually distributed by the master as well).
