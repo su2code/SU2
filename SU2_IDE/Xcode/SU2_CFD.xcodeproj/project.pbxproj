@@ -326,6 +326,8 @@
 		E9D9CE951C62A272004119E9 /* transfer_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = transfer_structure.hpp; path = ../../SU2_CFD/include/transfer_structure.hpp; sourceTree = "<group>"; };
 		E9D9CE961C62A272004119E9 /* transfer_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = transfer_structure.inl; path = ../../SU2_CFD/include/transfer_structure.inl; sourceTree = "<group>"; };
 		E9D9CE971C62A2A7004119E9 /* interpolation_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = interpolation_structure.hpp; path = ../../Common/include/interpolation_structure.hpp; sourceTree = "<group>"; };
+		E9D9CE981C6563B3004119E9 /* parallel_regression_AD.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = parallel_regression_AD.py; sourceTree = "<group>"; };
+		E9D9CE991C6563B3004119E9 /* serial_regression_AD.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = serial_regression_AD.py; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -617,9 +619,11 @@
 				E91CACC71B8C110E00EE3FCC /* optimization_euler */,
 				E91CACD61B8C110E00EE3FCC /* optimization_rans */,
 				E91CACDF1B8C110E00EE3FCC /* parallel_regression.py */,
+				E9D9CE981C6563B3004119E9 /* parallel_regression_AD.py */,
 				E91CACE01B8C110E00EE3FCC /* rans */,
 				E91CACF21B8C110E00EE3FCC /* rotating */,
 				E91CACF71B8C110E00EE3FCC /* serial_regression.py */,
+				E9D9CE991C6563B3004119E9 /* serial_regression_AD.py */,
 				E91CACF81B8C110E00EE3FCC /* spectral_method */,
 				E91CACFA1B8C110E00EE3FCC /* TestCase.py */,
 				E91CACFE1B8C110E00EE3FCC /* unsteady */,
