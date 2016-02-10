@@ -602,6 +602,7 @@ private:
 	unsigned short nIterFSI;	/*!< \brief Number of maximum number of subiterations in a FSI problem. */
 	su2double AitkenStatRelax;			/*!< \brief Aitken's relaxation factor (if set as static) */
 	su2double AitkenDynMaxInit;			/*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
+	su2double AitkenDynMinInit;			/*!< \brief Aitken's minimum dynamic relaxation factor for the first iteration */
 	su2double Wave_Speed;			/*!< \brief Wave speed used in the wave solver. */
 	su2double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
 	su2double Cyclic_Pitch,          /*!< \brief Cyclic pitch for rotorcraft simulations. */
@@ -5308,6 +5309,12 @@ public:
 	 * \return Aitken's relaxation parameters.
 	 */
 	su2double GetAitkenDynMaxInit(void);
+
+	/*!
+	 * \brief Get Aitken's maximum relaxation parameter for dynamic relaxation cases and first iteration.
+	 * \return Aitken's relaxation parameters.
+	 */
+	su2double GetAitkenDynMinInit(void);
 
 
 	/*!

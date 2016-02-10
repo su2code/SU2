@@ -3268,7 +3268,9 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
     su2double delta_deltaU[3] = {0.0, 0.0, 0.0};
 	su2double CurrentTime=fea_config->GetCurrent_DynTime();
 	su2double Static_Time=fea_config->GetStatic_Time();
-	su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn;
+	su2double WAitkDyn_tn1, WAitkDyn_Max, WAitkDyn_Min, WAitkDyn;
+
+	unsigned short RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
 
 	int rank = MASTER_NODE;
 	#ifdef HAVE_MPI
@@ -3289,57 +3291,86 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 
 	if (CurrentTime > Static_Time) {
 
-		if (iFSIIter == 0){
+		if (RelaxMethod_FSI == NO_RELAXATION){
 
-			WAitkDyn_tn1 = GetWAitken_Dyn_tn1();
-			WAitkDyn_Max = fea_config->GetAitkenDynMaxInit();
-
-			WAitkDyn = min(WAitkDyn_tn1, WAitkDyn_Max);
-
-			/*--- Temporal fix, only for now ---*/
-			WAitkDyn = max(WAitkDyn, 0.1);
-
-			SetWAitken_Dyn(WAitkDyn);
 			if (writeHistFSI && (rank == MASTER_NODE)){
+
+				SetWAitken_Dyn(1.0);
+
 				historyFile_FSI << " " << endl ;
 				historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
 				historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
-				historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn ;
+				if (iFSIIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << 1.0 ;
+				else historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << 1.0 << "," ;
 			}
 
 		}
-		else{
-		    // To nPointDomain; we need to have communicated Solution, Solution_Old, Solution_Pred and Solution_Pred_Old beforehand
-			for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+		else if (RelaxMethod_FSI == FIXED_PARAMETER){
 
-				dispPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
-				dispPred_Old = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred_Old();
-				dispCalc = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
-				dispCalc_Old = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Old();
+			if (writeHistFSI && (rank == MASTER_NODE)){
 
-				for (iDim = 0; iDim < nDim; iDim++){
+				SetWAitken_Dyn(fea_config->GetAitkenStatRelax());
 
-					/*--- Compute the deltaU and deltaU_n+1 ---*/
-					deltaU[iDim] = dispCalc_Old[iDim] - dispPred_Old[iDim];
-					deltaU_p1[iDim] = dispCalc[iDim] - dispPred[iDim];
+				historyFile_FSI << " " << endl ;
+				historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
+				historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
+				if (iFSIIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() ;
+				else historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() << "," ;
+			}
 
-					/*--- Compute the difference ---*/
-					delta_deltaU[iDim] = deltaU_p1[iDim] - deltaU[iDim];
+		}
+		else if (RelaxMethod_FSI == AITKEN_DYNAMIC){
 
-					/*--- Add numerator and denominator ---*/
-					sbuf_numAitk += deltaU[iDim] * delta_deltaU[iDim];
-					sbuf_denAitk += delta_deltaU[iDim] * delta_deltaU[iDim];
+			if (iFSIIter == 0){
 
+				WAitkDyn_tn1 = GetWAitken_Dyn_tn1();
+				WAitkDyn_Max = fea_config->GetAitkenDynMaxInit();
+				WAitkDyn_Min = fea_config->GetAitkenDynMinInit();
+
+				WAitkDyn = min(WAitkDyn_tn1, WAitkDyn_Max);
+				WAitkDyn = max(WAitkDyn, WAitkDyn_Min);
+
+				SetWAitken_Dyn(WAitkDyn);
+				if (writeHistFSI && (rank == MASTER_NODE)){
+					historyFile_FSI << " " << endl ;
+					historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
+					historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
+					historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn ;
 				}
 
 			}
+			else{
+				// To nPointDomain; we need to communicate the values
+				for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+
+					dispPred = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred();
+					dispPred_Old = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Pred_Old();
+					dispCalc = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution();
+					dispCalc_Old = fea_solution[MESH_0][FEA_SOL]->node[iPoint]->GetSolution_Old();
+
+					for (iDim = 0; iDim < nDim; iDim++){
+
+						/*--- Compute the deltaU and deltaU_n+1 ---*/
+						deltaU[iDim] = dispCalc_Old[iDim] - dispPred_Old[iDim];
+						deltaU_p1[iDim] = dispCalc[iDim] - dispPred[iDim];
+
+						/*--- Compute the difference ---*/
+						delta_deltaU[iDim] = deltaU_p1[iDim] - deltaU[iDim];
+
+						/*--- Add numerator and denominator ---*/
+						sbuf_numAitk += deltaU[iDim] * delta_deltaU[iDim];
+						sbuf_denAitk += delta_deltaU[iDim] * delta_deltaU[iDim];
+
+					}
+
+				}
 
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&sbuf_numAitk, &rbuf_numAitk, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&sbuf_denAitk, &rbuf_denAitk, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+				SU2_MPI::Allreduce(&sbuf_numAitk, &rbuf_numAitk, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+				SU2_MPI::Allreduce(&sbuf_denAitk, &rbuf_denAitk, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
-    rbuf_numAitk = sbuf_numAitk;
-    rbuf_denAitk = sbuf_denAitk;
+				rbuf_numAitk = sbuf_numAitk;
+				rbuf_denAitk = sbuf_denAitk;
 #endif
 
 				WAitkDyn = GetWAitken_Dyn();
@@ -3359,6 +3390,11 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 					historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn << "," ;
 				}
 
+			}
+
+		}
+		else {
+			if (rank == MASTER_NODE) cout << "No relaxation method used. " << endl;
 		}
 
 	}
@@ -3394,7 +3430,6 @@ void CFEM_ElasticitySolver::SetAitken_Relaxation(CGeometry **fea_geometry,
 		}
 		else {
 			WAitken = 1.0;
-			cout << "No relaxation parameter used. " << endl;
 		}
 
 	    // To nPointDomain; we need to communicate the solutions (predicted, old and old predicted) after this routine

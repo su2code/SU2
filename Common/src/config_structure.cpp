@@ -1227,7 +1227,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Aitken's static relaxation factor */
   addDoubleOption("STAT_RELAX_PARAMETER", AitkenStatRelax, 0.4);
   /* DESCRIPTION: Aitken's dynamic maximum relaxation factor for the first iteration */
-  addDoubleOption("AITKEN_DYN_MAX_INITIAL", AitkenDynMaxInit, 0.4);
+  addDoubleOption("AITKEN_DYN_MAX_INITIAL", AitkenDynMaxInit, 0.5);
+  /* DESCRIPTION: Aitken's dynamic minimum relaxation factor for the first iteration */
+  addDoubleOption("AITKEN_DYN_MIN_INITIAL", AitkenDynMinInit, 0.5);
   /* DESCRIPTION: Type of gust */
   addEnumOption("BGS_RELAXATION", Kind_BGS_RelaxMethod, AitkenForm_Map, NO_RELAXATION);
 
