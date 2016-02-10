@@ -703,6 +703,8 @@ private:
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
+  bool Check_FSI_MPI;	 /*!< \brief Benchmark of FSI performance. */
+
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map
@@ -5291,6 +5293,12 @@ public:
    * \return the discrete adjoint indicator.
   */
   bool GetDiscrete_Adjoint(void);
+
+  /*!
+   * \brief Get the indicator whether we want to benchmark the MPI performance of FSI problems
+   * \return The value for checking
+  */
+  bool CheckFSI_MPI(void);
 
 	/*!
 	 * \brief Get the number of fluid subiterations roblems.
