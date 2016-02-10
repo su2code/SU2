@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.0.2 "Cardinal"
+#  \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -218,30 +218,7 @@ def get_headerMap():
                  "D(CFx)"          : "D_FORCE_X"               ,
                  "D(CFy)"          : "D_FORCE_Y"               ,
                  "D(CFz)"          : "D_FORCE_Z"               ,
-                 "D(CL/CD)"        : "D_EFFICIENCY"            ,
-                 "TotalEfficiency_0"       : "TOTAL_EFFICIENCY"       ,
-                 "TotalPressureLoss_0"     : "TOTAL_PRESSURE_LOSS"    ,
-                 "KineticEnergyLoss_0"     : "KINETIC_ENERGY_LOSS"    ,
-                 "TotalStaticEfficiency_0" : "TOTAL_STATIC_EFFICIENCY",
-                 "FlowAngleOut_0"          : "FLOW_ANGLE_OUT"         ,
-                 "FlowAngleIn_0"           : "FLOW_ANGLE_IN"          ,
-                 "MassFlowIn_0"            : "MASS_FLOW_IN"           ,
-                 "MassFlowOut_0"           : "MASS_FLOW_OUT"          ,
-                 "PressureRatio_0"         : "PRESSURE_RATIO"         ,
-                 "EnthalpyOut_0"           : "ENTHALPY_OUT"           ,
-                 "TotalEnthalpy_0"         : "TOTAL_ENTHALPY_OUT"     ,
-                 "D(TotalPressureLoss_0)"  : "D_TOTAL_PRESSURE_LOSS"  ,
-                 "D(TotalEfficiency_0)"       : "D_TOTAL_EFFICIENCY"       ,
-                 "D(TotalPressureLoss_0)"     : "D_TOTAL_PRESSURE_LOSS"    ,
-                 "D(KineticEnergyLoss_0)"     : "D_KINETIC_ENERGY_LOSS"    ,
-                 "D(TotalStaticEfficiency_0)" : "D_TOTAL_STATIC_EFFICIENCY",
-                 "D(FlowAngleOut_0)"          : "D_FLOW_ANGLE_OUT"         ,
-                 "D(FlowAngleIn_0)"           : "D_FLOW_ANGLE_IN"          ,
-                 "D(MassFlowIn_0)"            : "D_MASS_FLOW_IN"           ,
-                 "D(MassFlowOut_0)"           : "D_MASS_FLOW_OUT"          ,
-                 "D(PressureRatio_0)"         : "D_PRESSURE_RATIO"         ,
-                 "D(EnthalpyOut_0)"           : "D_ENTHALPY_OUT"           ,
-                 "D(TotalEnthalpy_0)"         : "D_TOTAL_ENTHALPY_OUT"     }
+                 "D(CL/CD)"        : "D_EFFICIENCY"}
     
     return map_dict
 
@@ -272,28 +249,13 @@ optnames_aero = [ "LIFT"                    ,
                   "AVG_OUTLET_DENSITY"      ,
                   "AVG_OUTLET_VELOCITY"     ,
                   "MASS_FLOW_RATE"          ,
-                  "OUTLET_CHAIN_RULE"       ,
+                  "OUTFLOW_GENERALIZED"     ,
                   "EQUIVALENT_AREA"         ,
                   "NEARFIELD_PRESSURE"      ,
                   "INVERSE_DESIGN_PRESSURE" ,
                   "INVERSE_DESIGN_HEATFLUX" ,
                   "TOTAL_HEATFLUX"          ,
                   "MAXIMUM_HEATFLUX"        ]
-
-# Turbo performance optimizer Function Names
-optnames_turbo = ["TOTAL_EFFICIENCY"        ,
-                  "TOTAL_PRESSURE_LOSS"     ,
-                  "KINETIC_ENERGY_LOSS"     ,
-                  "TOTAL_STATIC_EFFICIENCY" ,
-                  "EULERIAN_WORK"           ,
-                  "TOTAL_ENTHALPY_IN"       ,
-                  "ENTHALPY_OUT"            ,
-                  "FLOW_ANGLE_IN"           ,
-                  "FLOW_ANGLE_OUT"          ,
-                  "MASS_FLOW_IN"            ,
-                  "MASS_FLOW_OUT"           ,
-                  "PRESSURE_RATIO"         ]
-
 #: optnames_aero
 
 optnames_stab = [ "D_LIFT_D_ALPHA"               ,
@@ -371,19 +333,7 @@ grad_names_directdiff = ["D_LIFT"                  ,
                          "D_FORCE_X"               ,
                          "D_FORCE_Y"               ,
                          "D_FORCE_Z"               ,
-                         "D_EFFICIENCY"            ,
-                         "D_TOTAL_PRESSURE_LOSS"    ,
-                         "D_TOTAL_EFFICIENCY"       ,
-                         "D_TOTAL_PRESSURE_LOSS"    ,
-                         "D_KINETIC_ENERGY_LOSS"    ,
-                         "D_TOTAL_STATIC_EFFICIENCY",
-                         "D_FLOW_ANGLE_OUT"         ,
-                         "D_FLOW_ANGLE_IN"          ,
-                         "D_MASS_FLOW_IN"           ,
-                         "D_MASS_FLOW_OUT"          ,
-                         "D_PRESSURE_RATIO"         ,
-                         "D_ENTHALPY_OUT"           ,
-                         "D_TOTAL_ENTHALPY_OUT"     ]
+                         "D_EFFICIENCY"]
 
 grad_names_map = { "LIFT"      : "D_LIFT"           ,
                    "DRAG"      : "D_DRAG"           ,
@@ -394,19 +344,7 @@ grad_names_map = { "LIFT"      : "D_LIFT"           ,
                    "FORCE_X"   : "D_FORCE_X"     ,
                    "FORCE_Y"   : "D_FORCE_Y"     ,
                    "FORCE_Z"   : "D_FORCE_Z"     ,
-                   "EFFICIENCY" : "D_EFFICIENCY" ,
-                   "TOTAL_PRESSURE_LOSS"     : "D_TOTAL_PRESSURE_LOSS"    ,
-                   "TOTAL_EFFICIENCY"        : "D_TOTAL_EFFICIENCY"       ,
-                   "TOTAL_PRESSURE_LOSS"     : "D_TOTAL_PRESSURE_LOSS"    ,
-                   "KINETIC_ENERGY_LOSS"     : "D_KINETIC_ENERGY_LOSS"    ,
-                   "TOTAL_STATIC_EFFICIENCY" : "D_TOTAL_STATIC_EFFICIENCY",
-                   "FLOW_ANGLE_OUT"          : "D_FLOW_ANGLE_OUT"         ,
-                   "FLOW_ANGLE_IN"           : "D_FLOW_ANGLE_IN"          ,
-                   "MASS_FLOW_IN"            : "D_MASS_FLOW_IN"           ,
-                   "MASS_FLOW_OUT"           : "D_MASS_FLOW_OUT"          ,
-                   "PRESSURE_RATIO"          : "D_PRESSURE_RATIO"         ,
-                   "ENTHALPY_OUT"            : "D_ENTHALPY_OUT"           ,
-                   "TOTAL_ENTHALPY_OUT"      : "D_TOTAL_ENTHALPY_OUT"     }
+                   "EFFICIENCY" : "D_EFFICIENCY"}
 # -------------------------------------------------------------------
 #  Read Aerodynamic Function Values from History File
 # -------------------------------------------------------------------
@@ -425,7 +363,7 @@ def read_aerodynamics( History_filename , special_cases=[], final_avg=0 ):
     history_data = read_history(History_filename)
     
     # list of functions to pull
-    func_names = optnames_aero + grad_names_directdiff + optnames_turbo
+    func_names = optnames_aero + grad_names_directdiff
 
     # pull only these functions
     Func_Values = ordered_bunch()
@@ -597,6 +535,7 @@ def get_dvMap():
                15  : "FFD_CONTROL_POINT_2D"  ,
                16  : "FFD_CAMBER_2D"         ,
                17  : "FFD_THICKNESS_2D"      ,
+               19  : "CUSTOM"                ,
                101 : "MACH_NUMBER"           ,
                102 : "AOA"                    }
     
@@ -677,7 +616,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
             if key == "INV_DESIGN_HEATFLUX"     :
                 header.append(r',"Grad_HeatFlux_Diff"')
                 write_format.append(", %.10f")
-            if key =="OUTLET_CHAIN_RULE"    :
+            if key =="OUTFLOW_GENERALIZED"    :
                 header.append(r',"Grad_Chain_Rule"')
                 write_format.append(", %.10f")
 
@@ -732,6 +671,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         write_format.append(r', %s, %s, %s')
     elif kindID == "MACH_NUMBER"        : pass
     elif kindID == "AOA"                : pass
+    elif kindID == "CUSTOM"             : pass
     
     # otherwise...
     else: raise Exception('Unrecognized Design Variable Kind') 
@@ -798,7 +738,7 @@ def get_optFileFormat(plot_format,special_cases=None):
         if key == "INV_DESIGN_HEATFLUX"     :
             header_list.extend(["HeatFlux_Diff"])
             write_format.append(r', %.10f')
-        if key =="OUTLET_CHAIN_RULE"    :
+        if key =="OUTFLOW_GENERALIZED"    :
             header_list.exted(["Chain_Rule"])
             write_format.append([r", %.10f"])
 
@@ -854,7 +794,7 @@ def get_specialCases(config):
                           '1D_OUTPUT'                        ,
                           'INV_DESIGN_CP'                    ,
                           'INV_DESIGN_HEATFLUX'              ,
-                          'OUTLET_CHAIN_RULE'                ]
+                          'OUTFLOW_GENERALIZED'                ]
     
     special_cases = []
     for key in all_special_cases:
