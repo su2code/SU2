@@ -483,6 +483,49 @@ bool CGeometry::RayIntersectsTriangle(su2double orig[3], su2double dir[3],
   
 }
 
+bool CGeometry::SegmentIntersectsLine(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]){
+
+  su2double det, diff0_A, diff0_B, diff1_A, diff1_B, intersect[2];
+
+  diff0_A = point0[0] - point1[0];
+  diff1_A = point0[1] - point1[1];
+
+  diff0_B = vert0[0] - vert1[0];
+  diff1_B = vert0[1] - vert1[1];
+
+  det = (diff0_A)*(diff1_B) - (diff1_A)*(diff0_B);
+
+  if (det == 0) return false;
+
+  /*--- Compute point of intersection ---*/
+
+  intersect[0] = ((point0[0]*point1[1] - point0[1]*point1[0])*diff0_B
+                -(vert0[0]* vert1[1]  - vert0[1]* vert1[0])*diff0_A)/det;
+
+  intersect[1] =  ((point0[0]*point1[1] - point0[1]*point1[0])*diff1_B
+                  -(vert0[0]* vert1[1]  - vert0[1]* vert1[0])*diff1_A)/det;
+
+
+  /*--- Check that the point is between the two surface points ---*/
+
+  su2double dist0, dist1, length;
+
+  dist0 = (intersect[0] - point0[0])*(intersect[0] - point0[0])
+         +(intersect[1] - point0[1])*(intersect[1] - point0[1]);
+
+  dist1 = (intersect[0] - point1[0])*(intersect[0] - point1[0])
+         +(intersect[1] - point1[1])*(intersect[1] - point1[1]);
+
+  length = diff0_A*diff0_A
+          +diff1_A*diff1_A;
+
+  if ( (dist0 > length) || (dist1 > length) ){
+    return false;
+  }
+
+  return true;
+}
+
 bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[3],
                                           su2double vert0[3], su2double vert1[3], su2double vert2[3]) {
   
