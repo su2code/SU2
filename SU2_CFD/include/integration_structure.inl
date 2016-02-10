@@ -80,6 +80,10 @@ inline void CIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver **
 inline void CIntegration::Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
 											  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) { }
 
+inline void CIntegration::Structural_Iteration_FEM(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
+											  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) { }
+
+
 inline void CIntegration::SetPotential_Solver(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
                                               CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone) { }
                                               

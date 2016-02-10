@@ -10062,10 +10062,10 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
 #ifndef HAVE_MPI
   
   unsigned short iMarker, jMarker;
-  unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0;
+  unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0, pGlobalPoint = 0;
   su2double *Coord_i, *Coord_j, dist = 0.0, mindist, maxdist;
   
-  if (val_iZone == ZONE_0) cout << "Set zone boundary conditions (if any)." << endl;
+//  if (val_iZone == ZONE_0) cout << "Set zone boundary conditions (if any)." << endl;
   
   maxdist = 0.0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -10080,11 +10080,12 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
           Coord_j = geometry_donor->node[jPoint]->GetCoord();
           if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
           if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
-          if (dist < mindist) { mindist = dist; pPoint = jPoint; }
+//          if (dist < mindist) { mindist = dist; pPoint = jPoint; pGlobalPoint = node[jPoint]->GetGlobalIndex();}
+          if (dist < mindist) { mindist = dist; pPoint = jPoint; pGlobalPoint = geometry_donor->node[jPoint]->GetGlobalIndex();}
         }
       
       maxdist = max(maxdist, mindist);
-      vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE);
+      vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE, pGlobalPoint);
       
     }
   }
@@ -10092,7 +10093,7 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
 #else
   
   unsigned short iMarker, iDim;
-  unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint;
+  unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint, jGlobalPoint = 0, pGlobalPoint = 0;
   su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
   int iProcessor, pProcessor = 0;
   unsigned long nLocalVertex_Zone = 0, nGlobalVertex_Zone = 0, MaxLocalVertex_Zone = 0;
@@ -10104,7 +10105,7 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
   unsigned long *Buffer_Send_nVertex = new unsigned long [1];
   unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
   
-  if (val_iZone == ZONE_0) cout << "Set zone boundary conditions (if any)." << endl;
+//  if (val_iZone == ZONE_0 && rank == MASTER_NODE) cout << "Set zone boundary conditions (if any)." << endl;
   
   nLocalVertex_Zone = 0;
   for (iMarker = 0; iMarker < config_donor->GetnMarker_All(); iMarker++)
@@ -10123,15 +10124,19 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
   
   su2double *Buffer_Send_Coord = new su2double [MaxLocalVertex_Zone*nDim];
   unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_Zone];
+  unsigned long *Buffer_Send_GlobalPoint = new unsigned long [MaxLocalVertex_Zone];
   
   su2double *Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_Zone*nDim];
   unsigned long *Buffer_Receive_Point = new unsigned long [nProcessor*MaxLocalVertex_Zone];
+  unsigned long *Buffer_Receive_GlobalPoint = new unsigned long [nProcessor*MaxLocalVertex_Zone];
   
   unsigned long nBuffer_Coord = MaxLocalVertex_Zone*nDim;
   unsigned long nBuffer_Point = MaxLocalVertex_Zone;
   
+
   for (iVertex = 0; iVertex < MaxLocalVertex_Zone; iVertex++) {
     Buffer_Send_Point[iVertex] = 0;
+    Buffer_Send_GlobalPoint[iVertex] = 0;
     for (iDim = 0; iDim < nDim; iDim++)
       Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
   }
@@ -10143,6 +10148,7 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
       iPoint = geometry_donor->vertex[iMarker][iVertex]->GetNode();
       if (geometry_donor->node[iPoint]->GetDomain()) {
         Buffer_Send_Point[nLocalVertex_Zone] = iPoint;
+        Buffer_Send_GlobalPoint[nLocalVertex_Zone] = geometry_donor->node[iPoint]->GetGlobalIndex();
         for (iDim = 0; iDim < nDim; iDim++)
           Buffer_Send_Coord[nLocalVertex_Zone*nDim+iDim] = geometry_donor->node[iPoint]->GetCoord(iDim);
         nLocalVertex_Zone++;
@@ -10151,7 +10157,8 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
   
   SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
   SU2_MPI::Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  
+  SU2_MPI::Allgather(Buffer_Send_GlobalPoint, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalPoint, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+
   /*--- Compute the closest point to a Near-Field boundary point ---*/
   maxdist = 0.0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -10167,7 +10174,8 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
         for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
           for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
             jPoint = Buffer_Receive_Point[iProcessor*MaxLocalVertex_Zone+jVertex];
-            
+            jGlobalPoint = Buffer_Receive_GlobalPoint[iProcessor*MaxLocalVertex_Zone+jVertex];
+
             /*--- Compute the distance ---*/
             dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
               Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Zone+jVertex)*nDim+iDim];
@@ -10177,12 +10185,13 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
             if (((dist < mindist) && (iProcessor != rank)) ||
                 ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
               mindist = dist; pProcessor = iProcessor; pPoint = jPoint;
+              pGlobalPoint = jGlobalPoint;
             }
           }
         
         /*--- Store the value of the pair ---*/
         maxdist = max(maxdist, mindist);
-        vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor);
+        vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor, pGlobalPoint);
         
         
       }
@@ -10191,9 +10200,11 @@ void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CC
   
   delete[] Buffer_Send_Coord;
   delete[] Buffer_Send_Point;
+  delete[] Buffer_Send_GlobalPoint;
   
   delete[] Buffer_Receive_Coord;
   delete[] Buffer_Receive_Point;
+  delete[] Buffer_Receive_GlobalPoint;
   
   delete[] Buffer_Send_nVertex;
   delete[] Buffer_Receive_nVertex;
@@ -11477,7 +11488,7 @@ void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
     Coord_nM1 = node[iPoint]->GetCoord_n1();
     Coord_n   = node[iPoint]->GetCoord_n();
     Coord_nP1 = node[iPoint]->GetCoord();
-    
+
     /*--- Unsteady time step ---*/
     
     TimeStep = config->GetDelta_UnstTimeND();
@@ -11759,6 +11770,268 @@ void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
   
   delete [] newGridVel;
   
+}
+
+void CPhysicalGeometry::Set_MPI_OldCoord(CConfig *config) {
+
+  unsigned short iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
+
+  su2double *Buffer_Receive_Coord_n = NULL, *Buffer_Send_Coord_n = NULL, *Coord_n = NULL, *newCoord_n = NULL;
+
+  newCoord_n = new su2double[nDim];
+
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  MPI_Status status;
+#endif
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+
+#ifdef HAVE_MPI
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+
+      nVertexS = nVertex[MarkerS];  nVertexR = nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nDim;        nBufferR_Vector = nVertexR*nDim;
+
+      /*--- Allocate Receive and send buffers  ---*/
+
+      Buffer_Receive_Coord_n = new su2double [nBufferR_Vector];
+      Buffer_Send_Coord_n = new su2double[nBufferS_Vector];
+
+      /*--- Copy the coordinates that should be sended ---*/
+
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = vertex[MarkerS][iVertex]->GetNode();
+        Coord_n = node[iPoint]->GetCoord_n();
+        for (iDim = 0; iDim < nDim; iDim++)
+          Buffer_Send_Coord_n[iDim*nVertexS+iVertex] = Coord_n[iDim];
+      }
+
+#ifdef HAVE_MPI
+      /*--- Send/Receive information using Sendrecv ---*/
+      SU2_MPI::Sendrecv(Buffer_Send_Coord_n, nBufferS_Vector, MPI_DOUBLE, send_to,0,
+                   Buffer_Receive_Coord_n, nBufferR_Vector, MPI_DOUBLE, receive_from,0, MPI_COMM_WORLD, &status);
+#else
+
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iDim = 0; iDim < nDim; iDim++)
+          Buffer_Receive_Coord_n[iDim*nVertexR+iVertex] = Buffer_Send_Coord_n[iDim*nVertexR+iVertex];
+      }
+
+#endif
+
+      /*--- Deallocate send buffer ---*/
+
+      delete [] Buffer_Send_Coord_n;
+
+      /*--- Do the coordinate transformation ---*/
+
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+
+        /*--- Find point and its type of transformation ---*/
+
+        iPoint = vertex[MarkerR][iVertex]->GetNode();
+        iPeriodic_Index = vertex[MarkerR][iVertex]->GetRotation_Type();
+
+        /*--- Retrieve the supplied periodic information. ---*/
+
+        angles = config->GetPeriodicRotation(iPeriodic_Index);
+
+        /*--- Store angles separately for clarity. ---*/
+
+        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
+        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
+        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
+
+        /*--- Compute the rotation matrix. Note that the implicit
+         ordering is rotation about the x-axis, y-axis,
+         then z-axis. Note that this is the transpose of the matrix
+         used during the preprocessing stage. ---*/
+
+        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
+
+        /*--- Copy coordinates before performing transformation. ---*/
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          newCoord_n[iDim] = Buffer_Receive_Coord_n[iDim*nVertexR+iVertex];
+
+        /*--- Rotate the coordinates. ---*/
+
+        if (nDim == 2) {
+          newCoord_n[0] = (rotMatrix[0][0]*Buffer_Receive_Coord_n[0*nVertexR+iVertex] +
+                         rotMatrix[0][1]*Buffer_Receive_Coord_n[1*nVertexR+iVertex]);
+          newCoord_n[1] = (rotMatrix[1][0]*Buffer_Receive_Coord_n[0*nVertexR+iVertex] +
+                         rotMatrix[1][1]*Buffer_Receive_Coord_n[1*nVertexR+iVertex]);
+        }
+        else {
+          newCoord_n[0] = (rotMatrix[0][0]*Buffer_Receive_Coord_n[0*nVertexR+iVertex] +
+                         rotMatrix[0][1]*Buffer_Receive_Coord_n[1*nVertexR+iVertex] +
+                         rotMatrix[0][2]*Buffer_Receive_Coord_n[2*nVertexR+iVertex]);
+          newCoord_n[1] = (rotMatrix[1][0]*Buffer_Receive_Coord_n[0*nVertexR+iVertex] +
+                         rotMatrix[1][1]*Buffer_Receive_Coord_n[1*nVertexR+iVertex] +
+                         rotMatrix[1][2]*Buffer_Receive_Coord_n[2*nVertexR+iVertex]);
+          newCoord_n[2] = (rotMatrix[2][0]*Buffer_Receive_Coord_n[0*nVertexR+iVertex] +
+                         rotMatrix[2][1]*Buffer_Receive_Coord_n[1*nVertexR+iVertex] +
+                         rotMatrix[2][2]*Buffer_Receive_Coord_n[2*nVertexR+iVertex]);
+        }
+
+        /*--- Copy transformed coordinates back into buffer. ---*/
+
+        node[iPoint]->SetCoord_n(newCoord_n);
+
+      }
+
+      /*--- Deallocate receive buffer. ---*/
+
+      delete [] Buffer_Receive_Coord_n;
+
+    }
+
+  }
+
+  delete [] newCoord_n;
+
+  /*--------------------------------------------------------------------------------------------------*/
+  /*--- We repeat the process for the coordinate n-1, in the case that the simulation is 2nd order ---*/
+  /*--------------------------------------------------------------------------------------------------*/
+
+  if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND){
+
+	  su2double *Buffer_Receive_Coord_n1 = NULL, *Buffer_Send_Coord_n1 = NULL, *Coord_n1 = NULL, *newCoord_n1 = NULL;
+	  newCoord_n1 = new su2double[nDim];
+
+	  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+		  if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+				  (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+			  MarkerS = iMarker;  MarkerR = iMarker+1;
+
+#ifdef HAVE_MPI
+			  send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+			  receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+
+			  nVertexS = nVertex[MarkerS];  nVertexR = nVertex[MarkerR];
+			  nBufferS_Vector = nVertexS*nDim;        nBufferR_Vector = nVertexR*nDim;
+
+			  /*--- Allocate Receive and send buffers  ---*/
+
+			  Buffer_Receive_Coord_n1 = new su2double [nBufferR_Vector];
+			  Buffer_Send_Coord_n1 = new su2double[nBufferS_Vector];
+
+			  /*--- Copy the coordinates that should be sended ---*/
+
+			  for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+				  iPoint = vertex[MarkerS][iVertex]->GetNode();
+				  Coord_n1 = node[iPoint]->GetCoord_n1();
+				  for (iDim = 0; iDim < nDim; iDim++)
+					  Buffer_Send_Coord_n1[iDim*nVertexS+iVertex] = Coord_n1[iDim];
+			  }
+
+#ifdef HAVE_MPI
+			  /*--- Send/Receive information using Sendrecv ---*/
+			  SU2_MPI::Sendrecv(Buffer_Send_Coord_n1, nBufferS_Vector, MPI_DOUBLE, send_to,0,
+					  Buffer_Receive_Coord_n1, nBufferR_Vector, MPI_DOUBLE, receive_from,0, MPI_COMM_WORLD, &status);
+#else
+
+			  /*--- Receive information without MPI ---*/
+			  for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+				  for (iDim = 0; iDim < nDim; iDim++)
+					  Buffer_Receive_Coord_n1[iDim*nVertexR+iVertex] = Buffer_Send_Coord_n1[iDim*nVertexR+iVertex];
+			  }
+
+#endif
+
+			  /*--- Deallocate send buffer ---*/
+
+			  delete [] Buffer_Send_Coord_n1;
+
+			  /*--- Do the coordinate transformation ---*/
+
+			  for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+
+				  /*--- Find point and its type of transformation ---*/
+
+				  iPoint = vertex[MarkerR][iVertex]->GetNode();
+				  iPeriodic_Index = vertex[MarkerR][iVertex]->GetRotation_Type();
+
+				  /*--- Retrieve the supplied periodic information. ---*/
+
+				  angles = config->GetPeriodicRotation(iPeriodic_Index);
+
+				  /*--- Store angles separately for clarity. ---*/
+
+				  theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
+				  cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
+				  sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
+
+				  /*--- Compute the rotation matrix. Note that the implicit
+         ordering is rotation about the x-axis, y-axis,
+         then z-axis. Note that this is the transpose of the matrix
+         used during the preprocessing stage. ---*/
+
+				  rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+				  rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+				  rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
+
+				  /*--- Copy coordinates before performing transformation. ---*/
+
+				  for (iDim = 0; iDim < nDim; iDim++)
+					  newCoord_n1[iDim] = Buffer_Receive_Coord_n1[iDim*nVertexR+iVertex];
+
+				  /*--- Rotate the coordinates. ---*/
+
+				  if (nDim == 2) {
+					  newCoord_n1[0] = (rotMatrix[0][0]*Buffer_Receive_Coord_n1[0*nVertexR+iVertex] +
+							  rotMatrix[0][1]*Buffer_Receive_Coord_n1[1*nVertexR+iVertex]);
+					  newCoord_n1[1] = (rotMatrix[1][0]*Buffer_Receive_Coord_n1[0*nVertexR+iVertex] +
+							  rotMatrix[1][1]*Buffer_Receive_Coord_n1[1*nVertexR+iVertex]);
+				  }
+				  else {
+					  newCoord_n1[0] = (rotMatrix[0][0]*Buffer_Receive_Coord_n1[0*nVertexR+iVertex] +
+							  rotMatrix[0][1]*Buffer_Receive_Coord_n1[1*nVertexR+iVertex] +
+							  rotMatrix[0][2]*Buffer_Receive_Coord_n1[2*nVertexR+iVertex]);
+					  newCoord_n1[1] = (rotMatrix[1][0]*Buffer_Receive_Coord_n1[0*nVertexR+iVertex] +
+							  rotMatrix[1][1]*Buffer_Receive_Coord_n1[1*nVertexR+iVertex] +
+							  rotMatrix[1][2]*Buffer_Receive_Coord_n1[2*nVertexR+iVertex]);
+					  newCoord_n1[2] = (rotMatrix[2][0]*Buffer_Receive_Coord_n1[0*nVertexR+iVertex] +
+							  rotMatrix[2][1]*Buffer_Receive_Coord_n1[1*nVertexR+iVertex] +
+							  rotMatrix[2][2]*Buffer_Receive_Coord_n1[2*nVertexR+iVertex]);
+				  }
+
+				  /*--- Copy transformed coordinates back into buffer. ---*/
+
+				  node[iPoint]->SetCoord_n1(newCoord_n1);
+
+			  }
+
+			  /*--- Deallocate receive buffer. ---*/
+
+			  delete [] Buffer_Receive_Coord_n1;
+
+		  }
+
+	  }
+
+	  delete [] newCoord_n1;
+
+  }
+
+  /*--------------------------------------------------------------------------------------------------*/
+
 }
 
 void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
