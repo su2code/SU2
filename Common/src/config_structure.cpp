@@ -3835,11 +3835,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   if (val_software == SU2_SOL) {
     if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
     switch (Output_FileFormat) {
-      case PARAVIEW: cout << "The output file format is Paraview ASCII (.dat)." << endl; break;
+      case PARAVIEW: cout << "The output file format is Paraview ASCII (.vtk)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
       case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
-      case FIELDVIEW: cout << "The output file format is FieldView ASCII (.dat)." << endl; break;
-      case FIELDVIEW_BINARY: cout << "The output file format is FieldView ASCII (.dat)." << endl; break;
+      case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
+      case FIELDVIEW_BINARY: cout << "The output file format is FieldView binary (.uns)." << endl; break;
       case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
     }
     cout << "Flow variables file name: " << Flow_FileName << "." << endl;
