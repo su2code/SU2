@@ -1501,6 +1501,54 @@ public:
   virtual void ViscTermInt_Linear(su2double CoordCorners[2][2], su2double Tau_0[3][3], su2double Tau_1[3][3],  su2double FviscNodal[4]);
   
   /*!
+   * \brief A virtual member to compute the tangent matrix in structural problems
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  virtual void Compute_Tangent_Matrix(CElement *element_container);
+
+  /*!
+   * \brief A virtual member to compute the pressure term in incompressible or nearly-incompressible structural problems
+   * \param[in] element_container - Definition of the particular element integrated.
+   */
+  virtual void Compute_MeanDilatation_Term(CElement *element_container);
+
+  /*!
+   * \brief A virtual member to compute the nodal stress term in non-linear structural problems
+   * \param[in] element_container - Definition of the particular element integrated.
+   */
+  virtual void Compute_NodalStress_Term(CElement *element_container);
+
+  /*!
+   * \brief A virtual member to compute the plane stress term in an element for nonlinear structural problems
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_Plane_Stress_Term(CElement *element_container);
+
+  /*!
+   * \brief A virtual member to compute the constitutive matrix in an element for structural problems
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_Constitutive_Matrix(CElement *element_container);
+
+  /*!
+   * \brief A virtual member to compute the stress tensor in an element for structural problems
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_Stress_Tensor(CElement *element_container);
+
+  /*!
+   * \brief A virtual member to compute the mass matrix
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_Mass_Matrix(CElement *element_container);
+
+  /*!
+   * \brief A virtual member to compute the averaged nodal stresses
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  virtual void Compute_Averaged_NodalStress(CElement *element_container);
+
+  /*!
    * \brief Computes a basis of orthogonal vectors from a suppled vector
    * \param[in] config - Normal vector
    */
@@ -4111,6 +4159,230 @@ public:
   void SetFEA_DeadLoad3D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
   
 };
+
+/*!
+ * \class CFEM_Elasticity
+ * \brief Generic class for computing the tangent matrix and the residual for structural problems
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_Elasticity : public CNumerics {
+
+protected:
+
+	su2double E;				/*!< \brief Young's modulus of elasticity. */
+	su2double Nu;			/*!< \brief Poisson's ratio. */
+	su2double Rho_s;		/*!< \brief Structural density. */
+	su2double Mu;			/*!< \brief Lame's coeficient. */
+	su2double Lambda;		/*!< \brief Lame's coeficient. */
+	su2double Kappa;		/*!< \brief Compressibility constant. */
+	bool plane_stress;		/*!< \brief Checks if we are solving a plane stress case */
+
+	su2double **Ba_Mat,	 /*!< \brief Matrix B for node a - Auxiliary. */
+	**Bb_Mat;	 		 /*!< \brief Matrix B for node b - Auxiliary. */
+	su2double *Ni_Vec;	 	 /*!< \brief Vector of shape functions - Auxiliary. */
+	su2double **D_Mat;		 /*!< \brief Constitutive matrix - Auxiliary. */
+	su2double **KAux_ab;	 /*!< \brief Node ab stiffness matrix - Auxiliary. */
+	su2double **GradNi_Ref_Mat;/*!< \brief Gradients of Ni - Auxiliary. */
+	su2double **GradNi_Curr_Mat;/*!< \brief Gradients of Ni - Auxiliary. */
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_Elasticity(void);
+
+	void Compute_Mass_Matrix(CElement *element_container);
+
+	virtual void Compute_Tangent_Matrix(CElement *element_container);
+
+	virtual void Compute_MeanDilatation_Term(CElement *element_container);
+
+	virtual void Compute_NodalStress_Term(CElement *element_container);
+
+	virtual void Compute_Averaged_NodalStress(CElement *element_container);
+
+	virtual void Compute_Plane_Stress_Term(CElement *element_container);
+
+	virtual void Compute_Constitutive_Matrix(CElement *element_container);
+  
+	virtual void Compute_Stress_Tensor(CElement *element_container);
+
+};
+
+/*!
+ * \class CFEM_LinearElasticity
+ * \brief Class for computing the stiffness matrix of a linear, elastic problem.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_LinearElasticity : public CFEM_Elasticity {
+
+	su2double **nodalDisplacement;
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_LinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_LinearElasticity(void);
+
+	void Compute_Tangent_Matrix(CElement *element_container);
+
+	void Compute_Constitutive_Matrix(void);
+  using CNumerics::Compute_Constitutive_Matrix;
+
+	void Compute_Averaged_NodalStress(CElement *element_container);
+
+//	virtual void Compute_Stress_Tensor(void);
+
+//	virtual void Compute_MeanDilatation_Term(CElement *element_container);
+
+//	virtual void Compute_NodalStress_Term(CElement *element_container);
+
+};
+
+/*!
+ * \class CFEM_LinearElasticity
+ * \brief Class for computing the stiffness matrix of a nonlinear, elastic problem.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_NonlinearElasticity : public CFEM_Elasticity {
+
+protected:
+
+	su2double **F_Mat;	 			/*!< \brief Deformation gradient. */
+	su2double **b_Mat;	 			/*!< \brief Left Cauchy-Green Tensor. */
+	su2double **currentCoord;	 	/*!< \brief Current coordinates. */
+	su2double **Stress_Tensor;		/*!< \brief Cauchy stress tensor */
+
+	su2double **KAux_P_ab;			/*!< \brief Auxiliar matrix for the pressure term */
+	su2double *KAux_t_a;			/*!< \brief Auxiliar matrix for the pressure term */
+
+	su2double J_F;		 			/*!< \brief Jacobian of the transformation (determinant of F) */
+
+	su2double f33;		 			/*!< \brief Plane stress term for non-linear 2D plane stress analysis */
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_NonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_NonlinearElasticity(void);
+
+	void Compute_Tangent_Matrix(CElement *element_container);
+
+	void Compute_MeanDilatation_Term(CElement *element_container);
+
+	void Compute_NodalStress_Term(CElement *element_container);
+
+	void Compute_Averaged_NodalStress(CElement *element_container);
+
+	virtual void Compute_Plane_Stress_Term(CElement *element_container);
+
+	virtual void Compute_Constitutive_Matrix(CElement *element_container);
+
+	virtual void Compute_Stress_Tensor(CElement *element_container);
+
+
+};
+
+/*!
+ * \class CFEM_NeoHookean_Comp
+ * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model, compressible.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_NeoHookean_Comp : public CFEM_NonlinearElasticity {
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_NeoHookean_Comp(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_NeoHookean_Comp(void);
+
+	void Compute_Plane_Stress_Term(CElement *element_container);
+
+	void Compute_Constitutive_Matrix(CElement *element_container);
+  using CNumerics::Compute_Constitutive_Matrix;
+
+	void Compute_Stress_Tensor(CElement *element_container);
+
+};
+
+/*!
+ * \class CFEM_NeoHookean_Incomp
+ * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model, incompressible.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_NeoHookean_Incomp : public CFEM_NonlinearElasticity {
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_NeoHookean_Incomp(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_NeoHookean_Incomp(void);
+
+	void Compute_Plane_Stress_Term(CElement *element_container);
+
+	void Compute_Constitutive_Matrix(CElement *element_container);
+  using CNumerics::Compute_Constitutive_Matrix;
+
+	void Compute_Stress_Tensor(CElement *element_container);
+
+};
+
+
 
 /*!
  * \class CSourceNothing
