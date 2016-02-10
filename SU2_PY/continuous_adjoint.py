@@ -104,14 +104,22 @@ def continuous_adjoint( filename           ,
         config.OBJ_CHAIN_RULE_COEFF = str(chaingrad[0:5])
     
     # Adjoint Solution
-    if compute:
-        info = SU2.run.adjoint(config)
+    objectives      = config['OBJECTIVE_FUNCTION']
+    objectives = objectives.split(',')
+    n_obj = len(objectives)
+    marker_monitoring = config['MARKER_MONITORING']
+    for i_obj, objective in enumerate(objectives):
+        if (n_obj>1) and (type(marker_monitoring)==list):
+            config['MARKER_MONITORING'] = marker_monitoring[i_obj]
+        config['OBJECTIVE_FUNCTION'] = objective
+        if compute:
+            info = SU2.run.adjoint(config)
+            state.update(info)
+            #SU2.io.restart2solution(config,state)
+        
+        # Gradient Projection
+        info = SU2.run.projection(config,state, step)
         state.update(info)
-        #SU2.io.restart2solution(config,state)
-    
-    # Gradient Projection
-    info = SU2.run.projection(config,state, step)
-    state.update(info)
     
     return state
 
