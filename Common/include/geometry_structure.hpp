@@ -862,6 +862,11 @@ public:
                                  su2double vert0[3], su2double vert1[3], su2double vert2[3]);
 
   /*!
+   * \brief Segment Intersects Line (for 2D FFD Intersection)
+   */
+  bool SegmentIntersectsLine(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]);
+
+  /*!
    * \brief Register the coordinates of the mesh nodes.
    * \param[in] config
    */
