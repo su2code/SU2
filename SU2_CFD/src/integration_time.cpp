@@ -942,25 +942,80 @@ void CStructuralIntegration::Structural_Iteration_FEM(CGeometry ***geometry, CSo
 
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
+	bool FSI_MPI = config[iZone]->CheckFSI_MPI();
+	su2double FSI_StartTime = 0.0, FSI_StopTime = 0.0, FSI_UsedTime = 0.0;
+
+int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+#ifndef HAVE_MPI
+	FSI_StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+	FSI_StartTime = MPI_Wtime();
+#endif
+
+
   /*--- Preprocessing ---*/
 
   solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0],
 		  config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position], MESH_0, Iteration, RunTime_EqSystem, false);
+
+#ifndef HAVE_MPI
+  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  FSI_StopTime = MPI_Wtime();
+#endif
+FSI_UsedTime = FSI_StopTime-FSI_StartTime;
+if ((rank == MASTER_NODE) && FSI_MPI) {
+   cout << "\n-----------Preprocessing: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
+}
 
   /*--- Space integration ---*/
 
   Space_Integration_FEM(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][SolContainer_Position],
                     config[iZone], RunTime_EqSystem, Iteration);
 
+#ifndef HAVE_MPI
+  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  FSI_StopTime = MPI_Wtime();
+#endif
+FSI_UsedTime = FSI_StopTime-FSI_StartTime;
+if ((rank == MASTER_NODE) && FSI_MPI) {
+   cout << "\n-----------Space integration: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
+}
+
   /*--- Time integration ---*/
 
   Time_Integration_FEM(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][SolContainer_Position],
 		  	  	    config[iZone], RunTime_EqSystem, Iteration);
 
+#ifndef HAVE_MPI
+  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  FSI_StopTime = MPI_Wtime();
+#endif
+FSI_UsedTime = FSI_StopTime-FSI_StartTime;
+if ((rank == MASTER_NODE) && FSI_MPI) {
+   cout << "\n-----------Time integration: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
+}
+
   /*--- Postprocessing ---*/
 
   solver_container[iZone][MESH_0][SolContainer_Position]->Postprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0],
 		  config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position],  MESH_0);
+
+#ifndef HAVE_MPI
+  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  FSI_StopTime = MPI_Wtime();
+#endif
+FSI_UsedTime = FSI_StopTime-FSI_StartTime;
+if ((rank == MASTER_NODE) && FSI_MPI) {
+   cout << "\n-----------Post processing: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
+}
 
 //  /*--- Compute adimensional parameters and the convergence monitor ---*/
 //
@@ -968,5 +1023,16 @@ void CStructuralIntegration::Structural_Iteration_FEM(CGeometry ***geometry, CSo
 
   /*--- Convergence strategy ---*/
   Convergence_Monitoring_FEM(geometry[iZone][MESH_0], config[iZone], solver_container[iZone][MESH_0][SolContainer_Position], Iteration);
+
+#ifndef HAVE_MPI
+  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  FSI_StopTime = MPI_Wtime();
+#endif
+FSI_UsedTime = FSI_StopTime-FSI_StartTime;
+if ((rank == MASTER_NODE) && FSI_MPI) {
+   cout << "\n-----------Convergence monitoring: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
+}
+
 
 }

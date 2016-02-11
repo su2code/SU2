@@ -1923,20 +1923,11 @@ void CFSIDriver::Run(CIteration **iteration_container,
 	unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
 	unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
 
-	bool FSI_MPI = config_container[ZONE_FLOW]->CheckFSI_MPI();
-	su2double FSI_StartTime = 0.0, FSI_StopTime = 0.0, FSI_UsedTime = 0.0;
 
 	int rank = MASTER_NODE;
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
-#ifndef HAVE_MPI
-	FSI_StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-	FSI_StartTime = MPI_Wtime();
-#endif
-
 
 	 /*--- If there is a restart, we need to get the old geometry from the fluid field ---*/
 	 bool restart = (config_container[ZONE_FLOW]->GetRestart() || config_container[ZONE_FLOW]->GetRestart_Flow());
@@ -1956,19 +1947,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
             		      surface_movement, grid_movement, FFDBox,
             		      ZONE_STRUCT, ZONE_FLOW);
 
-#ifndef HAVE_MPI
-  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  FSI_StopTime = MPI_Wtime();
-#endif
-
-  /*--- Compute/print the total time for performance benchmarking. ---*/
-
-  FSI_UsedTime = FSI_StopTime-FSI_StartTime;
-  if ((rank == MASTER_NODE) && FSI_MPI) {
-    cout << "\n-----------Predict_Displacements: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
-  }
-
 	while (FSIIter < nFSIIter){
 
 		/*-----------------------------------------------------------------*/
@@ -1979,19 +1957,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
                 solver_container, numerics_container, config_container,
                 surface_movement, grid_movement, FFDBox, transfer_container,
                 ZONE_STRUCT, ZONE_FLOW);
-
-#ifndef HAVE_MPI
-  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  FSI_StopTime = MPI_Wtime();
-#endif
-
-  /*--- Compute/print the total time for performance benchmarking. ---*/
-
-  FSI_UsedTime = FSI_StopTime-FSI_StartTime;
-  if ((rank == MASTER_NODE) && FSI_MPI) {
-    cout << "\n-----------Transfer_Displacements: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
-  }
 
 		/*-----------------------------------------------------------------*/
 		/*-------------------- Fluid subiteration -------------------------*/
@@ -2013,20 +1978,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
 
 		integration_container[ZONE_FLOW][FLOW_SOL]->SetConvergence(false);
 
-
-#ifndef HAVE_MPI
-  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  FSI_StopTime = MPI_Wtime();
-#endif
-
-  /*--- Compute/print the total time for performance benchmarking. ---*/
-
-  FSI_UsedTime = FSI_StopTime-FSI_StartTime;
-  if ((rank == MASTER_NODE) && FSI_MPI) {
-    cout << "\n-----------Fluid subiteration: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
-  }
-
 		/*-----------------------------------------------------------------*/
 		/*------------------- Set FEA loads from fluid --------------------*/
 		/*-----------------------------------------------------------------*/
@@ -2035,21 +1986,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
                 solver_container, numerics_container, config_container,
                 surface_movement, grid_movement, FFDBox, transfer_container,
                 ZONE_FLOW, ZONE_STRUCT);
-
-
-#ifndef HAVE_MPI
-  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  FSI_StopTime = MPI_Wtime();
-#endif
-
-  /*--- Compute/print the total time for performance benchmarking. ---*/
-
-  FSI_UsedTime = FSI_StopTime-FSI_StartTime;
-  if ((rank == MASTER_NODE) && FSI_MPI) {
-    cout << "\n-----------Transfer_Tractions: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
-  }
-
 
 		/*-----------------------------------------------------------------*/
 		/*------------------ Structural subiteration ----------------------*/
@@ -2067,38 +2003,12 @@ void CFSIDriver::Run(CIteration **iteration_container,
 
 		integration_container[ZONE_STRUCT][FEA_SOL]->SetConvergence(false);
 
-
-#ifndef HAVE_MPI
-  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  FSI_StopTime = MPI_Wtime();
-#endif
-
-  /*--- Compute/print the total time for performance benchmarking. ---*/
-
-  FSI_UsedTime = FSI_StopTime-FSI_StartTime;
-  if ((rank == MASTER_NODE) && FSI_MPI) {
-    cout << "\n-----------Structural subiteration: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
-  }
 		/*-----------------------------------------------------------------*/
 		/*----------------- Displacements relaxation ----------------------*/
 		/*-----------------------------------------------------------------*/
 
 		Relaxation_Displacements(output, geometry_container, solver_container, config_container,
 								 ZONE_STRUCT, ZONE_FLOW, FSIIter);
-
-#ifndef HAVE_MPI
-  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  FSI_StopTime = MPI_Wtime();
-#endif
-
-  /*--- Compute/print the total time for performance benchmarking. ---*/
-
-  FSI_UsedTime = FSI_StopTime-FSI_StartTime;
-  if ((rank == MASTER_NODE) && FSI_MPI) {
-    cout << "\n-----------Displacements relaxation: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
-  }
 
 		/*-----------------------------------------------------------------*/
 		/*-------------------- Check convergence --------------------------*/
@@ -2115,19 +2025,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
 
 		FSIIter++; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
 
-#ifndef HAVE_MPI
-  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  FSI_StopTime = MPI_Wtime();
-#endif
-
-  /*--- Compute/print the total time for performance benchmarking. ---*/
-
-  FSI_UsedTime = FSI_StopTime-FSI_StartTime;
-  if ((rank == MASTER_NODE) && FSI_MPI) {
-    cout << "\n-----------Check convergence: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
-  }
-
 	}
 
 	/*-----------------------------------------------------------------*/
@@ -2139,20 +2036,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
            surface_movement, grid_movement, FFDBox, transfer_container,
            ZONE_FLOW, ZONE_STRUCT);
 
-#ifndef HAVE_MPI
-  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  FSI_StopTime = MPI_Wtime();
-#endif
-
-  /*--- Compute/print the total time for performance benchmarking. ---*/
-
-  FSI_UsedTime = FSI_StopTime-FSI_StartTime;
-  if ((rank == MASTER_NODE) && FSI_MPI) {
-    cout << "\n-----------Update coupled solver: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
-  }
-
-
 
 	/*-----------------------------------------------------------------*/
   	/*-------------------- Update fluid solver ------------------------*/
@@ -2162,20 +2045,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
 	          	  	  	  	  	  	  	  solver_container, numerics_container, config_container,
 	          	  	  	  	  	  	  	  surface_movement, grid_movement, FFDBox, ZONE_FLOW);
 
-
-#ifndef HAVE_MPI
-  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  FSI_StopTime = MPI_Wtime();
-#endif
-
-  /*--- Compute/print the total time for performance benchmarking. ---*/
-
-  FSI_UsedTime = FSI_StopTime-FSI_StartTime;
-  if ((rank == MASTER_NODE) && FSI_MPI) {
-    cout << "\n-----------Update fluid solver: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
-  }
-
 	/*-----------------------------------------------------------------*/
   	/*----------------- Update structural solver ----------------------*/
 	/*-----------------------------------------------------------------*/
@@ -2183,20 +2052,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
 	iteration_container[ZONE_STRUCT]->Update(output, integration_container, geometry_container,
 	          	  	  	  	  	  	  	  solver_container, numerics_container, config_container,
 	          	  	  	  	  	  	  	  surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
-
-#ifndef HAVE_MPI
-  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  FSI_StopTime = MPI_Wtime();
-#endif
-
-  /*--- Compute/print the total time for performance benchmarking. ---*/
-
-  FSI_UsedTime = FSI_StopTime-FSI_StartTime;
-  if ((rank == MASTER_NODE) && FSI_MPI) {
-    cout << "\n-----------Update structural solver: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
-  }
-
 
 
 	/*-----------------------------------------------------------------*/
