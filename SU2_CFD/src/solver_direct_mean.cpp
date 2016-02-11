@@ -8997,7 +8997,7 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **sol
 
 								cj_out1= rhoc*deltaTangVelocity;
 								cj_out2=rhoc*deltaNormalVelocity + deltaPressure;
-								cj_inf=-rhoc*deltaNormalVelocity + deltaPressure;
+								cj_inf= rhoc*deltaNormalVelocity + deltaPressure;
 
 								jk_nVert = j*k/su2double(nVert);
 //								cout << jk_nVert<< " j " << j << " k " << k << " nVert " << nVert << endl;
@@ -9356,43 +9356,49 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 				case TOTAL_CONDITIONS_PT:
 
-//					if (AvgMach < 0.999){
-//						if (AverageTangVelocity[val_marker][iSpan] >= 0.0){
-//							Beta_inf= I*sqrt(1.0  - pow(AvgMach,2));
-//						}else{
-//							Beta_inf= -I*sqrt(1.0 - pow(AvgMach,2));
-//						}
-//						c2js 	= complex<su2double>(0.0,0.0);
-//						j			 = geometry->turbovertex[val_marker][iSpan][iVertex]->GetGlobalVertexIndex();
-//						for(k=1; k < kend+1; k++){
-//							jk_nVert = j*k/su2double(nVert);
-//							c2ks = -CkInflow[val_marker][iSpan][k-1]*(Beta_inf + AverageTangMach[val_marker][iSpan])/( 1.0 + AverageNormalMach[val_marker][iSpan]);
-//							c2js += c2ks*exp(I*PI_NUMBER*2.0*jk_nVert);
-//						}
-//						c2js_Re = 2.0*c2js.real();
-//						dcjs[1]		= c2js_Re - cj[1];
-//					}else{
-//						if (AverageTangVelocity[val_marker][iSpan] >= 0.0){
-//							Beta_inf2= -sqrt(pow(AvgMach,2)- 1.0);
-//						}else{
-//							Beta_inf2= sqrt(pow(AvgMach,2)-1.0);
-//						}
-//						c2js_Re = -cj[3]*(Beta_inf2 + AverageTangMach[val_marker][iSpan])/( 1.0 + AverageNormalMach[val_marker][iSpan]);
-//						dcjs[1]		= c2js_Re - cj[1];
-//					}
-//
-//
-//					/*--- compute local change for first and third charchteristic ---*/
-//					ComputeResJacobianNRBC(Pressure_i, Density_i, turboVelocity[0], turboVelocity[1], atan(turboVelocity[1]/turboVelocity[0]), R_c, R_c_inv);
-//					R[0] = Entropy_i  - AverageEntropy[val_marker][iSpan];
-//					R[2] = Enthalpy_i - AverageEnthalpy[val_marker][iSpan] + 0.5*AvgMach*AvgMach*cc;
-//					dcjs[2] = ((R_c[2][0]*R_c[0][1]/R_c[0][0] - R_c[2][1])*dcjs[1] + (R_c[2][0]/R_c[0][0]*R[0] - R[2]))/(R_c[2][2] - R_c[2][0]*R_c[0][2]/R_c[0][0]);
-//					dcjs[0] = - (R_c[0][1]*dcjs[1] + R_c[0][2]*dcjs[2] + R[0])/R_c[0][0];
+					if (AvgMach < 0.999){
+						if (AverageTangVelocity[val_marker][iSpan] >= 0.0){
+							Beta_inf= I*sqrt(1.0  - pow(AvgMach,2));
+						}else{
+							Beta_inf= -I*sqrt(1.0 - pow(AvgMach,2));
+						}
+						c2js 	= complex<su2double>(0.0,0.0);
+						j			 = geometry->turbovertex[val_marker][iSpan][iVertex]->GetGlobalVertexIndex();
+						for(k=1; k < kend+1; k++){
+							jk_nVert = j*k/su2double(nVert);
+							c2ks = -CkInflow[val_marker][iSpan][k-1]*(Beta_inf + AverageTangMach[val_marker][iSpan])/( 1.0 + AverageNormalMach[val_marker][iSpan]);
+							c2js += c2ks*exp(I*PI_NUMBER*2.0*jk_nVert);
+						}
+						c2js_Re = 2.0*c2js.real();
+						dcjs[1]		= c2js_Re + cj[1];
+					}else{
+						if (AverageTangVelocity[val_marker][iSpan] >= 0.0){
+							Beta_inf2= -sqrt(pow(AvgMach,2)- 1.0);
+						}else{
+							Beta_inf2= sqrt(pow(AvgMach,2)-1.0);
+						}
+						c2js_Re = -cj[3]*(Beta_inf2 + AverageTangMach[val_marker][iSpan])/( 1.0 + AverageNormalMach[val_marker][iSpan]);
+						dcjs[1]		= c2js_Re + cj[1];
+					}
 
-					/* --- Impose Inlet BC  --- */
-					delta_c[0] = (c_avg[0] + dcjs[0]);
-					delta_c[1] = -(c_avg[1] + dcjs[1]);
-					delta_c[2] = -(c_avg[2] + dcjs[2]);
+
+					/*--- compute local change for first and third charchteristic ---*/
+					ComputeResJacobianNRBC(Pressure_i, Density_i, turboVelocity[0], turboVelocity[1], atan(turboVelocity[1]/turboVelocity[0]), R_c, R_c_inv);
+					R[0] = Entropy_i  - AverageEntropy[val_marker][iSpan];
+					R[2] = Enthalpy_i - AverageEnthalpy[val_marker][iSpan] - 0.5*avgVel2;
+					dcjs[2] = ((R_c[2][0]*R_c[0][1]/R_c[0][0] - R_c[2][1])*dcjs[1] + (R_c[2][0]/R_c[0][0]*R[0] - R[2]))/(R_c[2][2] - R_c[2][0]*R_c[0][2]/R_c[0][0]);
+					dcjs[0] = - (R_c[0][1]*dcjs[1] + R_c[0][2]*dcjs[2] + R[0])/R_c[0][0];
+
+					/* --- Impose Inlet BC  Reflecting--- */
+//					for(iVar = 0; iVar < nVar -1; iVar++)
+//						cout << "Avg comp " << iVar +1 << " "<< c_avg[iVar] << " freq comp " << iVar +1 << " "<< dcjs[iVar] <<endl;
+//					delta_c[0] = 0.5*(c_avg[0]);
+//					delta_c[1] = -0.5*(c_avg[1]);
+					delta_c[2] = -0.5*(c_avg[2]);
+					/*--- Impose Inlet BC  --- */
+					delta_c[0] = 0.5*(c_avg[0] + dcjs[0]);
+					delta_c[1] = -0.5*(c_avg[1] + dcjs[1]);
+//					delta_c[2] = -0.5*(c_avg[2] + dcjs[2]);
 					delta_c[3]= -rhoc*(-NormalVelocity +AverageNormalVelocity[val_marker][iSpan]) +(Pressure_i - AveragePressure[val_marker][iSpan]);
 //					delta_c[3] = cj[3];
 					break;
@@ -9470,8 +9476,8 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 						}else{
 							GilesBeta= sqrt(pow(AvgMach,2)-1.0);
 						}
-						c4js= (2.0 * AverageNormalMach[val_marker][iSpan])/(GilesBeta - AverageTangMach[val_marker][iSpan])*c2j - (GilesBeta+AverageTangMach[val_marker][iSpan])/(GilesBeta-AverageTangMach[val_marker][iSpan])*c3j;
-						dc4js = c4js;
+						c4js= (2.0 * AverageNormalMach[val_marker][iSpan])/(GilesBeta - AverageTangMach[val_marker][iSpan])*cj[1] - (GilesBeta+AverageTangMach[val_marker][iSpan])/(GilesBeta-AverageTangMach[val_marker][iSpan])*cj[2];
+						dc4js = c4js - cj[3];
 					}else{
 						dc4js = 0.0;
 					}
