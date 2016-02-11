@@ -162,9 +162,6 @@ int main(int argc, char *argv[]) {
 
     if (rank == MASTER_NODE) cout << "Setting mesh sensitivity." << endl;
     mesh_movement->SetVolume_Deformation(geometry_container[ZONE_0], config_container[ZONE_0], false, true);
-
-    COutput *output = new COutput();
-    output->SetSensitivity_Files(geometry_container, config_container, nZone);
   }
   
 	/*--- Definition of the Class for surface deformation ---*/
