@@ -220,6 +220,20 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 	  /*--- Compute Mass Matrix ---*/
 	  /*--- The mass matrix is computed only once, at the beginning of the calculation, no matter whether the ---*/
 	  /*--- problem is linear or nonlinear. This is done in the preprocessing step. ---*/
+		bool FSI_MPI = config->CheckFSI_MPI();
+		su2double FSI_StartTime = 0.0, FSI_StopTime = 0.0, FSI_UsedTime = 0.0;
+
+	  int rank = MASTER_NODE;
+	  #ifdef HAVE_MPI
+	    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	  #endif
+
+	  #ifndef HAVE_MPI
+	  	FSI_StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+	  #else
+	  	FSI_StartTime = MPI_Wtime();
+	  #endif
+
 
 	  /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed ---*/
 	  /*--- This is done only once, at the beginning of the calculation. From then on, K is constant ---*/
@@ -252,6 +266,17 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 
 	  }
 
+#ifndef HAVE_MPI
+  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  FSI_StopTime = MPI_Wtime();
+#endif
+FSI_UsedTime = FSI_StopTime-FSI_StartTime;
+if ((rank == MASTER_NODE) && FSI_MPI) {
+   cout << "\n-----------Compute matrices: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
+}
+
+
 	  /*--- Apply the NATURAL BOUNDARY CONDITIONS (loads). ---*/
 	  /*--- If there are FSI loads, they have to be previously applied at other level involving both zones. ---*/
 
@@ -280,6 +305,17 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 	        break;
 	    }
 	  }
+
+#ifndef HAVE_MPI
+  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  FSI_StopTime = MPI_Wtime();
+#endif
+FSI_UsedTime = FSI_StopTime-FSI_StartTime;
+if ((rank == MASTER_NODE) && FSI_MPI) {
+   cout << "\n-----------Apply BCs: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
+}
+
 
 
 }
@@ -366,6 +402,20 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 
 	unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
+	bool FSI_MPI = config->CheckFSI_MPI();
+	su2double FSI_StartTime = 0.0, FSI_StopTime = 0.0, FSI_UsedTime = 0.0;
+
+int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+#ifndef HAVE_MPI
+	FSI_StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+	FSI_StartTime = MPI_Wtime();
+#endif
+
 	/*--- Set the Jacobian according to the different time integration methods ---*/
 
 	switch (config->GetKind_TimeIntScheme_FEA()) {
@@ -380,6 +430,16 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 		  break;
 	  }
 
+#ifndef HAVE_MPI
+  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  FSI_StopTime = MPI_Wtime();
+#endif
+FSI_UsedTime = FSI_StopTime-FSI_StartTime;
+if ((rank == MASTER_NODE) && FSI_MPI) {
+   cout << "\n-----------Set Jacobian: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
+}
+
 	/*--- Apply ESSENTIAL BOUNDARY CONDITIONS ---*/
 
 	  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -392,9 +452,31 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 	        break;
 	    }
 
+#ifndef HAVE_MPI
+  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  FSI_StopTime = MPI_Wtime();
+#endif
+FSI_UsedTime = FSI_StopTime-FSI_StartTime;
+if ((rank == MASTER_NODE) && FSI_MPI) {
+   cout << "\n-----------Apply clamped: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
+}
+
+
 	/*--- Solver linearized system ---*/
 
 	  solver_container[MainSolver]->Solve_System(geometry, solver_container, config);
+
+#ifndef HAVE_MPI
+  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  FSI_StopTime = MPI_Wtime();
+#endif
+FSI_UsedTime = FSI_StopTime-FSI_StartTime;
+if ((rank == MASTER_NODE) && FSI_MPI) {
+   cout << "\n-----------Solve system: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
+}
+
 
 	/*--- Update solution ---*/
 
@@ -411,6 +493,15 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 		  }
 
 
+#ifndef HAVE_MPI
+  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  FSI_StopTime = MPI_Wtime();
+#endif
+FSI_UsedTime = FSI_StopTime-FSI_StartTime;
+if ((rank == MASTER_NODE) && FSI_MPI) {
+   cout << "\n-----------Update solution: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
+}
 
 	/*--- Reinforce ESSENTIAL BOUNDARY CONDITIONS: avoids accumulation of numerical error ---*/
 
@@ -424,8 +515,29 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 //			break;
 		}
 
+#ifndef HAVE_MPI
+  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  FSI_StopTime = MPI_Wtime();
+#endif
+FSI_UsedTime = FSI_StopTime-FSI_StartTime;
+if ((rank == MASTER_NODE) && FSI_MPI) {
+   cout << "\n-----------Reinforce BC: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
+}
+
+
 	  /*--- Perform the MPI communication of the solution ---*/
 	  solver_container[MainSolver]->Set_MPI_Solution(geometry, config);
+
+#ifndef HAVE_MPI
+  FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  FSI_StopTime = MPI_Wtime();
+#endif
+FSI_UsedTime = FSI_StopTime-FSI_StartTime;
+if ((rank == MASTER_NODE) && FSI_MPI) {
+   cout << "\n-----------Communicate again: Passed in " << fixed << FSI_UsedTime << " seconds. " << endl;
+}
 
 
 }
