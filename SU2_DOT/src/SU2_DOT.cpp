@@ -408,7 +408,7 @@ void SetProjection_Continuous(CGeometry *geometry, CConfig *config, CSurfaceMove
 
       else if (config->GetDesign_Variable(iDV) == CUSTOM){
 	if (rank == MASTER_NODE)
-       	  cout <<"Custom design variable will be used in external script" << endl;
+        cout <<"Custom design variable will be used in external script" << endl;
       }
       /*--- Design variable not implement ---*/
 
@@ -574,21 +574,21 @@ void SetProjection_Discrete(CGeometry *geometry, CConfig *config, CSurfaceMoveme
 #endif
     }
   }
-
+    
   /*--- Print gradients to screen and file ---*/
-
+    
   OutputGradient(Gradient, config, Gradient_file);
 
   for (iDV = 0; iDV  < nDV; iDV++){
     delete [] Gradient[iDV];
   }
   delete [] Gradient;
-}
-
+    }
+    
 void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_file){
-
+    
   unsigned short nDV, iDV, iDV_Value, nDV_Value;
-
+	
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);
