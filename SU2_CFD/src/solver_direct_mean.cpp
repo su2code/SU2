@@ -606,11 +606,17 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   MassFlowIn= new su2double[nMarkerTurboPerf];
   MassFlowOut= new su2double[nMarkerTurboPerf];
   FlowAngleIn= new su2double[nMarkerTurboPerf];
+  FlowAngleIn_BC = new su2double[nMarkerTurboPerf];
   FlowAngleOut= new su2double[nMarkerTurboPerf];
   EulerianWork= new su2double[nMarkerTurboPerf];
   TotalEnthalpyIn= new su2double[nMarkerTurboPerf];
+  TotalEnthalpyIn_BC = new su2double[nMarkerTurboPerf];
+  EntropyIn = new su2double[nMarkerTurboPerf];
+  EntropyIn_BC = new su2double[nMarkerTurboPerf];
   PressureRatio= new su2double[nMarkerTurboPerf];
   PressureOut= new su2double[nMarkerTurboPerf];
+	TotalPresureIn= new su2double[nMarkerTurboPerf];
+	TotalTemperatureIn= new su2double[nMarkerTurboPerf];
   EnthalpyOut= new su2double[nMarkerTurboPerf];
   MachIn= new su2double[nMarkerTurboPerf];
   MachOut= new su2double[nMarkerTurboPerf];
@@ -626,11 +632,17 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     MassFlowIn[iMarker]= 0.0;
     MassFlowOut[iMarker]= 0.0;
     FlowAngleIn[iMarker]= 0.0;
+    FlowAngleIn_BC[iMarker]= 0.0;
     FlowAngleOut[iMarker]= 0.0;
     EulerianWork[iMarker]= 0.0;
     TotalEnthalpyIn[iMarker]= 0.0;
+    TotalEnthalpyIn_BC[iMarker]= 0.0;
+    EntropyIn [iMarker]= 0.0;
+    EntropyIn_BC [iMarker]= 0.0;
     PressureRatio[iMarker]= 0.0;
     PressureOut[iMarker]= 0.0;
+		TotalPresureIn[iMarker]= 0.0;
+		TotalTemperatureIn[iMarker]= 0.0;
     EnthalpyOut[iMarker]= 0.0;
     MachIn[iMarker]= 0.0;
     MachOut[iMarker]= 0.0;
@@ -9386,7 +9398,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 					ComputeResJacobianNRBC(Pressure_i, Density_i, turboVelocity[0], turboVelocity[1], atan(turboVelocity[1]/turboVelocity[0]), R_c, R_c_inv);
 					R[0] = Entropy_i  - AverageEntropy[val_marker][iSpan];
 					R[2] = Enthalpy_i - AverageEnthalpy[val_marker][iSpan] - 0.5*avgVel2;
-					dcjs[2] = ((R_c[2][0]*R_c[0][1]/R_c[0][0] - R_c[2][1])*dcjs[1] + (R_c[2][0]/R_c[0][0]*R[0] - R[2]))/(R_c[2][2] - R_c[2][0]*R_c[0][2]/R_c[0][0]);
+					dcjs[2] = (R[2] + R_c[2][1]*dcjs[1] -R_c[2][0]*R_c[0][2]*(R_c[0][1]*dcjs[1] + R[0]))/(R_c[2][0]*R_c[0][2]/R_c[0][0]- R_c[2][2]);
 					dcjs[0] = - (R_c[0][1]*dcjs[1] + R_c[0][2]*dcjs[2] + R[0])/R_c[0][0];
 
 					/* --- Impose Inlet BC  Reflecting--- */
@@ -9394,10 +9406,10 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 //						cout << "Avg comp " << iVar +1 << " "<< c_avg[iVar] << " freq comp " << iVar +1 << " "<< dcjs[iVar] <<endl;
 //					delta_c[0] = 0.5*(c_avg[0]);
 //					delta_c[1] = -0.5*(c_avg[1]);
-					delta_c[2] = -0.5*(c_avg[2]);
+					delta_c[2] = -3.0/nVert*(c_avg[2]+dcjs[2]);
 					/*--- Impose Inlet BC  --- */
-					delta_c[0] = 0.5*(c_avg[0] + dcjs[0]);
-					delta_c[1] = -0.5*(c_avg[1] + dcjs[1]);
+					delta_c[0] = 3.0/nVert*(c_avg[0] + dcjs[0]);
+					delta_c[1] = -3.0/nVert*(c_avg[1] + dcjs[1]);
 //					delta_c[2] = -0.5*(c_avg[2] + dcjs[2]);
 					delta_c[3]= -rhoc*(-NormalVelocity +AverageNormalVelocity[val_marker][iSpan]) +(Pressure_i - AveragePressure[val_marker][iSpan]);
 //					delta_c[3] = cj[3];
@@ -13407,48 +13419,60 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 	}
 
 
-  /*--- Initializate quantities for turboperformace ---*/
-  
-  TotalStaticEfficiency = new su2double[nMarkerTurboPerf];
-  TotalTotalEfficiency = new su2double[nMarkerTurboPerf];
-  KineticEnergyLoss= new su2double[nMarkerTurboPerf];
-  TotalPressureLoss= new su2double[nMarkerTurboPerf];
-  MassFlowIn= new su2double[nMarkerTurboPerf];
-  MassFlowOut= new su2double[nMarkerTurboPerf];
-  FlowAngleIn= new su2double[nMarkerTurboPerf];
-  FlowAngleOut= new su2double[nMarkerTurboPerf];
-  EulerianWork= new su2double[nMarkerTurboPerf];
-  TotalEnthalpyIn= new su2double[nMarkerTurboPerf];
-  PressureRatio= new su2double[nMarkerTurboPerf];
-  PressureOut= new su2double[nMarkerTurboPerf];
-  EnthalpyOut= new su2double[nMarkerTurboPerf];
-  MachIn= new su2double[nMarkerTurboPerf];
-  MachOut= new su2double[nMarkerTurboPerf];
-  NormalMachIn= new su2double[nMarkerTurboPerf];
-  NormalMachOut= new su2double[nMarkerTurboPerf];
-  VelocityOutIs= new su2double[nMarkerTurboPerf];
-  
-  for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
-    TotalStaticEfficiency[iMarker]= 0.0;
-    TotalTotalEfficiency[iMarker]= 0.0;
-    KineticEnergyLoss[iMarker]= 0.0;
-    TotalPressureLoss[iMarker]= 0.0;
-    MassFlowIn[iMarker]= 0.0;
-    MassFlowOut[iMarker]= 0.0;
-    FlowAngleIn[iMarker]= 0.0;
-    FlowAngleOut[iMarker]= 0.0;
-    EulerianWork[iMarker]= 0.0;
-    TotalEnthalpyIn[iMarker]= 0.0;
-    PressureRatio[iMarker]= 0.0;
-    PressureOut[iMarker]= 0.0;
-    EnthalpyOut[iMarker]= 0.0;
-    MachIn[iMarker]= 0.0;
-    MachOut[iMarker]= 0.0;
-    NormalMachIn[iMarker]= 0.0;
-    NormalMachOut[iMarker]= 0.0;
-    VelocityOutIs[iMarker]= 0.0;
-  }
-  
+	/*--- Initializate quantities for turboperformace ---*/
+
+	  TotalStaticEfficiency = new su2double[nMarkerTurboPerf];
+	  TotalTotalEfficiency = new su2double[nMarkerTurboPerf];
+	  KineticEnergyLoss= new su2double[nMarkerTurboPerf];
+	  TotalPressureLoss= new su2double[nMarkerTurboPerf];
+	  MassFlowIn= new su2double[nMarkerTurboPerf];
+	  MassFlowOut= new su2double[nMarkerTurboPerf];
+	  FlowAngleIn= new su2double[nMarkerTurboPerf];
+	  FlowAngleIn_BC = new su2double[nMarkerTurboPerf];
+	  FlowAngleOut= new su2double[nMarkerTurboPerf];
+	  EulerianWork= new su2double[nMarkerTurboPerf];
+	  TotalEnthalpyIn= new su2double[nMarkerTurboPerf];
+	  TotalEnthalpyIn_BC = new su2double[nMarkerTurboPerf];
+	  EntropyIn = new su2double[nMarkerTurboPerf];
+	  EntropyIn_BC = new su2double[nMarkerTurboPerf];
+	  PressureRatio= new su2double[nMarkerTurboPerf];
+	  PressureOut= new su2double[nMarkerTurboPerf];
+		TotalPresureIn= new su2double[nMarkerTurboPerf];
+		TotalTemperatureIn= new su2double[nMarkerTurboPerf];
+	  EnthalpyOut= new su2double[nMarkerTurboPerf];
+	  MachIn= new su2double[nMarkerTurboPerf];
+	  MachOut= new su2double[nMarkerTurboPerf];
+	  NormalMachIn= new su2double[nMarkerTurboPerf];
+	  NormalMachOut= new su2double[nMarkerTurboPerf];
+	  VelocityOutIs= new su2double[nMarkerTurboPerf];
+
+	  for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
+	    TotalStaticEfficiency[iMarker]= 0.0;
+	    TotalTotalEfficiency[iMarker]= 0.0;
+	    KineticEnergyLoss[iMarker]= 0.0;
+	    TotalPressureLoss[iMarker]= 0.0;
+	    MassFlowIn[iMarker]= 0.0;
+	    MassFlowOut[iMarker]= 0.0;
+	    FlowAngleIn[iMarker]= 0.0;
+	    FlowAngleIn_BC[iMarker]= 0.0;
+	    FlowAngleOut[iMarker]= 0.0;
+	    EulerianWork[iMarker]= 0.0;
+	    TotalEnthalpyIn[iMarker]= 0.0;
+	    TotalEnthalpyIn_BC[iMarker]= 0.0;
+	    EntropyIn [iMarker]= 0.0;
+	    EntropyIn_BC [iMarker]= 0.0;
+	    PressureRatio[iMarker]= 0.0;
+	    PressureOut[iMarker]= 0.0;
+			TotalPresureIn[iMarker]= 0.0;
+			TotalTemperatureIn[iMarker]= 0.0;
+	    EnthalpyOut[iMarker]= 0.0;
+	    MachIn[iMarker]= 0.0;
+	    MachOut[iMarker]= 0.0;
+	    NormalMachIn[iMarker]= 0.0;
+	    NormalMachOut[iMarker]= 0.0;
+	    VelocityOutIs[iMarker]= 0.0;
+	  }
+
   /*--- Initializate quantities for NR BC ---*/
   CkInflow				= new complex<su2double>** [nMarker];
   CkOutflow1			= new complex<su2double>** [nMarker];
