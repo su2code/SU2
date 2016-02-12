@@ -1214,4 +1214,121 @@ public:
 	void Change_Orientation(void);
 };
 
+/*!
+ * \class CPrimalGridFEM
+ * \brief Class to define the numerical primal grid for the FEM solver.
+ * \version 4.1.0 "Cardinal"
+ */
+class CPrimalGridFEM : public CPrimalGrid {
+private:
+ unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
+ unsigned short nPolyGrid;    /*!< \brief Polynomial degree for the geometry of the element. */
+ unsigned short nPolySol;     /*!< \brief Polynomial degree for the solution of the element. */
+ unsigned short nDOFsGrid;    /*!< \brief Number of DOFs for the geometry of the element. */
+ unsigned short nDOFsSol;     /*!< \brief Number of DOFs for the solution of the element. */
+
+ unsigned long elemIDGlobal;        /*!< \brief Global element ID of this element. */
+ unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
+
+public:
+
+ /*!
+  * \brief Constructor of the class.
+  */
+ CPrimalGridFEM(void);
+
+ /*!
+  * \brief Constructor using data to initialize the element.
+  * \param[in] val_elemGlobalID - Global element ID of this element.
+  * \param[in] val_VTK_Type     - VTK type to indicate the element type
+  * \param[in] val_nPolyGrid    - Polynomial degree to describe the geometry of the element.
+  * \param[in] val_nPolySol     - Polynomial degree to describe the solution of the element.
+  * \param[in] val_nDOFsGrid    - Number of DOFs used to describe the geometry of the element.
+  * \param[in] val_nDOFsSol     - Number of DOFs used to describe the solution of the element.
+  * \param[in] val_offDOfsSol   - Global offset of the solution DOFs of the element.
+  * \param[in] elem_line        - istringstream, which contains the grid node numbers of the element.
+  */
+ CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
+                unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
+                unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
+                unsigned long  val_offDOfsSol,   istringstream  &elem_line);
+
+ /*!
+  * \brief Destructor of the class.
+  */
+ ~CPrimalGridFEM(void);
+
+ /*!
+  * \brief Get the node shared by the element
+  * \param[in] val_node - Local (to the element) index of the node.
+  * \return Global index of the node.
+  */
+ unsigned long GetNode(unsigned short val_node);
+
+ /*!
+  * \brief Get the number of nodes that composes a face of an element.
+  * \param[in] val_face - Local index of the face.
+  * \return Number of nodes that composes a face of an element.
+  */
+ unsigned short GetnNodesFace(unsigned short val_face);
+
+ /*!
+  * \brief Get the face index of an element.
+  * \param[in] val_face - Local index of the face.
+  * \param[in] val_index - Local (to the face) index of the nodes that compose the face.
+  * \return Local (to the element) index of the nodes that compose the face.
+  */
+ unsigned short GetFaces(unsigned short val_face, unsigned short val_index);
+
+ /*!
+  * \brief Get the local index of the neighbors to a node (given the local index).
+  * \param[in] val_node - Local (to the element) index of a node.
+  * \param[in] val_index - Local (to the neighbor nodes of val_node) index of the nodes that are neighbor to val_node.
+  * \return Local (to the element) index of the nodes that are neighbor to val_node.
+  */
+ unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index);
+
+ /*!
+  * \brief Get the number of nodes of an element.
+  * \return Number of nodes that composes an element.
+  */
+ unsigned short GetnNodes(void);
+
+ /*!
+  * \brief Get the number of faces of an element.
+  * \return Number of faces of an element.
+  */
+ unsigned short GetnFaces(void);
+
+ /*!
+  * \brief Get the number of neighbors nodes of a node.
+  * \param[in] val_node - Local (to the element) index of a node.
+  * \return Number if neighbors of a node val_node.
+  */
+ unsigned short GetnNeighbor_Nodes(unsigned short val_node);
+
+ /*!
+  * \brief Change the orientation of an element.
+  */
+ void Change_Orientation(void);
+
+ /*!
+  * \brief Get the number of element that are neighbor to this element.
+  * \return Number of neighbor elements.
+  */
+ unsigned short GetnNeighbor_Elements(void);
+
+ /*!
+  * \brief Get the Maximum number of nodes of a face of an element.
+  * \return Maximum number of nodes of a face of an element.
+  */
+ unsigned short GetMaxNodesFace(void);
+
+ /*!
+  * \brief Get the type of the element using VTK nomenclature.
+  * \return Type of the element using VTK nomenclature.
+  */
+ unsigned short GetVTK_Type(void);
+};
+
 #include "primal_grid_structure.inl"

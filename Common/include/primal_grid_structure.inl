@@ -246,3 +246,25 @@ inline unsigned short CPyramid::GetVTK_Type(void) { return VTK_Type; }
 inline unsigned short CPyramid::GetMaxNodesFace(void) { return maxNodesFace; }
 
 inline unsigned short CPyramid::GetnNeighbor_Elements(void) { return nNeighbor_Elements; }
+
+inline unsigned long CPrimalGridFEM::GetNode(unsigned short val_node) { return Nodes[val_node]; }
+
+inline unsigned short CPrimalGridFEM::GetnNodesFace(unsigned short val_face) { return -1; }
+
+inline unsigned short CPrimalGridFEM::GetFaces(unsigned short val_face, unsigned short val_index) { return -1; }
+
+inline unsigned short CPrimalGridFEM::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return -1; }
+
+inline unsigned short CPrimalGridFEM::GetnNodes(void) { return nDOFsGrid; }
+
+inline unsigned short CPrimalGridFEM::GetnFaces(void) { return -1; }
+
+inline unsigned short CPrimalGridFEM::GetnNeighbor_Nodes(unsigned short val_node) { return -1; }
+
+inline void CPrimalGridFEM::Change_Orientation(void) {}
+
+inline unsigned short CPrimalGridFEM::GetnNeighbor_Elements(void) { return -1; }
+
+inline unsigned short CPrimalGridFEM::GetMaxNodesFace(void) { return -1; }
+
+inline unsigned short CPrimalGridFEM::GetVTK_Type(void) { return VTK_Type; }
