@@ -610,3 +610,54 @@ CPyramid::~CPyramid() {
 }
 
 void CPyramid::Change_Orientation(void) { cout << "Not defined orientation change" << endl; }
+
+CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short val_VTK_Type,
+                               unsigned short val_nPolyGrid,    unsigned short val_nPolySol,
+                               unsigned short val_nDOFsGrid,    unsigned short val_nDOFsSol,
+                               unsigned long  val_offDOfsSol,   istringstream  &elem_line)
+{
+  /*--- Store the integer data in the member variables of this object. ---*/
+
+  VTK_Type = val_VTK_Type;
+  nDim = (VTK_Type == TRIANGLE || VTK_Type == QUADRILATERAL) ? 2 : 3;
+
+  nPolyGrid = val_nPolyGrid;
+  nPolySol  = val_nPolySol;
+  nDOFsGrid = val_nDOFsGrid;
+  nDOFsSol  = val_nDOFsSol;
+
+  elemIDGlobal        = val_elemGlobalID;
+  offsetDOFsSolGlobal = val_offDOfsSol;
+
+  /*--- Allocate the memory for the global nodes of the element to define
+        the geometry and read them from elem_line.                        ---*/
+
+  Nodes = new unsigned long[nDOFsGrid];
+  for(unsigned short i=0; i<nDOFsGrid; i++)
+    elem_line >> Nodes[i];
+
+  /*--- If a linear element is used, the node numbering for non-simplices
+        must be adapted. The reason is that compatability with the original
+        SU2 format is maintained for linear elements, but for the FEM solver
+        the nodes of the elements are stored row-wise.                       ---*/
+
+  if(nPolyGrid == 1){
+    switch( VTK_Type ) {
+
+      case QUADRILATERAL:
+        swap(Nodes[2], Nodes[3]);
+        break;
+
+      case HEXAHEDRON:
+        swap(Nodes[2], Nodes[3]);
+        swap(Nodes[6], Nodes[7]);
+        break;
+
+      case PYRAMID:
+        swap(Nodes[2], Nodes[3]);
+        break;
+    }
+  }
+}
+
+CPrimalGridFEM::~CPrimalGridFEM(){}

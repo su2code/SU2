@@ -130,7 +130,7 @@ CGeometry::~CGeometry(void) {
     }
     delete[] vertex;
   }
-  
+
   if (newBound != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
@@ -1300,16 +1300,22 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
     cout << endl <<"---------------------- Read Grid File Information -----------------------" << endl;
 
   if( fem_solver ) {
+    switch (val_format) {
+      case SU2:
+        Read_SU2_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
+        LocaNodes = local_node;
+        break;
 
-    cout << "Reading of the FEM grid not implemented yet" << endl;
-
+      default:
+        if (rank == MASTER_NODE) cout << "Unrecognized mesh format specified for the FEM solver!" << endl;
 #ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
 #else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
 #endif
-
+        break;
+    }
   }
   else {
     switch (val_format) {
@@ -5969,7 +5975,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_prism[6],
   vnodes_pyramid[5], dummyLong, GlobalIndex;
   unsigned long i, j;
-  char cstr[200];
   su2double Coord_2D[2], Coord_3D[3];
   string::size_type position;
   int rank = MASTER_NODE, size = SINGLE_NODE;
@@ -6012,13 +6017,12 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- Open grid file ---*/
   
-  strcpy (cstr, val_mesh_filename.c_str());
-  mesh_file.open(cstr, ios::in);
+  mesh_file.open(val_mesh_filename.c_str(), ios::in);
   
   /*--- Check the grid ---*/
   
   if (mesh_file.fail()) {
-    cout << "There is no mesh file (CPhysicalGeometry)!! " << cstr << endl;
+    cout << "There is no mesh file (CPhysicalGeometry)!! " << val_mesh_filename << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -6188,7 +6192,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   }
   
   mesh_file.close();
-  strcpy (cstr, val_mesh_filename.c_str());
   
   /*--- Initialize some arrays for the adjacency information (ParMETIS). ---*/
   
@@ -6203,7 +6206,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     adj_counter[iPoint] = 0;
   }
   
-  mesh_file.open(cstr, ios::in);
+  mesh_file.open(val_mesh_filename.c_str(), ios::in);
 
   /*--- If more than one, find the zone in the mesh file  ---*/
   
@@ -6228,7 +6231,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     
     position = text_line.find ("NELEM=",0);
     if (position != string::npos) {
-      text_line.erase (0,6); nElem = atoi(text_line.c_str());
+      text_line.erase (0,6); nElem = atol(text_line.c_str());
 
       /*--- Store total number of elements in the original mesh ---*/
       
@@ -6490,7 +6493,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
    master node alone (and eventually distributed by the master as well).
    In the future, this component will also be performed in parallel. ---*/
   
-  mesh_file.open(cstr, ios::in);
+  mesh_file.open(val_mesh_filename.c_str(), ios::in);
 
   /*--- If more than one, find the zone in the mesh file ---*/
   
@@ -8306,6 +8309,325 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   exit(EXIT_FAILURE);
 #endif
   
+}
+
+void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
+                                                     string         val_mesh_filename,
+                                                     unsigned short val_iZone,
+                                                     unsigned short val_nZone) {
+  string text_line;
+  ifstream mesh_file;
+  string::size_type position;
+  int rank = MASTER_NODE, size = SINGLE_NODE;
+  unsigned long nDOFsGrid_Local = 0, loc_element_count = 0;
+  bool domain_flag   = false;
+  bool time_spectral = config->GetUnsteady_Simulation() == TIME_SPECTRAL;
+  nZone = val_nZone;
+
+  /*--- Initialize counters for local/global points & elements ---*/
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+  Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0;
+  nelem_edge     = 0; Global_nelem_edge     = 0;
+  nelem_triangle = 0; Global_nelem_triangle = 0;
+  nelem_quad     = 0; Global_nelem_quad     = 0;
+  nelem_tetra    = 0; Global_nelem_tetra    = 0;
+  nelem_hexa     = 0; Global_nelem_hexa     = 0;
+  nelem_prism    = 0; Global_nelem_prism    = 0;
+  nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
+
+  /*--- Allocate memory for the linear partition of the elements of the mesh.
+        These arrays are the size of the number of ranks. ---*/
+
+  starting_node = new unsigned long[size];
+  ending_node   = new unsigned long[size];
+  npoint_procs  = new unsigned long[size];
+
+  /*--- Open grid file ---*/ 
+  
+  mesh_file.open(val_mesh_filename.c_str(), ios::in);
+  
+  /*--- Check the grid ---*/
+
+  if (mesh_file.fail()) {
+    cout << "There is no mesh file (CPhysicalGeometry)!! " << val_mesh_filename << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- If more than one, find the zone in the mesh file ---*/
+
+  if (val_nZone > 1 || time_spectral) {
+    if (time_spectral) {
+      if (rank == MASTER_NODE) cout << "Reading time spectral instance " << val_iZone+1 << ":" << endl;
+    } else {
+      while (getline (mesh_file,text_line)) {
+        /*--- Search for the current domain ---*/
+        position = text_line.find ("IZONE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,6);
+          unsigned short jDomain = atoi(text_line.c_str());
+          if (jDomain == val_iZone+1) {
+            if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << " points:" << endl;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  /*--- Read grid file with format SU2 ---*/
+
+  while (getline (mesh_file, text_line)) {
+
+    /*--- Read the dimension of the problem ---*/
+
+    position = text_line.find ("NDIME=",0);
+    if (position != string::npos) {
+      if (domain_flag == false) {
+        text_line.erase (0,6); nDim = atoi(text_line.c_str());
+        if (rank == MASTER_NODE) {
+          if (nDim == 2) cout << "Two dimensional problem." << endl;
+          if (nDim == 3) cout << "Three dimensional problem." << endl;
+        }
+        domain_flag = true;
+      } else { break; }
+    }
+
+    /*--- Read the information about inner elements ---*/
+
+    position = text_line.find ("NELEM=",0);
+    if (position != string::npos) {
+      text_line.erase (0,6);
+      stringstream stream_line(text_line);
+      stream_line >> nElem;
+
+      /*--- Store total number of elements in the original mesh ---*/
+
+      Global_nElem = nElem;
+      if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+        cout << Global_nElem << " interior elements before parallel partitioning." << endl;
+
+      /*--- Compute the number of elements that will be on each processor.
+            This is a linear partitioning with the addition of a simple load
+            balancing for any remainder elements. ---*/
+
+      unsigned long total_elem_accounted = 0;
+      for(unsigned long i = 0; i < (unsigned long)size; i++) {
+        npoint_procs[i] = nElem/size;
+        total_elem_accounted = total_elem_accounted + npoint_procs[i];
+      }
+
+      /*--- Get the number of remainder elements after the even division ---*/
+      unsigned long rem_elem = nElem-total_elem_accounted;
+      for (unsigned long i = 0; i<rem_elem; i++) {
+        npoint_procs[i]++;
+      }
+
+      /*--- Store the local number of elements and the beginning/end index ---*/
+      local_elem = npoint_procs[rank];
+      starting_node[0] = 0;
+      ending_node[0]   = starting_node[0] + npoint_procs[0];
+      for (unsigned long i = 1; i < (unsigned long)size; i++) {
+        starting_node[i] = ending_node[i-1];
+        ending_node[i]   = starting_node[i] + npoint_procs[i] ;
+      }
+
+      /*--- Allocate space for elements ---*/
+
+      elem = new CPrimalGrid*[local_elem];
+      for (unsigned long i = 0; i < local_elem; i++) elem[i] = NULL;
+
+      /*--- Loop over all the elements and store the elements to be stored on
+            this rank. Furthermore, determine the total amount of DOFs for
+            the solution (which may differ from the number of DOFS for the
+            grid).                                                          ---*/
+
+      unsigned long nDOFs_tot = 0;
+      for (unsigned long i = 0; i < nElem; i++) {
+
+        getline(mesh_file, text_line);
+        istringstream elem_line(text_line);
+
+        /*--- Read the value that defines the element type, the polynomial
+              degree of the geometry and the polynomial degree of the
+              solution. Extract this info as well.                     ---*/
+
+        unsigned long typeRead; elem_line >> typeRead;
+        unsigned long typeReadErrorMessage = typeRead;
+        unsigned short nPolySol, nPolyGrid;
+        if(typeRead > 10000){nPolySol = typeRead/10000 -1; typeRead = typeRead%10000;}
+        else                {nPolySol = -1;}
+
+        nPolyGrid = typeRead/100 + 1;
+        if(nPolySol == -1) nPolySol = nPolyGrid;
+
+        unsigned short VTK_Type = typeRead%100;
+
+        unsigned short nDOFEdgeGrid = nPolyGrid + 1;
+        unsigned short nDOFEdgeSol  = nPolySol  + 1;
+
+        /*--- Determine the element type and act accordingly. ---*/
+
+        unsigned short nDOFsGrid, nDOFsSol;
+        switch(VTK_Type) {
+
+          case TRIANGLE:
+            nDOFsGrid = nDOFEdgeGrid*(nDOFEdgeGrid+1)/2;
+            nDOFsSol  = nDOFEdgeSol *(nDOFEdgeSol +1)/2;
+            break;
+
+          case QUADRILATERAL:
+            nDOFsGrid = nDOFEdgeGrid*nDOFEdgeGrid;
+            nDOFsSol  = nDOFEdgeSol *nDOFEdgeSol;
+            break;
+
+          case TETRAHEDRON:
+            nDOFsGrid = nDOFEdgeGrid*(nDOFEdgeGrid+1)*(nDOFEdgeGrid+2)/6;
+            nDOFsSol  = nDOFEdgeSol *(nDOFEdgeSol +1)*(nDOFEdgeSol +2)/6;
+            break;
+
+          case HEXAHEDRON:
+            nDOFsGrid = nDOFEdgeGrid*nDOFEdgeGrid*nDOFEdgeGrid;
+            nDOFsSol  = nDOFEdgeSol *nDOFEdgeSol *nDOFEdgeSol;
+            break;
+
+          case PRISM:
+            nDOFsGrid = nDOFEdgeGrid*nDOFEdgeGrid*(nDOFEdgeGrid+1)/2;
+            nDOFsSol  = nDOFEdgeSol *nDOFEdgeSol *(nDOFEdgeSol +1)/2;
+            break;
+
+          case PYRAMID:
+            nDOFsGrid = nDOFEdgeGrid*(nDOFEdgeGrid+1)*(2*nDOFEdgeGrid+1)/6;
+            nDOFsSol  = nDOFEdgeSol *(nDOFEdgeSol +1)*(2*nDOFEdgeSol +1)/6;
+            break;
+
+          default:
+            cout << "Unknown FEM element value, " << typeReadErrorMessage
+                 << ", in " << val_mesh_filename << endl;
+#ifndef HAVE_MPI
+            exit(EXIT_FAILURE);
+#else
+            MPI_Abort(MPI_COMM_WORLD,1);
+            MPI_Finalize();
+#endif
+        }
+
+        /*--- Allocate the memory for a new primary grid FEM element if
+              this element must be stored on this rank.                 ---*/
+
+        if ((i >= starting_node[rank]) && (i < ending_node[rank])) {
+
+          elem[loc_element_count] = new CPrimalGridFEM(i, VTK_Type, nPolyGrid, nPolySol,
+                                                       nDOFsGrid, nDOFsSol, nDOFs_tot, 
+                                                       elem_line);
+          nDOFsGrid_Local += nDOFsGrid;
+          loc_element_count++;
+        }
+
+        /*--- Update the total value of the number of DOFs. ---*/
+
+        nDOFs_tot += nDOFsSol;
+      }
+
+      /*--- Break from the loop to find the element information. ---*/
+
+      break;
+    }
+
+  }
+
+  mesh_file.close();
+
+  /*--- Create a vector, which contains the global node IDs of the local elements. ---*/
+
+  vector<unsigned long> nodeIDsElemLoc;
+  nodeIDsElemLoc.reserve(nDOFsGrid_Local);
+  for(unsigned long i=0; i<loc_element_count; i++)
+  {
+    unsigned short nDOFsElem = elem[i]->GetnNodes();
+    for(unsigned short j=0; j<nDOFsElem; ++j)
+      nodeIDsElemLoc.push_back(elem[i]->GetNode(j));
+  }
+
+  sort(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end());
+  vector<unsigned long>::iterator last;
+  last = unique(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end());
+  nodeIDsElemLoc.erase(last, nodeIDsElemLoc.end());
+
+  /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
+
+  local_node = nodeIDsElemLoc.size();
+  node = new CPoint*[local_node];
+
+  /*--- Open the grid file again and go to the position where
+        the correct zone is stored.                           ---*/
+
+  mesh_file.open(val_mesh_filename.c_str(), ios::in);
+
+  if (val_nZone > 1 && !time_spectral) {
+    while (getline (mesh_file,text_line)) {
+      position = text_line.find ("IZONE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,6);
+        unsigned short jDomain = atoi(text_line.c_str());
+        if (jDomain == val_iZone+1) break;
+      }
+    }
+  }
+
+  /*--- While loop to read the point information. ---*/
+
+  while (getline (mesh_file, text_line)) {
+
+    position = text_line.find ("NPOIN=",0);
+    if (position != string::npos) {
+      text_line.erase (0,6);
+      stringstream stream_line(text_line);
+      stream_line >> nPoint;
+
+      Global_nPoint = nPoint;
+
+      /*--- Loop over the global number of points and store the
+            ones that are needed on this processor.             ---*/
+
+      unsigned long ii = 0;
+      for(unsigned long i=0; i<nPoint; ++i) {
+        getline(mesh_file, text_line);
+
+        if( binary_search(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end(), i) ) {
+          istringstream point_line(text_line);
+
+          switch(nDim) {
+            case 2:
+              su2double Coord_2D[2];
+              point_line >> Coord_2D[0]; point_line >> Coord_2D[1];
+              node[ii] = new CPoint(Coord_2D[0], Coord_2D[1], i, config);
+              ii++;
+              break;
+
+            case 3:
+              su2double Coord_3D[3];
+              point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2];
+              node[ii] = new CPoint(Coord_3D[0], Coord_3D[1], Coord_3D[2], i, config);
+              ii++;
+              break;
+          }
+        }
+      }
+
+      break;
+    }
+  }
+
+  mesh_file.close();
+
 }
 
 void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
