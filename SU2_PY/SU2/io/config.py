@@ -445,11 +445,12 @@ def read_config(filename):
             
             # unitary objective definition
             if case('OPT_OBJECTIVE'):
-                print "OPT_OBJECTIVE is being deprecated - please replace with:"
+                print "OPT_OBJECTIVE is being deprecated, and replaced with OBJECTIVE_FUNCTION and OBJECTIVE_WEIGHT:"
+                print "ex: "
                 print "OBJECTIVE_FUNCTION = DRAG"
                 print "OBJECTIVE_WEIGHT = 1.0"
                 print "Note that you may need to either move or delete these options if they already exist in your config file."
-                print "For objectives such as lift which are traditionally maximized, use a negative sign on the weight."
+                print "In order to maximize a function (ex: LIFT), use a negative sign on the weight."
                 # remove white space
                 #this_value = ''.join(this_value.split())                
                 # split by scale
