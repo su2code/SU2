@@ -95,8 +95,9 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     x0 = [ x0[i]/dv_scl for i,dv_scl in enumerate(dv_scales) ]    
     
     # scale accuracy
-    obj = project.config['OPT_OBJECTIVE']
+    obj = project.config['OBJECTIVE_FUNCTION']
     obj_scale = obj[obj.keys()[0]]['SCALE']
+    print obj, obj_scale, accu
     accu = accu*obj_scale
 
     # scale accuracy

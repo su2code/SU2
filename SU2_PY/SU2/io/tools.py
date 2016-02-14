@@ -962,7 +962,7 @@ def restart2solution(config,state={}):
         restart  = config.RESTART_ADJ_FILENAME
         solution = config.SOLUTION_ADJ_FILENAME           
         # add suffix
-        func_name = config.OBJECTIVE_FUNCTION
+        func_name = config.OBJECTIVE_FUNCTION.keys()[0]
         suffix    = get_adjointSuffix(func_name)
         restart   = add_suffix(restart,suffix)
         solution  = add_suffix(solution,suffix)

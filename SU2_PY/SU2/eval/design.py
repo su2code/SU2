@@ -222,7 +222,7 @@ def obj_f(dvs,config,state=None):
     config.unpack_dvs(dvs)
     state = su2io.State(state)
     
-    def_objs = config['OPT_OBJECTIVE']
+    def_objs = config['OBJECTIVE_FUNCTION']
     objectives = def_objs.keys()
     n_obj = len( objectives )
     assert n_obj == 1 , 'SU2 currently only supports one objective'
@@ -269,7 +269,7 @@ def obj_df(dvs,config,state=None):
     state = su2io.State(state)
     grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
     
-    def_objs = config['OPT_OBJECTIVE']
+    def_objs = config['OBJECTIVE_FUNCTION']
     objectives = def_objs.keys()
     n_obj = len( objectives )
     assert n_obj == 1 , 'SU2 currently only supports one objective'

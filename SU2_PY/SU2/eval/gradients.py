@@ -86,7 +86,7 @@ def gradient( func_name, method, config, state=None ):
         if any([method == 'CONTINUOUS_ADJOINT', method == 'DISCRETE_ADJOINT']):
 
             # If using chain rule
-            if config.OBJECTIVE_FUNCTION == 'OUTFLOW_GENERALIZED':
+            if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION.keys():
                 import downstream_function
                 chaingrad = downstream_function.downstream_gradient(config,state)
                 # Set coefficients for gradients
@@ -256,7 +256,7 @@ def adjoint( func_name, config, state=None ):
         with redirect_output(log_adjoint):        
 
             # setup config
-            config['OBJECTIVE_FUNCTION'] = func_name
+            config['OBJECTIVE_FUNCTION'] = {func_name : {'SCALE': 1.0 }}
 
             # # RUN ADJOINT SOLUTION # #
             info = su2run.adjoint(config)

@@ -86,7 +86,7 @@ def projection( config, state={}, step = 1e-3 ):
     konfig.unpack_dvs(dv_new,dv_old)
 
     # filenames
-    objective      = konfig['OBJECTIVE_FUNCTION']
+    objective      = konfig['OBJECTIVE_FUNCTION'].keys()[0]
     grad_filename  = konfig['GRAD_OBJFUNC_FILENAME']
     output_format  = konfig['OUTPUT_FORMAT']
     plot_extension = su2io.get_extension(output_format)

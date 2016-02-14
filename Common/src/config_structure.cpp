@@ -750,6 +750,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief OBJECTIVE_FUNCTION
    *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
   addEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, DRAG_COEFFICIENT);
+  /*!\brief OBJECTIVE_WEIGHT  \n DESCRIPTION: Adjoint problem boundary condition weights. Applies scaling factor to objective(s) \ingroup Config*/
+  addDoubleOption("OBJECTIVE_WEIGHT", Weight_ObjFunc, 1.0);
 
   default_vec_5d[0]=0.0; default_vec_5d[1]=0.0; default_vec_5d[2]=0.0;
   default_vec_5d[3]=0.0;  default_vec_5d[4]=0.0;
@@ -1321,9 +1323,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Number of partitions of the mesh */
   addPythonOption("NUMBER_PART");
-
-  /* DESCRIPTION: Optimization objective function with optional scaling factor*/
-  addPythonOption("OPT_OBJECTIVE");
 
   /* DESCRIPTION: Optimization constraint functions with optional scaling factor */
   addPythonOption("OPT_CONSTRAINT");
