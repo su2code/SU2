@@ -394,38 +394,6 @@ def read_aerodynamics( History_filename , special_cases=[], final_avg=0 ):
 #: def read_aerodynamics()
 
 
-
-# -------------------------------------------------------------------
-#  Get Objective Function Sign
-# -------------------------------------------------------------------
-
-def get_objectiveSign( ObjFun_name ):
-    """ returns -1 for maximization problems:
-            LIFT
-            EFFICIENCY
-            THRUST
-            FIGURE_OF_MERIT
-            MASS_FLOW_RATE
-            AVG_OUTLET_PRESSURE
-            AVG_TOTAL_PRESSURE
-        returns +1 otherwise
-    """
-    
-    # flip sign for maximization problems
-    if ObjFun_name == "LIFT"            : return -1.0
-    if ObjFun_name == "EFFICIENCY"      : return -1.0
-    if ObjFun_name == "THRUST"          : return -1.0
-    if ObjFun_name == "FIGURE_OF_MERIT" : return -1.0
-    if ObjFun_name == "MASS_FLOW_RATE" : return -1.0
-    if ObjFun_name == "AVG_TOTAL_PRESSURE" : return -1.0
-    if ObjFun_name == "AVG_OUTLET_PRESSURE" : return -1.0
-    
-    # otherwise
-    return 1.0
-
-#: def get_objectiveSign()
-
-
 # -------------------------------------------------------------------
 #  Get Constraint Sign
 # -------------------------------------------------------------------
