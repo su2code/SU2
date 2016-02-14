@@ -135,7 +135,7 @@ def discrete_design( filename           ,
 
     config['GRADIENT_METHOD'] = 'DISCRETE_ADJOINT'
 
-    ADJ_NAME = config.OBJECTIVE_FUNCTION
+    ADJ_NAME = config.OBJECTIVE_FUNCTION.keys()
     
     # State
     state = SU2.io.State()

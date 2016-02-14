@@ -97,7 +97,7 @@ def process_surface_adjoint( config_filename       ,
     surface_filename = config_data['SURFACE_ADJ_FILENAME'] + '.csv'
     print surface_filename
     mesh_filename    = config_data['MESH_FILENAME']
-    gradient         = config_data['OBJECTIVE_FUNCTION']
+    gradient         = config_data['OBJECTIVE_FUNCTION'].keys()
     
     print('Config filename = %s' % config_filename)
     print('Surface filename = %s' % surface_filename)

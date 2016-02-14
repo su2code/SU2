@@ -445,19 +445,52 @@ def read_config(filename):
             
             # unitary objective definition
             if case('OPT_OBJECTIVE'):
+                print "OPT_OBJECTIVE is being deprecated, and replaced with OBJECTIVE_FUNCTION and OBJECTIVE_WEIGHT:"
+                print "ex: "
+                print "OBJECTIVE_FUNCTION = DRAG"
+                print "OBJECTIVE_WEIGHT = 1.0"
+                print "Note that you may need to either move or delete these options if they already exist in your config file."
+                print "In order to maximize a function (ex: LIFT), use a negative sign on the weight."
                 # remove white space
-                this_value = ''.join(this_value.split())                
+                #this_value = ''.join(this_value.split())                
                 # split by scale
-                this_value = this_value.split("*")
-                this_name  = this_value[0]
-                this_scale = 1.0
-                if len(this_value) > 1:
-                    this_scale = float( this_value[1] )
-                this_def = { this_name : {'SCALE':this_scale} }
+                #this_value = this_value.split("*")
+                #this_name  = this_value[0]
+                #this_scale = 1.0
+                #if len(this_value) > 1:
+                #    this_scale = float( this_value[1] )
+                #this_def = { this_name : {'SCALE':this_scale} }
+                # save to output dictionary
+                #data_dict[this_param] = this_def
+                break
+            
+            if case('OBJECTIVE_FUNCTION'):
+                this_value = this_value.split(',')
+                #split by ,
+                this_def={}
+                for  this_obj in this_value:       
+                    # split by scale
+                    this_name  = this_obj
+                    this_scale = 1.0
+                    this_def.update({ this_name : {'SCALE':this_scale} })
+
                 # save to output dictionary
                 data_dict[this_param] = this_def
                 break
-            
+                
+            if case('OBJECTIVE_WEIGHT'):
+                this_value = this_value.split(',')
+                if (not data_dict.has_key('OBJECTIVE_FUNCTION')):
+                    print "OBJECTIVE_FUNCTION must be defined prior to OBJECTIVE_WEIGHT."
+                    break
+                this_def = data_dict['OBJECTIVE_FUNCTION']
+                for this, this_name in enumerate(this_def):
+                    this_scale = this_value[this].strip('()')
+                    this_def[this_name] = {'SCALE':float(this_scale)} 
+                data_dict['OBJECTIVE_FUNCTION'] = this_def
+                data_dict[this_param] = (',').join(this_value)
+                break
+                
             # unitary constraint definition
             if case('OPT_CONSTRAINT'):
                 # remove white space
@@ -702,12 +735,11 @@ def write_config(filename,param_dict):
                 #: for each dv
                 break
             
-            if case("OPT_OBJECTIVE"):
-                assert len(new_value.keys())==1 , 'only one OPT_OBJECTIVE is currently supported'
+            if case('OBJECTIVE_FUNCTION'):
                 i_name = 0
                 for name,value in new_value.iteritems():
-                    if i_name>0: output_file.write("; ")
-                    output_file.write( "%s * %s" % (name,value['SCALE']) )
+                    if i_name>0: output_file.write(", ")
+                    output_file.write( "%s" % (name) )
                     i_name += 1
                 break
             
