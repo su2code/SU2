@@ -55,6 +55,10 @@ inline bool CPrimalGrid::GetDivide (void) { return Divide; }
 
 inline void CPrimalGrid::SetNode(unsigned short val_node, unsigned long val_point) { }
 
+inline void CPrimalGrid::GetCornerPointsAllFaces(unsigned short &nFaces,
+                                                 unsigned short nPointsPerFace[],
+                                                 unsigned long  faceConn[6][4]) { }
+
 inline unsigned short CVertexMPI::GetnNodes(void) { return nNodes; }
 
 inline unsigned long CVertexMPI::GetNode(unsigned short val_node) { return Nodes[val_node]; }
@@ -268,3 +272,25 @@ inline unsigned short CPrimalGridFEM::GetnNeighbor_Elements(void) { return -1; }
 inline unsigned short CPrimalGridFEM::GetMaxNodesFace(void) { return -1; }
 
 inline unsigned short CPrimalGridFEM::GetVTK_Type(void) { return VTK_Type; }
+
+inline unsigned long CPrimalGridBoundFEM::GetNode(unsigned short val_node) { return Nodes[val_node]; }
+
+inline unsigned short CPrimalGridBoundFEM::GetnNodesFace(unsigned short val_face) { return -1; }
+
+inline unsigned short CPrimalGridBoundFEM::GetFaces(unsigned short val_face, unsigned short val_index) { return -1; }
+
+inline unsigned short CPrimalGridBoundFEM::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return -1; }
+
+inline unsigned short CPrimalGridBoundFEM::GetnNodes(void) { return nDOFsGrid; }
+
+inline unsigned short CPrimalGridBoundFEM::GetnFaces(void) { return -1; }
+
+inline unsigned short CPrimalGridBoundFEM::GetnNeighbor_Nodes(unsigned short val_node) { return -1; }
+
+inline void CPrimalGridBoundFEM::Change_Orientation(void) {}
+
+inline unsigned short CPrimalGridBoundFEM::GetnNeighbor_Elements(void) { return -1; }
+
+inline unsigned short CPrimalGridBoundFEM::GetMaxNodesFace(void) { return -1; }
+
+inline unsigned short CPrimalGridBoundFEM::GetVTK_Type(void) { return VTK_Type; }

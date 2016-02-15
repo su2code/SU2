@@ -1,7 +1,7 @@
 /*!
  * \file primal_grid_structure.hpp
  * \brief Headers of the main subroutines for storing the primal grid structure.
- *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
+ *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> iile.
  * \author F. Palacios
  * \version 4.1.0 "Cardinal"
  *
@@ -240,6 +240,16 @@ public:
 	 * \return Local index of the nodes that are neighbor to <i>val_node</i>.
 	 */
 	virtual unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) = 0;
+
+ /*!
+  * \brief Virtual function, that must be overwritten by the derived class, if needed.
+  * \param[out] nFaces         - Number of faces of this element.
+  * \param[out] nPointsPerFace - Number of corner points for each of the faces.
+  * \param[out] faceConn       - Global IDs of the corner points of the faces.
+  */
+ virtual void GetCornerPointsAllFaces(unsigned short &nFaces,
+                                      unsigned short nPointsPerFace[],
+                                      unsigned long  faceConn[6][4]);
 };
 
 /*!
@@ -1216,7 +1226,7 @@ public:
 
 /*!
  * \class CPrimalGridFEM
- * \brief Class to define the numerical primal grid for the FEM solver.
+ * \brief Class to define primal grid element for the FEM solver.
  * \version 4.1.0 "Cardinal"
  */
 class CPrimalGridFEM : public CPrimalGrid {
@@ -1308,6 +1318,128 @@ public:
  unsigned short GetnNeighbor_Nodes(unsigned short val_node);
 
  /*!
+  * \brief Change the orientation of an element.
+  */
+ void Change_Orientation(void);
+
+ /*!
+  * \brief Get the number of element that are neighbor to this element.
+  * \return Number of neighbor elements.
+  */
+ unsigned short GetnNeighbor_Elements(void);
+
+ /*!
+  * \brief Get the Maximum number of nodes of a face of an element.
+  * \return Maximum number of nodes of a face of an element.
+  */
+ unsigned short GetMaxNodesFace(void);
+
+ /*!
+  * \brief Get the type of the element using VTK nomenclature.
+  * \return Type of the element using VTK nomenclature.
+  */
+ unsigned short GetVTK_Type(void);
+
+ /*!
+  * \brief Get all the corner points of all the faces of this element.
+  * \param[out] nFaces         - Number of faces of this element.
+  * \param[out] nPointsPerFace - Number of corner points for each of the faces.
+  * \param[out] faceConn       - Global IDs of the corner points of the faces.
+  */
+ void GetCornerPointsAllFaces(unsigned short &nFaces,
+                              unsigned short nPointsPerFace[],
+                              unsigned long  faceConn[6][4]);
+};
+
+/*!
+ * \class CPrimalGridBoundFEM
+ * \brief Class to define primal grid boundary element for the FEM solver.
+ * \version 4.1.0 "Cardinal"
+ */
+class CPrimalGridBoundFEM : public CPrimalGrid {
+private:
+ unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
+ unsigned short nPolyGrid;    /*!< \brief Polynomial degree for the geometry of the element. */
+ unsigned short nDOFsGrid;    /*!< \brief Number of DOFs for the geometry of the element. */
+
+ unsigned long boundElemIDGlobal;    /*!< \brief Global boundary element ID of this element. */
+
+public:
+
+ /*!
+  * \brief Constructor of the class.
+  */
+ CPrimalGridBoundFEM(void);
+
+/*!
+  * \brief Constructor using data to initialize the boundary element.
+  * \param[in] val_elemGlobalID - Global boundary element ID of this element.
+  * \param[in] val_VTK_Type     - VTK type to indicate the element type
+  * \param[in] val_nPolyGrid    - Polynomial degree to describe the geometry of the element.
+  * \param[in] val_nDOFsGrid    - Number of DOFs used to describe the geometry of the element.
+  * \param[in] val_nodes        - Vector, which contains the global node IDs of the element.
+  */
+ CPrimalGridBoundFEM(unsigned long        val_elemGlobalID,
+                     unsigned short       val_VTK_Type,
+                     unsigned short       val_nPolyGrid,
+                     unsigned short       val_nDOFsGrid,
+                     vector<unsigned long> &val_nodes);
+
+ /*!
+  * \brief Destructor of the class.
+  */
+ ~CPrimalGridBoundFEM(void);
+
+ /*!
+  * \brief Get the node shared by the element
+  * \param[in] val_node - Local (to the element) index of the node.
+  * \return Global index of the node.
+  */
+ unsigned long GetNode(unsigned short val_node);
+
+ /*!
+  * \brief Get the number of nodes that composes a face of an element.
+  * \param[in] val_face - Local index of the face.
+  * \return Number of nodes that composes a face of an element.
+  */
+ unsigned short GetnNodesFace(unsigned short val_face);
+
+ /*!
+  * \brief Get the face index of an element.
+  * \param[in] val_face - Local index of the face.
+  * \param[in] val_index - Local (to the face) index of the nodes that compose the face.
+  * \return Local (to the element) index of the nodes that compose the face.
+  */
+ unsigned short GetFaces(unsigned short val_face, unsigned short val_index);
+
+ /*!
+  * \brief Get the local index of the neighbors to a node (given the local index).
+  * \param[in] val_node - Local (to the element) index of a node.
+  * \param[in] val_index - Local (to the neighbor nodes of val_node) index of the nodes that are neighbor to val_node.
+  * \return Local (to the element) index of the nodes that are neighbor to val_node.
+  */
+ unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index);
+
+ /*!
+  * \brief Get the number of nodes of an element.
+  * \return Number of nodes that composes an element.
+  */
+ unsigned short GetnNodes(void);
+
+ /*!
+  * \brief Get the number of faces of an element.
+  * \return Number of faces of an element.
+  */
+ unsigned short GetnFaces(void);
+
+ /*!
+  * \brief Get the number of neighbors nodes of a node.
+  * \param[in] val_node - Local (to the element) index of a node.
+  * \return Number if neighbors of a node val_node.
+  */
+ unsigned short GetnNeighbor_Nodes(unsigned short val_node);
+
+  /*!
   * \brief Change the orientation of an element.
   */
  void Change_Orientation(void);
