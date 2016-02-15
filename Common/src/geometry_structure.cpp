@@ -38,8 +38,8 @@
 /*--- Cross product ---*/
 
 #define CROSS(dest,v1,v2) \
-(dest)[0] = (v1)[1]*(v2)[2] - (v1)[2]*(v2)[1];	\
-(dest)[1] = (v1)[2]*(v2)[0] - (v1)[0]*(v2)[2];	\
+(dest)[0] = (v1)[1]*(v2)[2] - (v1)[2]*(v2)[1]; \
+(dest)[1] = (v1)[2]*(v2)[0] - (v1)[0]*(v2)[2]; \
 (dest)[2] = (v1)[0]*(v2)[1] - (v1)[1]*(v2)[0];
 
 /*--- Cross product ---*/
@@ -49,9 +49,84 @@
 /*--- a = b - c ---*/
 
 #define SUB(dest,v1,v2) \
-(dest)[0] = (v1)[0] - (v2)[0];	\
-(dest)[1] = (v1)[1] - (v2)[1];	\
+(dest)[0] = (v1)[0] - (v2)[0]; \
+(dest)[1] = (v1)[1] - (v2)[1]; \
 (dest)[2] = (v1)[2] - (v2)[2];
+
+/*--- Local class used to store a face of an element. ---*/
+
+class FaceOfElementClass {
+public:
+  unsigned short nCornerPoints;
+  unsigned long  cornerPoints[4];
+
+  /* Standard constructor and destructor. Nothing to be done. */
+  FaceOfElementClass(){nCornerPoints = 0;}
+  ~FaceOfElementClass(){}
+
+  /* Copy constructor and assignment operator. */
+  FaceOfElementClass(const FaceOfElementClass &other){Copy(other);}
+
+  FaceOfElementClass& operator=(const FaceOfElementClass &other){Copy(other); return (*this);}
+
+  /* Less than operator. Needed for the sorting and searching. */
+  bool operator<(const FaceOfElementClass &other) const {
+    if(nCornerPoints != other.nCornerPoints) return nCornerPoints < other.nCornerPoints;
+    for(unsigned short i=0; i<nCornerPoints; ++i)
+      if(cornerPoints[i] != other.cornerPoints[i]) return cornerPoints[i] < other.cornerPoints[i];
+
+    return false;
+  }
+
+  /* Equal operator. Needed for removing double entities. */
+  bool operator ==(const FaceOfElementClass &other) const {
+    if(nCornerPoints != other.nCornerPoints) return false;
+    for(unsigned short i=0; i<nCornerPoints; ++i)
+      if(cornerPoints[i] != other.cornerPoints[i]) return false;
+
+    return true;
+  }
+
+  /*--- Member function, which creates a unique numbering for the corner points.
+        A sort in increasing order is OK for this purpose.                       ---*/
+  void CreateUniqueNumbering(void){sort(cornerPoints, cornerPoints+nCornerPoints);}
+
+private:
+  /*--- Copy function, which copies the data of the given object into the current object. ---*/
+  void Copy(const FaceOfElementClass &other) {
+    nCornerPoints = other.nCornerPoints;
+    for(unsigned short i=0; i<nCornerPoints; ++i) cornerPoints[i] = other.cornerPoints[i];
+  }
+};
+
+/*--- Local class used to store a boundary face. ---*/
+
+class BoundaryFaceClass {
+ public:
+  unsigned short VTK_Type, nPolyGrid, nDOFsGrid;
+  unsigned long  globalBoundElemID;
+  vector<unsigned long>  Nodes;
+
+  /* Standard constructor and destructor. Nothing to be done. */
+  BoundaryFaceClass(){}
+  ~BoundaryFaceClass(){}
+
+  /* Copy constructor and assignment operator. */
+  BoundaryFaceClass(const BoundaryFaceClass &other){Copy(other);}
+
+  BoundaryFaceClass& operator=(const BoundaryFaceClass &other){Copy(other); return (*this);}
+
+private:
+  /*--- Copy function, which copies the data of the given object into the current object. ---*/
+  void Copy(const BoundaryFaceClass &other) {
+    VTK_Type          = other.VTK_Type;
+    nPolyGrid         = other.nPolyGrid;
+    nDOFsGrid         = other.nDOFsGrid;
+    globalBoundElemID = other.globalBoundElemID;
+    Nodes             = other.Nodes;
+  }
+};
+
 
 CGeometry::CGeometry(void) {
   
@@ -72,15 +147,15 @@ CGeometry::CGeometry(void) {
   nNewElem_Bound = NULL;
   Marker_All_SendRecv = NULL;
   
-  //	PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
-  //	PeriodicElem[MAX_NUMBER_PERIODIC].clear();
-  //	XCoordList.clear();
+  // PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
+  // PeriodicElem[MAX_NUMBER_PERIODIC].clear();
+  // XCoordList.clear();
   
-  //	Xcoord_plane.clear();
-  //	Ycoord_plane.clear();
-  //	Zcoord_plane.clear();
-  //	FaceArea_plane.clear();
-  //	Plane_points.clear();
+  // Xcoord_plane.clear();
+  // Ycoord_plane.clear();
+  // Zcoord_plane.clear();
+  // FaceArea_plane.clear();
+  // Plane_points.clear();
   
 }
 
@@ -146,15 +221,15 @@ CGeometry::~CGeometry(void) {
   if (Marker_All_SendRecv != NULL) delete[] Marker_All_SendRecv;
   if (Tag_to_Marker != NULL) delete[] Tag_to_Marker;
   
-  //	PeriodicPoint[MAX_NUMBER_PERIODIC][2].~vector();
-  //	PeriodicElem[MAX_NUMBER_PERIODIC].~vector();
-  //	XCoordList.~vector();
+  // PeriodicPoint[MAX_NUMBER_PERIODIC][2].~vector();
+  // PeriodicElem[MAX_NUMBER_PERIODIC].~vector();
+  // XCoordList.~vector();
   
-  //	Xcoord_plane.~vector()
-  //	Ycoord_plane.~vector()
-  //	Zcoord_plane.~vector()
-  //	FaceArea_plane.~vector()
-  //	Plane_points.~vector()
+  // Xcoord_plane.~vector()
+  // Ycoord_plane.~vector()
+  // Zcoord_plane.~vector()
+  // FaceArea_plane.~vector()
+  // Plane_points.~vector()
   
 }
 
@@ -245,34 +320,34 @@ void CGeometry::SetEdges(void) {
 }
 
 void CGeometry::SetFaces(void) {
-  //	unsigned long iPoint, jPoint, iFace;
-  //	unsigned short jNode, iNode;
-  //	long TestFace = 0;
+  // unsigned long iPoint, jPoint, iFace;
+  // unsigned short jNode, iNode;
+  // long TestFace = 0;
   //
-  //	nFace = 0;
-  //	for (iPoint = 0; iPoint < nPoint; iPoint++)
-  //		for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
-  //			jPoint = node[iPoint]->GetPoint(iNode);
-  //			for (jNode = 0; jNode < node[jPoint]->GetnPoint(); jNode++)
-  //				if (node[jPoint]->GetPoint(jNode) == iPoint) {
-  //					TestFace = node[jPoint]->GetFace(jNode);
-  //					break;
-  //				}
-  //			if (TestFace == -1) {
-  //				node[iPoint]->SetFace(nFace, iNode);
-  //				node[jPoint]->SetFace(nFace, jNode);
-  //				nFace++;
-  //			}
-  //		}
+  // nFace = 0;
+  // for (iPoint = 0; iPoint < nPoint; iPoint++)
+  //  for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
+  //   jPoint = node[iPoint]->GetPoint(iNode);
+  //   for (jNode = 0; jNode < node[jPoint]->GetnPoint(); jNode++)
+  //    if (node[jPoint]->GetPoint(jNode) == iPoint) {
+  //     TestFace = node[jPoint]->GetFace(jNode);
+  //     break;
+  //    }
+  //   if (TestFace == -1) {
+  //    node[iPoint]->SetFace(nFace, iNode);
+  //    node[jPoint]->SetFace(nFace, jNode);
+  //    nFace++;
+  //   }
+  //  }
   //
-  //	face = new CFace*[nFace];
+  // face = new CFace*[nFace];
   //
-  //	for (iPoint = 0; iPoint < nPoint; iPoint++)
-  //		for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
-  //			jPoint = node[iPoint]->GetPoint(iNode);
-  //			iFace = FindFace(iPoint, jPoint);
-  //			if (iPoint < jPoint) face[iFace] = new CFace(iPoint, jPoint, nDim);
-  //		}
+  // for (iPoint = 0; iPoint < nPoint; iPoint++)
+  //  for (iNode = 0; iNode < node[iPoint]->GetnPoint(); iNode++) {
+  //   jPoint = node[iPoint]->GetPoint(iNode);
+  //   iFace = FindFace(iPoint, jPoint);
+  //   if (iPoint < jPoint) face[iFace] = new CFace(iPoint, jPoint, nDim);
+  //  }
 }
 
 void CGeometry::TestGeometry(void) {
@@ -323,17 +398,17 @@ void CGeometry::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned l
   
   u = new su2double [n];
   
-  if (yp1 > 0.99e30)			// The lower boundary condition is set either to be "nat
-    y2[0]=u[0]=0.0;			  // -ural"
-  else {									// or else to have a specified first derivative.
+  if (yp1 > 0.99e30)   // The lower boundary condition is set either to be "nat
+    y2[0]=u[0]=0.0;     // -ural"
+  else {         // or else to have a specified first derivative.
     y2[0] = -0.5;
     u[0]=(3.0/(x[1]-x[0]))*((y[1]-y[0])/(x[1]-x[0])-yp1);
   }
   
-  for (i=2; i<=n-1; i++) {									//  This is the decomposition loop of the tridiagonal al-
-    sig=(x[i-1]-x[i-2])/(x[i]-x[i-2]);		//	gorithm. y2 and u are used for tem-
-    p=sig*y2[i-2]+2.0;										//	porary storage of the decomposed
-    y2[i-1]=(sig-1.0)/p;										//	factors.
+  for (i=2; i<=n-1; i++) {         //  This is the decomposition loop of the tridiagonal al-
+    sig=(x[i-1]-x[i-2])/(x[i]-x[i-2]);  // gorithm. y2 and u are used for tem-
+    p=sig*y2[i-2]+2.0;          // porary storage of the decomposed
+    y2[i-1]=(sig-1.0)/p;          // factors.
     
     su2double a1 = (y[i]-y[i-1])/(x[i]-x[i-1]); if (x[i] == x[i-1]) a1 = 1.0;
     su2double a2 = (y[i-1]-y[i-2])/(x[i-1]-x[i-2]); if (x[i-1] == x[i-2]) a2 = 1.0;
@@ -342,15 +417,15 @@ void CGeometry::SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned l
     
   }
   
-  if (ypn > 0.99e30)						// The upper boundary condition is set either to be
-    qn=un=0.0;									// "natural"
-  else {												// or else to have a specified first derivative.
+  if (ypn > 0.99e30)      // The upper boundary condition is set either to be
+    qn=un=0.0;         // "natural"
+  else {            // or else to have a specified first derivative.
     qn=0.5;
     un=(3.0/(x[n-1]-x[n-2]))*(ypn-(y[n-1]-y[n-2])/(x[n-1]-x[n-2]));
   }
   y2[n-1]=(un-qn*u[n-2])/(qn*y2[n-2]+1.0);
-  for (k=n-1; k>=1; k--)					// This is the backsubstitution loop of the tridiagonal
-    y2[k-1]=y2[k-1]*y2[k]+u[k-1];	  // algorithm.
+  for (k=n-1; k>=1; k--)     // This is the backsubstitution loop of the tridiagonal
+    y2[k-1]=y2[k-1]*y2[k]+u[k-1];   // algorithm.
   
   delete[] u;
   
@@ -363,17 +438,17 @@ su2double CGeometry::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vecto
   if (x < xa[0]) x = xa[0];       // Clip max and min values
   if (x > xa[n-1]) x = xa[n-1];
   
-  klo = 1;										// We will find the right place in the table by means of
-  khi = n;										// bisection. This is optimal if sequential calls to this
-  while (khi-klo > 1) {			// routine are at random values of x. If sequential calls
-    k = (khi+klo) >> 1;				// are in order, and closely spaced, one would do better
-    if (xa[k-1] > x) khi = k;		// to store previous values of klo and khi and test if
-    else klo=k;							// they remain appropriate on the next call.
-  }								// klo and khi now bracket the input value of x
+  klo = 1;          // We will find the right place in the table by means of
+  khi = n;          // bisection. This is optimal if sequential calls to this
+  while (khi-klo > 1) {   // routine are at random values of x. If sequential calls
+    k = (khi+klo) >> 1;    // are in order, and closely spaced, one would do better
+    if (xa[k-1] > x) khi = k;  // to store previous values of klo and khi and test if
+    else klo=k;       // they remain appropriate on the next call.
+  }        // klo and khi now bracket the input value of x
   h = xa[khi-1] - xa[klo-1];
-  if (h == 0.0) h = EPS; // cout << "Bad xa input to routine splint" << endl;	// The xa’s must be distinct.
+  if (h == 0.0) h = EPS; // cout << "Bad xa input to routine splint" << endl; // The xa’s must be distinct.
   a = (xa[khi-1]-x)/h;
-  b = (x-xa[klo-1])/h;				// Cubic spline polynomial is now evaluated.
+  b = (x-xa[klo-1])/h;    // Cubic spline polynomial is now evaluated.
   y = a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
   
   return y;
@@ -1387,7 +1462,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           boundary_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
           for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
             boundary_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-          boundary_file	<< iElem_Bound << endl;
+          boundary_file << iElem_Bound << endl;
         }
       }
       
@@ -1396,7 +1471,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           boundary_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
           for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
             boundary_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-          boundary_file	<< iElem_Bound << endl;
+          boundary_file << iElem_Bound << endl;
         }
       }
       
@@ -5518,10 +5593,10 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   unsigned short nDomain, iNode, iDomain, jDomain, jNode;
   vector<unsigned long>::iterator it;
   
-  vector<vector<unsigned long> > SendTransfLocal;	/*!< \brief Vector to store the type of transformation for this send point. */
-  vector<vector<unsigned long> > ReceivedTransfLocal;	/*!< \brief Vector to store the type of transformation for this received point. */
-	vector<vector<unsigned long> > SendDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must me sended. */
-	vector<vector<unsigned long> > ReceivedDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must me sended. */
+  vector<vector<unsigned long> > SendTransfLocal; /*!< \brief Vector to store the type of transformation for this send point. */
+  vector<vector<unsigned long> > ReceivedTransfLocal; /*!< \brief Vector to store the type of transformation for this received point. */
+ vector<vector<unsigned long> > SendDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must me sended. */
+ vector<vector<unsigned long> > ReceivedDomainLocal; /*!< \brief SendDomain[from domain][to domain] and return the point index of the node that must me sended. */
   
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -5632,7 +5707,7 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
   }
   
   /*--- First compute the Send/Receive boundaries ---*/
-  Counter_Send = 0; 	Counter_Receive = 0;
+  Counter_Send = 0;  Counter_Receive = 0;
   for (iDomain = 0; iDomain < nDomain; iDomain++)
     if (SendDomainLocal[iDomain].size() != 0) Counter_Send++;
   
@@ -5924,7 +5999,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_GeoEval(iMarker, NO);
       config->SetMarker_All_Designing(iMarker, NO);
       config->SetMarker_All_Plotting(iMarker, NO);
-	  config->SetMarker_All_FSIinterface(iMarker, NO);
+   config->SetMarker_All_FSIinterface(iMarker, NO);
       config->SetMarker_All_DV(iMarker, NO);
       config->SetMarker_All_Moving(iMarker, NO);
       config->SetMarker_All_PerBound(iMarker, NO);
@@ -6423,8 +6498,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   mesh_file.close();
     
-    
-    if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << "Calling the partitioning functions." << endl;
     
   /*--- Store the number of local elements on each rank after determining
@@ -6600,7 +6674,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
             config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
             config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
-			      config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
+         config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -8225,7 +8299,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
             config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
             config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
-			config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
+   config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -8315,13 +8389,14 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
                                                      string         val_mesh_filename,
                                                      unsigned short val_iZone,
                                                      unsigned short val_nZone) {
-  string text_line;
+  string text_line, Marker_Tag;
   ifstream mesh_file;
   string::size_type position;
   int rank = MASTER_NODE, size = SINGLE_NODE;
   unsigned long nDOFsGrid_Local = 0, loc_element_count = 0;
   bool domain_flag   = false;
   bool time_spectral = config->GetUnsteady_Simulation() == TIME_SPECTRAL;
+  unsigned short nMarker_Max = config->GetnMarker_Max();
   nZone = val_nZone;
 
   /*--- Initialize counters for local/global points & elements ---*/
@@ -8557,9 +8632,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   }
 
   sort(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end());
-  vector<unsigned long>::iterator last;
-  last = unique(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end());
-  nodeIDsElemLoc.erase(last, nodeIDsElemLoc.end());
+  vector<unsigned long>::iterator lastNode;
+  lastNode = unique(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end());
+  nodeIDsElemLoc.erase(lastNode, nodeIDsElemLoc.end());
 
   /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
 
@@ -8628,6 +8703,181 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
   mesh_file.close();
 
+  /*--- Determine the faces of the local elements. --- */
+
+  vector<FaceOfElementClass> localFaces;
+  for(unsigned long i=0; i<loc_element_count; i++) {
+
+    /*--- Get the global IDs of the corner points of all the faces of this elements. ---*/
+
+    unsigned short nFaces;
+    unsigned short nPointsPerFace[6];
+    unsigned long  faceConn[6][4];
+
+    elem[i]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+    /*--- Loop over the faces and add them to localFaces. ---*/
+
+    for(unsigned short i=0; i<nFaces; ++i) {
+      FaceOfElementClass thisFace;
+      thisFace.nCornerPoints = nPointsPerFace[i];
+      for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
+        thisFace.cornerPoints[j] = faceConn[i][j];
+
+      thisFace.CreateUniqueNumbering();
+      localFaces.push_back(thisFace);
+    }
+  }
+
+  /*--- Sort localFaces in increasing order and remove the double entities,
+        such that the binary search later on is a bit more efficient.       ---*/
+
+  sort(localFaces.begin(), localFaces.end());
+  vector<FaceOfElementClass>::iterator lastFace;
+  lastFace = unique(localFaces.begin(), localFaces.end());
+  localFaces.erase(lastFace, localFaces.end());
+
+
+  /*--- Open the grid file again and go to the position where
+        the correct zone is stored.                           ---*/
+
+  mesh_file.open(val_mesh_filename.c_str(), ios::in);
+
+  if (val_nZone > 1 && !time_spectral) {
+    while (getline (mesh_file,text_line)) {
+      position = text_line.find ("IZONE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,6);
+        unsigned short jDomain = atoi(text_line.c_str());
+        if (jDomain == val_iZone+1) break;
+      }
+    }
+  }
+
+  /*--- While loop to read the boundary information. ---*/
+
+  while (getline (mesh_file, text_line)) {
+    /*--- Read number of markers ---*/
+    position = text_line.find ("NMARK=",0);
+    if (position != string::npos) {
+      text_line.erase (0,6);
+      istringstream stream_line(text_line);
+      stream_line >> nMarker;
+
+      if (rank == MASTER_NODE) cout << nMarker << " surface markers." << endl;
+      config->SetnMarker_All(nMarker);
+      bound = new CPrimalGrid**[nMarker];
+      nElem_Bound = new unsigned long [nMarker];
+      Tag_to_Marker = new string [nMarker_Max];
+
+      for(unsigned short iMarker = 0 ; iMarker < nMarker; iMarker++) {
+        getline (mesh_file, text_line);
+        text_line.erase (0,11);
+        text_line.erase (remove(text_line.begin(), text_line.end(), ' '),  text_line.end());
+        text_line.erase (remove(text_line.begin(), text_line.end(), '\r'), text_line.end());
+        text_line.erase (remove(text_line.begin(), text_line.end(), '\n'), text_line.end());
+
+        Marker_Tag = text_line.c_str();
+
+        /*--- Read the number of elements for this marker. ---*/
+        getline (mesh_file, text_line);
+        text_line.erase (0,13); stream_line.str(text_line);
+        unsigned long nElem_Bound_Global;
+        stream_line >> nElem_Bound_Global;
+        if (rank == MASTER_NODE)
+          cout << nElem_Bound_Global  << " boundary elements in index "<< iMarker 
+               <<" (Marker = " <<Marker_Tag<< ")." << endl;
+
+        /*--- Define a vector of FEM boundary elements to store the local boundary faces. ---*/
+        vector<BoundaryFaceClass> boundElems;
+
+        /*--- Loop over the global boundary faces. ---*/
+        for(unsigned long i=0; i<nElem_Bound_Global; ++i) {
+          getline (mesh_file, text_line);
+          stream_line.str(text_line);
+
+          /*--- Determine the element type, its number of DOFs and read
+                its node IDs.                                           ---*/
+          unsigned long typeRead; stream_line >> typeRead;
+          unsigned short nPolyGrid    = typeRead/100 + 1;
+          unsigned short VTK_Type     = typeRead%100;
+          unsigned short nDOFEdgeGrid = nPolyGrid + 1;
+
+          unsigned short nDOFsGrid;
+          FaceOfElementClass thisFace;
+          thisFace.cornerPoints[0] = 0; thisFace.cornerPoints[1] = nPolyGrid;
+          switch( VTK_Type ) {
+            case LINE:
+              nDOFsGrid = nDOFEdgeGrid;
+              thisFace.nCornerPoints = 2;
+              break;
+
+            case TRIANGLE:
+              nDOFsGrid = nDOFEdgeGrid*(nDOFEdgeGrid+1)/2;
+              thisFace.nCornerPoints = 3;
+              thisFace.cornerPoints[2] = nDOFsGrid -1;
+              break;
+
+            case QUADRILATERAL:
+              nDOFsGrid = nDOFEdgeGrid*nDOFEdgeGrid;
+              thisFace.nCornerPoints = 4;
+              thisFace.cornerPoints[2] = nPolyGrid*nDOFEdgeGrid;
+              thisFace.cornerPoints[3] = nDOFsGrid -1;
+              break;
+
+            default:
+              cout << "Unknown FEM boundary element value, " << typeRead
+                   << ", in " << val_mesh_filename << endl;
+#ifndef HAVE_MPI
+              exit(EXIT_FAILURE);
+#else
+              MPI_Abort(MPI_COMM_WORLD,1);
+              MPI_Finalize();
+#endif
+          }
+
+          vector<unsigned long> nodeIDs(nDOFsGrid);
+          for(unsigned short j=0; j<nDOFsGrid; ++j) stream_line >> nodeIDs[j];
+
+          /*--- Convert the local numbering of thisFace to global numbering
+                and create a unique numbering of these nodes.               ---*/
+          for(unsigned short j=0; j<thisFace.nCornerPoints; ++j)
+            thisFace.cornerPoints[j] = nodeIDs[thisFace.cornerPoints[j]];
+          thisFace.CreateUniqueNumbering();
+
+          /*--- Check if this boundary face must be stored on this rank.
+                If so, create an object of BoundaryFaceClass and add it
+                to boundElems.                                          ---*/
+          if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
+            BoundaryFaceClass thisBoundFace;
+            thisBoundFace.VTK_Type          = VTK_Type;
+            thisBoundFace.nPolyGrid         = nPolyGrid;
+            thisBoundFace.nDOFsGrid         = nDOFsGrid;
+            thisBoundFace.globalBoundElemID = i;
+            thisBoundFace.Nodes             = nodeIDs;
+
+            boundElems.push_back(thisBoundFace);
+          }
+        }
+
+        /*--- Allocate space for the boundary elements and store the ones
+              whose parent element is stored on this rank. ---*/
+        nElem_Bound[iMarker] = boundElems.size();
+        bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
+
+        for(unsigned long i=0; i<nElem_Bound[iMarker]; ++i)
+          bound[iMarker][i] = new CPrimalGridBoundFEM(boundElems[i].globalBoundElemID,
+                                                      boundElems[i].VTK_Type,
+                                                      boundElems[i].nPolyGrid,
+                                                      boundElems[i].nDOFsGrid,
+                                                      boundElems[i].Nodes);
+      }
+
+      break;
+    }
+  }
+
+  mesh_file.close();
 }
 
 void CPhysicalGeometry::Check_IntElem_Orientation(CConfig *config) {
@@ -10831,7 +11081,7 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
           output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
           for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
             output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-          output_file	<< iElem_Bound << endl;
+          output_file << iElem_Bound << endl;
         }
       }
       
@@ -10840,7 +11090,7 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
           output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
           for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
             output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-          output_file	<< iElem_Bound << endl;
+          output_file << iElem_Bound << endl;
         }
       }
       
@@ -11246,7 +11496,7 @@ void CPhysicalGeometry::SetBoundSTL(char mesh_filename[MAX_STRING_SIZE], bool ne
   unsigned short iDim, iMarker;
   su2double p[3] = {0.0,0.0,0.0}, u[3] = {0.0,0.0,0.0}, v[3] = {0.0,0.0,0.0}, n[3] = {0.0,0.0,0.0}, a;
   
-  /*---	STL format:
+  /*--- STL format:
    solid NAME
    ...
    facet normal 0.00 0.00 1.00
@@ -12237,7 +12487,7 @@ void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
           for (iIndex = 0; iIndex < node[jPoint]->GetnElem(); iIndex++) {
             iElem = node[jPoint]->GetElem(iIndex);
             PeriodicElem[iPeriodic].push_back(iElem);
-            for (unsigned short iNode = 0; iNode <	elem[iElem]->GetnNodes(); iNode ++) {
+            for (unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode ++) {
               kPoint = elem[iElem]->GetNode(iNode);
               if (!PeriodicBC[kPoint]) PeriodicPoint[iPeriodic][0].push_back(kPoint);
             }
@@ -12446,7 +12696,7 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
   
   bool loop_on;
   unsigned short iMarker = 0;
-  su2double auxXCoord, auxYCoord, auxZCoord,	*Face_Normal = NULL, auxArea, *Xcoord = NULL, *Ycoord = NULL, *Zcoord = NULL, *FaceArea = NULL;
+  su2double auxXCoord, auxYCoord, auxZCoord, *Face_Normal = NULL, auxArea, *Xcoord = NULL, *Ycoord = NULL, *Zcoord = NULL, *FaceArea = NULL;
   unsigned long jVertex, iVertex, ixCoord, iPoint, iVertex_Wall, nVertex_Wall = 0;
   
   /*--- Compute the total number of points on the near-field ---*/
@@ -12462,7 +12712,7 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
    equivalent area, and nearfield weight ---*/
   Xcoord = new su2double[nVertex_Wall];
   Ycoord = new su2double[nVertex_Wall];
-  if (nDim == 3)	Zcoord = new su2double[nVertex_Wall];
+  if (nDim == 3) Zcoord = new su2double[nVertex_Wall];
   FaceArea = new su2double[nVertex_Wall];
   
   /*--- Copy the boundary information to an array ---*/
@@ -12706,8 +12956,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
     if (incompressible) { skipVar += nDim+1; }
     if (freesurface)    { skipVar += nDim+2; }
     if (compressible)   { skipVar += nDim+2; }
-    if (sst) 			{ skipVar += 2;}
-    if (sa)				{ skipVar += 1;}
+    if (sst)    { skipVar += 2;}
+    if (sa)    { skipVar += 1;}
 
     if (grid_movement) {skipVar += nDim;}
 
@@ -12774,7 +13024,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
           for (iDim = 0; iDim < skipVar; iDim++){ point_line >> dull_val;}
           for (iDim = 0; iDim < nDim; iDim++){
             point_line >> Sens;
-            //                	  Sensitivity[iPoint_Local*nDim+iDim] += Sens*delta_T/total_T;
+            //                   Sensitivity[iPoint_Local*nDim+iDim] += Sens*delta_T/total_T;
             Sensitivity[iPoint_Local*nDim+iDim] += Sens;
 
           }
@@ -13424,7 +13674,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
           
           /*--- Now we do a sweep over all the nodes that surround the seed point ---*/
           
-          for (iNode = 0; iNode <	fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
+          for (iNode = 0; iNode < fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
             
             CVPoint = fine_grid->node[iPoint]->GetPoint(iNode);
             
@@ -13451,7 +13701,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
           
           /*--- Now we do a sweep over all the indirect nodes that can be added ---*/
           
-          for (iNode = 0; iNode <	Suitable_Indirect_Neighbors.size(); iNode ++) {
+          for (iNode = 0; iNode < Suitable_Indirect_Neighbors.size(); iNode ++) {
             
             CVPoint = Suitable_Indirect_Neighbors[iNode];
             
@@ -13519,7 +13769,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
       /*--- Count the number of agglomerated neighbors, and modify the queue ---*/
       
       priority = 0;
-      for (iNode = 0; iNode <	fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
+      for (iNode = 0; iNode < fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
         jPoint = fine_grid->node[iPoint]->GetPoint(iNode);
         if (fine_grid->node[jPoint]->GetAgglomerate() == true) priority++;
       }
@@ -13559,7 +13809,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
       
       /*--- Now we do a sweep over all the nodes that surround the seed point ---*/
       
-      for (iNode = 0; iNode <	fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
+      for (iNode = 0; iNode < fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
         
         CVPoint = fine_grid->node[iPoint]->GetPoint(iNode);
         
@@ -13595,7 +13845,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
       
       /*--- Now we do a sweep over all the indirect nodes that can be added ---*/
       
-      for (iNode = 0; iNode <	Suitable_Indirect_Neighbors.size(); iNode ++) {
+      for (iNode = 0; iNode < Suitable_Indirect_Neighbors.size(); iNode ++) {
         
         CVPoint = Suitable_Indirect_Neighbors[iNode];
         
@@ -14018,11 +14268,11 @@ bool CMultiGridGeometry::GeometricalCheck(unsigned long iPoint, CGeometry *fine_
   
   bool Stretching = true;
   
-  /*	unsigned short iNode, iDim;
+  /* unsigned short iNode, iDim;
    unsigned long jPoint;
    su2double *Coord_i = fine_grid->node[iPoint]->GetCoord();
    su2double max_dist = 0.0 ; su2double min_dist = 1E20;
-   for (iNode = 0; iNode <	fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
+   for (iNode = 0; iNode < fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
    jPoint = fine_grid->node[iPoint]->GetPoint(iNode);
    su2double *Coord_j = fine_grid->node[jPoint]->GetCoord();
    su2double distance = 0.0;
@@ -14050,7 +14300,7 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long> *Suitable_In
   
   vector<unsigned long> First_Neighbor_Points;
   First_Neighbor_Points.push_back(iPoint);
-  for (iNode = 0; iNode <	fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
+  for (iNode = 0; iNode < fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
     jPoint = fine_grid->node[iPoint]->GetPoint(iNode);
     First_Neighbor_Points.push_back(jPoint);
   }
@@ -14059,16 +14309,16 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long> *Suitable_In
   
   vector<unsigned long> Second_Neighbor_Points, Second_Origin_Points, Suitable_Second_Neighbors;
   
-  for (iNode = 0; iNode <	fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
+  for (iNode = 0; iNode < fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
     jPoint = fine_grid->node[iPoint]->GetPoint(iNode);
     
-    for (jNode = 0; jNode <	fine_grid->node[jPoint]->GetnPoint(); jNode ++) {
+    for (jNode = 0; jNode < fine_grid->node[jPoint]->GetnPoint(); jNode ++) {
       kPoint = fine_grid->node[jPoint]->GetPoint(jNode);
       
       /*--- Check that the second neighbor do not belong to the first neighbor or the seed ---*/
       
       SecondNeighborSeed = true;
-      for (iNeighbor = 0; iNeighbor <	First_Neighbor_Points.size(); iNeighbor ++)
+      for (iNeighbor = 0; iNeighbor < First_Neighbor_Points.size(); iNeighbor ++)
         if (kPoint == First_Neighbor_Points[iNeighbor]) {
           SecondNeighborSeed = false; break;
         }
@@ -14083,9 +14333,9 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long> *Suitable_In
   
   /*---  Identify those second neighbors that are repeated (candidate to be added) ---*/
   
-  for (iNeighbor = 0; iNeighbor <	Second_Neighbor_Points.size(); iNeighbor ++)
+  for (iNeighbor = 0; iNeighbor < Second_Neighbor_Points.size(); iNeighbor ++)
     
-    for (jNeighbor = 0; jNeighbor <	Second_Neighbor_Points.size(); jNeighbor ++)
+    for (jNeighbor = 0; jNeighbor < Second_Neighbor_Points.size(); jNeighbor ++)
       
     /*--- Repeated second neighbor with different origin ---*/
       
@@ -14119,17 +14369,17 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long> *Suitable_In
   
   vector<unsigned long> Third_Neighbor_Points, Third_Origin_Points;
   
-  for (jNode = 0; jNode <	Suitable_Second_Neighbors.size(); jNode ++) {
+  for (jNode = 0; jNode < Suitable_Second_Neighbors.size(); jNode ++) {
     kPoint = Suitable_Second_Neighbors[jNode];
     
-    for (kNode = 0; kNode <	fine_grid->node[kPoint]->GetnPoint(); kNode ++) {
+    for (kNode = 0; kNode < fine_grid->node[kPoint]->GetnPoint(); kNode ++) {
       lPoint = fine_grid->node[kPoint]->GetPoint(kNode);
       
       /*--- Check that the third neighbor do not belong to the first neighbors or the seed ---*/
       
       ThirdNeighborSeed = true;
       
-      for (iNeighbor = 0; iNeighbor <	First_Neighbor_Points.size(); iNeighbor ++)
+      for (iNeighbor = 0; iNeighbor < First_Neighbor_Points.size(); iNeighbor ++)
         if (lPoint == First_Neighbor_Points[iNeighbor]) {
           ThirdNeighborSeed = false;
           break;
@@ -14137,7 +14387,7 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long> *Suitable_In
       
       /*--- Check that the third neighbor do not belong to the second neighbors ---*/
       
-      for (iNeighbor = 0; iNeighbor <	Suitable_Second_Neighbors.size(); iNeighbor ++)
+      for (iNeighbor = 0; iNeighbor < Suitable_Second_Neighbors.size(); iNeighbor ++)
         if (lPoint == Suitable_Second_Neighbors[iNeighbor]) {
           ThirdNeighborSeed = false;
           break;
@@ -14153,8 +14403,8 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long> *Suitable_In
   
   /*---  Identify those third neighbors that are repeated (candidate to be added) ---*/
   
-  for (iNeighbor = 0; iNeighbor <	Third_Neighbor_Points.size(); iNeighbor ++)
-    for (jNeighbor = 0; jNeighbor <	Third_Neighbor_Points.size(); jNeighbor ++)
+  for (iNeighbor = 0; iNeighbor < Third_Neighbor_Points.size(); iNeighbor ++)
+    for (jNeighbor = 0; jNeighbor < Third_Neighbor_Points.size(); jNeighbor ++)
       
     /*--- Repeated second neighbor with different origin ---*/
       
@@ -14210,7 +14460,7 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
   /*--- If any children node belong to the boundary then the entire control
    volume will belong to the boundary ---*/
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++)
-    for (iChildren = 0; iChildren <	node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
+    for (iChildren = 0; iChildren < node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
       iFinePoint = node[iCoarsePoint]->GetChildren_CV(iChildren);
       if (fine_grid->node[iFinePoint]->GetBoundary()) {
         node[iCoarsePoint]->SetBoundary(nMarker);
@@ -14231,7 +14481,7 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
   
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++) {
     if (node[iCoarsePoint]->GetBoundary()) {
-      for (iChildren = 0; iChildren <	node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
+      for (iChildren = 0; iChildren < node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
         iFinePoint = node[iCoarsePoint]->GetChildren_CV(iChildren);
         for (iMarker = 0; iMarker < nMarker; iMarker ++) {
           if ((fine_grid->node[iFinePoint]->GetVertex(iMarker) != -1) && (node[iCoarsePoint]->GetVertex(iMarker) == -1)) {
@@ -14258,7 +14508,7 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
   
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++)
     if (node[iCoarsePoint]->GetBoundary())
-      for (iChildren = 0; iChildren <	node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
+      for (iChildren = 0; iChildren < node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
         iFinePoint = node[iCoarsePoint]->GetChildren_CV(iChildren);
         for (iMarker = 0; iMarker < fine_grid->GetnMarker(); iMarker ++) {
           if ((fine_grid->node[iFinePoint]->GetVertex(iMarker) != -1) && (node[iCoarsePoint]->GetVertex(iMarker) == -1)) {
@@ -14680,7 +14930,7 @@ void CMultiGridGeometry::FindNormal_Neighbor(CConfig *config) {
 void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
   bool loop_on;
   unsigned short iMarker = 0;
-  su2double auxXCoord, auxYCoord, auxZCoord,	*Face_Normal = NULL, auxArea, *Xcoord = NULL, *Ycoord = NULL, *Zcoord = NULL, *FaceArea = NULL;
+  su2double auxXCoord, auxYCoord, auxZCoord, *Face_Normal = NULL, auxArea, *Xcoord = NULL, *Ycoord = NULL, *Zcoord = NULL, *FaceArea = NULL;
   unsigned long jVertex, iVertex, ixCoord, iPoint, iVertex_Wall, nVertex_Wall = 0;
   
   /*--- Compute the total number of points on the near-field ---*/
@@ -14696,7 +14946,7 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
    equivalent area, and nearfield weight ---*/
   Xcoord = new su2double[nVertex_Wall];
   Ycoord = new su2double[nVertex_Wall];
-  if (nDim == 3)	Zcoord = new su2double[nVertex_Wall];
+  if (nDim == 3) Zcoord = new su2double[nVertex_Wall];
   FaceArea = new su2double[nVertex_Wall];
   
   /*--- Copy the boundary information to an array ---*/
@@ -15127,7 +15377,7 @@ void CPeriodicGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config
       nPeriodic++;
   
   /*--- First compute the Send/Receive boundaries, count the number of points ---*/
-  Counter_Send = 0; 	Counter_Receive = 0;
+  Counter_Send = 0;  Counter_Receive = 0;
   for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
     if (geometry->PeriodicPoint[iPeriodic][0].size() != 0)
       Counter_Send += geometry->PeriodicPoint[iPeriodic][0].size();
@@ -15585,7 +15835,7 @@ void CMultiGridQueue::Update(unsigned long iPoint, CGeometry *fine_grid) {
   unsigned long jPoint;
   
   RemoveCV(iPoint);
-  for (iNode = 0; iNode <	fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
+  for (iNode = 0; iNode < fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
     jPoint = fine_grid->node[iPoint]->GetPoint(iNode);
     if (fine_grid->node[jPoint]->GetAgglomerate() == false)
       IncrPriorityCV(jPoint);
