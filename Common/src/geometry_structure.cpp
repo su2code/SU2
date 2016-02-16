@@ -8781,9 +8781,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
         /*--- Read the number of elements for this marker. ---*/
         getline (mesh_file, text_line);
-        text_line.erase (0,13); stream_line.str(text_line);
+        text_line.erase (0,13); istringstream nmark_line(text_line);
         unsigned long nElem_Bound_Global;
-        stream_line >> nElem_Bound_Global;
+        nmark_line >> nElem_Bound_Global;
         if (rank == MASTER_NODE)
           cout << nElem_Bound_Global  << " boundary elements in index "<< iMarker 
                <<" (Marker = " <<Marker_Tag<< ")." << endl;
@@ -8794,11 +8794,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
         /*--- Loop over the global boundary faces. ---*/
         for(unsigned long i=0; i<nElem_Bound_Global; ++i) {
           getline (mesh_file, text_line);
-          stream_line.str(text_line);
+          istringstream bound_line(text_line);
 
           /*--- Determine the element type, its number of DOFs and read
                 its node IDs.                                           ---*/
-          unsigned long typeRead; stream_line >> typeRead;
+          unsigned long typeRead; bound_line >> typeRead;
           unsigned short nPolyGrid    = typeRead/100 + 1;
           unsigned short VTK_Type     = typeRead%100;
           unsigned short nDOFEdgeGrid = nPolyGrid + 1;
@@ -8837,7 +8837,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
           }
 
           vector<unsigned long> nodeIDs(nDOFsGrid);
-          for(unsigned short j=0; j<nDOFsGrid; ++j) stream_line >> nodeIDs[j];
+          for(unsigned short j=0; j<nDOFsGrid; ++j) bound_line >> nodeIDs[j];
 
           /*--- Convert the local numbering of thisFace to global numbering
                 and create a unique numbering of these nodes.               ---*/
@@ -11858,6 +11858,19 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
 #endif
 #endif
   
+}
+
+void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
+
+ cout << "Not implemented yet" << endl;
+
+#ifndef HAVE_MPI
+  exit(EXIT_FAILURE);
+#else
+  MPI_Abort(MPI_COMM_WORLD,1);
+  MPI_Finalize();
+#endif
+
 }
 
 void CPhysicalGeometry::GetQualityStatistics(su2double *statistics) {

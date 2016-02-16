@@ -1364,6 +1364,8 @@ private:
 
  unsigned long boundElemIDGlobal;    /*!< \brief Global boundary element ID of this element. */
 
+ unsigned long color;                /*!< \brief Color of the element in the partitioning strategy. */
+
 public:
 
  /*!

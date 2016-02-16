@@ -110,6 +110,13 @@ int main(int argc, char *argv[]) {
     grid_movement[iZone]          = NULL;
     FFDBox[iZone]                 = NULL;
   }
+
+  /*--- Determine whether or not the FEM solver is used. ---*/
+
+  const bool fem_solver = ((config->GetKind_Solver() == FEM_EULER)         ||
+                           (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
+                           (config->GetKind_Solver() == FEM_RANS)          ||
+                           (config->GetKind_Solver() == FEM_LES));
   
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
@@ -133,8 +140,9 @@ int main(int argc, char *argv[]) {
     geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
     
     /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
-    
-    geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+
+    if( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[iZone]);
+    else             geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
     
     /*--- Allocate the memory of the current domain, and divide the grid
      between the ranks. ---*/
