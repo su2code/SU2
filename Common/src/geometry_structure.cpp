@@ -60,8 +60,10 @@ public:
   unsigned short nCornerPoints;
   unsigned long  cornerPoints[4];
 
-  /* Standard constructor and destructor. Nothing to be done. */
-  FaceOfElementClass(){nCornerPoints = 0;}
+  unsigned long elemID0, elemID1;
+
+  /* Standard constructor and destructor. */
+  FaceOfElementClass(){nCornerPoints = 0; elemID0 = elemID1 = -1;}
   ~FaceOfElementClass(){}
 
   /* Copy constructor and assignment operator. */
@@ -96,6 +98,9 @@ private:
   void Copy(const FaceOfElementClass &other) {
     nCornerPoints = other.nCornerPoints;
     for(unsigned short i=0; i<nCornerPoints; ++i) cornerPoints[i] = other.cornerPoints[i];
+
+    elemID0 = other.elemID0;
+    elemID1 = other.elemID1;
   }
 };
 
@@ -104,7 +109,7 @@ private:
 class BoundaryFaceClass {
  public:
   unsigned short VTK_Type, nPolyGrid, nDOFsGrid;
-  unsigned long  globalBoundElemID;
+  unsigned long  globalBoundElemID, domainElementID;
   vector<unsigned long>  Nodes;
 
   /* Standard constructor and destructor. Nothing to be done. */
@@ -123,6 +128,7 @@ private:
     nPolyGrid         = other.nPolyGrid;
     nDOFsGrid         = other.nDOFsGrid;
     globalBoundElemID = other.globalBoundElemID;
+    domainElementID   = other.domainElementID;
     Nodes             = other.Nodes;
   }
 };
@@ -8706,7 +8712,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   /*--- Determine the faces of the local elements. --- */
 
   vector<FaceOfElementClass> localFaces;
-  for(unsigned long i=0; i<loc_element_count; i++) {
+  for(unsigned long k=0; k<loc_element_count; k++) {
 
     /*--- Get the global IDs of the corner points of all the faces of this elements. ---*/
 
@@ -8714,7 +8720,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
     unsigned short nPointsPerFace[6];
     unsigned long  faceConn[6][4];
 
-    elem[i]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+    elem[k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
 
     /*--- Loop over the faces and add them to localFaces. ---*/
 
@@ -8723,6 +8729,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
       thisFace.nCornerPoints = nPointsPerFace[i];
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
+      thisFace.elemID0 = k + starting_node[rank];
 
       thisFace.CreateUniqueNumbering();
       localFaces.push_back(thisFace);
@@ -8849,11 +8856,15 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
                 If so, create an object of BoundaryFaceClass and add it
                 to boundElems.                                          ---*/
           if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
+            vector<FaceOfElementClass>::iterator low;
+            low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+
             BoundaryFaceClass thisBoundFace;
             thisBoundFace.VTK_Type          = VTK_Type;
             thisBoundFace.nPolyGrid         = nPolyGrid;
             thisBoundFace.nDOFsGrid         = nDOFsGrid;
             thisBoundFace.globalBoundElemID = i;
+            thisBoundFace.domainElementID   = low->elemID0;
             thisBoundFace.Nodes             = nodeIDs;
 
             boundElems.push_back(thisBoundFace);
@@ -8867,6 +8878,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
         for(unsigned long i=0; i<nElem_Bound[iMarker]; ++i)
           bound[iMarker][i] = new CPrimalGridBoundFEM(boundElems[i].globalBoundElemID,
+                                                      boundElems[i].domainElementID,
                                                       boundElems[i].VTK_Type,
                                                       boundElems[i].nPolyGrid,
                                                       boundElems[i].nDOFsGrid,
@@ -11862,15 +11874,121 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
 
 void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
- cout << "Not implemented yet" << endl;
+  /*--- Initialize the color vector of the elements. ---*/
 
-#ifndef HAVE_MPI
-  exit(EXIT_FAILURE);
-#else
-  MPI_Abort(MPI_COMM_WORLD,1);
-  MPI_Finalize();
+  for(unsigned long i=0; i<local_elem; ++i)
+    elem[i]->SetColor(0);
+
+  /*--- This routine should only ever be called if we have parallel support
+   with MPI and have the ParMETIS library compiled and linked. ---*/
+
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+
+  int rank, size;
+  MPI_Comm comm = MPI_COMM_WORLD;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+  /*--- Only call ParMETIS if we have more than one rank to avoid errors ---*/
+
+  if(size > SINGLE_NODE) {
+
+    /*--- Determine the faces of the elements. ---*/
+
+    vector<FaceOfElementClass> localFaces;
+    for(unsigned long k=0; k<local_elem; k++) {
+
+      /*--- Get the global IDs of the corner points of all the faces of this elements. ---*/
+
+      unsigned short nFaces;
+      unsigned short nPointsPerFace[6];
+      unsigned long  faceConn[6][4];
+
+      elem[k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+      /*--- Loop over the faces and add them to localFaces. ---*/
+
+      for(unsigned short i=0; i<nFaces; ++i) {
+        FaceOfElementClass thisFace;
+        thisFace.nCornerPoints = nPointsPerFace[i];
+        for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
+          thisFace.cornerPoints[j] = faceConn[i][j];
+        thisFace.elemID0 = starting_node[rank] + k;
+
+        thisFace.CreateUniqueNumbering();
+        localFaces.push_back(thisFace);
+      }
+    }
+
+    /*--- Sort localFaces in increasing order. */
+
+    sort(localFaces.begin(), localFaces.end());
+
+    /*--- Loop over the boundary markers and its faces in order to flag the
+          physical boundary faces in localFaces. Note that use is made of the
+          overloaded function GetCornerPointsAllFaces, which explains the
+          dimensions of the variables used in the function call.         ---*/
+
+    for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+      for(unsigned long k=0; k<nElem_Bound[iMarker]; ++k) {
+
+        unsigned short nFaces;
+        unsigned short nPointsPerFace[6];
+        unsigned long  faceConn[6][4];
+        bound[iMarker][k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+        FaceOfElementClass thisFace;
+        thisFace.nCornerPoints = nPointsPerFace[0];
+        for(unsigned short j=0; j<nPointsPerFace[0]; ++j)
+          thisFace.cornerPoints[j] = faceConn[0][j];
+
+        vector<FaceOfElementClass>::iterator low;
+        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+
+        /*--- Invalidate the face by setting the element ID to an invalid value. ---*/
+
+        low->elemID0 = Global_nElem + 10;
+      }
+    }
+
+    /*--- Loop over the faces and check for double entries. If a double entry
+          is found, the elemID from the second entry is copied to the first
+          entry, and the second entry is invalidated.                    ---*/
+
+    unsigned long nFacesLoc = localFaces.size();
+    for(unsigned long i=1; i<nFacesLoc; ++i) {
+      if(localFaces[i] == localFaces[i-1]) {
+        localFaces[i-1].elemID1 = localFaces[i].elemID0;
+        localFaces[i].elemID0   = Global_nElem + 10;
+      }
+    }
+
+    /*--- Remove the invalidated faces. This is accomplished by giving the
+          face four points a global node ID that is larger than the largest
+          point ID in the grid. In this way the sorting operator puts
+          these faces at the end of the vector, see also the < operator
+          of FaceOfElementClass.                                         ---*/
+
+    unsigned long nFacesLocOr = nFacesLoc;
+    for(unsigned long i=0; i<nFacesLocOr; ++i) {
+      if(localFaces[i].elemID0 > Global_nElem) {
+        localFaces[i].nCornerPoints = 4;
+        localFaces[i].cornerPoints[0] = Global_nPoint;
+        localFaces[i].cornerPoints[1] = Global_nPoint;
+        localFaces[i].cornerPoints[2] = Global_nPoint;
+        localFaces[i].cornerPoints[3] = Global_nPoint;
+        --nFacesLoc;
+      }
+    }
+
+    sort(localFaces.begin(), localFaces.end());
+    localFaces.resize(nFacesLoc);
+
+  }
+
 #endif
-
+#endif
 }
 
 void CPhysicalGeometry::GetQualityStatistics(su2double *statistics) {

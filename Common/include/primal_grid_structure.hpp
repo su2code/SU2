@@ -135,6 +135,12 @@ public:
 	 * \return <code>TRUE</code> if the element must be divided; otherwise <code>FALSE</code>.
 	 */
 	bool GetDivide(void);
+
+ /*!
+  * \brief A virtual member.
+  * \param[in] val_color - New color of the element.
+  */
+ virtual void SetColor(unsigned long val_color);
 	
 	/*!
 	 * \brief A virtual member.
@@ -1239,6 +1245,7 @@ private:
 
  unsigned long elemIDGlobal;        /*!< \brief Global element ID of this element. */
  unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
+ unsigned long color;               /*!< \brief Color of the element in the partitioning strategy. */
 
 public:
 
@@ -1349,6 +1356,12 @@ public:
  void GetCornerPointsAllFaces(unsigned short &nFaces,
                               unsigned short nPointsPerFace[],
                               unsigned long  faceConn[6][4]);
+
+ /*!
+  * \brief Set the color of the element.
+  * \param[in] val_color - New color of the element.
+  */
+ void SetColor(unsigned long val_color);
 };
 
 /*!
@@ -1364,8 +1377,6 @@ private:
 
  unsigned long boundElemIDGlobal;    /*!< \brief Global boundary element ID of this element. */
 
- unsigned long color;                /*!< \brief Color of the element in the partitioning strategy. */
-
 public:
 
  /*!
@@ -1375,16 +1386,18 @@ public:
 
 /*!
   * \brief Constructor using data to initialize the boundary element.
-  * \param[in] val_elemGlobalID - Global boundary element ID of this element.
-  * \param[in] val_VTK_Type     - VTK type to indicate the element type
-  * \param[in] val_nPolyGrid    - Polynomial degree to describe the geometry of the element.
-  * \param[in] val_nDOFsGrid    - Number of DOFs used to describe the geometry of the element.
-  * \param[in] val_nodes        - Vector, which contains the global node IDs of the element.
+  * \param[in] val_elemGlobalID    - Global boundary element ID of this element.
+  * \param[in] val_domainElementID - Global ID of the corresponding domain element.
+  * \param[in] val_VTK_Type        - VTK type to indicate the element type
+  * \param[in] val_nPolyGrid       - Polynomial degree to describe the geometry of the element.
+  * \param[in] val_nDOFsGrid       - Number of DOFs used to describe the geometry of the element.
+  * \param[in] val_nodes           - Vector, which contains the global node IDs of the element.
   */
- CPrimalGridBoundFEM(unsigned long        val_elemGlobalID,
-                     unsigned short       val_VTK_Type,
-                     unsigned short       val_nPolyGrid,
-                     unsigned short       val_nDOFsGrid,
+ CPrimalGridBoundFEM(unsigned long         val_elemGlobalID,
+                     unsigned long         val_domainElementID,
+                     unsigned short        val_VTK_Type,
+                     unsigned short        val_nPolyGrid,
+                     unsigned short        val_nDOFsGrid,
                      vector<unsigned long> &val_nodes);
 
  /*!
@@ -1463,6 +1476,16 @@ public:
   * \return Type of the element using VTK nomenclature.
   */
  unsigned short GetVTK_Type(void);
+
+ /*!
+  * \brief Get the corner points of this boundary element.
+  * \param[out] nFaces         - Number of faces of this element, i.e. 1.
+  * \param[out] nPointsPerFace - Number of corner points for each of the faces.
+  * \param[out] faceConn       - Global IDs of the corner points of the faces.
+  */
+ void GetCornerPointsAllFaces(unsigned short &nFaces,
+                              unsigned short nPointsPerFace[],
+                              unsigned long  faceConn[6][4]);
 };
 
 #include "primal_grid_structure.inl"
