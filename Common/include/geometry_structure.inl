@@ -77,6 +77,8 @@ inline void CGeometry::SetColorGrid(CConfig *config) { }
 
 inline void CGeometry::SetColorGrid_Parallel(CConfig *config) { }
 
+inline void CGeometry::SetColorFEMGrid_Parallel(CConfig *config) { }
+
 inline void CGeometry::DivideConnectivity(CConfig *config, unsigned short Elem_Type) { }
 
 inline void CGeometry::SetRotationalVelocity(CConfig *config, unsigned short val_iZone) { }

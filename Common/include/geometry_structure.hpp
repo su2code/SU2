@@ -469,6 +469,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetColorGrid_Parallel(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetColorFEMGrid_Parallel(CConfig *config);
   
   /*!
 	 * \brief A virtual member.
@@ -1184,6 +1190,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetColorGrid_Parallel(CConfig *config);
+
+  /*!
+   * \brief Set the domains for FEM grid grid partitioning using ParMETIS.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetColorFEMGrid_Parallel(CConfig *config);
   
 	/*!
 	 * \brief Set the rotational velocity at each node.
