@@ -7228,14 +7228,10 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   }
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-
-      V_boundary= GetCharacPrimVar(val_marker, iVertex);
-
-      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
+		iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
       /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-      if (geometry->node[iPoint]->GetDomain()) {
-      	if (geometry->node[iPoint]->GetCoord(nDim-1) > yCoord_Max)
+			if (geometry->node[iPoint]->GetDomain()) {
+				if (geometry->node[iPoint]->GetCoord(nDim-1) > yCoord_Max)
       		yCoord_Max = geometry->node[iPoint]->GetCoord(nDim-1);
       }
   }
