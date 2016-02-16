@@ -7205,7 +7205,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   
   su2double *Normal, *FlowDirMix, TangVelocity, NormalVelocity;
   Normal = new su2double[nDim];
-  su2double ext_flow_angle;
+  su2double ext_flow_angle, yCoord_Max;
   
   Velocity_i = new su2double[nDim];
   Velocity_b = new su2double[nDim];
@@ -7227,6 +7227,19 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
     invP_Tensor[iVar] = new su2double[nVar];
   }
   
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+      V_boundary= GetCharacPrimVar(val_marker, iVertex);
+
+      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+      /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+      if (geometry->node[iPoint]->GetDomain()) {
+      	if (geometry->node[iPoint]->GetCoord(nDim-1) > yCoord_Max)
+      		yCoord_Max = geometry->node[iPoint]->GetCoord(nDim-1);
+      }
+  }
+
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
@@ -7236,7 +7249,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
     
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
     if (geometry->node[iPoint]->GetDomain()) {
-      
+
       /*--- Index of the closest interior node ---*/
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       
@@ -7464,11 +7477,13 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           
         case VELOCITY_STAT_PRESSURE_ENTROPY:
         	/* --- Non uniform BC test --- */
-        	su2double V_max, V_in2;	//hardcoded here for test
-        	V_max = 50.;	//initialized like this because in the switch
+        	su2double V_max, V_in2, yCoord;	//hardcoded here for test
+
+          yCoord = geometry->node[iPoint]->GetCoord(nDim-1);
+          V_max = 50.*sin(yCoord*M_PI/yCoord_Max);	//initialized like this because in the switch (just for test!!)
           V_in2 = V_max*V_max;
 
-
+          //std::cout << "iPoint: " << yCoord << "  " << yCoord_Max << std::endl;
           /*--- Retrieve the specified total conditions for this boundary. ---*/
         	Entropy_e = config->GetRiemann_Var1(Marker_Tag);
         	P_static   = config->GetRiemann_Var2(Marker_Tag);
