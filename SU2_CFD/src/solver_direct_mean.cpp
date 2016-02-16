@@ -7284,7 +7284,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
       
       /*--- Build the external state u_e from boundary data and internal node ---*/
-      
       switch(config->GetKind_Data_Riemann(Marker_Tag))
       {
           //TODO(turbo), generilize for 3D case
@@ -7463,6 +7462,59 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
           break;
           
+        case VELOCITY_STAT_PRESSURE_ENTROPY:
+        	/* --- Non uniform BC test --- */
+        	su2double V_max, V_in2;	//hardcoded here for test
+        	V_max = 50.;	//initialized like this because in the switch
+          V_in2 = V_max*V_max;
+
+
+          /*--- Retrieve the specified total conditions for this boundary. ---*/
+        	Entropy_e = config->GetRiemann_Var1(Marker_Tag);
+        	P_static   = config->GetRiemann_Var2(Marker_Tag);
+          Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
+           //= Enthalpy_e - 0.5*V_in2;
+
+          /* --- Computes the static state --- */
+          FluidModel->SetTDState_Ps(P_static, Entropy_e);
+          StaticEnthalpy_e = FluidModel->GetEntropy();
+          /* --- Computes the total state --- */
+          Enthalpy_e = StaticEnthalpy_e + 0.5*V_in2;
+          FluidModel->SetTDState_hs(Enthalpy_e, Entropy_e);
+          P_Total = FluidModel->GetPressure() ;
+          T_Total = FluidModel->GetTemperature();
+
+          /*--- Redundant Fluid Model calls to be changed after test. ---*/
+
+
+          /*--- Non-dim. the inputs if necessary. ---*/
+          P_Total /= config->GetPressure_Ref();
+          T_Total /= config->GetTemperature_Ref();
+
+          /* --- Computes the total state --- */
+          FluidModel->SetTDState_PT(P_Total, T_Total);
+          Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+          Entropy_e = FluidModel->GetEntropy();
+
+          /* --- Compute the boundary state u_e --- */
+          Velocity2_e = Velocity2_i;
+          if (nDim == 2){
+            NormalVelocity= -sqrt(Velocity2_e)*Flow_Dir[0];
+            TangVelocity= -sqrt(Velocity2_e)*Flow_Dir[1];
+            Velocity_e[0]= UnitNormal[0]*NormalVelocity - UnitNormal[1]*TangVelocity;
+            Velocity_e[1]= UnitNormal[1]*NormalVelocity + UnitNormal[0]*TangVelocity;
+          }else{
+            for (iDim = 0; iDim < nDim; iDim++)
+              Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
+          }
+          StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+          FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
+          Density_e = FluidModel->GetDensity();
+          StaticEnergy_e = FluidModel->GetStaticEnergy();
+          Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
+          if (tkeNeeded) Energy_e += GetTke_Inf();
+          break;
+
         default:
           cout << "Warning! Invalid Riemann input!" << endl;
           exit(EXIT_FAILURE);
