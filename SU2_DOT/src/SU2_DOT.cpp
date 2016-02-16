@@ -183,10 +183,10 @@ int main(int argc, char *argv[]) {
 		Gradient_file.open(cstr, ios::out);
 	}
 
-  /*--- For the discrete projection method we use AD to compute the derivatives
-   *  while the continuous projection uses finite differences ---*/
+  /*--- If AD mode is enabled we can use it to compute the projection,
+   * otherwise we use finite differences. ---*/
   
-  if (config_container[ZONE_0]->GetDiscrete_Adjoint()){
+  if (config_container[ZONE_0]->GetAD_Mode()){
     SetProjection_AD(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
   }else{
     SetProjection_FD(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
@@ -449,7 +449,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
 void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file){
 
-  su2double DV_Value, *VarCoord, Sensitivity, **Gradient, my_Gradient;
+  su2double DV_Value, *VarCoord, Sensitivity, **Gradient, my_Gradient, *Normal, Area = 0.0;
   unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value;
   unsigned long iVertex, nVertex, iPoint;
 
@@ -520,9 +520,20 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       for (iVertex = 0; iVertex <nVertex; iVertex++) {
         iPoint      = geometry->vertex[iMarker][iVertex]->GetNode();
         VarCoord    = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+        Normal      = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++){
+          Area += Normal[iDim]*Normal[iDim];
+        }
+        Area = sqrt(Area);
 
         for (iDim = 0; iDim < nDim; iDim++){
-          Sensitivity = geometry->GetSensitivity(iPoint, iDim);
+          if (config->GetDiscrete_Adjoint()){
+            Sensitivity = geometry->GetSensitivity(iPoint, iDim);
+          } else {
+            Sensitivity = -Normal[iDim]*geometry->vertex[iMarker][iVertex]->GetAuxVar()/Area;
+          }
           SU2_TYPE::SetDerivative(VarCoord[iDim], SU2_TYPE::GetValue(Sensitivity));
         }
       }
