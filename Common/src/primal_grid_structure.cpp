@@ -734,6 +734,7 @@ void CPrimalGridFEM::GetCornerPointsAllFaces(unsigned short &nFaces,
 }
 
 CPrimalGridBoundFEM::CPrimalGridBoundFEM(unsigned long         val_elemGlobalID,
+                                         unsigned long         val_domainElementID,
                                          unsigned short        val_VTK_Type,
                                          unsigned short        val_nPolyGrid,
                                          unsigned short        val_nDOFsGrid,
@@ -748,6 +749,7 @@ CPrimalGridBoundFEM::CPrimalGridBoundFEM(unsigned long         val_elemGlobalID,
   nDOFsGrid = val_nDOFsGrid;
 
   boundElemIDGlobal = val_elemGlobalID;
+  DomainElement     = val_domainElementID;
 
   /*--- Allocate the memory for the global nodes of the element to define
         the geometry and copy them from val_nodes.                        ---*/
@@ -763,3 +765,42 @@ CPrimalGridBoundFEM::CPrimalGridBoundFEM(unsigned long         val_elemGlobalID,
 }
 
 CPrimalGridBoundFEM::~CPrimalGridBoundFEM(){}
+
+void CPrimalGridBoundFEM::GetCornerPointsAllFaces(unsigned short &nFaces,
+                                                  unsigned short nPointsPerFace[],
+                                                  unsigned long  faceConn[6][4]) {
+
+  /*--- For compatibility reasons with the base class, nFaces is also an
+        argument to this function. However, it is always 1, because the
+        boundary element is the face.                                   ---*/
+  nFaces = 1;
+
+  /*--- Determine the element type and set the face data accordingly.
+        The faceConn values are local to the element.                 ---*/
+
+  unsigned short nPoly = nPolyGrid, nDOFs = nDOFsGrid;
+   switch( VTK_Type ) {
+    case LINE:
+      nPointsPerFace[0] = 2;
+      faceConn[0][0] = 0; faceConn[0][1] = nPoly;
+      break;
+
+    case TRIANGLE:
+      nPointsPerFace[0] = 3;
+      faceConn[0][0] = 0; faceConn[0][1] = nPoly; faceConn[0][2] = nDOFs -1;
+      break;
+
+    case QUADRILATERAL:
+      unsigned short nn2 = nPoly*(nPoly+1);
+      nPointsPerFace[0] = 4;
+      faceConn[0][0] = 0; faceConn[0][1] = nPoly; faceConn[0][2] = nDOFs -1; faceConn[0][3] = nn2;
+      break;
+  }
+
+  /*--- Convert the local values of faceConn to global values. ---*/
+
+  for(unsigned short j=0; j<nPointsPerFace[0]; ++j) {
+    unsigned long nn = faceConn[0][j];
+    faceConn[0][j] = Nodes[nn];
+  }
+}

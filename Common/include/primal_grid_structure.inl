@@ -37,6 +37,8 @@ inline void CPrimalGrid::SetDomainElement(unsigned long val_domainelement) { Dom
 
 inline void CPrimalGrid::SetRotation_Type(unsigned short val_rotation_type) { }
 
+inline void CPrimalGrid::SetColor(unsigned long val_color) { }
+
 inline unsigned short CPrimalGrid::GetRotation_Type(void) { return 0; }
 
 inline unsigned long CPrimalGrid::GetDomainElement(void) { return DomainElement; }
@@ -272,6 +274,8 @@ inline unsigned short CPrimalGridFEM::GetnNeighbor_Elements(void) { return -1; }
 inline unsigned short CPrimalGridFEM::GetMaxNodesFace(void) { return -1; }
 
 inline unsigned short CPrimalGridFEM::GetVTK_Type(void) { return VTK_Type; }
+
+inline void CPrimalGridFEM::SetColor(unsigned long val_color) { color = val_color; }
 
 inline unsigned long CPrimalGridBoundFEM::GetNode(unsigned short val_node) { return Nodes[val_node]; }
 
