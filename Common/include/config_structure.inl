@@ -1201,3 +1201,5 @@ inline su2double CConfig::GetResidual_FEM_ETOL(void) { return Res_FEM_ETOL; }
 inline unsigned short CConfig::GetDirectDiff(){ return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() {return DiscreteAdjoint;}
+
+inline bool CConfig::GetAD_Mode(void) {return AD_Mode;}
