@@ -675,7 +675,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
 
       if (target_geometry->node[Point_Target]->GetDomain()) {
 
-        Coord_i = target_geometry->vertex[markTarget][iVertex]->GetCoord();
+        Coord_i = target_geometry->node[Point_Target]->GetCoord();
         /*---Loop over the faces previously communicated/stored ---*/
         for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
 
@@ -726,7 +726,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
             /*--- Find distance to the interpolated point ---*/
             dist = 0.0;
             for (iDim=0; iDim<nDim; iDim++){
-              Coord[iDim] = target_geometry->vertex[markTarget][iVertex]->GetCoord(iDim);
+              Coord[iDim] = Coord_i[iDim];
               for(iDonor=0; iDonor< nNodes; iDonor++){
                 Coord[iDim]-=myCoeff[iDonor]*X[iDim*nNodes+iDonor];
               }
