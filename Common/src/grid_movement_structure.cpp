@@ -3691,7 +3691,7 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
       Diff = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++) {
 				VarCoord[iDim] = CartCoordNew[iDim] - CartCoordOld[iDim];
-        if ((fabs(VarCoord[iDim]) <= EPS) && (config->GetDirectDiff() != D_DESIGN) && (!config->GetDiscrete_Adjoint()))
+        if ((fabs(VarCoord[iDim]) <= EPS) && (config->GetDirectDiff() != D_DESIGN) && (!config->GetAD_Mode()))
           VarCoord[iDim] = 0.0;
         Diff += (VarCoord[iDim]*VarCoord[iDim]);
 			}
@@ -4493,13 +4493,16 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
         
         Normal[0] = Normal_[0]*ValCos - Normal_[1]*ValSin;
         Normal[1] = Normal_[1]*ValCos + Normal_[0]*ValSin;
-        
+
         /*--- Bump computation ---*/
         
 				if (double_surface) {
-					ek = log10(0.5)/log10(xk);
-					fk = pow( sin( PI_NUMBER * pow(Coord[0], ek) ) , t2);
-          
+          ek = log10(0.5)/log10(xk);
+          if (Coord[0] > 10*EPS)
+            fk = pow( sin( PI_NUMBER * pow(Coord[0], ek) ), t2);
+          else
+            fk = 0.0;
+
 					/*--- Upper and lower surface ---*/
           
 					if (( upper) && (Normal[1] > 0)) { VarCoord[1] =  Ampl*fk; }
@@ -4508,8 +4511,11 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 				}
 				else {
 					xCoord = Coord[0] - BumpLoc;
-					ek = log10(0.5)/log10(xk/BumpSize);
-					fk = pow( sin( PI_NUMBER * pow(xCoord/BumpSize, ek)), t2);
+          ek = log10(0.5)/log10((xk+EPS)/BumpSize);
+          if (Coord[0] > 10*EPS)
+            fk = pow( sin( PI_NUMBER * pow(xCoord/BumpSize, ek)), t2);
+          else
+            fk = 0.0;
 
 					/*--- Only one surface ---*/
           

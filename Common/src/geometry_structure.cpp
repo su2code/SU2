@@ -5999,6 +5999,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_prism[6],
   vnodes_pyramid[5], dummyLong, GlobalIndex;
   unsigned long i, j;
+  long local_index;
   char cstr[200];
   su2double Coord_2D[2], Coord_3D[3];
   string::size_type position;
@@ -6161,12 +6162,14 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       }
       
       /*--- Get the number of remainder points after the even division ---*/
+      
       rem_points = nPoint-total_pt_accounted;
       for (i = 0; i<rem_points; i++) {
         npoint_procs[i]++;
       }
       
       /*--- Store the local number of nodes and the beginning/end index ---*/
+      
       local_node = npoint_procs[rank];
       starting_node[0] = 0;
       ending_node[0]   = starting_node[0] + npoint_procs[0];
@@ -6176,7 +6179,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       }
       
       /*--- Here we check if a point in the mesh file lies in the domain
-       and if so then store it on the local processor. We only create enough
+       and if so, then store it on the local processor. We only create enough
        space in the node container for the local nodes at this point. ---*/
       
       node = new CPoint*[local_node];
@@ -6220,18 +6223,14 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   mesh_file.close();
   strcpy (cstr, val_mesh_filename.c_str());
   
-  /*--- Initialize some arrays for the adjacency information (ParMETIS). ---*/
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
   
-//  unsigned long *adj_counter = new unsigned long[local_node];
-//  unsigned long **adjacent_elem = new unsigned long*[local_node];
-    
-  adj_counter = new unsigned long[local_node];
-  adjacent_elem = new unsigned long*[local_node];
-  
-  for (iPoint = 0; iPoint < local_node; iPoint++) {
-    adjacent_elem[iPoint] = new unsigned long[2000];
-    adj_counter[iPoint] = 0;
-  }
+  /*--- Initialize the vector for the adjacency information (ParMETIS). ---*/
+  vector< vector<unsigned long> > adj_nodes(local_node, vector<unsigned long>(0));
+
+#endif
+#endif
   
   mesh_file.open(cstr, ios::in);
 
@@ -6286,8 +6285,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
        be element redundancy, since multiple ranks will store the same elems
        on the boundaries of the initial linear partitioning. ---*/
       
-      // TO DO: remove redundant edges (quads have extra diagonals for instance)
-      
       element_count=0; loc_element_count=0; ielem_div=0;
       while (ielem_div < nElem) {
         getline(mesh_file, text_line);
@@ -6304,140 +6301,342 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             
           case TRIANGLE:
             
-            elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
-            for (i = 0; i < N_POINTS_TRIANGLE; i++) {
-              if ((vnodes_triangle[i]>=starting_node[rank])&&(vnodes_triangle[i]<ending_node[rank])) {
-                elem_reqd = true;
-                  
-                for (unsigned long j=0; j<N_POINTS_TRIANGLE; j++) {
-                  if (i != j) {
-                    adjacent_elem[vnodes_triangle[i]-starting_node[rank]][adj_counter[vnodes_triangle[i]-starting_node[rank]]]=vnodes_triangle[j];
-                    adj_counter[vnodes_triangle[i]-starting_node[rank]]++;
-                  }
-                }
+            /*--- Load the connectivity for this element. ---*/
+            
+            elem_line >> vnodes_triangle[0];
+            elem_line >> vnodes_triangle[1];
+            elem_line >> vnodes_triangle[2];
+            
+            /*--- Decide whether we need to store this element, i.e., check if
+             any of the nodes making up this element have a global index value
+             that falls within the range of our linear partitioning. ---*/
+            
+            for (int i = 0; i < N_POINTS_TRIANGLE; i++) {
+              
+              local_index = vnodes_triangle[i]-starting_node[rank];
+
+              if ((local_index >= 0) && (local_index < (long)local_node)) {
                 
+                /*--- This node is within our linear partition. Mark this 
+                 entire element to be added to our list for this rank, and 
+                 add the neighboring nodes to this nodes' adjacency list. ---*/
+                
+                elem_reqd = true;
+                
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+                /*--- Build adjacency assuming the VTK connectivity ---*/
+                
+                for (int j=0; j<N_POINTS_TRIANGLE; j++) {
+                  if (i != j) adj_nodes[local_index].push_back(vnodes_triangle[j]);
+                }
+#endif
+#endif
               }
             }
+            
+            /*--- If any of the nodes were within the linear partition, the
+             element is added to our element data structure. ---*/
+            
             if (elem_reqd) {
               Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CTriangle(vnodes_triangle[0], vnodes_triangle[1], vnodes_triangle[2], 2);
-              nelem_triangle++;loc_element_count++;
+              elem[loc_element_count] = new CTriangle(vnodes_triangle[0],
+                                                      vnodes_triangle[1],
+                                                      vnodes_triangle[2], 2);
+              loc_element_count++;
+              nelem_triangle++;
             }
             
             break;
             
           case QUADRILATERAL:
             
-            elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
-            for (i = 0; i < N_POINTS_QUADRILATERAL; i++) {
-              if ((vnodes_quad[i]>=starting_node[rank])&&(vnodes_quad[i]<ending_node[rank])) {
-                elem_reqd = true;
-                  
-                for (unsigned long j=0; j<N_POINTS_QUADRILATERAL; j++) {
-                  
-                  if (i!=j) {
-                    adjacent_elem[vnodes_quad[i]-starting_node[rank]][adj_counter[vnodes_quad[i]-starting_node[rank]]]=vnodes_quad[j];
-                    adj_counter[vnodes_quad[i]-starting_node[rank]]++;
-                  }
-                }
+            /*--- Load the connectivity for this element. ---*/
+            
+            elem_line >> vnodes_quad[0];
+            elem_line >> vnodes_quad[1];
+            elem_line >> vnodes_quad[2];
+            elem_line >> vnodes_quad[3];
+            
+            /*--- Decide whether we need to store this element, i.e., check if
+             any of the nodes making up this element have a global index value
+             that falls within the range of our linear partitioning. ---*/
+            
+            for (int i = 0; i < N_POINTS_QUADRILATERAL; i++) {
+              
+              local_index = vnodes_quad[i]-starting_node[rank];
+              
+              if ((local_index >= 0) && (local_index < (long)local_node)) {
                 
+                /*--- This node is within our linear partition. Mark this
+                 entire element to be added to our list for this rank, and
+                 add the neighboring nodes to this nodes' adjacency list. ---*/
+                
+                elem_reqd = true;
+                
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+                /*--- Build adjacency assuming the VTK connectivity ---*/
+
+                adj_nodes[local_index].push_back(vnodes_quad[(i+1)%4]);
+                adj_nodes[local_index].push_back(vnodes_quad[(i+3)%4]);
+#endif
+#endif
               }
             }
+            
+            /*--- If any of the nodes were within the linear partition, the
+             element is added to our element data structure. ---*/
+            
             if (elem_reqd) {
               Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CQuadrilateral(vnodes_quad[0], vnodes_quad[1], vnodes_quad[2], vnodes_quad[3], 2);
-              loc_element_count++; nelem_quad++;
+              elem[loc_element_count] = new CQuadrilateral(vnodes_quad[0],
+                                                           vnodes_quad[1],
+                                                           vnodes_quad[2],
+                                                           vnodes_quad[3], 2);
+              loc_element_count++;
+              nelem_quad++;
             }
             
             break;
             
           case TETRAHEDRON:
             
-            elem_line >> vnodes_tetra[0]; elem_line >> vnodes_tetra[1]; elem_line >> vnodes_tetra[2]; elem_line >> vnodes_tetra[3];
-            for (i = 0; i < N_POINTS_TETRAHEDRON; i++) {
-              if ((vnodes_tetra[i]>=starting_node[rank])&&(vnodes_tetra[i]<ending_node[rank])) {
+            /*--- Load the connectivity for this element. ---*/
+            
+            elem_line >> vnodes_tetra[0];
+            elem_line >> vnodes_tetra[1];
+            elem_line >> vnodes_tetra[2];
+            elem_line >> vnodes_tetra[3];
+            
+            /*--- Decide whether we need to store this element, i.e., check if
+             any of the nodes making up this element have a global index value
+             that falls within the range of our linear partitioning. ---*/
+            
+            for (int i = 0; i < N_POINTS_TETRAHEDRON; i++) {
+              
+              local_index = vnodes_tetra[i]-starting_node[rank];
+              
+              if ((local_index >= 0) && (local_index < (long)local_node)) {
+                
+                /*--- This node is within our linear partition. Mark this
+                 entire element to be added to our list for this rank, and
+                 add the neighboring nodes to this nodes' adjacency list. ---*/
+                
                 elem_reqd = true;
-                for (j = 0; j<N_POINTS_TETRAHEDRON; j++) {
-                  if (i!=j) {
-                    adjacent_elem[vnodes_tetra[i]-starting_node[rank]][adj_counter[vnodes_tetra[i]-starting_node[rank]]]=vnodes_tetra[j];
-                    adj_counter[vnodes_tetra[i]-starting_node[rank]]++;
-                  }
+                
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+                /*--- Build adjacency assuming the VTK connectivity ---*/
+                
+                for (int j=0; j<N_POINTS_TETRAHEDRON; j++) {
+                  if (i != j) adj_nodes[local_index].push_back(vnodes_tetra[j]);
                 }
+#endif
+#endif
               }
             }
+            
+            /*--- If any of the nodes were within the linear partition, the
+             element is added to our element data structure. ---*/
+            
             if (elem_reqd) {
               Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CTetrahedron(vnodes_tetra[0], vnodes_tetra[1], vnodes_tetra[2], vnodes_tetra[3]);
-              loc_element_count++; nelem_tetra++;
+              elem[loc_element_count] = new CTetrahedron(vnodes_tetra[0],
+                                                         vnodes_tetra[1],
+                                                         vnodes_tetra[2],
+                                                         vnodes_tetra[3]);
+              loc_element_count++;
+              nelem_tetra++;
             }
+            
             break;
             
           case HEXAHEDRON:
             
-            elem_line >> vnodes_hexa[0]; elem_line >> vnodes_hexa[1]; elem_line >> vnodes_hexa[2];
-            elem_line >> vnodes_hexa[3]; elem_line >> vnodes_hexa[4]; elem_line >> vnodes_hexa[5];
-            elem_line >> vnodes_hexa[6]; elem_line >> vnodes_hexa[7];
-            for (i = 0; i < N_POINTS_HEXAHEDRON; i++) {
-              if ((vnodes_hexa[i]>=starting_node[rank])&&(vnodes_hexa[i]<ending_node[rank])) {
+            /*--- Load the connectivity for this element. ---*/
+            
+            elem_line >> vnodes_hexa[0];
+            elem_line >> vnodes_hexa[1];
+            elem_line >> vnodes_hexa[2];
+            elem_line >> vnodes_hexa[3];
+            elem_line >> vnodes_hexa[4];
+            elem_line >> vnodes_hexa[5];
+            elem_line >> vnodes_hexa[6];
+            elem_line >> vnodes_hexa[7];
+            
+            /*--- Decide whether we need to store this element, i.e., check if
+             any of the nodes making up this element have a global index value
+             that falls within the range of our linear partitioning. ---*/
+            
+            for (int i = 0; i < N_POINTS_HEXAHEDRON; i++) {
+              
+              local_index = vnodes_hexa[i]-starting_node[rank];
+              
+              if ((local_index >= 0) && (local_index < (long)local_node)) {
+                
+                /*--- This node is within our linear partition. Mark this
+                 entire element to be added to our list for this rank, and
+                 add the neighboring nodes to this nodes' adjacency list. ---*/
+                
                 elem_reqd = true;
-                for (j = 0; j < N_POINTS_HEXAHEDRON; j++) {
-                  if (i!=j) {
-                    adjacent_elem[vnodes_hexa[i]-starting_node[rank]][adj_counter[vnodes_hexa[i]-starting_node[rank]]]=vnodes_hexa[j];
-                    adj_counter[vnodes_hexa[i]-starting_node[rank]]++;
-                  }
+                
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+                /*--- Build adjacency assuming the VTK connectivity ---*/
+                
+                if (i < 4) {
+                  adj_nodes[local_index].push_back(vnodes_hexa[(i+1)%4]);
+                  adj_nodes[local_index].push_back(vnodes_hexa[(i+3)%4]);
+                } else {
+                  adj_nodes[local_index].push_back(vnodes_hexa[(i-3)%4+4]);
+                  adj_nodes[local_index].push_back(vnodes_hexa[(i-1)%4+4]);
                 }
+                adj_nodes[local_index].push_back(vnodes_hexa[(i+4)%8]);
+#endif
+#endif
               }
             }
+            
+            /*--- If any of the nodes were within the linear partition, the
+             element is added to our element data structure. ---*/
+            
             if (elem_reqd) {
               Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CHexahedron(vnodes_hexa[0], vnodes_hexa[1], vnodes_hexa[2], vnodes_hexa[3],
-                                                        vnodes_hexa[4], vnodes_hexa[5], vnodes_hexa[6], vnodes_hexa[7]);
-              loc_element_count++; nelem_hexa++;
+              elem[loc_element_count] = new CHexahedron(vnodes_hexa[0],
+                                                        vnodes_hexa[1],
+                                                        vnodes_hexa[2],
+                                                        vnodes_hexa[3],
+                                                        vnodes_hexa[4],
+                                                        vnodes_hexa[5],
+                                                        vnodes_hexa[6],
+                                                        vnodes_hexa[7]);
+              loc_element_count++;
+              nelem_hexa++;
             }
+            
             break;
             
           case PRISM:
             
-            elem_line >> vnodes_prism[0]; elem_line >> vnodes_prism[1]; elem_line >> vnodes_prism[2];
-            elem_line >> vnodes_prism[3]; elem_line >> vnodes_prism[4]; elem_line >> vnodes_prism[5];
-            for (i = 0; i < N_POINTS_PRISM; i++) {
-              if ((vnodes_prism[i]>=starting_node[rank])&&(vnodes_prism[i]<ending_node[rank])) {
+            /*--- Load the connectivity for this element. ---*/
+            
+            elem_line >> vnodes_prism[0];
+            elem_line >> vnodes_prism[1];
+            elem_line >> vnodes_prism[2];
+            elem_line >> vnodes_prism[3];
+            elem_line >> vnodes_prism[4];
+            elem_line >> vnodes_prism[5];
+            
+            /*--- Decide whether we need to store this element, i.e., check if
+             any of the nodes making up this element have a global index value
+             that falls within the range of our linear partitioning. ---*/
+            
+            for (int i = 0; i < N_POINTS_PRISM; i++) {
+              
+              local_index = vnodes_prism[i]-starting_node[rank];
+              
+              if ((local_index >= 0) && (local_index < (long)local_node)) {
+                
+                /*--- This node is within our linear partition. Mark this
+                 entire element to be added to our list for this rank, and
+                 add the neighboring nodes to this nodes' adjacency list. ---*/
+                
                 elem_reqd = true;
-                for (j = 0; j < N_POINTS_PRISM; j++) {
-                  if (i!=j) {
-                    adjacent_elem[vnodes_prism[i]-starting_node[rank]][adj_counter[vnodes_prism[i]-starting_node[rank]]]=vnodes_prism[j];
-                    adj_counter[vnodes_prism[i]-starting_node[rank]]++;
-                  }
+                
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+                /*--- Build adjacency assuming the VTK connectivity ---*/
+                
+                if (i < 3) {
+                  adj_nodes[local_index].push_back(vnodes_prism[(i+1)%3]);
+                  adj_nodes[local_index].push_back(vnodes_prism[(i+2)%3]);
+                } else {
+                  adj_nodes[local_index].push_back(vnodes_prism[(i-2)%3+3]);
+                  adj_nodes[local_index].push_back(vnodes_prism[(i-1)%3+3]);
                 }
+                adj_nodes[local_index].push_back(vnodes_prism[(i+3)%6]);
+#endif
+#endif
               }
             }
+            
+            /*--- If any of the nodes were within the linear partition, the
+             element is added to our element data structure. ---*/
+            
             if (elem_reqd) {
               Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CPrism(vnodes_prism[0], vnodes_prism[1], vnodes_prism[2], vnodes_prism[3], vnodes_prism[4], vnodes_prism[5]);
-              loc_element_count++; nelem_prism++;
+              elem[loc_element_count] = new CPrism(vnodes_prism[0],
+                                                   vnodes_prism[1],
+                                                   vnodes_prism[2],
+                                                   vnodes_prism[3],
+                                                   vnodes_prism[4],
+                                                   vnodes_prism[5]);
+              loc_element_count++;
+              nelem_prism++;
             }
+            
             break;
             
           case PYRAMID:
             
-            elem_line >> vnodes_pyramid[0]; elem_line >> vnodes_pyramid[1]; elem_line >> vnodes_pyramid[2];
-            elem_line >> vnodes_pyramid[3]; elem_line >> vnodes_pyramid[4];
-            for (i = 0; i < N_POINTS_PYRAMID; i++) {
-              if ((vnodes_pyramid[i]>=starting_node[rank])&&(vnodes_pyramid[i]<ending_node[rank])) {
+            /*--- Load the connectivity for this element. ---*/
+            
+            elem_line >> vnodes_pyramid[0];
+            elem_line >> vnodes_pyramid[1];
+            elem_line >> vnodes_pyramid[2];
+            elem_line >> vnodes_pyramid[3];
+            elem_line >> vnodes_pyramid[4];
+            
+            /*--- Decide whether we need to store this element, i.e., check if
+             any of the nodes making up this element have a global index value
+             that falls within the range of our linear partitioning. ---*/
+            
+            for (int i = 0; i < N_POINTS_PYRAMID; i++) {
+              
+              local_index = vnodes_pyramid[i]-starting_node[rank];
+              
+              if ((local_index >= 0) && (local_index < (long)local_node)) {
+                
+                /*--- This node is within our linear partition. Mark this
+                 entire element to be added to our list for this rank, and
+                 add the neighboring nodes to this nodes' adjacency list. ---*/
+                
                 elem_reqd = true;
-                for (j = 0; j < N_POINTS_PYRAMID; j++) {
-                  if (i!=j) {
-                    adjacent_elem[vnodes_pyramid[i]-starting_node[rank]][adj_counter[vnodes_pyramid[i]-starting_node[rank]]]=vnodes_pyramid[j];
-                    adj_counter[vnodes_pyramid[i]-starting_node[rank]]++;
-                  }
+                
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+                /*--- Build adjacency assuming the VTK connectivity ---*/
+                
+                if (i < 4) {
+                  adj_nodes[local_index].push_back(vnodes_pyramid[(i+1)%4]);
+                  adj_nodes[local_index].push_back(vnodes_pyramid[(i+3)%4]);
+                  adj_nodes[local_index].push_back(vnodes_pyramid[4]);
+                } else {
+                  adj_nodes[local_index].push_back(vnodes_pyramid[0]);
+                  adj_nodes[local_index].push_back(vnodes_pyramid[1]);
+                  adj_nodes[local_index].push_back(vnodes_pyramid[2]);
+                  adj_nodes[local_index].push_back(vnodes_pyramid[3]);
                 }
+#endif
+#endif
               }
             }
+            
+            /*--- If any of the nodes were within the linear partition, the
+             element is added to our element data structure. ---*/
+            
             if (elem_reqd) {
               Global_to_local_elem[element_count]=loc_element_count;
-              elem[loc_element_count] = new CPyramid(vnodes_pyramid[0], vnodes_pyramid[1], vnodes_pyramid[2], vnodes_pyramid[3], vnodes_pyramid[4]);
-              loc_element_count++; nelem_pyramid++;
+              elem[loc_element_count] = new CPyramid(vnodes_pyramid[0],
+                                                     vnodes_pyramid[1],
+                                                     vnodes_pyramid[2],
+                                                     vnodes_pyramid[3],
+                                                     vnodes_pyramid[4]);
+              loc_element_count++;
+              nelem_pyramid++;
             }
+            
             break;
             
         }
@@ -6449,8 +6648,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   }
   
   mesh_file.close();
-    
-    
+  
     if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << "Calling the partitioning functions." << endl;
     
@@ -6463,6 +6661,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
    proper format before sending the data to ParMETIS. We need to remove
    repeats and adjust the size of the array for each local node. ---*/
 
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << "Building the graph adjacency structure." << endl;
   
@@ -6470,38 +6671,45 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   vector<unsigned long> adjac_vec;
   unsigned long adj_elem_size;
   vector<unsigned long>::iterator it;
-  local_elem=loc_element_count;
   
-  xadj = new unsigned long [npoint_procs[rank]+1];
+  xadj = new idx_t [npoint_procs[rank]+1];
   xadj[0]=0;
   vector<unsigned long> temp_adjacency;
   unsigned long local_count=0;
   
+  /*--- Here, we transfer the adjacency information from a double vector
+   on a node-by-node basis into a single vector container. First, we sort
+   the entries and remove the duplicates we find for each node, then we
+   copy it into the single vect and clear the memory from the double vec. ---*/
+  
   for (unsigned long i = 0; i < local_node; i++) {
     
-    for (j = 0; j<adj_counter[i]; j++) {
-      temp_adjacency.push_back(adjacent_elem[i][j]);
+    for (j = 0; j<adj_nodes[i].size(); j++) {
+      temp_adjacency.push_back(adj_nodes[i][j]);
     }
     
     sort(temp_adjacency.begin(), temp_adjacency.end());
-    it = unique( temp_adjacency.begin(), temp_adjacency.end());
-    loc_adjc_size=it - temp_adjacency.begin();
+    it = unique(temp_adjacency.begin(), temp_adjacency.end());
+    loc_adjc_size = it - temp_adjacency.begin();
     
-    temp_adjacency.resize( loc_adjc_size);
+    temp_adjacency.resize(loc_adjc_size);
     xadj[local_count+1]=xadj[local_count]+loc_adjc_size;
     local_count++;
     
     for (j = 0; j<loc_adjc_size; j++) {
       adjac_vec.push_back(temp_adjacency[j]);
     }
+    
     temp_adjacency.clear();
+    adj_nodes[i].clear();
     
   }
   
-  /*--- Now that we know the size, create the final adjacency array ---*/
+  /*--- Now that we know the size, create the final adjacency array. This
+   is the array that we will feed to ParMETIS for partitioning. ---*/
   
   adj_elem_size = xadj[npoint_procs[rank]];
-  adjacency = new unsigned long[adj_elem_size];
+  adjacency = new idx_t [adj_elem_size];
   copy(adjac_vec.begin(), adjac_vec.end(), adjacency);
 
   xadj_size = npoint_procs[rank]+1;
@@ -6510,11 +6718,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- Free temporary memory used to build the adjacency. ---*/
   
   adjac_vec.clear();
-  delete[] adj_counter;
-  for (iPoint=0; iPoint<local_node; iPoint++) {
-    delete[] adjacent_elem[iPoint];
-  }
-  delete [] adjacent_elem;
+  adj_nodes.clear();
+  
+#endif
+#endif
+  
   
   /*--- For now, the boundary marker information is still read by the
    master node alone (and eventually distributed by the master as well).
@@ -7083,7 +7291,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           cg_error_exit();
         if (rank == MASTER_NODE) {
           cout << "Loading " << coordname;
-          cout << " values into linear partitions." << endl;
+          if (size > SINGLE_NODE) {
+            cout << " values into linear partitions." << endl;
+          } else {
+            cout << " values." << endl;
+          }
         }
         
         /*--- Always retrieve the grid coords in su2double precision. ---*/
@@ -7369,7 +7581,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         
         /*--- If we have found that this is a boundary section (we assume
          that internal cells and boundary cells do not exist in the same
-         section together), the master node read the boundary section.
+         section together), the master node reads the boundary section.
          Otherwise, we have all ranks read and communicate the internals. ---*/
         
         if (!isInternal[j-1][s-1]) {
@@ -7826,14 +8038,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
     if (nDim == 3) cout << "Three dimensional problem." << endl;
   }
   
-  /*--- Initialize some arrays for the adjacency information (ParMETIS). ---*/
+  /*--- Initialize an array for the adjacency information (ParMETIS). ---*/
   
-  unsigned long *adj_counter = new unsigned long[local_node];
-  unsigned long **adjacent_elem = new unsigned long*[local_node];
-  for (iPoint = 0; iPoint < local_node; iPoint++) {
-    adjacent_elem[iPoint] = new unsigned long[2000];
-    adj_counter[iPoint] = 0;
-  }
+  vector< vector<unsigned long> > adj_nodes(local_node, vector<unsigned long>(0));
   
   /*--- Store the total number of interior elements (global). ---*/
   
@@ -7883,7 +8090,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           /*--- Instantiate this element and build adjacency structure. ---*/
           
           switch(VTK_Type) {
+              
             case TRIANGLE:
+              
               for ( int j = 0; j < N_POINTS_TRIANGLE; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
@@ -7892,35 +8101,41 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   for (unsigned short j=0; j<N_POINTS_TRIANGLE; j++) {
                     if (ii!=j) {
-                      adjacent_elem[vnodes_cgns[ii]-starting_node[rank]][adj_counter[vnodes_cgns[ii]-starting_node[rank]]]=vnodes_cgns[j];
-                      adj_counter[vnodes_cgns[ii]-starting_node[rank]]++;
+                      adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[j]);
                     }
                   }
                 }
               }
               Global_to_local_elem[global_id]=ielem;
               elem[ielem] = new CTriangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], nDim);
-              ielem++; nelem_triangle++; break;
+              ielem++; nelem_triangle++;
+              break;
+              
             case QUADRILATERAL:
+              
               for ( int j = 0; j < N_POINTS_QUADRILATERAL; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_QUADRILATERAL+1][i];
+              
               for (unsigned short ii=0; ii<N_POINTS_QUADRILATERAL; ii++) {
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
-                  for (unsigned short j=0; j<N_POINTS_QUADRILATERAL; j++) {
-                    if (ii!=j) {
-                      adjacent_elem[vnodes_cgns[ii]-starting_node[rank]][adj_counter[vnodes_cgns[ii]-starting_node[rank]]]=vnodes_cgns[j];
-                      adj_counter[vnodes_cgns[ii]-starting_node[rank]]++;
-                    }
-                  }
+                  
+                  /*--- Build adjacency assuming the VTK connectivity ---*/
+                  
+                  adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+1)%4]);
+                  adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+3)%4]);
+                  
                 }
               }
+              
               Global_to_local_elem[global_id]=ielem;
               elem[ielem] = new CQuadrilateral(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], nDim);
               ielem++; nelem_quad++;
               break;
+              
             case TETRAHEDRON:
+              
               for ( int j = 0; j < N_POINTS_TETRAHEDRON; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
@@ -7929,72 +8144,105 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   for (unsigned short j=0; j<N_POINTS_TETRAHEDRON; j++) {
                     if (ii!=j) {
-                      adjacent_elem[vnodes_cgns[ii]-starting_node[rank]][adj_counter[vnodes_cgns[ii]-starting_node[rank]]]=vnodes_cgns[j];
-                      adj_counter[vnodes_cgns[ii]-starting_node[rank]]++;
+                      adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[j]);
                     }
                   }
                 }
               }
               Global_to_local_elem[global_id]=ielem;
               elem[ielem] = new CTetrahedron(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3]);
-              ielem++; nelem_tetra++; break;
+              ielem++; nelem_tetra++;
+              break;
+              
             case HEXAHEDRON:
+              
               for ( int j = 0; j < N_POINTS_HEXAHEDRON; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_HEXAHEDRON+1][i];
+              
               for (unsigned short ii=0; ii<N_POINTS_HEXAHEDRON; ii++) {
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
-                  for (unsigned short j=0; j<N_POINTS_HEXAHEDRON; j++) {
-                    if (ii!=j) {
-                      adjacent_elem[vnodes_cgns[ii]-starting_node[rank]][adj_counter[vnodes_cgns[ii]-starting_node[rank]]]=vnodes_cgns[j];
-                      adj_counter[vnodes_cgns[ii]-starting_node[rank]]++;
-                    }
+                  
+                  /*--- Build adjacency assuming the VTK connectivity ---*/
+                  
+                  if (ii < 4) {
+                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+1)%4]);
+                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+3)%4]);
+                  } else {
+                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii-3)%4+4]);
+                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii-1)%4+4]);
                   }
+                  adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+4)%8]);
+
                 }
               }
+              
               Global_to_local_elem[global_id]=ielem;
               elem[ielem] = new CHexahedron(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4], vnodes_cgns[5], vnodes_cgns[6], vnodes_cgns[7]);
               ielem++; nelem_hexa++;
               break;
+              
             case PRISM:
+              
               for ( int j = 0; j < N_POINTS_PRISM; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_PRISM+1][i];
+              
               for (unsigned short ii=0; ii<N_POINTS_PRISM; ii++) {
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
-                  for (unsigned short j=0; j<N_POINTS_PRISM; j++) {
-                    if (ii!=j) {
-                      adjacent_elem[vnodes_cgns[ii]-starting_node[rank]][adj_counter[vnodes_cgns[ii]-starting_node[rank]]]=vnodes_cgns[j];
-                      adj_counter[vnodes_cgns[ii]-starting_node[rank]]++;
-                    }
+                  
+                  /*--- Build adjacency assuming the VTK connectivity ---*/
+                  
+                  if (ii < 3) {
+                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+1)%3]);
+                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+2)%3]);
+                  } else {
+                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii-2)%3+3]);
+                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii-1)%3+3]);
                   }
+                  adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+3)%6]);
+                  
                 }
               }
+              
               Global_to_local_elem[global_id]=ielem;
               elem[ielem] = new CPrism(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4], vnodes_cgns[5]);
               ielem++; nelem_prism++;
               break;
+              
             case PYRAMID:
+              
               for ( int j = 0; j < N_POINTS_PYRAMID; j++ ) {
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_PYRAMID+1][i];
+              
               for (unsigned short ii=0; ii<N_POINTS_PYRAMID; ii++) {
                 if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
-                  for (unsigned short j=0; j<N_POINTS_PYRAMID; j++) {
-                    if (ii!=j) {
-                      adjacent_elem[vnodes_cgns[ii]-starting_node[rank]][adj_counter[vnodes_cgns[ii]-starting_node[rank]]]=vnodes_cgns[j];
-                      adj_counter[vnodes_cgns[ii]-starting_node[rank]]++;
-                    }
+                  
+                  /*--- Build adjacency assuming the VTK connectivity ---*/
+                  
+                  if (ii < 4) {
+                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+1)%4]);
+                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+3)%4]);
+                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[4]);
+                  } else {
+                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[0]);
+                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[1]);
+                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[2]);
+                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[3]);
                   }
+                  
                 }
               }
+              
               Global_to_local_elem[global_id]=ielem;
               elem[ielem] = new CPyramid(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4]);
               ielem++; nelem_pyramid++;
               break;
+              
             default:
               if (rank == MASTER_NODE)
                 cout << "Element type not suppported!" << endl;
@@ -8044,6 +8292,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   
   no_of_local_elements = ielem;
   
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  
   /*--- Post process the adjacency information in order to get it into the
    proper format before sending the data to ParMETIS. We need to remove
    repeats and adjust the size of the array for each local node. ---*/
@@ -8055,17 +8306,16 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   vector<unsigned long> adjac_vec;
   unsigned long adj_elem_size;
   vector<unsigned long>::iterator it;
-  local_elem=ielem;
   
-  xadj = new unsigned long [npoint_procs[rank]+1];
+  xadj = new idx_t[npoint_procs[rank]+1];
   xadj[0]=0;
   vector<unsigned long> temp_adjacency;
   unsigned long local_count=0;
   
   for (unsigned long i = 0; i < local_node; i++) {
     
-    for (unsigned long j=0; j<adj_counter[i]; j++) {
-      temp_adjacency.push_back(adjacent_elem[i][j]);
+    for (unsigned long j=0; j<adj_nodes[i].size(); j++) {
+      temp_adjacency.push_back(adj_nodes[i][j]);
     }
     
     sort(temp_adjacency.begin(), temp_adjacency.end());
@@ -8080,13 +8330,13 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
       adjac_vec.push_back(temp_adjacency[j]);
     }
     temp_adjacency.clear();
-    
+    adj_nodes[i].clear();
   }
   
   /*--- Now that we know the size, create the final adjacency array ---*/
   
   adj_elem_size = xadj[npoint_procs[rank]];
-  adjacency = new unsigned long[adj_elem_size];
+  adjacency = new idx_t [adj_elem_size];
   copy(adjac_vec.begin(), adjac_vec.end(), adjacency);
   
   xadj_size = npoint_procs[rank]+1;
@@ -8095,11 +8345,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   /*--- Free temporary memory used to build the adjacency. ---*/
   
   adjac_vec.clear();
-  delete[] adj_counter;
-  for (iPoint=0; iPoint<local_node; iPoint++) {
-    delete[] adjacent_elem[iPoint];
-  }
-  delete [] adjacent_elem;
+  
+#endif
+#endif
+  
+  adj_nodes.clear();
   
   /*--- Store the nodal coordinates from the linear partitioning. ---*/
 
@@ -8252,7 +8502,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
             config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
             config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
-			config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
+            config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -11245,28 +11495,26 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
   
   if (size > SINGLE_NODE) {
     
-  /*--- Create some structures that ParMETIS needs for partitioning. ---*/
-
+    /*--- Create some structures that ParMETIS needs for partitioning. ---*/
+    
     idx_t numflag, nparts, edgecut, wgtflag, ncon;
-  idx_t *vtxdist     = new idx_t[size+1];
-  idx_t *xadj_l      = new idx_t[xadj_size];
-  idx_t *adjacency_l = new idx_t[adjacency_size];
-  idx_t *elmwgt      = new idx_t[local_node];
-  idx_t *part        = new idx_t[local_node];
-
-  real_t ubvec;
-  real_t *tpwgts = new real_t[size];
-  
-  /*--- Some recommended defaults for the various ParMETIS options. ---*/
-  
-  wgtflag = 0;
-  numflag = 0;
-  ncon    = 1;
-  ubvec   = 1.05;
-  nparts  = (idx_t)size;
-  idx_t options[METIS_NOPTIONS];
-  METIS_SetDefaultOptions(options);
-  options[1] = 0;
+    
+    idx_t *vtxdist = new idx_t[size+1];
+    idx_t *part    = new idx_t[local_node];
+    
+    real_t ubvec;
+    real_t *tpwgts = new real_t[size];
+    
+    /*--- Some recommended defaults for the various ParMETIS options. ---*/
+    
+    wgtflag = 0;
+    numflag = 0;
+    ncon    = 1;
+    ubvec   = 1.05;
+    nparts  = (idx_t)size;
+    idx_t options[METIS_NOPTIONS];
+    METIS_SetDefaultOptions(options);
+    options[1] = 0;
     
     /*--- Fill the necessary ParMETIS data arrays. Note that xadj_size and
      adjacency_size are class data members that have been defined and set
@@ -11280,18 +11528,10 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     for (int i = 0; i < size; i++) {
       vtxdist[i+1] = (idx_t)ending_node[i];
     }
-
-    for (unsigned long i = 0; i < xadj_size; i++) {
-      xadj_l[i] = (idx_t)xadj[i];
-    }
-    
-    for (unsigned long i = 0; i < adjacency_size; i++) {
-      adjacency_l[i] = (idx_t)adjacency[i];
-    }
     
     /*--- Calling ParMETIS ---*/
     if (rank == MASTER_NODE) cout << "Calling ParMETIS..." << endl;
-    ParMETIS_V3_PartKway(vtxdist,xadj_l, adjacency_l, NULL, NULL, &wgtflag,
+    ParMETIS_V3_PartKway(vtxdist,xadj, adjacency, NULL, NULL, &wgtflag,
                          &numflag, &ncon, &nparts, tpwgts, &ubvec, options,
                          &edgecut, part, &comm);
     if (rank == MASTER_NODE) {
@@ -11307,17 +11547,14 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
       node[iPoint]->SetColor(part[iPoint]);
     }
     
-  /*--- Free all memory needed for the ParMETIS structures ---*/
-  
-  delete [] vtxdist;
-  delete [] xadj_l;
-  delete [] adjacency_l;
-  delete [] elmwgt;
-  delete [] part;
-  delete [] tpwgts;
-  
+    /*--- Free all memory needed for the ParMETIS structures ---*/
+    
+    delete [] vtxdist;
+    delete [] part;
+    delete [] tpwgts;
+    
   }
-
+  
   /*--- Delete the memory from the geometry class that carried the
    adjacency structure. ---*/
   

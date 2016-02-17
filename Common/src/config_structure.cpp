@@ -1290,11 +1290,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Surface continuity at the intersection with the FFD */
   addEnumOption("FFD_CONTINUITY", FFD_Continuity, Continuity_Map, DERIVATIVE_2ND);
 
-  /*--- Options for the direct differentiation methods ---*/
-  /*!\par CONFIG_CATEGORY: Direct Differentation options\ingroup Config*/
 
-  /* DESCRIPTION: Direct differentiation mode */
+  /*--- Options for the automatic differentiation methods ---*/
+  /*!\par CONFIG_CATEGORY: Automatic Differentation options\ingroup Config*/
+
+  /* DESCRIPTION: Direct differentiation mode (forward) */
   addEnumOption("DIRECT_DIFF", DirectDiff, DirectDiff_Var_Map, NO_DERIVATIVE);
+
+  /* DESCRIPTION: Automatic differentiation mode (reverse) */
+  addBoolOption("AUTO_DIFF", AD_Mode, NO);
 
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /*!\par CONFIG_CATEGORY:Python Options\ingroup Config*/
@@ -2523,6 +2527,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         break;
       }
   }
+
+#if defined CODI_REVERSE_TYPE
+  AD_Mode = YES;
+#else
+  if (AD_Mode == YES){
+    cout << "AUTO_DIFF=YES requires Automatic Differentiation support." << endl;
+    cout << "Please use correct executables (configuration/compilation is done using the preconfigure.py script)." << endl;
+  }
+#endif
 
   if (DiscreteAdjoint){
 #if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
