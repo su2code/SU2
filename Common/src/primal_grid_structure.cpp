@@ -670,6 +670,7 @@ void CPrimalGridFEM::GetCornerPointsAllFaces(unsigned short &nFaces,
         The faceConn values are local to the element.                 ---*/ 
 
   unsigned short nPoly = nPolyGrid, nDOFs = nDOFsGrid;
+  unsigned short nn2, nn3, nn4;
   switch( VTK_Type ) {
     case TRIANGLE:
       nFaces = 3;
@@ -679,7 +680,7 @@ void CPrimalGridFEM::GetCornerPointsAllFaces(unsigned short &nFaces,
       break;
 
     case QUADRILATERAL:
-      nFaces = 4; unsigned short nn2 = nPoly*(nPoly+1);
+      nFaces = 4; nn2 = nPoly*(nPoly+1);
       nPointsPerFace[0] = 2; faceConn[0][0] = 0;     faceConn[0][1] = nPoly;
       nPointsPerFace[1] = 2; faceConn[1][0] = 0;     faceConn[1][1] = nn2;
       nPointsPerFace[2] = 2; faceConn[2][0] = nPoly; faceConn[2][1] = nDOFs -1;
@@ -695,7 +696,7 @@ void CPrimalGridFEM::GetCornerPointsAllFaces(unsigned short &nFaces,
       break;
 
     case PYRAMID:
-      nFaces = 5; nn2 = (nPoly+1)*(nPoly+1) -1; unsigned short nn3 = nn2 - nPoly;
+      nFaces = 5; nn2 = (nPoly+1)*(nPoly+1) -1; nn3 = nn2 - nPoly;
       nPointsPerFace[0] = 4; faceConn[0][0] = 0;     faceConn[0][1] = nPoly; faceConn[0][2] = nn2; faceConn[0][3] = nn3;
       nPointsPerFace[1] = 3; faceConn[1][0] = 0;     faceConn[1][1] = nPoly; faceConn[1][2] = nDOFs -1;
       nPointsPerFace[2] = 3; faceConn[2][0] = 0;     faceConn[2][1] = nn3;   faceConn[2][2] = nDOFs -1;
@@ -713,7 +714,7 @@ void CPrimalGridFEM::GetCornerPointsAllFaces(unsigned short &nFaces,
       break;
 
     case HEXAHEDRON:
-      nFaces = 6; nn2 = (nPoly+1)*(nPoly+1); unsigned short nn4 = nPoly*nn2; --nn2; nn3 = nn2 - nPoly;
+      nFaces = 6; nn2 = (nPoly+1)*(nPoly+1); nn4 = nPoly*nn2; --nn2; nn3 = nn2 - nPoly;
       nPointsPerFace[0] = 4; faceConn[0][0] = 0;     faceConn[0][1] = nPoly;     faceConn[0][2] = nn2;       faceConn[0][3] = nn3;
       nPointsPerFace[1] = 4; faceConn[1][0] = nn4;   faceConn[1][1] = nPoly+nn4; faceConn[1][2] = nn2+nn4;   faceConn[1][3] = nn3+nn4;
       nPointsPerFace[2] = 4; faceConn[2][0] = 0;     faceConn[2][1] = nPoly;     faceConn[2][2] = nPoly+nn4; faceConn[2][3] = nn4;
