@@ -379,6 +379,7 @@ private:
 	SpatialOrder_AdjTurb,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjLevelSet;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
+  bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
   Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
@@ -5498,7 +5499,10 @@ public:
 	 */
 	inline unsigned short GetKindInterpolation(void);
 
-
+  /*!
+   * \brief Get the AD support.
+   */
+  bool GetAD_Mode(void);
 };
 
 #include "config_structure.inl"

@@ -162,9 +162,6 @@ int main(int argc, char *argv[]) {
 
     if (rank == MASTER_NODE) cout << "Setting mesh sensitivity." << endl;
     mesh_movement->SetVolume_Deformation(geometry_container[ZONE_0], config_container[ZONE_0], false, true);
-
-    COutput *output = new COutput();
-    output->SetSensitivity_Files(geometry_container, config_container, nZone);
   }
   
 	/*--- Definition of the Class for surface deformation ---*/
@@ -186,10 +183,10 @@ int main(int argc, char *argv[]) {
 		Gradient_file.open(cstr, ios::out);
 	}
 
-  /*--- For the discrete projection method we use AD to compute the derivatives
-   *  while the continuous projection uses finite differences ---*/
+  /*--- If AD mode is enabled we can use it to compute the projection,
+   * otherwise we use finite differences. ---*/
   
-  if (config_container[ZONE_0]->GetDiscrete_Adjoint()){
+  if (config_container[ZONE_0]->GetAD_Mode()){
     SetProjection_AD(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
   }else{
     SetProjection_FD(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
@@ -228,7 +225,7 @@ int main(int argc, char *argv[]) {
 
 	return EXIT_SUCCESS;
 
-    }
+}
 
 void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file){
 
@@ -381,13 +378,13 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       surface_movement->SetParabolic(geometry, config);
       }
 
-    else if (config->GetDesign_Variable(iDV) == CUSTOM){
-      if (rank == MASTER_NODE)
-        cout <<"Custom design variable will be used in external script" << endl;
-    }
+      else if (config->GetDesign_Variable(iDV) == CUSTOM){
+	if (rank == MASTER_NODE)
+       	  cout <<"Custom design variable will be used in external script" << endl;
+      }
       /*--- Design variable not implement ---*/
 
-    else { cout << "Design Variable not implement yet" << endl; }
+      else { cout << "Design Variable not implement yet" << endl; }
 
       /*--- Load the delta change in the design variable (finite difference step). ---*/
 
@@ -452,7 +449,7 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
 void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file){
 
-  su2double DV_Value, *VarCoord, Sensitivity, **Gradient, my_Gradient;
+  su2double DV_Value, *VarCoord, Sensitivity, **Gradient, my_Gradient, *Normal, Area = 0.0;
   unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV, nDV_Value;
   unsigned long iVertex, nVertex, iPoint;
 
@@ -513,29 +510,40 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
   /*--- Stop the recording --- */
     
   AD::StopRecording();
-
+    
   /*--- Initialize the derivatives of the output of the surface deformation routine
    * with the discrete adjoints from the CFD solution ---*/
-
+    
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config->GetMarker_All_DV(iMarker) == YES) {
       nVertex = geometry->nVertex[iMarker];
       for (iVertex = 0; iVertex <nVertex; iVertex++) {
         iPoint      = geometry->vertex[iMarker][iVertex]->GetNode();
         VarCoord    = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+        Normal      = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++){
+          Area += Normal[iDim]*Normal[iDim];
+        }
+        Area = sqrt(Area);
 
         for (iDim = 0; iDim < nDim; iDim++){
+          if (config->GetDiscrete_Adjoint()){
           Sensitivity = geometry->GetSensitivity(iPoint, iDim);
+          } else {
+            Sensitivity = -Normal[iDim]*geometry->vertex[iMarker][iVertex]->GetAuxVar()/Area;
+          }
           SU2_TYPE::SetDerivative(VarCoord[iDim], SU2_TYPE::GetValue(Sensitivity));
         }
       }
     }
   }
-
+    
   /*--- Compute derivatives and extract gradient ---*/
-
+    
   AD::ComputeAdjoint();
-
+	
   for (iDV = 0; iDV  < nDV; iDV++){
     nDV_Value =  config->GetnDV_Value(iDV);
     
@@ -543,27 +551,27 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
       DV_Value = config->GetDV_Value(iDV, iDV_Value);
       my_Gradient = SU2_TYPE::GetDerivative(DV_Value);
 #ifdef HAVE_MPI
-      SU2_MPI::Allreduce(&my_Gradient, &Gradient[iDV][iDV_Value], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&my_Gradient, &Gradient[iDV][iDV_Value], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
       Gradient[iDV][iDV_Value] = my_Gradient;
 #endif
     }
   }
-    
+
   /*--- Print gradients to screen and file ---*/
-    
+
   OutputGradient(Gradient, config, Gradient_file);
 
   for (iDV = 0; iDV  < nDV; iDV++){
     delete [] Gradient[iDV];
   }
   delete [] Gradient;
-    }
-    
+}
+
 void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_file){
-    
+
   unsigned short nDV, iDV, iDV_Value, nDV_Value;
-	
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD,&rank);

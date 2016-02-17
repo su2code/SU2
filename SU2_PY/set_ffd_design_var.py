@@ -120,7 +120,7 @@ if options.dim == 2:
     for iIndex in range(options.iOrder):
       iVariable = iVariable + 1
       dvList = dvList + "( 15, " + str(options.scale) + " | " + options.marker + " | "
-      dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + + ", " + str(options.xMove) +", " + str(options.yMove) + " )"
+      dvList = dvList + options.ffd_id + ", " + str(iIndex) + ", " + str(jIndex) + ", " + str(options.xMove) +", " + str(options.yMove) + " )"
       if iVariable < (options.iOrder*options.jOrder):
         dvList = dvList + "; "
 

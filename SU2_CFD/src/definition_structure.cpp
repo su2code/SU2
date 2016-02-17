@@ -477,7 +477,7 @@ void Partition_Analysis(CGeometry *geometry, CConfig *config) {
     /*--- Prepare and open the file ---*/
     Profile_File.open(cstr, ios::out);
     /*--- Create the CSV header ---*/
-    Profile_File << "\"Rank\", \"nNeighbors\", \"nPointTotal\", ,\"nEdge\", \"nPointGhost\", \"nSendTotal\", \"nRecvTotal\", \"nElemTotal\", \"nElemBoundary\", \"nElemHalo\", \"nnz\"" << endl;
+    Profile_File << "\"Rank\", \"nNeighbors\", \"nPointTotal\", \"nEdge\", \"nPointGhost\", \"nSendTotal\", \"nRecvTotal\", \"nElemTotal\", \"nElemBoundary\", \"nElemHalo\", \"nnz\"" << endl;
     Profile_File.close();
   }
 #ifdef HAVE_MPI
