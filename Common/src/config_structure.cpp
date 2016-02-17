@@ -1208,7 +1208,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("FSI_STRUCTURAL_PROBLEM", Kind_Solver_Struc_FSI, FSI_Struc_Solver_Map, NO_SOLVER_SFSI);
 
   /* DESCRIPTION: Linear solver for the structural side on FSI problems */
-  addEnumOption("FSI_LINEAR_SOLVER_STRUC", Kind_Linear_Solver_FSI_Struc, Linear_Solver_Map, BCGSTAB);
+  addEnumOption("FSI_LINEAR_SOLVER_STRUC", Kind_Linear_Solver_FSI_Struc, Linear_Solver_Map, FGMRES);
   /* DESCRIPTION: Preconditioner for the Krylov linear solvers */
   addEnumOption("FSI_LINEAR_SOLVER_PREC_STRUC", Kind_Linear_Solver_Prec_FSI_Struc, Linear_Solver_Prec_Map, LU_SGS);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
