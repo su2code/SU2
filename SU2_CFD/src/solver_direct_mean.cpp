@@ -8785,7 +8785,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 						
 						Density  = config->GetInlet_Ttotal(Marker_Tag);
 						//Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
-						Vel_Mag = 1/(2*1.837149e-5)*(-0.01)*(Coord[2]*Coord[2]-0.25);
+						Vel_Mag = 68.04-272.16*(Coord[1]*Coord[1]);
 						Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
 						
 						/*--- Non-dim. the inputs if necessary. ---*/
