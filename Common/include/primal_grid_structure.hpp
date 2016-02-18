@@ -256,6 +256,12 @@ public:
  virtual void GetCornerPointsAllFaces(unsigned short &nFaces,
                                       unsigned short nPointsPerFace[],
                                       unsigned long  faceConn[6][4]);
+
+ /*!
+  * \brief Virtual function to make available the polynomial degree of the solution.
+  * \return The polynomial degree of the solution.
+  */
+ virtual unsigned short GetNPolySol(void);
 };
 
 /*!
@@ -1348,6 +1354,12 @@ public:
  unsigned short GetVTK_Type(void);
 
  /*!
+  * \brief Get the polynomial degree of the solution for this element.
+  * \return The polynomial degree of the solution.
+  */
+ unsigned short GetNPolySol(void);
+
+ /*!
   * \brief Get all the corner points of all the faces of this element.
   * \param[out] nFaces         - Number of faces of this element.
   * \param[out] nPointsPerFace - Number of corner points for each of the faces.
@@ -1356,7 +1368,6 @@ public:
  void GetCornerPointsAllFaces(unsigned short &nFaces,
                               unsigned short nPointsPerFace[],
                               unsigned long  faceConn[6][4]);
-
  /*!
   * \brief Set the color of the element.
   * \param[in] val_color - New color of the element.

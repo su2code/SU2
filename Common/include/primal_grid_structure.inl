@@ -61,6 +61,8 @@ inline void CPrimalGrid::GetCornerPointsAllFaces(unsigned short &nFaces,
                                                  unsigned short nPointsPerFace[],
                                                  unsigned long  faceConn[6][4]) { }
 
+inline unsigned short CPrimalGrid::GetNPolySol(void) { return 0; }
+
 inline unsigned short CVertexMPI::GetnNodes(void) { return nNodes; }
 
 inline unsigned long CVertexMPI::GetNode(unsigned short val_node) { return Nodes[val_node]; }
@@ -274,6 +276,8 @@ inline unsigned short CPrimalGridFEM::GetnNeighbor_Elements(void) { return -1; }
 inline unsigned short CPrimalGridFEM::GetMaxNodesFace(void) { return -1; }
 
 inline unsigned short CPrimalGridFEM::GetVTK_Type(void) { return VTK_Type; }
+
+inline unsigned short CPrimalGridFEM::GetNPolySol(void) { return nPolySol; }
 
 inline void CPrimalGridFEM::SetColor(unsigned long val_color) { color = val_color; }
 
