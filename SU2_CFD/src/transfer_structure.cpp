@@ -770,7 +770,6 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
 	for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
 
-		cout << " ------------------------------ BOUNDARY " << iMarkerInt << " ------------------------------ " << endl;
 
 		Marker_Donor = -1;
 		Marker_Target = -1;
