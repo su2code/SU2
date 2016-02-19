@@ -59,6 +59,8 @@ lib_sources = \
   ../include/config_structure.inl \
   ../include/dual_grid_structure.hpp \
   ../include/dual_grid_structure.inl \
+		../include/fem_standard_element.hpp \
+		../include/fem_standard_element.inl \
   ../include/geometry_structure.hpp \
   ../include/geometry_structure.inl \
   ../include/grid_adaptation_structure.hpp \
@@ -85,6 +87,7 @@ lib_sources = \
   ../include/element_structure.inl \
   ../src/config_structure.cpp \
   ../src/dual_grid_structure.cpp \
+		../src/fem_standard_element.cpp \
   ../src/geometry_structure.cpp \
   ../src/grid_adaptation_structure.cpp \
   ../src/grid_movement_structure.cpp \
