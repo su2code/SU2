@@ -157,11 +157,16 @@ int main(int argc, char *argv[]) {
     if (rank == MASTER_NODE) cout << "Reading surface sensitivities at each node from file." << endl;
     geometry_container[ZONE_0]->SetBoundSensitivity(config_container[ZONE_0]);
   } else {
+    if (rank == MASTER_NODE) cout << "Reading volume sensitivities at each node from file." << endl;
     mesh_movement = new CVolumetricMovement(geometry_container[ZONE_0], config_container[ZONE_0]);
     geometry_container[ZONE_0]->SetSensitivity(config_container[ZONE_0]);
 
-    if (rank == MASTER_NODE) cout << "Setting mesh sensitivity." << endl;
+    if (rank == MASTER_NODE)
+      cout << endl <<"---------------------- Mesh sensitivity computation ---------------------" << endl;
     mesh_movement->SetVolume_Deformation(geometry_container[ZONE_0], config_container[ZONE_0], false, true);
+
+    COutput *output = new COutput();
+    output->SetSensitivity_Files(geometry_container, config_container, nZone);
   }
   
 	/*--- Definition of the Class for surface deformation ---*/
@@ -172,28 +177,30 @@ int main(int argc, char *argv[]) {
   
   surface_movement->CopyBoundary(geometry_container[ZONE_0], config_container[ZONE_0]);
 
-	if (rank == MASTER_NODE) 
-    cout << endl <<"---------- Start gradient evaluation using sensitivity information ----------" << endl;
-	
-	/*--- Write the gradient in a external file ---*/
+  if (config_container[ZONE_0]->GetDesign_Variable(0) != NONE){
+    if (rank == MASTER_NODE)
+      cout << endl <<"---------- Start gradient evaluation using sensitivity information ----------" << endl;
 
-	if (rank == MASTER_NODE) {
-		cstr = new char [config_container[ZONE_0]->GetObjFunc_Grad_FileName().size()+1];
-		strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str());
-		Gradient_file.open(cstr, ios::out);
-	}
+    /*--- Write the gradient in a external file ---*/
 
-  /*--- If AD mode is enabled we can use it to compute the projection,
+    if (rank == MASTER_NODE) {
+      cstr = new char [config_container[ZONE_0]->GetObjFunc_Grad_FileName().size()+1];
+      strcpy (cstr, config_container[ZONE_0]->GetObjFunc_Grad_FileName().c_str());
+      Gradient_file.open(cstr, ios::out);
+    }
+
+    /*--- If AD mode is enabled we can use it to compute the projection,
    * otherwise we use finite differences. ---*/
-  
-  if (config_container[ZONE_0]->GetAD_Mode()){
-    SetProjection_AD(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
-  }else{
-    SetProjection_FD(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
-  }
 
-	if (rank == MASTER_NODE)
-		Gradient_file.close();
+    if (config_container[ZONE_0]->GetAD_Mode()){
+      SetProjection_AD(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
+    }else{
+      SetProjection_FD(geometry_container[ZONE_0], config_container[ZONE_0], surface_movement, Gradient_file);
+    }
+
+    if (rank == MASTER_NODE)
+      Gradient_file.close();
+  }
 
     /*--- Synchronization point after a single solver iteration. Compute the
      wall clock time required. ---*/
