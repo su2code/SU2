@@ -120,6 +120,8 @@ am__libSU2_a_SOURCES_DIST =  \
 	../include/config_structure.inl \
 	../include/dual_grid_structure.hpp \
 	../include/dual_grid_structure.inl \
+	../include/fem_standard_element.hpp \
+	../include/fem_standard_element.inl \
 	../include/geometry_structure.hpp \
 	../include/geometry_structure.inl \
 	../include/grid_adaptation_structure.hpp \
@@ -141,7 +143,8 @@ am__libSU2_a_SOURCES_DIST =  \
 	../include/gauss_structure.hpp ../include/gauss_structure.inl \
 	../include/element_structure.hpp \
 	../include/element_structure.inl ../src/config_structure.cpp \
-	../src/dual_grid_structure.cpp ../src/geometry_structure.cpp \
+	../src/dual_grid_structure.cpp ../src/fem_standard_element.cpp \
+	../src/geometry_structure.cpp \
 	../src/grid_adaptation_structure.cpp \
 	../src/grid_movement_structure.cpp \
 	../src/linear_solvers_structure.cpp \
@@ -152,6 +155,7 @@ am__libSU2_a_SOURCES_DIST =  \
 	../src/element_linear.cpp
 am__objects_1 = libSU2_a-config_structure.$(OBJEXT) \
 	libSU2_a-dual_grid_structure.$(OBJEXT) \
+	libSU2_a-fem_standard_element.$(OBJEXT) \
 	libSU2_a-geometry_structure.$(OBJEXT) \
 	libSU2_a-grid_adaptation_structure.$(OBJEXT) \
 	libSU2_a-grid_movement_structure.$(OBJEXT) \
@@ -179,6 +183,8 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../include/config_structure.inl \
 	../include/dual_grid_structure.hpp \
 	../include/dual_grid_structure.inl \
+	../include/fem_standard_element.hpp \
+	../include/fem_standard_element.inl \
 	../include/geometry_structure.hpp \
 	../include/geometry_structure.inl \
 	../include/grid_adaptation_structure.hpp \
@@ -200,7 +206,8 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../include/gauss_structure.hpp ../include/gauss_structure.inl \
 	../include/element_structure.hpp \
 	../include/element_structure.inl ../src/config_structure.cpp \
-	../src/dual_grid_structure.cpp ../src/geometry_structure.cpp \
+	../src/dual_grid_structure.cpp ../src/fem_standard_element.cpp \
+	../src/geometry_structure.cpp \
 	../src/grid_adaptation_structure.cpp \
 	../src/grid_movement_structure.cpp \
 	../src/linear_solvers_structure.cpp \
@@ -211,6 +218,7 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../src/element_linear.cpp
 am__objects_2 = libSU2_AD_a-config_structure.$(OBJEXT) \
 	libSU2_AD_a-dual_grid_structure.$(OBJEXT) \
+	libSU2_AD_a-fem_standard_element.$(OBJEXT) \
 	libSU2_AD_a-geometry_structure.$(OBJEXT) \
 	libSU2_AD_a-grid_adaptation_structure.$(OBJEXT) \
 	libSU2_AD_a-grid_movement_structure.$(OBJEXT) \
@@ -239,6 +247,8 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../include/config_structure.inl \
 	../include/dual_grid_structure.hpp \
 	../include/dual_grid_structure.inl \
+	../include/fem_standard_element.hpp \
+	../include/fem_standard_element.inl \
 	../include/geometry_structure.hpp \
 	../include/geometry_structure.inl \
 	../include/grid_adaptation_structure.hpp \
@@ -260,7 +270,8 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../include/gauss_structure.hpp ../include/gauss_structure.inl \
 	../include/element_structure.hpp \
 	../include/element_structure.inl ../src/config_structure.cpp \
-	../src/dual_grid_structure.cpp ../src/geometry_structure.cpp \
+	../src/dual_grid_structure.cpp ../src/fem_standard_element.cpp \
+	../src/geometry_structure.cpp \
 	../src/grid_adaptation_structure.cpp \
 	../src/grid_movement_structure.cpp \
 	../src/linear_solvers_structure.cpp \
@@ -271,6 +282,7 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../src/element_linear.cpp
 am__objects_3 = libSU2_DIRECTDIFF_a-config_structure.$(OBJEXT) \
 	libSU2_DIRECTDIFF_a-dual_grid_structure.$(OBJEXT) \
+	libSU2_DIRECTDIFF_a-fem_standard_element.$(OBJEXT) \
 	libSU2_DIRECTDIFF_a-geometry_structure.$(OBJEXT) \
 	libSU2_DIRECTDIFF_a-grid_adaptation_structure.$(OBJEXT) \
 	libSU2_DIRECTDIFF_a-grid_movement_structure.$(OBJEXT) \
@@ -491,6 +503,8 @@ lib_sources = \
   ../include/config_structure.inl \
   ../include/dual_grid_structure.hpp \
   ../include/dual_grid_structure.inl \
+		../include/fem_standard_element.hpp \
+		../include/fem_standard_element.inl \
   ../include/geometry_structure.hpp \
   ../include/geometry_structure.inl \
   ../include/grid_adaptation_structure.hpp \
@@ -517,6 +531,7 @@ lib_sources = \
   ../include/element_structure.inl \
   ../src/config_structure.cpp \
   ../src/dual_grid_structure.cpp \
+		../src/fem_standard_element.cpp \
   ../src/geometry_structure.cpp \
   ../src/grid_adaptation_structure.cpp \
   ../src/grid_movement_structure.cpp \
@@ -626,6 +641,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_AD_a-dual_grid_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_AD_a-element_linear.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_AD_a-element_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_AD_a-fem_standard_element.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_AD_a-gauss_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_AD_a-geometry_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_AD_a-grid_adaptation_structure.Po@am__quote@
@@ -641,6 +657,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-dual_grid_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-element_linear.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-element_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-fem_standard_element.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_DIRECTDIFF_a-grid_adaptation_structure.Po@am__quote@
@@ -656,6 +673,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-dual_grid_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-element_linear.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-element_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-fem_standard_element.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-gauss_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-geometry_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libSU2_a-grid_adaptation_structure.Po@am__quote@
@@ -708,6 +726,20 @@ libSU2_a-dual_grid_structure.obj: ../src/dual_grid_structure.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/dual_grid_structure.cpp' object='libSU2_a-dual_grid_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-dual_grid_structure.obj `if test -f '../src/dual_grid_structure.cpp'; then $(CYGPATH_W) '../src/dual_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dual_grid_structure.cpp'; fi`
+
+libSU2_a-fem_standard_element.o: ../src/fem_standard_element.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-fem_standard_element.o -MD -MP -MF $(DEPDIR)/libSU2_a-fem_standard_element.Tpo -c -o libSU2_a-fem_standard_element.o `test -f '../src/fem_standard_element.cpp' || echo '$(srcdir)/'`../src/fem_standard_element.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-fem_standard_element.Tpo $(DEPDIR)/libSU2_a-fem_standard_element.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/fem_standard_element.cpp' object='libSU2_a-fem_standard_element.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-fem_standard_element.o `test -f '../src/fem_standard_element.cpp' || echo '$(srcdir)/'`../src/fem_standard_element.cpp
+
+libSU2_a-fem_standard_element.obj: ../src/fem_standard_element.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-fem_standard_element.obj -MD -MP -MF $(DEPDIR)/libSU2_a-fem_standard_element.Tpo -c -o libSU2_a-fem_standard_element.obj `if test -f '../src/fem_standard_element.cpp'; then $(CYGPATH_W) '../src/fem_standard_element.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/fem_standard_element.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_a-fem_standard_element.Tpo $(DEPDIR)/libSU2_a-fem_standard_element.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/fem_standard_element.cpp' object='libSU2_a-fem_standard_element.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_a-fem_standard_element.obj `if test -f '../src/fem_standard_element.cpp'; then $(CYGPATH_W) '../src/fem_standard_element.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/fem_standard_element.cpp'; fi`
 
 libSU2_a-geometry_structure.o: ../src/geometry_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_a-geometry_structure.o -MD -MP -MF $(DEPDIR)/libSU2_a-geometry_structure.Tpo -c -o libSU2_a-geometry_structure.o `test -f '../src/geometry_structure.cpp' || echo '$(srcdir)/'`../src/geometry_structure.cpp
@@ -919,6 +951,20 @@ libSU2_AD_a-dual_grid_structure.obj: ../src/dual_grid_structure.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_AD_a-dual_grid_structure.obj `if test -f '../src/dual_grid_structure.cpp'; then $(CYGPATH_W) '../src/dual_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dual_grid_structure.cpp'; fi`
 
+libSU2_AD_a-fem_standard_element.o: ../src/fem_standard_element.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_AD_a-fem_standard_element.o -MD -MP -MF $(DEPDIR)/libSU2_AD_a-fem_standard_element.Tpo -c -o libSU2_AD_a-fem_standard_element.o `test -f '../src/fem_standard_element.cpp' || echo '$(srcdir)/'`../src/fem_standard_element.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_AD_a-fem_standard_element.Tpo $(DEPDIR)/libSU2_AD_a-fem_standard_element.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/fem_standard_element.cpp' object='libSU2_AD_a-fem_standard_element.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_AD_a-fem_standard_element.o `test -f '../src/fem_standard_element.cpp' || echo '$(srcdir)/'`../src/fem_standard_element.cpp
+
+libSU2_AD_a-fem_standard_element.obj: ../src/fem_standard_element.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_AD_a-fem_standard_element.obj -MD -MP -MF $(DEPDIR)/libSU2_AD_a-fem_standard_element.Tpo -c -o libSU2_AD_a-fem_standard_element.obj `if test -f '../src/fem_standard_element.cpp'; then $(CYGPATH_W) '../src/fem_standard_element.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/fem_standard_element.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_AD_a-fem_standard_element.Tpo $(DEPDIR)/libSU2_AD_a-fem_standard_element.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/fem_standard_element.cpp' object='libSU2_AD_a-fem_standard_element.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_AD_a-fem_standard_element.obj `if test -f '../src/fem_standard_element.cpp'; then $(CYGPATH_W) '../src/fem_standard_element.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/fem_standard_element.cpp'; fi`
+
 libSU2_AD_a-geometry_structure.o: ../src/geometry_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_AD_a-geometry_structure.o -MD -MP -MF $(DEPDIR)/libSU2_AD_a-geometry_structure.Tpo -c -o libSU2_AD_a-geometry_structure.o `test -f '../src/geometry_structure.cpp' || echo '$(srcdir)/'`../src/geometry_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_AD_a-geometry_structure.Tpo $(DEPDIR)/libSU2_AD_a-geometry_structure.Po
@@ -1128,6 +1174,20 @@ libSU2_DIRECTDIFF_a-dual_grid_structure.obj: ../src/dual_grid_structure.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/dual_grid_structure.cpp' object='libSU2_DIRECTDIFF_a-dual_grid_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-dual_grid_structure.obj `if test -f '../src/dual_grid_structure.cpp'; then $(CYGPATH_W) '../src/dual_grid_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dual_grid_structure.cpp'; fi`
+
+libSU2_DIRECTDIFF_a-fem_standard_element.o: ../src/fem_standard_element.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-fem_standard_element.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-fem_standard_element.Tpo -c -o libSU2_DIRECTDIFF_a-fem_standard_element.o `test -f '../src/fem_standard_element.cpp' || echo '$(srcdir)/'`../src/fem_standard_element.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-fem_standard_element.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-fem_standard_element.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/fem_standard_element.cpp' object='libSU2_DIRECTDIFF_a-fem_standard_element.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-fem_standard_element.o `test -f '../src/fem_standard_element.cpp' || echo '$(srcdir)/'`../src/fem_standard_element.cpp
+
+libSU2_DIRECTDIFF_a-fem_standard_element.obj: ../src/fem_standard_element.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-fem_standard_element.obj -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-fem_standard_element.Tpo -c -o libSU2_DIRECTDIFF_a-fem_standard_element.obj `if test -f '../src/fem_standard_element.cpp'; then $(CYGPATH_W) '../src/fem_standard_element.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/fem_standard_element.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libSU2_DIRECTDIFF_a-fem_standard_element.Tpo $(DEPDIR)/libSU2_DIRECTDIFF_a-fem_standard_element.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/fem_standard_element.cpp' object='libSU2_DIRECTDIFF_a-fem_standard_element.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o libSU2_DIRECTDIFF_a-fem_standard_element.obj `if test -f '../src/fem_standard_element.cpp'; then $(CYGPATH_W) '../src/fem_standard_element.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/fem_standard_element.cpp'; fi`
 
 libSU2_DIRECTDIFF_a-geometry_structure.o: ../src/geometry_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT libSU2_DIRECTDIFF_a-geometry_structure.o -MD -MP -MF $(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure.Tpo -c -o libSU2_DIRECTDIFF_a-geometry_structure.o `test -f '../src/geometry_structure.cpp' || echo '$(srcdir)/'`../src/geometry_structure.cpp

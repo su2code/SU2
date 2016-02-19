@@ -30,7 +30,6 @@
  */
 
 #include "../include/geometry_structure.hpp"
-#include <climits>
 
 /*--- Epsilon definition ---*/
 
@@ -54,94 +53,47 @@
 (dest)[1] = (v1)[1] - (v2)[1]; \
 (dest)[2] = (v1)[2] - (v2)[2];
 
-/*--- Local class used to store a face of an element. ---*/
+FaceOfElementClass::FaceOfElementClass(){
+  nCornerPoints = 0;
+  cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = 0;
+  elemID0 = elemID1 = ULONG_MAX;
+  nPoly = 0;
+}
 
-class FaceOfElementClass {
-public:
-  unsigned short nCornerPoints;
-  unsigned long  cornerPoints[4];
-  unsigned long  elemID0, elemID1;
-  unsigned short nPoly;
+bool FaceOfElementClass::operator<(const FaceOfElementClass &other) const {
+  if(nCornerPoints != other.nCornerPoints) return nCornerPoints < other.nCornerPoints;
+  for(unsigned short i=0; i<nCornerPoints; ++i)
+    if(cornerPoints[i] != other.cornerPoints[i]) return cornerPoints[i] < other.cornerPoints[i];
 
-  /* Standard constructor and destructor. */
-  FaceOfElementClass(){
-    nCornerPoints = 0;
-    cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = 0;
-    elemID0 = elemID1 = ULONG_MAX;
-    nPoly = 0;
-  }
+  return false;
+}
 
-  ~FaceOfElementClass(){}
+bool FaceOfElementClass::operator ==(const FaceOfElementClass &other) const {
+  if(nCornerPoints != other.nCornerPoints) return false;
+  for(unsigned short i=0; i<nCornerPoints; ++i)
+    if(cornerPoints[i] != other.cornerPoints[i]) return false;
 
-  /* Copy constructor and assignment operator. */
-  FaceOfElementClass(const FaceOfElementClass &other){Copy(other);}
+  return true;
+}
 
-  FaceOfElementClass& operator=(const FaceOfElementClass &other){Copy(other); return (*this);}
+void FaceOfElementClass::Copy(const FaceOfElementClass &other) {
+  nCornerPoints = other.nCornerPoints;
+  for(unsigned short i=0; i<nCornerPoints; ++i) cornerPoints[i] = other.cornerPoints[i];
 
-  /* Less than operator. Needed for the sorting and searching. */
-  bool operator<(const FaceOfElementClass &other) const {
-    if(nCornerPoints != other.nCornerPoints) return nCornerPoints < other.nCornerPoints;
-    for(unsigned short i=0; i<nCornerPoints; ++i)
-      if(cornerPoints[i] != other.cornerPoints[i]) return cornerPoints[i] < other.cornerPoints[i];
+  elemID0 = other.elemID0;
+  elemID1 = other.elemID1;
 
-    return false;
-  }
+  nPoly = other.nPoly;
+}
 
-  /* Equal operator. Needed for removing double entities. */
-  bool operator ==(const FaceOfElementClass &other) const {
-    if(nCornerPoints != other.nCornerPoints) return false;
-    for(unsigned short i=0; i<nCornerPoints; ++i)
-      if(cornerPoints[i] != other.cornerPoints[i]) return false;
-
-    return true;
-  }
-
-  /*--- Member function, which creates a unique numbering for the corner points.
-        A sort in increasing order is OK for this purpose.                       ---*/
-  void CreateUniqueNumbering(void){sort(cornerPoints, cornerPoints+nCornerPoints);}
-
-private:
-  /*--- Copy function, which copies the data of the given object into the current object. ---*/
-  void Copy(const FaceOfElementClass &other) {
-    nCornerPoints = other.nCornerPoints;
-    for(unsigned short i=0; i<nCornerPoints; ++i) cornerPoints[i] = other.cornerPoints[i];
-
-    elemID0 = other.elemID0;
-    elemID1 = other.elemID1;
-
-    nPoly = other.nPoly;
-  }
-};
-
-/*--- Local class used to store a boundary face. ---*/
-
-class BoundaryFaceClass {
- public:
-  unsigned short VTK_Type, nPolyGrid, nDOFsGrid;
-  unsigned long  globalBoundElemID, domainElementID;
-  vector<unsigned long>  Nodes;
-
-  /* Standard constructor and destructor. Nothing to be done. */
-  BoundaryFaceClass(){}
-  ~BoundaryFaceClass(){}
-
-  /* Copy constructor and assignment operator. */
-  BoundaryFaceClass(const BoundaryFaceClass &other){Copy(other);}
-
-  BoundaryFaceClass& operator=(const BoundaryFaceClass &other){Copy(other); return (*this);}
-
-private:
-  /*--- Copy function, which copies the data of the given object into the current object. ---*/
-  void Copy(const BoundaryFaceClass &other) {
-    VTK_Type          = other.VTK_Type;
-    nPolyGrid         = other.nPolyGrid;
-    nDOFsGrid         = other.nDOFsGrid;
-    globalBoundElemID = other.globalBoundElemID;
-    domainElementID   = other.domainElementID;
-    Nodes             = other.Nodes;
-  }
-};
-
+void BoundaryFaceClass::Copy(const BoundaryFaceClass &other) {
+  VTK_Type          = other.VTK_Type;
+  nPolyGrid         = other.nPolyGrid;
+  nDOFsGrid         = other.nDOFsGrid;
+  globalBoundElemID = other.globalBoundElemID;
+  domainElementID   = other.domainElementID;
+  Nodes             = other.Nodes;
+}
 
 CGeometry::CGeometry(void) {
   
@@ -12313,8 +12265,10 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
     /*--- Compute the weigts of the graph. ---*/
 
-    vector<idx_t> vwgt(local_elem, 1);
-    vector<idx_t> adjwgt(xadj_l[local_elem], 1);
+    vector<idx_t> vwgt(local_elem);
+    vector<idx_t> adjwgt(xadj_l[local_elem]);
+
+    ComputeFEMGraphWeights(config, localFaces, xadj_l, adjacency_l, vwgt, adjwgt);
 
     /*--- Calling ParMETIS ---*/
 
@@ -12340,6 +12294,30 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 #endif
 #endif
 }
+
+#ifdef HAVE_PARMETIS
+void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          *config,
+                                               const vector<FaceOfElementClass> &localFaces,
+                                               const vector<idx_t>              &xadj_l,
+                                               const vector<idx_t>              &adjacency_l,
+                                               vector<idx_t>                    &vwgt,
+                                               vector<idx_t>                    &adjwgt){
+
+  /*--- Determine the standard elements for the volume elements. ---*/
+
+  vector<FEMStandardElementClass> standardElements;
+
+  for(unsigned long i=0; i<local_elem; ++i) {
+
+  }
+
+  cout << " Not implemented yet" << endl;
+  
+  MPI_Abort(MPI_COMM_WORLD,1);
+  MPI_Finalize();
+
+}
+#endif
 
 void CPhysicalGeometry::GetQualityStatistics(su2double *statistics) {
   unsigned long jPoint, Point_2, Point_3, iElem;

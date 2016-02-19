@@ -31,6 +31,16 @@
  
 #pragma once
 
+inline FaceOfElementClass::FaceOfElementClass(const FaceOfElementClass &other){Copy(other);}
+
+inline FaceOfElementClass& FaceOfElementClass::operator=(const FaceOfElementClass &other){Copy(other); return (*this);}
+
+inline void FaceOfElementClass::CreateUniqueNumbering(void){sort(cornerPoints, cornerPoints+nCornerPoints);}
+
+inline  BoundaryFaceClass::BoundaryFaceClass(const BoundaryFaceClass &other){Copy(other);}
+
+inline BoundaryFaceClass& BoundaryFaceClass::operator=(const BoundaryFaceClass &other){Copy(other); return (*this);}
+
 inline long CGeometry::GetGlobal_to_Local_Point(long val_ipoint) { return 0; }
 
 inline unsigned short CGeometry::GetGlobal_to_Local_Marker(unsigned short val_imarker) { return 0; }

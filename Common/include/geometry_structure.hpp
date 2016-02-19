@@ -53,12 +53,78 @@ extern "C" {
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <climits>
 
 #include "primal_grid_structure.hpp"
 #include "dual_grid_structure.hpp"
 #include "config_structure.hpp"
+#include "fem_standard_element.hpp"
 
 using namespace std;
+
+/*! 
+ * \class FaceOfElementClass
+ * \brief Help class used in the partitioning of the FEM grid.
+ *        It stores the face of an element.
+ * \version 4.1.0 "Cardinal"
+ */
+class FaceOfElementClass {
+public:
+  unsigned short nCornerPoints;     /*!< \brief Number of corner points of the face. */
+  unsigned long  cornerPoints[4];   /*!< \brief Global ID's of ther corner points. */
+  unsigned long  elemID0, elemID1;  /*!< \brief Element ID's to the left and right. */
+  unsigned short nPoly;             /*!< \brief Polynomial degree of the face. */
+
+  /* Standard constructor and destructor. */
+  FaceOfElementClass();
+  ~FaceOfElementClass(){}
+
+  /* Copy constructor and assignment operator. */
+  FaceOfElementClass(const FaceOfElementClass &other);
+
+  FaceOfElementClass& operator=(const FaceOfElementClass &other);
+
+  /* Less than operator. Needed for the sorting and searching. */
+  bool operator<(const FaceOfElementClass &other) const;
+
+  /* Equal operator. Needed for removing double entities. */
+  bool operator ==(const FaceOfElementClass &other) const;
+
+  /*--- Member function, which creates a unique numbering for the corner points.
+        A sort in increasing order is OK for this purpose.                       ---*/
+  void CreateUniqueNumbering(void);
+
+private:
+  /*--- Copy function, which copies the data of the given object into the current object. ---*/
+  void Copy(const FaceOfElementClass &other);
+};
+
+/*! 
+ * \class BoundaryFaceClass
+ * \brief Help class used in the partitioning of the FEM grid.
+ *        It stores a boundary element.
+ * \version 4.1.0 "Cardinal"
+ */
+class BoundaryFaceClass {
+ public:
+  unsigned short VTK_Type, nPolyGrid, nDOFsGrid;
+  unsigned long  globalBoundElemID, domainElementID;
+  vector<unsigned long>  Nodes;
+
+  /* Standard constructor and destructor. Nothing to be done. */
+  BoundaryFaceClass(){}
+  ~BoundaryFaceClass(){}
+
+  /* Copy constructor and assignment operator. */
+  BoundaryFaceClass(const BoundaryFaceClass &other);
+
+  BoundaryFaceClass& operator=(const BoundaryFaceClass &other);
+
+private:
+  /*--- Copy function, which copies the data of the given object into the current object. ---*/
+  void Copy(const BoundaryFaceClass &other);
+};
+
 
 /*! 
  * \class CGeometry
@@ -1192,11 +1258,29 @@ public:
   void SetColorGrid_Parallel(CConfig *config);
 
   /*!
-   * \brief Set the domains for FEM grid grid partitioning using ParMETIS.
+   * \brief Set the domains for FEM grid partitioning using ParMETIS.
    * \param[in] config - Definition of the particular problem.
    */
   void SetColorFEMGrid_Parallel(CConfig *config);
-  
+
+  /*!
+   * \brief Compute the weights of the FEM graph for ParMETIS.
+   * \param[in]  config      - Definition of the particular problem.
+   * \param[in]  localFaces  - Vector, which contains the element faces of this rank.
+   * \param[in]  xadj_l      - Number of neighbors per element, ParMETIS storage format.
+   * \param[in]  adjacency_l - Neighbors of the element, ParMETIS storage format.
+   * \param[out] vwgt        - Weights of the vertices of the graph, i.e. the elements.
+   * \param[out] adjwgt      - Weights of the edges of the graph.
+   */
+#ifdef HAVE_PARMETIS
+  void ComputeFEMGraphWeights(CConfig                          *config,
+                              const vector<FaceOfElementClass> &localFaces,
+                              const vector<idx_t>              &xadj_l,
+                              const vector<idx_t>              &adjacency_l,
+                              vector<idx_t>                    &vwgt,
+                              vector<idx_t>                    &adjwgt);
+#endif
+
 	/*!
 	 * \brief Set the rotational velocity at each node.
 	 * \param[in] config - Definition of the particular problem.
