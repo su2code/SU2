@@ -939,20 +939,18 @@ public:
                        unsigned short kind_recording);
 
   /*!
-   * \brief load checkpoints for unsteady problems
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration_container - Container vector with all the integration methods.
+   * \brief load unsteady solution for unsteady problems
    * \param[in] geometry_container - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_DirectIter - Direct iteration to load.
    */
-  void LoadCheckPoints(COutput *output,
-                      CIntegration ***integration_container,
-                      CGeometry ***geometry_container,
+  void LoadUnsteady_Solution(CGeometry ***geometry_container,
                       CSolver ****solver_container,
                       CConfig **config_container,
-                      unsigned short val_iZone);
+                      unsigned short val_iZone,
+                      int val_DirectIter);
 };
 
 
