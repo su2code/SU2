@@ -468,6 +468,18 @@ inline su2double CSolver::GetEnthalpyOut(unsigned short inMarkerTP){return 0;}
 
 inline su2double CSolver::GetVelocityOutIs(unsigned short inMarkerTP){return 0;}
 
+inline su2double CSolver::GetTotalPresureIn(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetTotalTemperatureIn(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetFlowAngleIn_BC(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetEntropyIn(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetEntropyIn_BC(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetTotalEnthalpyIn_BC(unsigned short inMarkerTP){return 0;}
+
 inline su2double CSolver::GetPressureOut(unsigned short inMarkerTP){return 0;}
 
 inline su2double CSolver::GetPressureRatio(unsigned short inMarkerTP){return 0;}
@@ -972,6 +984,18 @@ inline su2double CEulerSolver::GetNormalMachOut(unsigned short inMarkerTP){retur
 inline su2double CEulerSolver::GetEnthalpyOut(unsigned short inMarkerTP){return EnthalpyOut[inMarkerTP];}
 
 inline su2double CEulerSolver::GetVelocityOutIs(unsigned short inMarkerTP){return VelocityOutIs[inMarkerTP];}
+
+inline su2double CEulerSolver::GetTotalPresureIn(unsigned short inMarkerTP){return TotalPresureIn[inMarkerTP];}
+
+inline su2double CEulerSolver::GetTotalTemperatureIn(unsigned short inMarkerTP){return TotalTemperatureIn[inMarkerTP];}
+
+inline su2double CEulerSolver::GetFlowAngleIn_BC(unsigned short inMarkerTP){return FlowAngleIn_BC[inMarkerTP];}
+
+inline su2double CEulerSolver::GetEntropyIn(unsigned short inMarkerTP){return EntropyIn[inMarkerTP];}
+
+inline su2double CEulerSolver::GetEntropyIn_BC(unsigned short inMarkerTP){return EntropyIn_BC[inMarkerTP];}
+
+inline su2double CEulerSolver::GetTotalEnthalpyIn_BC(unsigned short inMarkerTP){return TotalEnthalpyIn_BC[inMarkerTP];}
 
 inline su2double CEulerSolver::GetPressureOut(unsigned short inMarkerTP){return PressureOut[inMarkerTP];}
 

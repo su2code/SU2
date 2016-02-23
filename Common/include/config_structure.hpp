@@ -63,6 +63,7 @@ private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
+  unsigned short Kind_TurboMachinery;  /*!< \brief Kind of turbomachynery architecture.*/
   unsigned short *Kind_TurboPerformance; /*!< \brief Kind of Turbomachinery performance calculation.*/
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
@@ -3343,6 +3344,11 @@ public:
 	unsigned short GetKind_MixingProcess(void);
 
 	/*!
+	 * \brief Get the kind of turbomachinery architecture.
+	 * \return Kind of turbomachinery architecture.
+	 */
+	unsigned short GetKind_TurboMachinery(void);
+	/*!
      * \brief Verify if there is mixing plane interface specified from config file.
 	 * \return boolean.
 	 */
@@ -3372,6 +3378,18 @@ public:
 	 * \return boolean.
 	 */
 	bool GetBoolTurboPerf(void);
+
+  /*!
+   * \brief Verify if there is any Non Reflecting Boundary Condition option specified from config file.
+   * \return boolean.
+   */
+	bool GetBoolNRBC(void);
+
+  /*!
+   * \brief Verify if there is any Rieamann Boundary Condition option specified from config file.
+   * \return boolean.
+   */
+	bool GetBoolRiemann(void);
 
 	/*!
 	 * \brief number Turbomachinery performance option specified from config file.

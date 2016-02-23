@@ -442,7 +442,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. */
   addTurboPerfOption("MARKER_TURBO_PERFORMANCE", nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut, Kind_TurboPerformance, TurboPerformance_Map);
   /* DESCRIPTION: Integer number of spanwise sections to compute 3D BC and Performance for turbomachinery */
-   addUnsignedShortOption("NUM_SPANWISE_SECTIONS", nSpanWiseSections, 1);
+  addUnsignedShortOption("NUM_SPANWISE_SECTIONS", nSpanWiseSections, 1);
+  /*!\brief TURBOMACHINERY_TYPE \n DESCRIPTION: types of turbomachynery architecture.
+      \n OPTIONS: see \link TurboMachinery_Map \endlink \n Default: AXIAL */
+  addEnumOption("TURBOMACHINERY_TYPE", Kind_TurboMachinery, TurboMachinery_Map, AXIAL);
   /*!\brief MARKER_SUPERSONIC_INLET  \n DESCRIPTION: Supersonic inlet boundary marker(s) \n   Format: (inlet marker, temperature, static pressure, velocity_x,   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
   addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
                  Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);

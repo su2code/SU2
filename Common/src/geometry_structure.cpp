@@ -9438,14 +9438,26 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 								turbovertex[iMarker][0][jVertex]->SetArea(Area);
 								turbovertex[iMarker][0][jVertex]->SetNormal(NormalArea);
 								coord = node[jPoint]->GetCoord();
-								Normal2 = 0.0;
-								for(iDim = 0; iDim < nDim; iDim++) Normal2 +=coord[iDim]*coord[iDim];
-								if (marker_flag == INFLOW){
-									TurboNormal[0] = -coord[0]/sqrt(Normal2);
-									TurboNormal[1] = -coord[1]/sqrt(Normal2);
-								}else{
-									TurboNormal[0] = coord[0]/sqrt(Normal2);
-									TurboNormal[1] = coord[1]/sqrt(Normal2);
+								switch (config->GetKind_TurboMachinery()){
+									case CENTRIFUGAL:
+										Normal2 = 0.0;
+										for(iDim = 0; iDim < nDim; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+										if (marker_flag == INFLOW){
+											TurboNormal[0] = -coord[0]/sqrt(Normal2);
+											TurboNormal[1] = -coord[1]/sqrt(Normal2);
+										}else{
+											TurboNormal[0] = coord[0]/sqrt(Normal2);
+											TurboNormal[1] = coord[1]/sqrt(Normal2);
+										}
+										break;
+									case AXIAL:
+										TurboNormal[0] = NormalArea[0];
+										TurboNormal[1] = NormalArea[1];
+										break;
+									default:
+										cout << "CENTRIPETAL NOT IMPLEMENTED YET"<<endl;
+										exit(EXIT_FAILURE);
+										break;
 								}
 								turbovertex[iMarker][0][jVertex]->SetTurboNormal(TurboNormal);
 								turbovertex[iMarker][0][jVertex]->SetOldVertex(oldVertex);

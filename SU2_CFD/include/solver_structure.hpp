@@ -1157,6 +1157,49 @@ public:
 	 virtual su2double GetVelocityOutIs(unsigned short inMarkerTP);
 
 	 /*!
+		* \brief A virtual member.
+		* \param[in] val_marker - bound marker.
+		* \return Value of the Outlet Inlet total pressure.
+		*/
+	 virtual su2double GetTotalPresureIn(unsigned short inMarkerTP);
+
+
+	 /*!
+		* \brief A virtual member.
+		* \param[in] val_marker - bound marker.
+		* \return Value of the inlet total temperature.
+		*/
+	 virtual su2double GetTotalTemperatureIn(unsigned short inMarkerTP);
+
+	 /*!
+		* \brief A virtual member.
+		* \param[in] val_marker - bound marker.
+		* \return Value of the inlet flow angle from BC.
+		*/
+	 virtual su2double GetFlowAngleIn_BC(unsigned short inMarkerTP);
+
+	 /*!
+		* \brief A virtual member.
+		* \param[in] val_marker - bound marker.
+		* \return Value of the inlet entropy.
+		*/
+	 virtual su2double GetEntropyIn(unsigned short inMarkerTP);
+
+	 /*!
+		* \brief A virtual member.
+		* \param[in] val_marker - bound marker.
+		* \return Value of the inlet entropy from BC.
+		*/
+	 virtual su2double GetEntropyIn_BC(unsigned short inMarkerTP);
+
+	 /*!
+		* \brief A virtual member.
+		* \param[in] val_marker - bound marker.
+		* \return Value of the total enthalpy from BC.
+		*/
+	 virtual su2double GetTotalEnthalpyIn_BC(unsigned short inMarkerTP);
+
+	 /*!
 	  * \brief A virtual member.
 	  * \param[in] val_marker - bound marker.
 	  * \return Value of the Outlet Pressure for turbomachinery performance.
@@ -3712,6 +3755,49 @@ public:
 	  * \return Value of the Isentropic Outlet Velocity.
 	  */
 	 su2double GetVelocityOutIs(unsigned short inMarkerTP);
+
+	 /*!
+		* \brief Provide the total pressure at the inlet for convergence monitoring.
+		* \param[in] val_marker - bound marker.
+		* \return Value of the Outlet Inlet total pressure.
+		*/
+	 su2double GetTotalPresureIn(unsigned short inMarkerTP);
+
+	 /*!
+		* \brief Provide the total temperature at the inlet for convergence monitoring.
+		* \param[in] val_marker - bound marker.
+		* \return Value of the inlet total temperature.
+		*/
+	 su2double GetTotalTemperatureIn(unsigned short inMarkerTP);
+
+	 /*!
+		* \brief Provide the inlet flow angle from BC for convergence monitoring.
+		* \param[in] val_marker - bound marker.
+		* \return Value of the inlet flow angle from BC.
+		*/
+   su2double GetFlowAngleIn_BC(unsigned short inMarkerTP);
+
+	 /*!
+		* \brief Provide the inlet entropy for convergence monitoring.
+		* \param[in] val_marker - bound marker.
+		* \return Value of the inlet entropy.
+		*/
+	 su2double GetEntropyIn(unsigned short inMarkerTP);
+
+	 /*!
+		* \brief Provide the inlet entropy from BC for convergence monitoring.
+		* \param[in] val_marker - bound marker.
+		* \return Value of the inlet entropy from BC.
+		*/
+	 su2double GetEntropyIn_BC(unsigned short inMarkerTP);
+
+	 /*!
+		* \brief Provide the total inlet enthalpy from BC for convergence monitoring.
+		* \param[in] val_marker - bound marker.
+		* \return Value of the total enthalpy from BC.
+		*/
+	 su2double GetTotalEnthalpyIn_BC(unsigned short inMarkerTP);
+
 
 	 /*!
 	  * \brief Provide the Outlet Pressure (turbomachinery performance).

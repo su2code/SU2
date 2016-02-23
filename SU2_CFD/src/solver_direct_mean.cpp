@@ -4813,19 +4813,19 @@ void CEulerSolver::MPITurboPerformance(CConfig *config, CGeometry *geometry){
 	su2double  avgVel2In, avgVel2Out,avgVelRel2In, avgVelRel2Out, avgGridVel2In, avgGridVel2Out, avgTotalEnthalpyIn= 0.0,avgTotalRothalpyIn,
 	avgTotalEnthalpyOut, avgTotalRothalpyOut, avgTotalEnthalpyOutIs, avgEnthalpyOut, avgEnthalpyOutIs,
 	avgPressureOut, avgTotalRelPressureIn, avgTotalRelPressureOut, avgEntropyIn, avgEntropyOut, flowAngleIn, massFlowIn, machIn, normalMachIn, 	flowAngleOut,
-	massFlowOut, machOut, normalMachOut;
+	massFlowOut, machOut, normalMachOut, avgTotTempIn, avgTotPresIn, P_Total, T_Total, *FlowDir, alphaIn_BC, entropyIn_BC, totalEnthalpyIn_BC;
 
 	unsigned short iDim, i, n1, n2, n1t,n2t;
 
 	int rank = MASTER_NODE, rankIn = MASTER_NODE, rankOut= MASTER_NODE;
 	int size = SINGLE_NODE;
-
+	string Marker_Tag;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   su2double *TurbPerfIn= NULL,*TurbPerfOut= NULL;
   su2double *TotTurbPerfIn = NULL,*TotTurbPerfOut = NULL;
-  n1  = 8;
+  n1  = 13;
   n2  = 10;
   n1t = n1*size;
   n2t = n2*size;
@@ -4846,6 +4846,11 @@ void CEulerSolver::MPITurboPerformance(CConfig *config, CGeometry *geometry){
 	massFlowIn						 = -1.0;
 	machIn								 = -1.0;
 	normalMachIn					 = -1.0;
+	avgTotTempIn					 = -1.0;
+	avgTotPresIn           = -1.0;
+	alphaIn_BC             = -1.0;
+	entropyIn_BC           = -1.0;
+	totalEnthalpyIn_BC     = -1.0;
   avgTotalRothalpyOut    = -1.0;
 	avgTotalEnthalpyOut    = -1.0;
 	avgTotalRelPressureOut = -1.0;
@@ -4881,15 +4886,59 @@ void CEulerSolver::MPITurboPerformance(CConfig *config, CGeometry *geometry){
 					massFlowIn							= SpanMassFlow[iMarker][0];
 					machIn									= AverageMach[iMarker][0];
 					normalMachIn						= AverageNormalMach[iMarker][0];
+					avgTotTempIn						= AverageTotTemperature[iMarker][0];
+					avgTotPresIn						= AverageTotPressure[iMarker][0];
+
+//TODO(turbo) better location has to be found for this computation, perhaps in the outputstructure file.
+					if(config->GetBoolNRBC() || config->GetBoolRiemann()){
+						Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
+
+						if(config->GetBoolRiemann()){
+							P_Total  = config->GetRiemann_Var1(Marker_Tag);
+							T_Total  = config->GetRiemann_Var2(Marker_Tag);
+							FlowDir = config->GetRiemann_FlowDir(Marker_Tag);
+
+						}else{
+							P_Total  = config->GetNRBC_Var1(Marker_Tag);
+							T_Total  = config->GetNRBC_Var2(Marker_Tag);
+							FlowDir = config->GetNRBC_FlowDir(Marker_Tag);
+						}
+
+						alphaIn_BC = atan(FlowDir[1]/FlowDir[0]);
+						P_Total /= config->GetPressure_Ref();
+						T_Total /= config->GetTemperature_Ref();
+
+						/* --- Computes the total state --- */
+						FluidModel->SetTDState_PT(P_Total, T_Total);
+						totalEnthalpyIn_BC= FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+						entropyIn_BC= FluidModel->GetEntropy();
+					}else{
+						cout << " Inlet BC convergence can't be checked "<<endl;
+						entropyIn_BC = 0.0;
+						totalEnthalpyIn_BC= 0.0;
+						alphaIn_BC =0.0;
+					}
+
+
+
+
+
+
+
 #ifdef HAVE_MPI
-					TurbPerfIn[0] = avgTotalRothalpyIn;
-					TurbPerfIn[1] = avgTotalEnthalpyIn;
-					TurbPerfIn[2] = avgEntropyIn;
-					TurbPerfIn[3] = avgTotalRelPressureIn;
-					TurbPerfIn[4] = flowAngleIn;
-					TurbPerfIn[5] = massFlowIn;
-					TurbPerfIn[6] = machIn;
-					TurbPerfIn[7] =	normalMachIn;
+					TurbPerfIn[0]  = avgTotalRothalpyIn;
+					TurbPerfIn[1]  = avgTotalEnthalpyIn;
+					TurbPerfIn[2]  = avgEntropyIn;
+					TurbPerfIn[3]  = avgTotalRelPressureIn;
+					TurbPerfIn[4]  = flowAngleIn;
+					TurbPerfIn[5]  = massFlowIn;
+					TurbPerfIn[6]  = machIn;
+					TurbPerfIn[7]  =	normalMachIn;
+					TurbPerfIn[8]  = avgTotTempIn;
+					TurbPerfIn[9]  = avgTotPresIn;
+					TurbPerfIn[10] = alphaIn_BC;
+					TurbPerfIn[11] = entropyIn_BC;
+					TurbPerfIn[12] = totalEnthalpyIn_BC;
 #endif
 				}
 
@@ -4925,7 +4974,7 @@ void CEulerSolver::MPITurboPerformance(CConfig *config, CGeometry *geometry){
 					TurbPerfOut[6] = flowAngleOut;
 					TurbPerfOut[7] = massFlowOut;
 					TurbPerfOut[8] = machOut;
-					TurbPerfOut[9] = normalMachOut;
+					TurbPerfOut[9] = avgEntropyOut;
 #endif
 
 				}
@@ -4966,6 +5015,16 @@ if (rank == MASTER_NODE){
 				machIn								 = TotTurbPerfIn[n1*i+6];
 				normalMachIn					 = 0.0;
 				normalMachIn					 = TotTurbPerfIn[n1*i+7];
+				avgTotTempIn           = 0.0;
+				avgTotTempIn           = TotTurbPerfIn[n1*i+8];
+				avgTotPresIn           = 0.0;
+				avgTotPresIn           = TotTurbPerfIn[n1*i+9];
+				alphaIn_BC						 = 0.0;
+				alphaIn_BC 						 = TotTurbPerfIn[n1*i+10];
+				entropyIn_BC           = 0.0;
+				entropyIn_BC					 = TotTurbPerfIn[n1*i+11];
+				totalEnthalpyIn_BC		 = 0.0;
+				totalEnthalpyIn_BC     = TotTurbPerfIn[n1*i+12];
 			}
 
 			if(TotTurbPerfOut[n2*i] > 0.0){
@@ -4998,49 +5057,53 @@ if (rank == MASTER_NODE){
 #endif
 	if (rank == MASTER_NODE){
 
-				/*--- compute outlet isoentropic conditions ---*/
-				FluidModel->SetTDState_Ps(avgPressureOut, avgEntropyIn);
-				avgEnthalpyOutIs = FluidModel->GetStaticEnergy() + avgPressureOut/FluidModel->GetDensity();
-				avgTotalEnthalpyOutIs = avgEnthalpyOutIs + 0.5*avgVel2Out;
+		/*--- compute outlet isoentropic conditions ---*/
+		FluidModel->SetTDState_Ps(avgPressureOut, avgEntropyIn);
+		avgEnthalpyOutIs = FluidModel->GetStaticEnergy() + avgPressureOut/FluidModel->GetDensity();
+		avgTotalEnthalpyOutIs = avgEnthalpyOutIs + 0.5*avgVel2Out;
 
-				/*--- store turboperformance informations ---*/
-				PressureOut[0] = avgPressureOut;
-				PressureRatio[0] = avgTotalRelPressureIn/avgPressureOut;
+		/*--- store turboperformance informations ---*/
+		PressureOut[0] = avgPressureOut;
+		PressureRatio[0] = avgTotalRelPressureIn/avgPressureOut;
 
-				switch(config->GetKind_TurboPerf(0)){
-					case BLADE:
+		switch(config->GetKind_TurboPerf(0)){
+		case BLADE:
 
-						TotalPressureLoss[0] = (avgTotalRelPressureIn - avgTotalRelPressureOut)/(avgTotalRelPressureOut - avgPressureOut) ;
-						KineticEnergyLoss[0] = (avgEnthalpyOut - avgEnthalpyOutIs)/(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out);
-						EulerianWork[0]      = avgTotalEnthalpyIn - avgTotalEnthalpyOut;
-						TotalEnthalpyIn[0]   = avgTotalRothalpyIn;
-						FlowAngleIn[0]       = flowAngleIn;
-						FlowAngleOut[0]      = flowAngleOut;
-						MassFlowIn[0]        = massFlowIn;
-						MassFlowOut[0]       = massFlowOut;
-						MachIn[0]            = machIn;
-						MachOut[0]           = machOut;
-						NormalMachIn[0]      = normalMachIn;
-						NormalMachOut[0]     = normalMachOut;
-						EnthalpyOut[0]       = avgEnthalpyOut;
-						VelocityOutIs[0]     =sqrt(2.0*(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out));
-						break;
+			TotalPressureLoss[0] 		= (avgTotalRelPressureIn - avgTotalRelPressureOut)/(avgTotalRelPressureOut - avgPressureOut) ;
+			KineticEnergyLoss[0] 		= (avgEnthalpyOut - avgEnthalpyOutIs)/(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out);
+			EulerianWork[0]      		= avgTotalEnthalpyIn - avgTotalEnthalpyOut;
+			TotalEnthalpyIn[0]   		= avgTotalEnthalpyIn;
+			EntropyIn[0]				 		= avgEntropyIn;
+			FlowAngleIn[0]       		= flowAngleIn;
+			FlowAngleOut[0]      		= flowAngleOut;
+			MassFlowIn[0]        		= massFlowIn;
+			MassFlowOut[0]       		= massFlowOut;
+			MachIn[0]            		= machIn;
+			MachOut[0]           		= machOut;
+			NormalMachIn[0]     		= normalMachIn;
+			NormalMachOut[0]    		= normalMachOut;
+			EnthalpyOut[0]       		= avgEnthalpyOut;
+			VelocityOutIs[0]    		= sqrt(2.0*(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out));
+			TotalPresureIn[0]       = avgTotPresIn;
+			TotalTemperatureIn[0]   = avgTotTempIn;
+			FlowAngleIn_BC[0] 			= alphaIn_BC;
+			EntropyIn_BC[0]					= entropyIn_BC;
+			TotalEnthalpyIn_BC[0]   = totalEnthalpyIn_BC;
+			break;
 
-					case STAGE: case TURBINE:
+		case STAGE: case TURBINE:
 
-						TotalTotalEfficiency[0] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgTotalEnthalpyOutIs);
-						TotalStaticEfficiency[0] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgEnthalpyOutIs);
-						TotalEnthalpyIn[0]= avgTotalEnthalpyIn;
-						EnthalpyOut[0] = avgTotalEnthalpyOut;
-						break;
+			TotalTotalEfficiency[0] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgTotalEnthalpyOutIs);
+			TotalStaticEfficiency[0] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgEnthalpyOutIs);
+			TotalEnthalpyIn[0]= avgTotalEnthalpyIn;
+			EnthalpyOut[0] = avgTotalEnthalpyOut;
+			break;
 
-					default:
-						cout << "Warning! Invalid TurboPerformance option!" << endl;
-						exit(EXIT_FAILURE);
-						break;
-				}
-
-
+		default:
+			cout << "Warning! Invalid TurboPerformance option!" << endl;
+			exit(EXIT_FAILURE);
+			break;
+		}
 	}
 }
 
@@ -9210,7 +9273,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   
   su2double  deltaDensity, deltaPressure, AvgMach, deltaTangVelocity, deltaNormalVelocity, cc,rhoc,c1j,c2j,c3j,c4j,jk_nVert, *cj,
   avg_c1, avg_c2, avg_c3, avg_c4,TangVelocity, NormalVelocity, GilesBeta, c4js, dc4js, *delta_c, **R_Matrix, *deltaprim, **R_c_inv,**R_c, alphaIn_BC,
-	P_Total, T_Total, *FlowDir, Enthalpy_BC, Entropy_BC, *R, *c_avg,*dcjs, Beta_inf2, c2js_Re, avgVel2;
+	P_Total, T_Total, *FlowDir, Enthalpy_BC, Entropy_BC, *R, *c_avg,*dcjs, Beta_inf2, c2js_Re, avgVel2, undRelax;
   int j;
   unsigned long nVert;
   
@@ -9268,17 +9331,27 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       Enthalpy_BC = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
       Entropy_BC = FluidModel->GetEntropy();
 
+
       /* --- Computes the inverse matrix R_c --- */
   		ComputeResJacobianNRBC(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan], AverageNormalVelocity[val_marker][iSpan], AverageTangVelocity[val_marker][iSpan], alphaIn_BC, R_c, R_c_inv);
   		avgVel2 = 0.0;
   		for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AverageVelocity[val_marker][iSpan][iDim]*AverageVelocity[val_marker][iSpan][iDim];
+  		su2double a;
+//  		a = abs((tan(alphaIn_BC)- AverageNormalVelocity[val_marker][iSpan]/AverageTangVelocity[val_marker][iSpan])/tan(alphaIn_BC));
+  		a =	abs((AverageEntropy[val_marker][iSpan] - Entropy_BC)/Entropy_BC);
   		if (nDim == 2){
   			R[0] = -(AverageEntropy[val_marker][iSpan] - Entropy_BC);
   			R[1] = -(AverageTangVelocity[val_marker][iSpan] - tan(alphaIn_BC)*AverageNormalVelocity[val_marker][iSpan]);
   			R[2] = -(AverageEnthalpy[val_marker][iSpan] + 0.5*avgVel2 - Enthalpy_BC);
+//  			R[0] *= (1.0 + 1.0/a);
+//  			R[1] *= (1.0 + 1.0/a);
+//  			R[2] *= (1.0 + 1.0/a);
+//				R[0] = -AveragePressure[val_marker][iSpan]*(AverageEntropy[val_marker][iSpan] - Entropy_BC);
+//  			R[1] = -AverageDensity[val_marker][iSpan]*AverageSoundSpeed[val_marker][iSpan]*(AverageTangVelocity[val_marker][iSpan] - tan(alphaIn_BC)*AverageNormalVelocity[val_marker][iSpan]);
+//  			R[2] = -AverageDensity[val_marker][iSpan]*(AverageEnthalpy[val_marker][iSpan] + 0.5*avgVel2 - Enthalpy_BC);
 //  			cout << "Avg Entropy "<< AverageEntropy[val_marker][iSpan] << "BC Entropy "<< Entropy_BC <<endl;
 //  			cout << "tan(alphaIn_AVG) "<< AverageTangVelocity[val_marker][iSpan]/AverageNormalVelocity[val_marker][iSpan] << " tan(alphaIn_BC) "<< tan(alphaIn_BC) <<endl;
-//  			cout << "Avg Enthalpy "<< AverageEnthalpy[val_marker][iSpan] + 0.5*avgVel2 << "BC Enthalpy"<< Enthalpy_BC <<endl;
+//			cout << "Avg Enthalpy "<< (AverageEnthalpy[val_marker][iSpan] + 0.5*avgVel2)*config->GetEnergy_Ref() << "BC Enthalpy"<< Enthalpy_BC*config->GetEnergy_Ref() <<endl;
 
   		}
   		/* --- Compute the avg component  c_avg = R_c^-1 * R --- */
@@ -9382,7 +9455,8 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 							c2js += c2ks*exp(I*PI_NUMBER*2.0*jk_nVert);
 						}
 						c2js_Re = 2.0*c2js.real();
-						dcjs[1]		= c2js_Re + cj[1];
+
+						dcjs[1]		= c2js_Re;// + cj[1];
 					}else{
 						if (AverageTangVelocity[val_marker][iSpan] >= 0.0){
 							Beta_inf2= -sqrt(pow(AvgMach,2)- 1.0);
@@ -9404,12 +9478,18 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 					/* --- Impose Inlet BC  Reflecting--- */
 //					for(iVar = 0; iVar < nVar -1; iVar++)
 //						cout << "Avg comp " << iVar +1 << " "<< c_avg[iVar] << " freq comp " << iVar +1 << " "<< dcjs[iVar] <<endl;
-//					delta_c[0] = 0.5*(c_avg[0]);
-//					delta_c[1] = -0.5*(c_avg[1]);
-					delta_c[2] = -3.0/nVert*(c_avg[2]+dcjs[2]);
+//					cout << (0.5/nVert)*(1.0+1.0*nVert*(config->GetCFL(ZONE_0)/config->GetCFL_AdaptParam(3)))<<endl;
+//					undRelax = (0.5/nVert)*(1.0+1.0*nVert*(config->GetCFL(ZONE_0)/config->GetCFL_AdaptParam(3)/config->GetCFL_AdaptParam(3)));
+					undRelax = (1.0/nVert);
+					delta_c[0] = undRelax*(c_avg[0]);
+					delta_c[1] = -undRelax*(c_avg[1]);
+					delta_c[2] = -undRelax*(c_avg[2]);
+//					delta_c[0] = undRelax*(c_avg[0]  + dcjs[0]);
+//					delta_c[1] = -undRelax*(c_avg[1] + dcjs[1]);
+//					delta_c[2] = -undRelax*(c_avg[2] + dcjs[2]);
 					/*--- Impose Inlet BC  --- */
-					delta_c[0] = 3.0/nVert*(c_avg[0] + dcjs[0]);
-					delta_c[1] = -3.0/nVert*(c_avg[1] + dcjs[1]);
+//					delta_c[0] = 3.0/nVert*(c_avg[0] + dcjs[0]);
+//					delta_c[1] = -0.7*(c_avg[1] + dcjs[1]);
 //					delta_c[2] = -0.5*(c_avg[2] + dcjs[2]);
 					delta_c[3]= -rhoc*(-NormalVelocity +AverageNormalVelocity[val_marker][iSpan]) +(Pressure_i - AveragePressure[val_marker][iSpan]);
 //					delta_c[3] = cj[3];
@@ -9489,7 +9569,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 							GilesBeta= sqrt(pow(AvgMach,2)-1.0);
 						}
 						c4js= (2.0 * AverageNormalMach[val_marker][iSpan])/(GilesBeta - AverageTangMach[val_marker][iSpan])*cj[1] - (GilesBeta+AverageTangMach[val_marker][iSpan])/(GilesBeta-AverageTangMach[val_marker][iSpan])*cj[2];
-						dc4js = c4js - cj[3];
+						dc4js = c4js;// - cj[3];
 					}else{
 						dc4js = 0.0;
 					}
