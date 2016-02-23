@@ -275,6 +275,7 @@ def obj_df(dvs,config,state=None):
     assert n_obj == 1 , 'SU2 currently only supports one objective'
     
     dv_scales = config['DEFINITION_DV']['SCALE']
+    dv_size   = config['DEFINITION_DV']['SIZE']
     
 #    if objectives: print('Evaluate Objective Gradients')
     
@@ -290,9 +291,12 @@ def obj_df(dvs,config,state=None):
 #        sys.stdout.write('done\n')
         
         # scaling and sign
-        for i_grd,dv_scl in enumerate(dv_scales):
-            grad[i_grd] = grad[i_grd] * sign * scale / dv_scl
-        
+        k = 0
+        for i_dv,dv_scl in enumerate(dv_scales):
+            for i_grd in range(dv_size[i_dv]):
+                grad[k] = grad[k] * sign * scale / dv_scl
+                k = k + 1
+
         vals_out.append(grad)
     
     #: for each objective
@@ -369,7 +373,8 @@ def con_dceq(dvs,config,state=None):
     constraints = def_cons.keys()
     
     dv_scales = config['DEFINITION_DV']['SCALE']
-    
+    dv_size   = config['DEFINITION_DV']['SIZE']
+
 #    if constraints: sys.stdout.write('Evaluate Equality Constraint Gradients ...')
     
     # evaluate each constraint
@@ -384,9 +389,12 @@ def con_dceq(dvs,config,state=None):
 #        sys.stdout.write('done\n')
         
         # scaling
-        for i_grd,dv_scl in enumerate(dv_scales):
-            grad[i_grd] = grad[i_grd] * scale / dv_scl     
-        
+        k = 0
+        for i_dv,dv_scl in enumerate(dv_scales):
+            for i_grd in range(dv_size[i_dv]):
+                grad[k] = grad[k] * scale / dv_scl
+                k = k + 1
+
         vals_out.append(grad)
         
     #: for each constraint
@@ -467,7 +475,8 @@ def con_dcieq(dvs,config,state=None):
     constraints = def_cons.keys()
     
     dv_scales = config['DEFINITION_DV']['SCALE']
-    
+    dv_size   = config['DEFINITION_DV']['SIZE']
+
 #    if constraints: sys.stdout.write('Evaluate Inequality Constraint Gradients')
     
     # evaluate each constraint
@@ -484,8 +493,11 @@ def con_dcieq(dvs,config,state=None):
 #        sys.stdout.write('done\n')
         
         # scaling and sign
-        for i_grd,dv_scl in enumerate(dv_scales):
-            grad[i_grd] = grad[i_grd] * sign * scale / dv_scl          
+        k = 0
+        for i_dv,dv_scl in enumerate(dv_scales):
+            for i_grd in range(dv_size[i_dv]):
+                grad[k] = grad[k] * sign * scale / dv_scl
+                k = k + 1
 
         vals_out.append(grad)
         

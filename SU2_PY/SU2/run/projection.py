@@ -76,7 +76,7 @@ def projection( config, state={}, step = 1e-3 ):
             
     # choose dv values 
     Definition_DV = konfig['DEFINITION_DV']
-    n_DV          = len(Definition_DV['KIND'])
+    n_DV          = sum(Definition_DV['SIZE'])
     if isinstance(step,list):
         assert len(step) == n_DV , 'unexpected step vector length'
     else:
