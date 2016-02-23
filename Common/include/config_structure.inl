@@ -699,9 +699,15 @@ inline unsigned short CConfig::GetKind_Inlet(void) { return Kind_Inlet; }
 
 inline unsigned short CConfig::GetKind_MixingProcess(void) { return Kind_MixingProcess; }
 
+inline unsigned short CConfig::GetKind_TurboMachinery(void) { return Kind_TurboMachinery; }
+
 inline bool CConfig::GetBoolMixingPlane(void) { return (nMarker_MixBound !=0);}
 
 inline bool CConfig::GetBoolTurboPerf(void) { return (nMarker_TurboPerf !=0);}
+
+inline bool CConfig::GetBoolNRBC(void) { return (nMarker_NRBC!=0);}
+
+inline bool CConfig::GetBoolRiemann(void) { return (nMarker_Riemann!=0);}
 
 inline string CConfig::GetMarker_MixingPlane_Bound(unsigned short index) {return Marker_MixBound[index];}
 

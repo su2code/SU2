@@ -750,6 +750,20 @@ static const map<string, MIXINGPROCESS_TYPE> MixingProcess_Map = CCreateMap<stri
 ("MIXEDOUT_AVERAGE",  MIXEDOUT_AVERAGE);
 
 /*!
+ * \brief types of mixing process for averaging quantities at the boundaries.
+ */
+enum TURBOMACHINERY_TYPE {
+  AXIAL       = 1,		/*!< \brief axial turbomachinery. */
+  CENTRIFUGAL = 2,    /*!< \brief centrifugal turbomachinery. */
+  CENTRIPETAL = 3		 /*!< \brief centripetal turbomachinery. */
+};
+
+static const map<string, TURBOMACHINERY_TYPE> TurboMachinery_Map = CCreateMap<string, TURBOMACHINERY_TYPE>
+("AXIAL", AXIAL)
+("CENTRIFUGAL", CENTRIFUGAL)
+("CENTRIPETAL",  CENTRIPETAL);
+
+/*!
  * \brief types of Turbomachinery performance indicators.
  */
 enum TURBO_PERFORMANCE_TYPE {

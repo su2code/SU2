@@ -3884,7 +3884,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 	*MachOut              = NULL,
 	*NormalMachIn         = NULL,
 	*NormalMachOut        = NULL,
-	*VelocityOutIs        = NULL;
+	*VelocityOutIs        = NULL,
+  *TotalPresureIn				= NULL,
+  *TotalTemperatureIn		= NULL,
+  *FlowAngleIn_BC				= NULL,
+	*EntropyIn  					= NULL,
+  *EntropyIn_BC					= NULL,
+  *TotalEnthalpyIn_BC   = NULL;
 
 
 
@@ -3984,7 +3990,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     TotalTotalEfficiency  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     KineticEnergyLoss 	  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     TotalPressureLoss 	  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    MassFlowIn 		      = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    MassFlowIn 		        = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     MassFlowOut           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     FlowAngleIn           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     FlowAngleOut          = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
@@ -3998,6 +4004,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     NormalMachIn          = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     NormalMachOut         = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
     VelocityOutIs         = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    TotalPresureIn				= new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    TotalTemperatureIn		= new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    FlowAngleIn_BC				= new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    EntropyIn   					= new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    EntropyIn_BC					= new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    TotalEnthalpyIn_BC    = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
 
 
 
@@ -4097,7 +4109,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 						TotalTotalEfficiency[iMarker_Monitoring]  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalTotalEfficiency(iMarker_Monitoring);
 						KineticEnergyLoss[iMarker_Monitoring] 	  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetKineticEnergyLoss(iMarker_Monitoring);
 						TotalPressureLoss[iMarker_Monitoring] 	  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalPressureLoss(iMarker_Monitoring);
-						MassFlowIn[iMarker_Monitoring] 		      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMassFlowIn(iMarker_Monitoring);
+						MassFlowIn[iMarker_Monitoring] 		        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMassFlowIn(iMarker_Monitoring);
 						MassFlowOut[iMarker_Monitoring]           = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMassFlowOut(iMarker_Monitoring);
 						FlowAngleIn[iMarker_Monitoring]           = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetFlowAngleIn(iMarker_Monitoring);
 						FlowAngleOut[iMarker_Monitoring]          = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetFlowAngleOut(iMarker_Monitoring);
@@ -4111,6 +4123,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 						NormalMachIn[iMarker_Monitoring]          = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetNormalMachIn(iMarker_Monitoring);
 						NormalMachOut[iMarker_Monitoring]         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetNormalMachOut(iMarker_Monitoring);
 						VelocityOutIs[iMarker_Monitoring]         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetVelocityOutIs(iMarker_Monitoring);
+				    TotalPresureIn[iMarker_Monitoring]				= solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalPresureIn(iMarker_Monitoring);
+				    TotalTemperatureIn[iMarker_Monitoring]		= solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalTemperatureIn(iMarker_Monitoring);
+				    FlowAngleIn_BC[iMarker_Monitoring]				= solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetFlowAngleIn_BC(iMarker_Monitoring);
+				    EntropyIn[iMarker_Monitoring]             = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetEntropyIn(iMarker_Monitoring);
+				    EntropyIn_BC[iMarker_Monitoring]					= solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetEntropyIn_BC(iMarker_Monitoring);
+				    TotalEnthalpyIn_BC[iMarker_Monitoring]		= solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalEnthalpyIn_BC(iMarker_Monitoring);
         	}
         }
 
@@ -4535,6 +4553,26 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               		outMarker_Tag = config[ZONE_0]->GetMarker_TurboPerf_BoundOut(iMarker_Monitoring);
               		switch (config[ZONE_0]->GetKind_TurboPerf(iMarker_Monitoring)) {
               			case BLADE:
+              				cout << "BC convergence summary  for  " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
+											cout << endl;
+											cout << "     Total Inlet Enthalpy" << "     Total Inlet Enyhalpy BC" << "     err(%)" <<  endl;
+											cout.width(25); cout << TotalEnthalpyIn[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref();
+											cout.width(25); cout << TotalEnthalpyIn_BC[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref();
+											cout.width(25); cout << abs((TotalEnthalpyIn[iMarker_Monitoring] - TotalEnthalpyIn_BC[iMarker_Monitoring])/TotalEnthalpyIn[iMarker_Monitoring])*100.0;
+											cout << endl;
+											cout << endl;
+											cout << "     Inlet Entropy" << "     Inlet Entropy BC" << "     err(%)" <<  endl;
+											cout.width(25); cout << EntropyIn[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
+											cout.width(25); cout << EntropyIn_BC[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
+											cout.width(25); cout << abs((EntropyIn[iMarker_Monitoring] - EntropyIn_BC[iMarker_Monitoring])/EntropyIn[iMarker_Monitoring])*100.0;
+											cout << endl;
+											cout << endl;
+											cout << "     Inlet Absolute Angle" << "     Inlet Absolute Angle BC" << "     err(%)" <<  endl;
+											cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleIn[iMarker_Monitoring];
+											cout.width(25); cout << 180.0/PI_NUMBER*FlowAngleIn_BC[iMarker_Monitoring];
+											cout.width(25); cout << abs((FlowAngleIn[iMarker_Monitoring] - FlowAngleIn_BC[iMarker_Monitoring])/FlowAngleIn[iMarker_Monitoring])*100.0;
+											cout << endl;
+											cout << endl;
 											cout << "Blade performance between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
 											cout << endl;
 											cout << "   Total Pressure Loss(%)" << "   Kinetic Energy Loss(%)" << "            Eulerian Work" << endl;
@@ -4563,7 +4601,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 											cout << endl;
 											cout << "        Inlet Normal Mach" << "       Outlet Normal Mach" << endl;
 											cout.width(25); cout << NormalMachIn[iMarker_Monitoring];
-											cout.width(25); cout << NormalMachOut[iMarker_Monitoring];
+											cout.width(25); cout << NormalMachOut[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
 											cout << endl;
 											cout << endl;
 											cout << "           Pressure Ratio" << "         Outlet Pressure" << endl;
@@ -5279,6 +5317,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       delete [] NormalMachIn;
       delete [] NormalMachOut;
       delete [] VelocityOutIs;
+      delete [] TotalPresureIn;
+      delete [] TotalTemperatureIn;
+      delete [] FlowAngleIn_BC;
+      delete [] EntropyIn;
+      delete [] EntropyIn_BC;
+      delete [] TotalEnthalpyIn_BC;
     }
   }
 }
