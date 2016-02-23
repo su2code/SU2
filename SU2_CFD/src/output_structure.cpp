@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -3113,7 +3113,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     }
     
     /*--- Communicate the FEM elasticity stresses (2D) - New elasticity solver---*/
-    
+
     if (Kind_Solver == FEM_ELASTICITY) {
 
       /*--- Loop over this partition to collect the current variable ---*/
@@ -3658,7 +3658,7 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
 void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
   
   /*--- Local variables ---*/
-  
+
   unsigned short nZone = geometry->GetnZone();
   unsigned short Kind_Solver  = config->GetKind_Solver();
   unsigned short iVar, iDim, nDim = geometry->GetnDim();
@@ -3679,7 +3679,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   } else {
     filename = config->GetRestart_FlowFileName();
   }
-  
+
   /*--- Append the zone number if multizone problems ---*/
   if (nZone > 1)
     filename= config->GetMultizone_FileName(filename, val_iZone);
@@ -3692,7 +3692,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   } else if ((fem) && (config->GetWrt_Dynamic())) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
-  
+
   /*--- Open the restart file and write the solution. ---*/
   
   restart_file.open(filename.c_str(), ios::out);
@@ -4090,7 +4090,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       ConvHist_file[0] << begin << fea_coeff;
       ConvHist_file[0] << fea_resid << end;
       break;
-      
+
     case FEM_ELASTICITY:
       ConvHist_file[0] << begin << fem_coeff;
       ConvHist_file[0] << fem_resid << end;
@@ -4193,7 +4193,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool flow = (config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
     (config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_EULER) ||
     (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
-    
+
     bool fem = (config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY);					// FEM structural solver.
 	bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
 	bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
@@ -4293,7 +4293,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (fea) nVar_FEA = nDim;
     if (heat) nVar_Heat = 1;
     if (freesurface) nVar_LevelSet = 1;
-    
+
     if (fem) {
     	if (linear_analysis) nVar_FEM = nDim;
     	if (nonlinear_analysis) nVar_FEM = 3;
@@ -4651,7 +4651,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool In_DualTime_1 = (!DualTime_Iteration && Unsteady);
     bool In_DualTime_2 = (Unsteady && DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
     bool In_DualTime_3 = (Unsteady && !DualTime_Iteration && (iExtIter % config[val_iZone]->GetWrt_Con_Freq() == 0));
-    
+
     /*--- Header frequency: analogy for dynamic structural analysis ---*/
     /*--- DualTime_Iteration is a bool we receive, which is true if it comes from FEM_StructuralIteration and false from SU2_CFD ---*/
     /*--- We maintain the name, as it is an input of the function ---*/
@@ -4680,7 +4680,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     	  (fem  && ( (In_NoDynamic || In_Dynamic_0 || In_Dynamic_1) && (In_NoDynamic || In_Dynamic_2 || In_Dynamic_3)))
        ){
 
-      
+
       /*--- Prepare the history file output, note that the dual
        time output don't write to the history file ---*/
       if (!DualTime_Iteration) {
@@ -4888,7 +4888,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       if (  (!fem && ((write_heads) && !(!DualTime_Iteration && Unsteady))) ||
     		(fem && ((write_heads_FEM) && !(!DualTime_Iteration && nonlinear_analysis)))
     	 ){
-        
+
        if (!fem){       
         if (!Unsteady && (config[val_iZone]->GetUnsteady_Simulation() != TIME_STEPPING)) {
           switch (config[val_iZone]->GetKind_Solver()) {
@@ -5335,14 +5335,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       cout.setf(ios::fixed, ios::floatfield);
       
       if (!fem){
-      if (!Unsteady) {
-        cout.width(5); cout << iExtIter;
-        cout.width(11); cout << timeiter;
-        
-      } else {
-        cout.width(8); cout << iIntIter;
-        cout.width(8); cout << iExtIter;
-      }
+          if (!Unsteady) {
+            cout.width(5); cout << iExtIter;
+            cout.width(11); cout << timeiter;
+
+          } else {
+            cout.width(8); cout << iIntIter;
+            cout.width(8); cout << iExtIter;
+          }
       }
       else if (fem){
           if (!nonlinear_analysis) {
@@ -5355,7 +5355,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
       }
       
-      
+
       switch (config[val_iZone]->GetKind_Solver()) {
         case EULER : case NAVIER_STOKES:
           
@@ -5986,7 +5986,7 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Breakdown_file << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
     Breakdown_file << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
     Breakdown_file <<"-------------------------------------------------------------------------" << endl;
-    Breakdown_file << "| Copyright (C) 2012-2015 SU2, the open-source CFD code.                |" << endl;
+    Breakdown_file << "| Copyright (C) 2012-2016 SU2, the open-source CFD code.                |" << endl;
     Breakdown_file << "|                                                                       |" << endl;
     Breakdown_file << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
     Breakdown_file << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
