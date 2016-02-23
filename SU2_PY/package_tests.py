@@ -283,7 +283,7 @@ def level5():
         cons['INEQUALITY']['MOMENT_Z'] = {'SIGN':'>','VALUE':0.034068,'SCALE':1e-2}
         
         def_dv = config.DEFINITION_DV
-        n_dv   = len(def_dv['KIND'])
+        n_dv   = sum(def_dv['KIND'])
         def_dv['SCALE'] = [1.e0]*n_dv
         
         config.OPT_OBJECTIVE  = obj

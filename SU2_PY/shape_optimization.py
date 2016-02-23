@@ -117,7 +117,7 @@ def shape_optimization( filename                ,
     bound_upper = float ( config.OPT_BOUND_UPPER )
     bound_lower = float ( config.OPT_BOUND_LOWER )
     def_dv      = config.DEFINITION_DV
-    n_dv        = len(def_dv['KIND'])
+    n_dv        = sum(def_dv['SIZE'])
     x0          = [0.0]*n_dv # initial design
     xb_low      = [float(bound_lower)]*n_dv # lower dv bound
     xb_up       = [float(bound_upper)]*n_dv # upper dv bound
