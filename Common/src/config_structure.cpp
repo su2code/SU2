@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2971,7 +2971,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
   cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| Copyright (C) 2012-2015 SU2, the open-source CFD code.                |" << endl;
+  cout << "| Copyright (C) 2012-2016 SU2, the open-source CFD code.                |" << endl;
   cout << "|                                                                       |" << endl;
   cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
   cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
