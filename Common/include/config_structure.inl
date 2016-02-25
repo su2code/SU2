@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -408,6 +408,8 @@ inline string CConfig::GetFFDTag(unsigned short val_dv) {	return FFDTag[val_dv];
 inline string CConfig::GetTagFFDBox(unsigned short val_ffd) {	return TagFFDBox[val_ffd]; }
 
 inline unsigned short CConfig::GetnDV(void) {	return nDV; }
+
+inline unsigned short CConfig::GetnDV_Value(unsigned short iDV) {	return nDV_Value[iDV]; }
 
 inline unsigned short CConfig::GetnFFDBox(void) {	return nFFDBox; }
 
@@ -942,9 +944,9 @@ inline su2double CConfig::GetTotal_UnstTime(void) { return Total_UnstTime; }
 
 inline bool CConfig::GetEngine_Intake(void) { return Engine_Intake; }
 
-inline su2double CConfig::GetDV_Value(unsigned short val_dv) { return DV_Value[val_dv]; }
+inline su2double CConfig::GetDV_Value(unsigned short val_dv, unsigned short val_value) { return DV_Value[val_dv][val_value]; }
 
-inline void CConfig::SetDV_Value(unsigned short val_dv, su2double val) { DV_Value[val_dv] = val; }
+inline void CConfig::SetDV_Value(unsigned short val_dv, unsigned short val_ind, su2double val) { DV_Value[val_dv][val_ind] = val; }
 
 inline su2double CConfig::GetOrderMagResidual(void) { return OrderMagResidual; }
 
@@ -1199,3 +1201,5 @@ inline su2double CConfig::GetResidual_FEM_ETOL(void) { return Res_FEM_ETOL; }
 inline unsigned short CConfig::GetDirectDiff(){ return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() {return DiscreteAdjoint;}
+
+inline bool CConfig::GetAD_Mode(void) {return AD_Mode;}
