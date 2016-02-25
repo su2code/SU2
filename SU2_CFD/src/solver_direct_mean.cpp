@@ -7205,7 +7205,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   
   su2double *Normal, *FlowDirMix, TangVelocity, NormalVelocity;
   Normal = new su2double[nDim];
-  su2double ext_flow_angle, yCoord_Max;
+  su2double ext_flow_angle, yCoord_Max, yCoord_Min ;
   
   Velocity_i = new su2double[nDim];
   Velocity_b = new su2double[nDim];
@@ -7233,6 +7233,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 			if (geometry->node[iPoint]->GetDomain()) {
 				if (geometry->node[iPoint]->GetCoord(nDim-1) > yCoord_Max)
       		yCoord_Max = geometry->node[iPoint]->GetCoord(nDim-1);
+				else
+					yCoord_Min = geometry->node[iPoint]->GetCoord(nDim-1);
       }
   }
 
@@ -7299,7 +7301,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           //TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
           //TODO(turbo), implement not uniform inlet and radial equilibrium for the outlet
         case TOTAL_CONDITIONS_PT:
-          
+
           /*--- Retrieve the specified total conditions for this boundary. ---*/
           if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
           else P_Total  = config->GetRiemann_Var1(Marker_Tag);
@@ -7314,7 +7316,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           FluidModel->SetTDState_PT(P_Total, T_Total);
           Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
           Entropy_e = FluidModel->GetEntropy();
-          
           /* --- Compute the boundary state u_e --- */
           Velocity2_e = Velocity2_i;
           if (nDim == 2){
@@ -7331,11 +7332,12 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           Density_e = FluidModel->GetDensity();
           StaticEnergy_e = FluidModel->GetStaticEnergy();
           Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
+          std::cout << "P" << FluidModel->GetPressure() << "s" <<Entropy_e  << std::endl;
           if (tkeNeeded) Energy_e += GetTke_Inf();
           break;
           
         case STATIC_SUPERSONIC_INFLOW_PT:
-          
+
           /*--- Retrieve the specified total conditions for this boundary. ---*/
           if (gravity) P_static = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
           else P_static  = config->GetRiemann_Var1(Marker_Tag);
@@ -7473,28 +7475,34 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           
         case VELOCITY_STAT_PRESSURE_ENTROPY:
         	/* --- Non uniform BC test --- */
-        	su2double V_max, V_in2, yCoord;	//hardcoded here for test
-
-          yCoord = geometry->node[iPoint]->GetCoord(nDim-1);
-          V_max = 50.*sin(yCoord*M_PI/yCoord_Max);	//initialized like this because in the switch (just for test!!)
-          V_in2 = V_max*V_max;
-
-          //std::cout << "iPoint: " << yCoord << "  " << yCoord_Max << std::endl;
+        	su2double V_max, V_in2, yCoord, Boundary_Length ,Physical_dt, Physical_t, Total_t;	//hardcoded here for test
+        	Boundary_Length = fabs(yCoord_Max-yCoord_Min);
+        	Physical_dt = config->GetDelta_UnstTime();
+        	Total_t = config->GetTotal_UnstTime();
+        	Physical_t  = (config->GetExtIter()+1)*Physical_dt;
+        	//cout << "t=  "<< Total_t << endl;
+        	yCoord = geometry->node[iPoint]->GetCoord(nDim-1);
+        	//TODO to be removed when merged in turbo_SU2
+        	//velocity profile hardcoded here just for test!
+        	if (config->GetUnsteady_Simulation() == 0)
+        			Physical_t = 0;
+        	V_max = fabs(200.*cos(M_PI/Boundary_Length*(yCoord+Boundary_Length/Total_t*Physical_t)));
+        	V_in2 = V_max*V_max;
           /*--- Retrieve the specified total conditions for this boundary. ---*/
-        	Entropy_e = config->GetRiemann_Var1(Marker_Tag);
-        	P_static   = config->GetRiemann_Var2(Marker_Tag);
+        	P_static   = config->GetRiemann_Var1(Marker_Tag);
+        	Entropy_e = config->GetRiemann_Var2(Marker_Tag);
           Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
-           //= Enthalpy_e - 0.5*V_in2;
 
           /* --- Computes the static state --- */
           FluidModel->SetTDState_Ps(P_static, Entropy_e);
-          StaticEnthalpy_e = FluidModel->GetEntropy();
+          StaticEnthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
           /* --- Computes the total state --- */
           Enthalpy_e = StaticEnthalpy_e + 0.5*V_in2;
           FluidModel->SetTDState_hs(Enthalpy_e, Entropy_e);
           P_Total = FluidModel->GetPressure() ;
           T_Total = FluidModel->GetTemperature();
-
+//          std::cout << "Pt: " << P_Total << "  " << T_Total << std::endl;
+//          std::cout << "y= " << yCoord << " -> Vin= " << sqrt(V_in2) << std::endl;
           /*--- Redundant Fluid Model calls to be changed after test. ---*/
 
 
