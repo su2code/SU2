@@ -1272,14 +1272,12 @@ public:
    * \param[out] vwgt        - Weights of the vertices of the graph, i.e. the elements.
    * \param[out] adjwgt      - Weights of the edges of the graph.
    */
-#ifdef HAVE_PARMETIS
   void ComputeFEMGraphWeights(CConfig                          *config,
                               const vector<FaceOfElementClass> &localFaces,
-                              const vector<idx_t>              &xadj_l,
-                              const vector<idx_t>              &adjacency_l,
-                              vector<idx_t>                    &vwgt,
-                              vector<idx_t>                    &adjwgt);
-#endif
+                              const vector<unsigned long>      &xadj_l,
+                              const vector<unsigned long>      &adjacency_l,
+                              vector<su2double>                &vwgt,
+                              vector<su2double>                &adjwgt);
 
 	/*!
 	 * \brief Set the rotational velocity at each node.

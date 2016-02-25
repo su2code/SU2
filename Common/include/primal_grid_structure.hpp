@@ -258,6 +258,12 @@ public:
                                       unsigned long  faceConn[6][4]);
 
  /*!
+  * \brief Virtual function to make available the polynomial degree of the grid.
+  * \return The polynomial degree of the grid.
+  */
+ virtual unsigned short GetNPolyGrid(void);
+
+ /*!
   * \brief Virtual function to make available the polynomial degree of the solution.
   * \return The polynomial degree of the solution.
   */
@@ -1352,6 +1358,12 @@ public:
   * \return Type of the element using VTK nomenclature.
   */
  unsigned short GetVTK_Type(void);
+
+ /*!
+  * \brief Get the polynomial degree of the grid for this element.
+  * \return The polynomial degree of the grid.
+  */
+ unsigned short GetNPolyGrid(void);
 
  /*!
   * \brief Get the polynomial degree of the solution for this element.
