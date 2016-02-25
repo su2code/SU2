@@ -11835,388 +11835,436 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
 
 void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
+  /*--- Determine my rank and the number of ranks. ---*/
+
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
   /*--- Initialize the color vector of the elements. ---*/
 
   for(unsigned long i=0; i<local_elem; ++i)
     elem[i]->SetColor(0);
 
-  /*--- This routine should only ever be called if we have parallel support
-   with MPI and have the ParMETIS library compiled and linked. ---*/
+  /*--- Determine the faces of the elements. ---*/
+
+  vector<FaceOfElementClass> localFaces;
+  for(unsigned long k=0; k<local_elem; k++) {
+
+    /*--- Get the global IDs of the corner points of all the faces of this elements. ---*/
+
+    unsigned short nFaces;
+    unsigned short nPointsPerFace[6];
+    unsigned long  faceConn[6][4];
+
+    elem[k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+    /*--- Loop over the faces and add them to localFaces. ---*/
+
+    for(unsigned short i=0; i<nFaces; ++i) {
+      FaceOfElementClass thisFace;
+      thisFace.nCornerPoints = nPointsPerFace[i];
+      for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
+        thisFace.cornerPoints[j] = faceConn[i][j];
+      thisFace.elemID0 = starting_node[rank] + k;
+      thisFace.nPoly   = elem[k]->GetNPolySol();
+
+      thisFace.CreateUniqueNumbering();
+      localFaces.push_back(thisFace);
+    }
+  }
+
+  /*--- Sort localFaces in increasing order. */
+
+  sort(localFaces.begin(), localFaces.end());
+
+  /*--- Loop over the boundary markers and its faces in order to flag the
+        physical boundary faces in localFaces. Note that use is made of the
+        overloaded function GetCornerPointsAllFaces, which explains the
+        dimensions of the variables used in the function call.         ---*/
+
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    for(unsigned long k=0; k<nElem_Bound[iMarker]; ++k) {
+
+      unsigned short nFaces;
+      unsigned short nPointsPerFace[6];
+      unsigned long  faceConn[6][4];
+      bound[iMarker][k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+      FaceOfElementClass thisFace;
+      thisFace.nCornerPoints = nPointsPerFace[0];
+      for(unsigned short j=0; j<nPointsPerFace[0]; ++j)
+        thisFace.cornerPoints[j] = faceConn[0][j];
+      thisFace.CreateUniqueNumbering();
+
+      vector<FaceOfElementClass>::iterator low;
+      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+
+      /*--- Invalidate the face by setting the element ID to an invalid value. ---*/
+
+      low->elemID0 = Global_nElem + 10;
+    }
+  }
+
+  /*--- Loop over the faces and check for double entries. If a double entry is
+        found, the elemID from the second entry is copied to the first entry,
+        the polynomial degree is updated, and the second entry is invalidated. ---*/
+
+  unsigned long nFacesLoc = localFaces.size();
+  for(unsigned long i=1; i<nFacesLoc; ++i) {
+    if(localFaces[i] == localFaces[i-1]) {
+      localFaces[i-1].elemID1 = localFaces[i].elemID0;
+      localFaces[i-1].nPoly   = max(localFaces[i-1].nPoly, localFaces[i].nPoly);
+      localFaces[i].elemID0   = Global_nElem + 10;
+    }
+  }
+
+  /*--- Remove the invalidated faces. This is accomplished by giving the
+        face four points a global node ID that is larger than the largest
+        point ID in the grid. In this way the sorting operator puts
+        these faces at the end of the vector, see also the < operator
+        of FaceOfElementClass.                                         ---*/
+
+  unsigned long nFacesLocOr = nFacesLoc;
+  for(unsigned long i=0; i<nFacesLocOr; ++i) {
+    if(localFaces[i].elemID0 > Global_nElem) {
+      localFaces[i].nCornerPoints = 4;
+      localFaces[i].cornerPoints[0] = Global_nPoint;
+      localFaces[i].cornerPoints[1] = Global_nPoint;
+      localFaces[i].cornerPoints[2] = Global_nPoint;
+      localFaces[i].cornerPoints[3] = Global_nPoint;
+      --nFacesLoc;
+    }
+  }
+
+  sort(localFaces.begin(), localFaces.end());
+  localFaces.resize(nFacesLoc);
+
+  /*--- The following part of this function should only be present if we have
+        parallel support with MPI. ---*/
+
+#ifdef HAVE_MPI
+
+  /*--- Determine and store the faces, for which only one neighboring element
+        was found. For these faces the other neighbor might be stored on
+        a different rank (unless there are non-matching interfaces).     ---*/
+
+  vector<FaceOfElementClass> localFacesComm;
+  for(unsigned long i=0; i<nFacesLoc; ++i)
+    if(localFaces[i].elemID1 > Global_nElem) localFacesComm.push_back(localFaces[i]);
+
+  /*--- Determine the maximum global point ID that occurs in localFacesComm
+        of all ranks. Note that only the first point is taken into account,
+        because the this point determines the rank where the face is sent to. ---*/
+
+  unsigned long nFacesLocComm = localFacesComm.size();
+  unsigned long maxPointIDLoc = 0;
+  for(unsigned long i=0; i<nFacesLocComm; ++i)
+    maxPointIDLoc = max(maxPointIDLoc, localFacesComm[i].cornerPoints[0]);
+
+  unsigned long maxPointID;
+  MPI_Allreduce(&maxPointIDLoc, &maxPointID, 1, MPI_UNSIGNED_LONG,
+                MPI_MAX, MPI_COMM_WORLD);
+  ++maxPointID;
+
+  /*--- Create a vector with a linear distribution over the ranks for
+        the points that occur in the faces of localFacesComm.        ---*/
+
+  vector<unsigned long> facePointsProc(size+1, 0);
+  unsigned long total_point_accounted = 0;
+  for(unsigned long i=1; i<=(unsigned long)size; ++i) {
+   facePointsProc[i]      =  maxPointID/size;
+   total_point_accounted += facePointsProc[i];
+  }
+
+  unsigned long rem_point = maxPointID - total_point_accounted;
+  for(unsigned long i=1; i<=rem_point; ++i)
+    ++facePointsProc[i];
+
+  for(unsigned long i=0; i<(unsigned long)size; ++i)   
+    facePointsProc[i+1] += facePointsProc[i];
+
+  /*--- Determine the number of faces that has to be sent to each rank.
+        Note that the rank is stored in elemID1, such that the search
+        does not have to be repeated below.                          ---*/
+
+  vector<unsigned long> nFacesComm(size, 0);
+  for(unsigned long i=0; i<nFacesLocComm; ++i) {
+    vector<unsigned long>::iterator low;
+    low = lower_bound(facePointsProc.begin(), facePointsProc.end(),
+                      localFacesComm[i].cornerPoints[0]);
+    unsigned long rankFace = low - facePointsProc.begin() -1;
+    if(*low == localFacesComm[i].cornerPoints[0]) ++rankFace;
+
+    ++nFacesComm[rankFace];
+    localFacesComm[i].elemID1 = rankFace;
+  }
+
+  /*--- Create the send buffer for the faces to be communicated. ---*/
+
+  vector<unsigned long> sendBufFace(7*nFacesLocComm);
+  vector<unsigned long> counter(size);
+  counter[0] = 0;
+  for(unsigned long i=1; i<(unsigned long)size; ++i)
+    counter[i] = counter[i-1] + 7*nFacesComm[i-1];
+
+  for(unsigned long i=0; i<nFacesLocComm; ++i) {
+    unsigned long rankFace = localFacesComm[i].elemID1;
+    unsigned long ii = counter[rankFace];
+    counter[rankFace] += 7;
+
+    sendBufFace[ii]   = localFacesComm[i].nCornerPoints;
+    sendBufFace[ii+1] = localFacesComm[i].cornerPoints[0];
+    sendBufFace[ii+2] = localFacesComm[i].cornerPoints[1];
+    sendBufFace[ii+3] = localFacesComm[i].cornerPoints[2];
+    sendBufFace[ii+4] = localFacesComm[i].cornerPoints[3];
+				sendBufFace[ii+5] = localFacesComm[i].elemID0;
+    sendBufFace[ii+6] = localFacesComm[i].nPoly;
+  }
+
+  /*--- Determine the number of ranks from which I receive a message. */
+
+  unsigned long nMessSend = 0;
+  for(unsigned long i=0; i<(unsigned long)size; ++i) {
+    if( nFacesComm[i] ) {counter[i] = 1; ++nMessSend;}
+    else                 counter[i] = 0;
+  }
+  vector<int> sizeRecv(size, 1);
+
+  unsigned long nMessRecv;
+  MPI_Reduce_scatter(counter.data(), &nMessRecv, sizeRecv.data(), 
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+
+  /*--- Send the data using nonblocking sends. ---*/
+
+  vector<MPI_Request> commReqs(max(nMessSend,nMessRecv));
+
+  nMessSend = 0;
+  unsigned long indSend = 0;
+  for(unsigned long i=0; i<(unsigned long)size; ++i) {
+    if( nFacesComm[i] ) {
+      unsigned long count = 7*nFacesComm[i];
+      MPI_Isend(&sendBufFace[indSend], count, MPI_UNSIGNED_LONG, i, i,
+                MPI_COMM_WORLD, &commReqs[nMessSend]);
+      ++nMessSend;
+      indSend += count;
+    }
+  }
+
+  /*--- Loop over the number of ranks from which faces are received.
+        Receive the messages and store them in facesRecv.         ---*/
+
+  vector<FaceOfElementClass> facesRecv;
+  vector<unsigned long> nFacesRecv(nMessRecv+1);
+  vector<int>           rankRecv(nMessRecv);
+  nFacesRecv[0] = 0;
+  for(unsigned long i=0; i<nMessRecv; ++i) {
+    MPI_Status status;
+    MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
+    rankRecv[i] = status.MPI_SOURCE;
+    int sizeMess;
+    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+
+    vector<unsigned long> recvBuf(sizeMess);
+    MPI_Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
+             rankRecv[i], rank, MPI_COMM_WORLD, &status);
+
+    nFacesRecv[i+1] = nFacesRecv[i] + sizeMess/7;
+    facesRecv.resize(nFacesRecv[i+1]);
+    int ii = 0;
+    for(unsigned long j=nFacesRecv[i]; j<nFacesRecv[i+1]; ++j, ii+=7) {
+      facesRecv[j].nCornerPoints   = recvBuf[ii];
+      facesRecv[j].cornerPoints[0] = recvBuf[ii+1];
+      facesRecv[j].cornerPoints[1] = recvBuf[ii+2];
+      facesRecv[j].cornerPoints[2] = recvBuf[ii+3];
+      facesRecv[j].cornerPoints[3] = recvBuf[ii+4];
+      facesRecv[j].elemID0         = recvBuf[ii+5];
+      facesRecv[j].nPoly           = recvBuf[ii+6];
+    }
+  }
+
+  /*--- The exact contents of facesRecv is needed when communicating back
+        the data to the original ranks, so a copy is made of facesRecv.
+        As localFacesComm is not needed anymore, this vector is used
+        for the sorting and searching of the data of facesRecv. ---*/
+
+  localFacesComm = facesRecv;
+  sort(localFacesComm.begin(), localFacesComm.end());
+
+  nFacesLocComm = localFacesComm.size();
+  for(unsigned long i=1; i<localFacesComm.size(); ++i) {
+    if(localFacesComm[i] == localFacesComm[i-1]) {
+      localFacesComm[i-1].elemID1 = localFacesComm[i].elemID0;
+      localFacesComm[i-1].nPoly   = max(localFacesComm[i-1].nPoly,
+                                        localFacesComm[i].nPoly);
+
+      localFacesComm[i].nCornerPoints = 4;
+      localFacesComm[i].cornerPoints[0] = Global_nPoint;
+      localFacesComm[i].cornerPoints[1] = Global_nPoint;
+      localFacesComm[i].cornerPoints[2] = Global_nPoint;
+      localFacesComm[i].cornerPoints[3] = Global_nPoint;
+      --nFacesLocComm;
+    }
+  }
+
+  sort(localFacesComm.begin(), localFacesComm.end());
+  localFacesComm.resize(nFacesLocComm);
+
+  /*--- Complete the first round of non-blocking sends. ---*/
+
+  MPI_Waitall(nMessSend, commReqs.data(), MPI_STATUSES_IGNORE);
+
+  /*--- Send the data back to the requesting ranks. ---*/
+
+  sendBufFace.resize(7*nFacesRecv[nMessRecv]);
+  indSend = 0;
+  for(unsigned long i=0; i<nMessRecv; ++i) {
+    unsigned long ii = indSend;
+    for(unsigned long j=nFacesRecv[i]; j<nFacesRecv[i+1]; ++j, ii+=7) {
+      sendBufFace[ii]   = facesRecv[j].nCornerPoints;
+      sendBufFace[ii+1] = facesRecv[j].cornerPoints[0];
+      sendBufFace[ii+2] = facesRecv[j].cornerPoints[1];
+      sendBufFace[ii+3] = facesRecv[j].cornerPoints[2];
+      sendBufFace[ii+4] = facesRecv[j].cornerPoints[3];
+
+      vector<FaceOfElementClass>::iterator low;
+      low = lower_bound(localFacesComm.begin(), localFacesComm.end(),
+                        facesRecv[j]);
+      if(facesRecv[j].elemID0 == low->elemID0) sendBufFace[ii+5] = low->elemID1;
+      else                                     sendBufFace[ii+5] = low->elemID0;
+
+      sendBufFace[ii+6] = facesRecv[j].nPoly;
+    }
+
+    unsigned long count = ii - indSend;
+    MPI_Isend(&sendBufFace[indSend], count, MPI_UNSIGNED_LONG, rankRecv[i],
+              rankRecv[i]+1, MPI_COMM_WORLD, &commReqs[i]);
+    indSend = ii;
+  }
+
+
+  /*--- Loop over the ranks to which I originally sent my face data.
+        The return data contains information about the neighboring
+        element ID.                                              ---*/
+
+  for(unsigned long i=0; i<nMessSend; ++i) {
+    MPI_Status status;
+    MPI_Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    int sizeMess;
+    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+
+    vector<unsigned long> recvBuf(sizeMess);
+    MPI_Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
+             status.MPI_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+
+    sizeMess /= 7;
+    unsigned long jj = 0;
+    for(unsigned long j=0; j<(unsigned long) sizeMess; ++j, jj+=7) {
+      FaceOfElementClass thisFace;
+      thisFace.nCornerPoints   = recvBuf[jj];
+      thisFace.cornerPoints[0] = recvBuf[jj+1];
+      thisFace.cornerPoints[1] = recvBuf[jj+2];
+      thisFace.cornerPoints[2] = recvBuf[jj+3];
+      thisFace.cornerPoints[3] = recvBuf[jj+4];
+
+      vector<FaceOfElementClass>::iterator low;
+      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+      low->elemID1 = recvBuf[jj+5];
+
+      if(recvBuf[jj+6] > low->nPoly) low->nPoly = recvBuf[jj+6];
+    }
+  }
+
+  /*--- Complete the second round of non-blocking sends. ---*/
+
+  MPI_Waitall(nMessRecv, commReqs.data(), MPI_STATUSES_IGNORE);
+
+  /*--- Wild cards have been used in the communication, so
+        synchronize the ranks to avoid problems.          ---*/
+
+  MPI_Barrier(MPI_COMM_WORLD);
+
+#endif
+
+  /*--- Determine the total number of non-matching faces in the grid. ---*/
+
+  nFacesLocOr = nFacesLoc;
+  for(unsigned long i=0; i<nFacesLocOr; ++i) {
+    if(localFaces[i].elemID1 > Global_nElem) {
+      localFaces[i].nCornerPoints = 4;
+      localFaces[i].cornerPoints[0] = Global_nPoint;
+      localFaces[i].cornerPoints[1] = Global_nPoint;
+      localFaces[i].cornerPoints[2] = Global_nPoint;
+      localFaces[i].cornerPoints[3] = Global_nPoint;
+      --nFacesLoc;
+    }
+  }
+
+  nFacesLocOr -= nFacesLoc;
+  if( nFacesLocOr ) {
+    sort(localFaces.begin(), localFaces.end());
+    localFaces.resize(nFacesLoc);
+  }
+
+  unsigned long nNonMatchingFaces = nFacesLocOr;
+
+#ifdef HAVE_MPI
+  MPI_Reduce(&nFacesLocOr, &nNonMatchingFaces, 1, MPI_UNSIGNED_LONG,
+             MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+  if(rank == MASTER_NODE && nNonMatchingFaces) {
+    cout << "There are " << nNonMatchingFaces << " non-matching faces in the grid. "
+         << "These are ignored in the partitioning." << endl;
+  }
+
+  /*-- Create the vectors that describe the connectivity of the graph. ---*/
+
+  vector<unsigned long> xadj_l(local_elem+1, 0);
+  for(unsigned long i=0; i<nFacesLoc; ++i) {
+    unsigned long ii = localFaces[i].elemID0 - starting_node[rank];
+    ++xadj_l[ii+1];
+
+    ii = localFaces[i].elemID1 - starting_node[rank];
+    if(ii >= 0 && ii < local_elem) ++xadj_l[ii+1];
+  }
+
+  for(unsigned long i=0; i<local_elem; ++i)
+    xadj_l[i+1] += xadj_l[i];
+
+  vector<unsigned long> xxadj_l = xadj_l;
+  vector<unsigned long> adjacency_l(xadj_l[local_elem]);
+  for(unsigned long i=0; i<nFacesLoc; ++i) {
+    unsigned long ii = localFaces[i].elemID0 - starting_node[rank];
+    adjacency_l[xxadj_l[ii]++] = localFaces[i].elemID1;
+
+    ii = localFaces[i].elemID1 - starting_node[rank];
+    if(ii >= 0 && ii < local_elem) adjacency_l[xxadj_l[ii]++] = localFaces[i].elemID0;
+  }
+
+  for(unsigned long i=0; i<local_elem; ++i)
+    sort(adjacency_l.begin()+xadj_l[i], adjacency_l.begin()+xadj_l[i+1]);
+
+  /*--- Compute the weigts of the graph. ---*/
+
+  vector<su2double> vwgt(local_elem);
+  vector<su2double> adjwgt(xadj_l[local_elem]);
+
+  ComputeFEMGraphWeights(config, localFaces, xadj_l, adjacency_l, vwgt, adjwgt);
+
+  /*--- The remainder of this function should only ever be called if we have parallel
+        support with MPI and have the ParMETIS library compiled and linked. ---*/
 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
-
-  int rank, size;
-  MPI_Comm comm = MPI_COMM_WORLD;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
 
   /*--- Only call ParMETIS if we have more than one rank to avoid errors ---*/
 
   if(size > SINGLE_NODE)
   {
-
-    /*--- Determine the faces of the elements. ---*/
-
-    vector<FaceOfElementClass> localFaces;
-    for(unsigned long k=0; k<local_elem; k++) {
-
-      /*--- Get the global IDs of the corner points of all the faces of this elements. ---*/
-
-      unsigned short nFaces;
-      unsigned short nPointsPerFace[6];
-      unsigned long  faceConn[6][4];
-
-      elem[k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
-
-      /*--- Loop over the faces and add them to localFaces. ---*/
-
-      for(unsigned short i=0; i<nFaces; ++i) {
-        FaceOfElementClass thisFace;
-        thisFace.nCornerPoints = nPointsPerFace[i];
-        for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
-          thisFace.cornerPoints[j] = faceConn[i][j];
-        thisFace.elemID0 = starting_node[rank] + k;
-        thisFace.nPoly   = elem[k]->GetNPolySol();
-
-        thisFace.CreateUniqueNumbering();
-        localFaces.push_back(thisFace);
-      }
-    }
-
-    /*--- Sort localFaces in increasing order. */
-
-    sort(localFaces.begin(), localFaces.end());
-
-    /*--- Loop over the boundary markers and its faces in order to flag the
-          physical boundary faces in localFaces. Note that use is made of the
-          overloaded function GetCornerPointsAllFaces, which explains the
-          dimensions of the variables used in the function call.         ---*/
-
-    for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
-      for(unsigned long k=0; k<nElem_Bound[iMarker]; ++k) {
-
-        unsigned short nFaces;
-        unsigned short nPointsPerFace[6];
-        unsigned long  faceConn[6][4];
-        bound[iMarker][k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
-
-        FaceOfElementClass thisFace;
-        thisFace.nCornerPoints = nPointsPerFace[0];
-        for(unsigned short j=0; j<nPointsPerFace[0]; ++j)
-          thisFace.cornerPoints[j] = faceConn[0][j];
-        thisFace.CreateUniqueNumbering();
-
-        vector<FaceOfElementClass>::iterator low;
-        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
-
-        /*--- Invalidate the face by setting the element ID to an invalid value. ---*/
-
-        low->elemID0 = Global_nElem + 10;
-      }
-    }
-
-    /*--- Loop over the faces and check for double entries. If a double entry is
-          found, the elemID from the second entry is copied to the first entry,
-          the polynomial degree is update, and the second entry is invalidated. ---*/
-
-    unsigned long nFacesLoc = localFaces.size();
-    for(unsigned long i=1; i<nFacesLoc; ++i) {
-      if(localFaces[i] == localFaces[i-1]) {
-        localFaces[i-1].elemID1 = localFaces[i].elemID0;
-        localFaces[i-1].nPoly   = max(localFaces[i-1].nPoly, localFaces[i].nPoly);
-        localFaces[i].elemID0   = Global_nElem + 10;
-      }
-    }
-
-    /*--- Remove the invalidated faces. This is accomplished by giving the
-          face four points a global node ID that is larger than the largest
-          point ID in the grid. In this way the sorting operator puts
-          these faces at the end of the vector, see also the < operator
-          of FaceOfElementClass.                                         ---*/
-
-    unsigned long nFacesLocOr = nFacesLoc;
-    for(unsigned long i=0; i<nFacesLocOr; ++i) {
-      if(localFaces[i].elemID0 > Global_nElem) {
-        localFaces[i].nCornerPoints = 4;
-        localFaces[i].cornerPoints[0] = Global_nPoint;
-        localFaces[i].cornerPoints[1] = Global_nPoint;
-        localFaces[i].cornerPoints[2] = Global_nPoint;
-        localFaces[i].cornerPoints[3] = Global_nPoint;
-        --nFacesLoc;
-      }
-    }
-
-    sort(localFaces.begin(), localFaces.end());
-    localFaces.resize(nFacesLoc);
-
-    /*--- Determine and store the faces, for which only one neighboring element
-          was found. For these faces the other neighbor might be stored on
-          a different rank (unless there are non-matching interfaces).     ---*/
-
-    vector<FaceOfElementClass> localFacesComm;
-    for(unsigned long i=0; i<nFacesLoc; ++i)
-      if(localFaces[i].elemID1 > Global_nElem) localFacesComm.push_back(localFaces[i]);
-
-    /*--- Determine the maximum global point ID that occurs in localFacesComm
-          of all ranks. Note that only the first point is taken into account,
-          because the this point determines the rank where the face is sent to. ---*/
-
-    unsigned long nFacesLocComm = localFacesComm.size();
-    unsigned long maxPointIDLoc = 0;
-    for(unsigned long i=0; i<nFacesLocComm; ++i)
-      maxPointIDLoc = max(maxPointIDLoc, localFacesComm[i].cornerPoints[0]);
-
-    unsigned long maxPointID;
-    MPI_Allreduce(&maxPointIDLoc, &maxPointID, 1, MPI_UNSIGNED_LONG,
-                  MPI_MAX, MPI_COMM_WORLD);
-    ++maxPointID;
-
-    /*--- Create a vector with a linear distribution over the ranks for
-          the points that occur in the faces of localFacesComm.        ---*/
-
-    vector<unsigned long> facePointsProc(size+1, 0);
-    unsigned long total_point_accounted = 0;
-    for(unsigned long i=1; i<=(unsigned long)size; ++i) {
-     facePointsProc[i]      =  maxPointID/size;
-     total_point_accounted += facePointsProc[i];
-    }
-
-    unsigned long rem_point = maxPointID - total_point_accounted;
-    for(unsigned long i=1; i<=rem_point; ++i)
-      ++facePointsProc[i];
-
-    for(unsigned long i=0; i<(unsigned long)size; ++i)   
-      facePointsProc[i+1] += facePointsProc[i];
-
-    /*--- Determine the number of faces that has to be sent to each rank.
-          Note that the rank is stored in elemID1, such that the search
-          does not have to be repeated below.                          ---*/
-
-    vector<unsigned long> nFacesComm(size, 0);
-    for(unsigned long i=0; i<nFacesLocComm; ++i) {
-      vector<unsigned long>::iterator low;
-      low = lower_bound(facePointsProc.begin(), facePointsProc.end(),
-                        localFacesComm[i].cornerPoints[0]);
-      unsigned long rankFace = low - facePointsProc.begin() -1;
-      if(*low == localFacesComm[i].cornerPoints[0]) ++rankFace;
-
-      ++nFacesComm[rankFace];
-      localFacesComm[i].elemID1 = rankFace;
-    }
-
-    /*--- Create the send buffer for the faces to be communicated. ---*/
-
-    vector<unsigned long> sendBufFace(7*nFacesLocComm);
-    vector<unsigned long> counter(size);
-    counter[0] = 0;
-    for(unsigned long i=1; i<(unsigned long)size; ++i)
-      counter[i] = counter[i-1] + 7*nFacesComm[i-1];
-
-    for(unsigned long i=0; i<nFacesLocComm; ++i) {
-      unsigned long rankFace = localFacesComm[i].elemID1;
-      unsigned long ii = counter[rankFace];
-      counter[rankFace] += 7;
-
-      sendBufFace[ii]   = localFacesComm[i].nCornerPoints;
-      sendBufFace[ii+1] = localFacesComm[i].cornerPoints[0];
-      sendBufFace[ii+2] = localFacesComm[i].cornerPoints[1];
-      sendBufFace[ii+3] = localFacesComm[i].cornerPoints[2];
-      sendBufFace[ii+4] = localFacesComm[i].cornerPoints[3];
-						sendBufFace[ii+5] = localFacesComm[i].elemID0;
-      sendBufFace[ii+6] = localFacesComm[i].nPoly;
-    }
-
-    /*--- Determine the number of ranks from which I receive a message. */
-
-    unsigned long nMessSend = 0;
-    for(unsigned long i=0; i<(unsigned long)size; ++i) {
-      if( nFacesComm[i] ) {counter[i] = 1; ++nMessSend;}
-      else                 counter[i] = 0;
-    }
-    vector<int> sizeRecv(size, 1);
-
-    unsigned long nMessRecv;
-    MPI_Reduce_scatter(counter.data(), &nMessRecv, sizeRecv.data(), 
-                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-
-    /*--- Send the data using nonblocking sends. ---*/
-
-    vector<MPI_Request> commReqs(max(nMessSend,nMessRecv));
-
-    nMessSend = 0;
-    unsigned long indSend = 0;
-    for(unsigned long i=0; i<(unsigned long)size; ++i) {
-      if( nFacesComm[i] ) {
-        unsigned long count = 7*nFacesComm[i];
-        MPI_Isend(&sendBufFace[indSend], count, MPI_UNSIGNED_LONG, i, i,
-                  MPI_COMM_WORLD, &commReqs[nMessSend]);
-        ++nMessSend;
-        indSend += count;
-      }
-    }
-
-    /*--- Loop over the number of ranks from which faces are received.
-          Receive the messages and store them in facesRecv.         ---*/
-
-    vector<FaceOfElementClass> facesRecv;
-    vector<unsigned long> nFacesRecv(nMessRecv+1);
-    vector<int>           rankRecv(nMessRecv);
-    nFacesRecv[0] = 0;
-    for(unsigned long i=0; i<nMessRecv; ++i) {
-      MPI_Status status;
-      MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status);
-      rankRecv[i] = status.MPI_SOURCE;
-      int sizeMess;
-      MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
-
-      vector<unsigned long> recvBuf(sizeMess);
-      MPI_Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-               rankRecv[i], rank, MPI_COMM_WORLD, &status);
-
-      nFacesRecv[i+1] = nFacesRecv[i] + sizeMess/7;
-      facesRecv.resize(nFacesRecv[i+1]);
-      int ii = 0;
-      for(unsigned long j=nFacesRecv[i]; j<nFacesRecv[i+1]; ++j, ii+=7) {
-        facesRecv[j].nCornerPoints   = recvBuf[ii];
-        facesRecv[j].cornerPoints[0] = recvBuf[ii+1];
-        facesRecv[j].cornerPoints[1] = recvBuf[ii+2];
-        facesRecv[j].cornerPoints[2] = recvBuf[ii+3];
-        facesRecv[j].cornerPoints[3] = recvBuf[ii+4];
-        facesRecv[j].elemID0         = recvBuf[ii+5];
-        facesRecv[j].nPoly           = recvBuf[ii+6];
-      }
-    }
-
-    /*--- The exact contents of facesRecv is needed when communicating back
-          the data to the original ranks, so a copy is made of facesRecv.
-          As localFacesComm is not needed anymore, this vector is used
-          for the sorting and searching of the data of facesRecv. ---*/
-
-    localFacesComm = facesRecv;
-    sort(localFacesComm.begin(), localFacesComm.end());
-
-    nFacesLocComm = localFacesComm.size();
-    for(unsigned long i=1; i<localFacesComm.size(); ++i) {
-      if(localFacesComm[i] == localFacesComm[i-1]) {
-        localFacesComm[i-1].elemID1 = localFacesComm[i].elemID0;
-        localFacesComm[i-1].nPoly   = max(localFacesComm[i-1].nPoly,
-                                          localFacesComm[i].nPoly);
-
-        localFacesComm[i].nCornerPoints = 4;
-        localFacesComm[i].cornerPoints[0] = Global_nPoint;
-        localFacesComm[i].cornerPoints[1] = Global_nPoint;
-        localFacesComm[i].cornerPoints[2] = Global_nPoint;
-        localFacesComm[i].cornerPoints[3] = Global_nPoint;
-        --nFacesLocComm;
-      }
-    }
-
-    sort(localFacesComm.begin(), localFacesComm.end());
-    localFacesComm.resize(nFacesLocComm);
-
-    /*--- Complete the first round of non-blocking sends. ---*/
-
-    MPI_Waitall(nMessSend, commReqs.data(), MPI_STATUSES_IGNORE);
-
-    /*--- Send the data back to the requesting ranks. ---*/
-
-    sendBufFace.resize(7*nFacesRecv[nMessRecv]);
-    indSend = 0;
-    for(unsigned long i=0; i<nMessRecv; ++i) {
-      unsigned long ii = indSend;
-      for(unsigned long j=nFacesRecv[i]; j<nFacesRecv[i+1]; ++j, ii+=7) {
-        sendBufFace[ii]   = facesRecv[j].nCornerPoints;
-        sendBufFace[ii+1] = facesRecv[j].cornerPoints[0];
-        sendBufFace[ii+2] = facesRecv[j].cornerPoints[1];
-        sendBufFace[ii+3] = facesRecv[j].cornerPoints[2];
-        sendBufFace[ii+4] = facesRecv[j].cornerPoints[3];
-
-        vector<FaceOfElementClass>::iterator low;
-        low = lower_bound(localFacesComm.begin(), localFacesComm.end(),
-                          facesRecv[j]);
-        if(facesRecv[j].elemID0 == low->elemID0) sendBufFace[ii+5] = low->elemID1;
-        else                                     sendBufFace[ii+5] = low->elemID0;
-
-        sendBufFace[ii+6] = facesRecv[j].nPoly;
-      }
-
-      unsigned long count = ii - indSend;
-      MPI_Isend(&sendBufFace[indSend], count, MPI_UNSIGNED_LONG, rankRecv[i],
-                rankRecv[i]+1, MPI_COMM_WORLD, &commReqs[i]);
-      indSend = ii;
-    }
-
-
-    /*--- Loop over the ranks to which I originally sent my face data.
-          The return data contains information about the neighboring
-          element ID.                                              ---*/
-
-    for(unsigned long i=0; i<nMessSend; ++i) {
-      MPI_Status status;
-      MPI_Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
-      int sizeMess;
-      MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
-
-      vector<unsigned long> recvBuf(sizeMess);
-      MPI_Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-               status.MPI_SOURCE, rank+1, MPI_COMM_WORLD, &status);
-
-      sizeMess /= 7;
-      unsigned long jj = 0;
-      for(unsigned long j=0; j<(unsigned long) sizeMess; ++j, jj+=7) {
-        FaceOfElementClass thisFace;
-        thisFace.nCornerPoints   = recvBuf[jj];
-        thisFace.cornerPoints[0] = recvBuf[jj+1];
-        thisFace.cornerPoints[1] = recvBuf[jj+2];
-        thisFace.cornerPoints[2] = recvBuf[jj+3];
-        thisFace.cornerPoints[3] = recvBuf[jj+4];
-
-        vector<FaceOfElementClass>::iterator low;
-        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
-        low->elemID1 = recvBuf[jj+5];
-
-        if(recvBuf[jj+6] > low->nPoly) low->nPoly = recvBuf[jj+6];
-      }
-    }
-
-    /*--- Complete the second round of non-blocking sends. ---*/
-
-    MPI_Waitall(nMessRecv, commReqs.data(), MPI_STATUSES_IGNORE);
-
-    /*--- Wild cards have been used in the communication, so
-          synchronize the ranks to avoid problems.          ---*/
-
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    /*--- Determine the total number of non-matching faces in the grid. ---*/
-
-    nFacesLocOr = nFacesLoc;
-    for(unsigned long i=0; i<nFacesLocOr; ++i) {
-      if(localFaces[i].elemID1 > Global_nElem) {
-        localFaces[i].nCornerPoints = 4;
-        localFaces[i].cornerPoints[0] = Global_nPoint;
-        localFaces[i].cornerPoints[1] = Global_nPoint;
-        localFaces[i].cornerPoints[2] = Global_nPoint;
-        localFaces[i].cornerPoints[3] = Global_nPoint;
-        --nFacesLoc;
-      }
-    }
-
-    nFacesLocOr -= nFacesLoc;
-    if( nFacesLocOr ) {
-      sort(localFaces.begin(), localFaces.end());
-      localFaces.resize(nFacesLoc);
-    }
-
-    unsigned long nNonMatchingFaces = 0;
-    MPI_Reduce(&nFacesLocOr, &nNonMatchingFaces, 1, MPI_UNSIGNED_LONG,
-               MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-    if(rank == MASTER_NODE && nNonMatchingFaces) {
-      cout << "There are " << nNonMatchingFaces << " non-matching faces in the grid. "
-           << "These are ignored in the partitioning." << endl;
-    }
-
     /*--- The scalar variables and the options array for the call to ParMETIS. ---*/
   
     idx_t  wgtflag = 2;               // Weights on both the vertices and edges.
@@ -12228,47 +12276,33 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     METIS_SetDefaultOptions(options);
     options[1] = 0;
 
-    /*-- Create the arrays that describe the connectivity of the graph and how the
-         graph must be distributed over the ranks (equal distribution).      ---*/
-
+    /*--- Determine the array, which stores the distribution of the graph nodes
+          over the ranks.     ---*/
     vector<idx_t> vtxdist(size+1);
     vtxdist[0] = 0;
     for(int i=0; i<size; ++i)
       vtxdist[i+1] = (idx_t)ending_node[i];
 
-    vector<idx_t> xadj_l(local_elem+1, 0);
-    for(unsigned long i=0; i<nFacesLoc; ++i) {
-      unsigned long ii = localFaces[i].elemID0 - starting_node[rank];
-      ++xadj_l[ii+1];
+    /*--- Copy some of the vectors needed for the call the ParMETIS,
+          but now with the data type used by ParMETIS.   ---*/
 
-      ii = localFaces[i].elemID1 - starting_node[rank];
-      if(ii >= 0 && ii < local_elem) ++xadj_l[ii+1];
-    }
+    vector<idx_t> xadjPar(local_elem+1);
+    for(unsigned long i=0; i<=local_elem; ++i)
+      xadjPar[i] = (idx_t) xadj_l[i];
 
+    vector<idx_t> adjacencyPar(xadj_l[local_elem]);
+    for(unsigned long i=0; i<xadj_l[local_elem]; ++i)
+      adjacencyPar[i] = adjacency_l[i];
+
+    vector<idx_t> vwgtPar(local_elem);
     for(unsigned long i=0; i<local_elem; ++i)
-      xadj_l[i+1] += xadj_l[i];
+      vwgtPar[i] = (idx_t) ceil(vwgt[i]);
 
-    vector<idx_t> xxadj_l = xadj_l;
-    vector<idx_t> adjacency_l(xadj_l[local_elem]);
-    for(unsigned long i=0; i<nFacesLoc; ++i) {
-      unsigned long ii = localFaces[i].elemID0 - starting_node[rank];
-      adjacency_l[xxadj_l[ii]++] = localFaces[i].elemID1;
+    vector<idx_t> adjwgtPar(xadj_l[local_elem]);
+    for(unsigned long i=0; i<xadj_l[local_elem]; ++i)
+      adjwgtPar[i] = (idx_t) ceil(adjwgt[i]);
 
-      ii = localFaces[i].elemID1 - starting_node[rank];
-      if(ii >= 0 && ii < local_elem) adjacency_l[xxadj_l[ii]++] = localFaces[i].elemID0;
-    }
-
-    for(unsigned long i=0; i<local_elem; ++i)
-      sort(adjacency_l.begin()+xadj_l[i], adjacency_l.begin()+xadj_l[i+1]);
-
-    vector<real_t> tpwgts(size, 1.0/((real_t)size));
-
-    /*--- Compute the weigts of the graph. ---*/
-
-    vector<idx_t> vwgt(local_elem);
-    vector<idx_t> adjwgt(xadj_l[local_elem]);
-
-    ComputeFEMGraphWeights(config, localFaces, xadj_l, adjacency_l, vwgt, adjwgt);
+    vector<real_t> tpwgts(size, 1.0/((real_t)size));  // Equal distribution.
 
     /*--- Calling ParMETIS ---*/
 
@@ -12276,8 +12310,9 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     if (rank == MASTER_NODE) cout << "Calling ParMETIS..." << endl;
 
     idx_t edgecut;
-    ParMETIS_V3_PartKway(vtxdist.data(), xadj_l.data(), adjacency_l.data(),
-                         vwgt.data(), adjwgt.data(), &wgtflag, &numflag,
+    MPI_Comm comm = MPI_COMM_WORLD;
+    ParMETIS_V3_PartKway(vtxdist.data(), xadjPar.data(), adjacencyPar.data(),
+                         vwgtPar.data(), adjwgtPar.data(), &wgtflag, &numflag,
                          &ncon, &nparts, tpwgts.data(), &ubvec, options,
                          &edgecut, part.data(), &comm);
     if (rank == MASTER_NODE) {
@@ -12295,21 +12330,52 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 #endif
 }
 
-#ifdef HAVE_PARMETIS
 void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          *config,
                                                const vector<FaceOfElementClass> &localFaces,
-                                               const vector<idx_t>              &xadj_l,
-                                               const vector<idx_t>              &adjacency_l,
-                                               vector<idx_t>                    &vwgt,
-                                               vector<idx_t>                    &adjwgt){
+                                               const vector<unsigned long>      &xadj_l,
+                                               const vector<unsigned long>      &adjacency_l,
+                                               vector<su2double>                &vwgt,
+                                               vector<su2double>                &adjwgt){
 
-  /*--- Determine the standard elements for the volume elements. ---*/
+  /*--- Althought this will (almost) never happen, check for an empty initial
+        partition. If present, return immediately to avoid problems.   ---*/
+
+  if(local_elem == 0) return;
+
+  /*--- Determine the standard elements for the volume elements. These standard
+        elements are created based on the polynomial degree of the grid.      ---*/
 
   vector<FEMStandardElementClass> standardElements;
+  vector<unsigned short> standElemForElem(local_elem);
 
-  for(unsigned long i=0; i<local_elem; ++i) {
+  standardElements.push_back(FEMStandardElementClass(elem[0]->GetVTK_Type(),
+                                                     elem[0]->GetNPolyGrid(),
+                                                     true, config));
+  unsigned short nStandardElements = 1;
+  standElemForElem[0] = 0;
 
+  for(unsigned long i=1; i<local_elem; ++i) {
+
+    unsigned short VTK_Type  = elem[i]->GetVTK_Type();
+    unsigned short nPolyGrid = elem[i]->GetNPolyGrid();
+
+    unsigned short j;
+    for(j=0; j<nStandardElements; ++j) {
+      if( standardElements[j].SameStandardElement(VTK_Type, nPolyGrid, true) ) {
+        standElemForElem[i] = j;
+        break;
+      }
+    }
+
+    if(j == nStandardElements) {
+      standElemForElem[i] = nStandardElements;
+      ++nStandardElements;
+      standardElements.push_back(FEMStandardElementClass(VTK_Type, nPolyGrid,
+                                                         true, config));
+    }
   }
+
+  /*--- Determine whether the elements have constant or varying Jacobians. ---*/
 
   cout << " Not implemented yet" << endl;
   
@@ -12317,7 +12383,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
   MPI_Finalize();
 
 }
-#endif
 
 void CPhysicalGeometry::GetQualityStatistics(su2double *statistics) {
   unsigned long jPoint, Point_2, Point_3, iElem;
