@@ -17,7 +17,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -183,6 +183,7 @@ enum ENUM_SOLVER {
   HEAT_EQUATION = 29,					/*!< \brief Definition of the heat solver. */
   LINEAR_ELASTICITY = 11,				/*!< \brief Definition of the FEA solver. */
   FLUID_STRUCTURE_INTERACTION = 12,		/*!< \brief Definition of a FSI solver. */
+  FEM_ELASTICITY = 13,					/*!< \brief Definition of a FEM solver. */
   ADJ_EULER = 18,						/*!< \brief Definition of the continuous adjoint Euler's solver. */
   ADJ_NAVIER_STOKES = 19,				/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
   ADJ_RANS = 20,						/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
@@ -204,6 +205,7 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("WAVE_EQUATION", WAVE_EQUATION)
 ("HEAT_EQUATION", HEAT_EQUATION)
 ("LINEAR_ELASTICITY", LINEAR_ELASTICITY)
+("FEM_ELASTICITY", FEM_ELASTICITY)
 ("DISC_ADJ_EULER", DISC_ADJ_EULER)
 ("DISC_ADJ_RANS", DISC_ADJ_RANS)
 ("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_EULER)
@@ -233,12 +235,63 @@ static const map<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = CCreateM
 enum ENUM_FSI_STRUC_PROBLEM {
   NO_SOLVER_SFSI = 0,				/*!< \brief Definition of no solver. */
   LINEAR_ELASTICITY_SFSI = 11,		/*!< \brief Linear elasticity equations for the FSI problem */
-  NONLINEAR_ELASTICITY_SFSI = 2		/*!< \brief Nonlinear elasticity equations for the FSI problem */
+  FEM_ELASTICITY_SFSI = 13,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
 };
 static const map<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = CCreateMap<string, ENUM_FSI_STRUC_PROBLEM>
 ("NONE", NO_SOLVER_SFSI)
 ("LINEAR_ELASTICITY", LINEAR_ELASTICITY_SFSI)
-("NONLINEAR_ELASTICITY", NONLINEAR_ELASTICITY_SFSI);
+("FEM_ELASTICITY", FEM_ELASTICITY_SFSI);
+
+/*!
+ * \brief Material geometric conditions
+ */
+enum ENUM_STRUCT_SOLVER {
+	SMALL_DEFORMATIONS = 0,			/*!< \brief Definition of linear elastic material. */
+	LARGE_DEFORMATIONS = 1,			/*!< \brief Definition of Neo-Hookean material. */
+};
+static const map<string, ENUM_STRUCT_SOLVER> Struct_Map = CCreateMap<string, ENUM_STRUCT_SOLVER>
+("SMALL_DEFORMATIONS", SMALL_DEFORMATIONS)
+("LARGE_DEFORMATIONS", LARGE_DEFORMATIONS);
+
+
+/*!
+ * \brief Material model
+ */
+enum ENUM_MATERIAL_MODEL {
+	LINEAR_ELASTIC = 0,			/*!< \brief Definition of linear elastic material. */
+	NEO_HOOKEAN = 1,			/*!< \brief Definition of Neo-Hookean material. */
+};
+static const map<string, ENUM_MATERIAL_MODEL> Material_Map = CCreateMap<string, ENUM_MATERIAL_MODEL>
+("LINEAR_ELASTIC", LINEAR_ELASTIC)
+("NEO_HOOKEAN", NEO_HOOKEAN);
+
+/*!
+ * \brief Material compressibility
+ */
+enum ENUM_MAT_COMPRESS {
+  COMPRESSIBLE_MAT = 0,			/*!< \brief Definition of compressible material. */
+  INCOMPRESSIBLE_MAT = 1,		/*!< \brief Definition of incompressible material. */
+};
+static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENUM_MAT_COMPRESS>
+("COMPRESSIBLE", COMPRESSIBLE_MAT)
+("INCOMPRESSIBLE", INCOMPRESSIBLE_MAT);
+
+
+
+/*!
+ * \brief types of interpolators
+ */
+enum ENUM_INTERPOLATOR {
+  NEAREST_NEIGHBOR = 0,   /*!< \brief Nearest Neigbhor interpolation */
+  ISOPARAMETRIC = 1, /*!< \brief Isoparametric interpolation */
+  CONSISTCONSERVE = 2,/*!< \brief Consistent & Conservative interpolation (S.A. Brown 1997). Utilizes Isoparametric interpolation. */
+};
+
+static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string, ENUM_INTERPOLATOR>
+("NEAREST_NEIGHBOR", NEAREST_NEIGHBOR)
+("ISOPARAMETRIC", ISOPARAMETRIC)
+("CONSISTCONSERVE", CONSISTCONSERVE);
+
 
 /*!
  * \brief different regime modes
@@ -316,6 +369,17 @@ const int SOURCE_FIRST_TERM = 2;        /*!< \brief Position of the first source
 const int SOURCE_SECOND_TERM = 3;   /*!< \brief Position of the second source term in the numerics container array. */
 const int CONV_BOUND_TERM = 4;       /*!< \brief Position of the convective boundary terms in the numerics container array. */
 const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundary terms in the numerics container array. */
+
+/*!
+ * \brief types of finite elements (in 2D or 3D)
+ */
+
+const int EL_TRIA = 0;		/*!< \brief Elements of three nodes (2D). */
+const int EL_QUAD = 1;		/*!< \brief Elements of four nodes (2D). */
+
+const int EL_TETRA = 0;		/*!< \brief Elements of four nodes (3D). */
+const int EL_HEXA = 1;		/*!< \brief Elements of eight nodes (3D). */
+
 
 /*!
  * \brief types of mathematical problem to solve
@@ -596,12 +660,38 @@ static const map<string, ENUM_TIME_INT> Time_Int_Map = CCreateMap<string, ENUM_T
 enum ENUM_TIME_INT_FEA {
   CD_EXPLICIT = 1,			/*!< \brief Support for implementing an explicit method. */
   NEWMARK_IMPLICIT = 2,   	/*!< \brief Implicit Newmark integration definition. */
-  GA_IMPLICIT = 3   		/*!< \brief Support for implementing another implicit method. */
+  GENERALIZED_ALPHA = 3   		/*!< \brief Support for implementing another implicit method. */
 };
 static const map<string, ENUM_TIME_INT_FEA> Time_Int_Map_FEA = CCreateMap<string, ENUM_TIME_INT_FEA>
 ("CD_EXPLICIT", CD_EXPLICIT)
 ("NEWMARK_IMPLICIT", NEWMARK_IMPLICIT)
-("GA_IMPLICIT", GA_IMPLICIT);
+("GENERALIZED_ALPHA", GENERALIZED_ALPHA);
+
+/*!
+ * \brief type of time integration schemes
+ */
+enum ENUM_SPACE_ITE_FEA {
+  NEWTON_RAPHSON = 1,			/*!< \brief Full Newton-Rapshon method. */
+  MODIFIED_NEWTON_RAPHSON = 2   /*!< \brief Modified Newton-Raphson method. */
+};
+static const map<string, ENUM_SPACE_ITE_FEA> Space_Ite_Map_FEA = CCreateMap<string, ENUM_SPACE_ITE_FEA>
+("NEWTON_RAPHSON", NEWTON_RAPHSON)
+("MODIFIED_NEWTON_RAPHSON", MODIFIED_NEWTON_RAPHSON);
+
+/*!
+ * \brief types of transfer methods
+ */
+enum ENUM_TRANSFER_METHOD {
+  BROADCAST_DATA = 1,	/*!< \brief Gather data on one processor and broadcast it into all of them, relating to global nodes. */
+  SCATTER_DATA = 2,   	/*!< \brief Gather data on one processor and scatter it into the one that needs it. */
+  ALLGATHER_DATA = 3,   /*!< \brief All processors gather data (this will be useful for operations over a group of data - averaging) */
+  LEGACY_METHOD = 4		/*!< \brief Original transfer method, maintained to check . */
+};
+static const map<string, ENUM_TRANSFER_METHOD> Transfer_Method_Map = CCreateMap<string, ENUM_TRANSFER_METHOD>
+("BROADCAST_DATA", BROADCAST_DATA)
+("SCATTER_DATA", SCATTER_DATA)
+("ALLGATHER_DATA", ALLGATHER_DATA)
+("LEGACY_METHOD", LEGACY_METHOD);
 
 /*!
  * \brief types of schemes to compute the flow gradient
@@ -1966,6 +2056,106 @@ public:
   }
 };
 
+class COptionDVValue : public COptionBase{
+  string name; // identifier for the option
+  unsigned short* & nDV_Value;
+  su2double ** & valueDV;
+  unsigned short & nDV;
+  su2double ** & paramDV;
+  unsigned short* & design_variable;
+
+public:
+  COptionDVValue(string option_field_name, unsigned short* & nDVValue_field, su2double** & valueDV_field, unsigned short & nDV_field,  su2double** & paramDV_field, unsigned short * & design_variable_field) : nDV_Value(nDVValue_field), valueDV(valueDV_field), nDV(nDV_field), paramDV(paramDV_field), design_variable(design_variable_field) {
+    this->name = option_field_name;
+  }
+
+  ~COptionDVValue() {};
+
+  string SetValue(vector<string> option_value) {
+    if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->nDV_Value = NULL;
+      return "";
+    }
+
+    if ( (this->nDV > 0) && (this->design_variable == NULL) ) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": Design_Variable array has not been allocated. Check that DV_KIND appears before DV_VALUE in configuration file.");
+      return newstring;
+    }
+    if ( (this->nDV > 0) && (this->paramDV == NULL) ) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": Design_Parameter array has not been allocated. Check that DV_PARAM appears before DV_VALUE in configuration file.");
+      return newstring;
+    }
+
+    this->valueDV = new su2double*[this->nDV];
+    this->nDV_Value = new unsigned short[this->nDV];
+
+    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
+      this->valueDV[iDV] = new su2double[3];
+    }
+
+    unsigned short nValueDV = 0;
+    unsigned short totalnValueDV = 0;
+    stringstream ss;
+    unsigned int i = 0;
+    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
+      switch (this->design_variable[iDV]) {
+        case FFD_CONTROL_POINT:
+          if((this->paramDV[iDV][4] == 0) &&
+             (this->paramDV[iDV][5] == 0) &&
+             (this->paramDV[iDV][6] == 0)) {
+            nValueDV = 3;
+          } else {
+            nValueDV = 1;
+          }
+          break;
+        case FFD_CONTROL_POINT_2D:
+          if((this->paramDV[iDV][3] == 0) &&
+             (this->paramDV[iDV][4] == 0)) {
+            nValueDV = 2;
+          } else {
+            nValueDV = 1;
+          }
+          break;
+        default :
+          nValueDV = 1;
+      }
+
+      this->nDV_Value[iDV] = nValueDV;
+
+      totalnValueDV += nValueDV;
+
+      for (unsigned short iValueDV = 0; iValueDV < nValueDV; iValueDV++) {
+
+        ss << option_value[i] << " ";
+
+        ss >> this->valueDV[iDV][iValueDV];
+
+        i++;
+      }
+    }
+
+    if (i != totalnValueDV){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": a design variable in the configuration file has the wrong number of values");
+      return newstring;
+    }
+
+    // Need to return something...
+    return "";
+  }
+
+  void SetDefault() {
+    this->nDV_Value = 0;
+    this->valueDV = NULL;
+    // Don't mess with the Design_Variable because it's an input, not modified
+  }
+};
+
 class COptionFFDDef : public COptionBase{
   string name;
   unsigned short & nFFD;
@@ -3079,4 +3269,3 @@ public:
     this->distribution = NULL;
   }
 };
-
