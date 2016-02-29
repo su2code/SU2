@@ -8798,10 +8798,12 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 						Density  = config->GetInlet_Ttotal(Marker_Tag);
 						//Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
 						if (Coord[1]>0)
-							Vel_Mag =-10978685552690526.000000*(Coord[1]*Coord[1]*Coord[1]*Coord[1])+3673858018331092.500000*(Coord[1]*Coord[1]*Coord[1])-461026566242547.000000*(Coord[1]*Coord[1]) + 25712678005167.066406*(Coord[1])  -537774533322.414001;
+							Vel_Mag = -1070792516.983605*(Coord[1]*Coord[1])+179160956.345980*(Coord[1])-7494059.493144;
+							//Vel_Mag =-10978685552690526.000000*(Coord[1]*Coord[1]*Coord[1]*Coord[1])+3673858018331092.500000*(Coord[1]*Coord[1]*Coord[1])-461026566242547.000000*(Coord[1]*Coord[1]) + 25712678005167.066406*(Coord[1])  -537774533322.414001;
 							//Vel_Mag = 68.04-272.16*(Coord[1]*Coord[1]);
 						else
-							Vel_Mag = -10983959871472600.000000*(Coord[1]*Coord[1]*Coord[1]*Coord[1]) -3675622941270522.000000*(Coord[1]*Coord[1]*Coord[1]) -461248037035403.000000*(Coord[1]*Coord[1]) -25725029648064.847656*(Coord[1]) -538032857070.865112;
+							Vel_Mag = -1070792516.983605*(Coord[1]*Coord[1])-179160956.345980*(Coord[1])-7494059.493144;
+							//Vel_Mag = -10983959871472600.000000*(Coord[1]*Coord[1]*Coord[1]*Coord[1]) -3675622941270522.000000*(Coord[1]*Coord[1]*Coord[1]) -461248037035403.000000*(Coord[1]*Coord[1]) -25725029648064.847656*(Coord[1]) -538032857070.865112;
 							//Vel_Mag = 68.04-272.16*(Coord[1]*Coord[1]);
 						
 						Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
