@@ -4584,7 +4584,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 											cout << "     Total Inlet Enthalpy" << "          Outlet Enthalpy" << "            D_MassFlow(%)" <<  endl;
 											cout.width(25); cout << TotalEnthalpyIn[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref();
 											cout.width(25); cout << EnthalpyOut[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref();
-											cout.width(25); cout << abs((MassFlowIn[iMarker_Monitoring] + MassFlowOut[iMarker_Monitoring])/MassFlowIn[iMarker_Monitoring])*100.0;
+											cout.width(25); cout << abs((MassFlowIn[iMarker_Monitoring] - MassFlowOut[iMarker_Monitoring])/MassFlowIn[iMarker_Monitoring])*100.0;
 											cout << endl;
 											cout << endl;
 											cout << "   Isentropic Outlet Vel." << "         Inlet Flow Angle" << "        Outlet Flow Angle" <<endl;
@@ -4983,7 +4983,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           	switch (config[ZONE_0]->GetKind_TurboPerf(0)) {
           		case BLADE:
           			cout.width(15); cout << KineticEnergyLoss[0]*100.0;
-          			cout.width(15); cout << abs((MassFlowIn[0] + MassFlowOut[0])/MassFlowIn[0])*100.0;
+          			cout.width(15); cout << abs((MassFlowIn[0] - MassFlowOut[0])/MassFlowIn[0])*100.0;
           			break;
           		case STAGE: case TURBINE:
           			cout.width(15); cout << TotalStaticEfficiency[0]*100.0;
@@ -5053,7 +5053,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         	switch (config[ZONE_0]->GetKind_TurboPerf(0)) {
         		case BLADE:
         			cout.width(15); cout << KineticEnergyLoss[0]*100.0;
-        			cout.width(15); cout << abs((MassFlowIn[0] + MassFlowOut[0])/MassFlowIn[0])*100.0;
+        			cout.width(15); cout << abs((MassFlowIn[0] - MassFlowOut[0])/MassFlowIn[0])*100.0;
         			break;
         		case STAGE: case TURBINE:
         			cout.width(15); cout << TotalStaticEfficiency[0]*100.0;

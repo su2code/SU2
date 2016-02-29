@@ -940,7 +940,7 @@ void CNumerics::GetRMatrix(su2double val_soundspeed, su2double val_density, su2d
 
 	su2double cc, rhoc;
 	cc = val_soundspeed*val_soundspeed;
-	rhoc = val_density/val_soundspeed;
+	rhoc = val_density*val_soundspeed;
 	if (nDim == 2) {
 		R_Matrix[0][0] = -1.0/cc;
 		R_Matrix[0][1] = 0.0;
@@ -1005,7 +1005,7 @@ void CNumerics::GetLMatrix(su2double val_soundspeed, su2double val_density, su2d
 
 	su2double cc, rhoc;
 	cc = val_soundspeed*val_soundspeed;
-	rhoc = val_density/val_soundspeed;
+	rhoc = val_density*val_soundspeed;
 	if (nDim == 2) {
 
 		L_Matrix[0][0] = -cc;
@@ -1068,7 +1068,7 @@ void CNumerics::GetCharJump(su2double val_soundspeed, su2double val_density, su2
 
 	su2double cc, rhoc;
 	cc = val_soundspeed*val_soundspeed;
-	rhoc = val_density/val_soundspeed;
+	rhoc = val_density*val_soundspeed;
 	if (nDim == 2) {
 
 		delta_char[0] = -cc*delta_prim[0] + delta_prim[3];
