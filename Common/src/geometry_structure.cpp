@@ -9920,8 +9920,13 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 						}
 						if (grid_movement){
 							for (iDim = 0; iDim < nDim; iDim++)AverageGridVel[iMarker][iSpan][iDim] =TotalGridVel[iDim]/nTotVertexSpan[iMarker][iSpan];
-							AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
-//							cout << "average  Tang grid Vel "<<AverageTangGridVel[iMarker][iSpan]<< " in span " << iSpan << " in rank " <<rank <<endl;
+							if (marker_flag == INFLOW){
+								AverageTangGridVel[iMarker][iSpan]= -(AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
+							}
+							else{
+								AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
+							}
+
 						}
 //						for (iDim = 0; iDim < nDim; iDim++){
 //							cout << "average turbo normal "<<AverageTurboNormal[iMarker][iSpan][iDim]<< " in span " << iSpan <<" in rank " <<rank <<endl;
