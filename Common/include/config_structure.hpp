@@ -84,7 +84,7 @@ private:
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
   bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
   bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
-  bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
+  bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
   InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
@@ -856,12 +856,12 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addMathProblemOption(const string name, bool & Adjoint, const bool & Adjoint_default,
-                      bool & Restart_Flow, const bool & Restart_Flow_default,
-                            bool &DiscreteAdjoint, const bool & DiscreteAdjoint_default) {
+  void addMathProblemOption(const string name, bool & ContinuousAdjoint, const bool & ContinuousAdjoint_default,
+                            bool & DiscreteAdjoint, const bool & DiscreteAdjoint_default,
+                            bool & Restart_Flow, const bool & Restart_Flow_default) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, Restart_Flow, Restart_Flow_default, DiscreteAdjoint, DiscreteAdjoint_default);
+    COptionBase* val = new COptionMathProblem(name, ContinuousAdjoint, ContinuousAdjoint_default, DiscreteAdjoint, DiscreteAdjoint_default, Restart_Flow, Restart_Flow_default);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -4419,7 +4419,7 @@ public:
 	 * \brief Determines if problem is adjoint
 	 * \return true if Adjoint
 	 */
-	bool GetAdjoint(void);
+	bool GetContinuous_Adjoint(void);
 
     /*!
 	 * \brief Determines if problem is viscous

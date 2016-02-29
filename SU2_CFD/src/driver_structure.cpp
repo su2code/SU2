@@ -1482,7 +1482,7 @@ void CSpectralDriver::SetTimeSpectral(CGeometry ***geometry_container, CSolver *
   unsigned short nVar = solver_container[ZONE_0][MESH_0][FLOW_SOL]->GetnVar();
   unsigned long iPoint;
   bool implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool adjoint = (config_container[ZONE_0]->GetAdjoint());
+  bool adjoint = (config_container[ZONE_0]->GetContinuous_Adjoint());
   if (adjoint) {
     implicit = (config_container[ZONE_0]->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   }

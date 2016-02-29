@@ -73,9 +73,14 @@ def geometry ( config , step = 1e-3 ):
     
     # unpack
     function_name = konfig['GEO_PARAM']
-    func_filename = 'of_func.dat'
-    grad_filename = 'of_grad.dat'
-    
+
+    func_filename  = config['VALUE_OBJFUNC_FILENAME']
+    func_filename  = os.path.splitext( func_filename )[0]
+
+    grad_filename  = config['GRAD_OBJFUNC_FILENAME']
+    grad_filename  = os.path.splitext( grad_filename )[0]
+
+
     # choose dv values 
     Definition_DV = konfig['DEFINITION_DV']
     n_DV          = len(Definition_DV['KIND'])

@@ -2260,7 +2260,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
   unsigned long nIterMesh;
   unsigned long iPoint;
   bool stat_mesh = true;
-  bool adjoint = config_container->GetAdjoint();
+  bool adjoint = config_container->GetContinuous_Adjoint();
   bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
   
   /*--- For a time-spectral case, set "iteration number" to the zone number,
