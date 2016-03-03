@@ -65,6 +65,12 @@ inline unsigned short CPrimalGrid::GetNPolyGrid(void) { return 0; }
 
 inline unsigned short CPrimalGrid::GetNPolySol(void) { return 0; }
 
+inline unsigned short CPrimalGrid::GetNDOFsSol(void) { return 0; }
+
+inline su2double CPrimalGrid::GetRatioMaxMinJacobian(void) { return 0.0; }
+
+inline void CPrimalGrid::SetRatioMaxMinJacobian(su2double val_ratioMaxMinJac) {}
+
 inline unsigned short CVertexMPI::GetnNodes(void) { return nNodes; }
 
 inline unsigned long CVertexMPI::GetNode(unsigned short val_node) { return Nodes[val_node]; }
@@ -283,7 +289,13 @@ inline unsigned short CPrimalGridFEM::GetNPolyGrid(void) { return nPolyGrid; }
 
 inline unsigned short CPrimalGridFEM::GetNPolySol(void) { return nPolySol; }
 
+inline unsigned short CPrimalGridFEM::GetNDOFsSol(void) { return nDOFsSol; }
+
+inline su2double CPrimalGridFEM::GetRatioMaxMinJacobian(void) { return ratioMaxMinJacobian; }
+
 inline void CPrimalGridFEM::SetColor(unsigned long val_color) { color = val_color; }
+
+inline void CPrimalGridFEM::SetRatioMaxMinJacobian(su2double val_ratioMaxMinJac) { ratioMaxMinJacobian = val_ratioMaxMinJac; }
 
 inline unsigned long CPrimalGridBoundFEM::GetNode(unsigned short val_node) { return Nodes[val_node]; }
 

@@ -674,53 +674,53 @@ void CPrimalGridFEM::GetCornerPointsAllFaces(unsigned short &nFaces,
   switch( VTK_Type ) {
     case TRIANGLE:
       nFaces = 3;
-      nPointsPerFace[0] = 2; faceConn[0][0] = 0;     faceConn[0][1] = nPoly;
-      nPointsPerFace[1] = 2; faceConn[1][0] = 0;     faceConn[1][1] = nDOFs -1;
-      nPointsPerFace[2] = 2; faceConn[2][0] = nPoly; faceConn[2][1] = nDOFs -1;
+      nPointsPerFace[0] = 2; faceConn[0][0] = 0;        faceConn[0][1] = nPoly;
+      nPointsPerFace[1] = 2; faceConn[1][0] = nPoly;    faceConn[1][1] = nDOFs -1;
+      nPointsPerFace[2] = 2; faceConn[2][0] = nDOFs -1; faceConn[2][1] = 0;
       break;
 
     case QUADRILATERAL:
       nFaces = 4; nn2 = nPoly*(nPoly+1);
-      nPointsPerFace[0] = 2; faceConn[0][0] = 0;     faceConn[0][1] = nPoly;
-      nPointsPerFace[1] = 2; faceConn[1][0] = 0;     faceConn[1][1] = nn2;
-      nPointsPerFace[2] = 2; faceConn[2][0] = nPoly; faceConn[2][1] = nDOFs -1;
-      nPointsPerFace[3] = 2; faceConn[3][0] = nn2;   faceConn[3][1] = nDOFs -1;
+      nPointsPerFace[0] = 2; faceConn[0][0] = 0;        faceConn[0][1] = nPoly;
+      nPointsPerFace[1] = 2; faceConn[1][0] = nPoly;    faceConn[1][1] = nDOFs -1;
+      nPointsPerFace[2] = 2; faceConn[2][0] = nDOFs -1; faceConn[2][1] = nn2;
+      nPointsPerFace[3] = 2; faceConn[3][0] = nn2;      faceConn[3][1] = 0;
       break;
 
     case TETRAHEDRON:
-      nFaces = 4; nn2 = (nPoly+1)*(nPoly+2)/2 -1;
+      nFaces = 4; nn2 = (nPoly+1)*(nPoly+2)/2 -1; nn3 = nDOFs -1;
       nPointsPerFace[0] = 3; faceConn[0][0] = 0;     faceConn[0][1] = nPoly; faceConn[0][2] = nn2;
-      nPointsPerFace[1] = 3; faceConn[1][0] = 0;     faceConn[1][1] = nPoly; faceConn[1][2] = nDOFs -1;
-      nPointsPerFace[2] = 3; faceConn[2][0] = 0;     faceConn[2][1] = nn2;   faceConn[2][2] = nDOFs -1;
-      nPointsPerFace[3] = 3; faceConn[3][0] = nPoly; faceConn[3][1] = nn2;   faceConn[3][2] = nDOFs -1;
+      nPointsPerFace[1] = 3; faceConn[1][0] = 0;     faceConn[1][1] = nn3;   faceConn[1][2] = nPoly;
+      nPointsPerFace[2] = 3; faceConn[2][0] = 0;     faceConn[2][1] = nn2;   faceConn[2][2] = nn3;
+      nPointsPerFace[3] = 3; faceConn[3][0] = nPoly; faceConn[3][1] = nn3;   faceConn[3][2] = nn2;
       break;
 
     case PYRAMID:
       nFaces = 5; nn2 = (nPoly+1)*(nPoly+1) -1; nn3 = nn2 - nPoly;
-      nPointsPerFace[0] = 4; faceConn[0][0] = 0;     faceConn[0][1] = nPoly; faceConn[0][2] = nn2; faceConn[0][3] = nn3;
-      nPointsPerFace[1] = 3; faceConn[1][0] = 0;     faceConn[1][1] = nPoly; faceConn[1][2] = nDOFs -1;
-      nPointsPerFace[2] = 3; faceConn[2][0] = 0;     faceConn[2][1] = nn3;   faceConn[2][2] = nDOFs -1;
-      nPointsPerFace[3] = 3; faceConn[3][0] = nn2;   faceConn[3][1] = nPoly; faceConn[3][2] = nDOFs -1;
-      nPointsPerFace[4] = 3; faceConn[4][0] = nn2;   faceConn[4][1] = nn3;   faceConn[4][2] = nDOFs -1;
+      nPointsPerFace[0] = 4; faceConn[0][0] = 0;     faceConn[0][1] = nPoly;    faceConn[0][2] = nn2; faceConn[0][3] = nn3;
+      nPointsPerFace[1] = 3; faceConn[1][0] = 0;     faceConn[1][1] = nDOFs -1; faceConn[1][2] = nPoly;
+      nPointsPerFace[2] = 3; faceConn[2][0] = nn3;   faceConn[2][1] = nn2;      faceConn[2][2] = nDOFs -1;
+      nPointsPerFace[3] = 3; faceConn[3][0] = 0;     faceConn[3][1] = nn3;      faceConn[3][2] = nDOFs -1;
+      nPointsPerFace[4] = 3; faceConn[4][0] = nPoly; faceConn[4][1] = nDOFs -1; faceConn[4][2] = nn2;
       break;
 
     case PRISM:
       nFaces = 5; nn2 = (nPoly+1)*(nPoly+2)/2; nn3 = nPoly*nn2; --nn2;
       nPointsPerFace[0] = 3; faceConn[0][0] = 0;     faceConn[0][1] = nPoly;     faceConn[0][2] = nn2;
-      nPointsPerFace[1] = 3; faceConn[1][0] = nn3;   faceConn[1][1] = nPoly+nn3; faceConn[1][2] = nn2+nn3;
-      nPointsPerFace[2] = 4; faceConn[2][0] = 0;     faceConn[2][1] = nPoly;     faceConn[2][2] = nPoly+nn3; faceConn[2][3] = nn3;
+      nPointsPerFace[1] = 3; faceConn[1][0] = nn3;   faceConn[1][1] = nn2+nn3;   faceConn[1][2] = nPoly+nn3;
+      nPointsPerFace[2] = 4; faceConn[2][0] = 0;     faceConn[2][1] = nn3;       faceConn[2][2] = nPoly+nn3; faceConn[2][3] = nPoly;
       nPointsPerFace[3] = 4; faceConn[3][0] = 0;     faceConn[3][1] = nn2;       faceConn[3][2] = nn2+nn3;   faceConn[3][3] = nn3;
-      nPointsPerFace[4] = 4; faceConn[4][0] = nPoly; faceConn[4][1] = nn2;       faceConn[4][2] = nn2+nn3;   faceConn[4][3] = nPoly+nn3;
+      nPointsPerFace[4] = 4; faceConn[4][0] = nPoly; faceConn[4][1] = nPoly+nn3; faceConn[4][2] = nn2+nn3;   faceConn[4][3] = nn2;
       break;
 
     case HEXAHEDRON:
       nFaces = 6; nn2 = (nPoly+1)*(nPoly+1); nn4 = nPoly*nn2; --nn2; nn3 = nn2 - nPoly;
       nPointsPerFace[0] = 4; faceConn[0][0] = 0;     faceConn[0][1] = nPoly;     faceConn[0][2] = nn2;       faceConn[0][3] = nn3;
-      nPointsPerFace[1] = 4; faceConn[1][0] = nn4;   faceConn[1][1] = nPoly+nn4; faceConn[1][2] = nn2+nn4;   faceConn[1][3] = nn3+nn4;
-      nPointsPerFace[2] = 4; faceConn[2][0] = 0;     faceConn[2][1] = nPoly;     faceConn[2][2] = nPoly+nn4; faceConn[2][3] = nn4;
+      nPointsPerFace[1] = 4; faceConn[1][0] = nn4;   faceConn[1][1] = nn3+nn4;   faceConn[1][2] = nn2+nn4;   faceConn[1][3] = nPoly+nn4;
+      nPointsPerFace[2] = 4; faceConn[2][0] = 0;     faceConn[2][1] = nn4;       faceConn[2][2] = nPoly+nn4; faceConn[2][3] = nPoly;
       nPointsPerFace[3] = 4; faceConn[3][0] = nn3;   faceConn[3][1] = nn2;       faceConn[3][2] = nn2+nn4;   faceConn[3][3] = nn3+nn4;
       nPointsPerFace[4] = 4; faceConn[4][0] = 0;     faceConn[4][1] = nn3;       faceConn[4][2] = nn3+nn4;   faceConn[4][3] = nn4;
-      nPointsPerFace[5] = 4; faceConn[5][0] = nPoly; faceConn[5][1] = nn2;       faceConn[5][2] = nn2+nn4;   faceConn[5][3] = nPoly+nn4;
+      nPointsPerFace[5] = 4; faceConn[5][0] = nPoly; faceConn[5][1] = nPoly+nn4; faceConn[5][2] = nn2+nn4;   faceConn[5][3] = nn2;
       break;
   }
 

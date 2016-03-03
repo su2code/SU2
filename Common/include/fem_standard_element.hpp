@@ -125,6 +125,96 @@ public:
   FEMStandardElementClass& operator=(const FEMStandardElementClass &other);
 
   /*!
+  * \brief Function, which makes available the r-derivatives of the basis functions in the integration points.
+  * \return  The pointer to data, which stores the r-derivatives of the basis functions.
+  */
+  su2double *GetDrBasisFunctionsIntegration(void);
+
+  /*!
+  * \brief Function, which makes available the s-derivatives of the basis functions in the integration points.
+  * \return  The pointer to data, which stores the s-derivatives of the basis functions.
+  */
+  su2double *GetDsBasisFunctionsIntegration(void);
+
+  /*!
+  * \brief Function, which makes available the t-derivatives of the basis functions in the integration points.
+  * \return  The pointer to data, which stores the t-derivatives of the basis functions.
+  */
+  su2double *GetDtBasisFunctionsIntegration(void);
+
+  /*!
+  * \brief Function, which makes available the connectivity of face 0.
+  * \return  The pointer to data, which stores the connectivity of face 0.
+  */
+  unsigned short *GetConnFace0(void);
+
+  /*!
+  * \brief Function, which makes available the connectivity of face 1.
+  * \return  The pointer to data, which stores the connectivity of face 1.
+  */
+  unsigned short *GetConnFace1(void);
+
+  /*!
+  * \brief Function, which makes available the connectivity of face 2.
+  * \return  The pointer to data, which stores the connectivity of face 2.
+  */
+  unsigned short *GetConnFace2(void);
+
+  /*!
+  * \brief Function, which makes available the connectivity of face 3.
+  * \return  The pointer to data, which stores the connectivity of face 3.
+  */
+  unsigned short *GetConnFace3(void);
+
+  /*!
+  * \brief Function, which makes available the connectivity of face 4.
+  * \return  The pointer to data, which stores the connectivity of face 4.
+  */
+  unsigned short *GetConnFace4(void);
+
+  /*!
+  * \brief Function, which makes available the connectivity of face 5.
+  * \return  The pointer to data, which stores the connectivity of face 5.
+  */
+  unsigned short *GetConnFace5(void);
+
+  /*!
+  * \brief Function, which makes available the number of DOFs for this standard element.
+  * \return  The number of DOFs of this standard element.
+  */
+  unsigned short GetNDOFs(void);
+
+  /*!
+  * \brief Static function, which makes available the number of DOFs for an element
+           corresponding to the arguments.
+  * \param[in] VTK_Type         - Type of the element using the VTK convention.
+  * \param[in] nPoly            - Polynomial degree of the element.
+  * \param[in] typeErrorMessage - Default argument used to write a good error message.
+  * \return  The number of DOFs
+  */
+  static unsigned short GetNDOFsStatic(unsigned short VTK_Type,
+                                       unsigned short nPoly,
+                                       unsigned long  typeErrorMessage = 0);
+
+  /*!
+  * \brief Function, which makes available the number of integration points for this standard element.
+  * \return  The number of integration points of this standard element.
+  */
+  unsigned short GetNIntegration(void);
+
+  /*!
+  * \brief Static function, which makes available the number of integration points for an element
+           corresponding to the arguments.
+  * \param[in] VTK_Type   - Type of the element using the VTK convention.
+  * \param[in] orderExact - Polynomial degree that must be integrated exactly.
+  * \param[in] config     - Object, which contains the input parameters.
+  * \return  The number of integration points.
+  */
+  static unsigned short GetNIntegrationStatic(unsigned short VTK_Type,
+                                              unsigned short nPoly,
+                                              CConfig        *config);
+ 
+  /*!
   * \brief Function, which checks if the functions arguments corresponds to this standard element.
   * \param[in] val_VTK_Type - Type of the element using the VTK convention.
   * \param[in] val_nPoly    - Polynomial degree of the element.

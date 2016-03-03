@@ -63,17 +63,45 @@ extern "C" {
 using namespace std;
 
 /*! 
+ * \class unsignedLong2T
+ * \brief Help class used to store two unsigned longs as one entity.
+ * \version 4.1.0 "Cardinal"
+ */
+class unsignedLong2T {
+public:
+  unsigned long long0;  /*!< \brief First long to store in this class. */
+  unsigned long long1;  /*!< \brief Second long to store in this class. */
+
+  /* Constructors and destructors. */
+  unsignedLong2T();
+  ~unsignedLong2T();
+
+  unsignedLong2T(const unsigned long a, const unsigned long b);
+
+  unsignedLong2T(const unsignedLong2T &other);
+
+  /* Operators. */
+  unsignedLong2T& operator=(const unsignedLong2T &other);
+
+  bool operator<(const unsignedLong2T &other) const;
+
+private:
+  /* Copy function. */
+  void Copy(const unsignedLong2T &other);
+};
+
+/*! 
  * \class FaceOfElementClass
- * \brief Help class used in the partitioning of the FEM grid.
- *        It stores the face of an element.
+ * \brief Help class used in the partitioning of the FEM grid. It stores a face of an element.
  * \version 4.1.0 "Cardinal"
  */
 class FaceOfElementClass {
 public:
-  unsigned short nCornerPoints;     /*!< \brief Number of corner points of the face. */
-  unsigned long  cornerPoints[4];   /*!< \brief Global ID's of ther corner points. */
-  unsigned long  elemID0, elemID1;  /*!< \brief Element ID's to the left and right. */
-  unsigned short nPoly;             /*!< \brief Polynomial degree of the face. */
+  unsigned short nCornerPoints;          /*!< \brief Number of corner points of the face. */
+  unsigned long  cornerPoints[4];        /*!< \brief Global ID's of ther corner points. */
+  unsigned long  elemID0, elemID1;       /*!< \brief Element ID's to the left and right. */
+  unsigned short nPoly;                  /*!< \brief Polynomial degree of the face. */
+  unsigned short nDOFsElem0, nDOFsElem1; /*!< \brief Number of DOFs of the elements to the left and right. */
 
   /* Standard constructor and destructor. */
   FaceOfElementClass();

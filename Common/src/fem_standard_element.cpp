@@ -117,6 +117,161 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
   }
 }
 
+unsigned short FEMStandardElementClass::GetNDOFsStatic(unsigned short VTK_Type,
+                                                       unsigned short nPoly,
+                                                       unsigned long  typeErrorMessage) {
+  unsigned short nDOFsEdge = nPoly + 1;
+  unsigned short nDOFs;
+
+  switch(VTK_Type) {
+
+    case LINE:
+      nDOFs = nDOFsEdge;
+      break;
+
+    case TRIANGLE:
+      nDOFs = nDOFsEdge*(nDOFsEdge+1)/2;
+      break;
+
+    case QUADRILATERAL:
+      nDOFs = nDOFsEdge*nDOFsEdge;
+      break;
+
+    case TETRAHEDRON:
+      nDOFs = nDOFsEdge*(nDOFsEdge+1)*(nDOFsEdge+2)/6;
+      break;
+
+    case HEXAHEDRON:
+      nDOFs = nDOFsEdge*nDOFsEdge*nDOFsEdge;
+      break;
+
+    case PRISM:
+      nDOFs = nDOFsEdge*nDOFsEdge*(nDOFsEdge+1)/2;
+      break;
+
+    case PYRAMID:
+      nDOFs = nDOFsEdge*(nDOFsEdge+1)*(2*nDOFsEdge+1)/6;
+      break;
+
+    default:
+      cout << "In function FEMStandardElementClass::GetNDOFsStatic" << endl;
+      cout << "Unknown FEM element type, " << typeErrorMessage
+           << ", encountered." << endl;
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+  }
+
+  return nDOFs;
+}
+
+unsigned short FEMStandardElementClass::GetNIntegrationStatic(unsigned short VTK_Type,
+                                                              unsigned short orderExact,
+                                                              CConfig        *config) {
+  unsigned short nIntegration;
+
+  /*--- Determine the element type and set nIntegration, depending on the
+        polynomial degree that must be integrated exactly. ---*/
+
+  switch(VTK_Type) {
+
+    case LINE: {
+      nIntegration = orderExact/2 + 1;
+      break;
+    }
+
+    case PRISM:
+    case TRIANGLE: {
+      switch( orderExact ) {
+        case  0: nIntegration =   1; break;
+        case  1: nIntegration =   1; break;
+        case  2: nIntegration =   3; break;
+        case  3: nIntegration =   6; break;
+        case  4: nIntegration =   6; break;
+        case  5: nIntegration =   7; break;
+        case  6: nIntegration =  12; break;
+        case  7: nIntegration =  15; break;
+        case  8: nIntegration =  16; break;
+        case  9: nIntegration =  19; break;
+        case 10: nIntegration =  25; break;
+        case 11: nIntegration =  28; break;
+        case 12: nIntegration =  36; break;
+        case 13: nIntegration =  40; break;
+        case 14: nIntegration =  46; break;
+        case 15: nIntegration =  54; break;
+        case 16: nIntegration =  58; break;
+        case 17: nIntegration =  66; break;
+        case 18: nIntegration =  73; break;
+        case 19: nIntegration =  82; break;
+        case 20: nIntegration =  85; break;
+        case 21: nIntegration =  93; break;
+        case 22: nIntegration = 100; break;
+        case 23: nIntegration = 106; break;
+        case 24: nIntegration = 118; break;
+        case 25: nIntegration = 126; break;
+        case 26: nIntegration = 138; break;
+        case 27: nIntegration = 145; break;
+        case 28: nIntegration = 225; break;
+      }
+
+      if(VTK_Type == PRISM) nIntegration *= orderExact/2 + 1;
+      break;
+    }
+
+    case QUADRILATERAL: {
+      unsigned short M = orderExact/2 + 1;
+      nIntegration = M*M;
+      break;
+    }
+
+    case TETRAHEDRON: {
+      switch( orderExact ) {
+        case  0: nIntegration =   1; break;
+        case  1: nIntegration =   1; break;
+        case  2: nIntegration =   4; break;
+        case  3: nIntegration =   8; break;
+        case  4: nIntegration =  14; break;
+        case  5: nIntegration =  14; break;
+        case  6: nIntegration =  24; break;
+        case  7: nIntegration =  35; break;
+        case  8: nIntegration =  46; break;
+        case  9: nIntegration =  59; break;
+        case 10: nIntegration =  81; break;
+        case 11: nIntegration = 105; break;
+        case 12: nIntegration = 132; break;
+      }
+      break;
+    }
+
+    case HEXAHEDRON: {
+      unsigned short M = orderExact/2 + 1;
+      nIntegration = M*M*M;
+      break;
+    }
+
+    case PYRAMID: {
+      switch( orderExact ) {
+        case  0: nIntegration =   1; break;
+        case  1: nIntegration =   1; break;
+        case  2: nIntegration =   5; break;
+        case  3: nIntegration =   6; break;
+        case  4: nIntegration =  10; break;
+        case  5: nIntegration =  15; break;
+        case  6: nIntegration =  24; break;
+        case  7: nIntegration =  31; break;
+        case  8: nIntegration =  47; break;
+        case  9: nIntegration =  62; break;
+      }
+      break;
+    }
+  }
+
+  return nIntegration;
+}
+
 bool FEMStandardElementClass::SameStandardElement(unsigned short val_VTK_Type,
                                                   unsigned short val_nPoly,
                                                   bool           val_constJac) {
@@ -502,7 +657,7 @@ void FEMStandardElementClass::DataStandardTetrahedron(void) {
 
   /*--- Compute the gradients of the 3D Vandermonde matrix in the integration points. ---*/
   vector<su2double> VDr(nDOFs*nIntegration), VDs(nDOFs*nIntegration), VDt(nDOFs*nIntegration);
-  GradVandermonde3D_Tetrahedron(rIntegration, sIntegration, tIntegration, VDr, VDs, VDr);
+  GradVandermonde3D_Tetrahedron(rIntegration, sIntegration, tIntegration, VDr, VDs, VDt);
 
   /*--- Allocate the memory to store the derivatives in r-, s- and t-direction of the
         Lagrange basis functions in the integration points and determine them.
@@ -617,7 +772,7 @@ void FEMStandardElementClass::DataStandardPyramid(void) {
 
   /*--- Compute the gradients of the 3D Vandermonde matrix in the integration points. ---*/
   vector<su2double> VDr(nDOFs*nIntegration), VDs(nDOFs*nIntegration), VDt(nDOFs*nIntegration);
-  GradVandermonde3D_Pyramid(rIntegration, sIntegration, tIntegration, VDr, VDs, VDr);
+  GradVandermonde3D_Pyramid(rIntegration, sIntegration, tIntegration, VDr, VDs, VDt);
 
   /*--- Allocate the memory to store the derivatives in r-, s- and t-direction of the
         Lagrange basis functions in the integration points and determine them.
@@ -759,7 +914,7 @@ void FEMStandardElementClass::DataStandardPrism(void) {
 
   /*--- Compute the gradients of the 3D Vandermonde matrix in the integration points. ---*/
   vector<su2double> VDr(nDOFs*nIntegration), VDs(nDOFs*nIntegration), VDt(nDOFs*nIntegration);
-  GradVandermonde3D_Prism(rIntegration, sIntegration, tIntegration, VDr, VDs, VDr);
+  GradVandermonde3D_Prism(rIntegration, sIntegration, tIntegration, VDr, VDs, VDt);
 
   /*--- Allocate the memory to store the derivatives in r-, s- and t-direction of the
         Lagrange basis functions in the integration points and determine them.
@@ -894,7 +1049,7 @@ void FEMStandardElementClass::DataStandardHexahedron(void) {
 
   /*--- Compute the gradients of the 3D Vandermonde matrix in the integration points. ---*/
   vector<su2double> VDr(nDOFs*nIntegration), VDs(nDOFs*nIntegration), VDt(nDOFs*nIntegration);
-  GradVandermonde3D_Hexahedron(rIntegration, sIntegration, tIntegration, VDr, VDs, VDr);
+  GradVandermonde3D_Hexahedron(rIntegration, sIntegration, tIntegration, VDr, VDs, VDt);
 
   /*--- Allocate the memory to store the derivatives in r-, s- and t-direction of the
         Lagrange basis functions in the integration points and determine them.
@@ -2414,7 +2569,7 @@ void FEMStandardElementClass::ChangeDirectionQuadConn(std::vector<unsigned short
   /*--- Determine the indices of the 4 corner vertices of the quad. ---*/
   unsigned short ind0 = 0;
   unsigned short ind1 = nPoly;
-  unsigned short ind2 = nDOFs - 1;
+  unsigned short ind2 = (nPoly+1)*(nPoly+1) -1;
   unsigned short ind3 = ind2 - nPoly;
 
   /*--- There exists a linear mapping from the indices of the numbering used in the
@@ -2581,7 +2736,7 @@ void FEMStandardElementClass::ChangeDirectionTriangleConn(std::vector<unsigned s
   /*--- Determine the indices of the 3 corner vertices of the triangle. ---*/
   unsigned short ind0 = 0;
   unsigned short ind1 = nPoly;
-  unsigned short ind2 = nDOFs-1;
+  unsigned short ind2 = (nPoly+1)*(nPoly+2)/2 -1;
 
   /*--- There exists a linear mapping from the indices of the numbering used in the
         connectivity of this face to the indices of the target numbering. This
@@ -2707,6 +2862,7 @@ void FEMStandardElementClass::IntegrationPointsTriangle(void) {
   /*--- Set the number of integration points, depending on the order of
         polynomials that must be integrated exactly. ---*/
   switch( orderExact ) {
+    case  0: nIntegration =   1; break;
     case  1: nIntegration =   1; break;
     case  2: nIntegration =   3; break;
     case  3: nIntegration =   6; break;
@@ -2761,6 +2917,7 @@ void FEMStandardElementClass::IntegrationPointsTriangle(void) {
         the book "Nodal Discontinuous Methods: Algorithms, Analysis, and Applications"
         by Jan S. Hesthaven and Tim Warburton. ---*/
   switch( orderExact ) {
+    case  0:
     case  1: {
       r[0] = -0.333333333333333; s[0] = -0.333333333333333; w[0] = 2.000000000000000;
     
