@@ -31,6 +31,16 @@
  
 #pragma once
 
+inline unsignedLong2T::unsignedLong2T(){long0 = long1 = 0;}
+
+inline unsignedLong2T::unsignedLong2T(const unsigned long a, const unsigned long b){long0 = a; long1 = b;}
+
+inline unsignedLong2T::~unsignedLong2T(){}
+
+inline unsignedLong2T::unsignedLong2T(const unsignedLong2T &other){Copy(other);}
+
+inline unsignedLong2T& unsignedLong2T::operator=(const unsignedLong2T &other){Copy(other); return (*this);}
+
 inline FaceOfElementClass::FaceOfElementClass(const FaceOfElementClass &other){Copy(other);}
 
 inline FaceOfElementClass& FaceOfElementClass::operator=(const FaceOfElementClass &other){Copy(other); return (*this);}

@@ -222,7 +222,6 @@ public:
 	 */
 	virtual unsigned long GetNode(unsigned short val_node) = 0;
   
-  
   /*!
 	 * \brief A pure virtual member.
 	 * \param[in] val_node - Local index of a node.
@@ -268,6 +267,24 @@ public:
   * \return The polynomial degree of the solution.
   */
  virtual unsigned short GetNPolySol(void);
+
+ /*!
+  * \brief Virtual function to make available the number of DOFs of the solution in the element.
+  * \return The number of DOFs of the solution in the element.
+  */
+ virtual unsigned short GetNDOFsSol(void);
+
+ /*!
+  * \brief Virtual function to get the ratio of the maximum and minimum value of the Jacobian.
+  * \return The maximum ratio of the Jacobian.
+  */
+ virtual su2double GetRatioMaxMinJacobian(void);
+
+ /*!
+  * \brief Virtual function to set the ratio of the maximum and minimum value of the Jacobian.
+  * \param[in] val_ratioMaxMinJac - The Jacobian ratio to be set.
+  */
+ virtual void SetRatioMaxMinJacobian(su2double val_ratioMaxMinJac);
 };
 
 /*!
@@ -282,7 +299,7 @@ private:
 	static unsigned short nFaces;				/*!< \brief Number of faces of the element. */
 	static unsigned short nNodes;				/*!< \brief Number of nodes of the element. */
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
-	unsigned short Rotation_Type;			/*!< \brief Definition of the rotation, traslation of the
+	unsigned short Rotation_Type;			/*!< \brief Definition of the rotation, translation of the
 																		 solution at the vertex. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of Neighbor_Elements. */
@@ -1259,6 +1276,9 @@ private:
  unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
  unsigned long color;               /*!< \brief Color of the element in the partitioning strategy. */
 
+ su2double ratioMaxMinJacobian; /*!< \brief Ratio of the maximum and minimum value of the Jacobian
+                                            of the transformation to the standard element. */
+
 public:
 
  /*!
@@ -1371,8 +1391,16 @@ public:
   */
  unsigned short GetNPolySol(void);
 
+  /*!
+  * \brief Function to make available the number of DOFs of the solution in the element.
+  * \return The number of DOFs of the solution in the element.
+  */
+ unsigned short GetNDOFsSol(void);
+
  /*!
-  * \brief Get all the corner points of all the faces of this element.
+  * \brief Get all the corner points of all the faces of this element. It must be made sure
+           that the numbering of the faces is identical to the numbering used for the
+           standard elements.
   * \param[out] nFaces         - Number of faces of this element.
   * \param[out] nPointsPerFace - Number of corner points for each of the faces.
   * \param[out] faceConn       - Global IDs of the corner points of the faces.
@@ -1380,11 +1408,24 @@ public:
  void GetCornerPointsAllFaces(unsigned short &nFaces,
                               unsigned short nPointsPerFace[],
                               unsigned long  faceConn[6][4]);
+
+ /*!
+  * \brief Function to get the ratio of the maximum and minimum value of the Jacobian.
+  * \return The maximum ratio of the Jacobian.
+  */
+ su2double GetRatioMaxMinJacobian(void);
+
  /*!
   * \brief Set the color of the element.
   * \param[in] val_color - New color of the element.
   */
  void SetColor(unsigned long val_color);
+
+ /*!
+  * \brief Function to set the ratio of the maximum and minimum value of the Jacobian.
+  * \param[in] val_ratioMaxMinJac - The Jacobian ratio to be set.
+  */
+ void SetRatioMaxMinJacobian(su2double val_ratioMaxMinJac);
 };
 
 /*!

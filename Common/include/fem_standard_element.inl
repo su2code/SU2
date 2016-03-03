@@ -38,3 +38,25 @@ inline FEMStandardElementClass::~FEMStandardElementClass(){}
 inline FEMStandardElementClass::FEMStandardElementClass(const FEMStandardElementClass &other){Copy(other);}
 
 inline FEMStandardElementClass& FEMStandardElementClass::operator=(const FEMStandardElementClass &other){Copy(other); return (*this);}
+
+inline su2double* FEMStandardElementClass::GetDrBasisFunctionsIntegration(void){return drLagBasisIntegration.data();}
+
+inline su2double* FEMStandardElementClass::GetDsBasisFunctionsIntegration(void){return dsLagBasisIntegration.data();}
+
+inline su2double* FEMStandardElementClass::GetDtBasisFunctionsIntegration(void){return dtLagBasisIntegration.data();}
+
+inline unsigned short* FEMStandardElementClass::GetConnFace0(void){return connFace0.data();}
+
+inline unsigned short* FEMStandardElementClass::GetConnFace1(void){return connFace1.data();}
+
+inline unsigned short* FEMStandardElementClass::GetConnFace2(void){return connFace2.data();}
+
+inline unsigned short* FEMStandardElementClass::GetConnFace3(void){return connFace3.data();}
+
+inline unsigned short* FEMStandardElementClass::GetConnFace4(void){return connFace4.data();}
+
+inline unsigned short* FEMStandardElementClass::GetConnFace5(void){return connFace5.data();}
+
+inline unsigned short FEMStandardElementClass::GetNDOFs(void){return nDOFs;}
+
+inline unsigned short FEMStandardElementClass::GetNIntegration(void){return nIntegration;}

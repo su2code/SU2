@@ -53,11 +53,24 @@
 (dest)[1] = (v1)[1] - (v2)[1]; \
 (dest)[2] = (v1)[2] - (v2)[2];
 
+bool unsignedLong2T::operator<(const unsignedLong2T &other) const {
+  if(long0 != other.long0) return (long0 < other.long0);
+  if(long1 != other.long1) return (long1 < other.long1);
+
+  return false;
+}
+
+void unsignedLong2T::Copy(const unsignedLong2T &other) {
+  long0 = other.long0;
+  long1 = other.long1;
+}
+
 FaceOfElementClass::FaceOfElementClass(){
   nCornerPoints = 0;
   cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = 0;
-  elemID0 = elemID1 = ULONG_MAX;
-  nPoly = 0;
+  elemID0    = elemID1 = ULONG_MAX;
+  nPoly      = 0;
+  nDOFsElem0 = nDOFsElem1 = 0;
 }
 
 bool FaceOfElementClass::operator<(const FaceOfElementClass &other) const {
@@ -84,6 +97,9 @@ void FaceOfElementClass::Copy(const FaceOfElementClass &other) {
   elemID1 = other.elemID1;
 
   nPoly = other.nPoly;
+
+  nDOFsElem0 = other.nDOFsElem0;
+  nDOFsElem1 = other.nDOFsElem1;
 }
 
 void BoundaryFaceClass::Copy(const BoundaryFaceClass &other) {
@@ -8504,62 +8520,22 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
         unsigned long typeRead; elem_line >> typeRead;
         unsigned long typeReadErrorMessage = typeRead;
         unsigned short nPolySol, nPolyGrid;
-        if(typeRead > 10000){nPolySol = typeRead/10000 -1; typeRead = typeRead%10000;}
-        else                {nPolySol = -1;}
-
-        nPolyGrid = typeRead/100 + 1;
-        if(nPolySol == -1) nPolySol = nPolyGrid;
+        if(typeRead > 10000) {
+          nPolySol  = typeRead/10000 -1;
+          typeRead  = typeRead%10000;
+          nPolyGrid = typeRead/100 + 1;
+        }
+        else {
+          nPolyGrid = typeRead/100 + 1;
+          nPolySol  = nPolyGrid;
+        }
 
         unsigned short VTK_Type = typeRead%100;
 
-        unsigned short nDOFEdgeGrid = nPolyGrid + 1;
-        unsigned short nDOFEdgeSol  = nPolySol  + 1;
-
-        /*--- Determine the element type and act accordingly. ---*/
-
-        unsigned short nDOFsGrid, nDOFsSol;
-        switch(VTK_Type) {
-
-          case TRIANGLE:
-            nDOFsGrid = nDOFEdgeGrid*(nDOFEdgeGrid+1)/2;
-            nDOFsSol  = nDOFEdgeSol *(nDOFEdgeSol +1)/2;
-            break;
-
-          case QUADRILATERAL:
-            nDOFsGrid = nDOFEdgeGrid*nDOFEdgeGrid;
-            nDOFsSol  = nDOFEdgeSol *nDOFEdgeSol;
-            break;
-
-          case TETRAHEDRON:
-            nDOFsGrid = nDOFEdgeGrid*(nDOFEdgeGrid+1)*(nDOFEdgeGrid+2)/6;
-            nDOFsSol  = nDOFEdgeSol *(nDOFEdgeSol +1)*(nDOFEdgeSol +2)/6;
-            break;
-
-          case HEXAHEDRON:
-            nDOFsGrid = nDOFEdgeGrid*nDOFEdgeGrid*nDOFEdgeGrid;
-            nDOFsSol  = nDOFEdgeSol *nDOFEdgeSol *nDOFEdgeSol;
-            break;
-
-          case PRISM:
-            nDOFsGrid = nDOFEdgeGrid*nDOFEdgeGrid*(nDOFEdgeGrid+1)/2;
-            nDOFsSol  = nDOFEdgeSol *nDOFEdgeSol *(nDOFEdgeSol +1)/2;
-            break;
-
-          case PYRAMID:
-            nDOFsGrid = nDOFEdgeGrid*(nDOFEdgeGrid+1)*(2*nDOFEdgeGrid+1)/6;
-            nDOFsSol  = nDOFEdgeSol *(nDOFEdgeSol +1)*(2*nDOFEdgeSol +1)/6;
-            break;
-
-          default:
-            cout << "Unknown FEM element value, " << typeReadErrorMessage
-                 << ", in " << val_mesh_filename << endl;
-#ifndef HAVE_MPI
-            exit(EXIT_FAILURE);
-#else
-            MPI_Abort(MPI_COMM_WORLD,1);
-            MPI_Finalize();
-#endif
-        }
+        unsigned short nDOFsGrid = FEMStandardElementClass::GetNDOFsStatic(VTK_Type, nPolyGrid,
+                                                                           typeReadErrorMessage);
+        unsigned short nDOFsSol  = FEMStandardElementClass::GetNDOFsStatic(VTK_Type, nPolySol,
+                                                                           typeReadErrorMessage);
 
         /*--- Allocate the memory for a new primary grid FEM element if
               this element must be stored on this rank.                 ---*/
@@ -11855,7 +11831,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   vector<FaceOfElementClass> localFaces;
   for(unsigned long k=0; k<local_elem; k++) {
 
-    /*--- Get the global IDs of the corner points of all the faces of this elements. ---*/
+    /*--- Get the global IDs of the corner points of all the faces of this element. ---*/
 
     unsigned short nFaces;
     unsigned short nPointsPerFace[6];
@@ -11870,8 +11846,9 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       thisFace.nCornerPoints = nPointsPerFace[i];
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
-      thisFace.elemID0 = starting_node[rank] + k;
-      thisFace.nPoly   = elem[k]->GetNPolySol();
+      thisFace.elemID0    = starting_node[rank] + k;
+      thisFace.nPoly      = elem[k]->GetNPolySol();
+      thisFace.nDOFsElem0 = elem[k]->GetNDOFsSol();
 
       thisFace.CreateUniqueNumbering();
       localFaces.push_back(thisFace);
@@ -11917,9 +11894,10 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   unsigned long nFacesLoc = localFaces.size();
   for(unsigned long i=1; i<nFacesLoc; ++i) {
     if(localFaces[i] == localFaces[i-1]) {
-      localFaces[i-1].elemID1 = localFaces[i].elemID0;
-      localFaces[i-1].nPoly   = max(localFaces[i-1].nPoly, localFaces[i].nPoly);
-      localFaces[i].elemID0   = Global_nElem + 10;
+      localFaces[i-1].elemID1    = localFaces[i].elemID0;
+      localFaces[i-1].nPoly      = max(localFaces[i-1].nPoly, localFaces[i].nPoly);
+      localFaces[i-1].nDOFsElem1 = localFaces[i].nDOFsElem0;
+      localFaces[i].elemID0      = Global_nElem + 10;
     }
   }
 
@@ -11967,8 +11945,8 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     maxPointIDLoc = max(maxPointIDLoc, localFacesComm[i].cornerPoints[0]);
 
   unsigned long maxPointID;
-  MPI_Allreduce(&maxPointIDLoc, &maxPointID, 1, MPI_UNSIGNED_LONG,
-                MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&maxPointIDLoc, &maxPointID, 1, MPI_UNSIGNED_LONG,
+                     MPI_MAX, MPI_COMM_WORLD);
   ++maxPointID;
 
   /*--- Create a vector with a linear distribution over the ranks for
@@ -12006,16 +11984,16 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   /*--- Create the send buffer for the faces to be communicated. ---*/
 
-  vector<unsigned long> sendBufFace(7*nFacesLocComm);
+  vector<unsigned long> sendBufFace(8*nFacesLocComm);
   vector<unsigned long> counter(size);
   counter[0] = 0;
   for(unsigned long i=1; i<(unsigned long)size; ++i)
-    counter[i] = counter[i-1] + 7*nFacesComm[i-1];
+    counter[i] = counter[i-1] + 8*nFacesComm[i-1];
 
   for(unsigned long i=0; i<nFacesLocComm; ++i) {
     unsigned long rankFace = localFacesComm[i].elemID1;
     unsigned long ii = counter[rankFace];
-    counter[rankFace] += 7;
+    counter[rankFace] += 8;
 
     sendBufFace[ii]   = localFacesComm[i].nCornerPoints;
     sendBufFace[ii+1] = localFacesComm[i].cornerPoints[0];
@@ -12024,6 +12002,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     sendBufFace[ii+4] = localFacesComm[i].cornerPoints[3];
 				sendBufFace[ii+5] = localFacesComm[i].elemID0;
     sendBufFace[ii+6] = localFacesComm[i].nPoly;
+    sendBufFace[ii+7] = localFacesComm[i].nDOFsElem0;
   }
 
   /*--- Determine the number of ranks from which I receive a message. */
@@ -12047,9 +12026,9 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   unsigned long indSend = 0;
   for(unsigned long i=0; i<(unsigned long)size; ++i) {
     if( nFacesComm[i] ) {
-      unsigned long count = 7*nFacesComm[i];
-      MPI_Isend(&sendBufFace[indSend], count, MPI_UNSIGNED_LONG, i, i,
-                MPI_COMM_WORLD, &commReqs[nMessSend]);
+      unsigned long count = 8*nFacesComm[i];
+      SU2_MPI::Isend(&sendBufFace[indSend], count, MPI_UNSIGNED_LONG, i, i,
+                     MPI_COMM_WORLD, &commReqs[nMessSend]);
       ++nMessSend;
       indSend += count;
     }
@@ -12070,13 +12049,13 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     vector<unsigned long> recvBuf(sizeMess);
-    MPI_Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-             rankRecv[i], rank, MPI_COMM_WORLD, &status);
+    SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
+                  rankRecv[i], rank, MPI_COMM_WORLD, &status);
 
-    nFacesRecv[i+1] = nFacesRecv[i] + sizeMess/7;
+    nFacesRecv[i+1] = nFacesRecv[i] + sizeMess/8;
     facesRecv.resize(nFacesRecv[i+1]);
     int ii = 0;
-    for(unsigned long j=nFacesRecv[i]; j<nFacesRecv[i+1]; ++j, ii+=7) {
+    for(unsigned long j=nFacesRecv[i]; j<nFacesRecv[i+1]; ++j, ii+=8) {
       facesRecv[j].nCornerPoints   = recvBuf[ii];
       facesRecv[j].cornerPoints[0] = recvBuf[ii+1];
       facesRecv[j].cornerPoints[1] = recvBuf[ii+2];
@@ -12084,6 +12063,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       facesRecv[j].cornerPoints[3] = recvBuf[ii+4];
       facesRecv[j].elemID0         = recvBuf[ii+5];
       facesRecv[j].nPoly           = recvBuf[ii+6];
+      facesRecv[j].nDOFsElem0      = recvBuf[ii+7];
     }
   }
 
@@ -12098,9 +12078,10 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   nFacesLocComm = localFacesComm.size();
   for(unsigned long i=1; i<localFacesComm.size(); ++i) {
     if(localFacesComm[i] == localFacesComm[i-1]) {
-      localFacesComm[i-1].elemID1 = localFacesComm[i].elemID0;
-      localFacesComm[i-1].nPoly   = max(localFacesComm[i-1].nPoly,
-                                        localFacesComm[i].nPoly);
+      localFacesComm[i-1].elemID1    = localFacesComm[i].elemID0;
+      localFacesComm[i-1].nPoly      = max(localFacesComm[i-1].nPoly,
+                                           localFacesComm[i].nPoly);
+      localFacesComm[i-1].nDOFsElem1 = localFacesComm[i].nDOFsElem0;
 
       localFacesComm[i].nCornerPoints = 4;
       localFacesComm[i].cornerPoints[0] = Global_nPoint;
@@ -12116,40 +12097,44 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   /*--- Complete the first round of non-blocking sends. ---*/
 
-  MPI_Waitall(nMessSend, commReqs.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Waitall(nMessSend, commReqs.data(), MPI_STATUSES_IGNORE);
 
   /*--- Send the data back to the requesting ranks. ---*/
 
-  sendBufFace.resize(7*nFacesRecv[nMessRecv]);
+  sendBufFace.resize(8*nFacesRecv[nMessRecv]);
   indSend = 0;
   for(unsigned long i=0; i<nMessRecv; ++i) {
     unsigned long ii = indSend;
-    for(unsigned long j=nFacesRecv[i]; j<nFacesRecv[i+1]; ++j, ii+=7) {
+    for(unsigned long j=nFacesRecv[i]; j<nFacesRecv[i+1]; ++j, ii+=8) {
       sendBufFace[ii]   = facesRecv[j].nCornerPoints;
       sendBufFace[ii+1] = facesRecv[j].cornerPoints[0];
       sendBufFace[ii+2] = facesRecv[j].cornerPoints[1];
       sendBufFace[ii+3] = facesRecv[j].cornerPoints[2];
       sendBufFace[ii+4] = facesRecv[j].cornerPoints[3];
+      sendBufFace[ii+6] = facesRecv[j].nPoly;
 
       vector<FaceOfElementClass>::iterator low;
       low = lower_bound(localFacesComm.begin(), localFacesComm.end(),
                         facesRecv[j]);
-      if(facesRecv[j].elemID0 == low->elemID0) sendBufFace[ii+5] = low->elemID1;
-      else                                     sendBufFace[ii+5] = low->elemID0;
-
-      sendBufFace[ii+6] = facesRecv[j].nPoly;
+      if(facesRecv[j].elemID0 == low->elemID0) {
+        sendBufFace[ii+5] = low->elemID1;
+        sendBufFace[ii+7] = low->nDOFsElem1;
+      }
+      else {
+        sendBufFace[ii+5] = low->elemID0;
+        sendBufFace[ii+7] = low->nDOFsElem0;
+      }
     }
 
     unsigned long count = ii - indSend;
-    MPI_Isend(&sendBufFace[indSend], count, MPI_UNSIGNED_LONG, rankRecv[i],
-              rankRecv[i]+1, MPI_COMM_WORLD, &commReqs[i]);
+    SU2_MPI::Isend(&sendBufFace[indSend], count, MPI_UNSIGNED_LONG, rankRecv[i],
+                   rankRecv[i]+1, MPI_COMM_WORLD, &commReqs[i]);
     indSend = ii;
   }
 
 
   /*--- Loop over the ranks to which I originally sent my face data.
-        The return data contains information about the neighboring
-        element ID.                                              ---*/
+        The return data contains information about the neighboring element. ---*/
 
   for(unsigned long i=0; i<nMessSend; ++i) {
     MPI_Status status;
@@ -12158,12 +12143,12 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
 
     vector<unsigned long> recvBuf(sizeMess);
-    MPI_Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
-             status.MPI_SOURCE, rank+1, MPI_COMM_WORLD, &status);
+    SU2_MPI::Recv(recvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
+                  status.MPI_SOURCE, rank+1, MPI_COMM_WORLD, &status);
 
-    sizeMess /= 7;
+    sizeMess /= 8;
     unsigned long jj = 0;
-    for(unsigned long j=0; j<(unsigned long) sizeMess; ++j, jj+=7) {
+    for(unsigned long j=0; j<(unsigned long) sizeMess; ++j, jj+=8) {
       FaceOfElementClass thisFace;
       thisFace.nCornerPoints   = recvBuf[jj];
       thisFace.cornerPoints[0] = recvBuf[jj+1];
@@ -12176,12 +12161,14 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       low->elemID1 = recvBuf[jj+5];
 
       if(recvBuf[jj+6] > low->nPoly) low->nPoly = recvBuf[jj+6];
+
+      low->nDOFsElem1 = recvBuf[jj+7];
     }
   }
 
   /*--- Complete the second round of non-blocking sends. ---*/
 
-  MPI_Waitall(nMessRecv, commReqs.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Waitall(nMessRecv, commReqs.data(), MPI_STATUSES_IGNORE);
 
   /*--- Wild cards have been used in the communication, so
         synchronize the ranks to avoid problems.          ---*/
@@ -12213,8 +12200,8 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   unsigned long nNonMatchingFaces = nFacesLocOr;
 
 #ifdef HAVE_MPI
-  MPI_Reduce(&nFacesLocOr, &nNonMatchingFaces, 1, MPI_UNSIGNED_LONG,
-             MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Reduce(&nFacesLocOr, &nNonMatchingFaces, 1, MPI_UNSIGNED_LONG,
+                  MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #endif
   if(rank == MASTER_NODE && nNonMatchingFaces) {
     cout << "There are " << nNonMatchingFaces << " non-matching faces in the grid. "
@@ -12337,10 +12324,26 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
                                                vector<su2double>                &vwgt,
                                                vector<su2double>                &adjwgt){
 
+  /*--- Factors, which determine the amount of work for a volume element, which
+        corresponds to a vertex in the graph for ParMETIS. ---*/
+
+  const su2double workVolumeIntegrationPoint  = 1.0;
+  const su2double workSurfaceIntegrationPoint = 1.1;
+  const su2double workVolumeDOF               = 0.1;
+  const su2double workSurfaceDOF              = 0.05;
+
   /*--- Althought this will (almost) never happen, check for an empty initial
         partition. If present, return immediately to avoid problems.   ---*/
 
   if(local_elem == 0) return;
+
+  /*--- Determine my rank. ---*/
+
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
   /*--- Determine the standard elements for the volume elements. These standard
         elements are created based on the polynomial degree of the grid.      ---*/
@@ -12375,13 +12378,443 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
     }
   }
 
-  /*--- Determine whether the elements have constant or varying Jacobians. ---*/
+  /*--- Determine a mapping from the global point ID to the local index
+        of the points.            ---*/
 
-  cout << " Not implemented yet" << endl;
-  
-  MPI_Abort(MPI_COMM_WORLD,1);
-  MPI_Finalize();
+  map<unsigned long,unsigned long> globalPointIDToLocalInd;
+  for(unsigned i=0; i<local_node; ++i) {
+    globalPointIDToLocalInd[node[i]->GetGlobalIndex()] = i;
+  }
 
+  /*--- Determine the maximum number of DOFs in an element and allocate
+        the memory for the x-, y- and z-coordinates accordingly. ---*/
+
+  unsigned short nDOFsMax = 0;
+  for(unsigned short i=0; i<nStandardElements; ++i)
+    nDOFsMax = max(nDOFsMax, standardElements[i].GetNDOFs());
+
+  vector<su2double> xVec(nDOFsMax), yVec(nDOFsMax), zVec(nDOFsMax);
+  su2double *x = xVec.data(), *y = yVec.data(), *z = zVec.data();
+
+  /*--- Define the vector to store the normals of the integration points
+        of the faces. In this way it is not needed to allocate the memory
+        inside the loop all the time.  ---*/
+
+  vector<su2double> normalsFace;
+
+  /*--- Loop over the elements to determine the amount of computational work.
+        This amount has a contribution from both the volume integral and
+        surface integral to allow for Discontinuous and Continuous Galerkin
+        schemes. For the latter the contribution of the surface integral will
+        be negligible to the total amount of work.         ---*/
+
+  for(unsigned long i=0; i<local_elem; ++i) {
+
+    /*--- Get the necessary data from the corresponding standard element. ---*/
+
+    unsigned short ii           = standElemForElem[i];
+    unsigned short nDOFs        = standardElements[ii].GetNDOFs();
+    unsigned short nIntegration = standardElements[ii].GetNIntegration();
+
+    su2double *dr = standardElements[ii].GetDrBasisFunctionsIntegration();
+    su2double *ds = standardElements[ii].GetDsBasisFunctionsIntegration();
+    su2double *dt = standardElements[ii].GetDtBasisFunctionsIntegration();
+
+    /*--- Store the coordinates of the DOFs in the local arrays x, y and z. ---*/
+
+    for(unsigned short j=0; j<nDOFs; ++j) {
+      unsigned long nodeID = elem[i]->GetNode(j);
+
+      map<unsigned long,unsigned long>::const_iterator MI = globalPointIDToLocalInd.find(nodeID);
+      if(MI == globalPointIDToLocalInd.end()) {
+        cout << "Entry not found in map in function CPhysicalGeometry::ComputeFEMGraphWeights" << endl;
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
+
+      unsigned long ind = MI->second;
+      x[j] = node[ind]->GetCoord(0);
+      y[j] = node[ind]->GetCoord(1);
+      if(nDim == 3) z[j] = node[ind]->GetCoord(2);
+    }
+
+    /*--- Definition of the minimum and maximum values of the Jacobian. Make a
+          distinction between a two-dimensional and a three-dimensional element
+          in order to compute them. ---*/
+
+    su2double jacMin;
+    su2double jacMax;
+    switch( nDim ) {
+      case 2: {
+
+        /*--- Loop over the integration points to compute the Jacobians and
+              determine the minimum and maximum value.        ---*/
+
+        for(unsigned short j=0; j<nIntegration; ++j) {
+
+          su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs];
+          su2double dxdr = 0.0, dydr = 0.0, dxds = 0.0, dyds = 0.0;
+          for(unsigned short k=0; k<nDOFs; ++k) {
+            dxdr += x[k]*drr[k]; dxds += x[k]*dss[k];
+            dydr += y[k]*drr[k]; dyds += y[k]*dss[k];
+          }
+
+          su2double Jac = dxdr*dyds - dxds*dydr;
+          if(Jac <= 0.0) {
+            cout << "Negative Jacobian found" << endl;
+#ifndef HAVE_MPI
+            exit(EXIT_FAILURE);
+#else
+            MPI_Abort(MPI_COMM_WORLD,1);
+            MPI_Finalize();
+#endif
+          }
+
+          if(j == 0) jacMin = jacMax = Jac;
+          else {
+            jacMin = min(jacMin, Jac);
+            jacMax = max(jacMax, Jac);
+          }
+        }
+
+        break;
+      }
+
+      case 3: {
+
+        /*--- Loop over the integration points to compute the Jacobians and
+              determine the minimum and maximum value.        ---*/
+
+        for(unsigned short j=0; j<nIntegration; ++j) {
+
+          su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs], *dtt = &dt[j*nDOFs];
+          su2double dxdr = 0.0, dxds = 0.0, dxdt = 0.0;
+          su2double dydr = 0.0, dyds = 0.0, dydt = 0.0;
+          su2double dzdr = 0.0, dzds = 0.0, dzdt = 0.0;
+
+          for(unsigned short k=0; k<nDOFs; ++k) {
+            dxdr += x[k]*drr[k]; dxds += x[k]*dss[k]; dxdt += x[k]*dtt[k];
+            dydr += y[k]*drr[k]; dyds += y[k]*dss[k]; dydt += y[k]*dtt[k];
+            dzdr += z[k]*drr[k]; dzds += z[k]*dss[k]; dzdt += z[k]*dtt[k];
+          }
+
+          su2double Jac = dxdr*(dyds*dzdt - dzds*dydt)
+                        - dxds*(dydr*dzdt - dzdr*dydt)
+                        + dxdt*(dydr*dzds - dzdr*dyds);
+
+          if(Jac <= 0.0) {
+            cout << "Negative Jacobian found" << endl;
+#ifndef HAVE_MPI
+            exit(EXIT_FAILURE);
+#else
+            MPI_Abort(MPI_COMM_WORLD,1);
+            MPI_Finalize();
+#endif
+          }
+
+          if(j == 0) jacMin = jacMax = Jac;
+          else {
+            jacMin = min(jacMin, Jac);
+            jacMax = max(jacMax, Jac);
+          }
+        }
+
+        break;
+      }
+    }
+
+    /*--- Determine the ratio of the maximum and minimum value of the Jacobian
+          and store it in the element class. From this ratio, determine whether
+          or not the element has a constant Jacobian and the total number of
+          volume integration points necessary. Note that in order to determine
+          this value the degree of the solution must be taken and not the degree
+          of the grid. ---*/
+
+    su2double ratioMaxMinJac = jacMax/jacMin;
+    elem[i]->SetRatioMaxMinJacobian(ratioMaxMinJac);
+
+    bool constJacobian = ratioMaxMinJac <= 1.000001;
+
+    unsigned short nPolySol = elem[i]->GetNPolySol();
+
+    unsigned short orderExact;
+    if( constJacobian )
+       orderExact = (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Straight());
+    else
+       orderExact = (unsigned short) ceil(nPolySol*config->GetQuadrature_Factor_Curved());
+
+    nIntegration = FEMStandardElementClass::GetNIntegrationStatic(elem[i]->GetVTK_Type(),
+                                                                  orderExact, config);
+
+    /*--- Initialize the computational work for this element. ---*/
+
+    vwgt[i] = workVolumeIntegrationPoint*nIntegration
+            + workVolumeDOF*elem[i]->GetNDOFsSol();
+
+    /*--- Get the global IDs of the corner points of all the faces of this element. ---*/
+
+    unsigned short nFaces;
+    unsigned short nPointsPerFace[6];
+    unsigned long  faceConn[6][4];
+
+    elem[i]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+    unsigned short nPolyGrid = elem[i]->GetNPolyGrid();
+
+    /*--- Loop over the number of faces of this element. ---*/
+
+    for(unsigned short j=0; j<nFaces; ++j) {
+
+      /*--- Determine the index jj in the standard elements for this face. ---*/
+
+      unsigned short VTK_Type;
+      switch( nPointsPerFace[j] ) {
+        case 2: VTK_Type = LINE;          break;
+        case 3: VTK_Type = TRIANGLE;      break;
+        case 4: VTK_Type = QUADRILATERAL; break;
+      }
+
+      unsigned short jj;
+      for(jj=0; jj<nStandardElements; ++jj) {
+        if( standardElements[jj].SameStandardElement(VTK_Type, nPolyGrid, true) ) {
+          break;
+        }
+      }
+
+      if(jj == nStandardElements) {
+        ++nStandardElements;
+        standardElements.push_back(FEMStandardElementClass(VTK_Type, nPolyGrid,
+                                                           true, config));
+      }
+
+      /*--- Possibly resize the vector to store the normals in the integration
+            points of the face and set the pointer to the correct
+            vector to store the face connectivity of this face.       ---*/
+
+      normalsFace.resize((nDim+1)*standardElements[jj].GetNIntegration());
+
+      unsigned short *connFace;
+      switch( j) {
+        case 0: connFace = standardElements[ii].GetConnFace0(); break;
+        case 1: connFace = standardElements[ii].GetConnFace1(); break;
+        case 2: connFace = standardElements[ii].GetConnFace2(); break;
+        case 3: connFace = standardElements[ii].GetConnFace3(); break;
+        case 4: connFace = standardElements[ii].GetConnFace4(); break;
+        case 5: connFace = standardElements[ii].GetConnFace5(); break;
+      }
+
+      /*--- Store the relevant derivative vectors of the standard element of
+            the face as well as the number of DOFs and integration points. ---*/
+
+      nDOFs        = standardElements[jj].GetNDOFs();
+      nIntegration = standardElements[jj].GetNIntegration();
+
+      dr = standardElements[jj].GetDrBasisFunctionsIntegration();
+      ds = standardElements[jj].GetDsBasisFunctionsIntegration();
+
+      /*--- Compute the unit normals in the integration points. Make a
+            distinction between two and three dimensions.  ---*/
+
+      switch( nDim ) {
+        case 2: {
+
+          /*--- Two dimensional case, for which the faces are edges.
+                The normal is the vector normal to the tangent vector
+                of the edge. Loop over the integration points. ---*/
+
+          for(unsigned short k=0; k<nIntegration; ++k) {
+
+            su2double *drr = &dr[k*nDOFs];
+            su2double dxdr = 0.0, dydr = 0.0;
+            for(unsigned short l=0; l<nDOFs; ++l) {
+              dxdr += x[connFace[l]]*drr[l];
+              dydr += y[connFace[l]]*drr[l];
+            }
+
+            normalsFace[3*k]   =  dydr;
+            normalsFace[3*k+1] = -dxdr;
+            normalsFace[3*k+2] =  sqrt(dxdr*dxdr + dydr*dydr);
+          }
+
+          break;
+        }
+
+        case 3: {
+
+          /*--- Three dimensional case, for which the faces are triangles and
+                quadrilaterals. The normal is the vector obtained via the
+                cross product of two tangent vectors.
+                Loop over the integration points.               ---*/
+
+          for(unsigned short k=0; k<nIntegration; ++k) {
+
+            su2double *drr = &dr[k*nDOFs], *dss = &ds[k*nDOFs];
+            su2double dxdr = 0.0, dydr = 0.0, dzdr = 0.0,
+                      dxds = 0.0, dyds = 0.0, dzds = 0.0;
+
+            for(unsigned short l=0; l<nDOFs; ++l) {
+              dxdr += x[connFace[l]]*drr[l]; dxds += x[connFace[l]]*dss[l];
+              dydr += y[connFace[l]]*drr[l]; dyds += y[connFace[l]]*dss[l];
+              dzdr += z[connFace[l]]*drr[l]; dzds += z[connFace[l]]*dss[l];
+            }
+
+            su2double nx = dydr*dzds - dyds*dzdr;
+            su2double ny = dxds*dzdr - dxdr*dzds;
+            su2double nz = dxdr*dyds - dxds*dydr;
+
+            normalsFace[4*k]   = nx;
+            normalsFace[4*k+1] = ny;
+            normalsFace[4*k+2] = nz;
+            normalsFace[4*k+3] = sqrt(nx*nx + ny*ny + nz*nz);
+          }
+
+          break;
+        }
+      }
+
+      /*--- Double loop over the integration points to determine the minimum
+            value of the cosine between the normals. Also the minimum and
+            maximum length of the normal is determined.     ---*/
+
+      su2double normLenMin, normLenMax;
+      su2double minCosAngleFaceNormals = 1.0;
+      unsigned short kk = (nDim+1);
+      for(unsigned short k=0; k<nIntegration; ++k) {
+
+        if(k == 0) normLenMin = normLenMax = normalsFace[nDim];
+        else {
+          normLenMin = min(normLenMin, normalsFace[k*kk+nDim]);
+          normLenMax = max(normLenMax, normalsFace[k*kk+nDim]);
+        }
+
+        for(unsigned short l=k+1; l<nIntegration; ++l) {
+          su2double dot = 0.0;
+          for(unsigned short m=0; m<nDim; ++m)
+            dot += normalsFace[k*kk+m]*normalsFace[l*kk+m];
+          dot /= normalsFace[k*kk+nDim]*normalsFace[l*kk+nDim];
+
+          minCosAngleFaceNormals = min(minCosAngleFaceNormals, dot);
+        }
+      }
+
+      /*--- Compute the ratio of normLenMin and normLenMax and determine
+            whether or not the face has a constant Jacobian. ---*/
+
+      su2double maxRatioLenFaceNormals = normLenMax/normLenMin;
+
+      constJacobian = minCosAngleFaceNormals >= 0.999999 &&
+                      maxRatioLenFaceNormals <= 1.000001;
+
+      /*--- Determine the polynomial degree of the face. If a face is shared
+            between elements, it is possible that the polynomial degree of the
+            face is different from the degree of the current element. Hence a
+            search is carried out in localFaces to see if the face is shared
+            between elements.                       ---*/
+
+      unsigned short nPolyFace = nPolySol;
+
+      FaceOfElementClass thisFace;
+      thisFace.nCornerPoints = nPointsPerFace[j];
+      for(unsigned short k=0; k<nPointsPerFace[j]; ++k)
+        thisFace.cornerPoints[k] = faceConn[j][k];
+      thisFace.CreateUniqueNumbering();
+
+      if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
+        vector<FaceOfElementClass>::const_iterator low;
+        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+        nPolyFace = low->nPoly;
+      }
+
+      /*--- Determine the number of integration points for this face as well as
+            the number of DOFs.           ---*/
+
+      if( constJacobian )
+         orderExact = (unsigned short) ceil(nPolyFace*config->GetQuadrature_Factor_Straight());
+      else
+         orderExact = (unsigned short) ceil(nPolyFace*config->GetQuadrature_Factor_Curved());
+
+      nIntegration = FEMStandardElementClass::GetNIntegrationStatic(VTK_Type, orderExact,
+                                                                    config);
+      nDOFs = FEMStandardElementClass::GetNDOFsStatic(VTK_Type, nPolyFace);
+
+      /*--- Update the amount of work for this element with the work for this face. ---*/
+
+      vwgt[i] += workSurfaceIntegrationPoint*nIntegration
+               + workSurfaceDOF*nDOFs;
+    }
+  }
+
+  /*--- Determine the minimum vertex weight over the entire domain. ---*/
+
+  su2double minvwgt = vwgt[0];
+  for(unsigned long i=0; i<local_elem; ++i) minvwgt = min(minvwgt, vwgt[i]);
+
+#ifdef HAVE_MPI
+  su2double locminvwgt = minvwgt;
+  SU2_MPI::Allreduce(&locminvwgt, &minvwgt, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+#endif
+
+  /*--- Scale the vertex weights with the minimum value and multiply them by 50.
+        The value 50 is chosen such that the conversion to an integer in the
+        weights, ParMETIS is using integers for the weights, does not lead to a
+        significant increase in the load balance.        ---*/
+
+  minvwgt = 50.0/minvwgt;
+  for(unsigned long i=0; i<local_elem; ++i) vwgt[i] *= minvwgt;
+
+  /*--- Create a map of the two global element IDs adjacent to the face to
+        the index in localFaces. This map is used for an efficient search
+        to determine the edge weights of the graph.   ---*/
+
+  map<unsignedLong2T, unsigned long> mapElemIDsToFaceInd;
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+    unsigned long e0 = min(localFaces[i].elemID0, localFaces[i].elemID1);
+    unsigned long e1 = max(localFaces[i].elemID0, localFaces[i].elemID1);
+    mapElemIDsToFaceInd[unsignedLong2T(e0, e1)] = i;
+  }
+
+  /*--- Determine the edge weights by a double loop over the local elements
+        and its edges. The map mapElemIDsToFaceInd is used to determine
+        the corresponding index in localFaces.   ---*/
+
+  for(unsigned long i=0; i<local_elem; ++i) {
+    unsigned long elemID0 = starting_node[rank] + i;
+
+    for(unsigned long j=xadj_l[i]; j<xadj_l[i+1]; ++j) {
+      unsigned long e0 = min(elemID0, adjacency_l[j]);
+      unsigned long e1 = max(elemID0, adjacency_l[j]);
+
+      unsignedLong2T elemIDs(e0, e1);
+      map<unsignedLong2T, unsigned long>::const_iterator MI = mapElemIDsToFaceInd.find(elemIDs);
+      if(MI == mapElemIDsToFaceInd.end()) {
+        cout << "Entry not found in map in function CPhysicalGeometry::ComputeFEMGraphWeights" << endl;
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
+
+      unsigned long ind = MI->second;
+
+      if(     localFaces[ind].elemID0 == elemID0) adjwgt[j] = localFaces[ind].nDOFsElem1;
+      else if(localFaces[ind].elemID1 == elemID0) adjwgt[j] = localFaces[ind].nDOFsElem0;
+      else {
+        cout << "This should not happen in function CPhysicalGeometry::ComputeFEMGraphWeights" << endl;
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
+    }
+  }
 }
 
 void CPhysicalGeometry::GetQualityStatistics(su2double *statistics) {
