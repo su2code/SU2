@@ -1862,7 +1862,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Retrieve filename from config ---*/
   
-  if (config->GetAdjoint() || config->GetDiscrete_Adjoint()) {
+  if (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
@@ -2170,7 +2170,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short nZone = geometry[iZone]->GetnZone();
 
   /*--- Retrieve filename from config ---*/
-  if (config->GetAdjoint()) {
+  if (config->GetContinuous_Adjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
@@ -2284,7 +2284,7 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
   unsigned short nZone = geometry->GetnZone();
 
   /*--- Retrieve filename from config ---*/
-  if (config->GetAdjoint()) {
+  if (config->GetContinuous_Adjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
