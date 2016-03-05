@@ -805,9 +805,9 @@ void FEMStandardElementClass::DataStandardPyramid(void) {
       for(unsigned short i=0; i<=mPoly; ++i, ++ii) {
         if(k == 0)     connFace0.push_back(ii);
         if(j == 0)     connFace1.push_back(ii);
-        if(j == nPoly) connFace2.push_back(ii);
+        if(j == mPoly) connFace2.push_back(ii);
         if(i == 0)     connFace3.push_back(ii);
-        if(i == nPoly) connFace4.push_back(ii);
+        if(i == mPoly) connFace4.push_back(ii);
       }
     }
   }
@@ -881,6 +881,7 @@ void FEMStandardElementClass::DataStandardPrism(void) {
   nIntegration = M*nIntTriangle;
   rIntegration.resize(nIntegration);
   sIntegration.resize(nIntegration);
+  tIntegration.resize(nIntegration);
   wIntegration.resize(nIntegration);
 
   ii = 0;
@@ -1014,6 +1015,7 @@ void FEMStandardElementClass::DataStandardHexahedron(void) {
   nIntegration = M*M*M;
   rIntegration.resize(nIntegration);
   sIntegration.resize(nIntegration);
+  tIntegration.resize(nIntegration);
   wIntegration.resize(nIntegration);
 
   ii = 0;
