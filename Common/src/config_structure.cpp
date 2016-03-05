@@ -433,7 +433,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. */
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
   /*!\brief MARKER_NRBC \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. */
-  addNRBCOption("MARKER_NRBC", nMarker_NRBC, Marker_NRBC, Kind_Data_NRBC, NRBC_Map, NRBC_Var1, NRBC_Var2, NRBC_FlowDir);
+  addNRBCOption("MARKER_NRBC", nMarker_NRBC, Marker_NRBC, Kind_Data_NRBC, NRBC_Map, NRBC_Var1, NRBC_Var2, NRBC_FlowDir, RelaxFactorAverage, RelaxFactorFourier);
   /*!\brief MIXING_PROCESS_TYPE \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries.
     \n OPTIONS: see \link MixingProcess_Map \endlink \n Default: AREA_AVERAGE */
   addEnumOption("MIXING_PROCESS_TYPE", Kind_MixingProcess, MixingProcess_Map, AREA_AVERAGE);
@@ -5066,6 +5066,20 @@ su2double CConfig::GetNRBC_Var2(string val_marker) {
   for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
     if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
   return NRBC_Var2[iMarker_NRBC];
+}
+
+su2double CConfig::GetNRBC_RelaxFactorAverage(string val_marker) {
+  unsigned short iMarker_NRBC;
+  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
+    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
+  return RelaxFactorAverage[iMarker_NRBC];
+}
+
+su2double CConfig::GetNRBC_RelaxFactorFourier(string val_marker) {
+  unsigned short iMarker_NRBC;
+  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
+    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
+  return RelaxFactorFourier[iMarker_NRBC];
 }
 
 su2double* CConfig::GetNRBC_FlowDir(string val_marker) {

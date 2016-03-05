@@ -283,7 +283,7 @@ public:
    * \param[in] output - Definition of the output for the particular problem.
    * \param[in] iZone - zone of the problem.
    */
-  void SetMPITurboPerformance(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, COutput *output, unsigned short iZone);
+  void SetMPITurboPerformance(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, CNumerics *****numerics_container, COutput *output, unsigned short iZone);
 
 
 };
