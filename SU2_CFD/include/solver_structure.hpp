@@ -920,7 +920,7 @@ public:
      * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_marker - Surface marker where the average is evaluated.
 	 */
-	virtual void MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag);
+	virtual void MPISpanMixing_Process(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
 
 
 	/*!
@@ -930,7 +930,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] marker_flag - Surface marker flag where the function is applied.
 	 */
-	virtual void PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics *conv_numerics, unsigned short marker_flag);
+	virtual void PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics, unsigned short marker_flag);
 
 	/*!
 	 * \brief it performs a mixed out average of the nodes of a boundary.
@@ -3576,7 +3576,7 @@ public:
      * \param[in] config - Definition of the particular problem.
 	 * \param[in] marker_flag - Surface marker flag where the function is applied.
 	 */
-	void MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag);
+	void MPISpanMixing_Process(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
 
 	/*!
 	 * \brief It computes Fourier transformation for the needed quantities along the pitch for each span in turbomachinery analysis.
@@ -3585,7 +3585,7 @@ public:
      * \param[in] config - Definition of the particular problem.
 	 * \param[in] marker_flag - Surface marker flag where the function is applied.
 	 */
-	void PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics *conv_numerics,  unsigned short marker_flag);
+	void PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics,  unsigned short marker_flag);
 	/*!
 	 * \brief it performs a mixed out average of the nodes of a boundary.
 	 * \param[in] val_init_pressure -  initial pressure value
