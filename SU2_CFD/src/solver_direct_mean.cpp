@@ -651,33 +651,36 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     VelocityOutIs[iMarker]= 0.0;
   }
   
+
   /*--- Initializate quantities for NR BC ---*/
-  CkInflow				= new complex<su2double>** [nMarker];
-  CkOutflow1			= new complex<su2double>** [nMarker];
-  CkOutflow2			= new complex<su2double>** [nMarker];
+  if(config->GetBoolNRBC()){
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  	CkInflow[iMarker]				= new complex<su2double>*[nSpanWiseSections];
-  	CkOutflow1[iMarker]			= new complex<su2double>*[nSpanWiseSections];
-  	CkOutflow2[iMarker]			= new complex<su2double>*[nSpanWiseSections];
+		CkInflow				= new complex<su2double>** [nMarker];
+		CkOutflow1			= new complex<su2double>** [nMarker];
+		CkOutflow2			= new complex<su2double>** [nMarker];
 
-		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++) {
-			CkInflow[iMarker][iSpan]				= new complex<su2double>[geometry->GetnFreqSpanMax(INFLOW)];
-			CkOutflow1[iMarker][iSpan]			= new complex<su2double>[geometry->GetnFreqSpanMax(OUTFLOW)];
-			CkOutflow2[iMarker][iSpan]			= new complex<su2double>[geometry->GetnFreqSpanMax(OUTFLOW)];
+		for (iMarker = 0; iMarker < nMarker; iMarker++) {
+			CkInflow[iMarker]				= new complex<su2double>*[nSpanWiseSections];
+			CkOutflow1[iMarker]			= new complex<su2double>*[nSpanWiseSections];
+			CkOutflow2[iMarker]			= new complex<su2double>*[nSpanWiseSections];
+
+			for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++) {
+				CkInflow[iMarker][iSpan]				= new complex<su2double>[geometry->GetnFreqSpanMax(INFLOW)];
+				CkOutflow1[iMarker][iSpan]			= new complex<su2double>[geometry->GetnFreqSpanMax(OUTFLOW)];
+				CkOutflow2[iMarker][iSpan]			= new complex<su2double>[geometry->GetnFreqSpanMax(OUTFLOW)];
 
 
-			for (iVar = 0; iVar <geometry->GetnFreqSpanMax(INFLOW) ; iVar++) {
-				CkInflow[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
-			}
+				for (iVar = 0; iVar <geometry->GetnFreqSpanMax(INFLOW) ; iVar++) {
+					CkInflow[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
+				}
 
-			for (iVar = 0; iVar <geometry->GetnFreqSpanMax(OUTFLOW) ; iVar++) {
-				CkOutflow1[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
-				CkOutflow2[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
+				for (iVar = 0; iVar <geometry->GetnFreqSpanMax(OUTFLOW) ; iVar++) {
+					CkOutflow1[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
+					CkOutflow2[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
+				}
 			}
 		}
   }
-
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
   
@@ -8642,7 +8645,7 @@ void CEulerSolver::MPIMixing_Process(CGeometry *geometry, CSolver **solver_conta
 }
 
 
-void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag) {
+void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
 
   unsigned long iVertex, iPoint, nVert;
   unsigned short iDim, iVar, iMarker, iMarkerTP, iSpan;
@@ -9045,7 +9048,7 @@ void CEulerSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Av
 }
 
 
-void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics *conv_numerics, unsigned short marker_flag) {
+void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics, unsigned short marker_flag) {
   /* Implementation of Fuorier Transformations for non-regfelcting BC will come soon */
 	su2double cj_inf,cj_out1, cj_out2, cc, rhoc, AvgMach, Density_i, Pressure_i, deltaPressure, NormalVelocity, deltaNormalVelocity, c4temp,jk_nVert, *turboNormal, *turboVelocity, *Velocity_i;
 	su2double deltaTangVelocity, TangVelocity, *deltaprim, *cj;
@@ -13601,33 +13604,36 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 	    VelocityOutIs[iMarker]= 0.0;
 	  }
 
-  /*--- Initializate quantities for NR BC ---*/
-  CkInflow				= new complex<su2double>** [nMarker];
-  CkOutflow1			= new complex<su2double>** [nMarker];
-  CkOutflow2			= new complex<su2double>** [nMarker];
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  	CkInflow[iMarker]				= new complex<su2double>*[nSpanWiseSections];
-  	CkOutflow1[iMarker]			= new complex<su2double>*[nSpanWiseSections];
-  	CkOutflow2[iMarker]			= new complex<su2double>*[nSpanWiseSections];
+	/*--- Initializate quantities for NR BC ---*/
+	if(config->GetBoolNRBC()){
 
-		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++) {
-			CkInflow[iMarker][iSpan]				= new complex<su2double>[geometry->GetnFreqSpanMax(INFLOW)];
-			CkOutflow1[iMarker][iSpan]			= new complex<su2double>[geometry->GetnFreqSpanMax(OUTFLOW)];
-			CkOutflow2[iMarker][iSpan]			= new complex<su2double>[geometry->GetnFreqSpanMax(OUTFLOW)];
+		CkInflow				= new complex<su2double>** [nMarker];
+		CkOutflow1			= new complex<su2double>** [nMarker];
+		CkOutflow2			= new complex<su2double>** [nMarker];
+
+		for (iMarker = 0; iMarker < nMarker; iMarker++) {
+			CkInflow[iMarker]				= new complex<su2double>*[nSpanWiseSections];
+			CkOutflow1[iMarker]			= new complex<su2double>*[nSpanWiseSections];
+			CkOutflow2[iMarker]			= new complex<su2double>*[nSpanWiseSections];
+
+			for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++) {
+				CkInflow[iMarker][iSpan]				= new complex<su2double>[geometry->GetnFreqSpanMax(INFLOW)];
+				CkOutflow1[iMarker][iSpan]			= new complex<su2double>[geometry->GetnFreqSpanMax(OUTFLOW)];
+				CkOutflow2[iMarker][iSpan]			= new complex<su2double>[geometry->GetnFreqSpanMax(OUTFLOW)];
 
 
-			for (iVar = 0; iVar <geometry->GetnFreqSpanMax(INFLOW) ; iVar++) {
-				CkInflow[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
-			}
+				for (iVar = 0; iVar <geometry->GetnFreqSpanMax(INFLOW) ; iVar++) {
+					CkInflow[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
+				}
 
-			for (iVar = 0; iVar <geometry->GetnFreqSpanMax(OUTFLOW) ; iVar++) {
-				CkOutflow1[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
-				CkOutflow2[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
+				for (iVar = 0; iVar <geometry->GetnFreqSpanMax(OUTFLOW) ; iVar++) {
+					CkOutflow1[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
+					CkOutflow2[iMarker][iSpan][iVar]				= complex<su2double>(0.0,0.0);
+				}
 			}
 		}
-  }
-
+	}
   
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
   
