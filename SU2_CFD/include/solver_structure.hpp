@@ -2753,6 +2753,16 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
+
+	virtual void Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
 	virtual void Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
 
 	/*!
@@ -7179,6 +7189,8 @@ private:
 	su2double *Res_Time_Cont;			/*!< \brief Auxiliary vector to store the surface load contribution to the residual */
 	su2double *Res_FSI_Cont;			/*!< \brief Auxiliary vector to store the surface load contribution to the residual */
 
+	su2double *Res_Dead_Load;			/*!< \brief Auxiliary vector to store the body load contribution to the residual */
+
 	su2double *solutionPredictor;		/*!< \brief Auxiliary vector to store the solution predictor */
 
 	su2double *Solution_Interm;		/*!< \brief Auxiliary vector to store the intermediate solution */
@@ -7352,6 +7364,14 @@ public:
 
 	void Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
 
+	/*!
+	 * \brief Compute the dead loads.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
 
 	/*!
 	 * \brief Initializes the matrices/residuals in the solution process (avoids adding over previous values).

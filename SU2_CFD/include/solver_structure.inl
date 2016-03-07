@@ -738,6 +738,8 @@ inline void CSolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solve
 
 inline void CSolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
 
+inline void CSolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
+
 inline void CSolver::Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }										  
 
 inline void CSolver::Compute_StiffMassDampMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }

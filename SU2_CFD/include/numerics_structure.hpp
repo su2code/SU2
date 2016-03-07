@@ -1520,27 +1520,33 @@ public:
 
   /*!
    * \brief A virtual member to compute the plane stress term in an element for nonlinear structural problems
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] element_container - Element structure for the particular element integrated.
    */
   virtual void Compute_Plane_Stress_Term(CElement *element_container);
 
   /*!
    * \brief A virtual member to compute the constitutive matrix in an element for structural problems
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] element_container - Element structure for the particular element integrated.
    */
   virtual void Compute_Constitutive_Matrix(CElement *element_container);
 
   /*!
    * \brief A virtual member to compute the stress tensor in an element for structural problems
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] element_container - Element structure for the particular element integrated.
    */
   virtual void Compute_Stress_Tensor(CElement *element_container);
 
   /*!
    * \brief A virtual member to compute the mass matrix
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] element_container - Element structure for the particular element integrated.
    */
   virtual void Compute_Mass_Matrix(CElement *element_container);
+
+  /*!
+   * \brief A virtual member to compute the residual component due to dead loads
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  virtual void Compute_Dead_Load(CElement *element_container);
 
   /*!
    * \brief A virtual member to compute the averaged nodal stresses
@@ -4181,6 +4187,8 @@ protected:
 	su2double **GradNi_Ref_Mat;/*!< \brief Gradients of Ni - Auxiliary. */
 	su2double **GradNi_Curr_Mat;/*!< \brief Gradients of Ni - Auxiliary. */
 
+	su2double *FAux_Dead_Load;		/*!< \brief Auxiliar vector for the dead loads */
+
 public:
 
 	/*!
@@ -4197,6 +4205,8 @@ public:
 	~CFEM_Elasticity(void);
 
 	void Compute_Mass_Matrix(CElement *element_container);
+
+	void Compute_Dead_Load(CElement *element_container);
 
 	virtual void Compute_Tangent_Matrix(CElement *element_container);
 

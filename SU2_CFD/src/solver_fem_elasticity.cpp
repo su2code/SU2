@@ -63,6 +63,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 	Res_Time_Cont = NULL;
 	Res_FSI_Cont = NULL;
 
+	Res_Dead_Load = NULL;
+
 	nodeReactions = NULL;
 
 	solutionPredictor = NULL;
@@ -88,6 +90,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
 	bool fsi = config->GetFSI_Simulation();												// FSI simulation
 	bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);	// Generalized alpha method requires residual at previous time step.
+
+	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
 
 	int rank = MASTER_NODE;
 	#ifdef HAVE_MPI
@@ -370,6 +374,14 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	/*--- Contribution of the external surface forces to the residual (auxiliary vector) ---*/
 	Res_Ext_Surf = new su2double[nVar];
 
+	/*--- Contribution of the body forces to the residual (auxiliary vector) ---*/
+	if (body_forces){
+		Res_Dead_Load = new su2double[nVar];
+	}
+	else {
+		Res_Dead_Load = NULL;
+	}
+
 	/*--- Contribution of the fluid tractions to the residual (auxiliary vector) ---*/
 	if (fsi){
 		Res_FSI_Cont = new su2double[nVar];
@@ -377,7 +389,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	else {
 		Res_FSI_Cont = NULL;
 	}
-
 
 	/*--- Time integration contribution to the residual ---*/
 	if (dynamic) {
@@ -505,6 +516,7 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
 	delete [] Res_Stress_i;
 	delete [] Res_Ext_Surf;
 	if (Res_Time_Cont != NULL) delete[] Res_Time_Cont;
+	if (Res_Dead_Load != NULL) delete[] Res_Dead_Load;
 	delete [] Solution;
 	delete [] SolRest;
 	delete [] GradN_X;
@@ -990,6 +1002,10 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 	bool restart = config->GetRestart();												// Restart analysis
 	bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter()); // Initial calculation for restart
 
+	bool incremental_load = config->GetIncrementalLoad();								// If an incremental load is applied
+
+	bool body_forces = config->GetDeadLoad();											// Body forces (dead loads).
+
 	/*--- Set vector entries to zero ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
 		LinSysAux.SetBlock_Zero(iPoint);
@@ -1024,6 +1040,25 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 		MassMatrix.SetValZero();
 		Compute_IntegrationConstants(config);
 		Compute_MassMatrix(geometry, solver_container, numerics[VISC_TERM], config);
+	}
+
+	/*
+	 * If body forces are taken into account, we need to compute the term that goes into the residual,
+	 * which will be constant along the calculation both for linear and nonlinear analysis.
+	 *
+	 * Only initialized once, at the first iteration or the beginning of the calculation after a restart.
+	 *
+	 * We need first_iter, because in nonlinear problems there are more than one subiterations in the first time step.
+	 */
+
+	if ((body_forces && initial_calc && first_iter) ||
+		(body_forces && restart && initial_calc_restart && first_iter)) {
+		// If the load is incremental, we have to reset the variable to avoid adding up over the increments
+		if (incremental_load){
+			for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Clear_BodyForces_Res();
+		}
+		// Compute the dead load term
+		Compute_DeadLoad(geometry, solver_container, numerics[VISC_TERM], config);
 	}
 
 	/*
@@ -1616,6 +1651,57 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 
 }
 
+void CFEM_ElasticitySolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+
+	unsigned long iElem, iVar;
+	unsigned short iNode, iDim, nNodes;
+	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+	su2double val_Coord;
+	int EL_KIND;
+
+	su2double *Dead_Load = NULL;
+	unsigned short NelNodes;
+
+	/*--- Loops over all the elements ---*/
+
+	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+
+		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+
+		/*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+
+		for (iNode = 0; iNode < nNodes; iNode++) {
+		  indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+		  for (iDim = 0; iDim < nDim; iDim++) {
+			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+			  element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+		  }
+		}
+
+		numerics->Compute_Dead_Load(element_container[EL_KIND]);
+
+		NelNodes = element_container[EL_KIND]->GetnNodes();
+
+		for (iNode = 0; iNode < NelNodes; iNode++){
+
+			Dead_Load = element_container[EL_KIND]->Get_FDL_a(iNode);
+			for (iVar = 0; iVar < nVar; iVar++) Res_Dead_Load[iVar] = Dead_Load[iVar];
+
+			node[indexNode[iNode]]->Add_BodyForces_Res(Res_Dead_Load);
+
+		}
+
+	}
+
+
+}
+
 void CFEM_ElasticitySolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
 }
@@ -1704,15 +1790,9 @@ void CFEM_ElasticitySolver::BC_Clamped(CGeometry *geometry, CSolver **solver_con
 	    		node[iPoint]->SetSolution_Accel(Solution);
 	    	}
 
-	    	//		for (iVar = 0; iVar < nVar; iVar++){
-	    	//			nodeReactions[iVar] = - 1.0 * LinSysRes.GetBlock(iPoint, iVar);
-	    	//		}
-	    	//
-	    	//		LinSysReact.SetBlock(iPoint,nodeReactions);
 
 	    	/*--- Initialize the reaction vector ---*/
 	    	LinSysReact.SetBlock(iPoint, Residual);
-
 
 	    	LinSysRes.SetBlock(iPoint, Residual);
 
@@ -2062,6 +2142,8 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 	bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
 	bool fsi = config->GetFSI_Simulation();												// FSI simulation.
 
+	bool body_forces = config->GetDeadLoad();											// Body forces (dead loads).
+
 	bool restart = config->GetRestart();													// Restart solution
 	bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());	// Restart iteration
 
@@ -2082,6 +2164,21 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 			}
 
 			LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
+
+			/*--- Add the contribution to the residual due to body forces ---*/
+
+			if (body_forces){
+				if (incremental_load){
+					for (iVar = 0; iVar < nVar; iVar++){
+						Res_Dead_Load[iVar] = loadIncrement * node[iPoint]->Get_BodyForces_Res(iVar);
+					}
+				}
+				else{
+					Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
+				}
+
+				LinSysRes.AddBlock(iPoint, Res_Dead_Load);
+			}
 		}
 
 	}
@@ -2152,6 +2249,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 			if (incremental_load){
 				for (iVar = 0; iVar < nVar; iVar++){
 					Res_Ext_Surf[iVar] = loadIncrement * node[iPoint]->Get_SurfaceLoad_Res(iVar);
+
 				}
 			}
 			else {
@@ -2159,7 +2257,23 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 			}
 			LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
 
-			/*--- Add FSI contribution ---*/
+
+			/*--- Body forces contribution (dead load) ---*/
+
+			if (body_forces){
+				if (incremental_load){
+					for (iVar = 0; iVar < nVar; iVar++){
+						Res_Dead_Load[iVar] = loadIncrement * node[iPoint]->Get_BodyForces_Res(iVar);
+					}
+				}
+				else{
+					Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
+				}
+
+				LinSysRes.AddBlock(iPoint, Res_Dead_Load);
+			}
+
+			/*--- FSI contribution (flow loads) ---*/
 			if (fsi) {
 				if (incremental_load){
 					for (iVar = 0; iVar < nVar; iVar++){
@@ -2331,6 +2445,8 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSol
 	bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);		// Newton-Raphson method
 	bool fsi = config->GetFSI_Simulation();												// FSI simulation.
 
+	bool body_forces = config->GetDeadLoad();											// Body forces (dead loads).
+
 	bool restart = config->GetRestart();													// Restart solution
 	bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());	// Restart iteration
 
@@ -2353,6 +2469,22 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSol
 			}
 
 			LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
+
+			/*--- Add the contribution to the residual due to body forces ---*/
+
+			if (body_forces){
+				if (incremental_load){
+					for (iVar = 0; iVar < nVar; iVar++){
+						Res_Dead_Load[iVar] = loadIncrement * node[iPoint]->Get_BodyForces_Res(iVar);
+					}
+				}
+				else{
+					Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
+				}
+
+				LinSysRes.AddBlock(iPoint, Res_Dead_Load);
+			}
+
 		}
 
 	}
@@ -2430,6 +2562,22 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSol
 				}
 			}
 			LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
+
+			/*--- Add the contribution to the residual due to body forces.
+			 *--- It is constant over time, so it's not necessary to distribute it. ---*/
+
+			if (body_forces){
+				if (incremental_load){
+					for (iVar = 0; iVar < nVar; iVar++){
+						Res_Dead_Load[iVar] = loadIncrement * node[iPoint]->Get_BodyForces_Res(iVar);
+					}
+				}
+				else{
+					Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
+				}
+
+				LinSysRes.AddBlock(iPoint, Res_Dead_Load);
+			}
 
 			/*--- Add FSI contribution ---*/
 			if (fsi) {

@@ -33,12 +33,17 @@
 CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
+	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+
 	E = config->GetElasticyMod();
 	Nu = config->GetPoissonRatio();
 	Rho_s = config->GetMaterialDensity();
 	Mu = E / (2.0*(1.0 + Nu));
 	Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
 	Kappa = config->GetBulk_Modulus_Struct();
+
+	// Auxiliary vector for body forces (dead load)
+	if (body_forces) FAux_Dead_Load = new su2double [nDim]; else FAux_Dead_Load = NULL;
 
 	plane_stress = (config->GetElas2D_Formulation() == PLANE_STRESS);
 
@@ -124,6 +129,8 @@ CFEM_Elasticity::~CFEM_Elasticity(void) {
 	delete [] GradNi_Ref_Mat;
 	delete [] GradNi_Curr_Mat;
 
+	if (FAux_Dead_Load 		!= NULL) delete [] FAux_Dead_Load;
+
 }
 
 void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element){
@@ -166,6 +173,53 @@ void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element){
 				}
 
 			}
+
+		}
+
+	}
+
+}
+
+void CFEM_Elasticity::Compute_Dead_Load(CElement *element){
+
+	unsigned short iGauss, nGauss;
+	unsigned short iNode, iDim, nNode;
+
+	su2double Weight, Jac_X;
+
+	/* -- Gravity directionality:
+	 * -- For 2D problems, we assume the direction for gravity is -y
+	 * -- For 3D problems, we assume the direction for gravity is -z
+	 */
+	su2double g_force[3] = {0.0,0.0,0.0};
+
+	if (nDim == 2) g_force[1] = -1*STANDART_GRAVITY;
+	else if (nDim == 3) g_force[2] = -1*STANDART_GRAVITY;
+
+	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements and sets initial values to 0--*/
+	element->ComputeGrad_Linear();		/*--- Need to compute the gradients to obtain the Jacobian ---*/
+
+	nNode = element->GetnNodes();
+	nGauss = element->GetnGaussPoints();
+
+	for (iGauss = 0; iGauss < nGauss; iGauss++){
+
+		Weight = element->GetWeight(iGauss);
+		Jac_X = element->GetJ_X(iGauss);			/*--- The dead load is computed in the reference configuration ---*/
+
+		/*--- Retrieve the values of the shape functions for each node ---*/
+		/*--- This avoids repeated operations ---*/
+		for (iNode = 0; iNode < nNode; iNode++){
+			Ni_Vec[iNode] = element->GetNi(iNode,iGauss);
+		}
+
+		for (iNode = 0; iNode < nNode; iNode++){
+
+			for (iDim = 0; iDim < nDim; iDim++){
+				FAux_Dead_Load[iDim] = Weight * Ni_Vec[iNode] * Jac_X * Rho_s * g_force[iDim];
+			}
+
+			element->Add_FDL_a(FAux_Dead_Load,iNode);
 
 		}
 
