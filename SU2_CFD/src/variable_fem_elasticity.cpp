@@ -64,7 +64,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 
 	unsigned short iVar;
 	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
-	bool body_forces = false;		// Bool for adding body forces in the future.
+	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
 	bool incremental_load = config->GetIncrementalLoad();
 	bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);	// Generalized alpha method requires residual at previous time step.
 
@@ -139,6 +139,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 
 	for (iVar = 0; iVar < nVar; iVar++){
 		Residual_Ext_Surf[iVar] = 0.0;
+		if (body_forces) Residual_Ext_Body[iVar] = 0.0;
 	}
 
 }

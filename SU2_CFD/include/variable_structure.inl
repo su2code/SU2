@@ -81,6 +81,14 @@ inline void CVariable::Set_SurfaceLoad_Res_n(void) { }
 
 inline su2double CVariable::Get_SurfaceLoad_Res_n(unsigned short iVar) { return 0.0;}
 
+inline void CVariable::Add_BodyForces_Res(su2double *val_bodyForce) { }
+
+inline su2double *CVariable::Get_BodyForces_Res(void) {return NULL;}
+
+inline su2double CVariable::Get_BodyForces_Res(unsigned short iVar) {return 0.0;}
+
+inline void CVariable::Clear_BodyForces_Res(void) { }
+
 inline void CVariable::Set_FlowTraction(su2double *val_flowTraction) { }
 
 inline void CVariable::Add_FlowTraction(su2double *val_flowTraction) { }
@@ -902,6 +910,19 @@ inline void CFEM_ElasVariable::Set_SurfaceLoad_Res_n(void) {
 }
 
 inline su2double CFEM_ElasVariable::Get_SurfaceLoad_Res_n(unsigned short iVar) {return Residual_Ext_Surf_n[iVar];}
+
+inline void CFEM_ElasVariable::Add_BodyForces_Res(su2double *val_bodyForce) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)
+		Residual_Ext_Body[iVar] += val_bodyForce[iVar];
+}
+
+inline su2double *CFEM_ElasVariable::Get_BodyForces_Res(void) {return Residual_Ext_Body;}
+
+inline su2double CFEM_ElasVariable::Get_BodyForces_Res(unsigned short iVar) {return Residual_Ext_Body[iVar];}
+
+inline void CFEM_ElasVariable::Clear_BodyForces_Res(void) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Residual_Ext_Body[iVar] = 0.0;
+}
 
 inline void CFEM_ElasVariable::Set_FlowTraction(su2double *val_flowTraction) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)

@@ -1504,6 +1504,26 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */
+	virtual void Add_BodyForces_Res(su2double *val_bodyForce);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual su2double *Get_BodyForces_Res(void);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual su2double Get_BodyForces_Res(unsigned short iVar);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+	virtual void Clear_BodyForces_Res(void);
+
+	/*!
+	 * \brief A virtual member.
+	 */
 	virtual void Set_FlowTraction(su2double *val_flowTraction);
 
 	/*!
@@ -2687,6 +2707,26 @@ public:
 	 * \brief Get the surface load from the previous time step.
 	 */
 	su2double Get_SurfaceLoad_Res_n(unsigned short iVar);
+
+	/*!
+	 * \brief Add body forces to the residual term.
+	 */
+	void Add_BodyForces_Res(su2double *val_bodyForce);
+
+	/*!
+	 * \brief Clear the surface load residual
+	 */
+	void Clear_BodyForces_Res(void);
+
+	/*!
+	 * \brief Get the body forces.
+	 */
+	su2double *Get_BodyForces_Res(void);
+
+	/*!
+	 * \brief Get the body forces.
+	 */
+	su2double Get_BodyForces_Res(unsigned short iVar);
 
 	/*!
 	 * \brief Set the flow traction at a node on the structural side

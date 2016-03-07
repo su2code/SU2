@@ -57,6 +57,8 @@ inline void CNumerics::ViscTermInt_Linear(su2double CoordCorners[2][2], su2doubl
 
 inline void CNumerics::Compute_Mass_Matrix(CElement *element_container){ }
 
+inline void CNumerics::Compute_Dead_Load(CElement *element_container){ }
+
 inline void CNumerics::Compute_Tangent_Matrix(CElement *element_container){ }
 
 inline void CFEM_Elasticity::Compute_Tangent_Matrix(CElement *element_container){ }
