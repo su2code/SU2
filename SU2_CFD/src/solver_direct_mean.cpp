@@ -497,16 +497,24 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Initializate quantities for the mixing process span-wise*/
 
 	AverageVelocity 		= new su2double** [nMarker];
+	AverageTurboVelocity 		= new su2double** [nMarker];
+	ExtAverageTurboVelocity 		= new su2double** [nMarker];
 	AverageGridVel 		= new su2double** [nMarker];
 
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		AverageVelocity[iMarker] 	= new su2double* [nSpanWiseSections];
+		AverageTurboVelocity[iMarker] 	= new su2double* [nSpanWiseSections];
+		ExtAverageTurboVelocity[iMarker] 	= new su2double* [nSpanWiseSections];
 		AverageGridVel[iMarker] 		= new su2double* [nSpanWiseSections];
 		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 			AverageVelocity[iMarker][iSpan] 			= new su2double [nDim];
+			AverageTurboVelocity[iMarker][iSpan] 			= new su2double [nDim];
+			ExtAverageTurboVelocity[iMarker][iSpan] 			= new su2double [nDim];
 			AverageGridVel[iMarker][iSpan] 			= new su2double [nDim];
 			for (iDim = 0; iDim < nDim; iDim++) {
 				AverageVelocity[iMarker][iSpan][iDim] 		= 0.0;
+				AverageTurboVelocity[iMarker][iSpan][iDim] 		= 0.0;
+				ExtAverageTurboVelocity[iMarker][iSpan][iDim] 		= 0.0;
 				AverageGridVel[iMarker][iSpan][iDim] 		= 0.0;
 			}
 		}
@@ -528,10 +536,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 		}
 	}
 
-	AverageNormalVelocity 							= new su2double* [nMarker];
-	AverageTangVelocity 								= new su2double* [nMarker];
-	ExtAverageNormalVelocity 					= new su2double* [nMarker];
-	ExtAverageTangVelocity 						= new su2double* [nMarker];
 	SpanMassFlow														= new su2double* [nMarker];
 	SpanFlowAngle														= new su2double* [nMarker];
 	AverageEnthalpy  									= new su2double* [nMarker];
@@ -550,10 +554,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 	AverageTangMach 										= new su2double* [nMarker];
 
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-		AverageNormalVelocity[iMarker] 						= new su2double [nSpanWiseSections];
-		AverageTangVelocity[iMarker] 							= new su2double [nSpanWiseSections];
-		ExtAverageNormalVelocity[iMarker] 					= new su2double [nSpanWiseSections];
-		ExtAverageTangVelocity[iMarker] 						= new su2double [nSpanWiseSections];
 		SpanMassFlow[iMarker]														= new su2double [nSpanWiseSections];
 		SpanFlowAngle[iMarker]													= new su2double [nSpanWiseSections];
 		AverageEnthalpy[iMarker]  									= new su2double [nSpanWiseSections];
@@ -572,10 +572,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 		AverageTangMach[iMarker] 									= new su2double [nSpanWiseSections];
 
 		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++) {
-			AverageNormalVelocity[iMarker][iSpan] 									= 0.0;
-			AverageTangVelocity[iMarker][iSpan] 										= 0.0;
-			ExtAverageNormalVelocity[iMarker][iSpan] 								= 0.0;
-			ExtAverageTangVelocity[iMarker][iSpan] 									= 0.0;
 			SpanMassFlow[iMarker][iSpan]														= 0.0;
 			SpanFlowAngle[iMarker][iSpan]														= 0.0;
 			AverageEnthalpy[iMarker][iSpan]  												= 0.0;
@@ -594,7 +590,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 			AverageTangMach[iMarker][iSpan]													= 0.0;
 		}
 	}
-
 
   
   /*--- Initializate quantities for turboperformace ---*/
@@ -4879,7 +4874,7 @@ void CEulerSolver::MPITurboPerformance(CConfig *config, CGeometry *geometry){
 					avgGridVel2In= 0.0;
 					avgVel2In= 0.0;
 					for (iDim = 0; iDim < nDim; iDim++){
-						if(AverageTangVelocity[iMarker][0] >= 0.0){
+						if(AverageTurboVelocity[iMarker][0][1] >= 0.0){
 							avgVelRel2In +=( AverageVelocity[iMarker][0][iDim] - geometry->GetAverageGridVel(iMarker, 0)[iDim])*( AverageVelocity[iMarker][0][iDim] - geometry->GetAverageGridVel(iMarker, 0)[iDim]);
 						}
 						else{
@@ -4960,7 +4955,7 @@ void CEulerSolver::MPITurboPerformance(CConfig *config, CGeometry *geometry){
 					avgGridVel2Out = 0.0;
 					avgVel2Out = 0.0;
 					for (iDim = 0; iDim < nDim; iDim++){
-						if(AverageTangVelocity[iMarker][0] >= 0.0){
+						if(AverageTurboVelocity[iMarker][0][1]  >= 0.0){
 							avgVelRel2Out +=( AverageVelocity[iMarker][0][iDim] + geometry->GetAverageGridVel(iMarker, 0)[iDim])*( AverageVelocity[iMarker][0][iDim] + geometry->GetAverageGridVel(iMarker, 0)[iDim]);
 						}
 						else{
@@ -8656,7 +8651,7 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CConfig *config, u
   su2double val_init_pressure;
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool grid_movement        = config->GetGrid_Movement();
-  su2double TotalDensity, TotalPressure, *TotalVelocity, *AverageTurboNormal, *AverageNormal, AverageTangGridVelocity, *AverageTurboVelocity, avgVel2,
+  su2double TotalDensity, TotalPressure, *TotalVelocity, *AverageTurboNormal, *AverageNormal, AverageTangGridVelocity, avgVel2,
 						avgTotalEnthaply, *TotalFluxes, AverageTangRotVel, RelTangVelocity;
 
   int rank = MASTER_NODE;
@@ -8667,7 +8662,6 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CConfig *config, u
   TotalVelocity 				= new su2double[nDim];
   TotalAreaVelocity 		= new su2double[nDim];
   TotalFluxes 					= new su2double[nVar];
-  AverageTurboVelocity 	= new su2double[nDim];
 
   unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
 
@@ -8872,11 +8866,9 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CConfig *config, u
 						AverageSoundSpeed[iMarker][iSpan]					= FluidModel->GetSoundSpeed();
 						AverageEntropy[iMarker][iSpan] 						= FluidModel->GetEntropy();
 
-						ComputeTurboVelocity(AverageVelocity[iMarker][iSpan], AverageTurboNormal , AverageTurboVelocity, marker_flag);
-						AverageNormalVelocity[iMarker][iSpan]			= AverageTurboVelocity[0];
-						AverageTangVelocity[iMarker][iSpan]				= AverageTurboVelocity[1];
-						SpanMassFlow[iMarker][iSpan]							= AverageDensity[iMarker][iSpan]*AverageNormalVelocity[iMarker][iSpan]*TotalArea;
-						SpanFlowAngle[iMarker][iSpan]							= atan(AverageTangVelocity[iMarker][iSpan]/AverageNormalVelocity[iMarker][iSpan]);
+						ComputeTurboVelocity(AverageVelocity[iMarker][iSpan], AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag);
+						SpanMassFlow[iMarker][iSpan]							= AverageDensity[iMarker][iSpan]*AverageTurboVelocity[iMarker][iSpan][0]*TotalArea;
+						SpanFlowAngle[iMarker][iSpan]							= atan(AverageTurboVelocity[iMarker][iSpan][1]/AverageTurboVelocity[iMarker][iSpan][0]);
 
 						/* --- compute total averaged quantities ---*/
 						avgVel2 = 0.0;
@@ -8888,16 +8880,16 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CConfig *config, u
 
 						if(grid_movement){
 							AverageTangGridVelocity = geometry->GetAverageTangGridVel(iMarker,iSpan);
-							if((marker_flag == INFLOW && AverageTangVelocity[iMarker][iSpan] >= 0.0) || (marker_flag == OUTFLOW && AverageTangVelocity[iMarker][iSpan] < 0.0)){
-								RelTangVelocity = (AverageTangVelocity[iMarker][iSpan] - AverageTangGridVelocity);
+							if((marker_flag == INFLOW && AverageTurboVelocity[iMarker][iSpan][1] >= 0.0) || (marker_flag == OUTFLOW && AverageTurboVelocity[iMarker][iSpan][1] < 0.0)){
+								RelTangVelocity = (AverageTurboVelocity[iMarker][iSpan][1] - AverageTangGridVelocity);
 							}
 							else{
-								RelTangVelocity = (AverageTangVelocity[iMarker][iSpan] + AverageTangGridVelocity);
+								RelTangVelocity = (AverageTurboVelocity[iMarker][iSpan][1] + AverageTangGridVelocity);
 							}
-							AverageMach[iMarker][iSpan] = sqrt(AverageNormalVelocity[iMarker][iSpan]*AverageNormalVelocity[iMarker][iSpan] + RelTangVelocity*RelTangVelocity);
+							AverageMach[iMarker][iSpan] = sqrt(AverageTurboVelocity[iMarker][iSpan][0]*AverageTurboVelocity[iMarker][iSpan][0] + RelTangVelocity*RelTangVelocity);
 							AverageMach[iMarker][iSpan] /= AverageSoundSpeed[iMarker][iSpan];
 							AverageTangMach[iMarker][iSpan] = (RelTangVelocity)/AverageSoundSpeed[iMarker][iSpan];
-//							SpanFlowAngle[iMarker][iSpan]= atan((RelTangVelocity)/AverageNormalVelocity[iMarker][iSpan]);
+//							SpanFlowAngle[iMarker][iSpan]= atan((RelTangVelocity)/AverageTurboVelocity[iMarker][iSpan][0]);
 
 						}else{
 							AverageMach[iMarker][iSpan] = 0.0;
@@ -8905,11 +8897,11 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CConfig *config, u
 								AverageMach[iMarker][iSpan] += AverageVelocity[iMarker][iSpan][iDim]*AverageVelocity[iMarker][iSpan][iDim];
 							}
 							AverageMach[iMarker][iSpan] = sqrt(AverageMach[iMarker][iSpan])/AverageSoundSpeed[iMarker][iSpan];
-							AverageTangMach[iMarker][iSpan] = AverageTangVelocity[iMarker][iSpan]/AverageSoundSpeed[iMarker][iSpan];
+							AverageTangMach[iMarker][iSpan] = AverageTurboVelocity[iMarker][iSpan][1]/AverageSoundSpeed[iMarker][iSpan];
 
 						}
 
-						AverageNormalMach[iMarker][iSpan] = AverageNormalVelocity[iMarker][iSpan]/AverageSoundSpeed[iMarker][iSpan];
+						AverageNormalMach[iMarker][iSpan] = AverageTurboVelocity[iMarker][iSpan][0]/AverageSoundSpeed[iMarker][iSpan];
 //						cout<<" Avg Density Span "<< AverageDensity[iMarker][iSpan]<<endl;
 //						cout<<" Avg Pressure Span "<< AveragePressure[iMarker][iSpan]<<endl;
 //						cout<<" Avg  x Velocity Span "<< AverageVelocity[iMarker][iSpan][0]<<endl;
@@ -8941,7 +8933,6 @@ void CEulerSolver::MPISpanMixing_Process(CGeometry *geometry, CConfig *config, u
   delete [] TotalVelocity;
   delete [] TotalAreaVelocity;
   delete [] TotalFluxes;
-  delete [] AverageTurboVelocity;
 }
 
 
@@ -9108,8 +9099,8 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 								TangVelocity    = turboVelocity[1];
 
 								deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
-								deltaprim[1] = turboVelocity[0] - AverageNormalVelocity[iMarker][iSpan];
-								deltaprim[2] = turboVelocity[1] - AverageTangVelocity[iMarker][iSpan];
+								deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[iMarker][iSpan][0];
+								deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[iMarker][iSpan][1];
 								deltaprim[3] = Pressure_i - AveragePressure[iMarker][iSpan];
 								conv_numerics->GetCharJump(AverageSoundSpeed[iMarker][iSpan], AverageDensity[iMarker][iSpan], deltaprim, cj);
 
@@ -9415,12 +9406,12 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 
       /* --- Computes the inverse matrix R_c --- */
-  		ComputeResJacobianNRBC(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan], AverageNormalVelocity[val_marker][iSpan], AverageTangVelocity[val_marker][iSpan], alphaIn_BC, R_c, R_c_inv);
+  		ComputeResJacobianNRBC(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan], AverageTurboVelocity[val_marker][iSpan][0], AverageTurboVelocity[val_marker][iSpan][1], alphaIn_BC, R_c, R_c_inv);
   		avgVel2 = 0.0;
   		for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AverageVelocity[val_marker][iSpan][iDim]*AverageVelocity[val_marker][iSpan][iDim];
   		if (nDim == 2){
   			R[0] = -(AverageEntropy[val_marker][iSpan] - Entropy_BC);
-  			R[1] = -(AverageTangVelocity[val_marker][iSpan] - tan(alphaIn_BC)*AverageNormalVelocity[val_marker][iSpan]);
+  			R[1] = -(AverageTurboVelocity[val_marker][iSpan][1] - tan(alphaIn_BC)*AverageTurboVelocity[val_marker][iSpan][0]);
   			R[2] = -(AverageEnthalpy[val_marker][iSpan] + 0.5*avgVel2 - Enthalpy_BC);
   		}
   		/* --- Compute the avg component  c_avg = R_c^-1 * R --- */
@@ -9493,8 +9484,8 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 			NormalVelocity	= turboVelocity[0];
 			TangVelocity		= turboVelocity[1];
 			deltaprim[0] = Density_i - AverageDensity[val_marker][iSpan];
-			deltaprim[1] = turboVelocity[0] - AverageNormalVelocity[val_marker][iSpan];
-			deltaprim[2] = turboVelocity[1] - AverageTangVelocity[val_marker][iSpan];
+			deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[val_marker][iSpan][0];
+			deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[val_marker][iSpan][1];
 			deltaprim[3] = Pressure_i - AveragePressure[val_marker][iSpan];
 			conv_numerics->GetCharJump(AverageSoundSpeed[val_marker][iSpan], AverageDensity[val_marker][iSpan], deltaprim, cj);
 
@@ -9508,7 +9499,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 				case TOTAL_CONDITIONS_PT:
 
 					if (AvgMach < 1.000){
-						if (AverageTangVelocity[val_marker][iSpan] >= 0.0){
+						if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
 							Beta_inf= I*sqrt(1.0  - pow(AvgMach,2));
 						}else{
 							Beta_inf= -I*sqrt(1.0 - pow(AvgMach,2));
@@ -9524,7 +9515,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 						dcjs[1]		= c2js_Re - cj[1];
 					}else{
-						if (AverageTangVelocity[val_marker][iSpan] >= 0.0){
+						if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
 							Beta_inf2= -sqrt(pow(AvgMach,2)- 1.0);
 						}else{
 							Beta_inf2= sqrt(pow(AvgMach,2)-1.0);
@@ -9616,7 +9607,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 					/* --- implementation of supersonic NRBC ---*/
 					if (AvgMach >= 1.000){
-						if (AverageTangVelocity[val_marker][iSpan] >= 0.0){
+						if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
 							GilesBeta= -sqrt(pow(AvgMach,2)-1.0);
 						}else{
 							GilesBeta= sqrt(pow(AvgMach,2)-1.0);
@@ -9624,7 +9615,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 						c4js_Re= (2.0 * AverageNormalMach[val_marker][iSpan])/(GilesBeta - AverageTangMach[val_marker][iSpan])*cj[1] - (GilesBeta+AverageTangMach[val_marker][iSpan])/(GilesBeta-AverageTangMach[val_marker][iSpan])*cj[2];
 						dcjs[3] = c4js_Re - cj[3];
 					}else{
-						if (AverageTangVelocity[val_marker][iSpan] >= 0.0){
+						if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
 							Beta_inf= I*sqrt(1.0  - pow(AvgMach,2));
 						}else{
 							Beta_inf= -I*sqrt(1.0 - pow(AvgMach,2));
@@ -9688,8 +9679,8 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 			Lambda_i[nVar-1] = ProjVelocity_i - SoundSpeed_i;
 
 			/*--- retrieve boundary variables ---*/
-			turboVelocity[0] = AverageNormalVelocity[val_marker][iSpan] + deltaprim[1];
-			turboVelocity[1] = AverageTangVelocity[val_marker][iSpan] + deltaprim[2];
+			turboVelocity[0] = AverageTurboVelocity[val_marker][iSpan][0] + deltaprim[1];
+			turboVelocity[1] = AverageTurboVelocity[val_marker][iSpan][1] + deltaprim[2];
 			Density_b = AverageDensity[val_marker][iSpan] + deltaprim[0];
 			Pressure_b = AveragePressure[val_marker][iSpan] + deltaprim[3];
 			ComputeBackVelocity(turboVelocity, turboNormal, Velocity_b, config->GetMarker_All_TurboPerformanceFlag(val_marker));
@@ -13452,16 +13443,24 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Initializate quantities for the mixing process span-wise*/
 
 	AverageVelocity 		= new su2double** [nMarker];
+	AverageTurboVelocity 		= new su2double** [nMarker];
+	ExtAverageTurboVelocity 		= new su2double** [nMarker];
 	AverageGridVel 		= new su2double** [nMarker];
 
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 		AverageVelocity[iMarker] 	= new su2double* [nSpanWiseSections];
+		AverageTurboVelocity[iMarker] 	= new su2double* [nSpanWiseSections];
+		ExtAverageTurboVelocity[iMarker] 	= new su2double* [nSpanWiseSections];
 		AverageGridVel[iMarker] 		= new su2double* [nSpanWiseSections];
 		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 			AverageVelocity[iMarker][iSpan] 			= new su2double [nDim];
+			AverageTurboVelocity[iMarker][iSpan] 			= new su2double [nDim];
+			ExtAverageTurboVelocity[iMarker][iSpan] 			= new su2double [nDim];
 			AverageGridVel[iMarker][iSpan] 			= new su2double [nDim];
 			for (iDim = 0; iDim < nDim; iDim++) {
 				AverageVelocity[iMarker][iSpan][iDim] 		= 0.0;
+				AverageTurboVelocity[iMarker][iSpan][iDim] 		= 0.0;
+				ExtAverageTurboVelocity[iMarker][iSpan][iDim] 		= 0.0;
 				AverageGridVel[iMarker][iSpan][iDim] 		= 0.0;
 			}
 		}
@@ -13483,10 +13482,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 	  }
 	}
 
-	AverageNormalVelocity 							= new su2double* [nMarker];
-	AverageTangVelocity 								= new su2double* [nMarker];
-	ExtAverageNormalVelocity 					= new su2double* [nMarker];
-	ExtAverageTangVelocity 						= new su2double* [nMarker];
 	SpanMassFlow														= new su2double* [nMarker];
 	SpanFlowAngle														= new su2double* [nMarker];
 	AverageEnthalpy  									= new su2double* [nMarker];
@@ -13505,10 +13500,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 	AverageTangMach 										= new su2double* [nMarker];
 
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-		AverageNormalVelocity[iMarker] 						= new su2double [nSpanWiseSections];
-		AverageTangVelocity[iMarker] 							= new su2double [nSpanWiseSections];
-		ExtAverageNormalVelocity[iMarker] 					= new su2double [nSpanWiseSections];
-		ExtAverageTangVelocity[iMarker] 						= new su2double [nSpanWiseSections];
 		SpanMassFlow[iMarker]														= new su2double [nSpanWiseSections];
 		SpanFlowAngle[iMarker]													= new su2double [nSpanWiseSections];
 		AverageEnthalpy[iMarker]  									= new su2double [nSpanWiseSections];
@@ -13525,11 +13516,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 		AverageMach[iMarker] 											= new su2double [nSpanWiseSections];
 		AverageNormalMach[iMarker] 								= new su2double [nSpanWiseSections];
 		AverageTangMach[iMarker] 									= new su2double [nSpanWiseSections];
+
 		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++) {
-			AverageNormalVelocity[iMarker][iSpan] 									= 0.0;
-			AverageTangVelocity[iMarker][iSpan] 										= 0.0;
-			ExtAverageNormalVelocity[iMarker][iSpan] 								= 0.0;
-			ExtAverageTangVelocity[iMarker][iSpan] 									= 0.0;
 			SpanMassFlow[iMarker][iSpan]														= 0.0;
 			SpanFlowAngle[iMarker][iSpan]														= 0.0;
 			AverageEnthalpy[iMarker][iSpan]  												= 0.0;
