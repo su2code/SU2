@@ -14,7 +14,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -482,7 +482,7 @@ def findiff( config, state=None, step=1e-4 ):
     konfig = copy.deepcopy(config)
 
     # check deformation setup
-    n_dv = len(Definition_DV['KIND'])
+    n_dv = sum(Definition_DV['SIZE'])
     deform_set = konfig['DV_KIND'] == Definition_DV['KIND']
     if not deform_set: 
         dvs_base = [0.0] * n_dv
@@ -777,7 +777,7 @@ def directdiff( config, state=None ):
     # local config
     konfig = copy.deepcopy(config)
 
-    n_dv = len(Definition_DV['KIND'])
+    n_dv = sum(Definition_DV['SIZE'])
 
     # initialize gradients
     func_keys = su2io.grad_names_map.keys()

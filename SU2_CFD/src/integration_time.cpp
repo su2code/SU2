@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -933,7 +933,6 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ***geometry, CSolver
   /*--- Convergence strategy ---*/
   Convergence_Monitoring(geometry[iZone][MESH_0], config[iZone], Iteration, monitor, MESH_0);
 
-
 }
 
 void CStructuralIntegration::Structural_Iteration_FEM(CGeometry ***geometry, CSolver ****solver_container,
@@ -941,7 +940,6 @@ void CStructuralIntegration::Structural_Iteration_FEM(CGeometry ***geometry, CSo
 //  su2double monitor = 0.0;
 
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
-
 
   /*--- Preprocessing ---*/
 
@@ -952,7 +950,6 @@ void CStructuralIntegration::Structural_Iteration_FEM(CGeometry ***geometry, CSo
 
   Space_Integration_FEM(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][SolContainer_Position],
                     config[iZone], RunTime_EqSystem, Iteration);
-
 
   /*--- Time integration ---*/
 
@@ -970,6 +967,5 @@ void CStructuralIntegration::Structural_Iteration_FEM(CGeometry ***geometry, CSo
 
   /*--- Convergence strategy ---*/
   Convergence_Monitoring_FEM(geometry[iZone][MESH_0], config[iZone], solver_container[iZone][MESH_0][SolContainer_Position], Iteration);
-
 
 }

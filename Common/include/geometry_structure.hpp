@@ -14,7 +14,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -134,9 +134,14 @@ public:
 	CPrimalGrid*** newBound;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
 	unsigned long *nNewElem_Bound;			/*!< \brief Number of new periodic elements of the boundary. */
 
-  //--------Parmetis variables-----
-  unsigned long * adjacency;
-  unsigned long * xadj;
+  
+  /*--- Partitioning-specific variables ---*/
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  idx_t * adjacency;
+  idx_t * xadj;
+#endif
+#endif
   unsigned long local_node;
   unsigned long local_elem;
   unsigned long xadj_size;
@@ -912,11 +917,11 @@ public:
 class CPhysicalGeometry : public CGeometry {
 
   long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
-	long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
-	unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
-	unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
-    unsigned long *adj_counter; /*!< \brief Adjacency counter. */
-    unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
+  long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
+  unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
+  unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
+  unsigned long *adj_counter; /*!< \brief Adjacency counter. */
+  unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
   su2double* Sensitivity; /*! <\brief Vector holding the sensitivities at each point. */
 
 public:
