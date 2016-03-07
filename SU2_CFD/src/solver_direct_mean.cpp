@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -106,7 +106,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   string filename = config->GetSolution_FlowFileName();
   
   unsigned short direct_diff = config->GetDirectDiff();
@@ -3126,7 +3126,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 #endif
   
   unsigned long ExtIter = config->GetExtIter();
-  bool adjoint          = config->GetAdjoint();
+  bool adjoint          = config->GetContinuous_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool second_order     = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
@@ -4735,7 +4735,7 @@ void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_co
   unsigned long iPoint;
   
   su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
@@ -4778,7 +4778,7 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned short iVar;
   unsigned long iPoint;
   
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
@@ -4821,7 +4821,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned long iPoint, total_index, IterLinSol = 0;
   su2double Delta, *local_Res_TruncError, Vol;
   
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
   
   /*--- Set maximum residual to zero ---*/
@@ -11955,7 +11955,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   string filename = config->GetSolution_FlowFileName();
   
   unsigned short direct_diff = config->GetDirectDiff();
@@ -12733,7 +12733,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 #endif
   
   unsigned long ExtIter     = config->GetExtIter();
-  bool adjoint              = config->GetAdjoint();
+  bool adjoint              = config->GetContinuous_Adjoint();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool center               = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;

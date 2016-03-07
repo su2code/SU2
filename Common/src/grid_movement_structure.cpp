@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1965,7 +1965,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry *geometry, CConfig *config,
 	su2double dtheta, dphi, dpsi, cosTheta, sinTheta;
 	su2double cosPhi, sinPhi, cosPsi, sinPsi;
 	bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-	bool adjoint = config->GetAdjoint();
+	bool adjoint = config->GetContinuous_Adjoint();
 
 	/*--- Problem dimension and physical time step ---*/
 	nDim = geometry->GetnDim();
@@ -2138,7 +2138,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   unsigned short nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND(); 
@@ -2297,7 +2297,7 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry *geometry, CConfig *config, u
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -2439,7 +2439,7 @@ void CVolumetricMovement::Rigid_Translation(CGeometry *geometry, CConfig *config
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   bool time_spectral = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
 	
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND();
@@ -3084,22 +3084,24 @@ void CSurfaceMovement::SetSurface_Derivative(CGeometry *geometry, CConfig *confi
 
   su2double DV_Value = 0.0;
 
-  unsigned short iDV = 0;
+  unsigned short iDV = 0, iDV_Value = 0;
 
   for (iDV = 0; iDV < config->GetnDV(); iDV++){
+    for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++){
 
-    DV_Value = config->GetDV_Value(iDV);
+      DV_Value = config->GetDV_Value(iDV, iDV_Value);
 
-    /*--- If value of the design variable is not 0.0 we apply the differentation.
+      /*--- If value of the design variable is not 0.0 we apply the differentation.
      *     Note if multiple variables are non-zero, we end up with the sum of all the derivatives. ---*/
 
-    if (DV_Value != 0.0){
+      if (DV_Value != 0.0){
 
-      DV_Value = 0.0;
+        DV_Value = 0.0;
 
-      SU2_TYPE::SetDerivative(DV_Value, 1.0);
+        SU2_TYPE::SetDerivative(DV_Value, 1.0);
 
-      config->SetDV_Value(iDV, DV_Value);
+        config->SetDV_Value(iDV, iDV_Value, DV_Value);
+      }
     }
   }
 
@@ -3663,7 +3665,7 @@ void CSurfaceMovement::SetCartesianCoord(CGeometry *geometry, CConfig *config, C
       Diff = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++) {
 				VarCoord[iDim] = CartCoordNew[iDim] - CartCoordOld[iDim];
-        if ((fabs(VarCoord[iDim]) <= EPS) && (config->GetDirectDiff() != D_DESIGN) && (!config->GetDiscrete_Adjoint()))
+        if ((fabs(VarCoord[iDim]) <= EPS) && (config->GetDirectDiff() != D_DESIGN) && (!config->GetAD_Mode()))
           VarCoord[iDim] = 0.0;
         Diff += (VarCoord[iDim]*VarCoord[iDim]);
 			}
@@ -3707,12 +3709,25 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
   if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
     
     /*--- Compute deformation ---*/
-    
-    Ampl = config->GetDV_Value(iDV);
-    
-    movement[0] = config->GetParamDV(iDV, 3)*Ampl;
-    movement[1] = config->GetParamDV(iDV, 4)*Ampl;
-    movement[2] = 0.0;
+
+    /*--- If we have only design value, than this value is the amplitude,
+     * otherwise we have a general movement. ---*/
+
+    if (config->GetnDV_Value(iDV) == 1){
+
+      Ampl = config->GetDV_Value(iDV);
+
+      movement[0] = config->GetParamDV(iDV, 3)*Ampl;
+      movement[1] = config->GetParamDV(iDV, 4)*Ampl;
+      movement[2] = 0.0;
+
+    } else {
+
+      movement[0] = config->GetDV_Value(iDV, 0);
+      movement[1] = config->GetDV_Value(iDV, 1);
+      movement[2] = 0.0;
+
+    }
     
     index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
     index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
@@ -3810,12 +3825,25 @@ void CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
 	if (design_FFDBox.compare(FFDBox->GetTag()) == 0) {
     
     /*--- Compute deformation ---*/
-    
-		Ampl = config->GetDV_Value(iDV);
 
-    movement[0] = config->GetParamDV(iDV, 4)*Ampl;
-		movement[1] = config->GetParamDV(iDV, 5)*Ampl;
-		movement[2] = config->GetParamDV(iDV, 6)*Ampl;
+    /*--- If we have only design value, than this value is the amplitude,
+     * otherwise we have a general movement. ---*/
+
+    if (config->GetnDV_Value(iDV) == 1) {
+
+      Ampl = config->GetDV_Value(iDV);
+
+      movement[0] = config->GetParamDV(iDV, 4)*Ampl;
+      movement[1] = config->GetParamDV(iDV, 5)*Ampl;
+      movement[2] = config->GetParamDV(iDV, 6)*Ampl;
+
+    } else {
+
+      movement[0] = config->GetDV_Value(iDV, 0);
+      movement[1] = config->GetDV_Value(iDV, 1);
+      movement[2] = config->GetDV_Value(iDV, 2);
+
+    }
 
     index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
     index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
@@ -4429,13 +4457,16 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
         
         Normal[0] = Normal_[0]*ValCos - Normal_[1]*ValSin;
         Normal[1] = Normal_[1]*ValCos + Normal_[0]*ValSin;
-        
+
         /*--- Bump computation ---*/
         
 				if (double_surface) {
-					ek = log10(0.5)/log10(xk);
-					fk = pow( sin( PI_NUMBER * pow(Coord[0], ek) ) , t2);
-          
+          ek = log10(0.5)/log10(xk);
+          if (Coord[0] > 10*EPS)
+            fk = pow( sin( PI_NUMBER * pow(Coord[0], ek) ), t2);
+          else
+            fk = 0.0;
+
 					/*--- Upper and lower surface ---*/
           
 					if (( upper) && (Normal[1] > 0)) { VarCoord[1] =  Ampl*fk; }
@@ -4444,8 +4475,11 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 				}
 				else {
 					xCoord = Coord[0] - BumpLoc;
-					ek = log10(0.5)/log10(xk/BumpSize);
-					fk = pow( sin( PI_NUMBER * pow(xCoord/BumpSize, ek)), t2);
+          ek = log10(0.5)/log10((xk+EPS)/BumpSize);
+          if (Coord[0] > 10*EPS)
+            fk = pow( sin( PI_NUMBER * pow(xCoord/BumpSize, ek)), t2);
+          else
+            fk = 0.0;
 
 					/*--- Only one surface ---*/
           
@@ -5395,7 +5429,7 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry *geometry, CConfig *confi
   su2double Omega[3], Ampl[3];
   su2double DEG2RAD = PI_NUMBER/180.0;
   int rank;
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
     
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -5498,7 +5532,7 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   string motion_filename, UnstExt, text_line;
   ifstream motion_file;
   bool unsteady = config->GetUnsteady_Simulation();
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   
 	/*--- Load stuff from config ---*/
   

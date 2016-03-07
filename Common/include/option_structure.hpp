@@ -17,7 +17,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1858,19 +1858,19 @@ public:
 
 class COptionMathProblem : public COptionBase{
   string name; // identifier for the option
-  bool & adjoint;
-  bool & restart;
+  bool & cont_adjoint;
+  bool cont_adjoint_def;
   bool & disc_adjoint;
-  bool adjoint_def;
-  bool restart_def;
   bool disc_adjoint_def;
+  bool & restart;
+  bool restart_def;
 
 public:
-  COptionMathProblem(string option_field_name, bool & adjoint_field, bool adjoint_default, bool & restart_field, bool restart_default, bool & disc_adjoint_field, bool disc_adjoint_default) : adjoint(adjoint_field), restart(restart_field), disc_adjoint(disc_adjoint_field){
+  COptionMathProblem(string option_field_name, bool & cont_adjoint_field, bool cont_adjoint_default, bool & disc_adjoint_field, bool disc_adjoint_default, bool & restart_field, bool restart_default) : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field){
     this->name = option_field_name;
-    this->adjoint_def = adjoint_default;
-    this->restart_def = restart_default;
+    this->cont_adjoint_def = cont_adjoint_default;
     this->disc_adjoint_def = disc_adjoint_default;
+    this->restart_def = restart_default;
   }
 
   ~COptionMathProblem() {};
@@ -1886,31 +1886,32 @@ public:
       return badValue(option_value, "math problem", this->name);
     }
     if (option_value[0] == "DIRECT") {
-      this->adjoint = false;
-      this->restart = false;
+      this->cont_adjoint = false;
       this->disc_adjoint = false;
+      this->restart = false;
       return "";
     }
     if (option_value[0] == "CONTINUOUS_ADJOINT") {
-      this->adjoint= true;
-      this->restart= true;
+      this->cont_adjoint= true;
       this->disc_adjoint = false;
+      this->restart= true;
       return "";
     }
     if (option_value[0] == "DISCRETE_ADJOINT"){
       this->disc_adjoint = true;
+      this->cont_adjoint= false;
       this->restart = true;
-      this->adjoint= false;
       return "";
     }
     return "option in math problem map not considered in constructor";
   }
 
   void SetDefault() {
-    this->adjoint = this->adjoint_def;
-    this->restart = this->restart_def;
+    this->cont_adjoint = this->cont_adjoint_def;
     this->disc_adjoint = this->disc_adjoint_def;
+    this->restart = this->restart_def;
   }
+  
 };
 
 class COptionDVParam : public COptionBase{
@@ -2052,6 +2053,106 @@ public:
     this->nDV = 0;
     this->paramDV = NULL;
     this->FFDTag = NULL;
+    // Don't mess with the Design_Variable because it's an input, not modified
+  }
+};
+
+class COptionDVValue : public COptionBase{
+  string name; // identifier for the option
+  unsigned short* & nDV_Value;
+  su2double ** & valueDV;
+  unsigned short & nDV;
+  su2double ** & paramDV;
+  unsigned short* & design_variable;
+
+public:
+  COptionDVValue(string option_field_name, unsigned short* & nDVValue_field, su2double** & valueDV_field, unsigned short & nDV_field,  su2double** & paramDV_field, unsigned short * & design_variable_field) : nDV_Value(nDVValue_field), valueDV(valueDV_field), nDV(nDV_field), paramDV(paramDV_field), design_variable(design_variable_field) {
+    this->name = option_field_name;
+  }
+
+  ~COptionDVValue() {};
+
+  string SetValue(vector<string> option_value) {
+    if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->nDV_Value = NULL;
+      return "";
+    }
+
+    if ( (this->nDV > 0) && (this->design_variable == NULL) ) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": Design_Variable array has not been allocated. Check that DV_KIND appears before DV_VALUE in configuration file.");
+      return newstring;
+    }
+    if ( (this->nDV > 0) && (this->paramDV == NULL) ) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": Design_Parameter array has not been allocated. Check that DV_PARAM appears before DV_VALUE in configuration file.");
+      return newstring;
+    }
+
+    this->valueDV = new su2double*[this->nDV];
+    this->nDV_Value = new unsigned short[this->nDV];
+
+    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
+      this->valueDV[iDV] = new su2double[3];
+    }
+
+    unsigned short nValueDV = 0;
+    unsigned short totalnValueDV = 0;
+    stringstream ss;
+    unsigned int i = 0;
+    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
+      switch (this->design_variable[iDV]) {
+        case FFD_CONTROL_POINT:
+          if((this->paramDV[iDV][4] == 0) &&
+             (this->paramDV[iDV][5] == 0) &&
+             (this->paramDV[iDV][6] == 0)) {
+            nValueDV = 3;
+          } else {
+            nValueDV = 1;
+          }
+          break;
+        case FFD_CONTROL_POINT_2D:
+          if((this->paramDV[iDV][3] == 0) &&
+             (this->paramDV[iDV][4] == 0)) {
+            nValueDV = 2;
+          } else {
+            nValueDV = 1;
+          }
+          break;
+        default :
+          nValueDV = 1;
+      }
+
+      this->nDV_Value[iDV] = nValueDV;
+
+      totalnValueDV += nValueDV;
+
+      for (unsigned short iValueDV = 0; iValueDV < nValueDV; iValueDV++) {
+
+        ss << option_value[i] << " ";
+
+        ss >> this->valueDV[iDV][iValueDV];
+
+        i++;
+      }
+    }
+
+    if (i != totalnValueDV){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": a design variable in the configuration file has the wrong number of values");
+      return newstring;
+    }
+
+    // Need to return something...
+    return "";
+  }
+
+  void SetDefault() {
+    this->nDV_Value = 0;
+    this->valueDV = NULL;
     // Don't mess with the Design_Variable because it's an input, not modified
   }
 };
