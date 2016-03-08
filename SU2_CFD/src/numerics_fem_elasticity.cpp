@@ -40,7 +40,8 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 	Rho_s = config->GetMaterialDensity();
 	Mu = E / (2.0*(1.0 + Nu));
 	Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-	Kappa = config->GetBulk_Modulus_Struct();
+	Kappa = Lambda + (2/3)*Mu;
+	//Kappa = config->GetBulk_Modulus_Struct();
 
 	// Auxiliary vector for body forces (dead load)
 	if (body_forces) FAux_Dead_Load = new su2double [nDim]; else FAux_Dead_Load = NULL;
