@@ -91,6 +91,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	bool fsi = config->GetFSI_Simulation();												// FSI simulation
 	bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);	// Generalized alpha method requires residual at previous time step.
 
+	bool de_effects = config->GetDE_Effects();											// Test whether we consider dielectric elastomers
+
 	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
 
 	int rank = MASTER_NODE;
@@ -438,9 +440,10 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	LinSysReact.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
 	/*--- Here is where we assign the kind of each element ---*/
+	/*--- If DE effects considered, we need the P1 component to subintegrate the electric stress ---*/
 
 	if (nDim == 2){
-		if (incompressible){
+		if (incompressible || de_effects){
 			element_container[EL_TRIA] = new CTRIA1(nDim, config);
 			element_container[EL_QUAD] = new CQUAD4P1(nDim, config);
 		}
@@ -450,7 +453,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 		}
 	}
 	else if (nDim == 3){
-		if (incompressible){
+		if (incompressible || de_effects){
 			element_container[EL_TETRA] = new CTETRA1(nDim, config);
 			element_container[EL_HEXA] = new CHEXA8P1(nDim, config);
 		}
@@ -1192,6 +1195,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 	unsigned short NelNodes, jNode;
 
 	bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
+	bool de_effects = config->GetDE_Effects();
 
 	/*--- Loops over all the elements ---*/
 
@@ -1222,6 +1226,8 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 		if (incompressible) numerics->Compute_MeanDilatation_Term(element_container[EL_KIND]);
 
 		numerics->Compute_Tangent_Matrix(element_container[EL_KIND]);
+
+		if (de_effects) numerics->Compute_Tangent_Matrix_DE(element_container[EL_KIND]);
 
 		NelNodes = element_container[EL_KIND]->GetnNodes();
 
@@ -1511,7 +1517,7 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 	Total_CFEA = MaxVonMises_Stress;
 
 
-  	bool outputReactions = false;
+  	bool outputReactions = true;
 
 	if (outputReactions) {
 

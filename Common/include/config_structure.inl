@@ -131,12 +131,15 @@ inline su2double CConfig::GetThermalDiffusivity(void) { return Thermal_Diffusivi
 
 inline su2double CConfig::GetElasticyMod(void) { return ElasticyMod; }
 
+inline bool CConfig::GetDE_Effects(void) { return DE_Effects; }
+
 inline su2double CConfig::GetDE_Modulus(void) { return DE_Modulus; }
+
+inline su2double CConfig::GetDE_Voltage(void) { return DE_Voltage; }
 
 inline unsigned short CConfig::GetElas2D_Formulation(void) { return Kind_2DElasForm; }
 
 inline su2double CConfig::GetPoissonRatio(void) { return PoissonRatio; }
-
 
 inline su2double CConfig::GetMaterialDensity(void) { return MaterialDensity; }
 

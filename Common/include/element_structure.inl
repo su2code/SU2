@@ -85,6 +85,8 @@ inline su2double CElement::GetGradNi_X(unsigned short iNode, unsigned short iGau
 
 inline su2double CElement::GetGradNi_x(unsigned short iNode, unsigned short iGauss, unsigned short iDim) { return GaussPoint[iGauss]->GetGradNi_xj(iNode,iDim);}
 
+inline su2double CElement::GetGradNi_X_P(unsigned short iNode, unsigned short iGaussP, unsigned short iDim) { return GaussPointP[iGaussP]->GetGradNi_Xj(iNode,iDim);}
+
 inline su2double CElement::GetGradNi_x_P(unsigned short iNode, unsigned short iGaussP, unsigned short iDim) { return GaussPointP[iGaussP]->GetGradNi_xj(iNode,iDim);}
 
 inline su2double CElement::GetNi_Extrap(unsigned short iNode, unsigned short iGauss) { return NodalExtrap[iNode][iGauss]; }

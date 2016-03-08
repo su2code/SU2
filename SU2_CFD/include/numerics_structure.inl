@@ -81,6 +81,18 @@ inline void CFEM_Elasticity::Compute_Plane_Stress_Term(CElement *element_contain
 
 inline void CFEM_NonlinearElasticity::Compute_Plane_Stress_Term(CElement *element_container) { }
 
+inline void CNumerics::Compute_Tangent_Matrix_DE(CElement *element_container) { }
+
+inline void CFEM_Elasticity::Compute_Tangent_Matrix_DE(CElement *element_container){ }
+
+inline void CNumerics::Compute_NodalStress_Term_DE(CElement *element_container) { }
+
+inline void CFEM_Elasticity::Compute_NodalStress_Term_DE(CElement *element_container){ }
+
+inline void CNumerics::Compute_Eigenproblem(CElement *element_container){ }
+
+inline void CFEM_Elasticity::Compute_Eigenproblem(CElement *element_container){ }
+
 inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container){ }
 
 inline void CFEM_Elasticity::Compute_Constitutive_Matrix(CElement *element_container){ }
