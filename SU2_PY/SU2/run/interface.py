@@ -93,7 +93,7 @@ def CFD(config):
 
         processes = konfig['NUMBER_PART']
 
-        the_Command = 'SU2_CFD_AD ' + tempname
+        the_Command = 'SU2_CFD_DIRECTDIFF ' + tempname
 
     elif auto_diff:
         tempname = 'config_CFD_AD.cfg'
