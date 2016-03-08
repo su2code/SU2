@@ -2,7 +2,7 @@
  * \file solver_adjoint_discrete.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -50,6 +50,8 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   ifstream restart_file;
   string filename, AdjExt;
   su2double dull_val;
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -166,7 +168,12 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
     /*--- Skip flow adjoint variables ---*/
     if (Kind_Solver == RUNTIME_TURB_SYS){
-      skipVars += nDim+2;
+      if (compressible){
+        skipVars += nDim + 2;
+      }
+      if (incompressible){
+        skipVars += nDim + 1;
+      }
     }
 
     /*--- The first line is the header ---*/

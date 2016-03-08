@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios, A. Bueno
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1138,6 +1138,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     ifstream restart_file;
     string filename = config->GetSolution_FlowFileName();
     su2double Density, StaticEnergy, Laminar_Viscosity, nu, nu_hat, muT = 0.0, U[5];
+
+    /*--- Modify file name for multizone problems ---*/
+    if (nZone >1)
+      filename= config->GetMultizone_FileName(filename, iZone);
     
     /*--- Modify file name for an unsteady restart ---*/
     if (dual_time) {
@@ -1150,9 +1154,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
-    if (nZone >1)
-      filename= config->GetRestart_FlowFileName(filename, iZone);
-  
+
     
     /*--- Open the restart file, throw an error if this fails. ---*/
     restart_file.open(filename.data(), ios::in);
@@ -2348,6 +2350,7 @@ void CTurbSASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+	bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
   string UnstExt, text_line;
   ifstream restart_file;
   string restart_filename = config->GetSolution_FlowFileName();
@@ -2357,7 +2360,7 @@ void CTurbSASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
 #endif
   
   /*--- Modify file name for an unsteady restart ---*/
-  if (dual_time)
+  if (dual_time|| time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
   
   /*--- Open the restart file, throw an error if this fails. ---*/
@@ -2472,7 +2475,8 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  
+	bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -2622,8 +2626,12 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     ifstream restart_file;
     string filename = config->GetSolution_FlowFileName();
     
+    /*--- Modify file name for multizone problems ---*/
+    if (nZone >1)
+      filename= config->GetMultizone_FileName(filename, iZone);
+
     /*--- Modify file name for an unsteady restart ---*/
-    if (dual_time) {
+    if (dual_time || time_stepping) {
       int Unst_RestartIter;
       if (adjoint) {
         Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - 1;
@@ -2633,9 +2641,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
       Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
-    if (nZone >1)
-      filename= config->GetRestart_FlowFileName(filename, iZone);
-  
+
     
     /*--- Open the restart file, throw an error if this fails. ---*/
     restart_file.open(filename.data(), ios::in);

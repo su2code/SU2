@@ -2,7 +2,7 @@
  * \file dual_grid_structure.inl
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -176,6 +176,16 @@ inline void CPoint::SetCoord_n1 (void) {
 		Coord_n1[iDim] = Coord_n[iDim]; 
 }
 
+inline void CPoint::SetCoord_n(su2double *val_coord) { 
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Coord_n[iDim] = val_coord[iDim]; 
+}
+
+inline void CPoint::SetCoord_n1(su2double *val_coord) { 
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Coord_n1[iDim] = val_coord[iDim]; 
+}
+
 inline void CPoint::SetCoord_p1(su2double *val_coord) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Coord_p1[iDim] = val_coord[iDim]; 
@@ -311,15 +321,29 @@ inline short CVertex::GetRotation_Type(void) { return Rotation_Type; }
 inline void CVertex::SetDonorPoint(long val_periodicpoint, long val_processor) { 
 	PeriodicPoint[0] = val_periodicpoint; 
 	PeriodicPoint[1] = val_processor; 
+	PeriodicPoint[2] = 0;
 }
+
+inline void CVertex::SetDonorPoint(long val_periodicpoint, long val_processor, long val_globalindex) { 
+	PeriodicPoint[0] = val_periodicpoint; 
+	PeriodicPoint[1] = val_processor; 
+	PeriodicPoint[2] = val_globalindex;
+}
+
 
 inline void CVertex::SetDonorElem(long val_donorelem) { Donor_Elem = val_donorelem; }
 
 inline long CVertex::GetDonorElem(void) { return Donor_Elem; }
 
+inline void CVertex::SetDonorFace(unsigned short val_donorface) { Donor_Face = val_donorface; }
+
+inline unsigned short CVertex::GetDonorFace(void) { return Donor_Face; }
+
 inline long CVertex::GetDonorPoint(void) { return PeriodicPoint[0]; }
 
 inline long CVertex::GetDonorProcessor(void) { return PeriodicPoint[1]; }
+
+inline long CVertex::GetGlobalDonorPoint(void) { return PeriodicPoint[2]; }
 
 inline void CVertex::SetBasisFunction(unsigned short val_node, su2double val_basis) { Basis_Function[val_node] = val_basis; }
 
@@ -335,6 +359,31 @@ inline void CVertex::SetZeroValues(void) {
 inline unsigned long CVertex::GetNormal_Neighbor(void) { return Normal_Neighbor; }
 
 inline void CVertex::SetNormal_Neighbor(unsigned long val_Normal_Neighbor) { Normal_Neighbor = val_Normal_Neighbor; }
+
+inline void CVertex::IncrementnDonor(void){nDonor_Points++;}
+
+inline void CVertex::SetInterpDonorPoint(unsigned short val_donorindex, long val_donorpoint) { Donor_Points[val_donorindex] = val_donorpoint; }
+
+inline long CVertex::GetInterpDonorPoint(unsigned short val_donorindex) { return Donor_Points[val_donorindex]; }
+
+inline void CVertex::SetInterpDonorProcessor(unsigned short val_donorindex, long val_donorpoint) { Donor_Proc[val_donorindex] = val_donorpoint; }
+
+inline long CVertex::GetInterpDonorProcessor(unsigned short val_donorindex) { return Donor_Proc[val_donorindex]; }
+
+inline void CVertex::SetDonorCoeff(unsigned short iDonor, su2double val){ Donor_Coeff[iDonor] = val; }
+
+inline su2double CVertex::GetDonorCoeff(unsigned short iDonor){ return Donor_Coeff[iDonor];}
+
+inline unsigned short CVertex::GetnDonorPoints(void){ return nDonor_Points;}
+
+inline void CVertex::SetnDonorPoints(unsigned short nDonor) {nDonor_Points = nDonor;}
+
+inline su2double *CVertex::GetVarRot(void) {return VarRot;}
+
+inline void CVertex::SetVarRot(su2double* val) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    VarRot[iDim] = val[iDim];
+}
 
 inline void CTurboVertex::SetTurboNormal(su2double *val_normal ){
 	unsigned short iDim;

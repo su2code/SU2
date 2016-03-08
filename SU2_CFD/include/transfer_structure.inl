@@ -1,8 +1,8 @@
 /*!
- * \file adolc_reverse_structure.hpp
- * \brief Header for adolc reverse type definition.
- * \author T. Albring
- * \version 4.0.2 "Cardinal"
+ * \file transfer_structure.inl
+ * \brief In-Line subroutines of the <i>transfer_structure.hpp</i> file.
+ * \author R. Sanchez
+ * \version 4.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,8 +12,6 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
- *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,13 +26,17 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
 
-#include <adolc/adouble.h>
-#include <adolc/interfaces.h>
-#include <adolc/taping.h>
-#include <adolc/drivers/drivers.h>
+inline void CTransfer::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
+	   	   	   	   	   	   	   	   	   	     CGeometry *donor_geometry, CGeometry *target_geometry,
+											 CConfig *donor_config, CConfig *target_config) { }
 
-#include <vector>
+inline void CTransfer::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, 
+								   	     CConfig *donor_config, unsigned long Marker_Donor, 
+										 unsigned long Vertex_Donor, unsigned long Point_Donor) { }
 
-typedef adouble su2double;
+inline void CTransfer::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
+										  CConfig *target_config, unsigned long Marker_Target,
+										  unsigned long Vertex_Target, unsigned long Point_Target) { }

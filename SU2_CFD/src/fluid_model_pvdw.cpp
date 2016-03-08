@@ -2,7 +2,7 @@
  * fluid_model_pvdw.cpp
  * \brief Source of the Polytropic Van der Waals model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -183,7 +183,7 @@ void CVanDerWaalsGas::SetTDState_hs (su2double h, su2double s ) {
 	cons_h= abs(((StaticEnergy + Pressure/Density) - h)/h);
 	cons_s= abs((Entropy-s)/s);
 
-	if (cons_h >1e-3 or cons_s >1e-3) {
+	if (cons_h >1e-3 || cons_s >1e-3) {
 		cout<< "TD consistency not verified in hs call"<< endl;
 	}
 
@@ -271,7 +271,7 @@ void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
 	cons_P= abs((Pressure -P)/P);
 	cons_s= abs((Entropy-s)/s);
 
-	if(cons_P >1e-3 or cons_s >1e-3){
+	if(cons_P >1e-3 || cons_s >1e-3){
 		cout<< "TD consistency not verified in hs call"<< endl;
 	}
 

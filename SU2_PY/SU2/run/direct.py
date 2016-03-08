@@ -3,7 +3,7 @@
 ## \file direct.py
 #  \brief python package for running direct solutions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.0.2 "Cardinal"
+#  \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -80,8 +80,13 @@ def direct ( config ):
     # Run Solution
     SU2_CFD(konfig)
     
+    # multizone cases
+    multizone_cases = su2io.get_multizone(konfig)
+
     # merge
-    konfig['SOLUTION_FLOW_FILENAME'] = konfig['RESTART_FLOW_FILENAME'] 
+    konfig['SOLUTION_FLOW_FILENAME'] = konfig['RESTART_FLOW_FILENAME']
+    if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
+        konfig['SOLUTION_STRUCTURE_FILENAME'] = konfig['RESTART_STRUCTURE_FILENAME']
     su2merge(konfig)
     
     # filenames

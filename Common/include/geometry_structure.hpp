@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -65,7 +65,7 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CGeometry {
 protected:
@@ -143,9 +143,14 @@ public:
 	CPrimalGrid*** newBound;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
 	unsigned long *nNewElem_Bound;			/*!< \brief Number of new periodic elements of the boundary. */
 
-  //--------Parmetis variables-----
-  unsigned long * adjacency;
-  unsigned long * xadj;
+  
+  /*--- Partitioning-specific variables ---*/
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  idx_t * adjacency;
+  idx_t * xadj;
+#endif
+#endif
   unsigned long local_node;
   unsigned long local_elem;
   unsigned long xadj_size;
@@ -655,6 +660,12 @@ public:
 	 */
   virtual void Set_MPI_GridVel(CConfig *config);
   
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual void Set_MPI_OldCoord(CConfig *config);
+
 	/*!
 	 * \brief A virtual member.
    * \param[in] geometry - Geometry of the fine mesh.
@@ -918,6 +929,11 @@ public:
                                  su2double vert0[3], su2double vert1[3], su2double vert2[3]);
 
   /*!
+   * \brief Segment Intersects Line (for 2D FFD Intersection)
+   */
+  bool SegmentIntersectsLine(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]);
+
+  /*!
    * \brief Register the coordinates of the mesh nodes.
    * \param[in] config
    */
@@ -1000,11 +1016,12 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CPhysicalGeometry : public CGeometry {
 
   long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
+
 	long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
 	unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
 	unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
@@ -1315,6 +1332,12 @@ public:
 	 */
   void Set_MPI_GridVel(CConfig *config);
   
+  /*!
+	 * \brief Perform the MPI communication for the grid coordinates (dynamic meshes) for restart purposes.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void Set_MPI_OldCoord(CConfig *config);
+
 	/*! 
 	 * \brief Set the periodic boundary conditions.
 	 * \param[in] config - Definition of the particular problem.		 
@@ -1607,7 +1630,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1783,7 +1806,7 @@ public:
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1829,7 +1852,7 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {

@@ -2,7 +2,7 @@
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -54,6 +54,42 @@ inline void CNumerics::SetFEA_DeadLoad3D(su2double *DeadLoadVector_Elem, su2doub
 inline void CNumerics::PressInt_Linear(su2double CoordCorners[4][3], su2double *tn_e, su2double *Fnodal) { }
 
 inline void CNumerics::ViscTermInt_Linear(su2double CoordCorners[2][2], su2double Tau_0[3][3], su2double Tau_1[3][3], su2double FviscNodal[4]) { }
+
+inline void CNumerics::Compute_Mass_Matrix(CElement *element_container){ }
+
+inline void CNumerics::Compute_Tangent_Matrix(CElement *element_container){ }
+
+inline void CFEM_Elasticity::Compute_Tangent_Matrix(CElement *element_container){ }
+
+inline void CNumerics::Compute_MeanDilatation_Term(CElement *element_container){ }
+
+inline void CFEM_Elasticity::Compute_MeanDilatation_Term(CElement *element_container){ }
+
+inline void CNumerics::Compute_NodalStress_Term(CElement *element_container){ }
+
+inline void CFEM_Elasticity::Compute_NodalStress_Term(CElement *element_container){ }
+
+inline void CNumerics::Compute_Averaged_NodalStress(CElement *element_container){ }
+
+inline void CFEM_Elasticity::Compute_Averaged_NodalStress(CElement *element_container){ }
+
+inline void CNumerics::Compute_Plane_Stress_Term(CElement *element_container) { }
+
+inline void CFEM_Elasticity::Compute_Plane_Stress_Term(CElement *element_container){ }
+
+inline void CFEM_NonlinearElasticity::Compute_Plane_Stress_Term(CElement *element_container) { }
+
+inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container){ }
+
+inline void CFEM_Elasticity::Compute_Constitutive_Matrix(CElement *element_container){ }
+
+inline void CFEM_NonlinearElasticity::Compute_Constitutive_Matrix(CElement *element_container){ }
+
+inline void CNumerics::Compute_Stress_Tensor(CElement *element_container){ }
+
+inline void CFEM_Elasticity::Compute_Stress_Tensor(CElement *element_container){ }
+
+inline void CFEM_NonlinearElasticity::Compute_Stress_Tensor(CElement *element_container){ }
 
 inline void CNumerics::ComputeResidual(su2double *val_residual, CConfig *config) { }
 
