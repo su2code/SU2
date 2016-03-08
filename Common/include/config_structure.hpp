@@ -601,7 +601,7 @@ private:
 	su2double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
 	MaterialDensity,								/*!< \brief Material density. */
-	Bulk_Modulus_Struct;				/*!< \brief Bulk modulus (on the structural side). */
+	DE_Modulus;							/*!< \brief Dielectric elastomer moduli. */
 	unsigned short Kind_2DElasForm;			/*!< \brief Kind of bidimensional elasticity solver. */
 	unsigned short nIterFSI;	/*!< \brief Number of maximum number of subiterations in a FSI problem. */
 	su2double AitkenStatRelax;			/*!< \brief Aitken's relaxation factor (if set as static) */
@@ -1564,7 +1564,7 @@ public:
 	 * \brief Get the value of the bulk modulus on the structural side.
 	 * \return Value of the bulk modulus on the structural side.
 	 */
-	su2double GetBulk_Modulus_Struct(void);
+	su2double GetDE_Modulus(void);
 
     /*!
 	 * \brief Formulation for 2D elasticity (plane stress - strain)

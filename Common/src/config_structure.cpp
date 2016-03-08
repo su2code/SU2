@@ -1124,9 +1124,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("POISSON_RATIO", PoissonRatio, 0.30);
   /* DESCRIPTION: Material density */
   addDoubleOption("MATERIAL_DENSITY", MaterialDensity, 7854);
-  /*!\brief BULK_MODULUS_STRUCT \n DESCRIPTION: Value of the Bulk Modulus for a structural problem \n DEFAULT 160E9 */
-  /* This is a temporal definition */
-  addDoubleOption("BULK_MODULUS_STRUCT", Bulk_Modulus_Struct, 160E9);
+  /*!\brief DE_MODULUS \n DESCRIPTION: Value of the Dielectric elastomer modulus \n DEFAULT 1 */
+  addDoubleOption("DE_MODULUS", DE_Modulus, 1);
 
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Geometric condition \n OPTIONS: see \link Struct_Map \endlink \ingroup Config*/
   addEnumOption("GEOMETRIC_CONDITIONS", Kind_Struct_Solver, Struct_Map, SMALL_DEFORMATIONS);
