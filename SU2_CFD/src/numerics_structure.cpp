@@ -2,7 +2,7 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author F. Palacios, T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -2163,6 +2163,7 @@ void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
 									su2double **val_Proj_Jac_Tensor_i,
 									su2double **val_Proj_Jac_Tensor_j) {
 
+  AD_BEGIN_PASSIVE
 	/* Viscous flux Jacobians for arbitrary equations of state */
 
 	//order of val_mean_primitives: T, vx, vy, vz, P, rho, ht
@@ -2319,7 +2320,7 @@ void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
 		}
 
 
-
+  AD_END_PASSIVE
 	}
 
 

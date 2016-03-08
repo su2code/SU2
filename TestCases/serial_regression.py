@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 4.0.2 "Cardinal"
+#  \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -112,6 +112,17 @@ def main():
     cylinder.timeout   = 1600
     cylinder.tol       = 0.00001
     test_list.append(cylinder)
+
+    # Laminar cylinder (low Mach correction)
+    cylinder_lowmach           = TestCase('cylinder_lowmach')
+    cylinder_lowmach.cfg_dir   = "navierstokes/cylinder"
+    cylinder_lowmach.cfg_file  = "cylinder_lowmach.cfg"
+    cylinder_lowmach.test_iter = 25
+    cylinder_lowmach.test_vals = [-6.830987, -1.368840, -0.142509, 73.962090] #last 4 columns
+    cylinder_lowmach.su2_exec  = "SU2_CFD"
+    cylinder_lowmach.timeout   = 1600
+    cylinder_lowmach.tol       = 0.00001
+    test_list.append(cylinder_lowmach)
 
     ##########################
     ### Compressible RANS  ###
@@ -223,6 +234,17 @@ def main():
     contadj_oneram6.timeout   = 1600
     contadj_oneram6.tol       = 0.00001
     test_list.append(contadj_oneram6)
+
+    # Inviscid WEDGE: generalized adjoint and custom DV
+    contadj_wedge             = TestCase('contadj_wedge')
+    contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
+    contadj_wedge.cfg_file  = "inv_wedge_ROE.cfg"
+    contadj_wedge.test_iter = 10
+    contadj_wedge.test_vals = [-7.364977, -13.301134, 0.000266, 0.000000] #last 4 columns
+    contadj_wedge.su2_exec  = "SU2_CFD"
+    contadj_wedge.timeout   = 1600
+    contadj_wedge.tol       = 0.00001
+    test_list.append(contadj_wedge)
 
     ###################################
     ### Cont. adj. compressible N-S ###
@@ -470,6 +492,45 @@ def main():
     centrifugal_stage.timeout   = 1600
     centrifugal_stage.tol       = 0.000001
     test_list.append(centrifugal_stage) 
+
+
+    ##########################
+    ### FEA - FSI          ###
+    ##########################
+
+    # Static beam, 3d
+    statbeam3d           = TestCase('statbeam3d')
+    statbeam3d.cfg_dir   = "fea_fsi/StatBeam_3d"
+    statbeam3d.cfg_file  = "configBeam_3d.cfg"
+    statbeam3d.test_iter = 0
+    statbeam3d.test_vals = [-8.498274, -8.230638, -8.123824, 6.4095e+04] #last 4 columns
+    statbeam3d.su2_exec  = "SU2_CFD"
+    statbeam3d.timeout   = 1600
+    statbeam3d.tol       = 0.00001
+    test_list.append(statbeam3d)
+
+    # Dynamic beam, 2d
+    dynbeam2d           = TestCase('dynbeam2d')
+    dynbeam2d.cfg_dir   = "fea_fsi/DynBeam_2d"
+    dynbeam2d.cfg_file  = "configBeam_2d.cfg"
+    dynbeam2d.test_iter = 6
+    dynbeam2d.test_vals = [-9.420640, -5.365872, -12.430382, 6.5210e+04] #last 4 columns
+    dynbeam2d.su2_exec  = "SU2_CFD"
+    dynbeam2d.timeout   = 1600
+    dynbeam2d.tol       = 0.00001
+    test_list.append(dynbeam2d)
+
+    # FSI, 2d
+    fsi2d           = TestCase('fsi2d')
+    fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
+    fsi2d.cfg_file  = "configFSI_2D.cfg"
+    fsi2d.test_iter = 4
+    fsi2d.test_vals = [2, 0.500000, -7.779713, -1.141613] #last 4 columns
+    fsi2d.su2_exec  = "SU2_CFD"
+    fsi2d.timeout   = 1600
+    fsi2d.tol       = 0.00001
+    test_list.append(fsi2d)    
+   
 
     ######################################
     ### RUN TESTS                      ###

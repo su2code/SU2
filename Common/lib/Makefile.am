@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 common library
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 4.0.2 "Cardinal"
+# \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -31,6 +31,7 @@
 #
 ################################################################################
 
+AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
 noinst_LIBRARIES =
@@ -48,14 +49,12 @@ noinst_LIBRARIES += libSU2_AD.a
 endif
 
 lib_sources = \
-  ../include/datatypes/adolc_f_structure.hpp \
-  ../include/datatypes/adolc_f_structure.inl \
-  ../include/datatypes/adolc_r_structure.hpp \
-  ../include/datatypes/adolc_r_structure.inl \
   ../include/datatypes/primitive_structure.hpp \
   ../include/datatypes/primitive_structure.inl \
   ../include/datatypes/complex_structure.hpp \
   ../include/datatypes/complex_structure.inl \
+  ../include/ad_structure.hpp \
+  ../include/ad_structure.inl \
   ../include/config_structure.hpp \
   ../include/config_structure.hpp \
   ../include/config_structure.inl \
@@ -81,6 +80,7 @@ lib_sources = \
   ../include/mpi_structure.inl \
   ../include/datatype_structure.hpp \
   ../include/datatype_structure.inl \
+  ../include/interpolation_structure.hpp \
   ../include/gauss_structure.hpp \
   ../include/gauss_structure.inl \
   ../include/element_structure.hpp \
@@ -96,10 +96,11 @@ lib_sources = \
   ../src/matrix_structure.cpp \
   ../src/mpi_structure.cpp \
   ../src/linear_solvers_structure_b.cpp \
-  ../src/datatype_structure.cpp \
+  ../src/ad_structure.cpp \
   ../src/gauss_structure.cpp \
   ../src/element_structure.cpp \
-  ../src/element_linear.cpp 
+  ../src/element_linear.cpp \
+  ../src/interpolation_structure.cpp
 
 lib_cxxflags =
 lib_ldadd =

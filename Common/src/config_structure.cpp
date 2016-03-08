@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -155,6 +155,7 @@ void CConfig::SetPointersNull(void) {
   Kappa_Flow = NULL;    Kappa_AdjFlow = NULL;
   Section_Location = NULL;
   U_FreeStreamND = NULL;
+  Design_Variable = NULL;
 
   /*--- Moving mesh pointers ---*/
 
@@ -215,14 +216,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Debug mode */
   addBoolOption("DEBUG_MODE",DebugMode, false);
   
-  /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n Default: NO_SOLVER \ingroup Config*/
+  /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM" , Adjoint, false , Restart_Flow, false, DiscreteAdjoint, false);
-  /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n Default: NO_TURB_MODEL \ingroup Config*/
+  /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
 
-  /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n Default: NO_TRANS_MODEL \ingroup Config*/
+  /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
 
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
@@ -233,11 +234,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("LOW_FIDELITY_SIMULATION", LowFidelitySim, false);
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
-  /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n Default: SI \ingroup Config*/
+  /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
 
   /*!\par CONFIG_CATEGORY: FluidModel \ingroup Config*/
-  /*!\brief FLUID_MODEL \n DESCRIPTION: Fluid model \n OPTIONS: See \link FluidModel_Map \endlink \n Default: STANDARD_AIR \ingroup Config*/
+  /*!\brief FLUID_MODEL \n DESCRIPTION: Fluid model \n OPTIONS: See \link FluidModel_Map \endlink \n DEFAULT: STANDARD_AIR \ingroup Config*/
   addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, STANDARD_AIR);
 
 
@@ -264,7 +265,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    addDoubleOption("ACENTRIC_FACTOR", Acentric_Factor, 0.035);
 
    /*--- Options related to Viscosity Model ---*/
-  /*!\brief VISCOSITY_MODEL \n DESCRIPTION: model of the viscosity \n OPTIONS: See \link ViscosityModel_Map \endlink \n Default: SUTHERLAND \ingroup Config*/
+  /*!\brief VISCOSITY_MODEL \n DESCRIPTION: model of the viscosity \n OPTIONS: See \link ViscosityModel_Map \endlink \n DEFAULT: SUTHERLAND \ingroup Config*/
   addEnumOption("VISCOSITY_MODEL", Kind_ViscosityModel, ViscosityModel_Map, SUTHERLAND);
 
   /*--- Options related to Constant Viscosity Model ---*/
@@ -380,6 +381,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
   /*!\brief MARKER_DESIGNING\n DESCRIPTION: Marker(s) of the surface where objective function (design problem) will be evaluated \ingroup Config*/
   addStringListOption("MARKER_DESIGNING", nMarker_Designing, Marker_Designing);
+  /*!\brief MARKER_OUT_1D \n DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
+   Format: ( outlet marker) \ingroup Config*/
+  addStringListOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
   /*!\brief GEO_MARKER\n DESCRIPTION: Marker(s) of the surface where evaluate the geometrical functions \ingroup Config*/
   addStringListOption("GEO_MARKER", nMarker_GeoEval, Marker_GeoEval);
   /*!\brief MARKER_EULER\n DESCRIPTION: Euler wall boundary marker(s) \ingroup Config*/
@@ -418,7 +422,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
                         ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius,
                         ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega, ActDisk_Distribution);
 
-  /*!\brief INLET_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n Default: TOTAL_CONDITIONS \ingroup Config*/
+  /*!\brief INLET_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n DEFAULT: TOTAL_CONDITIONS \ingroup Config*/
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
 
   /*!\brief MARKER_INLET  \n DESCRIPTION: Inlet boundary marker(s) with the following formats,
@@ -430,23 +434,25 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    a unit vector. \ingroup Config*/
   addInletOption("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
 
-  /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. */
+  /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector.
+   * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
   /*!\brief MARKER_NRBC \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. */
   addNRBCOption("MARKER_NRBC", nMarker_NRBC, Marker_NRBC, Kind_Data_NRBC, NRBC_Map, NRBC_Var1, NRBC_Var2, NRBC_FlowDir, RelaxFactorAverage, RelaxFactorFourier);
   /*!\brief MIXING_PROCESS_TYPE \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries.
-    \n OPTIONS: see \link MixingProcess_Map \endlink \n Default: AREA_AVERAGE */
+    \n OPTIONS: see \link MixingProcess_Map \endlink \n DEFAULT: AREA_AVERAGE \ingroup Config*/
   addEnumOption("MIXING_PROCESS_TYPE", Kind_MixingProcess, MixingProcess_Map, AREA_AVERAGE);
-  /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. */
+  /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
   addMixingPlaneOption("MARKER_MIXINGPLANE", nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
-  /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. */
+  /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
   addTurboPerfOption("MARKER_TURBO_PERFORMANCE", nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut, Kind_TurboPerformance, TurboPerformance_Map);
   /* DESCRIPTION: Integer number of spanwise sections to compute 3D BC and Performance for turbomachinery */
   addUnsignedShortOption("NUM_SPANWISE_SECTIONS", nSpanWiseSections, 1);
   /*!\brief TURBOMACHINERY_TYPE \n DESCRIPTION: types of turbomachynery architecture.
       \n OPTIONS: see \link TurboMachinery_Map \endlink \n Default: AXIAL */
   addEnumOption("TURBOMACHINERY_TYPE", Kind_TurboMachinery, TurboMachinery_Map, AXIAL);
-  /*!\brief MARKER_SUPERSONIC_INLET  \n DESCRIPTION: Supersonic inlet boundary marker(s) \n   Format: (inlet marker, temperature, static pressure, velocity_x,   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
+  /*!\brief MARKER_SUPERSONIC_INLET  \n DESCRIPTION: Supersonic inlet boundary marker(s)
+   * \n   Format: (inlet marker, temperature, static pressure, velocity_x,   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
   addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
                  Inlet_Temperature, Inlet_Pressure, Inlet_Velocity);
   /*!\brief MARKER_SUPERSONIC_OUTLET \n DESCRIPTION: Supersonic outlet boundary marker(s) \ingroup Config*/
@@ -466,7 +472,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_ENGINE_BLEED  \n DESCRIPTION: Engine bleed boundary marker(s)
    Format: ( nacelle inflow marker, flux, ... ) \ingroup Config*/
   addBleedOption("MARKER_ENGINE_BLEED", nMarker_EngineBleed, Marker_EngineBleed, Bleed_MassFlow_Target, Bleed_Temperature_Target);
-  /* DESCRIPTION: Engine subsonic intake region */
+  /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
   addBoolOption("SUBSONIC_ENGINE", Engine_Intake, false);
   default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
   default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
@@ -496,9 +502,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("DAMP_ENGINE_BLEED", Damp_Engine_Bleed, 0.95);
   /* DESCRIPTION: Damping factor for engine exhaust condition */
   addDoubleOption("DAMP_ENGINE_EXHAUST", Damp_Engine_Exhaust, 0.95);
-  /*!\brief MARKER_OUT_1D \n DESCRIPTION: Outlet boundary marker(s) over which to calculate 1-D flow properties
-   Format: ( outlet marker) \ingroup Config*/
-  addStringListOption("MARKER_OUT_1D", nMarker_Out_1D, Marker_Out_1D);
 
 
   /*!\par CONFIG_CATEGORY: Time-marching \ingroup Config*/
@@ -543,6 +546,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addLongOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
   addLongOption("UNST_ADJOINT_ITER", Unst_AdjointIter, 0);
+  /* DESCRIPTION: Iteration number to begin unsteady restarts (structural analysis) */
+  addLongOption("DYN_RESTART_ITER", Dyn_RestartIter, 0);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
@@ -566,10 +571,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*--- Options related to the linear solvers ---*/
 
   /*!\brief LINEAR_SOLVER
-   *  \n DESCRIPTION: Linear solver for the implicit, mesh deformation, or discrete adjoint systems \n OPTIONS: see \link Linear_Solver_Map \endlink \n Default: FGMRES \ingroup Config*/
+   *  \n DESCRIPTION: Linear solver for the implicit, mesh deformation, or discrete adjoint systems \n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
   addEnumOption("LINEAR_SOLVER", Kind_Linear_Solver, Linear_Solver_Map, FGMRES);
   /*!\brief LINEAR_SOLVER_PREC
-   *  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n Default: LU_SGS \ingroup Config*/
+   *  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
   addEnumOption("LINEAR_SOLVER_PREC", Kind_Linear_Solver_Prec, Linear_Solver_Prec_Map, LU_SGS);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
   addDoubleOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-5);
@@ -587,6 +592,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("ROE_KAPPA", Roe_Kappa, 0.5);
   /* DESCRIPTION: Roe-Turkel preconditioning for low Mach number flows */
   addBoolOption("ROE_TURKEL_PREC", Low_Mach_Precon, false);
+  /* DESCRIPTION: Post-reconstruction correction for low Mach number flows */
+  addBoolOption("LOW_MACH_CORR", Low_Mach_Corr, false);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
   addDoubleOption("MIN_ROE_TURKEL_PREC", Min_Beta_RoeTurkel, 0.01);
   /* DESCRIPTION: Time Step for dual time stepping simulations (s) */
@@ -610,48 +617,54 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*--- Options related to convergence ---*/
   
   /*!\brief CONV_CRITERIA
-   *  \n DESCRIPTION: Convergence criteria \n OPTIONS: see \link Converge_Crit_Map \endlink \n Default: RESIDUAL \ingroup Config*/
+   *  \n DESCRIPTION: Convergence criteria \n OPTIONS: see \link Converge_Crit_Map \endlink \n DEFAULT: RESIDUAL \ingroup Config*/
   addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
-  /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
+  /*!\brief RESIDUAL_REDUCTION \n DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value)\n DEFAULT: 3.0 \ingroup Config*/
   addDoubleOption("RESIDUAL_REDUCTION", OrderMagResidual, 3.0);
-  /* DESCRIPTION: Min value of the residual (log10 of the residual) */
+  /*!\brief RESIDUAL_MINVAL\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -8.0 \ingroup Config*/
   addDoubleOption("RESIDUAL_MINVAL", MinLogResidual, -8.0);
   /* DESCRIPTION: Residual reduction (order of magnitude with respect to the initial value) */
   addDoubleOption("RESIDUAL_REDUCTION_FSI", OrderMagResidualFSI, 3.0);
   /* DESCRIPTION: Min value of the residual (log10 of the residual) */
   addDoubleOption("RESIDUAL_MINVAL_FSI", MinLogResidualFSI, -5.0);
-  /* DESCRIPTION: Flow functional for the Residual criteria */
+  /* DESCRIPTION: FEM: UTOL = norm(Delta_U(k)) / norm(U(k)) */
+  addDoubleOption("RESIDUAL_FEM_UTOL", Res_FEM_UTOL, -9.0);
+  /* DESCRIPTION: FEM: RTOL = norm(Residual(k)) / norm(Residual(0)) */
+  addDoubleOption("RESIDUAL_FEM_RTOL", Res_FEM_RTOL, -9.0);
+  /* DESCRIPTION: FEM: ETOL = Delta_U(k) * Residual(k) / Delta_U(0) * Residual(0) */
+  addDoubleOption("RESIDUAL_FEM_ETOL", Res_FEM_ETOL, -9.0);
+  /*!\brief RESIDUAL_FUNC_FLOW\n DESCRIPTION: Flow functional for the Residual criteria\n OPTIONS: See \link Residual_Map \endlink \n DEFAULT: RHO_RESIDUAL \ingroup Config*/
   addEnumOption("RESIDUAL_FUNC_FLOW", Residual_Func_Flow, Residual_Map, RHO_RESIDUAL);
-  /* DESCRIPTION: Iteration number to begin convergence monitoring */
+  /*!\brief STARTCONV_ITER\n DESCRIPTION: Iteration number to begin convergence monitoring\n DEFAULT: 5 \ingroup Config*/
   addUnsignedLongOption("STARTCONV_ITER", StartConv_Iter, 5);
-  /* DESCRIPTION: Number of elements to apply the criteria */
+  /*!\brief CAUCHY_ELEMS\n DESCRIPTION: Number of elements to apply the criteria. \n DEFAULT 100 \ingroup Config*/
   addUnsignedShortOption("CAUCHY_ELEMS", Cauchy_Elems, 100);
-  /* DESCRIPTION: Epsilon to control the series convergence */
+  /*!\brief CAUCHY_EPS\n DESCRIPTION: Epsilon to control the series convergence \n DEFAULT: 1e-10 \ingroup Config*/
   addDoubleOption("CAUCHY_EPS", Cauchy_Eps, 1E-10);
   /*!\brief CAUCHY_FUNC_FLOW
-   *  \n DESCRIPTION: Flow functional for the Cauchy criteria \n OPTIONS: see \link Objective_Map \endlink \n Default: DRAG_COEFFICIENT \ingroup Config*/
+   *  \n DESCRIPTION: Flow functional for the Cauchy criteria \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
   addEnumOption("CAUCHY_FUNC_FLOW", Cauchy_Func_Flow, Objective_Map, DRAG_COEFFICIENT);
-  /* DESCRIPTION: Adjoint functional for the Cauchy criteria */
+  /*!\brief CAUCHY_FUNC_ADJFLOW\n DESCRIPTION: Adjoint functional for the Cauchy criteria.\n OPTIONS: See \link Sens_Map \endlink. \n DEFAULT: SENS_GEOMETRY \ingroup Config*/
   addEnumOption("CAUCHY_FUNC_ADJFLOW", Cauchy_Func_AdjFlow, Sens_Map, SENS_GEOMETRY);
 
   /*!\par CONFIG_CATEGORY: Multi-grid \ingroup Config*/
   /*--- Options related to Multi-grid ---*/
 
-  /* DESCRIPTION: Start up iterations using the fine grid only */
+  /*!\brief START_UP_ITER \n DESCRIPTION: Start up iterations using the fine grid only. DEFAULT: 0 \ingroup Config*/
   addUnsignedShortOption("START_UP_ITER", nStartUpIter, 0);
-  /* DESCRIPTION: Multi-grid Levels */
+  /*!\brief MGLEVEL\n DESCRIPTION: Multi-grid Levels. DEFAULT: 0 \ingroup Config*/
   addUnsignedShortOption("MGLEVEL", nMGLevels, 0);
-  /* DESCRIPTION: Multi-grid cycle */
+  /*!\brief MGCYCLE\n DESCRIPTION: Multi-grid cycle. OPTIONS: See \link MG_Cycle_Map \endlink. Defualt V_CYCLE \ingroup Config*/
   addEnumOption("MGCYCLE", MGCycle, MG_Cycle_Map, V_CYCLE);
-  /* DESCRIPTION: Multi-grid pre-smoothing level */
+  /*!\brief MG_PRE_SMOOTH\n DESCRIPTION: Multi-grid pre-smoothing level \ingroup Config*/
   addUShortListOption("MG_PRE_SMOOTH", nMG_PreSmooth, MG_PreSmooth);
-  /* DESCRIPTION: Multi-grid post-smoothing level */
+  /*!\brief MG_POST_SMOOTH\n DESCRIPTION: Multi-grid post-smoothing level \ingroup Config*/
   addUShortListOption("MG_POST_SMOOTH", nMG_PostSmooth, MG_PostSmooth);
-  /* DESCRIPTION: Jacobi implicit smoothing of the correction */
+  /*!\brief MG_CORRECTION_SMOOTH\n DESCRIPTION: Jacobi implicit smoothing of the correction \ingroup Config*/
   addUShortListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth, MG_CorrecSmooth);
-  /* DESCRIPTION: Damping factor for the residual restriction */
+  /*!\brief MG_DAMP_RESTRICTION\n DESCRIPTION: Damping factor for the residual restriction. DEFAULT: 0.75 \ingroup Config*/
   addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.75);
-  /* DESCRIPTION: Damping factor for the correction prolongation */
+  /*!\brief MG_DAMP_PROLONGATION\n DESCRIPTION: Damping factor for the correction prolongation. DEFAULT 0.75 \ingroup Config*/
   addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.75);
 
   /*!\par CONFIG_CATEGORY: Spatial Discretization \ingroup Config*/
@@ -661,26 +674,26 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  \n DESCRIPTION: Numerical method for spatial gradients \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: WEIGHTED_LEAST_SQUARES. \ingroup Config*/
   addEnumOption("NUM_METHOD_GRAD", Kind_Gradient_Method, Gradient_Map, WEIGHTED_LEAST_SQUARES);
   /*!\brief LIMITER_COEFF
-   *  \n DESCRIPTION: Coefficient for the limiter. Default value 0.5. Larger values decrease the extent of limiting, values approaching zero cause lower-order approximation to the solution. \ingroup Config */
+   *  \n DESCRIPTION: Coefficient for the limiter. DEFAULT value 0.5. Larger values decrease the extent of limiting, values approaching zero cause lower-order approximation to the solution. \ingroup Config */
   addDoubleOption("LIMITER_COEFF", LimiterCoeff, 0.5);
   /*!\brief LIMITER_ITER
-   *  \n DESCRIPTION: Freeze the value of the limiter after a number of iterations. Default value 999999. \ingroup Config*/
+   *  \n DESCRIPTION: Freeze the value of the limiter after a number of iterations. DEFAULT value 999999. \ingroup Config*/
   addUnsignedLongOption("LIMITER_ITER", LimiterIter, 999999);
   /*!\brief SHARP_EDGES_COEFF
-   *  \n DESCRIPTION: Coefficient for detecting the limit of the sharp edges. Default value 3.0.  Use with sharp edges limiter. \ingroup Config*/
+   *  \n DESCRIPTION: Coefficient for detecting the limit of the sharp edges. DEFAULT value 3.0.  Use with sharp edges limiter. \ingroup Config*/
   addDoubleOption("SHARP_EDGES_COEFF", SharpEdgesCoeff, 3.0);
 
   /*!\brief CONV_NUM_METHOD_FLOW
    *  \n DESCRIPTION: Convective numerical method \n OPTIONS: See \link Upwind_Map \endlink , \link Centered_Map \endlink. \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_FLOW", Kind_ConvNumScheme_Flow, Kind_Centered_Flow, Kind_Upwind_Flow);
   /*!\brief SPATIAL_ORDER_FLOW
-   *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n Default: SECOND_ORDER \ingroup Config*/
+   *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: SECOND_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_FLOW", SpatialOrder_Flow, SpatialOrder_Map, SECOND_ORDER);
   /*!\brief SLOPE_LIMITER_FLOW
-   * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n Default VENKATAKRISHNAN \ingroup Config*/
+   * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
-  /* DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients */
+  /*!\brief AD_COEFF_FLOW \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients \ingroup Config*/
   addDoubleArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
 
   /*!\brief CONV_NUM_METHOD_ADJFLOW
@@ -688,10 +701,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  \n OPTIONS:  See \link Upwind_Map \endlink , \link Centered_Map \endlink. Note: not all methods are guaranteed to be implemented for the adjoint solver. \ingroup Config */
   addConvectOption("CONV_NUM_METHOD_ADJFLOW", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
   /*!\brief SPATIAL_ORDER_ADJFLOW
-   *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n Default: SECOND_ORDER \ingroup Config*/
+   *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: SECOND_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_ADJFLOW", SpatialOrder_AdjFlow, SpatialOrder_Map, SECOND_ORDER);
   /*!\brief SLOPE_LIMITER_ADJFLOW
-     * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: See \link Limiter_Map \endlink \n Default VENKATAKRISHNAN \ingroup Config*/
+     * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, VENKATAKRISHNAN);
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /*!\brief AD_COEFF_ADJFLOW
@@ -700,29 +713,29 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleArrayOption("AD_COEFF_ADJFLOW", 3, Kappa_AdjFlow, default_vec_3d);
 
   /*!\brief SPATIAL_ORDER_TURB
-   *  \n DESCRIPTION: Spatial numerical order integration.\n OPTIONS: See \link SpatialOrder_Map \endlink \n Default: FIRST_ORDER \ingroup Config*/
+   *  \n DESCRIPTION: Spatial numerical order integration.\n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: FIRST_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_TURB", SpatialOrder_Turb, SpatialOrder_Map, FIRST_ORDER);
   /*!\brief SLOPE_LIMITER_TURB
-   *  \n DESCRIPTION: Slope limiter  \n OPTIONS: See \link Limiter_Map \endlink \n Default VENKATAKRISHNAN \ingroup Config*/
+   *  \n DESCRIPTION: Slope limiter  \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, VENKATAKRISHNAN);
   /*!\brief CONV_NUM_METHOD_TURB
    *  \n DESCRIPTION: Convective numerical method \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
   
   /*!\brief SPATIAL_ORDER_ADJTURB
-   *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n Default: FIRST_ORDER \ingroup Config*/
+   *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: FIRST_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_ADJTURB", SpatialOrder_AdjTurb, SpatialOrder_Map, FIRST_ORDER);
   /*!\brief SLOPE_LIMITER_ADJTURB
-   *  \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n Default VENKATAKRISHNAN \ingroup Config */
+   *  \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config */
   addEnumOption("SLOPE_LIMITER_ADJTURB", Kind_SlopeLimit_AdjTurb, Limiter_Map, VENKATAKRISHNAN);
   /*!\brief CONV_NUM_METHOD_ADJTURB\n DESCRIPTION: Convective numerical method for the adjoint/turbulent problem \ingroup Config*/
   addConvectOption("CONV_NUM_METHOD_ADJTURB", Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb, Kind_Upwind_AdjTurb);
 
   /*!\brief SPATIAL_ORDER_ADJLEVELSET
-   *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n Default: 2ND_ORDER \ingroup Config*/
+   *  \n DESCRIPTION: Spatial numerical order integration \n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: 2ND_ORDER \ingroup Config*/
   addEnumOption("SPATIAL_ORDER_ADJLEVELSET", SpatialOrder_AdjLevelSet, SpatialOrder_Map, SECOND_ORDER);
   /*!\brief SLOPE_LIMITER_ADJLEVELTSET
-   *  \n DESCRIPTION: Slope limiter\n OPTIONS: See \link Limiter_Map \endlink \n Default VENKATAKRISHNAN \ingroup Config */
+   *  \n DESCRIPTION: Slope limiter\n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config */
   addEnumOption("SLOPE_LIMITER_ADJLEVELSET", Kind_SlopeLimit_AdjLevelSet, Limiter_Map, VENKATAKRISHNAN);
   /*!\brief CONV_NUM_METHOD_ADJLEVELSET
    *  \n DESCRIPTION: Convective numerical method for the adjoint levelset problem. \ingroup Config*/
@@ -736,19 +749,20 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par CONFIG_CATEGORY: Adjoint and Gradient \ingroup Config*/
   /*--- Options related to the adjoint and gradient ---*/
 
-  /* DESCRIPTION: Limit value for the adjoint variable */
+  /*!\brief LIMIT_ADJFLOW \n DESCRIPTION: Limit value for the adjoint variable.\n DEFAULT: 1E6. \ingroup Config*/
   addDoubleOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
-  /* DESCRIPTION: Multigrid with the adjoint problem */
+  /*!\brief MG_ADJFLOW\n DESCRIPTION: Multigrid with the adjoint problem. \n Defualt: YES \ingroup Config*/
   addBoolOption("MG_ADJFLOW", MG_AdjointFlow, true);
   /*!\brief OBJECTIVE_FUNCTION
-   *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n Default: DRAG_COEFFICIENT \ingroup Config*/
+   *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
   addEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, DRAG_COEFFICIENT);
 
   default_vec_5d[0]=0.0; default_vec_5d[1]=0.0; default_vec_5d[2]=0.0;
   default_vec_5d[3]=0.0;  default_vec_5d[4]=0.0;
   /*!\brief OBJ_CHAIN_RULE_COEFF
   * \n DESCRIPTION: Coefficients defining the objective function gradient using the chain rule
-  * with area-averaged outlet primitive variables. \ingroup Config   */
+  * with area-averaged outlet primitive variables. This is used with the genereralized outflow
+  * objective.  \ingroup Config   */
   addDoubleArrayOption("OBJ_CHAIN_RULE_COEFF",5,Obj_ChainRuleCoeff,default_vec_5d);
 
   default_vec_2d[0] = 0.0; default_vec_2d[1] = 1.0;
@@ -774,39 +788,43 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    /* DESCRIPTION:  */
   addDoubleOption("FIX_AZIMUTHAL_LINE", FixAzimuthalLine, 90.0);
   /*!\brief SENS_REMOVE_SHARP
-   * DESCRIPTION: Remove sharp edges from the sensitivity evaluation  \n Format: SENS_REMOVE_SHARP = YES \n Default: NO \ingroup Config*/
+   * \n DESCRIPTION: Remove sharp edges from the sensitivity evaluation  \n Format: SENS_REMOVE_SHARP = YES \n DEFAULT: NO \ingroup Config*/
   addBoolOption("SENS_REMOVE_SHARP", Sens_Remove_Sharp, false);
 
   /*!\par CONFIG_CATEGORY: Input/output files and formats \ingroup Config */
   /*--- Options related to input/output files and formats ---*/
 
-  /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link Output_Map \endlink \n Default: TECPLOT \ingroup Config */
+  /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link Output_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
   addEnumOption("OUTPUT_FORMAT", Output_FileFormat, Output_Map, TECPLOT);
-  /*!\brief MESH_FORMAT \n DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n Default: SU2 \ingroup Config*/
+  /*!\brief MESH_FORMAT \n DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
   addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
   /* DESCRIPTION:  Mesh input file */
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
-  /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n Default: mesh_out.su2 \ingroup Config*/
+  /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n DEFAULT: mesh_out.su2 \ingroup Config*/
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
 
-  /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n Default: history \ingroup Config*/
+  /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
   /*!\brief BREAKDOWN_FILENAME \n DESCRIPTION: Output file forces breakdown \ingroup Config*/
   addStringOption("BREAKDOWN_FILENAME", Breakdown_FileName, string("forces_breakdown.dat"));
-  /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n Default: history \ingroup Config*/
+  /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME_FSI", Conv_FileName_FSI, string("historyFSI.csv"));
   /* DESCRIPTION: Viscous limiter turbulent equations */
   addBoolOption("WRITE_CONV_FILENAME_FSI", Write_Conv_FSI, false);
-  /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart flow input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n Default: solution_flow.dat \ingroup Config */
+  /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart flow input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n DEFAULT: solution_flow.dat \ingroup Config */
   addStringOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
   /*!\brief SOLUTION_ADJ_FILENAME\n DESCRIPTION: Restart adjoint input file. Objective function abbreviation is expected. \ingroup Config*/
   addStringOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj.dat"));
+  /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart structure input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n Default: solution_flow.dat \ingroup Config */
+  addStringOption("SOLUTION_STRUCTURE_FILENAME", Solution_FEMFileName, string("solution_structure.dat"));
   /*!\brief RESTART_FLOW_FILENAME \n DESCRIPTION: Output file restart flow \ingroup Config*/
   addStringOption("RESTART_FLOW_FILENAME", Restart_FlowFileName, string("restart_flow.dat"));
   /*!\brief RESTART_ADJ_FILENAME  \n DESCRIPTION: Output file restart adjoint. Objective function abbreviation will be appended. \ingroup Config*/
   addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
   /*!\brief RESTART_WAVE_FILENAME \n DESCRIPTION: Output file restart wave \ingroup Config*/
   addStringOption("RESTART_WAVE_FILENAME", Restart_WaveFileName, string("restart_wave.dat"));
+  /*!\brief RESTART_FLOW_FILENAME \n DESCRIPTION: Output file restart structure \ingroup Config*/
+  addStringOption("RESTART_STRUCTURE_FILENAME", Restart_FEMFileName, string("restart_structure.dat"));
   /*!\brief VOLUME_FLOW_FILENAME  \n DESCRIPTION: Output file flow (w/o extension) variables \ingroup Config */
   addStringOption("VOLUME_FLOW_FILENAME", Flow_FileName, string("flow"));
   /*!\brief VOLUME_STRUCTURE_FILENAME
@@ -845,6 +863,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SURFACE_ADJ_FILENAME
    *  \n DESCRIPTION: Output file surface adjoint coefficient (w/o extension)  \ingroup Config*/
   addStringOption("SURFACE_ADJ_FILENAME", SurfAdjCoeff_FileName, string("surface_adjoint"));
+  /*!\brief SURFACE_SENS_FILENAME_FILENAME
+   *  \n DESCRIPTION: Output file surface sensitivity (discrete adjoint) (w/o extension)  \ingroup Config*/
+  addStringOption("SURFACE_SENS_FILENAME", SurfSens_FileName, string("surface_sens"));
+  /*!\brief VOLUME_SENS_FILENAME
+   *  \n DESCRIPTION: Output file volume sensitivity (discrete adjoint))  \ingroup Config*/
+  addStringOption("VOLUME_SENS_FILENAME", VolSens_FileName, string("volume_sens"));
   /*!\brief WRT_SOL_FREQ
    *  \n DESCRIPTION: Writing solution file frequency  \ingroup Config*/
   addUnsignedLongOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);
@@ -1045,8 +1069,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	addEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
 	/* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
   addStringListOption("DV_MARKER", nMarker_DV, Marker_DV);
-	/* DESCRIPTION: New value of the shape deformation */
-	addDoubleListOption("DV_VALUE", nDV, DV_Value);
 	/* DESCRIPTION: Parameters of the shape deformation
    - FFD_CONTROL_POINT_2D ( FFDBox ID, i_Ind, j_Ind, x_Disp, y_Disp )
    - FFD_RADIUS_2D ( FFDBox ID )
@@ -1069,6 +1091,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
    - FFD_THICKNESS ( FFDBox ID, i_Ind, j_Ind ) */
 	addDVParamOption("DV_PARAM", nDV, ParamDV, FFDTag, Design_Variable);
+  /* DESCRIPTION: New value of the shape deformation */
+  addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
 	/* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
 	default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
@@ -1091,7 +1115,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("DEFORM_ELASTICITY_MODULUS", Deform_ElasticityMod, 2E11);
   /* DESCRIPTION: Young's modulus and Poisson's ratio for constant stiffness FEA method of grid deformation*/
   addDoubleOption("DEFORM_POISSONS_RATIO", Deform_PoissonRatio, 0.3);
-  /*  DESCRIPTION: Linear solver for the mesh deformation\n OPTIONS: see \link Linear_Solver_Map \endlink \n Default: FGMRES \ingroup Config*/
+  /*  DESCRIPTION: Linear solver for the mesh deformation\n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
   addEnumOption("DEFORM_LINEAR_SOLVER", Deform_Linear_Solver, Linear_Solver_Map, FGMRES);
 
   /*!\par CONFIG_CATEGORY: Rotorcraft problem \ingroup Config*/
@@ -1112,13 +1136,29 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("POISSON_RATIO", PoissonRatio, 0.30);
   /* DESCRIPTION: Material density */
   addDoubleOption("MATERIAL_DENSITY", MaterialDensity, 7854);
+  /*!\brief BULK_MODULUS_STRUCT \n DESCRIPTION: Value of the Bulk Modulus for a structural problem \n DEFAULT 160E9 */
+  /* This is a temporal definition */
+  addDoubleOption("BULK_MODULUS_STRUCT", Bulk_Modulus_Struct, 160E9);
+
+  /*!\brief REGIME_TYPE \n  DESCRIPTION: Geometric condition \n OPTIONS: see \link Struct_Map \endlink \ingroup Config*/
+  addEnumOption("GEOMETRIC_CONDITIONS", Kind_Struct_Solver, Struct_Map, SMALL_DEFORMATIONS);
+  /*!\brief REGIME_TYPE \n  DESCRIPTION: Material model \n OPTIONS: see \link Material_Map \endlink \ingroup Config*/
+  addEnumOption("MATERIAL_MODEL", Kind_Material, Material_Map, LINEAR_ELASTIC);
+  /*!\brief REGIME_TYPE \n  DESCRIPTION: Compressibility of the material \n OPTIONS: see \link MatComp_Map \endlink \ingroup Config*/
+  addEnumOption("MATERIAL_COMPRESSIBILITY", Kind_Material_Compress, MatComp_Map, COMPRESSIBLE_MAT);
+
+  /* DESCRIPTION: Iterative method for non-linear structural analysis */
+  addEnumOption("NONLINEAR_FEM_SOLUTION_METHOD", Kind_SpaceIteScheme_FEA, Space_Ite_Map_FEA, NEWTON_RAPHSON);
+  /* DESCRIPTION: Number of internal iterations for Newton-Raphson Method in nonlinear structural applications */
+  addUnsignedLongOption("NONLINEAR_FEM_INT_ITER", Dyn_nIntIter, 10);
+
   /* DESCRIPTION: Formulation for bidimensional elasticity solver */
-  addEnumOption("FORMULATION_ELASTICITY_2D", Kind_2DElasForm, ElasForm_2D, PLANE_STRESS);
+  addEnumOption("FORMULATION_ELASTICITY_2D", Kind_2DElasForm, ElasForm_2D, PLANE_STRAIN);
   /*  DESCRIPTION: Apply dead loads
   *  Options: NO, YES \ingroup Config */
   addBoolOption("DEAD_LOAD", DeadLoad, false);
   /* DESCRIPTION: Dynamic or static structural analysis */
-  addEnumOption("DYNAMIC_ANALYSYS", Dynamic_Analysis, Dynamic_Map, STATIC);
+  addEnumOption("DYNAMIC_ANALYSIS", Dynamic_Analysis, Dynamic_Map, STATIC);
   /* DESCRIPTION: Time Step for dynamic analysis (s) */
   addDoubleOption("DYN_TIMESTEP", Delta_DynTime, 0.0);
   /* DESCRIPTION: Total Physical Time for dual time stepping simulations (s) */
@@ -1128,24 +1168,48 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Parameter delta for Newmark scheme (s) */
   addDoubleOption("NEWMARK_DELTA", Newmark_delta, 0.5);
   /* DESCRIPTION: Apply the load slowly or suddenly */
-  addBoolOption("SIGMOID_LOADING", Gradual_Load, false);
+  addBoolOption("SIGMOID_LOADING", Sigmoid_Load, false);
   /* DESCRIPTION: Apply the load as a ramp */
   addBoolOption("RAMP_LOADING", Ramp_Load, false);
   /* DESCRIPTION: Time while the load is to be increased linearly */
   addDoubleOption("RAMP_TIME", Ramp_Time, 1.0);
+  /* DESCRIPTION: Time while the load is to be increased linearly */
+  addDoubleOption("SIGMOID_TIME", Sigmoid_Time, 1.0);
+  /* DESCRIPTION: Constant of steepness of the sigmoid */
+  addDoubleOption("SIGMOID_K", Sigmoid_K, 10.0);
+
+  /* DESCRIPTION: Newmark - Generalized alpha - coefficients */
+  addDoubleListOption("TIME_INT_STRUCT_COEFFS", nIntCoeffs, Int_Coeffs);
+
+  /*  DESCRIPTION: Apply dead loads. Options: NO, YES \ingroup Config */
+  addBoolOption("INCREMENTAL_LOAD", IncrementalLoad, false);
+  /* DESCRIPTION: Maximum number of increments of the  */
+  addUnsignedLongOption("NUMBER_INCREMENTS", IncLoad_Nincrements, 10);
+
+  default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
+  /* DESCRIPTION: Definition of the  UTOL RTOL ETOL*/
+  addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, IncLoad_Criteria, default_vec_3d);
 
   /* DESCRIPTION: Time while the structure is static */
-  addDoubleOption("STATIC_TIME", Static_Time, 1.0);
+  addDoubleOption("STATIC_TIME", Static_Time, 0.0);
 
   /* DESCRIPTION: Order of the predictor */
   addUnsignedShortOption("PREDICTOR_ORDER", Pred_Order, 0);
 
-  /*!\par PHYSICAL_PROBLEM_FLUID_FSI
+  /* DESCRIPTION: Transfer method used for multiphysics problems */
+  addEnumOption("MULTIPHYSICS_TRANSFER_METHOD", Kind_TransferMethod, Transfer_Method_Map, BROADCAST_DATA);
+
+
+  /* CONFIG_CATEGORY: FSI solver */
+  /*--- Options related to the FSI solver ---*/
+
+  /*!\brief PHYSICAL_PROBLEM_FLUID_FSI
    *  DESCRIPTION: Physical governing equations \n
    *  Options: NONE (default),EULER, NAVIER_STOKES, RANS,
    *  \ingroup Config*/
   addEnumOption("FSI_FLUID_PROBLEM", Kind_Solver_Fluid_FSI, FSI_Fluid_Solver_Map, NO_SOLVER_FFSI);
-  /*!\par PHYSICAL_PROBLEM_STRUCTURAL_FSI
+
+  /*!\brief PHYSICAL_PROBLEM_STRUCTURAL_FSI
    *  DESCRIPTION: Physical governing equations \n
    *  Options: NONE (default), LINEAR_ELASTICITY, NONLINEAR_ELASTICITY
    *  \ingroup Config*/
@@ -1157,9 +1221,19 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("FSI_LINEAR_SOLVER_ITER_STRUC", Linear_Solver_Iter_FSI_Struc, 500);
 
+  /* DESCRIPTION: Restart from a steady state (sets grid velocities to 0 when loading the restart). */
+  addBoolOption("RESTART_STEADY_STATE", SteadyRestart, false);
 
-  /* CONFIG_CATEGORY: FSI solver */
-  /*--- Options related to the FSI solver ---*/
+  /*  DESCRIPTION: Apply dead loads
+  *  Options: NO, YES \ingroup Config */
+  addBoolOption("MATCHING_MESH", MatchingMesh, true);
+
+  /*!\par KIND_INTERPOLATION \n
+   * DESCRIPTION: Type of interpolation to use for multi-zone problems. \n OPTIONS: see \link Interpolator_Map \endlink
+   * Sets Kind_Interpolation \ingroup Config
+   */
+  addEnumOption("KIND_INTERPOLATION", Kind_Interpolation, Interpolator_Map, NEAREST_NEIGHBOR);
+
   /* DESCRIPTION: Maximum number of FSI iterations */
   addUnsignedShortOption("FSI_ITER", nIterFSI, 1);
   /* DESCRIPTION: Aitken's static relaxation factor */
@@ -1221,11 +1295,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Surface continuity at the intersection with the FFD */
   addEnumOption("FFD_CONTINUITY", FFD_Continuity, Continuity_Map, DERIVATIVE_2ND);
 
-  /*--- Options for the direct differentiation methods ---*/
-  /*!\par CONFIG_CATEGORY: Direct Differentation options\ingroup Config*/
 
-  /* DESCRIPTION: Direct differentiation mode */
+  /*--- Options for the automatic differentiation methods ---*/
+  /*!\par CONFIG_CATEGORY: Automatic Differentation options\ingroup Config*/
+
+  /* DESCRIPTION: Direct differentiation mode (forward) */
   addEnumOption("DIRECT_DIFF", DirectDiff, DirectDiff_Var_Map, NO_DERIVATIVE);
+
+  /* DESCRIPTION: Automatic differentiation mode (reverse) */
+  addBoolOption("AUTO_DIFF", AD_Mode, NO);
 
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /*!\par CONFIG_CATEGORY:Python Options\ingroup Config*/
@@ -1245,8 +1323,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Requested accuracy */
   addPythonOption("OPT_ACCURACY");
   
-  /* DESCRIPTION: Setup for design variables */
-  addPythonOption("BOUND_DV");
+  /* DESCRIPTION: Setup for design variables (upper bound) */
+  addPythonOption("OPT_BOUND_UPPER");
+  
+  /* DESCRIPTION: Setup for design variables (lower bound) */
+  addPythonOption("OPT_BOUND_LOWER");
   
   /* DESCRIPTION: Current value of the design variables */
   addPythonOption("DV_VALUE_NEW");
@@ -1492,7 +1573,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Make sure that 1D outputs are written when objective function requires ---*/
   
-  if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE || Kind_ObjFunc == OUTLET_CHAIN_RULE) {
+  if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE || Kind_ObjFunc == OUTFLOW_GENERALIZED) {
     Wrt_1D_Output = YES;
     Marker_Out_1D = Marker_Monitoring;
     nMarker_Out_1D = nMarker_Monitoring;
@@ -1560,19 +1641,26 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	nExtIter = 1;
   }
 
+  if (Kind_Solver == FEM_ELASTICITY) {
+    nMGLevels = 0;
+    if (Dynamic_Analysis == STATIC)
+	nExtIter = 1;
+  }
+
   /*--- Decide whether we should be writing unsteady solution files. ---*/
   
   if (Unsteady_Simulation == STEADY ||
-      Unsteady_Simulation == TIME_STEPPING ||
       Unsteady_Simulation == TIME_SPECTRAL  ||
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
 
-  if (Kind_Solver == LINEAR_ELASTICITY) {
+  if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)) {
 
 	  if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
 	  else { Wrt_Dynamic = true; }
 
+  } else {
+    Wrt_Dynamic = false;
   }
 
   
@@ -1687,6 +1775,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
       (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION) &&
+      (Kind_GridMovement[ZONE_0] != FLUID_STRUCTURE) &&
       (Kind_GridMovement[ZONE_0] != GUST) &&
       (nGridMovement != nMarker_Moving)) {
     cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
@@ -2331,6 +2420,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     RK_Alpha_Step = new su2double[1]; RK_Alpha_Step[0] = 1.0;
   }
   
+  if (nIntCoeffs == 0) {
+	nIntCoeffs = 2;
+	Int_Coeffs = new su2double[2]; Int_Coeffs[0] = 0.25; Int_Coeffs[1] = 0.5;
+  }
+
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
     cout << "PHYSICAL_PROBLEM must be set in the configuration file" << endl;
     exit(EXIT_FAILURE);
@@ -2439,11 +2533,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       }
   }
 
+#if defined CODI_REVERSE_TYPE
+  AD_Mode = YES;
+#else
+  if (AD_Mode == YES){
+    cout << "AUTO_DIFF=YES requires Automatic Differentiation support." << endl;
+    cout << "Please use correct executables (configuration/compilation is done using the preconfigure.py script)." << endl;
+  }
+#endif
+
   if (DiscreteAdjoint){
 #if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
     if (Kind_SU2 == SU2_CFD){
       cout << "SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!" << endl;
-      cout << "Please use SU2_CFD_REVERSE (configuration/compilation is done using the preconfigure.py script)." << endl;
+      cout << "Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)." << endl;
       exit(EXIT_FAILURE);
     }
 #endif
@@ -2871,17 +2974,20 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_NRBC, iMarker_MixBound, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
-  iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV,
+  iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iDV_Value,
   iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDisk_Inlet,
   iMarker_ActDisk_Outlet;
   
-  time_t now = time(0);
-  string dt = ctime(&now); dt[24] = '.';
+  
+  /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
+   the two lines below that use the dt variable. ---*/
+  //time_t now = time(0);
+  //string dt = ctime(&now); dt[24] = '.';
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 4.0.2  \"Cardinal\"                         |" << endl;
+  cout << "|   / __| | | |_  )   Release 4.1.0  \"Cardinal\"                         |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -2893,7 +2999,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   cout << "|                                                                       |" << endl;
-  cout << "|   Local date and time: " << dt << "                      |" << endl;
+  //cout << "|   Local date and time: " << dt << "                      |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| SU2 Lead Dev.: Dr. Francisco Palacios, Francisco.D.Palacios@boeing.com|" << endl;
   cout << "|                Dr. Thomas D. Economon, economon@stanford.edu          |" << endl;
@@ -2969,6 +3075,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case WAVE_EQUATION: cout << "Wave equation." << endl; break;
       case HEAT_EQUATION: cout << "Heat equation." << endl; break;
       case LINEAR_ELASTICITY: cout << "Linear elasticity solver." << endl; break;
+      case FEM_ELASTICITY:
+    	  if (Kind_Struct_Solver == SMALL_DEFORMATIONS) cout << "Geometrically linear elasticity solver." << endl;
+    	  if (Kind_Struct_Solver == LARGE_DEFORMATIONS) cout << "Geometrically non-linear elasticity solver." << endl;
+    	  if (Kind_Material == LINEAR_ELASTIC) cout << "Linear elastic material." << endl;
+    	  if (Kind_Material == NEO_HOOKEAN) {
+    		  if (Kind_Material_Compress == COMPRESSIBLE_MAT) cout << "Compressible Neo-Hookean material model." << endl;
+    		  if (Kind_Material_Compress == INCOMPRESSIBLE_MAT) cout << "Incompressible Neo-Hookean material model (mean dilatation method)." << endl;
+    	  }
+    	  break;
       case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
       case ADJ_NAVIER_STOKES:
         if (Frozen_Visc)
@@ -2986,7 +3101,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
 
-    if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != LINEAR_ELASTICITY) &&
+    if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != FEM_ELASTICITY) &&
         (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
       cout << "Mach number: " << Mach <<"."<< endl;
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
@@ -3017,8 +3132,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if (Restart) {
-      if (!Adjoint) cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+      if (!Adjoint && Kind_Solver != FEM_ELASTICITY) cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
       if (Adjoint) cout << "Read adjoint solution from: " << Solution_AdjFileName << "." << endl;
+      if (Kind_Solver == FEM_ELASTICITY) cout << "Read structural solution from: " << Solution_FEMFileName << "." << endl;
     }
     else {
       cout << "No restart solution, use the values at infinity (freestream)." << endl;
@@ -3120,8 +3236,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "Input mesh file name: " << Mesh_FileName << endl;
 
 	if (val_software == SU2_DOT) {
-		cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
-	}
+    if (DiscreteAdjoint){
+      cout << "Input sensitivity file name: " << GetObjFunc_Extension(Solution_AdjFileName) << "." << endl;
+    }else{
+      cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
+    }
+  }
 
 	if (val_software == SU2_MSH) {
 		switch (Kind_Adaptation) {
@@ -3151,8 +3271,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
   }
 
-  if ((val_software == SU2_DEF) || (val_software == SU2_DOT)) {
-
+  if (((val_software == SU2_DEF) || (val_software == SU2_DOT)) && (Design_Variable[0] != NONE)) {
 
     for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 
@@ -3181,6 +3300,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case FFD_CONTROL_SURFACE:   cout << "FFD (control surface) <-> "; break;
           case FFD_CAMBER:            cout << "FFD (camber) <-> "; break;
           case FFD_THICKNESS:         cout << "FFD (thickness) <-> "; break;
+          case CUSTOM:                cout << "Custom DV <-> "; break;
         }
         
         for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
@@ -3188,7 +3308,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           if (iMarker_DV < nMarker_DV-1) cout << ", ";
           else cout << " <-> ";
         }
-        cout << DV_Value[iDV] << " <-> ";
+
+        for (iDV_Value = 0; iDV_Value < nDV_Value[iDV]; iDV_Value++){
+          cout << DV_Value[iDV][iDV_Value];
+          if (iDV_Value != nDV_Value[iDV]-1) cout << ", ";
+        }
+        cout << " <-> ";
 
         if (Design_Variable[iDV] == FFD_SETTING) nParamDV = 0;
         if (Design_Variable[iDV] == SCALE) nParamDV = 0;
@@ -3208,6 +3333,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             (Design_Variable[iDV] ==  FFD_TWIST_ANGLE) ||
             (Design_Variable[iDV] ==  FFD_ROTATION) ||
             (Design_Variable[iDV] ==  FFD_CONTROL_SURFACE) ) nParamDV = 7;
+        if (Design_Variable[iDV] ==  CUSTOM) nParamDV = 1;
 
         for (unsigned short iParamDV = 0; iParamDV < nParamDV; iParamDV++) {
 
@@ -3295,7 +3421,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
       case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
       case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
-      case OUTLET_CHAIN_RULE:       cout << "Objective function defined by chain rule." << endl; break;
+      case OUTFLOW_GENERALIZED:     cout << "Generalized outflow objective function." << endl; break;
 		}
 
 	}
@@ -3490,7 +3616,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;
 
-    if ((Kind_Solver != LINEAR_ELASTICITY)) {
+    if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != FEM_ELASTICITY) ) {
 		switch (Unsteady_Simulation) {
 		  case NO:
 			cout << "Local time stepping (steady state simulation)." << endl; break;
@@ -3589,9 +3715,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<< endl;
     }
 
-    if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
+    if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != FEM_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
 
-      if (CFL_AdaptParam[0] == 1.0) cout << "No CFL adaptation." << endl;
+      if (!CFL_Adapt) cout << "No CFL adaptation." << endl;
       else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
         <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
 
@@ -3603,10 +3729,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << endl;
       }
 
-      cout << "Courant-Friedrichs-Lewy number:   ";
-      cout.precision(3);
-      cout.width(6); cout << CFL[0];
-      cout << endl;
+			if (Unsteady_Simulation != TIME_STEPPING){
+				cout << "Courant-Friedrichs-Lewy number:   ";
+				cout.precision(3);
+				cout.width(6); cout << CFL[0];
+				cout << endl;
+			}
+			
 
       if (nMGLevels !=0) {
         cout.precision(3);
@@ -3742,7 +3871,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << "Forces breakdown file name: " << Breakdown_FileName << "." << endl;
 
-    if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
+    if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != FEM_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
       if (!Adjoint && !DiscreteAdjoint) {
         cout << "Surface flow coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
         cout << "Flow variables file name: " << Flow_FileName << "." << endl;
@@ -3759,7 +3888,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     else {
       cout << "Surface structure coefficients file name: " << SurfStructure_FileName << "." << endl;
       cout << "Structure variables file name: " << Structure_FileName << "." << endl;
-      cout << "Restart structure file name: " << Restart_FlowFileName << "." << endl;
+      cout << "Restart structure file name: " << Restart_FEMFileName << "." << endl;
     }
 
   }
@@ -3799,6 +3928,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_DOT) {
+    if (DiscreteAdjoint){
+      cout << "Output Volume Sensitivity file name: " << VolSens_FileName << ". " << endl;
+      cout << "Output Surface Sensitivity file name: " << SurfSens_FileName << ". " << endl;
+    }
     cout << "Output gradient file name: " << ObjFunc_Grad_FileName << ". " << endl;
   }
 
@@ -4574,8 +4707,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   }
 
   /*--- Append iteration number for unsteady cases ---*/
-  
-  if ((Wrt_Unsteady) || (Unsteady_Simulation == TIME_SPECTRAL)) {
+  if ((Wrt_Unsteady) || (Unsteady_Simulation == TIME_SPECTRAL) || (Wrt_Dynamic)) {
     unsigned short lastindex = UnstFilename.find_last_of(".");
     UnstFilename = UnstFilename.substr(0, lastindex);
     if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d.dat", val_iter);
@@ -4590,7 +4722,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   return UnstFilename;
 }
 
-string CConfig::GetRestart_FlowFileName(string val_filename, int val_iZone) {
+string CConfig::GetMultizone_FileName(string val_filename, int val_iZone) {
 
     string multizone_filename = val_filename;
     char buffer[50];
@@ -4639,7 +4771,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case AVG_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
       case AVG_OUTLET_PRESSURE:      AdjExt = "_pe";       break;
       case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
-      case OUTLET_CHAIN_RULE:       AdjExt = "_chn";       break;
+      case OUTFLOW_GENERALIZED:       AdjExt = "_chn";       break;
     }
     Filename.append(AdjExt);
 
@@ -4800,6 +4932,15 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
       }
       break;
     case LINEAR_ELASTICITY:
+
+      Current_DynTime = static_cast<su2double>(val_extiter)*Delta_DynTime;
+
+      if (val_system == RUNTIME_FEA_SYS) {
+        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_FEA);
+      }
+      break;
+    case FEM_ELASTICITY:
 
       Current_DynTime = static_cast<su2double>(val_extiter)*Delta_DynTime;
 

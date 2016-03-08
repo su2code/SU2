@@ -2,7 +2,7 @@
  * \file integration_structure.inl
  * \brief In-Line subroutines of the <i>integration_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -79,6 +79,10 @@ inline void CIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver **
 
 inline void CIntegration::Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
 											  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) { }
+
+inline void CIntegration::Structural_Iteration_FEM(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
+											  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) { }
+
 
 inline void CIntegration::SetPotential_Solver(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container, 
                                               CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone) { }

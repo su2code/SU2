@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -40,6 +40,7 @@
 #include "integration_structure.hpp"
 #include "output_structure.hpp"
 #include "numerics_structure.hpp"
+#include "transfer_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
@@ -50,7 +51,7 @@ using namespace std;
  * \class CIteration
  * \brief Parent class for defining a single iteration of a physics problem.
  * \author T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CIteration {
 protected:
@@ -146,7 +147,7 @@ public:
  * \class CMeanFlowIteration
  * \brief Class for driving an iteration of the mean flow system.
  * \author T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CMeanFlowIteration : public CIteration {
 public:
@@ -292,7 +293,7 @@ public:
  * \class CWaveIteration
  * \brief Class for driving an iteration of the wave system.
  * \author T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CWaveIteration : public CIteration {
 public:
@@ -310,7 +311,16 @@ public:
   
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.
-   * \param[in] ??? - Description here.
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] surface_movement - Surface movement classes of the problem.
+   * \param[in] grid_movement - Volume grid movement classes of the problem.
+   * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] val_iZone - zone of the problem.
    */
   void Preprocess(COutput *output,
                   CIntegration ***integration_container,
@@ -334,6 +344,7 @@ public:
    * \param[in] surface_movement - Surface movement classes of the problem.
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] val_iZone - zone of the problem.
    */
   void Iterate(COutput *output,
                CIntegration ***integration_container,
@@ -345,10 +356,19 @@ public:
                CVolumetricMovement **grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone);
-  
+
   /*!
    * \brief Updates the containers for the wave system.
-   * \param[in] ??? - Description here.
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] surface_movement - Surface movement classes of the problem.
+   * \param[in] grid_movement - Volume grid movement classes of the problem.
+   * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] val_iZone - zone of the problem.
    */
   void Update(COutput *output,
               CIntegration ***integration_container,
@@ -363,19 +383,16 @@ public:
   
   /*!
    * \brief Monitors the convergence and other metrics for the wave system.
-   * \param[in] ??? - Description here.
    */
   void Monitor();
   
   /*!
    * \brief Outputs desired files and quantities for the wave system.
-   * \param[in] ??? - Description here.
    */
   void Output();
   
   /*!
    * \brief Postprocesses the wave system before heading to another physics system or the next iteration.
-   * \param[in] ??? - Description here.
    */
   void Postprocess();
   
@@ -385,7 +402,7 @@ public:
  * \class CHeatIteration
  * \brief Class for driving an iteration of the heat system.
  * \author T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CHeatIteration : public CIteration {
 public:
@@ -438,7 +455,7 @@ public:
                CVolumetricMovement **grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone);
-  
+
   /*!
    * \brief Updates the containers for the heat system.
    * \param[in] ??? - Description here.
@@ -478,7 +495,7 @@ public:
  * \class CPoissonIteration
  * \brief Class for driving an iteration of the poisson system.
  * \author T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CPoissonIteration : public CIteration {
 public:
@@ -531,7 +548,7 @@ public:
                CVolumetricMovement **grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone);
-  
+
   /*!
    * \brief Updates the containers for the poisson system.
    * \param[in] ??? - Description here.
@@ -571,7 +588,7 @@ public:
  * \class CFEAIteration
  * \brief Class for driving an iteration of the FEA system.
  * \author T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CFEAIteration : public CIteration {
 public:
@@ -624,7 +641,7 @@ public:
                CVolumetricMovement **grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone);
-  
+
   /*!
    * \brief Updates the containers for the FEA system.
    * \param[in] ??? - Description here.
@@ -660,11 +677,99 @@ public:
   
 };
 
+
+/*!
+ * \class CFEM_StructuralAnalysis
+ * \brief Class for driving an iteration of structural analysis.
+ * \author R. Sanchez
+ * \version 4.0.1 "Cardinal"
+ */
+class CFEM_StructuralAnalysis : public CIteration {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] config - Definition of the particular problem.
+   */
+	CFEM_StructuralAnalysis(CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CFEM_StructuralAnalysis(void);
+
+  /*!
+   * \brief Preprocessing to prepare for an iteration of the physics.
+   * \param[in] ??? - Description here.
+   */
+  void Preprocess();
+  using CIteration::Preprocess;
+
+
+  /*!
+   * \brief Perform a single iteration for structural analysis using the Finite Element Method.
+   * \author R. Sanchez.
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] surface_movement - Surface movement classes of the problem.
+   * \param[in] grid_movement - Volume grid movement classes of the problem.
+   * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   */
+  void Iterate(COutput *output,
+		  	  CIntegration ***integration_container,
+		  	  CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox,
+              unsigned short val_iZone);
+
+  /*!
+   * \brief Updates the containers for the FEM system.
+   * \param[in] ??? - Description here.
+   */
+  void Update(COutput *output,
+		  	  CIntegration ***integration_container,
+		  	  CGeometry ***geometry_container,
+	   	   	  CSolver ****solver_container,
+	   	   	  CNumerics *****numerics_container,
+	   	   	  CConfig **config_container,
+	   	   	  CSurfaceMovement **surface_movement,
+	   	   	  CVolumetricMovement **grid_movement,
+	   	   	  CFreeFormDefBox*** FFDBox,
+		   	  unsigned short val_iZone);
+
+  /*!
+   * \brief Monitors the convergence and other metrics for the FEM system.
+   * \param[in] ??? - Description here.
+   */
+  void Monitor();
+
+  /*!
+   * \brief Outputs desired files and quantities for the FEM system.
+   * \param[in] ??? - Description here.
+   */
+  void Output();
+
+  /*!
+   * \brief Postprocesses the FEM system before heading to another physics system or the next iteration.
+   * \param[in] ??? - Description here.
+   */
+  void Postprocess();
+
+};
+
 /*!
  * \class CAdjMeanFlowIteration
  * \brief Class for driving an iteration of the adjoint mean flow system.
  * \author T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CAdjMeanFlowIteration : public CIteration {
 public:
@@ -757,13 +862,13 @@ public:
  * \class CDiscAdjMeanFlowIteration
  * \brief Class for driving an iteration of the discrete adjoint mean flow system.
  * \author T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  */
 class CDiscAdjMeanFlowIteration : public CIteration {
 
 private:
 
-  CIteration* meanflow_iteration; /*!< \brief Pointer to the mean flow iteration class. */
+  CMeanFlowIteration* meanflow_iteration; /*!< \brief Pointer to the mean flow iteration class. */
   unsigned short CurrentRecording; /*!< \brief Stores the current status of the recording. */
   bool turbulent;       /*!< \brief Stores the turbulent flag. */
 
@@ -772,9 +877,10 @@ private:
     FLOW_VARIABLES = 1, /*!< \brief Indicates that the current recording
                                     can be used to compute the gradients with respect
                                     to the conservative flow variables. */
-    GEOMETRY_VARIABLES = 2 /*!< \brief Indicates that the current recording
+    GEOMETRY_VARIABLES = 2, /*!< \brief Indicates that the current recording
                                        can be used to compute the gradients with respect
                                        to the geometry variables. */
+    ALL_VARIABLES = 3,
   };
 
 
@@ -916,6 +1022,22 @@ public:
                       CFreeFormDefBox*** FFDBox,
                       unsigned short val_iZone,
                       unsigned short kind_recording);
+
+  /*!
+   * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions
+   * (e.g. turbulent variables, normals, volumes).
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] kind_recording - The kind of recording (geometry or flow).
+   */
+  void SetDependencies(CSolver ****solver_container,
+                       CGeometry ***geometry_container,
+                       CConfig **config_container,
+                       unsigned short iZone,
+                       unsigned short kind_recording);
+
 };
 
 
@@ -938,6 +1060,26 @@ void FluidStructureIteration(COutput *output, CIntegration ***integration_contai
 														 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container, 
 														 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
 														 unsigned long iFluidIt, unsigned long nFluidIt);
+
+/*!
+ * \brief Iteration function for structural analysis using the Finite Element Method.
+ * \author R. Sanchez.
+ * \param[in] output - Pointer to the COutput class.
+ * \param[in] integration_container - Container vector with all the integration methods.
+ * \param[in] geometry_container - Geometrical definition of the problem.
+ * \param[in] solver_container - Container vector with all the solutions.
+ * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+ * \param[in] config_container - Definition of the particular problem.
+ * \param[in] surface_movement - Surface movement classes of the problem.
+ * \param[in] grid_movement - Volume grid movement classes of the problem.
+ * \param[in] FFDBox - FFD FFDBoxes of the problem.
+ * \param[in] ExtIter - Current physical time iteration number.
+ */
+void FEM_StructuralIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+									CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+									CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
+
+
 
 /*!
  * \brief Updates the positions and grid velocities for dynamic meshes between physical time steps.
