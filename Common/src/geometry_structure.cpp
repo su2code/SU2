@@ -9725,8 +9725,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 
 						/*--- store the number of local physical vertex and initiate turbovertex pointer---*/
 						nVertexSpan[iMarker][0] = jVertex;
-						turbovertex[iMarker][0] = new CTurboVertex* [nVertexSpan[iMarker][0]];
-
+						if (allocate){
+							turbovertex[iMarker][0] = new CTurboVertex* [nVertexSpan[iMarker][0]];
+						}
 						/*--- store min local value pitch wise to be used for global reordering---*/
 						ymin_loc 				= min;
 						nVertex_loc 		= jVertex;
@@ -9735,7 +9736,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 						jVertex = 0;
 						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 							if(node[jPoint]->GetDomain()){
-								turbovertex[iMarker][0][jVertex] = new CTurboVertex(jPoint, nDim);
+								if (allocate){
+									turbovertex[iMarker][0][jVertex] = new CTurboVertex(jPoint, nDim);
+								}
 								turbovertex[iMarker][0][jVertex]->SetArea(Area);
 								turbovertex[iMarker][0][jVertex]->SetNormal(NormalArea);
 								coord = node[jPoint]->GetCoord();
@@ -9849,7 +9852,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 
 						/*--- initialize the CTurboVertex pointers and auxiliary pointers  ---*/
 						for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-							turbovertex[iMarker][iSpan] = new CTurboVertex* [nVertexSpan[iMarker][iSpan]];
+							if (allocate){
+								turbovertex[iMarker][iSpan] = new CTurboVertex* [nVertexSpan[iMarker][iSpan]];
+							}
 							ordered[iSpan]     					= new unsigned long [nVertexSpan[iMarker][iSpan]];
 							disordered[iSpan]  					= new unsigned long [nVertexSpan[iMarker][iSpan]];
 							checkAssign[iSpan]     			= new bool [nVertexSpan[iMarker][iSpan]];
@@ -9922,7 +9927,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 							for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
 								dist = 10E+06;
 								ordered[iSpan][iSpanVertex] = disordered[iSpan][kSpanVertex];
-								turbovertex[iMarker][iSpan][iSpanVertex] = new CTurboVertex(ordered[iSpan][iSpanVertex], nDim);
+								if (allocate){
+									turbovertex[iMarker][iSpan][iSpanVertex] = new CTurboVertex(ordered[iSpan][iSpanVertex], nDim);
+								}
 								turbovertex[iMarker][iSpan][iSpanVertex]->SetArea(area[iSpan][kSpanVertex]);
 								turbovertex[iMarker][iSpan][iSpanVertex]->SetNormal(unitnormal[iSpan][kSpanVertex]);
 								checkAssign[iSpan][kSpanVertex] = true;
