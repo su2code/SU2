@@ -601,7 +601,9 @@ private:
 	su2double ElasticyMod,			/*!< \brief Young's modulus of elasticity. */
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
 	MaterialDensity,								/*!< \brief Material density. */
-	DE_Modulus;							/*!< \brief Dielectric elastomer moduli. */
+	DE_Modulus,							/*!< \brief Dielectric elastomer modulus. */
+	DE_Voltage;							/*!< \brief Dielectric elastomer voltage. */
+	bool DE_Effects; 						/*!< Application of DE effects to FE analysis */
 	unsigned short Kind_2DElasForm;			/*!< \brief Kind of bidimensional elasticity solver. */
 	unsigned short nIterFSI;	/*!< \brief Number of maximum number of subiterations in a FSI problem. */
 	su2double AitkenStatRelax;			/*!< \brief Aitken's relaxation factor (if set as static) */
@@ -1561,10 +1563,23 @@ public:
 	su2double GetElasticyMod(void);
 
 	/*!
-	 * \brief Get the value of the bulk modulus on the structural side.
-	 * \return Value of the bulk modulus on the structural side.
+	  * \brief Decide whether to apply DE effects to the model.
+	  * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
+	  */
+
+	bool GetDE_Effects(void);
+
+	/*!
+	 * \brief Get the value of the DE modulus.
+	 * \return Value of the DE modulus.
 	 */
 	su2double GetDE_Modulus(void);
+
+	/*!
+	 * \brief Get the value of the DE voltage.
+	 * \return Value of the DE voltage.
+	 */
+	su2double GetDE_Voltage(void);
 
     /*!
 	 * \brief Formulation for 2D elasticity (plane stress - strain)

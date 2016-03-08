@@ -328,7 +328,7 @@ public:
 	su2double GetGradNi_X(unsigned short iNode, unsigned short iGauss, unsigned short iDim);
 
 	/*!
-	 * \brief Retrieve the value of the gradient of the shape functions respect to the reference configuration.
+	 * \brief Retrieve the value of the gradient of the shape functions respect to the current configuration.
 	 * \param[in] iNode - Index of the node.
 	 * \param[in] iNode - Index of the Gaussian Point.
 	 * \param[out] GradNi_X - Gradient of the shape function related to node iNode and evaluated at Gaussian Point iGauss
@@ -336,7 +336,15 @@ public:
 	su2double GetGradNi_x(unsigned short iNode, unsigned short iGauss, unsigned short iDim);
 
 	/*!
-	 * \brief Retrieve the value of the gradient of the shape functions respect to the reference configuration.
+	 * \brief Retrieve the value of the gradient of the shape functions respect to the reference configuration (subintegrated point).
+	 * \param[in] iNode - Index of the node.
+	 * \param[in] iNode - Index of the Gaussian Point.
+	 * \param[out] GradNi_x - Gradient of the shape function related to node iNode and evaluated at Gaussian Point iGauss
+	 */
+	su2double GetGradNi_X_P(unsigned short iNode, unsigned short iGaussP, unsigned short iDim);
+
+	/*!
+	 * \brief Retrieve the value of the gradient of the shape functions respect to the current configuration (subintegrated point).
 	 * \param[in] iNode - Index of the node.
 	 * \param[in] iNode - Index of the Gaussian Point.
 	 * \param[out] GradNi_x - Gradient of the shape function related to node iNode and evaluated at Gaussian Point iGauss

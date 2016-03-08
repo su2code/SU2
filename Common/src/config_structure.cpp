@@ -1124,8 +1124,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("POISSON_RATIO", PoissonRatio, 0.30);
   /* DESCRIPTION: Material density */
   addDoubleOption("MATERIAL_DENSITY", MaterialDensity, 7854);
+
+  /*  DESCRIPTION: Include DE effects
+  *  Options: NO, YES \ingroup Config */
+  addBoolOption("DE_EFFECTS", DE_Effects, false);
   /*!\brief DE_MODULUS \n DESCRIPTION: Value of the Dielectric elastomer modulus \n DEFAULT 1 */
   addDoubleOption("DE_MODULUS", DE_Modulus, 1);
+  /*!\brief DE_VOLTAGE \n DESCRIPTION: Value of the Dielectric elastomer voltage \n DEFAULT 1 */
+  addDoubleOption("DE_VOLTAGE", DE_Voltage, 1);
 
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Geometric condition \n OPTIONS: see \link Struct_Map \endlink \ingroup Config*/
   addEnumOption("GEOMETRIC_CONDITIONS", Kind_Struct_Solver, Struct_Map, SMALL_DEFORMATIONS);

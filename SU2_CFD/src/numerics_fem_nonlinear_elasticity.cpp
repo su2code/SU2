@@ -543,6 +543,349 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element){
 
 }
 
+void CFEM_NonlinearElasticity::Compute_Tangent_Matrix_DE(CElement *element){
+
+	unsigned short iVar, jVar, kVar;
+	unsigned short iGaussP, nGaussP;
+	unsigned short iNode, jNode, nNode;
+	unsigned short iDim, bDim;
+
+	su2double Ks_Aux_ab;
+
+	su2double Weight, Jac_x;
+
+	su2double AuxMatrixKs[3];
+
+	/*--- Initialize auxiliary matrix ---*/
+
+	for (iVar = 0; iVar < 3; iVar++){
+		AuxMatrixKs[iVar] = 0.0;
+	}
+
+//	cout << "I ENTER HERE" << endl;
+
+	//element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements --*/
+	element->ComputeGrad_Pressure();    /*--- Compute the gradients for the subintegrated element ---*/
+
+	nNode = element->GetnNodes();
+	nGaussP = element->GetnGaussPointsP();
+
+	/*--- Reduced integration of the stress term for the tangent matrix and for the residual ---*/
+
+	for (iGaussP = 0; iGaussP < nGaussP; iGaussP++){
+
+//		cout << "And I compute this " << iGaussP+1 << " time. " << endl;
+
+		Weight = element->GetWeight_P(iGaussP);
+		Jac_x = element->GetJ_x_P(iGaussP);
+
+		/*--- Initialize the deformation gradient for each Gauss Point ---*/
+
+		for (iVar = 0; iVar < 3; iVar++){
+			for (jVar = 0; jVar < 3; jVar++){
+				F_Mat[iVar][jVar] = 0.0;
+				b_Mat[iVar][jVar] = 0.0;
+			}
+		}
+
+		/*--- Retrieve the values of the gradients of the shape functions for each node ---*/
+		/*--- This avoids repeated operations ---*/
+
+		for (iNode = 0; iNode < nNode; iNode++){
+
+			for (iDim = 0; iDim < nDim; iDim++){
+				GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X_P(iNode,iGaussP,iDim);
+				GradNi_Curr_Mat[iNode][iDim] = element->GetGradNi_x_P(iNode,iGaussP,iDim);
+				currentCoord[iNode][iDim] = element->GetCurr_Coord(iNode, iDim);
+			}
+
+			/*--- Compute the deformation gradient ---*/
+
+			for (iVar = 0; iVar < nDim; iVar++){
+				for (jVar = 0; jVar < nDim; jVar++){
+					F_Mat[iVar][jVar] += currentCoord[iNode][iVar]*GradNi_Ref_Mat[iNode][jVar];
+				}
+			}
+
+			/*--- This implies plane strain --> Consider the possible implementation for plane stress --*/
+			if (nDim == 2){
+				F_Mat[2][2] = 1.0;
+			}
+
+		}
+
+		cout << "Node 1 (x, y): " << currentCoord[0][0] << ", " << currentCoord[0][1] << endl;
+		cout << "Node 2 (x, y): " << currentCoord[1][0] << ", " << currentCoord[1][1] << endl;
+		cout << "Node 3 (x, y): " << currentCoord[2][0] << ", " << currentCoord[2][1] << endl;
+		cout << "Node 4 (x, y): " << currentCoord[3][0] << ", " << currentCoord[3][1] << endl;
+
+		// As a first approach, we assume plane strain
+
+//		if (nDim == 2) {
+//			if (plane_stress){
+//				// Compute the value of the term 33 for the deformation gradient
+//				Compute_Plane_Stress_Term(element);
+//				F_Mat[2][2] = f33;
+//			}
+//			else{
+//				F_Mat[2][2] = 1.0;
+//			}
+//		}
+
+		/*--- Determinant of F --> Jacobian of the transformation ---*/
+
+		J_F = 	F_Mat[0][0]*F_Mat[1][1]*F_Mat[2][2]+
+				F_Mat[0][1]*F_Mat[1][2]*F_Mat[2][0]+
+				F_Mat[0][2]*F_Mat[1][0]*F_Mat[2][1]-
+				F_Mat[0][2]*F_Mat[1][1]*F_Mat[2][0]-
+				F_Mat[1][2]*F_Mat[2][1]*F_Mat[0][0]-
+				F_Mat[2][2]*F_Mat[0][1]*F_Mat[1][0];
+
+		/*--- Compute the left Cauchy deformation tensor ---*/
+
+		for (iVar = 0; iVar < 3; iVar++){
+			for (jVar = 0; jVar < 3; jVar++){
+				for (kVar = 0; kVar < 3; kVar++){
+					b_Mat[iVar][jVar] += F_Mat[iVar][kVar]*F_Mat[jVar][kVar];
+				}
+			}
+		}
+
+//		cout << b_Mat[0][0] << " " << b_Mat[0][1] << " " << b_Mat[0][2] << endl;
+//		cout << b_Mat[1][0] << " " << b_Mat[1][1] << " " << b_Mat[1][2] << endl;
+//		cout << b_Mat[2][0] << " " << b_Mat[2][1] << " " << b_Mat[2][2] << endl;
+
+		/*--- Compute the constitutive matrix ---*/
+
+		Compute_Eigenproblem(element);
+
+		Compute_Stress_Tensor(element);
+
+		for (iNode = 0; iNode < nNode; iNode++){
+
+			/*--------------------------------------------------------------------------------*/
+			/*---------------------------- NODAL STRESS TERM ---------------------------------*/
+			/*--------------------------------------------------------------------------------*/
+		    /*--- Compute the nodal stress term for each gaussian point and for each node, ---*/
+		    /*--- and add it to the element structure to be retrieved from the solver      ---*/
+
+			for (iVar = 0; iVar < nDim; iVar++){
+				KAux_t_a[iVar] = 0.0;
+				for (jVar = 0; jVar < nDim; jVar++){
+					KAux_t_a[iVar] += Weight * Stress_Tensor[iVar][jVar] * GradNi_Curr_Mat[iNode][jVar] * Jac_x;
+				}
+			}
+
+			/*--------------------------------------------------------------------------------*/
+			/*-------------------------------  STRESS TERM  ----------------------------------*/
+			/*--------------------------------------------------------------------------------*/
+
+		    /*--- Compute the BT.D Matrix ---*/
+
+			for (iVar = 0; iVar < nDim; iVar++){
+				AuxMatrixKs[iVar] = 0.0;
+				for (jVar = 0; jVar < nDim; jVar++){
+					AuxMatrixKs[iVar] += GradNi_Curr_Mat[iNode][jVar]*Stress_Tensor[jVar][iVar]; // DOUBLE CHECK
+				}
+			}
+
+			/*--- Assumming symmetry ---*/
+			for (jNode = iNode; jNode < nNode; jNode++){
+
+				/*--- Ks_Aux_ab is the term for the constitutive part of the tangent matrix ---*/
+				Ks_Aux_ab = 0.0;
+				for (iVar = 0; iVar < nDim; iVar++){
+					Ks_Aux_ab += Weight * AuxMatrixKs[iVar] * GradNi_Curr_Mat[jNode][iVar] * Jac_x;
+				}
+
+			}
+
+		}
+
+	}
+
+}
+
+void CFEM_NonlinearElasticity::Compute_Eigenproblem(CElement *element){
+
+	su2double l1, l2, J1, J2;
+	su2double v12_1, v12_2;
+	su2double v21_1, v21_2;
+
+	unsigned short iVar, jVar, kVar;
+	double C_Mat[3][3];
+
+	/*--- Compute the right Cauchy deformation tensor ---*/
+
+	for (iVar = 0; iVar < 3; iVar++){
+		for (jVar = 0; jVar < 3; jVar++){
+			C_Mat[iVar][jVar] = 0.0;
+			for (kVar = 0; kVar < 3; kVar++){
+				C_Mat[iVar][jVar] += F_Mat[kVar][iVar] * F_Mat[kVar][jVar];
+			}
+		}
+	}
+
+//	cout << "----------------------INSIDE THE EIGENPROBLEM ROUTINE-------------------------" << endl;
+//
+	cout << C_Mat[0][0] << " " << C_Mat[0][1] << " " << C_Mat[0][2] << endl;
+	cout << C_Mat[1][0] << " " << C_Mat[1][1] << " " << C_Mat[1][2] << endl;
+	cout << C_Mat[2][0] << " " << C_Mat[2][1] << " " << C_Mat[2][2] << endl;
+//
+//	cout << "------------------------------------------------------------------------------" << endl;
+
+	if (nDim == 2){
+
+		l1 = 0.5*(b_Mat[0][0]+b_Mat[1][1]) + 0.5*sqrt(pow((b_Mat[0][0] + b_Mat[1][1]),2) - ( 4* (b_Mat[0][0]*b_Mat[1][1] - b_Mat[0][1]*b_Mat[1][0])));
+		l2 = 0.5*(b_Mat[0][0]+b_Mat[1][1]) - 0.5*sqrt(pow((b_Mat[0][0] + b_Mat[1][1]),2) - ( 4* (b_Mat[0][0]*b_Mat[1][1] - b_Mat[0][1]*b_Mat[1][0])));
+
+		J1 = 0.5*(C_Mat[0][0]+C_Mat[1][1]) + 0.5*sqrt(pow((C_Mat[0][0] + C_Mat[1][1]),2) - ( 4* (C_Mat[0][0]*C_Mat[1][1] - C_Mat[0][1]*C_Mat[1][0])));
+		J2 = 0.5*(C_Mat[0][0]+C_Mat[1][1]) - 0.5*sqrt(pow((C_Mat[0][0] + C_Mat[1][1]),2) - ( 4* (C_Mat[0][0]*C_Mat[1][1] - C_Mat[0][1]*C_Mat[1][0])));
+
+		v12_1 = - 1 * b_Mat[1][0] / (b_Mat[1][1]-l1);
+		v12_2 = - 1 * (b_Mat[0][0]-l1) / b_Mat[1][0];
+
+		v21_1 = - 1 * b_Mat[1][0] / (b_Mat[0][0]-l2);
+		v21_2 = - 1 * (b_Mat[1][1]-l2) / b_Mat[1][0];
+
+		cout << "Eigenvector b 1: (1," << v12_1 << ") or (1," << v12_2 << ")" << endl;
+		cout << "Eigenvector b 2: (" << v21_1 << ",1) or (" << v21_2 << ",1)" << endl;
+
+		cout << "LAMBDA_1^2=" << l1 << " and LAMBDA_2^2=" << l2 << ". " << "LAMBDA_1=" << sqrt(l1) << " and LAMBDA_2=" << sqrt(l2) << endl;
+
+		v12_1 = - 1 * C_Mat[1][0] / (C_Mat[1][1]-J1);
+		v12_2 = - 1 * (C_Mat[0][0]-J1) / C_Mat[1][0];
+
+		v21_1 = - 1 * C_Mat[1][0] / (C_Mat[0][0]-J2);
+		v21_2 = - 1 * (C_Mat[1][1]-J2) / C_Mat[1][0];
+
+		cout << "Eigenvector C 1: (1," << v12_1 << ") or (1," << v12_2 << ")" << endl;
+		cout << "Eigenvector C 2: (" << v21_1 << ",1) or (" << v21_2 << ",1)" << endl;
+
+		cout << "LAMBDA_1^2_C=" << J1 << " and LAMBDA_2^2_C=" << J2 << ". " << "LAMBDA_1_C=" << sqrt(J1) << " and LAMBDA_2_C=" << sqrt(J2) << endl;
+
+
+//		cout << b_Mat[1][0] << endl;
+//		cout << "Check L1=" << (b_Mat[0][0]-l1)*(b_Mat[1][1]-l1)-(b_Mat[0][1])*(b_Mat[1][0]) << endl;
+//		cout << "Check L2=" << (b_Mat[0][0]-l2)*(b_Mat[1][1]-l2)-(b_Mat[0][1])*(b_Mat[1][0]) << endl;
+	}
+
+
+
+}
+
+void CFEM_NonlinearElasticity::Compute_NodalStress_Term_DE(CElement *element){
+
+//	unsigned short iVar, jVar, kVar;
+//	unsigned short iGauss, nGauss;
+//	unsigned short iNode, nNode;
+//	unsigned short iDim;
+//
+//	su2double Weight, Jac_x;
+//
+//	element->clearElement(); 			/*--- Restarts the element: avoids adding over previous results in other elements --*/
+//	element->ComputeGrad_NonLinear();	/*--- Check if we can take this out... so we don't have to do it twice ---*/
+//
+//	nNode = element->GetnNodes();
+//	nGauss = element->GetnGaussPoints();
+//
+//	/*--- Full integration of the nodal stress ---*/
+//
+//	for (iGauss = 0; iGauss < nGauss; iGauss++){
+//
+//		Weight = element->GetWeight(iGauss);
+//		Jac_x = element->GetJ_x(iGauss);
+//
+//		/*--- Initialize the deformation gradient for each Gauss Point ---*/
+//
+//		for (iVar = 0; iVar < 3; iVar++){
+//			for (jVar = 0; jVar < 3; jVar++){
+//				F_Mat[iVar][jVar] = 0.0;
+//				b_Mat[iVar][jVar] = 0.0;
+//			}
+//		}
+//
+//		/*--- Retrieve the values of the gradients of the shape functions for each node ---*/
+//		/*--- This avoids repeated operations ---*/
+//
+//		for (iNode = 0; iNode < nNode; iNode++){
+//
+//			for (iDim = 0; iDim < nDim; iDim++){
+//				GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
+//				GradNi_Curr_Mat[iNode][iDim] = element->GetGradNi_x(iNode,iGauss,iDim);
+//				currentCoord[iNode][iDim] = element->GetCurr_Coord(iNode, iDim);
+//			}
+//
+//			/*--- Compute the deformation gradient ---*/
+//
+//			for (iVar = 0; iVar < nDim; iVar++){
+//				for (jVar = 0; jVar < nDim; jVar++){
+//					F_Mat[iVar][jVar] += currentCoord[iNode][iVar]*GradNi_Ref_Mat[iNode][jVar];
+//				}
+//			}
+//
+//			/*--- This implies plane strain --> Consider the possible implementation for plane stress --*/
+//			if (nDim == 2){
+//				F_Mat[2][2] = 1.0;
+//			}
+//
+//		}
+//
+//		if (nDim == 2) {
+//			if (plane_stress){
+//				// Compute the value of the term 33 for the deformation gradient
+//				Compute_Plane_Stress_Term(element);
+//				F_Mat[2][2] = f33;
+//			}
+//			else{
+//				F_Mat[2][2] = 1.0;
+//			}
+//		}
+//
+//		/*--- Determinant of F --> Jacobian of the transformation ---*/
+//
+//		J_F = 	F_Mat[0][0]*F_Mat[1][1]*F_Mat[2][2]+
+//				F_Mat[0][1]*F_Mat[1][2]*F_Mat[2][0]+
+//				F_Mat[0][2]*F_Mat[1][0]*F_Mat[2][1]-
+//				F_Mat[0][2]*F_Mat[1][1]*F_Mat[2][0]-
+//				F_Mat[1][2]*F_Mat[2][1]*F_Mat[0][0]-
+//				F_Mat[2][2]*F_Mat[0][1]*F_Mat[1][0];
+//
+//		/*--- Compute the left Cauchy deformation tensor ---*/
+//
+//		for (iVar = 0; iVar < 3; iVar++){
+//			for (jVar = 0; jVar < 3; jVar++){
+//				for (kVar = 0; kVar < 3; kVar++){
+//					b_Mat[iVar][jVar] += F_Mat[iVar][kVar]*F_Mat[jVar][kVar];
+//				}
+//			}
+//		}
+//
+//		/*--- Compute the stress tensor ---*/
+//
+//		Compute_Stress_Tensor(element);
+//
+//
+//		for (iNode = 0; iNode < nNode; iNode++){
+//
+//		    /*--- Compute the nodal stress term for each gaussian point and for each node, ---*/
+//		    /*--- and add it to the element structure to be retrieved from the solver      ---*/
+//
+//			for (iVar = 0; iVar < nDim; iVar++){
+//				KAux_t_a[iVar] = 0.0;
+//				for (jVar = 0; jVar < nDim; jVar++){
+//					KAux_t_a[iVar] += Weight * Stress_Tensor[iVar][jVar] * GradNi_Curr_Mat[iNode][jVar] * Jac_x;
+//				}
+//			}
+//
+//			element->Add_Kt_a(KAux_t_a, iNode);
+//
+//		}
+//
+//	}
+
+}
+
 void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 
 	unsigned short iVar, jVar, kVar;
@@ -759,24 +1102,6 @@ void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element) {
 			Stress_Tensor[iVar][jVar] = Mu_J * (b_Mat[iVar][jVar] - dij) + Lambda_J * log(J_F) * dij;
 		}
 	}
-
-///	if (plane_stress) {
-//	cout << "Deformation gradient (F): " << endl;
-//	cout << F_Mat[0][0] << " " << F_Mat[0][1] << " " << F_Mat[0][2] << endl;
-//	cout << F_Mat[1][0] << " " << F_Mat[1][1] << " " << F_Mat[1][2] << endl;
-//	cout << F_Mat[2][0] << " " << F_Mat[2][1] << " " << F_Mat[2][2] << endl;
-//	cout << endl;
-//	cout << "Left Cauchy-Green tensor (b): " << endl;
-//	cout << b_Mat[0][0] << " " << b_Mat[0][1] << " " << b_Mat[0][2] << endl;
-//	cout << b_Mat[1][0] << " " << b_Mat[1][1] << " " << b_Mat[1][2] << endl;
-//	cout << b_Mat[2][0] << " " << b_Mat[2][1] << " " << b_Mat[2][2] << endl;
-//	cout << endl;
-//	cout << "Stress Tensor (sigma): " << endl;
-//	cout << Stress_Tensor[0][0] << " " << Stress_Tensor[0][1] << " " << Stress_Tensor[0][2] << endl;
-//	cout << Stress_Tensor[1][0] << " " << Stress_Tensor[1][1] << " " << Stress_Tensor[1][2] << endl;
-//	cout << Stress_Tensor[2][0] << " " << Stress_Tensor[2][1] << " " << Stress_Tensor[2][2] << endl;
-//	cout << endl;
-//	}
 
 }
 
