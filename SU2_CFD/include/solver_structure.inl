@@ -592,19 +592,9 @@ inline void CSolver::BC_Dielec(CGeometry *geometry, CSolver **solver_container, 
 inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 									CConfig *config, unsigned short val_marker) { }
 
-inline void CSolver::Mixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short val_Marker){}
-
-inline void CSolver::MPIMixing_Process(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short marker_flag){}
-
-inline void CSolver::MPISpanMixing_Process(CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
+inline void CSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
 
 inline void CSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics,unsigned short marker_flag){}
-
-inline void CSolver::MixedOut_Average (su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *pressure_mix, su2double *density_mix){}
-
-inline void CSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density){}
-
-inline void CSolver::SetExtAveragedValue(CSolver *solver_container, unsigned short intMarker,  unsigned short extMarker){ }
 
 inline void CSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
@@ -646,11 +636,7 @@ inline void CSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config)
 
 inline void CSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::TurboPerformance(CSolver *solver, CConfig *config, unsigned short inMarker,  unsigned short outMarker, unsigned short Kind_TurboPerf, unsigned short inMarkerTP ){ }
-
-inline void CSolver::MPITurboPerformance(CConfig *config, CGeometry *geometry){ }
-
-inline void CSolver::StoreTurboPerformance(CSolver *solver, unsigned short inMarkerTP ){ }
+inline void CSolver::TurboPerformance(CConfig *config, CGeometry *geometry){ }
 
 inline void CSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) { }
 
@@ -1042,37 +1028,6 @@ inline su2double CEulerSolver::GetPressureOut(unsigned short inMarkerTP){return 
 
 inline su2double CEulerSolver::GetPressureRatio(unsigned short inMarkerTP){return PressureRatio[inMarkerTP];}
 
-inline void CEulerSolver::SetExtAveragedValue(CSolver *solver_container, unsigned short intMarker,  unsigned short extMarker){
-	ExtAveragedDensity[extMarker]= solver_container->GetAveragedDensity(intMarker);
-    ExtAveragedPressure[extMarker]= solver_container->GetAveragedPressure(intMarker);
-    ExtAveragedNormalVelocity[extMarker]= solver_container->GetAveragedNormalVelocity(intMarker);
-    ExtAveragedTangVelocity[extMarker]= solver_container->GetAveragedTangVelocity(intMarker);
-    ExtAveragedTotTemperature[extMarker]= solver_container->GetAveragedTotTemperature(intMarker);
-    ExtAveragedTotPressure[extMarker]= solver_container->GetAveragedTotPressure(intMarker);
-}
-
-inline void CEulerSolver::StoreTurboPerformance(CSolver *solver, unsigned short inMarkerTP ){
-	TotalPressureLoss[inMarkerTP] = solver->GetTotalPressureLoss(inMarkerTP);
-	KineticEnergyLoss[inMarkerTP] = solver->GetKineticEnergyLoss(inMarkerTP);
-	TotalTotalEfficiency[inMarkerTP] = solver->GetTotalTotalEfficiency(inMarkerTP);
-	TotalStaticEfficiency[inMarkerTP]= solver->GetTotalStaticEfficiency(inMarkerTP);
-	EulerianWork[inMarkerTP] = solver->GetEulerianWork(inMarkerTP);
-	TotalEnthalpyIn[inMarkerTP]= solver->GetTotalEnthalpyIn(inMarkerTP);
-	FlowAngleIn[inMarkerTP]= solver->GetFlowAngleIn(inMarkerTP);
-	FlowAngleOut[inMarkerTP]= solver->GetFlowAngleOut(inMarkerTP);
-	MassFlowIn[inMarkerTP]= solver->GetMassFlowIn(inMarkerTP);
-	MassFlowOut[inMarkerTP]= solver->GetMassFlowOut(inMarkerTP);
-	MachIn[inMarkerTP]= solver->GetMachIn(inMarkerTP);
-	MachOut[inMarkerTP]= solver->GetMachOut(inMarkerTP);
-	NormalMachIn[inMarkerTP]= solver->GetNormalMachIn(inMarkerTP);
-	NormalMachOut[inMarkerTP]= solver->GetNormalMachOut(inMarkerTP);
-	EnthalpyOut[inMarkerTP]= solver->GetEnthalpyOut(inMarkerTP);
-	VelocityOutIs[inMarkerTP]= solver->GetVelocityOutIs(inMarkerTP);
-	PressureOut[inMarkerTP] = solver->GetPressureOut(inMarkerTP);
-	PressureRatio[inMarkerTP] = solver->GetPressureRatio(inMarkerTP);
-
-}
-
 inline void CEulerSolver::ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity, unsigned short marker_flag){
 
 
@@ -1101,10 +1056,6 @@ inline void CEulerSolver::ComputeBackVelocity(su2double *turboVelocity, su2doubl
 		cartesianVelocity[2] = turboVelocity[2];
 
 }
-
-
-
-
 
 inline su2double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 

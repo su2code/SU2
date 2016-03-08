@@ -260,27 +260,6 @@ public:
    * \param[in] geometry_container - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config_container - Definition of the particular problem.
-   * \param[in] iZone - zone of the problem.
-   */
-  void SetMixingPlane(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, unsigned short iZone);
-
-  /*!
-   * \brief compute and set mixing-plane quantities at the interface between two adjacent zone.
-   * \author S. Vitale
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] output - Definition of the output for the particular problem.
-   * \param[in] iZone - zone of the problem.
-   */
-  void SetTurboPerformance(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, COutput *output, unsigned short iZone);
-
-  /*!
-   * \brief compute and set mixing-plane quantities at the interface between two adjacent zone.
-   * \author S. Vitale
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config_container - Definition of the particular problem.
    * \param[in] output - Definition of the output for the particular problem.
    * \param[in] iZone - zone of the problem.
    */
