@@ -131,7 +131,7 @@ inline su2double CConfig::GetThermalDiffusivity(void) { return Thermal_Diffusivi
 
 inline su2double CConfig::GetElasticyMod(void) { return ElasticyMod; }
 
-inline su2double CConfig::GetBulk_Modulus_Struct(void) { return Bulk_Modulus_Struct; }
+inline su2double CConfig::GetDE_Modulus(void) { return DE_Modulus; }
 
 inline unsigned short CConfig::GetElas2D_Formulation(void) { return Kind_2DElasForm; }
 
