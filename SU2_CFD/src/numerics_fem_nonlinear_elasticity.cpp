@@ -715,60 +715,77 @@ void CFEM_NonlinearElasticity::Compute_Eigenproblem(CElement *element){
 	unsigned short iVar, jVar, kVar;
 	double C_Mat[3][3];
 
+	// Define 2 unit vectors E1 and E2 in the reference configuration (1,0) and (0,1)
+	// The vectors E1_def and E2_def are going to be the deformed of E1 and E2
+
+	su2double E1[2] = {1.0,0.0}, E2[2] = {0.0,1.0};
+	su2double E1_def[2] = {0.0,0.0}, E2_def[2] = {0.0,0.0};
+
+	E1_def[0] = F_Mat[0][0]*E1[0]+F_Mat[0][1]*E1[1];
+	E1_def[1] = F_Mat[1][0]*E1[0]+F_Mat[1][1]*E1[1];
+
+	E2_def[0] = F_Mat[0][0]*E2[0]+F_Mat[0][1]*E2[1];
+	E2_def[1] = F_Mat[1][0]*E2[0]+F_Mat[1][1]*E2[1];
+
+	cout << "Vector (1,0) projects into (" << E1_def[0] << "," <<  E1_def[1] << ") and vector (0,1) projects into (" << E2_def[0] << "," <<  E2_def[1] << ")." <<endl;
+
+
 	/*--- Compute the right Cauchy deformation tensor ---*/
 
-	for (iVar = 0; iVar < 3; iVar++){
-		for (jVar = 0; jVar < 3; jVar++){
-			C_Mat[iVar][jVar] = 0.0;
-			for (kVar = 0; kVar < 3; kVar++){
-				C_Mat[iVar][jVar] += F_Mat[kVar][iVar] * F_Mat[kVar][jVar];
-			}
-		}
-	}
+//	for (iVar = 0; iVar < 3; iVar++){
+//		for (jVar = 0; jVar < 3; jVar++){
+//			C_Mat[iVar][jVar] = 0.0;
+//			for (kVar = 0; kVar < 3; kVar++){
+//				C_Mat[iVar][jVar] += F_Mat[kVar][iVar] * F_Mat[kVar][jVar];
+//			}
+//		}
+//	}
+
+
 
 //	cout << "----------------------INSIDE THE EIGENPROBLEM ROUTINE-------------------------" << endl;
 //
-	cout << C_Mat[0][0] << " " << C_Mat[0][1] << " " << C_Mat[0][2] << endl;
-	cout << C_Mat[1][0] << " " << C_Mat[1][1] << " " << C_Mat[1][2] << endl;
-	cout << C_Mat[2][0] << " " << C_Mat[2][1] << " " << C_Mat[2][2] << endl;
-//
+//	cout << C_Mat[0][0] << " " << C_Mat[0][1] << " " << C_Mat[0][2] << endl;
+//	cout << C_Mat[1][0] << " " << C_Mat[1][1] << " " << C_Mat[1][2] << endl;
+//	cout << C_Mat[2][0] << " " << C_Mat[2][1] << " " << C_Mat[2][2] << endl;
+////
 //	cout << "------------------------------------------------------------------------------" << endl;
 
-	if (nDim == 2){
-
-		l1 = 0.5*(b_Mat[0][0]+b_Mat[1][1]) + 0.5*sqrt(pow((b_Mat[0][0] + b_Mat[1][1]),2) - ( 4* (b_Mat[0][0]*b_Mat[1][1] - b_Mat[0][1]*b_Mat[1][0])));
-		l2 = 0.5*(b_Mat[0][0]+b_Mat[1][1]) - 0.5*sqrt(pow((b_Mat[0][0] + b_Mat[1][1]),2) - ( 4* (b_Mat[0][0]*b_Mat[1][1] - b_Mat[0][1]*b_Mat[1][0])));
-
-		J1 = 0.5*(C_Mat[0][0]+C_Mat[1][1]) + 0.5*sqrt(pow((C_Mat[0][0] + C_Mat[1][1]),2) - ( 4* (C_Mat[0][0]*C_Mat[1][1] - C_Mat[0][1]*C_Mat[1][0])));
-		J2 = 0.5*(C_Mat[0][0]+C_Mat[1][1]) - 0.5*sqrt(pow((C_Mat[0][0] + C_Mat[1][1]),2) - ( 4* (C_Mat[0][0]*C_Mat[1][1] - C_Mat[0][1]*C_Mat[1][0])));
-
-		v12_1 = - 1 * b_Mat[1][0] / (b_Mat[1][1]-l1);
-		v12_2 = - 1 * (b_Mat[0][0]-l1) / b_Mat[1][0];
-
-		v21_1 = - 1 * b_Mat[1][0] / (b_Mat[0][0]-l2);
-		v21_2 = - 1 * (b_Mat[1][1]-l2) / b_Mat[1][0];
-
-		cout << "Eigenvector b 1: (1," << v12_1 << ") or (1," << v12_2 << ")" << endl;
-		cout << "Eigenvector b 2: (" << v21_1 << ",1) or (" << v21_2 << ",1)" << endl;
-
-		cout << "LAMBDA_1^2=" << l1 << " and LAMBDA_2^2=" << l2 << ". " << "LAMBDA_1=" << sqrt(l1) << " and LAMBDA_2=" << sqrt(l2) << endl;
-
-		v12_1 = - 1 * C_Mat[1][0] / (C_Mat[1][1]-J1);
-		v12_2 = - 1 * (C_Mat[0][0]-J1) / C_Mat[1][0];
-
-		v21_1 = - 1 * C_Mat[1][0] / (C_Mat[0][0]-J2);
-		v21_2 = - 1 * (C_Mat[1][1]-J2) / C_Mat[1][0];
-
-		cout << "Eigenvector C 1: (1," << v12_1 << ") or (1," << v12_2 << ")" << endl;
-		cout << "Eigenvector C 2: (" << v21_1 << ",1) or (" << v21_2 << ",1)" << endl;
-
-		cout << "LAMBDA_1^2_C=" << J1 << " and LAMBDA_2^2_C=" << J2 << ". " << "LAMBDA_1_C=" << sqrt(J1) << " and LAMBDA_2_C=" << sqrt(J2) << endl;
-
-
-//		cout << b_Mat[1][0] << endl;
-//		cout << "Check L1=" << (b_Mat[0][0]-l1)*(b_Mat[1][1]-l1)-(b_Mat[0][1])*(b_Mat[1][0]) << endl;
-//		cout << "Check L2=" << (b_Mat[0][0]-l2)*(b_Mat[1][1]-l2)-(b_Mat[0][1])*(b_Mat[1][0]) << endl;
-	}
+//	if (nDim == 2){
+//
+//		l1 = 0.5*(b_Mat[0][0]+b_Mat[1][1]) + 0.5*sqrt(pow((b_Mat[0][0] + b_Mat[1][1]),2) - ( 4* (b_Mat[0][0]*b_Mat[1][1] - b_Mat[0][1]*b_Mat[1][0])));
+//		l2 = 0.5*(b_Mat[0][0]+b_Mat[1][1]) - 0.5*sqrt(pow((b_Mat[0][0] + b_Mat[1][1]),2) - ( 4* (b_Mat[0][0]*b_Mat[1][1] - b_Mat[0][1]*b_Mat[1][0])));
+//
+//		J1 = 0.5*(C_Mat[0][0]+C_Mat[1][1]) + 0.5*sqrt(pow((C_Mat[0][0] + C_Mat[1][1]),2) - ( 4* (C_Mat[0][0]*C_Mat[1][1] - C_Mat[0][1]*C_Mat[1][0])));
+//		J2 = 0.5*(C_Mat[0][0]+C_Mat[1][1]) - 0.5*sqrt(pow((C_Mat[0][0] + C_Mat[1][1]),2) - ( 4* (C_Mat[0][0]*C_Mat[1][1] - C_Mat[0][1]*C_Mat[1][0])));
+//
+//		v12_1 = - 1 * b_Mat[1][0] / (b_Mat[1][1]-l1);
+//		v12_2 = - 1 * (b_Mat[0][0]-l1) / b_Mat[1][0];
+//
+//		v21_1 = - 1 * b_Mat[1][0] / (b_Mat[0][0]-l2);
+//		v21_2 = - 1 * (b_Mat[1][1]-l2) / b_Mat[1][0];
+//
+//		cout << "Eigenvector b 1: (1," << v12_1 << ") or (1," << v12_2 << ")" << endl;
+//		cout << "Eigenvector b 2: (" << v21_1 << ",1) or (" << v21_2 << ",1)" << endl;
+//
+//		cout << "LAMBDA_1^2=" << l1 << " and LAMBDA_2^2=" << l2 << ". " << "LAMBDA_1=" << sqrt(l1) << " and LAMBDA_2=" << sqrt(l2) << endl;
+//
+//		v12_1 = - 1 * C_Mat[1][0] / (C_Mat[1][1]-J1);
+//		v12_2 = - 1 * (C_Mat[0][0]-J1) / C_Mat[1][0];
+//
+//		v21_1 = - 1 * C_Mat[1][0] / (C_Mat[0][0]-J2);
+//		v21_2 = - 1 * (C_Mat[1][1]-J2) / C_Mat[1][0];
+//
+//		cout << "Eigenvector C 1: (1," << v12_1 << ") or (1," << v12_2 << ")" << endl;
+//		cout << "Eigenvector C 2: (" << v21_1 << ",1) or (" << v21_2 << ",1)" << endl;
+//
+//		cout << "LAMBDA_1^2_C=" << J1 << " and LAMBDA_2^2_C=" << J2 << ". " << "LAMBDA_1_C=" << sqrt(J1) << " and LAMBDA_2_C=" << sqrt(J2) << endl;
+//
+//
+////		cout << b_Mat[1][0] << endl;
+////		cout << "Check L1=" << (b_Mat[0][0]-l1)*(b_Mat[1][1]-l1)-(b_Mat[0][1])*(b_Mat[1][0]) << endl;
+////		cout << "Check L2=" << (b_Mat[0][0]-l2)*(b_Mat[1][1]-l2)-(b_Mat[0][1])*(b_Mat[1][0]) << endl;
+//	}
 
 
 
