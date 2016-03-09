@@ -55,7 +55,7 @@ CFEM_LinearElasticity::~CFEM_LinearElasticity(void) {
 
 }
 
-void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element){
+void CFEM_LinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *config){
 
 	unsigned short iVar, jVar, kVar;
 	unsigned short iGauss, nGauss;
@@ -213,7 +213,7 @@ void CFEM_LinearElasticity::Compute_Constitutive_Matrix(void){
 
 }
 
-void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element){
+void CFEM_LinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConfig *config){
 
 	unsigned short iVar, jVar;
 	unsigned short iGauss, nGauss;
