@@ -134,7 +134,7 @@ CFEM_Elasticity::~CFEM_Elasticity(void) {
 
 }
 
-void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element){
+void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element, CConfig *config){
 
 	unsigned short iGauss, nGauss;
 	unsigned short iNode, jNode, nNode;
@@ -181,7 +181,7 @@ void CFEM_Elasticity::Compute_Mass_Matrix(CElement *element){
 
 }
 
-void CFEM_Elasticity::Compute_Dead_Load(CElement *element){
+void CFEM_Elasticity::Compute_Dead_Load(CElement *element, CConfig *config){
 
 	unsigned short iGauss, nGauss;
 	unsigned short iNode, iDim, nNode;

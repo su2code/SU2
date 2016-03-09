@@ -1504,73 +1504,73 @@ public:
    * \brief A virtual member to compute the tangent matrix in structural problems
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void Compute_Tangent_Matrix(CElement *element_container);
+  virtual void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
   /*!
    * \brief A virtual member to compute the pressure term in incompressible or nearly-incompressible structural problems
    * \param[in] element_container - Definition of the particular element integrated.
    */
-  virtual void Compute_MeanDilatation_Term(CElement *element_container);
+  virtual void Compute_MeanDilatation_Term(CElement *element_container, CConfig *config);
 
   /*!
    * \brief A virtual member to compute the nodal stress term in non-linear structural problems
    * \param[in] element_container - Definition of the particular element integrated.
    */
-  virtual void Compute_NodalStress_Term(CElement *element_container);
+  virtual void Compute_NodalStress_Term(CElement *element_container, CConfig *config);
 
   /*!
    * \brief A virtual member to compute the plane stress term in an element for nonlinear structural problems
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void Compute_Plane_Stress_Term(CElement *element_container);
+  virtual void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
 
   /*!
    * \brief A virtual member to compute the constitutive matrix in an element for structural problems
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void Compute_Constitutive_Matrix(CElement *element_container);
+  virtual void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
 
   /*!
    * \brief A virtual member to compute the stress tensor in an element for structural problems
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void Compute_Stress_Tensor(CElement *element_container);
+  virtual void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
 
   /*!
    * \brief A virtual member to compute the eigenvalues and eigenvectors of b
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void Compute_Eigenproblem(CElement *element_container);
+  virtual void Compute_Eigenproblem(CElement *element_container, CConfig *config);
 
   /*!
    * \brief A virtual member to compute the mass matrix
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void Compute_Mass_Matrix(CElement *element_container);
+  virtual void Compute_Mass_Matrix(CElement *element_container, CConfig *config);
 
   /*!
    * \brief A virtual member to compute the residual component due to dead loads
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void Compute_Dead_Load(CElement *element_container);
+  virtual void Compute_Dead_Load(CElement *element_container, CConfig *config);
 
   /*!
    * \brief A virtual member to compute the averaged nodal stresses
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void Compute_Averaged_NodalStress(CElement *element_container);
+  virtual void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
 
   /*!
    * \brief A virtual member to compute the tangent matrix terms for DE
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void Compute_Tangent_Matrix_DE(CElement *element_container);
+  virtual void Compute_Tangent_Matrix_DE(CElement *element_container, CConfig *config);
 
   /*!
    * \brief A virtual member to compute the nodal stress terms terms for DE
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void Compute_NodalStress_Term_DE(CElement *element_container);
+  virtual void Compute_NodalStress_Term_DE(CElement *element_container, CConfig *config);
 
   /*!
    * \brief Computes a basis of orthogonal vectors from a suppled vector
@@ -4222,29 +4222,29 @@ public:
 	 */
 	~CFEM_Elasticity(void);
 
-	void Compute_Mass_Matrix(CElement *element_container);
+	void Compute_Mass_Matrix(CElement *element_container, CConfig *config);
 
-	void Compute_Dead_Load(CElement *element_container);
+	void Compute_Dead_Load(CElement *element_container, CConfig *config);
 
-	virtual void Compute_Tangent_Matrix(CElement *element_container);
+	virtual void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
-	virtual void Compute_MeanDilatation_Term(CElement *element_container);
+	virtual void Compute_MeanDilatation_Term(CElement *element_container, CConfig *config);
 
-	virtual void Compute_NodalStress_Term(CElement *element_container);
+	virtual void Compute_NodalStress_Term(CElement *element_container, CConfig *config);
 
-	virtual void Compute_Averaged_NodalStress(CElement *element_container);
+	virtual void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
 
-	virtual void Compute_Plane_Stress_Term(CElement *element_container);
+	virtual void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
 
-	virtual void Compute_Constitutive_Matrix(CElement *element_container);
+	virtual void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
   
-	virtual void Compute_Stress_Tensor(CElement *element_container);
+	virtual void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
 
-	virtual void Compute_Eigenproblem(CElement *element_container);
+	virtual void Compute_Eigenproblem(CElement *element_container, CConfig *config);
 
-	virtual void Compute_Tangent_Matrix_DE(CElement *element_container);
+	virtual void Compute_Tangent_Matrix_DE(CElement *element_container, CConfig *config);
 
-	virtual void Compute_NodalStress_Term_DE(CElement *element_container);
+	virtual void Compute_NodalStress_Term_DE(CElement *element_container, CConfig *config);
 
 };
 
@@ -4274,12 +4274,12 @@ public:
 	 */
 	~CFEM_LinearElasticity(void);
 
-	void Compute_Tangent_Matrix(CElement *element_container);
+	void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
 	void Compute_Constitutive_Matrix(void);
   using CNumerics::Compute_Constitutive_Matrix; //??
 
-	void Compute_Averaged_NodalStress(CElement *element_container);
+	void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
 
 };
 
@@ -4321,25 +4321,25 @@ public:
 	 */
 	~CFEM_NonlinearElasticity(void);
 
-	void Compute_Tangent_Matrix(CElement *element_container);
+	void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
-	void Compute_MeanDilatation_Term(CElement *element_container);
+	void Compute_MeanDilatation_Term(CElement *element_container, CConfig *config);
 
-	void Compute_NodalStress_Term(CElement *element_container);
+	void Compute_NodalStress_Term(CElement *element_container, CConfig *config);
 
-	void Compute_Averaged_NodalStress(CElement *element_container);
+	void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
 
-	void Compute_Tangent_Matrix_DE(CElement *element_container);
+	void Compute_Tangent_Matrix_DE(CElement *element_container, CConfig *config);
 
-	void Compute_NodalStress_Term_DE(CElement *element_container);
+	void Compute_NodalStress_Term_DE(CElement *element_container, CConfig *config);
 
-	void Compute_Eigenproblem(CElement *element_container);
+	void Compute_Eigenproblem(CElement *element_container, CConfig *config);
 
-	virtual void Compute_Plane_Stress_Term(CElement *element_container);
+	virtual void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
 
-	virtual void Compute_Constitutive_Matrix(CElement *element_container);
+	virtual void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
 
-	virtual void Compute_Stress_Tensor(CElement *element_container);
+	virtual void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
 
 
 };
@@ -4368,12 +4368,12 @@ public:
 	 */
 	~CFEM_NeoHookean_Comp(void);
 
-	void Compute_Plane_Stress_Term(CElement *element_container);
+	void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
 
-	void Compute_Constitutive_Matrix(CElement *element_container);
+	void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
   using CNumerics::Compute_Constitutive_Matrix;
 
-	void Compute_Stress_Tensor(CElement *element_container);
+	void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
 
 };
 
@@ -4401,12 +4401,12 @@ public:
 	 */
 	~CFEM_NeoHookean_Incomp(void);
 
-	void Compute_Plane_Stress_Term(CElement *element_container);
+	void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
 
-	void Compute_Constitutive_Matrix(CElement *element_container);
+	void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
   using CNumerics::Compute_Constitutive_Matrix;
 
-	void Compute_Stress_Tensor(CElement *element_container);
+	void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
 
 };
 
@@ -4434,12 +4434,12 @@ public:
 	 */
 	~CFEM_DielectricElastomer(void);
 
-	void Compute_Plane_Stress_Term(CElement *element_container);
+	void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
 
-	void Compute_Constitutive_Matrix(CElement *element_container);
+	void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
   using CNumerics::Compute_Constitutive_Matrix;
 
-	void Compute_Stress_Tensor(CElement *element_container);
+	void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
 
 };
 
