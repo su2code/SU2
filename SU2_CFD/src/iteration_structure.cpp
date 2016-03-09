@@ -1188,7 +1188,7 @@ void CFEM_StructuralAnalysis::Update(COutput *output,
 
 	/*----------------- Compute averaged nodal stress and reactions ------------------------*/
 
-	solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL][FEA_TERM], config_container[val_iZone]);
+	solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL], config_container[val_iZone]);
 
 	/*----------------- Update structural solver ----------------------*/
 
@@ -1995,7 +1995,7 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 	/*----------------- Compute averaged nodal stress and reactions ------------------------*/
 
 	for (iZone = 0; iZone < nZone; iZone++)
-		solver_container[iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM], config_container[iZone]);
+		solver_container[iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][FEA_SOL], config_container[iZone]);
 
 	/*----------------- Update structural solver ----------------------*/
 

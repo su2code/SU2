@@ -360,14 +360,14 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   if (ExtIter == 0){
     
     if (!dynamic){
-      Compute_StiffMatrix(geometry, solver_container, numerics[VISC_TERM], config);
+      Compute_StiffMatrix(geometry, solver_container, numerics, config);
     }
     else if (dynamic){
       /*--- Compute the integration constants ---*/
       Compute_IntegrationConstants(config);
       
       /*--- Compute the stiffness and mass matrices ---*/
-      Compute_StiffMassMatrix(geometry, solver_container, numerics[VISC_TERM], config);
+      Compute_StiffMassMatrix(geometry, solver_container, numerics, config);
       
     }
     
@@ -464,7 +464,7 @@ void CFEASolver::Compute_IntegrationConstants(CConfig *config) {
   
 }
 
-void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
   
   unsigned short iVar, jVar, nNodes = 0, iNodes, iDim, jDim, form2d;
   unsigned long iElem, PointCorners[8];
@@ -494,8 +494,8 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
     
     /*--- We set the element stiffness matrix ---*/
     
-    if (nDim == 2) numerics->SetFEA_StiffMatrix2D(StiffMatrix_Elem, CoordCorners, nNodes, form2d);
-    if (nDim == 3) numerics->SetFEA_StiffMatrix3D(StiffMatrix_Elem, CoordCorners, nNodes);
+    if (nDim == 2) numerics[FEA_TERM]->SetFEA_StiffMatrix2D(StiffMatrix_Elem, CoordCorners, nNodes, form2d);
+    if (nDim == 3) numerics[FEA_TERM]->SetFEA_StiffMatrix3D(StiffMatrix_Elem, CoordCorners, nNodes);
     
     /*--- Initialization of the auxiliar matrix ---*/
     
@@ -521,7 +521,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
   
 }
 
-void CFEASolver::Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+void CFEASolver::Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
   
   unsigned short iVar, jVar, nNodes = 0, iNodes, iDim, jDim, form2d;
   unsigned long iElem, PointCorners[8];
@@ -559,8 +559,8 @@ void CFEASolver::Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_c
       }
     }
     
-    if (nDim == 2) numerics->SetFEA_StiffMassMatrix2D(StiffMatrix_Elem, MassMatrix_Elem, CoordCorners, nNodes, form2d);
-    if (nDim == 3) numerics->SetFEA_StiffMassMatrix3D(StiffMatrix_Elem, MassMatrix_Elem, CoordCorners, nNodes);
+    if (nDim == 2) numerics[FEA_TERM]->SetFEA_StiffMassMatrix2D(StiffMatrix_Elem, MassMatrix_Elem, CoordCorners, nNodes, form2d);
+    if (nDim == 3) numerics[FEA_TERM]->SetFEA_StiffMassMatrix3D(StiffMatrix_Elem, MassMatrix_Elem, CoordCorners, nNodes);
     
     /*--- Initialization of the auxiliar matrix ---*/
     
@@ -593,7 +593,7 @@ void CFEASolver::Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_c
   
 }
 
-void CFEASolver::Compute_StiffMassDampMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+void CFEASolver::Compute_StiffMassDampMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
   
   cout << "Here we will compute the damping matrix." << endl;
 }
@@ -1229,7 +1229,7 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
   
   /*--- Container of the shape functions ---*/
   CNumerics *numerics;
-  numerics=numerics_container[VISC_TERM];
+  numerics=numerics_container[FEA_TERM];
   
   /*--- Enforcement of displacement boundary conditions ---*/
   unsigned short MainSolver = config->GetContainerPosition(RUNTIME_FEA_SYS);
