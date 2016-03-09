@@ -1363,6 +1363,12 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
   
   unsigned short iZone;
   
+
+  /* --- Set the mixing-plane interface ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+  	SetMixingPlane(geometry_container, solver_container, config_container, interpolator_container, transfer_container, iZone);
+  }
+
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/
@@ -1373,6 +1379,7 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
                                            solver_container, numerics_container, config_container,
                                            surface_movement, grid_movement, FFDBox, iZone);
     
+
     iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
                                         surface_movement, grid_movement, FFDBox, iZone);
@@ -1390,6 +1397,26 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
   }
   
 }
+
+void CMultiZoneDriver::SetMixingPlane(CGeometry ***geometry_container,
+         	 	 	 	 	 	 	 	 	 	 	 	 	 	 	CSolver ****solver_container,
+																			CConfig **config_container,
+																			CInterpolator ***interpolator_container,
+																			CTransfer ***transfer_container,
+																			unsigned short donorZone){
+
+	unsigned short targetZone;
+	  /* --- transfer the average value from the donorZone to the targetZone*/
+	  for (targetZone = 0; targetZone < nZone; targetZone++) {
+	  	if (targetZone != donorZone){
+	  		transfer_container[donorZone][targetZone]->InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FEA_SOL],
+	  																																geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+																																		config_container[donorZone], config_container[targetZone]);
+	  	}
+		}
+
+}
+
 
 CSpectralDriver::CSpectralDriver(CIteration **iteration_container,
                                  CSolver ****solver_container,
