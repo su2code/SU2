@@ -1039,7 +1039,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   if (fea) {
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CGalerkin_FEA(nDim, nVar_FEA, config);
+    numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CGalerkin_FEA(nDim, nVar_FEA, config);
     
   }
   
@@ -1048,7 +1048,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
 	switch (config->GetGeometricConditions()) {
     	case SMALL_DEFORMATIONS :
     		switch (config->GetMaterialModel()) {
-    			case LINEAR_ELASTIC: numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CFEM_LinearElasticity(nDim, nVar_FEM, config); break;
+    			case LINEAR_ELASTIC: numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_LinearElasticity(nDim, nVar_FEM, config); break;
     			case NEO_HOOKEAN : cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
     			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
     		}
@@ -1058,8 +1058,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
 				case LINEAR_ELASTIC: cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
     			case NEO_HOOKEAN :
     				switch (config->GetMaterialCompressibility()) {
-    					case COMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config); break;
-    					case INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config); break;
+    					case COMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config); break;
+    					case INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config); break;
     					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
     				}
     				break;
@@ -2224,11 +2224,11 @@ void CFSIDriver::Transfer_Tractions(COutput *output, CIntegration ***integration
 	case LEGACY_METHOD:
 		if (MatchingMesh){
 			solver_container[targetZone][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[donorZone], geometry_container[targetZone], geometry_container[donorZone],
-					config_container[targetZone], config_container[donorZone], numerics_container[targetZone][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+					config_container[targetZone], config_container[donorZone], numerics_container[targetZone][MESH_0][SolContainer_Position_fea][FEA_TERM]);
 		}
 		else {
 			solver_container[targetZone][MESH_0][FEA_SOL]->SetFEA_Load_Int(solver_container[donorZone], geometry_container[targetZone], geometry_container[donorZone],
-					config_container[targetZone], config_container[donorZone], numerics_container[targetZone][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+					config_container[targetZone], config_container[donorZone], numerics_container[targetZone][MESH_0][SolContainer_Position_fea][FEA_TERM]);
 		}
 		break;
 	}

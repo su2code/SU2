@@ -1039,7 +1039,7 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 		(dynamic && restart && initial_calc_restart && first_iter)) {
 		MassMatrix.SetValZero();
 		Compute_IntegrationConstants(config);
-		Compute_MassMatrix(geometry, solver_container, numerics[VISC_TERM], config);
+		Compute_MassMatrix(geometry, solver_container, numerics[FEA_TERM], config);
 	}
 
 	/*
@@ -1058,7 +1058,7 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 			for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Clear_BodyForces_Res();
 		}
 		// Compute the dead load term
-		Compute_DeadLoad(geometry, solver_container, numerics[VISC_TERM], config);
+		Compute_DeadLoad(geometry, solver_container, numerics[FEA_TERM], config);
 	}
 
 	/*
