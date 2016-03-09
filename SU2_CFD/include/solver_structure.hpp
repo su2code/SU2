@@ -7224,7 +7224,7 @@ private:
 
 public:
 
-	CElement** element_container; 	/*!< \brief Vector which the define the finite element structure for each problem. */
+	CElement*** element_container; 	/*!< \brief Vector which the define the finite element structure for each problem. */
 
 	/*!
 	 * \brief Constructor of the class.
