@@ -1187,10 +1187,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Transfer method used for multiphysics problems */
   addEnumOption("MULTIPHYSICS_TRANSFER_METHOD", Kind_TransferMethod, Transfer_Method_Map, BROADCAST_DATA);
 
-  /*!\brief CHK_FSI_MPI
-   *  \n DESCRIPTION: For testing problems in FSI parallelization  \ingroup Config*/
-  addBoolOption("CHECK_FSI_MPI", Check_FSI_MPI, false);
-
 
   /* CONFIG_CATEGORY: FSI solver */
   /*--- Options related to the FSI solver ---*/

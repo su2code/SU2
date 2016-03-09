@@ -2734,37 +2734,8 @@ void CFEM_ElasticitySolver::Solve_System(CGeometry *geometry, CSolver **solver_c
 
 	 }
 
-	bool FSI_MPI = config->CheckFSI_MPI();
-	su2double FSI_StartTime = 0.0, FSI_StopTime = 0.0, FSI_UsedTime = 0.0;
-
-	int rank = MASTER_NODE;
-	int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-
-#ifndef HAVE_MPI
-	FSI_StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-	FSI_StartTime = MPI_Wtime();
-#endif
-
 	CSysSolve femSystem;
 	IterLinSol = femSystem.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-
-#ifndef HAVE_MPI
-	FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-	FSI_StopTime = MPI_Wtime();
-#endif
-	FSI_UsedTime = FSI_StopTime-FSI_StartTime;
-	if ((rank == MASTER_NODE) && FSI_MPI) {
-		cout << "\n------------------------------- Solve System ------------------------------------ " << endl;
-		cout << "------------------ It has taken " << fixed << FSI_UsedTime << " seconds on "<< size << " cores. -------------------" << endl;
-		cout << "-------------------- The number of iterations run was " << IterLinSol << ". ---------------------- " << endl;
-	}
-
 
 	/*--- The the number of iterations of the linear solver ---*/
 
@@ -3478,7 +3449,7 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 
 				SetWAitken_Dyn(1.0);
 
-				historyFile_FSI << " " << endl ;
+				if (iFSIIter == 0) historyFile_FSI << " " << endl ;
 				historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
 				historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
 				if (iFSIIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << 1.0 ;
@@ -3492,7 +3463,7 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 
 				SetWAitken_Dyn(fea_config->GetAitkenStatRelax());
 
-				historyFile_FSI << " " << endl ;
+				if (iFSIIter == 0) historyFile_FSI << " " << endl ;
 				historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
 				historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
 				if (iFSIIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() ;
@@ -3513,7 +3484,7 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 
 				SetWAitken_Dyn(WAitkDyn);
 				if (writeHistFSI && (rank == MASTER_NODE)){
-					historyFile_FSI << " " << endl ;
+					if (iFSIIter == 0) historyFile_FSI << " " << endl ;
 					historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
 					historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
 					historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn ;
