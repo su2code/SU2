@@ -1188,7 +1188,7 @@ void CFEM_StructuralAnalysis::Update(COutput *output,
 
 	/*----------------- Compute averaged nodal stress and reactions ------------------------*/
 
-	solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL][VISC_TERM], config_container[val_iZone]);
+	solver_container[val_iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL][FEA_TERM], config_container[val_iZone]);
 
 	/*----------------- Update structural solver ----------------------*/
 
@@ -1995,7 +1995,7 @@ void FEM_StructuralIteration(COutput *output, CIntegration ***integration_contai
 	/*----------------- Compute averaged nodal stress and reactions ------------------------*/
 
 	for (iZone = 0; iZone < nZone; iZone++)
-		solver_container[iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][FEA_SOL][VISC_TERM], config_container[iZone]);
+		solver_container[iZone][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM], config_container[iZone]);
 
 	/*----------------- Update structural solver ----------------------*/
 
@@ -2173,7 +2173,7 @@ void FluidStructureIteration(COutput *output, CIntegration ***integration_contai
     /*--- Update loads for the FEA model ---*/
     
     solver_container[ZONE_1][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[ZONE_0], geometry_container[ZONE_1], geometry_container[ZONE_0],
-                                                           config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+                                                           config_container[ZONE_1], config_container[ZONE_0], numerics_container[ZONE_1][MESH_0][SolContainer_Position_fea][FEA_TERM]);
     
     /*--- Run the iteration ---*/
     

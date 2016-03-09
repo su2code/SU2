@@ -370,6 +370,9 @@ const int SOURCE_SECOND_TERM = 3;   /*!< \brief Position of the second source te
 const int CONV_BOUND_TERM = 4;       /*!< \brief Position of the convective boundary terms in the numerics container array. */
 const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundary terms in the numerics container array. */
 
+const int FEA_TERM = 0;			/*!< \brief Position of the finite element analysis terms in the numerics container array. */
+
+
 /*!
  * \brief types of finite elements (in 2D or 3D)
  */
