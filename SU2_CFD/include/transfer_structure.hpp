@@ -169,6 +169,21 @@ public:
 									CConfig *target_config, unsigned long Marker_Target,
 									unsigned long Vertex_Target, unsigned long Point_Target);
 
+	/*!
+	 * \brief Interpolate data and scatter it into different processors, for matching meshes.
+	 * \param[in] donor_solution - Solution from the donor mesh.
+	 * \param[in] target_solution - Solution from the target mesh.
+	 * \param[in] donor_geometry - Geometry of the donor mesh.
+	 * \param[in] target_geometry - Geometry of the target mesh.
+	 * \param[in] donor_config - Definition of the problem at the donor mesh.
+	 * \param[in] target_config - Definition of the problem at the target mesh.
+	 */
+	void InterfaceAverage(CSolver *donor_solution, CSolver *target_solution,
+			   	   	   	   	   	  CGeometry *donor_geometry, CGeometry *target_geometry,
+			   	   	   	   	   	  CConfig *donor_config, CConfig *target_config);
+
+
+
 };
 
 /*!
@@ -447,4 +462,63 @@ public:
 
 
 };
+
+
+/*!
+ * \class CTransfer_MixingPlaneAverage
+ * \brief Transfer average variables needed for MixingPlane computation from a generic zone into another one
+ * \author S. Vitale
+ * \version 4.0.1 "Cardinal"
+ */
+
+class CTransfer_MixingPlaneAverage : public CTransfer {
+
+protected:
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CTransfer_MixingPlaneAverage(void);
+
+	/*!
+	 * \overload
+	 * \param[in] val_nVar - Number of variables that need to be transferred.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CTransfer_MixingPlaneAverage(unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CTransfer_MixingPlaneAverage(void);
+
+	/*!
+	 * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
+	 * \param[in] donor_solution - Solution from the donor mesh.
+	 * \param[in] donor_geometry - Geometry of the donor mesh.
+	 * \param[in] donor_config - Definition of the problem at the donor mesh.
+	 * \param[in] Marker_Donor - Index of the donor marker.
+	 * \param[in] Vertex_Donor - Index of the donor vertex.
+	 * \param[in] Point_Donor - Index of the donor point.
+	 */
+	void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
+						   unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor);
+
+	/*!
+	 * \brief Set the variable that has been received from the target mesh into the target mesh.
+	 * \param[in] target_solution - Solution from the target mesh.
+	 * \param[in] target_geometry - Geometry of the target mesh.
+	 * \param[in] target_config - Definition of the problem at the target mesh.
+	 * \param[in] Marker_Target - Index of the target marker.
+	 * \param[in] Vertex_Target - Index of the target vertex.
+	 * \param[in] Point_Target - Index of the target point.
+	 */
+	void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, CConfig *target_config,
+							unsigned long Marker_Target, unsigned long Vertex_Target, unsigned long Point_Target);
+
+
+};
+
 #include "transfer_structure.inl"

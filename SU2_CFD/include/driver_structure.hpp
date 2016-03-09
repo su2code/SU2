@@ -356,6 +356,25 @@ public:
            CInterpolator ***interpolator_container,
            CTransfer ***transfer_container);
 
+
+
+  /*!
+   * \brief Set Mixing Plane interface within multiple zones.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - zone in which we are iterating
+   */
+
+  void SetMixingPlane(CGeometry ***geometry_container,
+           CSolver ****solver_container,
+           CConfig **config_container,
+           CInterpolator ***interpolator_container,
+           CTransfer ***transfer_container,
+					 unsigned short iZone);
+
+
+
 };
 
 

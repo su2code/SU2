@@ -1277,3 +1277,11 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
 
 
 }
+
+
+
+void CTransfer::InterfaceAverage(CSolver *donor_solution, CSolver *target_solution,
+																 CGeometry *donor_geometry, CGeometry *target_geometry,
+																 CConfig *donor_config, CConfig *target_config){
+
+	}
