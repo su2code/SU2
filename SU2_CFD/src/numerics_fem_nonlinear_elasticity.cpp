@@ -101,7 +101,7 @@ CFEM_NonlinearElasticity::~CFEM_NonlinearElasticity(void) {
 }
 
 
-void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
+void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *config){
 
 	unsigned short iVar, jVar, kVar;
 	unsigned short iGauss, nGauss;
@@ -188,7 +188,7 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
 		if (nDim == 2) {
 			if (plane_stress){
 				// Compute the value of the term 33 for the deformation gradient
-				Compute_Plane_Stress_Term(element);
+				Compute_Plane_Stress_Term(element, config);
 				F_Mat[2][2] = f33;
 			}
 			else{
@@ -217,8 +217,8 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
 
 		/*--- Compute the constitutive matrix ---*/
 
-		Compute_Constitutive_Matrix(element);
-		Compute_Stress_Tensor(element);
+		Compute_Constitutive_Matrix(element, config);
+		Compute_Stress_Tensor(element, config);
 
 
 		for (iNode = 0; iNode < nNode; iNode++){
@@ -332,7 +332,7 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element){
 
 }
 
-void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element){
+void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CConfig *config){
 
 	unsigned short iVar, jVar;
 	unsigned short iGauss, nGauss;
@@ -431,7 +431,7 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element){
 }
 
 
-void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element){
+void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfig *config){
 
 	unsigned short iVar, jVar, kVar;
 	unsigned short iGauss, nGauss;
@@ -491,7 +491,7 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element){
 		if (nDim == 2) {
 			if (plane_stress){
 				// Compute the value of the term 33 for the deformation gradient
-				Compute_Plane_Stress_Term(element);
+				Compute_Plane_Stress_Term(element, config);
 				F_Mat[2][2] = f33;
 			}
 			else{
@@ -520,7 +520,7 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element){
 
 		/*--- Compute the stress tensor ---*/
 
-		Compute_Stress_Tensor(element);
+		Compute_Stress_Tensor(element, config);
 
 
 		for (iNode = 0; iNode < nNode; iNode++){
@@ -543,7 +543,7 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element){
 
 }
 
-void CFEM_NonlinearElasticity::Compute_Tangent_Matrix_DE(CElement *element){
+void CFEM_NonlinearElasticity::Compute_Tangent_Matrix_DE(CElement *element, CConfig *config){
 
 	unsigned short iVar, jVar, kVar;
 	unsigned short iGauss, nGauss;
@@ -657,9 +657,9 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix_DE(CElement *element){
 
 		/*--- Compute the constitutive matrix ---*/
 
-		Compute_Eigenproblem(element);
+		Compute_Eigenproblem(element, config);
 
-		Compute_Stress_Tensor(element);
+		Compute_Stress_Tensor(element, config);
 
 		for (iNode = 0; iNode < nNode; iNode++){
 
@@ -706,7 +706,7 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix_DE(CElement *element){
 
 }
 
-void CFEM_NonlinearElasticity::Compute_Eigenproblem(CElement *element){
+void CFEM_NonlinearElasticity::Compute_Eigenproblem(CElement *element, CConfig *config){
 
 	su2double l1, l2, J1, J2;
 	su2double v12_1, v12_2;
@@ -791,7 +791,7 @@ void CFEM_NonlinearElasticity::Compute_Eigenproblem(CElement *element){
 
 }
 
-void CFEM_NonlinearElasticity::Compute_NodalStress_Term_DE(CElement *element){
+void CFEM_NonlinearElasticity::Compute_NodalStress_Term_DE(CElement *element, CConfig *config){
 
 //	unsigned short iVar, jVar, kVar;
 //	unsigned short iGauss, nGauss;
@@ -903,7 +903,7 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term_DE(CElement *element){
 
 }
 
-void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
+void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConfig *config){
 
 	unsigned short iVar, jVar, kVar;
 	unsigned short iGauss, nGauss;
@@ -963,7 +963,7 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 		if (nDim == 2) {
 			if (plane_stress){
 				// Compute the value of the term 33 for the deformation gradient
-				Compute_Plane_Stress_Term(element);
+				Compute_Plane_Stress_Term(element, config);
 				F_Mat[2][2] = f33;
 			}
 			else{
@@ -992,7 +992,7 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element){
 
 		/*--- Compute the stress tensor ---*/
 
-		Compute_Stress_Tensor(element);
+		Compute_Stress_Tensor(element, config);
 
 		for (iNode = 0; iNode < nNode; iNode++){
 
@@ -1038,7 +1038,7 @@ CFEM_NeoHookean_Comp::~CFEM_NeoHookean_Comp(void) {
 
 }
 
-void CFEM_NeoHookean_Comp::Compute_Plane_Stress_Term(CElement *element) {
+void CFEM_NeoHookean_Comp::Compute_Plane_Stress_Term(CElement *element, CConfig *config) {
 
 	su2double j_red = 1.0;
 	su2double fx = 0.0, fpx = 1.0;
@@ -1072,7 +1072,7 @@ void CFEM_NeoHookean_Comp::Compute_Plane_Stress_Term(CElement *element) {
 
 }
 
-void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(CElement *element) {
+void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(CElement *element, CConfig *config) {
 
 	su2double Mu_p = 0.0, Lambda_p = 0.0;
 
@@ -1100,7 +1100,7 @@ void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(CElement *element) {
 
 }
 
-void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element) {
+void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element, CConfig *config) {
 
 	unsigned short iVar,jVar;
 	su2double Mu_J = 0.0, Lambda_J = 0.0;
@@ -1132,11 +1132,11 @@ CFEM_NeoHookean_Incomp::~CFEM_NeoHookean_Incomp(void) {
 
 }
 
-void CFEM_NeoHookean_Incomp::Compute_Plane_Stress_Term(CElement *element) {
+void CFEM_NeoHookean_Incomp::Compute_Plane_Stress_Term(CElement *element, CConfig *config) {
 
 }
 
-void CFEM_NeoHookean_Incomp::Compute_Constitutive_Matrix(CElement *element) {
+void CFEM_NeoHookean_Incomp::Compute_Constitutive_Matrix(CElement *element, CConfig *config) {
 
 	unsigned short iVar;
 	su2double el_P;
@@ -1233,7 +1233,7 @@ void CFEM_NeoHookean_Incomp::Compute_Constitutive_Matrix(CElement *element) {
 
 }
 
-void CFEM_NeoHookean_Incomp::Compute_Stress_Tensor(CElement *element) {
+void CFEM_NeoHookean_Incomp::Compute_Stress_Tensor(CElement *element, CConfig *config) {
 
 	unsigned short iDim,jDim;
 	su2double dij, el_P;
@@ -1272,11 +1272,11 @@ CFEM_DielectricElastomer::~CFEM_DielectricElastomer(void) {
 
 }
 
-void CFEM_DielectricElastomer::Compute_Plane_Stress_Term(CElement *element) {
+void CFEM_DielectricElastomer::Compute_Plane_Stress_Term(CElement *element, CConfig *config) {
 
 }
 
-void CFEM_DielectricElastomer::Compute_Constitutive_Matrix(CElement *element) {
+void CFEM_DielectricElastomer::Compute_Constitutive_Matrix(CElement *element, CConfig *config) {
 
 	/*--- This reduces performance by now, but it is temporal ---*/
 
@@ -1297,9 +1297,9 @@ void CFEM_DielectricElastomer::Compute_Constitutive_Matrix(CElement *element) {
 
 }
 
-void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element) {
+void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, CConfig *config) {
 
-	Compute_Eigenproblem(element);
+	Compute_Eigenproblem(element, config);
 
 
 }

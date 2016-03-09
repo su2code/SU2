@@ -1167,7 +1167,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **s
 		  }
 		}
 
-		numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND]);
+		numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
 
 		NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
@@ -1243,11 +1243,11 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 
 		/*--- If incompressible, we compute the Mean Dilatation term first so the volume is already computed ---*/
 
-		if (incompressible) numerics[FEA_TERM]->Compute_MeanDilatation_Term(element_container[FEA_TERM][EL_KIND]);
+		if (incompressible) numerics[FEA_TERM]->Compute_MeanDilatation_Term(element_container[FEA_TERM][EL_KIND], config);
 
-		numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND]);
+		numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
 
-		if (de_effects) numerics[DE_TERM]->Compute_Tangent_Matrix(element_container[DE_TERM][EL_KIND]);
+		if (de_effects) numerics[DE_TERM]->Compute_Tangent_Matrix(element_container[DE_TERM][EL_KIND], config);
 
 		NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
@@ -1327,7 +1327,7 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
 		  }
 		}
 
-		numerics[FEA_TERM]->Compute_Mass_Matrix(element_container[FEA_TERM][EL_KIND]);
+		numerics[FEA_TERM]->Compute_Mass_Matrix(element_container[FEA_TERM][EL_KIND], config);
 
 		NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
@@ -1387,7 +1387,7 @@ void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver 
 		  }
 		}
 
-		numerics[FEA_TERM]->Compute_NodalStress_Term(element_container[FEA_TERM][EL_KIND]);
+		numerics[FEA_TERM]->Compute_NodalStress_Term(element_container[FEA_TERM][EL_KIND], config);
 
 		NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
@@ -1459,7 +1459,7 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 		  }
 		}
 
-		numerics[FEA_TERM]->Compute_Averaged_NodalStress(element_container[FEA_TERM][EL_KIND]);
+		numerics[FEA_TERM]->Compute_Averaged_NodalStress(element_container[FEA_TERM][EL_KIND], config);
 
 		NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
@@ -1719,7 +1719,7 @@ void CFEM_ElasticitySolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solv
 		  }
 		}
 
-		numerics[FEA_TERM]->Compute_Dead_Load(element_container[FEA_TERM][EL_KIND]);
+		numerics[FEA_TERM]->Compute_Dead_Load(element_container[FEA_TERM][EL_KIND], config);
 
 		NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
