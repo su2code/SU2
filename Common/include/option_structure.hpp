@@ -117,6 +117,7 @@ const unsigned int MAX_NUMBER_FFD = 10;	     /*!< \brief Maximum number of FFDBo
 const unsigned int MAX_SOLS = 6;		         /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		         /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;            /*!< \brief Maximum number of zones. */
+const unsigned int MAX_FE_KINDS = 4;            	/*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;		       /*!< \brief No Runge-Kutta iteration. */
 
 const unsigned int MESH_0 = 0; /*!< \brief Definition of the finest grid level. */
@@ -369,6 +370,9 @@ const int SOURCE_FIRST_TERM = 2;        /*!< \brief Position of the first source
 const int SOURCE_SECOND_TERM = 3;   /*!< \brief Position of the second source term in the numerics container array. */
 const int CONV_BOUND_TERM = 4;       /*!< \brief Position of the convective boundary terms in the numerics container array. */
 const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundary terms in the numerics container array. */
+
+const int FEA_TERM = 0;			/*!< \brief Position of the finite element analysis terms in the numerics container array. */
+
 
 /*!
  * \brief types of finite elements (in 2D or 3D)

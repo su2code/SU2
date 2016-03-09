@@ -499,6 +499,59 @@ public:
 };
 
 /*!
+ * \class CQUAD4
+ * \brief Quadrilateral element with 4 Gauss Points
+ * \author R. Sanchez
+ * \version 4.1.0 "Cardinal"
+ */
+
+class CQUAD1 : public CElement {
+
+protected:
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CQUAD1(void);
+
+	/*!
+	 * \overload
+	 * \param[in] val_fea - Values of the fea solution (initialization value).
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CQUAD1(unsigned short val_nDim, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CQUAD1(void);
+
+	/*!
+	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
+	 * \param[in] val_solution - Solution of the problem.
+	 * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
+	 */
+	void ComputeGrad_Linear(void);
+
+	/*!
+	 * \brief Set the value of the gradient of the shape functions respect to the current configuration.
+	 * \param[in] val_solution - Solution of the problem.
+	 * \param[out] J_x - Jacobian of the element evaluated at the current Gauss Point respect to the current configuration
+	 */
+	void ComputeGrad_NonLinear(void);
+
+	/*!
+	 * \brief Virtual member.
+	 */
+	void ComputeGrad_Pressure(void);
+
+
+};
+
+/*!
  * \class CQUAD4P1
  * \brief Quadrilateral element with 4 Gauss Points and 1 Gauss Point for pressure subintegration
  * \author R. Sanchez
