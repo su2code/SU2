@@ -546,7 +546,7 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element){
 void CFEM_NonlinearElasticity::Compute_Tangent_Matrix_DE(CElement *element){
 
 	unsigned short iVar, jVar, kVar;
-	unsigned short iGaussP, nGaussP;
+	unsigned short iGauss, nGauss;
 	unsigned short iNode, jNode, nNode;
 	unsigned short iDim, bDim;
 
@@ -568,16 +568,16 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix_DE(CElement *element){
 	element->ComputeGrad_Pressure();    /*--- Compute the gradients for the subintegrated element ---*/
 
 	nNode = element->GetnNodes();
-	nGaussP = element->GetnGaussPointsP();
+	nGauss = element->GetnGaussPoints();
 
 	/*--- Reduced integration of the stress term for the tangent matrix and for the residual ---*/
 
-	for (iGaussP = 0; iGaussP < nGaussP; iGaussP++){
+	for (iGauss = 0; iGauss < nGauss; iGauss++){
 
 //		cout << "And I compute this " << iGaussP+1 << " time. " << endl;
 
-		Weight = element->GetWeight_P(iGaussP);
-		Jac_x = element->GetJ_x_P(iGaussP);
+		Weight = element->GetWeight(iGauss);
+		Jac_x = element->GetJ_x(iGauss);
 
 		/*--- Initialize the deformation gradient for each Gauss Point ---*/
 
@@ -594,8 +594,8 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix_DE(CElement *element){
 		for (iNode = 0; iNode < nNode; iNode++){
 
 			for (iDim = 0; iDim < nDim; iDim++){
-				GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X_P(iNode,iGaussP,iDim);
-				GradNi_Curr_Mat[iNode][iDim] = element->GetGradNi_x_P(iNode,iGaussP,iDim);
+				GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
+				GradNi_Curr_Mat[iNode][iDim] = element->GetGradNi_x(iNode,iGauss,iDim);
 				currentCoord[iNode][iDim] = element->GetCurr_Coord(iNode, iDim);
 			}
 
@@ -1262,5 +1262,45 @@ void CFEM_NeoHookean_Incomp::Compute_Stress_Tensor(CElement *element) {
 
 }
 
+CFEM_DielectricElastomer::CFEM_DielectricElastomer(unsigned short val_nDim, unsigned short val_nVar,
+                                   CConfig *config) : CFEM_NonlinearElasticity(val_nDim, val_nVar, config) {
 
+
+}
+
+CFEM_DielectricElastomer::~CFEM_DielectricElastomer(void) {
+
+}
+
+void CFEM_DielectricElastomer::Compute_Plane_Stress_Term(CElement *element) {
+
+}
+
+void CFEM_DielectricElastomer::Compute_Constitutive_Matrix(CElement *element) {
+
+	/*--- This reduces performance by now, but it is temporal ---*/
+
+	if (nDim == 2){
+	    D_Mat[0][0] = 0.0;	D_Mat[0][1] = 0.0;	D_Mat[0][2] = 0.0;
+	    D_Mat[1][0] = 0.0;	D_Mat[1][1] = 0.0;	D_Mat[1][2] = 0.0;
+	    D_Mat[2][0] = 0.0;	D_Mat[2][1] = 0.0;	D_Mat[2][2] = 0.0;
+	}
+	else if (nDim == 3){
+	    D_Mat[0][0] = 0.0;	D_Mat[0][1] = 0.0;	D_Mat[0][2] = 0.0;	D_Mat[0][3] = 0.0;	D_Mat[0][4] = 0.0;	D_Mat[0][5] = 0.0;
+	    D_Mat[1][0] = 0.0;	D_Mat[1][1] = 0.0;	D_Mat[1][2] = 0.0;	D_Mat[1][3] = 0.0;	D_Mat[1][4] = 0.0;	D_Mat[1][5] = 0.0;
+	    D_Mat[2][0] = 0.0;	D_Mat[2][1] = 0.0;	D_Mat[2][2] = 0.0;	D_Mat[2][3] = 0.0;	D_Mat[2][4] = 0.0;	D_Mat[2][5] = 0.0;
+	    D_Mat[3][0] = 0.0;	D_Mat[3][1] = 0.0;	D_Mat[3][2] = 0.0;	D_Mat[3][3] = 0.0;	D_Mat[3][4] = 0.0;	D_Mat[3][5] = 0.0;
+	    D_Mat[4][0] = 0.0;	D_Mat[4][1] = 0.0;	D_Mat[4][2] = 0.0;	D_Mat[4][3] = 0.0;	D_Mat[4][4] = 0.0;	D_Mat[4][5] = 0.0;
+	    D_Mat[5][0] = 0.0;	D_Mat[5][1] = 0.0;	D_Mat[5][2] = 0.0;	D_Mat[5][3] = 0.0;	D_Mat[5][4] = 0.0;	D_Mat[5][5] = 0.0;
+	}
+
+
+}
+
+void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element) {
+
+	Compute_Eigenproblem(element);
+
+
+}
 
