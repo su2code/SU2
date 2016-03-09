@@ -81,7 +81,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
 	unsigned long iPoint;
-	unsigned short iVar, jVar, iDim, jDim, nKindElements;
+	unsigned short iVar, jVar, iDim, jDim;
+	unsigned short iTerm, iKind;
 
 	unsigned short iZone = config->GetiZone();
 	unsigned short nZone = geometry->GetnZone();
@@ -94,6 +95,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	bool de_effects = config->GetDE_Effects();											// Test whether we consider dielectric elastomers
 
 	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+	bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
 
 	int rank = MASTER_NODE;
 	#ifdef HAVE_MPI
@@ -109,9 +111,35 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	nPoint        = geometry->GetnPoint();
 	nPointDomain  = geometry->GetnPointDomain();
 
-	nKindElements = 2;
 
-	element_container = new CElement*[nKindElements];
+	/*--- Here is where we assign the kind of each element ---*/
+
+	/*--- First level: different possible terms of the equations ---*/
+	element_container = new CElement** [MAX_TERMS];
+	for (iTerm = 0; iTerm < MAX_TERMS; iTerm++)
+		element_container[iTerm] = new CElement* [MAX_FE_KINDS];
+
+	if (nDim == 2){
+		if (incompressible){
+			element_container[FEA_TERM][EL_TRIA] = new CTRIA1(nDim, config);
+			element_container[FEA_TERM][EL_QUAD] = new CQUAD4P1(nDim, config);
+		}
+		else{
+			element_container[FEA_TERM][EL_TRIA] = new CTRIA1(nDim, config);
+			element_container[FEA_TERM][EL_QUAD] = new CQUAD4(nDim, config);
+		}
+	}
+	else if (nDim == 3){
+		if (incompressible){
+			element_container[FEA_TERM][EL_TETRA] = new CTETRA1(nDim, config);
+			element_container[FEA_TERM][EL_HEXA] = new CHEXA8P1(nDim, config);
+		}
+		else{
+			element_container[FEA_TERM][EL_TETRA] = new CTETRA1(nDim, config);
+			element_container[FEA_TERM][EL_HEXA] = new CHEXA8(nDim, config);
+		}
+	}
+
 	node          	  = new CVariable*[nPoint];
 
 	GradN_X = new su2double [nDim];
@@ -299,8 +327,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	}
 
-	bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
-
 	/*--- Term ij of the Jacobian ---*/
 
 	Jacobian_ij = new su2double*[nVar];
@@ -439,30 +465,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	LinSysReact.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
-	/*--- Here is where we assign the kind of each element ---*/
-	/*--- If DE effects considered, we need the P1 component to subintegrate the electric stress ---*/
-
-	if (nDim == 2){
-		if (incompressible || de_effects){
-			element_container[EL_TRIA] = new CTRIA1(nDim, config);
-			element_container[EL_QUAD] = new CQUAD4P1(nDim, config);
-		}
-		else{
-			element_container[EL_TRIA] = new CTRIA1(nDim, config);
-			element_container[EL_QUAD] = new CQUAD4(nDim, config);
-		}
-	}
-	else if (nDim == 3){
-		if (incompressible || de_effects){
-			element_container[EL_TETRA] = new CTETRA1(nDim, config);
-			element_container[EL_HEXA] = new CHEXA8P1(nDim, config);
-		}
-		else{
-			element_container[EL_TETRA] = new CTETRA1(nDim, config);
-			element_container[EL_HEXA] = new CHEXA8(nDim, config);
-		}
-	}
-
 	/*--- Initialize the auxiliary vector and matrix for the computation of the nodal Reactions ---*/
 
 	normalVertex = new su2double [nDim];
@@ -488,15 +490,16 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
 
-	unsigned short iVar, nKindElements = 2;
+	unsigned short iVar, jVar;
 	unsigned long iPoint;
 
 	for (iPoint = 0; iPoint < nPoint; iPoint++){
 		delete [] node[iPoint];
 	}
 
-	for (iVar = 0; iVar < nKindElements; iVar++){
-		delete [] element_container[iVar];
+	for (iVar = 0; iVar < MAX_TERMS; iVar++){
+		for (jVar = 0; jVar < MAX_FE_KINDS; iVar++)
+			if (element_container[iVar][jVar] != NULL) delete [] element_container[iVar][jVar];
 	}
 
 	for (iVar = 0; iVar < nVar; iVar++){
@@ -510,7 +513,7 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
 		delete [] stressTensor[iVar];
 	}
 
-	delete [] element_container;
+	if (element_container != NULL) delete [] element_container;
 	delete [] node;
 	delete [] Jacobian_ij;
 	if (Jacobian_s_ij != NULL) delete [] Jacobian_s_ij;
@@ -1042,7 +1045,7 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 		(dynamic && restart && initial_calc_restart && first_iter)) {
 		MassMatrix.SetValZero();
 		Compute_IntegrationConstants(config);
-		Compute_MassMatrix(geometry, solver_container, numerics[VISC_TERM], config);
+		Compute_MassMatrix(geometry, solver_container, numerics, config);
 	}
 
 	/*
@@ -1061,7 +1064,7 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 			for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Clear_BodyForces_Res();
 		}
 		// Compute the dead load term
-		Compute_DeadLoad(geometry, solver_container, numerics[VISC_TERM], config);
+		Compute_DeadLoad(geometry, solver_container, numerics, config);
 	}
 
 	/*
@@ -1118,7 +1121,7 @@ void CFEM_ElasticitySolver::ResetInitialCondition(CGeometry **geometry, CSolver 
 
 }
 
-void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
 
 	unsigned long iElem, iVar, jVar;
 	unsigned short iNode,  iDim, nNodes;
@@ -1149,19 +1152,19 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **s
 
 		  for (iDim = 0; iDim < nDim; iDim++) {
 			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
-			  element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+			  element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
 		  }
 		}
 
-		numerics->Compute_Tangent_Matrix(element_container[EL_KIND]);
+		numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND]);
 
-		NelNodes = element_container[EL_KIND]->GetnNodes();
+		NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
 		for (iNode = 0; iNode < NelNodes; iNode++){
 
 			for (jNode = 0; jNode < NelNodes; jNode++){
 
-				Kab = element_container[EL_KIND]->Get_Kab(iNode, jNode);
+				Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
 
 				for (iVar = 0; iVar < nVar; iVar++){
 					for (jVar = 0; jVar < nVar; jVar++){
@@ -1180,7 +1183,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **s
 
 }
 
-void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
 
 	unsigned long iElem, iVar, jVar;
 	unsigned short iNode, iDim, nNodes;
@@ -1216,24 +1219,24 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 		  for (iDim = 0; iDim < nDim; iDim++) {
 			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
 			  val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
-			  element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-			  element_container[EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+			  element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+			  element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
 		  }
 		}
 
 		/*--- If incompressible, we compute the Mean Dilatation term first so the volume is already computed ---*/
 
-		if (incompressible) numerics->Compute_MeanDilatation_Term(element_container[EL_KIND]);
+		if (incompressible) numerics[FEA_TERM]->Compute_MeanDilatation_Term(element_container[FEA_TERM][EL_KIND]);
 
-		numerics->Compute_Tangent_Matrix(element_container[EL_KIND]);
+		numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND]);
 
-		if (de_effects) numerics->Compute_Tangent_Matrix_DE(element_container[EL_KIND]);
+		if (de_effects) numerics[FEA_TERM]->Compute_Tangent_Matrix_DE(element_container[FEA_TERM][EL_KIND]);
 
-		NelNodes = element_container[EL_KIND]->GetnNodes();
+		NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
 		for (iNode = 0; iNode < NelNodes; iNode++){
 
-			Ta = element_container[EL_KIND]->Get_Kt_a(iNode);
+			Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
 			for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
 
 			/*--- Check if this is my node or not ---*/
@@ -1241,9 +1244,9 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 
 			for (jNode = 0; jNode < NelNodes; jNode++){
 
-				Kab = element_container[EL_KIND]->Get_Kab(iNode, jNode);
-				Ks_ab = element_container[EL_KIND]->Get_Ks_ab(iNode,jNode);
-				if (incompressible) Kk_ab = element_container[EL_KIND]->Get_Kk_ab(iNode,jNode);
+				Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
+				Ks_ab = element_container[FEA_TERM][EL_KIND]->Get_Ks_ab(iNode,jNode);
+				if (incompressible) Kk_ab = element_container[FEA_TERM][EL_KIND]->Get_Kk_ab(iNode,jNode);
 
 				for (iVar = 0; iVar < nVar; iVar++){
 					Jacobian_s_ij[iVar][iVar] = Ks_ab;
@@ -1265,7 +1268,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 
 }
 
-void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
 
 	unsigned long iElem, iVar;
 	unsigned short iNode, iDim, nNodes;
@@ -1294,19 +1297,19 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
 		  indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
 		  for (iDim = 0; iDim < nDim; iDim++) {
 			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
-			  element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+			  element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
 		  }
 		}
 
-		numerics->Compute_Mass_Matrix(element_container[EL_KIND]);
+		numerics[FEA_TERM]->Compute_Mass_Matrix(element_container[FEA_TERM][EL_KIND]);
 
-		NelNodes = element_container[EL_KIND]->GetnNodes();
+		NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
 		for (iNode = 0; iNode < NelNodes; iNode++){
 
 			for (jNode = 0; jNode < NelNodes; jNode++){
 
-				Mab = element_container[EL_KIND]->Get_Mab(iNode, jNode);
+				Mab = element_container[FEA_TERM][EL_KIND]->Get_Mab(iNode, jNode);
 
 				for (iVar = 0; iVar < nVar; iVar++){
 					MassMatrix_ij[iVar][iVar] = Mab;
@@ -1322,7 +1325,7 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
 
 }
 
-void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
 
 
 	unsigned long iElem, iVar;
@@ -1353,18 +1356,18 @@ void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver 
 		  for (iDim = 0; iDim < nDim; iDim++) {
 			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
 			  val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
-			  element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-			  element_container[EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+			  element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+			  element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
 		  }
 		}
 
-		numerics->Compute_NodalStress_Term(element_container[EL_KIND]);
+		numerics[FEA_TERM]->Compute_NodalStress_Term(element_container[FEA_TERM][EL_KIND]);
 
-		NelNodes = element_container[EL_KIND]->GetnNodes();
+		NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
 		for (iNode = 0; iNode < NelNodes; iNode++){
 
-			Ta = element_container[EL_KIND]->Get_Kt_a(iNode);
+			Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
 			for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
 
 			LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
@@ -1380,7 +1383,7 @@ void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver 
 
 }
 
-void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
 
 	unsigned long iPoint, iElem, iVar;
 	unsigned short iNode, iDim, iStress;
@@ -1425,26 +1428,26 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 		  for (iDim = 0; iDim < nDim; iDim++) {
 			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
 			  val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
-			  element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-			  element_container[EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+			  element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+			  element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
 		  }
 		}
 
-		numerics->Compute_Averaged_NodalStress(element_container[EL_KIND]);
+		numerics[FEA_TERM]->Compute_Averaged_NodalStress(element_container[FEA_TERM][EL_KIND]);
 
-		NelNodes = element_container[EL_KIND]->GetnNodes();
+		NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
 		for (iNode = 0; iNode < NelNodes; iNode++){
 
 			/*--- This only works if the problem is nonlinear ---*/
-			Ta = element_container[EL_KIND]->Get_Kt_a(iNode);
+			Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
 			for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
 
 			LinSysReact.AddBlock(indexNode[iNode], Res_Stress_i);
 
 			for (iStress = 0; iStress < nStress; iStress++){
 				node[indexNode[iNode]]->AddStress_FEM(iStress,
-						(element_container[EL_KIND]->Get_NodalStress(iNode, iStress) /
+						(element_container[FEA_TERM][EL_KIND]->Get_NodalStress(iNode, iStress) /
 								geometry->node[indexNode[iNode]]->GetnElem()) );
 			}
 
@@ -1657,7 +1660,7 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 
 }
 
-void CFEM_ElasticitySolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+void CFEM_ElasticitySolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
 
 	unsigned long iElem, iVar;
 	unsigned short iNode, iDim, nNodes;
@@ -1686,17 +1689,17 @@ void CFEM_ElasticitySolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solv
 		  indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
 		  for (iDim = 0; iDim < nDim; iDim++) {
 			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
-			  element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+			  element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
 		  }
 		}
 
-		numerics->Compute_Dead_Load(element_container[EL_KIND]);
+		numerics[FEA_TERM]->Compute_Dead_Load(element_container[FEA_TERM][EL_KIND]);
 
-		NelNodes = element_container[EL_KIND]->GetnNodes();
+		NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
 
 		for (iNode = 0; iNode < NelNodes; iNode++){
 
-			Dead_Load = element_container[EL_KIND]->Get_FDL_a(iNode);
+			Dead_Load = element_container[FEA_TERM][EL_KIND]->Get_FDL_a(iNode);
 			for (iVar = 0; iVar < nVar; iVar++) Res_Dead_Load[iVar] = Dead_Load[iVar];
 
 			node[indexNode[iNode]]->Add_BodyForces_Res(Res_Dead_Load);
@@ -2736,37 +2739,8 @@ void CFEM_ElasticitySolver::Solve_System(CGeometry *geometry, CSolver **solver_c
 
 	 }
 
-	bool FSI_MPI = config->CheckFSI_MPI();
-	su2double FSI_StartTime = 0.0, FSI_StopTime = 0.0, FSI_UsedTime = 0.0;
-
-	int rank = MASTER_NODE;
-	int size = SINGLE_NODE;
-#ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-
-#ifndef HAVE_MPI
-	FSI_StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-	FSI_StartTime = MPI_Wtime();
-#endif
-
 	CSysSolve femSystem;
 	IterLinSol = femSystem.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-
-#ifndef HAVE_MPI
-	FSI_StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-	FSI_StopTime = MPI_Wtime();
-#endif
-	FSI_UsedTime = FSI_StopTime-FSI_StartTime;
-	if ((rank == MASTER_NODE) && FSI_MPI) {
-		cout << "\n------------------------------- Solve System ------------------------------------ " << endl;
-		cout << "------------------ It has taken " << fixed << FSI_UsedTime << " seconds on "<< size << " cores. -------------------" << endl;
-		cout << "-------------------- The number of iterations run was " << IterLinSol << ". ---------------------- " << endl;
-	}
-
 
 	/*--- The the number of iterations of the linear solver ---*/
 
@@ -3480,7 +3454,7 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 
 				SetWAitken_Dyn(1.0);
 
-				historyFile_FSI << " " << endl ;
+				if (iFSIIter == 0) historyFile_FSI << " " << endl ;
 				historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
 				historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
 				if (iFSIIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << 1.0 ;
@@ -3494,7 +3468,7 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 
 				SetWAitken_Dyn(fea_config->GetAitkenStatRelax());
 
-				historyFile_FSI << " " << endl ;
+				if (iFSIIter == 0) historyFile_FSI << " " << endl ;
 				historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
 				historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
 				if (iFSIIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() ;
@@ -3515,7 +3489,7 @@ void CFEM_ElasticitySolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, 
 
 				SetWAitken_Dyn(WAitkDyn);
 				if (writeHistFSI && (rank == MASTER_NODE)){
-					historyFile_FSI << " " << endl ;
+					if (iFSIIter == 0) historyFile_FSI << " " << endl ;
 					historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
 					historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
 					historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn ;
