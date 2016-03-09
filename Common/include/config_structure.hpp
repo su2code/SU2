@@ -707,7 +707,6 @@ private:
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
-  bool Check_FSI_MPI;	 /*!< \brief Benchmark of FSI performance. */
 
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
