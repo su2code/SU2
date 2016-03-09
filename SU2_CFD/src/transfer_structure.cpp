@@ -1280,8 +1280,85 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
 
 
 
-void CTransfer::InterfaceAverage(CSolver *donor_solution, CSolver *target_solution,
+void CTransfer::Broadcast_InterfaceAverage(CSolver *donor_solution, CSolver *target_solution,
 																 CGeometry *donor_geometry, CGeometry *target_geometry,
 																 CConfig *donor_config, CConfig *target_config){
+	unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
+	unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+	int Marker_Donor = -1, Marker_Target = -1;
+
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
+	/*--- Number of markers on the Mixing-Plane interface ---*/
+
+	nMarkerInt     = (donor_config->GetMarker_n_MixingPlaneInterface())/2;
+	nMarkerTarget  = target_geometry->GetnMarker();
+	nMarkerDonor   = donor_geometry->GetnMarker();
+
+
+	/*--- Outer loop over the markers on the Mixing-Plane interface: compute one by one ---*/
+	/*--- The tags are always an integer greater than 1: loop from 1 to nMarkerMixingPlane ---*/
+
+	for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+
+		Marker_Donor = -1;
+		Marker_Target = -1;
+
+		/*--- The donor and target markers are tagged with the same index.
+		 *--- This is independent of the MPI domain decomposition.
+		 *--- We need to loop over all markers on both sides  ---*/
+
+		/*--- On the donor side ---*/
+
+		for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+			/*--- If the tag GetMarker_All_MixingPlaneInterface equals the index we are looping at ---*/
+			if ( donor_config->GetMarker_All_MixingPlaneInterface(iMarkerDonor) == iMarkerInt ){
+				/*--- We have identified the local index of the Donor marker ---*/
+				/*--- Now we are going to store the average values that belong to Marker_Donor on each processor ---*/
+
+				GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, rank, size);
+
+				/*--- Store the identifier for the structural marker ---*/
+				Marker_Donor = iMarkerDonor;
+				/*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
+				break;
+			}
+			else {
+				/*--- If the tag hasn't matched any tag within the donor markers ---*/
+				Marker_Donor = -1;
+			}
+		}
+
+		/*--- Here we want to make available the quantities for all the processors ---*/
+
+		// here I should broadcast the value from the processor containing the markerDonor to all the processor
+
+
+		/*--- On the target side we have to identify the marker as well ---*/
+
+		for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+			/*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
+			if ( target_config->GetMarker_All_MixingPlaneInterface(iMarkerTarget) == iMarkerInt ){
+				/*--- Store the identifier for the fluid marker ---*/
+
+				// here i should then store it in the target zone
+
+				Marker_Target = iMarkerTarget;
+				/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
+				break;
+			}
+			else {
+				/*--- If the tag hasn't matched any tag within the Flow markers ---*/
+				Marker_Target = -1;
+			}
+		}
 
 	}
+
+}

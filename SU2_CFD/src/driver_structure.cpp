@@ -1409,7 +1409,7 @@ void CMultiZoneDriver::SetMixingPlane(CGeometry ***geometry_container,
 	  /* --- transfer the average value from the donorZone to the targetZone*/
 	  for (targetZone = 0; targetZone < nZone; targetZone++) {
 	  	if (targetZone != donorZone){
-	  		transfer_container[donorZone][targetZone]->InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FEA_SOL],
+	  		transfer_container[donorZone][targetZone]->Broadcast_InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FEA_SOL],
 	  																																geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
 																																		config_container[donorZone], config_container[targetZone]);
 	  	}

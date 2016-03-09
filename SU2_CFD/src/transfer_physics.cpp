@@ -366,3 +366,32 @@ void CTransfer_ConservativeVars::SetTarget_Variable(CSolver *target_solution, CG
 
 }
 
+
+
+
+CTransfer_MixingPlaneAverage::CTransfer_MixingPlaneAverage(void) : CTransfer() {
+
+}
+
+CTransfer_MixingPlaneAverage::CTransfer_MixingPlaneAverage(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
+
+}
+
+CTransfer_MixingPlaneAverage::~CTransfer_MixingPlaneAverage(void) {
+
+}
+
+
+
+void CTransfer_MixingPlaneAverage::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
+								   	     	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	CConfig *donor_config, unsigned long Marker_Donor,
+																														unsigned long iSpan, unsigned long Point_Donor) {
+
+
+//	Donor_Variable[0] = donor_solution->GetAverageDensity(Marker_Donor, iSpan);
+//	Donor_Variable[1]	= donor_solution->GetAveragePressure(Marker_Donor, iSpan);
+//	Donor_Variable[2] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[0];
+//	Donor_Variable[2] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[1];
+
+}
+
