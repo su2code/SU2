@@ -677,7 +677,7 @@ CQUAD1::CQUAD1(unsigned short val_nDim, CConfig *config)
 		GaussCoord [iGauss] = new su2double[nDim];
 	}
 
-	GaussCoordP[0][0] = 0.0;  GaussCoordP[0][1] = 0.0;  GaussWeightP[0] = 4.0;
+	GaussCoord[0][0] = 0.0;  GaussCoord[0][1] = 0.0;  GaussWeight[0] = 4.0;
 
 	Mab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
@@ -940,10 +940,10 @@ void CQUAD1::ComputeGrad_Pressure(void){
 	  su2double ad_Ref[2][2], ad_Curr[2][2];
 	  unsigned short iNode, iDim, jDim, iGauss;
 
-	  for (iGauss = 0; iGauss < nGaussPointsP; iGauss++){
+	  for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
 
-		  Xi = GaussCoordP[iGauss][0];
-		  Eta = GaussCoordP[iGauss][1];
+		  Xi = GaussCoord[iGauss][0];
+		  Eta = GaussCoord[iGauss][1];
 
 		  /*--- dN/d xi, dN/d eta ---*/
 
@@ -983,8 +983,8 @@ void CQUAD1::ComputeGrad_Pressure(void){
 		  detJac_Ref = ad_Ref[0][0]*ad_Ref[1][1]-ad_Ref[0][1]*ad_Ref[1][0];
 		  detJac_Curr = ad_Curr[0][0]*ad_Curr[1][1]-ad_Curr[0][1]*ad_Curr[1][0];
 
-		  GaussPointP[iGauss]->SetJ_X(detJac_Ref);
-		  GaussPointP[iGauss]->SetJ_x(detJac_Curr);
+		  GaussPoint[iGauss]->SetJ_X(detJac_Ref);
+		  GaussPoint[iGauss]->SetJ_x(detJac_Curr);
 
 		  /*--- Jacobian inverse (it was already computed as transpose) ---*/
 
@@ -1005,8 +1005,8 @@ void CQUAD1::ComputeGrad_Pressure(void){
 					  GradNi_Xj_Ref += Jac_Ref[iDim][jDim]*dNiXj[iNode][jDim];
 					  GradNi_Xj_Curr += Jac_Curr[iDim][jDim]*dNiXj[iNode][jDim];
 				  }
-				  GaussPointP[iGauss]->SetGradNi_Xj(GradNi_Xj_Ref, iDim, iNode);
-				  GaussPointP[iGauss]->SetGradNi_xj(GradNi_Xj_Curr, iDim, iNode);
+				  GaussPoint[iGauss]->SetGradNi_Xj(GradNi_Xj_Ref, iDim, iNode);
+				  GaussPoint[iGauss]->SetGradNi_xj(GradNi_Xj_Curr, iDim, iNode);
 			  }
 		  }
 	  }

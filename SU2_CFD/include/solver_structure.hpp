@@ -7175,6 +7175,7 @@ private:
 
 	unsigned long nElement;
 	unsigned short nMarker;
+	int nFEA_Terms;
 
 	su2double *GradN_X,
 	*GradN_x;

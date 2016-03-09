@@ -1069,6 +1069,10 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     	default: cout << " Solver not implemented." << endl; exit(EXIT_FAILURE); break;
 	}
 
+	bool de_effects = config->GetDE_Effects();
+
+	if (de_effects) numerics_container[MESH_0][FEA_SOL][DE_TERM] = new CFEM_DielectricElastomer(nDim, nVar_FEM, config);
+
   }
 
 }

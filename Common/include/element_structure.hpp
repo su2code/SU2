@@ -500,7 +500,7 @@ public:
 
 /*!
  * \class CQUAD4
- * \brief Quadrilateral element with 4 Gauss Points
+ * \brief Quadrilateral element with 1 Gauss Point
  * \author R. Sanchez
  * \version 4.1.0 "Cardinal"
  */

@@ -4410,6 +4410,38 @@ public:
 
 };
 
+/*!
+ * \class CFEM_DielectricElastomer
+ * \brief Class for computing the constitutive and stress tensors for a dielectric elastomer.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_DielectricElastomer : public CFEM_NonlinearElasticity {
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_DielectricElastomer(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_DielectricElastomer(void);
+
+	void Compute_Plane_Stress_Term(CElement *element_container);
+
+	void Compute_Constitutive_Matrix(CElement *element_container);
+  using CNumerics::Compute_Constitutive_Matrix;
+
+	void Compute_Stress_Tensor(CElement *element_container);
+
+};
 
 
 /*!
