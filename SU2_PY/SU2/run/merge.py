@@ -24,8 +24,8 @@
 
 import os, sys, shutil, copy
 from .. import io  as su2io
-from interface import SOL as SU2_SOL
-from interface import SOL_FSI as SU2_SOL_FSI
+from .interface import SOL as SU2_SOL
+from .interface import SOL_FSI as SU2_SOL_FSI
 
 # ----------------------------------------------------------------------
 #  Merge Mesh

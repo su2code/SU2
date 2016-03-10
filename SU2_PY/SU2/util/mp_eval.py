@@ -1,7 +1,11 @@
 import os
 import multiprocessing as mp
 import numpy as np
-from misc import check_array
+import sys
+
+if sys.version_info.major > 2:
+    # In Py3, range corresponds to Py2 xrange
+    xrange = range
 
 class mp_eval(object):
     
@@ -36,7 +40,7 @@ class mp_eval(object):
         elif isinstance(inputs,list):
             n_inputs = len(inputs)
         else:
-            raise Exception, 'unsupported input'
+            raise Exception('unsupported input')
         
         for i_input,this_input in enumerate(inputs):
             this_job = { 'index'  : i_input    ,

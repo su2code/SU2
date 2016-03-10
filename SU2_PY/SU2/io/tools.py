@@ -33,7 +33,7 @@
 #  Imports
 # -------------------------------------------------------------------
 
-import os, time, sys, pickle, errno, copy
+import os
 import shutil, glob
 from SU2.util import ordered_bunch
 
@@ -126,7 +126,7 @@ def read_plot( filename ):
 
     # check for number of zones
     if len(zones) > 1:
-        raise IOError , 'multiple zones not supported'
+        raise IOError('multiple zones not supported')
     
     # done
     plot_file.close()              
@@ -977,5 +977,5 @@ def restart2solution(config,state={}):
         if state: state.FILES[ADJ_NAME] = solution
         
     else:
-        raise Exception, 'unknown math problem'
+        raise Exception('unknown math problem')
 
