@@ -137,6 +137,12 @@ inline su2double CConfig::GetDE_Modulus(void) { return DE_Modulus; }
 
 inline su2double CConfig::GetDE_Voltage(void) { return DE_Voltage; }
 
+inline bool CConfig::GetRefGeom(void) { return RefGeom; }
+
+inline string CConfig::GetRefGeom_FEMFileName(void) { return RefGeom_FEMFileName; }
+
+inline unsigned short CConfig::GetRefGeom_FileFormat(void) { return RefGeom_FileFormat; }
+
 inline unsigned short CConfig::GetElas2D_Formulation(void) { return Kind_2DElasForm; }
 
 inline su2double CConfig::GetPoissonRatio(void) { return PoissonRatio; }

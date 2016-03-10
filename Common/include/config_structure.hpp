@@ -604,6 +604,9 @@ private:
 	DE_Modulus,							/*!< \brief Dielectric elastomer modulus. */
 	DE_Voltage;							/*!< \brief Dielectric elastomer voltage. */
 	bool DE_Effects; 						/*!< Application of DE effects to FE analysis */
+	bool RefGeom; 						/*!< Application of DE effects to FE analysis */
+	string RefGeom_FEMFileName;    			/*!< \brief File name for reference geometry. */
+	unsigned short RefGeom_FileFormat;	/*!< \brief Mesh input format. */
 	unsigned short Kind_2DElasForm;			/*!< \brief Kind of bidimensional elasticity solver. */
 	unsigned short nIterFSI;	/*!< \brief Number of maximum number of subiterations in a FSI problem. */
 	su2double AitkenStatRelax;			/*!< \brief Aitken's relaxation factor (if set as static) */
@@ -1583,6 +1586,25 @@ public:
 	 * \return Value of the DE voltage.
 	 */
 	su2double GetDE_Voltage(void);
+
+	/*!
+	  * \brief Decide whether it's necessary to read a reference geometry.
+	  * \return <code>TRUE</code> if it's necessary to read a reference geometry, <code>FALSE</code> otherwise.
+	  */
+
+	bool GetRefGeom(void);
+
+	/*!
+	 * \brief Get the name of the file with the reference geometry of the structural problem.
+	 * \return Name of the file with the reference geometry of the structural problem.
+	 */
+	string GetRefGeom_FEMFileName(void);
+
+	/*!
+	 * \brief Get the format of the reference geometry file.
+	 * \return Format of the reference geometry file.
+	 */
+	unsigned short GetRefGeom_FileFormat(void);
 
     /*!
 	 * \brief Formulation for 2D elasticity (plane stress - strain)

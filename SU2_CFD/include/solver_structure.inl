@@ -727,6 +727,8 @@ inline void CSolver::Copy_Zone_Solution(CSolver ***solver1_solution, CGeometry *
 inline CFluidModel* CSolver::GetFluidModel(void) { return NULL;}
 
 inline CFluidModel* CEulerSolver::GetFluidModel(void) { return FluidModel;}
+
+inline void CSolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) { }
 										  
 inline void CSolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
 

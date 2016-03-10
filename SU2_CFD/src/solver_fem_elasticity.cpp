@@ -338,6 +338,12 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	}
 
+	bool reference_geometry = config->GetRefGeom();
+
+	/*--- Perform the MPI communication of the solution ---*/
+
+	if (reference_geometry) Set_ReferenceGeometry(geometry, config);
+
 	/*--- Term ij of the Jacobian ---*/
 
 	Jacobian_ij = new su2double*[nVar];
@@ -1005,6 +1011,129 @@ void CFEM_ElasticitySolver::Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConf
 
 }
 
+void CFEM_ElasticitySolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
+
+	unsigned long iPoint;
+	unsigned long index;
+
+	unsigned short iVar;
+	unsigned short iZone = config->GetiZone();
+	unsigned short nZone = geometry->GetnZone();
+	unsigned short file_format = config->GetRefGeom_FileFormat();
+
+	string filename;
+	su2double dull_val;
+	ifstream reference_file;
+
+	int rank = MASTER_NODE;
+	#ifdef HAVE_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	#endif
+
+
+	/*--- Restart the solution from file information ---*/
+
+	filename = config->GetRefGeom_FEMFileName();
+
+	/*--- If multizone, append zone name ---*/
+    if (nZone > 1)
+      filename = config->GetMultizone_FileName(filename, iZone);
+
+	reference_file.open(filename.data(), ios::in);
+
+	/*--- In case there is no file ---*/
+
+	if (reference_file.fail()) {
+	    if (rank == MASTER_NODE)
+		cout << "There is no FEM reference geometry file!!" << endl;
+		exit(EXIT_FAILURE);
+	}
+
+	cout << "Filename: " << filename << " and format " << file_format << "." << endl;
+
+	/*--- In case this is a parallel simulation, we need to perform the
+ 	 Global2Local index transformation first. ---*/
+
+	long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+
+	/*--- First, set all indices to a negative value by default ---*/
+
+    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
+      Global2Local[iPoint] = -1;
+
+	/*--- Now fill array with the transform values only for local points ---*/
+
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+
+    /*--- Read all lines in the restart file ---*/
+
+    long iPoint_Local;
+    unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
+    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+	/*--- The first line is the header ---*/
+
+	getline (reference_file, text_line);
+
+	while (getline (reference_file, text_line)) {
+	   istringstream point_line(text_line);
+
+	/*--- Retrieve local index. If this node from the restart file lives
+   	   on a different processor, the value of iPoint_Local will be -1.
+   	   Otherwise, the local index for this node on the current processor
+   	   will be returned and used to instantiate the vars. ---*/
+
+	   iPoint_Local = Global2Local[iPoint_Global];
+
+		if (iPoint_Local >= 0) {
+
+			if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1];
+			if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+
+			for (iVar = 0; iVar < nVar; iVar++) node[iPoint_Local]->SetReference_Geometry(iVar, Solution[iVar]);
+
+			iPoint_Global_Local++;
+		}
+		iPoint_Global++;
+	}
+
+    /*--- Detect a wrong solution file ---*/
+
+    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+	#ifndef HAVE_MPI
+    	rbuf_NotMatching = sbuf_NotMatching;
+	#else
+    	SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+	#endif
+
+    if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
+	#ifndef HAVE_MPI
+      	  exit(EXIT_FAILURE);
+	#else
+      	  MPI_Barrier(MPI_COMM_WORLD);
+      	  MPI_Abort(MPI_COMM_WORLD,1);
+      	  MPI_Finalize();
+	#endif
+    }
+
+	/*--- TODO: We need to communicate here the reference geometry for the halo nodes. ---*/
+
+	/*--- Close the restart file ---*/
+
+	reference_file.close();
+
+	/*--- Free memory needed for the transformation ---*/
+
+	delete [] Global2Local;
+
+}
+
 
 void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
 
@@ -1265,7 +1394,6 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 				for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta_DE[iVar];
 				LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
 
-//				cout << "Ta_DE= (" << Res_Stress_i[0] << "," << Res_Stress_i[1] << ")." << endl;
 			}
 
 			for (jNode = 0; jNode < NelNodes; jNode++){
@@ -1289,9 +1417,8 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 
 				/*--- Retrieve the electric contribution to the Jacobian ---*/
 				if (de_effects){
-					Kab_DE = element_container[DE_TERM][EL_KIND]->Get_Kab(iNode, jNode);
+//					Kab_DE = element_container[DE_TERM][EL_KIND]->Get_Kab(iNode, jNode);
 					Ks_ab_DE = element_container[DE_TERM][EL_KIND]->Get_Ks_ab(iNode,jNode);
-//					cout << "Ks_ab_DE= " << Ks_ab_DE << endl;
 
 					for (iVar = 0; iVar < nVar; iVar++){
 						Jacobian_s_ij[iVar][iVar] = Ks_ab_DE;

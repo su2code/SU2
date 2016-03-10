@@ -2702,6 +2702,13 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void Set_ReferenceGeometry(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
@@ -7318,6 +7325,13 @@ public:
 	 */
 	void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                       unsigned short iMesh, unsigned long Iteration);
+
+	/*!
+	 * \brief Set a reference geometry for .
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_ReferenceGeometry(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Compute the stiffness matrix of the problem.
