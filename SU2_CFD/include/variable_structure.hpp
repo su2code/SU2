@@ -2057,7 +2057,17 @@ public:
 	 * \return Pointer to the solution (at time n) vector.
 	 */
 	virtual su2double *GetSolution_Pred_Old(void);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+  virtual void SetReference_Geometry(unsigned short iVar, su2double ref_geometry);
   
+	/*!
+	 * \brief A virtual member.
+	 */
+  virtual su2double *GetReference_Geometry(void);
+
   /*!
    * \brief Register the variables in the solution array as input/output variable.
    * \param[in] input - input or output variables.
@@ -2597,7 +2607,6 @@ public:
 	su2double *GetSolution_Pred_Old(void);
 
 
-
 };
 
 /*!
@@ -2634,6 +2643,8 @@ protected:
 
 	su2double *Solution_Pred,					/*!< \brief Predictor of the solution for FSI purposes */
 	*Solution_Pred_Old;						/*!< \brief Predictor of the solution at time n for FSI purposes */
+
+	su2double *Reference_Geometry;			/*!< \brief Reference solution for optimization problems */
 
 
 public:
@@ -2978,6 +2989,17 @@ public:
 	 * \return Value of the Von Mises stress.
 	 */
      su2double GetVonMises_Stress(void);
+
+ 	/*!
+ 	 * \brief Set the reference geometry.
+ 	 * \return Pointer to the solution (at time n) vector.
+ 	 */
+     void SetReference_Geometry(unsigned short iVar, su2double ref_geometry);
+
+ 	/*!
+ 	 * \brief A virtual member.
+ 	 */
+     su2double *GetReference_Geometry(void);
 
 
 };

@@ -58,6 +58,8 @@ CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
 	Solution_Pred			= NULL;		// Predictor of the solution at the current subiteration
 	Solution_Pred_Old		= NULL;		// Predictor of the solution at the previous subiteration
 
+	Reference_Geometry		= NULL;		// Reference geometry for optimization purposes
+
 }
 
 CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
@@ -67,6 +69,8 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
 	bool incremental_load = config->GetIncrementalLoad();
 	bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);	// Generalized alpha method requires residual at previous time step.
+
+	bool refgeom = config->GetRefGeom();	// Reference geometry needs to be stored
 
 	VonMises_Stress = 0.0;
 
@@ -142,6 +146,10 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 		if (body_forces) Residual_Ext_Body[iVar] = 0.0;
 	}
 
+	if (refgeom)	Reference_Geometry = new su2double [nVar];
+	else 			Reference_Geometry = NULL;
+
+
 }
 
 CFEM_ElasVariable::~CFEM_ElasVariable(void) {
@@ -165,5 +173,7 @@ CFEM_ElasVariable::~CFEM_ElasVariable(void) {
 
 	if (Solution_Pred 			!= NULL) delete [] Solution_Pred;
 	if (Solution_Pred_Old 		!= NULL) delete [] Solution_Pred_Old;
+
+	if (Reference_Geometry 		!= NULL) delete [] Reference_Geometry;
 
 }

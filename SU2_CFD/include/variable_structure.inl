@@ -605,6 +605,10 @@ inline su2double CVariable::GetSolution_Pred_Old(unsigned short val_var){ return
 
 inline su2double *CVariable::GetSolution_Pred_Old(void){ return NULL; }
 
+inline void CVariable::SetReference_Geometry(unsigned short iVar, su2double ref_geometry){  }
+
+inline su2double *CVariable::GetReference_Geometry(void){ return NULL; }
+
 inline su2double CEulerVariable::GetDensity(void) { return Solution[0]; }
 
 inline su2double CEulerVariable::GetDensityInc(void) { return Primitive[nDim+1]; }
@@ -1036,6 +1040,10 @@ inline su2double CFEM_ElasVariable::GetSolution_Pred_Old(unsigned short val_var)
 inline void CFEM_ElasVariable::SetVonMises_Stress(su2double val_stress) { VonMises_Stress = val_stress; }
 
 inline su2double CFEM_ElasVariable::GetVonMises_Stress(void) { return VonMises_Stress; }
+
+inline void CFEM_ElasVariable::SetReference_Geometry(unsigned short iVar, su2double ref_geometry){ Reference_Geometry[iVar] = ref_geometry;}
+
+inline su2double *CFEM_ElasVariable::GetReference_Geometry(void){ return Reference_Geometry; }
 
 inline void CFEABoundVariable::SetTraction(unsigned short iVar, unsigned short jVar, su2double val_traction) { Traction[iVar][jVar] = val_traction; }
 
