@@ -2,7 +2,7 @@
  * \file grid_adaptation_structure.cpp
  * \brief Main subroutines for grid adaptation
  * \author F. Palacios
- * \version 4.0.1 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -196,45 +196,6 @@ void CGridAdaptation::GetFlowResidual(CGeometry *geometry, CConfig *config) {
 	restart_file.close();
 }
 
-void CGridAdaptation::GetLinResidual(CGeometry *geometry, CConfig *config) {
-	unsigned long iPoint, index;
-	su2double dummy;
-	string text_line;
-	
-	string mesh_filename = config->GetSolution_LinFileName();
-	ifstream restart_file;
-	
-	char *cstr = new char [mesh_filename.size()+1];
-	strcpy (cstr, mesh_filename.c_str());
-	restart_file.open(cstr, ios::in);
-	if (restart_file.fail()) {
-		cout << "There is no linear restart file!!" << endl;
-		exit(EXIT_FAILURE); }
-	
-  /*--- Read the header of the file ---*/
-  getline(restart_file, text_line);
-
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		getline(restart_file, text_line);
-		istringstream point_line(text_line);
-    
-    point_line >> index;
-    
-    if (nDim == 2) point_line >> dummy >> dummy;
-    else point_line >> dummy >> dummy >> dummy;
-    
-		if (nVar == 1) point_line >> dummy >> LinVar_Res[iPoint][0];
-		if (nVar == 4) point_line >> dummy >> dummy >> dummy >> dummy >>
-			LinVar_Res[iPoint][0] >> LinVar_Res[iPoint][1] >> LinVar_Res[iPoint][2] >> 
-			LinVar_Res[iPoint][3];
-		if (nVar == 5) point_line >> dummy >> dummy >> dummy >> dummy >> dummy >>
-			LinVar_Res[iPoint][0] >> LinVar_Res[iPoint][1] >> LinVar_Res[iPoint][2] >> 
-			LinVar_Res[iPoint][3] >> LinVar_Res[iPoint][4];
-	}
-	
-	restart_file.close();
-}
-
 void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, index;
 	unsigned short iVar;
@@ -277,44 +238,6 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	restart_file.close();
 }
 
-void CGridAdaptation::GetLinSolution(CGeometry *geometry, CConfig *config) {
-
-	unsigned long iPoint, index;
-  su2double dummy;
-	string text_line;
-	
-	string mesh_filename;
-	mesh_filename = config->GetSolution_LinFileName();
-	
-	ifstream restart_file;
-	
-	char *cstr = new char [mesh_filename.size()+1];
-	strcpy (cstr, mesh_filename.c_str());
-	restart_file.open(cstr, ios::in);
-	if (restart_file.fail()) {
-		cout << "There is no linear restart file!!" << endl;
-		exit(EXIT_FAILURE); }
-	
-  /*--- Read the header of the file ---*/
-  getline(restart_file, text_line);
-  
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-		getline(restart_file, text_line);
-		istringstream point_line(text_line);
-    
-    point_line >> index;
-    
-    if (nDim == 2) point_line >> dummy >> dummy;
-    else point_line >> dummy >> dummy >> dummy;
-    
-		if (nVar == 1) point_line >> LinVar_Sol[iPoint][0];
-		if (nVar == 4) point_line >> LinVar_Sol[iPoint][0] >> LinVar_Sol[iPoint][1] >> LinVar_Sol[iPoint][2] >> LinVar_Sol[iPoint][3];
-		if (nVar == 5) point_line >> LinVar_Sol[iPoint][0] >> LinVar_Sol[iPoint][1] >> LinVar_Sol[iPoint][2] >> LinVar_Sol[iPoint][3] >> LinVar_Sol[iPoint][4];
-	}
-	
-	restart_file.close();
-}
-
 void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, index;
 	string text_line;
@@ -348,7 +271,9 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config) {
   if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          SPRINTF (buffer, "_totheat.dat");
   if (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)        SPRINTF (buffer, "_maxheat.dat");
   if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)      SPRINTF (buffer, "_pt.dat");
+  if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE)      SPRINTF (buffer, "_pe.dat");
 	if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)          SPRINTF (buffer, "_mfr.dat");
+	if (config->GetKind_ObjFunc() == OUTFLOW_GENERALIZED)       SPRINTF (buffer, "_chn.dat");
 
 	strcat(cstr, buffer);
 	
@@ -1642,30 +1567,21 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 	
 	bool Restart_Flow = false;
 	bool Restart_Adjoint = false;
-	bool Restart_Linear = false;
 	
 	if ((config->GetKind_Adaptation() == FULL_FLOW) ||
 			(config->GetKind_Adaptation() == GRAD_FLOW) ||
 			(config->GetKind_Adaptation() == FULL_ADJOINT) ||
 			(config->GetKind_Adaptation() == GRAD_ADJOINT) ||
 			(config->GetKind_Adaptation() == GRAD_FLOW_ADJ) ||
-			(config->GetKind_Adaptation() == FULL_LINEAR) ||
-			(config->GetKind_Adaptation() == ROBUST) ||
 			(config->GetKind_Adaptation() == REMAINING) ||
-			(config->GetKind_Adaptation() == COMPUTABLE_ROBUST) ||
 			(config->GetKind_Adaptation() == COMPUTABLE)) Restart_Flow = true;
 	
 	if ((config->GetKind_Adaptation() == FULL_ADJOINT) ||
 			(config->GetKind_Adaptation() == GRAD_ADJOINT) ||
 			(config->GetKind_Adaptation() == GRAD_FLOW_ADJ) ||
-			(config->GetKind_Adaptation() == ROBUST) ||
 			(config->GetKind_Adaptation() == REMAINING) ||
-			(config->GetKind_Adaptation() == COMPUTABLE_ROBUST) ||
 			(config->GetKind_Adaptation() == COMPUTABLE)) Restart_Adjoint = true;
-	
-	if ((config->GetKind_Adaptation() == COMPUTABLE_ROBUST) ||
-			(config->GetKind_Adaptation() == FULL_LINEAR)) Restart_Linear = true;
-	
+		
 	TriangleAdaptCode = new long[geometry->GetnElem()];
 	TriangleEdgeIndex = new long*[geometry->GetnElem()];
 	TriangleEdgeCode = new bool*[geometry->GetnElem()];
@@ -1837,19 +1753,12 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 			AdjVar_Adapt[iPoint] = new su2double[nVar];
 	}
 	
-	if (Restart_Linear) {
-		LinVar_Adapt = new su2double *[4*geometry->GetnPoint()];
-		for (iPoint = 0; iPoint < 4*geometry->GetnPoint(); iPoint++)
-			LinVar_Adapt[iPoint] = new su2double[nVar];
-	}
-	
 	/*--- Set the value of the variables ---*/
   
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
 		for (iVar = 0; iVar < nVar; iVar ++) {
 			if (Restart_Flow) ConsVar_Adapt[iPoint][iVar] = ConsVar_Sol[iPoint][iVar];
 			if (Restart_Adjoint) AdjVar_Adapt[iPoint][iVar] = AdjVar_Sol[iPoint][iVar];
-			if (Restart_Linear) LinVar_Adapt[iPoint][iVar] = LinVar_Sol[iPoint][iVar];
 		}
 	}
 	
@@ -1882,7 +1791,6 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 						for (iVar = 0; iVar < nVar; iVar ++) {
 							if (Restart_Flow) ConsVar_Adapt[nPoint_new][iVar] =  0.5 * (ConsVar_Adapt[no_0][iVar]+ConsVar_Adapt[no_1][iVar]);
 							if (Restart_Adjoint) AdjVar_Adapt[nPoint_new][iVar] =  0.5 * (AdjVar_Adapt[no_0][iVar]+AdjVar_Adapt[no_1][iVar]);
-							if (Restart_Linear) LinVar_Adapt[nPoint_new][iVar] =  0.5 * (LinVar_Adapt[no_0][iVar]+LinVar_Adapt[no_1][iVar]);
 						}
 						
 						nPoint_new++;
@@ -1920,7 +1828,6 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 						for (iVar = 0; iVar < nVar; iVar ++) {
 							if (Restart_Flow) ConsVar_Adapt[nPoint_new][iVar] =  0.5 * (ConsVar_Adapt[no_0][iVar]+ConsVar_Adapt[no_1][iVar]);
 							if (Restart_Adjoint) AdjVar_Adapt[nPoint_new][iVar] =  0.5 * (AdjVar_Adapt[no_0][iVar]+AdjVar_Adapt[no_1][iVar]);
-							if (Restart_Linear) LinVar_Adapt[nPoint_new][iVar] =  0.5 * (LinVar_Adapt[no_0][iVar]+LinVar_Adapt[no_1][iVar]);
 						}
 						
 						nPoint_new++;
@@ -1951,7 +1858,6 @@ void CGridAdaptation::SetHomothetic_Adaptation2D(CGeometry *geometry, CPhysicalG
 						for (iVar = 0; iVar < nVar; iVar ++) {
 							if (Restart_Flow) ConsVar_Adapt[nPoint_new][iVar] =  0.25 * (ConsVar_Adapt[no_0][iVar]+ConsVar_Adapt[no_1][iVar]+ConsVar_Adapt[no_2][iVar]+ConsVar_Adapt[no_3][iVar]);
 							if (Restart_Adjoint) AdjVar_Adapt[nPoint_new][iVar] =  0.25 * (AdjVar_Adapt[no_0][iVar]+AdjVar_Adapt[no_1][iVar]+AdjVar_Adapt[no_2][iVar]+AdjVar_Adapt[no_3][iVar]);
-							if (Restart_Linear) LinVar_Adapt[nPoint_new][iVar] =  0.25 * (LinVar_Adapt[no_0][iVar]+LinVar_Adapt[no_1][iVar]+LinVar_Adapt[no_2][iVar]+LinVar_Adapt[no_3][iVar]);
 						}
 						
 						nPoint_new++;
@@ -2345,30 +2251,21 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 	
 	bool Restart_Flow = false;
 	bool Restart_Adjoint = false;
-	bool Restart_Linear = false;
 	
 	if ((config->GetKind_Adaptation() == FULL_FLOW) ||
 			(config->GetKind_Adaptation() == GRAD_FLOW) ||
 			(config->GetKind_Adaptation() == FULL_ADJOINT) ||
 			(config->GetKind_Adaptation() == GRAD_ADJOINT) ||
 			(config->GetKind_Adaptation() == GRAD_FLOW_ADJ) ||
-			(config->GetKind_Adaptation() == FULL_LINEAR) ||
-			(config->GetKind_Adaptation() == ROBUST) ||
 			(config->GetKind_Adaptation() == REMAINING) ||
-			(config->GetKind_Adaptation() == COMPUTABLE_ROBUST) ||
 			(config->GetKind_Adaptation() == COMPUTABLE)) Restart_Flow = true;
 	
 	if ((config->GetKind_Adaptation() == FULL_ADJOINT) ||
 			(config->GetKind_Adaptation() == GRAD_ADJOINT) ||
 			(config->GetKind_Adaptation() == GRAD_FLOW_ADJ) ||
-			(config->GetKind_Adaptation() == ROBUST) ||
 			(config->GetKind_Adaptation() == REMAINING) ||
-			(config->GetKind_Adaptation() == COMPUTABLE_ROBUST) ||
 			(config->GetKind_Adaptation() == COMPUTABLE)) Restart_Adjoint = true;
-	
-	if ((config->GetKind_Adaptation() == COMPUTABLE_ROBUST) ||
-			(config->GetKind_Adaptation() == FULL_LINEAR)) Restart_Linear = true;
-	
+		
 	TetraAdaptCode = new long[geometry->GetnElem()];
 	TetraEdgeIndex = new long*[geometry->GetnElem()];
 	TetraEdgeCode = new bool*[geometry->GetnElem()];
@@ -2625,18 +2522,11 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 			AdjVar_Adapt[iPoint] = new su2double[nVar];
 	}
 	
-	if (Restart_Linear) {
-		LinVar_Adapt = new su2double *[10*geometry->GetnPoint()];
-		for (iPoint = 0; iPoint < 10*geometry->GetnPoint(); iPoint++)
-			LinVar_Adapt[iPoint] = new su2double[nVar];
-	}
-	
 	// Set the value of the variables
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
 		for (iVar = 0; iVar < nVar; iVar ++) {
 			if (Restart_Flow) ConsVar_Adapt[iPoint][iVar] = ConsVar_Sol[iPoint][iVar];
 			if (Restart_Adjoint) AdjVar_Adapt[iPoint][iVar] = AdjVar_Sol[iPoint][iVar];
-			if (Restart_Linear) LinVar_Adapt[iPoint][iVar] = LinVar_Sol[iPoint][iVar];
 		}
 	}
 	
@@ -2674,7 +2564,6 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 						for (iVar = 0; iVar < nVar; iVar ++) {
 							if (Restart_Flow) ConsVar_Adapt[nPoint_new][iVar] =  0.5 * (ConsVar_Adapt[no_0][iVar]+ConsVar_Adapt[no_1][iVar]);
 							if (Restart_Adjoint) AdjVar_Adapt[nPoint_new][iVar] =  0.5 * (AdjVar_Adapt[no_0][iVar]+AdjVar_Adapt[no_1][iVar]);
-							if (Restart_Linear) LinVar_Adapt[nPoint_new][iVar] =  0.5 * (LinVar_Adapt[no_0][iVar]+LinVar_Adapt[no_1][iVar]);
 						}
 						
 						nPoint_new++;
@@ -2725,7 +2614,6 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 						for (iVar = 0; iVar < nVar; iVar ++) {
 							if (Restart_Flow) ConsVar_Adapt[nPoint_new][iVar] =  0.5 * (ConsVar_Adapt[no_0][iVar]+ConsVar_Adapt[no_1][iVar]);
 							if (Restart_Adjoint) AdjVar_Adapt[nPoint_new][iVar] =  0.5 * (AdjVar_Adapt[no_0][iVar]+AdjVar_Adapt[no_1][iVar]);
-							if (Restart_Linear) LinVar_Adapt[nPoint_new][iVar] =  0.5 * (LinVar_Adapt[no_0][iVar]+LinVar_Adapt[no_1][iVar]);
 						}
 						
 						nPoint_new++;
@@ -2794,8 +2682,6 @@ void CGridAdaptation::SetHomothetic_Adaptation3D(CGeometry *geometry, CPhysicalG
 																																						ConsVar_Adapt[no_4][iVar]+ConsVar_Adapt[no_5][iVar]+ConsVar_Adapt[no_6][iVar]+ConsVar_Adapt[no_7][iVar]);
 							if (Restart_Adjoint) AdjVar_Adapt[nPoint_new][iVar] =  0.125 * (AdjVar_Adapt[no_0][iVar]+AdjVar_Adapt[no_1][iVar]+AdjVar_Adapt[no_2][iVar]+AdjVar_Adapt[no_3][iVar]+
 																																							AdjVar_Adapt[no_4][iVar]+AdjVar_Adapt[no_5][iVar]+AdjVar_Adapt[no_6][iVar]+AdjVar_Adapt[no_7][iVar]);
-							if (Restart_Linear) LinVar_Adapt[nPoint_new][iVar] =  0.125 * (LinVar_Adapt[no_0][iVar]+LinVar_Adapt[no_1][iVar]+LinVar_Adapt[no_2][iVar]+LinVar_Adapt[no_3][iVar]+
-																																						 LinVar_Adapt[no_4][iVar]+LinVar_Adapt[no_5][iVar]+LinVar_Adapt[no_6][iVar]+LinVar_Adapt[no_7][iVar]);
 						}
 						
 						nPoint_new++;
@@ -3648,7 +3534,9 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry 
   if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          SPRINTF (buffer, "_totheat.dat");
   if (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)        SPRINTF (buffer, "_maxheat.dat");
   if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)      SPRINTF (buffer, "_pt.dat");
+  if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE)      SPRINTF (buffer, "_pe.dat");
   if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)          SPRINTF (buffer, "_mfr.dat");
+  if (config->GetKind_ObjFunc() == OUTFLOW_GENERALIZED)       SPRINTF (buffer, "_chn.dat");
   
 	strcat(cstr, buffer);
 	

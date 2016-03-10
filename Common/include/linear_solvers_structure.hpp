@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>linear_solvers_structure.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 4.0.1 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,7 +55,7 @@ using namespace std;
  * \class CSysSolve
  * \brief Class for solving linear systems using classical and Krylov-subspace iterative methods
  * \author J. Hicken.
- * \version 4.0.1 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * The individual solvers could be stand-alone subroutines, but by
  * creating CSysSolve objects we can more easily assign different
@@ -132,7 +134,6 @@ private:
   
   /*!
    * \brief writes header information for a CSysSolve residual history
-   * \param[in, out] os - ostream class object for output
    * \param[in] solver - string describing the solver
    * \param[in] restol - the target tolerance to solve to
    * \param[in] resinit - the initial residual norm (absolute)
@@ -174,6 +175,7 @@ public:
    * \param[in] precond - object that defines preconditioner
    * \param[in] tol - tolerance with which to solve the system
    * \param[in] m - maximum size of the search subspace
+   * \param[in] residual
    * \param[in] monitoring - turn on priting residuals from solver to screen.
    */
   unsigned long FGMRES_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
@@ -188,6 +190,7 @@ public:
    * \param[in] precond - object that defines preconditioner
    * \param[in] tol - tolerance with which to solve the system
    * \param[in] m - maximum size of the search subspace
+   * \param[in] residual
    * \param[in] monitoring - turn on priting residuals from solver to screen.
    */
   unsigned long BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,

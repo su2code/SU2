@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.0.1 "Cardinal"
+#  \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -14,7 +14,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -203,6 +203,10 @@ def get_headerMap():
                  "CNearFieldOF"    : "NEARFIELD_PRESSURE"      ,
                  "Avg_TotalPress"  : "AVG_TOTAL_PRESSURE"      ,
                  "FluxAvg_Pressure": "AVG_OUTLET_PRESSURE"     ,
+                 "FluxAvg_Density" : "FLUXAVG_OUTLET_DENSITY"  ,
+                 "FluxAvg_Velocity": "FLUXAVG_OUTLET_VELOCITY" ,
+                 "Avg_Mach"        : "AVG_OUTLET_MACH"         ,
+                 "Avg_Temperature" : "AVG_OUTLET_TEMPERATURE"  ,
                  "MassFlowRate"    : "MASS_FLOW_RATE"          ,
                  "Time(min)"       : "TIME"                    ,
                  "D(CLift)"        : "D_LIFT"                  ,
@@ -242,7 +246,10 @@ optnames_aero = [ "LIFT"                    ,
                   "THRUST"                  ,
                   "AVG_TOTAL_PRESSURE"      ,
                   "AVG_OUTLET_PRESSURE"     ,
+                  "AVG_OUTLET_DENSITY"      ,
+                  "AVG_OUTLET_VELOCITY"     ,
                   "MASS_FLOW_RATE"          ,
+                  "OUTFLOW_GENERALIZED"     ,
                   "EQUIVALENT_AREA"         ,
                   "NEARFIELD_PRESSURE"      ,
                   "INVERSE_DESIGN_PRESSURE" ,
@@ -398,6 +405,9 @@ def get_objectiveSign( ObjFun_name ):
             EFFICIENCY
             THRUST
             FIGURE_OF_MERIT
+            MASS_FLOW_RATE
+            AVG_OUTLET_PRESSURE
+            AVG_TOTAL_PRESSURE
         returns +1 otherwise
     """
     
@@ -406,6 +416,9 @@ def get_objectiveSign( ObjFun_name ):
     if ObjFun_name == "EFFICIENCY"      : return -1.0
     if ObjFun_name == "THRUST"          : return -1.0
     if ObjFun_name == "FIGURE_OF_MERIT" : return -1.0
+    if ObjFun_name == "MASS_FLOW_RATE" : return -1.0
+    if ObjFun_name == "AVG_TOTAL_PRESSURE" : return -1.0
+    if ObjFun_name == "AVG_OUTLET_PRESSURE" : return -1.0
     
     # otherwise
     return 1.0
@@ -459,8 +472,9 @@ def get_adjointSuffix(objective_function=None):
                  "FIGURE_OF_MERIT"         : "merit"     ,
                  "AVG_TOTAL_PRESSURE"      : "pt"        ,
                  "AVG_OUTLET_PRESSURE"     : "pe"        ,
-                 "MASS_FLOW_RATE"          : "mfw"       ,
-                 "FREE_SURFACE"            : "fs"        }
+                 "MASS_FLOW_RATE"          : "mfr"       ,
+                 "OUTFLOW_GENERALIZED"       : "chn"       ,
+                 "FREE_SURFACE"            : "fs"       }
     
     # if none or false, return map
     if not objective_function:
@@ -521,6 +535,7 @@ def get_dvMap():
                15  : "FFD_CONTROL_POINT_2D"  ,
                16  : "FFD_CAMBER_2D"         ,
                17  : "FFD_THICKNESS_2D"      ,
+               19  : "CUSTOM"                ,
                101 : "MACH_NUMBER"           ,
                102 : "AOA"                    }
     
@@ -601,6 +616,9 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
             if key == "INV_DESIGN_HEATFLUX"     :
                 header.append(r',"Grad_HeatFlux_Diff"')
                 write_format.append(", %.10f")
+            if key =="OUTFLOW_GENERALIZED"    :
+                header.append(r',"Grad_Chain_Rule"')
+                write_format.append(", %.10f")
 
     # otherwise...
     else: raise Exception('Unrecognized Gradient Type')          
@@ -653,6 +671,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
         write_format.append(r', %s, %s, %s')
     elif kindID == "MACH_NUMBER"        : pass
     elif kindID == "AOA"                : pass
+    elif kindID == "CUSTOM"             : pass
     
     # otherwise...
     else: raise Exception('Unrecognized Design Variable Kind') 
@@ -719,6 +738,9 @@ def get_optFileFormat(plot_format,special_cases=None):
         if key == "INV_DESIGN_HEATFLUX"     :
             header_list.extend(["HeatFlux_Diff"])
             write_format.append(r', %.10f')
+        if key =="OUTFLOW_GENERALIZED"    :
+            header_list.exted(["Chain_Rule"])
+            write_format.append([r", %.10f"])
 
     # finish formats
     header_format = (header_format) + ('"') + ('","').join(header_list) + ('"') + (' \n')
@@ -771,7 +793,8 @@ def get_specialCases(config):
                           'EQUIV_AREA'                       ,
                           '1D_OUTPUT'                        ,
                           'INV_DESIGN_CP'                    ,
-                          'INV_DESIGN_HEATFLUX'              ]
+                          'INV_DESIGN_HEATFLUX'              ,
+                          'OUTFLOW_GENERALIZED'                ]
     
     special_cases = []
     for key in all_special_cases:
@@ -802,6 +825,25 @@ def get_specialCases(config):
     return special_cases
 
 #: def get_specialCases()
+
+# -------------------------------------------------------------------
+#  Check Fluid Structure Interaction
+# -------------------------------------------------------------------
+def get_multizone(config):
+    """ returns a list of special physical problems that were
+        specified in the config file, and set to 'yes'
+    """
+    
+    all_multizone_problems = ['FLUID_STRUCTURE_INTERACTION']
+    
+    multizone = []
+    for key in all_multizone_problems:
+        if config.has_key('PHYSICAL_PROBLEM') and config['PHYSICAL_PROBLEM'] == key:
+            multizone.append(key)
+            
+    return multizone
+
+#: def get_multizone()
 
 
 def next_folder(folder_format,num_format='%03d'):

@@ -2,7 +2,7 @@
  * \file output_fieldview.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.0.1 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,8 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   unsigned long iPoint, iElem, iNode, nbfaces;
   
   unsigned long iExtIter = config->GetExtIter();
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
+
   bool grid_movement  = config->GetGrid_Movement();
 
   char cstr[200], buffer[50];
@@ -230,6 +231,13 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
         ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
         ( Kind_Solver == ADJ_RANS               ) ) {
       FieldView_File << "Surface_Sensitivity\nSolution_Sensor" << endl;
+    }
+
+    if (( Kind_Solver == DISC_ADJ_EULER              ) ||
+        ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
+        ( Kind_Solver == DISC_ADJ_RANS               ) ) {
+      if (nDim == 2) FieldView_File << "Surface_Sensitivity\nSensitivity_x\nSensitivity_y" << endl;
+      else FieldView_File << "Surface_Sensitivity\nSensitivity_x\nSensitivity_y\nSensitivity_z" << endl;
     }
     
     /*--- SU2 does not generate boundary variables ---*/
@@ -475,7 +483,7 @@ void COutput::SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned 
   
   unsigned long iPoint, iElem, iNode, nbfaces;
   unsigned long iExtIter = config->GetExtIter();
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   
   char cstr[200], buffer[50];
   string filename;

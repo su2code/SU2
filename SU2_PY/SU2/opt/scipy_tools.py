@@ -3,7 +3,7 @@
 ## \file scipy_tools.py
 #  \brief tools for interfacing with scipy
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.0.1 "Cardinal"
+#  \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -14,7 +14,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -84,7 +84,8 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
         fprime_ieqcons = con_dcieq        
     
     # number of design variables
-    n_dv = len( project.config['DEFINITION_DV']['KIND'] )
+    dv_size = project.config['DEFINITION_DV']['SIZE']
+    n_dv = sum( dv_size)
     project.n_dv = n_dv
     
     # Initial guess
@@ -92,8 +93,12 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
     
     # prescale x0
     dv_scales = project.config['DEFINITION_DV']['SCALE']
-    x0 = [ x0[i]/dv_scl for i,dv_scl in enumerate(dv_scales) ]    
-    
+    k = 0
+    for i, dv_scl in enumerate(dv_scales):
+        for j in range(dv_size[i]):
+            x0[k] =x0[k]/dv_scl;
+            k = k + 1
+
     # scale accuracy
     obj = project.config['OPT_OBJECTIVE']
     obj_scale = obj[obj.keys()[0]]['SCALE']
@@ -104,7 +109,7 @@ def scipy_slsqp(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
 
     # optimizer summary
     sys.stdout.write('Sequential Least SQuares Programming (SLSQP) parameters:\n')
-    sys.stdout.write('Number of design variables: ' + str(n_dv) + '\n')
+    sys.stdout.write('Number of design variables: ' + str(len(dv_size)) + ' ( ' + str(n_dv) + ' ) \n' )
     sys.stdout.write('Objective function scaling factor: ' + str(obj_scale) + '\n')
     sys.stdout.write('Maximum number of iterations: ' + str(its) + '\n')
     sys.stdout.write('Requested accuracy: ' + str(accu) + '\n')

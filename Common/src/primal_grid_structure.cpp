@@ -2,7 +2,7 @@
  * \file primal_grid_structure.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 4.0.1 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,9 +51,12 @@ CPrimalGrid::~CPrimalGrid() {
    
 }
 
-void CPrimalGrid::SetCG(su2double **val_coord) {
+void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
 	unsigned short iDim, iNode, NodeFace, iFace;
 	
+  AD::StartPreacc();
+  AD::SetPreaccIn(val_coord, GetnNodes(), nDim);
+
 	for (iDim = 0; iDim < nDim; iDim++) {
 		Coord_CG[iDim] = 0.0;
 		for (iNode = 0; iNode < GetnNodes();  iNode++)
@@ -68,6 +71,11 @@ void CPrimalGrid::SetCG(su2double **val_coord) {
 				Coord_FaceElems_CG[iFace][iDim] += val_coord[NodeFace][iDim]/su2double(GetnNodesFace(iFace));
 			}
 		}
+
+  AD::SetPreaccOut(Coord_CG, nDim);
+  AD::SetPreaccOut(Coord_FaceElems_CG, GetnFaces(), nDim);
+  AD::EndPreacc();
+
 }
 
 void CPrimalGrid::GetAllNeighbor_Elements() {
@@ -162,7 +170,7 @@ CLine::CLine(unsigned long val_point_0, unsigned long val_point_1,
 
 CLine::~CLine() {
   unsigned short iFaces;
-  /*Must be deleted here rather than parent class b/c parent class does not have nFaces*/
+  
   for (iFaces = 0; iFaces < nFaces; iFaces++)
     if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
   if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;

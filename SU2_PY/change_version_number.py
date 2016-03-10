@@ -3,7 +3,7 @@
 ## \file change_version_number.py
 #  \brief Python script for updating the version number of the SU2 suite.
 #  \author A. Aranake
-#  \version 4.0.1 "Cardinal"
+#  \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -14,7 +14,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -32,8 +32,8 @@
 # Run the script from the base directory (ie $SU2HOME). Grep will search directories recursively for matches in version number
 import os,sys
 
-oldvers = '4.0.0 "Cardinal"'
-newvers = '4.0.1 "Cardinal"'
+oldvers = '4.0.2 "Cardinal"'
+newvers = '4.1.0 "Cardinal"'
 
 os.system('rm -rf version.txt')
 

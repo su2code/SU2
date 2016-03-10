@@ -2,7 +2,7 @@
  * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.0.1 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,6 @@
 
 void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
   
-  /*--- Local variables and initialization ---*/
   unsigned short iDim, iVar, nDim = geometry->GetnDim();
   unsigned short Kind_Solver = config->GetKind_Solver();
   
@@ -43,7 +42,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   bool *SurfacePoint = NULL;
   
   bool grid_movement  = config->GetGrid_Movement();
-  bool adjoint = config->GetAdjoint() || config->GetDiscrete_Adjoint();
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
 
   char cstr[200], buffer[50];
   string filename;
@@ -193,16 +192,6 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         }
       }
       
-      if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
-        Tecplot_File << ",\"Mach\",\"Pressure\",\"Temperature\",\"Temperature_ve\"";
-      }
-      
-      if (Kind_Solver == TNE2_NAVIER_STOKES) {
-        for (unsigned short iSpecies = 0; iSpecies < config->GetnSpecies(); iSpecies++)
-          Tecplot_File << ",\"DiffusionCoeff_" << iSpecies << "\"";
-        Tecplot_File << ",\"Laminar_Viscosity\",\"ThermConductivity\",\"ThermConductivity_ve\"";
-      }
-      
       if (Kind_Solver == POISSON_EQUATION) {
         unsigned short iDim;
         for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
@@ -211,9 +200,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
       
       if (( Kind_Solver == ADJ_EULER              ) ||
           ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
-          ( Kind_Solver == ADJ_RANS               ) ||
-          ( Kind_Solver == ADJ_TNE2_EULER         ) ||
-          ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
+          ( Kind_Solver == ADJ_RANS               )   ) {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Solution_Sensor\"";
       }
 
@@ -425,7 +412,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   
   Tecplot_File.close();
   
-  if (surf_sol) {
+  if (surf_sol){
     delete [] LocalIndex;
     delete[] SurfacePoint;
   }
@@ -712,7 +699,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
     string filename, text_line;
     char buffer_char[50], out_file[MAX_STRING_SIZE];
     
-    if (!config->GetAdjoint()) {
+    if (!config->GetContinuous_Adjoint()) {
       if (surf_sol) filename = config->GetSurfFlowCoeff_FileName();
       else filename = config->GetFlow_FileName();
     }
@@ -729,7 +716,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
     
     for (int iRank = 0; iRank < size; iRank++) {
       
-      if (!config->GetAdjoint()) {
+      if (!config->GetContinuous_Adjoint()) {
         if (surf_sol) filename = config->GetSurfFlowCoeff_FileName();
         else filename = config->GetFlow_FileName();
       }
@@ -953,7 +940,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
   
 #ifdef HAVE_TECIO
   
-  su2double   t;
+  passivedouble   t;
   INTEGER4 i, err, Debug, NPts, NElm, IsDouble, KMax;
   INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;
   INTEGER4 *ShareFromZone = NULL, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
@@ -1414,7 +1401,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   
 #ifdef HAVE_TECIO
   
-  su2double   t;
+  passivedouble   t;
   INTEGER4 i, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
   INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;
   INTEGER4 *ShareFromZone = NULL, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
@@ -1431,7 +1418,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   Debug						= 0;
   IsDouble					= 1;
   NPts						= (INTEGER4)nGlobal_Poin;
-  t							= SU2_TYPE::GetPrimary(iExtIter*config->GetDelta_UnstTime());
+  t							= SU2_TYPE::GetValue(iExtIter*config->GetDelta_UnstTime());
   KMax						= 0;
   ICellMax					= 0;
   JCellMax					= 0;
@@ -1906,7 +1893,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
   
 #ifdef HAVE_TECIO
   
-  su2double   t;
+  passivedouble   t;
   INTEGER4 i, err, Debug, NPts, NElm, IsDouble, KMax;
   INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;
   INTEGER4 *ShareFromZone, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
@@ -2206,7 +2193,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   
 #ifdef HAVE_TECIO
   
-  su2double   t;
+  passivedouble   t;
   INTEGER4 i, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
   INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;
   INTEGER4 *ShareFromZone, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
@@ -2324,7 +2311,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   Debug						= 0;
   IsDouble					= 1;
   NPts						= (INTEGER4)nSurf_Poin;
-  t							= SU2_TYPE::GetPrimary(iExtIter*config->GetDelta_UnstTime());
+  t							= SU2_TYPE::GetValue(iExtIter*config->GetDelta_UnstTime());
   KMax						= 0;
   ICellMax					= 0;
   JCellMax					= 0;
@@ -2653,18 +2640,6 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
       }
     }
     
-    if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)) {
-      variables << "Mach Pressure Temperature Temperature_ve ";
-      *NVar += 4;
-    }
-    
-    if (Kind_Solver == TNE2_NAVIER_STOKES) {
-      for (iVar = 0; iVar < config->GetnSpecies(); iVar++)
-        variables << "DiffusionCoeff_" << iVar << " ";
-      variables << "Laminar_Viscosity ThermConductivity ThermConductivity_ve";
-      *NVar += 4;
-    }
-    
     if (Kind_Solver == POISSON_EQUATION) {
       for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
         variables << "poissonField_" << iDim+1 << " ";
@@ -2674,9 +2649,7 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
     
     if (( Kind_Solver == ADJ_EULER              ) ||
         ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
-        ( Kind_Solver == ADJ_RANS               ) ||
-        ( Kind_Solver == ADJ_TNE2_EULER         ) ||
-        ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES )   ) {
+        ( Kind_Solver == ADJ_RANS               )   ) {
       variables << "Surface_Sensitivity Solution_Sensor ";
       *NVar += 2;
     }
