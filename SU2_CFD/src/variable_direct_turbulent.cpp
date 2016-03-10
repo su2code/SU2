@@ -2,7 +2,7 @@
  * \file variable_direct_turbulent.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
- * \version 4.0.1 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -186,10 +186,10 @@ void CTurbSSTVariable::SetBlendingFunc(su2double val_viscosity, su2double val_di
   
 	/*--- F1 ---*/
   
-	arg2A = sqrt(Solution[0])/(beta_star*Solution[1]*val_dist);
-	arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Solution[1]);
+  arg2A = sqrt(Solution[0])/(beta_star*Solution[1]*val_dist+EPS*EPS);
+  arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Solution[1]+EPS*EPS);
 	arg2 = max(arg2A, arg2B);
-	arg1 = min(arg2, 4.0*val_density*sigma_om2*Solution[0] / (CDkw*val_dist*val_dist));
+  arg1 = min(arg2, 4.0*val_density*sigma_om2*Solution[0] / (CDkw*val_dist*val_dist+EPS*EPS));
 	F1 = tanh(pow(arg1, 4.0));
   
 	/*--- F2 ---*/

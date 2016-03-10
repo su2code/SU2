@@ -2,7 +2,7 @@
  * \file dual_grid_structure.inl
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.0.1 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,27 +33,27 @@
 
 inline void CPoint::SetElem(unsigned long val_elem) { Elem.push_back(val_elem); nElem = Elem.size(); }
 
-inline void CPoint::ResetBoundary(void) { if (vertex != NULL) delete [] vertex; Boundary = false; }
+inline void CPoint::ResetBoundary(void) { if (Vertex != NULL) delete [] Vertex; Boundary = false; }
 
 inline void CPoint::ResetElem(void) { Elem.clear(); nElem = 0; }
 
 inline void CPoint::ResetPoint(void) { Point.clear(); Edge.clear(); nPoint = 0; }
 
-inline su2double CPoint::GetCoord(unsigned short val_dim) { return coord[val_dim]; }
+inline su2double CPoint::GetCoord(unsigned short val_dim) { return Coord[val_dim]; }
 
-inline su2double *CPoint::GetCoord(void) { return coord; }
+inline su2double *CPoint::GetCoord(void) { return Coord; }
 
 inline bool CPoint::GetFlip_Orientation(void) { return Flip_Orientation; }
 
-inline void CPoint::SetCoord(unsigned short val_dim, su2double val_coord) { coord[val_dim] = val_coord; }
+inline void CPoint::SetCoord(unsigned short val_dim, su2double val_coord) { Coord[val_dim] = val_coord; }
 
 inline void CPoint::SetFlip_Orientation(void) { Flip_Orientation = true; }
 
-inline void CPoint::AddCoord(unsigned short val_dim, su2double val_coord) { coord[val_dim] += val_coord; }
+inline void CPoint::AddCoord(unsigned short val_dim, su2double val_coord) { Coord[val_dim] += val_coord; }
 
 inline void CPoint::SetCoord(su2double *val_coord) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
-		coord[iDim]=val_coord[iDim]; 
+		Coord[iDim]=val_coord[iDim];
 }
 
 inline void CPoint::SetnElem(unsigned short val_nElem) { nElem = val_nElem; }
@@ -94,9 +94,9 @@ inline void CPoint::SetVolume (su2double val_Volume) { Volume[0] = val_Volume; }
 
 inline void CPoint::SetMove(bool val_move) { Move = val_move; }
 
-inline su2double *CPoint::GetCoord_Old(void) { return Coord_old; }
+inline su2double *CPoint::GetCoord_Old(void) { return Coord_Old; }
 
-inline su2double *CPoint::GetCoord_Sum(void) { return Coord_sum; }
+inline su2double *CPoint::GetCoord_Sum(void) { return Coord_Sum; }
 
 inline su2double *CPoint::GetGridVel(void) { return GridVel; }
 
@@ -104,17 +104,17 @@ inline su2double **CPoint::GetGridVel_Grad(void) { return GridVel_Grad; }
 
 inline void CPoint::SetCoord_Old(su2double *val_coord_old) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Coord_old[iDim] = val_coord_old[iDim]; 
+		Coord_Old[iDim] = val_coord_old[iDim]; 
 }
 
 inline void CPoint::SetCoord_SumZero(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-	Coord_sum[iDim] = 0.0; 
+	Coord_Sum[iDim] = 0.0; 
 }
 
 inline void CPoint::AddCoord_Sum(su2double *val_coord_sum) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
-		Coord_sum[iDim] += val_coord_sum[iDim]; 
+		Coord_Sum[iDim] += val_coord_sum[iDim]; 
 }
 
 inline void CPoint::SetGridVel(unsigned short val_dim, su2double val_gridvel) { GridVel[val_dim] = val_gridvel; }
@@ -139,13 +139,13 @@ inline bool CPoint::GetAgglomerate_Indirect (void) { return Agglomerate_Indirect
 inline void CPoint::SetAgglomerate_Indirect(bool val_agglomerate) { Agglomerate_Indirect = val_agglomerate; };
 
 inline void CPoint::SetVertex(long val_vertex, unsigned short val_nmarker) { 
-	if (Boundary) vertex[val_nmarker] = val_vertex; 
+	if (Boundary) Vertex[val_nmarker] = val_vertex;
 }
 
 inline unsigned short CPoint::GetnChildren_CV (void) { return nChildren_CV; }
 
 inline long CPoint::GetVertex(unsigned short val_marker) { 
-	if (Boundary) return vertex[val_marker]; 
+	if (Boundary) return Vertex[val_marker];
 	else return -1; 
 }
 
@@ -168,12 +168,22 @@ inline su2double CPoint::GetVolume_nM1 (void) { return Volume[2]; }
 
 inline void CPoint::SetCoord_n (void) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Coord_n[iDim] = coord[iDim]; 
+		Coord_n[iDim] = Coord[iDim];
 }
 
 inline void CPoint::SetCoord_n1 (void) { 
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
 		Coord_n1[iDim] = Coord_n[iDim]; 
+}
+
+inline void CPoint::SetCoord_n(su2double *val_coord) { 
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Coord_n[iDim] = val_coord[iDim]; 
+}
+
+inline void CPoint::SetCoord_n1(su2double *val_coord) { 
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Coord_n1[iDim] = val_coord[iDim]; 
 }
 
 inline void CPoint::SetCoord_p1(su2double *val_coord) { 
@@ -311,15 +321,29 @@ inline short CVertex::GetRotation_Type(void) { return Rotation_Type; }
 inline void CVertex::SetDonorPoint(long val_periodicpoint, long val_processor) { 
 	PeriodicPoint[0] = val_periodicpoint; 
 	PeriodicPoint[1] = val_processor; 
+	PeriodicPoint[2] = 0;
 }
+
+inline void CVertex::SetDonorPoint(long val_periodicpoint, long val_processor, long val_globalindex) { 
+	PeriodicPoint[0] = val_periodicpoint; 
+	PeriodicPoint[1] = val_processor; 
+	PeriodicPoint[2] = val_globalindex;
+}
+
 
 inline void CVertex::SetDonorElem(long val_donorelem) { Donor_Elem = val_donorelem; }
 
 inline long CVertex::GetDonorElem(void) { return Donor_Elem; }
 
+inline void CVertex::SetDonorFace(unsigned short val_donorface) { Donor_Face = val_donorface; }
+
+inline unsigned short CVertex::GetDonorFace(void) { return Donor_Face; }
+
 inline long CVertex::GetDonorPoint(void) { return PeriodicPoint[0]; }
 
 inline long CVertex::GetDonorProcessor(void) { return PeriodicPoint[1]; }
+
+inline long CVertex::GetGlobalDonorPoint(void) { return PeriodicPoint[2]; }
 
 inline void CVertex::SetBasisFunction(unsigned short val_node, su2double val_basis) { Basis_Function[val_node] = val_basis; }
 
@@ -336,4 +360,27 @@ inline unsigned long CVertex::GetNormal_Neighbor(void) { return Normal_Neighbor;
 
 inline void CVertex::SetNormal_Neighbor(unsigned long val_Normal_Neighbor) { Normal_Neighbor = val_Normal_Neighbor; }
 
+inline void CVertex::IncrementnDonor(void){nDonor_Points++;}
 
+inline void CVertex::SetInterpDonorPoint(unsigned short val_donorindex, long val_donorpoint) { Donor_Points[val_donorindex] = val_donorpoint; }
+
+inline long CVertex::GetInterpDonorPoint(unsigned short val_donorindex) { return Donor_Points[val_donorindex]; }
+
+inline void CVertex::SetInterpDonorProcessor(unsigned short val_donorindex, long val_donorpoint) { Donor_Proc[val_donorindex] = val_donorpoint; }
+
+inline long CVertex::GetInterpDonorProcessor(unsigned short val_donorindex) { return Donor_Proc[val_donorindex]; }
+
+inline void CVertex::SetDonorCoeff(unsigned short iDonor, su2double val){ Donor_Coeff[iDonor] = val; }
+
+inline su2double CVertex::GetDonorCoeff(unsigned short iDonor){ return Donor_Coeff[iDonor];}
+
+inline unsigned short CVertex::GetnDonorPoints(void){ return nDonor_Points;}
+
+inline void CVertex::SetnDonorPoints(unsigned short nDonor) {nDonor_Points = nDonor;}
+
+inline su2double *CVertex::GetVarRot(void) {return VarRot;}
+
+inline void CVertex::SetVarRot(su2double* val) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    VarRot[iDim] = val[iDim];
+}

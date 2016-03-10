@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 4.0.1 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -17,7 +17,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -124,13 +124,6 @@ const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. 
 const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
 const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
 
-const su2double AVOGAD_CONSTANT = 6.0221415E26;	     /*!< \brief Avogardro's constant, number of particles in one kmole. */
-const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*! \brief Boltzmann's constant [J K^-1] */
-const su2double UNIVERSAL_GAS_CONSTANT = 8314.462175; /*! \brief Universal gas constant [J kmol^-1 K^-1] */
-const su2double ELECTRON_CHARGE = 1.60217646E-19;	   /*!< \brief Electronic charge constant. */
-const su2double ELECTRON_MASS = 9.10938188E-31;	     /*!< \brief Mass of an electron. */
-const su2double FREE_PERMITTIVITY = 8.8541878176E-12; /*!< \brief Premittivity of free space. */
-const su2double MAGNETIC_CONSTANT = 1.25663706E-6;    /*!< \brief magnetic permeability of free space. */
 const su2double STANDART_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 
 const su2double EPS = 1.0E-16;		   /*!< \brief Error scale. */
@@ -190,16 +183,11 @@ enum ENUM_SOLVER {
   HEAT_EQUATION = 29,					/*!< \brief Definition of the heat solver. */
   LINEAR_ELASTICITY = 11,				/*!< \brief Definition of the FEA solver. */
   FLUID_STRUCTURE_INTERACTION = 12,		/*!< \brief Definition of a FSI solver. */
+  FEM_ELASTICITY = 13,					/*!< \brief Definition of a FEM solver. */
   ADJ_EULER = 18,						/*!< \brief Definition of the continuous adjoint Euler's solver. */
   ADJ_NAVIER_STOKES = 19,				/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
   ADJ_RANS = 20,						/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  LIN_EULER = 21,						/*!< \brief Definition of the linear Euler's solver. */
-  LIN_NAVIER_STOKES = 22,				/*!< \brief Definition of the linear Navier-Stokes' solver. */
   TEMPLATE_SOLVER = 30,                 /*!< \brief Definition of template solver. */
-  TNE2_EULER = 31,
-  TNE2_NAVIER_STOKES = 32,
-  ADJ_TNE2_EULER = 33,
-  ADJ_TNE2_NAVIER_STOKES = 34,
   DISC_ADJ_EULER = 35,
   DISC_ADJ_RANS = 36,
   DISC_ADJ_NAVIER_STOKES = 37
@@ -214,15 +202,10 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("ADJ_EULER", ADJ_EULER)
 ("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
 ("ADJ_RANS", ADJ_RANS )
-("LIN_EULER", LIN_EULER)
-("LIN_NAVIER_STOKES", LIN_NAVIER_STOKES)
-("TNE2_EULER", TNE2_EULER)
-("TNE2_NAVIER_STOKES", TNE2_NAVIER_STOKES)
-("ADJ_TNE2_EULER", ADJ_TNE2_EULER)
-("ADJ_TNE2_NAVIER_STOKES", ADJ_TNE2_NAVIER_STOKES)
 ("WAVE_EQUATION", WAVE_EQUATION)
 ("HEAT_EQUATION", HEAT_EQUATION)
 ("LINEAR_ELASTICITY", LINEAR_ELASTICITY)
+("FEM_ELASTICITY", FEM_ELASTICITY)
 ("DISC_ADJ_EULER", DISC_ADJ_EULER)
 ("DISC_ADJ_RANS", DISC_ADJ_RANS)
 ("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_EULER)
@@ -252,12 +235,63 @@ static const map<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = CCreateM
 enum ENUM_FSI_STRUC_PROBLEM {
   NO_SOLVER_SFSI = 0,				/*!< \brief Definition of no solver. */
   LINEAR_ELASTICITY_SFSI = 11,		/*!< \brief Linear elasticity equations for the FSI problem */
-  NONLINEAR_ELASTICITY_SFSI = 2		/*!< \brief Nonlinear elasticity equations for the FSI problem */
+  FEM_ELASTICITY_SFSI = 13,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
 };
 static const map<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = CCreateMap<string, ENUM_FSI_STRUC_PROBLEM>
 ("NONE", NO_SOLVER_SFSI)
 ("LINEAR_ELASTICITY", LINEAR_ELASTICITY_SFSI)
-("NONLINEAR_ELASTICITY", NONLINEAR_ELASTICITY_SFSI);
+("FEM_ELASTICITY", FEM_ELASTICITY_SFSI);
+
+/*!
+ * \brief Material geometric conditions
+ */
+enum ENUM_STRUCT_SOLVER {
+	SMALL_DEFORMATIONS = 0,			/*!< \brief Definition of linear elastic material. */
+	LARGE_DEFORMATIONS = 1,			/*!< \brief Definition of Neo-Hookean material. */
+};
+static const map<string, ENUM_STRUCT_SOLVER> Struct_Map = CCreateMap<string, ENUM_STRUCT_SOLVER>
+("SMALL_DEFORMATIONS", SMALL_DEFORMATIONS)
+("LARGE_DEFORMATIONS", LARGE_DEFORMATIONS);
+
+
+/*!
+ * \brief Material model
+ */
+enum ENUM_MATERIAL_MODEL {
+	LINEAR_ELASTIC = 0,			/*!< \brief Definition of linear elastic material. */
+	NEO_HOOKEAN = 1,			/*!< \brief Definition of Neo-Hookean material. */
+};
+static const map<string, ENUM_MATERIAL_MODEL> Material_Map = CCreateMap<string, ENUM_MATERIAL_MODEL>
+("LINEAR_ELASTIC", LINEAR_ELASTIC)
+("NEO_HOOKEAN", NEO_HOOKEAN);
+
+/*!
+ * \brief Material compressibility
+ */
+enum ENUM_MAT_COMPRESS {
+  COMPRESSIBLE_MAT = 0,			/*!< \brief Definition of compressible material. */
+  INCOMPRESSIBLE_MAT = 1,		/*!< \brief Definition of incompressible material. */
+};
+static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENUM_MAT_COMPRESS>
+("COMPRESSIBLE", COMPRESSIBLE_MAT)
+("INCOMPRESSIBLE", INCOMPRESSIBLE_MAT);
+
+
+
+/*!
+ * \brief types of interpolators
+ */
+enum ENUM_INTERPOLATOR {
+  NEAREST_NEIGHBOR = 0,   /*!< \brief Nearest Neigbhor interpolation */
+  ISOPARAMETRIC = 1, /*!< \brief Isoparametric interpolation */
+  CONSISTCONSERVE = 2,/*!< \brief Consistent & Conservative interpolation (S.A. Brown 1997). Utilizes Isoparametric interpolation. */
+};
+
+static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string, ENUM_INTERPOLATOR>
+("NEAREST_NEIGHBOR", NEAREST_NEIGHBOR)
+("ISOPARAMETRIC", ISOPARAMETRIC)
+("CONSISTCONSERVE", CONSISTCONSERVE);
+
 
 /*!
  * \brief different regime modes
@@ -309,27 +343,17 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJFLOW_SYS = 6,		/*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
   RUNTIME_ADJTURB_SYS = 7,		/*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
   RUNTIME_WAVE_SYS = 8,		/*!< \brief One-physics case, the code is solving the wave equation. */
-  RUNTIME_LINPOT_SYS = 9,		/*!< \brief One-physics case, the code is solving the linear potential flow equations. */
-  RUNTIME_LINFLOW_SYS = 10,		/*!< \brief One-physics case, the code is solving the linear equations is being solved (Euler and Navier-Stokes). */
   RUNTIME_MULTIGRID_SYS = 14,   	/*!< \brief Full Approximation Storage Multigrid system of equations. */
   RUNTIME_FEA_SYS = 20,		/*!< \brief One-physics case, the code is solving the FEA equation. */
   RUNTIME_HEAT_SYS = 21,		/*!< \brief One-physics case, the code is solving the heat equation. */
   RUNTIME_TRANS_SYS = 22,			/*!< \brief One-physics case, the code is solving the turbulence model. */
-  RUNTIME_TNE2_SYS = 23,  /*!< \brief One-physics case, the code is solving the two-temperature model. */
-  RUNTIME_ADJTNE2_SYS = 24  /*!< \brief One-physics case, the code is solving the two-temperature model. */
 };
 
 const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solver container array. */
 const int ADJFLOW_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
-const int LINFLOW_SOL = 1;	/*!< \brief Position of the linearized flow solution in the solution solver array. */
 
 const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution in the solver container array. */
 const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
-const int LINTURB_SOL = 3;	/*!< \brief Position of the linearized turbulence model in the solver container array. */
-
-const int TNE2_SOL = 0;		/*!< \brief Position of the mean flow solution in the solution container array. */
-const int ADJTNE2_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solution container array. */
-const int LINTNE2_SOL = 1;	/*!< \brief Position of the linearized flow solution in the solution container array. */
 
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
 const int POISSON_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
@@ -347,18 +371,27 @@ const int CONV_BOUND_TERM = 4;       /*!< \brief Position of the convective boun
 const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundary terms in the numerics container array. */
 
 /*!
+ * \brief types of finite elements (in 2D or 3D)
+ */
+
+const int EL_TRIA = 0;		/*!< \brief Elements of three nodes (2D). */
+const int EL_QUAD = 1;		/*!< \brief Elements of four nodes (2D). */
+
+const int EL_TETRA = 0;		/*!< \brief Elements of four nodes (3D). */
+const int EL_HEXA = 1;		/*!< \brief Elements of eight nodes (3D). */
+
+
+/*!
  * \brief types of mathematical problem to solve
  */
 enum ENUM_MATH_PROBLEM {
   DIRECT = 0,		/*!< \brief Direct problem */
   CONTINUOUS_ADJOINT = 1,		/*!< \brief Continuous adjoint problem */
-  LINEARIZED = 2, /*< \brief Linearized numerical method */
-  DISCRETE_ADJOINT = 3 /*< \brief AD-based discrete adjoint problem. */
+  DISCRETE_ADJOINT = 2 /*< \brief AD-based discrete adjoint problem. */
 };
 static const map<string, ENUM_MATH_PROBLEM> Math_Problem_Map = CCreateMap<string, ENUM_MATH_PROBLEM>
 ("DIRECT", DIRECT)
 ("CONTINUOUS_ADJOINT", CONTINUOUS_ADJOINT)
-("LINEARIZED", LINEARIZED)
 ("DISCRETE_ADJOINT", DISCRETE_ADJOINT);
 
 /*!
@@ -441,32 +474,6 @@ enum ENUM_CONDUCTIVITYMODEL {
 static const map<string, ENUM_CONDUCTIVITYMODEL> ConductivityModel_Map = CCreateMap<string, ENUM_CONDUCTIVITYMODEL>
 ("CONSTANT_CONDUCTIVITY", CONSTANT_CONDUCTIVITY)
 ("CONSTANT_PRANDTL", CONSTANT_PRANDTL);
-
-/*!
- * \brief types of spatial discretizations
- */
-enum ENUM_GASMODEL {
-  NO_MODEL = 0, /*!< \brief _____. */
-  ARGON = 1,		/*!< \brief _____. */
-  AIR7 = 2,		/*!< \brief _______. */
-  AIR21 = 3,		/*!< \brief _______. */
-  O2 = 4,
-  N2 = 5,
-  AIR5 = 6,
-  ARGON_SID = 7,
-  ONESPECIES = 8
-
-};
-static const map<string, ENUM_GASMODEL> GasModel_Map = CCreateMap<string, ENUM_GASMODEL>
-("NONE", NO_MODEL)
-("ARGON", ARGON)
-("AIR-7", AIR7)
-("AIR-21", AIR21)
-("O2", O2)
-("N2", N2)
-("AIR-5", AIR5)
-("ARGON-SID", ARGON_SID)
-("ONESPECIES", ONESPECIES);
 
 /*!
  * \brief types of unsteady mesh motion
@@ -616,14 +623,12 @@ enum ENUM_TURB_MODEL {
   SA      = 1, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SA_NEG  = 2, /*!< \brief Kind of Turbulent model (Spalart-Allmaras). */
   SST     = 3, /*!< \brief Kind of Turbulence model (Menter SST). */
-  ML      = 4  /*!< \brief Kind of Turbulence model (Machine Learning). */
 };
 static const map<string, ENUM_TURB_MODEL> Turb_Model_Map = CCreateMap<string, ENUM_TURB_MODEL>
 ("NONE", NO_TURB_MODEL)
 ("SA", SA)
 ("SA_NEG", SA_NEG)
-("SST", SST)
-("ML", ML);
+("SST", SST);
 
 /*!
  * \brief types of transition models
@@ -655,12 +660,38 @@ static const map<string, ENUM_TIME_INT> Time_Int_Map = CCreateMap<string, ENUM_T
 enum ENUM_TIME_INT_FEA {
   CD_EXPLICIT = 1,			/*!< \brief Support for implementing an explicit method. */
   NEWMARK_IMPLICIT = 2,   	/*!< \brief Implicit Newmark integration definition. */
-  GA_IMPLICIT = 3   		/*!< \brief Support for implementing another implicit method. */
+  GENERALIZED_ALPHA = 3   		/*!< \brief Support for implementing another implicit method. */
 };
 static const map<string, ENUM_TIME_INT_FEA> Time_Int_Map_FEA = CCreateMap<string, ENUM_TIME_INT_FEA>
 ("CD_EXPLICIT", CD_EXPLICIT)
 ("NEWMARK_IMPLICIT", NEWMARK_IMPLICIT)
-("GA_IMPLICIT", GA_IMPLICIT);
+("GENERALIZED_ALPHA", GENERALIZED_ALPHA);
+
+/*!
+ * \brief type of time integration schemes
+ */
+enum ENUM_SPACE_ITE_FEA {
+  NEWTON_RAPHSON = 1,			/*!< \brief Full Newton-Rapshon method. */
+  MODIFIED_NEWTON_RAPHSON = 2   /*!< \brief Modified Newton-Raphson method. */
+};
+static const map<string, ENUM_SPACE_ITE_FEA> Space_Ite_Map_FEA = CCreateMap<string, ENUM_SPACE_ITE_FEA>
+("NEWTON_RAPHSON", NEWTON_RAPHSON)
+("MODIFIED_NEWTON_RAPHSON", MODIFIED_NEWTON_RAPHSON);
+
+/*!
+ * \brief types of transfer methods
+ */
+enum ENUM_TRANSFER_METHOD {
+  BROADCAST_DATA = 1,	/*!< \brief Gather data on one processor and broadcast it into all of them, relating to global nodes. */
+  SCATTER_DATA = 2,   	/*!< \brief Gather data on one processor and scatter it into the one that needs it. */
+  ALLGATHER_DATA = 3,   /*!< \brief All processors gather data (this will be useful for operations over a group of data - averaging) */
+  LEGACY_METHOD = 4		/*!< \brief Original transfer method, maintained to check . */
+};
+static const map<string, ENUM_TRANSFER_METHOD> Transfer_Method_Map = CCreateMap<string, ENUM_TRANSFER_METHOD>
+("BROADCAST_DATA", BROADCAST_DATA)
+("SCATTER_DATA", SCATTER_DATA)
+("ALLGATHER_DATA", ALLGATHER_DATA)
+("LEGACY_METHOD", LEGACY_METHOD);
 
 /*!
  * \brief types of schemes to compute the flow gradient
@@ -712,8 +743,6 @@ enum BC_TYPE {
   DISPLACEMENT_BOUNDARY = 14,		/*!< \brief Boundary displacement definition. */
   LOAD_BOUNDARY = 15,		/*!< \brief Boundary Load definition. */
   FLOWLOAD_BOUNDARY = 16,		/*!< \brief Boundary Load definition. */
-  ELEC_DIELEC_BOUNDARY = 17,	/*!< \brief Dipoisson boundary definition for the poissonal potential. */
-  ELEC_NEUMANN = 18,		/*!< \brief Boundary Neumann definition. */
   SUPERSONIC_INLET = 19,		/*!< \brief Boundary supersonic inlet definition. */
   SUPERSONIC_OUTLET = 20,		/*!< \brief Boundary supersonic inlet definition. */
   ENGINE_INFLOW = 21,		/*!< \brief Boundary nacelle inflow. */
@@ -723,16 +752,13 @@ enum BC_TYPE {
   ISOTHERMAL = 25,      /*!< \brief No slip isothermal wall boundary condition. */
   HEAT_FLUX  = 26,      /*!< \brief No slip constant heat flux wall boundary condition. */
   PRESSURE_BOUNDARY = 27,   	/*!< \brief Pressure boundary condition. */
-  HEAT_FLUX_NONCATALYTIC = 28, /*!< \brief No-slip, constant heat flux, noncatalytic bc. */
-  HEAT_FLUX_CATALYTIC= 29, /*!< \brief No-slip, constant heat flux, catalytic bc. */
-  ISOTHERMAL_NONCATALYTIC = 30, /*!< \brief No-slip, constant temperature, noncatalytic bc. */
-  ISOTHERMAL_CATALYTIC = 31, /*!< \brief No-slip, constant temperature, catalytic bc. */
   ACTDISK_INLET = 32,	/*!< \brief Actuator disk inlet boundary definition. */
   ACTDISK_OUTLET = 33,	/*!< \brief Actuator disk outlet boundary definition. */
   CLAMPED_BOUNDARY = 34,		/*!< \brief Clamped Boundary definition. */
   LOAD_DIR_BOUNDARY = 35,		/*!< \brief Boundary Load definition. */
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
-  SEND_RECEIVE = 99		/*!< \brief Boundary send-receive definition. */
+  NRBC_BOUNDARY= 37,   /*!< \brief NRBC Boundary definition. */
+  SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 
 
@@ -764,7 +790,7 @@ static const map<string, ENUM_AITKEN> AitkenForm_Map = CCreateMap<string, ENUM_A
 
 
 /*!
- * \brief types inlet boundary treatments
+ * \brief types Riemann boundary treatments
  */
 enum RIEMANN_TYPE {
   TOTAL_CONDITIONS_PT = 1,		/*!< \brief User specifies total pressure, total temperature, and flow direction. */
@@ -772,7 +798,9 @@ enum RIEMANN_TYPE {
   STATIC_PRESSURE = 3,           /*!< \brief User specifies static pressure. */
   TOTAL_SUPERSONIC_INFLOW = 4,	/*!< \brief User specifies total pressure, total temperature and Velocity components. */
   STATIC_SUPERSONIC_INFLOW_PT = 5, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
-  STATIC_SUPERSONIC_INFLOW_PD = 6 /*!< \brief User specifies static pressure, static temperature, and Mach components. */
+  STATIC_SUPERSONIC_INFLOW_PD = 6, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
+  MIXING_IN = 7, /*!< \brief User does not specify anything information are retrieved from the other domain */
+  MIXING_OUT = 8 /*!< \brief User does not specify anything information are retrieved from the other domain */
 };
 
 static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>
@@ -781,7 +809,49 @@ static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_
 ("STATIC_PRESSURE", STATIC_PRESSURE)
 ("TOTAL_SUPERSONIC_INFLOW", TOTAL_SUPERSONIC_INFLOW)
 ("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
-("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD);
+("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD)
+("MIXING_IN", MIXING_IN)
+("MIXING_OUT", MIXING_OUT);
+
+
+static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYPE>
+("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
+("DENSITY_VELOCITY", DENSITY_VELOCITY)
+("STATIC_PRESSURE", STATIC_PRESSURE)
+("TOTAL_SUPERSONIC_INFLOW", TOTAL_SUPERSONIC_INFLOW)
+("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
+("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD)
+("MIXING_IN", MIXING_IN)
+("MIXING_OUT", MIXING_OUT);
+
+
+/*!
+ * \brief types of mixing process for averaging quantities at the boundaries.
+ */
+enum MIXINGPROCESS_TYPE {
+  ALGEBRAIC_AVERAGE = 1,		/*!< \brief an algebraic average is computed at the boundary of interest. */
+  AREA_AVERAGE = 2,           /*!< \brief an area average is computed at the boundary of interest. */
+  MIXEDOUT_AVERAGE = 3		 /*!< \brief an mixed-out average is computed at the boundary of interest. */
+};
+
+static const map<string, MIXINGPROCESS_TYPE> MixingProcess_Map = CCreateMap<string, MIXINGPROCESS_TYPE>
+("ALGEBRAIC_AVERAGE", ALGEBRAIC_AVERAGE)
+("AREA_AVERAGE", AREA_AVERAGE)
+("MIXEDOUT_AVERAGE",  MIXEDOUT_AVERAGE);
+
+/*!
+ * \brief types of Turbomachinery performance indicators.
+ */
+enum TURBO_PERFORMANCE_TYPE {
+  BLADE   = 1,		/*!< \brief Turbomachinery blade performances. */
+  STAGE = 2,      /*!< \brief Turbomachinery blade stage performances. */
+  TURBINE              = 3		/*!< \brief Turbomachinery turbine performances. */
+};
+
+static const map<string, TURBO_PERFORMANCE_TYPE> TurboPerformance_Map = CCreateMap<string, TURBO_PERFORMANCE_TYPE>
+("BLADE", BLADE)
+("STAGE", STAGE)
+("TURBINE", TURBINE);
 
 /*!
  * \brief types inlet boundary treatments
@@ -793,6 +863,7 @@ enum INLET_TYPE {
 static const map<string, INLET_TYPE> Inlet_Map = CCreateMap<string, INLET_TYPE>
 ("TOTAL_CONDITIONS", TOTAL_CONDITIONS)
 ("MASS_FLOW", MASS_FLOW);
+
 
 /*!
  * \brief types of geometric entities based on VTK nomenclature
@@ -841,8 +912,10 @@ enum ENUM_OBJECTIVE {
   MAX_THICK_SEC5 = 27,           /*!< \brief Maximum thickness in section 5. */
   AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
   AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
-  MASS_FLOW_RATE = 30           /*!< \brief Mass Flow Rate objective function definition. */
+  MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
+  OUTFLOW_GENERALIZED=31          /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
 };
+
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
 ("DRAG", DRAG_COEFFICIENT)
 ("LIFT", LIFT_COEFFICIENT)
@@ -873,7 +946,8 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("MAX_THICK_SEC5", MAX_THICK_SEC5)
 ("AVG_TOTAL_PRESSURE", AVG_TOTAL_PRESSURE)
 ("AVG_OUTLET_PRESSURE", AVG_OUTLET_PRESSURE)
-("MASS_FLOW_RATE", MASS_FLOW_RATE);
+("MASS_FLOW_RATE", MASS_FLOW_RATE)
+("OUTFLOW_GENERALIZED", OUTFLOW_GENERALIZED);
 
 /*!
  * \brief types of residual criteria equations
@@ -904,17 +978,6 @@ static const map<string, ENUM_SENS> Sens_Map = CCreateMap<string, ENUM_SENS>
 ("SENS_AOS", SENS_AOS);
 
 /*!
- * \brief types of linearized objective functions
- */
-enum ENUM_LINEAR_OBJ {
-  DELTA_DRAG_COEFFICIENT = 1,	/*!< \brief Linearized Drag objective function definition. */
-  DELTA_LIFT_COEFFICIENT = 2	/*!< \brief Linearized Lift objective function definition. */
-};
-static const map<string, ENUM_LINEAR_OBJ> Linear_Obj_Map = CCreateMap<string, ENUM_LINEAR_OBJ>
-("DELTA_DRAG", DELTA_DRAG_COEFFICIENT)
-("DELTA_LIFT", DELTA_LIFT_COEFFICIENT);
-
-/*!
  * \brief types of grid adaptation/refinement
  */
 enum ENUM_ADAPT {
@@ -922,14 +985,11 @@ enum ENUM_ADAPT {
   FULL = 1,			/*!< \brief Do a complete grid refinement of all the computational grids. */
   FULL_FLOW = 2,		/*!< \brief Do a complete grid refinement of the flow grid. */
   FULL_ADJOINT = 3,		/*!< \brief Do a complete grid refinement of the adjoint grid. */
-  FULL_LINEAR = 4,		/*!< \brief Do a complete grid refinement of the linear grid. */
   GRAD_FLOW = 5,		/*!< \brief Do a gradient based grid adaptation of the flow grid. */
   GRAD_ADJOINT = 6,		/*!< \brief Do a gradient based grid adaptation of the adjoint grid. */
   GRAD_FLOW_ADJ = 7,		/*!< \brief Do a gradient based grid adaptation of the flow and adjoint grid. */
-  ROBUST = 8,			/*!< \brief Apply a robust grid adaptation (residual based). */
   COMPUTABLE = 9,		/*!< \brief Apply a computable error grid adaptation. */
   REMAINING = 10,		/*!< \brief Apply a remaining error grid adaptation. */
-  COMPUTABLE_ROBUST = 11,	/*!< \brief Apply a computable robust grid adaptation (using linearized problem). */
   WAKE = 12,			/*!< \brief Do a grid refinement on the wake. */
   SMOOTHING = 14,		/*!< \brief Do a grid smoothing of the geometry. */
   SUPERSONIC_SHOCK = 15,	/*!< \brief Do a grid smoothing. */
@@ -940,14 +1000,11 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
 ("FULL", FULL)
 ("FULL_FLOW", FULL_FLOW)
 ("FULL_ADJOINT", FULL_ADJOINT)
-("FULL_LINEAR", FULL_LINEAR)
 ("GRAD_FLOW", GRAD_FLOW)
 ("GRAD_ADJOINT", GRAD_ADJOINT)
 ("GRAD_FLOW_ADJ", GRAD_FLOW_ADJ)
-("ROBUST", ROBUST)
 ("COMPUTABLE", COMPUTABLE)
 ("REMAINING", REMAINING)
-("COMPUTABLE_ROBUST", COMPUTABLE_ROBUST)
 ("WAKE", WAKE)
 ("SMOOTHING", SMOOTHING)
 ("SUPERSONIC_SHOCK", SUPERSONIC_SHOCK)
@@ -1047,7 +1104,8 @@ enum ENUM_PARAM {
   PARABOLIC = 15,		         /*!< \brief Parabolic airfoil definition as design variables. */
   NACA_4DIGITS = 16,	         /*!< \brief The four digits NACA airfoil family as design variables. */
   AIRFOIL = 17,		           /*!< \brief Airfoil definition as design variables. */
-  SURFACE_FILE = 18		     /*!< Nodal coordinates set using a surface file. */
+  SURFACE_FILE = 18,		     /*!< Nodal coordinates set using a surface file. */
+  CUSTOM = 19                /*!< 'CUSTOM' for use in external python analysis. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
@@ -1068,7 +1126,8 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_THICKNESS", FFD_THICKNESS)
 ("PARABOLIC", PARABOLIC)
 ("AIRFOIL", AIRFOIL)
-("SURFACE_FILE", SURFACE_FILE);
+("SURFACE_FILE", SURFACE_FILE)
+("CUSTOM",CUSTOM);
 
 /*!
  * \brief types of solvers for solving linear systems
@@ -1647,7 +1706,7 @@ public:
   ~COptionDoubleList() {};
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
-    unsigned long option_size = option_value.size();
+    unsigned short option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE") == 0) {
       // No options
       this->size = 0;
@@ -1689,7 +1748,7 @@ public:
   ~COptionUShortList() {};
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
-    unsigned long option_size = option_value.size();
+    unsigned short option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE") == 0) {
       // No options
       this->size = 0;
@@ -1730,7 +1789,7 @@ public:
   ~COptionStringList() {};
   string SetValue(vector<string> option_value) {
     // The size is the length of option_value
-    unsigned long option_size = option_value.size();
+    unsigned short option_size = option_value.size();
     if (option_size == 1 && option_value[0].compare("NONE") == 0) {
       this->size = 0;
       return "";
@@ -1799,22 +1858,19 @@ public:
 
 class COptionMathProblem : public COptionBase{
   string name; // identifier for the option
-  bool & adjoint;
-  bool & linearized;
-  bool & restart;
+  bool & cont_adjoint;
+  bool cont_adjoint_def;
   bool & disc_adjoint;
-  bool adjoint_def;
-  bool linearized_def;
-  bool restart_def;
   bool disc_adjoint_def;
+  bool & restart;
+  bool restart_def;
 
 public:
-  COptionMathProblem(string option_field_name, bool & adjoint_field, bool adjoint_default, bool & linearized_field, bool linearized_default, bool & restart_field, bool restart_default, bool & disc_adjoint_field, bool disc_adjoint_default) : adjoint(adjoint_field), linearized(linearized_field), restart(restart_field), disc_adjoint(disc_adjoint_field){
+  COptionMathProblem(string option_field_name, bool & cont_adjoint_field, bool cont_adjoint_default, bool & disc_adjoint_field, bool disc_adjoint_default, bool & restart_field, bool restart_default) : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field){
     this->name = option_field_name;
-    this->adjoint_def = adjoint_default;
-    this->linearized_def = linearized_default;
-    this->restart_def = restart_default;
+    this->cont_adjoint_def = cont_adjoint_default;
     this->disc_adjoint_def = disc_adjoint_default;
+    this->restart_def = restart_default;
   }
 
   ~COptionMathProblem() {};
@@ -1830,42 +1886,32 @@ public:
       return badValue(option_value, "math problem", this->name);
     }
     if (option_value[0] == "DIRECT") {
-      this->adjoint = false;
-      this->linearized = false;
-      this->restart = false;
+      this->cont_adjoint = false;
       this->disc_adjoint = false;
+      this->restart = false;
       return "";
     }
     if (option_value[0] == "CONTINUOUS_ADJOINT") {
-      this->adjoint= true;
+      this->cont_adjoint= true;
+      this->disc_adjoint = false;
       this->restart= true;
-      this->linearized = false;
-      this->disc_adjoint = false;
-      return "";
-    }
-    if (option_value[0] == "LINEARIZED") {
-      this->linearized = true;
-      this->restart = true;
-      this->adjoint= false;
-      this->disc_adjoint = false;
       return "";
     }
     if (option_value[0] == "DISCRETE_ADJOINT"){
       this->disc_adjoint = true;
-      this->linearized = false;
+      this->cont_adjoint= false;
       this->restart = true;
-      this->adjoint= false;
       return "";
     }
     return "option in math problem map not considered in constructor";
   }
 
   void SetDefault() {
-    this->adjoint = this->adjoint_def;
-    this->linearized = this->linearized_def;
-    this->restart = this->restart_def;
+    this->cont_adjoint = this->cont_adjoint_def;
     this->disc_adjoint = this->disc_adjoint_def;
+    this->restart = this->restart_def;
   }
+  
 };
 
 class COptionDVParam : public COptionBase{
@@ -1955,6 +2001,7 @@ public:
         case FFD_CAMBER: nParamDV = 3; break;
         case FFD_THICKNESS: nParamDV = 3; break;
         case SURFACE_FILE: nParamDV = 0; break;
+        case CUSTOM: nParamDV = 1; break;
         default : {
           string newstring;
           newstring.append(this->name);
@@ -2006,6 +2053,106 @@ public:
     this->nDV = 0;
     this->paramDV = NULL;
     this->FFDTag = NULL;
+    // Don't mess with the Design_Variable because it's an input, not modified
+  }
+};
+
+class COptionDVValue : public COptionBase{
+  string name; // identifier for the option
+  unsigned short* & nDV_Value;
+  su2double ** & valueDV;
+  unsigned short & nDV;
+  su2double ** & paramDV;
+  unsigned short* & design_variable;
+
+public:
+  COptionDVValue(string option_field_name, unsigned short* & nDVValue_field, su2double** & valueDV_field, unsigned short & nDV_field,  su2double** & paramDV_field, unsigned short * & design_variable_field) : nDV_Value(nDVValue_field), valueDV(valueDV_field), nDV(nDV_field), paramDV(paramDV_field), design_variable(design_variable_field) {
+    this->name = option_field_name;
+  }
+
+  ~COptionDVValue() {};
+
+  string SetValue(vector<string> option_value) {
+    if ((option_value.size() == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->nDV_Value = NULL;
+      return "";
+    }
+
+    if ( (this->nDV > 0) && (this->design_variable == NULL) ) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": Design_Variable array has not been allocated. Check that DV_KIND appears before DV_VALUE in configuration file.");
+      return newstring;
+    }
+    if ( (this->nDV > 0) && (this->paramDV == NULL) ) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": Design_Parameter array has not been allocated. Check that DV_PARAM appears before DV_VALUE in configuration file.");
+      return newstring;
+    }
+
+    this->valueDV = new su2double*[this->nDV];
+    this->nDV_Value = new unsigned short[this->nDV];
+
+    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
+      this->valueDV[iDV] = new su2double[3];
+    }
+
+    unsigned short nValueDV = 0;
+    unsigned short totalnValueDV = 0;
+    stringstream ss;
+    unsigned int i = 0;
+    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
+      switch (this->design_variable[iDV]) {
+        case FFD_CONTROL_POINT:
+          if((this->paramDV[iDV][4] == 0) &&
+             (this->paramDV[iDV][5] == 0) &&
+             (this->paramDV[iDV][6] == 0)) {
+            nValueDV = 3;
+          } else {
+            nValueDV = 1;
+          }
+          break;
+        case FFD_CONTROL_POINT_2D:
+          if((this->paramDV[iDV][3] == 0) &&
+             (this->paramDV[iDV][4] == 0)) {
+            nValueDV = 2;
+          } else {
+            nValueDV = 1;
+          }
+          break;
+        default :
+          nValueDV = 1;
+      }
+
+      this->nDV_Value[iDV] = nValueDV;
+
+      totalnValueDV += nValueDV;
+
+      for (unsigned short iValueDV = 0; iValueDV < nValueDV; iValueDV++) {
+
+        ss << option_value[i] << " ";
+
+        ss >> this->valueDV[iDV][iValueDV];
+
+        i++;
+      }
+    }
+
+    if (i != totalnValueDV){
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": a design variable in the configuration file has the wrong number of values");
+      return newstring;
+    }
+
+    // Need to return something...
+    return "";
+  }
+
+  void SetDefault() {
+    this->nDV_Value = 0;
+    this->valueDV = NULL;
     // Don't mess with the Design_Variable because it's an input, not modified
   }
 };
@@ -2208,7 +2355,7 @@ public:
   ~COptionStringDoubleList() {};
   string SetValue(vector<string> option_value) {
     // There must be an even number of entries (same number of strings and doubles
-    unsigned long totalVals = option_value.size();
+    unsigned short totalVals = option_value.size();
     if ((totalVals % 2) != 0) {
       if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
         // It's okay to say its NONE
@@ -2220,7 +2367,7 @@ public:
       newstring.append(": must have an even number of entries");
       return newstring;
     }
-    unsigned long nVals = totalVals / 2;
+    unsigned short nVals = totalVals / 2;
     this->size = nVals;
     this->s_f = new string[nVals];
     this->d_f = new su2double[nVals];
@@ -2259,7 +2406,7 @@ public:
   ~COptionInlet() {};
   string SetValue(vector<string> option_value) {
 
-    unsigned long totalVals = option_value.size();
+    unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
       this->marker = NULL;
@@ -2281,7 +2428,7 @@ public:
       return newstring;
     }
 
-    unsigned long nVals = totalVals / 6;
+    unsigned short nVals = totalVals / 6;
     this->size = nVals;
     this->marker = new string[nVals];
     this->ttotal = new su2double[nVals];
@@ -2330,6 +2477,7 @@ public:
 template <class Tenum>
 class COptionRiemann : public COptionBase{
 
+protected:
   map<string, Tenum> m;
   string name; // identifier for the option
   unsigned short & size;
@@ -2349,7 +2497,7 @@ public:
 
   string SetValue(vector<string> option_value) {
 
-    unsigned long totalVals = option_value.size();
+    unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
       this->marker = NULL;
@@ -2373,7 +2521,7 @@ public:
       return newstring;
     }
 
-    unsigned long nVals = totalVals / 7;
+    unsigned short nVals = totalVals / 7;
     this->size = nVals;
     this->marker = new string[nVals];
     this->var1 = new su2double[nVals];
@@ -2433,6 +2581,127 @@ public:
   }
 };
 
+template <class Tenum>
+class COptionNRBC : public COptionRiemann<Tenum> {
+
+public:
+	  COptionNRBC(string option_field_name, unsigned short & nMarker_NRBC, string* & Marker_NRBC, unsigned short* & option_field,
+			  	  const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir): COptionRiemann<Tenum>(option_field_name, nMarker_NRBC,  Marker_NRBC, option_field,
+			  	   m, var1, var2,FlowDir){}
+	  ~COptionNRBC() {};
+
+};
+//template <class Tenum>
+//class COptionNRBC : public COptionBase{
+//
+//  map<string, Tenum> m;
+//  unsigned short* & field; // Reference to the fieldname
+//  string name; // identifier for the option
+//  unsigned short & size;
+//  string * & marker;
+//  su2double * & var1;
+//  su2double * & var2;
+//  su2double ** & flowdir;
+//
+//public:
+//  COptionNRBC(string option_field_name, unsigned short & nMarker_NRBC, string* & Marker_NRBC, unsigned short* & option_field, const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir) : size(nMarker_NRBC),
+//  	  	  	  	  marker(Marker_NRBC), field(option_field), var1(var1), var2(var2), flowdir(FlowDir) {
+//    this->name = option_field_name;
+//    this->m = m;
+//  }
+//  ~COptionNRBC() {};
+//
+//  string SetValue(vector<string> option_value) {
+//
+//    unsigned long totalVals = option_value.size();
+//    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
+//      this->size = 0;
+//      this->marker = NULL;
+//      this->field = 0;
+//      this->var1 = NULL;
+//      this->var2 = NULL;
+//      this->flowdir = NULL;
+//      return "";
+//    }
+//
+//    if (totalVals % 7 != 0) {
+//      string newstring;
+//      newstring.append(this->name);
+//      newstring.append(": must have a number of entries divisible by 7");
+//      this->size = 0;
+//      this->marker = NULL;
+//      this->var1 = NULL;
+//      this->var2 = NULL;
+//      this->flowdir = NULL;
+//      this->field = NULL;
+//      return newstring;
+//    }
+//
+//    unsigned long nVals = totalVals / 7;
+//    this->size = nVals;
+//    this->marker = new string[nVals];
+//    this->var1 = new su2double[nVals];
+//    this->var2 = new su2double[nVals];
+//    this->flowdir = new su2double*[nVals];
+//    this->field = new unsigned short[nVals];
+//
+//    for (int i = 0; i < nVals; i++) {
+//      this->flowdir[i] = new su2double[3];
+//    }
+//
+//    for (int i = 0; i < nVals; i++) {
+//      this->marker[i].assign(option_value[7*i]);
+//        // Check to see if the enum value is in the map
+//    if (this->m.find(option_value[7*i + 1]) == m.end()) {
+//      string str;
+//      str.append(this->name);
+//      str.append(": invalid option value ");
+//      str.append(option_value[0]);
+//      str.append(". Check current SU2 options in config_template.cfg.");
+//      return str;
+//    }
+//      Tenum val = this->m[option_value[7*i + 1]];
+//      this->field[i] = val;
+//
+//      istringstream ss_1st(option_value[7*i + 2]);
+//      if (!(ss_1st >> this->var1[i])) {
+//        return badValue(option_value, "NRBC", this->name);
+//      }
+//      istringstream ss_2nd(option_value[7*i + 3]);
+//      if (!(ss_2nd >> this->var2[i])) {
+//        return badValue(option_value, "NRBC", this->name);
+//      }
+//      istringstream ss_3rd(option_value[7*i + 4]);
+//      if (!(ss_3rd >> this->flowdir[i][0])) {
+//        return badValue(option_value, "NRBC", this->name);
+//      }
+//      istringstream ss_4th(option_value[7*i + 5]);
+//      if (!(ss_4th >> this->flowdir[i][1])) {
+//        return badValue(option_value, "NRBC", this->name);
+//      }
+//      istringstream ss_5th(option_value[7*i + 6]);
+//      if (!(ss_5th >> this->flowdir[i][2])) {
+//        return badValue(option_value, "NRBC", this->name);
+//      }
+//    }
+//
+//    return "";
+//  }
+//
+//  void SetDefault() {
+//    this->marker = NULL;
+//    this->var1 = NULL;
+//    this->var2 = NULL;
+//    this->flowdir = NULL;
+//    this->size = 0; // There is no default value for list
+//  }
+//};
+
+
+
+
+
+
 //Inlet condition where the input direction is assumed
 class COptionExhaust : public COptionBase{
   string name; // identifier for the option
@@ -2450,7 +2719,7 @@ public:
   
   string SetValue(vector<string> option_value) {
 
-    unsigned long totalVals = option_value.size();
+    unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
       this->marker = NULL;
@@ -2470,7 +2739,7 @@ public:
       return newstring;
     }
 
-    unsigned long nVals = totalVals / 3;
+    unsigned short nVals = totalVals / 3;
     this->size = nVals;
     this->marker = new string[nVals];
     this->ttotal = new su2double[nVals];
@@ -2515,7 +2784,7 @@ public:
   
   string SetValue(vector<string> option_value) {
     
-    unsigned long totalVals = option_value.size();
+    unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
       this->marker = NULL;
@@ -2535,7 +2804,7 @@ public:
       return newstring;
     }
     
-    unsigned long nVals = totalVals / 3;
+    unsigned short nVals = totalVals / 3;
     this->size = nVals;
     this->marker = new string[nVals];
     this->massflow_target = new su2double[nVals];
@@ -2584,7 +2853,7 @@ public:
 
     const int mod_num = 11;
 
-    unsigned long totalVals = option_value.size();
+    unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
       this->marker_bound = NULL;
@@ -2608,7 +2877,7 @@ public:
       return newstring;
     }
 
-    unsigned long nVals = 2 * (totalVals / mod_num); // To account for periodic and donor
+    unsigned short nVals = 2 * (totalVals / mod_num); // To account for periodic and donor
     this->size = nVals;
     this->marker_bound = new string[nVals];
     this->marker_donor = new string[nVals];
@@ -2732,6 +3001,145 @@ public:
   }
 };
 
+
+class COptionMixingPlane : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker_bound;
+  string * & marker_donor;
+
+public:
+  COptionMixingPlane(const string option_field_name, unsigned short & nMarker_MixBound,
+                  string* & Marker_MixBound, string* & Marker_MixDonor) : size(nMarker_MixBound), marker_bound(Marker_MixBound), marker_donor(Marker_MixDonor) {
+    this->name = option_field_name;
+  }
+
+  ~COptionMixingPlane() {};
+  string SetValue(vector<string> option_value) {
+
+    const int mod_num = 2;
+
+    unsigned long totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->size = 0;
+      this->marker_bound = NULL;
+      this->marker_donor = NULL;
+      return "";
+    }
+
+    if (totalVals % mod_num != 0) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 11");
+      this->size = 0;
+      this->marker_bound = NULL;
+      this->marker_donor = NULL;
+      return newstring;
+    }
+
+    unsigned long nVals = 2 * (totalVals / mod_num); // To account for periodic and donor
+    this->size = nVals;
+    this->marker_bound = new string[nVals];
+    this->marker_donor = new string[nVals];
+
+
+    for (unsigned short i = 0; i < (nVals/2); i++) {
+      this->marker_bound[i].assign(option_value[mod_num*i]);
+      this->marker_donor[i].assign(option_value[mod_num*i+1]);
+     }
+
+    for (unsigned long i = (nVals/2); i < nVals; i++) {
+      this->marker_bound[i].assign(option_value[mod_num*(i-nVals/2)+1]);
+      this->marker_donor[i].assign(option_value[mod_num*(i-nVals/2)]);
+      }
+
+
+
+    return "";
+  }
+
+  void SetDefault() {
+    this->size = 0;
+    this->marker_bound = NULL;
+    this->marker_donor = NULL;
+  }
+};
+
+template <class Tenum>
+class COptionTurboPerformance : public COptionBase{
+  string name; // identifier for the option
+  unsigned short & size;
+  string * & marker_turboIn;
+  string * & marker_turboOut;
+  map<string, Tenum> m;
+  unsigned short* & field; // Reference to the fieldname
+
+public:
+  COptionTurboPerformance(const string option_field_name, unsigned short & nMarker_TurboPerf,
+                  string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut, unsigned short* & option_field, const map<string, Tenum> m) : size(nMarker_TurboPerf), marker_turboIn(Marker_TurboBoundIn), marker_turboOut(Marker_TurboBoundOut), field(option_field) {
+    this->name = option_field_name;
+    this->m = m;
+  }
+
+  ~COptionTurboPerformance() {};
+  string SetValue(vector<string> option_value) {
+
+    const int mod_num = 3;
+
+    unsigned long totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->size = 0;
+      this->marker_turboIn= NULL;
+      this->marker_turboOut = NULL;
+      this->field = NULL;
+      return "";
+    }
+
+    if (totalVals % mod_num != 0) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 11");
+      this->size = 0;
+      this->marker_turboIn= NULL;
+      this->marker_turboOut = NULL;;
+      this->field = NULL;
+      return newstring;
+    }
+
+    unsigned long nVals = totalVals / mod_num;
+    this->size = nVals;
+    this->marker_turboIn = new string[nVals];
+    this->marker_turboOut = new string[nVals];
+    this->field = new unsigned short[nVals];
+    for (unsigned long i = 0; i < nVals; i++)
+    	if (this->m.find(option_value[mod_num*i + 2]) == m.end()) {
+    		string str;
+    		str.append(this->name);
+    		str.append(": invalid option value ");
+    		str.append(option_value[0]);
+    		str.append(". Check current SU2 options in config_template.cfg.");
+    		return str;
+    	}
+    for (unsigned long i = 0; i < nVals; i++) {
+      this->marker_turboIn[i].assign(option_value[mod_num*i]);
+      this->marker_turboOut[i].assign(option_value[mod_num*i+1]);
+      Tenum val = this->m[option_value[mod_num*i + 2]];
+      this->field[i] = val;
+     }
+
+
+    return "";
+  }
+
+  void SetDefault() {
+    this->size = 0;
+    this->marker_turboIn= NULL;
+    this->marker_turboOut = NULL;
+    this->field = NULL;
+  }
+};
+
+
 class COptionPython : public COptionBase{
   string name;
 public:
@@ -2748,6 +3156,8 @@ public:
     return;
   };
 };
+
+
 
 class COptionActuatorDisk : public COptionBase{
   string name; // identifier for the option
@@ -2771,7 +3181,7 @@ public:
   ~COptionActuatorDisk() {};
   string SetValue(vector<string> option_value) {
     const int mod_num = 11;
-    unsigned long totalVals = option_value.size();
+    unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->SetDefault();
       return "";
@@ -2785,7 +3195,7 @@ public:
       return newstring;
     }
 
-    unsigned long nVals = totalVals / mod_num;
+    unsigned short nVals = totalVals / mod_num;
     this->inlet_size = nVals;
     this->outlet_size = nVals;
     this->marker_inlet = new string[this->inlet_size];
@@ -2860,4 +3270,3 @@ public:
     this->distribution = NULL;
   }
 };
-

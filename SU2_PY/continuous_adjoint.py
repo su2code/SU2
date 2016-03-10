@@ -3,7 +3,7 @@
 ## \file continuous_adjoint.py
 #  \brief Python script for continuous adjoint computation using the SU2 suite.
 #  \author F. Palacios, T. Economon, T. Lukaczyk
-#  \version 4.0.1 "Cardinal"
+#  \version 4.1.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -14,7 +14,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -95,6 +95,13 @@ def continuous_adjoint( filename           ,
         info = SU2.run.direct(config) 
         state.update(info)
         SU2.io.restart2solution(config,state)
+
+    # If using chain rule update coefficients using gradients as defined in downstream_function (local file)
+    if config.OBJECTIVE_FUNCTION == 'OUTFLOW_GENERALIZED':
+        import downstream_function # Must be defined in run folder
+        chaingrad = downstream_function.downstream_gradient(config,state,step)
+        # Set coefficients for gradients
+        config.OBJ_CHAIN_RULE_COEFF = str(chaingrad[0:5])
     
     # Adjoint Solution
     if compute:
@@ -103,7 +110,7 @@ def continuous_adjoint( filename           ,
         #SU2.io.restart2solution(config,state)
     
     # Gradient Projection
-    info = SU2.run.projection(config,step)
+    info = SU2.run.projection(config,state, step)
     state.update(info)
     
     return state

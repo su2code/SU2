@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the numerical grid
  *        adaptation.
  * \author F. Palacios
- * \version 4.0.1 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -14,7 +14,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -111,20 +111,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */	
 	void GetAdjResidual(CGeometry *geometry, CConfig *config);
-	
-	/*! 
-	 * \brief Read the flow solution from the restart file.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */	
-	void GetLinSolution(CGeometry *geometry, CConfig *config);
-	
-	/*! 
-	 * \brief Read the flow solution from the restart file.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */	
-	void GetLinResidual(CGeometry *geometry, CConfig *config);
 	
 	/*! 
 	 * \brief Do a complete adaptation of the computational grid.
