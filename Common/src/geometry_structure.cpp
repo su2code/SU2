@@ -14124,10 +14124,12 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
 CMultiGridGeometry::~CMultiGridGeometry(void) {
   /* Must be deleted here rather than in parent class because Fine_nPoint \neq nPoint */
   if (node!=NULL){
+    /*
     for (int iPoint = 0; iPoint < Fine_nPoint; iPoint ++){
       if (node[iPoint]!=NULL) delete node[iPoint];
       node[iPoint]=NULL;
     }
+    */
     delete[] node;
     node = NULL;
   }

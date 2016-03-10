@@ -341,9 +341,6 @@ and potential are incompatible, they use the same position in sol container ---*
       delete solver_container[iMGlevel][FLOW_SOL];
     }
 
-    if (tne2_euler || tne2_ns) {
-      delete solver_container[iMGlevel][TNE2_SOL];
-    }
     if (turbulent) {
       if (spalart_allmaras || neg_spalart_allmaras || menter_sst ) {
         delete solver_container[iMGlevel][TURB_SOL];
@@ -441,7 +438,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   
 }
 
-void CDriverIntegration_Postprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config){
+void CDriver::Integration_Postprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config){
   bool
   euler, adj_euler,
   ns, adj_ns,
@@ -484,7 +481,6 @@ void CDriverIntegration_Postprocessing(CIntegration **integration_container, CGe
 
   /*--- Allocate solution for direct problem ---*/
   if (euler || ns) delete integration_container[FLOW_SOL];
-  if (tne2_euler or tne2_ns) delete integration_container[TNE2_SOL];
   if (turbulent) delete integration_container[TURB_SOL];
   if (transition) delete integration_container[TRANS_SOL];
   if (poisson) delete integration_container[POISSON_SOL];
@@ -493,7 +489,7 @@ void CDriverIntegration_Postprocessing(CIntegration **integration_container, CGe
   if (fea || fem) delete integration_container[FEA_SOL];
 
   /*--- Allocate solution for adjoint problem ---*/
-  if (adj_euler || adj_ns || adj_disc) delete integration_container[ADJFLOW_SOL];
+  if (adj_euler || adj_ns || disc_adj) delete integration_container[ADJFLOW_SOL];
   if (adj_turb) delete integration_container[ADJTURB_SOL];
 
 
@@ -1412,7 +1408,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     switch (config->GetKind_ConvNumScheme_Turb()) {
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-          if (spalart_allmaras || neg_spalart_allmaras ||machine_learning ||menter_sst)
+          if (spalart_allmaras || neg_spalart_allmaras ||menter_sst)
             delete numerics_container[iMGlevel][TURB_SOL][CONV_TERM];
         }
         break;
