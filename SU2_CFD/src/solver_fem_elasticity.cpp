@@ -1207,7 +1207,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 	su2double *Kk_ab = NULL;
 	su2double *Ta = NULL;
 
-	su2double *Kab_DE = NULL;
+	su2double *Kab_DE = NULL, *Ta_DE = NULL;
 	su2double Ks_ab_DE = 0.0;
 
 	unsigned short NelNodes, jNode;
@@ -1256,8 +1256,17 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 			Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
 			for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
 
-			/*--- Check if this is my node or not ---*/
 			LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
+
+			/*--- Retrieve the electric contribution to the Residual ---*/
+			if (de_effects){
+				Ta_DE = element_container[DE_TERM][EL_KIND]->Get_Kt_a(iNode);
+
+				for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta_DE[iVar];
+				LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
+
+//				cout << "Ta_DE= (" << Res_Stress_i[0] << "," << Res_Stress_i[1] << ")." << endl;
+			}
 
 			for (jNode = 0; jNode < NelNodes; jNode++){
 
@@ -1265,12 +1274,6 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 				Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
 				Ks_ab = element_container[FEA_TERM][EL_KIND]->Get_Ks_ab(iNode,jNode);
 				if (incompressible) Kk_ab = element_container[FEA_TERM][EL_KIND]->Get_Kk_ab(iNode,jNode);
-
-				/*--- Retrieve the electric contribution to the Jacobian ---*/
-				if (de_effects){
-					Kab_DE = element_container[DE_TERM][EL_KIND]->Get_Kab(iNode, jNode);
-					Ks_ab_DE = element_container[DE_TERM][EL_KIND]->Get_Ks_ab(iNode,jNode);
-				}
 
 				for (iVar = 0; iVar < nVar; iVar++){
 					Jacobian_s_ij[iVar][iVar] = Ks_ab;
@@ -1283,6 +1286,23 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 				Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_c_ij);
 				Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
 				if (incompressible) Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_k_ij);
+
+				/*--- Retrieve the electric contribution to the Jacobian ---*/
+				if (de_effects){
+					Kab_DE = element_container[DE_TERM][EL_KIND]->Get_Kab(iNode, jNode);
+					Ks_ab_DE = element_container[DE_TERM][EL_KIND]->Get_Ks_ab(iNode,jNode);
+//					cout << "Ks_ab_DE= " << Ks_ab_DE << endl;
+
+					for (iVar = 0; iVar < nVar; iVar++){
+						Jacobian_s_ij[iVar][iVar] = Ks_ab_DE;
+//						for (jVar = 0; jVar < nVar; jVar++){
+//							Jacobian_c_ij[iVar][jVar] = Kab_DE[iVar*nVar+jVar];
+//						}
+					}
+
+//					Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_c_ij);
+					Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
+				}
 
 			}
 

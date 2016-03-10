@@ -1167,6 +1167,16 @@ inline unsigned short CConfig::GetnIntCoeffs(void) { return nIntCoeffs; }
 
 inline su2double CConfig::Get_Int_Coeffs(unsigned short val_coeff) { return Int_Coeffs[val_coeff]; }
 
+inline unsigned short CConfig::GetnElectric_Field(void) { return nElectric_Field; }
+
+inline unsigned short CConfig::GetnDim_Electric_Field(void) { return nDim_Electric_Field; }
+
+inline su2double CConfig::Get_Electric_Field_Mod(unsigned short val_coeff) { return Electric_Field_Mod[val_coeff]; }
+
+inline void CConfig::Set_Electric_Field_Mod(unsigned short val_coeff, su2double val_el_field) { Electric_Field_Mod[val_coeff] = val_el_field; }
+
+inline su2double* CConfig::Get_Electric_Field_Dir(void) { return Electric_Field_Dir; }
+
 inline bool CConfig::GetSigmoid_Load(void) { return Sigmoid_Load; }
 
 inline bool CConfig::GetRamp_Load(void) { return Ramp_Load; }
