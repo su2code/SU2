@@ -516,15 +516,77 @@ int main(int argc, char *argv[]) {
     cout << "History file, closed." << endl;
   }
   
-  //  /*--- Deallocate config container ---*/
-  //
-  //  for (iZone = 0; iZone < nZone; iZone++) {
-  //    if (config_container[iZone] != NULL) {
-  //      delete config_container[iZone];
-  //    }
-  //  }
-  //  if (config_container != NULL) delete[] config_container;
+  /*--- Deallocations: may not be strictly necessary to explicitly call (as they should be called
+   * when the object is out of scope, but useful for debugging the deallocation functions and finding true
+   * memory leaks---*/
+  /*--- Numerics class deallocation ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone],  geometry_container[iZone], config_container[iZone], iZone);
+    delete[] numerics_container[iZone];
+  }
+  delete [] numerics_container;
+  if (rank == MASTER_NODE) cout <<"Numerics container deallocated." << endl;
+
+  /*--- Solver class deallocation ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if (solver_container[iZone]!=NULL){
+      Solver_Postprocessing(solver_container[iZone], geometry_container[iZone],  config_container[iZone], iZone);
+      delete [] solver_container[iZone];
+    }
+  }
+  delete [] solver_container;
+  if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
+
+  /*--- Geometry class deallocation ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if (geometry_container[iZone]!=NULL){
+      for (unsigned short iMGlevel = 1; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++){
+        if (geometry_container[iZone][iMGlevel]!=NULL) delete geometry_container[iZone][iMGlevel];
+      }
+      delete [] geometry_container[iZone];
+    }
+  }
+  delete [] geometry_container;
+  cout <<"Geometry container deallocated." << endl;
+
+  /*--- Integration class deallocation ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    Integration_Postprocessing(integration_container[iZone], geometry_container[iZone],
+                                  config_container[iZone], iZone);
+
+    delete [] integration_container[iZone];
+  }
+  delete [] integration_container;
+  cout <<"Integration container deallocated." << endl;
+
+  /*--- Free-form deformation class deallocation ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete FFDBox[iZone];
+  }
+  delete [] FFDBox;
+  cout <<"FFD container deallocated." << endl;
+
+  delete [] surface_movement;
+  cout <<"Surface movement container deallocated." << endl;
   
+  /*--- Grid movement class deallocation ---*/
+  delete [] grid_movement;
+  cout <<"Grid movement container deallocated." << endl;
+
+    /*Deallocate config container*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if (config_container[iZone]!=NULL){
+      delete config_container[iZone];
+    }
+  }
+  if (config_container!=NULL) delete [] config_container;
+  cout <<"Config container deallocated." << endl;
+
+  /*--- Deallocate output container ---*/
+  if (output!=NULL) delete output;
+  cout <<"Output container deallocated." << endl;
+
   
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/

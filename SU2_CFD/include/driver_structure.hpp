@@ -128,12 +128,28 @@ public:
   void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config);
 
   /*!
+   * \brief Definition and allocation of all solution classes.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Solver_Postprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+
+  /*!
    * \brief Definition and allocation of all integration classes.
    * \param[in] integration_container - Container vector with all the integration methods.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void Integration_Preprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config);
+
+  /*!
+   * \brief Definition and allocation of all integration classes.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Integration_Postprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config);
 
   /*!
    * \brief Definition and allocation of all interface classes.
@@ -158,6 +174,16 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+
+
+  /*!
+   * \brief Definition and allocation of all solver classes.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Numerics_Postprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.
