@@ -693,6 +693,10 @@ private:
   Newmark_delta;				/*!< \brief Parameter delta for Newmark method. */
   unsigned short nIntCoeffs;	/*!< \brief Number of integration coeffs for structural calculations. */
   su2double *Int_Coeffs;		/*!< \brief Time integration coefficients for structural method. */
+  unsigned short nElectric_Field,	/*!< \brief Number of different values for the electric field in the membrane. */
+  nDim_Electric_Field;				/*!< \brief Dimensionality of the problem. */
+  su2double *Electric_Field_Mod, /*!< \brief Values of the modulus of the electric field. */
+  *Electric_Field_Dir;		/*!< \brief Direction of the electric field. */
   bool Sigmoid_Load,		/*!< \brief Apply the load using a sigmoid. */
   Ramp_Load;				/*!< \brief Apply the load with linear increases. */
   bool IncrementalLoad;		/*!< \brief Apply the load in increments (for nonlinear structural analysis). */
@@ -5438,6 +5442,39 @@ public:
 	 * \return Alpha coefficient for the Runge-Kutta integration scheme.
 	 */
 	su2double Get_Int_Coeffs(unsigned short val_coeff);
+
+	/*!
+	 * \brief Get the number of different values for the modulus of the electric field.
+	 * \return Number of different values for the modulus of the electric field.
+	 */
+	unsigned short GetnElectric_Field(void);
+
+	/*!
+	 * \brief Get the dimensionality of the electric field.
+	 * \return Number of integration coefficients.
+	 */
+	unsigned short GetnDim_Electric_Field(void);
+
+	/*!
+	 * \brief Get the values for the electric field modulus.
+	 * \param[in] val_coeff - Index of the coefficient.
+	 * \return Alpha coefficient for the Runge-Kutta integration scheme.
+	 */
+	su2double Get_Electric_Field_Mod(unsigned short val_coeff);
+
+	/*!
+	 * \brief Set the values for the electric field modulus.
+	 * \param[in] val_coeff - Index of the electric field.
+	 * \param[in] val_el_field - Value of the electric field.
+	 */
+	void Set_Electric_Field_Mod(unsigned short val_coeff, su2double val_el_field);
+
+	/*!
+	 * \brief Get the direction of the electric field in reference configuration.
+	 * \param[in] val_coeff - Index of the coefficient.
+	 * \return Alpha coefficient for the Runge-Kutta integration scheme.
+	 */
+	su2double* Get_Electric_Field_Dir(void);
 
 	/*!
 	 * \brief Check if the user wants to apply the load gradually.

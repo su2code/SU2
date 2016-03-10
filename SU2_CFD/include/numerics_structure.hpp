@@ -4419,6 +4419,13 @@ public:
  */
 class CFEM_DielectricElastomer : public CFEM_NonlinearElasticity {
 
+	su2double **Electric_Field_Ref,		/*!< \brief Electric Field in the reference configuration. */
+	*Electric_Field_Curr;				/*!< \brief Electric Field in the current configuration. */
+	unsigned short nElectric_Field,
+	nDim_Electric_Field;
+
+	su2double ke_DE;					/*!< \brief Electric Constant for Dielectric Elastomers. */
+
 public:
 
 	/*!

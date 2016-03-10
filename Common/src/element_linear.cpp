@@ -724,24 +724,12 @@ CQUAD1::CQUAD1(unsigned short val_nDim, CConfig *config)
 		  val_Ni = 0.25*(1.0-Xi)*(1.0+Eta);		GaussPoint[iGauss]->SetNi(val_Ni,3);
 	}
 
-	su2double ExtrapCoord[4][2];
-
-	ExtrapCoord[0][0] = -1.732050807568877;  ExtrapCoord[0][1] = -1.732050807568877;
-	ExtrapCoord[1][0] = 1.732050807568877;   ExtrapCoord[1][1] = -1.732050807568877;
-	ExtrapCoord[2][0] = 1.732050807568877;   ExtrapCoord[2][1] = 1.732050807568877;
-	ExtrapCoord[3][0] = -1.732050807568877;  ExtrapCoord[3][1] = 1.732050807568877;
-
-	/*--- Store the shape functions (they only need to be computed once) ---*/
-	for (iNode = 0; iNode < nNodes; iNode++){
-		  Xi = ExtrapCoord[iNode][0];
-		  Eta = ExtrapCoord[iNode][1];
-
-		  NodalExtrap[iNode][0] = 0.25*(1.0-Xi)*(1.0-Eta);
-		  NodalExtrap[iNode][1] = 0.25*(1.0+Xi)*(1.0-Eta);
-		  NodalExtrap[iNode][2] = 0.25*(1.0+Xi)*(1.0+Eta);
-		  NodalExtrap[iNode][3] = 0.25*(1.0-Xi)*(1.0+Eta);
-
-	}
+	/*--- Shape functions evaluated at the nodes for extrapolation of the stresses at the Gaussian Points ---*/
+	/*--- The stress is constant at a QUAD1 element ---*/
+	NodalExtrap[0][0] = 1.0;
+	NodalExtrap[1][0] = 1.0;
+	NodalExtrap[2][0] = 1.0;
+	NodalExtrap[3][0] = 1.0;
 
 }
 

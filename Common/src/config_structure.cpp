@@ -143,6 +143,7 @@ void CConfig::SetPointersNull(void) {
 
   Load_Dir = NULL;	          Load_Dir_Value = NULL;          Load_Dir_Multiplier = NULL;
   Load_Sine_Dir = NULL;	      Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
+  Electric_Field_Mod = NULL;  Electric_Field_Dir = NULL;
 
   /*--- Miscellaneous/unsorted ---*/
 
@@ -1132,6 +1133,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("DE_MODULUS", DE_Modulus, 1);
   /*!\brief DE_VOLTAGE \n DESCRIPTION: Value of the Dielectric elastomer voltage \n DEFAULT 1 */
   addDoubleOption("DE_VOLTAGE", DE_Voltage, 1);
+  /* DESCRIPTION: Modulus of the electric fields */
+  addDoubleListOption("ELECTRIC_FIELD_MOD", nElectric_Field, Electric_Field_Mod);
+  /* DESCRIPTION: Direction of the electic fields */
+  addDoubleListOption("ELECTRIC_FIELD_DIR", nDim_Electric_Field, Electric_Field_Dir);
 
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Geometric condition \n OPTIONS: see \link Struct_Map \endlink \ingroup Config*/
   addEnumOption("GEOMETRIC_CONDITIONS", Kind_Struct_Solver, Struct_Map, SMALL_DEFORMATIONS);
@@ -2423,6 +2428,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (nIntCoeffs == 0) {
 	nIntCoeffs = 2;
 	Int_Coeffs = new su2double[2]; Int_Coeffs[0] = 0.25; Int_Coeffs[1] = 0.5;
+  }
+
+  if (nElectric_Field == 0) {
+	nElectric_Field = 1;
+	Electric_Field_Mod = new su2double[1]; Electric_Field_Mod[0] = 0.0;
+  }
+
+  if (nDim_Electric_Field == 0) {
+	nDim_Electric_Field = 2;
+	Electric_Field_Dir = new su2double[2]; Electric_Field_Dir[0] = 0.0;  Electric_Field_Dir[1] = 1.0;
   }
 
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
