@@ -125,6 +125,7 @@ CNumerics::~CNumerics(void) {
 	if(Enthalpy_formation != NULL) delete [] Enthalpy_formation;
 	if(Theta_v != NULL) delete [] Theta_v;
   if (Ys != NULL) delete [] Ys;
+  /*
   if (dFdYi != NULL) {
     for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       delete dFdYi[iSpecies];
@@ -135,7 +136,7 @@ CNumerics::~CNumerics(void) {
       delete dFdYj[iSpecies];
     delete [] dFdYj;
   }
-
+  */
   if (sumdFdYih != NULL) delete [] sumdFdYih;
   if (sumdFdYjh != NULL) delete [] sumdFdYjh;
   if (sumdFdYieve != NULL) delete [] sumdFdYieve;

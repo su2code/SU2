@@ -521,7 +521,7 @@ int main(int argc, char *argv[]) {
    * memory leaks---*/
   /*--- Numerics class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
-    Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone],  geometry_container[iZone], config_container[iZone], iZone);
+    driver->Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone],  geometry_container[iZone], config_container[iZone]);
     delete[] numerics_container[iZone];
   }
   delete [] numerics_container;
@@ -531,7 +531,7 @@ int main(int argc, char *argv[]) {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     if (solver_container[iZone]!=NULL){
-      Solver_Postprocessing(solver_container[iZone], geometry_container[iZone],  config_container[iZone], iZone);
+      driver->Solver_Postprocessing(solver_container[iZone], geometry_container[iZone],  config_container[iZone]);
       delete [] solver_container[iZone];
     }
   }
@@ -552,8 +552,8 @@ int main(int argc, char *argv[]) {
 
   /*--- Integration class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
-    Integration_Postprocessing(integration_container[iZone], geometry_container[iZone],
-                                  config_container[iZone], iZone);
+    driver->Integration_Postprocessing(integration_container[iZone], geometry_container[iZone],
+                                  config_container[iZone]);
 
     delete [] integration_container[iZone];
   }
