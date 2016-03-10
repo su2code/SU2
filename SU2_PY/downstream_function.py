@@ -1,10 +1,11 @@
 #!/usr/bin/env python 
 ## \file downstream_function.py
 
+# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
+from __future__ import print_function
 
-import os, sys, shutil, copy
+import os, sys
 import numpy as np
-from optparse import OptionParser
 sys.path.append(os.environ['SU2_RUN'])
 import SU2
 
@@ -15,7 +16,7 @@ def downstream_function(config, state ):
       nvar = nvar+1
   d_in = [0.0]*nvar
   obj = objective(config, state,d_in)
-  print " objective ", obj
+  print(" objective ", obj)
   return obj
 
 def objective(config, state, d_in ):
