@@ -4450,6 +4450,48 @@ public:
 
 };
 
+/*!
+ * \class CFEM_DielectricElastomer_Adj
+ * \brief Class for computing the constitutive and stress tensors for a dielectric elastomer - Adjoint.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_DielectricElastomer_Adj : public CFEM_NonlinearElasticity {
+
+	su2double **Electric_Field_Ref_Unit,	/*!< \brief Electric Field in the reference configuration, unitary. */
+	*Electric_Field_Curr;					/*!< \brief Electric Field in the current configuration. */
+
+	unsigned short nElectric_Field,
+	nDim_Electric_Field;
+
+	su2double *E_mod;					/*!< \brief Modulus of the Electric Field in the reference configuration. */
+	su2double ke_DE;					/*!< \brief Electric Constant for Dielectric Elastomers. */
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_DielectricElastomer_Adj(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_DielectricElastomer_Adj(void);
+
+	void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
+
+	void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
+  using CNumerics::Compute_Constitutive_Matrix;
+
+	void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
+
+};
+
 
 /*!
  * \class CSourceNothing

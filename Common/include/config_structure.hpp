@@ -604,7 +604,8 @@ private:
 	DE_Modulus,							/*!< \brief Dielectric elastomer modulus. */
 	DE_Voltage;							/*!< \brief Dielectric elastomer voltage. */
 	bool DE_Effects; 						/*!< Application of DE effects to FE analysis */
-	bool RefGeom; 						/*!< Application of DE effects to FE analysis */
+	bool RefGeom; 						/*!< Read a reference geometry for optimization purposes. */
+	bool Structural_Adj; 						/*!< Decide whether a structural adjoint iteration needs to be run (temporary). */
 	string RefGeom_FEMFileName;    			/*!< \brief File name for reference geometry. */
 	unsigned short RefGeom_FileFormat;	/*!< \brief Mesh input format. */
 	unsigned short Kind_2DElasForm;			/*!< \brief Kind of bidimensional elasticity solver. */
@@ -1586,6 +1587,13 @@ public:
 	 * \return Value of the DE voltage.
 	 */
 	su2double GetDE_Voltage(void);
+
+	/*!
+	  * \brief Decide whether to run a structural adjoint solution.
+	  * \return <code>TRUE</code> if it's necessary to run a structural adjoint solution, <code>FALSE</code> otherwise.
+	  */
+
+	bool GetStructural_Adj(void);
 
 	/*!
 	  * \brief Decide whether it's necessary to read a reference geometry.

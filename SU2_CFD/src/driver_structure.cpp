@@ -1070,8 +1070,10 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
 	}
 
 	bool de_effects = config->GetDE_Effects();
+	bool structural_adj = config->GetStructural_Adj();
 
 	if (de_effects) numerics_container[MESH_0][FEA_SOL][DE_TERM] = new CFEM_DielectricElastomer(nDim, nVar_FEM, config);
+	if (structural_adj && de_effects) numerics_container[MESH_0][FEA_SOL][DE_ADJ] = new CFEM_DielectricElastomer_Adj(nDim, nVar_FEM, config);
 
   }
 
