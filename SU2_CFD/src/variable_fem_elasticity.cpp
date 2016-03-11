@@ -59,6 +59,8 @@ CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
 	Solution_Pred_Old		= NULL;		// Predictor of the solution at the previous subiteration
 
 	Reference_Geometry		= NULL;		// Reference geometry for optimization purposes
+	Solution_Adj 			= NULL;		// Adjoint solution for structural problems (temporary)
+	Gradient_Adj			= NULL;		// Adjoint gradient dS/dv for structural problems (temporary)
 
 }
 
@@ -70,7 +72,8 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 	bool incremental_load = config->GetIncrementalLoad();
 	bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);	// Generalized alpha method requires residual at previous time step.
 
-	bool refgeom = config->GetRefGeom();	// Reference geometry needs to be stored
+	bool refgeom = config->GetRefGeom();				// Reference geometry needs to be stored
+	bool structural_adj = config->GetStructural_Adj();	// A structural adjoint simulation is to be run (temporary)
 
 	VonMises_Stress = 0.0;
 
@@ -149,7 +152,14 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 	if (refgeom)	Reference_Geometry = new su2double [nVar];
 	else 			Reference_Geometry = NULL;
 
-
+	if (structural_adj) 	{
+		Solution_Adj = new su2double[nVar];
+		Gradient_Adj = new su2double[nVar];
+	}
+	else{
+		Solution_Adj = NULL;
+		Gradient_Adj = NULL;
+	}
 }
 
 CFEM_ElasVariable::~CFEM_ElasVariable(void) {
@@ -175,5 +185,7 @@ CFEM_ElasVariable::~CFEM_ElasVariable(void) {
 	if (Solution_Pred_Old 		!= NULL) delete [] Solution_Pred_Old;
 
 	if (Reference_Geometry 		!= NULL) delete [] Reference_Geometry;
+	if (Solution_Adj 			!= NULL) delete [] Solution_Adj;
+	if (Gradient_Adj 			!= NULL) delete [] Gradient_Adj;
 
 }

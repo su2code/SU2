@@ -137,6 +137,8 @@ inline su2double CConfig::GetDE_Modulus(void) { return DE_Modulus; }
 
 inline su2double CConfig::GetDE_Voltage(void) { return DE_Voltage; }
 
+inline bool CConfig::GetStructural_Adj(void) { return Structural_Adj; }
+
 inline bool CConfig::GetRefGeom(void) { return RefGeom; }
 
 inline string CConfig::GetRefGeom_FEMFileName(void) { return RefGeom_FEMFileName; }

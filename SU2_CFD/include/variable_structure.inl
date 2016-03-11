@@ -557,6 +557,16 @@ inline void CVariable::SetSolution_Vel_time_n(void) { }
 
 inline void CVariable::SetSolution_Vel_time_n(unsigned short val_var, su2double val_solution_vel_time_n) { }
 
+inline su2double CVariable::GetSolution_Adj(unsigned short val_var) {return 0; }
+
+inline void CVariable::SetSolution_Adj(unsigned short val_var, su2double val_solution_adj) { }
+
+inline su2double CVariable::GetGradient_Adj(unsigned short val_var) {return 0; }
+
+inline void CVariable::SetGradient_Adj(unsigned short val_var, su2double val_gradient_adj) { }
+
+inline void CVariable::AddGradient_Adj(unsigned short val_var, su2double val_gradient_adj) { }
+
 inline su2double CVariable::GetSolution_time_n(unsigned short val_var) { return 0; }
 
 inline su2double CVariable::GetSolution_Vel(unsigned short val_var) { return 0; }
@@ -961,6 +971,16 @@ inline void CFEM_ElasVariable::SetSolution_time_n(su2double *val_solution_time_n
 }
 
 inline void CFEM_ElasVariable::SetSolution_time_n(unsigned short val_var, su2double val_solution_time_n) { Solution_time_n[val_var] = val_solution_time_n; }
+
+inline su2double CFEM_ElasVariable::GetSolution_Adj(unsigned short val_var) {return Solution_Adj[val_var]; }
+
+inline void CFEM_ElasVariable::SetSolution_Adj(unsigned short val_var, su2double val_solution_adj) { Solution_Adj[val_var] = val_solution_adj;}
+
+inline su2double CFEM_ElasVariable::GetGradient_Adj(unsigned short val_var) {return Gradient_Adj[val_var]; }
+
+inline void CFEM_ElasVariable::SetGradient_Adj(unsigned short val_var, su2double val_gradient_adj) { Gradient_Adj[val_var] = val_gradient_adj; }
+
+inline void CFEM_ElasVariable::AddGradient_Adj(unsigned short val_var, su2double val_gradient_adj) { Gradient_Adj[val_var] += val_gradient_adj; }
 
 inline void CFEM_ElasVariable::SetSolution_Vel(unsigned short val_var, su2double val_solution_vel) { Solution_Vel[val_var] = val_solution_vel; }
 
