@@ -519,26 +519,17 @@ int main(int argc, char *argv[]) {
   /*--- Deallocations: may not be strictly necessary to explicitly call (as they should be called
    * when the object is out of scope, but useful for debugging the deallocation functions and finding true
    * memory leaks---*/
-  /*--- Numerics class deallocation ---*/
-  for (iZone = 0; iZone < nZone; iZone++) {
-    driver->Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone],  geometry_container[iZone], config_container[iZone]);
-    delete[] numerics_container[iZone];
-  }
-  delete [] numerics_container;
-  if (rank == MASTER_NODE) cout <<"Numerics container deallocated." << endl;
 
-  /*--- Solver class deallocation ---*/
+  if (rank == MASTER_NODE) cout <<"Deallocating driver." << endl;
 
-  for (iZone = 0; iZone < nZone; iZone++) {
-    if (solver_container[iZone]!=NULL){
-      driver->Solver_Postprocessing(solver_container[iZone], geometry_container[iZone],  config_container[iZone]);
-      delete [] solver_container[iZone];
-    }
-  }
-  delete [] solver_container;
-  if (rank == MASTER_NODE) cout <<"Solution container, deallocated." << endl;
+  driver->Postprocessing(iteration_container, solver_container, geometry_container,
+      integration_container, numerics_container, interpolator_container,
+      transfer_container, config_container, nZone);
+
+  delete driver;
 
   /*--- Geometry class deallocation ---*/
+
   for (iZone = 0; iZone < nZone; iZone++) {
     if (geometry_container[iZone]!=NULL){
       for (unsigned short iMGlevel = 1; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++){
@@ -550,30 +541,20 @@ int main(int argc, char *argv[]) {
   delete [] geometry_container;
   cout <<"Geometry container deallocated." << endl;
 
-  /*--- Integration class deallocation ---*/
-  for (iZone = 0; iZone < nZone; iZone++) {
-    driver->Integration_Postprocessing(integration_container[iZone], geometry_container[iZone],
-                                  config_container[iZone]);
-
-    delete [] integration_container[iZone];
-  }
-  delete [] integration_container;
-  cout <<"Integration container deallocated." << endl;
-
   /*--- Free-form deformation class deallocation ---*/
+
   for (iZone = 0; iZone < nZone; iZone++) {
     delete FFDBox[iZone];
   }
   delete [] FFDBox;
+
   cout <<"FFD container deallocated." << endl;
 
   delete [] surface_movement;
   cout <<"Surface movement container deallocated." << endl;
-  
   /*--- Grid movement class deallocation ---*/
   delete [] grid_movement;
   cout <<"Grid movement container deallocated." << endl;
-
     /*Deallocate config container*/
   for (iZone = 0; iZone < nZone; iZone++) {
     if (config_container[iZone]!=NULL){
@@ -609,13 +590,13 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
-  
+
 #ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
   MPI_Buffer_detach(&bptr, &bl);
   MPI_Finalize();
 #endif
-  
+
   return EXIT_SUCCESS;
-  
+
 }

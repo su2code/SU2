@@ -150,6 +150,54 @@ CDriver::CDriver(CIteration **iteration_container,
 
 }
 
+void CDriver::Postprocessing(CIteration **iteration_container,
+                 CSolver ****solver_container,
+                 CGeometry ***geometry_container,
+                 CIntegration ***integration_container,
+                 CNumerics *****numerics_container,
+                 CInterpolator ***interpolator_container,
+                 CTransfer ***transfer_container,
+                 CConfig **config_container,
+                 unsigned short val_nZone){
+
+
+  unsigned short iZone;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    //if (rank == MASTER_NODE)
+    //      cout << endl <<"----------------- Numerics Postprocessing ----------------" << endl;
+
+    //Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone],
+    //                               geometry_container[iZone], config_container[iZone]);
+
+    if (rank == MASTER_NODE)
+          cout << endl <<"----------------- Integration Postprocessing ----------------" << endl;
+
+    Integration_Postprocessing(integration_container[iZone], geometry_container[iZone],
+                                      config_container[iZone]);
+
+    if (rank == MASTER_NODE)
+          cout << endl <<"------------------------- Solver Postprocessing --------------------------" << endl;
+
+    Solver_Postprocessing(solver_container[iZone], geometry_container[iZone],
+        config_container[iZone]);
+
+    if (rank == MASTER_NODE){
+            cout << endl <<"------------------------ Iteration Postprocessing ------------------------" << endl;
+          }
+              //Iteration_Preprocessing(iteration_container, config_container, iZone);
+    //delete[] numerics_container[iZone];
+    //delete[] integration_container[iZone];
+    //delete[] solver_container[iZone];
+  }
+
+}
 
 void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
                                    CConfig *config) {
@@ -329,16 +377,15 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
 
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
 and potential are incompatible, they use the same position in sol container ---*/
-  for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+  for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 
     /*--- Allocate solution for a template problem ---*/
     if (template_solver) {
       delete solver_container[iMGlevel][TEMPLATE_SOL];
     }
-
     /*--- Allocate solution for direct problem, and run the preprocessing and postprocessing ---*/
     if (euler || ns) {
-      delete solver_container[iMGlevel][FLOW_SOL];
+      //delete solver_container[iMGlevel][FLOW_SOL];
     }
 
     if (turbulent) {
@@ -369,10 +416,8 @@ and potential are incompatible, they use the same position in sol container ---*
         delete solver_container[iMGlevel][ADJTURB_SOL];
       }
     }
-
-    delete[] solver_container[iMGlevel];
+    //delete[] solver_container[iMGlevel];
   }
-
 }
 
 void CDriver::Integration_Preprocessing(CIntegration **integration_container,
@@ -1319,11 +1364,11 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
 
       case SPACE_CENTERED :
         if (compressible) {
+
           /*--- Compressible flow ---*/
           switch (config->GetKind_Centered_Flow()) {
             case LAX : case JST :  case JST_KE : delete numerics_container[MESH_0][FLOW_SOL][CONV_TERM]; break;
           }
-
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
             delete numerics_container[iMGlevel][FLOW_SOL][CONV_TERM];
 
@@ -1349,6 +1394,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
         }
         break;
       case SPACE_UPWIND :
+
         if (compressible) {
           /*--- Compressible flow ---*/
           switch (config->GetKind_Upwind_Flow()) {
@@ -1601,13 +1647,14 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
 
 
   /*--- Definition of the Class for the numerical method: numerics_container[MESH_LEVEL][EQUATION][EQ_TERM] ---*/
-
+  /*
   for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     for (iSol = 0; iSol < MAX_SOLS; iSol++){
       delete[] numerics_container[iMGlevel][iSol];
     }
     delete[] numerics_container[iMGlevel];
   }
+  */
 
 }
 
@@ -1801,7 +1848,7 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
 }
 
 
-CDriver::~CDriver(void) { }
+CDriver::~CDriver(void) {}
 
 
 CSingleZoneDriver::CSingleZoneDriver(CIteration **iteration_container,

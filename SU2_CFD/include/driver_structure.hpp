@@ -185,6 +185,27 @@ public:
    */
   void Numerics_Postprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
 
+
+  /*!
+   * \brief Deallocation routine
+   * \param[in] iteration_container - Container vector with all the iteration methods.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - Total number of zones.
+   */
+  void Postprocessing(CIteration **iteration_container,
+                   CSolver ****solver_container,
+                   CGeometry ***geometry_container,
+                   CIntegration ***integration_container,
+                   CNumerics *****numerics_container,
+                   CInterpolator ***interpolator_container,
+                   CTransfer ***transfer_container,
+                   CConfig **config_container,
+                   unsigned short val_nZone);
+
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be predicted.

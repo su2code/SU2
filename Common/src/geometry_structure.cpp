@@ -72,29 +72,28 @@ CGeometry::CGeometry(void) {
   nNewElem_Bound = NULL;
   Marker_All_SendRecv = NULL;
   
-	PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
-	PeriodicElem[MAX_NUMBER_PERIODIC].clear();
-	XCoordList.clear();
+  PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
+  PeriodicElem[MAX_NUMBER_PERIODIC].clear();
+  XCoordList.clear();
 
-	Xcoord_plane.clear();
-	Ycoord_plane.clear();
-	Zcoord_plane.clear();
-	FaceArea_plane.clear();
-	Plane_points.clear();
-
-	/*--- parmetis variables---*/
+  Xcoord_plane.clear();
+  Ycoord_plane.clear();
+  Zcoord_plane.clear();
+  FaceArea_plane.clear();
+  Plane_points.clear();
+  /*--- parmetis variables---*/
   starting_node=NULL;
   ending_node=NULL;
   npoint_procs=NULL;
   Global_to_local_elem=NULL;
-
+  
 }
 
 CGeometry::~CGeometry(void) {
-
-  unsigned long iElem, iElem_Bound, iFace, iVertex, iEdge, iPoint;
+  
+  unsigned long iElem, iElem_Bound, iFace, iVertex, iEdge;
   unsigned short iMarker;
-
+  
   if (elem != NULL) {
     for (iElem = 0; iElem < nElem; iElem++)
       if (elem[iElem] != NULL) delete elem[iElem];
@@ -106,23 +105,29 @@ CGeometry::~CGeometry(void) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (bound[iMarker][iElem_Bound] != NULL) delete bound[iMarker][iElem_Bound];
       }
-      delete[] bound[iMarker];
     }
     delete[] bound;
   }
-
+  
   if (face != NULL) {
     for (iFace = 0; iFace < nFace; iFace ++)
       if (face[iFace] != NULL) delete face[iFace];
     delete[] face;
   }
-
+  
+//  if (node != NULL) {
+//    for (iPoint = 0; iPoint < nPoint; iPoint ++)
+//      if (node[iPoint] != NULL) delete node[iPoint];
+//    delete[] node;
+//  }
+  
+  /*
   if (edge != NULL) {
     for (iEdge = 0; iEdge < nEdge; iEdge ++)
-      if (edge[iEdge] != NULL) delete [] edge[iEdge];
+      if (edge[iEdge] != NULL) delete edge[iEdge];
     delete[] edge;
   }
-  
+
   if (vertex != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
@@ -142,39 +147,14 @@ CGeometry::~CGeometry(void) {
     }
     delete[] newBound;
   }
-
+  */
   if (nElem_Bound != NULL) delete[] nElem_Bound;
   if (nVertex != NULL) delete[] nVertex;
   if (nNewElem_Bound != NULL) delete[] nNewElem_Bound;
   if (Marker_All_SendRecv != NULL) delete[] Marker_All_SendRecv;
   if (Tag_to_Marker != NULL) delete[] Tag_to_Marker;
-
-
-	PeriodicPoint[MAX_NUMBER_PERIODIC][2].~vector();
-	PeriodicElem[MAX_NUMBER_PERIODIC].~vector();
-	XCoordList.~vector();
-
-	Xcoord_plane.~vector();
-	Ycoord_plane.~vector();
-	Zcoord_plane.~vector();
-	FaceArea_plane.~vector();
-	Plane_points.~vector();
-
-	/*--- parmetis variables ---*/
-	if (adjacency!=NULL) delete adjacency;
-  if (xadj!=NULL) delete xadj;
-  if (starting_node!=NULL) delete starting_node;
-  if (ending_node!=NULL) delete ending_node;
-  if (npoint_procs!=NULL) delete npoint_procs;
-  if (Global_to_local_elem!=NULL) delete Global_to_local_elem;
-
-  if (node!=NULL) {
-    for(iPoint=0; iPoint<nPoint; iPoint++)
-      if (node[iPoint]!=NULL) delete node[iPoint];
-    delete [] node;
-    node=NULL;
-  }
-
+  
+  
 }
 
 su2double CGeometry::Point2Plane_Distance(su2double *Coord, su2double *iCoord, su2double *jCoord, su2double *kCoord) {
@@ -539,6 +519,7 @@ bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[
   }
   
   /*--- Intersection inside the segment ---*/
+
   return (true);
   
 }
@@ -1278,9 +1259,6 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   Local_to_Global_Point  = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
-  adj_counter=NULL;
-  adjacent_elem=NULL;
-  node = NULL;
 
 }
 
@@ -1290,10 +1268,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   Local_to_Global_Point = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
-  adj_counter=NULL;
-  adjacent_elem=NULL;
-  node = NULL;
-
+  
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short iDim, iMarker, iNodes;
@@ -1412,9 +1387,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   Local_to_Global_Point = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
-  adj_counter=NULL;
-  adjacent_elem=NULL;
-  node = NULL;
 
   unsigned long iter,  iPoint, jPoint, iElem, jElem, iVertex;
   unsigned long nElemTotal = 0, nPointTotal = 0, nPointDomainTotal = 0, nElemTriangle = 0, nElemQuadrilateral = 0, nElemTetrahedron = 0, nElemHexahedron = 0, nElemPrism = 0, nElemPyramid = 0;
@@ -1460,6 +1432,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   short *Buffer_Send_Marker_All_SendRecv = new short[nMarker_Max];
   char *Marker_All_TagBound = new char[nMarker_Max*MAX_STRING_SIZE];
   char *Buffer_Send_Marker_All_TagBound = new char[nMarker_Max*MAX_STRING_SIZE];
+
   
 #ifdef HAVE_MPI
   
@@ -2621,10 +2594,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   Local_to_Global_Point  = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
-  adj_counter=NULL;
-  adjacent_elem=NULL;
-  node = NULL;
-
   
   unsigned long iter,  iPoint, jPoint, iElem, iVertex;
     //unsigned long nElemTotal = 0, nPointTotal = 0, nPointDomainTotal = 0, nPointGhost = 0, nPointPeriodic = 0, nElemTriangle = 0, nElemQuadrilateral = 0, nElemTetrahedron = 0, nElemHexahedron = 0, nElemPrism = 0, nElemPyramid = 0;
@@ -4368,16 +4337,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
       }
       
       /*--- Free memory for element data ---*/
-      delete[] Local_to_global_elem;
-      delete[] Global_to_local_Point_recv;
-
+      
       delete[] Buffer_Receive_Triangle_loc;
       delete[] Buffer_Receive_Quadrilateral_loc;
       delete[] Buffer_Receive_Tetrahedron_loc;
       delete[] Buffer_Receive_Hexahedron_loc;
       delete[] Buffer_Receive_Prism_loc;
       delete[] Buffer_Receive_Pyramid_loc;
-      delete[] Buffer_Receive_GlobElem_loc;
       
       delete[] Buffer_Receive_Triangle_presence_loc;
       delete[] Buffer_Receive_Quadrilateral_presence_loc;
@@ -4407,7 +4373,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   delete[] Buffer_Send_Hexahedron;
   delete[] Buffer_Send_Prism;
   delete[] Buffer_Send_Pyramid;
-  delete[] Buffer_Send_GlobElem;
   delete[] Buffer_Send_BoundLine;
   delete[] Buffer_Send_BoundTriangle;
   delete[] Buffer_Send_BoundQuadrilateral;
@@ -4496,7 +4461,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   delete [] Hexahedron_presence;
   delete [] Prism_presence;
   delete [] Pyramid_presence;
-  delete [] Element_presence;
 
   /*--- Now partition the boundary elements on the markers. Note that, for
    now, we are still performing the boundary partitioning using the master
@@ -5475,7 +5439,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
     delete [] Marker_All_SendRecv_Copy;
     delete [] Marker_All_TagBound_Copy;
     delete [] PointIn;
-    delete [] ElemIn;
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
       delete [] VertexIn[iMarker];
     delete[] VertexIn;
@@ -5496,8 +5459,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
   delete [] Buffer_Send_nBoundQuadrilateral;
   delete [] Buffer_Send_Marker_All_SendRecv;
   
-  delete [] local_colour_values;
-
 #ifdef HAVE_MPI
   delete [] send_stat;
   delete [] recv_stat;
@@ -5509,29 +5470,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config, int o
 
 
 CPhysicalGeometry::~CPhysicalGeometry(void) {
-
-  unsigned long iPoint;
+  
   if (Global_to_Local_Point  != NULL) delete [] Global_to_Local_Point;
   if (Local_to_Global_Point  != NULL) delete [] Local_to_Global_Point;
   if (Global_to_Local_Marker != NULL) delete [] Global_to_Local_Marker;
   if (Local_to_Global_Marker != NULL) delete [] Local_to_Global_Marker;
-  //if (adj_counter!=NULL) delete [] adj_counter;
-  /*
-  cout <<"adj_elem:"<<endl;
-  if (adjacent_elem!=NULL){
-    for (iPoint=0; iPoint<local_node; iPoint++)
-      delete adjacent_elem[iPoint];
-    delete [] adjacent_elem;
-  }
-  */
-  /*node must be deleted here rather than in parent class b/c local_node \neq nPoint  */
-  if (node!=NULL){
-    for (iPoint=0; iPoint<local_node; iPoint++)
-      if (node[iPoint]!=NULL) delete node[iPoint];
-    delete [] node;
-    node = NULL;
-  }
-
+  
 }
 
 
@@ -5952,7 +5896,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_GeoEval(iMarker, NO);
       config->SetMarker_All_Designing(iMarker, NO);
       config->SetMarker_All_Plotting(iMarker, NO);
-      config->SetMarker_All_FSIinterface(iMarker, NO);
+	  config->SetMarker_All_FSIinterface(iMarker, NO);
       config->SetMarker_All_DV(iMarker, NO);
       config->SetMarker_All_Moving(iMarker, NO);
       config->SetMarker_All_PerBound(iMarker, NO);
@@ -6305,30 +6249,56 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             
           case TRIANGLE:
             
-            elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
-            for (i = 0; i < N_POINTS_TRIANGLE; i++) {
-              if ((vnodes_triangle[i]>=starting_node[rank])&&(vnodes_triangle[i]<ending_node[rank])) {
+            /*--- Load the connectivity for this element. ---*/
+            
+            elem_line >> vnodes_triangle[0];
+            elem_line >> vnodes_triangle[1];
+            elem_line >> vnodes_triangle[2];
+            
+            /*--- Decide whether we need to store this element, i.e., check if
+             any of the nodes making up this element have a global index value
+             that falls within the range of our linear partitioning. ---*/
+            
+            for (int i = 0; i < N_POINTS_TRIANGLE; i++) {
+              
+              local_index = vnodes_triangle[i]-starting_node[rank];
+
+              if ((local_index >= 0) && (local_index < (long)local_node)) {
+                
+                /*--- This node is within our linear partition. Mark this 
+                 entire element to be added to our list for this rank, and 
+                 add the neighboring nodes to this nodes' adjacency list. ---*/
+                
                 elem_reqd = true;
-
-                for (unsigned long j=0; j<N_POINTS_TRIANGLE; j++) {
-                  if (i != j) {
-                    adjacent_elem[vnodes_triangle[i]-starting_node[rank]][adj_counter[vnodes_triangle[i]-starting_node[rank]]]=vnodes_triangle[j];
-                    adj_counter[vnodes_triangle[i]-starting_node[rank]]++;
-                  }
+                
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+                /*--- Build adjacency assuming the VTK connectivity ---*/
+                
+                for (int j=0; j<N_POINTS_TRIANGLE; j++) {
+                  if (i != j) adj_nodes[local_index].push_back(vnodes_triangle[j]);
                 }
-
+#endif
+#endif
               }
             }
+            
+            /*--- If any of the nodes were within the linear partition, the
+             element is added to our element data structure. ---*/
+            
             if (elem_reqd) {
               Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CTriangle(vnodes_triangle[0], vnodes_triangle[1], vnodes_triangle[2], 2);
-              nelem_triangle++;loc_element_count++;
+              elem[loc_element_count] = new CTriangle(vnodes_triangle[0],
+                                                      vnodes_triangle[1],
+                                                      vnodes_triangle[2], 2);
+              loc_element_count++;
+              nelem_triangle++;
             }
-
+            
             break;
-
+            
           case QUADRILATERAL:
-
+            
             /*--- Load the connectivity for this element. ---*/
             
             elem_line >> vnodes_quad[0];
@@ -6341,7 +6311,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
              that falls within the range of our linear partitioning. ---*/
             
             for (int i = 0; i < N_POINTS_QUADRILATERAL; i++) {
-
+              
               local_index = vnodes_quad[i]-starting_node[rank];
               
               if ((local_index >= 0) && (local_index < (long)local_node)) {
@@ -6379,9 +6349,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             break;
             
           case TETRAHEDRON:
-
+            
             /*--- Load the connectivity for this element. ---*/
-
+            
             elem_line >> vnodes_tetra[0];
             elem_line >> vnodes_tetra[1];
             elem_line >> vnodes_tetra[2];
@@ -6553,11 +6523,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               loc_element_count++;
               nelem_prism++;
             }
-
+            
             break;
-
+            
           case PYRAMID:
-
+            
             /*--- Load the connectivity for this element. ---*/
             
             elem_line >> vnodes_pyramid[0];
@@ -6696,13 +6666,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- Free temporary memory used to build the adjacency. ---*/
   
   adjac_vec.clear();
-  /*
-  delete[] adj_counter;
-  for (iPoint=0; iPoint<local_node; iPoint++) {
-    delete[] adjacent_elem[iPoint];
-  }
-  delete [] adjacent_elem;
-  */
   adj_nodes.clear();
   
 #endif
@@ -10968,15 +10931,15 @@ bool CPhysicalGeometry::FindFace(unsigned long first_elem, unsigned long second_
       face_first_found = true;
       break;
     }
-
+    
     PointFaceFirst.erase (PointFaceFirst.begin(), PointFaceFirst.end());
   }
   }
-
+  
   /*--- Search the secuence in the second element ---*/
   for (iFace = 0; iFace < elem[second_elem]->GetnFaces(); iFace++) {
     nNodesFace = elem[second_elem]->GetnNodesFace(iFace);
-
+    
     if (nNodesFace == CommonPoints.size()) {
     for (iNode = 0; iNode < nNodesFace; iNode++) {
       face_node = elem[second_elem]->GetFaces(iFace, iNode);
@@ -11543,8 +11506,8 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
   /*--- Delete the memory from the geometry class that carried the
    adjacency structure. ---*/
   
-  delete [] xadj; xadj=NULL;
-  delete [] adjacency; adjacency = NULL;
+  delete [] xadj;
+  delete [] adjacency;
   
 #endif
 #endif
@@ -12853,23 +12816,23 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
       point_line >> iPoint >> Sensitivity;
       
       if (PointInDomain[iPoint]) {
-
+        
         /*--- Find the vertex for the Point and Marker ---*/
-
+        
         iMarker = Point2Vertex[iPoint][0];
         iVertex = Point2Vertex[iPoint][1];
-
+        
         /*--- Increment the auxiliary variable with the contribution of
          this unsteady timestep. For steady problems, this reduces to
          a single sensitivity value multiplied by 1.0. ---*/
-
+        
         vertex[iMarker][iVertex]->AddAuxVar(Sensitivity*(delta_T/total_T));
       }
-
+      
     }
     Surface_file.close();
   }
-
+  
   delete[] Point2Vertex;
 }
 
@@ -14121,18 +14084,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   
 }
 
+
 CMultiGridGeometry::~CMultiGridGeometry(void) {
-  /* Must be deleted here rather than in parent class because Fine_nPoint \neq nPoint */
-  if (node!=NULL){
-    /*
-    for (int iPoint = 0; iPoint < Fine_nPoint; iPoint ++){
-      if (node[iPoint]!=NULL) delete node[iPoint];
-      node[iPoint]=NULL;
-    }
-    */
-    delete[] node;
-    node = NULL;
-  }
+  
 }
 
 bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, short marker_seed, CGeometry *fine_grid, CConfig *config) {
@@ -15317,19 +15271,16 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
 CPeriodicGeometry::~CPeriodicGeometry(void) {
   unsigned long iElem_Bound;
   unsigned short iMarker;
-  unsigned long iPoint;
-
-  if (newBoundPer[iMarker][iElem_Bound] != NULL) {
+  
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
       if (newBoundPer[iMarker][iElem_Bound] != NULL) delete [] newBoundPer[iMarker][iElem_Bound];
     }
   }
-  }
   if (newBoundPer != NULL) delete[] newBoundPer;
   
   if (nNewElem_BoundPer != NULL) delete[] nNewElem_BoundPer;
-
+  
 }
 
 void CPeriodicGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config) {
@@ -15610,6 +15561,7 @@ CMultiGridQueue::CMultiGridQueue(unsigned long val_npoint) {
 }
 
 CMultiGridQueue::~CMultiGridQueue(void) {
+  
   delete[] Priority;
   delete[] RightCV;
   
