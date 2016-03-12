@@ -172,7 +172,7 @@ void CDriver::Postprocessing(CIteration **iteration_container,
 
     //if (rank == MASTER_NODE)
     //      cout << endl <<"----------------- Numerics Postprocessing ----------------" << endl;
-
+    // TODO: Fix numerics post processing
     //Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone],
     //                               geometry_container[iZone], config_container[iZone]);
 
@@ -187,11 +187,14 @@ void CDriver::Postprocessing(CIteration **iteration_container,
 
     Solver_Postprocessing(solver_container[iZone], geometry_container[iZone],
         config_container[iZone]);
-
+    /*
     if (rank == MASTER_NODE){
             cout << endl <<"------------------------ Iteration Postprocessing ------------------------" << endl;
           }
-              //Iteration_Preprocessing(iteration_container, config_container, iZone);
+              //Iteration_Postprocessing(iteration_container, config_container, iZone);
+               *
+               */
+    // TODO: implement Iteration Postprocessing
     //delete[] numerics_container[iZone];
     //delete[] integration_container[iZone];
     //delete[] solver_container[iZone];

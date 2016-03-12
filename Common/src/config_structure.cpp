@@ -137,7 +137,7 @@ void CConfig::SetPointersNull(void) {
   Marker_All_TagBound = NULL;     Marker_CfgFile_TagBound = NULL;   Marker_All_KindBC = NULL;
   Marker_CfgFile_KindBC = NULL;   Marker_All_SendRecv = NULL;       Marker_All_PerBound = NULL;
   Marker_FSIinterface = NULL;     Marker_Riemann = NULL;
-
+  Marker_Load = NULL;
   /*--- Boundary Condition settings ---*/
 
   Dirichlet_Value = NULL;         Exhaust_Temperature_Target = NULL;
@@ -160,12 +160,18 @@ void CConfig::SetPointersNull(void) {
   Aeroelastic_plunge = NULL;    Aeroelastic_pitch = NULL;
   MassFrac_FreeStream = NULL;
   Velocity_FreeStream = NULL;
-  RefOriginMoment = NULL;     RefOriginMoment_X=NULL;  RefOriginMoment_Y=NULL;
-  RefOriginMoment_Z=NULL;   CFL_AdaptParam = NULL;            CFL=NULL;
+  RefOriginMoment = NULL;
+  CFL_AdaptParam = NULL;            CFL=NULL;
   PlaneTag = NULL;
   Kappa_Flow = NULL;    Kappa_AdjFlow = NULL;
   Section_Location = NULL;
   U_FreeStreamND = NULL;
+  ParamDV=NULL;     DV_Value = NULL;    Design_Variable=NULL;
+  MG_CorrecSmooth = NULL;
+  Subsonic_Engine_Box = NULL;
+  Hold_GridFixed_Coord=NULL;
+  EA_IntLimit=NULL;
+  RK_Alpha_Step=NULL;
 
   /*--- Moving mesh pointers ---*/
 
@@ -4442,62 +4448,64 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
 }
 
 CConfig::~CConfig(void) {
-  
+  /* These cause seg faults, but only on a few of the reg tests
   if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
   if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
   if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
   if (U_FreeStreamND!=NULL) delete [] U_FreeStreamND;
-
+   */
   /*--- Free memory for Aeroelastic problems. ---*/
 
+
   if (Grid_Movement && Aeroelastic_Simulation) {
-    delete[] Aeroelastic_pitch;
-    delete[] Aeroelastic_plunge;
+    if (Aeroelastic_pitch!=NULL) delete[] Aeroelastic_pitch;
+    if (Aeroelastic_plunge!=NULL) delete[] Aeroelastic_plunge;
   }
+
 
   /*--- Free memory for unspecified grid motion parameters ---*/
 
-  if (Kind_GridMovement != NULL)    delete [] Kind_GridMovement;
+ if (Kind_GridMovement != NULL)    delete [] Kind_GridMovement;
 
   /*--- motion origin: ---*/
-  
+
   if (Motion_Origin_X != NULL)    delete [] Motion_Origin_X;
   if (Motion_Origin_Y != NULL)    delete [] Motion_Origin_Y;
   if (Motion_Origin_Z != NULL)    delete [] Motion_Origin_Z;
   if (MoveMotion_Origin != NULL)    delete [] MoveMotion_Origin;
 
   /*--- rotation: ---*/
-  
+
   if (Rotation_Rate_X != NULL)    delete [] Rotation_Rate_X;
   if (Rotation_Rate_Y != NULL)    delete [] Rotation_Rate_Y;
   if (Rotation_Rate_Z != NULL)    delete [] Rotation_Rate_Z;
 
   /*--- pitching: ---*/
-  
+
   if (Pitching_Omega_X != NULL)    delete [] Pitching_Omega_X;
   if (Pitching_Omega_Y != NULL)    delete [] Pitching_Omega_Y;
   if (Pitching_Omega_Z != NULL)    delete [] Pitching_Omega_Z;
 
   /*--- pitching amplitude: ---*/
-  
+
   if (Pitching_Ampl_X != NULL)    delete [] Pitching_Ampl_X;
   if (Pitching_Ampl_Y != NULL)    delete [] Pitching_Ampl_Y;
   if (Pitching_Ampl_Z != NULL)    delete [] Pitching_Ampl_Z;
 
   /*--- pitching phase: ---*/
-  
+
   if (Pitching_Phase_X != NULL)    delete [] Pitching_Phase_X;
   if (Pitching_Phase_Y != NULL)    delete [] Pitching_Phase_Y;
   if (Pitching_Phase_Z != NULL)    delete [] Pitching_Phase_Z;
 
   /*--- plunging: ---*/
-  
+
   if (Plunging_Omega_X != NULL)    delete [] Plunging_Omega_X;
   if (Plunging_Omega_Y != NULL)    delete [] Plunging_Omega_Y;
   if (Plunging_Omega_Z != NULL)    delete [] Plunging_Omega_Z;
 
   /*--- plunging amplitude: ---*/
-  
+
   if (Plunging_Ampl_X != NULL)    delete [] Plunging_Ampl_X;
   if (Plunging_Ampl_Y != NULL)    delete [] Plunging_Ampl_Y;
   if (Plunging_Ampl_Z != NULL)    delete [] Plunging_Ampl_Z;
@@ -4508,7 +4516,7 @@ CConfig::~CConfig(void) {
   if (RefOriginMoment_Z != NULL)    delete [] RefOriginMoment_Z;
 
   /*--- Marker pointers ---*/
-  
+
   if (Marker_CfgFile_Out_1D != NULL)   delete[] Marker_CfgFile_Out_1D;
   if (Marker_All_Out_1D != NULL)      delete[] Marker_All_Out_1D;
   if (Marker_CfgFile_GeoEval != NULL)  delete[] Marker_CfgFile_GeoEval;
@@ -4540,7 +4548,6 @@ CConfig::~CConfig(void) {
   if (Marker_Plotting != NULL)        delete[] Marker_Plotting;
   if (Marker_FSIinterface != NULL)        delete[] Marker_FSIinterface;
   if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
-
   if (EA_IntLimit != NULL)    delete[] EA_IntLimit;
   if (Hold_GridFixed_Coord != NULL)    delete[] Hold_GridFixed_Coord ;
   if (Subsonic_Engine_Box != NULL)    delete[] Subsonic_Engine_Box ;
@@ -4583,14 +4590,15 @@ CConfig::~CConfig(void) {
   if (Periodic_Rotation != NULL)    delete[] Periodic_Rotation;
   if (Periodic_Translate != NULL)    delete[] Periodic_Translate;
 
-  if (ParamDV!=NULL  )    delete[] ParamDV;
-  if (MG_CorrecSmooth != NULL    )    delete[] MG_CorrecSmooth;
-  if (Section_Location != NULL)    delete[] Section_Location;
-  if (Kappa_Flow != NULL      )    delete[] Kappa_Flow;
-  if (Kappa_AdjFlow != NULL             )    delete[] Kappa_AdjFlow;
-  if (PlaneTag != NULL)    delete[] PlaneTag;
-  if (CFL_AdaptParam != NULL)    delete[] CFL_AdaptParam;
-  if (CFL!=NULL)    delete[] CFL;
+  if (ParamDV!=NULL)                  delete[] ParamDV;
+  if (MG_CorrecSmooth != NULL)        delete[] MG_CorrecSmooth;
+  if (Section_Location != NULL)       delete[] Section_Location;
+  if (Kappa_Flow != NULL )            delete[] Kappa_Flow;
+  if (Kappa_AdjFlow != NULL)          delete[] Kappa_AdjFlow;
+  if (PlaneTag != NULL)               delete[] PlaneTag;
+  if (CFL_AdaptParam != NULL)         delete[] CFL_AdaptParam;
+  if (CFL!=NULL)                      delete[] CFL;
+
   /*--- String markers ---*/
   if (Marker_Euler != NULL )              delete[] Marker_Euler;
   if (Marker_FarField != NULL )           delete[] Marker_FarField;

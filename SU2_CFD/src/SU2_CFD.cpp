@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
   
   nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  
+  delete config;
   /*--- Definition and of the containers for all possible zones. ---*/
   
   iteration_container    = new CIteration*[nZone];
@@ -520,14 +520,14 @@ int main(int argc, char *argv[]) {
    * when the object is out of scope, but useful for debugging the deallocation functions and finding true
    * memory leaks---*/
 
-  if (rank == MASTER_NODE) cout <<"Deallocating driver." << endl;
+
 
   driver->Postprocessing(iteration_container, solver_container, geometry_container,
       integration_container, numerics_container, interpolator_container,
       transfer_container, config_container, nZone);
 
   delete driver;
-
+  if (rank == MASTER_NODE) cout <<"Driver deallocated." << endl;
   /*--- Geometry class deallocation ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -556,17 +556,19 @@ int main(int argc, char *argv[]) {
   delete [] grid_movement;
   cout <<"Grid movement container deallocated." << endl;
     /*Deallocate config container*/
-  for (iZone = 0; iZone < nZone; iZone++) {
-    if (config_container[iZone]!=NULL){
-      delete config_container[iZone];
+  if (config_container!=NULL){
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (config_container[iZone]!=NULL){
+        delete config_container[iZone];
+      }
     }
+    delete [] config_container;
   }
-  if (config_container!=NULL) delete [] config_container;
   cout <<"Config container deallocated." << endl;
 
   /*--- Deallocate output container ---*/
   if (output!=NULL) delete output;
-  cout <<"Output container deallocated." << endl;
+  cout <<"Output deallocated." << endl;
 
   
   /*--- Synchronization point after a single solver iteration. Compute the

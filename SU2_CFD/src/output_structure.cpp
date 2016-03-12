@@ -94,7 +94,7 @@ COutput::~COutput(void) {
   if(Conn_Pris!=NULL)      delete [] Conn_Pris;
   if(Conn_Pyra!=NULL)      delete [] Conn_Pyra;
   */
-  if(Volume!=NULL)      delete [] Volume;
+  //if(Volume!=NULL)      delete [] Volume;
   /* Data has a DeallocateSolution function */
   //if(Data!=NULL)        delete Data;//
 
