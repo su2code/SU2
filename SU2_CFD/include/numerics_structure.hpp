@@ -74,7 +74,6 @@ public:
   su2double
   **tau,		/*!< \brief Viscous stress tensor. */
   **delta;			/*!< \brief Identity matrix. */
-  su2double **dVdU; /*!< \brief Transformation matrix from primitive variables, V, to conserved, U. */
   su2double
   *Diffusion_Coeff_i, /*!< \brief Species diffusion coefficients at point i. */
   *Diffusion_Coeff_j; /*!< \brief Species diffusion coefficients at point j. */

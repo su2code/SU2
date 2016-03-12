@@ -72,8 +72,9 @@ CSolver::~CSolver(void) {
   if ( OutputHeadingNames != NULL) {
     delete []OutputHeadingNames;
   }
+/*
   //  delete [] OutputHeadingNames;
-  /*  unsigned short iVar, iDim;
+    unsigned short iVar, iDim;
    unsigned long iPoint;
    
    if (Residual_RMS != NULL) delete [] Residual_RMS;
@@ -164,10 +165,11 @@ CSolver::~CSolver(void) {
    }
    delete [] node;
    }
-   
+
    //	delete [] **StiffMatrix_Elem;
-   //	delete [] **StiffMatrix_Node;*/
-  
+   //	delete [] **StiffMatrix_Node;
+    */
+
 }
 
 void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {

@@ -54,12 +54,7 @@ COutput::COutput(void) {
   Conn_Line=NULL;     Conn_BoundTria=NULL;  Conn_BoundQuad=NULL;
   Conn_Tria=NULL;     Conn_Quad=NULL;       Conn_Tetr=NULL;
   Conn_Hexa=NULL;     Conn_Pris=NULL;       Conn_Pyra=NULL;
-  Volume=NULL;        Data=NULL;
-  residuals=NULL;     consv_vars=NULL;
-  p=NULL; rho=NULL; M=NULL; Cp=NULL; Cf=NULL; Ch=NULL; h=NULL; yplus=NULL;
-
-  nOutput_Vars=NULL;
-  data_container=NULL;
+  Data=NULL;
 
   /*--- Initialize CGNS write flag ---*/
   
@@ -86,36 +81,23 @@ COutput::COutput(void) {
 
 COutput::~COutput(void) {
   /* delete pointers initialized at construction*/
-
+  /* Coords and Connectivity have their own dealloc functions */
+  /*
   if(Coords!=NULL)          delete  Coords;//
   if(Conn_Line!=NULL)       delete Conn_Line;//
-
   if(Conn_BoundTria!=NULL)  delete [] Conn_BoundTria;
   if(Conn_BoundQuad!=NULL)    delete [] Conn_BoundQuad;
   if(Conn_Tria!=NULL)      delete Conn_Tria;//
   if(Conn_Quad!=NULL)      delete Conn_Quad;//
-
   if(Conn_Tetr!=NULL)      delete [] Conn_Tetr;
   if(Conn_Hexa!=NULL)      delete [] Conn_Hexa;
   if(Conn_Pris!=NULL)      delete [] Conn_Pris;
   if(Conn_Pyra!=NULL)      delete [] Conn_Pyra;
+  */
   if(Volume!=NULL)      delete [] Volume;
-  if(Data!=NULL)        delete Data;//
-  if(residuals!=NULL)   delete [] residuals;
-  if(consv_vars!=NULL)  delete [] consv_vars;
+  /* Data has a DeallocateSolution function */
+  //if(Data!=NULL)        delete Data;//
 
-  if(p!=NULL)      delete [] p;
-  if(rho!=NULL)    delete [] rho;
-  if(M!=NULL)      delete [] M;
-  if(Cp!=NULL)     delete [] Cp;
-  if(Cf!=NULL)     delete [] Cf;
-  if(Ch!=NULL)     delete [] Ch;
-  if(h!=NULL)      delete [] h;
-
-  if(yplus!=NULL)  delete [] yplus;
-  /*public pointers*/
-  if(nOutput_Vars!=NULL) delete[] nOutput_Vars;
-  if(data_container!=NULL) delete[] data_container;
 
 }
 
