@@ -1582,7 +1582,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE || Kind_ObjFunc == OUTFLOW_GENERALIZED) {
     Wrt_1D_Output = YES;
-    Marker_Out_1D = Marker_Monitoring;
+    Marker_Out_1D = new string[nMarker_Monitoring];
+    for (unsigned short iMarker=0; iMarker<nMarker_Monitoring; iMarker++){
+      Marker_Out_1D[iMarker] = Marker_Monitoring[iMarker];
+    }
     nMarker_Out_1D = nMarker_Monitoring;
   }
   
