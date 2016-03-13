@@ -61,6 +61,8 @@ inline void CPrimalGrid::GetCornerPointsAllFaces(unsigned short &nFaces,
                                                  unsigned short nPointsPerFace[],
                                                  unsigned long  faceConn[6][4]) { }
 
+inline unsigned long CPrimalGrid::GetGlobalBoundElemID(void) { return 0; }
+
 inline unsigned short CPrimalGrid::GetNPolyGrid(void) { return 0; }
 
 inline unsigned short CPrimalGrid::GetNPolySol(void) { return 0; }
@@ -312,6 +314,8 @@ inline unsigned short CPrimalGridBoundFEM::GetnFaces(void) { return -1; }
 inline unsigned short CPrimalGridBoundFEM::GetnNeighbor_Nodes(unsigned short val_node) { return -1; }
 
 inline void CPrimalGridBoundFEM::Change_Orientation(void) {}
+
+inline unsigned long CPrimalGridBoundFEM::GetGlobalBoundElemID(void) { return boundElemIDGlobal; }
 
 inline unsigned short CPrimalGridBoundFEM::GetnNeighbor_Elements(void) { return -1; }
 
