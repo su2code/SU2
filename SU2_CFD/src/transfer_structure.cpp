@@ -1285,9 +1285,11 @@ void CTransfer::Broadcast_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 																 CConfig *donor_config, CConfig *target_config){
 	unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
 	unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+	unsigned short iSpan, nSpanDonor, nSpanTarget;
 	int Marker_Donor = -1, Marker_Target = -1;
-
-  int rank = MASTER_NODE;
+	su2double *avgPressureDonor = NULL, *avgDensityDonor = NULL, *avgNormalVelDonor = NULL, *avgTangVelDonor = NULL;
+	su2double *avgPressureTarget = NULL, *avgDensityTarget = NULL, *avgNormalVelTarget = NULL, *avgTangVelTarget = NULL;
+	int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 
 #ifdef HAVE_MPI
@@ -1300,7 +1302,32 @@ void CTransfer::Broadcast_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 	nMarkerInt     = (donor_config->GetMarker_n_MixingPlaneInterface())/2;
 	nMarkerTarget  = target_geometry->GetnMarker();
 	nMarkerDonor   = donor_geometry->GetnMarker();
+	nSpanDonor     = donor_config->Get_nSpanWiseSections();
+	nSpanTarget		 = target_config->Get_nSpanWiseSections();
 
+	avgDensityDonor   =  new su2double[nSpanDonor];
+	avgPressureDonor  =  new su2double[nSpanDonor];
+	avgNormalVelDonor =  new su2double[nSpanDonor];
+	avgTangVelDonor   =  new su2double[nSpanDonor];
+
+	for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
+		avgDensityDonor[iSpan]   =  0.0;
+		avgPressureDonor[iSpan]  =  0.0;
+		avgNormalVelDonor[iSpan] =  0.0;
+		avgTangVelDonor[iSpan]   =  0.0;
+	}
+
+	avgDensityTarget   =  new su2double[nSpanDonor];
+	avgPressureTarget  =  new su2double[nSpanDonor];
+	avgNormalVelTarget =  new su2double[nSpanDonor];
+	avgTangVelTarget   =  new su2double[nSpanDonor];
+
+	for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
+		avgDensityTarget[iSpan]   =  0.0;
+		avgPressureTarget[iSpan]  =  0.0;
+		avgNormalVelTarget[iSpan] =  0.0;
+		avgTangVelTarget[iSpan]   =  0.0;
+	}
 
 	/*--- Outer loop over the markers on the Mixing-Plane interface: compute one by one ---*/
 	/*--- The tags are always an integer greater than 1: loop from 1 to nMarkerMixingPlane ---*/
@@ -1321,9 +1348,6 @@ void CTransfer::Broadcast_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 			if ( donor_config->GetMarker_All_MixingPlaneInterface(iMarkerDonor) == iMarkerInt ){
 				/*--- We have identified the local index of the Donor marker ---*/
 				/*--- Now we are going to store the average values that belong to Marker_Donor on each processor ---*/
-
-				GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, rank, size);
-
 				/*--- Store the identifier for the structural marker ---*/
 				Marker_Donor = iMarkerDonor;
 				/*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
@@ -1334,10 +1358,25 @@ void CTransfer::Broadcast_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 				Marker_Donor = -1;
 			}
 		}
+		/*--- Here we want to make available the quantities for all the processors and collect them in a buffer
+		 * for each span of the donor the span-wise height vector also so that then we can interpolate on the target side  ---*/
+		if (Marker_Donor != -1){
+			for(iSpan = 0; iSpan < nSpanDonor ; iSpan++){
+				GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iSpan, rank);
+				avgDensityDonor[iSpan]   =  Donor_Variable[0];
+				avgPressureDonor[iSpan]  =  Donor_Variable[1];
+				avgNormalVelDonor[iSpan] =  Donor_Variable[2];
+				avgTangVelDonor[iSpan]   =  Donor_Variable[3];
+			}
 
-		/*--- Here we want to make available the quantities for all the processors ---*/
-
-		// here I should broadcast the value from the processor containing the markerDonor to all the processor
+// this does not work to change with something else
+#ifdef HAVE_MPI
+			SU2_MPI::Bcast(avgDensityDonor, nSpanDonor, MPI_DOUBLE, rank, MPI_COMM_WORLD);
+			SU2_MPI::Bcast(avgPressureDonor, nSpanDonor, MPI_DOUBLE, rank, MPI_COMM_WORLD);
+			SU2_MPI::Bcast(avgNormalVelDonor, nSpanDonor, MPI_DOUBLE, rank, MPI_COMM_WORLD);
+			SU2_MPI::Bcast(avgTangVelDonor, nSpanDonor, MPI_DOUBLE, rank, MPI_COMM_WORLD);
+#endif
+		}
 
 
 		/*--- On the target side we have to identify the marker as well ---*/
@@ -1356,6 +1395,25 @@ void CTransfer::Broadcast_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 			else {
 				/*--- If the tag hasn't matched any tag within the Flow markers ---*/
 				Marker_Target = -1;
+			}
+		}
+
+		if (Marker_Target != -1){
+			/*--- here the interpolation span-wise shoudl be implemented ---*/
+			for(iSpan = 0; iSpan < nSpanDonor ; iSpan++){
+				avgDensityTarget[iSpan]   =  avgDensityDonor[iSpan];
+				avgPressureTarget[iSpan]  =  avgPressureDonor[iSpan];
+				avgNormalVelTarget[iSpan] =  avgNormalVelDonor[iSpan];
+				avgTangVelTarget[iSpan]   =  avgTangVelDonor[iSpan];
+			}
+			/*--- after interpolating the average value span-wise is set in the target zone ---*/
+
+			for(iSpan = 0; iSpan < nSpanTarget ; iSpan++){
+				Target_Variable[0] = avgDensityTarget[iSpan];
+				Target_Variable[1] = avgPressureTarget[iSpan];
+				Target_Variable[2] = avgNormalVelTarget[iSpan];
+				Target_Variable[3] = avgTangVelTarget[iSpan];
+				SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iSpan, rank);
 			}
 		}
 
