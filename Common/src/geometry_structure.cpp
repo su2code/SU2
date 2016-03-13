@@ -66,11 +66,12 @@ void unsignedLong2T::Copy(const unsignedLong2T &other) {
 }
 
 FaceOfElementClass::FaceOfElementClass(){
-  nCornerPoints = 0;
+  nCornerPoints   = 0;
   cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = 0;
-  elemID0    = elemID1 = ULONG_MAX;
-  nPoly      = 0;
-  nDOFsElem0 = nDOFsElem1 = 0;
+  elemID0         = elemID1 = ULONG_MAX;
+  nPoly           = 0;
+  nDOFsElem0      = nDOFsElem1 = 0;
+  periodicIndex   = 0;
 }
 
 bool FaceOfElementClass::operator<(const FaceOfElementClass &other) const {
@@ -100,6 +101,8 @@ void FaceOfElementClass::Copy(const FaceOfElementClass &other) {
 
   nDOFsElem0 = other.nDOFsElem0;
   nDOFsElem1 = other.nDOFsElem1;
+
+  periodicIndex = other.periodicIndex;
 }
 
 void BoundaryFaceClass::Copy(const BoundaryFaceClass &other) {
@@ -109,6 +112,100 @@ void BoundaryFaceClass::Copy(const BoundaryFaceClass &other) {
   globalBoundElemID = other.globalBoundElemID;
   domainElementID   = other.domainElementID;
   Nodes             = other.Nodes;
+}
+
+MatchingFaceClass::MatchingFaceClass() {
+  nCornerPoints  = 0;
+  nDim           = 0;
+  nPoly          = 0;
+  nDOFsElem      = 0;
+  elemID         = 0;
+  tolForMatching = 0.0;
+}
+
+bool MatchingFaceClass::operator<(const MatchingFaceClass &other) const {
+
+  /* First compare the number of corner points. ---*/
+  if(nCornerPoints != other.nCornerPoints) return nCornerPoints < other.nCornerPoints;
+
+  /*--- Determine the tolerance for comparing both objects. ---*/
+  const su2double tol = min(tolForMatching, other.tolForMatching);
+
+  /*--- Loop over the number of corner points and dimensions and compare the
+        coordinates. If considered different, return true if the current face
+        is considered smaller and false otherwise.            ---*/
+  for(unsigned short k=0; k<nCornerPoints; ++k) {
+    for(unsigned short l=0; l<nDim; ++l) {
+      if(fabs(cornerCoor[k][l] - other.cornerCoor[k][l]) > tol)
+        return cornerCoor[k][l] < other.cornerCoor[k][l];
+    }
+  }
+
+  /*--- Both objects are considered the same. Return false. ---*/
+  return false;
+}
+
+void MatchingFaceClass::SortFaceCoordinates(void) {
+
+  /*--- Determine the tolerance for a matching point for this face. This is
+        accomplished by computing the minimum distance between the points of
+        the face, multiplied by a relative tolerance.        ---*/
+  for(unsigned short k=0; k<nCornerPoints; ++k) {
+    for(unsigned short j=(k+1); j<nCornerPoints; ++j) {
+      su2double dist = 0.0;
+      for(unsigned short l=0; l<nDim; ++l) {
+        su2double ds = cornerCoor[k][l] - cornerCoor[j][l];
+        dist += ds*ds;
+      }
+      dist = sqrt(dist);
+
+      if(k==0 && j==1) tolForMatching = dist;
+      else             tolForMatching = min(tolForMatching, dist);
+    }
+  }
+
+  tolForMatching *= 0.01;
+
+  /*--- Sort the points in increasing order based on the coordinates.
+        An insertion sort algorithm is used, which is quite efficient
+        for at most four corner points.                        ---*/
+  for(unsigned short k=1; k<nCornerPoints; ++k) {
+    for(unsigned short j=k; j>0; --j) {
+
+      /* Check if cornerCoor[j] is considered less than cornerCoor[j-1]. */
+      bool lessThan = false;
+      for(unsigned short l=0; l<nDim; ++l) {
+        if(fabs(cornerCoor[j][l] - cornerCoor[j-1][l]) > tolForMatching) {
+          lessThan = cornerCoor[j][l] < cornerCoor[j-1][l];
+          break;
+        }
+      }
+
+      /* If cornerCoor[j] is less than cornerCoor[j-1] they must be swapped.
+         Otherwise an exit can be made from the j-loop.         */
+      if( lessThan ) {
+        for(unsigned short l=0; l<nDim; ++l)
+          swap(cornerCoor[j][l], cornerCoor[j-1][l]);
+      }
+      else break;
+    }
+  }
+}
+
+void MatchingFaceClass::Copy(const MatchingFaceClass &other) {
+  nCornerPoints = other.nCornerPoints;
+  nDim          = other.nDim;
+  nPoly         = other.nPoly;
+  nDOFsElem     = other.nDOFsElem;
+  elemID        = other.elemID;
+
+  for(unsigned short k=0; k<nCornerPoints; ++k) {
+    for(unsigned l=0; l<nDim; ++l) {
+      cornerCoor[k][l] = other.cornerCoor[k][l];
+    }
+  }
+
+  tolForMatching = other.tolForMatching;
 }
 
 CGeometry::CGeometry(void) {
@@ -8282,7 +8379,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
             config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
             config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
-   config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
+            config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -8820,6 +8917,22 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
                                                       boundElems[i].nPolyGrid,
                                                       boundElems[i].nDOFsGrid,
                                                       boundElems[i].Nodes);
+
+        /*--- Update config information storing the boundary information in the right place ---*/
+
+        Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
+        config->SetMarker_All_TagBound(iMarker, Marker_Tag);
+        config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
+        config->SetMarker_All_Monitoring(iMarker, config->GetMarker_CfgFile_Monitoring(Marker_Tag));
+        config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
+        config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
+        config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
+        config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
+        config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
+        config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+        config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
+        config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
+        config->SetMarker_All_SendRecv(iMarker, NONE);
       }
 
       break;
@@ -11812,7 +11925,6 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
 void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   /*--- Determine my rank and the number of ranks. ---*/
-
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 
@@ -11822,17 +11934,14 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 #endif
 
   /*--- Initialize the color vector of the elements. ---*/
-
   for(unsigned long i=0; i<local_elem; ++i)
     elem[i]->SetColor(0);
 
   /*--- Determine the faces of the elements. ---*/
-
   vector<FaceOfElementClass> localFaces;
   for(unsigned long k=0; k<local_elem; k++) {
 
     /*--- Get the global IDs of the corner points of all the faces of this element. ---*/
-
     unsigned short nFaces;
     unsigned short nPointsPerFace[6];
     unsigned long  faceConn[6][4];
@@ -11840,7 +11949,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     elem[k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
 
     /*--- Loop over the faces and add them to localFaces. ---*/
-
     for(unsigned short i=0; i<nFaces; ++i) {
       FaceOfElementClass thisFace;
       thisFace.nCornerPoints = nPointsPerFace[i];
@@ -11856,41 +11964,40 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   }
 
   /*--- Sort localFaces in increasing order. */
-
   sort(localFaces.begin(), localFaces.end());
 
   /*--- Loop over the boundary markers and its faces in order to flag the
         physical boundary faces in localFaces. Note that use is made of the
         overloaded function GetCornerPointsAllFaces, which explains the
-        dimensions of the variables used in the function call.         ---*/
-
+        dimensions of the variables used in the function call. Also note that
+        the periodic boundaries are excluded, because they are not physical.  ---*/
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
-    for(unsigned long k=0; k<nElem_Bound[iMarker]; ++k) {
+    if(config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) {
+      for(unsigned long k=0; k<nElem_Bound[iMarker]; ++k) {
 
-      unsigned short nFaces;
-      unsigned short nPointsPerFace[6];
-      unsigned long  faceConn[6][4];
-      bound[iMarker][k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+        unsigned short nFaces;
+        unsigned short nPointsPerFace[6];
+        unsigned long  faceConn[6][4];
+        bound[iMarker][k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
 
-      FaceOfElementClass thisFace;
-      thisFace.nCornerPoints = nPointsPerFace[0];
-      for(unsigned short j=0; j<nPointsPerFace[0]; ++j)
-        thisFace.cornerPoints[j] = faceConn[0][j];
-      thisFace.CreateUniqueNumbering();
+        FaceOfElementClass thisFace;
+        thisFace.nCornerPoints = nPointsPerFace[0];
+        for(unsigned short j=0; j<nPointsPerFace[0]; ++j)
+          thisFace.cornerPoints[j] = faceConn[0][j];
+        thisFace.CreateUniqueNumbering();
 
-      vector<FaceOfElementClass>::iterator low;
-      low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+        vector<FaceOfElementClass>::iterator low;
+        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
-      /*--- Invalidate the face by setting the element ID to an invalid value. ---*/
-
-      low->elemID0 = Global_nElem + 10;
+        /*--- Invalidate the face by setting the element ID to an invalid value. ---*/
+        low->elemID0 = Global_nElem + 10;
+      }
     }
   }
 
   /*--- Loop over the faces and check for double entries. If a double entry is
         found, the elemID from the second entry is copied to the first entry,
         the polynomial degree is updated, and the second entry is invalidated. ---*/
-
   unsigned long nFacesLoc = localFaces.size();
   for(unsigned long i=1; i<nFacesLoc; ++i) {
     if(localFaces[i] == localFaces[i-1]) {
@@ -11906,7 +12013,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
         point ID in the grid. In this way the sorting operator puts
         these faces at the end of the vector, see also the < operator
         of FaceOfElementClass.                                         ---*/
-
   unsigned long nFacesLocOr = nFacesLoc;
   for(unsigned long i=0; i<nFacesLocOr; ++i) {
     if(localFaces[i].elemID0 > Global_nElem) {
@@ -11930,7 +12036,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   /*--- Determine and store the faces, for which only one neighboring element
         was found. For these faces the other neighbor might be stored on
         a different rank (unless there are non-matching interfaces).     ---*/
-
   vector<FaceOfElementClass> localFacesComm;
   for(unsigned long i=0; i<nFacesLoc; ++i)
     if(localFaces[i].elemID1 > Global_nElem) localFacesComm.push_back(localFaces[i]);
@@ -11938,7 +12043,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   /*--- Determine the maximum global point ID that occurs in localFacesComm
         of all ranks. Note that only the first point is taken into account,
         because the this point determines the rank where the face is sent to. ---*/
-
   unsigned long nFacesLocComm = localFacesComm.size();
   unsigned long maxPointIDLoc = 0;
   for(unsigned long i=0; i<nFacesLocComm; ++i)
@@ -11951,7 +12055,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   /*--- Create a vector with a linear distribution over the ranks for
         the points that occur in the faces of localFacesComm.        ---*/
-
   vector<unsigned long> facePointsProc(size+1, 0);
   unsigned long total_point_accounted = 0;
   for(unsigned long i=1; i<=(unsigned long)size; ++i) {
@@ -11969,7 +12072,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   /*--- Determine the number of faces that has to be sent to each rank.
         Note that the rank is stored in elemID1, such that the search
         does not have to be repeated below.                          ---*/
-
   vector<unsigned long> nFacesComm(size, 0);
   for(unsigned long i=0; i<nFacesLocComm; ++i) {
     vector<unsigned long>::iterator low;
@@ -11983,7 +12085,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   }
 
   /*--- Create the send buffer for the faces to be communicated. ---*/
-
   vector<unsigned long> sendBufFace(8*nFacesLocComm);
   vector<unsigned long> counter(size);
   counter[0] = 0;
@@ -12006,7 +12107,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   }
 
   /*--- Determine the number of ranks from which I receive a message. */
-
   unsigned long nMessSend = 0;
   for(unsigned long i=0; i<(unsigned long)size; ++i) {
     if( nFacesComm[i] ) {counter[i] = 1; ++nMessSend;}
@@ -12019,7 +12119,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
                      MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 
   /*--- Send the data using nonblocking sends. ---*/
-
   vector<MPI_Request> commReqs(max(nMessSend,nMessRecv));
 
   nMessSend = 0;
@@ -12036,7 +12135,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   /*--- Loop over the number of ranks from which faces are received.
         Receive the messages and store them in facesRecv.         ---*/
-
   vector<FaceOfElementClass> facesRecv;
   vector<unsigned long> nFacesRecv(nMessRecv+1);
   vector<int>           rankRecv(nMessRecv);
@@ -12071,7 +12169,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
         the data to the original ranks, so a copy is made of facesRecv.
         As localFacesComm is not needed anymore, this vector is used
         for the sorting and searching of the data of facesRecv. ---*/
-
   localFacesComm = facesRecv;
   sort(localFacesComm.begin(), localFacesComm.end());
 
@@ -12096,11 +12193,9 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   localFacesComm.resize(nFacesLocComm);
 
   /*--- Complete the first round of non-blocking sends. ---*/
-
   SU2_MPI::Waitall(nMessSend, commReqs.data(), MPI_STATUSES_IGNORE);
 
   /*--- Send the data back to the requesting ranks. ---*/
-
   sendBufFace.resize(8*nFacesRecv[nMessRecv]);
   indSend = 0;
   for(unsigned long i=0; i<nMessRecv; ++i) {
@@ -12135,7 +12230,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   /*--- Loop over the ranks to which I originally sent my face data.
         The return data contains information about the neighboring element. ---*/
-
   for(unsigned long i=0; i<nMessSend; ++i) {
     MPI_Status status;
     MPI_Probe(MPI_ANY_SOURCE, rank+1, MPI_COMM_WORLD, &status);
@@ -12167,18 +12261,20 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   }
 
   /*--- Complete the second round of non-blocking sends. ---*/
-
   SU2_MPI::Waitall(nMessRecv, commReqs.data(), MPI_STATUSES_IGNORE);
 
   /*--- Wild cards have been used in the communication, so
         synchronize the ranks to avoid problems.          ---*/
-
   MPI_Barrier(MPI_COMM_WORLD);
 
 #endif
 
-  /*--- Determine the total number of non-matching faces in the grid. ---*/
+  /*--- In the procedure above the periodic boundaries are not found.
+        A different treatment must be used in order to find these. ---*/
+  DeterminePeriodicFacesFEMGrid(config, localFaces);
 
+  /*--- Determine the total number of non-matching faces in the grid. ---*/
+  nFacesLoc   = localFaces.size();
   nFacesLocOr = nFacesLoc;
   for(unsigned long i=0; i<nFacesLocOr; ++i) {
     if(localFaces[i].elemID1 > Global_nElem) {
@@ -12209,14 +12305,15 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   }
 
   /*-- Create the vectors that describe the connectivity of the graph. ---*/
-
   vector<unsigned long> xadj_l(local_elem+1, 0);
   for(unsigned long i=0; i<nFacesLoc; ++i) {
     unsigned long ii = localFaces[i].elemID0 - starting_node[rank];
     ++xadj_l[ii+1];
 
-    ii = localFaces[i].elemID1 - starting_node[rank];
-    if(ii >= 0 && ii < local_elem) ++xadj_l[ii+1];
+    if(localFaces[i].periodicIndex == 0) {
+      ii = localFaces[i].elemID1 - starting_node[rank];
+      if(ii >= 0 && ii < local_elem) ++xadj_l[ii+1];
+    }
   }
 
   for(unsigned long i=0; i<local_elem; ++i)
@@ -12228,15 +12325,16 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     unsigned long ii = localFaces[i].elemID0 - starting_node[rank];
     adjacency_l[xxadj_l[ii]++] = localFaces[i].elemID1;
 
-    ii = localFaces[i].elemID1 - starting_node[rank];
-    if(ii >= 0 && ii < local_elem) adjacency_l[xxadj_l[ii]++] = localFaces[i].elemID0;
+    if(localFaces[i].periodicIndex == 0) {
+      ii = localFaces[i].elemID1 - starting_node[rank];
+      if(ii >= 0 && ii < local_elem) adjacency_l[xxadj_l[ii]++] = localFaces[i].elemID0;
+    }
   }
 
   for(unsigned long i=0; i<local_elem; ++i)
     sort(adjacency_l.begin()+xadj_l[i], adjacency_l.begin()+xadj_l[i+1]);
 
   /*--- Compute the weigts of the graph. ---*/
-
   vector<su2double> vwgt(local_elem);
   vector<su2double> adjwgt(xadj_l[local_elem]);
 
@@ -12249,11 +12347,9 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 #ifdef HAVE_PARMETIS
 
   /*--- Only call ParMETIS if we have more than one rank to avoid errors ---*/
-
   if(size > SINGLE_NODE)
   {
     /*--- The scalar variables and the options array for the call to ParMETIS. ---*/
-  
     idx_t  wgtflag = 2;               // Weights on both the vertices and edges.
     idx_t  numflag = 0;               // C-numbering.
     idx_t  ncon    = 1;               // Number of constraints.
@@ -12272,7 +12368,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
     /*--- Copy some of the vectors needed for the call the ParMETIS,
           but now with the data type used by ParMETIS.   ---*/
-
     vector<idx_t> xadjPar(local_elem+1);
     for(unsigned long i=0; i<=local_elem; ++i)
       xadjPar[i] = (idx_t) xadj_l[i];
@@ -12292,7 +12387,6 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     vector<real_t> tpwgts(size, 1.0/((real_t)size));  // Equal distribution.
 
     /*--- Calling ParMETIS ---*/
-
     vector<idx_t> part(local_elem);
     if (rank == MASTER_NODE) cout << "Calling ParMETIS..." << endl;
 
@@ -12308,12 +12402,257 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     }
 
     /*--- Set the color of the elements to the outcome of ParMETIS. ---*/
-
     for(unsigned long i=0; i<local_elem; ++i)
       elem[i]->SetColor(part[i]);
   }
 
 #endif
+#endif
+}
+
+void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                    *config,
+                                                      vector<FaceOfElementClass> &localFaces) {
+
+  /*--- Create the MPI datatype for the communication of facesDonor. ---*/
+  MatchingFaceClass thisMatchingFace;
+
+#ifdef HAVE_MPI
+  int blockLen[] = {1, 1, 1, 1, 1, 12, 1};
+  MPI_Datatype type[] = {MPI_UNSIGNED_SHORT, MPI_UNSIGNED_SHORT,
+                         MPI_UNSIGNED_SHORT, MPI_UNSIGNED_SHORT,
+                         MPI_UNSIGNED_LONG,  MPI_DOUBLE, MPI_DOUBLE};
+  MPI_Aint disp[] = {(char *) &thisMatchingFace.nCornerPoints  - (char *) &thisMatchingFace,
+                     (char *) &thisMatchingFace.nDim           - (char *) &thisMatchingFace,
+                     (char *) &thisMatchingFace.nPoly          - (char *) &thisMatchingFace,
+                     (char *) &thisMatchingFace.nDOFsElem      - (char *) &thisMatchingFace,
+                     (char *) &thisMatchingFace.elemID         - (char *) &thisMatchingFace,
+                     (char *) &thisMatchingFace.cornerCoor     - (char *) &thisMatchingFace,
+                     (char *) &thisMatchingFace.tolForMatching - (char *) &thisMatchingFace};
+
+  MPI_Datatype MPI_MATCHINGFACE_TYPE;
+  MPI_Type_create_struct(7, blockLen, disp, type, &MPI_MATCHINGFACE_TYPE);
+  MPI_Type_commit(&MPI_MATCHINGFACE_TYPE);
+#endif
+
+  /*--- Determine a mapping from the global point ID to the local index
+        of the points.            ---*/
+  map<unsigned long,unsigned long> globalPointIDToLocalInd;
+  for(unsigned i=0; i<local_node; ++i) {
+    globalPointIDToLocalInd[node[i]->GetGlobalIndex()] = i;
+  }
+
+  /*--- Loop over the number of markers present in the grid and check for a periodic one. ---*/
+  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    if(config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+
+      /*--- Determine the donor marker and the transformation from the
+            current marker to the donor marker.    ---*/
+      unsigned short jMarker = config->GetMarker_Periodic_Donor(config->GetMarker_All_TagBound(iMarker));
+
+      su2double *center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iMarker));
+      su2double *angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
+      su2double *trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iMarker));
+
+      /*--- Store (center+trans) as it is constant and will be added on. ---*/
+      su2double translation[] = {center[0] + trans[0],
+                                 center[1] + trans[1],
+                                 center[2] + trans[2]};
+
+      /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+      su2double theta = angles[0];
+      su2double phi   = angles[1];
+      su2double psi   = angles[2];
+
+      su2double cosTheta = cos(theta), cosPhi = cos(phi), cosPsi = cos(psi);
+      su2double sinTheta = sin(theta), sinPhi = sin(phi), sinPsi = sin(psi);
+
+      /*--- Compute the rotation matrix. Note that the implicit
+       ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+      su2double rotMatrix[3][3];
+      rotMatrix[0][0] =  cosPhi*cosPsi;
+      rotMatrix[1][0] =  cosPhi*sinPsi;
+      rotMatrix[2][0] = -sinPhi;
+
+      rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+      rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+      rotMatrix[2][1] = sinTheta*cosPhi;
+
+      rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+      rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+      rotMatrix[2][2] = cosTheta*cosPhi;
+
+      /*--- Define the vector to store the faces of the donor. Initialize its
+            size to the number of local donor faces.    ---*/
+      vector<MatchingFaceClass> facesDonor(nElem_Bound[jMarker]);
+
+      /*------------------------------------------------------------------*/
+      /*--- Step 1: Store the information of the local faces of the donor
+                    marker in the variables defined above.             ---*/
+      /*------------------------------------------------------------------*/
+
+      /*--- Loop over the local elements of the donor marker. ---*/
+      for(unsigned long k=0; k<nElem_Bound[jMarker]; ++k) {
+
+        /*--- Get the connectivity of this face. The reason for the used
+              function arguments for GetCornerPointsAllFaces, is that
+              GetCornerPointsAllFaces is an overloaded function.   ---*/
+        unsigned short nFaces;
+        unsigned short nPointsPerFace[6];
+        unsigned long  faceConn[6][4];
+        bound[jMarker][k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+        /*--- Search for this face in localFaces. It must be present. ---*/
+        FaceOfElementClass thisFace;
+        thisFace.nCornerPoints = nPointsPerFace[0];
+        for(unsigned short j=0; j<nPointsPerFace[0]; ++j)
+          thisFace.cornerPoints[j] = faceConn[0][j];
+        thisFace.CreateUniqueNumbering();
+
+        vector<FaceOfElementClass>::iterator low;
+        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+
+        /*--- Store the relevant data in facesDonor. ---*/
+        facesDonor[k].nDim          = nDim;
+        facesDonor[k].nCornerPoints = nPointsPerFace[0];
+        facesDonor[k].elemID        = low->elemID0;
+        facesDonor[k].nPoly         = low->nPoly;
+        facesDonor[k].nDOFsElem     = low->nDOFsElem0;
+
+        for(unsigned short j=0; j<nPointsPerFace[0]; ++j) {
+          map<unsigned long,unsigned long>::const_iterator MI;
+          MI = globalPointIDToLocalInd.find(faceConn[0][j]);
+          unsigned long ind = MI->second;
+
+          for(unsigned l=0; l<nDim; ++l)
+            facesDonor[k].cornerCoor[j][l] = node[ind]->GetCoord(l);
+        }
+
+        /*--- Create the tolerance for this face and sort the coordinates. ---*/
+        facesDonor[k].SortFaceCoordinates();
+      }
+
+      /*------------------------------------------------------------------*/
+      /*--- Step 2: In parallel mode the data of the donor marker is
+                    gathered on all ranks.                             ---*/
+      /*------------------------------------------------------------------*/
+
+#ifdef HAVE_MPI
+
+      /*--- Determine the number of ranks and check if this is indeed
+            a parallel simulation.                       ---*/
+      int size;
+      MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+      if(size > 1) {
+
+        /*--- Allocate the memory for the size arrays in Allgatherv. ---*/
+        vector<int> recvCounts(size), displs(size);
+
+        /*--- Create the values of recvCounts for the gather of the facesDonor. ---*/
+        int sizeLocal = facesDonor.size();
+
+        SU2_MPI::Allgather(&sizeLocal, 1, MPI_INT, recvCounts.data(), 1,
+                           MPI_INT, MPI_COMM_WORLD);
+
+        /*--- Create the data for the vector displs from the known values of
+              recvCounts. Also determine the total size of the data.   ---*/
+        displs[0] = 0;
+        for(int i=1; i<size; ++i) displs[i] = displs[i-1] + recvCounts[i-1];
+
+        int sizeGlobal = displs.back() + recvCounts.back();
+
+        /*--- Gather the faces from all ranks to all ranks. Use Allgatherv
+              for this purpose.                  ---*/
+        vector<MatchingFaceClass> bufLocalFaces = facesDonor;
+        facesDonor.resize(sizeGlobal);
+
+        MPI_Allgatherv(bufLocalFaces.data(), sizeLocal, MPI_MATCHINGFACE_TYPE,
+                       facesDonor.data(), recvCounts.data(), displs.data(),
+                       MPI_MATCHINGFACE_TYPE, MPI_COMM_WORLD);
+      }
+#endif
+
+      /*--- Sort facesDonor in increasing order. ---*/
+      sort(facesDonor.begin(), facesDonor.end());
+
+      /*------------------------------------------------------------------*/
+      /*--- Step 3: Find for the current marker the required data in the
+                    variables for the donor marker.                    ---*/
+      /*------------------------------------------------------------------*/
+
+      /*--- Loop over the local faces of this boundary marker. ---*/
+      for(unsigned long k=0; k<nElem_Bound[iMarker]; ++k) {
+
+        /*--- Get the connectivity of this face. The reason for the used
+              function arguments for GetCornerPointsAllFaces, is that
+              GetCornerPointsAllFaces is an overloaded function.   ---*/
+        unsigned short nFaces;
+        unsigned short nPointsPerFace[6];
+        unsigned long  faceConn[6][4];
+        bound[iMarker][k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+        /*--- Search for this face in localFaces. It must be present. ---*/
+        FaceOfElementClass thisFace;
+        thisFace.nCornerPoints = nPointsPerFace[0];
+        for(unsigned short j=0; j<nPointsPerFace[0]; ++j)
+          thisFace.cornerPoints[j] = faceConn[0][j];
+        thisFace.CreateUniqueNumbering();
+
+        vector<FaceOfElementClass>::iterator low;
+        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+
+        /*--- Indicate that this face is a periodic face. This is accomplished
+              by setting periodicIndex to iMarker + 1.       ---*/
+        low->periodicIndex = iMarker + 1;
+
+        /*--- Store the data for this boundary element also in thisMatchingFace,
+              such that a search can be carried out in donorFaces. Note that the
+              periodic transformation must be applied to the coordinates. ---*/
+        thisMatchingFace.nDim          = nDim;
+        thisMatchingFace.nCornerPoints = nPointsPerFace[0];
+        thisMatchingFace.elemID        = low->elemID0;
+        thisMatchingFace.nPoly         = low->nPoly;
+        thisMatchingFace.nDOFsElem     = low->nDOFsElem0;
+
+        for(unsigned short j=0; j<nPointsPerFace[0]; ++j) {
+          map<unsigned long,unsigned long>::const_iterator MI;
+          MI = globalPointIDToLocalInd.find(faceConn[0][j]);
+          unsigned long ind = MI->second;
+          const su2double *coor = node[ind]->GetCoord();
+
+          const su2double dx =             coor[0] - center[0];
+          const su2double dy =             coor[1] - center[1];
+          const su2double dz = nDim == 3 ? coor[2] - center[2] : 0.0;
+
+          thisMatchingFace.cornerCoor[j][0] = rotMatrix[0][0]*dx + rotMatrix[0][1]*dy
+                                            + rotMatrix[0][2]*dz + translation[0];
+          thisMatchingFace.cornerCoor[j][1] = rotMatrix[1][0]*dx + rotMatrix[1][1]*dy
+                                            + rotMatrix[1][2]*dz + translation[1];
+          thisMatchingFace.cornerCoor[j][2] = rotMatrix[2][0]*dx + rotMatrix[2][1]*dy
+                                            + rotMatrix[2][2]*dz + translation[2];
+        }
+
+        /*--- Create the tolerance for this face and sort the coordinates. ---*/
+        thisMatchingFace.SortFaceCoordinates();
+
+        /*--- Check if thisMatchingFace is present in facesDonor. If so, set the
+              missing information in the face corresponding to the iterator low. ---*/
+        if( binary_search(facesDonor.begin(), facesDonor.end(), thisMatchingFace) ) {
+
+          vector<MatchingFaceClass>::const_iterator donorLow;
+          donorLow = lower_bound(facesDonor.begin(), facesDonor.end(), thisMatchingFace);
+
+          low->elemID1    = donorLow->elemID;
+          low->nPoly      = max(low->nPoly, donorLow->nPoly);
+          low->nDOFsElem1 = donorLow->nDOFsElem;
+        }
+      }
+    }
+  }
+
+#ifdef HAVE_MPI
+  /*--- Free the MPI datatype for the communication of facesDonor. ---*/
+  MPI_Type_free(&MPI_MATCHINGFACE_TYPE);
 #endif
 }
 
@@ -12326,7 +12665,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
 
   /*--- Factors, which determine the amount of work for a volume element, which
         corresponds to a vertex in the graph for ParMETIS. ---*/
-
   const su2double workVolumeIntegrationPoint  = 1.0;
   const su2double workSurfaceIntegrationPoint = 1.1;
   const su2double workVolumeDOF               = 0.1;
@@ -12334,11 +12672,9 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
 
   /*--- Althought this will (almost) never happen, check for an empty initial
         partition. If present, return immediately to avoid problems.   ---*/
-
   if(local_elem == 0) return;
 
   /*--- Determine my rank. ---*/
-
   int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
@@ -12347,7 +12683,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
 
   /*--- Determine the standard elements for the volume elements. These standard
         elements are created based on the polynomial degree of the grid.      ---*/
-
   vector<FEMStandardElementClass> standardElements;
   vector<unsigned short> standElemForElem(local_elem);
 
@@ -12380,7 +12715,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
 
   /*--- Determine a mapping from the global point ID to the local index
         of the points.            ---*/
-
   map<unsigned long,unsigned long> globalPointIDToLocalInd;
   for(unsigned i=0; i<local_node; ++i) {
     globalPointIDToLocalInd[node[i]->GetGlobalIndex()] = i;
@@ -12388,7 +12722,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
 
   /*--- Determine the maximum number of DOFs in an element and allocate
         the memory for the x-, y- and z-coordinates accordingly. ---*/
-
   unsigned short nDOFsMax = 0;
   for(unsigned short i=0; i<nStandardElements; ++i)
     nDOFsMax = max(nDOFsMax, standardElements[i].GetNDOFs());
@@ -12399,7 +12732,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
   /*--- Define the vector to store the normals of the integration points
         of the faces. In this way it is not needed to allocate the memory
         inside the loop all the time.  ---*/
-
   vector<su2double> normalsFace;
 
   /*--- Loop over the elements to determine the amount of computational work.
@@ -12407,11 +12739,9 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
         surface integral to allow for Discontinuous and Continuous Galerkin
         schemes. For the latter the contribution of the surface integral will
         be negligible to the total amount of work.         ---*/
-
   for(unsigned long i=0; i<local_elem; ++i) {
 
     /*--- Get the necessary data from the corresponding standard element. ---*/
-
     unsigned short ii           = standElemForElem[i];
     unsigned short nDOFs        = standardElements[ii].GetNDOFs();
     unsigned short nIntegration = standardElements[ii].GetNIntegration();
@@ -12421,21 +12751,10 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
     su2double *dt = standardElements[ii].GetDtBasisFunctionsIntegration();
 
     /*--- Store the coordinates of the DOFs in the local arrays x, y and z. ---*/
-
     for(unsigned short j=0; j<nDOFs; ++j) {
       unsigned long nodeID = elem[i]->GetNode(j);
 
       map<unsigned long,unsigned long>::const_iterator MI = globalPointIDToLocalInd.find(nodeID);
-      if(MI == globalPointIDToLocalInd.end()) {
-        cout << "Entry not found in map in function CPhysicalGeometry::ComputeFEMGraphWeights" << endl;
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#endif
-      }
-
       unsigned long ind = MI->second;
       x[j] = node[ind]->GetCoord(0);
       y[j] = node[ind]->GetCoord(1);
@@ -12445,7 +12764,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
     /*--- Definition of the minimum and maximum values of the Jacobian. Make a
           distinction between a two-dimensional and a three-dimensional element
           in order to compute them. ---*/
-
     su2double jacMin;
     su2double jacMax;
     switch( nDim ) {
@@ -12453,7 +12771,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
 
         /*--- Loop over the integration points to compute the Jacobians and
               determine the minimum and maximum value.        ---*/
-
         for(unsigned short j=0; j<nIntegration; ++j) {
 
           su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs];
@@ -12488,7 +12805,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
 
         /*--- Loop over the integration points to compute the Jacobians and
               determine the minimum and maximum value.        ---*/
-
         for(unsigned short j=0; j<nIntegration; ++j) {
 
           su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs], *dtt = &dt[j*nDOFs];
@@ -12533,7 +12849,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
           volume integration points necessary. Note that in order to determine
           this value the degree of the solution must be taken and not the degree
           of the grid. ---*/
-
     su2double ratioMaxMinJac = jacMax/jacMin;
     elem[i]->SetRatioMaxMinJacobian(ratioMaxMinJac);
 
@@ -12551,12 +12866,10 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
                                                                   orderExact, config);
 
     /*--- Initialize the computational work for this element. ---*/
-
     vwgt[i] = workVolumeIntegrationPoint*nIntegration
             + workVolumeDOF*elem[i]->GetNDOFsSol();
 
     /*--- Get the global IDs of the corner points of all the faces of this element. ---*/
-
     unsigned short nFaces;
     unsigned short nPointsPerFace[6];
     unsigned long  faceConn[6][4];
@@ -12566,11 +12879,9 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
     unsigned short nPolyGrid = elem[i]->GetNPolyGrid();
 
     /*--- Loop over the number of faces of this element. ---*/
-
     for(unsigned short j=0; j<nFaces; ++j) {
 
       /*--- Determine the index jj in the standard elements for this face. ---*/
-
       unsigned short VTK_Type;
       switch( nPointsPerFace[j] ) {
         case 2: VTK_Type = LINE;          break;
@@ -12594,7 +12905,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
       /*--- Possibly resize the vector to store the normals in the integration
             points of the face and set the pointer to the correct
             vector to store the face connectivity of this face.       ---*/
-
       normalsFace.resize((nDim+1)*standardElements[jj].GetNIntegration());
 
       unsigned short *connFace;
@@ -12609,7 +12919,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
 
       /*--- Store the relevant derivative vectors of the standard element of
             the face as well as the number of DOFs and integration points. ---*/
-
       nDOFs        = standardElements[jj].GetNDOFs();
       nIntegration = standardElements[jj].GetNIntegration();
 
@@ -12618,14 +12927,12 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
 
       /*--- Compute the unit normals in the integration points. Make a
             distinction between two and three dimensions.  ---*/
-
       switch( nDim ) {
         case 2: {
 
           /*--- Two dimensional case, for which the faces are edges.
                 The normal is the vector normal to the tangent vector
                 of the edge. Loop over the integration points. ---*/
-
           for(unsigned short k=0; k<nIntegration; ++k) {
 
             su2double *drr = &dr[k*nDOFs];
@@ -12649,7 +12956,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
                 quadrilaterals. The normal is the vector obtained via the
                 cross product of two tangent vectors.
                 Loop over the integration points.               ---*/
-
           for(unsigned short k=0; k<nIntegration; ++k) {
 
             su2double *drr = &dr[k*nDOFs], *dss = &ds[k*nDOFs];
@@ -12679,7 +12985,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
       /*--- Double loop over the integration points to determine the minimum
             value of the cosine between the normals. Also the minimum and
             maximum length of the normal is determined.     ---*/
-
       su2double normLenMin, normLenMax;
       su2double minCosAngleFaceNormals = 1.0;
       unsigned short kk = (nDim+1);
@@ -12703,7 +13008,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
 
       /*--- Compute the ratio of normLenMin and normLenMax and determine
             whether or not the face has a constant Jacobian. ---*/
-
       su2double maxRatioLenFaceNormals = normLenMax/normLenMin;
 
       constJacobian = minCosAngleFaceNormals >= 0.999999 &&
@@ -12714,7 +13018,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
             face is different from the degree of the current element. Hence a
             search is carried out in localFaces to see if the face is shared
             between elements.                       ---*/
-
       unsigned short nPolyFace = nPolySol;
 
       FaceOfElementClass thisFace;
@@ -12731,7 +13034,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
 
       /*--- Determine the number of integration points for this face as well as
             the number of DOFs.           ---*/
-
       if( constJacobian )
          orderExact = (unsigned short) ceil(nPolyFace*config->GetQuadrature_Factor_Straight());
       else
@@ -12742,14 +13044,12 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
       nDOFs = FEMStandardElementClass::GetNDOFsStatic(VTK_Type, nPolyFace);
 
       /*--- Update the amount of work for this element with the work for this face. ---*/
-
       vwgt[i] += workSurfaceIntegrationPoint*nIntegration
                + workSurfaceDOF*nDOFs;
     }
   }
 
   /*--- Determine the minimum vertex weight over the entire domain. ---*/
-
   su2double minvwgt = vwgt[0];
   for(unsigned long i=0; i<local_elem; ++i) minvwgt = min(minvwgt, vwgt[i]);
 
@@ -12762,14 +13062,12 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
         The value 50 is chosen such that the conversion to an integer in the
         weights, ParMETIS is using integers for the weights, does not lead to a
         significant increase in the load balance.        ---*/
-
   minvwgt = 50.0/minvwgt;
   for(unsigned long i=0; i<local_elem; ++i) vwgt[i] *= minvwgt;
 
   /*--- Create a map of the two global element IDs adjacent to the face to
         the index in localFaces. This map is used for an efficient search
         to determine the edge weights of the graph.   ---*/
-
   map<unsignedLong2T, unsigned long> mapElemIDsToFaceInd;
   for(unsigned long i=0; i<localFaces.size(); ++i) {
     unsigned long e0 = min(localFaces[i].elemID0, localFaces[i].elemID1);
@@ -12780,7 +13078,6 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
   /*--- Determine the edge weights by a double loop over the local elements
         and its edges. The map mapElemIDsToFaceInd is used to determine
         the corresponding index in localFaces.   ---*/
-
   for(unsigned long i=0; i<local_elem; ++i) {
     unsigned long elemID0 = starting_node[rank] + i;
 

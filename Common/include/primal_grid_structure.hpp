@@ -257,6 +257,12 @@ public:
                                       unsigned long  faceConn[6][4]);
 
  /*!
+  * \brief Virtual function to make available the global ID of this bound element.
+  * \return The global ID of this bound element.
+  */
+  virtual unsigned long GetGlobalBoundElemID(void);
+
+ /*!
   * \brief Virtual function to make available the polynomial degree of the grid.
   * \return The polynomial degree of the grid.
   */
@@ -1550,6 +1556,12 @@ public:
  void GetCornerPointsAllFaces(unsigned short &nFaces,
                               unsigned short nPointsPerFace[],
                               unsigned long  faceConn[6][4]);
+
+ /*!
+  * \brief Make available the global ID of this bound element.
+  * \return The global ID of this bound element.
+  */
+ unsigned long GetGlobalBoundElemID(void);
 };
 
 #include "primal_grid_structure.inl"

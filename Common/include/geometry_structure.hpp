@@ -102,6 +102,9 @@ public:
   unsigned long  elemID0, elemID1;       /*!< \brief Element ID's to the left and right. */
   unsigned short nPoly;                  /*!< \brief Polynomial degree of the face. */
   unsigned short nDOFsElem0, nDOFsElem1; /*!< \brief Number of DOFs of the elements to the left and right. */
+  unsigned short periodicIndex;          /*!< \brief Periodic indicator of the face. A value of 0 means no
+                                                     periodic face. A value larger than 0 gives the index of
+                                                     the periodic boundary + 1. */
 
   /* Standard constructor and destructor. */
   FaceOfElementClass();
@@ -153,6 +156,42 @@ private:
   void Copy(const BoundaryFaceClass &other);
 };
 
+/*! 
+ * \class MatchingFaceClass
+ * \brief Help class used to determine whether or not (periodic) faces match.
+ * \version 4.1.0 "Cardinal"
+ */
+class MatchingFaceClass {
+ public:
+  unsigned short nCornerPoints;          /*!< \brief Number of corner points of the face. */
+  unsigned short nDim;                   /*!< \brief Number of spatial dimensions. */
+  unsigned short nPoly;                  /*!< \brief Polynomial degree of the face. */
+  unsigned short nDOFsElem;              /*!< \brief Number of DOFs of the relevant adjacent element. */
+  unsigned long  elemID;                 /*!< \brief The relevant adjacent element ID. */
+  su2double cornerCoor[4][3];            /*!< \brief Coordinates of the corner points of the face. */
+  su2double tolForMatching;              /*!< \brief Tolerance for this face for matching points. */
+
+  /* Standard constructor. */
+  MatchingFaceClass();
+
+  /* Destructor, nothing to be done. */
+  ~MatchingFaceClass(){}
+
+  /* Copy constructor and assignment operator. */
+  MatchingFaceClass(const MatchingFaceClass &other);
+
+  MatchingFaceClass& operator=(const MatchingFaceClass &other);
+
+  /* Less than operator. Needed for the sorting and searching. */
+  bool operator<(const MatchingFaceClass &other) const;
+
+  /*--- Member function, which sorts the coordinates of the face. ---*/
+  void SortFaceCoordinates(void);
+
+private:
+  /*--- Copy function, which copies the data of the given object into the current object. ---*/
+  void Copy(const MatchingFaceClass &other);
+};
 
 /*! 
  * \class CGeometry
@@ -1306,6 +1345,14 @@ public:
                               const vector<unsigned long>      &adjacency_l,
                               vector<su2double>                &vwgt,
                               vector<su2double>                &adjwgt);
+
+  /*!
+   * \brief Determine the neighboring information for periodic faces of a FEM grid.
+   * \param[in]     config      - Definition of the particular problem.
+   * \param[in,out] localFaces  - Vector, which contains the element faces of this rank.
+   */
+  void DeterminePeriodicFacesFEMGrid(CConfig                    *config,
+                                     vector<FaceOfElementClass> &localFaces);
 
 	/*!
 	 * \brief Set the rotational velocity at each node.

@@ -51,6 +51,10 @@ inline  BoundaryFaceClass::BoundaryFaceClass(const BoundaryFaceClass &other){Cop
 
 inline BoundaryFaceClass& BoundaryFaceClass::operator=(const BoundaryFaceClass &other){Copy(other); return (*this);}
 
+inline MatchingFaceClass::MatchingFaceClass(const MatchingFaceClass &other){Copy(other);}
+
+inline MatchingFaceClass& MatchingFaceClass::operator=(const MatchingFaceClass &other){Copy(other); return (*this);}
+
 inline long CGeometry::GetGlobal_to_Local_Point(long val_ipoint) { return 0; }
 
 inline unsigned short CGeometry::GetGlobal_to_Local_Marker(unsigned short val_imarker) { return 0; }
