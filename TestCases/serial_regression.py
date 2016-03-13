@@ -550,7 +550,7 @@ def main():
     contadj_euler_py.timeout   = 1600
     contadj_euler_py.reference_file = "of_grad_cd.dat.ref"
     contadj_euler_py.test_file = "of_grad_cd.dat"
-    pass_list.append(contadj_euler_py.run_diff())
+    pass_list.append(contadj_euler_py.run_filediff())
     test_list.append(contadj_euler_py)
     
     # Tests summary
