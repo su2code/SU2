@@ -188,7 +188,7 @@ class TestCase:
         os.chdir(workdir)
         return passed
     
-    def run_diff(self):
+    def run_filediff(self):
         print '==================== Start Test: %s ===================='%self.tag
         passed       = True
         timed_out    = False
