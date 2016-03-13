@@ -29,7 +29,8 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import time, os, subprocess, datetime
+import time, os, subprocess, datetime, sys
+import difflib
 
 class TestCase:
 
@@ -52,6 +53,10 @@ class TestCase:
         self.su2_exec    = "SU2_CFD" 
         self.timeout     = 300
         self.tol         = 0.001
+        
+        # Options for file-comparison tests
+        self.reference_file = "of_grad.dat.ref"
+        self.test_file      = "of_grad.dat"
 
     def run_test(self):
 
@@ -178,6 +183,67 @@ class TestCase:
         print '\n',
         
         print 'test duration: %.2f min'%(running_time/60.0) 
+        print '==================== End Test: %s ====================\n'%self.tag
+        
+        os.chdir(workdir)
+        return passed
+    
+    def run_diff(self):
+        print '==================== Start Test: %s ===================='%self.tag
+        passed       = True
+        timed_out    = False
+        
+        # Assemble the shell command to run 
+        logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
+        command = "%s -f %s > %s" % (self.su2_exec, self.cfg_file, logfilename)
+
+        # Run SU2
+        workdir = os.getcwd()
+        os.chdir(self.cfg_dir)
+        print os.getcwd()
+        start   = datetime.datetime.now()
+        process = subprocess.Popen(command, shell=True)  # This line launches SU2
+        
+        # check for timeout
+        while process.poll() is None:
+            time.sleep(0.1)
+            now = datetime.datetime.now()
+            running_time = (now - start).seconds
+            if running_time > self.timeout:
+                try:
+                    process.kill()
+                    os.system('killall %s' % self.su2_exec)   # In case of parallel execution
+                except AttributeError: # popen.kill apparently fails on some versions of subprocess... the killall command should take care of things!
+                    pass
+                timed_out = True
+                passed    = False
+
+
+        if not timed_out:
+            # Compare files
+            fromfile = self.reference_file
+            tofile = self.test_file 
+            
+            fromdate = time.ctime(os.stat(fromfile).st_mtime)
+            todate = time.ctime(os.stat(tofile).st_mtime)
+            fromlines = open(fromfile, 'U').readlines()
+            tolines = open(tofile, 'U').readlines()
+            
+            diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile,
+                                        fromdate, todate))
+            
+            
+            if (diff==[]):
+                passed=True
+            else:
+                for line in diff:
+                    print line[:-1]
+                passed=False
+                
+        else:
+            passed = False
+        
+        print 'test duration: %.2f min'%(running_time/60.0)
         print '==================== End Test: %s ====================\n'%self.tag
         
         os.chdir(workdir)
