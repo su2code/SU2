@@ -385,13 +385,27 @@ CTransfer_MixingPlaneAverage::~CTransfer_MixingPlaneAverage(void) {
 
 void CTransfer_MixingPlaneAverage::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
 								   	     	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	CConfig *donor_config, unsigned long Marker_Donor,
-																														unsigned long iSpan, unsigned long Point_Donor) {
+																														unsigned long iSpan, unsigned long rank) {
 
 
 //	Donor_Variable[0] = donor_solution->GetAverageDensity(Marker_Donor, iSpan);
 //	Donor_Variable[1]	= donor_solution->GetAveragePressure(Marker_Donor, iSpan);
 //	Donor_Variable[2] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[0];
-//	Donor_Variable[2] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[1];
+//	Donor_Variable[3] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[1];
 
 }
 
+
+void CTransfer_MixingPlaneAverage::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
+										  CConfig *target_config, unsigned long Marker_Target,
+										  unsigned long iSpan, unsigned long rank) {
+
+//	target_solution->SetAverageDensity(Marker_Donor, iSpan, Target_Variable[0]);
+//	target_solution->SetAveragePressure(Marker_Donor, iSpan, Target_Variable[1]);
+//	target_solution->SetAverageTurboVelocity(Marker_Donor, iSpan, 0, Target_Variable[2]);
+//	target_solution->SetAverageTurboVelocity(Marker_Donor, iSpan, 1, Target_Variable[3]);
+
+
+
+
+}
