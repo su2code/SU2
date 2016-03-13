@@ -538,6 +538,21 @@ def main():
 
     pass_list = [ test.run_test() for test in test_list ]
     
+    
+    ######################################
+    ### RUN PYTHON TESTS               ###
+    ###################################### 
+    contadj_euler_py = TestCase('contadj_euler_py')
+    contadj_euler_py.cfg_dir = "cont_adj_euler/naca0012"
+    contadj_euler_py.cfg_file  = "inv_NACA0012.cfg"
+    contadj_euler_py.test_iter = 10
+    contadj_euler_py.su2_exec  = "continuous_adjoint.py"
+    contadj_euler_py.timeout   = 1600
+    contadj_euler_py.reference_file = "of_grad_cd.dat.ref"
+    contadj_euler_py.test_file = "of_grad_cd.dat"
+    pass_list.append(contadj_euler_py.run_diff())
+    test_list.append(contadj_euler_py)
+    
     # Tests summary
     print '=================================================================='
     print 'Summary of the serial tests'
