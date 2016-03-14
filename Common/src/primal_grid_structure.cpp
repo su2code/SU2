@@ -38,6 +38,7 @@ CPrimalGrid::CPrimalGrid(void) {
   /*--- Set the default values for the pointers ---*/
   Nodes = NULL;
  Neighbor_Elements = NULL;
+ PeriodIndexNeighbors = NULL;
  Coord_CG = NULL;
  Coord_FaceElems_CG = NULL;
   
@@ -47,7 +48,8 @@ CPrimalGrid::~CPrimalGrid() {
 
  if (Nodes != NULL) delete[] Nodes;
  if (Coord_CG != NULL) delete[] Coord_CG;
-  if (Neighbor_Elements != NULL) delete[] Neighbor_Elements;
+ if (Neighbor_Elements != NULL) delete[] Neighbor_Elements;
+ if (PeriodIndexNeighbors != NULL) delete[] PeriodIndexNeighbors;
    
 }
 
@@ -85,6 +87,20 @@ void CPrimalGrid::GetAllNeighbor_Elements() {
   cout << GetNeighbor_Elements(iFace) << ", ";
  }
  cout << ")"  << endl;
+}
+
+void CPrimalGrid::InitializeNeighbors(unsigned short val_nFaces) {
+
+  /*--- Allocate the memory for Neighbor_Elements and PeriodIndexNeighbors and
+        initialize the arrays to -1 to indicate that no neighbor is present and
+        that no periodic transformation is needed to the neighbor. */
+  Neighbor_Elements    = new long[val_nFaces];
+  PeriodIndexNeighbors = new short[val_nFaces];
+
+  for(unsigned short i=0; i<val_nFaces; ++i) {
+    Neighbor_Elements[i]    = -1;
+    PeriodIndexNeighbors[i] = -1;
+  }
 }
 
 unsigned short CVertexMPI::nFaces = 0;
@@ -662,7 +678,7 @@ CPrimalGridFEM::CPrimalGridFEM(unsigned long  val_elemGlobalID, unsigned short v
 
 CPrimalGridFEM::~CPrimalGridFEM(){}
 
-void CPrimalGridFEM::GetCornerPointsAllFaces(unsigned short &nFaces, 
+void CPrimalGridFEM::GetCornerPointsAllFaces(unsigned short &numFaces, 
                                              unsigned short nPointsPerFace[], 
                                              unsigned long  faceConn[6][4]) {
 
@@ -732,6 +748,10 @@ void CPrimalGridFEM::GetCornerPointsAllFaces(unsigned short &nFaces,
       faceConn[i][j] = Nodes[nn];
     }
   }
+
+  /*--- Store nFaces also in numFaces, one of the arguments in this function. ---*/
+
+  numFaces = nFaces;
 }
 
 CPrimalGridBoundFEM::CPrimalGridBoundFEM(unsigned long         val_elemGlobalID,

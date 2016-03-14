@@ -45,6 +45,8 @@ inline unsigned long CPrimalGrid::GetDomainElement(void) { return DomainElement;
 
 inline void CPrimalGrid::SetNeighbor_Elements(unsigned long val_elem, unsigned short val_face) { Neighbor_Elements[val_face] = val_elem; }
 
+inline void CPrimalGrid::SetPeriodicIndex(unsigned short val_periodic, unsigned short val_face) {PeriodIndexNeighbors[val_face] = val_periodic; }
+
 inline long CPrimalGrid::GetNeighbor_Elements(unsigned short val_face) { return Neighbor_Elements[val_face]; }
 
 inline su2double CPrimalGrid::GetCG(unsigned short val_dim) { return Coord_CG[val_dim]; }
@@ -275,13 +277,13 @@ inline unsigned short CPrimalGridFEM::GetNeighbor_Nodes(unsigned short val_node,
 
 inline unsigned short CPrimalGridFEM::GetnNodes(void) { return nDOFsGrid; }
 
-inline unsigned short CPrimalGridFEM::GetnFaces(void) { return -1; }
+inline unsigned short CPrimalGridFEM::GetnFaces(void) { return nFaces; }
 
 inline unsigned short CPrimalGridFEM::GetnNeighbor_Nodes(unsigned short val_node) { return -1; }
 
 inline void CPrimalGridFEM::Change_Orientation(void) {}
 
-inline unsigned short CPrimalGridFEM::GetnNeighbor_Elements(void) { return -1; }
+inline unsigned short CPrimalGridFEM::GetnNeighbor_Elements(void) { return nFaces; }
 
 inline unsigned short CPrimalGridFEM::GetMaxNodesFace(void) { return -1; }
 
