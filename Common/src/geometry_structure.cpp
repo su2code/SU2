@@ -12304,6 +12304,43 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
          << "These are ignored in the partitioning." << endl;
   }
 
+  /*--- All the matching face information is known now, including periodic
+        faces. Store the information of the neighbors in the data structure
+        for the local elements.     ---*/
+  for(unsigned long k=0; k<local_elem; ++k) {
+    unsigned short nFaces;
+    unsigned short nPointsPerFace[6];
+    unsigned long  faceConn[6][4];
+
+    elem[k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+    elem[k]->InitializeNeighbors(nFaces);
+
+    for(unsigned short i=0; i<nFaces; ++i) {
+      FaceOfElementClass thisFace;
+      thisFace.nCornerPoints = nPointsPerFace[i];
+      for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
+        thisFace.cornerPoints[j] = faceConn[i][j];
+      thisFace.elemID0    = starting_node[rank] + k;
+      thisFace.nPoly      = elem[k]->GetNPolySol();
+      thisFace.nDOFsElem0 = elem[k]->GetNDOFsSol();
+
+      thisFace.CreateUniqueNumbering();
+
+      if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
+        vector<FaceOfElementClass>::iterator low;
+        low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+
+        if(low->elemID0 == thisFace.elemID0)
+          elem[k]->SetNeighbor_Elements(low->elemID1, i);
+        else
+          elem[k]->SetNeighbor_Elements(low->elemID1, i);
+
+        if(low->periodicIndex > 0)
+          elem[k]->SetPeriodicIndex(low->periodicIndex-1, i);
+      }
+    }
+  }
+
   /*-- Create the vectors that describe the connectivity of the graph. ---*/
   vector<unsigned long> xadj_l(local_elem+1, 0);
   for(unsigned long i=0; i<nFacesLoc; ++i) {

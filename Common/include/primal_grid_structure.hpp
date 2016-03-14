@@ -53,6 +53,8 @@ class CPrimalGrid {
 protected:
 	unsigned long *Nodes;         /*!< \brief Vector to store the global nodes of an element. */
 	long *Neighbor_Elements;      /*!< \brief Vector to store the elements surronding an element. */
+ short *PeriodIndexNeighbors;  /*!< \brief Vector to store the periodic index of a neighbor.
+                                           A -1 indicates no periodic transformation to the neighbor. */
 	su2double *Coord_CG;             /*!< \brief Coordinates of the center-of-gravity of the element. */
 	su2double **Coord_FaceElems_CG;	/*!< \brief Coordinates of the center-of-gravity of the face of the
                                  elements. */
@@ -96,6 +98,13 @@ public:
 	 * \param[in] val_face - Local index of the face.
 	 */
 	void SetNeighbor_Elements(unsigned long val_elem, unsigned short val_face);
+
+ /*!
+  * \brief Set the index of the periodic transformation to the neighboring element.
+  * \param[in] val_periodic - Index of the periodic marker to which the face belongs.
+  * \param[in] val_face     - Local index of the face.
+  */
+ void SetPeriodicIndex(unsigned short val_periodic, unsigned short val_face);
 	
 	/*!
 	 * \brief Set the center of gravity of an element (including edges).
@@ -135,6 +144,12 @@ public:
 	 * \return <code>TRUE</code> if the element must be divided; otherwise <code>FALSE</code>.
 	 */
 	bool GetDivide(void);
+
+ /*!
+  * \brief Initialize the information about the neighboring elements.
+  * \param[in] val_nFaces - Number of faces for which neighboring information must be initialized.
+  */
+ void InitializeNeighbors(unsigned short val_nFaces);
 
  /*!
   * \brief A virtual member.
@@ -1272,11 +1287,12 @@ public:
  */
 class CPrimalGridFEM : public CPrimalGrid {
 private:
- unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
- unsigned short nPolyGrid;    /*!< \brief Polynomial degree for the geometry of the element. */
- unsigned short nPolySol;     /*!< \brief Polynomial degree for the solution of the element. */
- unsigned short nDOFsGrid;    /*!< \brief Number of DOFs for the geometry of the element. */
- unsigned short nDOFsSol;     /*!< \brief Number of DOFs for the solution of the element. */
+ unsigned short VTK_Type;      /*!< \brief Element type using the VTK convention. */
+ unsigned short nPolyGrid;     /*!< \brief Polynomial degree for the geometry of the element. */
+ unsigned short nPolySol;      /*!< \brief Polynomial degree for the solution of the element. */
+ unsigned short nDOFsGrid;     /*!< \brief Number of DOFs for the geometry of the element. */
+ unsigned short nDOFsSol;      /*!< \brief Number of DOFs for the solution of the element. */
+ unsigned short nFaces;        /*!< \brief Number of faces of the element. */
 
  unsigned long elemIDGlobal;        /*!< \brief Global element ID of this element. */
  unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
@@ -1411,7 +1427,7 @@ public:
   * \param[out] nPointsPerFace - Number of corner points for each of the faces.
   * \param[out] faceConn       - Global IDs of the corner points of the faces.
   */
- void GetCornerPointsAllFaces(unsigned short &nFaces,
+ void GetCornerPointsAllFaces(unsigned short &numFaces,
                               unsigned short nPointsPerFace[],
                               unsigned long  faceConn[6][4]);
 
