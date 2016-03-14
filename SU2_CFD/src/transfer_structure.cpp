@@ -1280,7 +1280,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
 
 
 
-void CTransfer::Broadcast_InterfaceAverage(CSolver *donor_solution, CSolver *target_solution,
+void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *target_solution,
 																 CGeometry *donor_geometry, CGeometry *target_geometry,
 																 CConfig *donor_config, CConfig *target_config){
 	unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
@@ -1290,11 +1290,13 @@ void CTransfer::Broadcast_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 	su2double *avgPressureDonor = NULL, *avgDensityDonor = NULL, *avgNormalVelDonor = NULL, *avgTangVelDonor = NULL;
 	su2double *avgPressureTarget = NULL, *avgDensityTarget = NULL, *avgNormalVelTarget = NULL, *avgTangVelTarget = NULL;
 	int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
+  int size = SINGLE_NODE, iSize;
 
 #ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+    su2double *BuffAvgPressureDonor = NULL, *BuffAvgDensityDonor = NULL, *BuffAvgNormalVelDonor = NULL, *BuffAvgTangVelDonor = NULL;
+    int nSpanSize;
 #endif
 
 	/*--- Number of markers on the Mixing-Plane interface ---*/
@@ -1305,28 +1307,30 @@ void CTransfer::Broadcast_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 	nSpanDonor     = donor_config->Get_nSpanWiseSections();
 	nSpanTarget		 = target_config->Get_nSpanWiseSections();
 
+	// here the number of span should be already known
+	// so perhaps when this option would be different for boundary markers then this should be done after the loop
 	avgDensityDonor   =  new su2double[nSpanDonor];
 	avgPressureDonor  =  new su2double[nSpanDonor];
 	avgNormalVelDonor =  new su2double[nSpanDonor];
 	avgTangVelDonor   =  new su2double[nSpanDonor];
 
 	for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
-		avgDensityDonor[iSpan]   =  0.0;
-		avgPressureDonor[iSpan]  =  0.0;
-		avgNormalVelDonor[iSpan] =  0.0;
-		avgTangVelDonor[iSpan]   =  0.0;
+		avgDensityDonor[iSpan]   =  -1.0;
+		avgPressureDonor[iSpan]  =  -1.0;
+		avgNormalVelDonor[iSpan] =  -1.0;
+		avgTangVelDonor[iSpan]   =  -1.0;
 	}
 
-	avgDensityTarget   =  new su2double[nSpanDonor];
-	avgPressureTarget  =  new su2double[nSpanDonor];
-	avgNormalVelTarget =  new su2double[nSpanDonor];
-	avgTangVelTarget   =  new su2double[nSpanDonor];
+	avgDensityTarget   =  new su2double[nSpanTarget];
+	avgPressureTarget  =  new su2double[nSpanTarget];
+	avgNormalVelTarget =  new su2double[nSpanTarget];
+	avgTangVelTarget   =  new su2double[nSpanTarget];
 
 	for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
-		avgDensityTarget[iSpan]   =  0.0;
-		avgPressureTarget[iSpan]  =  0.0;
-		avgNormalVelTarget[iSpan] =  0.0;
-		avgTangVelTarget[iSpan]   =  0.0;
+		avgDensityTarget[iSpan]   =  -1.0;
+		avgPressureTarget[iSpan]  =  -1.0;
+		avgNormalVelTarget[iSpan] =  -1.0;
+		avgTangVelTarget[iSpan]   =  -1.0;
 	}
 
 	/*--- Outer loop over the markers on the Mixing-Plane interface: compute one by one ---*/
@@ -1368,16 +1372,55 @@ void CTransfer::Broadcast_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 				avgNormalVelDonor[iSpan] =  Donor_Variable[2];
 				avgTangVelDonor[iSpan]   =  Donor_Variable[3];
 			}
-
-// this does not work to change with something else
-#ifdef HAVE_MPI
-			SU2_MPI::Bcast(avgDensityDonor, nSpanDonor, MPI_DOUBLE, rank, MPI_COMM_WORLD);
-			SU2_MPI::Bcast(avgPressureDonor, nSpanDonor, MPI_DOUBLE, rank, MPI_COMM_WORLD);
-			SU2_MPI::Bcast(avgNormalVelDonor, nSpanDonor, MPI_DOUBLE, rank, MPI_COMM_WORLD);
-			SU2_MPI::Bcast(avgTangVelDonor, nSpanDonor, MPI_DOUBLE, rank, MPI_COMM_WORLD);
-#endif
 		}
 
+		// for the moment is not needed but then i have to share among all processor the number of span to initilize the buffer vector
+#ifdef HAVE_MPI
+		nSpanSize = size*nSpanDonor;
+		BuffAvgDensityDonor    = new su2double[nSpanSize];
+		BuffAvgPressureDonor   = new su2double[nSpanSize];
+		BuffAvgNormalVelDonor  = new su2double[nSpanSize];
+		BuffAvgTangVelDonor    = new su2double[nSpanSize];
+
+		for (iSpan=0;iSpan<nSpanSize;iSpan++)
+			BuffAvgDensityDonor[iSpan]    = -1.0;
+			BuffAvgPressureDonor[iSpan]   = -1.0;
+			BuffAvgNormalVelDonor[iSpan]  = -1.0;
+			BuffAvgTangVelDonor[iSpan]    = -1.0;
+		}
+
+		SU2_MPI::AllGather(avgDensityDonor, nSpanDonor , MPI_DOUBLE, BuffAvgDensityDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+		SU2_MPI::AllGather(avgPressureDonor, nSpanDonor , MPI_DOUBLE, BuffAvgPressureDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+		SU2_MPI::AllGather(avgNormalVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvgNormalVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+		SU2_MPI::AllGather(avgTangVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvgTangVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+
+		for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
+			avgDensityDonor[iSpan]   =  -1.0;
+			avgPressureDonor[iSpan]  =  -1.0;
+			avgNormalVelDonor[iSpan] =  -1.0;
+			avgTangVelDonor[iSpan]   =  -1.0;
+		}
+
+		for (iSize=0; i<size;iSize++){
+			if(BuffAvgDensityDonor[nSpanDonor*iSize] > 0.0){
+				for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
+					avgDensityDonor[iSpan]   =  BuffAvgDensityDonor[nSpanDonor*iSize + iSpan]
+					avgPressureDonor[iSpan]  =  BuffAvgPressureDonor[nSpanDonor*iSize + iSpan];
+					avgNormalVelDonor[iSpan] =  BuffAvgNormalVelDonor[nSpanDonor*iSize + iSpan];
+					avgTangVelDonor[iSpan]   =  BuffAvgTangVelDonor[nSpanDonor*iSize + iSpan];
+				}
+			break;
+			}
+		}
+		delete [] BuffAvgDensityDonor;
+		delete [] BuffAvgPressureDonor;
+		delete [] BuffAvgNormalVelDonor;
+		delete [] BuffAvgTangVelDonor;
+
+
+}
+
+#endif
 
 		/*--- On the target side we have to identify the marker as well ---*/
 
@@ -1399,7 +1442,7 @@ void CTransfer::Broadcast_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 		}
 
 		if (Marker_Target != -1){
-			/*--- here the interpolation span-wise shoudl be implemented ---*/
+			/*--- here the interpolation span-wise should be implemented ---*/
 			for(iSpan = 0; iSpan < nSpanDonor ; iSpan++){
 				avgDensityTarget[iSpan]   =  avgDensityDonor[iSpan];
 				avgPressureTarget[iSpan]  =  avgPressureDonor[iSpan];
@@ -1418,5 +1461,15 @@ void CTransfer::Broadcast_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 		}
 
 	}
+
+	delete [] avgDensityDonor;
+	delete [] avgPressureDonor;
+	delete [] avgNormalVelDonor;
+	delete [] avgTangVelDonor;
+
+	delete [] avgDensityTarget;
+	delete [] avgPressureTarget;
+	delete [] avgNormalVelTarget;
+	delete [] avgTangVelTarget;
 
 }
