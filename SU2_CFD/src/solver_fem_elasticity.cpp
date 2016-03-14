@@ -3884,7 +3884,7 @@ void CFEM_ElasticitySolver::Compute_RefGeom_Sensitivity(CGeometry *geometry, CSo
 
     	}
 
-    	cout << "Node " << realIndex << ". dI/dx = (" << Solution[0] << "," << Solution[1] << ")." << endl;
+//    	cout << "Node " << realIndex << ". dI/dx = (" << Solution[0] << "," << Solution[1] << ")." << endl;
 
     	LinSysRes_Adj.AddBlock(iPoint, Solution);
 
@@ -3924,7 +3924,7 @@ void CFEM_ElasticitySolver::Solve_System_Adj(CGeometry *geometry, CSolver **solv
 	CSysSolve femSystem;
 	IterLinSol = femSystem.Solve(Jacobian, LinSysRes_Adj, LinSysSol_Adj, geometry, config);
 
-	cout << "Adjoint system solved with " << IterLinSol << " iterations." << endl;
+//	cout << "Adjoint system solved with " << IterLinSol << " iterations." << endl;
 
 	unsigned long realIndex;
 
@@ -3940,7 +3940,7 @@ void CFEM_ElasticitySolver::Solve_System_Adj(CGeometry *geometry, CSolver **solv
 
     	}
 
-    	cout << "Node " << realIndex << ". PHI = (" << Solution[0] << "," << Solution[1] << ")." << endl;
+//    	cout << "Node " << realIndex << ". PHI = (" << Solution[0] << "," << Solution[1] << ")." << endl;
 
     }
 
@@ -4010,7 +4010,7 @@ void CFEM_ElasticitySolver::Compute_DE_Sensitivity(CGeometry *geometry, CSolver 
 			for (iVar = 0; iVar < nVar; iVar++){
 				node[indexNode[iNode]]->AddGradient_Adj(iVar,Ta[iVar]);
 			}
-			cout << "For ID " << testID << " we add Ta = (" << Ta[0] << "," << Ta[1] << ")." << endl;
+//			cout << "For ID " << testID << " we add Ta = (" << Ta[0] << "," << Ta[1] << ")." << endl;
 
 		}
 
@@ -4024,16 +4024,45 @@ void CFEM_ElasticitySolver::Compute_RefGeom_Gradient(CGeometry *geometry, CSolve
 
 	cout << "STEP 7: output the interest function I and the gradient dI/dv (v: design variables)." << endl;
 
-
 	su2double *ref_geom, *curr_sol;
 	su2double adj_var, sens_var;
 	su2double objective_function, gradient_value;
+	//string adj_name, sens_name, res_name, file_type;
+	char adj_name[200], sens_name[200], res_name[200], file_type[200];
+
+	strcpy (adj_name,"Adjoint_E");
+	strcpy (sens_name,"Sensitivity_E");
+	strcpy (res_name,"Results_E");
+	strcpy (file_type,".txt");
+
+
+	char buffer[50];
+
+	int e_field_int = (int)config->Get_Electric_Field_Mod(0);
+
+    if ((e_field_int >= 0)    && (e_field_int < 10))    SPRINTF (buffer, "_0000%d.dat", e_field_int);
+    if ((e_field_int >= 10)   && (e_field_int < 100))   SPRINTF (buffer, "_000%d.dat",  e_field_int);
+    if ((e_field_int >= 100)  && (e_field_int < 1000))  SPRINTF (buffer, "_00%d.dat",   e_field_int);
+    if ((e_field_int >= 1000) && (e_field_int < 10000)) SPRINTF (buffer, "_0%d.dat",    e_field_int);
+
+    string key_append = string(buffer);
+    strcat(adj_name,buffer);
+    strcat(sens_name,buffer);
+
+    strcat(adj_name,file_type);
+    strcat(sens_name,file_type);
+    strcat(res_name,file_type);
 
 	unsigned long iPoint, realIndex;
 	unsigned short iVar;
 
 	objective_function = 0.0;
 	gradient_value = 0.0;
+
+	ofstream myfile_adj, myfile_sens, myfile_res;
+	myfile_adj.open (adj_name, ios::out);
+	myfile_sens.open (sens_name, ios::out);
+	myfile_res.open (res_name, ios::app);
 
 	cout << "Point " << "adj_var   " << " " << "sens_var  " << endl;
 
@@ -4050,19 +4079,21 @@ void CFEM_ElasticitySolver::Compute_RefGeom_Gradient(CGeometry *geometry, CSolve
 
     		adj_var = node[iPoint]->GetSolution_Adj(iVar);
     		sens_var = node[iPoint]->GetGradient_Adj(iVar);
-    		cout << realIndex<< " " << adj_var << " " << sens_var << endl;
-    		gradient_value += adj_var*sens_var;
+    		myfile_adj << realIndex<< " " << adj_var << endl;
+    		myfile_sens << realIndex<< " " << sens_var << endl;
+    		gradient_value -= adj_var*sens_var;
 
     	}
 
     }
 
-    cout << endl;
-	cout << "Objective function I = " << objective_function << endl;
-	cout << "Gradient value dI/dv = " << -1*gradient_value << endl;
-    cout << endl;
+    myfile_res << e_field_int << " " << objective_function << " "<< gradient_value << endl;
 	cout << "------------------------------- DONE ---------------------------------------" << endl;
-	cout << endl;
+
+	myfile_adj.close();
+	myfile_sens.close();
+	myfile_res.close();
+
 }
 
 /*------------------------------ RUBEN: END OF TEMPORARY FUNCTIONS - ADJOINT STRUCTURE ------------------------------*/

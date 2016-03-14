@@ -1495,9 +1495,9 @@ void CFEM_DielectricElastomer_Adj::Compute_Stress_Tensor(CElement *element, CCon
 
 		mod_Curr = sqrt(pow(Electric_Field_Curr[0],2)+pow(Electric_Field_Curr[1],2));
 		mod_Ref = sqrt(pow(Electric_Field_Ref_Unit[iVar][0],2)+pow(Electric_Field_Ref_Unit[iVar][1],2));
-		cout << endl;
-		cout << "E_Ref(" << iVar << ")  = (" << Electric_Field_Ref_Unit[iVar][0] << "," << Electric_Field_Ref_Unit[iVar][1] << ").  |E_Ref|  = " << mod_Ref << "." << endl;
-		cout << "E_Curr(" << iVar << ") = (" << Electric_Field_Curr[0] << "," << Electric_Field_Curr[1] << "). |E_Curr| = " << mod_Curr << "." << endl;
+//		cout << endl;
+//		cout << "E_Ref(" << iVar << ")  = (" << Electric_Field_Ref_Unit[iVar][0] << "," << Electric_Field_Ref_Unit[iVar][1] << ").  |E_Ref|  = " << mod_Ref << "." << endl;
+//		cout << "E_Curr(" << iVar << ") = (" << Electric_Field_Curr[0] << "," << Electric_Field_Curr[1] << "). |E_Curr| = " << mod_Curr << "." << endl;
 	}
 
 	mod_Curr = 0.0;
@@ -1524,10 +1524,10 @@ void CFEM_DielectricElastomer_Adj::Compute_Stress_Tensor(CElement *element, CCon
 	Stress_Tensor[1][0] = ke_DE*E01;	Stress_Tensor[1][1] = ke_DE*E11;	Stress_Tensor[1][2] = ke_DE*E12;
 	Stress_Tensor[2][0] = ke_DE*E02;	Stress_Tensor[2][1] = ke_DE*E12;	Stress_Tensor[2][2] = ke_DE*E22;
 
-	cout << endl << "SXX:" << endl;
-	cout << Stress_Tensor[0][0] << " " << Stress_Tensor[0][1] << " " << Stress_Tensor[0][2] << endl;
-	cout << Stress_Tensor[1][0] << " " << Stress_Tensor[1][1] << " " << Stress_Tensor[1][2] << endl;
-	cout << Stress_Tensor[2][0] << " " << Stress_Tensor[2][1] << " " << Stress_Tensor[2][2] << endl;
+//	cout << endl << "SXX:" << endl;
+//	cout << Stress_Tensor[0][0] << " " << Stress_Tensor[0][1] << " " << Stress_Tensor[0][2] << endl;
+//	cout << Stress_Tensor[1][0] << " " << Stress_Tensor[1][1] << " " << Stress_Tensor[1][2] << endl;
+//	cout << Stress_Tensor[2][0] << " " << Stress_Tensor[2][1] << " " << Stress_Tensor[2][2] << endl;
 
 }
 
