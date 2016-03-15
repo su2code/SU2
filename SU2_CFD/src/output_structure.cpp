@@ -3845,7 +3845,6 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char levelset_resid[]= ",\"Res_LevelSet\"";
   char adj_levelset_resid[]= ",\"Res_AdjLevelSet\"";
   char wave_resid[]= ",\"Res_Wave[0]\",\"Res_Wave[1]\"";
-//  char fea_resid[]= ",\"Res_FEA\"";
   char fem_resid[]= ",\"Res_FEM[0]\",\"Res_FEM[1]\",\"Res_FEM[2]\"";
   char heat_resid[]= ",\"Res_Heat\"";
   
@@ -3981,7 +3980,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     char begin[1000], direct_coeff[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000],
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
     adj_turb_resid[1000], levelset_resid[1000], adj_levelset_resid[1000], wave_coeff[1000],
-    heat_coeff[1000], fem_coeff[1000], wave_resid[1000], heat_resid[1000], //fea_resid[1000],
+    heat_coeff[1000], fem_coeff[1000], wave_resid[1000], heat_resid[1000],
 	fem_resid[1000], end[1000], oneD_outputs[1000], massflow_outputs[1000], d_direct_coeff[1000];
 
     su2double dummy = 0.0, *Coord;
@@ -4097,7 +4096,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     /*--- Initialize number of variables ---*/
     unsigned short nVar_Flow = 0, nVar_LevelSet = 0, nVar_Turb = 0,
-    nVar_Trans = 0, nVar_Wave = 0, nVar_Heat = 0, //nVar_FEA = 0,
+    nVar_Trans = 0, nVar_Wave = 0, nVar_Heat = 0,
     nVar_AdjFlow = 0, nVar_AdjLevelSet = 0, nVar_AdjTurb = 0,
     nVar_FEM = 0;
     
@@ -4137,7 +4136,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     residual_transition = new su2double[nVar_Trans];
     residual_levelset   = new su2double[nVar_LevelSet];
     residual_wave       = new su2double[nVar_Wave];
-//    residual_fea        = new su2double[nVar_FEA];
     residual_heat       = new su2double[nVar_Heat];
     residual_fem 		= new su2double[nVar_FEM];
     

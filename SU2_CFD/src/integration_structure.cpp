@@ -154,9 +154,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case DISPLACEMENT_BOUNDARY:
         solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
-//      case FLOWLOAD_BOUNDARY:
-//        solver_container[MainSolver]->BC_Flow_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-//        break;
       case LOAD_BOUNDARY:
         solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
