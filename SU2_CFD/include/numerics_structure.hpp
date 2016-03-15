@@ -1437,68 +1437,68 @@ public:
    * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetFEA_StiffMatrix2D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
+  //virtual void SetFEA_StiffMatrix2D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
   
   /*!
    * \brief Computing stiffness matrix of the Galerkin method.
    * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetFEA_StiffMatrix3D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
+  //virtual void SetFEA_StiffMatrix3D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
   
   /*!
    * \brief Computing mass matrix of the Galerkin method.
    * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetFEA_StiffMassMatrix2D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
+  //virtual void SetFEA_StiffMassMatrix2D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
   
   /*!
    * \brief Computing mass matrix of the Galerkin method.
    * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetFEA_StiffMassMatrix3D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
+  //virtual void SetFEA_StiffMassMatrix3D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
   
   /*!
    * \brief Computing dead load vector of the Galerkin method.
    * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetFEA_DeadLoad2D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
+  //virtual void SetFEA_DeadLoad2D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
   
   /*!
    * \brief Computing stiffness matrix of the Galerkin method.
    * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetFEA_DeadLoad3D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
+  //virtual void SetFEA_DeadLoad3D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
   
   
   /*!
    * \brief Computing stresses in FEA method.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void GetFEA_StressNodal2D(su2double StressVector[8][3], su2double DispElement[8], su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
+  //virtual void GetFEA_StressNodal2D(su2double StressVector[8][3], su2double DispElement[8], su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
   
   
   /*!
    * \brief Computing stresses in FEA method.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void GetFEA_StressNodal3D(su2double StressVector[8][6], su2double DispElement[24], su2double CoordCorners[8][3], unsigned short nNodes);
+  //virtual void GetFEA_StressNodal3D(su2double StressVector[8][6], su2double DispElement[24], su2double CoordCorners[8][3], unsigned short nNodes);
   
   /*!
    * \brief A virtual member to linearly interpolate pressures
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void PressInt_Linear(su2double CoordCorners[4][3], su2double *tn_e, su2double Fnodal[12]);
+  //virtual void PressInt_Linear(su2double CoordCorners[4][3], su2double *tn_e, su2double Fnodal[12]);
   
   /*!
    * \brief A virtual member to linearly interpolate viscous stresses
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void ViscTermInt_Linear(su2double CoordCorners[2][2], su2double Tau_0[3][3], su2double Tau_1[3][3],  su2double FviscNodal[4]);
+  //virtual void ViscTermInt_Linear(su2double CoordCorners[2][2], su2double Tau_0[3][3], su2double Tau_1[3][3],  su2double FviscNodal[4]);
   
   /*!
    * \brief A virtual member to compute the tangent matrix in structural problems
@@ -3996,169 +3996,169 @@ public:
   void ComputeResidual (su2double **val_stiffmatrix_elem, CConfig *config);
 };
 
-/*!
- * \class CGalerkin_FEA
- * \brief Class for computing the stiffness matrix of the Galerkin method.
- * \ingroup ViscDiscr
- * \author F. Palacios, R.Sanchez
- * \version 4.1.0 "Cardinal"
- */
-class CGalerkin_FEA : public CNumerics {
-  
-  su2double E;				/*!< \brief Young's modulus of elasticity. */
-  su2double Nu;			/*!< \brief Poisson's ratio. */
-  su2double Rho_s;		/*!< \brief Structural density. */
-  su2double Mu;			/*!< \brief Lame's coeficient. */
-  su2double Lambda;	/*!< \brief Lame's coeficient. */
-
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CGalerkin_FEA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CGalerkin_FEA(void);
-  
-  /*!
-   * \brief Shape functions and derivative of the shape functions
-   * \param[in] Fnodal - Forces at the nodes in cartesian coordinates.
-   * \param[in] Pnodal - Pressure at the nodes.
-   * \param[in] CoordCorners[2][2] - Coordiantes of the corners.
-   */
-  void PressInt_Linear(su2double CoordCorners[4][3], su2double *tn_e, su2double Fnodal[12]);
-  
-  /*!
-   * \brief Shape functions and derivative of the shape functions
-   * \param[in] Tau_0 - Stress tensor at the node 0.
-   * \param[in] Tau_1 - Stress tensor at the node 1.
-   * \param[in] Fnodal - Forces at the nodes in cartesian coordinates.
-   * \param[in] CoordCorners[2][2] - Coordiantes of the corners.
-   */
-  void ViscTermInt_Linear(su2double CoordCorners[2][2], su2double Tau_0[3][3], su2double Tau_1[3][3],  su2double FviscNodal[4]);
-  
-  /*!
-   * \brief Shape functions and derivative of the shape functions
-   * \param[in] Xi - Local coordinates.
-   * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
-   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
-   */
-  su2double ShapeFunc_Triangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
-  /*!
-   * \brief Shape functions and derivative of the shape functions
-   * \param[in] Xi - Local coordinates.
-   * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
-   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
-   */
-  su2double ShapeFunc_Quadrilateral(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
-  /*!
-   * \brief Shape functions and derivative of the shape functions
-   * \param[in] Xi - Local coordinates.
-   * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
-   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
-   */
-  su2double ShapeFunc_Tetra(su2double Xi, su2double Eta, su2double Mu, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
-  /*!
-   * \brief Shape functions and derivative of the shape functions
-   * \param[in] Xi - Local coordinates.
-   * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
-   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
-   */
-  su2double ShapeFunc_Prism(su2double Xi, su2double Eta, su2double Mu, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
-  /*!
-   * \brief Shape functions and derivative of the shape functions
-   * \param[in] Xi - Local coordinates.
-   * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
-   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
-   */
-  su2double ShapeFunc_Pyram(su2double Xi, su2double Eta, su2double Mu, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
-  /*!
-   * \brief Shape functions and derivative of the shape functions
-   * \param[in] Xi - Local coordinates.
-   * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
-   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
-   */
-  su2double ShapeFunc_Hexa(su2double Xi, su2double Eta, su2double Mu, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
-  /*!
-   * \brief Computing stiffness matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_StiffMatrix2D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
-  
-  /*!
-   * \brief Computing stiffness matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_StiffMatrix3D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
-  
-  /*!
-   * \brief Computing mass matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_StiffMassMatrix2D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
-  
-  /*!
-   * \brief Computing mass matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_StiffMassMatrix3D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
-  
-  /*!
-   * \brief Computing stresses in FEA method at the nodes.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void GetFEA_StressNodal2D(su2double StressVector[8][3], su2double DispElement[8], su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
-  
-  
-  /*!
-   * \brief Computing stresses in FEA method at the nodes.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void GetFEA_StressNodal3D(su2double StressVector[8][6], su2double DispElement[24], su2double CoordCorners[8][3], unsigned short nNodes);
-  
-  /*!
-   * \brief Computing dead load vector of the Galerkin method.
-   * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_DeadLoad2D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
-  
-  /*!
-   * \brief Computing stiffness matrix of the Galerkin method.
-   * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_DeadLoad3D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
-  
-};
+///*!
+// * \class CGalerkin_FEA
+// * \brief Class for computing the stiffness matrix of the Galerkin method.
+// * \ingroup ViscDiscr
+// * \author F. Palacios, R.Sanchez
+// * \version 4.1.0 "Cardinal"
+// */
+//class CGalerkin_FEA : public CNumerics {
+//
+//  su2double E;				/*!< \brief Young's modulus of elasticity. */
+//  su2double Nu;			/*!< \brief Poisson's ratio. */
+//  su2double Rho_s;		/*!< \brief Structural density. */
+//  su2double Mu;			/*!< \brief Lame's coeficient. */
+//  su2double Lambda;	/*!< \brief Lame's coeficient. */
+//
+//public:
+//
+//  /*!
+//   * \brief Constructor of the class.
+//   * \param[in] val_nDim - Number of dimensions of the problem.
+//   * \param[in] val_nVar - Number of variables of the problem.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  CGalerkin_FEA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+//
+//  /*!
+//   * \brief Destructor of the class.
+//   */
+//  ~CGalerkin_FEA(void);
+//
+//  /*!
+//   * \brief Shape functions and derivative of the shape functions
+//   * \param[in] Fnodal - Forces at the nodes in cartesian coordinates.
+//   * \param[in] Pnodal - Pressure at the nodes.
+//   * \param[in] CoordCorners[2][2] - Coordiantes of the corners.
+//   */
+//  void PressInt_Linear(su2double CoordCorners[4][3], su2double *tn_e, su2double Fnodal[12]);
+//
+//  /*!
+//   * \brief Shape functions and derivative of the shape functions
+//   * \param[in] Tau_0 - Stress tensor at the node 0.
+//   * \param[in] Tau_1 - Stress tensor at the node 1.
+//   * \param[in] Fnodal - Forces at the nodes in cartesian coordinates.
+//   * \param[in] CoordCorners[2][2] - Coordiantes of the corners.
+//   */
+//  void ViscTermInt_Linear(su2double CoordCorners[2][2], su2double Tau_0[3][3], su2double Tau_1[3][3],  su2double FviscNodal[4]);
+//
+//  /*!
+//   * \brief Shape functions and derivative of the shape functions
+//   * \param[in] Xi - Local coordinates.
+//   * \param[in] Eta - Local coordinates.
+//   * \param[in] Mu - Local coordinates.
+//   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+//   * \param[in] shp[8][4] - Shape function information
+//   */
+//  su2double ShapeFunc_Triangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
+//
+//  /*!
+//   * \brief Shape functions and derivative of the shape functions
+//   * \param[in] Xi - Local coordinates.
+//   * \param[in] Eta - Local coordinates.
+//   * \param[in] Mu - Local coordinates.
+//   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+//   * \param[in] shp[8][4] - Shape function information
+//   */
+//  su2double ShapeFunc_Quadrilateral(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
+//
+//  /*!
+//   * \brief Shape functions and derivative of the shape functions
+//   * \param[in] Xi - Local coordinates.
+//   * \param[in] Eta - Local coordinates.
+//   * \param[in] Mu - Local coordinates.
+//   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+//   * \param[in] shp[8][4] - Shape function information
+//   */
+//  su2double ShapeFunc_Tetra(su2double Xi, su2double Eta, su2double Mu, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
+//
+//  /*!
+//   * \brief Shape functions and derivative of the shape functions
+//   * \param[in] Xi - Local coordinates.
+//   * \param[in] Eta - Local coordinates.
+//   * \param[in] Mu - Local coordinates.
+//   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+//   * \param[in] shp[8][4] - Shape function information
+//   */
+//  su2double ShapeFunc_Prism(su2double Xi, su2double Eta, su2double Mu, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
+//
+//  /*!
+//   * \brief Shape functions and derivative of the shape functions
+//   * \param[in] Xi - Local coordinates.
+//   * \param[in] Eta - Local coordinates.
+//   * \param[in] Mu - Local coordinates.
+//   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+//   * \param[in] shp[8][4] - Shape function information
+//   */
+//  su2double ShapeFunc_Pyram(su2double Xi, su2double Eta, su2double Mu, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
+//
+//  /*!
+//   * \brief Shape functions and derivative of the shape functions
+//   * \param[in] Xi - Local coordinates.
+//   * \param[in] Eta - Local coordinates.
+//   * \param[in] Mu - Local coordinates.
+//   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
+//   * \param[in] shp[8][4] - Shape function information
+//   */
+//  su2double ShapeFunc_Hexa(su2double Xi, su2double Eta, su2double Mu, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
+//
+//  /*!
+//   * \brief Computing stiffness matrix of the Galerkin method.
+//   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  void SetFEA_StiffMatrix2D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
+//
+//  /*!
+//   * \brief Computing stiffness matrix of the Galerkin method.
+//   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  void SetFEA_StiffMatrix3D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
+//
+//  /*!
+//   * \brief Computing mass matrix of the Galerkin method.
+//   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  void SetFEA_StiffMassMatrix2D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
+//
+//  /*!
+//   * \brief Computing mass matrix of the Galerkin method.
+//   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  void SetFEA_StiffMassMatrix3D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
+//
+//  /*!
+//   * \brief Computing stresses in FEA method at the nodes.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  void GetFEA_StressNodal2D(su2double StressVector[8][3], su2double DispElement[8], su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
+//
+//
+//  /*!
+//   * \brief Computing stresses in FEA method at the nodes.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  void GetFEA_StressNodal3D(su2double StressVector[8][6], su2double DispElement[24], su2double CoordCorners[8][3], unsigned short nNodes);
+//
+//  /*!
+//   * \brief Computing dead load vector of the Galerkin method.
+//   * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  void SetFEA_DeadLoad2D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
+//
+//  /*!
+//   * \brief Computing stiffness matrix of the Galerkin method.
+//   * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  void SetFEA_DeadLoad3D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
+//
+//};
 
 /*!
  * \class CFEM_Elasticity
