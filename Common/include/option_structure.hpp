@@ -184,6 +184,7 @@ enum ENUM_SOLVER {
   HEAT_EQUATION = 29,					/*!< \brief Definition of the heat solver. */
   FLUID_STRUCTURE_INTERACTION = 12,		/*!< \brief Definition of a FSI solver. */
   FEM_ELASTICITY = 13,					/*!< \brief Definition of a FEM solver. */
+  ADJ_ELASTICITY = 14,					/*!< \brief Definition of a FEM adjoint solver. */
   ADJ_EULER = 18,						/*!< \brief Definition of the continuous adjoint Euler's solver. */
   ADJ_NAVIER_STOKES = 19,				/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
   ADJ_RANS = 20,						/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
@@ -205,6 +206,7 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("WAVE_EQUATION", WAVE_EQUATION)
 ("HEAT_EQUATION", HEAT_EQUATION)
 ("FEM_ELASTICITY", FEM_ELASTICITY)
+("ADJ_ELASTICITY", ADJ_ELASTICITY)
 ("DISC_ADJ_EULER", DISC_ADJ_EULER)
 ("DISC_ADJ_RANS", DISC_ADJ_RANS)
 ("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_EULER)
@@ -356,7 +358,9 @@ const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution i
 const int POISSON_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
 const int WAVE_SOL = 1;		/*!< \brief Position of the wave equation in the solution solver array. */
 const int HEAT_SOL = 2;		/*!< \brief Position of the heat equation in the solution solver array. */
-const int FEA_SOL = 1;		/*!< \brief Position of the FEA equation in the solution solver array. */
+
+const int FEA_SOL = 0;			/*!< \brief Position of the FEA equation in the solution solver array. */
+const int ADJFEA_SOL = 1;		/*!< \brief Position of the FEA adjoint equation in the solution solver array. */
 
 const int TEMPLATE_SOL = 0;     /*!< \brief Position of the template solution. */
 

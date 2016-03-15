@@ -30,3 +30,35 @@
  */
 
 #include "../include/variable_structure.hpp"
+
+CFEM_ElasVariable_Adj::CFEM_ElasVariable_Adj(void) : CVariable() {
+
+	Reference_Geometry		= NULL;		// Reference geometry for optimization purposes
+	Gradient_Adj			= NULL;		// Adjoint gradient dS/dv for structural problems (temporary)
+
+}
+
+CFEM_ElasVariable_Adj::CFEM_ElasVariable_Adj(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+	cout << "CHECKPOINT 7c" << endl;
+	unsigned short iVar;
+	bool refgeom = config->GetRefGeom();				// Reference geometry needs to be stored
+
+	/*--- Initialization of variables ---*/
+	for (iVar = 0; iVar < nVar; iVar++) {
+		Solution[iVar] = val_fea[iVar];
+	}
+
+	Gradient_Adj    = new su2double [nVar];
+
+	if (refgeom)	Reference_Geometry = new su2double [nVar];
+	else 			Reference_Geometry = NULL;
+
+
+}
+
+CFEM_ElasVariable_Adj::~CFEM_ElasVariable_Adj(void) {
+
+	if (Reference_Geometry 		!= NULL) delete [] Reference_Geometry;
+	if (Gradient_Adj 			!= NULL) delete [] Gradient_Adj;
+
+}

@@ -157,7 +157,8 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   unsigned short iMGlevel;
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
-  poisson, wave, heat, fem,
+  poisson, wave, heat,
+  fem, adj_fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj;
   
@@ -167,8 +168,8 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
   spalart_allmaras = false;  menter_sst      = false;
   poisson          = false;  neg_spalart_allmaras = false;
-  wave             = false;	 disc_adj        = false;
-  fem = false;
+  wave             = false;	 disc_adj         = false;
+  fem 			   = false;  adj_fem		  = false;
   heat             = false;
   transition       = false;
   template_solver  = false;
@@ -184,6 +185,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
     case FEM_ELASTICITY: fem = true; break;
+    case ADJ_ELASTICITY: fem = true; adj_fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
@@ -263,6 +265,9 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     if (adj_turb) {
       solver_container[iMGlevel][ADJTURB_SOL] = new CAdjTurbSolver(geometry[iMGlevel], config, iMGlevel);
     }
+    if (adj_fem) {
+      solver_container[iMGlevel][ADJFEA_SOL]  = new CFEM_ElasticitySolver_Adj(geometry[iMGlevel], config, solver_container[iMGlevel][FEA_SOL]);
+    }
     
     if (disc_adj) {
       solver_container[iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
@@ -279,7 +284,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   euler, adj_euler,
   ns, adj_ns,
   turbulent, adj_turb,
-  poisson, wave, fem, heat, template_solver, transition, disc_adj;
+  poisson, wave, fem, adj_fem, heat, template_solver, transition, disc_adj;
   
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -288,7 +293,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   poisson          = false; disc_adj         = false;
   wave             = false;
   heat             = false;
-  fem = false;
+  fem 			   = false; adj_fem          = false;
   transition       = false;
   template_solver  = false;
   
@@ -302,6 +307,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
     case FEM_ELASTICITY: fem = true; break;
+    case ADJ_ELASTICITY: fem = true; adj_fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
@@ -328,6 +334,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   if (adj_euler) integration_container[ADJFLOW_SOL] = new CMultiGridIntegration(config);
   if (adj_ns) integration_container[ADJFLOW_SOL] = new CMultiGridIntegration(config);
   if (adj_turb) integration_container[ADJTURB_SOL] = new CSingleGridIntegration(config);
+  if (adj_fem) integration_container[ADJFEA_SOL] = new CStructuralIntegration(config);
   
   if (disc_adj) integration_container[ADJFLOW_SOL] = new CIntegration(config);
   
@@ -347,6 +354,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   nVar_Adj_Turb         = 0,
   nVar_Poisson          = 0,
   nVar_FEM				= 0,
+  nVar_Adj_FEM			= 0,
   nVar_Wave             = 0,
   nVar_Heat             = 0;
   
@@ -359,7 +367,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   spalart_allmaras, neg_spalart_allmaras, menter_sst,
   poisson,
   wave,
-  fem,
+  fem, adj_fem,
   heat,
   transition,
   template_solver;
@@ -373,7 +381,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   euler            = false;   ns               = false;   turbulent        = false;
   poisson          = false;
   adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
-  wave             = false;   heat             = false;   fem				= false;
+  wave             = false;   heat             = false;
+  fem			   = false;   adj_fem			  = false;
   spalart_allmaras = false; neg_spalart_allmaras = false;	menter_sst       = false;
   transition       = false;
   template_solver  = false;
@@ -388,6 +397,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
     case FEM_ELASTICITY: fem = true; break;
+    case ADJ_ELASTICITY: fem = true; adj_fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
@@ -424,6 +434,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   if (adj_euler)        nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_ns)           nVar_Adj_Flow = solver_container[MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_turb)         nVar_Adj_Turb = solver_container[MESH_0][ADJTURB_SOL]->GetnVar();
+  if (adj_fem)          nVar_Adj_FEM  = solver_container[MESH_0][ADJFEA_SOL]->GetnVar();
   
   /*--- Number of dimensions ---*/
   
@@ -1052,11 +1063,44 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     	default: cout << " Solver not implemented." << endl; exit(EXIT_FAILURE); break;
 	}
 
+
 	bool de_effects = config->GetDE_Effects();
 	bool structural_adj = config->GetStructural_Adj();
 
 	if (de_effects) numerics_container[MESH_0][FEA_SOL][DE_TERM] = new CFEM_DielectricElastomer(nDim, nVar_FEM, config);
 	if (structural_adj && de_effects) numerics_container[MESH_0][FEA_SOL][DE_ADJ] = new CFEM_DielectricElastomer_Adj(nDim, nVar_FEM, config);
+
+  }
+
+  /*--- Solver definition for the FEM problem ---*/
+  if (adj_fem) {
+//	switch (config->GetGeometricConditions()) {
+//    	case SMALL_DEFORMATIONS :
+//    		switch (config->GetMaterialModel()) {
+//    			case LINEAR_ELASTIC: numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_LinearElasticity(nDim, nVar_FEM, config); break;
+//    			case NEO_HOOKEAN : cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
+//    			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+//    		}
+//    		break;
+//    	case LARGE_DEFORMATIONS :
+//    		switch (config->GetMaterialModel()) {
+//				case LINEAR_ELASTIC: cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
+//    			case NEO_HOOKEAN :
+//    				switch (config->GetMaterialCompressibility()) {
+//    					case COMPRESSIBLE_MAT : numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config); break;
+//    					case INCOMPRESSIBLE_MAT : numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config); break;
+//    					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+//    				}
+//    				break;
+//    			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+//    		}
+//    		break;
+//    	default: cout << " Solver not implemented." << endl; exit(EXIT_FAILURE); break;
+//	}
+
+	bool de_effects = config->GetDE_Effects();
+
+	if (de_effects) numerics_container[MESH_0][ADJFEA_SOL][DE_TERM] = new CFEM_DielectricElastomer_Adj(nDim, nVar_FEM, config);
 
   }
 
@@ -1106,6 +1150,13 @@ void CDriver::Iteration_Preprocessing(CIteration **iteration_container, CConfig 
         cout << ": FEM iteration." << endl;
       iteration_container[iZone] = new CFEM_StructuralAnalysis(config[iZone]);
       break;
+
+    case ADJ_ELASTICITY:
+      if (rank == MASTER_NODE)
+        cout << ": adjoint FEM iteration." << endl;
+      iteration_container[iZone] = new CFEAIteration_Adj(config[iZone]);
+      break;
+
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       if (rank == MASTER_NODE)
         cout << ": adjoint Euler/Navier-Stokes/RANS flow iteration." << endl;
