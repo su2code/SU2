@@ -1431,75 +1431,7 @@ public:
                                su2double **val_Jacobian_j,
                                su2double *val_Jacobian_muj,
                                su2double ***val_Jacobian_gradj, CConfig *config);
-  
-  /*!
-   * \brief Computing stiffness matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  //virtual void SetFEA_StiffMatrix2D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
-  
-  /*!
-   * \brief Computing stiffness matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  //virtual void SetFEA_StiffMatrix3D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
-  
-  /*!
-   * \brief Computing mass matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  //virtual void SetFEA_StiffMassMatrix2D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
-  
-  /*!
-   * \brief Computing mass matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  //virtual void SetFEA_StiffMassMatrix3D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
-  
-  /*!
-   * \brief Computing dead load vector of the Galerkin method.
-   * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  //virtual void SetFEA_DeadLoad2D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
-  
-  /*!
-   * \brief Computing stiffness matrix of the Galerkin method.
-   * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  //virtual void SetFEA_DeadLoad3D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
-  
-  
-  /*!
-   * \brief Computing stresses in FEA method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  //virtual void GetFEA_StressNodal2D(su2double StressVector[8][3], su2double DispElement[8], su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
-  
-  
-  /*!
-   * \brief Computing stresses in FEA method.
-   * \param[in] config - Definition of the particular problem.
-   */
-  //virtual void GetFEA_StressNodal3D(su2double StressVector[8][6], su2double DispElement[24], su2double CoordCorners[8][3], unsigned short nNodes);
-  
-  /*!
-   * \brief A virtual member to linearly interpolate pressures
-   * \param[in] config - Definition of the particular problem.
-   */
-  //virtual void PressInt_Linear(su2double CoordCorners[4][3], su2double *tn_e, su2double Fnodal[12]);
-  
-  /*!
-   * \brief A virtual member to linearly interpolate viscous stresses
-   * \param[in] config - Definition of the particular problem.
-   */
-  //virtual void ViscTermInt_Linear(su2double CoordCorners[2][2], su2double Tau_0[3][3], su2double Tau_1[3][3],  su2double FviscNodal[4]);
-  
+
   /*!
    * \brief A virtual member to compute the tangent matrix in structural problems
    * \param[in] element_container - Element structure for the particular element integrated.
