@@ -1,8 +1,7 @@
 /*!
- * \file SU2_CFD.hpp
- * \brief Headers of the main subroutines of the code SU2_CFD.
- *        The subroutines and functions are in the <i>SU2_CFD.cpp</i> file.
- * \author F. Palacios, T. Economon
+ * \file fem_geometry_structure.cpp
+ * \brief Main subroutines for creating the primal grid for the FEM solver.
+ * \author E. van der Weide
  * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
@@ -30,22 +29,21 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "../include/fem_geometry_structure.hpp"
 
-#include "../../Common/include/mpi_structure.hpp"
+CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
-#include <ctime>
+  cout << "CMeshFEM::CMeshFEM: Not implemented yet." << endl;
 
-#include "driver_structure.hpp"
-#include "solver_structure.hpp"
-#include "integration_structure.hpp"
-#include "output_structure.hpp"
-#include "numerics_structure.hpp"
-#include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/grid_movement_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../include/definition_structure.hpp"
-#include "../include/iteration_structure.hpp"
+#ifndef HAVE_MPI
+  exit(EXIT_FAILURE);
+#else
+  MPI_Abort(MPI_COMM_WORLD,1);
+  MPI_Finalize();
+#endif
 
-using namespace std;
+}
+
+CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config) : CMeshFEM(geometry, config) {
+
+}
