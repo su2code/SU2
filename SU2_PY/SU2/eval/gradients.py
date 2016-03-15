@@ -93,7 +93,7 @@ def gradient( func_name, method, config, state=None ):
                 config.OBJ_CHAIN_RULE_COEFF = str(chaingrad[0:5])
                 
             # Aerodynamics
-            if func_name in su2io.optnames_aero:
+            if func_name in su2io.optnames_aero + su2io.optnames_turbo:
                 grads = adjoint( func_name, config, state )
 
             # Stability
