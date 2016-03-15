@@ -14,7 +14,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -566,7 +566,11 @@ def read_config(filename):
         data_dict['OPT_BOUND_UPPER'] = 1e10
     if not data_dict.has_key('OPT_BOUND_LOWER'):
         data_dict['OPT_BOUND_LOWER'] = -1e10
-    
+    if not data_dict.has_key('VALUE_OBJFUNC_FILENAME'):
+      data_dict['VALUE_OBJFUNC_FILENAME'] = 'of_eval.dat'
+    if not data_dict.has_key('GRAD_OBJFUNC_FILENAME'):
+      data_dict['GRAD_OBJFUNC_FILENAME'] = 'of_grad.dat'
+ 
     return data_dict
     
 #: def read_config()
