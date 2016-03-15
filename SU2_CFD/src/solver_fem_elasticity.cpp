@@ -82,7 +82,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	unsigned long iPoint;
 	unsigned short iVar, jVar, iDim, jDim;
-	unsigned short iTerm, iKind;
+	unsigned short iTerm;
 
 	unsigned short iZone = config->GetiZone();
 	unsigned short nZone = geometry->GetnZone();
