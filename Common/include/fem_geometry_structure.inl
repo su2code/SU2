@@ -1,8 +1,7 @@
 /*!
- * \file SU2_CFD.hpp
- * \brief Headers of the main subroutines of the code SU2_CFD.
- *        The subroutines and functions are in the <i>SU2_CFD.cpp</i> file.
- * \author F. Palacios, T. Economon
+ * \file fem_geometry_structure.inl
+ * \brief In-Line subroutines of the <i>fem_geometry_structure.hpp</i> file.
+ * \author E. van der Weide
  * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
@@ -29,23 +28,13 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
+ 
 #pragma once
 
-#include "../../Common/include/mpi_structure.hpp"
+inline CMeshFEM::CMeshFEM(void) { }
 
-#include <ctime>
+inline CMeshFEM::~CMeshFEM(void) { }
 
-#include "driver_structure.hpp"
-#include "solver_structure.hpp"
-#include "integration_structure.hpp"
-#include "output_structure.hpp"
-#include "numerics_structure.hpp"
-#include "../../Common/include/fem_geometry_structure.hpp"
-#include "../../Common/include/geometry_structure.hpp"
-#include "../../Common/include/grid_movement_structure.hpp"
-#include "../../Common/include/config_structure.hpp"
-#include "../include/definition_structure.hpp"
-#include "../include/iteration_structure.hpp"
+inline CMeshFEM_DG::CMeshFEM_DG(void) { }
 
-using namespace std;
+inline CMeshFEM_DG::~CMeshFEM_DG(void) { }

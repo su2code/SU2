@@ -145,10 +145,22 @@ int main(int argc, char *argv[]) {
     else             geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
     
     /*--- Allocate the memory of the current domain, and divide the grid
-     between the ranks. ---*/
+     between the ranks. The derived class of the object to be allocated
+     depends on the solver to be used.                         ---*/
     
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
-    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
+
+    if( fem_solver ) {
+      switch( config->GetKind_FEM_Flow() ) {
+        case DG: {
+          geometry_container[iZone][MESH_0] = new CMeshFEM_DG(geometry_aux, config_container[iZone]);
+          break;
+        }
+      }
+    }
+    else {
+      geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
+    }
     
     /*--- Deallocate the memory of geometry_aux ---*/
     
