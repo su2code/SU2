@@ -937,7 +937,18 @@ enum ENUM_OBJECTIVE {
   AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
   AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
   MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
-  OUTFLOW_GENERALIZED=31          /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
+  OUTFLOW_GENERALIZED=31,        /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
+  TOTAL_PRESSURE_LOSS=32,
+  KINETIC_ENERGY_LOSS=33,
+  TOTAL_EFFICIENCY=34,
+  TOTAL_STATIC_EFFICIENCY=35,
+  EULERIAN_WORK=36,
+  TOTAL_ENTHALPY_IN=37,
+  FLOW_ANGLE_IN=38,
+  FLOW_ANGLE_OUT=39,
+  MASS_FLOW_IN=40,
+  MASS_FLOW_OUT=41,
+  PRESSURE_RATIO=42
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -971,7 +982,18 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("AVG_TOTAL_PRESSURE", AVG_TOTAL_PRESSURE)
 ("AVG_OUTLET_PRESSURE", AVG_OUTLET_PRESSURE)
 ("MASS_FLOW_RATE", MASS_FLOW_RATE)
-("OUTFLOW_GENERALIZED", OUTFLOW_GENERALIZED);
+("OUTFLOW_GENERALIZED", OUTFLOW_GENERALIZED)
+("TOTAL_EFFICIENCY", TOTAL_EFFICIENCY)
+("TOTAL_STATIC_EFFICIENCY", TOTAL_STATIC_EFFICIENCY)
+("TOTAL_PRESSURE_LOSS", TOTAL_PRESSURE_LOSS)
+("EULERIAN_WORK", EULERIAN_WORK)
+("TOTAL_ENTHALPY_IN", TOTAL_ENTHALPY_IN)
+("FLOW_ANGLE_IN", FLOW_ANGLE_IN)
+("FLOW_ANGLE_OUT", FLOW_ANGLE_OUT)
+("MASS_FLOW_IN", MASS_FLOW_IN)
+("MASS_FLOW_OUT", MASS_FLOW_OUT)
+("PRESSURE_RATIO",  PRESSURE_RATIO)
+("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS);
 
 /*!
  * \brief types of residual criteria equations
