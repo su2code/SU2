@@ -7454,6 +7454,241 @@ public:
 
 };
 
+/*! \class CFEM_ElasticitySolver
+ *  \brief Main class for defining a FEM solver for elastic structural problems.
+ *  \author R. Sanchez.
+ *  \version 4.0.0 "Cardinal"
+ *  \date July 10, 2015.
+ */
+class CFEM_ElasticitySolver_Adj : public CSolver {
+private:
+
+	CSolver *direct_solver; 			/*!< \brief Submatrix to store the constitutive term for node ij. */
+
+	unsigned long nElement;
+	unsigned short nMarker;
+	int nFEA_Terms;
+
+	su2double *GradN_X, *GradN_x;
+
+	su2double **Jacobian_c_ij;			/*!< \brief Submatrix to store the constitutive term for node ij. */
+	su2double **Jacobian_s_ij;			/*!< \brief Submatrix to store the stress contribution of node ij (diagonal). */
+
+	su2double **mZeros_Aux;			/*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
+	su2double **mId_Aux;				/*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
+
+
+public:
+
+	CElement*** element_container; 	/*!< \brief Vector which the define the finite element structure for each problem. */
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CFEM_ElasticitySolver_Adj(void);
+
+	/*!
+	 * \overload
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_ElasticitySolver_Adj(CGeometry *geometry, CConfig *config, CSolver* solver);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_ElasticitySolver_Adj(void);
+
+    /*!
+	 * \brief Impose the send-receive boundary condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Set residuals to zero.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+     * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 */
+	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output);
+
+
+	/*!
+	 * \brief Set the initial condition for the FEM structural problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] ExtIter - External iteration.
+	 */
+	void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
+
+	/*!
+	 * \brief Set a reference geometry for optimization purposes.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_ReferenceGeometry(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Compute the stiffness matrix of the problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+
+	/*!
+	 * \brief Compute the stiffness matrix of the problem and the nodal stress terms at the same time (more efficient if full Newton Raphson).
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+
+	/*!
+	 * \brief Initializes the matrices/residuals in the solution process (avoids adding over previous values).
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief Clamped boundary conditions.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+
+	/*!
+	 * \brief Enforce the solution to be 0 in the clamped nodes - Avoids accumulation of numerical error.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+	void BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                         unsigned short val_marker);
+
+	/*!
+	 * \brief Update the solution using an implicit solver.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief Postprocessing.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 */
+	void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,  CNumerics **numerics,
+			unsigned short iMesh);
+
+	/*!
+	 * \brief Routine to solve the Jacobian-Residual linearized system.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+
+	void Run_Structural_Adjoint(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh,
+			unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output);
+
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+
+	void BC_Clamped_Adj(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                                 unsigned short val_marker);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
+	 */
+
+	void BC_Clamped_Post_Adj(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                                 unsigned short val_marker);
+
+    /*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Solve_System_Adj(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Compute_DE_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Compute_RefGeom_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Initialize_Structural_Adj(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Compute_RefGeom_Gradient(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+
+};
+
 /*!
  * \class CAdjLevelSetSolver
  * \brief Main class for defining the level set solver.

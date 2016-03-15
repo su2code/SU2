@@ -1,5 +1,5 @@
 /*!
- * \file numerics_adjoint_elasticity_linear.cpp
+ * \file numerics_adjoint_elasticity_linear_linear.cpp
  * \brief This file contains the routines for setting the tangent matrix and residual of an adjoint FEM structural problem.
  * \author R. Sanchez
  * \version 4.1.0 "Cardinal"
