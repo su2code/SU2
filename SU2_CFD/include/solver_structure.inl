@@ -72,7 +72,7 @@ inline void CSolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geome
 
 inline void CSolver::SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics) { }
 
-inline void CSolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) { }
+//inline void CSolver::GetSurface_Pressure(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) { }
 
@@ -86,7 +86,7 @@ inline void CSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetric
 
 inline void CSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) { }
 
-inline void CSolver::SetStruct_Displacement(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
+//inline void CSolver::SetStruct_Displacement(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
 
 inline void CSolver::PredictStruct_Displacement(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
 
@@ -504,8 +504,8 @@ inline void CSolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_conta
 inline void CSolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 									 									 
-inline void CSolver::BC_Flow_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
-									 unsigned short val_marker) { }
+//inline void CSolver::BC_Flow_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
+//									 unsigned short val_marker) { }
 									 
 inline void CSolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
@@ -742,15 +742,15 @@ inline void CSolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_c
 
 inline void CSolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
 
-inline void CSolver::Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }										  
+//inline void CSolver::Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }										  
 
-inline void CSolver::Compute_StiffMassDampMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
+//inline void CSolver::Compute_StiffMassDampMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
 
 inline void CSolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }	
 
 inline void CSolver::Compute_IntegrationConstants(CConfig *config) { }
 
-inline void CSolver::SetSolution_time_n(CGeometry *geometry, CConfig *config) { }										  
+//inline void CSolver::SetSolution_time_n(CGeometry *geometry, CConfig *config) { }										  
 										  
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
@@ -1108,21 +1108,21 @@ inline su2double CAdjEulerSolver::GetPsiE_Inf(void) { return PsiE_Inf; }
 
 inline su2double CAdjEulerSolver::GetPhi_Inf(unsigned short val_dim) { return Phi_Inf[val_dim]; }
 
-inline su2double CFEASolver::GetTotal_CFEA() { return Total_CFEA; }
-
-inline void CFEASolver::SetTotal_CFEA(su2double cfea) { Total_CFEA = cfea; }
-
-inline su2double CFEASolver::GetWAitken_Dyn(void) { return WAitken_Dyn; }
-
-inline su2double CFEASolver::GetWAitken_Dyn_tn1(void) { return WAitken_Dyn_tn1; }
-
-inline void CFEASolver::SetWAitken_Dyn(su2double waitk) { WAitken_Dyn = waitk; }
-
-inline void CFEASolver::SetWAitken_Dyn_tn1(su2double waitk_tn1) { WAitken_Dyn_tn1 = waitk_tn1; }
-
-inline void CFEASolver::SetFSI_ConvValue(unsigned short val_index, su2double val_criteria) { FSI_Conv[val_index] = val_criteria; }
-
-inline su2double CFEASolver::GetFSI_ConvValue(unsigned short val_index){ return FSI_Conv[val_index]; }
+//inline su2double CFEASolver::GetTotal_CFEA() { return Total_CFEA; }
+//
+//inline void CFEASolver::SetTotal_CFEA(su2double cfea) { Total_CFEA = cfea; }
+//
+//inline su2double CFEASolver::GetWAitken_Dyn(void) { return WAitken_Dyn; }
+//
+//inline su2double CFEASolver::GetWAitken_Dyn_tn1(void) { return WAitken_Dyn_tn1; }
+//
+//inline void CFEASolver::SetWAitken_Dyn(su2double waitk) { WAitken_Dyn = waitk; }
+//
+//inline void CFEASolver::SetWAitken_Dyn_tn1(su2double waitk_tn1) { WAitken_Dyn_tn1 = waitk_tn1; }
+//
+//inline void CFEASolver::SetFSI_ConvValue(unsigned short val_index, su2double val_criteria) { FSI_Conv[val_index] = val_criteria; }
+//
+//inline su2double CFEASolver::GetFSI_ConvValue(unsigned short val_index){ return FSI_Conv[val_index]; }
 
 inline su2double CFEM_ElasticitySolver::GetRes_FEM(unsigned short val_var) { return Conv_Check[val_var]; }
 
