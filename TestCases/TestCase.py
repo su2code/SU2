@@ -193,7 +193,10 @@ class TestCase:
         passed       = True
         timed_out    = False
         
-        # Assemble the shell command to run 
+        # Adjust the number of iterations in the config file
+        self.adjust_iter()
+        
+        # Assemble the shell command to run
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
         command = "%s -f %s > %s" % (self.su2_exec, self.cfg_file, logfilename)
 
