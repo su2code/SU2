@@ -8507,7 +8507,7 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 	su2double cj_inf,cj_out1, cj_out2, cc, rhoc, AvgMach, Density_i, Pressure_i, deltaPressure, NormalVelocity, deltaNormalVelocity, c4temp,jk_nVert, *turboNormal, *turboVelocity, *Velocity_i;
 	su2double deltaTangVelocity, TangVelocity, *deltaprim, *cj;
 	unsigned short iMarker, iSpan, iMarkerTP, iDim;
-	unsigned long iVertex, iPoint, nVert, kstart, kend, k;
+	unsigned long iVertex, iPoint, kstart, kend, k;
 	unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
 	int j;
 	int rank = MASTER_NODE;
@@ -8516,8 +8516,8 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 	Velocity_i 		= new su2double[nDim];
 	deltaprim     = new su2double[nVar];
 	cj				    = new su2double[nVar];
-	complex<su2double> I, cktemp_inf,cktemp_out1, cktemp_out2;
-
+	complex<su2double> I, cktemp_inf,cktemp_out1, cktemp_out2, nVert;
+	su2double TwoPi = 2.0*PI_NUMBER;
 	I = complex<su2double>(0.0,1.0);
 
 #ifdef HAVE_MPI
@@ -8540,7 +8540,7 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 							cc = AverageSoundSpeed[iMarker][iSpan]*AverageSoundSpeed[iMarker][iSpan];
 							rhoc = AverageSoundSpeed[iMarker][iSpan]*AverageDensity[iMarker][iSpan];
 							AvgMach = AverageMach[iMarker][iSpan];
-							nVert = geometry->GetnTotVertexSpan(iMarker,iSpan);
+							nVert = complex<su2double>(geometry->GetnTotVertexSpan(iMarker,iSpan));
 							for (iVertex = 0; iVertex < geometry->nVertexSpan[iMarker][iSpan]; iVertex++) {
 
 								/*--- find the node related to the vertex ---*/
@@ -8571,11 +8571,12 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 								cj_out2 = cj[2];
 								cj_inf  = cj[3];
 
-								jk_nVert = j*k/su2double(nVert);
+								jk_nVert = j*k/(nVert.real());
 //								cout << jk_nVert<< " j " << j << " k " << k << " nVert " << nVert << endl;
-								cktemp_out1 +=  1.0/(nVert)*cj_out1*exp(-I*PI_NUMBER*2.0*jk_nVert);
-								cktemp_out2 +=  1.0/(nVert)*cj_out2*exp(-I*PI_NUMBER*2.0*jk_nVert);
-								cktemp_inf 	+=  1.0/(nVert)*cj_inf*exp(-I*PI_NUMBER*2.0*jk_nVert);
+								complex<su2double> expArg = complex<su2double>(cos(TwoPi*jk_nVert)) - I*complex<su2double>(sin(TwoPi*jk_nVert)); 
+								cktemp_out1 +=  cj_out1*expArg/nVert;
+								cktemp_out2 +=  cj_out2*expArg/nVert;
+								cktemp_inf  +=  cj_inf*expArg/nVert;
 
 							}
 						}
@@ -8782,7 +8783,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   su2double relfacAvg       = config->GetNRBC_RelaxFactorAverage(Marker_Tag);
   su2double relfacFou       = config->GetNRBC_RelaxFactorFourier(Marker_Tag);
   su2double *Normal;
-  
+  su2double TwoPi = 2.0*PI_NUMBER; 
   Normal 		 		= new su2double[nDim];
   turboNormal 	= new su2double[nDim];
   UnitNormal 		= new su2double[nDim];
@@ -8963,16 +8964,16 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 					if (AvgMach < 1.000){
 						if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
-							Beta_inf= I*sqrt(1.0  - pow(AvgMach,2));
+							Beta_inf= I*complex<su2double>(sqrt(1.0  - pow(AvgMach,2)));
 						}else{
-							Beta_inf= -I*sqrt(1.0 - pow(AvgMach,2));
+							Beta_inf= -I*complex<su2double>(sqrt(1.0 - pow(AvgMach,2)));
 						}
 						c2js 	= complex<su2double>(0.0,0.0);
 						j			 = geometry->turbovertex[val_marker][iSpan][iVertex]->GetGlobalVertexIndex();
 						for(k=1; k < kend+1; k++){
 							jk_nVert = j*k/su2double(nVert);
-							c2ks = -CkInflow[val_marker][iSpan][k-1]*(Beta_inf + AverageTurboMach[val_marker][iSpan][1])/( 1.0 + AverageTurboMach[val_marker][iSpan][0]);
-							c2js += c2ks*exp(I*PI_NUMBER*2.0*jk_nVert);
+							c2ks = -CkInflow[val_marker][iSpan][k-1]*complex<su2double>(Beta_inf + AverageTurboMach[val_marker][iSpan][1])/complex<su2double>( 1.0 + AverageTurboMach[val_marker][iSpan][0]);
+							c2js += c2ks*(complex<su2double>(cos(TwoPi*jk_nVert))+I*complex<su2double>(sin(TwoPi*jk_nVert)));
 						}
 						c2js_Re = 2.0*c2js.real();
 
@@ -9079,17 +9080,17 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 						dcjs[3] = c4js_Re - cj[3];
 					}else{
 						if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
-							Beta_inf= I*sqrt(1.0  - pow(AvgMach,2));
+							Beta_inf= I*complex<su2double>(sqrt(1.0  - pow(AvgMach,2)));
 						}else{
-							Beta_inf= -I*sqrt(1.0 - pow(AvgMach,2));
+							Beta_inf= -I*complex<su2double>(sqrt(1.0 - pow(AvgMach,2)));
 						}
 						c4js 	= complex<su2double>(0.0,0.0);
 						j			 = geometry->turbovertex[val_marker][iSpan][iVertex]->GetGlobalVertexIndex();
 						for(k=1; k < kend+1; k++){
 							jk_nVert = j*k/su2double(nVert);
-							c4ks= (2.0 * AverageTurboMach[val_marker][iSpan][0])/(Beta_inf - AverageTurboMach[val_marker][iSpan][1])*CkOutflow1[val_marker][iSpan][k-1] - (Beta_inf + AverageTurboMach[val_marker][iSpan][1])/(Beta_inf - AverageTurboMach[val_marker][iSpan][1])*CkOutflow2[val_marker][iSpan][k-1];
+							c4ks= complex<su2double>(2.0 * AverageTurboMach[val_marker][iSpan][0])/complex<su2double>(Beta_inf - AverageTurboMach[val_marker][iSpan][1])*CkOutflow1[val_marker][iSpan][k-1] - complex<su2double>(Beta_inf + AverageTurboMach[val_marker][iSpan][1])/complex<su2double>(Beta_inf - AverageTurboMach[val_marker][iSpan][1])*CkOutflow2[val_marker][iSpan][k-1];
 
-							c4js += c4ks*exp(I*PI_NUMBER*2.0*jk_nVert);
+							c4js += c4ks*(complex<su2double>(cos(TwoPi*jk_nVert)) + I*complex<su2double>(sin(TwoPi*jk_nVert)));
 						}
 						c4js_Re = 2.0*c4js.real();
 
