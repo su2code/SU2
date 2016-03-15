@@ -81,6 +81,9 @@ su2_cfd_sources = \
   ../src/numerics_adjoint_levelset.cpp \
   ../src/numerics_adjoint_mean.cpp \
   ../src/numerics_adjoint_turbulent.cpp \
+  ../src/numerics_adjoint_elasticity_nonlinear.cpp \
+  ../src/numerics_adjoint_elasticity_linear.cpp \
+  ../src/numerics_adjoint_elasticity.cpp \
   ../src/numerics_direct_poisson.cpp \
   ../src/numerics_direct_heat.cpp \
   ../src/numerics_direct_mean.cpp \
@@ -102,6 +105,7 @@ su2_cfd_sources = \
   ../src/solver_adjoint_mean.cpp \
   ../src/solver_adjoint_turbulent.cpp \
   ../src/solver_adjoint_discrete.cpp \
+  ../src/solver_adjoint_elasticity.cpp \
   ../src/solver_direct_poisson.cpp \
   ../src/solver_direct_heat.cpp \
   ../src/solver_direct_mean.cpp \
@@ -119,6 +123,7 @@ su2_cfd_sources = \
   ../src/variable_adjoint_mean.cpp \
   ../src/variable_adjoint_turbulent.cpp \
   ../src/variable_adjoint_discrete.cpp \
+  ../src/variable_adjoint_elasticity.cpp \
   ../src/variable_direct_poisson.cpp \
   ../src/variable_direct_heat.cpp \
   ../src/variable_direct_mean.cpp \
