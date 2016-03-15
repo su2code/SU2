@@ -1,8 +1,8 @@
 /*!
- * \file variable_direct_elasticity.cpp
- * \brief Definition of the solution fields.
- * \author F. Palacios, R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \file variable_fem_elasticity.cpp
+ * \brief Definition of the variables for FEM elastic structural problems.
+ * \author R. Sanchez
+ * \version 4.0.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -31,218 +31,161 @@
 
 #include "../include/variable_structure.hpp"
 
-CFEAVariable::CFEAVariable(void) : CVariable() { }
+CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
 
-CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
-: CVariable(val_nDim, val_nvar, config) {
-	unsigned short iVar, iDim, jDim;
+	dynamic_analysis 		= false;
+	fsi_analysis 			= false;
 
-	dynamicFEA = (config->GetDynamic_Analysis() == DYNAMIC);
-  
-	/*--- Allocate residual structures ---*/
-	Residual_Sum = new su2double [nVar]; Residual_Old = new su2double [nVar];
-  
+	VonMises_Stress 		= 0.0;
+
+	Stress 					= NULL;		// Nodal stress (for output purposes)
+	FlowTraction 			= NULL;		// Nodal traction due to the fluid (fsi)
+//	Residual_Int 			= NULL;		// Internal component of the residual
+	Residual_Ext_Surf 		= NULL;		// Residual component due to external surface forces
+	Residual_Ext_Body 		= NULL;		// Residual component due to body forces
+
+	FlowTraction_n			= NULL;		// Nodal traction due to the fluid (fsi) at time n (for gen-alpha methods)
+	Residual_Ext_Surf_n		= NULL;		// Residual component due to external surface forces at time n (for gen-alpha methods)
+
+	Solution_time_n			= NULL;		// Solution at the node at the previous subiteration
+
+	Solution_Vel			= NULL;		// Velocity at the node at time t+dt
+	Solution_Vel_time_n 	= NULL;		// Velocity at the node at time t
+
+	Solution_Accel			= NULL;		// Acceleration at the node at time t+dt
+	Solution_Accel_time_n 	= NULL;		// Acceleration at the node at time t
+
+	Solution_Pred			= NULL;		// Predictor of the solution at the current subiteration
+	Solution_Pred_Old		= NULL;		// Predictor of the solution at the previous subiteration
+
+	Reference_Geometry		= NULL;		// Reference geometry for optimization purposes
+	Solution_Adj 			= NULL;		// Adjoint solution for structural problems (temporary)
+	Gradient_Adj			= NULL;		// Adjoint gradient dS/dv for structural problems (temporary)
+
+}
+
+CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+
+	unsigned short iVar;
+	bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
+	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+	bool incremental_load = config->GetIncrementalLoad();
+	bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);	// Generalized alpha method requires residual at previous time step.
+
+	bool refgeom = config->GetRefGeom();				// Reference geometry needs to be stored
+	bool structural_adj = config->GetStructural_Adj();	// A structural adjoint simulation is to be run (temporary)
+
+	VonMises_Stress = 0.0;
+
+	dynamic_analysis = (config->GetDynamic_Analysis() == DYNAMIC);
+	fsi_analysis = config->GetFSI_Simulation();
+
+	if (nDim == 2) Stress = new su2double [3];
+	else if (nDim == 3) Stress = new su2double [6];
+
 	/*--- Initialization of variables ---*/
 	for (iVar = 0; iVar < nVar; iVar++) {
 		Solution[iVar] = val_fea[iVar];
-		Solution_Old[iVar] = val_fea[iVar];
 	}
 
-	if (dynamicFEA){
-
-		/*--- Allocate solution structures ---*/
-		Solution_Pred =  new su2double [nVar];
-		Solution_Pred_Old =  new su2double [nVar];
-		Solution_time_n = new su2double [nVar];
-		Solution_Vel = new su2double [nVar];
-		Solution_Vel_time_n = new su2double [nVar];
-		Solution_Accel = new su2double [nVar];
-		Solution_Accel_time_n = new su2double [nVar];
-
-		/*--- Initialization of variables for dynamic problem ---*/
-		for (iVar = 0; iVar < nVar; iVar++) {
-			Solution_Pred[iVar] =  val_fea[iVar];
-			Solution_Pred_Old[iVar] =  val_fea[iVar];
-			Solution_time_n[iVar] = val_fea[iVar];
-			Solution_Vel[iVar] = val_fea[iVar];
-			Solution_Vel_time_n[iVar] = val_fea[iVar];
-			Solution_Accel[iVar] = val_fea[iVar];
-			Solution_Accel_time_n[iVar] = val_fea[iVar];
+	if (dynamic_analysis){
+		Solution_time_n			=  new su2double [nVar];
+		Solution_Vel 			=  new su2double [nVar];
+		Solution_Vel_time_n		=  new su2double [nVar];
+		Solution_Accel 			=  new su2double [nVar];
+		Solution_Accel_time_n	=  new su2double [nVar];
+		for (iVar = 0; iVar < nVar; iVar++){
+			Solution_time_n[iVar] 		= val_fea[iVar];
+			Solution_Vel[iVar] 			= val_fea[iVar+nVar];
+			Solution_Vel_time_n[iVar] 	= val_fea[iVar+nVar];
+			Solution_Accel[iVar] 		= val_fea[iVar+2*nVar];
+			Solution_Accel_time_n[iVar] = val_fea[iVar+2*nVar];
 		}
 	}
+	else {
+		Solution_time_n			=  NULL;
+		Solution_Vel 			=  NULL;
+		Solution_Vel_time_n		=  NULL;
+		Solution_Accel 			=  NULL;
+		Solution_Accel_time_n	=  NULL;
+	}
 
-
-  
-  /*--- Allocate stress tensor ---*/
-	Stress = new su2double* [nDim];
-	for (iDim = 0; iDim < nDim; iDim++)
-		Stress[iDim] = new su2double [nDim];
-
-  /*--- Initialize stress tensor---*/
-	for (iDim = 0; iDim < nDim; iDim++){
-		for (jDim = 0; jDim < nDim; jDim++){
-			Stress[iDim][jDim]=0.0;
+	if (fsi_analysis) {
+		FlowTraction 			=  new su2double [nVar];
+		Solution_Pred 			=  new su2double [nVar];
+		Solution_Pred_Old 		=  new su2double [nVar];
+		for (iVar = 0; iVar < nVar; iVar++){
+			FlowTraction[iVar] = 0.0;
+			Solution_Pred[iVar] = val_fea[iVar];
+			Solution_Pred_Old[iVar] = val_fea[iVar];
 		}
 	}
-}
-
-CFEAVariable::~CFEAVariable(void) {
-  unsigned short iDim;
-
-	for (iDim = 0; iDim < nDim; iDim++)
-		delete [] Stress[iDim];
-	delete [] Stress;
-  delete [] Residual_Sum;
-  delete [] Residual_Old;
-  delete [] Solution;
-
-  if (dynamicFEA){
-	  delete[] Solution_Pred;
-	  delete[] Solution_Pred_Old;
-	  delete[] Solution_time_n;
-	  delete[] Solution_Vel;
-	  delete[] Solution_Vel_time_n;
-	  delete[] Solution_Accel;
-	  delete[] Solution_Accel_time_n ;
-  }
-
-  
-
-}
-
-void CFEAVariable::SetSolution_time_n(void) {
-
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Solution_time_n[iVar] = Solution[iVar];
-
-}
-
-void CFEAVariable::SetSolution_time_n(su2double *val_solution_time_n) {
-
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Solution_time_n[iVar] = val_solution_time_n[iVar];
-
-}
-
-void CFEAVariable::SetSolution_Vel(su2double *val_solution_vel) {
-
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Solution_Vel[iVar] = val_solution_vel[iVar];
-
-}
-
-void CFEAVariable::SetSolution_Vel_time_n(su2double *val_solution_vel_time_n) {
-
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Solution_Vel_time_n[iVar] = val_solution_vel_time_n[iVar];
-
-}
-
-void CFEAVariable::SetSolution_Vel_time_n(void) {
-
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Solution_Vel_time_n[iVar] = Solution_Vel[iVar];
-
-}
-
-void CFEAVariable::SetSolution_Accel(su2double *val_solution_accel) {
-
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Solution_Accel[iVar] = val_solution_accel[iVar];
-
-}
-
-void CFEAVariable::SetSolution_Accel_time_n(su2double *val_solution_accel_time_n) {
-
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Solution_Accel_time_n[iVar] = val_solution_accel_time_n[iVar];
-
-}
-
-void CFEAVariable::SetSolution_Accel_time_n(void) {
-
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Solution_Accel_time_n[iVar] = Solution_Accel[iVar];
-
-}
-
-void CFEAVariable::SetSolution_Pred(void){
-
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Solution_Pred[iVar] = Solution[iVar];
-
-}
-
-void CFEAVariable::SetSolution_Pred_Old(void){
-
-	for (unsigned short iVar = 0; iVar < nVar; iVar++)
-		Solution_Pred_Old[iVar] = Solution_Pred[iVar];
-
-}
-
-
-CFEABoundVariable::CFEABoundVariable(void) : CVariable() { }
-
-CFEABoundVariable::CFEABoundVariable(unsigned short val_nDim, unsigned short val_nvar, unsigned short val_nElBound, CConfig *config)
-: CVariable(val_nDim, val_nvar, config) {
-	unsigned short iDim, jDim;
-
-	/*--- Allocate residual structures ---*/
-	Residual_Sum = new su2double [nVar]; Residual_Old = new su2double [nVar];
-
-	/*--- Allocate stress tensor ---*/
-	if (nDim == 2){
-		Traction = new su2double* [2*nDim];
-		for (iDim = 0; iDim < 2*nDim ; iDim++)
-			Traction[iDim] = new su2double [val_nElBound];
-	}
-	else if (nDim == 3){
-		/*--- Allocate stress tensor ---*/
-		Traction = new su2double* [4*nDim];
-		for (iDim = 0; iDim < 4*nDim ; iDim++)
-			Traction[iDim] = new su2double [val_nElBound];
+	else {
+		FlowTraction 			=  NULL;
+		Solution_Pred 			=  NULL;
+		Solution_Pred_Old 		=  NULL;
 	}
 
-	/*--- Initialize stress tensor ---*/
-	if (nDim == 2){
-		/*--- Initialize stress tensor---*/
-		for (iDim = 0; iDim < 2*nDim; iDim++){
-			for (jDim = 0; jDim < val_nElBound; jDim++){
-				Traction[iDim][jDim]=0.0;
-			}
-		}
-	}
-	else if (nDim == 3){
-		/*--- Initialize stress tensor---*/
-		for (iDim = 0; iDim < 4*nDim; iDim++){
-			for (jDim = 0; jDim < val_nElBound; jDim++){
-				Traction[iDim][jDim]=0.0;
-			}
-		}
+	/*--- If we are going to use incremental analysis, we need a way to store the old solution ---*/
+	if (incremental_load && nonlinear_analysis){
+		Solution_Old 			=  new su2double [nVar];
 	}
 
+	/*--- If we are going to use a generalized alpha integration method, we need a way to store the old residuals ---*/
+	if (gen_alpha){
+		Residual_Ext_Surf_n		= new su2double [nVar];
+
+		if (fsi_analysis) FlowTraction_n = new su2double [nVar];
+		else FlowTraction_n = NULL;
+
+	}
+
+//	if (nonlinear_analysis) Residual_Int = new su2double [nVar];	else Residual_Int = NULL;
+	if (body_forces) Residual_Ext_Body = new su2double [nVar];	else Residual_Ext_Body = NULL;
+	Residual_Ext_Surf = new su2double [nVar];
+
+	for (iVar = 0; iVar < nVar; iVar++){
+		Residual_Ext_Surf[iVar] = 0.0;
+		if (body_forces) Residual_Ext_Body[iVar] = 0.0;
+	}
+
+	if (refgeom)	Reference_Geometry = new su2double [nVar];
+	else 			Reference_Geometry = NULL;
+
+	if (structural_adj) 	{
+		Solution_Adj = new su2double[nVar];
+		Gradient_Adj = new su2double[nVar];
+	}
+	else{
+		Solution_Adj = NULL;
+		Gradient_Adj = NULL;
+	}
 }
 
-CFEABoundVariable::~CFEABoundVariable(void) {
-  unsigned short iDim;
+CFEM_ElasVariable::~CFEM_ElasVariable(void) {
 
-	/*--- Initialize stress tensor ---*/
-	if (nDim == 2){
-		/*--- Initialize stress tensor---*/
-		for (iDim = 0; iDim < 2*nDim; iDim++){
-			delete [] Traction[iDim];
-		}
-	}
-	else if (nDim == 3){
-		/*--- Initialize stress tensor---*/
-		for (iDim = 0; iDim < 4*nDim; iDim++){
-			delete [] Traction[iDim];
-		}
-	}
+	if (Stress 					!= NULL) delete [] Stress;
+	if (FlowTraction 			!= NULL) delete [] FlowTraction;
+//	if (Residual_Int 			!= NULL) delete [] Residual_Int;
+	if (Residual_Ext_Surf 		!= NULL) delete [] Residual_Ext_Surf;
+	if (Residual_Ext_Body 		!= NULL) delete [] Residual_Ext_Body;
 
-	delete [] Traction;
+	if (FlowTraction_n 			!= NULL) delete [] FlowTraction_n;
+	if (Residual_Ext_Surf_n		!= NULL) delete [] Residual_Ext_Surf_n;
 
-  delete [] Residual_Sum;
-  delete [] Residual_Old;
-  
+	if (Solution_time_n 		!= NULL) delete [] Solution_time_n;
+
+	if (Solution_Vel 			!= NULL) delete [] Solution_Vel;
+	if (Solution_Vel_time_n 	!= NULL) delete [] Solution_Vel_time_n;
+
+	if (Solution_Accel 			!= NULL) delete [] Solution_Accel;
+	if (Solution_Accel_time_n 	!= NULL) delete [] Solution_Accel_time_n;
+
+	if (Solution_Pred 			!= NULL) delete [] Solution_Pred;
+	if (Solution_Pred_Old 		!= NULL) delete [] Solution_Pred_Old;
+
+	if (Reference_Geometry 		!= NULL) delete [] Reference_Geometry;
+	if (Solution_Adj 			!= NULL) delete [] Solution_Adj;
+	if (Gradient_Adj 			!= NULL) delete [] Gradient_Adj;
+
 }
