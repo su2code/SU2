@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -84,11 +84,12 @@ void CMeanFlowIteration::Preprocess(COutput *output,
                                     CFreeFormDefBox*** FFDBox,
                                     unsigned short val_iZone) {
   
-
-  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  unsigned long FSIIter = config_container[val_iZone]->GetFSIIter();
+  unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
+  unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
+  
   bool fsi = config_container[val_iZone]->GetFSI_Simulation();
+  unsigned long FSIIter = config_container[val_iZone]->GetFSIIter();
+
   bool time_spectral = (config_container[val_iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL);
 
   
@@ -2223,7 +2224,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
   unsigned long nIterMesh;
   unsigned long iPoint;
   bool stat_mesh = true;
-  bool adjoint = config_container->GetAdjoint();
+  bool adjoint = config_container->GetContinuous_Adjoint();
   bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
   
   /*--- For a time-spectral case, set "iteration number" to the zone number,
