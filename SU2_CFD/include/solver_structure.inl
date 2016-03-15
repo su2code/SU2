@@ -86,8 +86,6 @@ inline void CSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetric
 
 inline void CSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) { }
 
-//inline void CSolver::SetStruct_Displacement(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
-
 inline void CSolver::PredictStruct_Displacement(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
 
 inline void CSolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution, unsigned long iFSIIter) { }
@@ -503,10 +501,7 @@ inline void CSolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_conta
 									 
 inline void CSolver::BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
-									 									 
-//inline void CSolver::BC_Flow_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
-//									 unsigned short val_marker) { }
-									 
+									 									 								 
 inline void CSolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
 
@@ -742,15 +737,9 @@ inline void CSolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_c
 
 inline void CSolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
 
-//inline void CSolver::Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }										  
-
-//inline void CSolver::Compute_StiffMassDampMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) { }
-
 inline void CSolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }	
 
-inline void CSolver::Compute_IntegrationConstants(CConfig *config) { }
-
-//inline void CSolver::SetSolution_time_n(CGeometry *geometry, CConfig *config) { }										  
+inline void CSolver::Compute_IntegrationConstants(CConfig *config) { }					  
 										  
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
