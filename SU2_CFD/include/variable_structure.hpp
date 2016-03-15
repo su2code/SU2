@@ -1384,16 +1384,6 @@ public:
 	 * \brief A virtual member.
 	 */
 	virtual void SetVelocity(void);
-  
-	/*!
-	 * \brief A virtual member.
-	 */
-  //virtual void SetStress(unsigned short iVar, unsigned short jVar, su2double val_stress);
-  
-	/*!
-	 * \brief A virtual member.
-	 */
-  //virtual void AddStress(unsigned short iVar, unsigned short jVar, su2double val_stress);
 
 	/*!
 	 * \brief A virtual member.
@@ -1413,12 +1403,6 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-   
-	 */
-  //virtual su2double **GetStress(void);
-  
-	/*!
-	 * \brief A virtual member.
 	 */
   virtual void SetVonMises_Stress(su2double val_stress);
   
@@ -1427,33 +1411,6 @@ public:
    
 	 */
   virtual su2double GetVonMises_Stress(void);
-  
-  /*!
-	 * \brief A virtual member.
-	 */
-  //virtual void SetFlow_Pressure(su2double val_pressure);
-  
-	/*!
-	 * \brief A virtual member.
-   
-	 */
-  //virtual su2double GetFlow_Pressure(void);
-
-    /*!
-	 * \brief A virtual member.
-	 */
-  //virtual void Initialize_Connectivity(void);
-
-  /*!
-	 * \brief A virtual member.
-	 */
-  //virtual void Upgrade_Connectivity(void);
-
-  /*!
-	 * \brief A virtual member.
-	 */
-  //virtual unsigned short Get_Connectivity(void);
-
 
 	/*!
 	 * \brief A virtual member.

@@ -43,12 +43,6 @@ inline void CVariable::AddTraction(unsigned short iVar, unsigned short jVar, su2
 
 inline su2double **CVariable::GetTraction(void) { return NULL; }
 
-//inline void CVariable::SetStress(unsigned short iVar, unsigned short jVar, su2double val_stress) { }
-
-//inline void CVariable::AddStress(unsigned short iVar, unsigned short jVar, su2double val_stress) { }
-
-//inline su2double **CVariable::GetStress(void) { return NULL; }
-
 inline void CVariable::SetStress_FEM(unsigned short iVar, su2double val_stress) { }
 
 inline void CVariable::AddStress_FEM(unsigned short iVar, su2double val_stress) { }
@@ -58,16 +52,6 @@ inline su2double *CVariable::GetStress_FEM(void) { return NULL; }
 inline void CVariable::SetVonMises_Stress(su2double val_stress) { }
 
 inline su2double CVariable::GetVonMises_Stress(void) { return 0; }
-
-//inline void CVariable::SetFlow_Pressure(su2double val_pressure) { }
-
-//inline su2double CVariable::GetFlow_Pressure(void) { return 0; }
-
-//inline void CVariable::Initialize_Connectivity(void) { }
-
-//inline void CVariable::Upgrade_Connectivity(void) { }
-
-//inline unsigned short CVariable::Get_Connectivity(void) { return 0; }
 
 inline void CVariable::Add_SurfaceLoad_Res(su2double *val_surfForce) { }
 

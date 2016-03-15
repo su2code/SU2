@@ -630,16 +630,6 @@ public:
 	virtual void BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                                  unsigned short val_marker);
     
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	//virtual void BC_Flow_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-    //                         unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
@@ -2402,13 +2392,6 @@ public:
    * \ Set the flux averaged enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA ) }\f$
    */
   virtual void SetOneD_FluxAvgEntalpy(su2double EnthalpyRef);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  //virtual void GetSurface_Pressure(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -2494,16 +2477,6 @@ public:
                                     CGeometry **fea_geometry,
                                     CSolver ***fea_solution);
     
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] fea_geometry - Geometrical definition of the problem.
-	 * \param[in] fea_config - Geometrical definition of the problem.
-	 * \param[in] fea_geometry - Definition of the particular problem.
-	 */
-	//virtual void SetStruct_Displacement(CGeometry **fea_geometry,
-    //        							CConfig *fea_config,
-    //        							CSolver ***fea_solution);
-
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] fea_geometry - Geometrical definition of the problem.
@@ -2759,24 +2732,6 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	//virtual void Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	//virtual void Compute_StiffMassDampMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 */
@@ -2797,12 +2752,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void Compute_IntegrationConstants(CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 */
-	//virtual void SetSolution_time_n(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
