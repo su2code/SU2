@@ -371,6 +371,36 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
   case MASS_FLOW_RATE:
     ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
     break;
+  case TOTAL_EFFICIENCY:
+      ObjFunc_Value = direct_solver->GetTotalTotalEfficiency(0);
+      break;
+    case TOTAL_PRESSURE_LOSS:
+        ObjFunc_Value = direct_solver->GetTotalPressureLoss(0);
+      break;
+    case KINETIC_ENERGY_LOSS:
+        ObjFunc_Value = direct_solver->GetKineticEnergyLoss(0);
+      break;
+    case TOTAL_STATIC_EFFICIENCY:
+        ObjFunc_Value = direct_solver->GetTotalStaticEfficiency(0);
+      break;
+    case EULERIAN_WORK:
+        ObjFunc_Value = direct_solver->GetEulerianWork(0);
+      break;
+    case TOTAL_ENTHALPY_IN:
+        ObjFunc_Value = direct_solver->GetTotalEnthalpyIn(0);
+      break;
+    case FLOW_ANGLE_IN:
+        ObjFunc_Value = 180.0/PI_NUMBER*direct_solver->GetFlowAngleIn(0);
+      break;
+    case FLOW_ANGLE_OUT:
+        ObjFunc_Value = 180.0/PI_NUMBER*direct_solver->GetFlowAngleOut(0);
+      break;
+    case MASS_FLOW_IN:
+        ObjFunc_Value = direct_solver->GetMassFlowIn(0);
+      break;
+    case MASS_FLOW_OUT:
+        ObjFunc_Value = direct_solver->GetMassFlowOut(0);
+      break;
  /*--- Template for new objective functions where TemplateObjFunction()
   *  is the routine that returns the obj. function value. The computation
   * must be done while the tape is active, i.e. between AD::StartRecording() and
