@@ -4053,6 +4053,34 @@ public:
 
 /*!
  * \class CFEM_LinearElasticity
+ * \brief Class for computing the stiffness matrix of a linear, elastic problem.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_LinearElasticity_Adj : public CFEM_LinearElasticity {
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_LinearElasticity_Adj(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_LinearElasticity_Adj(void);
+
+	void Compute_Constitutive_Matrix(void);
+
+};
+
+/*!
+ * \class CFEM_LinearElasticity
  * \brief Class for computing the stiffness matrix of a nonlinear, elastic problem.
  * \ingroup FEM_Discr
  * \author R.Sanchez

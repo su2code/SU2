@@ -1065,38 +1065,38 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
 
 
 	bool de_effects = config->GetDE_Effects();
-	bool structural_adj = config->GetStructural_Adj();
+//	bool structural_adj = config->GetStructural_Adj();
 
 	if (de_effects) numerics_container[MESH_0][FEA_SOL][DE_TERM] = new CFEM_DielectricElastomer(nDim, nVar_FEM, config);
-	if (structural_adj && de_effects) numerics_container[MESH_0][FEA_SOL][DE_ADJ] = new CFEM_DielectricElastomer_Adj(nDim, nVar_FEM, config);
+//	if (structural_adj && de_effects) numerics_container[MESH_0][FEA_SOL][DE_ADJ] = new CFEM_DielectricElastomer_Adj(nDim, nVar_FEM, config);
 
   }
 
   /*--- Solver definition for the FEM problem ---*/
   if (adj_fem) {
-//	switch (config->GetGeometricConditions()) {
-//    	case SMALL_DEFORMATIONS :
-//    		switch (config->GetMaterialModel()) {
-//    			case LINEAR_ELASTIC: numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_LinearElasticity(nDim, nVar_FEM, config); break;
-//    			case NEO_HOOKEAN : cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
-//    			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
-//    		}
-//    		break;
-//    	case LARGE_DEFORMATIONS :
-//    		switch (config->GetMaterialModel()) {
-//				case LINEAR_ELASTIC: cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
-//    			case NEO_HOOKEAN :
-//    				switch (config->GetMaterialCompressibility()) {
-//    					case COMPRESSIBLE_MAT : numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config); break;
-//    					case INCOMPRESSIBLE_MAT : numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config); break;
-//    					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
-//    				}
-//    				break;
-//    			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
-//    		}
-//    		break;
-//    	default: cout << " Solver not implemented." << endl; exit(EXIT_FAILURE); break;
-//	}
+	switch (config->GetGeometricConditions()) {
+    	case SMALL_DEFORMATIONS :
+    		switch (config->GetMaterialModel()) {
+    			case LINEAR_ELASTIC: numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_LinearElasticity_Adj(nDim, nVar_FEM, config); break;
+    			case NEO_HOOKEAN : cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
+    			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+    		}
+    		break;
+    	case LARGE_DEFORMATIONS :
+    		switch (config->GetMaterialModel()) {
+				case LINEAR_ELASTIC: cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
+    			case NEO_HOOKEAN :
+    				switch (config->GetMaterialCompressibility()) {
+    					case COMPRESSIBLE_MAT : numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config); break;
+    					case INCOMPRESSIBLE_MAT : numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config); break;
+    					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+    				}
+    				break;
+    			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+    		}
+    		break;
+    	default: cout << " Solver not implemented." << endl; exit(EXIT_FAILURE); break;
+	}
 
 	bool de_effects = config->GetDE_Effects();
 

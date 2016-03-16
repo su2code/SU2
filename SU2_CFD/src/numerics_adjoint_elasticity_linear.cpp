@@ -31,3 +31,58 @@
 
 #include "../include/numerics_structure.hpp"
 #include <limits>
+
+CFEM_LinearElasticity_Adj::CFEM_LinearElasticity_Adj(unsigned short val_nDim, unsigned short val_nVar,
+                                   CConfig *config) : CFEM_LinearElasticity(val_nDim, val_nVar, config) {
+
+
+}
+
+CFEM_LinearElasticity_Adj::~CFEM_LinearElasticity_Adj(void) {
+
+}
+
+void CFEM_LinearElasticity_Adj::Compute_Constitutive_Matrix(void){
+
+     /*--- Compute the dD/dE Matrix (for plane stress and 2-D)---*/
+
+	if (nDim == 2){
+		if (plane_stress){
+
+			/*--- We enable plane stress cases ---*/
+
+			D_Mat[0][0] = 1.0/(1.0-Nu*Nu);	  		D_Mat[0][1] = Nu/(1.0-Nu*Nu);  	D_Mat[0][2] = 0.0;
+			D_Mat[1][0] = Nu/(1.0-Nu*Nu);    		D_Mat[1][1] = 1.0/(1.0-Nu*Nu);   	 D_Mat[1][2] = 0.0;
+			D_Mat[2][0] = 0.0;               	D_Mat[2][1] = 0.0;               D_Mat[2][2] = (1.0-Nu)/(2.0*(1.0-Nu*Nu));
+		}
+		else{
+			/*--- Assuming plane strain as a general case ---*/
+
+			D_Mat[0][0] = (1.0-Nu)/((1.0+Nu)*(1.0-2.0*Nu));	D_Mat[0][1] = Nu/((1.0+Nu)*(1.0-2.0*Nu));       	D_Mat[0][2] = 0.0;
+			D_Mat[1][0] = Nu/((1.0+Nu)*(1.0-2.0*Nu));       D_Mat[1][1] = (1.0-Nu)/((1.0+Nu)*(1.0-2.0*Nu));  	D_Mat[1][2] = 0.0;
+			D_Mat[2][0] = 0.0;              				D_Mat[2][1] = 0.0;               					D_Mat[2][2] = 1.0/(2.0*(1.0+Nu));
+		}
+
+	}
+	else if (nDim == 3){
+
+		D_Mat[0][0] = (1.0-Nu)/((1.0+Nu)*(1.0-2.0*Nu));	D_Mat[0][1] = Nu/((1.0+Nu)*(1.0-2.0*Nu));		D_Mat[0][2] = Nu/((1.0+Nu)*(1.0-2.0*Nu));
+		D_Mat[1][0] = Nu/((1.0+Nu)*(1.0-2.0*Nu));		D_Mat[1][1] = (1.0-Nu)/((1.0+Nu)*(1.0-2.0*Nu));	D_Mat[1][2] = Nu/((1.0+Nu)*(1.0-2.0*Nu));
+		D_Mat[2][0] = Nu/((1.0+Nu)*(1.0-2.0*Nu));		D_Mat[2][1] = Nu/((1.0+Nu)*(1.0-2.0*Nu));		D_Mat[2][2] = (1.0-Nu)/((1.0+Nu)*(1.0-2.0*Nu));
+
+		D_Mat[3][3] = 1.0/(2.0*(1.0+Nu));				D_Mat[4][4] = 1.0/(2.0*(1.0+Nu));				D_Mat[5][5] = 1.0/(2.0*(1.0+Nu));
+
+		D_Mat[0][3] = 0.0;	D_Mat[0][4] = 0.0;	D_Mat[0][5] = 0.0;
+		D_Mat[1][3] = 0.0;	D_Mat[1][4] = 0.0;	D_Mat[1][5] = 0.0;
+		D_Mat[2][3] = 0.0;	D_Mat[2][4] = 0.0;	D_Mat[2][5] = 0.0;
+		D_Mat[3][0] = 0.0;	D_Mat[3][1] = 0.0;	D_Mat[3][2] = 0.0;
+		D_Mat[4][0] = 0.0;	D_Mat[4][1] = 0.0;	D_Mat[4][2] = 0.0;
+		D_Mat[5][0] = 0.0;	D_Mat[5][1] = 0.0;	D_Mat[5][2] = 0.0;
+
+		D_Mat[3][4] = 0.0;	D_Mat[3][5] = 0.0;
+		D_Mat[4][3] = 0.0;	D_Mat[4][5] = 0.0;
+		D_Mat[5][3] = 0.0;	D_Mat[5][4] = 0.0;
+
+	}
+
+}
