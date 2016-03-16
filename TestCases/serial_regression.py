@@ -567,6 +567,18 @@ def main():
     pass_list.append(findiff_euler_py.run_filediff())
     test_list.append(findiff_euler_py)
     
+    # test shape_optimization.py
+    shape_opt_euler_py           = TestCase('shape_opt_euler_py')
+    shape_opt_euler_py.cfg_dir   = "optimization_euler/steady_naca0012"
+    shape_opt_euler_py.cfg_file  = "inv_NACA0012_adv.cfg"
+    shape_opt_euler_py.test_iter = 1
+    shape_opt_euler_py.test_vals = [1, 1, 2.134974E-05, 3.829535E-03] #last 4 columns
+    shape_opt_euler_py.su2_exec  = "shape_optimization.py -f"
+    shape_opt_euler_py.timeout   = 1600
+    shape_opt_euler_py.tol       = 0.00001
+    pass_list.append(shape_opt_euler_py.run_opt())
+    test_list.append(shape_opt_euler_py)
+    
     # Tests summary
     print '=================================================================='
     print 'Summary of the serial tests'
