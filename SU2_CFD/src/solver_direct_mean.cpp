@@ -8794,6 +8794,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 					case MASS_FLOW:
 						
 						/*--- Retrieve the specified mass flow for the inlet. ---*/
+						//n = geometry->node[iPoint]->GetGlobalIndex();
 						
 						Density  = config->GetInlet_Ttotal(Marker_Tag);
 						//Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
