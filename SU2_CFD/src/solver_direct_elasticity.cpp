@@ -98,7 +98,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	bool de_effects = config->GetDE_Effects();											// Test whether we consider dielectric elastomers
 
-	bool structural_adj = config->GetStructural_Adj();									// A structural adjoint simulation is to be run (temporary)
+//	bool structural_adj = config->GetStructural_Adj();									// A structural adjoint simulation is to be run (temporary)
 
 	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
 	bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
@@ -500,10 +500,10 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 	solutionPredictor = new su2double [nVar];
 
 	/*---- Initialize the linear solver structures for the adjoint problem (temporary) ---*/
-	if (structural_adj){
-		LinSysSol_Adj.Initialize(nPoint, nPointDomain, nVar, 0.0);
-		LinSysRes_Adj.Initialize(nPoint, nPointDomain, nVar, 0.0);
-	}
+//	if (structural_adj){
+//		LinSysSol_Adj.Initialize(nPoint, nPointDomain, nVar, 0.0);
+//		LinSysRes_Adj.Initialize(nPoint, nPointDomain, nVar, 0.0);
+//	}
 
 	/*--- Perform the MPI communication of the solution ---*/
 

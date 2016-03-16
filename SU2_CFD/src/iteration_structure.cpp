@@ -1093,12 +1093,12 @@ void CFEM_StructuralAnalysis::Iterate(COutput *output,
 	/*--- RUBEN: Addition (temporary) of the adjoint routines here) ---*/
 
 
-	bool structural_adj = config_container[val_iZone]->GetStructural_Adj();
-
-	if (structural_adj){
-		solver_container[val_iZone][MESH_0][FEA_SOL]->Run_Structural_Adjoint(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],
-				config_container[val_iZone], numerics_container[val_iZone][MESH_0][FEA_SOL], MESH_0, 0, RUNTIME_FEA_SYS, false);
-	}
+//	bool structural_adj = config_container[val_iZone]->GetStructural_Adj();
+//
+//	if (structural_adj){
+//		solver_container[val_iZone][MESH_0][FEA_SOL]->Run_Structural_Adjoint(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],
+//				config_container[val_iZone], numerics_container[val_iZone][MESH_0][FEA_SOL], MESH_0, 0, RUNTIME_FEA_SYS, false);
+//	}
 
 
 }
@@ -1450,15 +1450,22 @@ void CFEAIteration_Adj::Iterate_Adjoint(COutput *output,
 
 	cout << "HERE IS WHERE THE ADJOINT ITERATION GOES" << endl;
 
+	unsigned short RunTime_EqSystem = RUNTIME_FEA_SYS;
+
+	unsigned long Iteration = 1;
+	unsigned short iZone = val_iZone;
+
+	integration_container[val_iZone][ADJFEA_SOL]->Adjoint_Setup(geometry_container, solver_container, config_container, RunTime_EqSystem, Iteration, iZone);
+
 	/*--- RUBEN: Addition (temporary) of the adjoint routines here) ---*/
 
 
-	bool structural_adj = config_container[val_iZone]->GetStructural_Adj();
-
-	if (structural_adj){
-		solver_container[val_iZone][MESH_0][FEA_SOL]->Run_Structural_Adjoint(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],
-				config_container[val_iZone], numerics_container[val_iZone][MESH_0][FEA_SOL], MESH_0, 0, RUNTIME_FEA_SYS, false);
-	}
+//	bool structural_adj = config_container[val_iZone]->GetStructural_Adj();
+//
+//	if (structural_adj){
+//		solver_container[val_iZone][MESH_0][FEA_SOL]->Run_Structural_Adjoint(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],
+//				config_container[val_iZone], numerics_container[val_iZone][MESH_0][FEA_SOL], MESH_0, 0, RUNTIME_FEA_SYS, false);
+//	}
 
 
 }

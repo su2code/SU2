@@ -39,7 +39,7 @@ CFEM_ElasVariable_Adj::CFEM_ElasVariable_Adj(void) : CVariable() {
 }
 
 CFEM_ElasVariable_Adj::CFEM_ElasVariable_Adj(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
-	cout << "CHECKPOINT 7c" << endl;
+
 	unsigned short iVar;
 	bool refgeom = config->GetRefGeom();				// Reference geometry needs to be stored
 

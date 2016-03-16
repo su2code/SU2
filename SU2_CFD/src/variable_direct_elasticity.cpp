@@ -73,7 +73,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 	bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);	// Generalized alpha method requires residual at previous time step.
 
 	bool refgeom = config->GetRefGeom();				// Reference geometry needs to be stored
-	bool structural_adj = config->GetStructural_Adj();	// A structural adjoint simulation is to be run (temporary)
+//	bool structural_adj = config->GetStructural_Adj();	// A structural adjoint simulation is to be run (temporary)
 
 	VonMises_Stress = 0.0;
 
@@ -152,14 +152,14 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 	if (refgeom)	Reference_Geometry = new su2double [nVar];
 	else 			Reference_Geometry = NULL;
 
-	if (structural_adj) 	{
-		Solution_Adj = new su2double[nVar];
-		Gradient_Adj = new su2double[nVar];
-	}
-	else{
+//	if (structural_adj) 	{
+//		Solution_Adj = new su2double[nVar];
+//		Gradient_Adj = new su2double[nVar];
+//	}
+//	else{
 		Solution_Adj = NULL;
 		Gradient_Adj = NULL;
-	}
+//	}
 }
 
 CFEM_ElasVariable::~CFEM_ElasVariable(void) {
