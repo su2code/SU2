@@ -77,7 +77,7 @@ def gradient( func_name, method, config, state=None ):
     grads = {}
     state = su2io.State(state)
     if func_name == 'ALL':
-        raise Exception , "func_name = 'ALL' not yet supported"
+        raise Exception("func_name = 'ALL' not yet supported")
 
     # redundancy check
     if not state['GRADIENTS'].has_key(func_name):
@@ -105,7 +105,7 @@ def gradient( func_name, method, config, state=None ):
                 grads = geometry( func_name, config, state )
 
             else:
-                raise Exception, 'unknown function name: %s' % func_name
+                raise Exception('unknown function name: %s' % func_name)
 
         # Finite Difference Gradients
         elif method == 'FINDIFF':
@@ -115,7 +115,7 @@ def gradient( func_name, method, config, state=None ):
             grad = directdiff (config , state )
 
         else:
-            raise Exception , 'unrecognized gradient method'
+            raise Exception('unrecognized gradient method')
         
         if ('CUSTOM' in config.DV_KIND):
             import downstream_function
@@ -304,7 +304,7 @@ def stability( func_name, config, state=None, step=1e-2 ):
 
     # find base func name
     matches = [ k for k in su2io.optnames_aero if k in func_name ]
-    if not len(matches) == 1: raise Exception, 'could not find stability function name'
+    if not len(matches) == 1: raise Exception('could not find stability function name')
     base_name = matches[0]    
 
     ADJ_NAME = 'ADJOINT_'+base_name

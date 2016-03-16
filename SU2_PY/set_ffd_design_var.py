@@ -30,7 +30,9 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import os, time
+# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
+from __future__ import print_function
+
 from optparse import OptionParser
 from numpy import *
 
@@ -64,8 +66,8 @@ options.dim  = int(options.dimension)
 
 if options.dim == 3:
   
-  print " "
-  print "FFD_CONTROL_POINT"
+  print(" ")
+  print("FFD_CONTROL_POINT")
 
   iVariable = 0
   dvList = "DEFINITION_DV= "
@@ -79,10 +81,10 @@ if options.dim == 3:
           dvList = dvList + "; "
 
 
-  print dvList
+  print(dvList)
 
-  print " "
-  print "FFD_CAMBER & FFD_THICKNESS"
+  print(" ")
+  print("FFD_CAMBER & FFD_THICKNESS")
 
   iVariable = 0
   dvList = "DEFINITION_DV= "
@@ -101,7 +103,7 @@ if options.dim == 3:
       if iVariable < (options.iOrder*(options.jOrder)):
         dvList = dvList + "; "
 
-  print dvList
+  print(dvList)
 
 if options.dim == 2:
 
@@ -115,10 +117,10 @@ if options.dim == 2:
       if iVariable < (options.iOrder*options.jOrder):
         dvList = dvList + "; "
 
-  print dvList
+  print(dvList)
 
-  print " "
-  print "FFD_CAMBER & FFD_THICKNESS"
+  print(" ")
+  print("FFD_CAMBER & FFD_THICKNESS")
 
   iVariable = 0
   dvList = "DEFINITION_DV= "
@@ -135,9 +137,4 @@ if options.dim == 2:
     if iVariable < (options.iOrder):
       dvList = dvList + "; "
 
-  print dvList
-
-
-
-
-
+  print(dvList)

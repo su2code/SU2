@@ -29,7 +29,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import os, sys, numpy, time, shutil, glob, traceback
+import os, sys, time
 from optparse import OptionParser
 sys.path.append(os.environ['SU2_RUN'])
 import SU2
@@ -84,11 +84,3 @@ def main():
 # this is only accessed if running from command prompt
 if __name__ == '__main__':
     main()
-    
-    
-    
-    
-
-
-
-

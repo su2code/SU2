@@ -1,4 +1,6 @@
 
+import numpy as np
+
 def check_array(A,oned_as='row'):
     ''' ensures A is an array and at least of rank 2
     '''
@@ -11,6 +13,6 @@ def check_array(A,oned_as='row'):
         elif oned_as == 'col':
             A = A.T
         else:
-            raise Exception , "oned_as must be 'row' or 'col' "
+            raise Exception("oned_as must be 'row' or 'col' ")
             
     return A
