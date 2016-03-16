@@ -701,7 +701,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     /*--- Write the 3D surface flow coefficient file ---*/
     if (geometry->GetnDim() == 3) {
       
-      SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"PsiE\",\"x_coord\",\"y_coord\",\"z_coord\"" << endl;
+      SurfAdj_file <<  "\"Point\",\"Sensitivity\",\"PsiRho\",\"Phi_x\",\"Phi_y\",\"Phi_z\",\"PsiE\",\"x_coord\",\"y_coord\",\"z_coord\"";
       if (config->GetDiscrete_Adjoint()){
         SurfAdj_file << ",\"x_Sens\",\"y_Sens\",\"z_Sens\"";
       }
@@ -3630,7 +3630,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   
   /*--- Retrieve filename from config ---*/
   
-  if ((config->GetAdjoint()) || (config->GetDiscrete_Adjoint())) {
+  if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
     filename = config->GetRestart_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
@@ -4144,7 +4144,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         isothermal = true;
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
                       (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS));
-    bool adjoint = config[val_iZone]->GetAdjoint() || config[val_iZone]->GetDiscrete_Adjoint();
+    bool adjoint = config[val_iZone]->GetContinuous_Adjoint() || config[val_iZone]->GetDiscrete_Adjoint();
     bool disc_adj = config[val_iZone]->GetDiscrete_Adjoint();
     bool wave = (config[val_iZone]->GetKind_Solver() == WAVE_EQUATION);
     bool heat = (config[val_iZone]->GetKind_Solver() == HEAT_EQUATION);
@@ -6901,7 +6901,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
         char buffer_char[50], out_file[MAX_STRING_SIZE];
         
         string filename;
-        if (!config[iZone]->GetAdjoint()) filename = config[iZone]->GetFlow_FileName();
+        if (!config[iZone]->GetContinuous_Adjoint()) filename = config[iZone]->GetFlow_FileName();
         else filename = config[iZone]->GetAdj_FileName();
 
         if (size > 1) {
@@ -6920,7 +6920,7 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
         char buffer_char[50], out_file[MAX_STRING_SIZE];
         
         string filename;
-        if (!config[iZone]->GetAdjoint()) filename = config[iZone]->GetSurfFlowCoeff_FileName();
+        if (!config[iZone]->GetContinuous_Adjoint()) filename = config[iZone]->GetSurfFlowCoeff_FileName();
         else filename = config[iZone]->GetSurfAdjCoeff_FileName();
 
         if (size > 1) {
