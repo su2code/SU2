@@ -81,23 +81,10 @@ COutput::COutput(void) {
 
 COutput::~COutput(void) {
   /* delete pointers initialized at construction*/
-  /* Coords and Connectivity have their own dealloc functions */
-  /*
-  if(Coords!=NULL)          delete  Coords;//
-  if(Conn_Line!=NULL)       delete Conn_Line;//
-  if(Conn_BoundTria!=NULL)  delete [] Conn_BoundTria;
-  if(Conn_BoundQuad!=NULL)    delete [] Conn_BoundQuad;
-  if(Conn_Tria!=NULL)      delete Conn_Tria;//
-  if(Conn_Quad!=NULL)      delete Conn_Quad;//
-  if(Conn_Tetr!=NULL)      delete [] Conn_Tetr;
-  if(Conn_Hexa!=NULL)      delete [] Conn_Hexa;
-  if(Conn_Pris!=NULL)      delete [] Conn_Pris;
-  if(Conn_Pyra!=NULL)      delete [] Conn_Pyra;
-  */
-  //if(Volume!=NULL)      delete [] Volume;
-  /* Data has a DeallocateSolution function */
-  //if(Data!=NULL)        delete Data;//
-
+  /* Coords and Conn_*(Connectivity) have their own dealloc functions */
+  /* Data is taken care of in DeallocateSolution function */
+  /* delete[] Volume causes error in fsi test cases TODO: fix this*/
+  if(Volume!=NULL)      delete [] Volume;
 
 }
 

@@ -391,7 +391,7 @@ and potential are incompatible, they use the same position in sol container ---*
     }
     /*--- Allocate solution for direct problem, and run the preprocessing and postprocessing ---*/
     if (euler || ns) {
-      //delete solver_container[iMGlevel][FLOW_SOL];
+      delete solver_container[iMGlevel][FLOW_SOL];
     }
 
     if (turbulent) {
@@ -1285,7 +1285,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
                             CSolver ***solver_container, CGeometry **geometry,
                             CConfig *config) {
 
-  unsigned short iMGlevel, iSol, nDim;
+  unsigned short iMGlevel, iSol;
 
 
   bool
@@ -1303,7 +1303,6 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-  bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
 
   /*--- Initialize some useful booleans ---*/
   euler            = false;   ns               = false;   turbulent        = false;
@@ -1653,14 +1652,12 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
 
 
   /*--- Definition of the Class for the numerical method: numerics_container[MESH_LEVEL][EQUATION][EQ_TERM] ---*/
-  /*
   for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     for (iSol = 0; iSol < MAX_SOLS; iSol++){
-      delete[] numerics_container[iMGlevel][iSol];
+      delete numerics_container[iMGlevel][iSol];
     }
     delete[] numerics_container[iMGlevel];
   }
-  */
 
 }
 
