@@ -392,6 +392,8 @@ void CTransfer_MixingPlaneAverage::GetDonor_Variable(CSolver *donor_solution, CG
 //	Donor_Variable[1]	= donor_solution->GetAveragePressure(Marker_Donor, iSpan);
 //	Donor_Variable[2] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[0];
 //	Donor_Variable[3] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[1];
+// 	Donor_Variable[4] = donor_solution->GetAverageTotPressure(Marker_Donor, iSpan);
+// 	Donor_Variable[5] = donor_solution->GetAverageTotTemperature(Marker_Donor, iSpan);
 
 }
 
@@ -404,7 +406,8 @@ void CTransfer_MixingPlaneAverage::SetTarget_Variable(CSolver *target_solution, 
 //	target_solution->SetAveragePressure(Marker_Donor, iSpan, Target_Variable[1]);
 //	target_solution->SetAverageTurboVelocity(Marker_Donor, iSpan, 0, Target_Variable[2]);
 //	target_solution->SetAverageTurboVelocity(Marker_Donor, iSpan, 1, Target_Variable[3]);
-
+//	target_solution->SetAverageTotPressure(Marker_Donor, iSpan, Target_Variable[4]);
+//  target_solution->SetAverageTotTemperature(Marker_Donor, iSpan, Target_Variable[5]);
 
 
 
