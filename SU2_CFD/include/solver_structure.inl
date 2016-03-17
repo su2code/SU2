@@ -426,33 +426,29 @@ inline void CSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) { }
 
 inline void CSolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config){ }
 
-inline su2double CSolver::GetAveragedDensity(unsigned short valMarker){ return 0;}
+inline su2double CSolver::GetAverageDensity(unsigned short valMarker, unsigned short valSpan){return 0.0;}
 
-inline su2double CSolver::GetAveragedPressure(unsigned short valMarker){ return 0;}
+inline su2double CSolver::GetAveragePressure(unsigned short valMarker, unsigned short valSpan){return 0.0;}
 
-inline su2double CSolver::GetAveragedEnthalpy(unsigned short valMarker){ return 0;}
+inline su2double CSolver::GetAverageTotTemperature(unsigned short valMarker, unsigned short valSpan){return 0.0;}
 
-inline su2double CSolver::GetAveragedEntropy(unsigned short valMarker){ return 0;}
+inline su2double CSolver::GetAverageTotPressure(unsigned short valMarker, unsigned short valSpan){return 0.0;}
 
-inline su2double* CSolver::GetAveragedVelocity(unsigned short valMarker){ return 0;}
+inline su2double* CSolver::GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan){return 0.0;}
 
-inline su2double* CSolver::GetAveragedGridVelocity(unsigned short valMarker){ return 0;}
+inline void CSolver::SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity){ }
 
-inline su2double CSolver::GetAveragedNormalVelocity(unsigned short valMarker){ return 0;}
+inline void CSolver::SetExtAveragePressure(unsigned short valMarker, unsigned short valSpan, su2double valPressure){ }
 
-inline su2double CSolver::GetAveragedTangVelocity(unsigned short valMarker){ return 0;}
+inline void CSolver::SetExtAverageTotTemperature(unsigned short valMarker, unsigned short valSpan, su2double valTotTemperature){ }
 
-inline su2double CSolver::GetAveragedTotTemperature(unsigned short valMarker){return 0;}
+inline void CSolver::SetExtAverageTotPressure(unsigned short valMarker, unsigned short valSpan, su2double valTotPressure){ }
 
-inline su2double CSolver::GetAveragedTotPressure(unsigned short valMarker){return 0;}
+inline void CSolver::SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity){ }
 
 inline su2double CSolver::GetMassFlow(unsigned short valMarker){return 0;}
 
 inline su2double CSolver::GetFlowAngle(unsigned short valMarker){return 0;}
-
-inline su2double CSolver::GetAveragedMach(unsigned short valMarker){return 0;}
-
-inline su2double CSolver::GetAveragedNormalMach(unsigned short valMarker){return 0;}
 
 inline su2double CSolver::GetTotalPressureLoss(unsigned short inMarkerTP){return 0;}
 
@@ -952,25 +948,25 @@ inline su2double CEulerSolver::GetOneD_FluxAvgEntalpy(void) {return OneD_Enthalp
 
 inline void CEulerSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) {OneD_EnthalpyRef = EnthalpyRef; }
 
-inline su2double CEulerSolver::GetAveragedDensity(unsigned short valMarker){return AveragedDensity[valMarker];}
+inline su2double CEulerSolver::GetAverageDensity(unsigned short valMarker, unsigned short valSpan){return AverageDensity[valMarker][valSpan];}
 
-inline su2double CEulerSolver::GetAveragedPressure(unsigned short valMarker){return AveragedPressure[valMarker];}
+inline su2double CEulerSolver::GetAveragePressure(unsigned short valMarker, unsigned short valSpan){return AveragePressure[valMarker][valSpan];}
 
-inline su2double CEulerSolver::GetAveragedEnthalpy(unsigned short valMarker){return AveragedEnthalpy[valMarker];}
+inline su2double CEulerSolver::GetAverageTotTemperature(unsigned short valMarker, unsigned short valSpan){return AverageTotTemperature[valMarker][valSpan];}
 
-inline su2double CEulerSolver::GetAveragedEntropy(unsigned short valMarker){return AveragedEntropy[valMarker];}
+inline su2double CEulerSolver::GetAverageTotPressure(unsigned short valMarker, unsigned short valSpan){return AverageTotPressure[valMarker][valSpan];}
 
-inline su2double* CEulerSolver::GetAveragedVelocity(unsigned short valMarker){return AveragedVelocity[valMarker];}
+inline su2double* CEulerSolver::GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan){return AverageTurboVelocity[valMarker][valSpan];}
 
-inline su2double* CEulerSolver::GetAveragedGridVelocity(unsigned short valMarker){return AveragedGridVel[valMarker];}
+inline void CEulerSolver::SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity){ExtAverageDensity[valMarker][valSpan] = valDensity;}
 
-inline su2double CEulerSolver::GetAveragedNormalVelocity(unsigned short valMarker){return AveragedNormalVelocity[valMarker];}
+inline void CEulerSolver::SetExtAveragePressure(unsigned short valMarker, unsigned short valSpan, su2double valPressure){ExtAveragePressure[valMarker][valSpan] = valPressure;}
 
-inline su2double CEulerSolver::GetAveragedTangVelocity(unsigned short valMarker){return AveragedTangVelocity[valMarker];}
+inline void CEulerSolver::SetExtAverageTotTemperature(unsigned short valMarker, unsigned short valSpan, su2double valTotTemperature){ExtAverageTotTemperature[valMarker][valSpan] = valTotTemperature;}
 
-inline su2double CEulerSolver::GetAveragedTotTemperature(unsigned short valMarker){return AveragedTotTemperature[valMarker];}
+inline void CEulerSolver::SetExtAverageTotPressure(unsigned short valMarker, unsigned short valSpan, su2double valTotPressure){ExtAverageTotPressure[valMarker][valSpan] = valTotPressure;}
 
-inline su2double CEulerSolver::GetAveragedTotPressure(unsigned short valMarker){return AveragedTotPressure[valMarker];}
+inline void CEulerSolver::SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity){ExtAveragePressure[valMarker][valSpan][valIndex] = valTurboVelocity;}
 
 inline su2double CEulerSolver::GetMassFlow(unsigned short valMarker){return MassFlow[valMarker];}
 
