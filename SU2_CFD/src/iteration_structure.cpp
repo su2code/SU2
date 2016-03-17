@@ -1452,10 +1452,15 @@ void CFEAIteration_Adj::Iterate_Adjoint(COutput *output,
 
 	unsigned short RunTime_EqSystem = RUNTIME_FEA_SYS;
 
-	unsigned long Iteration = 1;
-	unsigned short iZone = val_iZone;
+	unsigned long IntIter=1;
 
-	integration_container[val_iZone][ADJFEA_SOL]->Adjoint_Setup(geometry_container, solver_container, config_container, RunTime_EqSystem, Iteration, iZone);
+	integration_container[val_iZone][ADJFEA_SOL]->Adjoint_Setup(geometry_container, solver_container, config_container,
+																RUNTIME_ADJFEA_SYS, 0, val_iZone);
+
+
+	integration_container[val_iZone][ADJFEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
+			config_container, RUNTIME_ADJFEA_SYS, IntIter, val_iZone);
+
 
 	/*--- RUBEN: Addition (temporary) of the adjoint routines here) ---*/
 

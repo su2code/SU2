@@ -51,6 +51,8 @@ inline void CSolver::Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConfig *con
 
 inline void CSolver::Set_MPI_Solution_DispOnly(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver::Set_MPI_RefGeom(CGeometry *geometry, CConfig *config) { }
+
 inline void CSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config) { }
@@ -1097,6 +1099,8 @@ inline su2double CAdjEulerSolver::GetPsiE_Inf(void) { return PsiE_Inf; }
 
 inline su2double CAdjEulerSolver::GetPhi_Inf(unsigned short val_dim) { return Phi_Inf[val_dim]; }
 
+inline void CSolver::RefGeom_Sensitivity(CGeometry *geometry, CSolver **solver_container, CConfig *config){ }
+
 inline su2double CFEM_ElasticitySolver::GetRes_FEM(unsigned short val_var) { return Conv_Check[val_var]; }
 
 inline su2double CFEM_ElasticitySolver::GetTotal_CFEA() { return Total_CFEA; }
@@ -1166,7 +1170,6 @@ inline void CEulerSolver::SetTemperature_Inf(su2double t_inf){Temperature_Inf = 
 inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){}
 
 inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){}
-
 
 
 /*------------------------------ RUBEN: TEMPORARY FUNCTIONS - ADJOINT STRUCTURE ------------------------------*/

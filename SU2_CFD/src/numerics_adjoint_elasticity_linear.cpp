@@ -35,6 +35,9 @@
 CFEM_LinearElasticity_Adj::CFEM_LinearElasticity_Adj(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CFEM_LinearElasticity(val_nDim, val_nVar, config) {
 
+	/*--- If it is linear elasticity, dD/dE is constant along the calculations ---*/
+
+	Compute_Constitutive_Matrix();
 
 }
 
@@ -51,9 +54,9 @@ void CFEM_LinearElasticity_Adj::Compute_Constitutive_Matrix(void){
 
 			/*--- We enable plane stress cases ---*/
 
-			D_Mat[0][0] = 1.0/(1.0-Nu*Nu);	  		D_Mat[0][1] = Nu/(1.0-Nu*Nu);  	D_Mat[0][2] = 0.0;
-			D_Mat[1][0] = Nu/(1.0-Nu*Nu);    		D_Mat[1][1] = 1.0/(1.0-Nu*Nu);   	 D_Mat[1][2] = 0.0;
-			D_Mat[2][0] = 0.0;               	D_Mat[2][1] = 0.0;               D_Mat[2][2] = (1.0-Nu)/(2.0*(1.0-Nu*Nu));
+			D_Mat[0][0] = 1.0/(1.0-Nu*Nu);	  		D_Mat[0][1] = Nu/(1.0-Nu*Nu);  	 D_Mat[0][2] = 0.0;
+			D_Mat[1][0] = Nu/(1.0-Nu*Nu);    		D_Mat[1][1] = 1.0/(1.0-Nu*Nu);   D_Mat[1][2] = 0.0;
+			D_Mat[2][0] = 0.0;               	    D_Mat[2][1] = 0.0;               D_Mat[2][2] = (1.0-Nu)/(2.0*(1.0-Nu*Nu));
 		}
 		else{
 			/*--- Assuming plane strain as a general case ---*/

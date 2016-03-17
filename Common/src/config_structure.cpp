@@ -4770,6 +4770,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
     case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
     case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
+    case RUNTIME_ADJFEA_SYS:    return ADJFEA_SOL;
     case RUNTIME_MULTIGRID_SYS: return 0;
   }
   return 0;

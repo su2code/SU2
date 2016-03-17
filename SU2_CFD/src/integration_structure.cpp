@@ -282,7 +282,7 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 
 void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
                                  unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
-	cout << "AND IT GOES INSIDE THE REGULAR FUNCTION" << endl;
+
 	unsigned short iMGLevel;
   
 	if ( ( (RunTime_EqSystem == RUNTIME_ADJFLOW_SYS) && (Iteration == 0) ) ) {
@@ -308,6 +308,17 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
 			}
       
 		}
+  }
+
+	if ( ( (RunTime_EqSystem == RUNTIME_ADJFEA_SYS) && (Iteration == 0) ) ) {
+
+	    switch (config[iZone]->GetKind_ObjFunc()) {
+	    	case REFERENCE_GEOMETRY:
+	    		solver_container[iZone][MESH_0][ADJFEA_SOL]->RefGeom_Sensitivity(geometry[iZone][MESH_0],
+	    																		solver_container[iZone][MESH_0], config[iZone]);
+	    		break;
+	    }
+
   }
   
 }

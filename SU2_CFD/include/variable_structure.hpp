@@ -2051,12 +2051,17 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */
-  virtual void SetReference_Geometry(unsigned short iVar, su2double ref_geometry);
+     virtual void SetReference_Geometry(unsigned short iVar, su2double ref_geometry);
+
+	/*!
+	 * \brief A virtual member.
+	 */
+    virtual su2double *GetReference_Geometry(void);
   
 	/*!
 	 * \brief A virtual member.
 	 */
-  virtual su2double *GetReference_Geometry(void);
+    virtual su2double GetReference_Geometry(unsigned short iVar);
 
   /*!
    * \brief Register the variables in the solution array as input/output variable.
@@ -2771,6 +2776,11 @@ public:
  	 * \brief A virtual member.
  	 */
      su2double *GetReference_Geometry(void);
+
+  	/*!
+  	 * \brief A virtual member.
+  	 */
+     su2double GetReference_Geometry(unsigned short iVar);
 
  	/*!
  	 * \brief Get the solution of the adjoint gradient dS/dv (Structural Analysis).

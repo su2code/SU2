@@ -193,6 +193,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Impose the send-receive boundary condition for reference geometry (adjoint FEM).
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void Set_MPI_RefGeom(CGeometry *geometry, CConfig *config);
     
   /*!
 	 * \brief Impose the send-receive boundary condition.
@@ -2538,6 +2545,16 @@ public:
 	 */
 	virtual void LoadRestart_FSI(CGeometry *geometry, CSolver ***solver,
                            	   CConfig *config, int val_iter);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void RefGeom_Sensitivity(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
 
 
 	/*------------------------------ RUBEN: TEMPORARY FUNCTIONS - ADJOINT STRUCTURE ------------------------------*/
@@ -7418,6 +7435,8 @@ private:
 	unsigned short nMarker;
 	int nFEA_Terms;
 
+	su2double val_I;
+
 	su2double *GradN_X, *GradN_x;
 
 	su2double **Jacobian_c_ij;			/*!< \brief Submatrix to store the constitutive term for node ij. */
@@ -7425,6 +7444,14 @@ private:
 
 	su2double **mZeros_Aux;			/*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
 	su2double **mId_Aux;				/*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
+
+	CSysVector LinSysSol_Direct;		/*!< \brief Vector structure for storing the solution of the direct problem. */
+	CSysVector LinSysRes_dSdv;			/*!< \brief Vector structure for storing the sensitivity of the FEA equations respect to the design dS/dv. */
+	CSysVector LinSysRes_FSens_DV;		/*!< \brief Vector structure for storing the sensitivity of the External Forces respect to the design variables dF/dv. */
+
+	CSysVector LinSysRes_Aux;			/*!< \brief Auxiliary vector structure to do intermediate steps. */
+
+	CSysMatrix Jacobian_ISens;			/*!< \brief Vector structure for storing the sensitivity of the Interest Function dI/dx. */
 
 
 public:
@@ -7454,6 +7481,13 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Impose the send-receive boundary condition for reference geometry (adjoint FEM).
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Set_MPI_RefGeom(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief Set residuals to zero.
@@ -7599,6 +7633,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void Solve_System_Adj(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief Compute the sensitivity vector for an objective function I=f(x,x_ref)
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void RefGeom_Sensitivity(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
