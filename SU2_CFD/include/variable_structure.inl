@@ -603,6 +603,8 @@ inline void CVariable::SetReference_Geometry(unsigned short iVar, su2double ref_
 
 inline su2double *CVariable::GetReference_Geometry(void){ return NULL; }
 
+inline su2double CVariable::GetReference_Geometry(unsigned short iVar){ return 0.0; }
+
 inline su2double CEulerVariable::GetDensity(void) { return Solution[0]; }
 
 inline su2double CEulerVariable::GetDensityInc(void) { return Primitive[nDim+1]; }
@@ -1032,6 +1034,8 @@ inline su2double *CFEM_ElasVariable::GetReference_Geometry(void){ return Referen
 inline void CFEM_ElasVariable_Adj::SetReference_Geometry(unsigned short iVar, su2double ref_geometry){ Reference_Geometry[iVar] = ref_geometry;}
 
 inline su2double *CFEM_ElasVariable_Adj::GetReference_Geometry(void){ return Reference_Geometry; }
+
+inline su2double CFEM_ElasVariable_Adj::GetReference_Geometry(unsigned short iVar){ return Reference_Geometry[iVar]; }
 
 inline su2double CFEM_ElasVariable_Adj::GetGradient_Adj(unsigned short val_var) {return Gradient_Adj[val_var]; }
 

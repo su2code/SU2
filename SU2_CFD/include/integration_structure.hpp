@@ -680,9 +680,6 @@ public:
 	void Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
 							 CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
-	void Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
-	                     unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
-
 };
 
 #include "integration_structure.inl"

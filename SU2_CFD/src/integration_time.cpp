@@ -934,11 +934,3 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ***geometry, CSolver
   Convergence_Monitoring_FEM(geometry[iZone][MESH_0], config[iZone], solver_container[iZone][MESH_0][SolContainer_Position], Iteration);
 
 }
-
-void CStructuralIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
-                                 unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
-
-
-	cout << "AND IT GOES INSIDE THE OVERLOADED FUNCTION" << endl;
-
-}
