@@ -112,7 +112,7 @@ void CMeanFlowIteration::Preprocess(COutput *output,
 
   /*--- turbomachinery preprocess  ---*/
   
-  if(config_container[val_iZone]->GetBoolTurboPerf()){
+  if(config_container[val_iZone]->GetBoolTurbomachinery()){
   	if(ExtIter == 0){
   			geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],INFLOW, true);
   			geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],OUTFLOW, true);

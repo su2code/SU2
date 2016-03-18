@@ -154,8 +154,8 @@ private:
 	nMarker_SymWall,				/*!< \brief Number of symmetry wall markers. */
   nMarker_Pressure,				/*!< \brief Number of pressure wall markers. */
 	nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
-	nMarker_MixBound,				/*!< \brief Number of mixing boundary markers. */
-	nMarker_TurboPerf,				/*!< \brief Number of mixing boundary markers. */
+	nMarker_MixingPlaneInterface,				/*!< \brief Number of mixing plane interface boundary markers. */
+	nMarker_Turbomachinery,				/*!< \brief Number of mixing boundary markers. */
 	nSpanWiseSections,			/*!< \brief Number of spanwise sections to compute 3D BC and Performance for turbomachinery   */
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
@@ -189,12 +189,11 @@ private:
 	string *Marker_Euler,			/*!< \brief Euler wall markers. */
 	*Marker_FarField,				/*!< \brief Far field markers. */
 	*Marker_Custom,
-	*Marker_SymWall,				/*!< \brief Symmetry wall markers. */
-  *Marker_Pressure,				/*!< \brief Pressure boundary markers. */
-	*Marker_PerBound,				/*!< \brief Periodic boundary markers. */
-	*Marker_PerDonor,				/*!< \brief Rotationally periodic boundary donor markers. */
-	*Marker_MixBound,				/*!< \brief MixingPlane boundary markers. */
-	*Marker_MixDonor,				/*!< \brief MixingPlane boundary donor markers. */
+	*Marker_SymWall,				            /*!< \brief Symmetry wall markers. */
+  *Marker_Pressure,				            /*!< \brief Pressure boundary markers. */
+	*Marker_PerBound,				            /*!< \brief Periodic boundary markers. */
+	*Marker_PerDonor,				            /*!< \brief Rotationally periodic boundary donor markers. */
+	*Marker_MixingPlaneInterface,				/*!< \brief MixingPlane interface boundary markers. */
 	*Marker_TurboBoundIn,				/*!< \brief Turbomachinery performance boundary markers. */
 	*Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
@@ -469,8 +468,9 @@ private:
   *Marker_All_GeoEval,       /*!< \brief Global index for geometrical evaluation. */
   *Marker_All_Plotting,        /*!< \brief Global index for plotting using the grid information. */
   *Marker_All_FSIinterface,        /*!< \brief Global index for FSI interface markers using the grid information. */
-	*Marker_All_TurboPerformance,        /*!< \brief Global index for Turbo performance markers using the grid information. */
-	*Marker_All_TurboPerformanceFlag,        /*!< \brief Global index for Turbo performance markers using the grid information. */
+	*Marker_All_Turbomachinery,        /*!< \brief Global index for Turbomachinery markers using the grid information. */
+	*Marker_All_TurbomachineryFlag,        /*!< \brief Global index for Turbomachinery markers flag using the grid information. */
+	*Marker_All_MixingPlaneInterface,        /*!< \brief Global index for MixingPlane interface markers using the grid information. */
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
@@ -480,8 +480,9 @@ private:
   *Marker_CfgFile_GeoEval,      /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_Plotting,     /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_FSIinterface,     /*!< \brief Global index for FSI interface using the config information. */
-	*Marker_CfgFile_TurboPerformance,     /*!< \brief Global index for TurboPerformance  using the config information. */
-	*Marker_CfgFile_TurboPerformanceFlag,     /*!< \brief Global index for TurboPerformance flag using the config information. */
+	*Marker_CfgFile_Turbomachinery,     /*!< \brief Global index for Turbomachinery  using the config information. */
+	*Marker_CfgFile_TurbomachineryFlag,     /*!< \brief Global index for Turbomachinery flag using the config information. */
+	*Marker_CfgFile_MixingPlaneInterface,     /*!< \brief Global index for MixingPlane interface using the config information. */
   *Marker_CfgFile_Out_1D,      /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
@@ -965,13 +966,13 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addMixingPlaneOption(const string & name, unsigned short & nMarker_MixBound,
-                    string* & Marker_MixBound, string* & Marker_MixDonor){
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionMixingPlane(name, nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
+//  void addMixingPlaneOption(const string & name, unsigned short & nMarker_MixBound,
+//                    string* & Marker_MixBound, string* & Marker_MixDonor){
+//    assert(option_map.find(name) == option_map.end());
+//    all_options.insert(pair<string, bool>(name, true));
+//    COptionBase* val = new COptionMixingPlane(name, nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
+//    option_map.insert(pair<string, COptionBase *>(name, val));
+//  }
   template <class Tenum>
   void addTurboPerfOption(const string & name, unsigned short & nMarker_TurboPerf,
                     string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut,  unsigned short* & Kind_TurboPerformance, const map<string, Tenum> & TurboPerformance_Map){
@@ -2497,18 +2498,25 @@ public:
 	void SetMarker_All_FSIinterface(unsigned short val_marker, unsigned short val_fsiinterface);
 
 	/*!
-	 * \brief Set if a marker <i>val_marker</i> is part of the Turbo Performance (read from the config file).
+	 * \brief Set if a marker <i>val_marker</i> is part of the Turbomachinery (read from the config file).
 	 * \param[in] val_marker - Index of the marker in which we are interested.
-	 * \param[in] val_turboperf - 0 if not part of TurboPerformance or greater than 1 if it is part.
+	 * \param[in] val_turboperf - 0 if not part of Turbomachinery or greater than 1 if it is part.
 	 */
-	void SetMarker_All_TurboPerformance(unsigned short val_marker, unsigned short val_turboperf);
+	void SetMarker_All_Turbomachinery(unsigned short val_marker, unsigned short val_turbo);
 
 	/*!
-	 * \brief Set a flag to the marker <i>val_marker</i> part of the Turbo Performance (read from the config file).
+	 * \brief Set a flag to the marker <i>val_marker</i> part of the Turbomachinery (read from the config file).
 	 * \param[in] val_marker - Index of the marker in which we are interested.
-	 * \param[in] val_turboperflag - 0 if is not part of the Turbo Performance, flag INFLOW or OUTFLOW if it is part.
+	 * \param[in] val_turboperflag - 0 if is not part of the Turbomachinery, flag INFLOW or OUTFLOW if it is part.
 	 */
-	void SetMarker_All_TurboPerformanceFlag(unsigned short val_marker, unsigned short val_turboperflag);
+	void SetMarker_All_TurbomachineryFlag(unsigned short val_marker, unsigned short val_turboflag);
+
+	/*!
+	 * \brief Set if a marker <i>val_marker</i> is part of the MixingPlane interface (read from the config file).
+	 * \param[in] val_marker - Index of the marker in which we are interested.
+	 * \param[in] val_turboperf - 0 if not part of the MixingPlane interface or greater than 1 if it is part.
+	 */
+	void SetMarker_All_MixingPlaneInterface(unsigned short val_marker, unsigned short val_mixplan_interface);
 
 	/*!
 	 * \brief Set if a marker <i>val_marker</i> is going to be affected by design variables <i>val_moving</i>
@@ -2593,18 +2601,25 @@ public:
 	unsigned short GetMarker_All_FSIinterface(unsigned short val_marker);
 
 	/*!
-	 * \brief Get the Turbo Performance information for a marker <i>val_marker</i>.
+	 * \brief Get the MixingPlane interface information for a marker <i>val_marker</i>.
 	 * \param[in] val_marker value of the marker on the grid.
-	 * \return 0 if is not part of the Turbo Performance and greater than 1 if it is part.
+	 * \return 0 if is not part of the MixingPlane Interface and greater than 1 if it is part.
 	 */
-	unsigned short GetMarker_All_TurboPerformance(unsigned short val_marker);
+	unsigned short GetMarker_All_MixingPlaneInterface(unsigned short val_marker);
 
 	/*!
-	 * \brief Get the Turbo Performance flag information for a marker <i>val_marker</i>.
+	 * \brief Get the Turbomachinery information for a marker <i>val_marker</i>.
 	 * \param[in] val_marker value of the marker on the grid.
-	 * \return 0 if is not part of the Turbo Performance, flag INFLOW or OUTFLOW if it is part.
+	 * \return 0 if is not part of the Turbomachinery and greater than 1 if it is part.
 	 */
-	unsigned short GetMarker_All_TurboPerformanceFlag(unsigned short val_marker);
+	unsigned short GetMarker_All_Turbomachinery(unsigned short val_marker);
+
+	/*!
+	 * \brief Get the Turbomachinery flag information for a marker <i>val_marker</i>.
+	 * \param[in] val_marker value of the marker on the grid.
+	 * \return 0 if is not part of the Turbomachinery, flag INFLOW or OUTFLOW if it is part.
+	 */
+	unsigned short GetMarker_All_TurbomachineryFlag(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the number of FSI interface markers <i>val_marker</i>.
@@ -3462,32 +3477,19 @@ public:
      * \brief Verify if there is mixing plane interface specified from config file.
 	 * \return boolean.
 	 */
-	bool GetBoolMixingPlane(void);
+	bool GetBoolMixingPlaneInterface(void);
 
 	/*!
 	 * \brief number mixing plane interface specified from config file.
 	 * \return number of bound.
 	 */
-    unsigned short Get_nMarkerMixingPlane(void);
+	unsigned short GetnMarker_MixingPlaneInterface(void);
 
-    /*!
-	 * \brief get bounds name of mixing plane interface.
-	 * \return name of the bound.
-	 */
-    string GetMarker_MixingPlane_Bound(unsigned short index);
-
-
-    /*!
-	 * \brief get bounds name of mixing plane interface.
-	 * \return name of the bound.
-	 */
-    string GetMarker_MixingPlane_Donor(unsigned short index);
-
-    /*!
-     * \brief Verify if there is Turbomachinery performance option specified from config file.
+	/*!
+	 * \brief Verify if there is Turbomachinery performance option specified from config file.
 	 * \return boolean.
 	 */
-	bool GetBoolTurboPerf(void);
+	bool GetBoolTurbomachinery(void);
 
   /*!
    * \brief Verify if there is any Non Reflecting Boundary Condition option specified from config file.
@@ -3505,7 +3507,7 @@ public:
 	 * \brief number Turbomachinery performance option specified from config file.
 	 * \return number of bound.
 	 */
-	unsigned short Get_nMarkerTurboPerf(void);
+	unsigned short GetnMarker_Turbomachinery(void);
 
   /*!
    * \brief number span-wise sections to compute 3D BC and performance for turbomachinery.
@@ -4470,14 +4472,19 @@ public:
 	 * \brief Get the TurboPerformance information from the config definition for the marker <i>val_marker</i>.
 	 * \return TurboPerformance information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */
-	unsigned short GetMarker_CfgFile_TurboPerformance(string val_marker);
+	unsigned short GetMarker_CfgFile_Turbomachinery(string val_marker);
 
 	/*!
 	 * \brief Get the TurboPerformance flag information from the config definition for the marker <i>val_marker</i>.
 	 * \return TurboPerformance flag information of the boundary in the config information for the marker <i>val_marker</i>.
 	 */
-	unsigned short GetMarker_CfgFile_TurboPerformanceFlag(string val_marker);
+	unsigned short GetMarker_CfgFile_TurbomachineryFlag(string val_marker);
 
+	/*!
+	 * \brief Get the MixingPlane interface information from the config definition for the marker <i>val_marker</i>.
+	 * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_CfgFile_MixingPlaneInterface(string val_marker);
   /*!
    * \brief Get the 1-D output (ie, averaged pressure) information from the config definition for the marker <i>val_marker</i>.
    * \return 1D output information of the boundary in the config information for the marker <i>val_marker</i>.

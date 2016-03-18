@@ -1365,10 +1365,11 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
   
 
   /* --- Set the mixing-plane interface ---*/
-  for (iZone = 0; iZone < nZone; iZone++) {
-  	SetMixingPlane(geometry_container, solver_container, config_container, interpolator_container, transfer_container, iZone);
+  if (config_container[ZONE_0]->GetBoolMixingPlaneInterface()){
+		for (iZone = 0; iZone < nZone; iZone++) {
+			SetMixingPlane(geometry_container, solver_container, config_container, interpolator_container, transfer_container, iZone);
+		}
   }
-
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/

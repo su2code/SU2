@@ -369,21 +369,21 @@ void CTransfer_ConservativeVars::SetTarget_Variable(CSolver *target_solution, CG
 
 
 
-CTransfer_MixingPlaneAverage::CTransfer_MixingPlaneAverage(void) : CTransfer() {
+CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(void) : CTransfer() {
 
 }
 
-CTransfer_MixingPlaneAverage::CTransfer_MixingPlaneAverage(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
+CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
 
 }
 
-CTransfer_MixingPlaneAverage::~CTransfer_MixingPlaneAverage(void) {
+CTransfer_MixingPlaneInterface::~CTransfer_MixingPlaneInterface(void) {
 
 }
 
 
 
-void CTransfer_MixingPlaneAverage::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
+void CTransfer_MixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
 								   	     	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	CConfig *donor_config, unsigned long Marker_Donor,
 																														unsigned long iSpan, unsigned long rank) {
 
@@ -403,7 +403,7 @@ void CTransfer_MixingPlaneAverage::GetDonor_Variable(CSolver *donor_solution, CG
 }
 
 
-void CTransfer_MixingPlaneAverage::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
+void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
 										  CConfig *target_config, unsigned long Marker_Target,
 										  unsigned long iSpan, unsigned long rank) {
 
