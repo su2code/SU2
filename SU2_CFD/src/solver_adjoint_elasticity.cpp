@@ -304,10 +304,11 @@ CFEM_ElasticitySolver_Adj::CFEM_ElasticitySolver_Adj(CGeometry *geometry, CConfi
 
 	Jacobian_ISens.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
 
-	/*--- Check whether we need to read a reference geometry ---*/
-	bool reference_geometry = config->GetRefGeom();
-	/*--- Read the reference geometry file ---*/
-	if (reference_geometry) Set_ReferenceGeometry(geometry, config);
+    switch (config->GetKind_ObjFunc()) {
+    	case REFERENCE_GEOMETRY:
+    		Set_ReferenceGeometry(geometry, config);
+    		break;
+    }
 
 	/*--- Perform the MPI communication of the solution ---*/
 	Set_MPI_Solution(geometry, config);
