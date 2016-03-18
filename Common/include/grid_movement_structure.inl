@@ -215,3 +215,10 @@ inline su2double CVolumetricMovement::Determinant_3x3(su2double A00, su2double A
 inline void CVolumetricMovement::Set_nIterMesh(unsigned long val_nIterMesh) { nIterMesh = val_nIterMesh; }
 
 inline unsigned long CVolumetricMovement::Get_nIterMesh() { return nIterMesh; }
+
+inline bool CSurfaceMovement::CheckFFDBoxDefinition(CConfig *config, unsigned short iDV){
+  for (unsigned short iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++){
+    if (FFDBox[iFFDBox]->GetTag() == config->GetFFDTag(iDV)){ return true;}
+  }
+  return false;
+}
