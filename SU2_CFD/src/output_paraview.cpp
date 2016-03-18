@@ -45,7 +45,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   unsigned long nGlobal_Elem_Storage;
   
 	bool grid_movement  = config->GetGrid_Movement();
-	bool adjoint = config->GetAdjoint();
+	bool adjoint = config->GetContinuous_Adjoint();
   bool disc_adj = config->GetDiscrete_Adjoint();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
 
@@ -992,7 +992,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   unsigned long nGlobal_Elem_Storage;
   
 	bool grid_movement  = config->GetGrid_Movement();
-	bool adjoint = config->GetAdjoint();
+	bool adjoint = config->GetContinuous_Adjoint();
 	bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   
 	char cstr[200], buffer[50];

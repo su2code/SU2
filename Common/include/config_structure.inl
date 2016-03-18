@@ -59,7 +59,7 @@ inline unsigned short CConfig::GetRef_NonDim(void) { return Ref_NonDim; }
 
 inline void CConfig::SetKind_SU2(unsigned short val_kind_su2) { Kind_SU2 = val_kind_su2 ; }
 
-inline bool CConfig::GetAdjoint(void) { return Adjoint; }
+inline bool CConfig::GetContinuous_Adjoint(void) { return ContinuousAdjoint; }
 
 inline bool CConfig::GetViscous(void) { return Viscous; }
 
