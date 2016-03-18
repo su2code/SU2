@@ -8372,7 +8372,8 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
 						}
 
 						AverageTurboMach[iMarker][iSpan][0] = AverageTurboVelocity[iMarker][iSpan][0]/AverageSoundSpeed[iMarker][iSpan];
-						AverageTurboMach[iMarker][iSpan][2] = AverageTurboVelocity[iMarker][iSpan][2]/AverageSoundSpeed[iMarker][iSpan];
+            if (nDim == 3)
+              AverageTurboMach[iMarker][iSpan][2] = AverageTurboVelocity[iMarker][iSpan][2]/AverageSoundSpeed[iMarker][iSpan];
 
 #ifdef HAVE_MPI
 						if ((AverageDensity[iMarker][iSpan]!= AverageDensity[iMarker][iSpan]) || (AverageEnthalpy[iMarker][iSpan]!=AverageEnthalpy[iMarker][iSpan])){
