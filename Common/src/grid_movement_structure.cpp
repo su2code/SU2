@@ -2841,6 +2841,17 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         
       }
       
+      /* --- Check if the FFD boxes referenced in the design variable definition can be found --- */
+
+      for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+        if (!CheckFFDBoxDefinition(config, iDV)){
+         cout << endl << "There is no FFD box with tag \"" << config->GetFFDTag(iDV)
+              << "\" defined in the mesh file." << endl;
+         cout << "Check the definition of the design variables and/or the FFD settings !!" << endl;
+         exit(EXIT_FAILURE);
+        }
+      }
+
       /*--- Output original FFD FFDBox ---*/
       
       if (rank == MASTER_NODE) {
