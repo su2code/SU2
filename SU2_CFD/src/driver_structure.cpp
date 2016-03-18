@@ -1087,7 +1087,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
 				case LINEAR_ELASTIC: cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
     			case NEO_HOOKEAN :
     				switch (config->GetMaterialCompressibility()) {
-    					case COMPRESSIBLE_MAT : numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config); break;
+    					case COMPRESSIBLE_MAT : numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Comp_Adj(nDim, nVar_FEM, config); break;
     					case INCOMPRESSIBLE_MAT : numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config); break;
     					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
     				}

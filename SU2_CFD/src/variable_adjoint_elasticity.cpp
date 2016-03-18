@@ -50,8 +50,14 @@ CFEM_ElasVariable_Adj::CFEM_ElasVariable_Adj(su2double *val_fea, unsigned short 
 
 	Gradient_Adj    = new su2double [nVar];
 
-	if (refgeom)	Reference_Geometry = new su2double [nVar];
-	else 			Reference_Geometry = NULL;
+    switch (config->GetKind_ObjFunc()) {
+    	case REFERENCE_GEOMETRY:
+    		Reference_Geometry = new su2double [nVar];
+    		break;
+    	default:
+    		Reference_Geometry = NULL;
+    		break;
+    }
 
 
 }
