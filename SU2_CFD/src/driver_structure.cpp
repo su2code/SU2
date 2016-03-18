@@ -47,6 +47,7 @@ CDriver::CDriver(CIteration **iteration_container,
   unsigned short nDim;
   
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
+  bool mixingplane = config_container[ZONE_0]-> GetBoolMixingPlaneInterface();
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -124,7 +125,7 @@ CDriver::CDriver(CIteration **iteration_container,
   
 	/*--- Definition of the interface and transfer conditions between different zones.
 	 *--- The transfer container is defined for zones paired one to one.
-	 *--- This only works for a multizone FSI problem (nZone > 1).
+	 *--- This only works for a multizone FSI or MixingPlane problem (nZone > 1).
 	 *--- Also, at the moment this capability is limited to two zones (nZone < 3).
 	 *--- This will change in the future. ---*/
 
@@ -132,7 +133,7 @@ CDriver::CDriver(CIteration **iteration_container,
 		cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
 
 
-	if (((nZone > 1) && (nZone < 3)) && (fsi)) {
+	if (((nZone > 1) && (nZone < 3)) && (fsi || mixingplane)) {
 
 		for (iZone = 0; iZone < nZone; iZone++){
 			transfer_container[iZone] = new CTransfer*[nZone];
@@ -1246,6 +1247,11 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
 					nVarTransfer = 0;
 					transfer_container[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nVar, nVarTransfer, config_container[donorZone]);
 					if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
+				}
+				else if (fluid_donor && fluid_target){
+					nVarTransfer = 0;
+					transfer_container[donorZone][targetZone] = new CTransfer_MixingPlaneInterface(nVar, nVarTransfer, config_container[donorZone]);
+					if (rank == MASTER_NODE) cout << "mixing-plane averages. "<< endl;
 				}
 				else {
 					nVarTransfer = 0;

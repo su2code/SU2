@@ -373,12 +373,26 @@ CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(void) : CTransfer
 
 }
 
-CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
+CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config){
+	unsigned short iVar;
+	nVar = val_nVar;
+
+	Donor_Variable     = new su2double[nVar + 2];
+	Target_Variable    = new su2double[nVar + 2];
+
+
+
+	for (iVar = 0; iVar < nVar + 2; iVar++){
+		Donor_Variable[iVar]  = 0.0;
+		Target_Variable[iVar] = 0.0;
+	}
+
 
 }
 
 CTransfer_MixingPlaneInterface::~CTransfer_MixingPlaneInterface(void) {
-
+	if (Donor_Variable       != NULL) delete [] Donor_Variable;
+	if (Target_Variable      != NULL) delete [] Target_Variable;
 }
 
 
