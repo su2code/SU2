@@ -1432,6 +1432,10 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
     if (config_container[val_iZone]->GetGrid_Movement()) {
       SetGrid_Movement(geometry_container[val_iZone], surface_movement[val_iZone], grid_movement[val_iZone], FFDBox[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_iZone, IntIter, ExtIter);
     }
+    if (config_container[val_iZone]->GetBoolTurboPerf()){
+      geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],INFLOW, true);
+      geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],OUTFLOW, true);
+    }
   }
   if (CurrentRecording != FLOW_VARIABLES){
     
@@ -1556,7 +1560,11 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   /*--- Clear indices of coupling variables ---*/
 
   SetDependencies(solver_container, geometry_container, config_container, val_iZone, ALL_VARIABLES);
-  
+
+  if(config_container[val_iZone]->GetBoolTurboPerf()){
+    meanflow_iteration->TurboPreprocess(geometry_container, solver_container, config_container, numerics_container, output, val_iZone);
+  }
+
   /*--- Run one iteration while tape is passive - this clears all indices ---*/
   
   meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
@@ -1586,6 +1594,10 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
 
   SetDependencies(solver_container, geometry_container, config_container, val_iZone, kind_recording);
   
+  if(config_container[val_iZone]->GetBoolTurboPerf()){
+    meanflow_iteration->TurboPreprocess(geometry_container, solver_container, config_container, numerics_container, output, val_iZone);
+  }
+
   /*--- Run the direct iteration ---*/
   
   meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
@@ -1648,7 +1660,11 @@ void CDiscAdjMeanFlowIteration::SetDependencies(CSolver ****solver_container, CG
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
     
     geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone], config_container[iZone]);
-    
+
+    if (config_container[iZone]->GetBoolTurboPerf()){
+      geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],INFLOW, false);
+      geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],OUTFLOW, false);
+    }
   }
 
   /*--- Compute coupling between flow and turbulent equations ---*/
