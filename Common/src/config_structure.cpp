@@ -4772,6 +4772,16 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case AVG_OUTLET_PRESSURE:     AdjExt = "_pe";       break;
       case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
       case OUTFLOW_GENERALIZED:     AdjExt = "_chn";       break;
+      case KINETIC_ENERGY_LOSS:     AdjExt = "_ke";        break;
+      case TOTAL_PRESSURE_LOSS:     AdjExt = "_pl";        break;
+      case FLOW_ANGLE_OUT:          AdjExt = "_fao";       break;
+      case FLOW_ANGLE_IN:           AdjExt = "_fai";       break;
+      case TOTAL_EFFICIENCY:        AdjExt = "_teff";      break;
+      case TOTAL_STATIC_EFFICIENCY: AdjExt = "_tseff";     break;
+      case EULERIAN_WORK:           AdjExt = "_ew";        break;
+      case TOTAL_ENTHALPY_IN:       AdjExt = "_tei";       break;
+      case MASS_FLOW_IN:            AdjExt = "_mfi";       break;
+      case MASS_FLOW_OUT:           AdjExt = "_mfo";       break;
     }
     Filename.append(AdjExt);
 
