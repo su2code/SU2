@@ -110,7 +110,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   string filename = config->GetSolution_FlowFileName();
   
   unsigned short direct_diff = config->GetDirectDiff();
-  unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
+  unsigned short nMarkerTurboPerf = config->GetnMarker_Turbomachinery();
   unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
 
   int rank = MASTER_NODE;
@@ -4838,11 +4838,11 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 	normalMachOut					 = -1.0;
 
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-		for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++)
-			if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
+		for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++)
+			if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
 
 				/*--- compute or retrieve inlet information ---*/
-				if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == INFLOW){
+				if (config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW){
 					avgVelRel2In= 0.0;
 					avgGridVel2In= 0.0;
 					avgVel2In= 0.0;
@@ -4923,7 +4923,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 				}
 
 				/*--- compute or retrieve outlet information ---*/
-				if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == OUTFLOW){
+				if (config->GetMarker_All_TurbomachineryFlag(iMarker) == OUTFLOW){
 					avgVelRel2Out = 0.0;
 					avgGridVel2Out = 0.0;
 					avgVel2Out = 0.0;
@@ -8156,9 +8156,9 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
     TotalAreaDensity=0.0;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-    	for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
-    		if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
-    			if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+    	for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+    		if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+    			if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
     				/*--- Loop over the vertices to sum all the quantities pithc-wise ---*/
     				for (iVertex = 0; iVertex < geometry->GetnVertexSpan(iMarker,iSpan); iVertex++) {
@@ -8260,9 +8260,9 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
 
 
 		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-			for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
-				if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
-					if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
 						TotalArea 					= geometry->GetSpanArea(iMarker,iSpan);
 						AverageTurboNormal 	= geometry->GetAverageTurboNormal(iMarker,iSpan);
@@ -8533,9 +8533,9 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 			cktemp_out1 = complex<su2double>(0.0,0.0);
 			cktemp_out2 = complex<su2double>(0.0,0.0);
 			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-				for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
-					if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
-						if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+				for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+					if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+						if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
 							cc = AverageSoundSpeed[iMarker][iSpan]*AverageSoundSpeed[iMarker][iSpan];
 							rhoc = AverageSoundSpeed[iMarker][iSpan]*AverageDensity[iMarker][iSpan];
@@ -8609,9 +8609,9 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 #endif
 
 			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-				for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
-					if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
-						if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+				for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+					if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+						if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 							if (marker_flag == INFLOW){
 								CkInflow[iMarker][iSpan][k-1]= cktemp_inf;
 //								if(rank == 2)
@@ -8850,7 +8850,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
   	conv_numerics->GetRMatrix(AverageSoundSpeed[val_marker][iSpan], AverageDensity[val_marker][iSpan], R_Matrix);
 
-  	if(config->GetMarker_All_TurboPerformanceFlag(val_marker) == INFLOW){
+  	if(config->GetMarker_All_TurbomachineryFlag(val_marker) == INFLOW){
 
   		/*--- Retrieve the specified total conditions for this inlet. ---*/
   		P_Total  = config->GetNRBC_Var1(Marker_Tag);
@@ -8943,7 +8943,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 			for (iDim = 0; iDim < nDim; iDim++)
 				ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
 
-			ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, config->GetMarker_All_TurboPerformanceFlag(val_marker));
+			ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, config->GetMarker_All_TurbomachineryFlag(val_marker));
 			NormalVelocity	= turboVelocity[0];
 			TangVelocity		= turboVelocity[1];
 			deltaprim[0] = Density_i - AverageDensity[val_marker][iSpan];
@@ -9146,7 +9146,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 			turboVelocity[1] = AverageTurboVelocity[val_marker][iSpan][1] + deltaprim[2];
 			Density_b = AverageDensity[val_marker][iSpan] + deltaprim[0];
 			Pressure_b = AveragePressure[val_marker][iSpan] + deltaprim[3];
-			ComputeBackVelocity(turboVelocity, turboNormal, Velocity_b, config->GetMarker_All_TurboPerformanceFlag(val_marker));
+			ComputeBackVelocity(turboVelocity, turboNormal, Velocity_b, config->GetMarker_All_TurbomachineryFlag(val_marker));
 			Velocity2_b = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++) {
 				Velocity2_b+= Velocity_b[iDim]*Velocity_b[iDim];
@@ -12784,7 +12784,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   string filename = config->GetSolution_FlowFileName();
   
   unsigned short direct_diff = config->GetDirectDiff();
-  unsigned short nMarkerTurboPerf = config->Get_nMarkerTurboPerf();
+  unsigned short nMarkerTurboPerf = config->GetnMarker_Turbomachinery();
   unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
   
   int rank = MASTER_NODE;

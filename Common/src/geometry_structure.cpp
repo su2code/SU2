@@ -5956,8 +5956,9 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
       config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
       config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
-      config->SetMarker_All_TurboPerformance(iMarker, config->GetMarker_CfgFile_TurboPerformance(Marker_Tag));
-      config->SetMarker_All_TurboPerformanceFlag(iMarker, config->GetMarker_CfgFile_TurboPerformanceFlag(Marker_Tag));
+      config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
+      config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+      config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
       config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -5975,8 +5976,9 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_Designing(iMarker, NO);
       config->SetMarker_All_Plotting(iMarker, NO);
       config->SetMarker_All_FSIinterface(iMarker, NO);
-      config->SetMarker_All_TurboPerformance(iMarker, NO);
-      config->SetMarker_All_TurboPerformanceFlag(iMarker, NO);
+      config->SetMarker_All_Turbomachinery(iMarker, NO);
+      config->SetMarker_All_TurbomachineryFlag(iMarker, NO);
+      config->SetMarker_All_MixingPlaneInterface(iMarker, NO);
       config->SetMarker_All_DV(iMarker, NO);
       config->SetMarker_All_Moving(iMarker, NO);
       config->SetMarker_All_PerBound(iMarker, NO);
@@ -6864,8 +6866,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
             config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
 			      config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
-			      config->SetMarker_All_TurboPerformance(iMarker, config->GetMarker_CfgFile_TurboPerformance(Marker_Tag));
-			      config->SetMarker_All_TurboPerformanceFlag(iMarker, config->GetMarker_CfgFile_TurboPerformanceFlag(Marker_Tag));
+			      config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
+			      config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+			      config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -8533,9 +8536,10 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
             config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
             config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
-			      config->SetMarker_All_TurboPerformance(iMarker, config->GetMarker_CfgFile_TurboPerformance(Marker_Tag));
-			      config->SetMarker_All_TurboPerformanceFlag(iMarker, config->GetMarker_CfgFile_TurboPerformanceFlag(Marker_Tag));
-            config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
+			      config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
+			      config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+			      config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
+			      config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
             config->SetMarker_All_Out_1D(iMarker, config->GetMarker_CfgFile_Out_1D(Marker_Tag));
@@ -9665,9 +9669,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 	//TODO (turbo) generalize for different number of section for inlet and outlet.
 	if (allocate){
 		for (iMarker = 0; iMarker < nMarker; iMarker++){
-			for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
-				if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
-					if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 						nVertexSpan[iMarker] 							= new unsigned long[nSpanWiseSections];
 						turbovertex[iMarker] 							= new CTurboVertex** [nSpanWiseSections];
 						nTotVertexSpan[iMarker]						= new unsigned long [nSpanWiseSections];
@@ -9690,9 +9694,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
   if (nDim == 2){
 
   	for (iMarker = 0; iMarker < nMarker; iMarker++){
-			for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
-				if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
-					if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
 						/*--- find the local minimum pitch-wise for each processor, in this case is not needed to find a global one
 						 * the global reordering will be done at solver level when these pitch-wise order will be used for computing NRBC---*/
@@ -9797,9 +9801,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 		/*--- compute the local minimum and maximum value in each processor on span-wise direction for Inflow or Outflow ---*/
 		//TODO (turbo) this works only for centrifugal blade rotating around the Z-Axes.
 		for (iMarker = 0; iMarker < nMarker; iMarker++){
-			for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
-				if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
-					if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 								iPoint = vertex[iMarker][iVertex]->GetNode();
 								coord = node[iPoint]->GetCoord();
@@ -9826,9 +9830,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 		}
 
 		for (iMarker = 0; iMarker < nMarker; iMarker++){
-			for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
-				if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
-					if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
 						/*--- compute the amount of vertexes for each span-wise section to initialize the CTurboVertex pointers and auxiliary pointers  ---*/
 						//TODO (turbo) this works only for centrifugal blade rotating around the Z-Axes.
@@ -10016,9 +10020,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
   for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
   	nVert    = 0;
 		for (iMarker = 0; iMarker < nMarker; iMarker++){
-			for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
-				if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
-					if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 						nVert = nVertexSpan[iMarker][iSpan];
 							for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
 								globalindex = nVertex_loc + iSpanVertex + 1;
@@ -10040,9 +10044,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 			SetnVertexSpanMax(marker_flag,nVert);
 		}
 		for (iMarker = 0; iMarker < nMarker; iMarker++){
-			for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
-				if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
-					if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 						nTotVertexSpan[iMarker][iSpan]							= nVert;
 					}
 				}
@@ -10051,9 +10055,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
   }
 //			FINAL TEST
 //  for (iMarker = 0; iMarker < nMarker; iMarker++){
-//  	for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
-//			if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
-//				if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+//  	for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+//			if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+//				if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 //					for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 //						for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
 //							iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
@@ -10109,9 +10113,9 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
   /*--- Intialization of the vector for the interested boudary ---*/
   if(allocate){
   	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-			for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
-				if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
-					if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 						AverageTurboNormal[iMarker] 			= new su2double *[nSpanWiseSections];
 						AverageNormal[iMarker]			 			= new su2double *[nSpanWiseSections];
 						AverageGridVel[iMarker] 					= new su2double *[nSpanWiseSections];
@@ -10148,9 +10152,9 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
     TotalArea = 0.0;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-    	for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
-    		if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
-    			if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+    	for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+    		if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+    			if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
     				for(iVertex = 0; iVertex < nVertexSpan[iMarker][iSpan]; iVertex++){
     					iPoint = turbovertex[iMarker][iSpan][iVertex]->GetNode();
     					turbovertex[iMarker][iSpan][iVertex]->GetTurboNormal(TurboNormal);
@@ -10204,9 +10208,9 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 #endif
 
 		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-			for (iMarkerTP=1; iMarkerTP < config->Get_nMarkerTurboPerf()+1; iMarkerTP++){
-				if (config->GetMarker_All_TurboPerformance(iMarker) == iMarkerTP){
-					if (config->GetMarker_All_TurboPerformanceFlag(iMarker) == marker_flag){
+			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 
 
 						SpanArea[iMarker][iSpan]										= TotalArea;

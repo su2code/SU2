@@ -443,9 +443,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
     \n OPTIONS: see \link MixingProcess_Map \endlink \n DEFAULT: AREA_AVERAGE \ingroup Config*/
   addEnumOption("MIXING_PROCESS_TYPE", Kind_MixingProcess, MixingProcess_Map, AREA_AVERAGE);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
-  addMixingPlaneOption("MARKER_MIXINGPLANE", nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
+  addStringListOption("MARKER_MIXINGPLANE_INTERFACE", nMarker_MixingPlaneInterface, Marker_MixingPlaneInterface);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
-  addTurboPerfOption("MARKER_TURBO_PERFORMANCE", nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut, Kind_TurboPerformance, TurboPerformance_Map);
+  addTurboPerfOption("MARKER_TURBOMACHINERY", nMarker_Turbomachinery, Marker_TurboBoundIn, Marker_TurboBoundOut, Kind_TurboPerformance, TurboPerformance_Map);
   /* DESCRIPTION: Integer number of spanwise sections to compute 3D BC and Performance for turbomachinery */
   addUnsignedShortOption("NUM_SPANWISE_SECTIONS", nSpanWiseSections, 1);
   /*!\brief TURBOMACHINERY_TYPE \n DESCRIPTION: types of turbomachynery architecture.
@@ -2592,7 +2592,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
-  iMarker_Clamped, iMarker_FSIinterface, iMarker_TurboPerformance, iMarker_Load_Dir, iMarker_Load_Sine,
+  iMarker_Clamped, iMarker_FSIinterface, iMarker_Turbomachinery, iMarker_MixingPlaneInterface, iMarker_Load_Dir, iMarker_Load_Sine,
   iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
 
   int size = SINGLE_NODE;
@@ -2631,8 +2631,9 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_All_Designing  						= new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
   Marker_All_Plotting   						= new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
   Marker_All_FSIinterface   				= new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
-  Marker_All_TurboPerformance       = new unsigned short[nMarker_All];	// Store whether the boundary is in needed for Turbo Performance computations.
-  Marker_All_TurboPerformanceFlag   = new unsigned short[nMarker_All];	// Store whether the boundary has a flag for Turbo Performance computations.
+  Marker_All_Turbomachinery         = new unsigned short[nMarker_All];	// Store whether the boundary is in needed for Turbomachinery computations.
+  Marker_All_TurbomachineryFlag     = new unsigned short[nMarker_All];	// Store whether the boundary has a flag for Turbomachinery computations.
+  Marker_All_MixingPlaneInterface		= new unsigned short[nMarker_All];	// Store whether the boundary has a in the MixingPlane interface.
   Marker_All_GeoEval    						= new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
   Marker_All_DV         						= new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
   Marker_All_Moving     						= new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
@@ -2648,8 +2649,9 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_All_Designing[iMarker_All]  						= 0;
     Marker_All_Plotting[iMarker_All]   						= 0;
     Marker_All_FSIinterface[iMarker_All]   				= 0;
-    Marker_All_TurboPerformance[iMarker_All]  		= 0;
-    Marker_All_TurboPerformanceFlag[iMarker_All]  = 0;
+    Marker_All_Turbomachinery[iMarker_All]  		  = 0;
+    Marker_All_TurbomachineryFlag[iMarker_All]    = 0;
+    Marker_All_MixingPlaneInterface[iMarker_All]    = 0;
     Marker_All_DV[iMarker_All]         						= 0;
     Marker_All_Moving[iMarker_All]     						= 0;
     Marker_All_PerBound[iMarker_All]   						= 0;
@@ -2665,8 +2667,9 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_Plotting   					= new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_GeoEval    					= new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_FSIinterface					= new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_TurboPerformance			= new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_TurboPerformanceFlag	= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Turbomachinery 			= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_TurbomachineryFlag	  = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_MixingPlaneInterface	= new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_DV         					= new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Moving     					= new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_PerBound   					= new unsigned short[nMarker_CfgFile];
@@ -2680,8 +2683,9 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_Designing[iMarker_CfgFile]  						= 0;
     Marker_CfgFile_Plotting[iMarker_CfgFile]   						= 0;
     Marker_CfgFile_FSIinterface[iMarker_CfgFile]   				= 0;
-    Marker_CfgFile_TurboPerformance[iMarker_CfgFile]			= 0;
-    Marker_CfgFile_TurboPerformanceFlag[iMarker_CfgFile]	= 0;
+    Marker_CfgFile_Turbomachinery[iMarker_CfgFile]			  = 0;
+    Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile]	  = 0;
+    Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile]  = 0;
     Marker_CfgFile_DV[iMarker_CfgFile]         						= 0;
     Marker_CfgFile_Moving[iMarker_CfgFile]     						= 0;
     Marker_CfgFile_PerBound[iMarker_CfgFile]   						= 0;
@@ -2923,24 +2927,35 @@ void CConfig::SetMarkers(unsigned short val_software) {
         Marker_CfgFile_FSIinterface[iMarker_CfgFile] = indexMarker;
   }
 
-  /*--- Identification of TurboPerformance markers and flag them---*/
+  /*--- Identification of Turbomachinery markers and flag them---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
 	unsigned short indexMarker=0;
-	Marker_CfgFile_TurboPerformance[iMarker_CfgFile] = NO;
-	Marker_CfgFile_TurboPerformanceFlag[iMarker_CfgFile] = NO;
-    for (iMarker_TurboPerformance = 0; iMarker_TurboPerformance < nMarker_TurboPerf; iMarker_TurboPerformance++){
-      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundIn[iMarker_TurboPerformance]){
-      	indexMarker=(int)(iMarker_TurboPerformance+1);
-        Marker_CfgFile_TurboPerformance[iMarker_CfgFile] = indexMarker;
-        Marker_CfgFile_TurboPerformanceFlag[iMarker_CfgFile] = INFLOW;
+	Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = NO;
+	Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = NO;
+    for (iMarker_Turbomachinery = 0; iMarker_Turbomachinery < nMarker_Turbomachinery; iMarker_Turbomachinery++){
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundIn[iMarker_Turbomachinery]){
+      	indexMarker=(iMarker_Turbomachinery+1);
+        Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = indexMarker;
+        Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = INFLOW;
       }
-    	if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundOut[iMarker_TurboPerformance]){
-				indexMarker=(int)(iMarker_TurboPerformance+1);
-				Marker_CfgFile_TurboPerformance[iMarker_CfgFile] = indexMarker;
-				Marker_CfgFile_TurboPerformanceFlag[iMarker_CfgFile] = OUTFLOW;
+    	if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundOut[iMarker_Turbomachinery]){
+				indexMarker=(iMarker_Turbomachinery+1);
+				Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = indexMarker;
+				Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = OUTFLOW;
     	}
     }
+  }
+
+  /*--- Identification of MixingPlane interface markers ---*/
+
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+  	unsigned short indexMarker=0;
+    Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = NO;
+    for (iMarker_MixingPlaneInterface = 0; iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface; iMarker_MixingPlaneInterface++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface])
+      	indexMarker=(int)(iMarker_MixingPlaneInterface/2+1);
+    Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = indexMarker;
   }
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
@@ -2971,11 +2986,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
   iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
-  iMarker_NRBC, iMarker_MixBound, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
+  iMarker_NRBC, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iDV_Value,
-  iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
+  iMarker_FSIinterface, iMarker_MixingPlaneInterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDisk_Inlet,
   iMarker_ActDisk_Outlet;
   
@@ -4066,11 +4081,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  if (nMarker_MixBound != 0) {
+  if (nMarker_MixingPlaneInterface != 0) {
       cout << "MixingPlane boundary marker(s): ";
-      for (iMarker_MixBound = 0; iMarker_MixBound < nMarker_MixBound; iMarker_MixBound++) {
-        cout << Marker_MixBound[iMarker_MixBound];
-        if (iMarker_MixBound < nMarker_MixBound-1) cout << ", ";
+      for (iMarker_MixingPlaneInterface = 0; iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface; iMarker_MixingPlaneInterface++) {
+        cout << Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface];
+        if (iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface-1) cout << ", ";
         else cout <<"."<< endl;
     }
   }
@@ -4442,18 +4457,25 @@ unsigned short CConfig::GetMarker_CfgFile_FSIinterface(string val_marker) {
   return Marker_CfgFile_FSIinterface[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_TurboPerformance(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_Turbomachinery(string val_marker) {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
-  return Marker_CfgFile_TurboPerformance[iMarker_CfgFile];
+  return Marker_CfgFile_Turbomachinery[iMarker_CfgFile];
 }
 
-unsigned short CConfig::GetMarker_CfgFile_TurboPerformanceFlag(string val_marker) {
+unsigned short CConfig::GetMarker_CfgFile_TurbomachineryFlag(string val_marker) {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
-  return Marker_CfgFile_TurboPerformanceFlag[iMarker_CfgFile];
+  return Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile];
+}
+
+unsigned short CConfig::GetMarker_CfgFile_MixingPlaneInterface(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile];
 }
 
 unsigned short CConfig::GetMarker_CfgFile_Out_1D(string val_marker) {

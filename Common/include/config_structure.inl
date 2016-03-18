@@ -724,21 +724,17 @@ inline unsigned short CConfig::GetKind_MixingProcess(void) { return Kind_MixingP
 
 inline unsigned short CConfig::GetKind_TurboMachinery(void) { return Kind_TurboMachinery; }
 
-inline bool CConfig::GetBoolMixingPlane(void) { return (nMarker_MixBound !=0);}
+inline bool CConfig::GetBoolMixingPlaneInterface(void) { return (nMarker_MixingPlaneInterface !=0);}
 
-inline bool CConfig::GetBoolTurboPerf(void) { return (nMarker_TurboPerf !=0);}
+inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachinery !=0);}
 
 inline bool CConfig::GetBoolNRBC(void) { return (nMarker_NRBC!=0);}
 
 inline bool CConfig::GetBoolRiemann(void) { return (nMarker_Riemann!=0);}
 
-inline string CConfig::GetMarker_MixingPlane_Bound(unsigned short index) {return Marker_MixBound[index];}
+inline unsigned short CConfig::GetnMarker_MixingPlaneInterface(void) { return nMarker_MixingPlaneInterface;}
 
-inline string CConfig::GetMarker_MixingPlane_Donor(unsigned short index) {return Marker_MixDonor[index];}
-
-inline unsigned short CConfig::Get_nMarkerMixingPlane(void) { return nMarker_MixBound;}
-
-inline unsigned short CConfig::Get_nMarkerTurboPerf(void) { return nMarker_TurboPerf;}
+inline unsigned short CConfig::GetnMarker_Turbomachinery(void) { return nMarker_Turbomachinery;}
 
 inline unsigned short CConfig::Get_nSpanWiseSections(void) { return nSpanWiseSections;}
 
@@ -814,9 +810,11 @@ inline void CConfig::SetMarker_All_Plotting(unsigned short val_marker, unsigned 
 
 inline void CConfig::SetMarker_All_FSIinterface(unsigned short val_marker, unsigned short val_fsiinterface) { Marker_All_FSIinterface[val_marker] = val_fsiinterface; }
 
-inline void CConfig::SetMarker_All_TurboPerformance(unsigned short val_marker, unsigned short val_turboperf) { Marker_All_TurboPerformance[val_marker] = val_turboperf; }
+inline void CConfig::SetMarker_All_Turbomachinery(unsigned short val_marker, unsigned short val_turbo) { Marker_All_Turbomachinery[val_marker] = val_turbo; }
 
-inline void CConfig::SetMarker_All_TurboPerformanceFlag(unsigned short val_marker, unsigned short val_turboperflag) { Marker_All_TurboPerformanceFlag[val_marker] = val_turboperflag; }
+inline void CConfig::SetMarker_All_TurbomachineryFlag(unsigned short val_marker, unsigned short val_turboflag) { Marker_All_TurbomachineryFlag[val_marker] = val_turboflag; }
+
+inline void CConfig::SetMarker_All_MixingPlaneInterface(unsigned short val_marker, unsigned short val_mixpla_interface) { Marker_All_MixingPlaneInterface[val_marker] = val_mixpla_interface; }
 
 inline void CConfig::SetMarker_All_DV(unsigned short val_marker, unsigned short val_DV) { Marker_All_DV[val_marker] = val_DV; }
 
@@ -844,9 +842,11 @@ inline unsigned short CConfig::GetMarker_All_Plotting(unsigned short val_marker)
 
 inline unsigned short CConfig::GetMarker_All_FSIinterface(unsigned short val_marker) { return Marker_All_FSIinterface[val_marker]; }
 
-inline unsigned short CConfig::GetMarker_All_TurboPerformance(unsigned short val_marker) { return Marker_All_TurboPerformance[val_marker]; }
+inline unsigned short CConfig::GetMarker_All_Turbomachinery(unsigned short val_marker) { return Marker_All_Turbomachinery[val_marker]; }
 
-inline unsigned short CConfig::GetMarker_All_TurboPerformanceFlag(unsigned short val_marker) { return Marker_All_TurboPerformanceFlag[val_marker]; }
+inline unsigned short CConfig::GetMarker_All_TurbomachineryFlag(unsigned short val_marker) { return Marker_All_TurbomachineryFlag[val_marker]; }
+
+inline unsigned short CConfig::GetMarker_All_MixingPlaneInterface(unsigned short val_marker) { return Marker_All_MixingPlaneInterface[val_marker]; }
 
 inline unsigned short CConfig::GetMarker_n_FSIinterface(void) { return nMarker_FSIinterface; }
 

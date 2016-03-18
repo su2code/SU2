@@ -4200,7 +4200,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
     bool fsi = (config[val_iZone]->GetFSI_Simulation());					// FEM structural solver.
     
-    bool turbo = config[val_iZone]->GetBoolTurboPerf();
+    bool turbo = config[val_iZone]->GetBoolTurbomachinery();
     string inMarker_Tag, outMarker_Tag;
 
     bool output_per_surface = false;
@@ -4345,30 +4345,30 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Surface_CMz        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     
     /*--- Allocate memory for the turboperformace ---*/
-    TotalStaticEfficiency = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    TotalTotalEfficiency  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    KineticEnergyLoss 	  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    TotalPressureLoss 	  = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    MassFlowIn 		        = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    MassFlowOut           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    FlowAngleIn           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    FlowAngleOut          = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    EulerianWork          = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    TotalEnthalpyIn       = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    PressureRatio         = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    PressureOut           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    EnthalpyOut           = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    MachIn                = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    MachOut               = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    NormalMachIn          = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    NormalMachOut         = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    VelocityOutIs         = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    TotalPresureIn				= new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    TotalTemperatureIn		= new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    FlowAngleIn_BC				= new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    EntropyIn   					= new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    EntropyIn_BC					= new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
-    TotalEnthalpyIn_BC    = new su2double[config[ZONE_0]->Get_nMarkerTurboPerf()];
+    TotalStaticEfficiency = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    TotalTotalEfficiency  = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    KineticEnergyLoss 	  = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    TotalPressureLoss 	  = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    MassFlowIn 		        = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    MassFlowOut           = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    FlowAngleIn           = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    FlowAngleOut          = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    EulerianWork          = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    TotalEnthalpyIn       = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    PressureRatio         = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    PressureOut           = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    EnthalpyOut           = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    MachIn                = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    MachOut               = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    NormalMachIn          = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    NormalMachOut         = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    VelocityOutIs         = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    TotalPresureIn				= new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    TotalTemperatureIn		= new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    FlowAngleIn_BC				= new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    EntropyIn   					= new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    EntropyIn_BC					= new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    TotalEnthalpyIn_BC    = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
 
 
 
@@ -4463,7 +4463,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         if (turbo) {
         	/*--- Loop over the nMarker of turboperformance and get the desired values ---*/
-        	for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->Get_nMarkerTurboPerf(); iMarker_Monitoring++) {
+        	for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Turbomachinery(); iMarker_Monitoring++) {
         		TotalStaticEfficiency[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalStaticEfficiency(iMarker_Monitoring);
 						TotalTotalEfficiency[iMarker_Monitoring]  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalTotalEfficiency(iMarker_Monitoring);
 						KineticEnergyLoss[iMarker_Monitoring] 	  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetKineticEnergyLoss(iMarker_Monitoring);
@@ -4970,7 +4970,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               }
               if (turbo && write_turbo){
               	cout << endl << "---------------------- Turbo Performance Summary -------------------" << endl;
-              	for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->Get_nMarkerTurboPerf(); iMarker_Monitoring++){
+              	for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Turbomachinery(); iMarker_Monitoring++){
               		inMarker_Tag = config[ZONE_0]->GetMarker_TurboPerf_BoundIn(iMarker_Monitoring);
               		outMarker_Tag = config[ZONE_0]->GetMarker_TurboPerf_BoundOut(iMarker_Monitoring);
               		switch (config[ZONE_0]->GetKind_TurboPerf(iMarker_Monitoring)) {

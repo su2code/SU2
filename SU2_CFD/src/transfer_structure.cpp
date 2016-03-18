@@ -1304,7 +1304,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 
 	/*--- Number of markers on the Mixing-Plane interface ---*/
 
-	nMarkerInt     = (donor_config->GetMarker_n_MixingPlaneInterface())/2;
+	nMarkerInt     = (donor_config->GetnMarker_MixingPlaneInterface())/2;
 	nMarkerTarget  = target_geometry->GetnMarker();
 	nMarkerDonor   = donor_geometry->GetnMarker();
 	nSpanDonor     = donor_config->Get_nSpanWiseSections();
@@ -1405,7 +1405,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 		BuffAvgTangVelDonor        = new su2double[nSpanSize];
 		BuffAvg3DVelDonor          = new su2double[nSpanSize];
 
-		for (iSpan=0;iSpan<nSpanSize;iSpan++)
+		for (iSpan=0;iSpan<nSpanSize;iSpan++){
 			BuffAvgDensityDonor[iSpan]        = -1.0;
 			BuffAvgPressureDonor[iSpan]       = -1.0;
 			BuffAvgTotPressureDonor[iSpan]    = -1.0;
@@ -1416,13 +1416,13 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 
 		}
 
-		SU2_MPI::AllGather(avgDensityDonor, nSpanDonor , MPI_DOUBLE, BuffAvgDensityDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
-		SU2_MPI::AllGather(avgPressureDonor, nSpanDonor , MPI_DOUBLE, BuffAvgPressureDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
-		SU2_MPI::AllGather(avgTotPressureDonor, nSpanDonor , MPI_DOUBLE, BuffAvgTotPressureDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
-		SU2_MPI::AllGather(avgTotTemperatureDonor, nSpanDonor , MPI_DOUBLE, BuffAvgTotTemperatureDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
-		SU2_MPI::AllGather(avgNormalVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvgNormalVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
-		SU2_MPI::AllGather(avgTangVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvgTangVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
-		SU2_MPI::AllGather(avg3DVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvg3DVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+		SU2_MPI::Allgather(avgDensityDonor, nSpanDonor , MPI_DOUBLE, BuffAvgDensityDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+		SU2_MPI::Allgather(avgPressureDonor, nSpanDonor , MPI_DOUBLE, BuffAvgPressureDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+		SU2_MPI::Allgather(avgTotPressureDonor, nSpanDonor , MPI_DOUBLE, BuffAvgTotPressureDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+		SU2_MPI::Allgather(avgTotTemperatureDonor, nSpanDonor , MPI_DOUBLE, BuffAvgTotTemperatureDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+		SU2_MPI::Allgather(avgNormalVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvgNormalVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+		SU2_MPI::Allgather(avgTangVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvgTangVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+		SU2_MPI::Allgather(avg3DVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvg3DVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
 
 
 		for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
@@ -1435,10 +1435,10 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 			avg3DVelDonor[iSpan]          = -1.0;
 		}
 
-		for (iSize=0; i<size;iSize++){
+		for (iSize=0; iSize<size;iSize++){
 			if(BuffAvgDensityDonor[nSpanDonor*iSize] > 0.0){
 				for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
-					avgDensityDonor[iSpan]        = BuffAvgDensityDonor[nSpanDonor*iSize + iSpan]
+					avgDensityDonor[iSpan]        = BuffAvgDensityDonor[nSpanDonor*iSize + iSpan];
 					avgPressureDonor[iSpan]       = BuffAvgPressureDonor[nSpanDonor*iSize + iSpan];
 					avgTotPressureDonor[iSpan]    = BuffAvgTotPressureDonor[nSpanDonor*iSize + iSpan];
 					avgTotTemperatureDonor[iSpan] = BuffAvgTotTemperatureDonor[nSpanDonor*iSize + iSpan];
@@ -1457,15 +1457,12 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 		delete [] BuffAvgTangVelDonor;
 		delete [] BuffAvg3DVelDonor;
 
-
-}
-
 #endif
 
 		/*--- On the target side we have to identify the marker as well ---*/
 
 		for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
-			/*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
+			/*--- If the tag GetMarker_All_MixingPlaneInterface(iMarkerTarget) equals the index we are looping at ---*/
 			if ( target_config->GetMarker_All_MixingPlaneInterface(iMarkerTarget) == iMarkerInt ){
 				/*--- Store the identifier for the fluid marker ---*/
 
