@@ -8850,40 +8850,63 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
   	conv_numerics->GetRMatrix(AverageSoundSpeed[val_marker][iSpan], AverageDensity[val_marker][iSpan], R_Matrix);
 
-  	if(config->GetMarker_All_TurbomachineryFlag(val_marker) == INFLOW){
+  	switch(config->GetKind_Data_NRBC(Marker_Tag)){
 
-  		/*--- Retrieve the specified total conditions for this inlet. ---*/
-  		P_Total  = config->GetNRBC_Var1(Marker_Tag);
-			T_Total  = config->GetNRBC_Var2(Marker_Tag);
-			FlowDir = config->GetNRBC_FlowDir(Marker_Tag);
-			alphaIn_BC = atan(FlowDir[1]/FlowDir[0]);
+  	case TOTAL_CONDITIONS_PT:
 
-      /*--- Non-dim. the inputs---*/
-      P_Total /= config->GetPressure_Ref();
-      T_Total /= config->GetTemperature_Ref();
+				/*--- Retrieve the specified total conditions for this inlet. ---*/
+				P_Total  = config->GetNRBC_Var1(Marker_Tag);
+				T_Total  = config->GetNRBC_Var2(Marker_Tag);
+				FlowDir = config->GetNRBC_FlowDir(Marker_Tag);
+				alphaIn_BC = atan(FlowDir[1]/FlowDir[0]);
 
-      /* --- Computes the total state --- */
-      FluidModel->SetTDState_PT(P_Total, T_Total);
-      Enthalpy_BC = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
-      Entropy_BC = FluidModel->GetEntropy();
+				/*--- Non-dim. the inputs---*/
+				P_Total /= config->GetPressure_Ref();
+				T_Total /= config->GetTemperature_Ref();
+
+				/* --- Computes the total state --- */
+				FluidModel->SetTDState_PT(P_Total, T_Total);
+				Enthalpy_BC = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+				Entropy_BC = FluidModel->GetEntropy();
 
 
-      /* --- Computes the inverse matrix R_c --- */
-  		ComputeResJacobianNRBC(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan], AverageTurboVelocity[val_marker][iSpan][0], AverageTurboVelocity[val_marker][iSpan][1], alphaIn_BC, R_c, R_c_inv);
-  		avgVel2 = 0.0;
-  		for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AverageVelocity[val_marker][iSpan][iDim]*AverageVelocity[val_marker][iSpan][iDim];
-  		if (nDim == 2){
-  			R[0] = -(AverageEntropy[val_marker][iSpan] - Entropy_BC);
-  			R[1] = -(AverageTurboVelocity[val_marker][iSpan][1] - tan(alphaIn_BC)*AverageTurboVelocity[val_marker][iSpan][0]);
-  			R[2] = -(AverageEnthalpy[val_marker][iSpan] + 0.5*avgVel2 - Enthalpy_BC);
-  		}
-  		/* --- Compute the avg component  c_avg = R_c^-1 * R --- */
-  		for (iVar = 0; iVar < nVar-1; iVar++){
-  			c_avg[iVar] = 0.0;
-  			for (jVar = 0; jVar < nVar-1; jVar++){
-  				c_avg[iVar] += R_c_inv[iVar][jVar]*R[jVar];
-  		  }
-  		}
+				/* --- Computes the inverse matrix R_c --- */
+				ComputeResJacobianNRBC(AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan], AverageTurboVelocity[val_marker][iSpan][0], AverageTurboVelocity[val_marker][iSpan][1], alphaIn_BC, R_c, R_c_inv);
+				avgVel2 = 0.0;
+				for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AverageVelocity[val_marker][iSpan][iDim]*AverageVelocity[val_marker][iSpan][iDim];
+				if (nDim == 2){
+					R[0] = -(AverageEntropy[val_marker][iSpan] - Entropy_BC);
+					R[1] = -(AverageTurboVelocity[val_marker][iSpan][1] - tan(alphaIn_BC)*AverageTurboVelocity[val_marker][iSpan][0]);
+					R[2] = -(AverageEnthalpy[val_marker][iSpan] + 0.5*avgVel2 - Enthalpy_BC);
+				}
+				/* --- Compute the avg component  c_avg = R_c^-1 * R --- */
+				for (iVar = 0; iVar < nVar-1; iVar++){
+					c_avg[iVar] = 0.0;
+					for (jVar = 0; jVar < nVar-1; jVar++){
+						c_avg[iVar] += R_c_inv[iVar][jVar]*R[jVar];
+					}
+				}
+				break;
+
+  	case MIXING_IN: case MIXING_OUT:
+
+			/* --- Compute average jump of primitive at the mixing-plane interface--- */
+			deltaprim[0] = ExtAverageDensity[val_marker][iSpan] - AverageDensity[val_marker][iSpan];
+			deltaprim[1] = ExtAverageTurboVelocity[val_marker][iSpan][0] - AverageTurboVelocity[val_marker][iSpan][0];
+			deltaprim[2] = ExtAverageTurboVelocity[val_marker][iSpan][1] - AverageTurboVelocity[val_marker][iSpan][1];
+			deltaprim[3] = ExtAveragePressure[val_marker][iSpan] - AveragePressure[val_marker][iSpan];
+
+			/* --- Compute average jump of charachteristic variable at the mixing-plane interface--- */
+			conv_numerics->GetCharJump(AverageSoundSpeed[val_marker][iSpan], AverageDensity[val_marker][iSpan], deltaprim, c_avg);
+			break;
+
+  	case STATIC_PRESSURE:
+			Pressure_e = config->GetNRBC_Var1(Marker_Tag);
+			Pressure_e /= config->GetPressure_Ref();
+
+			/* --- Compute avg characteristic jump  --- */
+			c_avg[3] = -2.0*(AveragePressure[val_marker][iSpan]-Pressure_e);
+  		break;
 
   	}
 
@@ -8959,7 +8982,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 					//TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
 					//TODO(turbo), implement not uniform inlet and radial equilibrium for the outlet
 
-				case TOTAL_CONDITIONS_PT:
+				case TOTAL_CONDITIONS_PT: case MIXING_IN:
 
 					if (AvgMach < 1.000){
 						if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
@@ -9002,73 +9025,9 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 					delta_c[3] = cj[3];
 					break;
 
+				case STATIC_PRESSURE:case MIXING_OUT:
 
-
-
-//				case MIXING_IN:
-//
-//					/* --- Compute jump of primitive variable  --- */
-//					deltaDensity = ExtAveragedDensity[val_marker] - AveragedDensity[val_marker];
-//					deltaPressure = ExtAveragedPressure[val_marker] - AveragedPressure[val_marker];
-//					deltaTangVelocity= ExtAveragedTangVelocity[val_marker]+AveragedTangVelocity[val_marker];
-//					deltaNormalVelocity= ExtAveragedNormalVelocity[val_marker]+AveragedNormalVelocity[val_marker];
-//
-//					/* --- Compute characteristic jumps  --- */
-//					avg_c1= -cc*deltaDensity +deltaPressure;
-//					avg_c2= (rhoc*deltaTangVelocity);
-//					avg_c3= (rhoc*deltaNormalVelocity +deltaPressure);
-//					c4j= -rhoc*(-NormalVelocity +AveragedNormalVelocity[val_marker]) +(Pressure_i - AveragedPressure[val_marker]);
-//
-//					/* --- Impose Inlet BC  --- */
-//					delta_c[0] = avg_c1;
-//					delta_c[1] = avg_c2;
-//					delta_c[2] = avg_c3;
-//					delta_c[3] = c4j;
-//					break;
-
-//				case MIXING_OUT:
-//
-//					/* --- Compute jump of primitive variable  --- */
-//					deltaDensity = Density_i - AveragedDensity[val_marker];
-//					deltaPressure = Pressure_i - AveragedPressure[val_marker];
-//					deltaTangVelocity= TangVelocity - AveragedTangVelocity[val_marker];
-//					deltaNormalVelocity= NormalVelocity - AveragedNormalVelocity[val_marker];
-//
-//					/* --- Compute characteristic jumps  --- */
-//					c1j= -cc*deltaDensity +deltaPressure;
-//					c2j= rhoc*deltaTangVelocity;
-//					c3j= rhoc*deltaNormalVelocity + deltaPressure;
-//					avg_c4 = rhoc*(AveragedNormalVelocity[val_marker]+ExtAveragedNormalVelocity[val_marker]) -(AveragedPressure[val_marker]-ExtAveragedPressure[val_marker]);
-//
-//					/* --- implementation of supersonic NRBC ---*/
-//					if (AvgMach > 1.001){
-//						if (AveragedTangVelocity[val_marker] >= 0.0){
-//							GilesBeta= -sqrt(pow(AvgMach,2)-1.0);
-//						}else{
-//							GilesBeta= sqrt(pow(AvgMach,2)-1.0);
-//						}
-//						c4js_Re= (2.0 * AveragedNormalMach[val_marker])/(GilesBeta - AveragedTangMach[val_marker])*c2j - (GilesBeta+AveragedTangMach[val_marker])/(GilesBeta-AveragedTangMach[val_marker])*c3j;
-//						dc4js = c4js_Re;
-//					}else{
-//						dc4js = 0.0;
-//					}
-//
-//					/* --- Impose Outlet BC  --- */
-//					delta_c[0] = c1j;
-//					delta_c[1] = c2j;
-//					delta_c[2] = c3j;
-//					delta_c[3] = avg_c4 + dc4js;
-//					break;
-
-				case STATIC_PRESSURE:
-
-					Pressure_e = config->GetNRBC_Var1(Marker_Tag);
-					Pressure_e /= config->GetPressure_Ref();
-
-					/* --- Compute characteristic jumps  --- */
-					c_avg[3] = -2.0*(AveragePressure[val_marker][iSpan]-Pressure_e);
-
-					/* --- implementation of supersonic NRBC ---*/
+					/* --- implementation of NRBC ---*/
 					if (AvgMach >= 1.000){
 						if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
 							GilesBeta= -sqrt(pow(AvgMach,2)-1.0);
