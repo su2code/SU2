@@ -8793,17 +8793,70 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 						
 					case MASS_FLOW:
 						
+						/*-
+					  // Creates vectors to store the data from the file
+						vector<int> N;
+						vector<su2double> X, Y, Rho, UVel;
+						
+						// Open a file that contains the node, location, density and velocity information for the jets
+						ifstream Jet_File;
+						Jet_File.open("jet_profile_variables.dat");
+						if (Jet_File.is_open())
+						{
+							int n;
+							su2double x, y, rho, Uvel;
+							while ( Jet_File >> n >> x >> y >> rho >> Uvel )
+							{
+								N.push_back(n);
+								X.push_back(x);
+								Y.push_back(y);
+								Rho.push_back(rho);
+								UVel.push_back(Uvel);
+							}
+							Jet_File.close();
+						}
+						else cout << "Unable to open file";
+						-*/
+						
+						// Find the node number for the marker and initialize the density and Uvelocity variables
+						unsigned long nm = geometry->node[iPoint]->GetGlobalIndex();
+						su2double Rho = 0, UVel = 0;
+						
+						// Open a file that contains the node, location, density and velocity information for the jets
+						ifstream Jet_File;
+						Jet_File.open("jet_profile_variables.dat");
+						if (Jet_File.is_open())
+						{
+							unsigned long n;
+							su2double x, y, rho, Uvel;
+							while ( Jet_File >> n >> x >> y >> rho >> Uvel )
+							{
+								if (n == nm)
+								{
+									Rho = rho;
+									UVel = Uvel;
+								}
+							}
+							Jet_File.close();
+						}
+						else cout << "Unable to open file";
+						
+
+						
+						
 						/*--- Retrieve the specified mass flow for the inlet. ---*/
 						//n = geometry->node[iPoint]->GetGlobalIndex();
 						
-						Density  = config->GetInlet_Ttotal(Marker_Tag);
+						//Density  = config->GetInlet_Ttotal(Marker_Tag);
+						Density = Rho;
+						Vel_Mag = UVel;
 						//Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
-						if (Coord[1]>0)
-							Vel_Mag = -1070792516.983605*(Coord[1]*Coord[1])+179160956.345980*(Coord[1])-7494059.493144;
+						//if (Coord[1]>0)
+							//Vel_Mag = -1070792516.983605*(Coord[1]*Coord[1])+179160956.345980*(Coord[1])-7494059.493144;
 							//Vel_Mag =-10978685552690526.000000*(Coord[1]*Coord[1]*Coord[1]*Coord[1])+3673858018331092.500000*(Coord[1]*Coord[1]*Coord[1])-461026566242547.000000*(Coord[1]*Coord[1]) + 25712678005167.066406*(Coord[1])  -537774533322.414001;
 							//Vel_Mag = 68.04-272.16*(Coord[1]*Coord[1]);
-						else
-							Vel_Mag = -1070792516.983605*(Coord[1]*Coord[1])-179160956.345980*(Coord[1])-7494059.493144;
+						//else
+							//Vel_Mag = -1070792516.983605*(Coord[1]*Coord[1])-179160956.345980*(Coord[1])-7494059.493144;
 							//Vel_Mag = -10983959871472600.000000*(Coord[1]*Coord[1]*Coord[1]*Coord[1]) -3675622941270522.000000*(Coord[1]*Coord[1]*Coord[1]) -461248037035403.000000*(Coord[1]*Coord[1]) -25725029648064.847656*(Coord[1]) -538032857070.865112;
 							//Vel_Mag = 68.04-272.16*(Coord[1]*Coord[1]);
 						
