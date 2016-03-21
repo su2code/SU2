@@ -45,7 +45,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <complex>
-#include <vector>
 
 #include "fluid_model.hpp"
 #include "numerics_structure.hpp"
