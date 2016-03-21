@@ -1157,7 +1157,7 @@ void CFEAIteration_Adj::Iterate(COutput *output,
                                   unsigned short val_iZone
                          	 	  ) {
 
-	/*--- We first run a direct iteration, to precompute the problem Jacobian ---*/
+	/*--- We first run a direct iteration, to solve the direct problem and compute the problem Jacobian ---*/
 
 	Iterate_Direct(output, integration_container, geometry_container, solver_container,
 			       numerics_container, config_container, surface_movement, grid_movement,

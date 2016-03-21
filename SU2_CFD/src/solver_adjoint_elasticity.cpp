@@ -697,6 +697,72 @@ void CFEM_ElasticitySolver_Adj::Compute_StiffMatrix(CGeometry *geometry, CSolver
 
 }
 
+void CFEM_ElasticitySolver_Adj::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
+
+
+	unsigned long iElem, iVar;
+	unsigned short iNode, iDim, nNodes;
+	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+	su2double val_Coord, val_Sol;
+	int EL_KIND, iTerm;
+
+	su2double *Ta = NULL;
+	unsigned short NelNodes;
+
+	cout << "KIND OF DV... " << config->GetDV_FEA() << endl;
+
+
+	/*--- For the solution of the adjoint problem, this routine computes dK/dv, being v the design variables ---*/
+
+	/*--- TODO: This needs to be extended to n Design Variables. As of now, only for E. ---*/
+
+	/*--- Set the value of the Residual vectors to 0 ---*/
+	LinSysRes_dSdv.SetValZero();
+
+	/*--- Loops over all the elements ---*/
+
+	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+
+		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
+		if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+
+		/*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+		/*--- The solution comes from the direct solver ---*/
+		for (iNode = 0; iNode < nNodes; iNode++) {
+		  indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+		  for (iDim = 0; iDim < nDim; iDim++) {
+			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+			  val_Sol = direct_solver->node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+			  for (iTerm = 0; iTerm < nFEA_Terms; iTerm++){
+				  element_container[iTerm][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+				  element_container[iTerm][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+			  }
+		  }
+		}
+		cout << "nFEA_Terms: " << nFEA_Terms << endl;
+
+		numerics[FEA_TERM]->Compute_NodalStress_Term(element_container[FEA_TERM][EL_KIND], config);
+
+		NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
+
+		for (iNode = 0; iNode < NelNodes; iNode++){
+
+			Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
+			for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = Ta[iVar];
+
+			LinSysRes_dSdv.SubtractBlock(indexNode[iNode], Residual);
+
+		}
+
+	}
+
+}
+
 void CFEM_ElasticitySolver_Adj::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config){ }
 
 void CFEM_ElasticitySolver_Adj::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config){ }
@@ -774,25 +840,25 @@ void CFEM_ElasticitySolver_Adj::Solve_System(CGeometry *geometry, CSolver **solv
 	CSysSolve femSystem2;
 	IterLinSol1 = femSystem2.Solve(direct_solver->Jacobian, LinSysRes, LinSysSol, geometry, config);
 
-//	ofstream myfile;
-//	myfile.open ("Check_Adjoint.txt");
-//
-//	unsigned long iNode;
-//	unsigned long realIndex;
-//	su2double dxdE, Rv, PHI, dIdx;
-//	myfile << "Node (" << "realIndex" << "," << "iVar" << "): " << "dxdE" << " " << "Rv" << " " << "PHI" << " " << "dIdx" << endl;
-//
-//	for (iNode = 0; iNode < nPoint; iNode++){
-//			realIndex = geometry->node[iNode]->GetGlobalIndex();
-//			for (iVar = 0; iVar < nVar; iVar++){
-//				dxdE = LinSysSol_Direct.GetBlock(iNode, iVar);
-//				Rv = LinSysRes.GetBlock(iNode, iVar);
-//				PHI = LinSysSol.GetBlock(iNode, iVar);
-//				dIdx = LinSysRes_ISens_X.GetBlock(iNode, iVar);
-//				myfile << "Node (" << realIndex << "," << iVar << "): " << dxdE << " " << Rv << " " << PHI << " " << dIdx << endl;
-//			}
-//	}
-//	myfile.close();
+	ofstream myfile;
+	myfile.open ("Check_Adjoint.txt");
+
+	unsigned long iNode;
+	unsigned long realIndex;
+	su2double dxdE, Rv, PHI, dIdx;
+	myfile << "Node (" << "realIndex" << "," << "iVar" << "): " << "dxdE" << " " << "Rv" << " " << "PHI" << " " << "dIdx" << endl;
+
+	for (iNode = 0; iNode < nPoint; iNode++){
+			realIndex = geometry->node[iNode]->GetGlobalIndex();
+			for (iVar = 0; iVar < nVar; iVar++){
+				dxdE = LinSysSol_Direct.GetBlock(iNode, iVar);
+				Rv = LinSysRes_dSdv.GetBlock(iNode, iVar);
+				PHI = LinSysSol.GetBlock(iNode, iVar);
+				dIdx = LinSysRes.GetBlock(iNode, iVar);
+				myfile << "Node (" << realIndex << "," << iVar << "): " << dxdE << " " << Rv << " " << PHI << " " << dIdx << endl;
+			}
+	}
+	myfile.close();
 
 	su2double sensI_direct, sensI_adjoint;
 

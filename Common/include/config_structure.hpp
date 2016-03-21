@@ -383,7 +383,8 @@ private:
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
-  Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
+  Kind_Struct_Solver,		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
+  Kind_DV_FEA;				/*!< \brief Kind of Design Variable for FEA problems.*/
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
@@ -1587,6 +1588,12 @@ public:
 	 * \return Value of the DE voltage.
 	 */
 	su2double GetDE_Voltage(void);
+
+	/*!
+	 * \brief Get the kind of design variable for FEA.
+	 * \return Value of the DE voltage.
+	 */
+	unsigned short GetDV_FEA(void);
 
 	/*!
 	  * \brief Decide whether to run a structural adjoint solution.
