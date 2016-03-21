@@ -781,7 +781,7 @@ static const map<string, ENUM_2DFORM> ElasForm_2D = CCreateMap<string, ENUM_2DFO
 
 
 /*!
- * \brief different regime modes
+ * \brief Kinds of relaxation for FSI problem
  */
 enum ENUM_AITKEN {
   NO_RELAXATION = 0,			/*!< \brief No relaxation in the strongly coupled approach. */
@@ -793,7 +793,18 @@ static const map<string, ENUM_AITKEN> AitkenForm_Map = CCreateMap<string, ENUM_A
 ("FIXED_PARAMETER", FIXED_PARAMETER)
 ("AITKEN_DYNAMIC", AITKEN_DYNAMIC);
 
-
+/*!
+ * \brief Kinds of Design Variables for FEA problems (temporary)
+ */
+enum ENUM_DVFEA {
+  YOUNG_MODULUS = 0,		/*!< \brief Young modulus (E) as design variables. */
+  LAME_CONSTANTS = 1,  		/*!< \brief Lame constants (Lambda, mu) as design variables. */
+  ELECTRIC_FIELD = 2,       /*!< \brief Electric field (E) as design variable. */
+};
+static const map<string, ENUM_DVFEA> DVFEA_Map = CCreateMap<string, ENUM_DVFEA>
+("YOUNG_MODULUS", YOUNG_MODULUS)
+("LAME_CONSTANTS", LAME_CONSTANTS)
+("ELECTRIC_FIELD", ELECTRIC_FIELD);
 
 /*!
  * \brief types Riemann boundary treatments
