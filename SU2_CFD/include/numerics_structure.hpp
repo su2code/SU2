@@ -4215,8 +4215,9 @@ public:
  */
 class CFEM_DielectricElastomer : public CFEM_NonlinearElasticity {
 
-	su2double **Electric_Field_Ref,		/*!< \brief Electric Field in the reference configuration. */
-	*Electric_Field_Curr;				/*!< \brief Electric Field in the current configuration. */
+	su2double *EField_Ref_Unit,			/*!< \brief Electric Field, unitary, in the reference configuration. */
+	*EField_Ref_Mod;					/*!< \brief Electric Field, modulus, in the reference configuration. */
+	su2double *EField_Curr_Unit;		/*!< \brief Auxiliary vector for the unitary Electric Field in the current configuration. */
 	unsigned short nElectric_Field,
 	nDim_Electric_Field;
 
@@ -4291,13 +4292,12 @@ public:
  */
 class CFEM_DielectricElastomer_Adj : public CFEM_NonlinearElasticity {
 
-	su2double **Electric_Field_Ref_Unit,	/*!< \brief Electric Field in the reference configuration, unitary. */
-	*Electric_Field_Curr;					/*!< \brief Electric Field in the current configuration. */
-
+	su2double *EField_Ref_Unit,			/*!< \brief Electric Field, unitary, in the reference configuration. */
+	*EField_Ref_Mod;					/*!< \brief Electric Field, modulus, in the reference configuration. */
+	su2double *EField_Curr_Unit;		/*!< \brief Auxiliary vector for the unitary Electric Field in the current configuration. */
 	unsigned short nElectric_Field,
 	nDim_Electric_Field;
 
-	su2double *E_mod;					/*!< \brief Modulus of the Electric Field in the reference configuration. */
 	su2double ke_DE;					/*!< \brief Electric Constant for Dielectric Elastomers. */
 
 public:

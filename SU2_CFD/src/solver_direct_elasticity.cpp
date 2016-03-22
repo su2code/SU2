@@ -1560,11 +1560,6 @@ void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver 
 
 	}
 
-	for (iDim = 0; iDim < nDim; iDim++) {
-		val_Coord = geometry->node[0]->GetCoord(iDim);
-		val_Sol = node[0]->GetSolution(iDim) + val_Coord;
-	}
-
 }
 
 void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {

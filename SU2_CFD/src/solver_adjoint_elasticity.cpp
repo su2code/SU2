@@ -619,10 +619,19 @@ void CFEM_ElasticitySolver_Adj::Compute_StiffMatrix(CGeometry *geometry, CSolver
 	unsigned short iNode,  iDim, nNodes;
 	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
 	su2double val_Coord;
-	int EL_KIND;
+	int EL_KIND, DV_TERM;
 
 	su2double *Kab = NULL;
 	unsigned short NelNodes, jNode;
+
+	switch (config->GetDV_FEA()) {
+		case YOUNG_MODULUS:
+			DV_TERM = FEA_TERM;
+			break;
+		case ELECTRIC_FIELD:
+			DV_TERM = DE_TERM;
+			break;
+	}
 
 	/*--- For the solution of the adjoint problem, this routine computes dK/dv, being v the design variables ---*/
 
@@ -664,19 +673,19 @@ void CFEM_ElasticitySolver_Adj::Compute_StiffMatrix(CGeometry *geometry, CSolver
 
 		  for (iDim = 0; iDim < nDim; iDim++) {
 			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
-			  element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+			  element_container[DV_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
 		  }
 		}
 
-		numerics[FEA_TERM]->Compute_Tangent_Matrix(element_container[FEA_TERM][EL_KIND], config);
+		numerics[DV_TERM]->Compute_Tangent_Matrix(element_container[DV_TERM][EL_KIND], config);
 
-		NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
+		NelNodes = element_container[DV_TERM][EL_KIND]->GetnNodes();
 
 		for (iNode = 0; iNode < NelNodes; iNode++){
 
 			for (jNode = 0; jNode < NelNodes; jNode++){
 
-				Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
+				Kab = element_container[DV_TERM][EL_KIND]->Get_Kab(iNode, jNode);
 
 				for (iVar = 0; iVar < nVar; iVar++){
 					for (jVar = 0; jVar < nVar; jVar++){
@@ -704,12 +713,19 @@ void CFEM_ElasticitySolver_Adj::Compute_NodalStressRes(CGeometry *geometry, CSol
 	unsigned short iNode, iDim, nNodes;
 	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
 	su2double val_Coord, val_Sol;
-	int EL_KIND, iTerm;
+	int EL_KIND, DV_TERM;
 
 	su2double *Ta = NULL;
 	unsigned short NelNodes;
 
-	cout << "KIND OF DV... " << config->GetDV_FEA() << endl;
+	switch (config->GetDV_FEA()) {
+		case YOUNG_MODULUS:
+			DV_TERM = FEA_TERM;
+			break;
+		case ELECTRIC_FIELD:
+			DV_TERM = DE_TERM;
+			break;
+	}
 
 
 	/*--- For the solution of the adjoint problem, this routine computes dK/dv, being v the design variables ---*/
@@ -738,21 +754,18 @@ void CFEM_ElasticitySolver_Adj::Compute_NodalStressRes(CGeometry *geometry, CSol
 		  for (iDim = 0; iDim < nDim; iDim++) {
 			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
 			  val_Sol = direct_solver->node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
-			  for (iTerm = 0; iTerm < nFEA_Terms; iTerm++){
-				  element_container[iTerm][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-				  element_container[iTerm][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
-			  }
+			  element_container[DV_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+			  element_container[DV_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
 		  }
 		}
-		cout << "nFEA_Terms: " << nFEA_Terms << endl;
 
-		numerics[FEA_TERM]->Compute_NodalStress_Term(element_container[FEA_TERM][EL_KIND], config);
+		numerics[DV_TERM]->Compute_NodalStress_Term(element_container[DV_TERM][EL_KIND], config);
 
-		NelNodes = element_container[FEA_TERM][EL_KIND]->GetnNodes();
+		NelNodes = element_container[DV_TERM][EL_KIND]->GetnNodes();
 
 		for (iNode = 0; iNode < NelNodes; iNode++){
 
-			Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
+			Ta = element_container[DV_TERM][EL_KIND]->Get_Kt_a(iNode);
 			for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = Ta[iVar];
 
 			LinSysRes_dSdv.SubtractBlock(indexNode[iNode], Residual);
@@ -840,32 +853,32 @@ void CFEM_ElasticitySolver_Adj::Solve_System(CGeometry *geometry, CSolver **solv
 	CSysSolve femSystem2;
 	IterLinSol1 = femSystem2.Solve(direct_solver->Jacobian, LinSysRes, LinSysSol, geometry, config);
 
-	ofstream myfile;
-	myfile.open ("Check_Adjoint.txt");
-
-	unsigned long iNode;
-	unsigned long realIndex;
-	su2double dxdE, Rv, PHI, dIdx;
-	myfile << "Node (" << "realIndex" << "," << "iVar" << "): " << "dxdE" << " " << "Rv" << " " << "PHI" << " " << "dIdx" << endl;
-
-	for (iNode = 0; iNode < nPoint; iNode++){
-			realIndex = geometry->node[iNode]->GetGlobalIndex();
-			for (iVar = 0; iVar < nVar; iVar++){
-				dxdE = LinSysSol_Direct.GetBlock(iNode, iVar);
-				Rv = LinSysRes_dSdv.GetBlock(iNode, iVar);
-				PHI = LinSysSol.GetBlock(iNode, iVar);
-				dIdx = LinSysRes.GetBlock(iNode, iVar);
-				myfile << "Node (" << realIndex << "," << iVar << "): " << dxdE << " " << Rv << " " << PHI << " " << dIdx << endl;
-			}
-	}
-	myfile.close();
+//	ofstream myfile;
+//	myfile.open ("Check_Adjoint.txt");
+//
+//	unsigned long iNode;
+//	unsigned long realIndex;
+//	su2double dxdE, Rv, PHI, dIdx;
+//	myfile << "Node (" << "realIndex" << "," << "iVar" << "): " << "dxdE" << " " << "Rv" << " " << "PHI" << " " << "dIdx" << endl;
+//
+//	for (iNode = 0; iNode < nPoint; iNode++){
+//			realIndex = geometry->node[iNode]->GetGlobalIndex();
+//			for (iVar = 0; iVar < nVar; iVar++){
+//				dxdE = LinSysSol_Direct.GetBlock(iNode, iVar);
+//				Rv = LinSysRes_dSdv.GetBlock(iNode, iVar);
+//				PHI = LinSysSol.GetBlock(iNode, iVar);
+//				dIdx = LinSysRes.GetBlock(iNode, iVar);
+//				myfile << "Node (" << realIndex << "," << iVar << "): " << dxdE << " " << Rv << " " << PHI << " " << dIdx << endl;
+//			}
+//	}
+//	myfile.close();
 
 	su2double sensI_direct, sensI_adjoint;
 
 	sensI_direct = dotProd(LinSysRes,LinSysSol_Direct);
 	sensI_adjoint = dotProd(LinSysSol,LinSysRes_dSdv);
 
-	su2double E_mod = config->GetElasticyMod();
+	su2double E_mod = config->Get_Electric_Field_Mod(0);
 
 	ofstream myfile_res;
 	myfile_res.open ("Results_E.txt", ios::app);

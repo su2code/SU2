@@ -137,8 +137,8 @@ CFEM_DielectricElastomer_Adj::CFEM_DielectricElastomer_Adj(unsigned short val_nD
 
 	su2double Electric_Field_Mod;
 	su2double *Electric_Field_Dir = config->Get_Electric_Field_Dir();
-	su2double ref_Efield_mod;
 	unsigned short iVar, iDim;
+	su2double ref_Efield_mod;
 
 	ke_DE = config->GetDE_Modulus();
 
@@ -147,12 +147,7 @@ CFEM_DielectricElastomer_Adj::CFEM_DielectricElastomer_Adj(unsigned short val_nD
 
 	if (nDim != nDim_Electric_Field) cout << "DIMENSIONS DON'T AGREE (Fix this)" << endl;
 
-	/*--- Initialize pointer for the electric field ---*/
-	Electric_Field_Ref_Unit = new su2double* [nElectric_Field];
-	for (iVar = 0; iVar < nElectric_Field; iVar++) {
-		Electric_Field_Ref_Unit[iVar] = new su2double[nDim_Electric_Field];
-	}
-
+	/*--- We initialize the modulus ---*/
 	ref_Efield_mod = 0.0;
 	/*--- Normalize the electric field vector ---*/
 	for (iDim = 0; iDim < nDim_Electric_Field; iDim++) {
@@ -161,27 +156,27 @@ CFEM_DielectricElastomer_Adj::CFEM_DielectricElastomer_Adj(unsigned short val_nD
 	ref_Efield_mod = sqrt(ref_Efield_mod);
 
 	if (ref_Efield_mod == 0){
-		cout << "The electric field direction is incorrectly defined!!!!!" << endl;
+		cout << "The electric field has not been defined!!!!!" << endl;
 		exit(EXIT_FAILURE);
 	}
 
+	/*--- Initialize pointer for the electric field ---*/
+	EField_Ref_Unit = new su2double[nDim_Electric_Field];
 	/*--- Assign values to the auxiliary Electric_Field structure ---*/
-	for (iVar = 0; iVar < nElectric_Field; iVar++) {
-		for (iDim = 0; iDim < nDim_Electric_Field; iDim++) {
-			Electric_Field_Ref_Unit[iVar][iDim] = Electric_Field_Dir[iDim]/ref_Efield_mod;
-		}
-	}
-
-	/*--- Auxiliary vector for computing the electric field in the current configuration ---*/
-	Electric_Field_Curr = new su2double[nDim_Electric_Field];
 	for (iDim = 0; iDim < nDim_Electric_Field; iDim++) {
-		Electric_Field_Curr[iDim] = 0.0;
+		EField_Ref_Unit[iDim] = Electric_Field_Dir[iDim]/ref_Efield_mod;
 	}
 
 	/*--- Auxiliary vector for hosting the electric field modulus in the reference configuration ---*/
-	E_mod = new su2double[nElectric_Field];
+	EField_Ref_Mod = new su2double[nElectric_Field];
 	for (iVar = 0; iVar < nElectric_Field; iVar++) {
-		E_mod[iVar] = config->Get_Electric_Field_Mod(iVar);
+		EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
+	}
+
+	/*--- Auxiliary vector for computing the electric field in the current configuration ---*/
+	EField_Curr_Unit = new su2double[nDim_Electric_Field];
+	for (iDim = 0; iDim < nDim_Electric_Field; iDim++) {
+		EField_Curr_Unit[iDim] = 0.0;
 	}
 
 
@@ -189,14 +184,9 @@ CFEM_DielectricElastomer_Adj::CFEM_DielectricElastomer_Adj(unsigned short val_nD
 
 CFEM_DielectricElastomer_Adj::~CFEM_DielectricElastomer_Adj(void) {
 
-	unsigned short iVar;
-
-	for (iVar = 0; iVar < nElectric_Field; iVar++){
-		delete [] Electric_Field_Ref_Unit[iVar];
-	}
-
-	delete [] Electric_Field_Ref_Unit;
-	delete [] Electric_Field_Curr;
+	delete [] EField_Ref_Unit;
+	delete [] EField_Ref_Mod;
+	delete [] EField_Curr_Unit;
 
 }
 
@@ -234,49 +224,41 @@ void CFEM_DielectricElastomer_Adj::Compute_Stress_Tensor(CElement *element, CCon
 	su2double E01 = 0.0, E02 = 0.0, E12 = 0.0;
 
 //	Compute_Eigenproblem(element, config);
+	cout << endl << "------ADJOINT-------" << endl;
 
-	for (iVar = 0; iVar < nElectric_Field; iVar++){
-		for (iDim = 0; iDim < nDim; iDim++){
-			Electric_Field_Curr[iDim] = 0.0;
-			for (jDim = 0; jDim < nDim; jDim++){
-				Electric_Field_Curr[iDim] += F_Mat[iDim][jDim] * Electric_Field_Ref_Unit[iVar][jDim];
-			}
+	for (iDim = 0; iDim < nDim; iDim++){
+		EField_Curr_Unit[iDim] = 0.0;
+		for (jDim = 0; jDim < nDim; jDim++){
+			EField_Curr_Unit[iDim] += F_Mat[iDim][jDim] * EField_Ref_Unit[jDim];
 		}
-
-		mod_Curr = sqrt(pow(Electric_Field_Curr[0],2)+pow(Electric_Field_Curr[1],2));
-		mod_Ref = sqrt(pow(Electric_Field_Ref_Unit[iVar][0],2)+pow(Electric_Field_Ref_Unit[iVar][1],2));
-//		cout << endl;
-//		cout << "E_Ref(" << iVar << ")  = (" << Electric_Field_Ref_Unit[iVar][0] << "," << Electric_Field_Ref_Unit[iVar][1] << ").  |E_Ref|  = " << mod_Ref << "." << endl;
-//		cout << "E_Curr(" << iVar << ") = (" << Electric_Field_Curr[0] << "," << Electric_Field_Curr[1] << "). |E_Curr| = " << mod_Curr << "." << endl;
 	}
 
-	mod_Curr = 0.0;
-	/*--- Normalize the electric field vector ---*/
-	for (iDim = 0; iDim < nDim_Electric_Field; iDim++) {
-		mod_Curr += Electric_Field_Curr[iDim]*Electric_Field_Curr[iDim];
-	}
-	mod_Curr = sqrt(mod_Curr);
+	mod_Curr = sqrt(pow(EField_Curr_Unit[0],2)+pow(EField_Curr_Unit[1],2));
+	mod_Ref = sqrt(pow(EField_Ref_Unit[0],2)+pow(EField_Ref_Unit[1],2));
+
+	cout << "E_Ref(" << iVar << ")  = (" << EField_Ref_Unit[0] << "," << EField_Ref_Unit[1] << ").  |E_Ref|  = " << mod_Ref << "." << endl;
+	cout << "E_Curr(" << iVar << ") = (" << EField_Curr_Unit[0] << "," << EField_Curr_Unit[1] << "). |E_Curr| = " << mod_Curr << "." << endl;
 
 	/*--- v = Electric_Field_Curr[iDim] ---*/
 
-	E00 = (2*(pow(Electric_Field_Curr[0],2))-pow(mod_Curr,2))*E_mod[0];
-	E11 = (2*(pow(Electric_Field_Curr[1],2))-pow(mod_Curr,2))*E_mod[0];
-	E01 = 2*Electric_Field_Curr[0]*Electric_Field_Curr[0]*E_mod[0];
-	E22 = -1*pow(mod_Curr,2)*E_mod[0];
+	E00 = (2*(pow(EField_Curr_Unit[0],2))-pow(mod_Curr,2))*EField_Ref_Mod[0];
+	E11 = (2*(pow(EField_Curr_Unit[1],2))-pow(mod_Curr,2))*EField_Ref_Mod[0];
+	E01 = 2*EField_Curr_Unit[0]*EField_Curr_Unit[1]*EField_Ref_Mod[0];
+	E22 = -1*pow(mod_Curr,2)*EField_Ref_Mod[0];
 
 	if (nDim == 3){
-		E02 = 2*Electric_Field_Curr[0]*Electric_Field_Curr[2]*E_mod[0];
-		E12 = 2*Electric_Field_Curr[1]*Electric_Field_Curr[2]*E_mod[0];
-		E22+=2*(pow(Electric_Field_Curr[1],2))*E_mod[0];
+		E02 = 2*EField_Curr_Unit[0]*EField_Curr_Unit[2]*EField_Ref_Mod[0];
+		E12 = 2*EField_Curr_Unit[1]*EField_Curr_Unit[2]*EField_Ref_Mod[0];
+		E22+=2*(pow(EField_Curr_Unit[1],2))*EField_Ref_Mod[0];
 	}
 
 	Stress_Tensor[0][0] = ke_DE*E00;	Stress_Tensor[0][1] = ke_DE*E01;	Stress_Tensor[0][2] = ke_DE*E02;
 	Stress_Tensor[1][0] = ke_DE*E01;	Stress_Tensor[1][1] = ke_DE*E11;	Stress_Tensor[1][2] = ke_DE*E12;
 	Stress_Tensor[2][0] = ke_DE*E02;	Stress_Tensor[2][1] = ke_DE*E12;	Stress_Tensor[2][2] = ke_DE*E22;
 
-//	cout << endl << "SXX:" << endl;
-//	cout << Stress_Tensor[0][0] << " " << Stress_Tensor[0][1] << " " << Stress_Tensor[0][2] << endl;
-//	cout << Stress_Tensor[1][0] << " " << Stress_Tensor[1][1] << " " << Stress_Tensor[1][2] << endl;
-//	cout << Stress_Tensor[2][0] << " " << Stress_Tensor[2][1] << " " << Stress_Tensor[2][2] << endl;
+	cout << endl << "SXX:" << endl;
+	cout << Stress_Tensor[0][0] << " " << Stress_Tensor[0][1] << " " << Stress_Tensor[0][2] << endl;
+	cout << Stress_Tensor[1][0] << " " << Stress_Tensor[1][1] << " " << Stress_Tensor[1][2] << endl;
+	cout << Stress_Tensor[2][0] << " " << Stress_Tensor[2][1] << " " << Stress_Tensor[2][2] << endl;
 
 }
