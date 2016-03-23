@@ -1,0 +1,481 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXCopyFilesBuildPhase section */
+		E9FE26311CA342ED0035E3CC /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		E9FE263D1CA343570035E3CC /* SU2_PY */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_PY; sourceTree = BUILT_PRODUCTS_DIR; };
+		E9FE263F1CA343B70035E3CC /* change_version_number.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = change_version_number.py; path = ../../SU2_PY/change_version_number.py; sourceTree = "<group>"; };
+		E9FE26401CA343B70035E3CC /* compute_polar.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = compute_polar.py; path = ../../SU2_PY/compute_polar.py; sourceTree = "<group>"; };
+		E9FE26411CA343B70035E3CC /* compute_stability.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = compute_stability.py; path = ../../SU2_PY/compute_stability.py; sourceTree = "<group>"; };
+		E9FE26421CA343B70035E3CC /* config_gui.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = config_gui.py; path = ../../SU2_PY/config_gui.py; sourceTree = "<group>"; };
+		E9FE26431CA343B70035E3CC /* continuous_adjoint.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = continuous_adjoint.py; path = ../../SU2_PY/continuous_adjoint.py; sourceTree = "<group>"; };
+		E9FE26441CA343B70035E3CC /* direct_differentiation.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = direct_differentiation.py; path = ../../SU2_PY/direct_differentiation.py; sourceTree = "<group>"; };
+		E9FE26451CA343B70035E3CC /* discrete_adjoint.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = discrete_adjoint.py; path = ../../SU2_PY/discrete_adjoint.py; sourceTree = "<group>"; };
+		E9FE26461CA343B70035E3CC /* documentation.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = documentation.txt; path = ../../SU2_PY/documentation.txt; sourceTree = "<group>"; };
+		E9FE26471CA343B70035E3CC /* downstream_function.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = downstream_function.py; path = ../../SU2_PY/downstream_function.py; sourceTree = "<group>"; };
+		E9FE26481CA343B70035E3CC /* finite_differences.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = finite_differences.py; path = ../../SU2_PY/finite_differences.py; sourceTree = "<group>"; };
+		E9FE26491CA343B70035E3CC /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.am; path = ../../SU2_PY/Makefile.am; sourceTree = "<group>"; };
+		E9FE264A1CA343B80035E3CC /* Makefile.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.in; path = ../../SU2_PY/Makefile.in; sourceTree = "<group>"; };
+		E9FE264B1CA343B80035E3CC /* merge_solution.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = merge_solution.py; path = ../../SU2_PY/merge_solution.py; sourceTree = "<group>"; };
+		E9FE264C1CA343B80035E3CC /* mesh_adaptation.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = mesh_adaptation.py; path = ../../SU2_PY/mesh_adaptation.py; sourceTree = "<group>"; };
+		E9FE264D1CA343B80035E3CC /* mesh_deformation.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = mesh_deformation.py; path = ../../SU2_PY/mesh_deformation.py; sourceTree = "<group>"; };
+		E9FE264E1CA343B80035E3CC /* package_tests.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = package_tests.py; path = ../../SU2_PY/package_tests.py; sourceTree = "<group>"; };
+		E9FE264F1CA343B80035E3CC /* parallel_computation.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = parallel_computation.py; path = ../../SU2_PY/parallel_computation.py; sourceTree = "<group>"; };
+		E9FE26501CA343B80035E3CC /* parallel_computation_fsi.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = parallel_computation_fsi.py; path = ../../SU2_PY/parallel_computation_fsi.py; sourceTree = "<group>"; };
+		E9FE26511CA343B80035E3CC /* parse_config.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = parse_config.py; path = ../../SU2_PY/parse_config.py; sourceTree = "<group>"; };
+		E9FE26521CA343B80035E3CC /* patient_designspace.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = patient_designspace.py; path = ../../SU2_PY/patient_designspace.py; sourceTree = "<group>"; };
+		E9FE26531CA343B80035E3CC /* set_ffd_design_var.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = set_ffd_design_var.py; path = ../../SU2_PY/set_ffd_design_var.py; sourceTree = "<group>"; };
+		E9FE26541CA343B80035E3CC /* shape_optimization.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = shape_optimization.py; path = ../../SU2_PY/shape_optimization.py; sourceTree = "<group>"; };
+		E9FE26561CA343B80035E3CC /* __init__.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = __init__.py; sourceTree = "<group>"; };
+		E9FE26571CA343B80035E3CC /* __init__.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = __init__.pyc; sourceTree = "<group>"; };
+		E9FE26591CA343B80035E3CC /* __init__.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = __init__.py; sourceTree = "<group>"; };
+		E9FE265A1CA343B80035E3CC /* __init__.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = __init__.pyc; sourceTree = "<group>"; };
+		E9FE265B1CA343B80035E3CC /* design.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = design.py; sourceTree = "<group>"; };
+		E9FE265C1CA343B80035E3CC /* design.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = design.pyc; sourceTree = "<group>"; };
+		E9FE265D1CA343B80035E3CC /* functions.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = functions.py; sourceTree = "<group>"; };
+		E9FE265E1CA343B80035E3CC /* functions.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = functions.pyc; sourceTree = "<group>"; };
+		E9FE265F1CA343B80035E3CC /* gradients.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = gradients.py; sourceTree = "<group>"; };
+		E9FE26601CA343B80035E3CC /* gradients.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = gradients.pyc; sourceTree = "<group>"; };
+		E9FE26621CA343B80035E3CC /* __init__.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = __init__.py; sourceTree = "<group>"; };
+		E9FE26631CA343B80035E3CC /* __init__.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = __init__.pyc; sourceTree = "<group>"; };
+		E9FE26641CA343B80035E3CC /* config.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = config.py; sourceTree = "<group>"; };
+		E9FE26651CA343B80035E3CC /* config.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = config.pyc; sourceTree = "<group>"; };
+		E9FE26661CA343B80035E3CC /* config_options.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = config_options.py; sourceTree = "<group>"; };
+		E9FE26671CA343B80035E3CC /* config_options.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = config_options.pyc; sourceTree = "<group>"; };
+		E9FE26681CA343B80035E3CC /* data.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = data.py; sourceTree = "<group>"; };
+		E9FE26691CA343B80035E3CC /* data.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = data.pyc; sourceTree = "<group>"; };
+		E9FE266A1CA343B80035E3CC /* filelock.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = filelock.py; sourceTree = "<group>"; };
+		E9FE266B1CA343B80035E3CC /* filelock.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = filelock.pyc; sourceTree = "<group>"; };
+		E9FE266C1CA343B80035E3CC /* redirect.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = redirect.py; sourceTree = "<group>"; };
+		E9FE266D1CA343B80035E3CC /* redirect.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = redirect.pyc; sourceTree = "<group>"; };
+		E9FE266E1CA343B80035E3CC /* state.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = state.py; sourceTree = "<group>"; };
+		E9FE266F1CA343B80035E3CC /* state.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = state.pyc; sourceTree = "<group>"; };
+		E9FE26701CA343B80035E3CC /* tools.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = tools.py; sourceTree = "<group>"; };
+		E9FE26711CA343B80035E3CC /* tools.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = tools.pyc; sourceTree = "<group>"; };
+		E9FE26731CA343B80035E3CC /* __init__.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = __init__.py; sourceTree = "<group>"; };
+		E9FE26741CA343B80035E3CC /* __init__.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = __init__.pyc; sourceTree = "<group>"; };
+		E9FE26751CA343B80035E3CC /* adapt.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = adapt.py; sourceTree = "<group>"; };
+		E9FE26761CA343B80035E3CC /* adapt.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = adapt.pyc; sourceTree = "<group>"; };
+		E9FE26771CA343B80035E3CC /* tools.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = tools.py; sourceTree = "<group>"; };
+		E9FE26781CA343B80035E3CC /* tools.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = tools.pyc; sourceTree = "<group>"; };
+		E9FE267A1CA343B80035E3CC /* __init__.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = __init__.py; sourceTree = "<group>"; };
+		E9FE267B1CA343B80035E3CC /* __init__.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = __init__.pyc; sourceTree = "<group>"; };
+		E9FE267C1CA343B80035E3CC /* project.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = project.py; sourceTree = "<group>"; };
+		E9FE267D1CA343B80035E3CC /* project.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = project.pyc; sourceTree = "<group>"; };
+		E9FE267E1CA343B80035E3CC /* scipy_tools.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = scipy_tools.py; sourceTree = "<group>"; };
+		E9FE267F1CA343B80035E3CC /* scipy_tools.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = scipy_tools.pyc; sourceTree = "<group>"; };
+		E9FE26801CA343B80035E3CC /* server.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = server.py; sourceTree = "<group>"; };
+		E9FE26821CA343B80035E3CC /* __init__.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = __init__.py; sourceTree = "<group>"; };
+		E9FE26831CA343B80035E3CC /* __init__.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = __init__.pyc; sourceTree = "<group>"; };
+		E9FE26841CA343B80035E3CC /* adaptation.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = adaptation.py; sourceTree = "<group>"; };
+		E9FE26851CA343B80035E3CC /* adaptation.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = adaptation.pyc; sourceTree = "<group>"; };
+		E9FE26861CA343B80035E3CC /* adjoint.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = adjoint.py; sourceTree = "<group>"; };
+		E9FE26871CA343B80035E3CC /* adjoint.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = adjoint.pyc; sourceTree = "<group>"; };
+		E9FE26881CA343B80035E3CC /* deform.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = deform.py; sourceTree = "<group>"; };
+		E9FE26891CA343B80035E3CC /* deform.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = deform.pyc; sourceTree = "<group>"; };
+		E9FE268A1CA343B80035E3CC /* direct.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = direct.py; sourceTree = "<group>"; };
+		E9FE268B1CA343B80035E3CC /* direct.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = direct.pyc; sourceTree = "<group>"; };
+		E9FE268C1CA343B80035E3CC /* geometry.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = geometry.py; sourceTree = "<group>"; };
+		E9FE268D1CA343B80035E3CC /* geometry.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = geometry.pyc; sourceTree = "<group>"; };
+		E9FE268E1CA343B80035E3CC /* interface.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = interface.py; sourceTree = "<group>"; };
+		E9FE268F1CA343B80035E3CC /* interface.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = interface.pyc; sourceTree = "<group>"; };
+		E9FE26901CA343B80035E3CC /* merge.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = merge.py; sourceTree = "<group>"; };
+		E9FE26911CA343B80035E3CC /* merge.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = merge.pyc; sourceTree = "<group>"; };
+		E9FE26921CA343B80035E3CC /* projection.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = projection.py; sourceTree = "<group>"; };
+		E9FE26931CA343B80035E3CC /* projection.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = projection.pyc; sourceTree = "<group>"; };
+		E9FE26951CA343B80035E3CC /* __init__.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = __init__.py; sourceTree = "<group>"; };
+		E9FE26961CA343B80035E3CC /* __init__.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = __init__.pyc; sourceTree = "<group>"; };
+		E9FE26971CA343B80035E3CC /* bunch.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = bunch.py; sourceTree = "<group>"; };
+		E9FE26981CA343B80035E3CC /* bunch.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = bunch.pyc; sourceTree = "<group>"; };
+		E9FE26991CA343B80035E3CC /* filter_adjoint.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = filter_adjoint.py; sourceTree = "<group>"; };
+		E9FE269A1CA343B80035E3CC /* lhc_unif.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = lhc_unif.py; sourceTree = "<group>"; };
+		E9FE269B1CA343B80035E3CC /* lhc_unif.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = lhc_unif.pyc; sourceTree = "<group>"; };
+		E9FE269C1CA343B80035E3CC /* misc.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = misc.py; sourceTree = "<group>"; };
+		E9FE269D1CA343B80035E3CC /* misc.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = misc.pyc; sourceTree = "<group>"; };
+		E9FE269E1CA343B80035E3CC /* mp_eval.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = mp_eval.py; sourceTree = "<group>"; };
+		E9FE269F1CA343B80035E3CC /* mp_eval.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = mp_eval.pyc; sourceTree = "<group>"; };
+		E9FE26A01CA343B80035E3CC /* ordered_bunch.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = ordered_bunch.py; sourceTree = "<group>"; };
+		E9FE26A11CA343B80035E3CC /* ordered_bunch.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = ordered_bunch.pyc; sourceTree = "<group>"; };
+		E9FE26A21CA343B80035E3CC /* ordered_dict.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = ordered_dict.py; sourceTree = "<group>"; };
+		E9FE26A31CA343B80035E3CC /* ordered_dict.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = ordered_dict.pyc; sourceTree = "<group>"; };
+		E9FE26A41CA343B80035E3CC /* plot.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = plot.py; sourceTree = "<group>"; };
+		E9FE26A51CA343B80035E3CC /* plot.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = plot.pyc; sourceTree = "<group>"; };
+		E9FE26A61CA343B80035E3CC /* pyCppTap.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = pyCppTap.py; sourceTree = "<group>"; };
+		E9FE26A71CA343B80035E3CC /* switch.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = switch.py; sourceTree = "<group>"; };
+		E9FE26A81CA343B80035E3CC /* switch.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = switch.pyc; sourceTree = "<group>"; };
+		E9FE26A91CA343B80035E3CC /* which.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = which.py; sourceTree = "<group>"; };
+		E9FE26AA1CA343B80035E3CC /* which.pyc */ = {isa = PBXFileReference; lastKnownFileType = file; path = which.pyc; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E9FE26301CA342ED0035E3CC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		E9FE262A1CA342ED0035E3CC = {
+			isa = PBXGroup;
+			children = (
+				E9FE263F1CA343B70035E3CC /* change_version_number.py */,
+				E9FE26401CA343B70035E3CC /* compute_polar.py */,
+				E9FE26411CA343B70035E3CC /* compute_stability.py */,
+				E9FE26421CA343B70035E3CC /* config_gui.py */,
+				E9FE26431CA343B70035E3CC /* continuous_adjoint.py */,
+				E9FE26441CA343B70035E3CC /* direct_differentiation.py */,
+				E9FE26451CA343B70035E3CC /* discrete_adjoint.py */,
+				E9FE26461CA343B70035E3CC /* documentation.txt */,
+				E9FE26471CA343B70035E3CC /* downstream_function.py */,
+				E9FE26481CA343B70035E3CC /* finite_differences.py */,
+				E9FE26491CA343B70035E3CC /* Makefile.am */,
+				E9FE264A1CA343B80035E3CC /* Makefile.in */,
+				E9FE264B1CA343B80035E3CC /* merge_solution.py */,
+				E9FE264C1CA343B80035E3CC /* mesh_adaptation.py */,
+				E9FE264D1CA343B80035E3CC /* mesh_deformation.py */,
+				E9FE264E1CA343B80035E3CC /* package_tests.py */,
+				E9FE264F1CA343B80035E3CC /* parallel_computation.py */,
+				E9FE26501CA343B80035E3CC /* parallel_computation_fsi.py */,
+				E9FE26511CA343B80035E3CC /* parse_config.py */,
+				E9FE26521CA343B80035E3CC /* patient_designspace.py */,
+				E9FE26531CA343B80035E3CC /* set_ffd_design_var.py */,
+				E9FE26541CA343B80035E3CC /* shape_optimization.py */,
+				E9FE26551CA343B80035E3CC /* SU2 */,
+				E9FE263D1CA343570035E3CC /* SU2_PY */,
+			);
+			sourceTree = "<group>";
+		};
+		E9FE26551CA343B80035E3CC /* SU2 */ = {
+			isa = PBXGroup;
+			children = (
+				E9FE26561CA343B80035E3CC /* __init__.py */,
+				E9FE26571CA343B80035E3CC /* __init__.pyc */,
+				E9FE26581CA343B80035E3CC /* eval */,
+				E9FE26611CA343B80035E3CC /* io */,
+				E9FE26721CA343B80035E3CC /* mesh */,
+				E9FE26791CA343B80035E3CC /* opt */,
+				E9FE26811CA343B80035E3CC /* run */,
+				E9FE26941CA343B80035E3CC /* util */,
+			);
+			name = SU2;
+			path = ../../SU2_PY/SU2;
+			sourceTree = "<group>";
+		};
+		E9FE26581CA343B80035E3CC /* eval */ = {
+			isa = PBXGroup;
+			children = (
+				E9FE26591CA343B80035E3CC /* __init__.py */,
+				E9FE265A1CA343B80035E3CC /* __init__.pyc */,
+				E9FE265B1CA343B80035E3CC /* design.py */,
+				E9FE265C1CA343B80035E3CC /* design.pyc */,
+				E9FE265D1CA343B80035E3CC /* functions.py */,
+				E9FE265E1CA343B80035E3CC /* functions.pyc */,
+				E9FE265F1CA343B80035E3CC /* gradients.py */,
+				E9FE26601CA343B80035E3CC /* gradients.pyc */,
+			);
+			path = eval;
+			sourceTree = "<group>";
+		};
+		E9FE26611CA343B80035E3CC /* io */ = {
+			isa = PBXGroup;
+			children = (
+				E9FE26621CA343B80035E3CC /* __init__.py */,
+				E9FE26631CA343B80035E3CC /* __init__.pyc */,
+				E9FE26641CA343B80035E3CC /* config.py */,
+				E9FE26651CA343B80035E3CC /* config.pyc */,
+				E9FE26661CA343B80035E3CC /* config_options.py */,
+				E9FE26671CA343B80035E3CC /* config_options.pyc */,
+				E9FE26681CA343B80035E3CC /* data.py */,
+				E9FE26691CA343B80035E3CC /* data.pyc */,
+				E9FE266A1CA343B80035E3CC /* filelock.py */,
+				E9FE266B1CA343B80035E3CC /* filelock.pyc */,
+				E9FE266C1CA343B80035E3CC /* redirect.py */,
+				E9FE266D1CA343B80035E3CC /* redirect.pyc */,
+				E9FE266E1CA343B80035E3CC /* state.py */,
+				E9FE266F1CA343B80035E3CC /* state.pyc */,
+				E9FE26701CA343B80035E3CC /* tools.py */,
+				E9FE26711CA343B80035E3CC /* tools.pyc */,
+			);
+			path = io;
+			sourceTree = "<group>";
+		};
+		E9FE26721CA343B80035E3CC /* mesh */ = {
+			isa = PBXGroup;
+			children = (
+				E9FE26731CA343B80035E3CC /* __init__.py */,
+				E9FE26741CA343B80035E3CC /* __init__.pyc */,
+				E9FE26751CA343B80035E3CC /* adapt.py */,
+				E9FE26761CA343B80035E3CC /* adapt.pyc */,
+				E9FE26771CA343B80035E3CC /* tools.py */,
+				E9FE26781CA343B80035E3CC /* tools.pyc */,
+			);
+			path = mesh;
+			sourceTree = "<group>";
+		};
+		E9FE26791CA343B80035E3CC /* opt */ = {
+			isa = PBXGroup;
+			children = (
+				E9FE267A1CA343B80035E3CC /* __init__.py */,
+				E9FE267B1CA343B80035E3CC /* __init__.pyc */,
+				E9FE267C1CA343B80035E3CC /* project.py */,
+				E9FE267D1CA343B80035E3CC /* project.pyc */,
+				E9FE267E1CA343B80035E3CC /* scipy_tools.py */,
+				E9FE267F1CA343B80035E3CC /* scipy_tools.pyc */,
+				E9FE26801CA343B80035E3CC /* server.py */,
+			);
+			path = opt;
+			sourceTree = "<group>";
+		};
+		E9FE26811CA343B80035E3CC /* run */ = {
+			isa = PBXGroup;
+			children = (
+				E9FE26821CA343B80035E3CC /* __init__.py */,
+				E9FE26831CA343B80035E3CC /* __init__.pyc */,
+				E9FE26841CA343B80035E3CC /* adaptation.py */,
+				E9FE26851CA343B80035E3CC /* adaptation.pyc */,
+				E9FE26861CA343B80035E3CC /* adjoint.py */,
+				E9FE26871CA343B80035E3CC /* adjoint.pyc */,
+				E9FE26881CA343B80035E3CC /* deform.py */,
+				E9FE26891CA343B80035E3CC /* deform.pyc */,
+				E9FE268A1CA343B80035E3CC /* direct.py */,
+				E9FE268B1CA343B80035E3CC /* direct.pyc */,
+				E9FE268C1CA343B80035E3CC /* geometry.py */,
+				E9FE268D1CA343B80035E3CC /* geometry.pyc */,
+				E9FE268E1CA343B80035E3CC /* interface.py */,
+				E9FE268F1CA343B80035E3CC /* interface.pyc */,
+				E9FE26901CA343B80035E3CC /* merge.py */,
+				E9FE26911CA343B80035E3CC /* merge.pyc */,
+				E9FE26921CA343B80035E3CC /* projection.py */,
+				E9FE26931CA343B80035E3CC /* projection.pyc */,
+			);
+			path = run;
+			sourceTree = "<group>";
+		};
+		E9FE26941CA343B80035E3CC /* util */ = {
+			isa = PBXGroup;
+			children = (
+				E9FE26951CA343B80035E3CC /* __init__.py */,
+				E9FE26961CA343B80035E3CC /* __init__.pyc */,
+				E9FE26971CA343B80035E3CC /* bunch.py */,
+				E9FE26981CA343B80035E3CC /* bunch.pyc */,
+				E9FE26991CA343B80035E3CC /* filter_adjoint.py */,
+				E9FE269A1CA343B80035E3CC /* lhc_unif.py */,
+				E9FE269B1CA343B80035E3CC /* lhc_unif.pyc */,
+				E9FE269C1CA343B80035E3CC /* misc.py */,
+				E9FE269D1CA343B80035E3CC /* misc.pyc */,
+				E9FE269E1CA343B80035E3CC /* mp_eval.py */,
+				E9FE269F1CA343B80035E3CC /* mp_eval.pyc */,
+				E9FE26A01CA343B80035E3CC /* ordered_bunch.py */,
+				E9FE26A11CA343B80035E3CC /* ordered_bunch.pyc */,
+				E9FE26A21CA343B80035E3CC /* ordered_dict.py */,
+				E9FE26A31CA343B80035E3CC /* ordered_dict.pyc */,
+				E9FE26A41CA343B80035E3CC /* plot.py */,
+				E9FE26A51CA343B80035E3CC /* plot.pyc */,
+				E9FE26A61CA343B80035E3CC /* pyCppTap.py */,
+				E9FE26A71CA343B80035E3CC /* switch.py */,
+				E9FE26A81CA343B80035E3CC /* switch.pyc */,
+				E9FE26A91CA343B80035E3CC /* which.py */,
+				E9FE26AA1CA343B80035E3CC /* which.pyc */,
+			);
+			path = util;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E9FE26321CA342ED0035E3CC /* SU2_PY */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E9FE263A1CA342ED0035E3CC /* Build configuration list for PBXNativeTarget "SU2_PY" */;
+			buildPhases = (
+				E9FE262F1CA342ED0035E3CC /* Sources */,
+				E9FE26301CA342ED0035E3CC /* Frameworks */,
+				E9FE26311CA342ED0035E3CC /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SU2_PY;
+			productName = SU2_PY;
+			productReference = E9FE263D1CA343570035E3CC /* SU2_PY */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E9FE262B1CA342ED0035E3CC /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0720;
+				ORGANIZATIONNAME = "Thomas D. Economon";
+				TargetAttributes = {
+					E9FE26321CA342ED0035E3CC = {
+						CreatedOnToolsVersion = 7.2;
+					};
+				};
+			};
+			buildConfigurationList = E9FE262E1CA342ED0035E3CC /* Build configuration list for PBXProject "SU2_PY" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = E9FE262A1CA342ED0035E3CC;
+			productRefGroup = E9FE262A1CA342ED0035E3CC;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E9FE26321CA342ED0035E3CC /* SU2_PY */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E9FE262F1CA342ED0035E3CC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		E9FE26381CA342ED0035E3CC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		E9FE26391CA342ED0035E3CC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		E9FE263B1CA342ED0035E3CC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		E9FE263C1CA342ED0035E3CC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		E9FE262E1CA342ED0035E3CC /* Build configuration list for PBXProject "SU2_PY" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E9FE26381CA342ED0035E3CC /* Debug */,
+				E9FE26391CA342ED0035E3CC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E9FE263A1CA342ED0035E3CC /* Build configuration list for PBXNativeTarget "SU2_PY" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E9FE263B1CA342ED0035E3CC /* Debug */,
+				E9FE263C1CA342ED0035E3CC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E9FE262B1CA342ED0035E3CC /* Project object */;
+}
