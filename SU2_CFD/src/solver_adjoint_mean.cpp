@@ -5220,8 +5220,6 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Norm heat flux objective test ---*/
   pnorm = 1.0;
-  if (config->GetKind_ObjFunc()==TOTAL_HEATFLUX)
-    pnorm = 1.0;
   if (config->GetKind_ObjFunc()==MAXIMUM_HEATFLUX)
     pnorm = 8.0;
   
