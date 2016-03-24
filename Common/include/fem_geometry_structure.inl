@@ -31,6 +31,36 @@
  
 #pragma once
 
+inline CVolumeElementFEM::CVolumeElementFEM(void) { }
+
+inline CVolumeElementFEM::~CVolumeElementFEM(void) { }
+
+inline CPointFEM::CPointFEM(void) { coor[0] = coor[1] = coor[2] = 0.0; }
+
+inline CPointFEM::~CPointFEM(void) { }
+
+inline CPointFEM::CPointFEM(const CPointFEM &other) { Copy(other); }
+
+inline CPointFEM& CPointFEM::operator=(const CPointFEM &other) { Copy(other); return (*this); }
+
+inline bool CPointFEM::operator< (const CPointFEM &other) const { return globalID <  other.globalID; }
+
+inline bool CPointFEM::operator==(const CPointFEM &other) const { return globalID == other.globalID; }
+
+inline CSurfaceElementFEM::CSurfaceElementFEM(void) { indStandardElement = -1; }
+
+inline CSurfaceElementFEM::~CSurfaceElementFEM(void) { }
+
+inline CSurfaceElementFEM::CSurfaceElementFEM(const CSurfaceElementFEM &other) { Copy(other); }
+
+inline CSurfaceElementFEM& CSurfaceElementFEM::operator=(const CSurfaceElementFEM &other) { Copy(other); return (*this); }
+
+inline bool CSurfaceElementFEM::operator< (const CSurfaceElementFEM &other) const { return boundElemIDGlobal < other.boundElemIDGlobal; }
+
+inline CBoundaryFEM::CBoundaryFEM(void) { }
+
+inline CBoundaryFEM::~CBoundaryFEM(void) { }
+
 inline CMeshFEM::CMeshFEM(void) { }
 
 inline CMeshFEM::~CMeshFEM(void) { }

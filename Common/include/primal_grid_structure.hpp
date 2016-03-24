@@ -64,6 +64,8 @@ protected:
                                  correspond with a boundary element is stored. */
 	bool Divide;                  /*!< \brief Marker used to know if we are going to divide this element
                                  in the adaptation proccess. */
+ bool *JacobianFaceIsConstant; /*!< \brief Whether or not the Jacobian of the faces can be considered
+                                  constant in the transformation to the standard element. */
   
 public:
 	
@@ -100,11 +102,32 @@ public:
 	void SetNeighbor_Elements(unsigned long val_elem, unsigned short val_face);
 
  /*!
+  * \brief Get the index of the periodic transformation to the neighboring element.
+  * \param[in] val_face - Local index of the face.
+  * \return   Index of the periodic transformation to the neighboring element.
+  */
+ short GetPeriodicIndex(unsigned short val_face);
+
+ /*!
   * \brief Set the index of the periodic transformation to the neighboring element.
   * \param[in] val_periodic - Index of the periodic marker to which the face belongs.
   * \param[in] val_face     - Local index of the face.
   */
  void SetPeriodicIndex(unsigned short val_periodic, unsigned short val_face);
+
+ /*!
+  * \brief Get whether or not the Jacobian of the given face is considered constant.
+  * \param[in] val_face - Local index of the face.
+  * \return  Whether or not the Jacobian of the face is considered constant.
+  */
+ bool GetJacobianConstantFace(unsigned short val_face);
+
+ /*!
+  * \brief Set whether or not the Jacobian of the given face is considered constant.
+  * \param[in] val_JacFaceIsConstant - Boolean to indicate whether or not the Jacobian is constant.
+  * \param[in] val_face              - Local index of the face.
+  */
+ void SetJacobianConstantFace(bool val_JacFaceIsConstant, unsigned short val_face);
 	
 	/*!
 	 * \brief Set the center of gravity of an element (including edges).
@@ -146,6 +169,12 @@ public:
 	bool GetDivide(void);
 
  /*!
+  * \brief Initialize the array, which stores whether or not the faces have a constant Jacobian.
+  * \param[in] val_nFaces - Number of faces for which Jacobians must be initialized.
+  */
+ void InitializeJacobianConstantFaces(unsigned short val_nFaces);
+
+ /*!
   * \brief Initialize the information about the neighboring elements.
   * \param[in] val_nFaces - Number of faces for which neighboring information must be initialized.
   */
@@ -156,6 +185,12 @@ public:
   * \param[in] val_color - New color of the element.
   */
  virtual void SetColor(unsigned long val_color);
+
+ /*!
+  * \brief A virtual member.
+  * \return The color of the element in the partitioning.
+  */
+ virtual unsigned long GetColor(void);
 	
 	/*!
 	 * \brief A virtual member.
@@ -272,10 +307,16 @@ public:
                                       unsigned long  faceConn[6][4]);
 
  /*!
-  * \brief Virtual function to make available the global ID of this bound element.
-  * \return The global ID of this bound element.
+  * \brief Virtual function to make available the global ID of this element.
+  * \return The global ID of this element.
   */
-  virtual unsigned long GetGlobalBoundElemID(void);
+  virtual unsigned long GetGlobalElemID(void);
+
+ /*!
+  * \brief Virtual function to make available the global offset of the solution DOFs.
+  * \return The global offset of the solution DOFs.
+  */
+ virtual unsigned long GetGlobalOffsetDOFsSol(void);
 
  /*!
   * \brief Virtual function to make available the polynomial degree of the grid.
@@ -290,22 +331,28 @@ public:
  virtual unsigned short GetNPolySol(void);
 
  /*!
+  * \brief Virtual function to make available the number of DOFs of the grid in the element.
+  * \return The number of DOFs of the Grid in the element.
+  */
+ virtual unsigned short GetNDOFsGrid(void);
+
+ /*!
   * \brief Virtual function to make available the number of DOFs of the solution in the element.
   * \return The number of DOFs of the solution in the element.
   */
  virtual unsigned short GetNDOFsSol(void);
 
  /*!
-  * \brief Virtual function to get the ratio of the maximum and minimum value of the Jacobian.
-  * \return The maximum ratio of the Jacobian.
+  * \brief Virtual function to get whether or not the Jacobian is considered constant.
+  * \return True if the Jacobian is (almost) constant and false otherwise.
   */
- virtual su2double GetRatioMaxMinJacobian(void);
+ virtual bool GetJacobianConsideredConstant(void);
 
  /*!
-  * \brief Virtual function to set the ratio of the maximum and minimum value of the Jacobian.
-  * \param[in] val_ratioMaxMinJac - The Jacobian ratio to be set.
+  * \brief Virtual function to set the value of JacobianConsideredConstant.
+  * \param[in] val_JacobianConsideredConstant - The value to be set for JacobianConsideredConstant.
   */
- virtual void SetRatioMaxMinJacobian(su2double val_ratioMaxMinJac);
+ virtual void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant);
 };
 
 /*!
@@ -1298,8 +1345,8 @@ private:
  unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
  unsigned long color;               /*!< \brief Color of the element in the partitioning strategy. */
 
- su2double ratioMaxMinJacobian; /*!< \brief Ratio of the maximum and minimum value of the Jacobian
-                                            of the transformation to the standard element. */
+ bool JacobianConsideredConstant; /*!< \brief Whether or not the Jacobian of the transformation to
+                                              is (almost) constant. */
 
 public:
 
@@ -1384,6 +1431,18 @@ public:
  void Change_Orientation(void);
 
  /*!
+  * \brief Make available the global ID of this element.
+  * \return The global ID of this element.
+  */
+ unsigned long GetGlobalElemID(void);
+
+ /*!
+  * \brief Make available the global offset of the solution DOFs of this element.
+  * \return The global offset of the solution DOFs.
+  */
+ unsigned long GetGlobalOffsetDOFsSol(void);
+
+ /*!
   * \brief Get the number of element that are neighbor to this element.
   * \return Number of neighbor elements.
   */
@@ -1414,6 +1473,12 @@ public:
  unsigned short GetNPolySol(void);
 
   /*!
+  * \brief Function to make available the number of DOFs of the grid in the element.
+  * \return The number of DOFs of the grid in the element.
+  */
+ unsigned short GetNDOFsGrid(void);
+
+  /*!
   * \brief Function to make available the number of DOFs of the solution in the element.
   * \return The number of DOFs of the solution in the element.
   */
@@ -1432,10 +1497,10 @@ public:
                               unsigned long  faceConn[6][4]);
 
  /*!
-  * \brief Function to get the ratio of the maximum and minimum value of the Jacobian.
-  * \return The maximum ratio of the Jacobian.
+  * \brief Function to get whether or not the Jacobian is considered constant.
+  * \return True if the Jacobian is (almost) constant and false otherwise.
   */
- su2double GetRatioMaxMinJacobian(void);
+ bool GetJacobianConsideredConstant(void);
 
  /*!
   * \brief Set the color of the element.
@@ -1444,10 +1509,16 @@ public:
  void SetColor(unsigned long val_color);
 
  /*!
-  * \brief Function to set the ratio of the maximum and minimum value of the Jacobian.
-  * \param[in] val_ratioMaxMinJac - The Jacobian ratio to be set.
+  * \brief Get the color of the element for the partitioning.
+  * return - The color of the element in the partitioning.
   */
- void SetRatioMaxMinJacobian(su2double val_ratioMaxMinJac);
+ unsigned long GetColor(void);
+
+ /*!
+  * \brief Function to set the value of JacobianConsideredConstant.
+  * \param[in] val_JacobianConsideredConstant - The value to be set for JacobianConsideredConstant.
+  */
+ void SetJacobianConsideredConstant(bool val_JacobianConsideredConstant);
 };
 
 /*!
@@ -1564,6 +1635,18 @@ public:
  unsigned short GetVTK_Type(void);
 
  /*!
+  * \brief Get the polynomial degree of the grid for this element.
+  * \return The polynomial degree of the grid.
+  */
+ unsigned short GetNPolyGrid(void);
+
+ /*!
+  * \brief Function to make available the number of DOFs of the grid in the element.
+  * \return The number of DOFs of the grid in the element.
+  */
+ unsigned short GetNDOFsGrid(void);
+
+ /*!
   * \brief Get the corner points of this boundary element.
   * \param[out] nFaces         - Number of faces of this element, i.e. 1.
   * \param[out] nPointsPerFace - Number of corner points for each of the faces.
@@ -1574,10 +1657,10 @@ public:
                               unsigned long  faceConn[6][4]);
 
  /*!
-  * \brief Make available the global ID of this bound element.
-  * \return The global ID of this bound element.
+  * \brief Make available the global ID of this element.
+  * \return The global ID of this element.
   */
- unsigned long GetGlobalBoundElemID(void);
+ unsigned long GetGlobalElemID(void);
 };
 
 #include "primal_grid_structure.inl"

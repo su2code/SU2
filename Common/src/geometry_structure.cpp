@@ -60,6 +60,13 @@ bool unsignedLong2T::operator<(const unsignedLong2T &other) const {
   return false;
 }
 
+bool unsignedLong2T::operator==(const unsignedLong2T &other) const {
+  if(long0 != other.long0) return false;
+  if(long1 != other.long1) return false;
+
+  return true;
+}
+
 void unsignedLong2T::Copy(const unsignedLong2T &other) {
   long0 = other.long0;
   long1 = other.long1;
@@ -11989,7 +11996,9 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
         vector<FaceOfElementClass>::iterator low;
         low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
-        /*--- Invalidate the face by setting the element ID to an invalid value. ---*/
+        /*--- Store the corresponding element ID for the boundary element and
+              invalidate the face by setting the element ID to an invalid value. ---*/
+        bound[iMarker][k]->SetDomainElement(low->elemID0);
         low->elemID0 = Global_nElem + 10;
       }
     }
@@ -12333,7 +12342,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
         if(low->elemID0 == thisFace.elemID0)
           elem[k]->SetNeighbor_Elements(low->elemID1, i);
         else
-          elem[k]->SetNeighbor_Elements(low->elemID1, i);
+          elem[k]->SetNeighbor_Elements(low->elemID0, i);
 
         if(low->periodicIndex > 0)
           elem[k]->SetPeriodicIndex(low->periodicIndex-1, i);
@@ -12753,7 +12762,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
   /*--- Determine a mapping from the global point ID to the local index
         of the points.            ---*/
   map<unsigned long,unsigned long> globalPointIDToLocalInd;
-  for(unsigned i=0; i<local_node; ++i) {
+  for(unsigned long i=0; i<local_node; ++i) {
     globalPointIDToLocalInd[node[i]->GetGlobalIndex()] = i;
   }
 
@@ -12880,16 +12889,13 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
       }
     }
 
-    /*--- Determine the ratio of the maximum and minimum value of the Jacobian
-          and store it in the element class. From this ratio, determine whether
-          or not the element has a constant Jacobian and the total number of
-          volume integration points necessary. Note that in order to determine
-          this value the degree of the solution must be taken and not the degree
-          of the grid. ---*/
-    su2double ratioMaxMinJac = jacMax/jacMin;
-    elem[i]->SetRatioMaxMinJacobian(ratioMaxMinJac);
-
-    bool constJacobian = ratioMaxMinJac <= 1.000001;
+    /*--- Determine the ratio of the maximum and minimum value of the Jacobian.
+          From this ratio, determine whether or not the element is considered to
+          have a constant Jacobian and the total number of volume integration
+          points necessary. Note that in order to determine this value the degree
+          of the solution must be taken and not the degree of the grid. ---*/
+    bool constJacobian = (jacMax/jacMin) <= 1.000001;
+    elem[i]->SetJacobianConsideredConstant(constJacobian);
 
     unsigned short nPolySol = elem[i]->GetNPolySol();
 
@@ -12914,6 +12920,10 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
     elem[i]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
 
     unsigned short nPolyGrid = elem[i]->GetNPolyGrid();
+
+    /*--- Initialize the array, which stores whether or not the faces are
+          considered to have a constant Jacobian. ---*/
+    elem[i]->InitializeJacobianConstantFaces(nFaces);
 
     /*--- Loop over the number of faces of this element. ---*/
     for(unsigned short j=0; j<nFaces; ++j) {
@@ -13044,11 +13054,13 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
       }
 
       /*--- Compute the ratio of normLenMin and normLenMax and determine
-            whether or not the face has a constant Jacobian. ---*/
+            whether the face is considered to have a constant Jacobian. ---*/
       su2double maxRatioLenFaceNormals = normLenMax/normLenMin;
 
       constJacobian = minCosAngleFaceNormals >= 0.999999 &&
                       maxRatioLenFaceNormals <= 1.000001;
+
+      elem[i]->SetJacobianConstantFace(constJacobian, j);
 
       /*--- Determine the polynomial degree of the face. If a face is shared
             between elements, it is possible that the polynomial degree of the
