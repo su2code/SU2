@@ -41,6 +41,7 @@ CPrimalGrid::CPrimalGrid(void) {
  PeriodIndexNeighbors = NULL;
  Coord_CG = NULL;
  Coord_FaceElems_CG = NULL;
+ JacobianFaceIsConstant = NULL;
   
 }
 
@@ -50,7 +51,7 @@ CPrimalGrid::~CPrimalGrid() {
  if (Coord_CG != NULL) delete[] Coord_CG;
  if (Neighbor_Elements != NULL) delete[] Neighbor_Elements;
  if (PeriodIndexNeighbors != NULL) delete[] PeriodIndexNeighbors;
-   
+ if (JacobianFaceIsConstant != NULL) delete[] JacobianFaceIsConstant; 
 }
 
 void CPrimalGrid::SetCoord_CG(su2double **val_coord) {
@@ -87,6 +88,15 @@ void CPrimalGrid::GetAllNeighbor_Elements() {
   cout << GetNeighbor_Elements(iFace) << ", ";
  }
  cout << ")"  << endl;
+}
+
+void CPrimalGrid::InitializeJacobianConstantFaces(unsigned short val_nFaces) {
+
+  /*--- Allocate the memory for JacobianFaceIsConstant and initialize
+        its values to false.     ---*/
+  JacobianFaceIsConstant = new bool[val_nFaces];
+  for(unsigned short i=0; i<val_nFaces; ++i)
+    JacobianFaceIsConstant[i] = false;
 }
 
 void CPrimalGrid::InitializeNeighbors(unsigned short val_nFaces) {

@@ -85,6 +85,8 @@ public:
 
   bool operator<(const unsignedLong2T &other) const;
 
+  bool operator==(const unsignedLong2T &other) const;
+
 private:
   /* Copy function. */
   void Copy(const unsignedLong2T &other);
