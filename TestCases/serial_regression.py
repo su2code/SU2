@@ -554,6 +554,37 @@ def main():
     pass_list.append(naca0012_geo.run_geo())
     test_list.append(naca0012_geo)
     
+    
+    ######################################
+    ### RUN SU2_DEF TESTS              ###
+    ######################################
+    
+    # RAE2822
+    rae2822_def            = TestCase('rae2822_def')
+    rae2822_def.cfg_dir   = "optimization_rans/steady_rae2822"
+    rae2822_def.cfg_file  = "def_SA_RAE2822.cfg"
+    rae2822_def.test_iter = 100
+    rae2822_def.test_vals = [8.06616e-14] #residual
+    rae2822_def.su2_exec  = "SU2_DEF"
+    rae2822_def.timeout   = 1600
+    rae2822_def.tol       = 1e-14
+    
+    pass_list.append(rae2822_def.run_def())
+    test_list.append(rae2822_def)    
+
+    # Inviscid ONERAM6
+    oneram6_sa_def            = TestCase('oneram6_sa_def')
+    oneram6_sa_def.cfg_dir   = "optimization_euler/steady_oneram6"
+    oneram6_sa_def.cfg_file  = "def_ONERAM6.cfg"
+    oneram6_sa_def.test_iter = 600
+    oneram6_sa_def.test_vals = [3.46695e-13] #residual
+    oneram6_sa_def.su2_exec  = "SU2_DEF"
+    oneram6_sa_def.timeout   = 1600
+    oneram6_sa_def.tol       = 1e-13
+    
+    pass_list.append(oneram6_sa_def.run_def())
+    test_list.append(oneram6_sa_def)       
+
 
     ######################################
     ### RUN PYTHON TESTS               ###
