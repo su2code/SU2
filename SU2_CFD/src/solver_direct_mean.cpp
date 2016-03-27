@@ -4794,12 +4794,14 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 
 	int rank = MASTER_NODE, rankIn = MASTER_NODE, rankOut= MASTER_NODE;
 	int size = SINGLE_NODE;
+	int markerTP;
 	string Marker_Tag;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
   su2double *TurbPerfIn= NULL,*TurbPerfOut= NULL;
   su2double *TotTurbPerfIn = NULL,*TotTurbPerfOut = NULL;
+  int *TotMarkerTP;
   n1  = 13;
   n2  = 10;
   n1t = n1*size;
@@ -4836,13 +4838,15 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 	massFlowOut						 = -1.0;
 	machOut								 = -1.0;
 	normalMachOut					 = -1.0;
+	markerTP				       = -1;
 
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++)
 			if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-
 				/*--- compute or retrieve inlet information ---*/
 				if (config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW){
+					markerTP = iMarkerTP;
+//					cout << markerTP -1 << " "<< config->GetMarker_All_TagBound(iMarker)<<endl;
 					avgVelRel2In= 0.0;
 					avgGridVel2In= 0.0;
 					avgVel2In= 0.0;
@@ -4975,14 +4979,18 @@ if (rank == MASTER_NODE){
   for (i=0;i<n2t;i++)
 		TotTurbPerfOut[i]= -1.0;
 	}
+	TotMarkerTP = new int[size];
+	for(i=0; i<size; i++){
+		TotMarkerTP[i] = -1;
+	}
+
 	SU2_MPI::Gather(TurbPerfIn, n1, MPI_DOUBLE, TotTurbPerfIn, n1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 	SU2_MPI::Gather(TurbPerfOut, n2, MPI_DOUBLE,TotTurbPerfOut, n2, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-
+	SU2_MPI::Gather(&markerTP, 1, MPI_INT,TotMarkerTP, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 	delete [] TurbPerfIn, delete [] TurbPerfOut;
 
-if (rank == MASTER_NODE){
+	if (rank == MASTER_NODE){
 		for (i=0;i<size;i++){
-
 			if(TotTurbPerfIn[n1*i] > 0.0){
 				avgTotalRothalpyIn 		 = 0.0;
 				avgTotalRothalpyIn 		 = TotTurbPerfIn[n1*i];
@@ -5010,6 +5018,8 @@ if (rank == MASTER_NODE){
 				entropyIn_BC					 = TotTurbPerfIn[n1*i+11];
 				totalEnthalpyIn_BC		 = 0.0;
 				totalEnthalpyIn_BC     = TotTurbPerfIn[n1*i+12];
+				markerTP               = -1;
+				markerTP               = TotMarkerTP[i];
 			}
 
 			if(TotTurbPerfOut[n2*i] > 0.0){
@@ -5036,44 +5046,45 @@ if (rank == MASTER_NODE){
 			}
 		}
 
-		delete [] TotTurbPerfIn, delete [] TotTurbPerfOut;
+		delete [] TotTurbPerfIn, delete [] TotTurbPerfOut; delete [] TotMarkerTP;
 }
 
 #endif
+
 	if (rank == MASTER_NODE){
 
 		/*--- compute outlet isoentropic conditions ---*/
 		FluidModel->SetTDState_Ps(avgPressureOut, avgEntropyIn);
 		avgEnthalpyOutIs = FluidModel->GetStaticEnergy() + avgPressureOut/FluidModel->GetDensity();
 		avgTotalEnthalpyOutIs = avgEnthalpyOutIs + 0.5*avgVel2Out;
-
+//		cout << markerTP -1<<endl;
 		/*--- store turboperformance informations ---*/
-		PressureOut[0] = avgPressureOut;
-		PressureRatio[0] = avgTotalRelPressureIn/avgPressureOut;
+		PressureOut[markerTP - 1] = avgPressureOut;
+		PressureRatio[markerTP -1] = avgTotalRelPressureIn/avgPressureOut;
 
-		switch(config->GetKind_TurboPerf(0)){
+		switch(config->GetKind_TurboPerf(markerTP -1)){
 		case BLADE:
 
-			TotalPressureLoss[0] 		= (avgTotalRelPressureIn - avgTotalRelPressureOut)/(avgTotalRelPressureOut - avgPressureOut) ;
-			KineticEnergyLoss[0] 		= (avgEnthalpyOut - avgEnthalpyOutIs)/(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out);
-			EulerianWork[0]      		= avgTotalEnthalpyIn - avgTotalEnthalpyOut;
-			TotalEnthalpyIn[0]   		= avgTotalEnthalpyIn;
-			EntropyIn[0]				 		= avgEntropyIn;
-			FlowAngleIn[0]       		= flowAngleIn;
-			FlowAngleOut[0]      		= flowAngleOut;
-			MassFlowIn[0]        		= massFlowIn;
-			MassFlowOut[0]       		= massFlowOut;
-			MachIn[0]            		= machIn;
-			MachOut[0]           		= machOut;
-			NormalMachIn[0]     		= normalMachIn;
-			NormalMachOut[0]    		= normalMachOut;
-			EnthalpyOut[0]       		= avgEnthalpyOut;
-			VelocityOutIs[0]    		= sqrt(2.0*(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out));
-			TotalPresureIn[0]       = avgTotPresIn;
-			TotalTemperatureIn[0]   = avgTotTempIn;
-			FlowAngleIn_BC[0] 			= alphaIn_BC;
-			EntropyIn_BC[0]					= entropyIn_BC;
-			TotalEnthalpyIn_BC[0]   = totalEnthalpyIn_BC;
+			TotalPressureLoss[markerTP -1] 		= (avgTotalRelPressureIn - avgTotalRelPressureOut)/(avgTotalRelPressureOut - avgPressureOut) ;
+			KineticEnergyLoss[markerTP -1] 		= (avgEnthalpyOut - avgEnthalpyOutIs)/(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out);
+			EulerianWork[markerTP -1]      		= avgTotalEnthalpyIn - avgTotalEnthalpyOut;
+			TotalEnthalpyIn[markerTP -1]   		= avgTotalEnthalpyIn;
+			EntropyIn[markerTP -1]				 		= avgEntropyIn;
+			FlowAngleIn[markerTP -1]       		= flowAngleIn;
+			FlowAngleOut[markerTP -1]      		= flowAngleOut;
+			MassFlowIn[markerTP -1]        		= massFlowIn;
+			MassFlowOut[markerTP -1]       		= massFlowOut;
+			MachIn[markerTP -1]            		= machIn;
+			MachOut[markerTP -1]           		= machOut;
+			NormalMachIn[markerTP -1]     		= normalMachIn;
+			NormalMachOut[markerTP -1]    		= normalMachOut;
+			EnthalpyOut[markerTP -1]       		= avgEnthalpyOut;
+			VelocityOutIs[markerTP -1]    		= sqrt(2.0*(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out));
+			TotalPresureIn[markerTP -1]       = avgTotPresIn;
+			TotalTemperatureIn[markerTP -1]   = avgTotTempIn;
+			FlowAngleIn_BC[markerTP -1] 			= alphaIn_BC;
+			EntropyIn_BC[markerTP -1]					= entropyIn_BC;
+			TotalEnthalpyIn_BC[markerTP -1]   = totalEnthalpyIn_BC;
 			break;
 
 		case STAGE: case TURBINE:
@@ -8372,8 +8383,9 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
 						}
 
 						AverageTurboMach[iMarker][iSpan][0] = AverageTurboVelocity[iMarker][iSpan][0]/AverageSoundSpeed[iMarker][iSpan];
-						AverageTurboMach[iMarker][iSpan][2] = AverageTurboVelocity[iMarker][iSpan][2]/AverageSoundSpeed[iMarker][iSpan];
-
+						if(nDim == 3){
+							AverageTurboMach[iMarker][iSpan][2] = AverageTurboVelocity[iMarker][iSpan][2]/AverageSoundSpeed[iMarker][iSpan];
+						}
 #ifdef HAVE_MPI
 						if ((AverageDensity[iMarker][iSpan]!= AverageDensity[iMarker][iSpan]) || (AverageEnthalpy[iMarker][iSpan]!=AverageEnthalpy[iMarker][iSpan])){
 							if(size > 1 && rank == MASTER_NODE) cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
