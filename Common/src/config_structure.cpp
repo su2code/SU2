@@ -4755,7 +4755,6 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone) {
         SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer));
     }
-    
     return multizone_filename;
 }
 

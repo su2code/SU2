@@ -437,3 +437,9 @@ void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution
 
 
 }
+
+void CTransfer_MixingPlaneInterface::GetSetTurboPerformance(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone){
+
+
+}
+

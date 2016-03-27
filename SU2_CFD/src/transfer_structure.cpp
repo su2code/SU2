@@ -1525,3 +1525,20 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 	delete [] avg3DVelTarget;
 
 }
+
+void CTransfer::StoreTurboPerformance(CSolver *donor_solution, CSolver *target_solution,
+																 CGeometry *donor_geometry, CGeometry *target_geometry,
+																 CConfig *donor_config, CConfig *target_config, unsigned short donorZone){
+
+
+	int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+	/*--- here we made the strong assumption that the mesh zone order follow the same order of the turbomachinery markers ---*/
+
+	if(rank == MASTER_NODE){
+		GetSetTurboPerformance(donor_solution, target_solution, donorZone);
+	}
+}
+

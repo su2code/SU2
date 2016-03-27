@@ -90,7 +90,7 @@ void CMeanFlowIteration::Preprocess(COutput *output,
   unsigned long FSIIter = config_container[val_iZone]->GetFSIIter();
   bool fsi = config_container[val_iZone]->GetFSI_Simulation();
   bool time_spectral = (config_container[val_iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL);
-
+  bool turbomachinery = config_container[val_iZone]->GetBoolTurbomachinery();
   
   /*--- Set the initial condition ---*/
   /*--- For FSI problems with subiterations, this must only be done in the first subiteration ---*/
@@ -111,15 +111,11 @@ void CMeanFlowIteration::Preprocess(COutput *output,
   
 
   /*--- turbomachinery preprocess  ---*/
-  
-  if(config_container[val_iZone]->GetBoolTurbomachinery()){
-  	if(ExtIter == 0){
-  			geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],INFLOW, true);
-  			geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],OUTFLOW, true);
-  		}
-  		TurboPreprocess(geometry_container, solver_container, config_container, numerics_container, output, val_iZone);
-  	}
+  if(turbomachinery){
+  	TurboPreprocess(geometry_container, solver_container, config_container, numerics_container, output, val_iZone);
   }
+
+}
 
 
 void CMeanFlowIteration::Iterate(COutput *output,
@@ -2225,6 +2221,8 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
   bool stat_mesh = true;
   bool adjoint = config_container->GetAdjoint();
   bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool turbomachinery = config_container->GetBoolTurbomachinery();
+
   
   /*--- For a time-spectral case, set "iteration number" to the zone number,
    so that the meshes are positioned correctly for each instance. ---*/
@@ -2269,7 +2267,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       /*--- Steadily rotating frame: set the grid velocities just once
        before the first iteration flow solver. ---*/
       
-      if (ExtIter == 0) {
+      if (ExtIter == 0 && !turbomachinery) {
         
         if (rank == MASTER_NODE) {
           cout << endl << " Setting rotating frame grid velocities";
