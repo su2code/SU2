@@ -1020,20 +1020,6 @@ public:
 	 */
 	virtual void SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity);
 
-//	/*!
-//	 * \brief A virtual member.
-//	 * \param[in] val_marker - bound marker.
-//	 * \return Value of the flow angle on the surface <i>val_marker</i>.
-//	 */
-//	virtual su2double GetFlowAngle(unsigned short valMarker);
-//
-//	/*!
-//	 * \brief A virtual member.
-//	 * \param[in] val_marker - bound marker.
-//	 * \return Value of the Mass flow on the surface <i>val_marker</i>..
-//	 */
-//	virtual su2double GetMassFlow(unsigned short valMarker);
-
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - bound marker.
@@ -4301,19 +4287,6 @@ public:
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
 	void SetPressureRatio(su2double value, unsigned short inMarkerTP);
-//	/*!
-//	 * \brief Set the MassFlow at the boundary of interest.
-//	 * \param[in] val_marker - bound marker.
-//	 * \return Value of the MassFLow on the surface <i>val_marker</i>.
-//	 */
-//	su2double GetMassFlow(unsigned short valMarker);
-//
-//	/*!
-//	 * \brief Provide the Flow Angle at the boundary of interest.
-//	 * \param[in] val_marker - bound marker.
-//	 * \return Value of the Flow Angle on the surface <i>val_marker</i>.
-//	 */
-//	su2double GetFlowAngle(unsigned short valMarker);
 
   /*!
 	 * \brief Update the solution using a Runge-Kutta scheme.
