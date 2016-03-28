@@ -1430,6 +1430,10 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
     iteration_container[iZone]->Postprocess(); /*--- Does nothing for now. ---*/
     
   }
+  /* --- Set turboperformance for mukt ---*/
+	if (config_container[ZONE_0]->GetnMarker_Turbomachinery() > 0){
+		SetTurboPerformance(geometry_container, solver_container, config_container, interpolator_container, transfer_container, ZONE_0);
+	}
   
 }
 
@@ -1441,7 +1445,6 @@ void CMultiZoneDriver::SetMixingPlane(CGeometry ***geometry_container,
 																			unsigned short donorZone){
 
 	unsigned short targetZone;
-	unsigned short iDonor;
 	/* --- transfer the average value from the donorZone to the targetZone*/
 	for (targetZone = 0; targetZone < nZone; targetZone++) {
 		if (targetZone != donorZone){
@@ -1450,10 +1453,21 @@ void CMultiZoneDriver::SetMixingPlane(CGeometry ***geometry_container,
 																																	config_container[donorZone], config_container[targetZone]);
 		}
 	}
-	for (iDonor = 1; iDonor < nZone; iDonor++) {
-			transfer_container[iDonor][0]->StoreTurboPerformance(solver_container[iDonor][MESH_0][FLOW_SOL],solver_container[0][MESH_0][FLOW_SOL],
-																																		geometry_container[iDonor][MESH_0],geometry_container[0][MESH_0],
-																																		config_container[iDonor], config_container[0], iDonor);
+}
+void CMultiZoneDriver::SetTurboPerformance(CGeometry ***geometry_container,
+         	 	 	 	 	 	 	 	 	 	 	 	 	 	 	CSolver ****solver_container,
+																			CConfig **config_container,
+																			CInterpolator ***interpolator_container,
+																			CTransfer ***transfer_container,
+																			unsigned short targetZone){
+
+	unsigned short donorZone;
+	/* --- transfer the average value from the donorZone to the targetZone*/
+
+	for (donorZone = 1; donorZone < nZone; donorZone++) {
+			transfer_container[donorZone][targetZone]->StoreTurboPerformance(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+																																		geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+																																		config_container[donorZone], config_container[targetZone], donorZone);
 	}
 
 }

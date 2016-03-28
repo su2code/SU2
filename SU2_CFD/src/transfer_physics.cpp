@@ -440,6 +440,31 @@ void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution
 
 void CTransfer_MixingPlaneInterface::GetSetTurboPerformance(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone){
 
+	/*--- Loop over the nMarker of turboperformance and get the desired values ---*/
+//	TotalStaticEfficiency[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalStaticEfficiency(iMarker_Monitoring);
+//	TotalTotalEfficiency[iMarker_Monitoring]  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalTotalEfficiency(iMarker_Monitoring);
+	target_solution->SetKineticEnergyLoss(donor_solution->GetKineticEnergyLoss(donorZone), donorZone);
+	target_solution->SetTotalPressureLoss(donor_solution->GetTotalPressureLoss(donorZone), donorZone);
+	target_solution->SetMassFlowIn(donor_solution->GetMassFlowIn(donorZone), donorZone);
+	target_solution->SetMassFlowOut(donor_solution->GetMassFlowOut(donorZone), donorZone);
+	target_solution->SetFlowAngleIn(donor_solution->GetFlowAngleIn(donorZone), donorZone);
+	target_solution->SetFlowAngleOut(donor_solution->GetFlowAngleOut(donorZone), donorZone);
+	target_solution->SetEulerianWork(donor_solution->GetEulerianWork(donorZone), donorZone);
+	target_solution->SetTotalEnthalpyIn(donor_solution->GetTotalEnthalpyIn(donorZone), donorZone);
+	target_solution->SetPressureRatio(donor_solution->GetPressureRatio(donorZone), donorZone);
+	target_solution->SetPressureOut(donor_solution->GetPressureOut(donorZone), donorZone);
+	target_solution->SetEnthalpyOut(donor_solution->GetEnthalpyOut(donorZone), donorZone);
+	target_solution->SetMachIn(donor_solution->GetMachIn(donorZone), donorZone);
+	target_solution->SetMachOut(donor_solution->GetMachOut(donorZone), donorZone);
+	target_solution->SetNormalMachIn(donor_solution->GetNormalMachIn(donorZone), donorZone);
+	target_solution->SetNormalMachOut(donor_solution->GetNormalMachOut(donorZone), donorZone);
+	target_solution->SetVelocityOutIs(donor_solution->GetVelocityOutIs(donorZone), donorZone);
+	target_solution->SetTotalPresureIn(donor_solution->GetTotalPresureIn(donorZone), donorZone);
+	target_solution->SetTotalTemperatureIn(donor_solution->GetTotalTemperatureIn(donorZone), donorZone);
+	target_solution->SetFlowAngleIn_BC(donor_solution->GetFlowAngleIn_BC(donorZone), donorZone);
+	target_solution->SetEntropyIn(donor_solution->GetEntropyIn(donorZone), donorZone);
+	target_solution->SetEntropyIn_BC(donor_solution->GetEntropyIn_BC(donorZone), donorZone);
+	target_solution->SetTotalEnthalpyIn_BC(donor_solution->GetTotalEnthalpyIn_BC(donorZone), donorZone);
 
 }
 

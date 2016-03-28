@@ -1020,19 +1020,19 @@ public:
 	 */
 	virtual void SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity);
 
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - bound marker.
-	 * \return Value of the flow angle on the surface <i>val_marker</i>.
-	 */
-	virtual su2double GetFlowAngle(unsigned short valMarker);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - bound marker.
-	 * \return Value of the Mass flow on the surface <i>val_marker</i>..
-	 */
-	virtual su2double GetMassFlow(unsigned short valMarker);
+//	/*!
+//	 * \brief A virtual member.
+//	 * \param[in] val_marker - bound marker.
+//	 * \return Value of the flow angle on the surface <i>val_marker</i>.
+//	 */
+//	virtual su2double GetFlowAngle(unsigned short valMarker);
+//
+//	/*!
+//	 * \brief A virtual member.
+//	 * \param[in] val_marker - bound marker.
+//	 * \return Value of the Mass flow on the surface <i>val_marker</i>..
+//	 */
+//	virtual su2double GetMassFlow(unsigned short valMarker);
 
 	/*!
 	 * \brief A virtual member.
@@ -1202,6 +1202,174 @@ public:
 	 * \return Value of the Pressure ratio for turbomachinery performance.
 	 */
 	virtual su2double GetPressureRatio(unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetTotalPressureLoss(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	* \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetKineticEnergyLoss(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetTotalTotalEfficiency(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetTotalStaticEfficiency(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetEulerianWork(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetTotalEnthalpyIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetFlowAngleIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetFlowAngleOut(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetMassFlowIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetMassFlowOut(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetMachIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetMachOut(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetNormalMachIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetNormalMachOut(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetEnthalpyOut(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetVelocityOutIs(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetTotalPresureIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Provide the total temperature at the inlet for convergence monitoring.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetTotalTemperatureIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetFlowAngleIn_BC(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Provide the inlet entropy for convergence monitoring.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetEntropyIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetEntropyIn_BC(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetTotalEnthalpyIn_BC(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetPressureOut(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetPressureRatio(su2double value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
@@ -3967,18 +4135,185 @@ public:
 	su2double GetPressureRatio(unsigned short inMarkerTP);
 
 	/*!
-	 * \brief Provide the MassFlow at the boundary of interest.
-	 * \param[in] val_marker - bound marker.
-	 * \return Value of the MassFLow on the surface <i>val_marker</i>.
+	 * \brief Set Total Pressure Losses (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	su2double GetMassFlow(unsigned short valMarker);
+	void SetTotalPressureLoss(su2double value, unsigned short inMarkerTP);
 
 	/*!
-	 * \brief Provide the Flow Angle at the boundary of interest.
-	 * \param[in] val_marker - bound marker.
-	 * \return Value of the Flow Angle on the surface <i>val_marker</i>.
+	 * \brief Set Kinetic Energy Losses (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	su2double GetFlowAngle(unsigned short valMarker);
+	void SetKineticEnergyLoss(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set Total-Total Efficiency (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetTotalTotalEfficiency(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set Total-Static Efficiency (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetTotalStaticEfficiency(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the Eulerian Work (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetEulerianWork(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the Inlet Total Enthalpy (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetTotalEnthalpyIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the Inlet Flow Angle (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetFlowAngleIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the Outlet Flow Angle (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetFlowAngleOut(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the Inlet Mass Flow (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetMassFlowIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the Outlet Mass Flow (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetMassFlowOut(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the Inlet Mach number (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetMachIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the Outlet Mach number (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetMachOut(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the normal component of the Inlet Mach number (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetNormalMachIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the normal component of the Outlet Mach number (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetNormalMachOut(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the Outlet Enthalpy (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetEnthalpyOut(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the Isentropic Outlet Velocity (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetVelocityOutIs(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the total pressure at the inlet for convergence monitoring.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetTotalPresureIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the total temperature at the inlet for convergence monitoring.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetTotalTemperatureIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the inlet flow angle from BC for convergence monitoring.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetFlowAngleIn_BC(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the inlet entropy for convergence monitoring.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetEntropyIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the inlet entropy from BC for convergence monitoring.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetEntropyIn_BC(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the total inlet enthalpy from BC for convergence monitoring.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetTotalEnthalpyIn_BC(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the Outlet Pressure (turbomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetPressureOut(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set Pressure Ratio (tubomachinery performance).
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetPressureRatio(su2double value, unsigned short inMarkerTP);
+//	/*!
+//	 * \brief Set the MassFlow at the boundary of interest.
+//	 * \param[in] val_marker - bound marker.
+//	 * \return Value of the MassFLow on the surface <i>val_marker</i>.
+//	 */
+//	su2double GetMassFlow(unsigned short valMarker);
+//
+//	/*!
+//	 * \brief Provide the Flow Angle at the boundary of interest.
+//	 * \param[in] val_marker - bound marker.
+//	 * \return Value of the Flow Angle on the surface <i>val_marker</i>.
+//	 */
+//	su2double GetFlowAngle(unsigned short valMarker);
 
   /*!
 	 * \brief Update the solution using a Runge-Kutta scheme.
