@@ -446,10 +446,6 @@ inline void CSolver::SetExtAverageTotPressure(unsigned short valMarker, unsigned
 
 inline void CSolver::SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity){ }
 
-//inline su2double CSolver::GetMassFlow(unsigned short valMarker){return 0;}
-//
-//inline su2double CSolver::GetFlowAngle(unsigned short valMarker){return 0;}
-
 inline su2double CSolver::GetTotalPressureLoss(unsigned short inMarkerTP){return 0;}
 
 inline su2double CSolver::GetKineticEnergyLoss(unsigned short inMarkerTP){return 0;}
@@ -1014,10 +1010,6 @@ inline void CEulerSolver::SetExtAverageTotTemperature(unsigned short valMarker, 
 inline void CEulerSolver::SetExtAverageTotPressure(unsigned short valMarker, unsigned short valSpan, su2double valTotPressure){ExtAverageTotPressure[valMarker][valSpan] = valTotPressure;}
 
 inline void CEulerSolver::SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity){ExtAverageTurboVelocity[valMarker][valSpan][valIndex] = valTurboVelocity;}
-
-//inline su2double CEulerSolver::GetMassFlow(unsigned short valMarker){return MassFlow[valMarker];}
-//
-//inline su2double CEulerSolver::GetFlowAngle(unsigned short valMarker){return FlowAngle[valMarker];}
 
 inline su2double CEulerSolver::GetTotalPressureLoss(unsigned short inMarkerTP){return TotalPressureLoss[inMarkerTP];}
 
