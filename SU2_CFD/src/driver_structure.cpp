@@ -1311,10 +1311,10 @@ void CSingleZoneDriver::Run(CIteration **iteration_container,
 
 	if(ExtIter == 0){
 		/*--- set rotating frame and turbo average quantities ---*/
-		if ((config_container[ZONE_0]->GetGrid_Movement())){
-			geometry_container[ZONE_0][MESH_0]->SetRotationalVelocity(config_container[ZONE_0], ZONE_0);
-		}
 		if(config_container[ZONE_0]->GetBoolTurbomachinery()){
+			if ((config_container[ZONE_0]->GetGrid_Movement())){
+				geometry_container[ZONE_0][MESH_0]->SetRotationalVelocity(config_container[ZONE_0], ZONE_0);
+			}
 			geometry_container[ZONE_0][MESH_0]->SetAvgTurboValue(config_container[ZONE_0],INFLOW, true);
 			geometry_container[ZONE_0][MESH_0]->SetAvgTurboValue(config_container[ZONE_0],OUTFLOW, true);
 		}
@@ -1385,8 +1385,8 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
 
   /* --- Set the average for geometric quantities and steady grid velocity   ---*/
   if(ExtIter == 0){
-  	for (iZone = 0; iZone < nZone; iZone++) {
-  		if(config_container[iZone]->GetBoolTurbomachinery()){
+  	if(config_container[iZone]->GetBoolTurbomachinery()){
+  		for (iZone = 0; iZone < nZone; iZone++) {
   			/*--- set rotating frame and turbo average quantities ---*/
   			if ((config_container[iZone]->GetGrid_Movement())){
   				geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone);
