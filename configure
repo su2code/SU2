@@ -5941,57 +5941,7 @@ $as_echo "#define HAVE_METIS 1" >>confdefs.h
 $as_echo "<<< Configuring library with Metis support >>>" >&6; }
 
      # look for thread-local storage
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for thread local storage (TLS) class" >&5
-$as_echo_n "checking for thread local storage (TLS) class... " >&6; }
-  if ${ac_cv_tls+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-    ax_tls_keywords="__thread __declspec(thread) none"
-    for ax_tls_keyword in $ax_tls_keywords; do
-       case $ax_tls_keyword in
-          none) ac_cv_tls=none ; break ;;
-	  *)
-             cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <stdlib.h>
-                 static void
-                 foo(void) {
-                 static  $ax_tls_keyword  int bar;
-                 exit(1);
-                 }
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_tls=$ax_tls_keyword ; break
-else
-  ac_cv_tls=none
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-	  esac
-    done
-
-fi
-
-
-  if test "$ac_cv_tls" != "none"; then
-
-cat >>confdefs.h <<_ACEOF
-#define TLS $ac_cv_tls
-_ACEOF
-
-  fi
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_tls" >&5
-$as_echo "$ac_cv_tls" >&6; }
-
+     #AX_TLS
  else
      METIS_INCLUDE=""
      METIS_LIB=""
