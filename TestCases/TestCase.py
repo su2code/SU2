@@ -232,8 +232,7 @@ class TestCase:
             fromlines = open(fromfile, 'U').readlines()
             tolines = open(tofile, 'U').readlines()
 
-            diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile,
-                                             fromdate, todate))
+            diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate))
 
 
             if (diff==[]):
@@ -523,25 +522,25 @@ class TestCase:
         return passed
 
     def run_def(self):
-
+    
         print '==================== Start Test: %s ===================='%self.tag
         passed       = True
         exceed_tol   = False
         timed_out    = False
         iter_missing = True
         start_solver = True
-
+    
         # Assemble the shell command to run SU2
         logfilename = '%s.log' % os.path.splitext(self.cfg_file)[0]
         command = "%s %s > %s" % (self.su2_exec, self.cfg_file,logfilename)
-
+    
         # Run SU2
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print os.getcwd()
         start   = datetime.datetime.now()
         process = subprocess.Popen(command, shell=True)  # This line launches SU2
-
+    
         # check for timeout
         while process.poll() is None:
             time.sleep(0.1)
@@ -555,7 +554,7 @@ class TestCase:
                     pass
                 timed_out = True
                 passed    = False
-
+    
         # Examine the output
         f = open(logfilename,'r')
         output = f.readlines()
@@ -567,85 +566,85 @@ class TestCase:
                 if not start_solver: # Don't bother parsing anything before -- Volumetric grid deformation ---
                     if line.find('Volumetric grid deformation') > -1:
                         start_solver=True
-                    else:   # Found the -- Volumetric grid deformation --- line; parse the input
-                        raw_data = line.split()
-                        try:
-                            iter_number = int(raw_data[0])
-                            data        = raw_data[len(raw_data)-1:]    # Take the last column for comparison
-                        except ValueError:
-                            continue
-                        except IndexError:
-                            continue
-
-                        if iter_number == self.test_iter:  # Found the iteration number we're checking for
-                            iter_missing = False
-                            if not len(self.test_vals)==len(data):   # something went wrong... probably bad input
-                                print "Error in test_vals!"
-                                passed = False
-                                break
-                            for j in range(len(data)):
-                                sim_vals.append( float(data[j]) )
-                                delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
-                                if delta_vals[j] > self.tol:
-                                    exceed_tol = True
-                                    passed     = False
-                                    break
-                        else:
-                            iter_missing = True
-
-                if not start_solver:
-                    passed = False
-
-                if iter_missing:
-                    passed = False
-
+                else:   # Found the -- Volumetric grid deformation --- line; parse the input
+                    raw_data = line.split()
+                    try:
+                        iter_number = int(raw_data[0])
+                        data        = raw_data[len(raw_data)-1:]    # Take the last column for comparison
+                    except ValueError:
+                        continue
+                    except IndexError:
+                        continue
+    
+                    if iter_number == self.test_iter:  # Found the iteration number we're checking for
+                        iter_missing = False
+                        if not len(self.test_vals)==len(data):   # something went wrong... probably bad input
+                            print "Error in test_vals!"
+                            passed = False
+                            break
+                        for j in range(len(data)):
+                            sim_vals.append( float(data[j]) )
+                            delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
+                            if delta_vals[j] > self.tol:
+                                exceed_tol = True
+                                passed     = False
+                        break
+                    else:
+                        iter_missing = True
+    
+            if not start_solver:
+                passed = False
+    
+            if iter_missing:
+                passed = False
+    
         # Write the test results 
         #for j in output:
         #  print j
-
+    
         if passed:
             print "%s: PASSED"%self.tag
         else:
             print "%s: FAILED"%self.tag
             print 'Output for the failed case'
             subprocess.call(['cat', logfilename])      
-
+    
         print 'execution command: %s'%command
-
+    
         if timed_out:
             print 'ERROR: Execution timed out. timeout=%d sec'%self.timeout
-
+    
         if exceed_tol:
             print 'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%e'%self.tol
-
+    
         if not start_solver:
             print 'ERROR: The code was not able to get to the "Begin solver" section.'
-
+    
         if iter_missing:
             print 'ERROR: The iteration number %d could not be found.'%self.test_iter
-
+    
         print 'test_iter=%d \n'%self.test_iter,
-
+    
         print 'test_vals (stored): ',
         for j in self.test_vals:
             print '%e'%j,
         print '\n',
-
+    
         print 'sim_vals (computed): ',
         for j in sim_vals:
             print '%e'%j,
         print '\n',
-
+    
         print 'delta_vals: ',
         for j in delta_vals:
             print '%e'%j,
         print '\n',
-
+    
         print 'test duration: %.2f min'%(running_time/60.0) 
         print '==================== End Test: %s ====================\n'%self.tag
-
+    
         os.chdir(workdir)
-        return passed
+        return passed    
 
     def adjust_iter(self):
 
