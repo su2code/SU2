@@ -444,57 +444,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     Bleed_Pressure[iMarker]      = Pressure_Inf;
     Bleed_Area[iMarker]          = 0.0;
   }
-  
-//  /*--- Initializate quantities for the mixing process ---*/
-//
-//  AveragedVelocity = new su2double* [nMarker];
-//  AveragedNormal = new su2double* [nMarker];
-//  AveragedGridVel = new su2double* [nMarker];
-//  AveragedFlux = new su2double* [nMarker];
-//  TotalFlux = new su2double* [nMarker];
-//
-//  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-//    AveragedVelocity[iMarker] = new su2double [nDim];
-//    AveragedNormal[iMarker] = new su2double [nDim];
-//    AveragedGridVel[iMarker] = new su2double [nDim];
-//    for (iDim = 0; iDim < nDim; iDim++) {
-//      AveragedVelocity[iMarker][iDim] = 0.0;
-//      AveragedNormal[iMarker][iDim] = 0.0;
-//      AveragedGridVel [iMarker][iDim] = 0.0;
-//    }
-//  }
-//
-//  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-//    AveragedFlux[iMarker] = new su2double [nVar];
-//    TotalFlux[iMarker] = new su2double [nVar];
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//      AveragedFlux[iMarker][iVar] = 0.0;
-//      TotalFlux[iMarker][iVar] = 0.0;
-//    }
-//  }
-//
-//  AveragedNormalVelocity = new su2double[nMarker];
-//  AveragedTangVelocity = new su2double[nMarker];
-//  ExtAveragedNormalVelocity = new su2double[nMarker];
-//  ExtAveragedTangVelocity = new su2double[nMarker];
-//  MassFlow= new su2double[nMarker];
-//  FlowAngle= new su2double[nMarker];
-//  AveragedEnthalpy  = new su2double[nMarker];
-//  AveragedPressure  = new su2double[nMarker];
-//  AveragedTotPressure  = new su2double[nMarker];
-//  AveragedTotTemperature  = new su2double[nMarker];
-//  ExtAveragedTotPressure  = new su2double[nMarker];
-//  ExtAveragedTotTemperature  = new su2double[nMarker];
-//  AveragedDensity   = new su2double[nMarker];
-//  ExtAveragedPressure  = new su2double[nMarker];
-//  ExtAveragedDensity   = new su2double[nMarker];
-//  AveragedSoundSpeed= new su2double[nMarker];
-//  AveragedEntropy   = new su2double[nMarker];
-//  AveragedTangGridVelocity = new su2double[nMarker];
-//  AveragedMach = new su2double[nMarker];
-//  AveragedNormalMach = new su2double[nMarker];
-//  AveragedTangMach = new su2double[nMarker];
-  
+
   /*--- Initializate quantities for the mixing process span-wise*/
 
 	AverageVelocity 		= new su2double** [nMarker];
@@ -13285,57 +13235,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     Bleed_Pressure[iMarker]      = Pressure_Inf;
     Bleed_Area[iMarker]          = 0.0;
   }
-  
-//  /*--- Initializate quantities for the mixing process*/
-//
-//  AveragedVelocity = new su2double* [nMarker];
-//  AveragedNormal = new su2double* [nMarker];
-//  AveragedGridVel = new su2double* [nMarker];
-//  AveragedFlux = new su2double* [nMarker];
-//  TotalFlux = new su2double* [nMarker];
-//
-//  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-//    AveragedVelocity[iMarker] = new su2double [nDim];
-//    AveragedNormal[iMarker] = new su2double [nDim];
-//    AveragedGridVel[iMarker] = new su2double [nDim];
-//    for (iDim = 0; iDim < nDim; iDim++) {
-//      AveragedVelocity[iMarker][iDim] = 0.0;
-//      AveragedNormal[iMarker][iDim] = 0.0;
-//      AveragedGridVel[iMarker][iDim] = 0.0;
-//    }
-//  }
-//
-//  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-//    AveragedFlux[iMarker] = new su2double [nVar];
-//    TotalFlux[iMarker] = new su2double [nVar];
-//    for (iVar = 0; iVar < nVar; iVar++) {
-//      AveragedFlux[iMarker][iVar] = 0.0;
-//      TotalFlux[iMarker][iVar] = 0.0;
-//    }
-//  }
-//
-//  AveragedNormalVelocity = new su2double[nMarker];
-//  AveragedTangVelocity = new su2double[nMarker];
-//  ExtAveragedNormalVelocity = new su2double[nMarker];
-//  ExtAveragedTangVelocity = new su2double[nMarker];
-//  MassFlow= new su2double[nMarker];
-//  FlowAngle= new su2double[nMarker];
-//  AveragedEnthalpy  = new su2double[nMarker];
-//  AveragedPressure  = new su2double[nMarker];
-//  AveragedTotPressure  = new su2double[nMarker];
-//  AveragedTotTemperature  = new su2double[nMarker];
-//  ExtAveragedTotPressure  = new su2double[nMarker];
-//  ExtAveragedTotTemperature  = new su2double[nMarker];
-//  ExtAveragedPressure  = new su2double[nMarker];
-//  AveragedDensity   = new su2double[nMarker];
-//  ExtAveragedDensity   = new su2double[nMarker];
-//  AveragedSoundSpeed= new su2double[nMarker];
-//  AveragedEntropy   = new su2double[nMarker];
-//  AveragedTangGridVelocity = new su2double[nMarker];
-//  AveragedMach = new su2double[nMarker];
-//  AveragedNormalMach = new su2double[nMarker];
-//  AveragedTangMach = new su2double[nMarker];
-  
+
   
   /*--- Initializate quantities for the mixing process span-wise*/
 
