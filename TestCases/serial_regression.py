@@ -585,7 +585,7 @@ def main():
     pass_list.append(oneram6_sa_def.run_def())
     test_list.append(oneram6_sa_def)       
 
-    '''
+    
     ######################################
     ### RUN PYTHON TESTS               ###
     ###################################### 
@@ -625,7 +625,7 @@ def main():
     shape_opt_euler_py.tol       = 0.00001
     pass_list.append(shape_opt_euler_py.run_opt())
     test_list.append(shape_opt_euler_py)
-    '''
+    
     
     # Tests summary
     print '=================================================================='
