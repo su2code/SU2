@@ -861,3 +861,254 @@ def directdiff( config, state=None ):
 
 #: def directdiff()
 
+
+# ----------------------------------------------------------------------
+#  Continuous Adjoint Domain Formulation
+# ----------------------------------------------------------------------
+
+def domain_adjoint( config, state=None, step=1e-4 ):
+    """ vals = SU2.eval.domain_adjoint(config,state=None,step=1e-4)
+
+        Evaluates the aerodynamic gradients using
+        a continuous adjoint domain formulation with:
+            SU2.eval.func()
+            SU2.run.deform()
+            SU2.run.direct()
+            SU2.run.adjoint()
+
+        Assumptions:
+            Config is already setup for deformation.
+            Mesh may or may not be deformed.
+            Updates config and state by reference.
+            Gradient Redundancy if state.GRADIENTS has the key func_name.
+            Direct Redundancy if state.FUNCTIONS has key func_name.
+
+        Executes in:
+            ./DOMAIN_ADJOINT
+
+        Inputs:
+            config - an SU2 config
+            state  - optional, an SU2 state
+            step   - finite difference step size, as a float or
+                     list of floats of length n_DV
+
+        Outputs:
+            A Bunch() with keys of objective function names
+            and values of list of floats of gradient values
+    """    
+
+    # ----------------------------------------------------
+    #  Initialize    
+    # ----------------------------------------------------
+
+    # initialize
+    state = su2io.State(state)
+    special_cases = su2io.get_specialCases(config)
+    Definition_DV = config['DEFINITION_DV']
+
+    # console output
+    if config.get('CONSOLE','VERBOSE') in ['QUIET','CONCISE']:
+        log_domain_adjoint = 'log_domain_adjoint.out'
+    else:
+        log_domain_adjoint = None
+
+    # ----------------------------------------------------
+    #  Redundancy Check
+    # ----------------------------------------------------    
+
+    # master redundancy check
+    objective = config['OBJECTIVE_FUNCTION']
+    opt_names = objective
+    domain_adjoint_todo = all( [ state.GRADIENTS.has_key(key) for key in opt_names ] )
+    if domain_adjoint_todo:
+        grads = state['GRADIENTS']
+        return copy.deepcopy(grads)
+
+    # ----------------------------------------------------
+    #  Zero Step  
+    # ----------------------------------------------------   
+
+    # Force residual output in order to compute gradients
+    config.WRT_CSV_SOL   = 'YES'
+    config.WRT_RESIDUALS = 'YES'
+    config.EXT_ITER = 500
+
+    # direct solution
+    func_base = function( objective, config, state )
+
+    # adjoint solution
+    info = su2run.adjoint(config)
+    state.update(info)
+    su2io.restart2solution(config,state)
+
+    # ----------------------------------------------------
+    #  Plot Setup
+    # ----------------------------------------------------          
+
+    # filenames
+    grad_filename  = config['GRAD_OBJFUNC_FILENAME']
+    output_format  = config['OUTPUT_FORMAT']
+    plot_extension = su2io.get_extension(output_format)
+    adj_suffix     = su2io.get_adjointSuffix(objective)
+    grad_filename  = os.path.splitext(grad_filename)[0] + '_' + adj_suffix + plot_extension
+
+    # ----------------------------------------------------
+    #  Finite Difference Steps
+    # ----------------------------------------------------  
+
+    # local config
+    konfig = copy.deepcopy(config)
+
+    # check deformation setup
+    n_dv = sum(Definition_DV['SIZE'])
+    deform_set = konfig['DV_KIND'] == Definition_DV['KIND']
+    if not deform_set: 
+        dvs_base = [0.0] * n_dv
+        konfig.unpack_dvs(dvs_base,dvs_base)    
+    else:
+        dvs_base = konfig['DV_VALUE_NEW']
+
+    # initialize gradients
+    func_keys = ['VARIABLE'] + ['GRADIENT'] + ['FINDIFF_STEP']
+    grads = su2util.ordered_bunch.fromkeys(func_keys)
+    for key in grads.keys(): grads[key] = []
+
+    # step vector
+    if isinstance(step,list):
+        assert n_dv == len(step) , 'unexpected step vector length'
+    else:
+        step = [step] * n_dv
+
+    # files to pull
+    files = state['FILES']
+    pull = []; link = []
+
+    # files: mesh
+    name = files['MESH']
+    name = su2io.expand_part(name,konfig)
+    link.extend(name)
+
+    # files: direct solution
+    if files.has_key('DIRECT'):
+        name = files['DIRECT']
+        name = su2io.expand_time(name,konfig)
+        link.extend(name)
+    
+    # files: adjoint solution
+    adj_title = 'ADJOINT_' + objective
+    if files.has_key(adj_title):
+        name = files[adj_title]
+        name = su2io.expand_time(name,konfig)
+        link.extend(name)
+
+    # Load and store the base flow residuals and adjoint variables
+    base_sol = su2io.read_restart(files['DIRECT'])
+    adj_sol  = su2io.read_restart(files[adj_title])
+
+    # files: target equivarea distribution
+    if 'EQUIV_AREA' in special_cases and 'TARGET_EA' in files:
+        pull.append(files['TARGET_EA'])
+
+    # files: target pressure distribution
+    if 'INV_DESIGN_CP' in special_cases and 'TARGET_CP' in files:
+        pull.append(files['TARGET_CP'])
+
+    # files: target heat flux distribution
+    if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
+        pull.append(files['TARGET_HEATFLUX'])
+
+    # Use custom variable
+    if ('CUSTOM' in konfig.DV_KIND):
+        import downstream_function
+        chaingrad = downstream_function.downstream_gradient(config,state)
+        custom_dv=1
+
+    print pull, link
+    # output redirection
+    with redirect_folder('DOMAIN_ADJOINT',pull,link) as push:
+        with redirect_output(log_domain_adjoint):
+
+            # copy original flow solution so it is not overwritten
+            shutil.copy(files['DIRECT'],'base_'+files['DIRECT'])
+            
+            # iterate each dv
+            for i_dv in range(n_dv):
+
+                this_step = step[i_dv]
+                temp_config_name = 'config_domain_adjoint_%i.cfg' % i_dv
+
+                this_dvs    = copy.deepcopy(dvs_base)
+                this_konfig = copy.deepcopy(konfig)
+                this_dvs[i_dv] = this_dvs[i_dv] + this_step
+
+                this_state = su2io.State()
+                this_state.FILES = copy.deepcopy( state.FILES )
+                this_konfig.unpack_dvs(this_dvs,dvs_base)
+
+                this_konfig.dump(temp_config_name)
+                
+                # Copy in original restart file to be safe
+                shutil.copy('base_'+files['DIRECT'],files['DIRECT'])
+                
+                # Force a single iteration from a restart to get the
+                # partial derivative for the objective and delta residuals
+                this_konfig.EXT_ITER      = 1
+                this_konfig.WRT_RESIDUALS = 'YES'
+                this_konfig.RESTART_SOL   = 'YES'
+                
+                # Direct Solution, findiff step
+                func_step = function( objective, this_konfig, this_state )
+
+                # Load up the residuals from the restart file for this step
+                step_sol = su2io.read_restart(files['DIRECT'])
+                
+                # remove deform step files
+                meshfiles = this_state.FILES.MESH
+                meshfiles = su2io.expand_part(meshfiles,this_konfig)
+                for name in meshfiles: os.remove(name)
+
+                # calc finite difference and store
+                for key in grads.keys():
+                    if key == 'VARIABLE': 
+                        grads[key].append(i_dv)
+                    elif key == 'FINDIFF_STEP': 
+                        grads[key].append(this_step)
+                    else:
+                      
+                        # Compute del(J)/del(alpha) using a finite difference
+                        this_grad = (func_step - func_base) / this_step
+                        total = 0.0
+                        # Compute the domain integral as Psi^T * [R'(U) - R(U)]
+                        for i in range(len(adj_sol['Conservative_1'])):
+                          
+                            dx = sqrt( pow(step_sol['x'][i]-base_sol['x'][i],2.0)  +  pow(step_sol['y'][i]-base_sol['y'][i],2.0) )
+                            rho  = adj_sol['Conservative_1'][i] * (step_sol['Residual_1'][i]-base_sol['Residual_1'][i])*dx
+                            rhoU = adj_sol['Conservative_2'][i] * (step_sol['Residual_2'][i]-base_sol['Residual_2'][i])*dx
+                            rhoV = adj_sol['Conservative_3'][i] * (step_sol['Residual_3'][i]-base_sol['Residual_3'][i])*dx
+                            rhoE = adj_sol['Conservative_4'][i] * (step_sol['Residual_4'][i]-base_sol['Residual_4'][i])*dx
+                            this_grad = this_grad - (rho + rhoU + rhoV + rhoE)/this_step
+                            total = total + (rho + rhoU + rhoV + rhoE)
+                            print i, this_grad, total, this_grad - total, this_grad - total/this_step, this_grad - total*this_step
+            
+                        # Store the grad
+                        grads[key].append(this_grad)
+                          
+                #: for each grad name
+                    
+                su2util.write_plot(grad_filename,output_format,grads)
+                os.remove(temp_config_name)
+
+            #: for each dv
+
+    #: with output redirection
+
+    # remove plot items
+    del grads['VARIABLE']
+    del grads['FINDIFF_STEP']
+    state.GRADIENTS.update(grads)
+
+    # return results
+    grads = copy.deepcopy(grads)
+    return grads
+
+#: def domain_adjoint()

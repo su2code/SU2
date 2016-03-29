@@ -132,6 +132,54 @@ def read_plot( filename ):
     plot_file.close()              
     return plot_data
 
+# -------------------------------------------------------------------
+#  Read All Data from a Restart File
+# -------------------------------------------------------------------
+
+def read_restart( filename ):
+    """ reads a plot file
+        returns an ordered bunch with the headers for keys
+        and a list of each header's floats for values.
+    """
+    
+    extension = os.path.splitext( filename )[1]
+    
+    # open history file
+    restart_file = open(filename)
+
+    line = restart_file.readline()
+    # process header
+    line = line.split()
+    Variables = [ x.strip('"') for x in line ]
+    n_Vars = len(Variables)
+    
+    # initialize plot data dictionary
+    restart_data = ordered_bunch.fromkeys(Variables)
+    # must default each value to avoid pointer problems
+    for key in restart_data.keys(): restart_data[key] = []
+    
+    # read all data rows
+    while 1:
+        # read line
+        line = restart_file.readline()
+        if not line:
+            break
+        
+        # split line
+        line_data = line.strip().split()
+        line_data = [ float(x.strip()) for x in line_data ]  
+        
+        # store to dictionary
+        for i_Var in range(n_Vars):
+            this_variable = Variables[i_Var] 
+            restart_data[this_variable] = restart_data[this_variable] + [ line_data[i_Var] ]
+    
+    #: for each line
+    
+    # done
+    restart_file.close()
+    return restart_data
+
 
 # -------------------------------------------------------------------
 #  Read All Data from History File

@@ -50,22 +50,35 @@ def main():
                       help="COMPUTE direct and adjoint problem", metavar="COMPUTE")
     parser.add_option("-s", "--step",       dest="step",       default=1E-4,
                       help="DOT finite difference STEP", metavar="STEP")    
-    
+    parser.add_option("-d", "--domain",    dest="domain",    default="False",
+                      help="use the domain continuous adjoint formulation", metavar="DOMAIN")
+    parser.add_option("-q", "--quiet",      dest="quiet",      default='False',
+                      help="output QUIET to log files", metavar="QUIET")
+                      
     (options, args)=parser.parse_args()
     options.partitions  = int( options.partitions )
     options.step        = float( options.step )
     options.compute     = options.compute.upper() == 'TRUE'
+    options.domain      = options.domain.upper()  == 'TRUE'
+    options.quiet       = options.quiet.upper()   == 'TRUE'
     
-    continuous_adjoint( options.filename    ,
-                        options.partitions  ,
-                        options.compute     ,
-                        options.step         )
-        
+    # Apply either the surface or domain continuous adjoint formulation
+    if not options.domain:
+        continuous_adjoint( options.filename    ,
+                            options.partitions  ,
+                            options.compute     ,
+                            options.step         )
+    else:
+        continuous_adjoint_domain( options.filename    ,
+                                   options.partitions  ,
+                                   options.step        ,
+                                   options.quiet        )
+
 #: def main()
 
 
 # -------------------------------------------------------------------
-#  Continuous Adjoint 
+#  Continuous Adjoint - Surface Formulation
 # -------------------------------------------------------------------
 
 def continuous_adjoint( filename           , 
@@ -116,6 +129,32 @@ def continuous_adjoint( filename           ,
     return state
 
 #: continuous_adjoint()
+
+# -------------------------------------------------------------------
+#  Continuous Adjoint - Domain Formulation
+# -------------------------------------------------------------------
+
+def continuous_adjoint_domain( filename           ,
+                               partitions = 0     ,
+                               step       = 1e-3  ,
+                               quiet      = False  ):
+    # Config
+    config = SU2.io.Config(filename)
+    config.NUMBER_PART = partitions
+    
+    if quiet:
+      config.CONSOLE = 'CONCISE'
+    
+    # State
+    state = SU2.io.State()
+    state.find_files(config)
+    
+    # Compute gradient with the continuous adjoint domain formulation
+    SU2.eval.gradients.domain_adjoint(config,state,step)
+    
+    return state
+
+#: continuous_adjoint_domain()
 
 # -------------------------------------------------------------------
 #  Alternate Forumulation
