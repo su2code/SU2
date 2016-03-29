@@ -14,7 +14,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -79,13 +79,41 @@ def main():
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001
     test_list.append(discadj_rans_naca0012_sst)
-
+    
     ######################################
     ### RUN TESTS                      ###
     ######################################  
 
     pass_list = [ test.run_test() for test in test_list ]
     
+    ######################################
+    ### RUN PYTHON TESTS               ###
+    ######################################
+    
+    # test discrete_adjoint.py
+    discadj_euler_py = TestCase('discadj_euler_py')
+    discadj_euler_py.cfg_dir = "cont_adj_euler/naca0012"
+    discadj_euler_py.cfg_file  = "inv_NACA0012.cfg"
+    discadj_euler_py.test_iter = 10
+    discadj_euler_py.su2_exec  = "discrete_adjoint.py"
+    discadj_euler_py.timeout   = 1600
+    discadj_euler_py.reference_file = "of_grad_cd_disc.dat.ref"
+    discadj_euler_py.test_file = "of_grad_cd.dat"
+    pass_list.append(discadj_euler_py.run_filediff())
+    test_list.append(discadj_euler_py)
+    
+    # test direct_differentiation.py
+    directdiff_euler_py = TestCase('directdiff_euler_py')
+    directdiff_euler_py.cfg_dir = "cont_adj_euler/naca0012"
+    directdiff_euler_py.cfg_file  = "inv_NACA0012_FD.cfg"
+    directdiff_euler_py.test_iter = 10
+    directdiff_euler_py.su2_exec  = "direct_differentiation.py"
+    directdiff_euler_py.timeout   = 1600
+    directdiff_euler_py.reference_file = "of_grad_directdiff.dat.ref"
+    directdiff_euler_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
+    pass_list.append(directdiff_euler_py.run_filediff())
+    test_list.append(directdiff_euler_py)
+
     # Tests summary
     print '=================================================================='
     print 'Summary of the serial tests'

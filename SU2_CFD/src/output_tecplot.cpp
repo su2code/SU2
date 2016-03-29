@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,7 +42,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   bool *SurfacePoint = NULL;
   
   bool grid_movement  = config->GetGrid_Movement();
-  bool adjoint = config->GetAdjoint() || config->GetDiscrete_Adjoint();
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
 
   char cstr[200], buffer[50];
   string filename;
@@ -696,7 +696,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
     string filename, text_line;
     char buffer_char[50], out_file[MAX_STRING_SIZE];
     
-    if (!config->GetAdjoint()) {
+    if (!config->GetContinuous_Adjoint()) {
       if (surf_sol) filename = config->GetSurfFlowCoeff_FileName();
       else filename = config->GetFlow_FileName();
     }
@@ -713,7 +713,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
     
     for (int iRank = 0; iRank < size; iRank++) {
       
-      if (!config->GetAdjoint()) {
+      if (!config->GetContinuous_Adjoint()) {
         if (surf_sol) filename = config->GetSurfFlowCoeff_FileName();
         else filename = config->GetFlow_FileName();
       }
