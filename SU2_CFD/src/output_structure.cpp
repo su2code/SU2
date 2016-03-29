@@ -5023,7 +5023,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 											cout << endl;
 											cout << "        Inlet Normal Mach" << "       Outlet Normal Mach" << endl;
 											cout.width(25); cout << NormalMachIn[iMarker_Monitoring];
-											cout.width(25); cout << NormalMachOut[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
+											cout.width(25); cout << NormalMachOut[iMarker_Monitoring];
 											cout << endl;
 											cout << endl;
 											cout << "           Pressure Ratio" << "         Outlet Pressure" << endl;
