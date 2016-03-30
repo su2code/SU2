@@ -1462,14 +1462,16 @@ void CMultiZoneDriver::SetTurboPerformance(CGeometry ***geometry_container,
 																			unsigned short targetZone){
 
 	unsigned short donorZone;
-	/* --- transfer the average value from the donorZone to the targetZone*/
 
+	/* --- transfer the local turboperfomance quantities (for each blade)  from all the donorZones to the targetZone (ZONE_0) ---*/
 	for (donorZone = 1; donorZone < nZone; donorZone++) {
 			transfer_container[donorZone][targetZone]->StoreTurboPerformance(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
 																																		geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
 																																		config_container[donorZone], config_container[targetZone], donorZone);
 	}
 
+	/* --- compute turboperformance for each stage and the global machine ---*/
+	solver_container[targetZone][MESH_0][FLOW_SOL]->TurboPerformance2nd(config_container[targetZone]);
 }
 
 

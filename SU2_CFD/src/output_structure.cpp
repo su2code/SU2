@@ -4120,7 +4120,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   bool output_1d  = config[val_iZone]->GetWrt_1D_Output();
   bool output_massflow = (config[val_iZone]->GetKind_ObjFunc() == MASS_FLOW_RATE);
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-  
+  unsigned short nTurboPerf  = config[val_iZone]->GetnMarker_TurboPerformance();
   int rank;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -4345,30 +4345,30 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Surface_CMz        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     
     /*--- Allocate memory for the turboperformace ---*/
-    TotalStaticEfficiency = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    TotalTotalEfficiency  = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    KineticEnergyLoss 	  = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    TotalPressureLoss 	  = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    MassFlowIn 		        = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    MassFlowOut           = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    FlowAngleIn           = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    FlowAngleOut          = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    EulerianWork          = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    TotalEnthalpyIn       = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    PressureRatio         = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    PressureOut           = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    EnthalpyOut           = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    MachIn                = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    MachOut               = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    NormalMachIn          = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    NormalMachOut         = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    VelocityOutIs         = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    TotalPresureIn				= new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    TotalTemperatureIn		= new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    FlowAngleIn_BC				= new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    EntropyIn   					= new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    EntropyIn_BC					= new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
-    TotalEnthalpyIn_BC    = new su2double[config[ZONE_0]->GetnMarker_Turbomachinery()];
+    TotalStaticEfficiency = new su2double[nTurboPerf];
+    TotalTotalEfficiency  = new su2double[nTurboPerf];
+    KineticEnergyLoss 	  = new su2double[nTurboPerf];
+    TotalPressureLoss 	  = new su2double[nTurboPerf];
+    MassFlowIn 		        = new su2double[nTurboPerf];
+    MassFlowOut           = new su2double[nTurboPerf];
+    FlowAngleIn           = new su2double[nTurboPerf];
+    FlowAngleOut          = new su2double[nTurboPerf];
+    EulerianWork          = new su2double[nTurboPerf];
+    TotalEnthalpyIn       = new su2double[nTurboPerf];
+    PressureRatio         = new su2double[nTurboPerf];
+    PressureOut           = new su2double[nTurboPerf];
+    EnthalpyOut           = new su2double[nTurboPerf];
+    MachIn                = new su2double[nTurboPerf];
+    MachOut               = new su2double[nTurboPerf];
+    NormalMachIn          = new su2double[nTurboPerf];
+    NormalMachOut         = new su2double[nTurboPerf];
+    VelocityOutIs         = new su2double[nTurboPerf];
+    TotalPresureIn				= new su2double[nTurboPerf];
+    TotalTemperatureIn		= new su2double[nTurboPerf];
+    FlowAngleIn_BC				= new su2double[nTurboPerf];
+    EntropyIn   					= new su2double[nTurboPerf];
+    EntropyIn_BC					= new su2double[nTurboPerf];
+    TotalEnthalpyIn_BC    = new su2double[nTurboPerf];
 
 
 
@@ -4463,7 +4463,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         if (turbo) {
         	/*--- Loop over the nMarker of turboperformance and get the desired values ---*/
-        	for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Turbomachinery(); iMarker_Monitoring++) {
+        	for (iMarker_Monitoring = 0; iMarker_Monitoring < nTurboPerf; iMarker_Monitoring++) {
         		TotalStaticEfficiency[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalStaticEfficiency(iMarker_Monitoring);
 						TotalTotalEfficiency[iMarker_Monitoring]  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalTotalEfficiency(iMarker_Monitoring);
 						KineticEnergyLoss[iMarker_Monitoring] 	  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetKineticEnergyLoss(iMarker_Monitoring);
@@ -5156,12 +5156,15 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               else if (equiv_area) cout << "     Res[Rho]" << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
               else if (turbo){
 
-              	/*--- single xone output ---*/
-								cout << "     Res[Rho]" << "     Res[RhoE]"  << "  KineticLoss(%)" << "  D_MassFlow(%)" << endl;
 
-								/* --- multi-zone output ---*/
-//								cout << "     Res[Rho]" << "     Res[RhoE]"  << " TSEfficiency(%)" << " Outlet Pressure" << endl;
-
+              	if(nZones  < 2){
+              		/*--- single zone output ---*/
+              		cout << "     Res[Rho]" << "     Res[RhoE]"  << "  KineticLoss(%)" << "  D_MassFlow(%)" << endl;
+              	}
+              	else{
+              		/* --- multi-zone output ---*/
+              		cout << "     Res[Rho]" << "     Res[RhoE]"  << " TSEfficiency(%)" << " Outlet Pressure" << endl;
+              	}
             	}
               else cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
 //            }
@@ -5214,12 +5217,16 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch" << endl;
             else if (equiv_area) cout << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)" << endl;
             else if (turbo){
-            	/*--- single zone output ---*/
-							cout << "  KineticLoss(%)" << "  D_MassFlow(%)" << endl;
-							/*--- multi zone output ---*/
-//							cout << " TSEfficiency(%)" << " Outlet Pressure" << endl;
-            }
+            	if (nZones < 2){
+								/*--- single zone output ---*/
+								cout << "  KineticLoss(%)" << "  D_MassFlow(%)" << endl;
+            	}
+            	else{
+								/*--- multi zone output ---*/
+								cout << " TSEfficiency(%)" << " Outlet Pressure" << endl;
 
+            	}
+            }
             else cout << "   CLift(Total)"   << "   CDrag(Total)"   << endl;
             
             break;
@@ -5429,13 +5436,16 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           else if (turbo) {
           	cout.setf(ios::scientific, ios::floatfield);
           	/*--- singlezone output---*/
-						cout.width(15); cout << KineticEnergyLoss[0]*100.0;
-						cout.width(15); cout << abs((MassFlowIn[0] - MassFlowOut[0])/MassFlowIn[0])*100.0;
-          	/*--- multizone output---*/
-//						cout.width(15); cout << TotalStaticEfficiency[0]*100.0;
-//						cout.width(15); cout << PressureOut[0]*config[ZONE_0]->GetPressure_Ref();
+          	if (nZones < 2){
+							cout.width(15); cout << KineticEnergyLoss[0]*100.0;
+							cout.width(15); cout << abs((MassFlowIn[0] - MassFlowOut[0])/MassFlowIn[0])*100.0;
+          	}
+          	else{
+							/*--- multizone output---*/
+							cout.width(15); cout << TotalStaticEfficiency[nTurboPerf -1]*100.0;
+							cout.width(15); cout << PressureOut[0]*config[ZONE_0]->GetPressure_Ref();
 
-
+          	}
           	cout.unsetf(ios_base::floatfield);
           }
           else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); }
@@ -5494,15 +5504,16 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout << Total_CNearFieldOF; }
           else if (turbo) {
           	cout.setf(ios::scientific, ios::floatfield);
-
-          	/*--- single zone output ---*/
-						cout.width(15); cout << KineticEnergyLoss[0]*100.0;
-						cout.width(15); cout << abs((MassFlowIn[0] - MassFlowOut[0])/MassFlowIn[0])*100.0;
-
+          	if (nZones < 2){
+							/*--- single zone output ---*/
+							cout.width(15); cout << KineticEnergyLoss[0]*100.0;
+							cout.width(15); cout << abs((MassFlowIn[0] - MassFlowOut[0])/MassFlowIn[0])*100.0;
+          	}
+          	else{
 						/*--- multi zone output ---*/
-//						cout.width(15); cout << TotalStaticEfficiency[0]*100.0;
-//						cout.width(15); cout << PressureOut[0]*config[ZONE_0]->GetPressure_Ref();
-
+							cout.width(15); cout << TotalStaticEfficiency[nTurboPerf]*100.0;
+							cout.width(15); cout << PressureOut[0]*config[ZONE_0]->GetPressure_Ref();
+          	}
 						cout.unsetf(ios_base::floatfield);
           }
           else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); }

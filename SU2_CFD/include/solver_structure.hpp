@@ -1676,6 +1676,13 @@ public:
 
 	/*!
 	 * \brief A virtual member.
+	 * \param[in] config - contains config file information.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 */
+	virtual void TurboPerformance2nd(CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
@@ -4758,12 +4765,18 @@ public:
 	void Inviscid_Forces(CGeometry *geometry, CConfig *config);
 
 	/*!
-	 * \brief Compute turbomachinery performance.
+	 * \brief Compute single blade turbomachinery performance quantities.
 	 * \param[in] config - contains config file information.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
 	void TurboPerformance(CConfig *config, CGeometry *geometry);
 
+	/*!
+	 * \brief Compute multi-stage turbomachinery performance quantities.
+	 * \param[in] config - contains config file information.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 */
+	void TurboPerformance2nd(CConfig *config);
 	/*!
 	 * \brief Provide the non dimensional lift coefficient (inviscid contribution).
 	 * \param val_marker Surface where the coefficient is going to be computed.

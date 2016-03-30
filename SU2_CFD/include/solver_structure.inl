@@ -737,6 +737,8 @@ inline void CSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::TurboPerformance(CConfig *config, CGeometry *geometry){ }
 
+inline void CSolver::TurboPerformance2nd(CConfig *config){ }
+
 inline void CSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
