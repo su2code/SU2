@@ -110,7 +110,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   string filename = config->GetSolution_FlowFileName();
   
   unsigned short direct_diff = config->GetDirectDiff();
-  unsigned short nMarkerTurboPerf = config->GetnMarker_Turbomachinery();
+  unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
   unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
 
   int rank = MASTER_NODE;
@@ -4774,7 +4774,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 
 	unsigned short iDim, i, n1, n2, n1t,n2t;
 
-	int rank = MASTER_NODE, rankIn = MASTER_NODE, rankOut= MASTER_NODE;
+	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
 	int markerTP;
 	string Marker_Tag;
@@ -5183,13 +5183,36 @@ if (rank == MASTER_NODE){
 		PressureOut_BC[markerTP -1]       = pressureOut_BC;
 
 
-//		TotalTotalEfficiency[0] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgTotalEnthalpyOutIs);
-//		TotalStaticEfficiency[0] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgEnthalpyOutIs);
+
 
 	}
 }
 
+void CEulerSolver::TurboPerformance2nd(CConfig *config){
 
+	unsigned short nBladesRow, nStages;
+	unsigned short iStage;
+	int rank = MASTER_NODE;
+	int size = SINGLE_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
+  nBladesRow = config->GetnMarker_Turbomachinery();
+  nStages    = int(nBladesRow/2);
+  if (rank == MASTER_NODE){
+  	/*---Comnpute performance for each stage---*/
+  	for(iStage = 0; iStage < nStages; iStage++ ){
+  		TotalTotalEfficiency[nBladesRow + iStage] = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 2])/(TotalEnthalpyIn[iStage*2] - TotalEnthalpyOutIs[iStage*2 + 2]);
+  		TotalStaticEfficiency[nBladesRow + iStage] = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 2])/(TotalEnthalpyIn[iStage*2] - EnthalpyOutIs[iStage*2 + 2]);
+  	}
+
+  	/*---Comnpute performance for full machine---*/
+  	TotalTotalEfficiency[nBladesRow + nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - TotalEnthalpyOutIs[nBladesRow-1]);
+    TotalStaticEfficiency[nBladesRow +nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - EnthalpyOutIs[nBladesRow-1]);
+  }
+}
 void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iRKStep) {
   su2double *Residual, *Res_TruncError, Vol, Delta, Res;
@@ -12841,7 +12864,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   string filename = config->GetSolution_FlowFileName();
   
   unsigned short direct_diff = config->GetDirectDiff();
-  unsigned short nMarkerTurboPerf = config->GetnMarker_Turbomachinery();
+  unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
   unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
   
   int rank = MASTER_NODE;

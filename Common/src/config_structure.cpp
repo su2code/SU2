@@ -1727,6 +1727,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Force number of span-wise section to 1 if 2D case ---*/
   if(val_nDim ==2) nSpanWiseSections=1;
 
+  /*--- Set number of TurboPerformance markers ---*/
+  if(nMarker_Turbomachinery > 0)
+  	nMarker_TurboPerformance = nMarker_Turbomachinery + int(nMarker_Turbomachinery/2) + 1;
+
 
 
   /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
