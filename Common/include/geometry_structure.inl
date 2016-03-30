@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -116,6 +116,8 @@ inline void CGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig 
 inline void CGeometry::Set_MPI_Coord(CConfig *config) { } 
 
 inline void CGeometry::Set_MPI_GridVel(CConfig *config) { } 
+
+inline void CGeometry::Set_MPI_OldCoord(CConfig *config) { } 
 
 inline void CGeometry::SetPeriodicBoundary(CConfig *config) { }
 

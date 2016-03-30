@@ -530,13 +530,13 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*--- Step 3: Build the layer of halo elements.                            ---*/
   /*----------------------------------------------------------------------------*/
 
+#ifndef HAVE_MPI
+  cout << "CMeshFEM::CMeshFEM: Not implemented yet." << endl << flush;
+  exit(EXIT_FAILURE);
+#else
   MPI_Barrier(MPI_COMM_WORLD);
   cout << "CMeshFEM::CMeshFEM: Not implemented yet." << endl << flush;
   MPI_Barrier(MPI_COMM_WORLD);
-
-#ifndef HAVE_MPI
-  exit(EXIT_FAILURE);
-#else
   MPI_Abort(MPI_COMM_WORLD,1);
   MPI_Finalize();
 #endif

@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -205,21 +205,21 @@ int main(int argc, char *argv[]) {
 
   /*--- Volumetric grid deformation/transformations ---*/
   
-  if (config_container[ZONE_0]->GetDesign_Variable(0) == SCALE and allmoving) {
+  if (config_container[ZONE_0]->GetDesign_Variable(0) == SCALE && allmoving) {
     
     if (rank == MASTER_NODE)
       cout << "Performing a scaling of the volumetric grid." << endl;
     
     grid_movement->SetVolume_Scaling(geometry_container[ZONE_0], config_container[ZONE_0], false);
     
-  } else if (config_container[ZONE_0]->GetDesign_Variable(0) == TRANSLATION and allmoving) {
+  } else if (config_container[ZONE_0]->GetDesign_Variable(0) == TRANSLATION && allmoving) {
     
     if (rank == MASTER_NODE)
       cout << "Performing a translation of the volumetric grid." << endl;
     
     grid_movement->SetVolume_Translation(geometry_container[ZONE_0], config_container[ZONE_0], false);
     
-  } else if (config_container[ZONE_0]->GetDesign_Variable(0) == ROTATION and allmoving) {
+  } else if (config_container[ZONE_0]->GetDesign_Variable(0) == ROTATION && allmoving) {
     
     if (rank == MASTER_NODE)
       cout << "Performing a rotation of the volumetric grid." << endl;

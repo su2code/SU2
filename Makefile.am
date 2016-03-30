@@ -14,7 +14,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -31,20 +31,16 @@
 #
 ################################################################################
 
+AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS} -I m4
 
-# Build third-party optional dependencies first
+# build third-party optional dependencies first
 SUBDIRS = externals
 
-# Build the SU2 C++ common library
 SUBDIRS += Common/lib
 
-# Install the SU2 Python scripts to the proper location
-if BUILD_NORMAL
 SUBDIRS += SU2_PY
-endif
 
-# Build each of the SU2 C++ modules
 if BUILD_CFD
 SUBDIRS +=SU2_CFD/obj
 endif
