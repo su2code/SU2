@@ -43,10 +43,6 @@ inline CPointFEM::CPointFEM(const CPointFEM &other) { Copy(other); }
 
 inline CPointFEM& CPointFEM::operator=(const CPointFEM &other) { Copy(other); return (*this); }
 
-inline bool CPointFEM::operator< (const CPointFEM &other) const { return globalID <  other.globalID; }
-
-inline bool CPointFEM::operator==(const CPointFEM &other) const { return globalID == other.globalID; }
-
 inline CSurfaceElementFEM::CSurfaceElementFEM(void) { indStandardElement = -1; }
 
 inline CSurfaceElementFEM::~CSurfaceElementFEM(void) { }
