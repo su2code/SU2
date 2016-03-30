@@ -494,6 +494,36 @@ inline su2double CSolver::GetPressureOut(unsigned short inMarkerTP){return 0;}
 
 inline su2double CSolver::GetPressureRatio(unsigned short inMarkerTP){return 0;}
 
+inline su2double CSolver::GetDensityIn_Mix(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetPressureIn_Mix(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetNormalVelocityIn_Mix(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetTangVelocityIn_Mix(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetDensityOut_Mix(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetPressureOut_Mix(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetNormalVelocityOut_Mix(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetTangVelocityOut_Mix(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetEnthalpyOutIs(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetEntropyGen(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetAbsFlowAngleIn(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetTotalEnthalpyOut(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetTotalEnthalpyOutIs(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetAbsFlowAngleOut(unsigned short inMarkerTP){return 0;}
+
+inline su2double CSolver::GetPressureOut_BC(unsigned short inMarkerTP){return 0;}
+
 inline void CSolver::SetTotalPressureLoss(su2double value, unsigned short inMarkerTP){}
 
 inline void CSolver::SetKineticEnergyLoss(su2double value, unsigned short inMarkerTP){}
@@ -541,6 +571,36 @@ inline void CSolver::SetTotalEnthalpyIn_BC(su2double value, unsigned short inMar
 inline void CSolver::SetPressureOut(su2double value, unsigned short inMarkerTP){}
 
 inline void CSolver::SetPressureRatio(su2double value, unsigned short inMarkerTP){}
+
+inline void CSolver::SetDensityIn_Mix(su2double value, unsigned short inMarkerTP){}
+
+inline void CSolver::SetPressureIn_Mix(su2double value, unsigned short inMarkerTP){}
+
+inline void CSolver::SetNormalVelocityIn_Mix(su2double value, unsigned short inMarkerTP){}
+
+inline void CSolver::SetTangVelocityIn_Mix(su2double value, unsigned short inMarkerTP){}
+
+inline void CSolver::SetDensityOut_Mix(su2double value, unsigned short inMarkerTP){}
+
+inline void CSolver::SetPressureOut_Mix(su2double value, unsigned short inMarkerTP){}
+
+inline void CSolver::SetNormalVelocityOut_Mix(su2double value, unsigned short inMarkerTP){}
+
+inline void CSolver::SetTangVelocityOut_Mix(su2double value, unsigned short inMarkerTP){}
+
+inline void CSolver::SetEnthalpyOutIs(su2double value, unsigned short inMarkerTP){}
+
+inline void CSolver::SetEntropyGen(su2double value, unsigned short inMarkerTP){}
+
+inline void CSolver::SetAbsFlowAngleIn(su2double value, unsigned short inMarkerTP){}
+
+inline void CSolver::SetTotalEnthalpyOut(su2double value, unsigned short inMarkerTP){}
+
+inline void CSolver::SetTotalEnthalpyOutIs(su2double value, unsigned short inMarkerTP){}
+
+inline void CSolver::SetAbsFlowAngleOut(su2double value, unsigned short inMarkerTP){}
+
+inline void CSolver::SetPressureOut_BC(su2double value, unsigned short inMarkerTP){}
 
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
@@ -1059,6 +1119,36 @@ inline su2double CEulerSolver::GetPressureOut(unsigned short inMarkerTP){return 
 
 inline su2double CEulerSolver::GetPressureRatio(unsigned short inMarkerTP){return PressureRatio[inMarkerTP];}
 
+inline su2double CEulerSolver::GetDensityIn_Mix(unsigned short inMarkerTP){return DensityIn_Mix[inMarkerTP];}
+
+inline su2double CEulerSolver::GetPressureIn_Mix(unsigned short inMarkerTP){return PressureIn_Mix[inMarkerTP];}
+
+inline su2double CEulerSolver::GetNormalVelocityIn_Mix(unsigned short inMarkerTP){return NormalVelocityIn_Mix[inMarkerTP];}
+
+inline su2double CEulerSolver::GetTangVelocityIn_Mix(unsigned short inMarkerTP){return TangVelocityIn_Mix[inMarkerTP];}
+
+inline su2double CEulerSolver::GetDensityOut_Mix(unsigned short inMarkerTP){return DensityOut_Mix[inMarkerTP];}
+
+inline su2double CEulerSolver::GetPressureOut_Mix(unsigned short inMarkerTP){return PressureOut_Mix[inMarkerTP];}
+
+inline su2double CEulerSolver::GetNormalVelocityOut_Mix(unsigned short inMarkerTP){return NormalVelocityOut_Mix[inMarkerTP];}
+
+inline su2double CEulerSolver::GetTangVelocityOut_Mix(unsigned short inMarkerTP){return TangVelocityOut_Mix[inMarkerTP];}
+
+inline su2double CEulerSolver::GetEnthalpyOutIs(unsigned short inMarkerTP){return EnthalpyOutIs[inMarkerTP];}
+
+inline su2double CEulerSolver::GetEntropyGen(unsigned short inMarkerTP){return EntropyGen[inMarkerTP];}
+
+inline su2double CEulerSolver::GetAbsFlowAngleIn(unsigned short inMarkerTP){return AbsFlowAngleIn[inMarkerTP];}
+
+inline su2double CEulerSolver::GetTotalEnthalpyOut(unsigned short inMarkerTP){return TotalEnthalpyOut[inMarkerTP];}
+
+inline su2double CEulerSolver::GetTotalEnthalpyOutIs(unsigned short inMarkerTP){return TotalEnthalpyOutIs[inMarkerTP];}
+
+inline su2double CEulerSolver::GetAbsFlowAngleOut(unsigned short inMarkerTP){return AbsFlowAngleOut[inMarkerTP];}
+
+inline su2double CEulerSolver::GetPressureOut_BC(unsigned short inMarkerTP){return PressureOut_BC[inMarkerTP];}
+
 inline void CEulerSolver::SetTotalPressureLoss(su2double value, unsigned short inMarkerTP){ TotalPressureLoss[inMarkerTP]=value;}
 
 inline void CEulerSolver::SetKineticEnergyLoss(su2double value, unsigned short inMarkerTP){ KineticEnergyLoss[inMarkerTP]=value;}
@@ -1106,6 +1196,36 @@ inline void CEulerSolver::SetTotalEnthalpyIn_BC(su2double value, unsigned short 
 inline void CEulerSolver::SetPressureOut(su2double value, unsigned short inMarkerTP){ PressureOut[inMarkerTP]=value;}
 
 inline void CEulerSolver::SetPressureRatio(su2double value, unsigned short inMarkerTP){ PressureRatio[inMarkerTP]=value;}
+
+inline void CEulerSolver::SetDensityIn_Mix(su2double value, unsigned short inMarkerTP){DensityIn_Mix[inMarkerTP]=value; }
+
+inline void CEulerSolver::SetPressureIn_Mix(su2double value, unsigned short inMarkerTP){PressureIn_Mix[inMarkerTP]=value;}
+
+inline void CEulerSolver::SetNormalVelocityIn_Mix(su2double value, unsigned short inMarkerTP){NormalVelocityIn_Mix[inMarkerTP]=value;}
+
+inline void CEulerSolver::SetTangVelocityIn_Mix(su2double value, unsigned short inMarkerTP){TangVelocityIn_Mix[inMarkerTP]=value;}
+
+inline void CEulerSolver::SetDensityOut_Mix(su2double value, unsigned short inMarkerTP){DensityOut_Mix[inMarkerTP]=value;}
+
+inline void CEulerSolver::SetPressureOut_Mix(su2double value, unsigned short inMarkerTP){PressureOut_Mix[inMarkerTP]=value;}
+
+inline void CEulerSolver::SetNormalVelocityOut_Mix(su2double value, unsigned short inMarkerTP){NormalVelocityOut_Mix[inMarkerTP]=value;}
+
+inline void CEulerSolver::SetTangVelocityOut_Mix(su2double value, unsigned short inMarkerTP){TangVelocityOut_Mix[inMarkerTP]=value;}
+
+inline void CEulerSolver::SetEnthalpyOutIs(su2double value, unsigned short inMarkerTP){EnthalpyOutIs[inMarkerTP]=value;}
+
+inline void CEulerSolver::SetEntropyGen(su2double value, unsigned short inMarkerTP){EntropyGen[inMarkerTP]=value;}
+
+inline void CEulerSolver::SetAbsFlowAngleIn(su2double value, unsigned short inMarkerTP){AbsFlowAngleIn[inMarkerTP]=value;}
+
+inline void CEulerSolver::SetTotalEnthalpyOut(su2double value, unsigned short inMarkerTP){TotalEnthalpyOut[inMarkerTP]=value;}
+
+inline void CEulerSolver::SetTotalEnthalpyOutIs(su2double value, unsigned short inMarkerTP){TotalEnthalpyOutIs[inMarkerTP]=value;}
+
+inline void CEulerSolver::SetAbsFlowAngleOut(su2double value, unsigned short inMarkerTP){AbsFlowAngleOut[inMarkerTP]=value;}
+
+inline void CEulerSolver::SetPressureOut_BC(su2double value, unsigned short inMarkerTP){PressureOut_BC[inMarkerTP]=value;}
 
 inline void CEulerSolver::ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity, unsigned short marker_flag){
 
