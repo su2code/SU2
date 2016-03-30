@@ -14,7 +14,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -35,8 +35,7 @@
 # METIS & TECIO integration added by Ben Kirk, 3/24/2014
 # LAPACK connection added by Teus van der Stelt, 11/13/2014
 # ParMETIS integration added by Ben Kirk & Thomas D. Economon, 2/3/2015
-#
-################################################################################
+##########################
 
 AC_INIT([SU2], [4.1.0], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
@@ -51,6 +50,8 @@ SU2_SET_COMPILERS
 AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_PROG_MKDIR_P
+AC_PROG_CXX
+
 #PKG_PROG_PKG_CONFIG
 
 # --------------------------------------------------------------
@@ -587,7 +588,7 @@ AC_MSG_RESULT([
 | - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |
 | - Prof. Rafael Palacios' group at Imperial College London.            |
 -------------------------------------------------------------------------
-| Copyright (C) 2012-2015 SU2, the open-source CFD code.                |
+| Copyright (C) 2012-2016 SU2, the open-source CFD code.                |
 |                                                                       |
 | SU2 is free software; you can redistribute it and/or                  |
 | modify it under the terms of the GNU Lesser General Public            |

@@ -1600,7 +1600,7 @@ void CFEM_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solve
   unsigned long iPoint;
   
   su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);

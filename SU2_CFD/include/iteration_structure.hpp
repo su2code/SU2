@@ -14,7 +14,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,6 +40,7 @@
 #include "integration_structure.hpp"
 #include "output_structure.hpp"
 #include "numerics_structure.hpp"
+#include "transfer_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
@@ -344,7 +345,7 @@ public:
                CVolumetricMovement **grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone);
-  
+
   /*!
    * \brief Updates the containers for the wave system.
    * \param[in] output - Pointer to the COutput class.
@@ -443,7 +444,7 @@ public:
                CVolumetricMovement **grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone);
-  
+
   /*!
    * \brief Updates the containers for the heat system.
    * \param[in] ??? - Description here.
@@ -536,7 +537,7 @@ public:
                CVolumetricMovement **grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone);
-  
+
   /*!
    * \brief Updates the containers for the poisson system.
    * \param[in] ??? - Description here.
@@ -629,7 +630,7 @@ public:
                CVolumetricMovement **grid_movement,
                CFreeFormDefBox*** FFDBox,
                unsigned short val_iZone);
-  
+
   /*!
    * \brief Updates the containers for the FEA system.
    * \param[in] ??? - Description here.
@@ -663,6 +664,94 @@ public:
    */
   void Postprocess();
   
+};
+
+
+/*!
+ * \class CFEM_StructuralAnalysis
+ * \brief Class for driving an iteration of structural analysis.
+ * \author R. Sanchez
+ * \version 4.0.1 "Cardinal"
+ */
+class CFEM_StructuralAnalysis : public CIteration {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] config - Definition of the particular problem.
+   */
+	CFEM_StructuralAnalysis(CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CFEM_StructuralAnalysis(void);
+
+  /*!
+   * \brief Preprocessing to prepare for an iteration of the physics.
+   * \param[in] ??? - Description here.
+   */
+  void Preprocess();
+  using CIteration::Preprocess;
+
+
+  /*!
+   * \brief Perform a single iteration for structural analysis using the Finite Element Method.
+   * \author R. Sanchez.
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] surface_movement - Surface movement classes of the problem.
+   * \param[in] grid_movement - Volume grid movement classes of the problem.
+   * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   */
+  void Iterate(COutput *output,
+		  	  CIntegration ***integration_container,
+		  	  CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox,
+              unsigned short val_iZone);
+
+  /*!
+   * \brief Updates the containers for the FEM system.
+   * \param[in] ??? - Description here.
+   */
+  void Update(COutput *output,
+		  	  CIntegration ***integration_container,
+		  	  CGeometry ***geometry_container,
+	   	   	  CSolver ****solver_container,
+	   	   	  CNumerics *****numerics_container,
+	   	   	  CConfig **config_container,
+	   	   	  CSurfaceMovement **surface_movement,
+	   	   	  CVolumetricMovement **grid_movement,
+	   	   	  CFreeFormDefBox*** FFDBox,
+		   	  unsigned short val_iZone);
+
+  /*!
+   * \brief Monitors the convergence and other metrics for the FEM system.
+   * \param[in] ??? - Description here.
+   */
+  void Monitor();
+
+  /*!
+   * \brief Outputs desired files and quantities for the FEM system.
+   * \param[in] ??? - Description here.
+   */
+  void Output();
+
+  /*!
+   * \brief Postprocesses the FEM system before heading to another physics system or the next iteration.
+   * \param[in] ??? - Description here.
+   */
+  void Postprocess();
+
 };
 
 /*!
@@ -1053,6 +1142,26 @@ void FluidStructureIteration(COutput *output, CIntegration ***integration_contai
 														 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container, 
 														 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
 														 unsigned long iFluidIt, unsigned long nFluidIt);
+
+/*!
+ * \brief Iteration function for structural analysis using the Finite Element Method.
+ * \author R. Sanchez.
+ * \param[in] output - Pointer to the COutput class.
+ * \param[in] integration_container - Container vector with all the integration methods.
+ * \param[in] geometry_container - Geometrical definition of the problem.
+ * \param[in] solver_container - Container vector with all the solutions.
+ * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+ * \param[in] config_container - Definition of the particular problem.
+ * \param[in] surface_movement - Surface movement classes of the problem.
+ * \param[in] grid_movement - Volume grid movement classes of the problem.
+ * \param[in] FFDBox - FFD FFDBoxes of the problem.
+ * \param[in] ExtIter - Current physical time iteration number.
+ */
+void FEM_StructuralIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+									CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+									CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox);
+
+
 
 /*!
  * \brief Updates the positions and grid velocities for dynamic meshes between physical time steps.
