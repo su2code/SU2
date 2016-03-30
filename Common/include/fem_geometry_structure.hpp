@@ -45,9 +45,15 @@ using namespace std;
 class CVolumeElementFEM {
 public:
   bool elemIsOwned;             /*!< \brief Whether or not this is an owned element. */
-  bool elemIsPeriodicHalo;      /*!< \brief Whether or not this is a periodic halo element. */
   bool JacIsConsideredConstant; /*!< \brief Whether or not the Jacobian of the transformation
                                      to the standard element is considered constant. */
+
+  int rankOriginal;            /*!< \brief The rank where the original volume is stored. For
+                                    the original volume, this is simply the current rank. */
+
+  short periodIndexToDonor;    /*!< \brief The index of the periodic transformation to the donor
+                                    element. Only for halo elements. A -1 indicates no periodic
+                                    transformation. */
 
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
   unsigned short nPolyGrid;    /*!< \brief Polynomial degree for the geometry of the element. */
@@ -90,8 +96,11 @@ public:
  */
 class CPointFEM {
 public:
-  unsigned long globalID;  /*!< \brief The global ID of this point in the grid. */
-  su2double     coor[3];   /*!< \brief Array with the coordinates of the node. */
+  unsigned long globalID;    /*!< \brief The global ID of this point in the grid. */
+  short periodIndexToDonor;  /*!< \brief The index of the periodic transformation to the donor
+                                  element. Only for halo elements. A -1 indicates no periodic
+                                  transformation. */
+  su2double coor[3];         /*!< \brief Array with the coordinates of the node. */
 
   /*!
    * \brief Default constructor of the class. Initialize the coordinates to zero

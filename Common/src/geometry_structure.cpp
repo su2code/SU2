@@ -8841,7 +8841,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
       /*--- Get the number of remainder elements after the even division ---*/
       unsigned long rem_elem = nElem-total_elem_accounted;
       for (unsigned long i = 0; i<rem_elem; i++) {
-        npoint_procs[i]++;
+        ++npoint_procs[i];
       }
 
       /*--- Store the local number of elements and the beginning/end index ---*/
