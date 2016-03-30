@@ -465,6 +465,21 @@ void CTransfer_MixingPlaneInterface::GetSetTurboPerformance(CSolver *donor_solut
 	target_solution->SetEntropyIn(donor_solution->GetEntropyIn(donorZone), donorZone);
 	target_solution->SetEntropyIn_BC(donor_solution->GetEntropyIn_BC(donorZone), donorZone);
 	target_solution->SetTotalEnthalpyIn_BC(donor_solution->GetTotalEnthalpyIn_BC(donorZone), donorZone);
+	target_solution->SetDensityIn_Mix(donor_solution->GetDensityIn_Mix(donorZone), donorZone);
+	target_solution->SetPressureIn_Mix(donor_solution->GetPressureIn_Mix(donorZone), donorZone);
+	target_solution->SetNormalVelocityIn_Mix(donor_solution->GetNormalVelocityIn_Mix(donorZone), donorZone);
+	target_solution->SetTangVelocityIn_Mix(donor_solution->GetTangVelocityIn_Mix(donorZone), donorZone);
+	target_solution->SetDensityOut_Mix(donor_solution->GetDensityOut_Mix(donorZone), donorZone);
+	target_solution->SetPressureOut_Mix(donor_solution->GetPressureOut_Mix(donorZone), donorZone);
+	target_solution->SetNormalVelocityOut_Mix(donor_solution->GetNormalVelocityOut_Mix(donorZone), donorZone);
+	target_solution->SetTangVelocityOut_Mix(donor_solution->GetTangVelocityOut_Mix(donorZone), donorZone);
+	target_solution->SetEnthalpyOutIs(donor_solution->GetTotalEnthalpyOutIs(donorZone), donorZone);
+	target_solution->SetEntropyGen(donor_solution->GetEntropyGen(donorZone), donorZone);
+	target_solution->SetAbsFlowAngleIn(donor_solution->GetAbsFlowAngleIn(donorZone), donorZone);
+	target_solution->SetTotalEnthalpyOut(donor_solution->GetTotalEnthalpyOut(donorZone), donorZone);
+	target_solution->SetTotalEnthalpyOutIs(donor_solution->GetTotalEnthalpyOutIs(donorZone), donorZone);
+	target_solution->SetAbsFlowAngleOut(donor_solution->GetAbsFlowAngleOut(donorZone), donorZone);
+	target_solution->SetPressureOut_BC(donor_solution->GetPressureOut_BC(donorZone), donorZone);
 
 }
 
