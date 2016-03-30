@@ -855,19 +855,19 @@ static const map<string, TURBOMACHINERY_TYPE> TurboMachinery_Map = CCreateMap<st
 ("CENTRIFUGAL", CENTRIFUGAL)
 ("CENTRIPETAL",  CENTRIPETAL);
 
-/*!
- * \brief types of Turbomachinery performance indicators.
- */
-enum TURBO_PERFORMANCE_TYPE {
-  BLADE   = 1,		/*!< \brief Turbomachinery blade performances. */
-  STAGE = 2,      /*!< \brief Turbomachinery blade stage performances. */
-  TURBINE              = 3		/*!< \brief Turbomachinery turbine performances. */
-};
-
-static const map<string, TURBO_PERFORMANCE_TYPE> TurboPerformance_Map = CCreateMap<string, TURBO_PERFORMANCE_TYPE>
-("BLADE", BLADE)
-("STAGE", STAGE)
-("TURBINE", TURBINE);
+///*!
+// * \brief types of Turbomachinery performance indicators.
+// */
+//enum TURBO_PERFORMANCE_TYPE {
+//  BLADE   = 1,		/*!< \brief Turbomachinery blade performances. */
+//  STAGE = 2,      /*!< \brief Turbomachinery blade stage performances. */
+//  TURBINE              = 3		/*!< \brief Turbomachinery turbine performances. */
+//};
+//
+//static const map<string, TURBO_PERFORMANCE_TYPE> TurboPerformance_Map = CCreateMap<string, TURBO_PERFORMANCE_TYPE>
+//("BLADE", BLADE)
+//("STAGE", STAGE)
+//("TURBINE", TURBINE);
 
 /*!
  * \brief types of Turbomachinery performance flag.
@@ -3106,44 +3106,38 @@ public:
 //  }
 //};
 
-template <class Tenum>
 class COptionTurboPerformance : public COptionBase{
   string name; // identifier for the option
   unsigned short & size;
   string * & marker_turboIn;
   string * & marker_turboOut;
-  map<string, Tenum> m;
-  unsigned short* & field; // Reference to the fieldname
 
 public:
   COptionTurboPerformance(const string option_field_name, unsigned short & nMarker_TurboPerf,
-                  string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut, unsigned short* & option_field, const map<string, Tenum> m) : size(nMarker_TurboPerf), marker_turboIn(Marker_TurboBoundIn), marker_turboOut(Marker_TurboBoundOut), field(option_field) {
+                          string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut) : size(nMarker_TurboPerf), marker_turboIn(Marker_TurboBoundIn), marker_turboOut(Marker_TurboBoundOut){
     this->name = option_field_name;
-    this->m = m;
   }
 
   ~COptionTurboPerformance() {};
   string SetValue(vector<string> option_value) {
 
-    const int mod_num = 3;
+    const int mod_num = 2;
 
     unsigned long totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
       this->marker_turboIn= NULL;
       this->marker_turboOut = NULL;
-      this->field = NULL;
       return "";
     }
 
     if (totalVals % mod_num != 0) {
       string newstring;
       newstring.append(this->name);
-      newstring.append(": must have a number of entries divisible by 11");
+      newstring.append(": must have a number of entries divisible by 2");
       this->size = 0;
       this->marker_turboIn= NULL;
       this->marker_turboOut = NULL;;
-      this->field = NULL;
       return newstring;
     }
 
@@ -3151,21 +3145,9 @@ public:
     this->size = nVals;
     this->marker_turboIn = new string[nVals];
     this->marker_turboOut = new string[nVals];
-    this->field = new unsigned short[nVals];
-    for (unsigned long i = 0; i < nVals; i++)
-    	if (this->m.find(option_value[mod_num*i + 2]) == m.end()) {
-    		string str;
-    		str.append(this->name);
-    		str.append(": invalid option value ");
-    		str.append(option_value[0]);
-    		str.append(". Check current SU2 options in config_template.cfg.");
-    		return str;
-    	}
     for (unsigned long i = 0; i < nVals; i++) {
       this->marker_turboIn[i].assign(option_value[mod_num*i]);
       this->marker_turboOut[i].assign(option_value[mod_num*i+1]);
-      Tenum val = this->m[option_value[mod_num*i + 2]];
-      this->field[i] = val;
      }
 
 
@@ -3176,7 +3158,6 @@ public:
     this->size = 0;
     this->marker_turboIn= NULL;
     this->marker_turboOut = NULL;
-    this->field = NULL;
   }
 };
 

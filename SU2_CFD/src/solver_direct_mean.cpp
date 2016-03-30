@@ -5028,18 +5028,20 @@ if (rank == MASTER_NODE){
   	TotTurbPerfIn[i]= -1.0;
   for (i=0;i<n2t;i++)
 		TotTurbPerfOut[i]= -1.0;
-	}
 	TotMarkerTP = new int[size];
 	for(i=0; i<size; i++){
 		TotMarkerTP[i] = -1;
 	}
-
+}
 	SU2_MPI::Gather(TurbPerfIn, n1, MPI_DOUBLE, TotTurbPerfIn, n1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 	SU2_MPI::Gather(TurbPerfOut, n2, MPI_DOUBLE,TotTurbPerfOut, n2, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 	SU2_MPI::Gather(&markerTP, 1, MPI_INT,TotMarkerTP, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
 	delete [] TurbPerfIn, delete [] TurbPerfOut;
 
 	if (rank == MASTER_NODE){
+//		for (i=0;i<size;i++){
+//			cout << TotMarkerTP[i] << endl;
+//		}
 		for (i=0;i<size;i++){
 			if(TotTurbPerfIn[n1*i] > 0.0){
 				avgTotalRothalpyIn 		 = 0.0;
@@ -5080,6 +5082,7 @@ if (rank == MASTER_NODE){
 				absFlowAngleIn         = TotTurbPerfIn[n1*i+17];
 				markerTP               = -1;
 				markerTP               = TotMarkerTP[i];
+//				cout << " I am assigning this value "<< TotMarkerTP[i] << endl;
 			}
 
 			if(TotTurbPerfOut[n2*i] > 0.0){
@@ -5138,61 +5141,51 @@ if (rank == MASTER_NODE){
 		PressureOut[markerTP - 1] = avgPressureOut;
 		PressureRatio[markerTP -1] = avgTotalRelPressureIn/avgPressureOut;
 
-		switch(config->GetKind_TurboPerf(markerTP -1)){
-		case BLADE:
-			/*----Quantities needed for computing the turbomachinery performance -----*/
-			TotalPressureLoss[markerTP -1] 		= (avgTotalRelPressureIn - avgTotalRelPressureOut)/(avgTotalRelPressureOut - avgPressureOut) ;
-			KineticEnergyLoss[markerTP -1] 		= (avgEnthalpyOut - avgEnthalpyOutIs)/(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out);
-			EulerianWork[markerTP -1]      		= avgTotalEnthalpyIn - avgTotalEnthalpyOut;
-			TotalEnthalpyIn[markerTP -1]   		= avgTotalEnthalpyIn;
-			TotalEnthalpyOut[markerTP -1]   	= avgTotalEnthalpyOut;
-			TotalEnthalpyOutIs[markerTP -1]		=	avgTotalEnthalpyOutIs;
-			EntropyIn[markerTP -1]				 		= avgEntropyIn;
-			EntropyGen[markerTP -1]           = (avgEntropyOut - avgEntropyIn)/avgEntropyIn;
-			AbsFlowAngleIn[markerTP -1]       = absFlowAngleIn;
-			AbsFlowAngleOut[markerTP -1]      = absFlowAngleOut;
-			FlowAngleIn[markerTP -1]       		= flowAngleIn;
-			FlowAngleOut[markerTP -1]      		= flowAngleOut;
-			MassFlowIn[markerTP -1]        		= massFlowIn;
-			MassFlowOut[markerTP -1]       		= massFlowOut;
-			MachIn[markerTP -1]            		= machIn;
-			MachOut[markerTP -1]           		= machOut;
-			NormalMachIn[markerTP -1]     		= normalMachIn;
-			NormalMachOut[markerTP -1]    		= normalMachOut;
-			EnthalpyOut[markerTP -1]       		= avgEnthalpyOut;
-			EnthalpyOutIs[markerTP -1]        = avgEnthalpyOutIs;
-			VelocityOutIs[markerTP -1]    		= sqrt(2.0*(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out));
 
-			/*----Quantities needed for BC convergence test -----*/
+		/*----Quantities needed for computing the turbomachinery performance -----*/
+		TotalPressureLoss[markerTP -1] 		= (avgTotalRelPressureIn - avgTotalRelPressureOut)/(avgTotalRelPressureOut - avgPressureOut) ;
+		KineticEnergyLoss[markerTP -1] 		= (avgEnthalpyOut - avgEnthalpyOutIs)/(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out);
+		EulerianWork[markerTP -1]      		= avgTotalEnthalpyIn - avgTotalEnthalpyOut;
+		TotalEnthalpyIn[markerTP -1]   		= avgTotalEnthalpyIn;
+		TotalEnthalpyOut[markerTP -1]   	= avgTotalEnthalpyOut;
+		TotalEnthalpyOutIs[markerTP -1]		=	avgTotalEnthalpyOutIs;
+		EntropyIn[markerTP -1]				 		= avgEntropyIn;
+		EntropyGen[markerTP -1]           = (avgEntropyOut - avgEntropyIn)/avgEntropyIn;
+		AbsFlowAngleIn[markerTP -1]       = absFlowAngleIn;
+		AbsFlowAngleOut[markerTP -1]      = absFlowAngleOut;
+		FlowAngleIn[markerTP -1]       		= flowAngleIn;
+		FlowAngleOut[markerTP -1]      		= flowAngleOut;
+		MassFlowIn[markerTP -1]        		= massFlowIn;
+		MassFlowOut[markerTP -1]       		= massFlowOut;
+		MachIn[markerTP -1]            		= machIn;
+		MachOut[markerTP -1]           		= machOut;
+		NormalMachIn[markerTP -1]     		= normalMachIn;
+		NormalMachOut[markerTP -1]    		= normalMachOut;
+		EnthalpyOut[markerTP -1]       		= avgEnthalpyOut;
+		EnthalpyOutIs[markerTP -1]        = avgEnthalpyOutIs;
+		VelocityOutIs[markerTP -1]    		= sqrt(2.0*(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out));
 
-			TotalPresureIn[markerTP -1]       = avgTotPresIn;
-			TotalTemperatureIn[markerTP -1]   = avgTotTempIn;
-			FlowAngleIn_BC[markerTP -1] 			= alphaIn_BC;
-			EntropyIn_BC[markerTP -1]					= entropyIn_BC;
-			TotalEnthalpyIn_BC[markerTP -1]   = totalEnthalpyIn_BC;
-			DensityIn_Mix[markerTP -1]				= densityIn_Mix;
-			PressureIn_Mix[markerTP -1]			  = pressureIn_Mix;
-			NormalVelocityIn_Mix[markerTP -1] = normalVelocityIn_Mix;
-			TangVelocityIn_Mix[markerTP -1]		= tangVelocityIn_Mix;
-			DensityOut_Mix[markerTP -1]				= densityOut_Mix;
-			PressureOut_Mix[markerTP -1]			= pressureOut_Mix;
-			NormalVelocityOut_Mix[markerTP -1] = normalVelocityOut_Mix;
-			TangVelocityOut_Mix[markerTP -1]	= tangVelocityOut_Mix;
-			PressureOut_BC[markerTP -1]       = pressureOut_BC;
+		/*----Quantities needed for BC convergence test -----*/
 
-			break;
+		TotalPresureIn[markerTP -1]       = avgTotPresIn;
+		TotalTemperatureIn[markerTP -1]   = avgTotTempIn;
+		FlowAngleIn_BC[markerTP -1] 			= alphaIn_BC;
+		EntropyIn_BC[markerTP -1]					= entropyIn_BC;
+		TotalEnthalpyIn_BC[markerTP -1]   = totalEnthalpyIn_BC;
+		DensityIn_Mix[markerTP -1]				= densityIn_Mix;
+		PressureIn_Mix[markerTP -1]			  = pressureIn_Mix;
+		NormalVelocityIn_Mix[markerTP -1] = normalVelocityIn_Mix;
+		TangVelocityIn_Mix[markerTP -1]		= tangVelocityIn_Mix;
+		DensityOut_Mix[markerTP -1]				= densityOut_Mix;
+		PressureOut_Mix[markerTP -1]			= pressureOut_Mix;
+		NormalVelocityOut_Mix[markerTP -1] = normalVelocityOut_Mix;
+		TangVelocityOut_Mix[markerTP -1]	= tangVelocityOut_Mix;
+		PressureOut_BC[markerTP -1]       = pressureOut_BC;
 
-//		case STAGE: case TURBINE:
-//
-//			TotalTotalEfficiency[0] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgTotalEnthalpyOutIs);
-//			TotalStaticEfficiency[0] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgEnthalpyOutIs);
-//			break;
 
-		default:
-			cout << "Warning! Invalid TurboPerformance option!" << endl;
-			exit(EXIT_FAILURE);
-			break;
-		}
+//		TotalTotalEfficiency[0] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgTotalEnthalpyOutIs);
+//		TotalStaticEfficiency[0] = (avgTotalEnthalpyIn - avgTotalEnthalpyOut)/(avgTotalEnthalpyIn - avgEnthalpyOutIs);
+
 	}
 }
 
