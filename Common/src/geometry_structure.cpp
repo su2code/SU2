@@ -12318,13 +12318,17 @@ void CPhysicalGeometry::SetRotationalVelocity(CConfig *config, unsigned short va
     
     Distance[0] = (Coord[0]-Center[0])/L_Ref;
     Distance[1] = (Coord[1]-Center[1])/L_Ref;
-    Distance[2] = (Coord[2]-Center[2])/L_Ref;
+    Distance[2] = 0.0;
+    if (nDim == 3)
+    	Distance[2] = (Coord[2]-Center[2])/L_Ref;
     
     /*--- Calculate the angular velocity as omega X r ---*/
     
     RotVel[0] = Omega[1]*(Distance[2]) - Omega[2]*(Distance[1]);
     RotVel[1] = Omega[2]*(Distance[0]) - Omega[0]*(Distance[2]);
-    RotVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]);
+    RotVel[2] = 0.0;
+    if (nDim == 3)
+    	RotVel[2] = Omega[0]*(Distance[1]) - Omega[1]*(Distance[0]);
     
     /*--- Store the grid velocity at this node ---*/
     
