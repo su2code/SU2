@@ -4476,7 +4476,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       Riemann=0.0, Entropy=0.0, Density_Outlet = 0.0, Vn_rel=0.0;
   su2double Velocity[3], UnitNormal[3];
   su2double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
-  su2double a1=0.0; /*Placeholder terms to simplify expressions/ repeated terms*/
+  su2double a1=0.0, a2=0.0; /*Placeholder terms to simplify expressions/ repeated terms*/
   /*Gradient terms for the generalized boundary */
   su2double density_gradient, pressure_gradient, velocity_gradient;
 
@@ -4569,7 +4569,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Psi_outlet[iVar] = 0.0;
         }
 
-        if (Vn >= SoundSpeed) {
+        if (Vn > SoundSpeed) {
           /*--- Objective-dependent additions to energy term ---*/
           Vn_Exit = Vn; /* Vn_Exit comes from Reiman conditions in subsonic case*/
           Vn_rel = Vn_Exit-ProjGridVel;
@@ -4592,7 +4592,17 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             for (iDim = 0; iDim < nDim; iDim++) {
               Velocity2 += Velocity[iDim]*Velocity[iDim];
             }
-            Psi_outlet[nDim+1]+=a1*Velocity2/(2.0*Vn_Exit);
+            if (incompressible)
+              Psi_outlet[nDim+1]+=a1*Velocity2/(2.0*Vn_Exit);
+            else{
+              a2 = Pressure*(Gamma/(Gamma-1.0))*pow((1.0+(Gamma-1.0)*Density/(2.0*Gamma*Pressure)*Velocity2),1.0/(Gamma-1.0));
+              density_gradient = a2*((Gamma-1.0)*Velocity2/(2.0*Gamma*Pressure));
+              velocity_gradient = 0.0;
+              for (iDim=0; iDim<nDim; iDim++)
+                velocity_gradient+=a2*(Gamma-1.0)*Density/(2.0*Gamma*Pressure)*Velocity[iDim]*UnitNormal[iDim];
+              pressure_gradient = a2*((1.0-Gamma)*Density/(2.0*Gamma*pow(Pressure,2.0)))+pow((1+(Gamma-1.0)*Density*Velocity2/(2.0*Gamma*Pressure)),(Gamma/(Gamma-1.0)));
+              Psi_outlet[nDim+1]+=a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
+            }
             break;
           case AVG_OUTLET_PRESSURE:
             /*Area averaged static pressure*/
@@ -4754,8 +4764,20 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Psi_outlet[iDim+1] +=a1*UnitNormal[iDim]*(-Velocity2)/(2.0*Vn_Exit)+Velocity[iDim]/Vn_Exit;
          */
         /*Pressure-fixed version*/
-        for (iDim = 0; iDim < nDim; iDim++)
-          Psi_outlet[iDim+1] += Velocity[iDim]/Vn_Exit-UnitNormal[iDim]*Velocity2/(Vn_Exit*Vn_Exit);
+        if (incompressible){
+          for (iDim = 0; iDim < nDim; iDim++)
+            Psi_outlet[iDim+1] += Velocity[iDim]/Vn_Exit-UnitNormal[iDim]*Velocity2/(Vn_Exit*Vn_Exit);
+          }
+        else{
+          a2 = Pressure*(Gamma/(Gamma-1.0))*pow((1.0+(Gamma-1.0)*Density/(2.0*Gamma*Pressure)*Velocity2),1.0/(Gamma-1.0));
+          density_gradient = a2*((Gamma-1.0)*Velocity2/(2.0*Gamma*Pressure));
+          velocity_gradient=a2*(Gamma-1.0)*Density/(2.0*Gamma*Pressure); // re-using variable as the constant multiplying V[i] for dj/dvi
+          Psi_outlet[0]+=density_gradient*2.0/Vn_Exit;
+          for (iDim=0; iDim<nDim; iDim++){
+            Psi_outlet[0]-=velocity_gradient*Velocity[iDim]*Velocity[iDim]/(Density*Vn_Exit);
+            Psi_outlet[iDim+1] += velocity_gradient*Velocity[iDim]/(Density*Vn_Exit) - UnitNormal[iDim]*density_gradient/(Ven_Exit*Vn_Exit);
+          }
+        }
         break;
       case AVG_OUTLET_PRESSURE:
         /* Characteristic-based version

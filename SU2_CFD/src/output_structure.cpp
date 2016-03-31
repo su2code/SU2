@@ -7113,8 +7113,11 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Temperature = solver_container->node[iPoint]->GetTemperature();
           
           Mach = (sqrt(Velocity2))/ solver_container->node[iPoint]->GetSoundSpeed();
-          //Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),( Gamma/(Gamma-1.0) ) );
-          Tot_Pressure = Pressure + 0.5*solver_container->node[iPoint]->GetDensity()*Velocity2;
+          if (incompressible)
+            Tot_Pressure = Pressure + 0.5*solver_container->node[iPoint]->GetDensity()*Velocity2;
+          else
+            Tot_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),( Gamma/(Gamma-1.0) ) );
+
 
           AveragePt += Tot_Pressure * Area;
           TotalArea += Area;
