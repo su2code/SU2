@@ -843,8 +843,8 @@ void CFEM_ElasticitySolver_Adj::Solve_System(CGeometry *geometry, CSolver **solv
 	/*--- LinSysSol_Direct is dx/dE ---*/
 	/*--- LinSysRes_dSdv is Rv ---*/
 
-	CSysSolve femSystem;
-	IterLinSol = femSystem.Solve(direct_solver->Jacobian, LinSysRes_dSdv, LinSysSol_Direct, geometry, config);
+//	CSysSolve femSystem;
+//	IterLinSol = femSystem.Solve(direct_solver->Jacobian, LinSysRes_dSdv, LinSysSol_Direct, geometry, config);
 
 	/*--- Solve system of K*PHI=dI/dx ---*/
 	/*--- LinSysSol is PHI ---*/
@@ -875,15 +875,23 @@ void CFEM_ElasticitySolver_Adj::Solve_System(CGeometry *geometry, CSolver **solv
 
 	su2double sensI_direct, sensI_adjoint;
 
-	sensI_direct = dotProd(LinSysRes,LinSysSol_Direct);
+//	sensI_direct = dotProd(LinSysRes,LinSysSol_Direct);
 	sensI_adjoint = dotProd(LinSysSol,LinSysRes_dSdv);
+	su2double E_mod;
 
-	su2double E_mod = config->Get_Electric_Field_Mod(0);
+	switch (config->GetDV_FEA()) {
+		case YOUNG_MODULUS:
+			E_mod = config->GetElasticyMod();
+			break;
+		case ELECTRIC_FIELD:
+			E_mod = config->Get_Electric_Field_Mod(0);
+			break;
+	}
 
 	ofstream myfile_res;
 	myfile_res.open ("Results_E.txt", ios::app);
 
-    myfile_res << E_mod << " " << val_I << " "<< sensI_direct << " "  << sensI_adjoint << endl;
+    myfile_res << E_mod << " " << val_I << " " << sensI_adjoint << endl;
 
 	myfile_res.close();
 
