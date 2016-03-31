@@ -4595,13 +4595,13 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             if (incompressible)
               Psi_outlet[nDim+1]+=a1*Velocity2/(2.0*Vn_Exit);
             else{
-              a2 = Pressure*(Gamma/(Gamma-1.0))*pow((1.0+(Gamma-1.0)*Density/(2.0*Gamma*Pressure)*Velocity2),1.0/(Gamma-1.0));
-              density_gradient = a2*((Gamma-1.0)*Velocity2/(2.0*Gamma*Pressure));
+              a2 = Pressure*(Gamma/(Gamma_Minus_One))*pow((1.0+(Gamma_Minus_One)*Density/(2.0*Gamma*Pressure)*Velocity2),1.0/(Gamma_Minus_One));
+              density_gradient = a2*((Gamma_Minus_One)*Velocity2/(2.0*Gamma*Pressure));
               velocity_gradient = 0.0;
               for (iDim=0; iDim<nDim; iDim++)
-                velocity_gradient+=a2*(Gamma-1.0)*Density/(2.0*Gamma*Pressure)*Velocity[iDim]*UnitNormal[iDim];
-              pressure_gradient = a2*((1.0-Gamma)*Density/(2.0*Gamma*pow(Pressure,2.0)))+pow((1+(Gamma-1.0)*Density*Velocity2/(2.0*Gamma*Pressure)),(Gamma/(Gamma-1.0)));
-              Psi_outlet[nDim+1]+=a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
+                velocity_gradient+=a2*(Gamma_Minus_One)*Density/(2.0*Gamma*Pressure)*Velocity[iDim]*UnitNormal[iDim];
+              pressure_gradient = a2*((-Gamma_Minus_One)*Density/(2.0*Gamma*pow(Pressure,2.0)))+pow((1+(Gamma_Minus_One)*Density*Velocity2/(2.0*Gamma*Pressure)),(Gamma/(Gamma_Minus_One)));
+              Psi_outlet[nDim+1]+=-a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
             }
             break;
           case AVG_OUTLET_PRESSURE:
@@ -4769,9 +4769,9 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             Psi_outlet[iDim+1] += Velocity[iDim]/Vn_Exit-UnitNormal[iDim]*Velocity2/(Vn_Exit*Vn_Exit);
           }
         else{
-          a2 = Pressure*(Gamma/(Gamma-1.0))*pow((1.0+(Gamma-1.0)*Density/(2.0*Gamma*Pressure)*Velocity2),1.0/(Gamma-1.0));
-          density_gradient = a2*((Gamma-1.0)*Velocity2/(2.0*Gamma*Pressure));
-          velocity_gradient=a2*(Gamma-1.0)*Density/(2.0*Gamma*Pressure); // re-using variable as the constant multiplying V[i] for dj/dvi
+          a2 = Pressure*(Gamma/(Gamma_Minus_One))*pow((1.0+(Gamma_Minus_One)*Density/(2.0*Gamma*Pressure)*Velocity2),1.0/(Gamma_Minus_One));
+          density_gradient = a2*((Gamma_Minus_One)*Velocity2/(2.0*Gamma*Pressure));
+          velocity_gradient=a2*(Gamma_Minus_One)*Density/(2.0*Gamma*Pressure); // re-using variable as the constant multiplying V[i] for dj/dvi
           Psi_outlet[0]+=density_gradient*2.0/Vn_Exit;
           for (iDim=0; iDim<nDim; iDim++){
             Psi_outlet[0]-=velocity_gradient*Velocity[iDim]*Velocity[iDim]/(Density*Vn_Exit);
