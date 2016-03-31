@@ -4775,7 +4775,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Psi_outlet[0]+=density_gradient*2.0/Vn_Exit;
           for (iDim=0; iDim<nDim; iDim++){
             Psi_outlet[0]-=velocity_gradient*Velocity[iDim]*Velocity[iDim]/(Density*Vn_Exit);
-            Psi_outlet[iDim+1] += velocity_gradient*Velocity[iDim]/(Density*Vn_Exit) - UnitNormal[iDim]*density_gradient/(Ven_Exit*Vn_Exit);
+            Psi_outlet[iDim+1] += velocity_gradient*Velocity[iDim]/(Density*Vn_Exit) - UnitNormal[iDim]*density_gradient/(Vn_Exit*Vn_Exit);
           }
         }
         break;
