@@ -4221,6 +4221,8 @@ class CFEM_DielectricElastomer : public CFEM_NonlinearElasticity {
 	unsigned short nElectric_Field,
 	nDim_Electric_Field;
 
+	su2double **FmT_Mat;	 			/*!< \brief Deformation gradient inverse and transpose. */
+
 	su2double ke_DE;					/*!< \brief Electric Constant for Dielectric Elastomers. */
 
 public:
@@ -4244,6 +4246,8 @@ public:
   using CNumerics::Compute_Constitutive_Matrix;
 
 	void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
+
+	void Compute_FmT_Mat(void);
 
 };
 
@@ -4298,6 +4302,8 @@ class CFEM_DielectricElastomer_Adj : public CFEM_NonlinearElasticity {
 	unsigned short nElectric_Field,
 	nDim_Electric_Field;
 
+	su2double **FmT_Mat;	 			/*!< \brief Deformation gradient inverse and transpose. */
+
 	su2double ke_DE;					/*!< \brief Electric Constant for Dielectric Elastomers. */
 
 public:
@@ -4321,6 +4327,8 @@ public:
   using CNumerics::Compute_Constitutive_Matrix;
 
 	void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
+
+	void Compute_FmT_Mat(void);
 
 };
 

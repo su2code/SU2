@@ -179,7 +179,18 @@ CFEM_DielectricElastomer_Adj::CFEM_DielectricElastomer_Adj(unsigned short val_nD
 		EField_Curr_Unit[iDim] = 0.0;
 	}
 
+	/*--- Deformation gradient, inverse and transpose ---*/
+	unsigned short jVar;
 
+	FmT_Mat = new su2double *[3];
+	for (iVar = 0; iVar < 3; iVar++){
+		FmT_Mat[iVar] = new su2double [3];
+	}
+	for (iVar = 0; iVar < 3; iVar++){
+		for (jVar = 0; jVar < 3; jVar++){
+			FmT_Mat[iVar][jVar] = 0.0;
+		}
+	}
 }
 
 CFEM_DielectricElastomer_Adj::~CFEM_DielectricElastomer_Adj(void) {
@@ -188,6 +199,12 @@ CFEM_DielectricElastomer_Adj::~CFEM_DielectricElastomer_Adj(void) {
 	delete [] EField_Ref_Mod;
 	delete [] EField_Curr_Unit;
 
+	unsigned short iVar;
+
+	for (iVar = 0; iVar < 3; iVar++){
+		delete [] FmT_Mat[iVar];
+	}
+	delete [] FmT_Mat;
 }
 
 void CFEM_DielectricElastomer_Adj::Compute_Plane_Stress_Term(CElement *element, CConfig *config) {
@@ -226,10 +243,12 @@ void CFEM_DielectricElastomer_Adj::Compute_Stress_Tensor(CElement *element, CCon
 //	Compute_Eigenproblem(element, config);
 	cout << endl << "------ADJOINT-------" << endl;
 
+	Compute_FmT_Mat();
+
 	for (iDim = 0; iDim < nDim; iDim++){
 		EField_Curr_Unit[iDim] = 0.0;
 		for (jDim = 0; jDim < nDim; jDim++){
-			EField_Curr_Unit[iDim] += F_Mat[iDim][jDim] * EField_Ref_Unit[jDim];
+			EField_Curr_Unit[iDim] += FmT_Mat[iDim][jDim] * EField_Ref_Unit[jDim];
 		}
 	}
 
@@ -243,8 +262,8 @@ void CFEM_DielectricElastomer_Adj::Compute_Stress_Tensor(CElement *element, CCon
 //
 //	mod_Curr = sqrt(pow(EField_Curr_Unit[0],2)+pow(EField_Curr_Unit[1],2));
 
-	cout << "E_Ref(" << iVar << ")  = (" << EField_Ref_Unit[0] << "," << EField_Ref_Unit[1] << ").  |E_Ref|  = " << mod_Ref << "." << endl;
-	cout << "E_Curr(" << iVar << ") = (" << EField_Curr_Unit[0] << "," << EField_Curr_Unit[1] << "). |E_Curr| = " << mod_Curr << "." << endl;
+//	cout << "E_Ref(" << iVar << ")  = (" << EField_Ref_Unit[0] << "," << EField_Ref_Unit[1] << ").  |E_Ref|  = " << mod_Ref << "." << endl;
+//	cout << "E_Curr(" << iVar << ") = (" << EField_Curr_Unit[0] << "," << EField_Curr_Unit[1] << "). |E_Curr| = " << mod_Curr << "." << endl;
 
 	/*--- v = Electric_Field_Curr[iDim] ---*/
 
@@ -263,9 +282,26 @@ void CFEM_DielectricElastomer_Adj::Compute_Stress_Tensor(CElement *element, CCon
 	Stress_Tensor[1][0] = ke_DE*E01;	Stress_Tensor[1][1] = ke_DE*E11;	Stress_Tensor[1][2] = ke_DE*E12;
 	Stress_Tensor[2][0] = ke_DE*E02;	Stress_Tensor[2][1] = ke_DE*E12;	Stress_Tensor[2][2] = ke_DE*E22;
 
-	cout << endl << "SXX:" << endl;
-	cout << Stress_Tensor[0][0] << " " << Stress_Tensor[0][1] << " " << Stress_Tensor[0][2] << endl;
-	cout << Stress_Tensor[1][0] << " " << Stress_Tensor[1][1] << " " << Stress_Tensor[1][2] << endl;
-	cout << Stress_Tensor[2][0] << " " << Stress_Tensor[2][1] << " " << Stress_Tensor[2][2] << endl;
+//	cout << endl << "SXX:" << endl;
+//	cout << Stress_Tensor[0][0] << " " << Stress_Tensor[0][1] << " " << Stress_Tensor[0][2] << endl;
+//	cout << Stress_Tensor[1][0] << " " << Stress_Tensor[1][1] << " " << Stress_Tensor[1][2] << endl;
+//	cout << Stress_Tensor[2][0] << " " << Stress_Tensor[2][1] << " " << Stress_Tensor[2][2] << endl;
+
+}
+
+void CFEM_DielectricElastomer_Adj::Compute_FmT_Mat(void) {
+
+	FmT_Mat[0][0] = (F_Mat[1][1]*F_Mat[2][2] - F_Mat[1][2]*F_Mat[2][1]) / J_F;
+	FmT_Mat[0][1] = (F_Mat[1][2]*F_Mat[2][0] - F_Mat[2][2]*F_Mat[1][0]) / J_F;
+	FmT_Mat[0][2] = (F_Mat[1][0]*F_Mat[2][1] - F_Mat[1][1]*F_Mat[2][0]) / J_F;
+
+	FmT_Mat[1][0] = (F_Mat[0][2]*F_Mat[2][1] - F_Mat[0][1]*F_Mat[2][2]) / J_F;
+	FmT_Mat[1][1] = (F_Mat[0][0]*F_Mat[2][2] - F_Mat[2][0]*F_Mat[0][2]) / J_F;
+	FmT_Mat[1][2] = (F_Mat[0][1]*F_Mat[2][1] - F_Mat[0][0]*F_Mat[2][0]) / J_F;
+
+	FmT_Mat[2][0] = (F_Mat[0][1]*F_Mat[1][2] - F_Mat[0][2]*F_Mat[1][1]) / J_F;
+	FmT_Mat[2][1] = (F_Mat[0][2]*F_Mat[1][0] - F_Mat[0][0]*F_Mat[1][2]) / J_F;
+	FmT_Mat[2][2] = (F_Mat[0][0]*F_Mat[1][1] - F_Mat[0][1]*F_Mat[1][0]) / J_F;
+
 
 }
