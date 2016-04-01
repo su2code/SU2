@@ -73,6 +73,7 @@ protected:
 	su2double **Ks_ab;						/*!< \brief Structure for the stress component of the tangent matrix. */
 	su2double ***Kk_ab;					/*!< \brief Structure for the pressure component of the tangent matrix. */
 	su2double **Kt_a;						/*!< \brief Structure for the nodal stress term for the residual computation. */
+	su2double **FDL_a;						/*!< \brief Structure for the dead loads for the residual computation. */
 	su2double el_Pressure;					/*!< \brief Pressure in the element */
 
 public:
@@ -240,6 +241,13 @@ public:
 	void Add_Kt_a(su2double *val_Kt_a, unsigned short nodeA);
 
 	/*!
+	 * \brief Add the value of the dead load for the computation of the residual.
+	 * \param[in] nodeA - index of Node a.
+	 * \param[in] val_FDL_a - value of the term that will constitute the diagonal of the stress contribution.
+	 */
+	void Add_FDL_a(su2double *val_FDL_a, unsigned short nodeA);
+
+	/*!
 	 * \brief Set the value of a submatrix K relating nodes a and b, for the pressure term (this term is subintegrated).
 	 * \param[in] nodeA - index of Node a.
 	 * \param[in] nodeB - index of Node b.
@@ -295,6 +303,13 @@ public:
 	 * \param[out] val_Kt_a - value of the stress term.
 	 */
 	su2double *Get_Kt_a(unsigned short nodeA);
+
+	/*!
+	 * \brief Return the value of the dead load component of the residual for node a.
+	 * \param[in] nodeA - index of Node a.
+	 * \param[out] val_Kt_a - value of the stress term.
+	 */
+	su2double *Get_FDL_a(unsigned short nodeA);
 
 	/*!
 	 * \brief Retrieve the value of the shape functions.

@@ -82,15 +82,14 @@ su2_cfd_sources = \
   ../src/numerics_adjoint_mean.cpp \
   ../src/numerics_adjoint_turbulent.cpp \
   ../src/numerics_direct_poisson.cpp \
-  ../src/numerics_direct_elasticity.cpp \
   ../src/numerics_direct_heat.cpp \
   ../src/numerics_direct_mean.cpp \
   ../src/numerics_direct_transition.cpp \
   ../src/numerics_direct_turbulent.cpp \
   ../src/numerics_direct_wave.cpp \
-  ../src/numerics_fem_nonlinear_elasticity.cpp \
-  ../src/numerics_fem_linear_elasticity.cpp \
-  ../src/numerics_fem_elasticity.cpp \
+  ../src/numerics_direct_elasticity_nonlinear.cpp \
+  ../src/numerics_direct_elasticity_linear.cpp \
+  ../src/numerics_direct_elasticity.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
   ../src/output_cgns.cpp \
@@ -104,13 +103,12 @@ su2_cfd_sources = \
   ../src/solver_adjoint_turbulent.cpp \
   ../src/solver_adjoint_discrete.cpp \
   ../src/solver_direct_poisson.cpp \
-  ../src/solver_direct_elasticity.cpp \
   ../src/solver_direct_heat.cpp \
   ../src/solver_direct_mean.cpp \
   ../src/solver_direct_transition.cpp \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_wave.cpp \
-  ../src/solver_fem_elasticity.cpp \
+  ../src/solver_direct_elasticity.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
   ../src/transfer_physics.cpp \
@@ -122,13 +120,12 @@ su2_cfd_sources = \
   ../src/variable_adjoint_turbulent.cpp \
   ../src/variable_adjoint_discrete.cpp \
   ../src/variable_direct_poisson.cpp \
-  ../src/variable_direct_elasticity.cpp \
   ../src/variable_direct_heat.cpp \
   ../src/variable_direct_mean.cpp \
   ../src/variable_direct_transition.cpp \
   ../src/variable_direct_turbulent.cpp \
   ../src/variable_direct_wave.cpp \
-  ../src/variable_fem_elasticity.cpp \
+  ../src/variable_direct_elasticity.cpp \
   ../src/variable_structure.cpp \
   ../src/variable_template.cpp
 
