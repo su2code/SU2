@@ -171,7 +171,7 @@ void MatchingFaceClass::SortFaceCoordinates(void) {
     }
   }
 
-  tolForMatching *= 0.01;
+  tolForMatching *= 1.e-4;
 
   /*--- Sort the points in increasing order based on the coordinates.
         An insertion sort algorithm is used, which is quite efficient
@@ -248,7 +248,7 @@ CGeometry::CGeometry(void) {
 
 CGeometry::~CGeometry(void) {
   
-  unsigned long iElem, iElem_Bound, iFace, iVertex, iEdge;
+  unsigned long iElem, iElem_Bound, iFace, iVertex, iEdge, iPoint;
   unsigned short iMarker;
   
   if (elem != NULL) {
@@ -272,11 +272,11 @@ CGeometry::~CGeometry(void) {
     delete[] face;
   }
   
-//  if (node != NULL) {
-//    for (iPoint = 0; iPoint < nPoint; iPoint ++)
-//      if (node[iPoint] != NULL) delete node[iPoint];
-//    delete[] node;
-//  }
+  if (node != NULL) {
+    for (iPoint = 0; iPoint < nPoint; iPoint ++)
+      if (node[iPoint] != NULL) delete node[iPoint];
+    delete[] node;
+  }
   
   if (edge != NULL) {
     for (iEdge = 0; iEdge < nEdge; iEdge ++)
@@ -8820,11 +8820,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
     if (position != string::npos) {
       text_line.erase (0,6);
       stringstream stream_line(text_line);
-      stream_line >> nElem;
+      stream_line >> Global_nElem;
 
-      /*--- Store total number of elements in the original mesh ---*/
-
-      Global_nElem = nElem;
       if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
         cout << Global_nElem << " interior elements before parallel partitioning." << endl;
 
@@ -8834,18 +8831,18 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
       unsigned long total_elem_accounted = 0;
       for(unsigned long i = 0; i < (unsigned long)size; i++) {
-        npoint_procs[i] = nElem/size;
+        npoint_procs[i] = Global_nElem/size;
         total_elem_accounted = total_elem_accounted + npoint_procs[i];
       }
 
       /*--- Get the number of remainder elements after the even division ---*/
-      unsigned long rem_elem = nElem-total_elem_accounted;
+      unsigned long rem_elem = Global_nElem - total_elem_accounted;
       for (unsigned long i = 0; i<rem_elem; i++) {
         ++npoint_procs[i];
       }
 
       /*--- Store the local number of elements and the beginning/end index ---*/
-      local_elem = npoint_procs[rank];
+      nElem = local_elem = npoint_procs[rank];
       starting_node[0] = 0;
       ending_node[0]   = starting_node[0] + npoint_procs[0];
       for (unsigned long i = 1; i < (unsigned long)size; i++) {
@@ -8864,7 +8861,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
             grid).                                                          ---*/
 
       unsigned long nDOFs_tot = 0;
-      for (unsigned long i = 0; i < nElem; i++) {
+      for (unsigned long i = 0; i < Global_nElem; i++) {
 
         getline(mesh_file, text_line);
         istringstream elem_line(text_line);
@@ -8937,7 +8934,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
   /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
 
-  local_node = nodeIDsElemLoc.size();
+  nPoint = local_node = nodeIDsElemLoc.size();
   node = new CPoint*[local_node];
 
   /*--- Open the grid file again and go to the position where
@@ -8964,15 +8961,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
     if (position != string::npos) {
       text_line.erase (0,6);
       stringstream stream_line(text_line);
-      stream_line >> nPoint;
-
-      Global_nPoint = nPoint;
+      stream_line >> Global_nPoint;
 
       /*--- Loop over the global number of points and store the
             ones that are needed on this processor.             ---*/
 
       unsigned long ii = 0;
-      for(unsigned long i=0; i<nPoint; ++i) {
+      for(unsigned long i=0; i<Global_nPoint; ++i) {
         getline(mesh_file, text_line);
 
         if( binary_search(nodeIDsElemLoc.begin(), nodeIDsElemLoc.end(), i) ) {
