@@ -31,6 +31,14 @@
  
 #pragma once
 
+inline CPointCompare::CPointCompare(void) { }
+
+inline CPointCompare::~CPointCompare(void) { }
+
+inline CPointCompare::CPointCompare(const CPointCompare &other) { Copy(other); }
+
+inline CPointCompare& CPointCompare::operator=(const CPointCompare &other) { Copy(other); return (*this); }
+
 inline CVolumeElementFEM::CVolumeElementFEM(void) { }
 
 inline CVolumeElementFEM::~CVolumeElementFEM(void) { }

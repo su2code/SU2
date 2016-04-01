@@ -37,6 +37,51 @@
 using namespace std;
 
 /*!
+ * \class CPointCompare
+ * \brief Helper class used to determine whether two points are identical.
+ * \author E. van der Weide
+ * \version 4.1.0 "Cardinal"
+ */
+class CPointCompare {
+public:
+  unsigned short nDim;       /*!< \brief Number of spatial dimensions. */
+  unsigned long  nodeID;     /*!< \brief The corresponding node ID in the grid. */
+  su2double coor[3];         /*!< \brief Coordinates of the point. */
+  su2double tolForMatching;  /*!< \brief Tolerance used to determine if points are matching. */
+
+  /*!
+   * \brief Constructor of the class. Nothing to be done
+   */
+  CPointCompare(void);
+
+  /*!
+   * \brief Destructor of the class. Nothing to be done.
+   */
+  ~CPointCompare(void);
+
+  /*!
+   * \brief Copy constructor of the class.
+   */
+  CPointCompare(const CPointCompare &other);
+
+  /*!
+   * \brief Assignment operator of the class.
+   */
+  CPointCompare& operator=(const CPointCompare &other);
+
+  /*!
+   * \brief Less than operator of the class. Needed for the sorting and searching.
+   */
+  bool operator<(const CPointCompare &other) const;
+
+private:
+  /*!
+   * \brief Copy function. Needed for the copy constructor and assignment operator.
+   */
+  void Copy(const CPointCompare &other);
+};
+
+/*!
  * \class CVolumeElementFEM
  * \brief Class to store a volume element for the FEM solver.
  * \author E. van der Weide
@@ -68,10 +113,6 @@ public:
   unsigned long offsetDOFsSolGlobal; /*!< \brief Global offset of the solution DOFs of this element. */
   unsigned long offsetDOFsSolLocal;  /*!< \brief Local offset of the solution DOFs of this element. */
 
-  vector<long> neighborElemIDMatchingFaces;  /*!< \brief Vector with the neighbor element IDs of the faces of this
-                                                   element. A negative value indicates no matching neighbor. */
-  vector<short> periodIndexNeighbors;        /*!< \brief Vector with the periodic indices of the neighbors to the
-                                                  faces. A -1 indicates no periodic transformation to the neighbor. */
   vector<bool> JacFacesIsConsideredConstant; /*!< \brief Vector with the booleans whether the Jacobian of the
                                                   transformation to the standard element is constant for the faces. */
 
@@ -185,6 +226,12 @@ public:
    */
   bool operator<(const CSurfaceElementFEM &other) const;
 
+  /*!
+   *  \brief Function, which determines a length scale for this surface element.
+   *  \return  The relevant length scale for this surface element.
+   */
+  su2double DetermineLengthScale(vector<CPointFEM> &meshPoints);
+
 private:
   /*!
    * \brief Copy function. Needed for the copy constructor and assignment operator.
@@ -223,7 +270,6 @@ public:
  */
 class CMeshFEM: public CGeometry {
 protected:
-  unsigned long nVolElemOwned;  /*!< \brief Number of local volume elements owned by this rank. */
   unsigned long nVolElemTot;    /*!< \brief Total number of local volume elements, including halos. */
 
   vector<CVolumeElementFEM> volElem; /*!< \brief Vector of the local volume elements, including halos. */
@@ -278,7 +324,13 @@ public:
  /*!
   * \brief Destructor of the class.
   */
- ~CMeshFEM_DG(void);
+  ~CMeshFEM_DG(void);
+
+ /*!
+  * \brief Set the send receive boundaries of the grid.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void SetSendReceive(CConfig *config);
 };
 
 #include "fem_geometry_structure.inl"

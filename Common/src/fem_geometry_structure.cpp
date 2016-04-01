@@ -29,7 +29,29 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <iomanip>
 #include "../include/fem_geometry_structure.hpp"
+
+void CPointCompare::Copy(const CPointCompare &other) {
+  nDim           = other.nDim;
+  nodeID         = other.nodeID;
+  tolForMatching = other.tolForMatching;
+
+  for(unsigned short l=0; l<nDim; ++l)
+    coor[l] = other.coor[l];
+}
+
+bool CPointCompare::operator< (const CPointCompare &other) const {
+  if(nDim != other.nDim) return nDim < other.nDim;    // This should never be active.
+
+  su2double tol = min(tolForMatching, other.tolForMatching); // Tolerance for comparing.
+  for(unsigned short l=0; l<nDim; ++l) {
+    if(fabs(coor[l] - other.coor[l]) > tol)
+      return coor[l] < other.coor[l];
+  }
+
+  return false;  // Both objects are identical.
+}
 
 void CPointFEM::Copy(const CPointFEM &other) {
   globalID           = other.globalID;
@@ -48,6 +70,88 @@ bool CPointFEM::operator< (const CPointFEM &other) const {
 bool CPointFEM::operator==(const CPointFEM &other) const {
  return (globalID           == other.globalID &&
          periodIndexToDonor == other.periodIndexToDonor);
+}
+
+su2double CSurfaceElementFEM::DetermineLengthScale(vector<CPointFEM> &meshPoints) {
+
+  /* Variables needed to make a generic treatment possible. */
+  unsigned short nDim;
+  unsigned short nEdges;
+  unsigned long  edgeVertices[4][2];
+
+  su2double lenScale;
+
+  /*--- A distinction must be made between element types. As this is a surface
+        element the only options are a line, a triangle and a quadrilateral.
+        Determine the number of edges and its connectivities.             ---*/
+  switch( VTK_Type ) {
+
+    case LINE: {
+      nEdges = 1; nDim = 2;
+      edgeVertices[0][0] = nodeIDsGrid.front();
+      edgeVertices[0][1] = nodeIDsGrid.back();
+      break;
+    }
+
+    case TRIANGLE: {
+      nEdges = 3; nDim = 3;
+      edgeVertices[0][0] = nodeIDsGrid.front();
+      edgeVertices[0][1] = nodeIDsGrid[nPolyGrid];
+
+      edgeVertices[1][0] = nodeIDsGrid[nPolyGrid];
+      edgeVertices[1][1] = nodeIDsGrid.back();
+
+      edgeVertices[2][0] = nodeIDsGrid.back();
+      edgeVertices[2][1] = nodeIDsGrid.front();
+      break;
+    }
+
+    case QUADRILATERAL: {
+      nEdges = 4; nDim = 3;
+      edgeVertices[0][0] = nodeIDsGrid.front();
+      edgeVertices[0][1] = nodeIDsGrid[nPolyGrid];
+
+      edgeVertices[1][0] = nodeIDsGrid[nPolyGrid];
+      edgeVertices[1][1] = nodeIDsGrid.back();
+
+      edgeVertices[2][0] = nodeIDsGrid.back();
+      edgeVertices[2][1] = nodeIDsGrid[nPolyGrid*(nPolyGrid+1)];
+
+      edgeVertices[3][0] = nodeIDsGrid[nPolyGrid*(nPolyGrid+1)];
+      edgeVertices[3][1] = nodeIDsGrid.front();
+      break;
+    }
+
+    default: {
+      cout << "CSurfaceElementFEM::DetermineLengthScale: This should not happen." << endl;
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+    }
+  }
+ 
+  /* Loop over the edges, determine their length and take the minimum
+     for the length scale. */
+  for(unsigned short i=0; i<nEdges; ++i) {
+    unsigned long n0 = edgeVertices[i][0];
+    unsigned long n1 = edgeVertices[i][1];
+
+    su2double len = 0.0;
+    for(unsigned short l=0; l<nDim; ++l) {
+      su2double ds = meshPoints[n1].coor[l] - meshPoints[n0].coor[l];
+      len += ds*ds;
+    }
+    len = sqrt(len);
+
+    if(i == 0) lenScale = len;
+    else       lenScale = min(lenScale, len);
+  }
+
+  /* Return the length scale. */
+  return lenScale;
 }
 
 void CSurfaceElementFEM::Copy(const CSurfaceElementFEM &other) {
@@ -420,8 +524,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   map<unsigned long,  unsigned long> mapGlobalElemIDToInd;
   map<unsignedLong2T, unsigned long> mapGlobalHaloElemToInd;
 
-  nVolElemOwned = globalElemID.size();
-  nVolElemTot   = nVolElemOwned + haloElements.size();
+  unsigned long nVolElemOwned = globalElemID.size();
+  nVolElemTot = nVolElemOwned + haloElements.size();
 
   for(unsigned long i=0; i<nVolElemOwned; ++i)
     mapGlobalElemIDToInd[globalElemID[i]] = i;
@@ -470,19 +574,19 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       volElem[ind].offsetDOFsSolGlobal = longRecvBuf[i][indL++];
 
       volElem[ind].nodeIDsGrid.resize(volElem[ind].nDOFsGrid);
-
-      volElem[ind].neighborElemIDMatchingFaces.resize(volElem[ind].nFaces);
-      volElem[ind].periodIndexNeighbors.resize(volElem[ind].nFaces);
       volElem[ind].JacFacesIsConsideredConstant.resize(volElem[ind].nFaces);
 
       for(unsigned short k=0; k<volElem[ind].nDOFsGrid; ++k)
         volElem[ind].nodeIDsGrid[k] = longRecvBuf[i][indL++];
 
-      for(unsigned short k=0; k<volElem[ind].nFaces; ++k)
-        volElem[ind].neighborElemIDMatchingFaces[k] = longRecvBuf[i][indL++];
+      /* Update the counter indL with nFaces, because at this location in
+         the long buffer the global ID of the neighboring element is stored.
+         This data is not stored in volElem. */
+      indL += volElem[ind].nFaces;
 
       for(unsigned short k=0; k<volElem[ind].nFaces; ++k) {
-        volElem[ind].periodIndexNeighbors[k] = shortRecvBuf[i][indS++];
+        ++indS; // At this location the periodic index of the face is stored in
+                // shortRecvBuf, which is not stored in volElem.
         volElem[ind].JacFacesIsConsideredConstant[k] = (bool) shortRecvBuf[i][indS++];
       }
     }
@@ -732,6 +836,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       shortSendBuf[i].push_back(geometry->elem[locElemInd]->GetNPolySol());
       shortSendBuf[i].push_back(geometry->elem[locElemInd]->GetNDOFsGrid());
       shortSendBuf[i].push_back(geometry->elem[locElemInd]->GetNDOFsSol());
+      shortSendBuf[i].push_back(geometry->elem[locElemInd]->GetnFaces());
 
       longSendBuf[i].push_back(geometry->elem[locElemInd]->GetColor());
 
@@ -868,18 +973,41 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*---         receive buffers shortRecvBuf, longRecvBuf and doubleRecvBuf. ---*/
   /*----------------------------------------------------------------------------*/
 
-  /*--- Loop over the receive buffers to store the information of the halo points. ---*/
+  /*--- Loop over the receive buffers to store the information of the
+        halo elements and the halo points. ---*/
   vector<CPointFEM> haloPoints;
   for(int i=0; i<nRankSend; ++i) {
 
     /* Initialization of the indices in the communication buffers. */
     unsigned long indL = 1, indS = 0, indD = 0;
 
-    /* Skip the element information in the buffers. */
+    /* Loop over the halo elements received from this rank. */
     for(long j=0; j<longRecvBuf[i][0]; ++j) {
-      short nDOFsGrid = shortRecvBuf[i][indS+4];
-      indS += 6;
-      indL += nDOFsGrid + 3;
+
+      /* Retrieve the data from the communication buffers. */
+      long globElemID = longRecvBuf[i][indL++];
+      long indV       = longRecvBuf[i][indL++];
+
+      volElem[indV].elemIDGlobal = globElemID;
+      volElem[indV].rankOriginal = longRecvBuf[i][indL++];
+
+      volElem[indV].periodIndexToDonor = shortRecvBuf[i][indS++];
+      volElem[indV].VTK_Type           = shortRecvBuf[i][indS++];
+      volElem[indV].nPolyGrid          = shortRecvBuf[i][indS++];
+      volElem[indV].nPolySol           = shortRecvBuf[i][indS++];
+      volElem[indV].nDOFsGrid          = shortRecvBuf[i][indS++];
+      volElem[indV].nDOFsSol           = shortRecvBuf[i][indS++];
+      volElem[indV].nFaces             = shortRecvBuf[i][indS++];
+
+      volElem[indV].nodeIDsGrid.resize(volElem[indV].nDOFsGrid);
+      for(unsigned short k=0; k<volElem[indV].nDOFsGrid; ++k)
+        volElem[indV].nodeIDsGrid[k] = longRecvBuf[i][indL++];
+
+      /* Give the member variables that are not obtained via communication their
+         values. Some of these variables are not used for halo elements. */
+      volElem[indV].elemIsOwned             = false;
+      volElem[indV].JacIsConsideredConstant = false;
+      volElem[indV].offsetDOFsSolGlobal     = ULONG_MAX;
     }
 
     /* Store the information of the points in haloPoints. */
@@ -893,6 +1021,12 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
       haloPoints.push_back(thisPoint);
     }
+
+    /* The communication buffers from this rank are not needed anymore.
+       Delete them using the swap function. */
+    vector<short>().swap(shortRecvBuf[i]);
+    vector<long>().swap(longRecvBuf[i]);
+    vector<su2double>().swap(doubleRecvBuf[i]);
   }
 
   /* Remove the duplicate entries from haloPoints. */
@@ -980,10 +1114,48 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     short perIndex = haloPoints[iLow].periodIndexToDonor;
     if(perIndex != -1) {
 
+      /* Easier storage of the surface elements. */
+      vector<CSurfaceElementFEM> &surfElem = boundaries[perIndex].surfElem;
+
       /*--- Store the points of this local periodic boundary in a data structure
             that can be used for searching coordinates. ---*/
+      vector<CPointCompare> pointsBoundary;
+      vector<long> indInPointsBoundary(meshPoints.size(), -1);
+      for(unsigned long j=0; j<surfElem.size(); ++j) {
 
+        /* Determine the tolerance for equal points, which is a small value
+           times the length scale of this surface element. */
+        su2double tolElem = 1.e-4*surfElem[j].DetermineLengthScale(meshPoints);
 
+        /* Loop over the nodes of this surface grid and update the points on
+           this periodic boundary. */
+        for(unsigned short k=0; k<surfElem[j].nDOFsGrid; ++k) {
+          unsigned long nn = surfElem[j].nodeIDsGrid[k];
+
+          if(indInPointsBoundary[nn] == -1) {
+            /* Point is not stored yet in pointsBoundary. Do so now. */
+            indInPointsBoundary[nn] = pointsBoundary.size();
+
+            CPointCompare thisPoint;
+            thisPoint.nDim           = nDim;
+            thisPoint.nodeID         = nn;
+            thisPoint.tolForMatching = tolElem;
+            for(unsigned short l=0; l<nDim; ++l)
+              thisPoint.coor[l] = meshPoints[nn].coor[l];
+
+            pointsBoundary.push_back(thisPoint);
+          }
+          else {
+            /* Point is already stored in pointsBoundary. Update the tolerance. */
+            nn = indInPointsBoundary[nn];
+            pointsBoundary[nn].tolForMatching = min(pointsBoundary[nn].tolForMatching, tolElem);
+          }
+        }
+      }
+
+      /* Sort pointsBoundary in increasing order, such that binary searches can
+         be carried out later on. */
+      sort(pointsBoundary.begin(), pointsBoundary.end());
 
       /* Get the data for the periodic transformation to the donor. */
       su2double *center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(perIndex));
@@ -1021,31 +1193,87 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
       rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
       rotMatrix[2][2] = cosTheta*cosPhi;
+
+      /* Loop over the halo points for this periodic transformation. */
+      for(unsigned long i=iLow; i<iUpp; ++i) {
+
+        /* Apply the periodic transformation to the coordinates
+           stored in this halo point. */
+        su2double dx =             haloPoints[i].coor[0] - center[0];
+        su2double dy =             haloPoints[i].coor[1] - center[1];
+        su2double dz = nDim == 3 ? haloPoints[i].coor[2] - center[2] : 0.0;
+
+        haloPoints[i].coor[0] = rotMatrix[0][0]*dx + rotMatrix[0][1]*dy
+                              + rotMatrix[0][2]*dz + translation[0];
+        haloPoints[i].coor[1] = rotMatrix[1][0]*dx + rotMatrix[1][1]*dy
+                              + rotMatrix[1][2]*dz + translation[1];
+        haloPoints[i].coor[2] = rotMatrix[2][0]*dx + rotMatrix[2][1]*dy
+                              + rotMatrix[2][2]*dz + translation[2];
+
+        /* Create an object of the type CPointCompare, which can be used
+           to search the points on the periodic boundary, pointsBoundary. */
+        CPointCompare thisPoint;
+        thisPoint.nDim   = nDim;
+        thisPoint.nodeID = ULONG_MAX;
+        thisPoint.tolForMatching = 1.e+10;   // Just a large value.
+        for(unsigned short l=0; l<nDim; ++l)
+          thisPoint.coor[l] = haloPoints[i].coor[l];
+
+        /* Check if this point is present in pointsBoundary. */
+        if( binary_search(pointsBoundary.begin(), pointsBoundary.end(), thisPoint) ) {
+
+          /* This point is present on the boundary. Find its position and
+             store it in the mapping to the local points in meshPoints. */
+          vector<CPointCompare>::const_iterator periodicLow;
+          periodicLow = lower_bound(pointsBoundary.begin(), pointsBoundary.end(), thisPoint);
+
+          unsignedLong2T globIndAndPer;
+          globIndAndPer.long0 = haloPoints[i].globalID;
+          globIndAndPer.long1 = haloPoints[i].periodIndexToDonor+1;  // Note the +1 again.
+
+          mapGlobalPointIDToInd[globIndAndPer] = periodicLow->nodeID;
+        }
+        else {
+
+          /* This point is not present yet on this rank yet. Store it in the
+             mapping to the local points in mesh points and create it. */
+          unsignedLong2T globIndAndPer;
+          globIndAndPer.long0 = haloPoints[i].globalID;
+          globIndAndPer.long1 = haloPoints[i].periodIndexToDonor+1;  // Note the +1 again.
+
+          mapGlobalPointIDToInd[globIndAndPer] = meshPoints.size();
+          meshPoints.push_back(haloPoints[i]);
+        }
+      }
     }
 
     /* Set iLow to iUpp for the next periodic transformation. */
     iLow = iUpp;
   }
 
+  /*--- Convert the global node numbering in the elements to a local numbering. ---*/
+  for(unsigned long i=0; i<nVolElemTot; ++i) {
+    for(unsigned short j=0; j<volElem[i].nDOFsGrid; ++j) {
+      unsignedLong2T searchItem(volElem[i].nodeIDsGrid[j],
+                                volElem[i].periodIndexToDonor+1); // Again the +1.
+      map<unsignedLong2T, unsigned long>::const_iterator LLMI;
+      LLMI = mapGlobalPointIDToInd.find(searchItem);
+      volElem[i].nodeIDsGrid[j] = LLMI->second;
+    }
+  }
+}
 
-#ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
-  cout << "nRankRecv: " << nRankRecv << ", nRankSend: " << nRankSend << endl;
-  cout << "CMeshFEM::CMeshFEM: Not implemented yet." << endl << flush;
-#ifdef HAVE_MPI
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
+CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config) : CMeshFEM(geometry, config) {
 
+}
+
+void CMeshFEM_DG::SetSendReceive(CConfig *config) {
+
+  cout << "CMeshFEM_DG::SetSendReceive: Not implemented yet." << endl;
 #ifndef HAVE_MPI
   exit(EXIT_FAILURE);
 #else
   MPI_Abort(MPI_COMM_WORLD,1);
   MPI_Finalize();
 #endif
-
-}
-
-CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config) : CMeshFEM(geometry, config) {
-
 }
