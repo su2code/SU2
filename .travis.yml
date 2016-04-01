@@ -37,7 +37,7 @@ env:
 before_install:
     # install the necessary packages
     - sudo apt-get update -qq
-    - sudo apt-get install -qq python-numpy mpich2
+    - sudo apt-get install -qq python-numpy python-scipy mpich2
 
 install:
     - echo $TRAVIS_BUILD_DIR
