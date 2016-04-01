@@ -40,6 +40,7 @@ from .. import util as su2util
 from .functions import function, update_mesh
 from ..io import redirect_folder, redirect_output
 import functions
+import numpy as np
 
 # ----------------------------------------------------------------------
 #  Main Gradient Interface
@@ -1023,7 +1024,6 @@ def domain_adjoint( config, state=None, step=1e-4 ):
         chaingrad = downstream_function.downstream_gradient(config,state)
         custom_dv=1
 
-    print pull, link
     # output redirection
     with redirect_folder('DOMAIN_ADJOINT',pull,link) as push:
         with redirect_output(log_domain_adjoint):
@@ -1051,10 +1051,13 @@ def domain_adjoint( config, state=None, step=1e-4 ):
                 shutil.copy('base_'+files['DIRECT'],files['DIRECT'])
                 
                 # Force a single iteration from a restart to get the
-                # partial derivative for the objective and delta residuals
+                # partial derivative for the objective and delta residuals.
+                # Note also that MG is disabled to make sure the correct
+                # residual values are written to the restart file.
                 this_konfig.EXT_ITER      = 1
                 this_konfig.WRT_RESIDUALS = 'YES'
                 this_konfig.RESTART_SOL   = 'YES'
+                this_konfig.MGLEVEL       = '0'
                 
                 # Direct Solution, findiff step
                 func_step = function( objective, this_konfig, this_state )
@@ -1077,18 +1080,29 @@ def domain_adjoint( config, state=None, step=1e-4 ):
                       
                         # Compute del(J)/del(alpha) using a finite difference
                         this_grad = (func_step - func_base) / this_step
-                        total = 0.0
+
                         # Compute the domain integral as Psi^T * [R'(U) - R(U)]
                         for i in range(len(adj_sol['Conservative_1'])):
                           
-                            dx = sqrt( pow(step_sol['x'][i]-base_sol['x'][i],2.0)  +  pow(step_sol['y'][i]-base_sol['y'][i],2.0) )
-                            rho  = adj_sol['Conservative_1'][i] * (step_sol['Residual_1'][i]-base_sol['Residual_1'][i])*dx
-                            rhoU = adj_sol['Conservative_2'][i] * (step_sol['Residual_2'][i]-base_sol['Residual_2'][i])*dx
-                            rhoV = adj_sol['Conservative_3'][i] * (step_sol['Residual_3'][i]-base_sol['Residual_3'][i])*dx
-                            rhoE = adj_sol['Conservative_4'][i] * (step_sol['Residual_4'][i]-base_sol['Residual_4'][i])*dx
-                            this_grad = this_grad - (rho + rhoU + rhoV + rhoE)/this_step
-                            total = total + (rho + rhoU + rhoV + rhoE)
-                            print i, this_grad, total, this_grad - total, this_grad - total/this_step, this_grad - total*this_step
+                            mag = np.sqrt( np.power(step_sol['x'][i]-base_sol['x'][i],2.0)  +  np.power(step_sol['y'][i]-base_sol['y'][i],2.0) + 1.0e-10)
+                            dx = (step_sol['x'][i]-base_sol['x'][i])
+                            dy = (step_sol['y'][i]-base_sol['y'][i])
+                            
+                            dx_hat = dx / mag
+                            dy_hat = dy / mag
+                            
+                            rho  = adj_sol['Conservative_1'][i] * (step_sol['Residual_1'][i]-base_sol['Residual_1'][i])
+                            rhoU = adj_sol['Conservative_2'][i] * (step_sol['Residual_2'][i]-base_sol['Residual_2'][i])
+                            rhoV = adj_sol['Conservative_3'][i] * (step_sol['Residual_3'][i]-base_sol['Residual_3'][i])
+                            rhoE = adj_sol['Conservative_4'][i] * (step_sol['Residual_4'][i]-base_sol['Residual_4'][i])
+                            
+                            grad_x = dx*(rho + rhoU + rhoV + rhoE)*dx_hat
+                            grad_y = dy*(rho + rhoU + rhoV + rhoE)*dy_hat
+                            
+                            #this_grad = this_grad - (grad_x + grad_y)/this_step
+                            
+                            #this_grad = this_grad + (rho + rhoU + rhoV + rhoE)/this_step
+                            this_grad = this_grad - (rho + rhoU + rhoV + rhoE)
             
                         # Store the grad
                         grads[key].append(this_grad)
