@@ -1311,7 +1311,18 @@ CFEM_DielectricElastomer::CFEM_DielectricElastomer(unsigned short val_nDim, unsi
 		EField_Curr_Unit[iDim] = 0.0;
 	}
 
+	/*--- Deformation gradient, inverse and transpose ---*/
+	unsigned short jVar;
 
+	FmT_Mat = new su2double *[3];
+	for (iVar = 0; iVar < 3; iVar++){
+		FmT_Mat[iVar] = new su2double [3];
+	}
+	for (iVar = 0; iVar < 3; iVar++){
+		for (jVar = 0; jVar < 3; jVar++){
+			FmT_Mat[iVar][jVar] = 0.0;
+		}
+	}
 }
 
 CFEM_DielectricElastomer::~CFEM_DielectricElastomer(void) {
@@ -1319,6 +1330,13 @@ CFEM_DielectricElastomer::~CFEM_DielectricElastomer(void) {
 	delete [] EField_Ref_Unit;
 	delete [] EField_Ref_Mod;
 	delete [] EField_Curr_Unit;
+
+	unsigned short iVar;
+
+	for (iVar = 0; iVar < 3; iVar++){
+		delete [] FmT_Mat[iVar];
+	}
+	delete [] FmT_Mat;
 
 }
 
@@ -1358,10 +1376,12 @@ void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, CConfig 
 
 //	cout << endl << "------ DIRECT -------" << endl;
 
+	Compute_FmT_Mat();
+
 	for (iDim = 0; iDim < nDim; iDim++){
 		EField_Curr_Unit[iDim] = 0.0;
 		for (jDim = 0; jDim < nDim; jDim++){
-			EField_Curr_Unit[iDim] += F_Mat[iDim][jDim] * EField_Ref_Unit[jDim];
+			EField_Curr_Unit[iDim] += FmT_Mat[iDim][jDim] * EField_Ref_Unit[jDim];
 		}
 	}
 
@@ -1388,13 +1408,67 @@ void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, CConfig 
 	Stress_Tensor[1][0] = ke_DE*E1*E0;			Stress_Tensor[1][1] = ke_DE*(E1_2-0.5*E_2);	Stress_Tensor[1][2] = ke_DE*E1*E2;
 	Stress_Tensor[2][0] = ke_DE*E2*E0;			Stress_Tensor[2][1] = ke_DE*E2*E1;			Stress_Tensor[2][2] = ke_DE*(E2_2-0.5*E_2);
 
-//	cout << endl << "SXX:" << endl;
-//	cout << Stress_Tensor[0][0] << " " << Stress_Tensor[0][1] << " " << Stress_Tensor[0][2] << endl;
-//	cout << Stress_Tensor[1][0] << " " << Stress_Tensor[1][1] << " " << Stress_Tensor[1][2] << endl;
-//	cout << Stress_Tensor[2][0] << " " << Stress_Tensor[2][1] << " " << Stress_Tensor[2][2] << endl;
+//	cout << endl << "F:" << endl;
+//	cout << F_Mat[0][0] << " " << F_Mat[0][1] << " " << F_Mat[0][2] << endl;
+//	cout << F_Mat[1][0] << " " << F_Mat[1][1] << " " << F_Mat[1][2] << endl;
+//	cout << F_Mat[2][0] << " " << F_Mat[2][1] << " " << F_Mat[2][2] << endl;
+//
+//	su2double matrix_check[3][3], matrix_check_2[3][3], Ft[3][3];
+//
+//	Ft[0][0] = F_Mat[0][0];		Ft[0][1] = F_Mat[1][0];		Ft[0][2] = F_Mat[2][0];
+//	Ft[1][0] = F_Mat[0][1];		Ft[1][1] = F_Mat[1][1];		Ft[1][2] = F_Mat[2][1];
+//	Ft[2][0] = F_Mat[0][2];		Ft[2][1] = F_Mat[1][2];		Ft[2][2] = F_Mat[2][2];
+//
+//	cout << endl << "Ft:" << endl;
+//	cout << Ft[0][0] << " " << Ft[0][1] << " " << Ft[0][2] << endl;
+//	cout << Ft[1][0] << " " << Ft[1][1] << " " << Ft[1][2] << endl;
+//	cout << Ft[2][0] << " " << Ft[2][1] << " " << Ft[2][2] << endl;
+
+//	cout << endl << "FmT:" << endl;
+//	cout << FmT_Mat[0][0] << " " << FmT_Mat[0][1] << " " << FmT_Mat[0][2] << endl;
+//	cout << FmT_Mat[1][0] << " " << FmT_Mat[1][1] << " " << FmT_Mat[1][2] << endl;
+//	cout << FmT_Mat[2][0] << " " << FmT_Mat[2][1] << " " << FmT_Mat[2][2] << endl;
+//
+//
+//	for (iDim = 0; iDim < 3; iDim++){
+//		for (jDim = 0; jDim < 3; jDim++){
+//			matrix_check[iDim][jDim] = 0.0;
+//			matrix_check_2[iDim][jDim] = 0.0;
+//			for (iVar = 0; iVar < 3; iVar++){
+//				matrix_check[iDim][jDim] += FmT_Mat[iDim][iVar]*Ft[iVar][jDim];
+//				matrix_check_2[iDim][jDim] += Ft[iDim][iVar]*FmT_Mat[iVar][jDim];
+//			}
+//		}
+//	}
+//
+//	cout << endl << "Check_1:" << endl;
+//	cout << matrix_check[0][0] << " " << matrix_check[0][1] << " " << matrix_check[0][2] << endl;
+//	cout << matrix_check[1][0] << " " << matrix_check[1][1] << " " << matrix_check[1][2] << endl;
+//	cout << matrix_check[2][0] << " " << matrix_check[2][1] << " " << matrix_check[2][2] << endl;
+//
+//	cout << endl << "Check_2:" << endl;
+//	cout << matrix_check_2[0][0] << " " << matrix_check_2[0][1] << " " << matrix_check_2[0][2] << endl;
+//	cout << matrix_check_2[1][0] << " " << matrix_check_2[1][1] << " " << matrix_check_2[1][2] << endl;
+//	cout << matrix_check_2[2][0] << " " << matrix_check_2[2][1] << " " << matrix_check_2[2][2] << endl;
 
 
 }
 
+void CFEM_DielectricElastomer::Compute_FmT_Mat(void) {
+
+	FmT_Mat[0][0] = (F_Mat[1][1]*F_Mat[2][2] - F_Mat[1][2]*F_Mat[2][1]) / J_F;
+	FmT_Mat[0][1] = (F_Mat[1][2]*F_Mat[2][0] - F_Mat[2][2]*F_Mat[1][0]) / J_F;
+	FmT_Mat[0][2] = (F_Mat[1][0]*F_Mat[2][1] - F_Mat[1][1]*F_Mat[2][0]) / J_F;
+
+	FmT_Mat[1][0] = (F_Mat[0][2]*F_Mat[2][1] - F_Mat[0][1]*F_Mat[2][2]) / J_F;
+	FmT_Mat[1][1] = (F_Mat[0][0]*F_Mat[2][2] - F_Mat[2][0]*F_Mat[0][2]) / J_F;
+	FmT_Mat[1][2] = (F_Mat[0][1]*F_Mat[2][1] - F_Mat[0][0]*F_Mat[2][0]) / J_F;
+
+	FmT_Mat[2][0] = (F_Mat[0][1]*F_Mat[1][2] - F_Mat[0][2]*F_Mat[1][1]) / J_F;
+	FmT_Mat[2][1] = (F_Mat[0][2]*F_Mat[1][0] - F_Mat[0][0]*F_Mat[1][2]) / J_F;
+	FmT_Mat[2][2] = (F_Mat[0][0]*F_Mat[1][1] - F_Mat[0][1]*F_Mat[1][0]) / J_F;
+
+
+}
 
 
