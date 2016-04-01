@@ -154,9 +154,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case DISPLACEMENT_BOUNDARY:
         solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
-      case FLOWLOAD_BOUNDARY:
-        solver_container[MainSolver]->BC_Flow_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-        break;
       case LOAD_BOUNDARY:
         solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
@@ -225,7 +222,7 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 	  /*--- This is done only once, at the beginning of the calculation. From then on, K is constant ---*/
 	  if ((linear_analysis && initial_calc) ||
 		  (linear_analysis && restart && initial_calc_restart)){
-		  solver_container[MainSolver]->Compute_StiffMatrix(geometry, solver_container, numerics[VISC_TERM], config);
+		  solver_container[MainSolver]->Compute_StiffMatrix(geometry, solver_container, numerics, config);
 	  }
 	  else if (!linear_analysis){
 		  /*--- If the analysis is nonlinear, also the stress terms need to be computed ---*/
@@ -233,7 +230,7 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 		  /*--- They are calculated together to avoid looping twice over the elements ---*/
 		  if (IterativeScheme == NEWTON_RAPHSON){
 			  /*--- The Jacobian is reinitialized every time in Preprocessing (before calling Space_Integration_FEM) */
-			  solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics[VISC_TERM], config);
+			  solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics, config);
 		  }
 
 		  /*--- If the method is modified Newton-Raphson, the stiffness matrix is only computed once at the beginning of the time-step ---*/
@@ -241,11 +238,11 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 		  else if (IterativeScheme == MODIFIED_NEWTON_RAPHSON){
 
 			  if (first_iter){
-				  solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics[VISC_TERM], config);
+				  solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics, config);
 			  }
 
 			  else{
-				  solver_container[MainSolver]->Compute_NodalStressRes(geometry, solver_container, numerics[VISC_TERM], config);
+				  solver_container[MainSolver]->Compute_NodalStressRes(geometry, solver_container, numerics, config);
 			  }
 
 		  }
@@ -260,10 +257,10 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 		  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 		    switch (config->GetMarker_All_KindBC(iMarker)) {
 		      case LOAD_DIR_BOUNDARY:
-				solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
+				solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
 				break;
 		      case LOAD_SINE_BOUNDARY:
-				solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
+				solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
 				break;
 		    }
 		  }
@@ -273,14 +270,13 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 	  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 	    switch (config->GetMarker_All_KindBC(iMarker)) {
 	      case LOAD_BOUNDARY:
-	        solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
+	        solver_container[MainSolver]->BC_Normal_Load(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
 	        break;
 	      case PRESSURE_BOUNDARY:
-	        solver_container[MainSolver]->BC_Pressure(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
+	        solver_container[MainSolver]->BC_Pressure(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
 	        break;
 	    }
 	  }
-
 
 }
 
@@ -325,7 +321,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Fluid time integration schemes ---*/
 
-	if ((KindSolver != LINEAR_ELASTICITY) && (KindSolver != FEM_ELASTICITY)) {
+	if (KindSolver != FEM_ELASTICITY) {
 
 	  switch (config->GetKind_TimeIntScheme()) {
 		case (RUNGE_KUTTA_EXPLICIT):
@@ -342,7 +338,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
    /*--- Structural time integration schemes ---*/
   
 	}
-	else if ((KindSolver == LINEAR_ELASTICITY) || (KindSolver == FEM_ELASTICITY)) {
+	else if (KindSolver == FEM_ELASTICITY) {
 
 	  switch (config->GetKind_TimeIntScheme_FEA()) {
 		case (CD_EXPLICIT):
@@ -385,7 +381,7 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 	  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 	    switch (config->GetMarker_All_KindBC(iMarker)) {
 	      case CLAMPED_BOUNDARY:
-			solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
+			solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
 			break;
 	      case DISPLACEMENT_BOUNDARY:
 	        solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
@@ -410,14 +406,12 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 			  break;
 		  }
 
-
-
 	/*--- Reinforce ESSENTIAL BOUNDARY CONDITIONS: avoids accumulation of numerical error ---*/
 
 	  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
 		switch (config->GetMarker_All_KindBC(iMarker)) {
 		  case CLAMPED_BOUNDARY:
-			solver_container[MainSolver]->BC_Clamped_Post(geometry, solver_container, numerics[VISC_TERM], config, iMarker);
+			solver_container[MainSolver]->BC_Clamped_Post(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
 			break;
 //		  case DISPLACEMENT_BOUNDARY:
 //			solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
@@ -426,7 +420,6 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
 
 	  /*--- Perform the MPI communication of the solution ---*/
 	  solver_container[MainSolver]->Set_MPI_Solution(geometry, config);
-
 
 }
 

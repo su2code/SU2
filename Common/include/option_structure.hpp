@@ -117,6 +117,7 @@ const unsigned int MAX_NUMBER_FFD = 10;	     /*!< \brief Maximum number of FFDBo
 const unsigned int MAX_SOLS = 6;		         /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		         /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;            /*!< \brief Maximum number of zones. */
+const unsigned int MAX_FE_KINDS = 4;            	/*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;		       /*!< \brief No Runge-Kutta iteration. */
 
 const unsigned int MESH_0 = 0; /*!< \brief Definition of the finest grid level. */
@@ -181,7 +182,6 @@ enum ENUM_SOLVER {
   POISSON_EQUATION = 4,       			/*!< \brief Definition of the poisson potential solver. */
   WAVE_EQUATION = 10,					/*!< \brief Definition of the wave solver. */
   HEAT_EQUATION = 29,					/*!< \brief Definition of the heat solver. */
-  LINEAR_ELASTICITY = 11,				/*!< \brief Definition of the FEA solver. */
   FLUID_STRUCTURE_INTERACTION = 12,		/*!< \brief Definition of a FSI solver. */
   FEM_ELASTICITY = 13,					/*!< \brief Definition of a FEM solver. */
   ADJ_EULER = 18,						/*!< \brief Definition of the continuous adjoint Euler's solver. */
@@ -204,7 +204,6 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("ADJ_RANS", ADJ_RANS )
 ("WAVE_EQUATION", WAVE_EQUATION)
 ("HEAT_EQUATION", HEAT_EQUATION)
-("LINEAR_ELASTICITY", LINEAR_ELASTICITY)
 ("FEM_ELASTICITY", FEM_ELASTICITY)
 ("DISC_ADJ_EULER", DISC_ADJ_EULER)
 ("DISC_ADJ_RANS", DISC_ADJ_RANS)
@@ -234,12 +233,10 @@ static const map<string, ENUM_FSI_FLUID_PROBLEM> FSI_Fluid_Solver_Map = CCreateM
  */
 enum ENUM_FSI_STRUC_PROBLEM {
   NO_SOLVER_SFSI = 0,				/*!< \brief Definition of no solver. */
-  LINEAR_ELASTICITY_SFSI = 11,		/*!< \brief Linear elasticity equations for the FSI problem */
   FEM_ELASTICITY_SFSI = 13,		/*!< \brief Nonlinear elasticity equations for the FSI problem */
 };
 static const map<string, ENUM_FSI_STRUC_PROBLEM> FSI_Struc_Solver_Map = CCreateMap<string, ENUM_FSI_STRUC_PROBLEM>
 ("NONE", NO_SOLVER_SFSI)
-("LINEAR_ELASTICITY", LINEAR_ELASTICITY_SFSI)
 ("FEM_ELASTICITY", FEM_ELASTICITY_SFSI);
 
 /*!
@@ -369,6 +366,9 @@ const int SOURCE_FIRST_TERM = 2;        /*!< \brief Position of the first source
 const int SOURCE_SECOND_TERM = 3;   /*!< \brief Position of the second source term in the numerics container array. */
 const int CONV_BOUND_TERM = 4;       /*!< \brief Position of the convective boundary terms in the numerics container array. */
 const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundary terms in the numerics container array. */
+
+const int FEA_TERM = 0;			/*!< \brief Position of the finite element analysis terms in the numerics container array. */
+
 
 /*!
  * \brief types of finite elements (in 2D or 3D)

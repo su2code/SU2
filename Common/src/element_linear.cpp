@@ -41,6 +41,8 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 	unsigned short iNode, iGauss, jNode;
 	unsigned short nDimSq;
 
+	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+
 	nNodes = 3;
 	nGaussPoints = 1;
 
@@ -105,6 +107,16 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 		Kt_a[iNode] = new su2double [nDim];
 	}
 
+	if (body_forces){
+		FDL_a = new su2double *[nNodes];
+		for (iNode = 0; iNode < nNodes; iNode++){
+			FDL_a[iNode] = new su2double [nDim];
+		}
+	}
+	else{
+		FDL_a = NULL;
+	}
+
 	su2double Xi, Eta, val_Ni;
 	for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
 		  Xi = GaussCoord[iGauss][0];
@@ -145,6 +157,7 @@ CTRIA1::~CTRIA1(void) {
 		delete [] Kab[iVar];
 		delete [] Ks_ab[iVar];
 		delete [] Kt_a[iVar];
+		if (FDL_a != NULL) delete [] FDL_a[iVar];
 		delete [] NodalExtrap[iVar];
 	}
 
@@ -158,6 +171,8 @@ CTRIA1::~CTRIA1(void) {
 	delete [] Kt_a;
 	delete [] GaussWeight;
 	delete [] NodalExtrap;
+
+	if (FDL_a != NULL) delete [] FDL_a;
 
 }
 
@@ -311,6 +326,8 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 	unsigned short iNode, iGauss, jNode;
 	unsigned short nDimSq;
 
+	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+
 	nNodes = 4;
 	nGaussPoints = 4;
 
@@ -378,6 +395,16 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 		Kt_a[iNode] = new su2double [nDim];
 	}
 
+	if (body_forces){
+		FDL_a = new su2double *[nNodes];
+		for (iNode = 0; iNode < nNodes; iNode++){
+			FDL_a[iNode] = new su2double [nDim];
+		}
+	}
+	else{
+		FDL_a = NULL;
+	}
+
 	/*--- Store the shape functions (they only need to be computed once) ---*/
 	su2double Xi, Eta, val_Ni;
 	for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
@@ -436,6 +463,7 @@ CQUAD4::~CQUAD4(void) {
 		delete [] Kab[iVar];
 		delete [] Ks_ab[iVar];
 		delete [] Kt_a[iVar];
+		if (FDL_a != NULL) delete [] FDL_a[iVar];
 		delete [] NodalExtrap[iVar];
 	}
 
@@ -449,6 +477,8 @@ CQUAD4::~CQUAD4(void) {
 	delete [] Kt_a;
 	delete [] GaussWeight;
 	delete [] NodalExtrap;
+
+	if (FDL_a != NULL) delete [] FDL_a;
 
 }
 
@@ -759,6 +789,8 @@ CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
 	unsigned short iNode, iGauss, jNode;
 	unsigned short nDimSq;
 
+	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+
 	nNodes = 4;
 	nGaussPoints = 1;
 
@@ -823,6 +855,16 @@ CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
 		Kt_a[iNode] = new su2double [nDim];
 	}
 
+	if (body_forces){
+		FDL_a = new su2double *[nNodes];
+		for (iNode = 0; iNode < nNodes; iNode++){
+			FDL_a[iNode] = new su2double [nDim];
+		}
+	}
+	else{
+		FDL_a = NULL;
+	}
+
 	/*--- Store the shape functions (they only need to be computed once) ---*/
 	su2double Xi, Eta, Zeta, val_Ni;
 	for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
@@ -864,6 +906,7 @@ CTETRA1::~CTETRA1(void) {
 		delete [] Kab[iVar];
 		delete [] Ks_ab[iVar];
 		delete [] Kt_a[iVar];
+		if (FDL_a != NULL) delete [] FDL_a[iVar];
 		delete [] NodalExtrap[iVar];
 	}
 
@@ -877,6 +920,8 @@ CTETRA1::~CTETRA1(void) {
 	delete [] Kt_a;
 	delete [] GaussWeight;
 	delete [] NodalExtrap;
+
+	if (FDL_a != NULL) delete [] FDL_a;
 
 }
 
@@ -1047,6 +1092,8 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 	unsigned short iNode, iGauss, jNode;
 	unsigned short nDimSq;
 
+	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+
 	nNodes = 8;
 	nGaussPoints = 8;
 
@@ -1118,6 +1165,16 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 		Kt_a[iNode] = new su2double [nDim];
 	}
 
+	if (body_forces){
+		FDL_a = new su2double *[nNodes];
+		for (iNode = 0; iNode < nNodes; iNode++){
+			FDL_a[iNode] = new su2double [nDim];
+		}
+	}
+	else{
+		FDL_a = NULL;
+	}
+
 
 	/*--- Store the shape functions (they only need to be computed once) ---*/
 	su2double Xi, Eta, Zeta, val_Ni;
@@ -1186,6 +1243,7 @@ CHEXA8::~CHEXA8(void) {
 		delete [] Kab[iVar];
 		delete [] Ks_ab[iVar];
 		delete [] Kt_a[iVar];
+		if (FDL_a != NULL) delete [] FDL_a[iVar];
 		delete [] NodalExtrap[iVar];
 	}
 
@@ -1199,6 +1257,8 @@ CHEXA8::~CHEXA8(void) {
 	delete [] Kt_a;
 	delete [] GaussWeight;
 	delete [] NodalExtrap;
+
+	if (FDL_a != NULL) delete [] FDL_a;
 
 
 }

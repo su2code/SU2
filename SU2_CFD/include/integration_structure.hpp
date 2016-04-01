@@ -375,17 +375,6 @@ public:
 	virtual void SingleGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
 								  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-	 * \param[in] Iteration - Current iteration.
-	 */
-	virtual void Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
-								  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
 	/*!
 	 * \brief A virtual member.
@@ -396,7 +385,7 @@ public:
 	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
 	 * \param[in] Iteration - Current iteration.
 	 */
-	virtual void Structural_Iteration_FEM(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
+	virtual void Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
 								  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
 	
@@ -689,18 +678,6 @@ public:
 	 * \param[in] Iteration - Current iteration.
 	 */
 	void Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
-							 CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
-
-	/*!
-	 * \brief Do the numerical integration (implicit) of the structural solver.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-	 * \param[in] Iteration - Current iteration.
-	 */
-	void Structural_Iteration_FEM(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
 							 CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
 };
