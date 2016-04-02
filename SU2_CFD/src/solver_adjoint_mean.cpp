@@ -4593,7 +4593,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
               Velocity2 += Velocity[iDim]*Velocity[iDim];
             }
             a2 = Pressure*(Gamma/Gamma_Minus_One)*pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),1.0/Gamma_Minus_One);
-            density_gradient = a2*((Gamma_Minus_One)*Velocity2/(2.0*Gamma*Pressure));
+            density_gradient = a2*(Gamma_Minus_One*Velocity2/(2.0*Gamma*Pressure));
             velocity_gradient = 0.0;
             for (iDim=0; iDim<nDim; iDim++)
               velocity_gradient+=a2*Gamma_Minus_One*Density/(Gamma*Pressure)*Velocity[iDim]*UnitNormal[iDim];
