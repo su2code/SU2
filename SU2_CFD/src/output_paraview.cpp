@@ -66,7 +66,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       filename = config->GetFlow_FileName();
   }
   
-	if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)) {
+	if (Kind_Solver == FEM_ELASTICITY) {
 		if (surf_sol)
 			filename = config->GetSurfStructure_FileName().c_str();
 		else
@@ -367,7 +367,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
 
-    	if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY))
+    	if (Kind_Solver == FEM_ELASTICITY)
     		Paraview_File << "\nSCALARS Displacement_" << iVar+1 << " float 1\n";
     	else
     		Paraview_File << "\nSCALARS Conservative_" << iVar+1 << " float 1\n";
@@ -723,91 +723,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       }
     }
 
-    if (Kind_Solver == LINEAR_ELASTICITY) {
-
-       Paraview_File << "\nSCALARS Sxx float 1\n";
-       Paraview_File << "LOOKUP_TABLE default\n";
-
-       for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-          if (! surf_sol) {
-        	  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-          }
-        }
-      VarCounter++;
-
-      Paraview_File << "\nSCALARS Syy float 1\n";
-      Paraview_File << "LOOKUP_TABLE default\n";
-
-      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-         if (! surf_sol) {
-       	  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-         }
-       }
-     VarCounter++;
-
-     Paraview_File << "\nSCALARS Sxy float 1\n";
-     Paraview_File << "LOOKUP_TABLE default\n";
-
-     for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-        if (! surf_sol) {
-      	  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      }
-    VarCounter++;
-
-    if (nDim == 3){
-
-			Paraview_File << "\nSCALARS Szz float 1\n";
-			Paraview_File << "LOOKUP_TABLE default\n";
-
-			for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-			   if (! surf_sol) {
-				  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-			   }
-			 }
-		   VarCounter++;
-
-		   Paraview_File << "\nSCALARS Sxz float 1\n";
-		   Paraview_File << "LOOKUP_TABLE default\n";
-
-		   for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-			  if (! surf_sol) {
-				  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-			  }
-			}
-		  VarCounter++;
-
-		  Paraview_File << "\nSCALARS Syz float 1\n";
-		  Paraview_File << "LOOKUP_TABLE default\n";
-
-		  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-			 if (! surf_sol) {
-			  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-			 }
-		   }
-		 VarCounter++;
-
-    }
-
-      Paraview_File << "\nSCALARS Von_Mises_Stress float 1\n";
-      Paraview_File << "LOOKUP_TABLE default\n";
-
-      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-        if (surf_sol) {
-          if (LocalIndex[iPoint+1] != 0) {
-            /*--- Loop over the vars/residuals and write the values to file ---*/
-            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-          }
-        } else {
-          /*--- Loop over the vars/residuals and write the values to file ---*/
-          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      }
-      VarCounter++;
-
-    }
-
-
     if (Kind_Solver == FEM_ELASTICITY) {
 
        if (config->GetDynamic_Analysis() == DYNAMIC) {
@@ -1014,7 +929,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     }
   }
   
-	if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY)){
+	if (Kind_Solver == FEM_ELASTICITY){
 		if (surf_sol)
 			filename = config->GetSurfStructure_FileName().c_str();
 		else
@@ -1319,7 +1234,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
 
-    	if ((Kind_Solver == LINEAR_ELASTICITY) || (Kind_Solver == FEM_ELASTICITY))
+    	if (Kind_Solver == FEM_ELASTICITY)
     		Paraview_File << "\nSCALARS Displacement_" << iVar+1 << " float 1\n";
     	else
     		Paraview_File << "\nSCALARS Conservative_" << iVar+1 << " float 1\n";
@@ -1635,92 +1550,6 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
       VarCounter++;
       
     }
-    
-
-    if (Kind_Solver == LINEAR_ELASTICITY) {
-
-       Paraview_File << "\nSCALARS Sxx float 1\n";
-       Paraview_File << "LOOKUP_TABLE default\n";
-
-       for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-          if (! surf_sol) {
-        	  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-          }
-        }
-      VarCounter++;
-
-      Paraview_File << "\nSCALARS Syy float 1\n";
-      Paraview_File << "LOOKUP_TABLE default\n";
-
-      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-         if (! surf_sol) {
-       	  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-         }
-       }
-     VarCounter++;
-
-     Paraview_File << "\nSCALARS Sxy float 1\n";
-     Paraview_File << "LOOKUP_TABLE default\n";
-
-     for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-        if (! surf_sol) {
-      	  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      }
-    VarCounter++;
-
-    if (nDim == 3){
-
-			Paraview_File << "\nSCALARS Szz float 1\n";
-			Paraview_File << "LOOKUP_TABLE default\n";
-
-			for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-			   if (! surf_sol) {
-				  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-			   }
-			 }
-		   VarCounter++;
-
-		   Paraview_File << "\nSCALARS Sxz float 1\n";
-		   Paraview_File << "LOOKUP_TABLE default\n";
-
-		   for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-			  if (! surf_sol) {
-				  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-			  }
-			}
-		  VarCounter++;
-
-		  Paraview_File << "\nSCALARS Syz float 1\n";
-		  Paraview_File << "LOOKUP_TABLE default\n";
-
-		  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-			 if (! surf_sol) {
-			  Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-			 }
-		   }
-		 VarCounter++;
-
-    }
-
-      Paraview_File << "\nSCALARS Von_Mises_Stress float 1\n";
-      Paraview_File << "LOOKUP_TABLE default\n";
-
-      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
-        if (surf_sol) {
-          if (LocalIndex[iPoint+1] != 0) {
-            /*--- Loop over the vars/residuals and write the values to file ---*/
-            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-          }
-        } else {
-          /*--- Loop over the vars/residuals and write the values to file ---*/
-          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
-        }
-      }
-      VarCounter++;
-
-    }
-
 
     if (Kind_Solver == FEM_ELASTICITY) {
 
