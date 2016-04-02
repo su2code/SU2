@@ -1144,6 +1144,8 @@ inline su2double CConfig::GetAitkenStatRelax(void) { return AitkenStatRelax; }
 
 inline su2double CConfig::GetAitkenDynMaxInit(void) { return AitkenDynMaxInit; }
 
+inline su2double CConfig::GetAitkenDynMinInit(void) { return AitkenDynMinInit; }
+
 inline bool CConfig::GetDeadLoad(void) { return DeadLoad; }
 
 inline bool CConfig::GetMatchingMesh(void) { return MatchingMesh; }

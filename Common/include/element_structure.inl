@@ -69,6 +69,8 @@ inline su2double *CElement::Get_Kk_ab(unsigned short nodeA, unsigned short nodeB
 
 inline su2double *CElement::Get_Kt_a(unsigned short nodeA){ return Kt_a[nodeA];}
 
+inline su2double *CElement::Get_FDL_a(unsigned short nodeA){ return FDL_a[nodeA];}
+
 inline su2double CElement::Get_Ks_ab(unsigned short nodeA, unsigned short nodeB) { return Ks_ab[nodeA][nodeB]; }
 
 inline void CElement::Add_Mab(su2double val_Mab, unsigned short nodeA, unsigned short nodeB) { Mab[nodeA][nodeB] += val_Mab; }

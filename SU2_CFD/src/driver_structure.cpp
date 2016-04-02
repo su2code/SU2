@@ -158,7 +158,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   bool euler, ns, turbulent,
   fem_euler, fem_ns, fem_turbulent, fem_les,
   adj_euler, adj_ns, adj_turb,
-  poisson, wave, fea, heat, fem,
+  poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj;
   
@@ -170,7 +170,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   spalart_allmaras = false;  menter_sst      = false;
   poisson          = false;  neg_spalart_allmaras = false;
   wave             = false;	 disc_adj        = false;
-  fea              = false;  fem = false;
+  fem = false;
   heat             = false;
   transition       = false;
   template_solver  = false;
@@ -189,7 +189,6 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
-    case LINEAR_ELASTICITY: fea = true; break;
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
@@ -266,9 +265,6 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     if (heat) {
       solver_container[iMGlevel][HEAT_SOL] = new CHeatSolver(geometry[iMGlevel], config);
     }
-    if (fea) {
-      solver_container[iMGlevel][FEA_SOL] = new CFEASolver(geometry[iMGlevel], config);
-    }
     if (fem) {
       solver_container[iMGlevel][FEA_SOL] = new CFEM_ElasticitySolver(geometry[iMGlevel], config);
     }
@@ -300,7 +296,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   ns, adj_ns,
   turbulent, adj_turb,
   fem_euler, fem_ns, fem_turbulent, fem_les,
-  poisson, wave, fea, fem, heat, template_solver, transition, disc_adj;
+  poisson, wave, fem, heat, template_solver, transition, disc_adj;
   
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -313,7 +309,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   fem_les          = false;
   wave             = false;
   heat             = false;
-  fea              = false; fem = false;
+  fem = false;
   transition       = false;
   template_solver  = false;
   
@@ -330,7 +326,6 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
-    case LINEAR_ELASTICITY: fea = true; break;
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
@@ -352,7 +347,6 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   if (poisson) integration_container[POISSON_SOL] = new CSingleGridIntegration(config);
   if (wave) integration_container[WAVE_SOL] = new CSingleGridIntegration(config);
   if (heat) integration_container[HEAT_SOL] = new CSingleGridIntegration(config);
-  if (fea) integration_container[FEA_SOL] = new CStructuralIntegration(config);
   if (fem) integration_container[FEA_SOL] = new CStructuralIntegration(config);
   
   /*--- Allocate integration container for finite element flow solver. ---*/
@@ -383,7 +377,6 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   nVar_Adj_Flow         = 0,
   nVar_Adj_Turb         = 0,
   nVar_Poisson          = 0,
-  nVar_FEA              = 0,
   nVar_FEM				= 0,
   nVar_Wave             = 0,
   nVar_Heat             = 0;
@@ -398,7 +391,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   spalart_allmaras, neg_spalart_allmaras, menter_sst,
   poisson,
   wave,
-  fea, fem,
+  fem,
   heat,
   transition,
   template_solver;
@@ -413,7 +406,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   fem_euler        = false; fem_ns = false; fem_turbulent = false; fem_les = false;
   poisson          = false;
   adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
-  wave             = false;   heat             = false;   fea              = false;  fem				= false;
+  wave             = false;   heat             = false;   fem				= false;
   spalart_allmaras = false; neg_spalart_allmaras = false;	menter_sst       = false;
   transition       = false;
   template_solver  = false;
@@ -431,7 +424,6 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
-    case LINEAR_ELASTICITY: fea = true; break;
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
@@ -465,7 +457,6 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   //if (fem_turbulent)    nVar_Turb = solver_container[MESH_0][FEM_TURB_SOL]->GetnVar();
 
   if (wave)				nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
-  if (fea)				nVar_FEA = solver_container[MESH_0][FEA_SOL]->GetnVar();
   if (fem)				nVar_FEM = solver_container[MESH_0][FEA_SOL]->GetnVar();
   if (heat)				nVar_Heat = solver_container[MESH_0][HEAT_SOL]->GetnVar();
   
@@ -1126,21 +1117,13 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     numerics_container[MESH_0][WAVE_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Wave, config);
     
   }
-  
-  /*--- Solver definition for the FEA problem ---*/
-  if (fea) {
-    
-    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CGalerkin_FEA(nDim, nVar_FEA, config);
-    
-  }
-  
+
   /*--- Solver definition for the FEM problem ---*/
   if (fem) {
 	switch (config->GetGeometricConditions()) {
     	case SMALL_DEFORMATIONS :
     		switch (config->GetMaterialModel()) {
-    			case LINEAR_ELASTIC: numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CFEM_LinearElasticity(nDim, nVar_FEM, config); break;
+    			case LINEAR_ELASTIC: numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_LinearElasticity(nDim, nVar_FEM, config); break;
     			case NEO_HOOKEAN : cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
     			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
     		}
@@ -1150,8 +1133,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
 				case LINEAR_ELASTIC: cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
     			case NEO_HOOKEAN :
     				switch (config->GetMaterialCompressibility()) {
-    					case COMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config); break;
-    					case INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][VISC_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config); break;
+    					case COMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config); break;
+    					case INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config); break;
     					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
     				}
     				break;
@@ -1210,11 +1193,6 @@ void CDriver::Iteration_Preprocessing(CIteration **iteration_container, CConfig 
       iteration_container[iZone] = new CPoissonIteration(config[iZone]);
       break;
       
-    case LINEAR_ELASTICITY:
-      if (rank == MASTER_NODE)
-        cout << ": FEA iteration." << endl;
-      iteration_container[iZone] = new CFEAIteration(config[iZone]);
-      break;
     case FEM_ELASTICITY:
       if (rank == MASTER_NODE)
         cout << ": FEM iteration." << endl;
@@ -2323,11 +2301,11 @@ void CFSIDriver::Transfer_Tractions(COutput *output, CIntegration ***integration
 	case LEGACY_METHOD:
 		if (MatchingMesh){
 			solver_container[targetZone][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[donorZone], geometry_container[targetZone], geometry_container[donorZone],
-					config_container[targetZone], config_container[donorZone], numerics_container[targetZone][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+					config_container[targetZone], config_container[donorZone], numerics_container[targetZone][MESH_0][SolContainer_Position_fea][FEA_TERM]);
 		}
 		else {
 			solver_container[targetZone][MESH_0][FEA_SOL]->SetFEA_Load_Int(solver_container[donorZone], geometry_container[targetZone], geometry_container[donorZone],
-					config_container[targetZone], config_container[donorZone], numerics_container[targetZone][MESH_0][SolContainer_Position_fea][VISC_TERM]);
+					config_container[targetZone], config_container[donorZone], numerics_container[targetZone][MESH_0][SolContainer_Position_fea][FEA_TERM]);
 		}
 		break;
 	}

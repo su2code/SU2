@@ -59,7 +59,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     else filename = config->GetFlow_FileName();
   }
   
-  if (Kind_Solver == LINEAR_ELASTICITY) {
+  if (Kind_Solver == FEM_ELASTICITY) {
     if (surf_sol) filename = config->GetSurfStructure_FileName().c_str();
     else filename = config->GetStructure_FileName().c_str();
   }
@@ -216,8 +216,8 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         }
       }
       
-      if (Kind_Solver == LINEAR_ELASTICITY) {
-        Tecplot_File << ", \"Von_Mises_Stress\", \"Flow_Pressure\"";
+      if (Kind_Solver == FEM_ELASTICITY) {
+        Tecplot_File << ", \"Von_Mises_Stress\"";
       }
       
       if (config->GetExtraOutput()) {
