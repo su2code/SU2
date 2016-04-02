@@ -405,10 +405,6 @@ int main(int argc, char *argv[]) {
         StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
       case HEAT_EQUATION:
         StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
-      case LINEAR_ELASTICITY:
-        // This is a temporal fix, while we code the non-linear solver
-        //	        StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
-        StopCalc = false; break;
 	  case FEM_ELASTICITY:
 	    StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
       case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
