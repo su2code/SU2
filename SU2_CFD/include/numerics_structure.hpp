@@ -1493,18 +1493,6 @@ public:
   virtual void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
 
   /*!
-   * \brief A virtual member to compute the tangent matrix terms for DE
-   * \param[in] element_container - Element structure for the particular element integrated.
-   */
-  virtual void Compute_Tangent_Matrix_DE(CElement *element_container, CConfig *config);
-
-  /*!
-   * \brief A virtual member to compute the nodal stress terms terms for DE
-   * \param[in] element_container - Element structure for the particular element integrated.
-   */
-  virtual void Compute_NodalStress_Term_DE(CElement *element_container, CConfig *config);
-
-  /*!
    * \brief Computes a basis of orthogonal vectors from a suppled vector
    * \param[in] config - Normal vector
    */
@@ -4010,10 +3998,6 @@ public:
 
 	virtual void Compute_Eigenproblem(CElement *element_container, CConfig *config);
 
-	virtual void Compute_Tangent_Matrix_DE(CElement *element_container, CConfig *config);
-
-	virtual void Compute_NodalStress_Term_DE(CElement *element_container, CConfig *config);
-
 };
 
 /*!
@@ -4124,10 +4108,6 @@ public:
 	void Compute_NodalStress_Term(CElement *element_container, CConfig *config);
 
 	void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
-
-	void Compute_Tangent_Matrix_DE(CElement *element_container, CConfig *config);
-
-	void Compute_NodalStress_Term_DE(CElement *element_container, CConfig *config);
 
 	void Compute_Eigenproblem(CElement *element_container, CConfig *config);
 
