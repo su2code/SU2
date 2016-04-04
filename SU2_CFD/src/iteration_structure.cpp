@@ -1997,7 +1997,7 @@ void CDiscAdjMeanFlowIteration::SetDependencies(CSolver ****solver_container, CG
   /*--- Compute coupling between flow and turbulent equations ---*/
 
   if (turbulent){
-    solver_container[iZone][MESH_0][FLOW_SOL]->SetPrimitive_Variables(solver_container[iZone][MESH_0], config_container[iZone], false);
+    solver_container[iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
     solver_container[iZone][MESH_0][TURB_SOL]->Postprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
   }
 
