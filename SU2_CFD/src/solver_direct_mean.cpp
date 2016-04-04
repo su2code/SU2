@@ -558,31 +558,41 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   EntropyIn 										= new su2double[nMarkerTurboPerf];
   EntropyIn_BC 									= new su2double[nMarkerTurboPerf];
   PressureRatio									= new su2double[nMarkerTurboPerf];
-  PressureOut										= new su2double[nMarkerTurboPerf];
-	TotalPresureIn								= new su2double[nMarkerTurboPerf];
+  TotalPresureIn								= new su2double[nMarkerTurboPerf];
 	TotalTemperatureIn						= new su2double[nMarkerTurboPerf];
   EnthalpyOut										= new su2double[nMarkerTurboPerf];
-  MachIn												= new su2double[nMarkerTurboPerf];
-  MachOut												= new su2double[nMarkerTurboPerf];
-  NormalMachIn									= new su2double[nMarkerTurboPerf];
-  NormalMachOut									= new su2double[nMarkerTurboPerf];
+  MachIn												= new su2double*[nMarkerTurboPerf];
+  MachOut												= new su2double*[nMarkerTurboPerf];
   VelocityOutIs									= new su2double[nMarkerTurboPerf];
-	DensityIn_Mix									= new su2double[nMarkerTurboPerf];
-	PressureIn_Mix								= new su2double[nMarkerTurboPerf];
-	NormalVelocityIn_Mix					= new su2double[nMarkerTurboPerf];
-	TangVelocityIn_Mix						= new su2double[nMarkerTurboPerf];
-	DensityOut_Mix								= new su2double[nMarkerTurboPerf];
-	PressureOut_Mix								= new su2double[nMarkerTurboPerf];
-	NormalVelocityOut_Mix					= new su2double[nMarkerTurboPerf];
-	TangVelocityOut_Mix						= new su2double[nMarkerTurboPerf];
+	DensityIn											= new su2double[nMarkerTurboPerf];
+	PressureIn										= new su2double[nMarkerTurboPerf];
+	TurboVelocityIn								= new su2double*[nMarkerTurboPerf];
+	DensityOut										= new su2double[nMarkerTurboPerf];
+	PressureOut										= new su2double[nMarkerTurboPerf];
+	TurboVelocityOut							= new su2double*[nMarkerTurboPerf];
 	EnthalpyOutIs									= new su2double[nMarkerTurboPerf];
 	EntropyGen										= new su2double[nMarkerTurboPerf];
 	AbsFlowAngleIn								= new su2double[nMarkerTurboPerf];
 	TotalEnthalpyOut							= new su2double[nMarkerTurboPerf];
 	TotalEnthalpyOutIs						= new su2double[nMarkerTurboPerf];
+	TotalRothalpyIn								= new su2double[nMarkerTurboPerf];
+	TotalRothalpyOut							= new su2double[nMarkerTurboPerf];
 	AbsFlowAngleOut								= new su2double[nMarkerTurboPerf];
 	PressureOut_BC								= new su2double[nMarkerTurboPerf];
   
+	for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
+		MachIn[iMarker]													= new su2double[nDim];
+		MachOut[iMarker]												= new su2double[nDim];
+		TurboVelocityIn[iMarker]								= new su2double[nDim];
+		TurboVelocityOut[iMarker]								= new su2double[nDim];
+		for (iDim = 0; iDim < nDim; iDim++){
+			MachIn[iMarker][iDim]										= 0.0;
+			MachOut[iMarker][iDim]									= 0.0;
+			TurboVelocityIn[iMarker][iDim]					= 0.0;
+			TurboVelocityOut[iMarker][iDim]					= 0.0;
+		}
+	}
+
   for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
     TotalStaticEfficiency[iMarker]					= 0.0;
     TotalTotalEfficiency[iMarker]						= 0.0;
@@ -603,24 +613,18 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 		TotalPresureIn[iMarker]									= 0.0;
 		TotalTemperatureIn[iMarker]							= 0.0;
     EnthalpyOut[iMarker]										= 0.0;
-    MachIn[iMarker]													= 0.0;
-    MachOut[iMarker]												= 0.0;
-    NormalMachIn[iMarker]										= 0.0;
-    NormalMachOut[iMarker]									= 0.0;
     VelocityOutIs[iMarker]									= 0.0;
-		DensityIn_Mix[iMarker]									= 0.0;
-		PressureIn_Mix[iMarker]									= 0.0;
-		NormalVelocityIn_Mix[iMarker]						= 0.0;
-		TangVelocityIn_Mix[iMarker]							= 0.0;
-		DensityOut_Mix[iMarker]									= 0.0;
-		PressureOut_Mix[iMarker]								= 0.0;
-		NormalVelocityOut_Mix[iMarker]					= 0.0;
-		TangVelocityOut_Mix[iMarker]						= 0.0;
+		DensityIn[iMarker]											= 0.0;
+		PressureIn[iMarker]											= 0.0;
+		DensityOut[iMarker]											= 0.0;
+		PressureOut[iMarker]										= 0.0;
 		EnthalpyOutIs[iMarker]									= 0.0;
 		EntropyGen[iMarker]											= 0.0;
 		AbsFlowAngleIn[iMarker]									= 0.0;
 		TotalEnthalpyOut[iMarker]								= 0.0;
 		TotalEnthalpyOutIs[iMarker]							= 0.0;
+		TotalRothalpyIn[iMarker]								= 0.0;
+		TotalRothalpyOut[iMarker]								= 0.0;
 		AbsFlowAngleOut[iMarker]								= 0.0;
 		PressureOut_BC[iMarker]									= 0.0;
   }
@@ -4767,8 +4771,8 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 	unsigned short iMarker, iMarkerTP;
 	su2double  avgVel2In, avgVel2Out,avgVelRel2In, avgVelRel2Out, avgGridVel2In, avgGridVel2Out, avgTotalEnthalpyIn= 0.0,avgTotalRothalpyIn,
 	avgTotalEnthalpyOut, avgTotalRothalpyOut, avgTotalEnthalpyOutIs, avgEnthalpyOut, avgEnthalpyOutIs,
-	avgPressureOut, avgTotalRelPressureIn, avgTotalRelPressureOut, avgEntropyIn, avgEntropyOut, flowAngleIn, massFlowIn, machIn, normalMachIn, 	flowAngleOut,
-	massFlowOut, machOut, normalMachOut, avgTotTempIn, avgTotPresIn, P_Total, T_Total, *FlowDir, alphaIn_BC, entropyIn_BC, totalEnthalpyIn_BC, densityIn_Mix,
+	avgPressureOut, avgTotalRelPressureIn, avgTotalRelPressureOut, avgEntropyIn, avgEntropyOut, flowAngleIn, massFlowIn, tangMachIn, normalMachIn, 	flowAngleOut,
+	massFlowOut, tangMachOut, normalMachOut, avgTotTempIn, avgTotPresIn, P_Total, T_Total, *FlowDir, alphaIn_BC, entropyIn_BC, totalEnthalpyIn_BC, densityIn_Mix,
 	pressureIn_Mix, normalVelocityIn_Mix, tangVelocityIn_Mix, densityOut_Mix, pressureOut_Mix, normalVelocityOut_Mix, tangVelocityOut_Mix, absFlowAngleIn,
 	absFlowAngleOut, pressureOut_BC;
 
@@ -4803,7 +4807,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
   avgTotalRelPressureIn  = -1.0;
 	flowAngleIn						 = -1.0;
 	massFlowIn						 = -1.0;
-	machIn								 = -1.0;
+	tangMachIn						 = -1.0;
 	normalMachIn					 = -1.0;
 	avgTotTempIn					 = -1.0;
 	avgTotPresIn           = -1.0;
@@ -4818,7 +4822,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 	avgGridVel2Out				 = -1.0;
 	flowAngleOut					 = -1.0;
 	massFlowOut						 = -1.0;
-	machOut								 = -1.0;
+	tangMachOut						 = -1.0;
 	normalMachOut					 = -1.0;
   densityIn_Mix					 = -1.0;
 	pressureIn_Mix				 = -1.0;
@@ -4862,7 +4866,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 					avgTotalRelPressureIn   = FluidModel->GetPressure();
 					flowAngleIn							= SpanFlowAngle[iMarker][0];
 					massFlowIn							= SpanMassFlow[iMarker][0];
-					machIn									= AverageMach[iMarker][0];
+					tangMachIn							= AverageTurboMach[iMarker][0][1];
 					normalMachIn						= AverageTurboMach[iMarker][0][0];
 					avgTotTempIn						= AverageTotTemperature[iMarker][0];
 					avgTotPresIn						= AverageTotPressure[iMarker][0];
@@ -4927,8 +4931,8 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 					TurbPerfIn[3]  = avgTotalRelPressureIn;
 					TurbPerfIn[4]  = flowAngleIn;
 					TurbPerfIn[5]  = massFlowIn;
-					TurbPerfIn[6]  = machIn;
-					TurbPerfIn[7]  =	normalMachIn;
+					TurbPerfIn[6]  = tangMachIn;
+					TurbPerfIn[7]  = normalMachIn;
 					TurbPerfIn[8]  = avgTotTempIn;
 					TurbPerfIn[9]  = avgTotPresIn;
 					TurbPerfIn[10] = alphaIn_BC;
@@ -4966,7 +4970,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 					avgPressureOut						= AveragePressure[iMarker][0];
 					flowAngleOut							= SpanFlowAngle[iMarker][0];
 					massFlowOut							  = SpanMassFlow[iMarker][0];
-					machOut									  = AverageMach[iMarker][0];
+					tangMachOut								= AverageTurboMach[iMarker][0][1];
 					normalMachOut						  = AverageTurboMach[iMarker][0][0];
 					densityOut_Mix					  = AverageDensity[iMarker][0];
 					pressureOut_Mix				  = AveragePressure[iMarker][0];
@@ -4979,9 +4983,12 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 						Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
 						if(config->GetBoolRiemann()){
 							pressureOut_BC  = config->GetRiemann_Var1(Marker_Tag);
+							pressureOut_BC /= config->GetPressure_Ref();
 						}
 						else{
 							pressureOut_BC  = config->GetNRBC_Var1(Marker_Tag);
+							pressureOut_BC /= config->GetPressure_Ref();
+
 						}
 					}
 					else{
@@ -5002,7 +5009,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 					TurbPerfOut[5]  = avgGridVel2Out;
 					TurbPerfOut[6]  = flowAngleOut;
 					TurbPerfOut[7]  = massFlowOut;
-					TurbPerfOut[8]  = machOut;
+					TurbPerfOut[8]  = tangMachOut;
 					TurbPerfOut[9]  = normalMachOut;
 					TurbPerfOut[10] = avgEntropyOut;
 					TurbPerfOut[11] = densityOut_Mix;
@@ -5056,8 +5063,8 @@ if (rank == MASTER_NODE){
 				flowAngleIn						 = TotTurbPerfIn[n1*i+4];
 				massFlowIn						 = 0.0;
 				massFlowIn						 = TotTurbPerfIn[n1*i+5];
-				machIn								 = 0.0;
-				machIn								 = TotTurbPerfIn[n1*i+6];
+				tangMachIn						 = 0.0;
+				tangMachIn						 = TotTurbPerfIn[n1*i+6];
 				normalMachIn					 = 0.0;
 				normalMachIn					 = TotTurbPerfIn[n1*i+7];
 				avgTotTempIn           = 0.0;
@@ -5102,8 +5109,8 @@ if (rank == MASTER_NODE){
 				flowAngleOut					 = TotTurbPerfOut[n2*i+6];
 				massFlowOut						 = 0.0;
 				massFlowOut 					 = TotTurbPerfOut[n2*i+7];
-				machOut								 = 0.0;
-				machOut								 = TotTurbPerfOut[n2*i+8];
+				tangMachOut						 = 0.0;
+				tangMachOut						 = TotTurbPerfOut[n2*i+8];
 				normalMachOut					 = 0.0;
 				normalMachOut					 = TotTurbPerfOut[n2*i+9];
 				avgEntropyOut					 = 0.0;
@@ -5138,7 +5145,6 @@ if (rank == MASTER_NODE){
 		avgTotalEnthalpyOutIs = avgEnthalpyOutIs + 0.5*avgVel2Out;
 //		cout << markerTP -1<<endl;
 		/*--- store turboperformance informations ---*/
-		PressureOut[markerTP - 1] = avgPressureOut;
 		PressureRatio[markerTP -1] = avgTotalRelPressureIn/avgPressureOut;
 
 
@@ -5148,6 +5154,8 @@ if (rank == MASTER_NODE){
 		EulerianWork[markerTP -1]      		= avgTotalEnthalpyIn - avgTotalEnthalpyOut;
 		TotalEnthalpyIn[markerTP -1]   		= avgTotalEnthalpyIn;
 		TotalEnthalpyOut[markerTP -1]   	= avgTotalEnthalpyOut;
+		TotalRothalpyIn[markerTP -1]   		= avgTotalRothalpyIn;
+		TotalRothalpyOut[markerTP -1]   	= avgTotalRothalpyOut;
 		TotalEnthalpyOutIs[markerTP -1]		=	avgTotalEnthalpyOutIs;
 		EntropyIn[markerTP -1]				 		= avgEntropyIn;
 		EntropyGen[markerTP -1]           = (avgEntropyOut - avgEntropyIn)/avgEntropyIn;
@@ -5157,10 +5165,10 @@ if (rank == MASTER_NODE){
 		FlowAngleOut[markerTP -1]      		= flowAngleOut;
 		MassFlowIn[markerTP -1]        		= massFlowIn;
 		MassFlowOut[markerTP -1]       		= massFlowOut;
-		MachIn[markerTP -1]            		= machIn;
-		MachOut[markerTP -1]           		= machOut;
-		NormalMachIn[markerTP -1]     		= normalMachIn;
-		NormalMachOut[markerTP -1]    		= normalMachOut;
+		MachIn[markerTP -1][0]            = normalMachIn;
+		MachOut[markerTP -1][0]           = normalMachOut;
+		MachIn[markerTP -1][1]     				= tangMachIn;
+		MachOut[markerTP -1][1]    				= tangMachOut;
 		EnthalpyOut[markerTP -1]       		= avgEnthalpyOut;
 		EnthalpyOutIs[markerTP -1]        = avgEnthalpyOutIs;
 		VelocityOutIs[markerTP -1]    		= sqrt(2.0*(avgTotalRothalpyIn - avgEnthalpyOut + 0.5*avgGridVel2Out));
@@ -5172,14 +5180,14 @@ if (rank == MASTER_NODE){
 		FlowAngleIn_BC[markerTP -1] 			= alphaIn_BC;
 		EntropyIn_BC[markerTP -1]					= entropyIn_BC;
 		TotalEnthalpyIn_BC[markerTP -1]   = totalEnthalpyIn_BC;
-		DensityIn_Mix[markerTP -1]				= densityIn_Mix;
-		PressureIn_Mix[markerTP -1]			  = pressureIn_Mix;
-		NormalVelocityIn_Mix[markerTP -1] = normalVelocityIn_Mix;
-		TangVelocityIn_Mix[markerTP -1]		= tangVelocityIn_Mix;
-		DensityOut_Mix[markerTP -1]				= densityOut_Mix;
-		PressureOut_Mix[markerTP -1]			= pressureOut_Mix;
-		NormalVelocityOut_Mix[markerTP -1] = normalVelocityOut_Mix;
-		TangVelocityOut_Mix[markerTP -1]	= tangVelocityOut_Mix;
+		DensityIn[markerTP -1]						= densityIn_Mix;
+		PressureIn[markerTP -1]					  = pressureIn_Mix;
+		TurboVelocityIn[markerTP -1][0] 	= normalVelocityIn_Mix;
+		TurboVelocityIn[markerTP -1][1]		= tangVelocityIn_Mix;
+		DensityOut[markerTP -1]						= densityOut_Mix;
+		PressureOut[markerTP -1]					= pressureOut_Mix;
+		TurboVelocityOut[markerTP -1][0] 	= normalVelocityOut_Mix;
+		TurboVelocityOut[markerTP -1][1]	= tangVelocityOut_Mix;
 		PressureOut_BC[markerTP -1]       = pressureOut_BC;
 
 
@@ -5204,13 +5212,17 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
   if (rank == MASTER_NODE){
   	/*---Comnpute performance for each stage---*/
   	for(iStage = 0; iStage < nStages; iStage++ ){
-  		TotalTotalEfficiency[nBladesRow + iStage] = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 2])/(TotalEnthalpyIn[iStage*2] - TotalEnthalpyOutIs[iStage*2 + 2]);
-  		TotalStaticEfficiency[nBladesRow + iStage] = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 2])/(TotalEnthalpyIn[iStage*2] - EnthalpyOutIs[iStage*2 + 2]);
+  		TotalTotalEfficiency[nBladesRow + iStage]  = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 1])/(TotalEnthalpyIn[iStage*2] - TotalEnthalpyOutIs[iStage*2 + 1]);
+  		TotalStaticEfficiency[nBladesRow + iStage] = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 1])/(TotalEnthalpyIn[iStage*2] - EnthalpyOutIs[iStage*2 + 1]);
+  		EntropyGen[nBladesRow + iStage]            = ((EntropyIn[iStage*2 + 1]*EntropyGen[iStage*2 + 1] + EntropyIn[iStage*2 + 1]) - EntropyIn[iStage*2])/abs(EntropyIn[iStage*2]);
+  		PressureRatio[nBladesRow + iStage]         = (PressureRatio[iStage*2]*PressureOut[iStage*2]/PressureOut[iStage*2 + 1]);
   	}
 
   	/*---Comnpute performance for full machine---*/
   	TotalTotalEfficiency[nBladesRow + nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - TotalEnthalpyOutIs[nBladesRow-1]);
     TotalStaticEfficiency[nBladesRow +nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - EnthalpyOutIs[nBladesRow-1]);
+		EntropyGen[nBladesRow + nStages]           = ((EntropyIn[nBladesRow-1]*EntropyGen[nBladesRow-1] + EntropyIn[nBladesRow-1]) - EntropyIn[0])/abs(EntropyIn[0]);
+		PressureRatio[nBladesRow + nStages]        = PressureRatio[0]*PressureOut[0]/PressureOut[nBladesRow-1];
   }
 }
 void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
@@ -8479,7 +8491,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
 							}
 							AverageMach[iMarker][iSpan] /= AverageSoundSpeed[iMarker][iSpan];
 							AverageTurboMach[iMarker][iSpan][1] = (RelTangVelocity)/AverageSoundSpeed[iMarker][iSpan];
-//							SpanFlowAngle[iMarker][iSpan]= atan((RelTangVelocity)/AverageTurboVelocity[iMarker][iSpan][0]);
+							SpanFlowAngle[iMarker][iSpan]= atan((RelTangVelocity)/AverageTurboVelocity[iMarker][iSpan][0]);
 
 						}else{
 							AverageMach[iMarker][iSpan] = 0.0;
@@ -13366,30 +13378,40 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   EntropyIn 										= new su2double[nMarkerTurboPerf];
   EntropyIn_BC 									= new su2double[nMarkerTurboPerf];
   PressureRatio									= new su2double[nMarkerTurboPerf];
-  PressureOut										= new su2double[nMarkerTurboPerf];
-	TotalPresureIn								= new su2double[nMarkerTurboPerf];
+  TotalPresureIn								= new su2double[nMarkerTurboPerf];
 	TotalTemperatureIn						= new su2double[nMarkerTurboPerf];
   EnthalpyOut										= new su2double[nMarkerTurboPerf];
-  MachIn												= new su2double[nMarkerTurboPerf];
-  MachOut												= new su2double[nMarkerTurboPerf];
-  NormalMachIn									= new su2double[nMarkerTurboPerf];
-  NormalMachOut									= new su2double[nMarkerTurboPerf];
+  MachIn												= new su2double*[nMarkerTurboPerf];
+  MachOut												= new su2double*[nMarkerTurboPerf];
   VelocityOutIs									= new su2double[nMarkerTurboPerf];
-	DensityIn_Mix									= new su2double[nMarkerTurboPerf];
-	PressureIn_Mix								= new su2double[nMarkerTurboPerf];
-	NormalVelocityIn_Mix					= new su2double[nMarkerTurboPerf];
-	TangVelocityIn_Mix						= new su2double[nMarkerTurboPerf];
-	DensityOut_Mix								= new su2double[nMarkerTurboPerf];
-	PressureOut_Mix								= new su2double[nMarkerTurboPerf];
-	NormalVelocityOut_Mix					= new su2double[nMarkerTurboPerf];
-	TangVelocityOut_Mix						= new su2double[nMarkerTurboPerf];
+	DensityIn											= new su2double[nMarkerTurboPerf];
+	PressureIn										= new su2double[nMarkerTurboPerf];
+	TurboVelocityIn								= new su2double*[nMarkerTurboPerf];
+	DensityOut										= new su2double[nMarkerTurboPerf];
+	PressureOut										= new su2double[nMarkerTurboPerf];
+	TurboVelocityOut							= new su2double*[nMarkerTurboPerf];
 	EnthalpyOutIs									= new su2double[nMarkerTurboPerf];
 	EntropyGen										= new su2double[nMarkerTurboPerf];
 	AbsFlowAngleIn								= new su2double[nMarkerTurboPerf];
 	TotalEnthalpyOut							= new su2double[nMarkerTurboPerf];
 	TotalEnthalpyOutIs						= new su2double[nMarkerTurboPerf];
+	TotalRothalpyIn								= new su2double[nMarkerTurboPerf];
+	TotalRothalpyOut							= new su2double[nMarkerTurboPerf];
 	AbsFlowAngleOut								= new su2double[nMarkerTurboPerf];
 	PressureOut_BC								= new su2double[nMarkerTurboPerf];
+
+	for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
+		MachIn[iMarker]													= new su2double[nDim];
+		MachOut[iMarker]												= new su2double[nDim];
+		TurboVelocityIn[iMarker]								= new su2double[nDim];
+		TurboVelocityOut[iMarker]								= new su2double[nDim];
+		for (iDim = 0; iDim < nDim; iDim++){
+			MachIn[iMarker][iDim]										= 0.0;
+			MachOut[iMarker][iDim]									= 0.0;
+			TurboVelocityIn[iMarker][iDim]					= 0.0;
+			TurboVelocityOut[iMarker][iDim]					= 0.0;
+		}
+	}
 
   for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
     TotalStaticEfficiency[iMarker]					= 0.0;
@@ -13411,28 +13433,21 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 		TotalPresureIn[iMarker]									= 0.0;
 		TotalTemperatureIn[iMarker]							= 0.0;
     EnthalpyOut[iMarker]										= 0.0;
-    MachIn[iMarker]													= 0.0;
-    MachOut[iMarker]												= 0.0;
-    NormalMachIn[iMarker]										= 0.0;
-    NormalMachOut[iMarker]									= 0.0;
     VelocityOutIs[iMarker]									= 0.0;
-		DensityIn_Mix[iMarker]									= 0.0;
-		PressureIn_Mix[iMarker]									= 0.0;
-		NormalVelocityIn_Mix[iMarker]						= 0.0;
-		TangVelocityIn_Mix[iMarker]							= 0.0;
-		DensityOut_Mix[iMarker]									= 0.0;
-		PressureOut_Mix[iMarker]								= 0.0;
-		NormalVelocityOut_Mix[iMarker]					= 0.0;
-		TangVelocityOut_Mix[iMarker]						= 0.0;
+		DensityIn[iMarker]											= 0.0;
+		PressureIn[iMarker]											= 0.0;
+		DensityOut[iMarker]											= 0.0;
+		PressureOut[iMarker]										= 0.0;
 		EnthalpyOutIs[iMarker]									= 0.0;
 		EntropyGen[iMarker]											= 0.0;
 		AbsFlowAngleIn[iMarker]									= 0.0;
 		TotalEnthalpyOut[iMarker]								= 0.0;
 		TotalEnthalpyOutIs[iMarker]							= 0.0;
+		TotalRothalpyIn[iMarker]								= 0.0;
+		TotalRothalpyOut[iMarker]								= 0.0;
 		AbsFlowAngleOut[iMarker]								= 0.0;
 		PressureOut_BC[iMarker]									= 0.0;
   }
-
 
 	/*--- Initializate quantities for NR BC ---*/
 	if(config->GetBoolNRBC()){

@@ -1095,28 +1095,14 @@ public:
 	 * \param[in] inMarkerTP - bound marker.
 	 * \return Value of the Inlet Mach for turbomachinery performance.
 	 */
-	virtual su2double GetMachIn(unsigned short inMarkerTP);
+	virtual su2double* GetMachIn(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] inMarkerTP - bound marker.
 	 * \return Value of the Outlet Mach for turbomachinery performance.
 	 */
-	virtual su2double GetMachOut(unsigned short inMarkerTP);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the normal component of the Inlet Mach for turbomachinery performance.
-	 */
-	virtual su2double GetNormalMachIn(unsigned short inMarkerTP);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the normal component of the Outlet Mach for turbomachinery performance.
-	 */
-	virtual su2double GetNormalMachOut(unsigned short inMarkerTP);
+	virtual su2double* GetMachOut(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
@@ -1178,13 +1164,6 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the Outlet Pressure for turbomachinery performance.
-	 */
-	virtual su2double GetPressureOut(unsigned short inMarkerTP);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] inMarkerTP - bound marker.
 	 * \return Value of the PressureRatio for turbomachinery performance.
 	 */
 	virtual su2double GetPressureRatio(unsigned short inMarkerTP);
@@ -1194,56 +1173,42 @@ public:
 	 * \param[in] inMarkerTP - bound marker.
 	 * \return Value of the inlet density.
 	 */
-	virtual su2double GetDensityIn_Mix(unsigned short inMarkerTP);
+	virtual su2double GetDensityIn(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] inMarkerTP - bound marker.
 	 * \return Value of inlet pressure.
 	 */
-	virtual su2double GetPressureIn_Mix(unsigned short inMarkerTP);
+	virtual su2double GetPressureIn(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] inMarkerTP - bound marker.
 	 * \return Value of the inlet normal velocity.
 	 */
-	virtual su2double GetNormalVelocityIn_Mix(unsigned short inMarkerTP);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the inlet tangential velocity.
-	 */
-	virtual su2double GetTangVelocityIn_Mix(unsigned short inMarkerTP);
+	virtual su2double* GetTurboVelocityIn(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] inMarkerTP - bound marker.
 	 * \return Value of the outlet density.
 	 */
-	virtual su2double GetDensityOut_Mix(unsigned short inMarkerTP);
+	virtual su2double GetDensityOut(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] inMarkerTP - bound marker.
 	 * \return Value of the outlet pressure.
 	 */
-	virtual su2double GetPressureOut_Mix(unsigned short inMarkerTP);
+	virtual su2double GetPressureOut(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] inMarkerTP - bound marker.
 	 * \return Value of the outlet normal velocity.
 	 */
-	virtual su2double GetNormalVelocityOut_Mix(unsigned short inMarkerTP);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the outlet tangential velocity.
-	 */
-	virtual su2double GetTangVelocityOut_Mix(unsigned short inMarkerTP);
+	virtual su2double* GetTurboVelocityOut(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
@@ -1272,6 +1237,21 @@ public:
 	 * \return Value of the Total outlet Enthalpy for turbomachinery performance.
 	 */
 	virtual su2double GetTotalEnthalpyOut(unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] inMarkerTP - bound marker.
+	 * \return Value of the Total inlet Rothalpy for turbomachinery performance.
+	 */
+	virtual su2double GetTotalRothalpyIn(unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] inMarkerTP - bound marker.
+	 * \return Value of the Total outlet Rothalpy for turbomachinery performance.
+	 */
+	virtual su2double GetTotalRothalpyOut(unsigned short inMarkerTP);
+
 
 	/*!
 	 * \brief A virtual member.
@@ -1369,28 +1349,14 @@ public:
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	virtual void SetMachIn(su2double value, unsigned short inMarkerTP);
+	virtual void SetMachIn(su2double* value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	virtual void SetMachOut(su2double value, unsigned short inMarkerTP);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] value      - turboperformance value to set.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 */
-	virtual void SetNormalMachIn(su2double value, unsigned short inMarkerTP);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] value      - turboperformance value to set.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 */
-	virtual void SetNormalMachOut(su2double value, unsigned short inMarkerTP);
+	virtual void SetMachOut(su2double* value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
@@ -1453,13 +1419,6 @@ public:
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	virtual void SetPressureOut(su2double value, unsigned short inMarkerTP);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] value      - turboperformance value to set.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 */
 	virtual void SetPressureRatio(su2double value, unsigned short inMarkerTP);
 
 	/*!
@@ -1467,56 +1426,42 @@ public:
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	virtual void SetDensityIn_Mix(su2double value, unsigned short inMarkerTP);
+	virtual void SetDensityIn(su2double value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	virtual void SetPressureIn_Mix(su2double value, unsigned short inMarkerTP);
+	virtual void SetPressureIn(su2double value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	virtual void SetNormalVelocityIn_Mix(su2double value, unsigned short inMarkerTP);
+	virtual void SetTurboVelocityIn(su2double* value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	virtual void SetTangVelocityIn_Mix(su2double value, unsigned short inMarkerTP);
+	virtual void SetDensityOut(su2double value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	virtual void SetDensityOut_Mix(su2double value, unsigned short inMarkerTP);
+	virtual void SetPressureOut(su2double value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	virtual void SetPressureOut_Mix(su2double value, unsigned short inMarkerTP);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] value      - turboperformance value to set.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 */
-	virtual void SetNormalVelocityOut_Mix(su2double value, unsigned short inMarkerTP);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] value      - turboperformance value to set.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 */
-	virtual void SetTangVelocityOut_Mix(su2double value, unsigned short inMarkerTP);
+	virtual void SetTurboVelocityOut(su2double* value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
@@ -1545,6 +1490,20 @@ public:
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
 	virtual void SetTotalEnthalpyOut(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetTotalRothalpyIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetTotalRothalpyOut(su2double value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
@@ -3462,7 +3421,7 @@ protected:
   	  	  	*TotalTotalEfficiency,
 			*KineticEnergyLoss,
 			*TotalPressureLoss,
-  	  	  	*MassFlowIn,
+  	  *MassFlowIn,
 			*MassFlowOut,
 			*FlowAngleIn,
 			*FlowAngleIn_BC,
@@ -3473,27 +3432,24 @@ protected:
 			*EntropyIn,
 			*EntropyIn_BC,
 			*PressureRatio,
-			*PressureOut,
 			*TotalPresureIn,
 			*TotalTemperatureIn,
 			*EnthalpyOut,
-			*MachIn,
-			*MachOut,
-			*NormalMachIn,
-			*NormalMachOut,
+			**MachIn,
+			**MachOut,
 			*VelocityOutIs,
-			*DensityIn_Mix,
-			*PressureIn_Mix,
-			*NormalVelocityIn_Mix,
-			*TangVelocityIn_Mix,
-			*DensityOut_Mix,
-			*PressureOut_Mix,
-			*NormalVelocityOut_Mix,
-			*TangVelocityOut_Mix,
+			*DensityIn,
+			*PressureIn,
+			**TurboVelocityIn,
+			*DensityOut,
+			*PressureOut,
+			**TurboVelocityOut,
 			*EnthalpyOutIs,
 			*EntropyGen,
 			*AbsFlowAngleIn,
 			*TotalEnthalpyOut,
+			*TotalRothalpyIn,
+			*TotalRothalpyOut,
 			*TotalEnthalpyOutIs,
 			*AbsFlowAngleOut,
 			*PressureOut_BC;
@@ -4233,28 +4189,14 @@ public:
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 * \return Value of the Inlet Mach number.
 	 */
-	su2double GetMachIn(unsigned short inMarkerTP);
+	su2double* GetMachIn(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Provide the Outlet Mach number (turbomachinery performance).
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 * \return Value of the Outlet Mach number.
 	 */
-	su2double GetMachOut(unsigned short inMarkerTP);
-
-	/*!
-	 * \brief Provide the normal component of the Inlet Mach number (turbomachinery performance).
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 * \return Value of the normal component of the Inlet Mach number.
-	 */
-	su2double GetNormalMachIn(unsigned short inMarkerTP);
-
-	/*!
-	 * \brief Provide the normal component of the Outlet Mach number (turbomachinery performance).
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 * \return Value of the normal component of the Outlet Mach number.
-	 */
-	su2double GetNormalMachOut(unsigned short inMarkerTP);
+	su2double* GetMachOut(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Provide the Outlet Enthalpy (turbomachinery performance).
@@ -4313,13 +4255,6 @@ public:
 	su2double GetTotalEnthalpyIn_BC(unsigned short inMarkerTP);
 
 	/*!
-	 * \brief Provide the the Outlet Pressure for BC convergece monitoring.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 * \return Value of the Outlet Pressure.
-	 */
-	su2double GetPressureOut(unsigned short inMarkerTP);
-
-	/*!
 	 * \brief Provide the Pressure Ratio (tubomachinery performance).
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 * \return Value of the Pressure Ratio.
@@ -4331,56 +4266,42 @@ public:
 	 * \param[in] inMarkerTP - bound marker.
 	 * \return Value of the inlet density.
 	 */
-	 su2double GetDensityIn_Mix(unsigned short inMarkerTP);
+	 su2double GetDensityIn(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Provide the inlet pressure to check convergence of conservative mixing-plane.
 	 * \param[in] inMarkerTP - bound marker.
 	 * \return Value of inlet pressure.
 	 */
-	su2double GetPressureIn_Mix(unsigned short inMarkerTP);
+	su2double GetPressureIn(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Provide the inlet normal velocity to check convergence of conservative mixing-plane.
 	 * \param[in] inMarkerTP - bound marker.
 	 * \return Value of the inlet normal velocity.
 	 */
-	su2double GetNormalVelocityIn_Mix(unsigned short inMarkerTP);
-
-	/*!
-	 * \brief Provide the inlet tangential velocity to check convergence of conservative mixing-plane.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the inlet tangential velocity.
-	 */
-	su2double GetTangVelocityIn_Mix(unsigned short inMarkerTP);
+	su2double* GetTurboVelocityIn(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Provide the outlet density to check convergence of conservative mixing-plane.
 	 * \param[in] inMarkerTP - bound marker.
 	 * \return Value of the outlet density.
 	 */
-	su2double GetDensityOut_Mix(unsigned short inMarkerTP);
+	su2double GetDensityOut(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Provide the outlet pressure to check convergence of conservative mixing-plane.
 	 * \param[in] inMarkerTP - bound marker.
 	 * \return Value of the outlet pressure.
 	 */
-	su2double GetPressureOut_Mix(unsigned short inMarkerTP);
+	su2double GetPressureOut(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Provide the outlet normal velocity to check convergence of conservative mixing-plane.
 	 * \param[in] inMarkerTP - bound marker.
 	 * \return Value of the outlet normal velocity.
 	 */
-	su2double GetNormalVelocityOut_Mix(unsigned short inMarkerTP);
-
-	/*!
-	 * \brief Provide the outlet tangential velocity to check convergence of conservative mixing-plane.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the outlet tangential velocity.
-	 */
-	su2double GetTangVelocityOut_Mix(unsigned short inMarkerTP);
+	su2double* GetTurboVelocityOut(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Provide the isentropic outlet Enthalpy for turbomachinery performance.
@@ -4416,6 +4337,20 @@ public:
 	 * \return Value of the Total outlet isentropic Enthalpy.
 	 */
 	su2double GetTotalEnthalpyOutIs(unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Provide the Total outlet Enthalpy for turbomachinery performance.
+	 * \param[in] inMarkerTP - bound marker.
+	 * \return Value of the Total outlet Enthalpy.
+	 */
+	su2double GetTotalRothalpyIn(unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Provide the Total outlet Enthalpy for turbomachinery performance.
+	 * \param[in] inMarkerTP - bound marker.
+	 * \return Value of the Total outlet Enthalpy.
+	 */
+	su2double GetTotalRothalpyOut(unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Provide the absolute outlet flow angle for turbomachinery performance.
@@ -4506,28 +4441,14 @@ public:
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	void SetMachIn(su2double value, unsigned short inMarkerTP);
+	void SetMachIn(su2double* value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Set the Outlet Mach number (turbomachinery performance).
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	void SetMachOut(su2double value, unsigned short inMarkerTP);
-
-	/*!
-	 * \brief Set the normal component of the Inlet Mach number (turbomachinery performance).
-	 * \param[in] value      - turboperformance value to set.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 */
-	void SetNormalMachIn(su2double value, unsigned short inMarkerTP);
-
-	/*!
-	 * \brief Set the normal component of the Outlet Mach number (turbomachinery performance).
-	 * \param[in] value      - turboperformance value to set.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 */
-	void SetNormalMachOut(su2double value, unsigned short inMarkerTP);
+	void SetMachOut(su2double* value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Set the Outlet Enthalpy (turbomachinery performance).
@@ -4586,13 +4507,6 @@ public:
 	void SetTotalEnthalpyIn_BC(su2double value, unsigned short inMarkerTP);
 
 	/*!
-	 * \brief Set the Outlet Pressure (turbomachinery performance).
-	 * \param[in] value      - turboperformance value to set.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 */
-	void SetPressureOut(su2double value, unsigned short inMarkerTP);
-
-	/*!
 	 * \brief Set Pressure Ratio (tubomachinery performance).
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
@@ -4604,56 +4518,42 @@ public:
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	void SetDensityIn_Mix(su2double value, unsigned short inMarkerTP);
+	void SetDensityIn(su2double value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Set inlet pressure.
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	void SetPressureIn_Mix(su2double value, unsigned short inMarkerTP);
+	void SetPressureIn(su2double value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Set inlet normal velocity.
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	void SetNormalVelocityIn_Mix(su2double value, unsigned short inMarkerTP);
-
-	/*!
-	 * \brief Set inlet tangential velocity.
-	 * \param[in] value      - turboperformance value to set.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 */
-	void SetTangVelocityIn_Mix(su2double value, unsigned short inMarkerTP);
+	void SetTurboVelocityIn(su2double* value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Set outlet density.
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	void SetDensityOut_Mix(su2double value, unsigned short inMarkerTP);
+	void SetDensityOut(su2double value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Set outlet pressure.
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	void SetPressureOut_Mix(su2double value, unsigned short inMarkerTP);
+	void SetPressureOut(su2double value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Set outlet normal velocity.
 	 * \param[in] value      - turboperformance value to set.
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
-	void SetNormalVelocityOut_Mix(su2double value, unsigned short inMarkerTP);
-
-	/*!
-	 * \brief Set outlet tangential velocity.
-	 * \param[in] value      - turboperformance value to set.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 */
-	void SetTangVelocityOut_Mix(su2double value, unsigned short inMarkerTP);
+	void SetTurboVelocityOut(su2double* value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Set outlet isentropic Enthalpy.
@@ -4682,6 +4582,20 @@ public:
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
 	void SetTotalEnthalpyOut(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set total inlet rothalpy.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetTotalRothalpyIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set total outlet rothalpy.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetTotalRothalpyOut(su2double value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Set total isentropic outlet enthalpy.
