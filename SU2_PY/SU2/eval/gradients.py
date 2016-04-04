@@ -117,7 +117,7 @@ def gradient( func_name, method, config, state=None ):
         else:
             raise Exception , 'unrecognized gradient method'
         
-        if ('CUSTOM' in config.DV_KIND):
+        if ('CUSTOM' in config.DV_KIND and 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION ):
             import downstream_function
             chaingrad = downstream_function.downstream_gradient(config,state)
             n_dv = len(grads[func_name])
@@ -528,7 +528,7 @@ def findiff( config, state=None, step=1e-4 ):
         pull.append(files['TARGET_HEATFLUX'])
 
     # Use custom variable
-    if ('CUSTOM' in konfig.DV_KIND):
+    if ('CUSTOM' in konfig.DV_KIND and 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION):
         import downstream_function
         chaingrad = downstream_function.downstream_gradient(config,state)
         custom_dv=1

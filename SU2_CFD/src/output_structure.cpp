@@ -3805,7 +3805,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char free_surface_coeff[]= ",\"CFreeSurface\"";
   char wave_coeff[]= ",\"CWave\"";
   char fem_coeff[]= ",\"VM_Stress\"";
-  char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\",\"Sens_BPress\"";
+  char adj_coeff[]= ",\"Sens_Geo\",\"Sens_Mach\",\"Sens_AoA\",\"Sens_Press\",\"Sens_Temp\",\"Sens_AoS\"";
   char oneD_outputs[]= ",\"Avg_TotalPress\",\"Avg_Mach\",\"Avg_Temperature\",\"MassFlowRate\",\"FluxAvg_Pressure\",\"FluxAvg_Density\",\"FluxAvg_Velocity\",\"FluxAvg_Enthalpy\"";
   char Cp_inverse_design[]= ",\"Cp_Diff\"";
   char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
@@ -4053,7 +4053,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
     /*--- Initialize variables to store information from all domains (adjoint solution) ---*/
     su2double Total_Sens_Geo = 0.0, Total_Sens_Mach = 0.0, Total_Sens_AoA = 0.0;
-    su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0, Total_Sens_BPress=0.0;
+    su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
     
     /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
     su2double D_Total_CLift = 0.0, D_Total_CDrag = 0.0, D_Total_CSideForce = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0;
@@ -4357,7 +4357,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           Total_Sens_AoA   = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_AoA();
           Total_Sens_Press = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Press();
           Total_Sens_Temp  = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Temp();
-          Total_Sens_BPress  = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_BPress();
           
           /*--- Adjoint flow residuals ---*/
           
@@ -4619,7 +4618,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (adjoint) {
               
               /*--- Adjoint coefficients ---*/
-              SPRINTF (adjoint_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, 0.0, %12.10f", Total_Sens_Geo, Total_Sens_Mach, Total_Sens_AoA, Total_Sens_Press, Total_Sens_Temp, Total_Sens_BPress);
+              SPRINTF (adjoint_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, 0.0", Total_Sens_Geo, Total_Sens_Mach, Total_Sens_AoA, Total_Sens_Press, Total_Sens_Temp);
               
               /*--- Adjoint flow residuals ---*/
               if (nDim == 2) {
@@ -5042,17 +5041,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (disc_adj){
               cout << "    Sens_Press" << "     Sens_Mach" << endl;
             } else {
-              if (output_1d)
-                cout << "      Sens_Geo" << "     Sens_BPress" << endl;
-              else
-                cout << "      Sens_Geo" << "     Sens_Mach" << endl;
+              cout << "      Sens_Geo" << "     Sens_Mach" << endl;
             }
             if (freesurface) {
               cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo";
-              if (output_1d)
-                cout << "     Sens_BPress" << endl;
-              else
-                cout << "   Sens_Mach" << endl;
+              cout << "   Sens_Mach" << endl;
             }
             break;
             
@@ -5093,17 +5086,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (disc_adj){
               cout << "    Sens_Press" << "     Sens_Mach" << endl;
             } else {
-              if (output_1d)
-               cout << "      Sens_Geo" << "     Sens_BPress" << endl;
-             else
-               cout << "      Sens_Geo" << "     Sens_Mach" << endl;
+              cout << "      Sens_Geo" << "     Sens_Mach" << endl;
             }
             if (freesurface) {
               cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo";
-              if (output_1d)
-                cout << "     Sens_BPress" << endl;
-              else
-                cout << "   Sens_Mach" << endl;
+              cout << "   Sens_Mach" << endl;
             }
             break;
             
@@ -5375,12 +5362,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(14); cout << Total_Sens_Geo;
-            if (output_1d){
-              cout.width(14); cout << Total_Sens_BPress;
-            }
-            else{
-              cout.width(14); cout << Total_Sens_Mach;
-            }
+            cout.width(14); cout << Total_Sens_Mach;
           }
           cout << endl;
           cout.unsetf(ios_base::floatfield);
@@ -5398,12 +5380,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(3);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(12); cout << Total_Sens_Geo;
-            if (output_1d){
-              cout.width(12); cout << Total_Sens_BPress;
-            }
-            else{
-              cout.width(12); cout << Total_Sens_Mach;
-            }
+            cout.width(12); cout << Total_Sens_Mach;
             cout.unsetf(ios_base::floatfield);
             cout << endl;
           }
@@ -5444,12 +5421,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(14); cout << Total_Sens_Geo;
-            if (output_1d){
-              cout.width(14); cout << Total_Sens_BPress;
-            }
-            else{
-              cout.width(14); cout << Total_Sens_Mach;
-            }
+            cout.width(14); cout << Total_Sens_Mach;
           }
           cout << endl;
           cout.unsetf(ios_base::floatfield);
@@ -5468,12 +5440,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(12); cout << Total_Sens_Geo;
-            if (output_1d){
-              cout.width(14); cout << Total_Sens_BPress;
-            }
-            else{
-              cout.width(14); cout << Total_Sens_Mach;
-            }
+            cout.width(14); cout << Total_Sens_Mach;
             cout << endl;
             cout.unsetf(ios_base::floatfield);
           }
@@ -6917,8 +6884,11 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Temperature = solver_container->node[iPoint]->GetTemperature();
           
           Mach = (sqrt(Velocity2))/ solver_container->node[iPoint]->GetSoundSpeed();
-          //Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),( Gamma/(Gamma-1.0) ) );
-          Tot_Pressure = Pressure + 0.5*solver_container->node[iPoint]->GetDensity()*Velocity2;
+          if (incompressible)
+            Tot_Pressure = Pressure + 0.5*solver_container->node[iPoint]->GetDensity()*Velocity2;
+          else
+            Tot_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),( Gamma/(Gamma-1.0) ) );
+
 
           AveragePt += Tot_Pressure * Area;
           TotalArea += Area;
