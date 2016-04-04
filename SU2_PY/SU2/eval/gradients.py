@@ -1070,6 +1070,43 @@ def domain_adjoint( config, state=None, step=1e-4 ):
                 meshfiles = su2io.expand_part(meshfiles,this_konfig)
                 for name in meshfiles: os.remove(name)
 
+
+                this_step = step[i_dv]
+                temp_config_name = 'config_domain_adjoint_%i.cfg' % i_dv
+
+                this_dvs    = copy.deepcopy(dvs_base)
+                this_konfig = copy.deepcopy(konfig)
+                this_dvs[i_dv] = this_dvs[i_dv] - this_step
+
+                this_state = su2io.State()
+                this_state.FILES = copy.deepcopy( state.FILES )
+                this_konfig.unpack_dvs(this_dvs,dvs_base)
+
+                this_konfig.dump(temp_config_name)
+                
+                # Copy in original restart file to be safe
+                shutil.copy('base_'+files['DIRECT'],files['DIRECT'])
+                
+                # Force a single iteration from a restart to get the
+                # partial derivative for the objective and delta residuals.
+                # Note also that MG is disabled to make sure the correct
+                # residual values are written to the restart file.
+                this_konfig.EXT_ITER      = 1
+                this_konfig.WRT_RESIDUALS = 'YES'
+                this_konfig.RESTART_SOL   = 'YES'
+                this_konfig.MGLEVEL       = '0'
+                
+                # Direct Solution, findiff step
+                func_back = function( objective, this_konfig, this_state )
+
+                # Load up the residuals from the restart file for this step
+                step_back = su2io.read_restart(files['DIRECT'])
+                
+                # remove deform step files
+                meshfiles = this_state.FILES.MESH
+                meshfiles = su2io.expand_part(meshfiles,this_konfig)
+                for name in meshfiles: os.remove(name)
+                
                 # calc finite difference and store
                 for key in grads.keys():
                     if key == 'VARIABLE': 
@@ -1079,30 +1116,32 @@ def domain_adjoint( config, state=None, step=1e-4 ):
                     else:
                       
                         # Compute del(J)/del(alpha) using a finite difference
-                        this_grad = (func_step - func_base) / this_step
+                        this_grad = (func_step - func_back)/(2.0*this_step)
 
                         # Compute the domain integral as Psi^T * [R'(U) - R(U)]
                         for i in range(len(adj_sol['Conservative_1'])):
                           
                             mag = np.sqrt( np.power(step_sol['x'][i]-base_sol['x'][i],2.0)  +  np.power(step_sol['y'][i]-base_sol['y'][i],2.0) + 1.0e-10)
-                            dx = (step_sol['x'][i]-base_sol['x'][i])
-                            dy = (step_sol['y'][i]-base_sol['y'][i])
+                            dx = (step_sol['x'][i]-base_sol['x'][i]) +1.0e-10
+                            dy = (step_sol['y'][i]-base_sol['y'][i]) +1.0e-10
                             
                             dx_hat = dx / mag
                             dy_hat = dy / mag
                             
-                            rho  = adj_sol['Conservative_1'][i] * (step_sol['Residual_1'][i]-base_sol['Residual_1'][i])
-                            rhoU = adj_sol['Conservative_2'][i] * (step_sol['Residual_2'][i]-base_sol['Residual_2'][i])
-                            rhoV = adj_sol['Conservative_3'][i] * (step_sol['Residual_3'][i]-base_sol['Residual_3'][i])
-                            rhoE = adj_sol['Conservative_4'][i] * (step_sol['Residual_4'][i]-base_sol['Residual_4'][i])
+                            rho  = adj_sol['Conservative_1'][i] * (step_sol['Residual_1'][i]-step_back['Residual_1'][i])
+                            rhoU = adj_sol['Conservative_2'][i] * (step_sol['Residual_2'][i]-step_back['Residual_2'][i])
+                            rhoV = adj_sol['Conservative_3'][i] * (step_sol['Residual_3'][i]-step_back['Residual_3'][i])
+                            rhoE = adj_sol['Conservative_4'][i] * (step_sol['Residual_4'][i]-step_back['Residual_4'][i])
                             
-                            grad_x = dx*(rho + rhoU + rhoV + rhoE)*dx_hat
-                            grad_y = dy*(rho + rhoU + rhoV + rhoE)*dy_hat
+                            #res = (rho + rhoU + rhoV + rhoE)#*mag/this_step
                             
-                            #this_grad = this_grad - (grad_x + grad_y)/this_step
+                            #grad_x = ((rho + rhoU + rhoV + rhoE)/dx)*(mag/this_step)
+                            #grad_y = ((rho + rhoU + rhoV + rhoE)/dy)*(mag/this_step)
+                            #this_grad = this_grad + (grad_x + grad_y)
                             
-                            #this_grad = this_grad + (rho + rhoU + rhoV + rhoE)/this_step
-                            this_grad = this_grad - (rho + rhoU + rhoV + rhoE)
+                            this_grad = this_grad - (rho + rhoU + rhoV + rhoE)/(2.0*this_step)
+                        
+                            #this_grad = this_grad + res
             
                         # Store the grad
                         grads[key].append(this_grad)

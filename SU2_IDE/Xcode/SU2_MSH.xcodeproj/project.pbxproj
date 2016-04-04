@@ -17,7 +17,6 @@
 		05E6DB5117EB61CC00FA1F7E /* primal_grid_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB4817EB61CC00FA1F7E /* primal_grid_structure.cpp */; };
 		05E6DB5217EB61CC00FA1F7E /* vector_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB4917EB61CC00FA1F7E /* vector_structure.cpp */; };
 		05E6DC5117EB637300FA1F7E /* SU2_MSH.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DC5017EB637300FA1F7E /* SU2_MSH.cpp */; };
-		E941BBF41B71DB1D005C6C06 /* datatype_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBF11B71DB1D005C6C06 /* datatype_structure.cpp */; };
 		E941BBF51B71DB1D005C6C06 /* linear_solvers_structure_b.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBF21B71DB1D005C6C06 /* linear_solvers_structure_b.cpp */; };
 		E941BBF61B71DB1D005C6C06 /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBF31B71DB1D005C6C06 /* mpi_structure.cpp */; };
 /* End PBXBuildFile section */
@@ -68,7 +67,6 @@
 		05E6DB4917EB61CC00FA1F7E /* vector_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = vector_structure.cpp; path = ../../Common/src/vector_structure.cpp; sourceTree = "<group>"; };
 		05E6DC4F17EB636E00FA1F7E /* SU2_MSH.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = SU2_MSH.hpp; path = ../../SU2_MSH/include/SU2_MSH.hpp; sourceTree = "<group>"; };
 		05E6DC5017EB637300FA1F7E /* SU2_MSH.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SU2_MSH.cpp; path = ../../SU2_MSH/src/SU2_MSH.cpp; sourceTree = "<group>"; };
-		E941BBF11B71DB1D005C6C06 /* datatype_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = datatype_structure.cpp; path = ../../Common/src/datatype_structure.cpp; sourceTree = "<group>"; };
 		E941BBF21B71DB1D005C6C06 /* linear_solvers_structure_b.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = linear_solvers_structure_b.cpp; path = ../../Common/src/linear_solvers_structure_b.cpp; sourceTree = "<group>"; };
 		E941BBF31B71DB1D005C6C06 /* mpi_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mpi_structure.cpp; path = ../../Common/src/mpi_structure.cpp; sourceTree = "<group>"; };
 		E941BBF71B71DB3D005C6C06 /* datatype_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = datatype_structure.inl; path = ../../Common/include/datatype_structure.inl; sourceTree = "<group>"; };
@@ -168,7 +166,6 @@
 				05E6DB4717EB61CC00FA1F7E /* matrix_structure.cpp */,
 				05E6DB4817EB61CC00FA1F7E /* primal_grid_structure.cpp */,
 				05E6DB4917EB61CC00FA1F7E /* vector_structure.cpp */,
-				E941BBF11B71DB1D005C6C06 /* datatype_structure.cpp */,
 				E941BBF31B71DB1D005C6C06 /* mpi_structure.cpp */,
 			);
 			name = Source;
@@ -258,7 +255,6 @@
 				E941BBF51B71DB1D005C6C06 /* linear_solvers_structure_b.cpp in Sources */,
 				E941BBF61B71DB1D005C6C06 /* mpi_structure.cpp in Sources */,
 				05E6DB4A17EB61CC00FA1F7E /* config_structure.cpp in Sources */,
-				E941BBF41B71DB1D005C6C06 /* datatype_structure.cpp in Sources */,
 				05E6DB4B17EB61CC00FA1F7E /* dual_grid_structure.cpp in Sources */,
 				05E6DB4C17EB61CC00FA1F7E /* geometry_structure.cpp in Sources */,
 				05E6DB4D17EB61CC00FA1F7E /* grid_adaptation_structure.cpp in Sources */,
