@@ -259,20 +259,24 @@ static const map<string, ENUM_STRUCT_SOLVER> Struct_Map = CCreateMap<string, ENU
 enum ENUM_MATERIAL_MODEL {
 	LINEAR_ELASTIC = 0,			/*!< \brief Definition of linear elastic material. */
 	NEO_HOOKEAN = 1,			/*!< \brief Definition of Neo-Hookean material. */
+	IDEAL_DE = 2
 };
 static const map<string, ENUM_MATERIAL_MODEL> Material_Map = CCreateMap<string, ENUM_MATERIAL_MODEL>
 ("LINEAR_ELASTIC", LINEAR_ELASTIC)
-("NEO_HOOKEAN", NEO_HOOKEAN);
+("NEO_HOOKEAN", NEO_HOOKEAN)
+("IDEAL_DE", IDEAL_DE);
 
 /*!
  * \brief Material compressibility
  */
 enum ENUM_MAT_COMPRESS {
-  COMPRESSIBLE_MAT = 0,			/*!< \brief Definition of compressible material. */
-  INCOMPRESSIBLE_MAT = 1,		/*!< \brief Definition of incompressible material. */
+  COMPRESSIBLE_MAT = 0,				/*!< \brief Definition of compressible material. */
+  NEARLY_INCOMPRESSIBLE_MAT = 1,	/*!< \brief Definition of nearly incompressible material. */
+  INCOMPRESSIBLE_MAT = 2			/*!< \brief Definition of incompressible material. */
 };
 static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENUM_MAT_COMPRESS>
 ("COMPRESSIBLE", COMPRESSIBLE_MAT)
+("NEARLY_INCOMPRESSIBLE", NEARLY_INCOMPRESSIBLE_MAT)
 ("INCOMPRESSIBLE", INCOMPRESSIBLE_MAT);
 
 
