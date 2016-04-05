@@ -387,6 +387,19 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
   
 }
 
+void Geometrical_Preprocessing_DGFEM(CGeometry ***geometry, CConfig **config, unsigned short val_nZone) {
+
+  cout << "Geometrical_Preprocessing_DGFEM: Not implemented yet." << endl;
+#ifndef HAVE_MPI
+  exit(EXIT_FAILURE);
+#else
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Abort(MPI_COMM_WORLD,1);
+  MPI_Finalize();
+#endif
+
+}
+
 void Partition_Analysis(CGeometry *geometry, CConfig *config) {
   
   /*--- This routine does a quick and dirty output of the total

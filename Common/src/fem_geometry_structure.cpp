@@ -216,7 +216,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   for(int i=0; i<nRankSend; ++i) longSendBuf[i].push_back(0);
 
   /*--- Determine the number of ranks, from which this rank will receive elements. ---*/
-  int nRankRecv = 1;
+  int nRankRecv = nRankSend;
 
 #ifdef HAVE_MPI
   vector<int> sizeRecv(nRank, 1);
@@ -1269,11 +1269,141 @@ CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config) : CMeshFEM(geomet
 
 void CMeshFEM_DG::SetSendReceive(CConfig *config) {
 
-  cout << "CMeshFEM_DG::SetSendReceive: Not implemented yet." << endl;
-#ifndef HAVE_MPI
-  exit(EXIT_FAILURE);
+  /*--- Determine the number of ranks and the current rank. ---*/
+  int nRank = SINGLE_NODE;
+  int rank  = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nRank);
+#endif
+
+  /*----------------------------------------------------------------------------*/
+  /*--- Step 1: Determine the ranks which this rank has to communicate       ---*/
+  /*---         during the actual communication of halo data, as well as the ---*/
+  /*            that must be communicated.                                   ---*/
+  /*----------------------------------------------------------------------------*/
+
+  /* Determine for every element the local offset of the solution DOFs. */
+  volElem[0].offsetDOFsSolLocal = 0;
+  for(unsigned long i=1; i<nVolElemTot; ++i)
+    volElem[i].offsetDOFsSolLocal = volElem[i-1].offsetDOFsSolLocal
+                                  + volElem[i-1].nDOFsSol;
+
+  /* Determine the ranks which this rank will communicate. */
+  vector<bool> commWithRank(nRank, false);
+  for(unsigned long i=0; i<nVolElemTot; ++i) {
+    if( !volElem[i].elemIsOwned ) commWithRank[volElem[i].rankOriginal] = true;
+  }
+
+  map<int,int> rankToIndCommBuf;
+  for(int i=0; i<nRank; ++i) {
+    if( commWithRank[i] ) {
+      int ind = rankToIndCommBuf.size();
+      rankToIndCommBuf[i] = ind;
+    }
+  }
+
+  ranksComm.resize(rankToIndCommBuf.size());
+  map<int,int>::const_iterator MI = rankToIndCommBuf.begin();
+  for(int i=0; i<rankToIndCommBuf.size(); ++i, ++MI)
+    ranksComm[i] = MI->first;
+
+  /* Define and determine the buffers to send the global indices of my halo
+     elements to the appropriate ranks and the vectors which store the
+     DOFs that I will receive from these ranks. */
+  vector<vector<unsigned long> > longBuf(rankToIndCommBuf.size(), vector<unsigned long>(0));
+  DOFsReceive.resize(rankToIndCommBuf.size());
+
+  for(unsigned long i=0; i<nVolElemTot; ++i) {
+    if( !volElem[i].elemIsOwned ) {
+      MI = rankToIndCommBuf.find(volElem[i].rankOriginal);
+      longBuf[MI->second].push_back(volElem[i].elemIDGlobal);
+
+      for(unsigned long j=0; j<volElem[i].nDOFsSol; ++j)
+        DOFsReceive[MI->second].push_back(volElem[i].offsetDOFsSolLocal+j);
+    }
+  }
+
+  /* Determine the mapping from global element ID to local owned element ID. */
+  map<unsigned long,unsigned long> globalElemIDToLocalInd;
+  for(unsigned long i=0; i<nVolElemTot; ++i) {
+    if( volElem[i].elemIsOwned )
+      globalElemIDToLocalInd[volElem[i].elemIDGlobal] = i;
+  }
+
+  /* Resize the first index of the vectors to store the DOFs that must be sent. */
+  DOFsSend.resize(rankToIndCommBuf.size());
+
+  /*--- Make a distinction between sequential and parallel mode to
+        determine the DOFs to be sent.                 ---*/
+
+#ifdef HAVE_MPI
+  /*--- Parallel mode. Send all the data using non-blocking sends. ---*/
+  vector<MPI_Request> commReqs(ranksComm.size());
+
+  for(unsigned long i=0; i<ranksComm.size(); ++i) {
+    int dest = ranksComm[i];
+    SU2_MPI::Isend(longBuf[i].data(), longBuf[i].size(), MPI_UNSIGNED_LONG,
+                   dest, dest, MPI_COMM_WORLD, &commReqs[i]);
+  }
+
+  /* Loop over the number of ranks from which I receive data about the
+     global element ID's that I must sent. */
+  for(unsigned long i=0; i<ranksComm.size(); ++i) {
+
+    /* Receive the messages in the order specified in ranksComm.
+       First probe the message to find out the size. */
+    MPI_Status status;
+    MPI_Probe(ranksComm[i], rank, MPI_COMM_WORLD, &status);
+
+    int sizeMess;
+    MPI_Get_count(&status, MPI_UNSIGNED_LONG, &sizeMess);
+
+    /* Allocate the memory for a buffer to receive the data
+       and receive the data using a blocking receive. */
+    vector<unsigned long> longRecvBuf(sizeMess);
+    SU2_MPI::Recv(longRecvBuf.data(), sizeMess, MPI_UNSIGNED_LONG,
+                  ranksComm[i], rank, MPI_COMM_WORLD, &status);
+
+    /* Loop over the elements of longRecvBuf and set the contents
+       of DOFsSend accordingly. */
+    for(int j=0; j<sizeMess; ++j) {
+      map<unsigned long,unsigned long>::const_iterator LMI;
+      LMI = globalElemIDToLocalInd.find(longRecvBuf[j]);
+
+      if(LMI == globalElemIDToLocalInd.end()) {
+        cout << "This should not happen in CMeshFEM_DG::SetSendReceive" << endl;
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+      }
+
+      for(unsigned long k=0; k<volElem[LMI->second].nDOFsSol; ++k)
+        DOFsSend[i].push_back(volElem[LMI->second].offsetDOFsSolLocal+k);
+    }
+  }
+
+  /* Complete the non-blocking sends. */
+  SU2_MPI::Waitall(ranksComm.size(), commReqs.data(), MPI_STATUSES_IGNORE);
+
 #else
-  MPI_Abort(MPI_COMM_WORLD,1);
-  MPI_Finalize();
+  /* Sequential mode. Search for the local index of the global element ID.
+     Note that in sequential mode there are only halo elements when periodic
+     boundaries are present in the grid. */
+  if( longBuf.size() ) {
+    for(unsigned long i=0; i<longBuf[0].size(); ++i) {
+      map<unsigned long,unsigned long>::const_iterator LMI;
+      LMI = globalElemIDToLocalInd.find(longBuf[0][i]);
+
+      if(LMI == globalElemIDToLocalInd.end()) {
+        cout << "This should not happen in CMeshFEM_DG::SetSendReceive" << endl;
+        exit(EXIT_FAILURE);
+      }
+
+      for(unsigned long j=0; j<volElem[LMI->second].nDOFsSol; ++j)
+        DOFsSend[0].push_back(volElem[LMI->second].offsetDOFsSolLocal+j);
+    }
+  }
+
 #endif
 }

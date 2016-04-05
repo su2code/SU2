@@ -97,6 +97,14 @@ void Driver_Preprocessing(CDriver **driver,
  */
 void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);
 
+/*! 
+ * \brief Do the geometrical preprocessing for the DG FEM solver.
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] val_nZone - Total number of zones.
+ */
+void Geometrical_Preprocessing_DGFEM(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);
+
 /*!
  * \brief Performs an analysis of the mesh partitions for distributed memory calculations.
  * \param[in] geometry - Geometrical definition of the problem.
