@@ -5972,7 +5972,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-  unsigned long LocalIndex;
+  unsigned long LocalIndex, j;
 #endif
   Global_nPoint  = 0; Global_nPointDomain   = 0; Global_nElem = 0;
   nelem_edge     = 0; Global_nelem_edge     = 0;
