@@ -2744,9 +2744,9 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
                                         CGeometry **flow_geometry, CConfig *fea_config,
                                         CConfig *flow_config, CNumerics *fea_numerics) {
   
-  unsigned short nMarkerFSI, nMarkerStruct, nMarkerFlow;		// Number of markers on FSI problem, FEA and Flow side
-  unsigned short iMarkerFSI, iMarkerStruct, iMarkerFlow;		// Variables for iteration over markers
-  int Marker_Flow = -1, Marker_Struct = -1;
+  unsigned short nMarkerFSI, nMarkerFlow;		// Number of markers on FSI problem, FEA and Flow side
+  unsigned short iMarkerFSI, iMarkerFlow;		// Variables for iteration over markers
+  int Marker_Flow = -1;
   
   unsigned long iVertex, iPoint;								// Variables for iteration over vertices and nodes
   
@@ -2801,8 +2801,6 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
   /*--- Number of markers on the FSI interface ---*/
   
   nMarkerFSI = (fea_config->GetMarker_n_FSIinterface())/2;
-  
-  nMarkerStruct  = fea_geometry[MESH_0]->GetnMarker();		// Retrieve total number of markers on FEA side
   nMarkerFlow = flow_geometry[MESH_0]->GetnMarker();		// Retrieve total number of markers on Fluid side
   
   // Parameters for the calculations
@@ -2824,7 +2822,6 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 #ifndef HAVE_MPI
   
   unsigned long nVertexFlow;						// Number of vertices on FEA and Flow side
-  //unsigned long nVertexFEA;
   
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     node[iPoint]->Clear_FlowTraction();
@@ -2836,13 +2833,6 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
     
     /*--- Identification of the markers ---*/
     
-    /*--- Current structural marker ---*/
-    for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++){
-      if ( fea_config->GetMarker_All_FSIinterface(iMarkerStruct) == (iMarkerFSI+1)){
-        Marker_Struct = iMarkerStruct;
-      }
-    }
-    
     /*--- Current fluid marker ---*/
     for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
       if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSI+1)){
@@ -2850,7 +2840,6 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
       }
     }
     
-    //nVertexFEA = fea_geometry[MESH_0]->GetnVertex(Marker_Struct);		// Retrieve total number of vertices on FEA marker
     nVertexFlow = flow_geometry[MESH_0]->GetnVertex(Marker_Flow);  // Retrieve total number of vertices on Fluid marker
     
     /*--- Loop over the nodes in the fluid mesh, calculate the tf vector (unitary) ---*/
@@ -2951,6 +2940,9 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
   unsigned long Processor_Struct;
   
   int iProcessor, nProcessor = 0;
+  
+  unsigned short nMarkerStruct, iMarkerStruct;		// Variables for iteration over markers
+  int Marker_Struct = -1;
   
   /*--- Number of markers on the FSI interface ---*/
   
