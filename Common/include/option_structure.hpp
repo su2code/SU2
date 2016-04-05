@@ -17,7 +17,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -937,7 +937,18 @@ enum ENUM_OBJECTIVE {
   AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
   AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
   MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
-  OUTFLOW_GENERALIZED=31          /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
+  OUTFLOW_GENERALIZED=31,        /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
+  TOTAL_PRESSURE_LOSS=32,
+  KINETIC_ENERGY_LOSS=33,
+  TOTAL_EFFICIENCY=34,
+  TOTAL_STATIC_EFFICIENCY=35,
+  EULERIAN_WORK=36,
+  TOTAL_ENTHALPY_IN=37,
+  FLOW_ANGLE_IN=38,
+  FLOW_ANGLE_OUT=39,
+  MASS_FLOW_IN=40,
+  MASS_FLOW_OUT=41,
+  PRESSURE_RATIO=42
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -971,7 +982,18 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("AVG_TOTAL_PRESSURE", AVG_TOTAL_PRESSURE)
 ("AVG_OUTLET_PRESSURE", AVG_OUTLET_PRESSURE)
 ("MASS_FLOW_RATE", MASS_FLOW_RATE)
-("OUTFLOW_GENERALIZED", OUTFLOW_GENERALIZED);
+("OUTFLOW_GENERALIZED", OUTFLOW_GENERALIZED)
+("TOTAL_EFFICIENCY", TOTAL_EFFICIENCY)
+("TOTAL_STATIC_EFFICIENCY", TOTAL_STATIC_EFFICIENCY)
+("TOTAL_PRESSURE_LOSS", TOTAL_PRESSURE_LOSS)
+("EULERIAN_WORK", EULERIAN_WORK)
+("TOTAL_ENTHALPY_IN", TOTAL_ENTHALPY_IN)
+("FLOW_ANGLE_IN", FLOW_ANGLE_IN)
+("FLOW_ANGLE_OUT", FLOW_ANGLE_OUT)
+("MASS_FLOW_IN", MASS_FLOW_IN)
+("MASS_FLOW_OUT", MASS_FLOW_OUT)
+("PRESSURE_RATIO",  PRESSURE_RATIO)
+("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS);
 
 /*!
  * \brief types of residual criteria equations
@@ -1882,19 +1904,19 @@ public:
 
 class COptionMathProblem : public COptionBase{
   string name; // identifier for the option
-  bool & adjoint;
-  bool & restart;
+  bool & cont_adjoint;
+  bool cont_adjoint_def;
   bool & disc_adjoint;
-  bool adjoint_def;
-  bool restart_def;
   bool disc_adjoint_def;
+  bool & restart;
+  bool restart_def;
 
 public:
-  COptionMathProblem(string option_field_name, bool & adjoint_field, bool adjoint_default, bool & restart_field, bool restart_default, bool & disc_adjoint_field, bool disc_adjoint_default) : adjoint(adjoint_field), restart(restart_field), disc_adjoint(disc_adjoint_field){
+  COptionMathProblem(string option_field_name, bool & cont_adjoint_field, bool cont_adjoint_default, bool & disc_adjoint_field, bool disc_adjoint_default, bool & restart_field, bool restart_default) : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field){
     this->name = option_field_name;
-    this->adjoint_def = adjoint_default;
-    this->restart_def = restart_default;
+    this->cont_adjoint_def = cont_adjoint_default;
     this->disc_adjoint_def = disc_adjoint_default;
+    this->restart_def = restart_default;
   }
 
   ~COptionMathProblem() {};
@@ -1910,31 +1932,32 @@ public:
       return badValue(option_value, "math problem", this->name);
     }
     if (option_value[0] == "DIRECT") {
-      this->adjoint = false;
-      this->restart = false;
+      this->cont_adjoint = false;
       this->disc_adjoint = false;
+      this->restart = false;
       return "";
     }
     if (option_value[0] == "CONTINUOUS_ADJOINT") {
-      this->adjoint= true;
-      this->restart= true;
+      this->cont_adjoint= true;
       this->disc_adjoint = false;
+      this->restart= true;
       return "";
     }
     if (option_value[0] == "DISCRETE_ADJOINT"){
       this->disc_adjoint = true;
+      this->cont_adjoint= false;
       this->restart = true;
-      this->adjoint= false;
       return "";
     }
     return "option in math problem map not considered in constructor";
   }
 
   void SetDefault() {
-    this->adjoint = this->adjoint_def;
-    this->restart = this->restart_def;
+    this->cont_adjoint = this->cont_adjoint_def;
     this->disc_adjoint = this->disc_adjoint_def;
+    this->restart = this->restart_def;
   }
+  
 };
 
 class COptionDVParam : public COptionBase{

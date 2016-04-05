@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,8 +39,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   unsigned long iPoint, iElem, iNode, nbfaces;
   
   unsigned long iExtIter = config->GetExtIter();
-  bool adjoint = config->GetAdjoint();
-  bool disc_adjoint = config->GetDiscrete_Adjoint();
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
 
   bool grid_movement  = config->GetGrid_Movement();
 
@@ -49,7 +48,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   /*--- Write file name with extension ---*/
   
-  if (adjoint || disc_adjoint) filename = config->GetAdj_FileName();
+  if (adjoint) filename = config->GetAdj_FileName();
   else filename = config->GetFlow_FileName();
   
   if (Kind_Solver == LINEAR_ELASTICITY)
@@ -488,15 +487,14 @@ void COutput::SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned 
   
   unsigned long iPoint, iElem, iNode, nbfaces;
   unsigned long iExtIter = config->GetExtIter();
-  bool adjoint = config->GetAdjoint();
-  bool disc_adjoint = config->GetDiscrete_Adjoint();
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   
   char cstr[200], buffer[50];
   string filename;
   
   /*--- Write file name with extension ---*/
   
-  if (adjoint || disc_adjoint) filename = config->GetAdj_FileName();
+  if (adjoint) filename = config->GetAdj_FileName();
   else filename = config->GetFlow_FileName();
   
   if (Kind_Solver == LINEAR_ELASTICITY)

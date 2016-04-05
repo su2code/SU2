@@ -14,7 +14,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -218,7 +218,30 @@ def get_headerMap():
                  "D(CFx)"          : "D_FORCE_X"               ,
                  "D(CFy)"          : "D_FORCE_Y"               ,
                  "D(CFz)"          : "D_FORCE_Z"               ,
-                 "D(CL/CD)"        : "D_EFFICIENCY"}
+                 "D(CL/CD)"        : "D_EFFICIENCY"            ,
+                 "TotalEfficiency_0"       : "TOTAL_EFFICIENCY"       ,
+                 "TotalPressureLoss_0"     : "TOTAL_PRESSURE_LOSS"    ,
+                 "KineticEnergyLoss_0"     : "KINETIC_ENERGY_LOSS"    ,
+                 "TotalStaticEfficiency_0" : "TOTAL_STATIC_EFFICIENCY",
+                 "FlowAngleOut_0"          : "FLOW_ANGLE_OUT"         ,
+                 "FlowAngleIn_0"           : "FLOW_ANGLE_IN"          ,
+                 "MassFlowIn_0"            : "MASS_FLOW_IN"           ,
+                 "MassFlowOut_0"           : "MASS_FLOW_OUT"          ,
+                 "PressureRatio_0"         : "PRESSURE_RATIO"         ,
+                 "EnthalpyOut_0"           : "ENTHALPY_OUT"           ,
+                 "TotalEnthalpy_0"         : "TOTAL_ENTHALPY_OUT"     ,
+                 "D(TotalPressureLoss_0)"  : "D_TOTAL_PRESSURE_LOSS"  ,
+                 "D(TotalEfficiency_0)"       : "D_TOTAL_EFFICIENCY"       ,
+                 "D(TotalPressureLoss_0)"     : "D_TOTAL_PRESSURE_LOSS"    ,
+                 "D(KineticEnergyLoss_0)"     : "D_KINETIC_ENERGY_LOSS"    ,
+                 "D(TotalStaticEfficiency_0)" : "D_TOTAL_STATIC_EFFICIENCY",
+                 "D(FlowAngleOut_0)"          : "D_FLOW_ANGLE_OUT"         ,
+                 "D(FlowAngleIn_0)"           : "D_FLOW_ANGLE_IN"          ,
+                 "D(MassFlowIn_0)"            : "D_MASS_FLOW_IN"           ,
+                 "D(MassFlowOut_0)"           : "D_MASS_FLOW_OUT"          ,
+                 "D(PressureRatio_0)"         : "D_PRESSURE_RATIO"         ,
+                 "D(EnthalpyOut_0)"           : "D_ENTHALPY_OUT"           ,
+                 "D(TotalEnthalpy_0)"         : "D_TOTAL_ENTHALPY_OUT"     }
     
     return map_dict
 
@@ -256,6 +279,21 @@ optnames_aero = [ "LIFT"                    ,
                   "INVERSE_DESIGN_HEATFLUX" ,
                   "TOTAL_HEATFLUX"          ,
                   "MAXIMUM_HEATFLUX"        ]
+
+# Turbo performance optimizer Function Names
+optnames_turbo = ["TOTAL_EFFICIENCY"        ,
+                  "TOTAL_PRESSURE_LOSS"     ,
+                  "KINETIC_ENERGY_LOSS"     ,
+                  "TOTAL_STATIC_EFFICIENCY" ,
+                  "EULERIAN_WORK"           ,
+                  "TOTAL_ENTHALPY_IN"       ,
+                  "ENTHALPY_OUT"            ,
+                  "FLOW_ANGLE_IN"           ,
+                  "FLOW_ANGLE_OUT"          ,
+                  "MASS_FLOW_IN"            ,
+                  "MASS_FLOW_OUT"           ,
+                  "PRESSURE_RATIO"         ]
+
 #: optnames_aero
 
 optnames_stab = [ "D_LIFT_D_ALPHA"               ,
@@ -333,7 +371,19 @@ grad_names_directdiff = ["D_LIFT"                  ,
                          "D_FORCE_X"               ,
                          "D_FORCE_Y"               ,
                          "D_FORCE_Z"               ,
-                         "D_EFFICIENCY"]
+                         "D_EFFICIENCY"            ,
+                         "D_TOTAL_PRESSURE_LOSS"    ,
+                         "D_TOTAL_EFFICIENCY"       ,
+                         "D_TOTAL_PRESSURE_LOSS"    ,
+                         "D_KINETIC_ENERGY_LOSS"    ,
+                         "D_TOTAL_STATIC_EFFICIENCY",
+                         "D_FLOW_ANGLE_OUT"         ,
+                         "D_FLOW_ANGLE_IN"          ,
+                         "D_MASS_FLOW_IN"           ,
+                         "D_MASS_FLOW_OUT"          ,
+                         "D_PRESSURE_RATIO"         ,
+                         "D_ENTHALPY_OUT"           ,
+                         "D_TOTAL_ENTHALPY_OUT"     ]
 
 grad_names_map = { "LIFT"      : "D_LIFT"           ,
                    "DRAG"      : "D_DRAG"           ,
@@ -344,7 +394,19 @@ grad_names_map = { "LIFT"      : "D_LIFT"           ,
                    "FORCE_X"   : "D_FORCE_X"     ,
                    "FORCE_Y"   : "D_FORCE_Y"     ,
                    "FORCE_Z"   : "D_FORCE_Z"     ,
-                   "EFFICIENCY" : "D_EFFICIENCY"}
+                   "EFFICIENCY" : "D_EFFICIENCY" ,
+                   "TOTAL_PRESSURE_LOSS"     : "D_TOTAL_PRESSURE_LOSS"    ,
+                   "TOTAL_EFFICIENCY"        : "D_TOTAL_EFFICIENCY"       ,
+                   "TOTAL_PRESSURE_LOSS"     : "D_TOTAL_PRESSURE_LOSS"    ,
+                   "KINETIC_ENERGY_LOSS"     : "D_KINETIC_ENERGY_LOSS"    ,
+                   "TOTAL_STATIC_EFFICIENCY" : "D_TOTAL_STATIC_EFFICIENCY",
+                   "FLOW_ANGLE_OUT"          : "D_FLOW_ANGLE_OUT"         ,
+                   "FLOW_ANGLE_IN"           : "D_FLOW_ANGLE_IN"          ,
+                   "MASS_FLOW_IN"            : "D_MASS_FLOW_IN"           ,
+                   "MASS_FLOW_OUT"           : "D_MASS_FLOW_OUT"          ,
+                   "PRESSURE_RATIO"          : "D_PRESSURE_RATIO"         ,
+                   "ENTHALPY_OUT"            : "D_ENTHALPY_OUT"           ,
+                   "TOTAL_ENTHALPY_OUT"      : "D_TOTAL_ENTHALPY_OUT"     }
 # -------------------------------------------------------------------
 #  Read Aerodynamic Function Values from History File
 # -------------------------------------------------------------------
@@ -363,7 +425,7 @@ def read_aerodynamics( History_filename , special_cases=[], final_avg=0 ):
     history_data = read_history(History_filename)
     
     # list of functions to pull
-    func_names = optnames_aero + grad_names_directdiff
+    func_names = optnames_aero + grad_names_directdiff + optnames_turbo
 
     # pull only these functions
     Func_Values = ordered_bunch()
@@ -474,7 +536,18 @@ def get_adjointSuffix(objective_function=None):
                  "AVG_OUTLET_PRESSURE"     : "pe"        ,
                  "MASS_FLOW_RATE"          : "mfr"       ,
                  "OUTFLOW_GENERALIZED"       : "chn"       ,
-                 "FREE_SURFACE"            : "fs"       }
+                 "FREE_SURFACE"            : "fs"        ,
+                 "KINETIC_ENERGY_LOSS"     : "ke"        ,
+                 "TOTAL_PRESSURE_LOSS"     : "pl"        ,
+                 "FLOW_ANGLE_OUT"          : "fao"       ,
+                 "FLOW_ANGLE_IN"           : "fai"       ,
+                 "TOTAL_EFFICIENCY"        : "teff"      ,
+                 "TOTAL_STATIC_EFFICIENCY" : "tseff"     ,
+                 "EULERIAN_WORK"           : "ew"        ,
+                 "TOTAL_ENTHALPY_IN"       : "tei"       ,
+                 "ENTHALPY_OUT"            : "eo"        ,
+                 "MASS_FLOW_OUT"           : "mfo"       ,
+                 "MASS_FLOW_IN"            : "mfi"       }
     
     # if none or false, return map
     if not objective_function:
