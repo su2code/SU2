@@ -6626,10 +6626,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   vector<unsigned long> temp_adjacency;
   unsigned long local_count=0;
   
-  /*--- Here, we transfer the adjacency information from a double vector
+  /*--- Here, we transfer the adjacency information from a multi-dim vector
    on a node-by-node basis into a single vector container. First, we sort
    the entries and remove the duplicates we find for each node, then we
-   copy it into the single vect and clear the memory from the double vec. ---*/
+   copy it into the single vect and clear memory from the multi-dim vec. ---*/
   
   for (unsigned long i = 0; i < local_node; i++) {
     
