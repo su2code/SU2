@@ -176,7 +176,8 @@ int main(int argc, char *argv[]) {
     
     geometry_container[iZone][MESH_0]->SetSendReceive(config_container[iZone]);
     
-    /*--- Add the Send/Receive boundaries ---*/
+    /*--- Add the Send/Receive boundaries. Note that for the
+          FEM solver nothing happens. ---*/
     
     geometry_container[iZone][MESH_0]->SetBoundaries(config_container[iZone]);
     
@@ -190,7 +191,17 @@ int main(int argc, char *argv[]) {
    identified and linked, face areas and volumes of the dual mesh cells are
    computed, and the multigrid levels are created using an agglomeration procedure. ---*/
   
-  Geometrical_Preprocessing(geometry_container, config_container, nZone);
+  if( fem_solver ) {
+    switch( config->GetKind_FEM_Flow() ) {
+      case DG: {
+        Geometrical_Preprocessing_DGFEM(geometry_container, config_container, nZone);
+        break;
+      }
+    }
+  }
+  else {
+    Geometrical_Preprocessing(geometry_container, config_container, nZone);
+  }
   
   for (iZone = 0; iZone < nZone; iZone++) {
     

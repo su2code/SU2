@@ -277,6 +277,14 @@ protected:
   vector<CPointFEM> meshPoints;      /*!< \brief Vector of the points of the FEM mesh. */
 
   vector<CBoundaryFEM> boundaries;   /*!< \brief Vector of the boundaries of the FEM mesh. */
+
+  vector<int> ranksComm;             /*!< \brief Vector of ranks, which this rank exchanges information.
+                                                 Self communication is included. */
+
+  vector<vector<unsigned long> > DOFsSend;    /*!< \brief Vector of vector, which contains the DOFs that
+                                                          must be sent. Self communication is included. */
+  vector<vector<unsigned long> > DOFsReceive; /*!< \brief Vector of vector, which contains the DOFs that
+                                                          must be received. Self communication is included. */
 public:
   
 	/*!
