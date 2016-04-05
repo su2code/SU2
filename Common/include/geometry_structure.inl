@@ -2,7 +2,7 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -90,6 +90,8 @@ inline void CGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig 
 inline void CGeometry::Set_MPI_Coord(CConfig *config) { } 
 
 inline void CGeometry::Set_MPI_GridVel(CConfig *config) { } 
+
+inline void CGeometry::Set_MPI_OldCoord(CConfig *config) { } 
 
 inline void CGeometry::SetPeriodicBoundary(CConfig *config) { }
 
