@@ -650,342 +650,340 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
 }
 
 void CIntegration::SetStructural_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
-
-	unsigned long iPoint;
-
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-
-		solver->node[iPoint]->SetSolution_time_n();
-		solver->node[iPoint]->SetSolution_Vel_time_n();
-		solver->node[iPoint]->SetSolution_Accel_time_n();
-
-	}
-
-	  bool fsi = config->GetFSI_Simulation();
-
-	  /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
-
-	  if (fsi){
-
-		  su2double WAitk=0.0;
-
-		  WAitk = solver->GetWAitken_Dyn();
-		  solver->SetWAitken_Dyn_tn1(WAitk);
-
-	  }
-
-
+  
+  unsigned long iPoint;
+  
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    
+    solver->node[iPoint]->SetSolution_time_n();
+    solver->node[iPoint]->SetSolution_Vel_time_n();
+    solver->node[iPoint]->SetSolution_Accel_time_n();
+    
+  }
+  
+  bool fsi = config->GetFSI_Simulation();
+  
+  /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
+  
+  if (fsi){
+    
+    su2double WAitk=0.0;
+    
+    WAitk = solver->GetWAitken_Dyn();
+    solver->SetWAitken_Dyn_tn1(WAitk);
+    
+  }
+  
+  
 }
 
 void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
-
-	unsigned long iPoint;
-	bool fsi = config->GetFSI_Simulation();
-
-	/*--- Update the solution according to the integration scheme used ---*/
-
-	switch (config->GetKind_TimeIntScheme_FEA()) {
-		case (CD_EXPLICIT):
-		  break;
-		case (NEWMARK_IMPLICIT):
-		  if (fsi) solver_container[FEA_SOL]->ImplicitNewmark_Relaxation(geometry, solver_container, config);
-		  break;
-		case (GENERALIZED_ALPHA):
-		  //if (fsi)	solver_container[FEA_SOL]->Update_StructSolution(geometry, solver_container, config);
-		  solver_container[FEA_SOL]->GeneralizedAlpha_UpdateSolution(geometry, solver_container, config);
-		  solver_container[FEA_SOL]->GeneralizedAlpha_UpdateLoads(geometry, solver_container, config);
-		  break;
-	  }
-
-	/*--- Store the solution at t+1 as solution at t, both for the local points and for the halo points ---*/
-	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-
-		solver_container[FEA_SOL]->node[iPoint]->SetSolution_time_n();
-		solver_container[FEA_SOL]->node[iPoint]->SetSolution_Vel_time_n();
-		solver_container[FEA_SOL]->node[iPoint]->SetSolution_Accel_time_n();
-
-	}
-
-	  /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
-
-	  if (fsi){
-
-		  su2double WAitk=0.0;
-
-		  WAitk = solver_container[FEA_SOL]->GetWAitken_Dyn();
-		  solver_container[FEA_SOL]->SetWAitken_Dyn_tn1(WAitk);
-
-	  }
-
+  
+  unsigned long iPoint;
+  bool fsi = config->GetFSI_Simulation();
+  
+  /*--- Update the solution according to the integration scheme used ---*/
+  
+  switch (config->GetKind_TimeIntScheme_FEA()) {
+    case (CD_EXPLICIT):
+      break;
+    case (NEWMARK_IMPLICIT):
+      if (fsi) solver_container[FEA_SOL]->ImplicitNewmark_Relaxation(geometry, solver_container, config);
+      break;
+    case (GENERALIZED_ALPHA):
+      //if (fsi)	solver_container[FEA_SOL]->Update_StructSolution(geometry, solver_container, config);
+      solver_container[FEA_SOL]->GeneralizedAlpha_UpdateSolution(geometry, solver_container, config);
+      solver_container[FEA_SOL]->GeneralizedAlpha_UpdateLoads(geometry, solver_container, config);
+      break;
+  }
+  
+  /*--- Store the solution at t+1 as solution at t, both for the local points and for the halo points ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    
+    solver_container[FEA_SOL]->node[iPoint]->SetSolution_time_n();
+    solver_container[FEA_SOL]->node[iPoint]->SetSolution_Vel_time_n();
+    solver_container[FEA_SOL]->node[iPoint]->SetSolution_Accel_time_n();
+    
+  }
+  
+  /*--- If FSI problem, save the last Aitken relaxation parameter of the previous time step ---*/
+  
+  if (fsi){
+    
+    su2double WAitk=0.0;
+    
+    WAitk = solver_container[FEA_SOL]->GetWAitken_Dyn();
+    solver_container[FEA_SOL]->SetWAitken_Dyn_tn1(WAitk);
+    
+  }
+  
 }
 
 void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter) {
-
-	su2double Reference_UTOL, Reference_RTOL, Reference_ETOL;
-	su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
-
-	int rank = MASTER_NODE;
-	#ifdef HAVE_MPI
-    	int size;
-    	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	#endif
-
-    bool Already_Converged = Convergence;
-
-	Reference_UTOL = config->GetResidual_FEM_UTOL();
-	Reference_RTOL = config->GetResidual_FEM_RTOL();
-	Reference_ETOL = config->GetResidual_FEM_ETOL();
-
-	Residual_UTOL = log10(solver->GetRes_FEM(0));
-	Residual_RTOL = log10(solver->GetRes_FEM(1));
-	Residual_ETOL = log10(solver->GetRes_FEM(2));
-
-//	cout << "Reference - UTOL: " << Reference_UTOL << " ETOL: " << Reference_ETOL << " RTOL: " << Reference_RTOL << endl;
-//	cout << "Residual - UTOL: " << Residual_UTOL << " ETOL: " << Residual_ETOL << " RTOL: " << Residual_RTOL << endl;
-
-	if ((Residual_UTOL <= Reference_UTOL) &&
-		(Residual_ETOL <= Reference_ETOL) &&
-		(Residual_RTOL <= Reference_RTOL)){
-		Convergence = true;
-	}
-
-    if (Already_Converged) Convergence = true;
-
-
-    /*--- Apply the same convergence criteria to all the processors ---*/
-
+  
+  su2double Reference_UTOL, Reference_RTOL, Reference_ETOL;
+  su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
+  
 #ifdef HAVE_MPI
-
-    unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
-    sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
-    rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
-
-    /*--- Convergence criteria ---*/
-
-    sbuf_conv[0] = Convergence;
-    SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-
-    /*-- Compute global convergence criteria in the master node --*/
-
-    sbuf_conv[0] = 0;
-    if (rank == MASTER_NODE) {
-      if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
-      else sbuf_conv[0] = 0;
-    }
-
-    SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-
-    if (sbuf_conv[0] == 1) { Convergence = true; }
-    else { Convergence = false; }
-
-    delete [] sbuf_conv;
-    delete [] rbuf_conv;
-
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
-
+  
+  bool Already_Converged = Convergence;
+  
+  Reference_UTOL = config->GetResidual_FEM_UTOL();
+  Reference_RTOL = config->GetResidual_FEM_RTOL();
+  Reference_ETOL = config->GetResidual_FEM_ETOL();
+  
+  Residual_UTOL = log10(solver->GetRes_FEM(0));
+  Residual_RTOL = log10(solver->GetRes_FEM(1));
+  Residual_ETOL = log10(solver->GetRes_FEM(2));
+  
+  //	cout << "Reference - UTOL: " << Reference_UTOL << " ETOL: " << Reference_ETOL << " RTOL: " << Reference_RTOL << endl;
+  //	cout << "Residual - UTOL: " << Residual_UTOL << " ETOL: " << Residual_ETOL << " RTOL: " << Residual_RTOL << endl;
+  
+  if ((Residual_UTOL <= Reference_UTOL) &&
+      (Residual_ETOL <= Reference_ETOL) &&
+      (Residual_RTOL <= Reference_RTOL)){
+    Convergence = true;
+  }
+  
+  if (Already_Converged) Convergence = true;
+  
+  
+  /*--- Apply the same convergence criteria to all the processors ---*/
+  
+#ifdef HAVE_MPI
+  
+  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
+  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
+  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
+  
+  /*--- Convergence criteria ---*/
+  
+  sbuf_conv[0] = Convergence;
+  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+  
+  /*-- Compute global convergence criteria in the master node --*/
+  
+  sbuf_conv[0] = 0;
+  if (rank == MASTER_NODE) {
+    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
+    else sbuf_conv[0] = 0;
+  }
+  
+  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+  
+  if (sbuf_conv[0] == 1) { Convergence = true; }
+  else { Convergence = false; }
+  
+  delete [] sbuf_conv;
+  delete [] rbuf_conv;
+  
+#endif
+  
 }
 
 
 void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iFSIIter) {
-
-	int rank = MASTER_NODE;
-	#ifdef HAVE_MPI
-    	int size;
-    	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	#endif
-
-	su2double FEA_check[2] = {0.0, 0.0};
-	su2double magResidualFSI, logResidualFSI_initial, logResidualFSI;
-	su2double magResidualFSI_criteria, logResidualFSI_criteria;
-
-	unsigned long iExtIter = fea_config->GetExtIter();
-
-    unsigned long iPoint, iDim;
-    unsigned long nPointDomain, nDim;
-    su2double *dispPred, *dispPred_Old;
-	su2double CurrentTime=fea_config->GetCurrent_DynTime();
-	su2double Static_Time=fea_config->GetStatic_Time();
-    su2double deltaU, deltaURad, deltaURes, deltaURes_recv = 0.0;
-
-	bool stat_time = (CurrentTime <= Static_Time);
-
-   	magResidualFSI_criteria = -1*fea_config->GetOrderMagResidualFSI();
-   	logResidualFSI_criteria = fea_config->GetMinLogResidualFSI();
-
-    deltaURes = 0.0;
-
-	ofstream historyFile_FSI;
-	bool writeHistFSI = fea_config->GetWrite_Conv_FSI();
-	if (writeHistFSI && (rank == MASTER_NODE)){
-		char cstrFSI[200];
-		string filenameHistFSI = fea_config->GetConv_FileName_FSI();
-		strcpy (cstrFSI, filenameHistFSI.data());
-		historyFile_FSI.open (cstrFSI, std::ios_base::app);
-	}
-
-	/*--- Only when there is movement it makes sense to check convergence (otherwise, it is always converged...) ---*/
-	/*--- The same with the first iteration, if we are doing strongly coupled we need at least two. ---*/
-
-	if ((CurrentTime > Static_Time) && (iFSIIter == 0)) {
-		/*--- Set the convergence values to 0.0 --*/
-		fea_solver->SetFSI_ConvValue(0,0.0);
-		fea_solver->SetFSI_ConvValue(1,0.0);
-
-		if (writeHistFSI && (rank == MASTER_NODE)){
-		historyFile_FSI << endl;
-		}
-
-	}
-	else if ((CurrentTime > Static_Time) && (iFSIIter > 0)) {
-
-		// We loop only over the points that belong to the processor
-		nPointDomain = fea_geometry->GetnPointDomain();
-		nDim = fea_geometry->GetnDim();
-
-		for (iPoint=0; iPoint < nPointDomain; iPoint++){
-
-		deltaURad = 0.0;
-
-		dispPred = fea_solver->node[iPoint]->GetSolution_Pred();
-		dispPred_Old = fea_solver->node[iPoint]->GetSolution_Pred_Old();
-
-			for (iDim = 0; iDim < nDim; iDim++){
-
-				/*--- Compute the deltaU, and add deltaU2 to deltaURad ---*/
-				deltaU = dispPred[iDim] - dispPred_Old[iDim];
-				deltaURad += deltaU * deltaU;
-
-			}
-
-			/*--- The residual is the maximum of the values of sqrt(deltaURad) computed ---*/
-			deltaURad = sqrt(deltaURad);
-			deltaURes = max(deltaURes, deltaURad);
-
-		}
-
-		// We need to communicate the maximum residual throughout the different processors
-
-		#ifdef HAVE_MPI
-				/*--- We sum the squares of the norms across the different processors ---*/
-				SU2_MPI::Allreduce(&deltaURes, &deltaURes_recv, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-		#else
-				deltaURes_recv         = deltaURes;
-		#endif
-
-		if (writeHistFSI && (rank == MASTER_NODE)){ historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << deltaURes_recv << "," ;}
-
-		if (iFSIIter == 1){
-			fea_solver->SetFSI_ConvValue(0,deltaURes_recv);
-			logResidualFSI_initial = log10(deltaURes_recv);
-
-			if (logResidualFSI_initial < logResidualFSI_criteria) Convergence_FSI = true;
-
-			if (writeHistFSI && (rank == MASTER_NODE)){ historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI_initial;}
-
-		}
-		else {
-			fea_solver->SetFSI_ConvValue(1,deltaURes_recv);
-			FEA_check[0] = fea_solver->GetFSI_ConvValue(0);
-			logResidualFSI_initial = log10(FEA_check[0]);
-			logResidualFSI = log10(deltaURes_recv);
-
-			magResidualFSI=logResidualFSI-logResidualFSI_initial;
-
-			if (writeHistFSI && (rank == MASTER_NODE)){
-			historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI << "," ;
-			historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << magResidualFSI ;
-			}
-
-			if ((logResidualFSI < logResidualFSI_criteria) || (magResidualFSI < magResidualFSI_criteria)) Convergence_FSI = true;
-		}
-
-		if (writeHistFSI && (rank == MASTER_NODE)){ historyFile_FSI << endl;}
-
-	}
-
-	if (writeHistFSI && (rank == MASTER_NODE)){ historyFile_FSI.close();}
-
-    /*--- Apply the same convergence criteria to all the processors ---*/
-
+  
+  int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-
-    unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
-    sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
-    rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
-
-    /*--- Convergence criteria ---*/
-
-    sbuf_conv[0] = Convergence_FSI;
-    SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-
-    /*-- Compute global convergence criteria in the master node --*/
-
-    sbuf_conv[0] = 0;
-    if (rank == MASTER_NODE) {
-      if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
-      else sbuf_conv[0] = 0;
-    }
-
-    SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-
-    if (sbuf_conv[0] == 1) { Convergence_FSI = true; }
-    else { Convergence_FSI = false; }
-
-    delete [] sbuf_conv;
-    delete [] rbuf_conv;
-
+  int size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
-
-    if (rank == MASTER_NODE){
-
-        su2double WAitken;
-        unsigned short RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
-
-		if (RelaxMethod_FSI == NO_RELAXATION){
-			WAitken = 1.0;
-		}
-		else if (RelaxMethod_FSI == FIXED_PARAMETER){
-			WAitken = fea_config->GetAitkenStatRelax();
-		}
-		else if (RelaxMethod_FSI == AITKEN_DYNAMIC){
-			WAitken = fea_solver->GetWAitken_Dyn();
-		}
-		else {
-			WAitken = 1.0;
-			cout << "No relaxation parameter used. " << endl;
-		}
-
-    	cout << endl;
-        cout.setf(ios::fixed, ios::floatfield);
-    	cout << endl << "Simulation time: " << fea_config->GetCurrent_DynTime() << ". Time step: " << fea_config->GetDelta_DynTime() << ".";
-        cout.precision(6);
-    	cout << endl <<"---------------------- FSI Convergence Summary -------------------------- ";
-    	if (stat_time){
-    		cout << endl <<" The structure is being held static. No convergence is checked.";
-    	}
-    	else{
-			if (iFSIIter == 0) cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" <<  endl;
-			else if (iFSIIter == 1) cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" << "      Res[ATOL]"  <<  endl;
-			else cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" << "      Res[ATOL]"  << "      Res[OMAG]"<<  endl;
-
-			cout.width(8); cout << iFSIIter;
-			cout.width(8); cout << iExtIter;
-			cout.width(15); cout << WAitken;
-			cout.width(15);
-			if (iFSIIter == 0) cout << " ";
-			else if (iFSIIter == 1) cout << logResidualFSI_initial;
-			else cout << logResidualFSI;
-			cout.width(15);
-			if (iFSIIter < 2) cout << " ";
-			else cout << magResidualFSI;
-    	}
-
-    	cout << endl << "------------------------------------------------------------------------- ";
-    	cout << endl;
+  
+  su2double FEA_check[2] = {0.0, 0.0};
+  su2double magResidualFSI = 0.0, logResidualFSI_initial = 0.0, logResidualFSI = 0.0;
+  su2double magResidualFSI_criteria, logResidualFSI_criteria;
+  
+  unsigned long iExtIter = fea_config->GetExtIter();
+  
+  unsigned long iPoint, iDim;
+  unsigned long nPointDomain, nDim;
+  su2double *dispPred, *dispPred_Old;
+  su2double CurrentTime=fea_config->GetCurrent_DynTime();
+  su2double Static_Time=fea_config->GetStatic_Time();
+  su2double deltaU, deltaURad, deltaURes, deltaURes_recv = 0.0;
+  
+  bool stat_time = (CurrentTime <= Static_Time);
+  
+  magResidualFSI_criteria = -1*fea_config->GetOrderMagResidualFSI();
+  logResidualFSI_criteria = fea_config->GetMinLogResidualFSI();
+  
+  deltaURes = 0.0;
+  
+  ofstream historyFile_FSI;
+  bool writeHistFSI = fea_config->GetWrite_Conv_FSI();
+  if (writeHistFSI && (rank == MASTER_NODE)){
+    char cstrFSI[200];
+    string filenameHistFSI = fea_config->GetConv_FileName_FSI();
+    strcpy (cstrFSI, filenameHistFSI.data());
+    historyFile_FSI.open (cstrFSI, std::ios_base::app);
+  }
+  
+  /*--- Only when there is movement it makes sense to check convergence (otherwise, it is always converged...) ---*/
+  /*--- The same with the first iteration, if we are doing strongly coupled we need at least two. ---*/
+  
+  if ((CurrentTime > Static_Time) && (iFSIIter == 0)) {
+    /*--- Set the convergence values to 0.0 --*/
+    fea_solver->SetFSI_ConvValue(0,0.0);
+    fea_solver->SetFSI_ConvValue(1,0.0);
+    
+    if (writeHistFSI && (rank == MASTER_NODE)){
+      historyFile_FSI << endl;
     }
-
+    
+  }
+  else if ((CurrentTime > Static_Time) && (iFSIIter > 0)) {
+    
+    // We loop only over the points that belong to the processor
+    nPointDomain = fea_geometry->GetnPointDomain();
+    nDim = fea_geometry->GetnDim();
+    
+    for (iPoint=0; iPoint < nPointDomain; iPoint++){
+      
+      deltaURad = 0.0;
+      
+      dispPred = fea_solver->node[iPoint]->GetSolution_Pred();
+      dispPred_Old = fea_solver->node[iPoint]->GetSolution_Pred_Old();
+      
+      for (iDim = 0; iDim < nDim; iDim++){
+        
+        /*--- Compute the deltaU, and add deltaU2 to deltaURad ---*/
+        deltaU = dispPred[iDim] - dispPred_Old[iDim];
+        deltaURad += deltaU * deltaU;
+        
+      }
+      
+      /*--- The residual is the maximum of the values of sqrt(deltaURad) computed ---*/
+      deltaURad = sqrt(deltaURad);
+      deltaURes = max(deltaURes, deltaURad);
+      
+    }
+    
+    // We need to communicate the maximum residual throughout the different processors
+    
+#ifdef HAVE_MPI
+    /*--- We sum the squares of the norms across the different processors ---*/
+    SU2_MPI::Allreduce(&deltaURes, &deltaURes_recv, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#else
+    deltaURes_recv         = deltaURes;
+#endif
+    
+    if (writeHistFSI && (rank == MASTER_NODE)){ historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << deltaURes_recv << "," ;}
+    
+    if (iFSIIter == 1){
+      fea_solver->SetFSI_ConvValue(0,deltaURes_recv);
+      logResidualFSI_initial = log10(deltaURes_recv);
+      
+      if (logResidualFSI_initial < logResidualFSI_criteria) Convergence_FSI = true;
+      
+      if (writeHistFSI && (rank == MASTER_NODE)){ historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI_initial;}
+      
+    }
+    else {
+      fea_solver->SetFSI_ConvValue(1,deltaURes_recv);
+      FEA_check[0] = fea_solver->GetFSI_ConvValue(0);
+      logResidualFSI_initial = log10(FEA_check[0]);
+      logResidualFSI = log10(deltaURes_recv);
+      
+      magResidualFSI=logResidualFSI-logResidualFSI_initial;
+      
+      if (writeHistFSI && (rank == MASTER_NODE)){
+        historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << logResidualFSI << "," ;
+        historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << magResidualFSI ;
+      }
+      
+      if ((logResidualFSI < logResidualFSI_criteria) || (magResidualFSI < magResidualFSI_criteria)) Convergence_FSI = true;
+    }
+    
+    if (writeHistFSI && (rank == MASTER_NODE)){ historyFile_FSI << endl;}
+    
+  }
+  
+  if (writeHistFSI && (rank == MASTER_NODE)){ historyFile_FSI.close();}
+  
+  /*--- Apply the same convergence criteria to all the processors ---*/
+  
+#ifdef HAVE_MPI
+  
+  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
+  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
+  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
+  
+  /*--- Convergence criteria ---*/
+  
+  sbuf_conv[0] = Convergence_FSI;
+  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+  
+  /*-- Compute global convergence criteria in the master node --*/
+  
+  sbuf_conv[0] = 0;
+  if (rank == MASTER_NODE) {
+    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
+    else sbuf_conv[0] = 0;
+  }
+  
+  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+  
+  if (sbuf_conv[0] == 1) { Convergence_FSI = true; }
+  else { Convergence_FSI = false; }
+  
+  delete [] sbuf_conv;
+  delete [] rbuf_conv;
+  
+#endif
+  
+  if (rank == MASTER_NODE){
+    
+    su2double WAitken;
+    unsigned short RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
+    
+    if (RelaxMethod_FSI == NO_RELAXATION){
+      WAitken = 1.0;
+    }
+    else if (RelaxMethod_FSI == FIXED_PARAMETER){
+      WAitken = fea_config->GetAitkenStatRelax();
+    }
+    else if (RelaxMethod_FSI == AITKEN_DYNAMIC){
+      WAitken = fea_solver->GetWAitken_Dyn();
+    }
+    else {
+      WAitken = 1.0;
+      cout << "No relaxation parameter used. " << endl;
+    }
+    
+    cout << endl;
+    cout.setf(ios::fixed, ios::floatfield);
+    cout << endl << "Simulation time: " << fea_config->GetCurrent_DynTime() << ". Time step: " << fea_config->GetDelta_DynTime() << ".";
+    cout.precision(6);
+    cout << endl <<"---------------------- FSI Convergence Summary -------------------------- ";
+    if (stat_time){
+      cout << endl <<" The structure is being held static. No convergence is checked.";
+    }
+    else{
+      if (iFSIIter == 0) cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" <<  endl;
+      else if (iFSIIter == 1) cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" << "      Res[ATOL]"  <<  endl;
+      else cout << endl <<" BGSIter" << " ExtIter" << "     Relaxation" << "      Res[ATOL]"  << "      Res[OMAG]"<<  endl;
+      
+      cout.width(8); cout << iFSIIter;
+      cout.width(8); cout << iExtIter;
+      cout.width(15); cout << WAitken;
+      cout.width(15);
+      if (iFSIIter == 0) cout << " ";
+      else if (iFSIIter == 1) cout << logResidualFSI_initial;
+      else cout << logResidualFSI;
+      cout.width(15);
+      if (iFSIIter < 2) cout << " ";
+      else cout << magResidualFSI;
+    }
+    
+    cout << endl << "------------------------------------------------------------------------- ";
+    cout << endl;
+  }
+  
 }
-
-

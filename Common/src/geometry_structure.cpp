@@ -5947,7 +5947,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4];
   unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_prism[6],
   vnodes_pyramid[5], dummyLong, GlobalIndex;
-  unsigned long i, j;
+  unsigned long i;
   long local_index;
   char cstr[200];
   su2double Coord_2D[2], Coord_3D[3];

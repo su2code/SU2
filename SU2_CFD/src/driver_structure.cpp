@@ -1901,9 +1901,8 @@ void CFSIDriver::Run(CIteration **iteration_container,
 	unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
 	unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
 
-
-	int rank = MASTER_NODE;
 #ifdef HAVE_MPI
+  int rank = MASTER_NODE;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 

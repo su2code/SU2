@@ -896,7 +896,7 @@ void CFEM_NeoHookean_Incomp::Compute_Constitutive_Matrix(CElement *element, CCon
 void CFEM_NeoHookean_Incomp::Compute_Stress_Tensor(CElement *element, CConfig *config) {
 
 	unsigned short iDim,jDim;
-	su2double dij, el_P;
+	su2double dij = 0.0, el_P;
 	su2double Ib = 0.0, Jft;
 
 	/*--- First invariant of b -> Ib = tr(b) ---*/
