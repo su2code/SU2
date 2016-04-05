@@ -4991,6 +4991,16 @@ su2double* CConfig::GetPeriodicRotAngles(string val_marker) {
   return Periodic_RotAngles[iMarker_PerBound];
 }
 
+su2double CConfig::GetPeriodicRotAngles(unsigned short val_iZone) {
+	if (Kind_TurboMachinery == CENTRIFUGAL ||Kind_TurboMachinery == CENTRIPETAL){
+		return Periodic_RotAngles[val_iZone][2];
+	}
+	else{
+		return Periodic_RotAngles[val_iZone][0];
+	}
+
+}
+
 su2double* CConfig::GetPeriodicTranslation(string val_marker) {
   unsigned short iMarker_PerBound;
   for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)

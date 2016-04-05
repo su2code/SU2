@@ -4636,6 +4636,11 @@ public:
 	su2double *GetPeriodicRotAngles(string val_marker);
 
 	/*!
+	 * \brief Angles of rotation for a rotational periodic boundary.
+	 */
+	su2double GetPeriodicRotAngles(unsigned short val_iZone);
+
+	/*!
 	 * \brief Translation vector for a rotational periodic boundary.
 	 */
 	su2double *GetPeriodicTranslation(string val_marker);

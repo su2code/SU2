@@ -4775,13 +4775,14 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 	massFlowOut, tangMachOut, normalMachOut, avgTotTempIn, avgTotPresIn, P_Total, T_Total, *FlowDir, alphaIn_BC, entropyIn_BC, totalEnthalpyIn_BC, densityIn_Mix,
 	pressureIn_Mix, normalVelocityIn_Mix, tangVelocityIn_Mix, densityOut_Mix, pressureOut_Mix, normalVelocityOut_Mix, tangVelocityOut_Mix, absFlowAngleIn,
 	absFlowAngleOut, pressureOut_BC;
-
+	su2double pitch;
 	unsigned short iDim, i, n1, n2, n1t,n2t;
 
 	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
 	int markerTP;
 	string Marker_Tag;
+
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -4841,6 +4842,10 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
 		for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
 			if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+				Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
+				pitch = config->GetPeriodicRotAngles(iMarkerTP -1);
+				// to avoid nan with 2D axial case.
+				if(pitch <= EPS) pitch=2*PI_NUMBER;
 				/*--- compute or retrieve inlet information ---*/
 				if (config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW){
 					markerTP = iMarkerTP;
@@ -4865,7 +4870,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 					FluidModel->SetTDState_hs(avgTotalRothalpyIn, avgEntropyIn);
 					avgTotalRelPressureIn   = FluidModel->GetPressure();
 					flowAngleIn							= SpanFlowAngle[iMarker][0];
-					massFlowIn							= SpanMassFlow[iMarker][0];
+					massFlowIn							= SpanMassFlow[iMarker][0]*2*PI_NUMBER/abs(pitch);
 					tangMachIn							= AverageTurboMach[iMarker][0][1];
 					normalMachIn						= AverageTurboMach[iMarker][0][0];
 					avgTotTempIn						= AverageTotTemperature[iMarker][0];
@@ -4878,7 +4883,6 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 
 //TODO(turbo) better location has to be found for this computation, perhaps in the outputstructure file.
 					if(config->GetBoolNRBC() || config->GetBoolRiemann()){
-						Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
 
 						if(config->GetBoolRiemann()){
 							P_Total  = config->GetRiemann_Var1(Marker_Tag);
@@ -4969,7 +4973,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 					avgTotalRelPressureOut    =  FluidModel->GetPressure();
 					avgPressureOut						= AveragePressure[iMarker][0];
 					flowAngleOut							= SpanFlowAngle[iMarker][0];
-					massFlowOut							  = SpanMassFlow[iMarker][0];
+					massFlowOut							  = SpanMassFlow[iMarker][0]*2*PI_NUMBER/abs(pitch);
 					tangMachOut								= AverageTurboMach[iMarker][0][1];
 					normalMachOut						  = AverageTurboMach[iMarker][0][0];
 					densityOut_Mix					  = AverageDensity[iMarker][0];
@@ -4980,7 +4984,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 
 
 					if(config->GetBoolNRBC() || config->GetBoolRiemann()){
-						Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
+
 						if(config->GetBoolRiemann()){
 							pressureOut_BC  = config->GetRiemann_Var1(Marker_Tag);
 							pressureOut_BC /= config->GetPressure_Ref();
@@ -5139,11 +5143,14 @@ if (rank == MASTER_NODE){
 
 	if (rank == MASTER_NODE){
 
+
+		//IMPORTANT this approach of multi-zone performances rely upon the fact that turbomachinery markers follow the natural (stator-rotor) development of the real machine.
+
 		/*--- compute outlet isoentropic conditions ---*/
 		FluidModel->SetTDState_Ps(avgPressureOut, avgEntropyIn);
 		avgEnthalpyOutIs = FluidModel->GetStaticEnergy() + avgPressureOut/FluidModel->GetDensity();
 		avgTotalEnthalpyOutIs = avgEnthalpyOutIs + 0.5*avgVel2Out;
-//		cout << markerTP -1<<endl;
+
 		/*--- store turboperformance informations ---*/
 		PressureRatio[markerTP -1] = avgTotalRelPressureIn/avgPressureOut;
 
@@ -5199,7 +5206,7 @@ if (rank == MASTER_NODE){
 void CEulerSolver::TurboPerformance2nd(CConfig *config){
 
 	unsigned short nBladesRow, nStages;
-	unsigned short iStage;
+	unsigned short iStage, iDim;
 	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
 #ifdef HAVE_MPI
@@ -5207,22 +5214,48 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
 
+
+	//IMPORTANT this approach of multi-zone performances rely upon the fact that turbomachinery markers follow the natural (stator-rotor) development of the real machine.
+
   nBladesRow = config->GetnMarker_Turbomachinery();
   nStages    = int(nBladesRow/2);
+  su2double  vel2out;
   if (rank == MASTER_NODE){
+  	EulerianWork[nBladesRow + nStages]        = 0.0;
   	/*---Comnpute performance for each stage---*/
   	for(iStage = 0; iStage < nStages; iStage++ ){
-  		TotalTotalEfficiency[nBladesRow + iStage]  = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 1])/(TotalEnthalpyIn[iStage*2] - TotalEnthalpyOutIs[iStage*2 + 1]);
-  		TotalStaticEfficiency[nBladesRow + iStage] = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 1])/(TotalEnthalpyIn[iStage*2] - EnthalpyOutIs[iStage*2 + 1]);
+  		FluidModel->SetTDState_Ps(PressureOut[iStage*2 +1], EntropyIn[iStage*2]);
+  		EnthalpyOutIs[nBladesRow + iStage] 				 = FluidModel->GetStaticEnergy() + PressureOut[iStage*2 +1]/FluidModel->GetDensity();
+  		FluidModel->SetTDState_Prho(PressureOut[iStage*2 +1], DensityOut[iStage*2 +1]);
+  		vel2out = 0.0;
+  		for (iDim = 0; iDim<nDim;iDim++) vel2out += MachOut[iStage*2 +1][iDim]*MachOut[iStage*2 +1][iDim];
+  		vel2out /= FluidModel->GetSoundSpeed2();
+  		TotalEnthalpyOutIs[nBladesRow + iStage] 	 = EnthalpyOutIs[nBladesRow + iStage] + 0.5*vel2out;
+
+  		TotalTotalEfficiency[nBladesRow + iStage]  = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 1])/(TotalEnthalpyIn[iStage*2] - TotalEnthalpyOutIs[nBladesRow + iStage]);
+  		TotalStaticEfficiency[nBladesRow + iStage] = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 1])/(TotalEnthalpyIn[iStage*2] - EnthalpyOutIs[nBladesRow + iStage]);
   		EntropyGen[nBladesRow + iStage]            = ((EntropyIn[iStage*2 + 1]*EntropyGen[iStage*2 + 1] + EntropyIn[iStage*2 + 1]) - EntropyIn[iStage*2])/abs(EntropyIn[iStage*2]);
   		PressureRatio[nBladesRow + iStage]         = (PressureRatio[iStage*2]*PressureOut[iStage*2]/PressureOut[iStage*2 + 1]);
+  		MassFlowIn[nBladesRow + iStage]         	 = MassFlowIn[iStage*2];
+  		MassFlowOut[nBladesRow + iStage]         	 = MassFlowIn[iStage*2 + 1];
+
   	}
 
   	/*---Comnpute performance for full machine---*/
-  	TotalTotalEfficiency[nBladesRow + nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - TotalEnthalpyOutIs[nBladesRow-1]);
-    TotalStaticEfficiency[nBladesRow +nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - EnthalpyOutIs[nBladesRow-1]);
-		EntropyGen[nBladesRow + nStages]           = ((EntropyIn[nBladesRow-1]*EntropyGen[nBladesRow-1] + EntropyIn[nBladesRow-1]) - EntropyIn[0])/abs(EntropyIn[0]);
-		PressureRatio[nBladesRow + nStages]        = PressureRatio[0]*PressureOut[0]/PressureOut[nBladesRow-1];
+  	FluidModel->SetTDState_Ps(PressureOut[nBladesRow-1], EntropyIn[0]);
+		EnthalpyOutIs[nBladesRow + nStages] 				 = FluidModel->GetStaticEnergy() + PressureOut[nBladesRow-1]/FluidModel->GetDensity();
+		FluidModel->SetTDState_Prho(PressureOut[nBladesRow-1], DensityOut[nBladesRow-1]);
+		vel2out = 0.0;
+		for (iDim = 0; iDim<nDim;iDim++) vel2out += MachOut[nBladesRow-1][iDim]*MachOut[nBladesRow-1][iDim];
+		vel2out /= FluidModel->GetSoundSpeed2();
+		TotalEnthalpyOutIs[nBladesRow + nStages] 	 = EnthalpyOutIs[nBladesRow + nStages] + 0.5*vel2out;
+
+		TotalTotalEfficiency[nBladesRow + nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - TotalEnthalpyOutIs[nBladesRow + nStages]);
+    TotalStaticEfficiency[nBladesRow +nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - EnthalpyOutIs[nBladesRow + nStages]);
+  	EntropyGen[nBladesRow + iStage]            = ((EntropyIn[nBladesRow-1]*EntropyGen[nBladesRow-1] + EntropyIn[nBladesRow-1]) - EntropyIn[0])/abs(EntropyIn[0]);
+    PressureRatio[nBladesRow + nStages]        = PressureRatio[0]*PressureOut[0]/PressureOut[nBladesRow-1];
+		MassFlowIn[nBladesRow + nStages]         	 = MassFlowIn[0];
+  	MassFlowOut[nBladesRow + nStages]          = MassFlowIn[nBladesRow-1];
   }
 }
 void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,

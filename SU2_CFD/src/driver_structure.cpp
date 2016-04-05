@@ -1430,7 +1430,7 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
     iteration_container[iZone]->Postprocess(); /*--- Does nothing for now. ---*/
     
   }
-  /* --- Set turboperformance for mukt ---*/
+  /* --- Set turboperformance for multi-zone ---*/
 	if (config_container[ZONE_0]->GetnMarker_Turbomachinery() > 0){
 		SetTurboPerformance(geometry_container, solver_container, config_container, interpolator_container, transfer_container, ZONE_0);
 	}
@@ -1462,7 +1462,7 @@ void CMultiZoneDriver::SetTurboPerformance(CGeometry ***geometry_container,
 																			unsigned short targetZone){
 
 	unsigned short donorZone;
-
+	//IMPORTANT this approach of multi-zone performances rely upon the fact that turbomachinery markers follow the natural (stator-rotor) development of the real machine.
 	/* --- transfer the local turboperfomance quantities (for each blade)  from all the donorZones to the targetZone (ZONE_0) ---*/
 	for (donorZone = 1; donorZone < nZone; donorZone++) {
 			transfer_container[donorZone][targetZone]->StoreTurboPerformance(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
