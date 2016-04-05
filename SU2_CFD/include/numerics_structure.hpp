@@ -1475,6 +1475,12 @@ public:
   virtual void Compute_Eigenproblem(CElement *element_container, CConfig *config);
 
   /*!
+   * \brief A virtual member to add the Maxwell stress contribution
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  virtual void Add_MaxwellStress(CElement *element_container, CConfig *config);
+
+  /*!
    * \brief A virtual member to compute the mass matrix
    * \param[in] element_container - Element structure for the particular element integrated.
    */
@@ -3998,6 +4004,8 @@ public:
 
 	virtual void Compute_Eigenproblem(CElement *element_container, CConfig *config);
 
+	virtual void Add_MaxwellStress(CElement *element_container, CConfig *config);
+
 };
 
 /*!
@@ -4079,12 +4087,34 @@ protected:
 	su2double **currentCoord;	 	/*!< \brief Current coordinates. */
 	su2double **Stress_Tensor;		/*!< \brief Cauchy stress tensor */
 
+	su2double **FmT_Mat;	 			/*!< \brief Deformation gradient inverse and transpose. */
+
 	su2double **KAux_P_ab;			/*!< \brief Auxiliar matrix for the pressure term */
 	su2double *KAux_t_a;			/*!< \brief Auxiliar matrix for the pressure term */
 
 	su2double J_F;		 			/*!< \brief Jacobian of the transformation (determinant of F) */
 
 	su2double f33;		 			/*!< \brief Plane stress term for non-linear 2D plane stress analysis */
+
+	bool nearly_incompressible;		/*!< \brief Boolean to consider nearly_incompressible effects */
+	bool incompressible;			/*!< \brief Boolean to consider Hu-Washizu incompressible effects */
+
+	su2double **F_Mat_Iso;	 			/*!< \brief Isocoric component of the deformation gradient. */
+	su2double **b_Mat_Iso;	 			/*!< \brief Isocoric component of the left Cauchy-Green tensor. */
+
+	su2double C10, D1;					/*!< \brief C10 = Mu/2. D1 = Kappa/2. */
+	su2double J_F_Iso;					/*!< \brief J_F_Iso: det(F)^-1/3. */
+
+	bool maxwell_stress;			/*!< \brief Consider the effects of the dielectric loads */
+
+	su2double *EField_Ref_Unit,			/*!< \brief Electric Field, unitary, in the reference configuration. */
+	*EField_Ref_Mod;					/*!< \brief Electric Field, modulus, in the reference configuration. */
+	su2double *EField_Curr_Unit;		/*!< \brief Auxiliary vector for the unitary Electric Field in the current configuration. */
+	unsigned short nElectric_Field,
+	nDim_Electric_Field;
+
+	su2double ke_DE;					/*!< \brief Electric Constant for Dielectric Elastomers. */
+
 
 public:
 
@@ -4110,6 +4140,12 @@ public:
 	void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
 
 	void Compute_Eigenproblem(CElement *element_container, CConfig *config);
+
+	void Add_MaxwellStress(CElement *element_container, CConfig *config);
+
+	void Compute_FmT_Mat(void);
+
+	void Compute_Isochoric_F_b(void);
 
 	virtual void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
 
@@ -4195,12 +4231,6 @@ public:
  */
 class CFEM_IdealDE : public CFEM_NonlinearElasticity {
 
-	su2double **F_Mat_Iso;	 			/*!< \brief Isocoric component of the deformation gradient. */
-	su2double **b_Mat_Iso;	 			/*!< \brief Isocoric component of the left Cauchy-Green tensor. */
-
-	su2double C10, D1;					/*!< \brief C10 = Mu/2. D1 = Kappa/2. */
-	su2double J_F_Iso;					/*!< \brief J_F_Iso: det(F)^-1/3. */
-
 	su2double trbbar, Eg, Eg23, Ek, Pr;	/*!< \brief Parameters of the model. */
 
 public:
@@ -4235,16 +4265,6 @@ public:
  */
 class CFEM_DielectricElastomer : public CFEM_NonlinearElasticity {
 
-	su2double *EField_Ref_Unit,			/*!< \brief Electric Field, unitary, in the reference configuration. */
-	*EField_Ref_Mod;					/*!< \brief Electric Field, modulus, in the reference configuration. */
-	su2double *EField_Curr_Unit;		/*!< \brief Auxiliary vector for the unitary Electric Field in the current configuration. */
-	unsigned short nElectric_Field,
-	nDim_Electric_Field;
-
-	su2double **FmT_Mat;	 			/*!< \brief Deformation gradient inverse and transpose. */
-
-	su2double ke_DE;					/*!< \brief Electric Constant for Dielectric Elastomers. */
-
 public:
 
 	/*!
@@ -4266,8 +4286,6 @@ public:
   using CNumerics::Compute_Constitutive_Matrix;
 
 	void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
-
-	void Compute_FmT_Mat(void);
 
 };
 
