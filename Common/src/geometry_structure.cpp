@@ -9632,16 +9632,17 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_flag, bool allocate) {
 	unsigned long  iPoint, jPoint, iVertex, jVertex, kVertex, iSpanVertex, jSpanVertex, kSpanVertex, **ordered, **disordered, oldVertex;
 	unsigned long nVert, nVertMax;
-	unsigned short iMarker, iMarkerTP, iSpan, jSpan, iDim, nSpanWiseSections;
-	su2double min, max, *coord, *span, delta, dist, Normal2, *TurboNormal, *NormalArea, target, **area, ***unitnormal, Area, ymin_loc;
+	unsigned short iMarker, iMarkerTP, iSpan,iSize, jSpan, iDim, nSpanWiseSections;
+	su2double min, max, *coord, *span, delta, dist, Normal2, *TurboNormal, *NormalArea, target, **area, ***unitnormal, Area;
 	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
-	int nVertex_loc, globalindex;
+	int  globalindex;
 	bool **checkAssign;
 	min = 10.0E+06;
 	max = -10.0E+06;
-	ymin_loc= 10.0E+04*(rank+1);
-	nVertex_loc = -1;
+
+	su2double *ymin_loc;
+	int *nVertex_loc;
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -9650,8 +9651,15 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
   unsigned long My_nVert;
 
 #endif
-  ymin_loc= 10.0E+05*(rank+1);
+
 	nSpanWiseSections = config->Get_nSpanWiseSections();
+
+	ymin_loc    = new su2double[nSpanWiseSections];
+	nVertex_loc = new int[nSpanWiseSections];
+	for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+		ymin_loc[iSpan]= 10.0E+05*(rank+1);
+		nVertex_loc[iSpan] = -1;
+	}
 
 	/*--- Initialize auxiliary pointers ---*/
 	span    					= new su2double[nSpanWiseSections];
@@ -9733,8 +9741,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 							turbovertex[iMarker][0] = new CTurboVertex* [nVertexSpan[iMarker][0]];
 						}
 						/*--- store min local value pitch wise to be used for global reordering---*/
-						ymin_loc 				= min;
-						nVertex_loc 		= jVertex;
+						ymin_loc[0] 				= min;
+						nVertex_loc[0] 		= jVertex;
 
 						/*--- reordering pitch-wise, storing in the turbovertex structure, compute normal for the turbo frame of reference---*/
 						jVertex = 0;
@@ -9977,38 +9985,40 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 		}
   }
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(&ymin_loc, 1, MPI_DOUBLE, ymin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-  SU2_MPI::Gather(&nVertex_loc, 1, MPI_INT, nvertex_glob, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  min =  10.0E+06;
-  dist =  10.0E+06;
-  unsigned short imin;
-  unsigned long  nvertMPI;
-  if (rank==MASTER_NODE){
-  	for(iSpan=0; iSpan<size; iSpan++){
-  		if (ymin[iSpan]< min){
-  			min = ymin[iSpan];
-  			imin = iSpan;
-  		}
-  	}
+  for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+		SU2_MPI::Gather(&ymin_loc[iSpan], 1, MPI_DOUBLE, ymin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		SU2_MPI::Gather(&nVertex_loc[iSpan], 1, MPI_INT, nvertex_glob, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		min =  10.0E+06;
+		dist =  10.0E+06;
+		unsigned short imin;
+		unsigned long  nvertMPI;
+		if (rank==MASTER_NODE){
+			for(iSize=0; iSize<size; iSize++){
+				if (ymin[iSize]< min){
+					min = ymin[iSize];
+					imin = iSize;
+				}
+			}
 
-  	nvertMPI = 0;
-  	for(iSpan=0; iSpan<size; iSpan++){
-//  		cout << ymin[imin]<<endl;
-//  		cout << nvertex_glob[imin]<<endl;
-   		nvertex_out[imin]= nvertMPI;
-//   		cout << nvertex_out[imin]<<endl;
-   		nvertMPI += nvertex_glob[imin];
-    	target = ymin[imin];
-    	dist =  10.0E+06;
-  		for(jSpan=0; jSpan<size; jSpan++){
-  			if(dist > ( ymin[jSpan] - target) && (ymin[jSpan] - target) > 0.0){
-  				dist =  ymin[jSpan] - target;
-  				imin =  jSpan;
-  			}
-  		}
-  	}
+			nvertMPI = 0;
+			for(iSize=0; iSize<size; iSize++){
+	//  		cout << ymin[imin]<<endl;
+	//  		cout << nvertex_glob[imin]<<endl;
+				nvertex_out[imin]= nvertMPI;
+	//   		cout << nvertex_out[imin]<<endl;
+				nvertMPI += nvertex_glob[imin];
+				target = ymin[imin];
+				dist =  10.0E+06;
+				for(jSpan=0; jSpan<size; jSpan++){
+					if(dist > ( ymin[jSpan] - target) && (ymin[jSpan] - target) > 0.0){
+						dist =  ymin[jSpan] - target;
+						imin =  jSpan;
+					}
+				}
+			}
+		}
+		SU2_MPI::Scatter(nvertex_out, 1, MPI_INT, &nVertex_loc[iSpan], 1, MPI_INT, 0, MPI_COMM_WORLD);
   }
-  SU2_MPI::Scatter(nvertex_out, 1, MPI_INT, &nVertex_loc, 1, MPI_INT, 0, MPI_COMM_WORLD);
 #endif
 
   /*--- to be set for all the processor to initialize an appropriate number of frequency for the NR BC ---*/
@@ -10025,7 +10035,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 						nVert = nVertexSpan[iMarker][iSpan];
 							for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
-								globalindex = nVertex_loc + iSpanVertex + 1;
+								globalindex = nVertex_loc[iSpan] + iSpanVertex + 1;
 								turbovertex[iMarker][iSpan][iSpanVertex]->SetGlobalVertexIndex(globalindex);
 
 						}
@@ -10054,28 +10064,29 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 		}
   }
 //			FINAL TEST
-//  for (iMarker = 0; iMarker < nMarker; iMarker++){
-//  	for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-//			if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-//				if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-//					for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-//						for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
-//							iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
-//							coord = node[iPoint]->GetCoord();
-//							//if(rank == 3)
-//							cout <<"span " <<iSpan << " pitch wise " << coord[1]<< " local index " << iSpanVertex << " global index " << turbovertex[iMarker][iSpan][iSpanVertex]->GetGlobalVertexIndex() <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
-//							//check if the old vertex work ass well
+//      TODO  IMPORTANT oldVertexindex should be implemented in 3D
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+  	for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+			if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+				if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+					for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+						for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
+							iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
+							coord = node[iPoint]->GetCoord();
+//							if(rank == 3)
+							cout <<"span " <<iSpan << " pitch wise " << coord[1]<< " local index " << iSpanVertex << " global index " << turbovertex[iMarker][iSpan][iSpanVertex]->GetGlobalVertexIndex() <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
+							//check if the old vertex work ass well
 //							iVertex = turbovertex[iMarker][iSpan][iSpanVertex]->GetOldVertex();
 //							iPoint = vertex[iMarker][iVertex]->GetNode();
 //							coord = node[iPoint]->GetCoord();
-//							//if(rank == 3)
-//							//cout <<"old vertex check in Span  " <<iSpan << " pitch wise " << coord[1]<< " in vertex " << iVertex <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
-//						}
-//					}
-//				}
-//  		}
-//  	}
-// }
+							//if(rank == 3)
+							//cout <<"old vertex check in Span  " <<iSpan << " pitch wise " << coord[1]<< " in vertex " << iVertex <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
+						}
+					}
+				}
+  		}
+  	}
+ }
 
   delete [] area;
   delete [] ordered;
@@ -10085,6 +10096,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 	delete [] TurboNormal;
 	delete [] unitnormal;
 	delete [] NormalArea;
+	delete [] ymin_loc;
+	delete []	nVertex_loc;
 }
 
 void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_flag, bool allocate) {
