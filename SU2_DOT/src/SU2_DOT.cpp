@@ -493,7 +493,7 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
     for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
 
-      /*--- Initilization with double resets the index ---*/
+      /*--- Initilization with su2double resets the index ---*/
 
       DV_Value = 0.0;
 
