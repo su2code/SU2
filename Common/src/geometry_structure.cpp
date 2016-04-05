@@ -9932,6 +9932,10 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 								}
 							}
 
+							/*--- each span and for each processor store auxiliary information that will be used for global pitch ordering ---*/
+							ymin_loc[iSpan]    = min;
+							nVertex_loc[iSpan] = nVertexSpan[iMarker][iSpan];
+
 							/*--- reordering pitch-wise algorithm, store the ordered vertexes span-wise and pitch-wise
 							 * in the CTurboVertex container and compute the normal in an appropriate turbo frame of references---*/
 							//TODO (turbo) ordering algorithm works only on Y direction (read above)
@@ -10073,7 +10077,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 						for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
 							iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
 							coord = node[iPoint]->GetCoord();
-//							if(rank == 3)
+							if(iSpan == 8 && marker_flag == INFLOW)
 							cout <<"span " <<iSpan << " pitch wise " << coord[1]<< " local index " << iSpanVertex << " global index " << turbovertex[iMarker][iSpan][iSpanVertex]->GetGlobalVertexIndex() <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
 							//check if the old vertex work ass well
 //							iVertex = turbovertex[iMarker][iSpan][iSpanVertex]->GetOldVertex();
