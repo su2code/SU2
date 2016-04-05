@@ -84,11 +84,8 @@
 		E9D9CE861C62A1A7004119E9 /* interpolation_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE851C62A1A7004119E9 /* interpolation_structure.cpp */; };
 		E9D9CE891C62A1C8004119E9 /* transfer_physics.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE871C62A1C8004119E9 /* transfer_physics.cpp */; };
 		E9D9CE8A1C62A1C8004119E9 /* transfer_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE881C62A1C8004119E9 /* transfer_structure.cpp */; };
-		E9D9CE8C1C62A1FF004119E9 /* solver_fem_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE8B1C62A1FF004119E9 /* solver_fem_elasticity.cpp */; };
-		E9D9CE901C62A224004119E9 /* numerics_fem_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE8D1C62A224004119E9 /* numerics_fem_elasticity.cpp */; };
-		E9D9CE911C62A224004119E9 /* numerics_fem_linear_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE8E1C62A224004119E9 /* numerics_fem_linear_elasticity.cpp */; };
-		E9D9CE921C62A224004119E9 /* numerics_fem_nonlinear_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE8F1C62A224004119E9 /* numerics_fem_nonlinear_elasticity.cpp */; };
-		E9D9CE941C62A24F004119E9 /* variable_fem_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE931C62A24F004119E9 /* variable_fem_elasticity.cpp */; };
+		E9F512C81CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F512C61CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp */; };
+		E9F512C91CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F512C71CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -330,16 +327,13 @@
 		E9D9CE851C62A1A7004119E9 /* interpolation_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = interpolation_structure.cpp; path = ../../Common/src/interpolation_structure.cpp; sourceTree = "<group>"; };
 		E9D9CE871C62A1C8004119E9 /* transfer_physics.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = transfer_physics.cpp; path = ../../SU2_CFD/src/transfer_physics.cpp; sourceTree = "<group>"; };
 		E9D9CE881C62A1C8004119E9 /* transfer_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = transfer_structure.cpp; path = ../../SU2_CFD/src/transfer_structure.cpp; sourceTree = "<group>"; };
-		E9D9CE8B1C62A1FF004119E9 /* solver_fem_elasticity.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_fem_elasticity.cpp; path = ../../SU2_CFD/src/solver_fem_elasticity.cpp; sourceTree = "<group>"; };
-		E9D9CE8D1C62A224004119E9 /* numerics_fem_elasticity.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_fem_elasticity.cpp; path = ../../SU2_CFD/src/numerics_fem_elasticity.cpp; sourceTree = "<group>"; };
-		E9D9CE8E1C62A224004119E9 /* numerics_fem_linear_elasticity.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_fem_linear_elasticity.cpp; path = ../../SU2_CFD/src/numerics_fem_linear_elasticity.cpp; sourceTree = "<group>"; };
-		E9D9CE8F1C62A224004119E9 /* numerics_fem_nonlinear_elasticity.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_fem_nonlinear_elasticity.cpp; path = ../../SU2_CFD/src/numerics_fem_nonlinear_elasticity.cpp; sourceTree = "<group>"; };
-		E9D9CE931C62A24F004119E9 /* variable_fem_elasticity.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = variable_fem_elasticity.cpp; path = ../../SU2_CFD/src/variable_fem_elasticity.cpp; sourceTree = "<group>"; };
 		E9D9CE951C62A272004119E9 /* transfer_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = transfer_structure.hpp; path = ../../SU2_CFD/include/transfer_structure.hpp; sourceTree = "<group>"; };
 		E9D9CE961C62A272004119E9 /* transfer_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = transfer_structure.inl; path = ../../SU2_CFD/include/transfer_structure.inl; sourceTree = "<group>"; };
 		E9D9CE971C62A2A7004119E9 /* interpolation_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = interpolation_structure.hpp; path = ../../Common/include/interpolation_structure.hpp; sourceTree = "<group>"; };
 		E9D9CE981C6563B3004119E9 /* parallel_regression_AD.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = parallel_regression_AD.py; sourceTree = "<group>"; };
 		E9D9CE991C6563B3004119E9 /* serial_regression_AD.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = serial_regression_AD.py; sourceTree = "<group>"; };
+		E9F512C61CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_elasticity_linear.cpp; path = ../../SU2_CFD/src/numerics_direct_elasticity_linear.cpp; sourceTree = "<group>"; };
+		E9F512C71CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_elasticity_nonlinear.cpp; path = ../../SU2_CFD/src/numerics_direct_elasticity_nonlinear.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -361,7 +355,6 @@
 				05E6DBFB17EB62A100FA1F7E /* variable_direct_turbulent.cpp */,
 				0530E56B17FDF7BD00733CE8 /* variable_direct_poisson.cpp */,
 				0530E56D17FDF7C600733CE8 /* variable_direct_elasticity.cpp */,
-				E9D9CE931C62A24F004119E9 /* variable_fem_elasticity.cpp */,
 				05E6DBF517EB62A100FA1F7E /* variable_direct_heat.cpp */,
 				05E6DBFA17EB62A100FA1F7E /* variable_direct_transition.cpp */,
 				05E6DBFC17EB62A100FA1F7E /* variable_direct_wave.cpp */,
@@ -383,7 +376,6 @@
 				05E6DBE617EB62A100FA1F7E /* solver_direct_turbulent.cpp */,
 				0530E56717FDF79500733CE8 /* solver_direct_poisson.cpp */,
 				0530E56917FDF7AC00733CE8 /* solver_direct_elasticity.cpp */,
-				E9D9CE8B1C62A1FF004119E9 /* solver_fem_elasticity.cpp */,
 				05E6DBE017EB62A100FA1F7E /* solver_direct_heat.cpp */,
 				05E6DBE517EB62A100FA1F7E /* solver_direct_transition.cpp */,
 				05E6DBE717EB62A100FA1F7E /* solver_direct_wave.cpp */,
@@ -530,9 +522,8 @@
 				05E6DBCF17EB62A100FA1F7E /* numerics_direct_turbulent.cpp */,
 				0530E57117FDF7D800733CE8 /* numerics_direct_poisson.cpp */,
 				0530E56F17FDF7D300733CE8 /* numerics_direct_elasticity.cpp */,
-				E9D9CE8D1C62A224004119E9 /* numerics_fem_elasticity.cpp */,
-				E9D9CE8E1C62A224004119E9 /* numerics_fem_linear_elasticity.cpp */,
-				E9D9CE8F1C62A224004119E9 /* numerics_fem_nonlinear_elasticity.cpp */,
+				E9F512C61CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp */,
+				E9F512C71CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp */,
 				05E6DBC917EB62A100FA1F7E /* numerics_direct_heat.cpp */,
 				05E6DBCE17EB62A100FA1F7E /* numerics_direct_transition.cpp */,
 				05E6DBD017EB62A100FA1F7E /* numerics_direct_wave.cpp */,
@@ -1456,7 +1447,7 @@
 				05E6DC0117EB62A100FA1F7E /* definition_structure.cpp in Sources */,
 				05E6DC0317EB62A100FA1F7E /* integration_structure.cpp in Sources */,
 				E941BBAE1B71D564005C6C06 /* variable_adjoint_discrete.cpp in Sources */,
-				E9D9CE8C1C62A1FF004119E9 /* solver_fem_elasticity.cpp in Sources */,
+				E9F512C81CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp in Sources */,
 				05E6DC0417EB62A100FA1F7E /* integration_time.cpp in Sources */,
 				05F1089B1978D2AE00F2F288 /* fluid_model_ppr.cpp in Sources */,
 				0530E57217FDF7D800733CE8 /* numerics_direct_poisson.cpp in Sources */,
@@ -1475,7 +1466,6 @@
 				05E6DC1017EB62A100FA1F7E /* numerics_direct_mean.cpp in Sources */,
 				E9D85B4C1C3F1B9E0077122F /* ad_structure.cpp in Sources */,
 				0530E56E17FDF7C600733CE8 /* variable_direct_elasticity.cpp in Sources */,
-				E9D9CE901C62A224004119E9 /* numerics_fem_elasticity.cpp in Sources */,
 				05F1089D1978D2AE00F2F288 /* fluid_model.cpp in Sources */,
 				05E6DC1317EB62A100FA1F7E /* numerics_direct_transition.cpp in Sources */,
 				0506980A1AA6179100FF4F07 /* output_fieldview.cpp in Sources */,
@@ -1491,12 +1481,11 @@
 				E9D9CE861C62A1A7004119E9 /* interpolation_structure.cpp in Sources */,
 				05E6DC1E17EB62A100FA1F7E /* solver_adjoint_levelset.cpp in Sources */,
 				05F1089C1978D2AE00F2F288 /* fluid_model_pvdw.cpp in Sources */,
-				E9D9CE911C62A224004119E9 /* numerics_fem_linear_elasticity.cpp in Sources */,
-				E9D9CE941C62A24F004119E9 /* variable_fem_elasticity.cpp in Sources */,
 				05E6DC1F17EB62A100FA1F7E /* solver_adjoint_mean.cpp in Sources */,
 				05E6DC2217EB62A100FA1F7E /* solver_adjoint_turbulent.cpp in Sources */,
 				05E6DC2517EB62A100FA1F7E /* solver_direct_heat.cpp in Sources */,
 				05E6DC2717EB62A100FA1F7E /* solver_direct_mean.cpp in Sources */,
+				E9F512C91CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp in Sources */,
 				05E6DC2A17EB62A100FA1F7E /* solver_direct_transition.cpp in Sources */,
 				05E6DC2B17EB62A100FA1F7E /* solver_direct_turbulent.cpp in Sources */,
 				05E6DC2C17EB62A100FA1F7E /* solver_direct_wave.cpp in Sources */,
@@ -1517,7 +1506,6 @@
 				E941BB931B71D124005C6C06 /* linear_solvers_structure_b.cpp in Sources */,
 				05E6DC4417EB62A100FA1F7E /* variable_structure.cpp in Sources */,
 				05E6DC4517EB62A100FA1F7E /* variable_template.cpp in Sources */,
-				E9D9CE921C62A224004119E9 /* numerics_fem_nonlinear_elasticity.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1542,27 +1530,12 @@
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4.0.2;
+				CURRENT_PROJECT_VERSION = 4.1.1;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					NO_OMP,
-					NO_METIS,
-					NO_MPI,
-					NO_CGNS,
-					NO_MUTATIONPP,
-					NO_JSONCPP,
-				);
-				"GCC_PREPROCESSOR_DEFINITIONS[arch=*]" = (
-					NO_TECIO,
-					NO_OMP,
-					NO_METIS,
-					NO_MPI,
-					NO_CGNS,
-					NO_MUTATIONPP,
-					NO_JSONCPP,
-				);
+				GCC_PREPROCESSOR_DEFINITIONS = "";
+				"GCC_PREPROCESSOR_DEFINITIONS[arch=*]" = "";
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = NO;
 				GCC_TREAT_INCOMPATIBLE_POINTER_TYPE_WARNINGS_AS_ERRORS = NO;
@@ -1584,11 +1557,12 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INSTALL_PATH = /usr/local/bin;
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				PRODUCT_NAME = SU2_CFD;
 				WARNING_CFLAGS = (
 					"-Wall",
 					"-Wextra",
+					"-Wunused",
 					"-Wno-unused-parameter",
 				);
 			};
@@ -1611,7 +1585,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CURRENT_PROJECT_VERSION = 4.0.2;
+				CURRENT_PROJECT_VERSION = 4.1.1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
@@ -1635,11 +1609,12 @@
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INSTALL_PATH = /usr/local/bin;
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				PRODUCT_NAME = SU2_CFD;
 				WARNING_CFLAGS = (
 					"-Wall",
 					"-Wextra",
+					"-Wunused",
 					"-Wno-unused-parameter",
 				);
 			};
