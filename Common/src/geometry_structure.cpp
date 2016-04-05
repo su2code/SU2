@@ -9643,16 +9643,25 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 
 	su2double *ymin_loc;
 	int *nVertex_loc;
+	su2double **x_loc, **y_loc, **z_loc;
+	int       **globIdx_loc;
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	su2double MyMax, MyMin, ymin[size];
-  int nvertex_glob[size], nvertex_out[size], nvert;
+	su2double **x_gb, **y_gb, **z_gb;
+	int       **globIdx_gb;
+	int nvertex_glob[size], nvertex_out[size], nvert;
   unsigned long My_nVert;
 
 #endif
 
 	nSpanWiseSections = config->Get_nSpanWiseSections();
+
+	x_loc    				= new su2double*[nSpanWiseSections];
+	y_loc    				= new su2double*[nSpanWiseSections];
+	z_loc    				= new su2double*[nSpanWiseSections];
+	globIdx_loc     = new int*[nSpanWiseSections];
 
 	ymin_loc    = new su2double[nSpanWiseSections];
 	nVertex_loc = new int[nSpanWiseSections];
@@ -10067,30 +10076,90 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 			}
 		}
   }
+
+  /*--- Printing Tec file to check the order ---*/
+  /*--- Send all the info to the MASTERNODE ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+    for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+  		if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+  			if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+  				for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+  					x_loc[iSpan]    				= new su2double[nVertexSpan[iMarker][iSpan]];
+  					y_loc[iSpan]    				= new su2double[nVertexSpan[iMarker][iSpan]];
+  					z_loc[iSpan]    				= new su2double[nVertexSpan[iMarker][iSpan]];
+  					globIdx_loc[iSpan]      = new int[nVertexSpan[iMarker][iSpan]];
+  					for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
+  						iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
+							coord  = node[iPoint]->GetCoord();
+							x_loc[iSpan][iSpanVertex] = coord[0];
+							y_loc[iSpan][iSpanVertex] = coord[1];
+							if (nDim == 3){
+								z_loc[iSpan][iSpanVertex] = coord[2];
+							}
+							else{
+								z_loc[iSpan][iSpanVertex] = 0.0;
+							}
+							globIdx_loc[iSpan][iSpanVertex]      = turbovertex[iMarker][iSpan][iSpanVertex]->GetGlobalVertexIndex();
+							cout << y_loc[iSpan][iSpanVertex] << "  " <<globIdx_loc[iSpan][iSpanVertex] << endl;
+  					}
+  				}
+  			}
+  		}
+    }
+  }
+
+//#ifdef HAVE_MPI
+//  	x_gb    				= new su2double*[nSpanWiseSections];
+//  	y_gb    				= new su2double*[nSpanWiseSections];
+//  	z_gb    				= new su2double*[nSpanWiseSections];
+//  	globIdx_gb     = new int*[nSpanWiseSections];
+//  	for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+//			x_gb[iSpan]    				= new su2double[nTotVertexSpan[iMarker][iSpan]];
+//			y_gb[iSpan]    				= new su2double[nTotVertexSpan[iMarker][iSpan]];
+//			z_gb[iSpan]    				= new su2double[nTotVertexSpan[iMarker][iSpan]];
+//			globIdx_gb[iSpan]     = new int[nTotVertexSpan[iMarker][iSpan]];
+//  	}
+//  	for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+//  		SU2_MPI::Gather(&ymin_loc[iSpan], 1, MPI_DOUBLE, ymin, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+//
+//#endif
 //			FINAL TEST
 //      TODO  IMPORTANT oldVertexindex should be implemented in 3D
-  for (iMarker = 0; iMarker < nMarker; iMarker++){
-  	for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-			if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-				if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-					for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-						for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
-							iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
-							coord = node[iPoint]->GetCoord();
-							if(iSpan == 8 && marker_flag == INFLOW)
-							cout <<"span " <<iSpan << " pitch wise " << coord[1]<< " local index " << iSpanVertex << " global index " << turbovertex[iMarker][iSpan][iSpanVertex]->GetGlobalVertexIndex() <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
-							//check if the old vertex work ass well
-//							iVertex = turbovertex[iMarker][iSpan][iSpanVertex]->GetOldVertex();
-//							iPoint = vertex[iMarker][iVertex]->GetNode();
+//  for (iMarker = 0; iMarker < nMarker; iMarker++){
+//  	for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+//			if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+//				if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+//					for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+//						for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
+//							iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
 //							coord = node[iPoint]->GetCoord();
-							//if(rank == 3)
-							//cout <<"old vertex check in Span  " <<iSpan << " pitch wise " << coord[1]<< " in vertex " << iVertex <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
-						}
-					}
-				}
-  		}
-  	}
- }
+//							if(iSpan == 8 && marker_flag == INFLOW)
+//							cout <<"span " <<iSpan << " pitch wise " << coord[1]<< " local index " << iSpanVertex << " global index " << turbovertex[iMarker][iSpan][iSpanVertex]->GetGlobalVertexIndex() <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
+//							//check if the old vertex work ass well
+////							iVertex = turbovertex[iMarker][iSpan][iSpanVertex]->GetOldVertex();
+////							iPoint = vertex[iMarker][iVertex]->GetNode();
+////							coord = node[iPoint]->GetCoord();
+//							//if(rank == 3)
+//							//cout <<"old vertex check in Span  " <<iSpan << " pitch wise " << coord[1]<< " in vertex " << iVertex <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
+//						}
+//					}
+//				}
+//  		}
+//  	}
+// }
+
+	for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+		delete [] x_loc[iSpan];
+		delete [] y_loc[iSpan];
+		delete [] z_loc[iSpan];
+		delete [] globIdx_loc[iSpan];
+	}
+
+	delete [] x_loc;
+	delete [] y_loc;
+	delete [] z_loc;
+	delete [] globIdx_loc;
+
 
   delete [] area;
   delete [] ordered;
