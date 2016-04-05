@@ -19,7 +19,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_CFD
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 4.1.0 "Cardinal"
+# \version 4.1.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -151,6 +151,7 @@ am_____bin_SU2_CFD_SOURCES_DIST = ../include/definition_structure.hpp \
 	../src/solver_adjoint_discrete.cpp \
 	../src/solver_direct_poisson.cpp ../src/solver_direct_heat.cpp \
 	../src/solver_direct_mean.cpp \
+	../src/solver_direct_mean_fem.cpp \
 	../src/solver_direct_transition.cpp \
 	../src/solver_direct_turbulent.cpp \
 	../src/solver_direct_wave.cpp \
@@ -285,6 +286,7 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST =  \
 	../src/solver_adjoint_discrete.cpp \
 	../src/solver_direct_poisson.cpp ../src/solver_direct_heat.cpp \
 	../src/solver_direct_mean.cpp \
+	../src/solver_direct_mean_fem.cpp \
 	../src/solver_direct_transition.cpp \
 	../src/solver_direct_turbulent.cpp \
 	../src/solver_direct_wave.cpp \
@@ -418,6 +420,7 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST =  \
 	../src/solver_adjoint_discrete.cpp \
 	../src/solver_direct_poisson.cpp ../src/solver_direct_heat.cpp \
 	../src/solver_direct_mean.cpp \
+	../src/solver_direct_mean_fem.cpp \
 	../src/solver_direct_transition.cpp \
 	../src/solver_direct_turbulent.cpp \
 	../src/solver_direct_wave.cpp \
