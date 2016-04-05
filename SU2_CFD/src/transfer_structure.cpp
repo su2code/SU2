@@ -191,8 +191,8 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     MaxLocalVertexDonor  = nLocalVertexDonor;
     MaxLocalVertexTarget = nLocalVertexTarget;
     
-    Buffer_Recv_nVertexDonor[0] = nLocalVertexDonor;
-    Buffer_Recv_nVertexTarget[0] = nLocalVertexTarget;
+    Buffer_Recv_nVertexDonor[0] = Buffer_Send_nVertexDonor[0];
+    Buffer_Recv_nVertexTarget[0] = Buffer_Send_nVertexTarget[0];
     
 #endif
     
@@ -551,7 +551,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 #else
     MaxLocalVertexDonor         = nLocalVertexDonor;
     TotalVertexDonor            = nLocalVertexDonorOwned;
-    Buffer_Recv_nVertexDonor[0] = nLocalVertexDonor;
+    Buffer_Recv_nVertexDonor[0] = Buffer_Send_nVertexDonor[0];
 #endif
     
     /*--- We will be gathering the donor information into the master node ---*/
@@ -842,7 +842,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 #else
     MaxLocalVertexDonor         = nLocalVertexDonor;
     TotalVertexDonor            = nLocalVertexDonorOwned;
-    Buffer_Recv_nVertexDonor[0] = nLocalVertexDonor;
+    Buffer_Recv_nVertexDonor[0] = Buffer_Send_nVertexDonor[0];
 #endif
     
     /*--- We will be gathering the donor information into the master node ---*/
@@ -1138,7 +1138,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
     SU2_MPI::Allgather(&Buffer_Send_nVertexDonor, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertexDonor, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
 #else
     MaxLocalVertexDonor         = nLocalVertexDonor;
-    Buffer_Recv_nVertexDonor[0] = nLocalVertexDonor;
+    Buffer_Recv_nVertexDonor[0] = Buffer_Send_nVertexDonor[0];
 #endif
     
     /*--- We will be gathering the donor information into the master node ---*/

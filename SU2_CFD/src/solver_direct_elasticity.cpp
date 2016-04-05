@@ -2823,7 +2823,8 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
   
 #ifndef HAVE_MPI
   
-  unsigned long nVertexFEA, nVertexFlow;						// Number of vertices on FEA and Flow side
+  unsigned long nVertexFlow;						// Number of vertices on FEA and Flow side
+  //unsigned long nVertexFEA;
   
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     node[iPoint]->Clear_FlowTraction();
@@ -2849,7 +2850,7 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
       }
     }
     
-    nVertexFEA = fea_geometry[MESH_0]->GetnVertex(Marker_Struct);		// Retrieve total number of vertices on FEA marker
+    //nVertexFEA = fea_geometry[MESH_0]->GetnVertex(Marker_Struct);		// Retrieve total number of vertices on FEA marker
     nVertexFlow = flow_geometry[MESH_0]->GetnVertex(Marker_Flow);  // Retrieve total number of vertices on Fluid marker
     
     /*--- Loop over the nodes in the fluid mesh, calculate the tf vector (unitary) ---*/
