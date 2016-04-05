@@ -4527,7 +4527,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 						PressureOut_BC[iMarker_Monitoring]				= solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPressureOut_BC(iMarker_Monitoring);
 						TotalRothalpyIn[iMarker_Monitoring]       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalRothalpyIn(iMarker_Monitoring);
 						TotalRothalpyOut[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalRothalpyOut(iMarker_Monitoring);
-
+						EnthalpyOutIs[iMarker_Monitoring]      		= solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetEnthalpyOutIs(iMarker_Monitoring);
 						for (iDim = 0; iDim < nDim; iDim++){
 							MachIn[iMarker_Monitoring][iDim]                = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMachIn(iMarker_Monitoring)[iDim];
 							MachOut[iMarker_Monitoring][iDim]               = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMachOut(iMarker_Monitoring)[iDim];
@@ -5106,6 +5106,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 									cout.width(25); cout << PressureRatio[iMarker_Monitoring];
 									cout << endl;
 									cout << endl;
+									cout << "     Inlet Entropy" << "            Outlet Enthalpy" << "             Outlet Is. Enthalpy" <<  endl;
+									cout.width(25); cout << EntropyIn[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
+									cout.width(25); cout << EnthalpyOut[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref();
+									cout.width(25); cout << EnthalpyOutIs[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref();
+									cout << endl;
+									cout << endl;
 									cout << "Cinematic quantities between boundaries " << inMarker_Tag << " and "<< outMarker_Tag << " : "<<endl;
 									cout << endl;
 									cout << "     Inlet Mach"<< "               Inlet Normal Mach" << "            Inlet Tang. Mach" << endl;
@@ -5129,12 +5135,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 									cout.width(25); cout << 180.0/PI_NUMBER*AbsFlowAngleIn[iMarker_Monitoring];
 									cout.width(25); cout << 180.0/PI_NUMBER*AbsFlowAngleOut[iMarker_Monitoring];
 									cout << endl;
+									cout << endl << "-------------------------------------------------------------------------" << endl;
 									cout << endl;
-
 									if(mixing){
-									// if in mixingplane interface
+										cout << endl << "---------- Mixing-Plane Interface between Blade " << iMarker_Monitoring + 1 << " and Blade " << iMarker_Monitoring + 2 << " -----------" << endl;
+										cout << endl;
 										inMarkerTag_Mix = config[ZONE_0]->GetMarker_TurboPerf_BoundIn(iMarker_Monitoring + 1);
-										cout << "Mixing-Plane interface convergence monitoring for " << outMarker_Tag << " and "<< inMarkerTag_Mix << " : "<<endl;
+										cout << "Convergence monitoring for the outlet  " << outMarker_Tag << " and the inlet  "<< inMarkerTag_Mix << " : "<<endl;
 										cout << endl;
 										cout << "     Outlet Density " << "          Inlet Density" << "               err(%)" <<  endl;
 										cout.width(25); cout << DensityOut[iMarker_Monitoring]*config[ZONE_0]->GetDensity_Ref();
@@ -5159,11 +5166,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 										cout.width(25); cout << TurboVelocityIn[iMarker_Monitoring + 1][1]*config[ZONE_0]->GetVelocity_Ref();
 										cout.width(25); cout << abs((TurboVelocityIn[iMarker_Monitoring + 1][1] - TurboVelocityOut[iMarker_Monitoring][1])/TurboVelocityIn[iMarker_Monitoring+1][1])*100.0;
 										cout << endl;
+										cout << endl << "-------------------------------------------------------------------------" << endl;
 										cout << endl;
 									}
-									cout << endl;
-									cout << endl << "-------------------------------------------------------------------------" << endl;
-									cout << endl;
+
 								}
 								if(nZone > 1){
 									/*--- Stage Performance ---*/
@@ -5179,6 +5185,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 										cout.width(25); cout << EntropyGen[nBladesRow + iStage]*100.0;
 										cout << endl;
 										cout << endl;
+										cout << "     Pressure Ratio " << "          Outlet Is. Enthalpy" << "       In-Out MassFlow Diff (%)" <<  endl;
+										cout.width(25); cout << PressureRatio[nBladesRow + iStage];
+										cout.width(25); cout << EnthalpyOutIs[nBladesRow + iStage]*config[ZONE_0]->GetEnergy_Ref();;
+										cout.width(25); cout << abs((MassFlowIn[nBladesRow + iStage] - MassFlowOut[nBladesRow + iStage])/MassFlowIn[nBladesRow + iStage])*100.0;
 									}
 									cout << endl;
 									cout << endl << "-------------------------------------------------------------------------" << endl;
@@ -5196,6 +5206,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 									cout.width(25); cout << TotalStaticEfficiency[nBladesRow + nStages]*100.0;
 									cout.width(25); cout << EntropyGen[nBladesRow + nStages]*100.0;
 									cout << endl;
+									cout << endl;
+									cout << "     Pressure Ratio " << "          Outlet Is. Enthalpy" << "       In-Out MassFlow Diff (%)" <<  endl;
+									cout.width(25); cout << PressureRatio[nBladesRow + nStages];
+									cout.width(25); cout << EnthalpyOutIs[nBladesRow + nStages]*config[ZONE_0]->GetEnergy_Ref();;
+									cout.width(25); cout << abs((MassFlowIn[nBladesRow + nStages] - MassFlowOut[nBladesRow + nStages])/MassFlowIn[nBladesRow + nStages])*100.0;
+									cout << endl;
+									cout << endl << "-------------------------------------------------------------------------" << endl;
 									cout << endl;
 								}
 
