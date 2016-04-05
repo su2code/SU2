@@ -65,6 +65,10 @@ inline void CNumerics::Compute_Eigenproblem(CElement *element_container, CConfig
 
 inline void CFEM_Elasticity::Compute_Eigenproblem(CElement *element_container, CConfig *config){ }
 
+inline void CNumerics::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
+
+inline void CFEM_Elasticity::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
+
 inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config){ }
 
 inline void CFEM_Elasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config){ }

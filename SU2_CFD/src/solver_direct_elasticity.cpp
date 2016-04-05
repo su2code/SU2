@@ -140,7 +140,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 		if (de_effects){
 			element_container[DE_TERM][EL_TRIA] = new CTRIA1(nDim, config);
-			element_container[DE_TERM][EL_QUAD] = new CQUAD1(nDim, config);
+			element_container[DE_TERM][EL_QUAD] = new CQUAD4(nDim, config);
 		}
 
 	}

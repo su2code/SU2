@@ -35,14 +35,19 @@
 CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CFEM_Elasticity(val_nDim, val_nVar, config) {
 
+	incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
+	nearly_incompressible = (config->GetMaterialCompressibility() == NEARLY_INCOMPRESSIBLE_MAT);
+
 	unsigned short iVar;
 
 	F_Mat = new su2double *[3];
 	b_Mat = new su2double *[3];
+	FmT_Mat = new su2double *[3];
 	Stress_Tensor = new su2double *[3];
 	for (iVar = 0; iVar < 3; iVar++){
 		F_Mat[iVar] = new su2double [3];
 		b_Mat[iVar] = new su2double [3];
+		FmT_Mat[iVar] = new su2double [3];
 		Stress_Tensor[iVar] = new su2double [3];
 	}
 
@@ -62,9 +67,88 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 		for (iVar = 0; iVar < 8; iVar++) currentCoord[iVar] = new su2double[nDim];
 	}
 
-	J_F = 0.0;
+	J_F = 1.0; J_F_Iso = 1.0;
 	f33 = 1.0;
 
+	C10 = Mu/2;
+	D1  = Kappa/2;
+
+	if (incompressible || nearly_incompressible){
+
+		F_Mat_Iso = new su2double *[3];
+		b_Mat_Iso = new su2double *[3];
+		for (iVar = 0; iVar < 3; iVar++){
+			F_Mat_Iso[iVar] = new su2double [3];
+			b_Mat_Iso[iVar] = new su2double [3];
+		}
+
+	}
+	else{
+		F_Mat_Iso = NULL;
+		b_Mat_Iso = NULL;
+	}
+
+
+	maxwell_stress = config->GetDE_Effects();
+
+	if (maxwell_stress == true){
+
+		su2double Electric_Field_Mod;
+		su2double *Electric_Field_Dir = config->Get_Electric_Field_Dir();
+		unsigned short iVar, iDim;
+		su2double ref_Efield_mod;
+
+		ke_DE = config->GetDE_Modulus();
+
+		nElectric_Field = config->GetnElectric_Field();
+		nDim_Electric_Field = config->GetnDim_Electric_Field();
+
+		if (nDim != nDim_Electric_Field) cout << "DIMENSIONS DON'T AGREE (Fix this)" << endl;
+
+		/*--- We initialize the modulus ---*/
+		ref_Efield_mod = 0.0;
+		/*--- Normalize the electric field vector ---*/
+		for (iDim = 0; iDim < nDim_Electric_Field; iDim++) {
+			ref_Efield_mod += Electric_Field_Dir[iDim]*Electric_Field_Dir[iDim];
+		}
+		ref_Efield_mod = sqrt(ref_Efield_mod);
+
+		if (ref_Efield_mod == 0){
+			cout << "The electric field has not been defined!!!!!" << endl;
+			exit(EXIT_FAILURE);
+		}
+
+		/*--- Initialize pointer for the electric field ---*/
+		EField_Ref_Unit = new su2double[nDim_Electric_Field];
+		/*--- Assign values to the auxiliary Electric_Field structure ---*/
+		for (iDim = 0; iDim < nDim_Electric_Field; iDim++) {
+			EField_Ref_Unit[iDim] = Electric_Field_Dir[iDim]/ref_Efield_mod;
+		}
+
+		/*--- Auxiliary vector for hosting the electric field modulus in the reference configuration ---*/
+		EField_Ref_Mod = new su2double[nElectric_Field];
+		for (iVar = 0; iVar < nElectric_Field; iVar++) {
+			EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
+		}
+
+		/*--- Auxiliary vector for computing the electric field in the current configuration ---*/
+		EField_Curr_Unit = new su2double[nDim_Electric_Field];
+		for (iDim = 0; iDim < nDim_Electric_Field; iDim++) {
+			EField_Curr_Unit[iDim] = 0.0;
+		}
+
+	}
+	else{
+
+		ke_DE 				= 0.0;
+		nElectric_Field 	= 0;
+		nDim_Electric_Field = 0;
+
+		EField_Ref_Unit		= NULL;
+		EField_Ref_Mod		= NULL;
+		EField_Curr_Unit	= NULL;
+
+	}
 
 }
 
@@ -75,6 +159,7 @@ CFEM_NonlinearElasticity::~CFEM_NonlinearElasticity(void) {
 	for (iVar = 0; iVar < 3; iVar++){
 		delete [] F_Mat[iVar];
 		delete [] b_Mat[iVar];
+		delete [] FmT_Mat[iVar];
 		delete [] Stress_Tensor[iVar];
 	}
 
@@ -95,10 +180,24 @@ CFEM_NonlinearElasticity::~CFEM_NonlinearElasticity(void) {
 
 	delete [] F_Mat;
 	delete [] b_Mat;
+	delete [] FmT_Mat;
 	delete [] Stress_Tensor;
 	delete [] KAux_t_a;
 	delete [] KAux_P_ab;
 	delete [] currentCoord;
+
+	for (iVar = 0; iVar < 3; iVar++){
+		if (F_Mat_Iso[iVar] != NULL) delete [] F_Mat_Iso[iVar];
+		if (b_Mat_Iso[iVar] != NULL) delete [] b_Mat_Iso[iVar];
+	}
+
+	if (F_Mat_Iso != NULL)			delete [] F_Mat_Iso;
+	if (b_Mat_Iso != NULL) 			delete [] b_Mat_Iso;
+
+
+	if (EField_Ref_Unit != NULL) 	delete [] EField_Ref_Unit;
+	if (EField_Ref_Mod != NULL) 	delete [] EField_Ref_Mod;
+	if (EField_Curr_Unit != NULL) 	delete [] EField_Curr_Unit;
 
 }
 
@@ -207,14 +306,14 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 				F_Mat[1][2]*F_Mat[2][1]*F_Mat[0][0]-
 				F_Mat[2][2]*F_Mat[0][1]*F_Mat[1][0];
 
-		cout.precision(8);
-		cout << endl << "Deformation Gradient" << endl;
-		cout << scientific << F_Mat[0][0] << " " << F_Mat[0][1] << " " << F_Mat[0][2] << endl;
-		cout << scientific << F_Mat[1][0] << " " << F_Mat[1][1] << " " << F_Mat[1][2] << endl;
-		cout << scientific << F_Mat[2][0] << " " << F_Mat[2][1] << " " << F_Mat[2][2] << endl;
-
-		cout << endl << "J = det(F)" << endl;
-		cout << scientific << J_F << endl;
+//		cout.precision(15);
+//		cout << endl << "Matrix F" << endl;
+//		cout << scientific << F_Mat[0][0] << " " << F_Mat[0][1] << " " << F_Mat[0][2] << endl;
+//		cout << scientific << F_Mat[1][0] << " " << F_Mat[1][1] << " " << F_Mat[1][2] << endl;
+//		cout << scientific << F_Mat[2][0] << " " << F_Mat[2][1] << " " << F_Mat[2][2] << endl;
+//
+//		cout << endl << "J = det(F)" << endl;
+//		cout << scientific << J_F << endl;
 
 		/*--- Compute the left Cauchy deformation tensor ---*/
 
@@ -229,6 +328,7 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 		/*--- Compute the constitutive matrix ---*/
 
 		Compute_Stress_Tensor(element, config);
+//		if (maxwell_stress) Add_MaxwellStress(element, config);
 		Compute_Constitutive_Matrix(element, config);
 
 
@@ -532,7 +632,7 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConf
 		/*--- Compute the stress tensor ---*/
 
 		Compute_Stress_Tensor(element, config);
-
+//		if (maxwell_stress) Add_MaxwellStress(element, config);
 
 		for (iNode = 0; iNode < nNode; iNode++){
 
@@ -639,6 +739,118 @@ void CFEM_NonlinearElasticity::Compute_Eigenproblem(CElement *element, CConfig *
 
 }
 
+void CFEM_NonlinearElasticity::Add_MaxwellStress(CElement *element, CConfig *config){
+
+	cout << "HERE, I WILL ADD THE MAXWELL STRESS!!!!!!" << endl;
+
+	unsigned short iVar, iDim, jDim;
+	su2double mod_Curr, mod_Ref;
+
+	su2double E0 = 0.0, E1 = 0.0, E2 = 0.0;
+	su2double E0_2 = 0.0, E1_2 = 0.0, E2_2 = 0.0;
+	su2double E_2 = 0.0;
+
+	Compute_FmT_Mat();
+
+	for (iDim = 0; iDim < nDim; iDim++){
+		EField_Curr_Unit[iDim] = 0.0;
+		for (jDim = 0; jDim < nDim; jDim++){
+			EField_Curr_Unit[iDim] += FmT_Mat[iDim][jDim] * EField_Ref_Unit[jDim];
+		}
+	}
+
+	mod_Curr = sqrt(pow(EField_Curr_Unit[0],2)+pow(EField_Curr_Unit[1],2));
+	mod_Ref = sqrt(pow(EField_Ref_Unit[0],2)+pow(EField_Ref_Unit[1],2));
+
+	E0 = EField_Ref_Mod[0]*EField_Curr_Unit[0];					E0_2 = pow(E0,2);
+	E1 = EField_Ref_Mod[0]*EField_Curr_Unit[1];					E1_2 = pow(E1,2);
+	if (nDim == 3) {E2 = EField_Ref_Mod[0]*EField_Curr_Unit[2];	E2_2 = pow(E2,2);}
+
+	E_2 = E0_2+E1_2+E2_2;
+//	cout.precision(15);
+//	cout << endl << "Maxwell Stress tensor" << endl;
+//	cout << scientific << ke_DE*(E0_2-0.5*E_2) << " " << ke_DE*E0*E1 << " " << ke_DE*E0*E2 << endl;
+//	cout << scientific << ke_DE*E1*E0 << " " << ke_DE*(E1_2-0.5*E_2) << " " << ke_DE*E1*E2 << endl;
+//	cout << scientific << ke_DE*E2*E0 << " " << ke_DE*E2*E1 << " " << ke_DE*(E2_2-0.5*E_2) << endl;
+
+	Stress_Tensor[0][0] += ke_DE*(E0_2-0.5*E_2);	Stress_Tensor[0][1] += ke_DE*E0*E1;				Stress_Tensor[0][2] += ke_DE*E0*E2;
+	Stress_Tensor[1][0] += ke_DE*E1*E0;				Stress_Tensor[1][1] += ke_DE*(E1_2-0.5*E_2);	Stress_Tensor[1][2] += ke_DE*E1*E2;
+	Stress_Tensor[2][0] += ke_DE*E2*E0;				Stress_Tensor[2][1] += ke_DE*E2*E1;				Stress_Tensor[2][2] += ke_DE*(E2_2-0.5*E_2);
+
+//	cout << endl << "Stress tensor final" << endl;
+//	cout << scientific << Stress_Tensor[0][0] << " " << Stress_Tensor[0][1] << " " << Stress_Tensor[0][2] << endl;
+//	cout << scientific << Stress_Tensor[1][0] << " " << Stress_Tensor[1][1] << " " << Stress_Tensor[1][2] << endl;
+//	cout << scientific << Stress_Tensor[2][0] << " " << Stress_Tensor[2][1] << " " << Stress_Tensor[2][2] << endl;
+
+
+}
+
+void CFEM_NonlinearElasticity::Compute_FmT_Mat(void) {
+
+	FmT_Mat[0][0] = (F_Mat[1][1]*F_Mat[2][2] - F_Mat[1][2]*F_Mat[2][1]) / J_F;
+	FmT_Mat[0][1] = (F_Mat[1][2]*F_Mat[2][0] - F_Mat[2][2]*F_Mat[1][0]) / J_F;
+	FmT_Mat[0][2] = (F_Mat[1][0]*F_Mat[2][1] - F_Mat[1][1]*F_Mat[2][0]) / J_F;
+
+	FmT_Mat[1][0] = (F_Mat[0][2]*F_Mat[2][1] - F_Mat[0][1]*F_Mat[2][2]) / J_F;
+	FmT_Mat[1][1] = (F_Mat[0][0]*F_Mat[2][2] - F_Mat[2][0]*F_Mat[0][2]) / J_F;
+	FmT_Mat[1][2] = (F_Mat[0][1]*F_Mat[2][1] - F_Mat[0][0]*F_Mat[2][0]) / J_F;
+
+	FmT_Mat[2][0] = (F_Mat[0][1]*F_Mat[1][2] - F_Mat[0][2]*F_Mat[1][1]) / J_F;
+	FmT_Mat[2][1] = (F_Mat[0][2]*F_Mat[1][0] - F_Mat[0][0]*F_Mat[1][2]) / J_F;
+	FmT_Mat[2][2] = (F_Mat[0][0]*F_Mat[1][1] - F_Mat[0][1]*F_Mat[1][0]) / J_F;
+//	cout.precision(15);
+//	cout << endl << "FmT" << endl;
+//	cout << scientific << FmT_Mat[0][0] << " " << FmT_Mat[0][1] << " " << FmT_Mat[0][2] << endl;
+//	cout << scientific << FmT_Mat[1][0] << " " << FmT_Mat[1][1] << " " << FmT_Mat[1][2] << endl;
+//	cout << scientific << FmT_Mat[2][0] << " " << FmT_Mat[2][1] << " " << FmT_Mat[2][2] << endl;
+
+}
+
+void CFEM_NonlinearElasticity::Compute_Isochoric_F_b(void) {
+
+	unsigned short iVar, jVar, kVar;
+
+//	cout.precision(15);
+
+	J_F_Iso = pow(J_F,-0.333333333333333);
+
+//	cout << endl << "C10 and D1" << endl;
+//	cout << scientific << C10 << " " << D1 << endl;
+//
+//	cout << endl << "Scale" << endl;
+//	cout << J_F_Iso << endl;
+
+	// Isochoric deformation tensor
+	for (iVar = 0; iVar < 3; iVar++){
+		for (jVar = 0; jVar < 3; jVar++){
+			F_Mat_Iso[iVar][jVar] = F_Mat[iVar][jVar] * J_F_Iso;
+		}
+	}
+
+//	cout << endl << "Matrix Fbar" << endl;
+//	cout << scientific << F_Mat_Iso[0][0] << " " << F_Mat_Iso[0][1] << " " << F_Mat_Iso[0][2] << endl;
+//	cout << scientific << F_Mat_Iso[1][0] << " " << F_Mat_Iso[1][1] << " " << F_Mat_Iso[1][2] << endl;
+//	cout << scientific << F_Mat_Iso[2][0] << " " << F_Mat_Iso[2][1] << " " << F_Mat_Iso[2][2] << endl;
+
+	// Isochoric left Cauchy-Green tensor
+
+	for (iVar = 0; iVar < 3; iVar++){
+		for (jVar = 0; jVar < 3; jVar++){
+			b_Mat_Iso[iVar][jVar] = 0.0;
+			for (kVar = 0; kVar < 3; kVar++){
+				b_Mat_Iso[iVar][jVar] += F_Mat_Iso[iVar][kVar]*F_Mat_Iso[jVar][kVar];
+			}
+		}
+	}
+
+//	cout << endl << "Matrix Bbar" << endl;
+//	cout << scientific << b_Mat_Iso[0][0] << " " << b_Mat_Iso[0][1] << " " << b_Mat_Iso[0][2] << endl;
+//	cout << scientific << b_Mat_Iso[1][0] << " " << b_Mat_Iso[1][1] << " " << b_Mat_Iso[1][2] << endl;
+//	cout << scientific << b_Mat_Iso[2][0] << " " << b_Mat_Iso[2][1] << " " << b_Mat_Iso[2][2] << endl;
+
+}
+
+
 void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConfig *config){
 
 	unsigned short iVar, jVar, kVar;
@@ -729,6 +941,7 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, C
 		/*--- Compute the stress tensor ---*/
 
 		Compute_Stress_Tensor(element, config);
+		if (maxwell_stress) Add_MaxwellStress(element, config);
 
 		for (iNode = 0; iNode < nNode; iNode++){
 
@@ -1011,20 +1224,6 @@ CFEM_IdealDE::CFEM_IdealDE(unsigned short val_nDim, unsigned short val_nVar,
 	 * -- http://imechanica.org/node/4234
 	 */
 
-	unsigned short iVar;
-
-	F_Mat_Iso = new su2double *[3];
-	b_Mat_Iso = new su2double *[3];
-	for (iVar = 0; iVar < 3; iVar++){
-		F_Mat_Iso[iVar] = new su2double [3];
-		b_Mat_Iso[iVar] = new su2double [3];
-	}
-
-	C10 = Mu/2;
-	D1  = Kappa/2;
-
-	J_F_Iso = 1.0;
-
 	trbbar 	= 0.0;
 	Eg		= 0.0;
 	Eg23	= 0.0;
@@ -1034,16 +1233,6 @@ CFEM_IdealDE::CFEM_IdealDE(unsigned short val_nDim, unsigned short val_nVar,
 }
 
 CFEM_IdealDE::~CFEM_IdealDE(void) {
-
-	unsigned short iVar;
-
-	for (iVar = 0; iVar < 3; iVar++){
-		delete [] F_Mat_Iso[iVar];
-		delete [] b_Mat_Iso[iVar];
-	}
-
-	delete [] F_Mat_Iso;
-	delete [] b_Mat_Iso;
 
 }
 
@@ -1077,11 +1266,11 @@ void CFEM_IdealDE::Compute_Constitutive_Matrix(CElement *element, CConfig *confi
 	else if (nDim == 3){
 
 	}
-	cout.precision(8);
-	cout << endl << "DDSDDE" << endl;
-	cout << scientific << D_Mat[0][0] << " " << D_Mat[0][1] << " " << D_Mat[0][2] << endl;
-	cout << scientific << D_Mat[1][0] << " " << D_Mat[1][1] << " " << D_Mat[1][2] << endl;
-	cout << scientific << D_Mat[2][0] << " " << D_Mat[2][1] << " " << D_Mat[2][2] << endl;
+//	cout.precision(15);
+//	cout << endl << "DDSDDE" << endl;
+//	cout << scientific << D_Mat[0][0] << " " << D_Mat[0][1] << " " << D_Mat[0][2] << endl;
+//	cout << scientific << D_Mat[1][0] << " " << D_Mat[1][1] << " " << D_Mat[1][2] << endl;
+//	cout << scientific << D_Mat[2][0] << " " << D_Mat[2][1] << " " << D_Mat[2][2] << endl;
 
 }
 
@@ -1092,45 +1281,20 @@ void CFEM_IdealDE::Compute_Stress_Tensor(CElement *element, CConfig *config) {
 	unsigned short iVar, jVar, kVar;
 	su2double dij;
 
-	cout.precision(8);
+	/*--- Compute the isochoric deformation gradient Fbar and left Cauchy-Green tensor bbar ---*/
+	Compute_Isochoric_F_b();
 
-	J_F_Iso = pow(J_F,-0.333333333333333);
-
-	// Isochoric deformation tensor
-	for (iVar = 0; iVar < 3; iVar++){
-		for (jVar = 0; jVar < 3; jVar++){
-			F_Mat_Iso[iVar][jVar] = F_Mat[iVar][jVar] * J_F_Iso;
-		}
-	}
-
-	cout << endl << "Matrix Fbar" << endl;
-	cout << scientific << F_Mat_Iso[0][0] << " " << F_Mat_Iso[0][1] << " " << F_Mat_Iso[0][2] << endl;
-	cout << scientific << F_Mat_Iso[1][0] << " " << F_Mat_Iso[1][1] << " " << F_Mat_Iso[1][2] << endl;
-	cout << scientific << F_Mat_Iso[2][0] << " " << F_Mat_Iso[2][1] << " " << F_Mat_Iso[2][2] << endl;
-
-	// Isochoric left Cauchy-Green tensor
-
-	for (iVar = 0; iVar < 3; iVar++){
-		for (jVar = 0; jVar < 3; jVar++){
-			b_Mat_Iso[iVar][jVar] = 0.0;
-			for (kVar = 0; kVar < 3; kVar++){
-				b_Mat_Iso[iVar][jVar] += F_Mat_Iso[iVar][kVar]*F_Mat_Iso[jVar][kVar];
-			}
-		}
-	}
-
-	cout << endl << "Matrix Bbar" << endl;
-	cout << scientific << b_Mat_Iso[0][0] << " " << b_Mat_Iso[0][1] << " " << b_Mat_Iso[0][2] << endl;
-	cout << scientific << b_Mat_Iso[1][0] << " " << b_Mat_Iso[1][1] << " " << b_Mat_Iso[1][2] << endl;
-	cout << scientific << b_Mat_Iso[2][0] << " " << b_Mat_Iso[2][1] << " " << b_Mat_Iso[2][2] << endl;
-
+//	cout.precision(15);
 	// Stress terms
 
-	trbbar = (1.0 / 3.0) * (b_Mat_Iso[0][0] + b_Mat_Iso[1][1] + b_Mat_Iso[2][2]);
+	trbbar = (b_Mat_Iso[0][0] + b_Mat_Iso[1][1] + b_Mat_Iso[2][2]) / 3.0;
 	Eg = 2.0 * C10 / J_F;
 	Ek = (2.0 / D1) * (2.0 * J_F - 1.0);
 	Pr = (2.0 / D1) * (J_F - 1.0);
 	Eg23 = 2.0 * Eg / 3.0;
+
+//	cout << endl << " TRBBAR, EG, EK, PR" << endl;
+//	cout << scientific << trbbar << " " << Eg << " " << Ek << " " << Pr << " " << endl;
 
 	// Stress tensor
 
@@ -1142,86 +1306,20 @@ void CFEM_IdealDE::Compute_Stress_Tensor(CElement *element, CConfig *config) {
 		}
 	}
 
-	cout << endl << "Stress tensor" << endl;
-	cout << scientific << Stress_Tensor[0][0] << " " << Stress_Tensor[0][1] << " " << Stress_Tensor[0][2] << endl;
-	cout << scientific << Stress_Tensor[1][0] << " " << Stress_Tensor[1][1] << " " << Stress_Tensor[1][2] << endl;
-	cout << scientific << Stress_Tensor[2][0] << " " << Stress_Tensor[2][1] << " " << Stress_Tensor[2][2] << endl;
+//	cout << endl << "Stress tensor" << endl;
+//	cout << scientific << Stress_Tensor[0][0] << " " << Stress_Tensor[0][1] << " " << Stress_Tensor[0][2] << endl;
+//	cout << scientific << Stress_Tensor[1][0] << " " << Stress_Tensor[1][1] << " " << Stress_Tensor[1][2] << endl;
+//	cout << scientific << Stress_Tensor[2][0] << " " << Stress_Tensor[2][1] << " " << Stress_Tensor[2][2] << endl;
 
 }
 
 CFEM_DielectricElastomer::CFEM_DielectricElastomer(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CFEM_NonlinearElasticity(val_nDim, val_nVar, config) {
 
-	su2double Electric_Field_Mod;
-	su2double *Electric_Field_Dir = config->Get_Electric_Field_Dir();
-	unsigned short iVar, iDim;
-	su2double ref_Efield_mod;
 
-	ke_DE = config->GetDE_Modulus();
-
-	nElectric_Field = config->GetnElectric_Field();
-	nDim_Electric_Field = config->GetnDim_Electric_Field();
-
-	if (nDim != nDim_Electric_Field) cout << "DIMENSIONS DON'T AGREE (Fix this)" << endl;
-
-	/*--- We initialize the modulus ---*/
-	ref_Efield_mod = 0.0;
-	/*--- Normalize the electric field vector ---*/
-	for (iDim = 0; iDim < nDim_Electric_Field; iDim++) {
-		ref_Efield_mod += Electric_Field_Dir[iDim]*Electric_Field_Dir[iDim];
-	}
-	ref_Efield_mod = sqrt(ref_Efield_mod);
-
-	if (ref_Efield_mod == 0){
-		cout << "The electric field has not been defined!!!!!" << endl;
-		exit(EXIT_FAILURE);
-	}
-
-	/*--- Initialize pointer for the electric field ---*/
-	EField_Ref_Unit = new su2double[nDim_Electric_Field];
-	/*--- Assign values to the auxiliary Electric_Field structure ---*/
-	for (iDim = 0; iDim < nDim_Electric_Field; iDim++) {
-		EField_Ref_Unit[iDim] = Electric_Field_Dir[iDim]/ref_Efield_mod;
-	}
-
-	/*--- Auxiliary vector for hosting the electric field modulus in the reference configuration ---*/
-	EField_Ref_Mod = new su2double[nElectric_Field];
-	for (iVar = 0; iVar < nElectric_Field; iVar++) {
-		EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
-	}
-
-	/*--- Auxiliary vector for computing the electric field in the current configuration ---*/
-	EField_Curr_Unit = new su2double[nDim_Electric_Field];
-	for (iDim = 0; iDim < nDim_Electric_Field; iDim++) {
-		EField_Curr_Unit[iDim] = 0.0;
-	}
-
-	/*--- Deformation gradient, inverse and transpose ---*/
-	unsigned short jVar;
-
-	FmT_Mat = new su2double *[3];
-	for (iVar = 0; iVar < 3; iVar++){
-		FmT_Mat[iVar] = new su2double [3];
-	}
-	for (iVar = 0; iVar < 3; iVar++){
-		for (jVar = 0; jVar < 3; jVar++){
-			FmT_Mat[iVar][jVar] = 0.0;
-		}
-	}
 }
 
 CFEM_DielectricElastomer::~CFEM_DielectricElastomer(void) {
-
-	delete [] EField_Ref_Unit;
-	delete [] EField_Ref_Mod;
-	delete [] EField_Curr_Unit;
-
-	unsigned short iVar;
-
-	for (iVar = 0; iVar < 3; iVar++){
-		delete [] FmT_Mat[iVar];
-	}
-	delete [] FmT_Mat;
 
 }
 
@@ -1338,22 +1436,4 @@ void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, CConfig 
 
 
 }
-
-void CFEM_DielectricElastomer::Compute_FmT_Mat(void) {
-
-	FmT_Mat[0][0] = (F_Mat[1][1]*F_Mat[2][2] - F_Mat[1][2]*F_Mat[2][1]) / J_F;
-	FmT_Mat[0][1] = (F_Mat[1][2]*F_Mat[2][0] - F_Mat[2][2]*F_Mat[1][0]) / J_F;
-	FmT_Mat[0][2] = (F_Mat[1][0]*F_Mat[2][1] - F_Mat[1][1]*F_Mat[2][0]) / J_F;
-
-	FmT_Mat[1][0] = (F_Mat[0][2]*F_Mat[2][1] - F_Mat[0][1]*F_Mat[2][2]) / J_F;
-	FmT_Mat[1][1] = (F_Mat[0][0]*F_Mat[2][2] - F_Mat[2][0]*F_Mat[0][2]) / J_F;
-	FmT_Mat[1][2] = (F_Mat[0][1]*F_Mat[2][1] - F_Mat[0][0]*F_Mat[2][0]) / J_F;
-
-	FmT_Mat[2][0] = (F_Mat[0][1]*F_Mat[1][2] - F_Mat[0][2]*F_Mat[1][1]) / J_F;
-	FmT_Mat[2][1] = (F_Mat[0][2]*F_Mat[1][0] - F_Mat[0][0]*F_Mat[1][2]) / J_F;
-	FmT_Mat[2][2] = (F_Mat[0][0]*F_Mat[1][1] - F_Mat[0][1]*F_Mat[1][0]) / J_F;
-
-
-}
-
 
