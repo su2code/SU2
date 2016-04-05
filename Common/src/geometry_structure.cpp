@@ -9631,7 +9631,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_flag, bool allocate) {
 	unsigned long  iPoint, jPoint, iVertex, jVertex, kVertex, iSpanVertex, jSpanVertex, kSpanVertex, **ordered, **disordered, oldVertex;
-	unsigned long nVert, nVertMax, nVertLocSpanMax, nVertMaxSpan;
+	unsigned long nVert, nVertMax;
 	unsigned short iMarker, iMarkerTP, iSpan,iSize, jSpan, iDim, nSpanWiseSections;
 	su2double min, max, *coord, *span, delta, dist, Normal2, *TurboNormal, *NormalArea, target, **area, ***unitnormal, Area;
 	int rank = MASTER_NODE;
@@ -9650,8 +9650,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	su2double MyMax, MyMin, ymin[size];
-	su2double **x_gb, **y_gb, **z_gb;
-	int       **globIdx_gb;
+	su2double *x_gb, *y_gb, *z_gb;
+	int       *globIdx_gb;
+
 	int nvertex_glob[size], nvertex_out[size], nvert;
   unsigned long My_nVert;
 
@@ -10039,19 +10040,15 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 
   /*--- to be set for all the processor to initialize an appropriate number of frequency for the NR BC ---*/
    nVertMax = 0;
-   nVertMaxSpan = 0;
   /*--- global reordering pitch-wise,to be used for Non Reflecting BC ---*/
   //TODO (turbo) this works only for centrifugal blade rotating around the Z-Axes.
-  //TODO (turbo) this works only for 2D.
   for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
   	nVert    = 0;
-  	nVertLocSpanMax = 0;
-		for (iMarker = 0; iMarker < nMarker; iMarker++){
+  	for (iMarker = 0; iMarker < nMarker; iMarker++){
 			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
 				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
 					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 						nVert = nVertexSpan[iMarker][iSpan];
-						nVertLocSpanMax = nVertexSpan[iMarker][iSpan];
 							for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
 								globalindex = nVertex_loc[iSpan] + iSpanVertex + 1;
 								turbovertex[iMarker][iSpan][iSpanVertex]->SetGlobalVertexIndex(globalindex);
@@ -10065,8 +10062,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 #ifdef HAVE_MPI
 		My_nVert						 = nVert;											nVert								 = 0;
 		SU2_MPI::Allreduce(&My_nVert, &nVert, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-		My_nVert						 = nVertLocSpanMax;						nVertLocSpanMax			 = 0;
-		SU2_MPI::Allreduce(&My_nVert, &nVertLocSpanMax, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 #endif
 
 		/*--- to be set for all the processor to initialize an appropriate number of frequency for the NR BC ---*/
@@ -10074,9 +10069,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 			SetnVertexSpanMax(marker_flag,nVert);
 		}
 		/*--- for all the processor should be known the amount of total turbovertex per span  ---*/
-		if (nVertLocSpanMax > nVertMaxSpan){
-			nVertMaxSpan = nVertLocSpanMax;
-		}
+		nTotVertex_gb[iSpan]												= nVert;
+
 		for (iMarker = 0; iMarker < nMarker; iMarker++){
 			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
 				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
@@ -10088,20 +10082,21 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 		}
   }
 
+  /*--- Printing Tec file to check the global ordering of the turbovertex pitch-wise ---*/
+  /*--- Send all the info to the MASTERNODE ---*/
+
   for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-  	x_loc[iSpan]    				= new su2double[nVertMaxSpan];
-  	y_loc[iSpan]    				= new su2double[nVertMaxSpan];
-  	z_loc[iSpan]    				= new su2double[nVertMaxSpan];
-  	globIdx_loc[iSpan]      = new int[nVertMaxSpan];
-  	for(iSpanVertex = 0; iSpanVertex<nVertMaxSpan; iSpanVertex++){
+  	x_loc[iSpan]    				= new su2double[nTotVertex_gb[iSpan]];
+  	y_loc[iSpan]    				= new su2double[nTotVertex_gb[iSpan]];
+  	z_loc[iSpan]    				= new su2double[nTotVertex_gb[iSpan]];
+  	globIdx_loc[iSpan]      = new int[nTotVertex_gb[iSpan]];
+  	for(iSpanVertex = 0; iSpanVertex<nTotVertex_gb[iSpan]; iSpanVertex++){
   		x_loc[iSpan][iSpanVertex] 				= -1.0;
 			y_loc[iSpan][iSpanVertex] 				= -1.0;
 			z_loc[iSpan][iSpanVertex] 				= -1.0;
 			globIdx_loc[iSpan][iSpanVertex]		= -1;
   	}
   }
-  /*--- Printing Tec file to check the order ---*/
-  /*--- Send all the info to the MASTERNODE ---*/
 
   for (iMarker = 0; iMarker < nMarker; iMarker++){
     for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
@@ -10120,46 +10115,62 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 								z_loc[iSpan][iSpanVertex] = 0.0;
 							}
 							globIdx_loc[iSpan][iSpanVertex]      = turbovertex[iMarker][iSpan][iSpanVertex]->GetGlobalVertexIndex();
-//							cout << y_loc[iSpan][iSpanVertex] << "  " <<globIdx_loc[iSpan][iSpanVertex] << endl;
   					}
   				}
   			}
   		}
     }
   }
-//  for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-//  	for(iSpanVertex = 0; iSpanVertex<nVertMaxSpan; iSpanVertex++){
-//  		cout << y_loc[iSpan][iSpanVertex] << "  " <<globIdx_loc[iSpan][iSpanVertex] << endl;
-//  	}
-//  }
 
 #ifdef HAVE_MPI
-  	x_gb    				= new su2double*[nSpanWiseSections];
-  	y_gb    				= new su2double*[nSpanWiseSections];
-  	z_gb    				= new su2double*[nSpanWiseSections];
-  	globIdx_gb     = new int*[nSpanWiseSections];
-  	for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-			x_gb[iSpan]    				= new su2double[nVertMaxSpan*size];
-			y_gb[iSpan]    				= new su2double[nVertMaxSpan*size];
-			z_gb[iSpan]    				= new su2double[nVertMaxSpan*size];
-			globIdx_gb[iSpan]     = new int[nVertMaxSpan*size];
-  	}
-  	for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-  		SU2_MPI::Gather(y_loc[iSpan], nVertMaxSpan , MPI_DOUBLE, y_gb[iSpan], nVertMaxSpan, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  		SU2_MPI::Gather(globIdx_loc[iSpan], nVertMaxSpan , MPI_INT, globIdx_gb[iSpan], nVertMaxSpan, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-  	}
-  	if (rank == MASTER_NODE){
-  		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-  			for(iSize= 0; iSize < size; iSize++){
-  				for(iSpanVertex = 0; iSpanVertex < nVertMaxSpan; iSpanVertex++){
-  					if(iSpan == 1 && globIdx_gb[iSpan][iSize*nVertMaxSpan + iSpanVertex] > 0)
-  					cout << y_gb[iSpan][iSize*nVertMaxSpan + iSpanVertex] << "  " <<globIdx_gb[iSpan][iSize*nVertMaxSpan + iSpanVertex] << endl;
 
-  				}
-  			}
-  		}
-  	}
+	for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+		if (rank == MASTER_NODE){
+			x_gb    				= new su2double[nTotVertex_gb[iSpan]*size];
+			y_gb    				= new su2double[nTotVertex_gb[iSpan]*size];
+			z_gb    				= new su2double[nTotVertex_gb[iSpan]*size];
+			globIdx_gb      = new int[nTotVertex_gb[iSpan]*size];
+		}
+
+		SU2_MPI::Gather(y_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, y_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		SU2_MPI::Gather(x_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, x_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		SU2_MPI::Gather(z_loc[iSpan], nTotVertex_gb[iSpan] , MPI_DOUBLE, z_gb, nTotVertex_gb[iSpan], MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		SU2_MPI::Gather(globIdx_loc[iSpan], nTotVertex_gb[iSpan] , MPI_INT, globIdx_gb, nTotVertex_gb[iSpan], MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+		if (rank == MASTER_NODE){
+			for(iSpanVertex = 0; iSpanVertex<nTotVertex_gb[iSpan]; iSpanVertex++){
+				x_loc[iSpan][iSpanVertex] 				= -1.0;
+				y_loc[iSpan][iSpanVertex] 				= -1.0;
+				z_loc[iSpan][iSpanVertex] 				= -1.0;
+				globIdx_loc[iSpan][iSpanVertex]		= -1;
+			}
+			for(iSize= 0; iSize < size; iSize++){
+				for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
+					if(globIdx_gb[iSize*nTotVertex_gb[iSpan] + iSpanVertex] > 0){
+						globIdx_loc[iSpan][globIdx_gb[iSize*nTotVertex_gb[iSpan] + iSpanVertex] -1]    = globIdx_gb[iSize*nTotVertex_gb[iSpan] + iSpanVertex];
+						y_loc[iSpan][globIdx_gb[iSize*nTotVertex_gb[iSpan] + iSpanVertex] -1] 				 = y_gb[iSize*nTotVertex_gb[iSpan] + iSpanVertex];
+						x_loc[iSpan][globIdx_gb[iSize*nTotVertex_gb[iSpan] + iSpanVertex] -1] 				 = x_gb[iSize*nTotVertex_gb[iSpan] + iSpanVertex];
+						z_loc[iSpan][globIdx_gb[iSize*nTotVertex_gb[iSpan] + iSpanVertex] -1] 				 = z_gb[iSize*nTotVertex_gb[iSpan] + iSpanVertex];
+					}
+				}
+			}
+
+			delete [] x_gb;	delete [] y_gb; delete [] z_gb;	delete [] globIdx_gb;
+
+		}
+	}
+
 #endif
+
+	if (rank == MASTER_NODE){
+		//			VICENTE here in this if underneath you have to implemented the writing of the file using the vector x_loc, y_loc, z_loc, globIdx_loc
+		//      istead of the video print
+		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+			for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
+				cout << "iSpan " << iSpan << " y coord " <<  y_loc[iSpan][iSpanVertex] << " global index " << globIdx_loc[iSpan][iSpanVertex]<<endl;
+			}
+			cout <<endl;
+		}
+	}
 
 //			FINAL TEST
 //      TODO  IMPORTANT oldVertexindex should be implemented in 3D
@@ -10194,12 +10205,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 		delete [] globIdx_loc[iSpan];
 	}
 
-	delete [] x_loc;
-	delete [] y_loc;
-	delete [] z_loc;
-	delete [] globIdx_loc;
-	delete [] nTotVertex_gb;
-
 
   delete [] area;
   delete [] ordered;
@@ -10211,6 +10216,11 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 	delete [] NormalArea;
 	delete [] ymin_loc;
 	delete []	nVertex_loc;
+	delete [] x_loc;
+	delete [] y_loc;
+	delete [] z_loc;
+	delete [] globIdx_loc;
+	delete [] nTotVertex_gb;
 }
 
 void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_flag, bool allocate) {
