@@ -33,7 +33,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy, glob, re
+import os, copy
 from .. import io   as su2io
 from .  import func as su2func
 from .  import grad as su2grad
