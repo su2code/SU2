@@ -5,6 +5,19 @@ class EvaluationFailure(RuntimeError):
 class DivergenceFailure(EvaluationFailure):
     pass
 
+
+# Please do not remove next imports
+# this is in place to save the need for additional import lines in user scripts
+# It's important for the whole python package to be accessible with one import SU2
+# See issue #246
+
+import run
+import io
+import mesh
+import eval
+import opt
+import util
+
 try:
     import readline
     import rlcompleter
