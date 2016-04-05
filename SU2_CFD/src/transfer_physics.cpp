@@ -132,7 +132,7 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 	// Dij: Dirac delta
 	su2double Pn = 0.0, div_vel = 0.0, Dij = 0.0;
 	su2double Viscosity = 0.0;
-	su2double **Grad_PrimVar;
+	su2double **Grad_PrimVar = NULL;
 	su2double Tau[3][3] = { {0.0, 0.0, 0.0} ,
 							{0.0, 0.0, 0.0} ,
 							{0.0, 0.0, 0.0} } ;
