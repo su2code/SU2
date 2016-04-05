@@ -2,7 +2,7 @@
  * \file solver_direct_elasticity.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -235,7 +235,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	      Dyn_RestartIter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
 
-	      filename = config->GetUnsteady_FileName(filename, Dyn_RestartIter);
+	      filename = config->GetUnsteady_FileName(filename, (int)Dyn_RestartIter);
 	    }
 
 		restart_file.open(filename.data(), ios::in);
@@ -1274,10 +1274,10 @@ void CFEM_ElasticitySolver::ResetInitialCondition(CGeometry **geometry, CSolver 
 void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
 
 	unsigned long iElem, iVar, jVar;
-	unsigned short iNode,  iDim, nNodes;
+	unsigned short iNode, iDim, nNodes = 0;
 	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
 	su2double val_Coord;
-	int EL_KIND;
+	int EL_KIND = 0;
 
 	su2double *Kab = NULL;
 	unsigned short NelNodes, jNode;
@@ -1287,7 +1287,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **s
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
 		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){nNodes = 4; EL_KIND = EL_QUAD;}
 
 		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
 		if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
@@ -1336,10 +1336,10 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **s
 void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
 
 	unsigned long iElem, iVar, jVar;
-	unsigned short iNode, iDim, nNodes;
+	unsigned short iNode, iDim, nNodes = 0;
 	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
 	su2double val_Coord, val_Sol;
-	int EL_KIND, iTerm;
+	int EL_KIND = 0, iTerm;
 
 	su2double Ks_ab;
 	su2double *Kab = NULL;
@@ -1359,7 +1359,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
 		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){nNodes = 4; EL_KIND = EL_QUAD;}
 
 		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
 		if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
@@ -1455,10 +1455,10 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
 
 	unsigned long iElem, iVar;
-	unsigned short iNode, iDim, nNodes;
+	unsigned short iNode, iDim, nNodes = 0;
 	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
 	su2double val_Coord;
-	int EL_KIND;
+	int EL_KIND = 0;
 
 	su2double Mab;
 	unsigned short NelNodes, jNode;
@@ -1468,7 +1468,7 @@ void CFEM_ElasticitySolver::Compute_MassMatrix(CGeometry *geometry, CSolver **so
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
 		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){nNodes = 4; EL_KIND = EL_QUAD;}
 
 		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
 		if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
@@ -1513,10 +1513,10 @@ void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver 
 
 
 	unsigned long iElem, iVar;
-	unsigned short iNode, iDim, nNodes;
+	unsigned short iNode, iDim, nNodes = 0;
 	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
 	su2double val_Coord, val_Sol;
-	int EL_KIND;
+	int EL_KIND = 0;
 
 	su2double *Ta = NULL;
 	unsigned short NelNodes;
@@ -1526,7 +1526,7 @@ void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver 
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
 		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){nNodes = 4; EL_KIND = EL_QUAD;}
 
 		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
 		if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
@@ -1569,7 +1569,7 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 	unsigned short nNodes, nStress;
 	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
 	su2double val_Coord, val_Sol;
-	int EL_KIND;
+	int EL_KIND = 0;
 
 	bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
 
@@ -1593,7 +1593,7 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
 		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){nNodes = 4; EL_KIND = EL_QUAD;}
 
 		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
 		if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
@@ -1842,10 +1842,10 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 void CFEM_ElasticitySolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
 
 	unsigned long iElem, iVar;
-	unsigned short iNode, iDim, nNodes;
+	unsigned short iNode, iDim, nNodes = 0;
 	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
 	su2double val_Coord;
-	int EL_KIND;
+	int EL_KIND = 0;
 
 	su2double *Dead_Load = NULL;
 	unsigned short NelNodes;
@@ -1855,7 +1855,7 @@ void CFEM_ElasticitySolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solv
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
 		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){nNodes = 4; EL_KIND = EL_QUAD;}
 
 		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
 		if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
@@ -2062,9 +2062,8 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
 
 	su2double solNorm = 0.0, solNorm_recv = 0.0;
 
-    int rank = MASTER_NODE;
-
 #ifdef HAVE_MPI
+    int rank = MASTER_NODE;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
@@ -2115,8 +2114,7 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
 
 		Set_MPI_Solution(geometry, config);
 
-	}
-	else{
+	} else{
 
 			/*--- If the problem is linear, the only check we do is the RMS of the displacements ---*/
 
@@ -2933,9 +2931,9 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 											CGeometry **flow_geometry, CConfig *fea_config,
 											CConfig *flow_config, CNumerics *fea_numerics) {
 
-	unsigned short nMarkerFSI, nMarkerStruct, nMarkerFlow;		// Number of markers on FSI problem, FEA and Flow side
-	unsigned short iMarkerFSI, iMarkerStruct, iMarkerFlow;		// Variables for iteration over markers
-	int Marker_Flow = -1, Marker_Struct = -1;
+	unsigned short nMarkerFSI, nMarkerFlow;		// Number of markers on FSI problem, FEA and Flow side
+	unsigned short iMarkerFSI, iMarkerFlow;		// Variables for iteration over markers
+	int Marker_Flow = -1;
 
 	unsigned long iVertex, iPoint;								// Variables for iteration over vertices and nodes
 
@@ -2990,8 +2988,6 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 	/*--- Number of markers on the FSI interface ---*/
 
 	nMarkerFSI = (fea_config->GetMarker_n_FSIinterface())/2;
-
-	nMarkerStruct  = fea_geometry[MESH_0]->GetnMarker();		// Retrieve total number of markers on FEA side
 	nMarkerFlow = flow_geometry[MESH_0]->GetnMarker();		// Retrieve total number of markers on Fluid side
 
 	// Parameters for the calculations
@@ -3001,7 +2997,7 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 	// Dij: Dirac delta
 	su2double Pn = 0.0, Pinf = 0.0, div_vel = 0.0, Dij = 0.0;
 	su2double Viscosity = 0.0;
-	su2double **Grad_PrimVar;
+	su2double **Grad_PrimVar = NULL;
 	su2double Tau[3][3];
 
 	unsigned long Point_Flow, Point_Struct;
@@ -3012,7 +3008,7 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 
 #ifndef HAVE_MPI
 
-	unsigned long nVertexFEA, nVertexFlow;						// Number of vertices on FEA and Flow side
+	unsigned long nVertexFlow;						// Number of vertices on FEA and Flow side
 
 	for (iPoint = 0; iPoint < nPoint; iPoint++){
 		node[iPoint]->Clear_FlowTraction();
@@ -3024,13 +3020,6 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 
 		/*--- Identification of the markers ---*/
 
-		/*--- Current structural marker ---*/
-		for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++){
-			if ( fea_config->GetMarker_All_FSIinterface(iMarkerStruct) == (iMarkerFSI+1)){
-				Marker_Struct = iMarkerStruct;
-			}
-		}
-
 		/*--- Current fluid marker ---*/
 		for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
 			if (flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == (iMarkerFSI+1)){
@@ -3038,7 +3027,6 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 			}
 		}
 
-		nVertexFEA = fea_geometry[MESH_0]->GetnVertex(Marker_Struct);		// Retrieve total number of vertices on FEA marker
 		nVertexFlow = flow_geometry[MESH_0]->GetnVertex(Marker_Flow);  // Retrieve total number of vertices on Fluid marker
 
 		/*--- Loop over the nodes in the fluid mesh, calculate the tf vector (unitary) ---*/
@@ -3139,6 +3127,9 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
 	unsigned long Processor_Struct;
 
 	int iProcessor, nProcessor = 0;
+
+	unsigned short nMarkerStruct, iMarkerStruct;		// Variables for iteration over markers
+	int Marker_Struct = -1;
 
 	/*--- Number of markers on the FSI interface ---*/
 
@@ -3961,10 +3952,10 @@ void CFEM_ElasticitySolver::Compute_DE_Sensitivity(CGeometry *geometry, CSolver 
 
 
 	unsigned long iElem, iVar;
-	unsigned short iNode, iDim, nNodes;
+	unsigned short iNode, iDim, nNodes = 0;
 	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
 	su2double val_Coord, val_Sol;
-	int EL_KIND;
+	int EL_KIND = 0;
 
 	su2double *Ta = NULL;
 	unsigned short NelNodes;
@@ -3976,7 +3967,7 @@ void CFEM_ElasticitySolver::Compute_DE_Sensitivity(CGeometry *geometry, CSolver 
 	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
 
 		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){nNodes = 4; EL_KIND = EL_QUAD;}
 
 		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
 		if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}

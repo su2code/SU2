@@ -2,7 +2,7 @@
  * \file numerics_direct_elasticity_nonlinear.cpp
  * \brief This file contains the routines for setting the tangent matrix and residual of a FEM nonlinear elastic structural problem.
  * \author R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -972,7 +972,7 @@ void CFEM_NeoHookean_Incomp::Compute_Constitutive_Matrix(CElement *element, CCon
 void CFEM_NeoHookean_Incomp::Compute_Stress_Tensor(CElement *element, CConfig *config) {
 
 	unsigned short iDim,jDim;
-	su2double dij, el_P;
+	su2double dij = 0.0, el_P;
 	su2double Ib = 0.0, Jft;
 
 	/*--- First invariant of b -> Ib = tr(b) ---*/

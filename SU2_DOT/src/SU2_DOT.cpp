@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -493,7 +493,7 @@ void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
 
     for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
 
-      /*--- Initilization with double resets the index ---*/
+      /*--- Initilization with su2double resets the index ---*/
 
       DV_Value = 0.0;
 
