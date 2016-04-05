@@ -14,7 +14,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -70,7 +70,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 100
-    wedge.test_vals = [-1.711318, 3.913749, -0.252131, 0.044402] #last 4 columns
+    wedge.test_vals = [-1.769374, 3.848733, -0.252191, 0.044410] #last 4 columns
     wedge.su2_exec  = "SU2_CFD"
     wedge.timeout   = 1600
     wedge.tol       = 0.00001
@@ -118,7 +118,7 @@ def main():
     cylinder_lowmach.cfg_dir   = "navierstokes/cylinder"
     cylinder_lowmach.cfg_file  = "cylinder_lowmach.cfg"
     cylinder_lowmach.test_iter = 25
-    cylinder_lowmach.test_vals = [-6.830987, -1.368840, -0.142509, 73.962090] #last 4 columns
+    cylinder_lowmach.test_vals = [-6.850123, -1.388088, -0.056090, 108.140177] #last 4 columns
     cylinder_lowmach.su2_exec  = "SU2_CFD"
     cylinder_lowmach.timeout   = 1600
     cylinder_lowmach.tol       = 0.00001

@@ -14,7 +14,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -74,7 +74,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-1.655245, -0.507187, 0.129010, -0.477680] #last 4 columns
+    discadj_rans_naca0012_sst.test_vals = [-1.655243, -0.507187, 0.129010, -0.4776800] #last 4 columns
     discadj_rans_naca0012_sst.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001

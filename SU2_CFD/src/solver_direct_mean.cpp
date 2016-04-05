@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -106,7 +106,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   string filename = config->GetSolution_FlowFileName();
   
   unsigned short direct_diff = config->GetDirectDiff();
@@ -3250,7 +3250,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 #endif
   
   unsigned long ExtIter = config->GetExtIter();
-  bool adjoint          = config->GetAdjoint();
+  bool adjoint          = config->GetContinuous_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool second_order     = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
@@ -5265,7 +5265,7 @@ void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_co
   unsigned long iPoint;
   
   su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
@@ -5308,7 +5308,7 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned short iVar;
   unsigned long iPoint;
   
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
@@ -5351,7 +5351,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned long iPoint, total_index, IterLinSol = 0;
   su2double Delta, *local_Res_TruncError, Vol;
   
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
   
   /*--- Set maximum residual to zero ---*/
@@ -8537,6 +8537,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
 						}
 
 						AverageTurboMach[iMarker][iSpan][0] = AverageTurboVelocity[iMarker][iSpan][0]/AverageSoundSpeed[iMarker][iSpan];
+
 						if(nDim == 3){
 							AverageTurboMach[iMarker][iSpan][2] = AverageTurboVelocity[iMarker][iSpan][2]/AverageSoundSpeed[iMarker][iSpan];
 						}
@@ -8673,7 +8674,7 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 	su2double cj_inf,cj_out1, cj_out2, cc, rhoc, AvgMach, Density_i, Pressure_i, deltaPressure, NormalVelocity, deltaNormalVelocity, c4temp,jk_nVert, *turboNormal, *turboVelocity, *Velocity_i;
 	su2double deltaTangVelocity, TangVelocity, *deltaprim, *cj;
 	unsigned short iMarker, iSpan, iMarkerTP, iDim;
-	unsigned long iVertex, iPoint, nVert, kstart, kend, k;
+	unsigned long iVertex, iPoint, kstart, kend, k;
 	unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
 	int j;
 	int rank = MASTER_NODE;
@@ -8682,8 +8683,8 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 	Velocity_i 		= new su2double[nDim];
 	deltaprim     = new su2double[nVar];
 	cj				    = new su2double[nVar];
-	complex<su2double> I, cktemp_inf,cktemp_out1, cktemp_out2;
-
+	complex<su2double> I, cktemp_inf,cktemp_out1, cktemp_out2, nVert;
+	su2double TwoPi = 2.0*PI_NUMBER;
 	I = complex<su2double>(0.0,1.0);
 
 #ifdef HAVE_MPI
@@ -8706,7 +8707,7 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 							cc = AverageSoundSpeed[iMarker][iSpan]*AverageSoundSpeed[iMarker][iSpan];
 							rhoc = AverageSoundSpeed[iMarker][iSpan]*AverageDensity[iMarker][iSpan];
 							AvgMach = AverageMach[iMarker][iSpan];
-							nVert = geometry->GetnTotVertexSpan(iMarker,iSpan);
+							nVert = complex<su2double>(geometry->GetnTotVertexSpan(iMarker,iSpan));
 							for (iVertex = 0; iVertex < geometry->nVertexSpan[iMarker][iSpan]; iVertex++) {
 
 								/*--- find the node related to the vertex ---*/
@@ -8737,11 +8738,12 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 								cj_out2 = cj[2];
 								cj_inf  = cj[3];
 
-								jk_nVert = j*k/su2double(nVert);
+								jk_nVert = j*k/(nVert.real());
 //								cout << jk_nVert<< " j " << j << " k " << k << " nVert " << nVert << endl;
-								cktemp_out1 +=  1.0/(nVert)*cj_out1*exp(-I*PI_NUMBER*2.0*jk_nVert);
-								cktemp_out2 +=  1.0/(nVert)*cj_out2*exp(-I*PI_NUMBER*2.0*jk_nVert);
-								cktemp_inf 	+=  1.0/(nVert)*cj_inf*exp(-I*PI_NUMBER*2.0*jk_nVert);
+								complex<su2double> expArg = complex<su2double>(cos(TwoPi*jk_nVert)) - I*complex<su2double>(sin(TwoPi*jk_nVert)); 
+								cktemp_out1 +=  cj_out1*expArg/nVert;
+								cktemp_out2 +=  cj_out2*expArg/nVert;
+								cktemp_inf  +=  cj_inf*expArg/nVert;
 
 							}
 						}
@@ -8948,7 +8950,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   su2double relfacAvg       = config->GetNRBC_RelaxFactorAverage(Marker_Tag);
   su2double relfacFou       = config->GetNRBC_RelaxFactorFourier(Marker_Tag);
   su2double *Normal;
-  
+  su2double TwoPi = 2.0*PI_NUMBER; 
   Normal 		 		= new su2double[nDim];
   turboNormal 	= new su2double[nDim];
   UnitNormal 		= new su2double[nDim];
@@ -9152,16 +9154,16 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 					if (AvgMach < 1.000){
 						if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
-							Beta_inf= I*sqrt(1.0  - pow(AvgMach,2));
+							Beta_inf= I*complex<su2double>(sqrt(1.0  - pow(AvgMach,2)));
 						}else{
-							Beta_inf= -I*sqrt(1.0 - pow(AvgMach,2));
+							Beta_inf= -I*complex<su2double>(sqrt(1.0 - pow(AvgMach,2)));
 						}
 						c2js 	= complex<su2double>(0.0,0.0);
 						j			 = geometry->turbovertex[val_marker][iSpan][iVertex]->GetGlobalVertexIndex();
 						for(k=1; k < kend+1; k++){
 							jk_nVert = j*k/su2double(nVert);
-							c2ks = -CkInflow[val_marker][iSpan][k-1]*(Beta_inf + AverageTurboMach[val_marker][iSpan][1])/( 1.0 + AverageTurboMach[val_marker][iSpan][0]);
-							c2js += c2ks*exp(I*PI_NUMBER*2.0*jk_nVert);
+							c2ks = -CkInflow[val_marker][iSpan][k-1]*complex<su2double>(Beta_inf + AverageTurboMach[val_marker][iSpan][1])/complex<su2double>( 1.0 + AverageTurboMach[val_marker][iSpan][0]);
+							c2js += c2ks*(complex<su2double>(cos(TwoPi*jk_nVert))+I*complex<su2double>(sin(TwoPi*jk_nVert)));
 						}
 						c2js_Re = 2.0*c2js.real();
 
@@ -9204,17 +9206,17 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 						dcjs[3] = c4js_Re - cj[3];
 					}else{
 						if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
-							Beta_inf= I*sqrt(1.0  - pow(AvgMach,2));
+							Beta_inf= I*complex<su2double>(sqrt(1.0  - pow(AvgMach,2)));
 						}else{
-							Beta_inf= -I*sqrt(1.0 - pow(AvgMach,2));
+							Beta_inf= -I*complex<su2double>(sqrt(1.0 - pow(AvgMach,2)));
 						}
 						c4js 	= complex<su2double>(0.0,0.0);
 						j			 = geometry->turbovertex[val_marker][iSpan][iVertex]->GetGlobalVertexIndex();
 						for(k=1; k < kend+1; k++){
 							jk_nVert = j*k/su2double(nVert);
-							c4ks= (2.0 * AverageTurboMach[val_marker][iSpan][0])/(Beta_inf - AverageTurboMach[val_marker][iSpan][1])*CkOutflow1[val_marker][iSpan][k-1] - (Beta_inf + AverageTurboMach[val_marker][iSpan][1])/(Beta_inf - AverageTurboMach[val_marker][iSpan][1])*CkOutflow2[val_marker][iSpan][k-1];
+							c4ks= complex<su2double>(2.0 * AverageTurboMach[val_marker][iSpan][0])/complex<su2double>(Beta_inf - AverageTurboMach[val_marker][iSpan][1])*CkOutflow1[val_marker][iSpan][k-1] - complex<su2double>(Beta_inf + AverageTurboMach[val_marker][iSpan][1])/complex<su2double>(Beta_inf - AverageTurboMach[val_marker][iSpan][1])*CkOutflow2[val_marker][iSpan][k-1];
 
-							c4js += c4ks*exp(I*PI_NUMBER*2.0*jk_nVert);
+							c4js += c4ks*(complex<su2double>(cos(TwoPi*jk_nVert)) + I*complex<su2double>(sin(TwoPi*jk_nVert)));
 						}
 						c4js_Re = 2.0*c4js.real();
 
@@ -12905,7 +12907,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   string filename = config->GetSolution_FlowFileName();
   
   unsigned short direct_diff = config->GetDirectDiff();
@@ -13807,7 +13809,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 #endif
   
   unsigned long ExtIter     = config->GetExtIter();
-  bool adjoint              = config->GetAdjoint();
+  bool adjoint              = config->GetContinuous_Adjoint();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool center               = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;

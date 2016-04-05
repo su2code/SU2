@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -84,13 +84,14 @@ void CMeanFlowIteration::Preprocess(COutput *output,
                                     CFreeFormDefBox*** FFDBox,
                                     unsigned short val_iZone) {
   
-
-  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  unsigned long FSIIter = config_container[val_iZone]->GetFSIIter();
+  unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
+  unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
+  
   bool fsi = config_container[val_iZone]->GetFSI_Simulation();
   bool time_spectral = (config_container[val_iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL);
   bool turbomachinery = config_container[val_iZone]->GetBoolTurbomachinery();
+  unsigned long FSIIter = config_container[val_iZone]->GetFSIIter();
+
   
   /*--- Set the initial condition ---*/
   /*--- For FSI problems with subiterations, this must only be done in the first subiteration ---*/
@@ -1427,6 +1428,10 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
     if (config_container[val_iZone]->GetGrid_Movement()) {
       SetGrid_Movement(geometry_container[val_iZone], surface_movement[val_iZone], grid_movement[val_iZone], FFDBox[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_iZone, IntIter, ExtIter);
     }
+    if (config_container[val_iZone]->GetBoolTurbomachinery()){
+      geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],INFLOW, true);
+      geometry_container[val_iZone][MESH_0]->SetAvgTurboValue(config_container[val_iZone],OUTFLOW, true);
+    }
   }
   if (CurrentRecording != FLOW_VARIABLES){
     
@@ -1551,7 +1556,11 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   /*--- Clear indices of coupling variables ---*/
 
   SetDependencies(solver_container, geometry_container, config_container, val_iZone, ALL_VARIABLES);
-  
+
+  if(config_container[val_iZone]->GetBoolTurbomachinery()){
+    meanflow_iteration->TurboPreprocess(geometry_container, solver_container, config_container, numerics_container, output, val_iZone);
+  }
+
   /*--- Run one iteration while tape is passive - this clears all indices ---*/
   
   meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
@@ -1581,6 +1590,10 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
 
   SetDependencies(solver_container, geometry_container, config_container, val_iZone, kind_recording);
   
+  if(config_container[val_iZone]->GetBoolTurbomachinery()){
+    meanflow_iteration->TurboPreprocess(geometry_container, solver_container, config_container, numerics_container, output, val_iZone);
+  }
+
   /*--- Run the direct iteration ---*/
   
   meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
@@ -1643,13 +1656,17 @@ void CDiscAdjMeanFlowIteration::SetDependencies(CSolver ****solver_container, CG
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
     
     geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone], config_container[iZone]);
-    
+
+    if (config_container[iZone]->GetBoolTurbomachinery()){
+      geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],INFLOW, false);
+      geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],OUTFLOW, false);
+    }
   }
 
   /*--- Compute coupling between flow and turbulent equations ---*/
 
   if (turbulent){
-    solver_container[iZone][MESH_0][FLOW_SOL]->SetPrimitive_Variables(solver_container[iZone][MESH_0], config_container[iZone], false);
+    solver_container[iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
     solver_container[iZone][MESH_0][TURB_SOL]->Postprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
   }
 
@@ -2219,7 +2236,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
   unsigned long nIterMesh;
   unsigned long iPoint;
   bool stat_mesh = true;
-  bool adjoint = config_container->GetAdjoint();
+  bool adjoint = config_container->GetContinuous_Adjoint();
   bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
   bool turbomachinery = config_container->GetBoolTurbomachinery();
 
