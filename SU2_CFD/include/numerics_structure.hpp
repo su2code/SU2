@@ -4105,6 +4105,8 @@ protected:
 	su2double C10, D1;					/*!< \brief C10 = Mu/2. D1 = Kappa/2. */
 	su2double J_F_Iso;					/*!< \brief J_F_Iso: det(F)^-1/3. */
 
+	su2double ****cijkl;			/*!< \brief Constitutive tensor i,j,k,l (defined only for incompressibility - near inc.). */
+
 	bool maxwell_stress;			/*!< \brief Consider the effects of the dielectric loads */
 
 	su2double *EField_Ref_Unit,			/*!< \brief Electric Field, unitary, in the reference configuration. */
@@ -4146,6 +4148,10 @@ public:
 	void Compute_FmT_Mat(void);
 
 	void Compute_Isochoric_F_b(void);
+
+	void Assign_cijkl_D_Mat(void);
+
+	su2double deltaij(unsigned short iVar, unsigned short jVar);
 
 	virtual void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
 
@@ -4231,7 +4237,7 @@ public:
  */
 class CFEM_IdealDE : public CFEM_NonlinearElasticity {
 
-	su2double trbbar, Eg, Eg23, Ek, Pr;	/*!< \brief Parameters of the model. */
+	su2double trbbar, Eg, Eg23, Ek, Pr;	/*!< \brief Variables of the model calculation. */
 
 public:
 
@@ -4251,6 +4257,42 @@ public:
 	void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
 
 	void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
+
+	void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
+
+};
+
+/*!
+ * \class CFEM_NeoHookean_Comp
+ * \brief Class for computing the constitutive and stress tensors for a Knowles stored-energy function, nearly incompressible.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_Knowles_NearInc : public CFEM_NonlinearElasticity {
+
+	su2double trbbar, term1, term2, Ek, Pr;	/*!< \brief Variables of the model calculation. */
+	su2double Bk, Nk;						/*!< \brief Parameters b and n of the model. */
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_Knowles_NearInc(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_Knowles_NearInc(void);
+
+	void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
+
+	void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
+  using CNumerics::Compute_Constitutive_Matrix;
 
 	void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
 

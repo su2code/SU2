@@ -1057,6 +1057,12 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
     				}
     				break;
+    			case KNOWLES:
+    				switch (config->GetMaterialCompressibility()) {
+    					case NEARLY_INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config); break;
+    					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+    				}
+    				break;
     			case IDEAL_DE:
     				switch (config->GetMaterialCompressibility()) {
     					case NEARLY_INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_IdealDE(nDim, nVar_FEM, config); break;
@@ -1098,6 +1104,19 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
     				}
     				break;
+        			case KNOWLES:
+        				switch (config->GetMaterialCompressibility()) {
+        					case NEARLY_INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config); break;
+        					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+        				}
+        				break;
+        			case IDEAL_DE:
+        				switch (config->GetMaterialCompressibility()) {
+        					case NEARLY_INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_IdealDE(nDim, nVar_FEM, config); break;
+        					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+        				}
+        				break;
+
     			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
     		}
     		break;
