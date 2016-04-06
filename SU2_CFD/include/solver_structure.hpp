@@ -2555,93 +2555,6 @@ public:
 	 */
 	virtual void RefGeom_Sensitivity(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
-
-
-	/*------------------------------ RUBEN: TEMPORARY FUNCTIONS - ADJOINT STRUCTURE ------------------------------*/
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-
-	virtual void Run_Structural_Adjoint(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh,
-			unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output);
-
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-
-	virtual void BC_Clamped_Adj(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                 unsigned short val_marker);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-
-	virtual void BC_Clamped_Post_Adj(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                 unsigned short val_marker);
-
-    /*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void Solve_System_Adj(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void Compute_DE_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void Compute_RefGeom_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void Initialize_Structural_Adj(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void Compute_RefGeom_Gradient(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
-	/*------------------------------ RUBEN: END OF TEMPORARY FUNCTIONS - ADJOINT STRUCTURE ------------------------------*/
-
 	/*!
 	 * \brief Gauss method for solving a linear system.
 	 * \param[in] A - Matrix Ax = b.
@@ -7332,91 +7245,6 @@ public:
 	 */
 	void SetLoad_Increment(su2double val_loadIncrement);
 
-	/*------------------------------ RUBEN: TEMPORARY FUNCTIONS - ADJOINT STRUCTURE ------------------------------*/
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-
-	void Run_Structural_Adjoint(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh,
-			unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output);
-
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-
-	void BC_Clamped_Adj(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                 unsigned short val_marker);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-
-	void BC_Clamped_Post_Adj(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                 unsigned short val_marker);
-
-    /*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Solve_System_Adj(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Compute_DE_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Compute_RefGeom_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Initialize_Structural_Adj(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Compute_RefGeom_Gradient(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
-	/*------------------------------ RUBEN: END OF TEMPORARY FUNCTIONS - ADJOINT STRUCTURE ------------------------------*/
-
 
 };
 
@@ -7598,18 +7426,6 @@ public:
 	 */
 	void Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-
-	void Run_Structural_Adjoint(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh,
-			unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output);
-
 
 	/*!
 	 * \brief A virtual member.
@@ -7624,68 +7440,12 @@ public:
                                  unsigned short val_marker);
 
 	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-
-	void BC_Clamped_Post_Adj(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                 unsigned short val_marker);
-
-    /*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Solve_System_Adj(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
-	/*!
 	 * \brief Compute the sensitivity vector for an objective function I=f(x,x_ref)
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void RefGeom_Sensitivity(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Compute_DE_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Compute_RefGeom_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Initialize_Structural_Adj(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Compute_RefGeom_Gradient(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 };
 

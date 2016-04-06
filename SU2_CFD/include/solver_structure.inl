@@ -1171,31 +1171,3 @@ inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
 inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){}
 
-
-/*------------------------------ RUBEN: TEMPORARY FUNCTIONS - ADJOINT STRUCTURE ------------------------------*/
-
-inline void CSolver::Run_Structural_Adjoint(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh,
-		unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output){ }
-
-inline void CSolver::BC_Clamped_Adj(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                             unsigned short val_marker){ }
-
-inline void CSolver::BC_Clamped_Post_Adj(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                             unsigned short val_marker){ }
-
-inline void CSolver::Solve_System_Adj(CGeometry *geometry, CSolver **solver_container, CConfig *config){ }
-
-inline void CSolver::Compute_DE_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config){ }
-
-inline void CSolver::Compute_RefGeom_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config){ }
-
-inline void CSolver::Initialize_Structural_Adj(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config){ }
-
-inline void CSolver::Compute_RefGeom_Gradient(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config){ }
-
-/*------------------------------ RUBEN: END OF TEMPORARY FUNCTIONS - ADJOINT STRUCTURE ------------------------------*/
-
-
-
-
-

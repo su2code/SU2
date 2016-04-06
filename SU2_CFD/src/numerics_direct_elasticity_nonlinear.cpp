@@ -70,8 +70,8 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 	J_F = 1.0; J_F_Iso = 1.0;
 	f33 = 1.0;
 
-	C10 = Mu/2;
-	D1  = Kappa/2;
+	C10 = Mu/2.0;
+	D1  = 2.0/Kappa;
 
 	if (incompressible || nearly_incompressible){
 
@@ -81,6 +81,19 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 			F_Mat_Iso[iVar] = new su2double [3];
 			b_Mat_Iso[iVar] = new su2double [3];
 		}
+
+		unsigned short jVar, kVar;
+		cijkl = new su2double ***[3];
+		for (iVar = 0; iVar < 3; iVar++){
+			cijkl[iVar] = new su2double **[3];
+			for (jVar = 0; jVar < 3; jVar++){
+				cijkl[iVar][jVar] = new su2double *[3];
+				for (kVar = 0; kVar < 3; kVar++){
+					cijkl[iVar][jVar][kVar] = new su2double [3];
+				}
+			}
+		}
+
 
 	}
 	else{
@@ -154,7 +167,7 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 
 CFEM_NonlinearElasticity::~CFEM_NonlinearElasticity(void) {
 
-	unsigned short iVar;
+	unsigned short iVar, jVar, kVar;
 
 	for (iVar = 0; iVar < 3; iVar++){
 		delete [] F_Mat[iVar];
@@ -191,9 +204,19 @@ CFEM_NonlinearElasticity::~CFEM_NonlinearElasticity(void) {
 		if (b_Mat_Iso[iVar] != NULL) delete [] b_Mat_Iso[iVar];
 	}
 
+	for (iVar = 0; iVar < 3; iVar++){
+		for (jVar = 0; jVar < 3; jVar++){
+			for (kVar = 0; kVar < 3;kVar++){
+				if (cijkl[iVar][jVar][kVar] != NULL) delete [] cijkl[iVar][jVar][kVar];
+			}
+			if (cijkl[iVar][jVar] != NULL) delete [] cijkl[iVar][jVar];
+		}
+		if (cijkl[iVar] != NULL) delete [] cijkl[iVar];
+	}
+	if (cijkl != NULL)			delete [] cijkl;
+
 	if (F_Mat_Iso != NULL)			delete [] F_Mat_Iso;
 	if (b_Mat_Iso != NULL) 			delete [] b_Mat_Iso;
-
 
 	if (EField_Ref_Unit != NULL) 	delete [] EField_Ref_Unit;
 	if (EField_Ref_Mod != NULL) 	delete [] EField_Ref_Mod;
@@ -312,8 +335,8 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 //		cout << scientific << F_Mat[1][0] << " " << F_Mat[1][1] << " " << F_Mat[1][2] << endl;
 //		cout << scientific << F_Mat[2][0] << " " << F_Mat[2][1] << " " << F_Mat[2][2] << endl;
 //
-//		cout << endl << "J = det(F)" << endl;
-//		cout << scientific << J_F << endl;
+//		cout << endl << "J = det(F): ";
+//		cout << scientific << J_F;
 
 		/*--- Compute the left Cauchy deformation tensor ---*/
 
@@ -741,7 +764,7 @@ void CFEM_NonlinearElasticity::Compute_Eigenproblem(CElement *element, CConfig *
 
 void CFEM_NonlinearElasticity::Add_MaxwellStress(CElement *element, CConfig *config){
 
-	cout << "HERE, I WILL ADD THE MAXWELL STRESS!!!!!!" << endl;
+//	cout << "HERE, I WILL ADD THE MAXWELL STRESS!!!!!!" << endl;
 
 	unsigned short iVar, iDim, jDim;
 	su2double mod_Curr, mod_Ref;
@@ -817,6 +840,9 @@ void CFEM_NonlinearElasticity::Compute_Isochoric_F_b(void) {
 //	cout << endl << "C10 and D1" << endl;
 //	cout << scientific << C10 << " " << D1 << endl;
 //
+//	cout << endl << "Mu and Kappa" << endl;
+//	cout << scientific << Mu << " " << Kappa << endl;
+//
 //	cout << endl << "Scale" << endl;
 //	cout << J_F_Iso << endl;
 
@@ -847,6 +873,63 @@ void CFEM_NonlinearElasticity::Compute_Isochoric_F_b(void) {
 //	cout << scientific << b_Mat_Iso[0][0] << " " << b_Mat_Iso[0][1] << " " << b_Mat_Iso[0][2] << endl;
 //	cout << scientific << b_Mat_Iso[1][0] << " " << b_Mat_Iso[1][1] << " " << b_Mat_Iso[1][2] << endl;
 //	cout << scientific << b_Mat_Iso[2][0] << " " << b_Mat_Iso[2][1] << " " << b_Mat_Iso[2][2] << endl;
+
+}
+
+void CFEM_NonlinearElasticity::Assign_cijkl_D_Mat(void) {
+
+	unsigned short iVar, jVar;
+
+	if (nDim == 2){
+		D_Mat[0][0] = cijkl[0][0][0][0];
+		D_Mat[1][1] = cijkl[1][1][1][1];
+
+		D_Mat[0][1] = cijkl[0][0][1][1];
+		D_Mat[1][0] = cijkl[1][1][0][0];
+
+		D_Mat[0][2] = cijkl[0][0][0][1];
+		D_Mat[2][0] = cijkl[1][0][0][0];
+
+		D_Mat[1][2] = cijkl[1][1][0][1];
+		D_Mat[2][1] = cijkl[1][0][1][1];
+
+		D_Mat[2][2] = cijkl[0][1][0][1];
+	}
+	else{
+		D_Mat[0][0] = cijkl[0][0][0][0];
+		D_Mat[1][1] = cijkl[1][1][1][1];
+		D_Mat[2][2] = cijkl[2][2][2][2];
+		D_Mat[3][3] = cijkl[0][1][0][1];
+		D_Mat[4][4] = cijkl[0][2][0][2];
+		D_Mat[5][5] = cijkl[1][2][1][2];
+
+		D_Mat[0][1] = cijkl[0][0][1][1];
+		D_Mat[0][2] = cijkl[0][0][2][2];
+		D_Mat[0][3] = cijkl[0][0][0][1];
+		D_Mat[0][4] = cijkl[0][0][0][2];
+		D_Mat[0][5] = cijkl[0][0][1][2];
+
+		D_Mat[1][2] = cijkl[1][1][2][2];
+		D_Mat[1][3] = cijkl[1][1][0][1];
+		D_Mat[1][4] = cijkl[1][1][0][2];
+		D_Mat[1][5] = cijkl[1][1][1][2];
+
+		D_Mat[2][3] = cijkl[2][2][0][1];
+		D_Mat[2][4] = cijkl[2][2][0][2];
+		D_Mat[2][5] = cijkl[2][2][1][2];
+
+		D_Mat[3][4] = cijkl[0][1][0][2];
+		D_Mat[3][5] = cijkl[0][1][1][2];
+
+		D_Mat[4][5] = cijkl[0][2][1][2];
+
+		for (jVar = 0; jVar < 6; jVar++){
+			for (iVar = 0; iVar < jVar; iVar++){
+				D_Mat[jVar][iVar] = D_Mat[iVar][jVar];
+			}
+		}
+
+	}
 
 }
 
@@ -1212,6 +1295,117 @@ void CFEM_NeoHookean_Incomp::Compute_Stress_Tensor(CElement *element, CConfig *c
 }
 
 
+CFEM_Knowles_NearInc::CFEM_Knowles_NearInc(unsigned short val_nDim, unsigned short val_nVar,
+                                   CConfig *config) : CFEM_NonlinearElasticity(val_nDim, val_nVar, config) {
+
+
+	/* -- The formulation adopted for this material model has been described by:
+	 * --
+	 * -- Suchocki, C., A Finite Element Implementation of Knowles stored-energy function:
+	 * -- theory, coding and applications, Archive of Mechanical Engineering, Vol. 58, pp. 319-346 (2011).
+	 * --
+	 * -- DOI: 10.2478/v10180-011-0021-7
+	 */
+
+	Bk = 1.0;
+	Nk = 1.0;
+
+	trbbar 	= 0.0;
+	Ek		= 0.0;
+	Pr		= 0.0;
+
+
+}
+
+CFEM_Knowles_NearInc::~CFEM_Knowles_NearInc(void) {
+
+}
+
+void CFEM_Knowles_NearInc::Compute_Plane_Stress_Term(CElement *element, CConfig *config) {
+
+	cout << "This material model cannot (yet) be used for plane stress." << endl;
+
+}
+
+void CFEM_Knowles_NearInc::Compute_Constitutive_Matrix(CElement *element, CConfig *config) {
+
+	/* -- Suchocki (2011) (full reference in class constructor). ---*/
+
+	/*--- Computation of the tensor cijkl ---*/
+
+	unsigned short iVar, jVar, kVar, lVar;
+
+	for (iVar = 0; iVar < 3; iVar++){
+		for (jVar = 0; jVar < 3; jVar++){
+			for (kVar = 0; kVar < 3; kVar++){
+				for (lVar = 0; lVar < 3; lVar++){
+					cijkl[iVar][jVar][kVar][lVar] =
+						term1 * ((1.0/2.0)*( deltaij(iVar,kVar)*b_Mat_Iso[jVar][lVar]
+											+deltaij(jVar,lVar)*b_Mat_Iso[iVar][kVar]
+											+deltaij(iVar,lVar)*b_Mat_Iso[jVar][kVar]
+											+deltaij(jVar,kVar)*b_Mat_Iso[iVar][lVar])
+								 +(2.0/3.0)*(trbbar*deltaij(iVar,jVar)*deltaij(kVar,lVar)
+											-b_Mat_Iso[iVar][jVar]*deltaij(kVar,lVar)
+											-deltaij(iVar,jVar)*b_Mat_Iso[kVar][lVar]))
+					   +term2 * ( b_Mat_Iso[iVar][jVar]*b_Mat_Iso[kVar][lVar]
+								- trbbar*(b_Mat_Iso[iVar][jVar]*deltaij(kVar,lVar)
+										 +deltaij(iVar,jVar)*b_Mat_Iso[kVar][lVar])
+								+ pow(trbbar,2.0) * deltaij(iVar,jVar) * deltaij(kVar,lVar))
+					   +Kappa * (2.0 * J_F - 1.0) * deltaij(iVar,jVar) * deltaij(kVar,lVar);
+
+				}
+			}
+		}
+	}
+
+	/*--- Reorganizing the tensor into the matrix D ---*/
+
+	Assign_cijkl_D_Mat();
+
+//	cout.precision(15);
+//	cout << endl << "DDSDDE" << endl;
+//	cout << scientific << D_Mat[0][0] << " " << D_Mat[0][1] << " " << D_Mat[0][2] << endl;
+//	cout << scientific << D_Mat[1][0] << " " << D_Mat[1][1] << " " << D_Mat[1][2] << endl;
+//	cout << scientific << D_Mat[2][0] << " " << D_Mat[2][1] << " " << D_Mat[2][2] << endl;
+
+}
+
+void CFEM_Knowles_NearInc::Compute_Stress_Tensor(CElement *element, CConfig *config) {
+
+	/* -- Suchocki (2011) (full reference in class constructor). ---*/
+
+	unsigned short iVar, jVar;
+
+	/*--- Compute the isochoric deformation gradient Fbar and left Cauchy-Green tensor bbar ---*/
+	Compute_Isochoric_F_b();
+
+	trbbar = (b_Mat_Iso[0][0] + b_Mat_Iso[1][1] + b_Mat_Iso[2][2]) / 3.0;
+	term1 = (Mu / J_F) * pow((1 + (Bk / Nk) * (3.0 * trbbar - 3.0)), (Nk-1.0));
+	term2 = 2.0 * (Mu / J_F) * (Bk * (Nk - 1.0) / Nk) *
+			pow((1.0 + (Bk / Nk) * (3.0 * trbbar - 3.0)), (Nk-2.0));
+
+	Ek = Kappa * (2.0 * J_F - 1.0);
+	Pr = Kappa * (J_F - 1.0);
+
+//	cout << endl << " TRBBAR, TERM1, TERM2, EK, PR" << endl;
+//	cout << scientific << trbbar << " " << term1 << " " << term2 << " " << Ek << " " << Pr << " " << endl;
+
+	for (iVar = 0; iVar < 3; iVar++){
+		for (jVar = 0; jVar < 3; jVar++){
+			Stress_Tensor[iVar][jVar] = term1 * (b_Mat_Iso[iVar][jVar] -
+												(deltaij(iVar,jVar) * trbbar))
+										+ deltaij(iVar,jVar) * Pr;
+		}
+	}
+//	cout.precision(15);
+//	cout << endl << "Stress tensor" << endl;
+//	cout << scientific << Stress_Tensor[0][0] << " " << Stress_Tensor[0][1] << " " << Stress_Tensor[0][2] << endl;
+//	cout << scientific << Stress_Tensor[1][0] << " " << Stress_Tensor[1][1] << " " << Stress_Tensor[1][2] << endl;
+//	cout << scientific << Stress_Tensor[2][0] << " " << Stress_Tensor[2][1] << " " << Stress_Tensor[2][2] << endl;
+
+
+}
+
 
 CFEM_IdealDE::CFEM_IdealDE(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CFEM_NonlinearElasticity(val_nDim, val_nVar, config) {
@@ -1284,13 +1478,13 @@ void CFEM_IdealDE::Compute_Stress_Tensor(CElement *element, CConfig *config) {
 	/*--- Compute the isochoric deformation gradient Fbar and left Cauchy-Green tensor bbar ---*/
 	Compute_Isochoric_F_b();
 
-//	cout.precision(15);
+	cout.precision(15);
 	// Stress terms
 
 	trbbar = (b_Mat_Iso[0][0] + b_Mat_Iso[1][1] + b_Mat_Iso[2][2]) / 3.0;
-	Eg = 2.0 * C10 / J_F;
-	Ek = (2.0 / D1) * (2.0 * J_F - 1.0);
-	Pr = (2.0 / D1) * (J_F - 1.0);
+	Eg = Mu / J_F;
+	Ek = Kappa * (2.0 * J_F - 1.0);
+	Pr = Kappa * (J_F - 1.0);
 	Eg23 = 2.0 * Eg / 3.0;
 
 //	cout << endl << " TRBBAR, EG, EK, PR" << endl;
@@ -1302,7 +1496,7 @@ void CFEM_IdealDE::Compute_Stress_Tensor(CElement *element, CConfig *config) {
 		for (jVar = 0; jVar < 3; jVar++){
 			if (iVar == jVar) dij = 1.0;
 			else if (iVar != jVar) dij = 0.0;
-			Stress_Tensor[iVar][jVar] = Eg * b_Mat_Iso[iVar][jVar] - dij * (Eg * trbbar + Pr);
+			Stress_Tensor[iVar][jVar] = Eg * ( b_Mat_Iso[iVar][jVar] - dij * trbbar) + dij * Pr ;
 		}
 	}
 
