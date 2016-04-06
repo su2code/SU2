@@ -33,4 +33,8 @@
 #include "codi.hpp"
 #include "tools/dataStore.hpp"
 
+#ifdef CODI_INDEX_TAPE
+typedef codi::RealReverseIndex su2double;
+#else
 typedef codi::RealReverse su2double;
+#endif
