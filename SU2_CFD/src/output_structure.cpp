@@ -5155,7 +5155,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 									// if BC outlet
 										cout << "BC outlet convergence monitoring  marker " << outMarker_Tag << " : "<<endl;
 										cout << endl;
-										cout << "     Outlet Pressure" << "          Outlet Pressure BC" << "     err(%)" <<  endl;
+										cout << "     Outlet Pressure" << "          Outlet Pressure BC" << "          err(%)" <<  endl;
 										cout.width(25); cout << PressureOut[iMarker_Monitoring]*config[ZONE_0]->GetPressure_Ref();
 										cout.width(25); cout << PressureOut_BC[iMarker_Monitoring]*config[ZONE_0]->GetPressure_Ref();
 										cout.width(25); cout << abs((PressureOut[iMarker_Monitoring] - PressureOut_BC[iMarker_Monitoring])/PressureOut_BC[iMarker_Monitoring])*100.0;
@@ -5390,11 +5390,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
               	if(nZone  < 2){
               		/*--- single zone output ---*/
-              		cout << "     Res[Rho]" << "     Res[RhoE]"  << "  KineticLoss(%)" << "  D_MassFlow(%)" << endl;
+              		cout << "     Res[Rho]" << "     Res[RhoE]"  << "  KineticLoss(%)" << "  Entropy Gen.(%)" << endl;
               	}
               	else{
               		/* --- multi-zone output ---*/
-              		cout << "     Res[Rho]" << "     Res[RhoE]"  << " TSEfficiency(%)" << " Outlet Pressure" << endl;
+              		cout << "     Res[Rho]" << "     Res[RhoE]"  << " TSEfficiency(%)" << " Entropy Gen.(%)" << endl;
               	}
             	}
               else cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
@@ -5450,11 +5450,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else if (turbo){
             	if (nZone < 2){
 								/*--- single zone output ---*/
-								cout << "  KineticLoss(%)" << "  D_MassFlow(%)" << endl;
+								cout << "  KineticLoss(%)" << "  Entropy Gen.(%)" << endl;
             	}
             	else{
 								/*--- multi zone output ---*/
-								cout << " TSEfficiency(%)" << " Outlet Pressure" << endl;
+								cout << " TSEfficiency(%)" << " Entropy Gen.(%)" << endl;
 
             	}
             }
@@ -5670,12 +5670,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           	/*--- singlezone output---*/
           	if (nZone < 2){
 							cout.width(15); cout << KineticEnergyLoss[0]*100.0;
-							cout.width(15); cout << abs((MassFlowIn[0] - MassFlowOut[0])/MassFlowIn[0])*100.0;
+							cout.width(15); cout << EntropyGen[0]*100.0;
           	}
           	else{
 							/*--- multizone output---*/
 							cout.width(15); cout << TotalStaticEfficiency[nTurboPerf -1]*100.0;
-							cout.width(15); cout << PressureOut[0]*config[ZONE_0]->GetPressure_Ref();
+							cout.width(15); cout << EntropyGen[nTurboPerf -1]*100.0;
 
           	}
           	cout.unsetf(ios_base::floatfield);
