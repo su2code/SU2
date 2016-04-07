@@ -97,6 +97,10 @@ inline su2double CElement::GetWeight_P(unsigned short iGaussP) { return GaussWei
 
 inline unsigned short CElement::GetnGaussPointsP(void) { return nGaussPointsP;}
 
+inline void CElement::Set_iDe(unsigned short val_iDe) { iDe = val_iDe;}
+
+inline unsigned short CElement::Get_iDe(void) { return iDe;}
+
 inline void CElement::ComputeGrad_Pressure(void){ }
 
 inline void CQUAD4::ComputeGrad_Pressure(void){ }

@@ -75,6 +75,7 @@ protected:
 	su2double **Kt_a;						/*!< \brief Structure for the nodal stress term for the residual computation. */
 	su2double **FDL_a;						/*!< \brief Structure for the dead loads for the residual computation. */
 	su2double el_Pressure;					/*!< \brief Pressure in the element */
+	unsigned short iDe;					/*!< \brief ID of the dielectric elastomer */
 
 public:
 	/*!
@@ -374,6 +375,18 @@ public:
 	 * \param[in] val_Stress - Value of the stress added.
 	 */
 	su2double Get_NodalStress(unsigned short iNode, unsigned short iVar);
+
+	/*!
+	 * \brief Store the value of the identifier for the Dielectric Elastomers.
+	 * \param[in] val_iDe - identifier of the DE property.
+	 */
+	void Set_iDe(unsigned short val_iDe);
+
+	/*!
+	 * \brief Return the value of the identifier for the Dielectric Elastomers.
+	 * \param[out] val_iDe - identifier of the DE property.
+	 */
+	unsigned short Get_iDe(void);
 
 	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.

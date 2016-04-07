@@ -700,8 +700,11 @@ private:
   su2double *Int_Coeffs;		/*!< \brief Time integration coefficients for structural method. */
   unsigned short nElectric_Field,	/*!< \brief Number of different values for the electric field in the membrane. */
   nDim_Electric_Field;				/*!< \brief Dimensionality of the problem. */
-  su2double *Electric_Field_Mod, /*!< \brief Values of the modulus of the electric field. */
-  *Electric_Field_Dir;		/*!< \brief Direction of the electric field. */
+  unsigned short nDel_EField;		/*!< \brief Number of delimiters for the electric field (must be nElectric_Field + 1). */
+  unsigned short Axis_EField;		/*!< \brief Axis along which the delimiters are set. */
+  su2double *Electric_Field_Mod, 	/*!< \brief Values of the modulus of the electric field. */
+  *Electric_Field_Dir;				/*!< \brief Direction of the electric field. */
+  su2double *Electric_Field_Del;	/*!< \brief Values of the delimiters of the Electric Field (along axis Axis_EField). */
   bool Sigmoid_Load,		/*!< \brief Apply the load using a sigmoid. */
   Ramp_Load;				/*!< \brief Apply the load with linear increases. */
   bool IncrementalLoad;		/*!< \brief Apply the load in increments (for nonlinear structural analysis). */
@@ -5498,6 +5501,25 @@ public:
 	 * \return Alpha coefficient for the Runge-Kutta integration scheme.
 	 */
 	su2double Get_Electric_Field_Mod(unsigned short val_coeff);
+
+	/*!
+	 * \brief Get the number of delimiters for the electric field.
+	 * \return Number of different values of the delimiters for the electric field.
+	 */
+	unsigned short GetnDel_EField(void);
+
+	/*!
+	 * \brief Get the axis along which the delimiters for the electric field are defined.
+	 * \return Axis (X, Y or Z).
+	 */
+	unsigned short GetAxis_EField(void);
+
+	/*!
+	 * \brief Get the values for the electric field modulus.
+	 * \param[in] val_coeff - Index of the coefficient.
+	 * \return Alpha coefficient for the Runge-Kutta integration scheme.
+	 */
+	su2double Get_Electric_Field_Del(unsigned short val_coeff);
 
 	/*!
 	 * \brief Set the values for the electric field modulus.

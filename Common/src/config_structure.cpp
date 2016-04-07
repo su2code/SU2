@@ -1138,6 +1138,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Direction of the electic fields */
   addDoubleListOption("ELECTRIC_FIELD_DIR", nDim_Electric_Field, Electric_Field_Dir);
 
+  /* DESCRIPTION: Identify the axis that delimits the distribution of DEs */
+  addEnumOption("ELECTRIC_FIELD_AXIS", Axis_EField, Axis_Orientation_Map, X_AXIS);
+  /* DESCRIPTION: Modulus of the electric fields */
+  addDoubleListOption("ELECTRIC_FIELD_DELIMITERS", nDel_EField, Electric_Field_Del);
+
   /*!\brief DESIGN_VARIABLE_FEA
    *  \n DESCRIPTION: Design variable for FEA problems (Temp) \n OPTIONS: See \link DVFEA_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config */
   addEnumOption("DESIGN_VARIABLE_FEA", Kind_DV_FEA, DVFEA_Map, YOUNG_MODULUS);

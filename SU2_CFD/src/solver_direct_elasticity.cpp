@@ -1380,6 +1380,39 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 		  }
 		}
 
+		if (de_effects){
+
+			bool multiple_de = (config->GetnDel_EField() > 0);
+			/*--- So far, this will only be enabled for quadrilateral elements ---*/
+			bool feature_enabled = (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL);
+			su2double cornerCoord[4] = {0.0,0.0,0.0,0.0}, centerCoord = 0.0;
+			unsigned long indexNode_de = 0;
+
+			if ((multiple_de) && (feature_enabled)) {
+
+				for (iNode = 0; iNode < nNodes; iNode++) {
+					indexNode_de = geometry->elem[iElem]->GetNode(iNode);
+					cornerCoord[iNode] = geometry->node[indexNode_de]->GetCoord(config->GetAxis_EField());
+				}
+
+				// Compute the coordinate of the center of the element
+				centerCoord = (((cornerCoord[0] + cornerCoord[2]) / 2.0) + ((cornerCoord[1] + cornerCoord[3]) / 2.0)) / 2.0;
+
+				// If we are over the first coordinate
+					for (iVar = 1; iVar < config->GetnDel_EField(); iVar++){
+						if ( (config->Get_Electric_Field_Del(iVar-1) <= centerCoord)
+							&& (config->Get_Electric_Field_Del(iVar)) > centerCoord){
+							element_container[DE_TERM][EL_KIND]->Set_iDe(iVar-1);
+							break;
+						}
+					}
+			}
+			else{
+				// If there are not multiple areas or the feature is not enabled, the iDe is 0
+				element_container[DE_TERM][EL_KIND]->Set_iDe(0);
+			}
+		}
+
 		/*--- If incompressible, we compute the Mean Dilatation term first so the volume is already computed ---*/
 
 		if (incompressible) numerics[FEA_TERM]->Compute_MeanDilatation_Term(element_container[FEA_TERM][EL_KIND], config);
