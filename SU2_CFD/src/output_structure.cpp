@@ -4015,26 +4015,24 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_TurboPerformance(); iMarker_Monitoring++) {
 
       stringstream tag;
-      tag << iMarker_Monitoring;
+      tag << iMarker_Monitoring + 1;
 
-      turbo_coeff += ",\"PressureRatio_" + tag.str() + "\"";
-      turbo_coeff += ",\"PressureOut_" + tag.str() + "\"";
-      turbo_coeff += ",\"EnthalpyOut_" + tag.str() + "\"";
-      turbo_coeff += ",\"Total_EnthalpyIn_" + tag.str() + "\"";
 			turbo_coeff += ",\"TotalPressureLoss_" + tag.str() + "\"";
 			turbo_coeff += ",\"KineticEnergyLoss_" + tag.str() + "\"";
+			turbo_coeff += ",\"EntropyGen_" + tag.str() + "\"";
 			turbo_coeff += ",\"EulerianWork_" + tag.str() + "\"";
-			turbo_coeff += ",\"VelocityOutIs_" + tag.str() + "\"";
+			turbo_coeff += ",\"PressureRatio_" + tag.str() + "\"";
 			turbo_coeff += ",\"FlowAngleIn_" + tag.str() + "\"";
 			turbo_coeff += ",\"FlowAngleOut_" + tag.str() + "\"";
+			turbo_coeff += ",\"AbsFlowAngleIn_" + tag.str() + "\"";
+			turbo_coeff += ",\"AbsFlowAngleOut_" + tag.str() + "\"";
 			turbo_coeff += ",\"MassFlowIn_" + tag.str() + "\"";
 			turbo_coeff += ",\"MassFlowOut_" + tag.str() + "\"";
 			turbo_coeff += ",\"MachIn_" + tag.str() + "\"";
 			turbo_coeff += ",\"MachOut_" + tag.str() + "\"";
-			turbo_coeff += ",\"NormalMachIn_" + tag.str() + "\"";
-			turbo_coeff += ",\"NormalMachOut_" + tag.str() + "\"";
-//			turbo_coeff += ",\"TotalEfficiency_" + tag.str() + "\"";
-//			turbo_coeff += ",\"TotalStaticEfficiency_" + tag.str() + "\"";
+			// different from zero only in multi-zone computation
+			turbo_coeff += ",\"TotalEfficiency_" + tag.str() + "\"";
+			turbo_coeff += ",\"TotalStaticEfficiency_" + tag.str() + "\"";
 
     }
   }
@@ -4881,50 +4879,44 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 strcat(monitoring_coeff, surface_coeff);
               }
             }
-            
+
             if (turbo){
               for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_TurboPerformance(); iMarker_Monitoring++){
                 if (iMarker_Monitoring == 0){
-                  SPRINTF(turbo_coeff, ", %12.10f", PressureRatio[iMarker_Monitoring]);
+                  SPRINTF(turbo_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring]);
                 }else{
-                  SPRINTF(surface_coeff, ", %12.10f", PressureRatio[iMarker_Monitoring]);
+                  SPRINTF(surface_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring]);
                   strcat(turbo_coeff, surface_coeff);
                 }
-                SPRINTF(surface_coeff, ", %12.10f", PressureOut[iMarker_Monitoring]);
-                strcat(turbo_coeff, surface_coeff);
-                SPRINTF(surface_coeff, ", %12.10f", EnthalpyOut[iMarker_Monitoring]);
-                strcat(turbo_coeff, surface_coeff);
-                SPRINTF(surface_coeff, ", %12.10f", TotalEnthalpyIn[iMarker_Monitoring]);
-                strcat(turbo_coeff, surface_coeff);
-								SPRINTF(surface_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring]);
-								strcat(turbo_coeff, surface_coeff);
 								SPRINTF(surface_coeff, ", %12.10f", KineticEnergyLoss[iMarker_Monitoring]);
+								strcat(turbo_coeff, surface_coeff);
+								SPRINTF(surface_coeff, ", %12.10f", EntropyGen[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
 								SPRINTF(surface_coeff, ", %12.10f", EulerianWork[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
-								SPRINTF(surface_coeff, ", %12.10f", VelocityOutIs[iMarker_Monitoring]);
+								SPRINTF(surface_coeff, ", %12.10f", PressureRatio[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
 								SPRINTF(surface_coeff, ", %12.10f", 180.0/PI_NUMBER*FlowAngleIn[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
 								SPRINTF(surface_coeff, ", %12.10f", 180.0/PI_NUMBER*FlowAngleOut[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
+								SPRINTF(surface_coeff, ", %12.10f", 180.0/PI_NUMBER*AbsFlowAngleIn[iMarker_Monitoring]);
+								strcat(turbo_coeff, surface_coeff);
+								SPRINTF(surface_coeff, ", %12.10f", 180.0/PI_NUMBER*AbsFlowAngleOut[iMarker_Monitoring]);
+								strcat(turbo_coeff, surface_coeff);
 								SPRINTF(surface_coeff, ", %12.10f", MassFlowIn[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
 								SPRINTF(surface_coeff, ", %12.10f", MassFlowOut[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
-								SPRINTF(surface_coeff, ", %12.10f", MachIn[iMarker_Monitoring][1]);
+								SPRINTF(surface_coeff, ", %12.10f", sqrt(MachIn[iMarker_Monitoring][1]*MachIn[iMarker_Monitoring][1] + MachIn[iMarker_Monitoring][0]*MachIn[iMarker_Monitoring][0]));
 								strcat(turbo_coeff, surface_coeff);
-								SPRINTF(surface_coeff, ", %12.10f", MachOut[iMarker_Monitoring][1]);
+								SPRINTF(surface_coeff, ", %12.10f", sqrt(MachOut[iMarker_Monitoring][1]*MachOut[iMarker_Monitoring][1] + MachOut[iMarker_Monitoring][0]*MachOut[iMarker_Monitoring][0]));
 								strcat(turbo_coeff, surface_coeff);
-								SPRINTF(surface_coeff, ", %12.10f", MachIn[iMarker_Monitoring][0]);
+								//
+								SPRINTF(surface_coeff, ", %12.10f", TotalTotalEfficiency[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
-								SPRINTF(surface_coeff, ", %12.10f", MachOut[iMarker_Monitoring][0]);
+								SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
-
-//                    SPRINTF(surface_coeff, ", %12.10f", TotalTotalEfficiency[iMarker_Monitoring]);
-//                    strcat(turbo_coeff, surface_coeff);
-//                    SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring]);
-//                    strcat(turbo_coeff, surface_coeff);
 
               }
             }
