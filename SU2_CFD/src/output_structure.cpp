@@ -5732,12 +5732,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           	if (nZone < 2){
 							/*--- single zone output ---*/
 							cout.width(15); cout << KineticEnergyLoss[0]*100.0;
-							cout.width(15); cout << abs((MassFlowIn[0] - MassFlowOut[0])/MassFlowIn[0])*100.0;
+							cout.width(15); cout << EntropyGen[0]*100.0;
           	}
           	else{
 						/*--- multi zone output ---*/
 							cout.width(15); cout << TotalStaticEfficiency[nTurboPerf - 1]*100.0;
-							cout.width(15); cout << PressureOut[0]*config[ZONE_0]->GetPressure_Ref();
+							cout.width(15); cout << EntropyGen[nTurboPerf -1]*100.0;
           	}
 						cout.unsetf(ios_base::floatfield);
           }
