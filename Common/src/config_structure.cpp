@@ -1728,8 +1728,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if(val_nDim ==2) nSpanWiseSections=1;
 
   /*--- Set number of TurboPerformance markers ---*/
-  if(nMarker_Turbomachinery > 0)
-  	nMarker_TurboPerformance = nMarker_Turbomachinery + int(nMarker_Turbomachinery/2) + 1;
+  if(nMarker_Turbomachinery > 0){
+  	if(nMarker_Turbomachinery > 1){
+  		nMarker_TurboPerformance = nMarker_Turbomachinery + int(nMarker_Turbomachinery/2) + 1;
+  	}else{
+  		nMarker_TurboPerformance = nMarker_Turbomachinery;
+  	}
+  }
 
 
 
