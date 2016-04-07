@@ -1187,6 +1187,12 @@ inline void CConfig::Set_Electric_Field_Mod(unsigned short val_coeff, su2double 
 
 inline su2double* CConfig::Get_Electric_Field_Dir(void) { return Electric_Field_Dir; }
 
+inline unsigned short CConfig::GetAxis_EField(void) { return Axis_EField; }
+
+inline unsigned short CConfig::GetnDel_EField(void) { return nDel_EField; }
+
+inline su2double CConfig::Get_Electric_Field_Del(unsigned short val_coeff) { return Electric_Field_Del[val_coeff]; }
+
 inline bool CConfig::GetSigmoid_Load(void) { return Sigmoid_Load; }
 
 inline bool CConfig::GetRamp_Load(void) { return Ramp_Load; }
