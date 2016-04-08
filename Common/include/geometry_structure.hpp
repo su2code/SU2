@@ -94,7 +94,8 @@ private:
 
 /*! 
  * \class FaceOfElementClass
- * \brief Help class used in the partitioning of the FEM grid. It stores a face of an element.
+ * \brief Class used in the partitioning of the FEM grid as well as the building of
+          the faces of DG. It stores a face of an element.
  * \version 4.1.0 "Cardinal"
  */
 class FaceOfElementClass {
@@ -102,11 +103,19 @@ public:
   unsigned short nCornerPoints;          /*!< \brief Number of corner points of the face. */
   unsigned long  cornerPoints[4];        /*!< \brief Global ID's of ther corner points. */
   unsigned long  elemID0, elemID1;       /*!< \brief Element ID's to the left and right. */
-  unsigned short nPoly;                  /*!< \brief Polynomial degree of the face. */
+  unsigned short nPoly0, nPoly1;         /*!< \brief Polynomial degree of the face. */
   unsigned short nDOFsElem0, nDOFsElem1; /*!< \brief Number of DOFs of the elements to the left and right. */
   unsigned short periodicIndex;          /*!< \brief Periodic indicator of the face. A value of 0 means no
                                                      periodic face. A value larger than 0 gives the index of
                                                      the periodic boundary + 1. */
+  short faceIndicator;                   /*!< \brief The corresponding boundary marker if this face is on a
+                                                     boundary. If not, a -1 indicates a face of an owned
+                                                     element and -2 indicates a face of an unowned element. */
+
+  vector<unsigned long> faceConnSide0;   /*!< \brief DOFs of side 0 of the face, where side 0 is defined as
+                                                     the element to the left of the face. */
+  vector<unsigned long> faceConnSide1;   /*!< \brief DOFs of side 0 of the face, where side 1 is defined as
+                                                     the element to the right of the face. */
 
   /* Standard constructor and destructor. */
   FaceOfElementClass();
@@ -492,7 +501,7 @@ public:
 	/*! 
 	 * \brief A virtual member.
 	 */
-	void SetFaces(void);
+	virtual void SetFaces(void);
 
 	/*! 
 	 * \brief A virtual member.

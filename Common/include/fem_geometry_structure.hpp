@@ -335,6 +335,11 @@ public:
   ~CMeshFEM_DG(void);
 
  /*!
+  * \brief Function to create the faces used in the DG formulation.
+  */
+  void SetFaces(void);
+
+ /*!
   * \brief Set the send receive boundaries of the grid.
   * \param[in] config - Definition of the particular problem.
   */

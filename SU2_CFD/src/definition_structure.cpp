@@ -389,6 +389,23 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
 
 void Geometrical_Preprocessing_DGFEM(CGeometry ***geometry, CConfig **config, unsigned short val_nZone) {
 
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Loop over the number of zones of the fine grid. ---*/
+
+  for(unsigned short iZone = 0; iZone < val_nZone; iZone++) {
+
+    /*--- Create the face information needed to compute the contour integral
+          for the elements in the Discontinuous Galerkin formulation. ---*/
+
+    if (rank == MASTER_NODE) cout << "Creating face information." << endl;
+    geometry[iZone][MESH_0]->SetFaces();
+  }
+
   cout << "Geometrical_Preprocessing_DGFEM: Not implemented yet." << endl;
 #ifndef HAVE_MPI
   exit(EXIT_FAILURE);
