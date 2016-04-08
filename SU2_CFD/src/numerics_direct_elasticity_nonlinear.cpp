@@ -109,14 +109,35 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 		su2double Electric_Field_Mod;
 		su2double *Electric_Field_Dir = config->Get_Electric_Field_Dir();
 		unsigned short iVar, iDim;
+		unsigned short nDelimiters, nEField_Read;
 		su2double ref_Efield_mod;
 
 		ke_DE = config->GetDE_Modulus();
 
-		nElectric_Field = config->GetnElectric_Field();
+		nEField_Read = config->GetnElectric_Field();
+		nDelimiters = config->GetnDel_EField() - 1;					// Number of region delimiters - 1 (has to be equal to nElectric_Field)
 		nDim_Electric_Field = config->GetnDim_Electric_Field();
 
 		if (nDim != nDim_Electric_Field) cout << "DIMENSIONS DON'T AGREE (Fix this)" << endl;
+
+		/*--- If the input of values for the electric field is only 1, every region gets the same value ---*/
+		if (nEField_Read == 1){
+			if (nDelimiters == 0){
+				nElectric_Field = 1;
+			}
+			else{
+				nElectric_Field = nDelimiters;
+			}
+		} else{
+			if (nDelimiters == nEField_Read){
+				nElectric_Field = nEField_Read;
+			}
+			else{
+				cout << "DIMENSIONS OF ELECTRIC FIELD AND DELIMITERS DON'T AGREE!!!" << endl;
+				exit(EXIT_FAILURE);
+			}
+		}
+
 
 		/*--- We initialize the modulus ---*/
 		ref_Efield_mod = 0.0;
@@ -140,9 +161,19 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 
 		/*--- Auxiliary vector for hosting the electric field modulus in the reference configuration ---*/
 		EField_Ref_Mod = new su2double[nElectric_Field];
-		for (iVar = 0; iVar < nElectric_Field; iVar++) {
-			EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
+
+		/*--- If the input of values for the electric field is only 1, every region gets the same value for a start ---*/
+		if (nEField_Read == 1){
+			for (iVar = 0; iVar < nElectric_Field; iVar++) {
+				EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(0);
+			}
 		}
+		else{
+			for (iVar = 0; iVar < nElectric_Field; iVar++) {
+				EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
+			}
+		}
+
 
 		/*--- Auxiliary vector for computing the electric field in the current configuration ---*/
 		EField_Curr_Unit = new su2double[nDim_Electric_Field];
@@ -1551,6 +1582,8 @@ void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, CConfig 
 	su2double E0_2 = 0.0, E1_2 = 0.0, E2_2 = 0.0;
 	su2double E_2 = 0.0;
 
+	unsigned short iRegion;
+
 //	cout << endl << "------ DIRECT -------" << endl;
 
 	Compute_FmT_Mat();
@@ -1574,12 +1607,21 @@ void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, CConfig 
 
 //	cout << "E_Ref(" << iVar << ")  = (" << EField_Ref_Unit[0] << "," << EField_Ref_Unit[1] << ").  |E_Ref|  = " << mod_Ref << "." << endl;
 //	cout << "E_Curr(" << iVar << ") = (" << EField_Curr_Unit[0] << "," << EField_Curr_Unit[1] << "). |E_Curr| = " << mod_Curr << "." << endl;
+//
+	iRegion = element->Get_iDe();
 
-	cout << element->Get_iDe() << endl;
+//	for (iVar = 0; iVar < nElectric_Field; iVar++){
+//		cout << EField_Ref_Mod[iVar] << " ";
+//	}
+//	cout << endl;
 
-	E0 = EField_Ref_Mod[0]*EField_Curr_Unit[0];					E0_2 = pow(E0,2);
-	E1 = EField_Ref_Mod[0]*EField_Curr_Unit[1];					E1_2 = pow(E1,2);
-	if (nDim == 3) {E2 = EField_Ref_Mod[0]*EField_Curr_Unit[2];	E2_2 = pow(E2,2);}
+//	E0 = EField_Ref_Mod[0]*EField_Curr_Unit[0];					E0_2 = pow(E0,2);
+//	E1 = EField_Ref_Mod[0]*EField_Curr_Unit[1];					E1_2 = pow(E1,2);
+//	if (nDim == 3) {E2 = EField_Ref_Mod[0]*EField_Curr_Unit[2];	E2_2 = pow(E2,2);}
+
+	E0 = EField_Ref_Mod[iRegion]*EField_Curr_Unit[0];					E0_2 = pow(E0,2);
+	E1 = EField_Ref_Mod[iRegion]*EField_Curr_Unit[1];					E1_2 = pow(E1,2);
+	if (nDim == 3) {E2 = EField_Ref_Mod[iRegion]*EField_Curr_Unit[2];	E2_2 = pow(E2,2);}
 
 	E_2 = E0_2+E1_2+E2_2;
 

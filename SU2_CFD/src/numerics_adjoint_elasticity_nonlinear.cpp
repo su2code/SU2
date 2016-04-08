@@ -241,7 +241,6 @@ void CFEM_DielectricElastomer_Adj::Compute_Stress_Tensor(CElement *element, CCon
 	su2double E01 = 0.0, E02 = 0.0, E12 = 0.0;
 
 //	Compute_Eigenproblem(element, config);
-	cout << endl << "------ADJOINT-------" << endl;
 
 	Compute_FmT_Mat();
 

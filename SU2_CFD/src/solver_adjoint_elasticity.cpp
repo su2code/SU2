@@ -36,6 +36,7 @@ CFEM_ElasticitySolver_Adj::CFEM_ElasticitySolver_Adj(void) : CSolver() {
 	nElement   = 0;
 	nMarker    = 0;
 	nFEA_Terms = 0;
+	n_DV	   = 0;
 
 	direct_solver 		= NULL;
 	GradN_X				= NULL;
@@ -48,6 +49,8 @@ CFEM_ElasticitySolver_Adj::CFEM_ElasticitySolver_Adj(void) : CSolver() {
 	mId_Aux				= NULL;
 
 	element_container	= NULL;
+
+	sensI_adjoint		= NULL;
 
 }
 
@@ -289,6 +292,38 @@ CFEM_ElasticitySolver_Adj::CFEM_ElasticitySolver_Adj(CGeometry *geometry, CConfi
 
 	}
 
+	switch (config->GetDV_FEA()) {
+		case YOUNG_MODULUS:
+			n_DV = 1;
+			break;
+		case ELECTRIC_FIELD:
+
+			unsigned short nEField_Read, nDelimiters;
+			nEField_Read = config->GetnElectric_Field();
+			nDelimiters = config->GetnDel_EField() - 1;					// Number of region delimiters - 1 (has to be equal to nElectric_Field)
+			if (nEField_Read == 1){
+				if (nDelimiters == 0){
+					n_DV = 1;				// If there are no delimiters
+				}
+				else{
+					n_DV = nDelimiters;
+				}
+			} else{
+				if (nDelimiters == nEField_Read){
+					n_DV = nEField_Read;
+				}
+				else{
+					cout << "DIMENSIONS OF ELECTRIC FIELD AND DELIMITERS DON'T AGREE!!!" << endl;
+					exit(EXIT_FAILURE);
+				}
+			}
+			break;
+		default:
+			n_DV = 1;
+	}
+
+	/*--- Initialize the sensitivity variable for the linear system ---*/
+	sensI_adjoint = new su2double[n_DV];
 
 	/*--- Initialize the different structures for the linear system ---*/
 //	Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
@@ -312,9 +347,46 @@ CFEM_ElasticitySolver_Adj::CFEM_ElasticitySolver_Adj(CGeometry *geometry, CConfi
 
 	/*--- Perform the MPI communication of the solution ---*/
 	Set_MPI_Solution(geometry, config);
+
 }
 
 CFEM_ElasticitySolver_Adj::~CFEM_ElasticitySolver_Adj(void) {
+
+	unsigned short iVar, jVar;
+	unsigned long iPoint;
+
+	for (iPoint = 0; iPoint < nPoint; iPoint++){
+		delete [] node[iPoint];
+	}
+
+	for (iVar = 0; iVar < MAX_TERMS; iVar++){
+		for (jVar = 0; jVar < MAX_FE_KINDS; iVar++)
+			if (element_container[iVar][jVar] != NULL) delete [] element_container[iVar][jVar];
+	}
+
+	for (iVar = 0; iVar < nVar; iVar++){
+		delete [] Jacobian_ij[iVar];
+		if (Jacobian_s_ij != NULL) delete [] Jacobian_s_ij[iVar];
+		if (Jacobian_c_ij != NULL) delete [] Jacobian_c_ij[iVar];
+		delete [] mZeros_Aux[iVar];
+		delete [] mId_Aux[iVar];
+	}
+
+	if (element_container != NULL) delete [] element_container;
+	delete [] node;
+	delete [] Jacobian_ij;
+	if (Jacobian_s_ij != NULL) delete [] Jacobian_s_ij;
+	if (Jacobian_c_ij != NULL) delete [] Jacobian_c_ij;
+	delete [] Solution;
+	delete [] GradN_X;
+	delete [] GradN_x;
+
+	delete [] Residual;
+
+	delete [] mZeros_Aux;
+	delete [] mId_Aux;
+
+	if (sensI_adjoint != NULL) delete [] sensI_adjoint;
 
 }
 
@@ -708,72 +780,6 @@ void CFEM_ElasticitySolver_Adj::Compute_StiffMatrix(CGeometry *geometry, CSolver
 
 void CFEM_ElasticitySolver_Adj::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config) {
 
-
-	unsigned long iElem, iVar;
-	unsigned short iNode, iDim, nNodes;
-	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-	su2double val_Coord, val_Sol;
-	int EL_KIND, DV_TERM;
-
-	su2double *Ta = NULL;
-	unsigned short NelNodes;
-
-	switch (config->GetDV_FEA()) {
-		case YOUNG_MODULUS:
-			DV_TERM = FEA_TERM;
-			break;
-		case ELECTRIC_FIELD:
-			DV_TERM = DE_TERM;
-			break;
-	}
-
-
-	/*--- For the solution of the adjoint problem, this routine computes dK/dv, being v the design variables ---*/
-
-	/*--- TODO: This needs to be extended to n Design Variables. As of now, only for E. ---*/
-
-	/*--- Set the value of the Residual vectors to 0 ---*/
-	LinSysRes_dSdv.SetValZero();
-
-	/*--- Loops over all the elements ---*/
-
-	for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-
-		if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
-		if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
-
-		if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
-		if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
-		if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
-		if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
-
-		/*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
-		/*--- The solution comes from the direct solver ---*/
-		for (iNode = 0; iNode < nNodes; iNode++) {
-		  indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
-		  for (iDim = 0; iDim < nDim; iDim++) {
-			  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
-			  val_Sol = direct_solver->node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
-			  element_container[DV_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
-			  element_container[DV_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
-		  }
-		}
-
-		numerics[DV_TERM]->Compute_NodalStress_Term(element_container[DV_TERM][EL_KIND], config);
-
-		NelNodes = element_container[DV_TERM][EL_KIND]->GetnNodes();
-
-		for (iNode = 0; iNode < NelNodes; iNode++){
-
-			Ta = element_container[DV_TERM][EL_KIND]->Get_Kt_a(iNode);
-			for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = Ta[iVar];
-
-			LinSysRes_dSdv.SubtractBlock(indexNode[iNode], Residual);
-
-		}
-
-	}
-
 }
 
 void CFEM_ElasticitySolver_Adj::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config){ }
@@ -788,7 +794,19 @@ void CFEM_ElasticitySolver_Adj::BC_Clamped_Post(CGeometry *geometry, CSolver **s
 void CFEM_ElasticitySolver_Adj::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config){ }
 
 void CFEM_ElasticitySolver_Adj::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,  CNumerics **numerics,
-		unsigned short iMesh){ }
+		unsigned short iMesh){
+
+
+	switch (config->GetDV_FEA()) {
+		case YOUNG_MODULUS:
+			cout << "Young Modulus " << endl;
+			break;
+		case ELECTRIC_FIELD:
+			DE_Sensitivity(geometry, solver_container, numerics, config);
+			break;
+	}
+
+}
 
 void CFEM_ElasticitySolver_Adj::RefGeom_Sensitivity(CGeometry *geometry, CSolver **solver_container, CConfig *config){
 
@@ -853,6 +871,23 @@ void CFEM_ElasticitySolver_Adj::Solve_System(CGeometry *geometry, CSolver **solv
 	CSysSolve femSystem2;
 	IterLinSol1 = femSystem2.Solve(direct_solver->Jacobian, LinSysRes, LinSysSol, geometry, config);
 
+
+    for (iPoint=0; iPoint < nPointDomain; iPoint++){
+
+    	for (iVar = 0; iVar < nVar; iVar++){
+
+    		Solution[iVar] = LinSysSol.GetBlock(iPoint, iVar);
+
+        	node[iPoint]->SetSolution(iVar, Solution[iVar]);
+
+    	}
+
+    }
+
+	/*--- The the number of iterations of the linear solver ---*/
+
+	SetIterLinSolver(IterLinSol);
+
 //	ofstream myfile;
 //	myfile.open ("Check_Adjoint.txt");
 //
@@ -873,10 +908,95 @@ void CFEM_ElasticitySolver_Adj::Solve_System(CGeometry *geometry, CSolver **solv
 //	}
 //	myfile.close();
 
-	su2double sensI_direct, sensI_adjoint;
-
 //	sensI_direct = dotProd(LinSysRes,LinSysSol_Direct);
-	sensI_adjoint = dotProd(LinSysSol,LinSysRes_dSdv);
+
+
+}
+
+void CFEM_ElasticitySolver_Adj::DE_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config){
+
+	unsigned long iElem, iVar, iPoint;
+	unsigned short iNode, iDim, nNodes;
+	unsigned short i_DV;
+	unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+	su2double val_Coord, val_Sol;
+	int EL_KIND, DV_TERM;
+
+	su2double *Ta = NULL;
+	unsigned short NelNodes;
+
+	switch (config->GetDV_FEA()) {
+		case YOUNG_MODULUS:
+			DV_TERM = FEA_TERM;
+			break;
+		case ELECTRIC_FIELD:
+			DV_TERM = DE_TERM;
+			break;
+	}
+
+
+	/*--- For the solution of the adjoint problem, this routine computes dK/dv, being v the design variables ---*/
+
+	/*--- TODO: This needs to be extended to n Design Variables. As of now, only for E. ---*/
+
+	for (i_DV = 0; i_DV < n_DV; i_DV++){
+
+		/*--- Set the value of the Residual vectors to 0 ---*/
+		LinSysRes_dSdv.SetValZero();
+
+		/*--- Loops over all the elements ---*/
+
+		for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+			if (direct_solver->Get_iElem_iDe(iElem) == i_DV){
+
+				if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
+				if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+
+				if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
+				if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
+				if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
+				if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+
+				/*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+				/*--- The solution comes from the direct solver ---*/
+				for (iNode = 0; iNode < nNodes; iNode++) {
+				  indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+				  for (iDim = 0; iDim < nDim; iDim++) {
+					  val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+					  val_Sol = direct_solver->node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+					  element_container[DV_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+					  element_container[DV_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+				  }
+				}
+
+				numerics[DV_TERM]->Compute_NodalStress_Term(element_container[DV_TERM][EL_KIND], config);
+
+				NelNodes = element_container[DV_TERM][EL_KIND]->GetnNodes();
+
+				for (iNode = 0; iNode < NelNodes; iNode++){
+
+					Ta = element_container[DV_TERM][EL_KIND]->Get_Kt_a(iNode);
+					for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = Ta[iVar];
+
+					LinSysRes_dSdv.SubtractBlock(indexNode[iNode], Residual);
+
+				}
+
+			}
+
+		}
+
+		sensI_adjoint[i_DV] = 0.0;
+		for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+			for (iVar = 0; iVar < nVar; iVar++){
+				sensI_adjoint[i_DV] += node[iPoint]->GetSolution(iVar) * LinSysRes_dSdv.GetBlock(iPoint,iVar);
+			}
+		}
+
+	}
+
+//	sensI_adjoint = dotProd(LinSysSol,LinSysRes_dSdv);
 	su2double E_mod;
 
 	switch (config->GetDV_FEA()) {
@@ -890,27 +1010,29 @@ void CFEM_ElasticitySolver_Adj::Solve_System(CGeometry *geometry, CSolver **solv
 
 	ofstream myfile_res;
 	myfile_res.open ("Results_E.txt", ios::app);
-	myfile_res << E_mod ;
-	myfile_res.precision(15);
-    myfile_res << scientific << " " << val_I << " " << sensI_adjoint << endl;
 
-	myfile_res.close();
-
-    for (iPoint=0; iPoint < nPointDomain; iPoint++){
-
-    	for (iVar = 0; iVar < nVar; iVar++){
-
-    		Solution[iVar] = LinSysSol.GetBlock(iPoint, iVar);
-
-        	node[iPoint]->SetSolution(iVar, Solution[iVar]);
-
+    for (i_DV = 0; i_DV < n_DV; i_DV++){
+    	switch (config->GetDV_FEA()) {
+    		case YOUNG_MODULUS:
+    			myfile_res <<  config->GetElasticyMod() << " ";
+    			break;
+    		case ELECTRIC_FIELD:
+    			myfile_res << config->Get_Electric_Field_Mod(i_DV) << " ";
+    			break;
     	}
-
     }
 
-	/*--- The the number of iterations of the linear solver ---*/
+	myfile_res.precision(15);
 
-	SetIterLinSolver(IterLinSol);
+    myfile_res << scientific << " " << val_I << " ";
+
+    for (i_DV = 0; i_DV < n_DV; i_DV++){
+    	myfile_res << scientific << sensI_adjoint[i_DV] << " ";
+    }
+
+    myfile_res << endl;
+
+	myfile_res.close();
 
 }
 
