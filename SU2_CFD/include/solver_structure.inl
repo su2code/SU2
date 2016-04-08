@@ -1101,6 +1101,12 @@ inline su2double CAdjEulerSolver::GetPhi_Inf(unsigned short val_dim) { return Ph
 
 inline void CSolver::RefGeom_Sensitivity(CGeometry *geometry, CSolver **solver_container, CConfig *config){ }
 
+inline void CSolver::DE_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config){ }
+
+inline unsigned short CSolver::Get_iElem_iDe(unsigned long iElem){ return 0; }
+
+inline unsigned short CFEM_ElasticitySolver::Get_iElem_iDe(unsigned long iElem){ return iElem_iDe[iElem]; }
+
 inline su2double CFEM_ElasticitySolver::GetRes_FEM(unsigned short val_var) { return Conv_Check[val_var]; }
 
 inline su2double CFEM_ElasticitySolver::GetTotal_CFEA() { return Total_CFEA; }

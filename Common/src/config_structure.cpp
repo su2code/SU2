@@ -2451,6 +2451,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	Electric_Field_Mod = new su2double[1]; Electric_Field_Mod[0] = 0.0;
   }
 
+  if (nDel_EField == 0) {
+	nDel_EField = 1;
+	Electric_Field_Del = new su2double[1]; Electric_Field_Del[0] = 0.0;
+  }
+
   if (nDim_Electric_Field == 0) {
 	nDim_Electric_Field = 2;
 	Electric_Field_Dir = new su2double[2]; Electric_Field_Dir[0] = 0.0;  Electric_Field_Dir[1] = 1.0;

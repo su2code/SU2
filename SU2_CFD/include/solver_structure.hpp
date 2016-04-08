@@ -2556,6 +2556,22 @@ public:
 	virtual void RefGeom_Sensitivity(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
 	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void DE_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] iElem - element parameter.
+	 * \param[out] iElem_iDe - ID of the Dielectric Elastomer region.
+	 */
+	virtual unsigned short Get_iElem_iDe(unsigned long iElem);
+
+	/*!
 	 * \brief Gauss method for solving a linear system.
 	 * \param[in] A - Matrix Ax = b.
 	 * \param[in] rhs - Right hand side.
@@ -6773,6 +6789,8 @@ private:
 	su2double **mZeros_Aux;			/*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
 	su2double **mId_Aux;				/*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
 
+	unsigned short *iElem_iDe;			/*!< \brief For DE cases, ID of the region considered for each iElem. */
+
 	su2double a_dt[9];					/*!< \brief Integration constants. */
 
 	su2double Conv_Ref[3];				/*!< \brief Reference values for convergence check: DTOL, RTOL, ETOL */
@@ -7245,6 +7263,13 @@ public:
 	 */
 	void SetLoad_Increment(su2double val_loadIncrement);
 
+	/*!
+	 * \brief Retrieve the iDe index for DE computations
+	 * \param[in] iElem - element parameter.
+	 * \param[out] iElem_iDe - ID of the Dielectric Elastomer region.
+	 */
+	unsigned short Get_iElem_iDe(unsigned long iElem);
+
 
 };
 
@@ -7272,6 +7297,9 @@ private:
 
 	su2double **mZeros_Aux;			/*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
 	su2double **mId_Aux;				/*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
+
+	unsigned short n_DV;				/*!< \brief Number of Design Variables. */
+	su2double *sensI_adjoint;			/*!< \brief Adjoint sensitivities for the number of design variables. */
 
 	CSysVector LinSysSol_Direct;		/*!< \brief Vector structure for storing the solution of the direct problem. */
 	CSysVector LinSysRes_dSdv;			/*!< \brief Vector structure for storing the sensitivity of the FEA equations respect to the design dS/dv. */
@@ -7446,6 +7474,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void RefGeom_Sensitivity(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+	/*!
+	 * \brief Compute the sensitivity matrix for the DE
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void DE_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 };
 

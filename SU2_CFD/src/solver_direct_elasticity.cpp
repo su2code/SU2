@@ -80,6 +80,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 
 	Solution_Interm = NULL;
 
+	iElem_iDe		= NULL;
+
 }
 
 CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *config) : CSolver() {
@@ -499,6 +501,98 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	solutionPredictor = new su2double [nVar];
 
+	/*---- Initialize and store the region of each element in the case of DE effects and multiple regions ---*/
+	if (de_effects){
+
+		/*--- Initialize the structure to store the iDe ---*/
+		iElem_iDe = new unsigned short [nElement];
+
+		bool multiple_de = (config->GetnDel_EField() > 1);
+		unsigned long iElem;
+		bool iTest;
+
+		if (multiple_de){
+			unsigned short iNode, nNodes, iKind;
+			unsigned long indexNode;
+			su2double cornerCoord[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+			su2double centerCoord = 0.0;
+			/*--- Loop over all the elements ---*/
+			for (iElem = 0; iElem < nElement; iElem++){
+
+				/*--- Check what kind of element is each ---*/
+				if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; iKind = 0;}
+				if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){nNodes = 4; iKind = 1;}
+
+				if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; iKind = 2;}
+				if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; iKind = 3;}
+				if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; iKind = 4;}
+				if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; iKind = 5;}
+
+				/*--- Retrieve the corner coordinates for the dimension of the axis considered ---*/
+				for (iNode = 0; iNode < nNodes; iNode++) {
+					indexNode = geometry->elem[iElem]->GetNode(iNode);
+					cornerCoord[iNode] = geometry->node[indexNode]->GetCoord(config->GetAxis_EField());
+				}
+
+				switch (iKind){
+					case 0:
+						cout << "The element is a TRIA and this is not yet implemented." << endl;
+						iTest = false;		// This prevents incorrect setting of the value of iDe while it's not implemented
+						break;
+					case 1:
+						centerCoord = (((cornerCoord[0] + cornerCoord[2]) / 2.0) +
+								       ((cornerCoord[1] + cornerCoord[3]) / 2.0)) / 2.0;
+						iTest = true;
+						break;
+					case 2:
+						cout << "The element is a TETRA and this is not yet implemented." << endl;
+						iTest = false;		// This prevents incorrect setting of the value of iDe while it's not implemented
+						break;
+					case 3:
+						cout << "The element is a PYRAMID and this is not yet implemented." << endl;
+						iTest = false;		// This prevents incorrect setting of the value of iDe while it's not implemented
+						break;
+					case 4:
+						cout << "The element is a PRISM and this is not yet implemented." << endl;
+						iTest = false;		// This prevents incorrect setting of the value of iDe while it's not implemented
+						break;
+					case 5:
+						cout << "The element is a HEXA and this is not yet implemented." << endl;
+						iTest = false;		// This prevents incorrect setting of the value of iDe while it's not implemented
+						break;
+					default:
+						cout << "The element is not yet implemented." << endl;
+						iTest = false;		// This prevents incorrect setting of the value of iDe while it's not implemented
+						break;
+				}
+
+				for (iVar = 1; iVar < config->GetnDel_EField(); iVar++){
+					if ( (config->Get_Electric_Field_Del(iVar-1) <= centerCoord)
+						&& (config->Get_Electric_Field_Del(iVar)) > centerCoord){
+							iElem_iDe[iElem] = iVar-1;
+						break;
+					}
+				}
+
+				/*--- If the element centerCoord is not implemented yet... sets iElem_iDe = 0 ---*/
+				if (!iTest){
+					iElem_iDe[iElem] = 0;
+				}
+
+
+			}
+		} else {
+			/*--- If there are no multiple DEs, the ID is 0 for all the cases ---*/
+			for (iElem = 0; iElem < nElement; iElem++){
+				iElem_iDe[iElem] = 0;
+			}
+
+		}
+
+	} else {
+		iElem_iDe = NULL;
+	}
+
 	/*---- Initialize the linear solver structures for the adjoint problem (temporary) ---*/
 //	if (structural_adj){
 //		LinSysSol_Adj.Initialize(nPoint, nPointDomain, nVar, 0.0);
@@ -568,6 +662,8 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
 
 	delete [] normalVertex;
 	delete [] stressTensor;
+
+	if (iElem_iDe != NULL) delete [] iElem_iDe;
 
 }
 
@@ -1382,33 +1478,14 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 
 		if (de_effects){
 
-			bool multiple_de = (config->GetnDel_EField() > 0);
+			bool multiple_de = (config->GetnDel_EField() > 1);
 			/*--- So far, this will only be enabled for quadrilateral elements ---*/
 			bool feature_enabled = (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL);
-			su2double cornerCoord[4] = {0.0,0.0,0.0,0.0}, centerCoord = 0.0;
-			unsigned long indexNode_de = 0;
 
 			if ((multiple_de) && (feature_enabled)) {
-
-				for (iNode = 0; iNode < nNodes; iNode++) {
-					indexNode_de = geometry->elem[iElem]->GetNode(iNode);
-					cornerCoord[iNode] = geometry->node[indexNode_de]->GetCoord(config->GetAxis_EField());
-				}
-
-				// Compute the coordinate of the center of the element
-				centerCoord = (((cornerCoord[0] + cornerCoord[2]) / 2.0) + ((cornerCoord[1] + cornerCoord[3]) / 2.0)) / 2.0;
-
-				// If we are over the first coordinate
-					for (iVar = 1; iVar < config->GetnDel_EField(); iVar++){
-						if ( (config->Get_Electric_Field_Del(iVar-1) <= centerCoord)
-							&& (config->Get_Electric_Field_Del(iVar)) > centerCoord){
-							element_container[DE_TERM][EL_KIND]->Set_iDe(iVar-1);
-							break;
-						}
-					}
+				element_container[DE_TERM][EL_KIND]->Set_iDe(iElem_iDe[iElem]);
 			}
 			else{
-				// If there are not multiple areas or the feature is not enabled, the iDe is 0
 				element_container[DE_TERM][EL_KIND]->Set_iDe(0);
 			}
 		}
