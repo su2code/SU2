@@ -76,9 +76,10 @@ FaceOfElementClass::FaceOfElementClass(){
   nCornerPoints   = 0;
   cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = 0;
   elemID0         = elemID1 = ULONG_MAX;
-  nPoly           = 0;
+  nPoly0          = nPoly1     = 0;
   nDOFsElem0      = nDOFsElem1 = 0;
   periodicIndex   = 0;
+  faceIndicator   = 0;
 }
 
 bool FaceOfElementClass::operator<(const FaceOfElementClass &other) const {
@@ -104,12 +105,17 @@ void FaceOfElementClass::Copy(const FaceOfElementClass &other) {
   elemID0 = other.elemID0;
   elemID1 = other.elemID1;
 
-  nPoly = other.nPoly;
+  nPoly0 = other.nPoly0;
+  nPoly1 = other.nPoly1;
 
   nDOFsElem0 = other.nDOFsElem0;
   nDOFsElem1 = other.nDOFsElem1;
 
   periodicIndex = other.periodicIndex;
+  faceIndicator = other.faceIndicator;
+
+  faceConnSide0 = other.faceConnSide0;
+  faceConnSide1 = other.faceConnSide1;
 }
 
 void BoundaryFaceClass::Copy(const BoundaryFaceClass &other) {
@@ -12207,7 +12213,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
       thisFace.elemID0    = starting_node[rank] + k;
-      thisFace.nPoly      = elem[k]->GetNPolySol();
+      thisFace.nPoly0     = elem[k]->GetNPolySol();
       thisFace.nDOFsElem0 = elem[k]->GetNDOFsSol();
 
       thisFace.CreateUniqueNumbering();
@@ -12256,7 +12262,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   for(unsigned long i=1; i<nFacesLoc; ++i) {
     if(localFaces[i] == localFaces[i-1]) {
       localFaces[i-1].elemID1    = localFaces[i].elemID0;
-      localFaces[i-1].nPoly      = max(localFaces[i-1].nPoly, localFaces[i].nPoly);
+      localFaces[i-1].nPoly0     = max(localFaces[i-1].nPoly0, localFaces[i].nPoly0);
       localFaces[i-1].nDOFsElem1 = localFaces[i].nDOFsElem0;
       localFaces[i].elemID0      = Global_nElem + 10;
     }
@@ -12356,7 +12362,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     sendBufFace[ii+3] = localFacesComm[i].cornerPoints[2];
     sendBufFace[ii+4] = localFacesComm[i].cornerPoints[3];
 				sendBufFace[ii+5] = localFacesComm[i].elemID0;
-    sendBufFace[ii+6] = localFacesComm[i].nPoly;
+    sendBufFace[ii+6] = localFacesComm[i].nPoly0;
     sendBufFace[ii+7] = localFacesComm[i].nDOFsElem0;
   }
 
@@ -12414,7 +12420,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       facesRecv[j].cornerPoints[2] = recvBuf[ii+3];
       facesRecv[j].cornerPoints[3] = recvBuf[ii+4];
       facesRecv[j].elemID0         = recvBuf[ii+5];
-      facesRecv[j].nPoly           = recvBuf[ii+6];
+      facesRecv[j].nPoly0          = recvBuf[ii+6];
       facesRecv[j].nDOFsElem0      = recvBuf[ii+7];
     }
   }
@@ -12430,8 +12436,8 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   for(unsigned long i=1; i<localFacesComm.size(); ++i) {
     if(localFacesComm[i] == localFacesComm[i-1]) {
       localFacesComm[i-1].elemID1    = localFacesComm[i].elemID0;
-      localFacesComm[i-1].nPoly      = max(localFacesComm[i-1].nPoly,
-                                           localFacesComm[i].nPoly);
+      localFacesComm[i-1].nPoly0     = max(localFacesComm[i-1].nPoly0,
+                                           localFacesComm[i].nPoly0);
       localFacesComm[i-1].nDOFsElem1 = localFacesComm[i].nDOFsElem0;
 
       localFacesComm[i].nCornerPoints = 4;
@@ -12460,7 +12466,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       sendBufFace[ii+2] = facesRecv[j].cornerPoints[1];
       sendBufFace[ii+3] = facesRecv[j].cornerPoints[2];
       sendBufFace[ii+4] = facesRecv[j].cornerPoints[3];
-      sendBufFace[ii+6] = facesRecv[j].nPoly;
+      sendBufFace[ii+6] = facesRecv[j].nPoly0;
 
       vector<FaceOfElementClass>::iterator low;
       low = lower_bound(localFacesComm.begin(), localFacesComm.end(),
@@ -12508,7 +12514,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
       low->elemID1 = recvBuf[jj+5];
 
-      if(recvBuf[jj+6] > low->nPoly) low->nPoly = recvBuf[jj+6];
+      if(recvBuf[jj+6] > low->nPoly0) low->nPoly0 = recvBuf[jj+6];
 
       low->nDOFsElem1 = recvBuf[jj+7];
     }
@@ -12575,7 +12581,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
       thisFace.elemID0    = starting_node[rank] + k;
-      thisFace.nPoly      = elem[k]->GetNPolySol();
+      thisFace.nPoly0     = elem[k]->GetNPolySol();
       thisFace.nDOFsElem0 = elem[k]->GetNDOFsSol();
 
       thisFace.CreateUniqueNumbering();
@@ -12806,7 +12812,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
         facesDonor[k].nDim          = nDim;
         facesDonor[k].nCornerPoints = nPointsPerFace[0];
         facesDonor[k].elemID        = low->elemID0;
-        facesDonor[k].nPoly         = low->nPoly;
+        facesDonor[k].nPoly         = low->nPoly0;
         facesDonor[k].nDOFsElem     = low->nDOFsElem0;
 
         for(unsigned short j=0; j<nPointsPerFace[0]; ++j) {
@@ -12902,7 +12908,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
         thisMatchingFace.nDim          = nDim;
         thisMatchingFace.nCornerPoints = nPointsPerFace[0];
         thisMatchingFace.elemID        = low->elemID0;
-        thisMatchingFace.nPoly         = low->nPoly;
+        thisMatchingFace.nPoly         = low->nPoly0;
         thisMatchingFace.nDOFsElem     = low->nDOFsElem0;
 
         for(unsigned short j=0; j<nPointsPerFace[0]; ++j) {
@@ -12934,7 +12940,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
           donorLow = lower_bound(facesDonor.begin(), facesDonor.end(), thisMatchingFace);
 
           low->elemID1    = donorLow->elemID;
-          low->nPoly      = max(low->nPoly, donorLow->nPoly);
+          low->nPoly0     = max(low->nPoly0, donorLow->nPoly);
           low->nDOFsElem1 = donorLow->nDOFsElem;
         }
       }
@@ -13323,7 +13329,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
       if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
         vector<FaceOfElementClass>::const_iterator low;
         low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
-        nPolyFace = low->nPoly;
+        nPolyFace = low->nPoly0;
       }
 
       /*--- Determine the number of integration points for this face as well as

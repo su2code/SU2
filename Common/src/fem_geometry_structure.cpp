@@ -1267,6 +1267,22 @@ CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config) : CMeshFEM(geomet
 
 }
 
+void CMeshFEM_DG::SetFaces(void) {
+
+  /*---------------------------------------------------------------------------*/
+  /*--- Step 1: Determine the faces of the locally stored part of the grid. ---*/
+  /*---------------------------------------------------------------------------*/
+
+  cout << "CMeshFEM_DG::SetFaces: Not implemented yet." << endl;
+#ifndef HAVE_MPI
+  exit(EXIT_FAILURE);
+#else
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Abort(MPI_COMM_WORLD,1);
+  MPI_Finalize();
+#endif
+}
+
 void CMeshFEM_DG::SetSendReceive(CConfig *config) {
 
   /*--- Determine the number of ranks and the current rank. ---*/
