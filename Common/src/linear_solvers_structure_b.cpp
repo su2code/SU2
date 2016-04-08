@@ -38,8 +38,8 @@
 void CSysSolve_b::Solve_b(AD::CheckpointHandler* data){
   /*--- Extract data from the checkpoint handler ---*/
 
-  int *LinSysRes_Indices;
-  int *LinSysSol_Indices;
+  su2double::GradientData *LinSysRes_Indices;
+  su2double::GradientData *LinSysSol_Indices;
 
   data->getData(LinSysRes_Indices);
   data->getData(LinSysSol_Indices);
@@ -70,7 +70,7 @@ void CSysSolve_b::Solve_b(AD::CheckpointHandler* data){
   /*--- Initialize the right-hand side with the gradient of the solution of the primal linear system ---*/
 
   for (i = 0; i < size; i ++){
-    int& index = LinSysSol_Indices[i];
+    su2double::GradientData& index = LinSysSol_Indices[i];
     LinSysRes_b[i] = AD::globalTape.getGradient(index);
     LinSysSol_b[i] = 0.0;
     AD::globalTape.gradient(index) = 0.0;
@@ -107,7 +107,7 @@ void CSysSolve_b::Solve_b(AD::CheckpointHandler* data){
   /*--- Update the gradients of the right-hand side of the primal linear system ---*/
 
   for (i = 0; i < size; i ++){
-    int& index = LinSysRes_Indices[i];
+    su2double::GradientData& index = LinSysRes_Indices[i];
     AD::globalTape.gradient(index) += SU2_TYPE::GetValue(LinSysSol_b[i]);
   }
 
@@ -119,8 +119,8 @@ void CSysSolve_b::Solve_b(AD::CheckpointHandler* data){
 
 void CSysSolve_b::Delete_b(AD::CheckpointHandler* data){
 
-  int *LinSysRes_Indices;
-  int *LinSysSol_Indices;
+  su2double::GradientData *LinSysRes_Indices;
+  su2double::GradientData *LinSysSol_Indices;
 
   data->getData(LinSysRes_Indices);
   data->getData(LinSysSol_Indices);

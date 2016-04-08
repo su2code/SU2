@@ -511,6 +511,8 @@ void CAuxMPIWrapper::Bcast(void *buf, int count, MPI_Datatype datatype,
 }
 #endif
 #ifdef CODI_REVERSE_TYPE
+#define AD_TYPE su2double
 #include "externals/ampi_interface_realreverse_old.cpp"
+#undef AD_TYPE
 #endif
 #endif

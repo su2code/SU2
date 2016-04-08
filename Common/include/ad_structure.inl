@@ -2,13 +2,13 @@
 
 
 namespace AD{
-#ifdef CODI_REVERSE_TYPE
+#if defined CODI_REVERSE_TYPE
 
   typedef codi::DataStore CheckpointHandler;
 
   /*--- Stores the indices of the input variables (they might be overwritten) ---*/
 
-  extern std::vector<unsigned int> inputValues;
+  extern std::vector<su2double::GradientData> inputValues;
 
   /*--- Current position inside the adjoint vector ---*/
 
@@ -16,15 +16,15 @@ namespace AD{
 
   /*--- Reference to the tape ---*/
 
-  extern codi::ChunkTape<double, int>& globalTape;
+  extern su2double::TapeType& globalTape;
 
   extern bool Status;
 
   extern bool PreaccActive;
 
-  extern codi::ChunkTape<double, int>::Position StartPosition, EndPosition;
+  extern su2double::TapeType::Position StartPosition, EndPosition;
 
-  extern std::vector<unsigned int> localInputValues;
+  extern std::vector<su2double::GradientData> localInputValues;
 
   extern std::vector<su2double*> localOutputValues;
 
@@ -33,7 +33,7 @@ namespace AD{
 
   inline void RegisterOutput(su2double& data){AD::globalTape.registerOutput(data);}
 
-  inline void ResetInput(su2double &data){data.getGradientData() = 0;}
+  inline void ResetInput(su2double &data){data.getGradientData() = su2double::GradientData();}
 
   inline void StartRecording(){AD::globalTape.setActive();}
 
@@ -54,7 +54,7 @@ namespace AD{
 
   inline void SetPreaccIn(const su2double &data){
     if (PreaccActive){
-      if (data.getGradientData() != 0){
+      if (data.isActive()){
         localInputValues.push_back(data.getGradientData());
       }
     }
@@ -63,7 +63,7 @@ namespace AD{
   inline void SetPreaccIn(su2double* data, const int size){
     if (PreaccActive){
       for (unsigned short i = 0; i < size; i++){
-        if (data[i].getGradientData() != 0){
+        if (data[i].isActive()){
           localInputValues.push_back(data[i].getGradientData());
         }
       }
@@ -74,7 +74,7 @@ namespace AD{
     if (PreaccActive){
       for (unsigned short i = 0; i < size_x; i++){
         for (unsigned short j = 0; j < size_y; j++){
-          if (data[i][j].getGradientData() != 0){
+          if (data[i][j].isActive()){
             localInputValues.push_back(data[i][j].getGradientData());
           }
         }
@@ -91,7 +91,7 @@ namespace AD{
 
   inline void SetPreaccOut(su2double& data){
     if (PreaccActive){
-      if (data.getGradientData() != 0){
+      if (data.isActive()){
         localOutputValues.push_back(&data);
       }
     }
@@ -100,7 +100,7 @@ namespace AD{
   inline void SetPreaccOut(su2double* data, const int size){
     if (PreaccActive){
       for (unsigned short i = 0; i < size; i++){
-        if (data[i].getGradientData() != 0){
+        if (data[i].isActive()){
           localOutputValues.push_back(&data[i]);
         }
       }
@@ -111,7 +111,7 @@ namespace AD{
     if (PreaccActive){
       for (unsigned short i = 0; i < size_x; i++){
         for (unsigned short j = 0; j < size_y; j++){
-          if (data[i][j].getGradientData() != 0){
+          if (data[i][j].isActive()){
             localOutputValues.push_back(&data[i][j]);
           }
         }
