@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -715,14 +715,14 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
 
 
 //  if(TapeActive){
-
-//    /*--- Prepare the externally differentiated linear solver ---*/
-
-//    SetExternalSolve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-
 //    /*--- Start recording if it was stopped for the linear solver ---*/
-
+//
 //    AD::StartRecording();
+//
+//    /*--- Prepare the externally differentiated linear solver ---*/
+//
+//    SetExternalSolve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+//
 //  }
 
   return IterLinSol;
@@ -741,14 +741,14 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
   /*--- Arrays to store the indices of the input/output of the linear solver.
      * Note: They will be deleted in the CSysSolve_b::Delete_b routine. ---*/
 
-  int *LinSysRes_Indices = new int[size];
-  int *LinSysSol_Indices = new int[size];
+  su2double::GradientData *LinSysRes_Indices = new su2double::GradientData[size];
+  su2double::GradientData *LinSysSol_Indices = new su2double::GradientData[size];
 
   for (i = 0; i < size; i++){
 
     /*--- Register the solution of the linear system (could already be registered when using multigrid) ---*/
 
-    if (LinSysSol[i].getGradientData() == 0){
+    if (!LinSysSol[i].isActive()){
       AD::globalTape.registerInput(LinSysSol[i]);
     }
 

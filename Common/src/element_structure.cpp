@@ -2,7 +2,7 @@
  * \file element_structure.cpp
  * \brief Definition of the Finite Element structure (elements)
  * \author R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -61,6 +61,8 @@ CElement::CElement(void) {
 	Kk_ab = NULL;
 	Kt_a = NULL;
 
+	FDL_a = NULL;
+
 }
 
 
@@ -95,6 +97,8 @@ CElement::CElement(unsigned short val_nDim, CConfig *config) {
 	Kk_ab = NULL;
 	Kt_a = NULL;
 
+	FDL_a = NULL;
+
 }
 
 CElement::~CElement(void) {
@@ -115,6 +119,8 @@ CElement::~CElement(void) {
 	if (Ks_ab           	!= NULL) delete [] Ks_ab;
 	if (Kk_ab           	!= NULL) delete [] Kk_ab;
 	if (Kt_a            	!= NULL) delete [] Kt_a;
+
+	if (FDL_a            	!= NULL) delete [] FDL_a;
 
 }
 
@@ -161,6 +167,16 @@ void CElement::Add_Kt_a(su2double *val_Kt_a, unsigned short nodeA){
 
 }
 
+void CElement::Add_FDL_a(su2double *val_FDL_a, unsigned short nodeA){
+
+	unsigned short iDim;
+
+	for(iDim = 0; iDim < nDim; iDim++) {
+		FDL_a[nodeA][iDim] += val_FDL_a[iDim];
+	}
+
+}
+
 
 void CElement::clearElement(void){
 
@@ -171,6 +187,7 @@ void CElement::clearElement(void){
 	for(iNode = 0; iNode < nNodes; iNode++) {
 		for(iDim = 0; iDim < nDim; iDim++){
 			if (Kt_a != NULL) Kt_a[iNode][iDim] = 0.0;
+			if (FDL_a != NULL) FDL_a[iNode][iDim] = 0.0;
 		}
 		for (jNode = 0; jNode < nNodes; jNode++) {
 			if (Ks_ab != NULL) Ks_ab[iNode][jNode] = 0.0;
