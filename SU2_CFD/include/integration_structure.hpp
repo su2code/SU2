@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>integration_structure.cpp</i>, 
  *        <i>integration_time.cpp</i>, and <i>integration_notime.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -15,7 +15,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,7 +50,7 @@ using namespace std;
  * \brief Main class for doing the space integration, time integration, and monitoring 
  *        of a system of Partial Differential Equations (PDE).
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CIntegration {
 protected:
@@ -90,6 +90,19 @@ public:
 	void Space_Integration(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config, 
 						   unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
 
+	/*!
+	 * \brief Do the space integration of the numerical system on a FEM framework.
+	 * \author R. Sanchez
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] Iteration - Current iteration.
+	 */
+	void Space_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config,
+						   unsigned short RunTime_EqSystem, unsigned long Iteration);
+
 	/*! 
 	 * \brief Do the time integration (explicit or implicit) of the numerical system.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -103,6 +116,18 @@ public:
 						  unsigned short iRKStep, unsigned short RunTime_EqSystem, unsigned long Iteration);
 	
 	/*! 
+	 * \brief Do the time integration (explicit or implicit) of the numerical system on a FEM framework.
+	 * \author R. Sanchez
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] Iteration - Current iteration.
+	 */
+	void Time_Integration_FEM(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config,
+						  	  unsigned short RunTime_EqSystem, unsigned long Iteration);
+
+	/*!
 	 * \brief Initialize the adjoint solution using the primal problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -124,6 +149,17 @@ public:
 								unsigned long Iteration, su2double monitor, unsigned short iMesh);
 	
 	/*! 
+	 * \brief Do the convergence analysis to determine if the structural FEM analysis has converged.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] solver - Solution of the problem
+	 * \param[in] Iteration - Current iteration.
+	 * \param[in] monitor - Objective function that is use to study its convergence.
+	 */
+	void Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter);
+
+
+	/*!
 	 * \brief Do the convergence analysis to determine if the FSI problem has converged on the structural side.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
@@ -191,6 +227,14 @@ public:
    * \param[in] config - Definition of the particular problem.
 	 */
 	void SetStructural_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh);
+
+	/*!
+	 * \brief Save the structural solution at different time steps.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Structural solution.
+   * \param[in] config - Definition of the particular problem.
+	 */
+	void SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
 
 	/*!
 	 * \brief A virtual member.
@@ -331,6 +375,7 @@ public:
 	virtual void SingleGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
 								  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -374,7 +419,7 @@ public:
  * \class CMultiGridIntegration
  * \brief Class for doing the numerical integration using a multigrid method.
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CMultiGridIntegration : public CIntegration {
 protected:
@@ -546,7 +591,7 @@ public:
  * \class CSingleGridIntegration
  * \brief Class for doing the numerical integration of the turbulence model.
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CSingleGridIntegration : public CIntegration {
 public:
@@ -607,7 +652,7 @@ public:
  * \class CStructuralIntegration
  * \brief Class for doing the numerical integration of the structural model.
  * \author R. Sanchez.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CStructuralIntegration : public CIntegration {
 public:
