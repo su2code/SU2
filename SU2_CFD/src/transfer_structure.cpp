@@ -2,7 +2,7 @@
  * \file transfer_structure.cpp
  * \brief Main subroutines for MPI transfer of information between zones
  * \author R. Sanchez
- * \version 4.0.1 "Cardinal"
+ * \version 4.1.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -770,7 +770,6 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
 	for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
 
-		cout << " ------------------------------ BOUNDARY " << iMarkerInt << " ------------------------------ " << endl;
 
 		Marker_Donor = -1;
 		Marker_Target = -1;
@@ -969,14 +968,10 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
 				Point_Target = target_geometry->vertex[Marker_Target][iVertex]->GetNode();
 
-				cout << "Target Point " << Point_Target;
-
 				/*--- If this processor owns the node ---*/
 				if (target_geometry->node[Point_Target]->GetDomain()){
 
 					nDonorPoints = target_geometry->vertex[Marker_Target][iVertex]->GetnDonorPoints();
-
-					cout << " receives data from " << nDonorPoints << " donor points: " << endl;
 
 					/*--- As we will be adding data, we need to set the variable to 0 ---*/
 					for (iVar = 0; iVar < nVar; iVar++) Target_Variable[iVar] = 0.0;
@@ -989,8 +984,6 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 
 						/*--- We need to get the donor coefficient in a way like this: ---*/
 						donorCoeff = target_geometry->vertex[Marker_Target][iVertex]->GetDonorCoeff(iDonorPoint);
-
-						cout << "Donor Point " << Donor_Global_Index << " has a coefficient of " << donorCoeff << endl;
 
 						/*--- Find the index of the global donor point in the buffer Buffer_Bcast_Indices ---*/
 						indexPoint_iVertex = std::distance(Buffer_Bcast_Indices, std::find(Buffer_Bcast_Indices, Buffer_Bcast_Indices + nBuffer_BcastIndices, Donor_Global_Index));
