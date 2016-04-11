@@ -91,7 +91,7 @@ CGeometry::CGeometry(void) {
 
 CGeometry::~CGeometry(void) {
   
-  unsigned long iElem, iElem_Bound, iFace, iVertex, iEdge;
+  unsigned long iElem, iElem_Bound, iFace;
   unsigned short iMarker;
   
   if (elem != NULL) {

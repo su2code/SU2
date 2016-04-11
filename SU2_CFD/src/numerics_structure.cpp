@@ -100,7 +100,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 }
 
 CNumerics::~CNumerics(void) {
-  unsigned short iVar;
   delete [] Normal;
 	delete [] UnitNormal;
 
