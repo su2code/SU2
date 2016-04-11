@@ -792,7 +792,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 CEulerSolver::~CEulerSolver(void) {
   unsigned short iVar, iMarker;
   /*--- Array deallocation ---*/
-  cout <<" Euler Solver dealloc " << endl;
   if (CDrag_Inv != NULL)         delete [] CDrag_Inv;
   if (CLift_Inv != NULL)         delete [] CLift_Inv;
   if (CSideForce_Inv != NULL)    delete [] CSideForce_Inv;
