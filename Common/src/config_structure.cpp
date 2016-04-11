@@ -4809,9 +4809,9 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case TOTAL_EFFICIENCY:        AdjExt = "_teff";      break;
       case TOTAL_STATIC_EFFICIENCY: AdjExt = "_tseff";     break;
       case EULERIAN_WORK:           AdjExt = "_ew";        break;
-      case TOTAL_ENTHALPY_IN:       AdjExt = "_tei";       break;
       case MASS_FLOW_IN:            AdjExt = "_mfi";       break;
       case MASS_FLOW_OUT:           AdjExt = "_mfo";       break;
+      case ENTROPY_GENERATION:      AdjExt = "_entg";       break;
     }
     Filename.append(AdjExt);
 

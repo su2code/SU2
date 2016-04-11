@@ -5177,12 +5177,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 									cout << "     Total Pressure Loss(%)" << "   Kinetic Energy Loss(%)" << "      Entropy Generation(%)" << endl;
 									cout.width(25); cout << TotalPressureLoss[iMarker_Monitoring]*100.0;
 									cout.width(25); cout << KineticEnergyLoss[iMarker_Monitoring]*100.0;
-									if(EntropyIn[iMarker_Monitoring] >= 0){
-										cout.width(25); cout << EntropyGen[iMarker_Monitoring]*100.0;
-									}
-									else{
-										cout.width(25); cout << -1.0*EntropyGen[iMarker_Monitoring]*100.0;
-									}
+									cout.width(25); cout << EntropyGen[iMarker_Monitoring]*100.0;
 									cout << endl;
 									cout << endl;
 									cout << "     Total Inlet Enthalpy" << "     Eulerian Work" << "               Pressure Ratio" <<  endl;

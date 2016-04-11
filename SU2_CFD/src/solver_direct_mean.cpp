@@ -5165,7 +5165,7 @@ if (rank == MASTER_NODE){
 		TotalRothalpyOut[markerTP -1]   	= avgTotalRothalpyOut;
 		TotalEnthalpyOutIs[markerTP -1]		=	avgTotalEnthalpyOutIs;
 		EntropyIn[markerTP -1]				 		= avgEntropyIn;
-		EntropyGen[markerTP -1]           = (avgEntropyOut - avgEntropyIn)/avgEntropyIn;
+		EntropyGen[markerTP -1]           = (avgEntropyOut - avgEntropyIn)/abs(avgEntropyIn);
 		AbsFlowAngleIn[markerTP -1]       = absFlowAngleIn;
 		AbsFlowAngleOut[markerTP -1]      = absFlowAngleOut;
 		FlowAngleIn[markerTP -1]       		= flowAngleIn;
@@ -5218,7 +5218,7 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
 	//IMPORTANT this approach of multi-zone performances rely upon the fact that turbomachinery markers follow the natural (stator-rotor) development of the real machine.
 
   nBladesRow = config->GetnMarker_Turbomachinery();
-  nStages    = int(nBladesRow/2);
+  nStages    = SU2_TYPE::Int(nBladesRow/2);
   su2double  vel2out;
   if (rank == MASTER_NODE){
   	EulerianWork[nBladesRow + nStages]        = 0.0;
@@ -5234,7 +5234,7 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
 
   		TotalTotalEfficiency[nBladesRow + iStage]  = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 1])/(TotalEnthalpyIn[iStage*2] - TotalEnthalpyOutIs[nBladesRow + iStage]);
   		TotalStaticEfficiency[nBladesRow + iStage] = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 1])/(TotalEnthalpyIn[iStage*2] - EnthalpyOutIs[nBladesRow + iStage]);
-  		EntropyGen[nBladesRow + iStage]            = ((EntropyIn[iStage*2 + 1]*EntropyGen[iStage*2 + 1] + EntropyIn[iStage*2 + 1]) - EntropyIn[iStage*2])/abs(EntropyIn[iStage*2]);
+  		EntropyGen[nBladesRow + iStage]            = ((abs(EntropyIn[iStage*2 + 1])*EntropyGen[iStage*2 + 1] + EntropyIn[iStage*2 + 1]) - EntropyIn[iStage*2])/abs(EntropyIn[iStage*2]);
   		PressureRatio[nBladesRow + iStage]         = (PressureRatio[iStage*2]*PressureOut[iStage*2]/PressureOut[iStage*2 + 1]);
   		MassFlowIn[nBladesRow + iStage]         	 = MassFlowIn[iStage*2];
   		MassFlowOut[nBladesRow + iStage]         	 = MassFlowIn[iStage*2 + 1];
@@ -5252,7 +5252,7 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
 
 		TotalTotalEfficiency[nBladesRow + nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - TotalEnthalpyOutIs[nBladesRow + nStages]);
     TotalStaticEfficiency[nBladesRow +nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - EnthalpyOutIs[nBladesRow + nStages]);
-  	EntropyGen[nBladesRow + iStage]            = ((EntropyIn[nBladesRow-1]*EntropyGen[nBladesRow-1] + EntropyIn[nBladesRow-1]) - EntropyIn[0])/abs(EntropyIn[0]);
+  	EntropyGen[nBladesRow + iStage]            = ((abs(EntropyIn[nBladesRow-1])*EntropyGen[nBladesRow-1] + EntropyIn[nBladesRow-1]) - EntropyIn[0])/abs(EntropyIn[0]);
     PressureRatio[nBladesRow + nStages]        = PressureRatio[0]*PressureOut[0]/PressureOut[nBladesRow-1];
 		MassFlowIn[nBladesRow + nStages]         	 = MassFlowIn[0];
   	MassFlowOut[nBladesRow + nStages]          = MassFlowIn[nBladesRow-1];
