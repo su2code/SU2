@@ -501,6 +501,59 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	solutionPredictor = new su2double [nVar];
 
+  /*---- If we are solving an adjoint problem ---*/
+  if (config->GetKind_Solver() == ADJ_ELASTICITY){
+
+    unsigned short i_DV;
+
+    /*---- Initialize the number of design variables ---*/
+    switch (config->GetDV_FEA()) {
+    case YOUNG_MODULUS:
+      n_DV = 1;
+      break;
+    case ELECTRIC_FIELD:
+      unsigned short nEField_Read, nDelimiters;
+      nEField_Read = config->GetnElectric_Field();
+      nDelimiters = config->GetnDel_EField() - 1;         // Number of region delimiters - 1 (has to be equal to nElectric_Field)
+      if (nEField_Read == 1){
+        if (nDelimiters == 0){
+          n_DV = 1;       // If there are no delimiters
+          EField_Mod = new su2double[n_DV];
+          for (i_DV = 0; i_DV < n_DV; i_DV++){
+            EField_Mod[i_DV] = config->Get_Electric_Field_Mod(0);
+          }
+        }
+        else{
+          n_DV = nDelimiters;
+          EField_Mod = new su2double[n_DV];
+          for (i_DV = 0; i_DV < n_DV; i_DV++){
+            EField_Mod[i_DV] = config->Get_Electric_Field_Mod(i_DV);   // Only one value is passed in
+          }
+        }
+      } else{
+        if (nDelimiters == nEField_Read){
+          n_DV = nEField_Read;
+          EField_Mod = new su2double[n_DV];
+          for (i_DV = 0; i_DV < n_DV; i_DV++){
+            EField_Mod[i_DV] = config->Get_Electric_Field_Mod(i_DV);
+          }
+        }
+        else{
+          cout << "DIMENSIONS OF ELECTRIC FIELD AND DELIMITERS DON'T AGREE!!!" << endl;
+          exit(EXIT_FAILURE);
+        }
+      }
+      break;
+    default:
+      n_DV = 1;
+    }
+
+  } else{
+    n_DV = 0;
+    EField_Mod = NULL;
+  }
+
+
 	/*---- Initialize and store the region of each element in the case of DE effects and multiple regions ---*/
 	if (de_effects){
 
@@ -578,7 +631,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 				if (!iTest){
 					iElem_iDe[iElem] = 0;
 				}
-
 
 			}
 		} else {
@@ -664,6 +716,7 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
 	delete [] stressTensor;
 
 	if (iElem_iDe != NULL) delete [] iElem_iDe;
+  if (EField_Mod != NULL) delete[] EField_Mod;
 
 }
 
@@ -1331,6 +1384,37 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 		for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->Clear_SurfaceLoad_Res();
 	}
 
+  /*---- If we are solving an adjoint problem, we need to update the values of the design variables ---*/
+  if (config->GetKind_Solver() == ADJ_ELASTICITY){
+
+    /*
+     * We change the variables only at the beginning of the time step, but not for the first time step
+     * (when we want the input values to be the true ones computed).
+     */
+
+    if ( ((!restart) && ((!initial_calc) && first_iter)) ||
+         ( (restart) && ((!initial_calc_restart) && first_iter))
+        ){
+
+      unsigned short i_DV;
+      cout << " The design variables are now: ";
+      for (i_DV = 0; i_DV < n_DV; i_DV++){
+        cout << EField_Mod[i_DV] << " ";
+        numerics[FEA_TERM]->Set_ElectricField(i_DV, EField_Mod[i_DV]);
+        numerics[DE_TERM]->Set_ElectricField(i_DV, EField_Mod[i_DV]);
+      }
+
+      cout << endl;
+
+
+
+
+
+    }
+
+
+  }
+
 
 }
 
@@ -1940,8 +2024,6 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
 			  }
 
 		}
-
-
 
 		myfile.close();
 

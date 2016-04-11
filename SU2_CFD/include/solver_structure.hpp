@@ -2571,6 +2571,29 @@ public:
 	 */
 	virtual unsigned short Get_iElem_iDe(unsigned long iElem);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] i_DV - number of design variable.
+   * \param[in] val_EField - value of the design variable.
+   */
+  virtual void Set_EField_Mod(su2double val_EField, unsigned short i_DV);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] i_DV - number of design variable.
+   * \param[out] EField_Mod - value of the design variable.
+   */
+  virtual su2double Get_EField_Mod(unsigned short i_DV);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point i of the Mass Matrix.
+   * \param[in] jPoint - Point j of the Mass Matrix.
+   * \param[in] iVar - Variable i of the Mass Matrix submatrix.
+   * \param[in] iVar - Variable j of the Mass Matrix submatrix.
+   */
+  virtual su2double Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar);
+
 	/*!
 	 * \brief Gauss method for solving a linear system.
 	 * \param[in] A - Matrix Ax = b.
@@ -6790,6 +6813,8 @@ private:
 	su2double **mId_Aux;				/*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
 
 	unsigned short *iElem_iDe;			/*!< \brief For DE cases, ID of the region considered for each iElem. */
+	su2double *EField_Mod;          /*!< \brief For DE cases, value of the modulus of the electric field (design variable). */
+	unsigned short n_DV;          /*!< \brief For DE cases, number of design variables. */
 
 	su2double a_dt[9];					/*!< \brief Integration constants. */
 
@@ -7270,11 +7295,34 @@ public:
 	 */
 	unsigned short Get_iElem_iDe(unsigned long iElem);
 
+  /*!
+   * \brief Set the value of the Electric Field modulus, design variable for DE computations
+   * \param[in] i_DV - number of design variable.
+   * \param[in] val_EField - value of the design variable.
+   */
+  void Set_EField_Mod(su2double val_EField, unsigned short i_DV);
+
+  /*!
+   * \brief Retrieve the Electric Field modulus, design variable for DE computations
+   * \param[in] i_DV - number of design variable.
+   * \param[out] EField_Mod - value of the design variable.
+   */
+  su2double Get_EField_Mod(unsigned short i_DV);
+
+  /*!
+   * \brief Retrieve the Mass Matrix term (to add to the Jacobian of the adjoint problem)
+   * \param[in] iPoint - Point i of the Mass Matrix.
+   * \param[in] jPoint - Point j of the Mass Matrix.
+   * \param[in] iVar - Variable i of the Mass Matrix submatrix.
+   * \param[in] iVar - Variable j of the Mass Matrix submatrix.
+   */
+  su2double Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar);
+
 
 };
 
-/*! \class CFEM_ElasticitySolver
- *  \brief Main class for defining a FEM solver for elastic structural problems.
+/*! \class CFEM_ElasticitySolver_Adj
+ *  \brief Main class for defining an adjoint FEM solver for elastic structural problems.
  *  \author R. Sanchez.
  *  \version 4.0.0 "Cardinal"
  *  \date July 10, 2015.
@@ -7300,6 +7348,7 @@ private:
 
 	unsigned short n_DV;				/*!< \brief Number of Design Variables. */
 	su2double *sensI_adjoint;			/*!< \brief Adjoint sensitivities for the number of design variables. */
+  su2double *EField_Mod;          /*!< \brief For DE cases, value of the modulus of the electric field (design variable). */
 
 	CSysVector LinSysSol_Direct;		/*!< \brief Vector structure for storing the solution of the direct problem. */
 	CSysVector LinSysRes_dSdv;			/*!< \brief Vector structure for storing the sensitivity of the FEA equations respect to the design dS/dv. */
@@ -7308,6 +7357,7 @@ private:
 	CSysVector LinSysRes_Aux;			/*!< \brief Auxiliary vector structure to do intermediate steps. */
 
 	CSysMatrix Jacobian_ISens;			/*!< \brief Vector structure for storing the sensitivity of the Interest Function dI/dx. */
+	CSysMatrix Jacobian_Pred;      /*!< \brief Vector structure for storing the sensitivity of the Interest Function dI/dx. */
 
 
 public:
@@ -7436,6 +7486,14 @@ public:
 	 */
 	void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
 	/*!
 	 * \brief Postprocessing.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -7482,6 +7540,20 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void DE_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+
+  /*!
+   * \brief Set the value of the Electric Field modulus, design variable for DE computations
+   * \param[in] i_DV - number of design variable.
+   * \param[in] val_EField - value of the design variable.
+   */
+  void Set_EField_Mod(su2double val_EField, unsigned short i_DV);
+
+  /*!
+   * \brief Retrieve the Electric Field modulus, design variable for DE computations
+   * \param[in] i_DV - number of design variable.
+   * \param[out] EField_Mod - value of the design variable.
+   */
+  su2double Get_EField_Mod(unsigned short i_DV);
 
 };
 

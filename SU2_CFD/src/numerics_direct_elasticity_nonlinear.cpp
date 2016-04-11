@@ -1090,6 +1090,19 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, C
 
 }
 
+//void CFEM_NonlinearElasticity::Set_ElectricField(su2double *EField_DV){
+//
+//  unsigned short i_DV;
+//
+//  cout << "New DV: ";
+//  for (i_DV = 0; i_DV < nElectric_Field; i_DV++){
+//    EField_Ref_Mod[i_DV] = EField_DV[i_DV];
+//    cout << EField_Ref_Mod[i_DV] << " ";
+//  }
+//  cout << endl;
+//
+//}
+
 
 CFEM_NeoHookean_Comp::CFEM_NeoHookean_Comp(unsigned short val_nDim, unsigned short val_nVar,
                                    CConfig *config) : CFEM_NonlinearElasticity(val_nDim, val_nVar, config) {

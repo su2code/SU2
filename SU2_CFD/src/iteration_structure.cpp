@@ -66,7 +66,16 @@ void CIteration::Update(COutput *output,
                         unsigned short val_iZone)      { }
 void CIteration::Monitor()     { }
 void CIteration::Output()      { }
-void CIteration::Postprocess() { }
+void CIteration::Postprocess(COutput *output,
+                        CIntegration ***integration_container,
+                        CGeometry ***geometry_container,
+                        CSolver ****solver_container,
+                        CNumerics *****numerics_container,
+                        CConfig **config_container,
+                        CSurfaceMovement **surface_movement,
+                        CVolumetricMovement **grid_movement,
+                        CFreeFormDefBox*** FFDBox,
+                        unsigned short val_iZone) { }
 
 
 
@@ -314,7 +323,16 @@ void CMeanFlowIteration::Update(COutput *output,
 
 void CMeanFlowIteration::Monitor()     { }
 void CMeanFlowIteration::Output()      { }
-void CMeanFlowIteration::Postprocess() { }
+void CMeanFlowIteration::Postprocess(COutput *output,
+    CIntegration ***integration_container,
+    CGeometry ***geometry_container,
+    CSolver ****solver_container,
+    CNumerics *****numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement **grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone) { }
 
 void CMeanFlowIteration::SetWind_GustField(CConfig *config_container, CGeometry **geometry_container, CSolver ***solver_container) {
   // The gust is imposed on the flow field via the grid velocities. This method called the Field Velocity Method is described in the
@@ -687,7 +705,16 @@ void CWaveIteration::Update(COutput *output,
 
 void CWaveIteration::Monitor()     { }
 void CWaveIteration::Output()      { }
-void CWaveIteration::Postprocess() { }
+void CWaveIteration::Postprocess(COutput *output,
+    CIntegration ***integration_container,
+    CGeometry ***geometry_container,
+    CSolver ****solver_container,
+    CNumerics *****numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement **grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone) { }
 
 
 CHeatIteration::CHeatIteration(CConfig *config) : CIteration(config) { }
@@ -771,7 +798,16 @@ void CHeatIteration::Update(COutput *output,
 }
 void CHeatIteration::Monitor()     { }
 void CHeatIteration::Output()      { }
-void CHeatIteration::Postprocess() { }
+void CHeatIteration::Postprocess(COutput *output,
+    CIntegration ***integration_container,
+    CGeometry ***geometry_container,
+    CSolver ****solver_container,
+    CNumerics *****numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement **grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone) { }
 
 
 CPoissonIteration::CPoissonIteration(CConfig *config) : CIteration(config) { }
@@ -824,7 +860,16 @@ void CPoissonIteration::Update(COutput *output,
                                unsigned short val_iZone)      { }
 void CPoissonIteration::Monitor()     { }
 void CPoissonIteration::Output()      { }
-void CPoissonIteration::Postprocess() { }
+void CPoissonIteration::Postprocess(COutput *output,
+    CIntegration ***integration_container,
+    CGeometry ***geometry_container,
+    CSolver ****solver_container,
+    CNumerics *****numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement **grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone) { }
 
 
 CFEM_StructuralAnalysis::CFEM_StructuralAnalysis(CConfig *config) : CIteration(config) { }
@@ -1139,7 +1184,16 @@ void CFEM_StructuralAnalysis::Update(COutput *output,
 }
 void CFEM_StructuralAnalysis::Monitor()     { }
 void CFEM_StructuralAnalysis::Output()      { }
-void CFEM_StructuralAnalysis::Postprocess() { }
+void CFEM_StructuralAnalysis::Postprocess(COutput *output,
+    CIntegration ***integration_container,
+    CGeometry ***geometry_container,
+    CSolver ****solver_container,
+    CNumerics *****numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement **grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone) { }
 
 
 CFEAIteration_Adj::CFEAIteration_Adj(CConfig *config) : CIteration(config) { }
@@ -1160,12 +1214,6 @@ void CFEAIteration_Adj::Iterate(COutput *output,
 	/*--- We first run a direct iteration, to solve the direct problem and compute the problem Jacobian ---*/
 
 	Iterate_Direct(output, integration_container, geometry_container, solver_container,
-			       numerics_container, config_container, surface_movement, grid_movement,
-			       FFDBox, val_iZone);
-
-	/*--- We then run the adjoint iteration ---*/
-
-	Iterate_Adjoint(output, integration_container, geometry_container, solver_container,
 			       numerics_container, config_container, surface_movement, grid_movement,
 			       FFDBox, val_iZone);
 
@@ -1462,17 +1510,6 @@ void CFEAIteration_Adj::Iterate_Adjoint(COutput *output,
 			config_container, RUNTIME_ADJFEA_SYS, IntIter, val_iZone);
 
 
-	/*--- RUBEN: Addition (temporary) of the adjoint routines here) ---*/
-
-
-//	bool structural_adj = config_container[val_iZone]->GetStructural_Adj();
-//
-//	if (structural_adj){
-//		solver_container[val_iZone][MESH_0][FEA_SOL]->Run_Structural_Adjoint(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],
-//				config_container[val_iZone], numerics_container[val_iZone][MESH_0][FEA_SOL], MESH_0, 0, RUNTIME_FEA_SYS, false);
-//	}
-
-
 }
 
 void CFEAIteration_Adj::Update(COutput *output,
@@ -1513,7 +1550,24 @@ void CFEAIteration_Adj::Update(COutput *output,
 
 void CFEAIteration_Adj::Monitor()     { }
 void CFEAIteration_Adj::Output()      { }
-void CFEAIteration_Adj::Postprocess() { }
+void CFEAIteration_Adj::Postprocess(COutput *output,
+    CIntegration ***integration_container,
+    CGeometry ***geometry_container,
+    CSolver ****solver_container,
+    CNumerics *****numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement **grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone) {
+
+  /*--- We then run the adjoint iteration ---*/
+
+  Iterate_Adjoint(output, integration_container, geometry_container, solver_container,
+             numerics_container, config_container, surface_movement, grid_movement,
+             FFDBox, val_iZone);
+
+}
 
 
 
@@ -1742,7 +1796,16 @@ void CAdjMeanFlowIteration::Update(COutput *output,
 
 void CAdjMeanFlowIteration::Monitor()     { }
 void CAdjMeanFlowIteration::Output()      { }
-void CAdjMeanFlowIteration::Postprocess() { }
+void CAdjMeanFlowIteration::Postprocess(COutput *output,
+    CIntegration ***integration_container,
+    CGeometry ***geometry_container,
+    CSolver ****solver_container,
+    CNumerics *****numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement **grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone) { }
 
 CDiscAdjMeanFlowIteration::CDiscAdjMeanFlowIteration(CConfig *config) : CIteration(config), CurrentRecording(NONE){
   
@@ -2047,7 +2110,16 @@ void CDiscAdjMeanFlowIteration::Update(COutput *output,
                                        unsigned short val_iZone)      { }
 void CDiscAdjMeanFlowIteration::Monitor()     { }
 void CDiscAdjMeanFlowIteration::Output()      { }
-void CDiscAdjMeanFlowIteration::Postprocess() { }
+void CDiscAdjMeanFlowIteration::Postprocess(COutput *output,
+    CIntegration ***integration_container,
+    CGeometry ***geometry_container,
+    CSolver ****solver_container,
+    CNumerics *****numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement **grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone) { }
 
 void FEM_StructuralIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                   	  	  	  	 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,

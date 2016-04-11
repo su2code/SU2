@@ -2880,7 +2880,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 
 	/*--- Communicate the Velocities for dynamic FEM problem ---*/
 
-    if ((Kind_Solver == FEM_ELASTICITY) && (config->GetDynamic_Analysis() == DYNAMIC)) {
+    if (((Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == ADJ_ELASTICITY)) && (config->GetDynamic_Analysis() == DYNAMIC)) {
 
         /*--- Loop over this partition to collect the current variable ---*/
 
@@ -2943,7 +2943,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 
 	/*--- Communicate the Accelerations for dynamic FEM problem ---*/
 
-    if ((Kind_Solver == FEM_ELASTICITY) && (config->GetDynamic_Analysis() == DYNAMIC)) {
+    if (((Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == ADJ_ELASTICITY)) && (config->GetDynamic_Analysis() == DYNAMIC)) {
 
         /*--- Loop over this partition to collect the current variable ---*/
 

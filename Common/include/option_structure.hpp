@@ -380,7 +380,8 @@ const int VISC_BOUND_TERM = 5;       /*!< \brief Position of the viscous boundar
 
 const int FEA_TERM = 0;			/*!< \brief Position of the finite element analysis terms in the numerics container array. */
 const int DE_TERM = 1;			/*!< \brief Position of the dielectric terms in the numerics container array. */
-const int DE_ADJ = 2;			/*!< \brief Position of the dielectric adjoint terms in the numerics container array. */
+const int FEA_ADJ = 2;     /*!< \brief Position of the finite element analysis terms in the numerics container array. */
+const int DE_ADJ = 3;			/*!< \brief Position of the dielectric adjoint terms in the numerics container array. */
 
 /*!
  * \brief types of finite elements (in 2D or 3D)
