@@ -109,7 +109,15 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \param[in] ??? - Description here.
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] surface_movement - Surface movement classes of the problem.
+   * \param[in] grid_movement - Volume grid movement classes of the problem.
+   * \param[in] FFDBox - FFD FFDBoxes of the problem.
    */
   virtual void Update(COutput *output,
                       CIntegration ***integration_container,
@@ -136,9 +144,26 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \param[in] ??? - Description here.
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] surface_movement - Surface movement classes of the problem.
+   * \param[in] grid_movement - Volume grid movement classes of the problem.
+   * \param[in] FFDBox - FFD FFDBoxes of the problem.
    */
-  virtual void Postprocess();
+  virtual void Postprocess(COutput *output,
+                      CIntegration ***integration_container,
+                      CGeometry ***geometry_container,
+                      CSolver ****solver_container,
+                      CNumerics *****numerics_container,
+                      CConfig **config_container,
+                      CSurfaceMovement **surface_movement,
+                      CVolumetricMovement **grid_movement,
+                      CFreeFormDefBox*** FFDBox,
+                      unsigned short val_iZone);
 
 };
 
@@ -232,7 +257,16 @@ public:
    * \brief Postprocesses the mean flow system before heading to another physics system or the next iteration.
    * \param[in] ??? - Description here.
    */
-  void Postprocess();
+  void Postprocess(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox,
+              unsigned short val_iZone);
   
   /*!
    * \brief Imposes a gust via the grid velocities.
@@ -383,7 +417,16 @@ public:
   /*!
    * \brief Postprocesses the wave system before heading to another physics system or the next iteration.
    */
-  void Postprocess();
+  void Postprocess(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox,
+              unsigned short val_iZone);
   
 };
 
@@ -476,7 +519,16 @@ public:
    * \brief Postprocesses the heat system before heading to another physics system or the next iteration.
    * \param[in] ??? - Description here.
    */
-  void Postprocess();
+  void Postprocess(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox,
+              unsigned short val_iZone);
   
 };
 
@@ -569,7 +621,16 @@ public:
    * \brief Postprocesses the poisson system before heading to another physics system or the next iteration.
    * \param[in] ??? - Description here.
    */
-  void Postprocess();
+  void Postprocess(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox,
+              unsigned short val_iZone);
   
 };
 
@@ -656,7 +717,16 @@ public:
    * \brief Postprocesses the FEM system before heading to another physics system or the next iteration.
    * \param[in] ??? - Description here.
    */
-  void Postprocess();
+  void Postprocess(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox,
+              unsigned short val_iZone);
 
 };
 
@@ -790,7 +860,16 @@ public:
    * \brief Postprocesses the FEM system before heading to another physics system or the next iteration.
    * \param[in] ??? - Description here.
    */
-  void Postprocess();
+  void Postprocess(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox,
+              unsigned short val_iZone);
 
 };
 
@@ -883,7 +962,16 @@ public:
    * \brief Postprocesses the adjoint mean flow system before heading to another physics system or the next iteration.
    * \param[in] ??? - Description here.
    */
-  void Postprocess();
+  void Postprocess(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox,
+              unsigned short val_iZone);
   
 };
 
@@ -995,7 +1083,16 @@ public:
    * \brief Postprocesses the discrete adjoint mean flow system before heading to another physics system or the next iteration.
    * \param[in] ??? - Description here.
    */
-  void Postprocess(); 
+  void Postprocess(COutput *output,
+              CIntegration ***integration_container,
+              CGeometry ***geometry_container,
+              CSolver ****solver_container,
+              CNumerics *****numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement **grid_movement,
+              CFreeFormDefBox*** FFDBox,
+              unsigned short val_iZone);
 
   /*!
    * \brief Registers all input variables of the mean flow iteration.

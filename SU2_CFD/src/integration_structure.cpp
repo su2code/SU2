@@ -251,6 +251,8 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 	  }
 	  else {
 
+	    bool predicted_de = config->GetDE_Predicted();
+
 		  /*--- For linear problems, it is necessary to compute the stiffness matrix and multiply it by the solution. ---*/
 		  /*--- This function is (so far) empty for nonlinear problems ---*/
 		  if (linear_analysis)
@@ -258,8 +260,11 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 
 		  /*--- For non-linear problems, the residual arises from a non-linear stress term. ---*/
 		  /*--- This function is (so far) empty for linear problems ---*/
-		  else if (!linear_analysis)
-			  solver_container[MainSolver]->Compute_NodalStressRes(geometry, solver_container, numerics, config);
+		  else if (!linear_analysis && predicted_de){
+		    /*--- Compute the predicted Jacobian ---*/
+		    solver_container[MainSolver]->Compute_StiffMatrix_NodalStressRes(geometry, solver_container, numerics, config);
+		  }
+
 
 	  }
 

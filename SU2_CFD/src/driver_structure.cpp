@@ -1089,7 +1089,9 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
 	switch (config->GetGeometricConditions()) {
     	case SMALL_DEFORMATIONS :
     		switch (config->GetMaterialModel()) {
-    			case LINEAR_ELASTIC: numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_LinearElasticity_Adj(nDim, nVar_FEM, config); break;
+    			case LINEAR_ELASTIC:
+    			  numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_LinearElasticity_Adj(nDim, nVar_FEM, config);
+    			  break;
     			case NEO_HOOKEAN : cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
     			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
     		}
@@ -1099,20 +1101,32 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
 				case LINEAR_ELASTIC: cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
     			case NEO_HOOKEAN :
     				switch (config->GetMaterialCompressibility()) {
-    					case COMPRESSIBLE_MAT : numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Comp_Adj(nDim, nVar_FEM, config); break;
-    					case INCOMPRESSIBLE_MAT : numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config); break;
+    					case COMPRESSIBLE_MAT:
+    					  numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config);
+    					  numerics_container[MESH_0][ADJFEA_SOL][FEA_ADJ] = new CFEM_NeoHookean_Comp_Adj(nDim, nVar_FEM, config);
+    					  break;
+    					case INCOMPRESSIBLE_MAT :
+    					  numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config);
+    					  numerics_container[MESH_0][ADJFEA_SOL][FEA_ADJ] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config);
+    					  break;
     					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
     				}
     				break;
         			case KNOWLES:
         				switch (config->GetMaterialCompressibility()) {
-        					case NEARLY_INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config); break;
+        					case NEARLY_INCOMPRESSIBLE_MAT :
+        					  numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config);
+        					  numerics_container[MESH_0][ADJFEA_SOL][FEA_ADJ] = new CFEM_Knowles_NearInc(nDim, nVar_FEM, config);
+        					  break;
         					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
         				}
         				break;
         			case IDEAL_DE:
         				switch (config->GetMaterialCompressibility()) {
-        					case NEARLY_INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_IdealDE(nDim, nVar_FEM, config); break;
+        					case NEARLY_INCOMPRESSIBLE_MAT :
+        					  numerics_container[MESH_0][ADJFEA_SOL][FEA_TERM] = new CFEM_IdealDE(nDim, nVar_FEM, config);
+        					  numerics_container[MESH_0][ADJFEA_SOL][FEA_ADJ] = new CFEM_IdealDE(nDim, nVar_FEM, config);
+        					  break;
         					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
         				}
         				break;
@@ -1125,7 +1139,10 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
 
 	bool de_effects = config->GetDE_Effects();
 
-	if (de_effects) numerics_container[MESH_0][ADJFEA_SOL][DE_TERM] = new CFEM_DielectricElastomer_Adj(nDim, nVar_FEM, config);
+	if (de_effects){
+	  numerics_container[MESH_0][ADJFEA_SOL][DE_TERM] = new CFEM_DielectricElastomer(nDim, nVar_FEM, config);
+	  numerics_container[MESH_0][ADJFEA_SOL][DE_ADJ] = new CFEM_DielectricElastomer_Adj(nDim, nVar_FEM, config);
+	}
 
   }
 
@@ -1380,7 +1397,9 @@ void CSingleZoneDriver::Run(CIteration **iteration_container,
   
   iteration_container[ZONE_0]->Output();      /*--- Does nothing for now. ---*/
   
-  iteration_container[ZONE_0]->Postprocess(); /*--- Does nothing for now. ---*/
+  iteration_container[ZONE_0]->Postprocess(output, integration_container, geometry_container,
+                                      solver_container, numerics_container, config_container,
+                                      surface_movement, grid_movement, FFDBox, ZONE_0);
   
 }
 
@@ -1445,7 +1464,9 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
     
     iteration_container[iZone]->Output();      /*--- Does nothing for now. ---*/
     
-    iteration_container[iZone]->Postprocess(); /*--- Does nothing for now. ---*/
+    iteration_container[iZone]->Postprocess(output, integration_container, geometry_container,
+                                       solver_container, numerics_container, config_container,
+                                       surface_movement, grid_movement, FFDBox, iZone);
     
   }
   
@@ -1524,7 +1545,9 @@ void CSpectralDriver::Run(CIteration **iteration_container,
     
     iteration_container[iZone]->Output();      /*--- Does nothing for now. ---*/
     
-    iteration_container[iZone]->Postprocess(); /*--- Does nothing for now. ---*/
+    iteration_container[iZone]->Postprocess(output, integration_container, geometry_container,
+                                       solver_container, numerics_container, config_container,
+                                       surface_movement, grid_movement, FFDBox, iZone);
     
   }
   

@@ -143,7 +143,8 @@ void CConfig::SetPointersNull(void) {
 
   Load_Dir = NULL;	          Load_Dir_Value = NULL;          Load_Dir_Multiplier = NULL;
   Load_Sine_Dir = NULL;	      Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
-  Electric_Field_Mod = NULL;  Electric_Field_Dir = NULL;
+  Electric_Field_Mod = NULL;  Electric_Field_Dir = NULL;      Electric_Field_Max = NULL;
+  Electric_Field_Min = NULL;  Electric_Field_Del = NULL;
 
   /*--- Miscellaneous/unsorted ---*/
 
@@ -1131,12 +1132,21 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("DE_EFFECTS", DE_Effects, false);
   /*!\brief DE_MODULUS \n DESCRIPTION: Value of the Dielectric elastomer modulus \n DEFAULT 1 */
   addDoubleOption("DE_MODULUS", DE_Modulus, 1);
-  /*!\brief DE_VOLTAGE \n DESCRIPTION: Value of the Dielectric elastomer voltage \n DEFAULT 1 */
-  addDoubleOption("DE_VOLTAGE", DE_Voltage, 1);
   /* DESCRIPTION: Modulus of the electric fields */
   addDoubleListOption("ELECTRIC_FIELD_MOD", nElectric_Field, Electric_Field_Mod);
+  /* DESCRIPTION: Maximum value of the modulus of the electric field */
+  addDoubleListOption("ELECTRIC_FIELD_MAX", nElectric_Field_Max, Electric_Field_Max);
+  /* DESCRIPTION: Minimum value of the modulus of the electric field */
+  addDoubleListOption("ELECTRIC_FIELD_MIN", nElectric_Field_Min, Electric_Field_Min);
   /* DESCRIPTION: Direction of the electic fields */
   addDoubleListOption("ELECTRIC_FIELD_DIR", nDim_Electric_Field, Electric_Field_Dir);
+  /* DESCRIPTION: Direction of the electic fields */
+  addDoubleOption("ELECTRIC_FIELD_CHANGE_RATE", DE_Rate, 1);
+
+  /*  DESCRIPTION: Include DE effects
+  *  Options: NO, YES \ingroup Config */
+  addBoolOption("DE_PREDICT_ADJOINT", DE_Predicted, false);
+
 
   /* DESCRIPTION: Identify the axis that delimits the distribution of DEs */
   addEnumOption("ELECTRIC_FIELD_AXIS", Axis_EField, Axis_Orientation_Map, X_AXIS);
@@ -2449,6 +2459,16 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (nElectric_Field == 0) {
 	nElectric_Field = 1;
 	Electric_Field_Mod = new su2double[1]; Electric_Field_Mod[0] = 0.0;
+  }
+
+  if (nElectric_Field_Max == 0) {
+  nElectric_Field_Max = 1;
+  Electric_Field_Max = new su2double[1]; Electric_Field_Max[0] = 1000.0;    // Default value
+  }
+
+  if (nElectric_Field_Min == 0) {
+  nElectric_Field_Min = 1;
+  Electric_Field_Min = new su2double[1]; Electric_Field_Min[0] = 0.0;
   }
 
   if (nDel_EField == 0) {

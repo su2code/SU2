@@ -603,8 +603,9 @@ private:
 	PoissonRatio,						/*!< \brief Poisson's ratio. */
 	MaterialDensity,								/*!< \brief Material density. */
 	DE_Modulus,							/*!< \brief Dielectric elastomer modulus. */
-	DE_Voltage;							/*!< \brief Dielectric elastomer voltage. */
+	DE_Rate;							  /*!< \brief Dielectric elastomer maximum rate of change. */
 	bool DE_Effects; 						/*!< Application of DE effects to FE analysis */
+  bool DE_Predicted;            /*!< Application of DE effects to FE analysis */
 	bool RefGeom; 						/*!< Read a reference geometry for optimization purposes. */
 	bool Structural_Adj; 						/*!< Decide whether a structural adjoint iteration needs to be run (temporary). */
 	string RefGeom_FEMFileName;    			/*!< \brief File name for reference geometry. */
@@ -700,10 +701,14 @@ private:
   su2double *Int_Coeffs;		/*!< \brief Time integration coefficients for structural method. */
   unsigned short nElectric_Field,	/*!< \brief Number of different values for the electric field in the membrane. */
   nDim_Electric_Field;				/*!< \brief Dimensionality of the problem. */
+  unsigned short nElectric_Field_Max, /*!< \brief Number of different values for the max electric field in the membrane. */
+  nElectric_Field_Min;                  /*!< \brief Number of different values for the min electric field in the membrane. */
   unsigned short nDel_EField;		/*!< \brief Number of delimiters for the electric field (must be nElectric_Field + 1). */
   unsigned short Axis_EField;		/*!< \brief Axis along which the delimiters are set. */
   su2double *Electric_Field_Mod, 	/*!< \brief Values of the modulus of the electric field. */
   *Electric_Field_Dir;				/*!< \brief Direction of the electric field. */
+  su2double *Electric_Field_Max,  /*!< \brief Maximum value of the modulus of the electric field. */
+  *Electric_Field_Min;            /*!< \brief Minimum value of the modulus of the electric field. */
   su2double *Electric_Field_Del;	/*!< \brief Values of the delimiters of the Electric Field (along axis Axis_EField). */
   bool Sigmoid_Load,		/*!< \brief Apply the load using a sigmoid. */
   Ramp_Load;				/*!< \brief Apply the load with linear increases. */
@@ -1580,6 +1585,13 @@ public:
 
 	bool GetDE_Effects(void);
 
+  /*!
+    * \brief Decide whether to predict the DE effects for the next time step.
+    * \return <code>TRUE</code> if the DE effects are to be applied, <code>FALSE</code> otherwise.
+    */
+
+  bool GetDE_Predicted(void);
+
 	/*!
 	 * \brief Get the value of the DE modulus.
 	 * \return Value of the DE modulus.
@@ -1587,10 +1599,10 @@ public:
 	su2double GetDE_Modulus(void);
 
 	/*!
-	 * \brief Get the value of the DE voltage.
-	 * \return Value of the DE voltage.
+	 * \brief Get the value of the DE rate of change from one iter to the next.
+	 * \return Value of the DE rate of change from one iter to the next.
 	 */
-	su2double GetDE_Voltage(void);
+	su2double GetDE_Rate(void);
 
 	/*!
 	 * \brief Get the kind of design variable for FEA.
@@ -5501,6 +5513,21 @@ public:
 	 * \return Alpha coefficient for the Runge-Kutta integration scheme.
 	 */
 	su2double Get_Electric_Field_Mod(unsigned short val_coeff);
+
+  /*!
+   * \brief Get the maximum value allowed for the electric field modulus.
+   * \param[in] val_coeff - Index of the coefficient.
+   * \return Alpha coefficient for the Runge-Kutta integration scheme.
+   */
+  su2double Get_Electric_Field_Max(unsigned short val_coeff);
+
+  /*!
+   * \brief Get the minimum value allowed for the electric field modulus.
+   * \param[in] val_coeff - Index of the coefficient.
+   * \return Alpha coefficient for the Runge-Kutta integration scheme.
+   */
+  su2double Get_Electric_Field_Min(unsigned short val_coeff);
+
 
 	/*!
 	 * \brief Get the number of delimiters for the electric field.

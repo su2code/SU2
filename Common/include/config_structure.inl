@@ -133,9 +133,11 @@ inline su2double CConfig::GetElasticyMod(void) { return ElasticyMod; }
 
 inline bool CConfig::GetDE_Effects(void) { return DE_Effects; }
 
+inline bool CConfig::GetDE_Predicted(void) { return DE_Predicted; }
+
 inline su2double CConfig::GetDE_Modulus(void) { return DE_Modulus; }
 
-inline su2double CConfig::GetDE_Voltage(void) { return DE_Voltage; }
+inline su2double CConfig::GetDE_Rate(void) { return DE_Rate; }
 
 inline unsigned short CConfig::GetDV_FEA(void) { return Kind_DV_FEA; }
 
@@ -1182,6 +1184,10 @@ inline unsigned short CConfig::GetnElectric_Field(void) { return nElectric_Field
 inline unsigned short CConfig::GetnDim_Electric_Field(void) { return nDim_Electric_Field; }
 
 inline su2double CConfig::Get_Electric_Field_Mod(unsigned short val_coeff) { return Electric_Field_Mod[val_coeff]; }
+
+inline su2double CConfig::Get_Electric_Field_Max(unsigned short val_coeff) { return Electric_Field_Max[val_coeff]; }
+
+inline su2double CConfig::Get_Electric_Field_Min(unsigned short val_coeff) { return Electric_Field_Min[val_coeff]; }
 
 inline void CConfig::Set_Electric_Field_Mod(unsigned short val_coeff, su2double val_el_field) { Electric_Field_Mod[val_coeff] = val_el_field; }
 

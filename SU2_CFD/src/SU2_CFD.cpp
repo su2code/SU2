@@ -292,7 +292,7 @@ int main(int argc, char *argv[]) {
     ExtIter = config_container[ZONE_0]->GetUnst_RestartIter();
   
   /*--- Check for a dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
-  if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY
+  if ((config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY || config_container[ZONE_0]->GetKind_Solver() == ADJ_ELASTICITY)
 		  && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
 	  	  ExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
 

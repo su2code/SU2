@@ -1481,6 +1481,12 @@ public:
   virtual void Add_MaxwellStress(CElement *element_container, CConfig *config);
 
   /*!
+   * \brief A virtual member to set the electric field
+   * \param[in] EField_DV - New electric field computed by adjoint methods.
+   */
+  virtual void Set_ElectricField(unsigned short i_DV, su2double val_EField);
+
+  /*!
    * \brief A virtual member to compute the mass matrix
    * \param[in] element_container - Element structure for the particular element integrated.
    */
@@ -4006,6 +4012,8 @@ public:
 
 	virtual void Add_MaxwellStress(CElement *element_container, CConfig *config);
 
+  virtual void Set_ElectricField(unsigned short i_DV, su2double val_EField);
+
 };
 
 /*!
@@ -4110,7 +4118,7 @@ protected:
 	bool maxwell_stress;			/*!< \brief Consider the effects of the dielectric loads */
 
 	su2double *EField_Ref_Unit,			/*!< \brief Electric Field, unitary, in the reference configuration. */
-	*EField_Ref_Mod;					/*!< \brief Electric Field, modulus, in the reference configuration. */
+	*EField_Ref_Mod;					      /*!< \brief Electric Field, modulus, in the reference configuration. */
 	su2double *EField_Curr_Unit;		/*!< \brief Auxiliary vector for the unitary Electric Field in the current configuration. */
 	unsigned short nElectric_Field,
 	nDim_Electric_Field;
@@ -4150,6 +4158,8 @@ public:
 	void Compute_Isochoric_F_b(void);
 
 	void Assign_cijkl_D_Mat(void);
+
+  void Set_ElectricField(unsigned short i_DV, su2double val_EField);
 
 	su2double deltaij(unsigned short iVar, unsigned short jVar);
 
