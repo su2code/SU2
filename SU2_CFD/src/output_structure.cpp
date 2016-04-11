@@ -83,8 +83,8 @@ COutput::~COutput(void) {
   /* delete pointers initialized at construction*/
   /* Coords and Conn_*(Connectivity) have their own dealloc functions */
   /* Data is taken care of in DeallocateSolution function */
-  /* delete[] Volume causes error in fsi test cases TODO: fix this*/
-  if(Volume!=NULL)      delete [] Volume;
+  /* delete[] Volume causes error in some test cases TODO: fix this*/
+ // if(Volume!=NULL)      delete [] Volume;
 
 }
 
