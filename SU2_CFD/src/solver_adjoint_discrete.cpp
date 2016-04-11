@@ -371,8 +371,9 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
   case MASS_FLOW_RATE:
     ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
     break;
+  // only valid for stator-rotor single stage
   case TOTAL_EFFICIENCY:
-		ObjFunc_Value = direct_solver->GetTotalTotalEfficiency(0);
+		ObjFunc_Value = direct_solver->GetTotalTotalEfficiency(2);
 		break;
 	case TOTAL_PRESSURE_LOSS:
 		ObjFunc_Value = direct_solver->GetTotalPressureLoss(0);
@@ -380,8 +381,9 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
 	case KINETIC_ENERGY_LOSS:
 		ObjFunc_Value = direct_solver->GetKineticEnergyLoss(0);
 		break;
+	// only valid for stator-rotor single stage
 	case TOTAL_STATIC_EFFICIENCY:
-		ObjFunc_Value = direct_solver->GetTotalStaticEfficiency(0);
+		ObjFunc_Value = direct_solver->GetTotalStaticEfficiency(2);
 		break;
 	case ENTROPY_GENERATION:
 		ObjFunc_Value = direct_solver->GetEntropyGen(0);
