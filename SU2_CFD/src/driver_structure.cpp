@@ -332,7 +332,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   unsigned short iMGlevel;
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
-  poisson, wave, fea, heat, fem,
+  poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj;
 
@@ -343,7 +343,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   spalart_allmaras = false;  menter_sst      = false;
   poisson          = false;  neg_spalart_allmaras = false;
   wave             = false;  disc_adj        = false;
-  fea              = false;  fem = false;
+  fem = false;
   heat             = false;
   transition       = false;
   template_solver  = false;
@@ -358,7 +358,6 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   case POISSON_EQUATION: poisson = true; break;
   case WAVE_EQUATION: wave = true; break;
   case HEAT_EQUATION: heat = true; break;
-  case LINEAR_ELASTICITY: fea = true; break;
   case FEM_ELASTICITY: fem = true; break;
   case ADJ_EULER : euler = true; adj_euler = true; break;
   case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
@@ -407,7 +406,7 @@ and potential are incompatible, they use the same position in sol container ---*
     if (heat) {
       delete solver_container[iMGlevel][HEAT_SOL];
     }
-    if (fea or fem) {
+    if (fem) {
       delete solver_container[iMGlevel][FEA_SOL];
     }
 
@@ -488,7 +487,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   euler, adj_euler,
   ns, adj_ns,
   turbulent, adj_turb,
-  poisson, wave, fea, fem, heat, template_solver, transition, disc_adj;
+  poisson, wave, fem, heat, template_solver, transition, disc_adj;
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -497,7 +496,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   poisson          = false; disc_adj         = false;
   wave             = false;
   heat             = false;
-  fea              = false; fem = false;
+  fem = false;
   transition       = false;
   template_solver  = false;
 
@@ -510,7 +509,6 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
-    case LINEAR_ELASTICITY: fea = true; break;
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
@@ -531,7 +529,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   if (poisson) delete integration_container[POISSON_SOL];
   if (wave) delete integration_container[WAVE_SOL];
   if (heat) delete integration_container[HEAT_SOL];
-  if (fea || fem) delete integration_container[FEA_SOL];
+  if (fem) delete integration_container[FEA_SOL];
 
   /*--- Allocate solution for adjoint problem ---*/
   if (adj_euler || adj_ns || disc_adj) delete integration_container[ADJFLOW_SOL];
@@ -1278,7 +1276,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   spalart_allmaras, neg_spalart_allmaras, menter_sst,
   poisson,
   wave,
-  fea, fem,
+  fem,
   heat,
   transition,
   template_solver;
@@ -1291,7 +1289,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   euler            = false;   ns               = false;   turbulent        = false;
   poisson          = false;
   adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
-  wave             = false;   heat             = false;   fea              = false;  fem        = false;
+  wave             = false;   heat             = false;   fem        = false;
   spalart_allmaras = false; neg_spalart_allmaras = false; menter_sst       = false;
   transition       = false;
   template_solver  = false;
@@ -1305,7 +1303,6 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
-    case LINEAR_ELASTICITY: fea = true; break;
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
@@ -1626,7 +1623,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   }
 
   /*--- Solver definition for the FEA problem ---*/
-  if (fea || fem) {
+  if (fem) {
 
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     delete numerics_container[MESH_0][FEA_SOL][VISC_TERM];
