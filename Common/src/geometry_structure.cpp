@@ -89,11 +89,11 @@ CGeometry::~CGeometry(void) {
   unsigned long iElem, iElem_Bound, iFace, iVertex, iEdge;
   unsigned short iMarker;
   
-  if (elem != NULL) {
-    for (iElem = 0; iElem < nElem; iElem++)
-      if (elem[iElem] != NULL) delete elem[iElem];
-    delete[] elem;
-  }
+//  if (elem != NULL) {
+//    for (iElem = 0; iElem < nElem; iElem++)
+//      if (elem[iElem] != NULL) delete elem[iElem];
+//    delete[] elem;
+//  }
   
   if (bound != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -4685,6 +4685,8 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
     
   }
   
+  delete [] Marker_All_SendRecv_Copy;
+  
 }
 
 void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone) {
@@ -4717,7 +4719,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long boundary_marker_count = 0;
   unsigned long node_count = 0;
   unsigned long loc_element_count = 0;
-  bool elem_reqd = false;
   
   /*--- Initialize counters for local/global points & elements ---*/
 #ifdef HAVE_MPI
@@ -4932,6 +4933,16 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #endif
 #endif
   
+  /*--- Read the elements in the file with two loops. The first finds
+   elements that live in the local partition and builds the adjacency
+   for ParMETIS (if parallel). Once we know how many elements we have
+   on the local partition, we allocate memory and store those elements. ---*/
+  
+  map<unsigned long,bool> ElemIn;
+  map<unsigned long, bool>::const_iterator MI;
+  
+  /*--- Open the mesh file and find the section with the elements. ---*/
+  
   mesh_file.open(cstr, ios::in);
 
   /*--- If more than one, find the zone in the mesh file  ---*/
@@ -4965,19 +4976,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
       cout << Global_nElem << " interior elements before parallel partitioning." << endl;
       
-      /*--- Allocate space for elements ---*/
-      
-      /*--- MEMORY WARNING: not scalable. Should allocate only enough space for local elems. Could do this with two passes
-       that first fill a map with those we need to store and then a second pass to load them up. ---*/
-      elem = new CPrimalGrid*[nElem];
-      for (unsigned long iElem = 0; iElem < nElem; iElem++) elem[iElem] = NULL;
-
-      /*--- Set up the global to local element mapping. ---*/
-      Global_to_local_elem.clear();
-      
-      if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-        cout << "Distributing elements across all ranks." << endl;
-      
       /*--- Loop over all the volumetric elements and store any element that
        contains at least one of an owned node for this rank (i.e., there will
        be element redundancy, since multiple ranks will store the same elems
@@ -4989,7 +4987,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         istringstream elem_line(text_line);
         
         elem_line >> VTK_Type;
-        elem_reqd = false;
         
         /*--- Decide whether this rank needs each element. If so, build the
          adjacency arrays needed by ParMETIS and store the element connectivity.
@@ -5019,7 +5016,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  entire element to be added to our list for this rank, and 
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
-                elem_reqd = true;
+                ElemIn[ielem_div] = true;
                 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
@@ -5033,17 +5030,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               }
             }
             
-            /*--- If any of the nodes were within the linear partition, the
-             element is added to our element data structure. ---*/
-            
-            if (elem_reqd) {
-              Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CTriangle(vnodes_triangle[0],
-                                                      vnodes_triangle[1],
-                                                      vnodes_triangle[2], 2);
-              loc_element_count++;
-              nelem_triangle++;
-            }
+            MI = ElemIn.find(ielem_div);
+            if (MI != ElemIn.end()) loc_element_count++;
             
             break;
             
@@ -5070,7 +5058,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  entire element to be added to our list for this rank, and
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
-                elem_reqd = true;
+                ElemIn[ielem_div] = true;
                 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
@@ -5083,19 +5071,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               }
             }
             
-            /*--- If any of the nodes were within the linear partition, the
-             element is added to our element data structure. ---*/
-            
-            if (elem_reqd) {
-              Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CQuadrilateral(vnodes_quad[0],
-                                                           vnodes_quad[1],
-                                                           vnodes_quad[2],
-                                                           vnodes_quad[3], 2);
-              loc_element_count++;
-              nelem_quad++;
-            }
-            
+            MI = ElemIn.find(ielem_div);
+            if (MI != ElemIn.end()) loc_element_count++;
+
             break;
             
           case TETRAHEDRON:
@@ -5121,7 +5099,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  entire element to be added to our list for this rank, and
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
-                elem_reqd = true;
+                ElemIn[ielem_div] = true;
                 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
@@ -5135,18 +5113,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               }
             }
             
-            /*--- If any of the nodes were within the linear partition, the
-             element is added to our element data structure. ---*/
-            
-            if (elem_reqd) {
-              Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CTetrahedron(vnodes_tetra[0],
-                                                         vnodes_tetra[1],
-                                                         vnodes_tetra[2],
-                                                         vnodes_tetra[3]);
-              loc_element_count++;
-              nelem_tetra++;
-            }
+            MI = ElemIn.find(ielem_div);
+            if (MI != ElemIn.end()) loc_element_count++;
             
             break;
             
@@ -5177,7 +5145,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  entire element to be added to our list for this rank, and
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
-                elem_reqd = true;
+                ElemIn[ielem_div] = true;
                 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
@@ -5195,23 +5163,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #endif
               }
             }
-            
-            /*--- If any of the nodes were within the linear partition, the
-             element is added to our element data structure. ---*/
-            
-            if (elem_reqd) {
-              Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CHexahedron(vnodes_hexa[0],
-                                                        vnodes_hexa[1],
-                                                        vnodes_hexa[2],
-                                                        vnodes_hexa[3],
-                                                        vnodes_hexa[4],
-                                                        vnodes_hexa[5],
-                                                        vnodes_hexa[6],
-                                                        vnodes_hexa[7]);
-              loc_element_count++;
-              nelem_hexa++;
-            }
+
+            MI = ElemIn.find(ielem_div);
+            if (MI != ElemIn.end()) loc_element_count++;
             
             break;
             
@@ -5240,7 +5194,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  entire element to be added to our list for this rank, and
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
-                elem_reqd = true;
+                ElemIn[ielem_div] = true;
                 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
@@ -5258,21 +5212,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #endif
               }
             }
-            
-            /*--- If any of the nodes were within the linear partition, the
-             element is added to our element data structure. ---*/
-            
-            if (elem_reqd) {
-              Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CPrism(vnodes_prism[0],
-                                                   vnodes_prism[1],
-                                                   vnodes_prism[2],
-                                                   vnodes_prism[3],
-                                                   vnodes_prism[4],
-                                                   vnodes_prism[5]);
-              loc_element_count++;
-              nelem_prism++;
-            }
+
+            MI = ElemIn.find(ielem_div);
+            if (MI != ElemIn.end()) loc_element_count++;
             
             break;
             
@@ -5300,7 +5242,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  entire element to be added to our list for this rank, and
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
-                elem_reqd = true;
+                ElemIn[ielem_div] = true;
                 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
@@ -5321,22 +5263,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               }
             }
             
-            /*--- If any of the nodes were within the linear partition, the
-             element is added to our element data structure. ---*/
-            
-            if (elem_reqd) {
-              Global_to_local_elem[element_count]=loc_element_count;
-              elem[loc_element_count] = new CPyramid(vnodes_pyramid[0],
-                                                     vnodes_pyramid[1],
-                                                     vnodes_pyramid[2],
-                                                     vnodes_pyramid[3],
-                                                     vnodes_pyramid[4]);
-              loc_element_count++;
-              nelem_pyramid++;
-            }
+            MI = ElemIn.find(ielem_div);
+            if (MI != ElemIn.end()) loc_element_count++;
             
             break;
-            
         }
         ielem_div++;
         element_count++;
@@ -5347,18 +5277,21 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   mesh_file.close();
   
-    if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-    cout << "Calling the partitioning functions." << endl;
-    
   /*--- Store the number of local elements on each rank after determining
    which elements must be kept in the loop above. ---*/
   
   no_of_local_elements = loc_element_count;
   
+  /*--- Begin dealing with the partitioning by adjusting the adjacency
+   information and clear out memory where possible. ---*/
+  
+  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+    cout << "Calling the partitioning functions." << endl;
+  
   /*--- Post process the adjacency information in order to get it into the
    proper format before sending the data to ParMETIS. We need to remove
    repeats and adjust the size of the array for each local node. ---*/
-
+  
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
   
@@ -5409,7 +5342,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   adj_elem_size = xadj[npoint_procs[rank]];
   adjacency = new idx_t [adj_elem_size];
   copy(adjac_vec.begin(), adjac_vec.end(), adjacency);
-
+  
   xadj_size = npoint_procs[rank]+1;
   adjacency_size = adj_elem_size;
   
@@ -5421,6 +5354,218 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #endif
 #endif
   
+  
+  /*--- Open the mesh file again and now that we know the number of
+   elements needed on each partition, allocate memory for them. ---*/
+  
+  mesh_file.open(cstr, ios::in);
+  
+  /*--- If more than one, find the zone in the mesh file  ---*/
+  
+  if (val_nZone > 1 && !time_spectral) {
+    while (getline (mesh_file,text_line)) {
+      /*--- Search for the current domain ---*/
+      position = text_line.find ("IZONE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,6);
+        unsigned short jDomain = atoi(text_line.c_str());
+        if (jDomain == val_iZone+1) {
+          if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << " elements:" << endl;
+          break;
+        }
+      }
+    }
+  }
+  
+  while (getline (mesh_file, text_line)) {
+    
+    /*--- Read the information about inner elements ---*/
+    
+    position = text_line.find ("NELEM=",0);
+    if (position != string::npos) {
+      
+      /*--- Allocate space for elements ---*/
+      elem = new CPrimalGrid*[no_of_local_elements];
+      
+      /*--- Set up the global to local element mapping. ---*/
+      Global_to_local_elem.clear();
+      
+      if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+        cout << "Distributing elements across all ranks." << endl;
+      
+      /*--- Loop over all the volumetric elements and store any element that
+       contains at least one of an owned node for this rank (i.e., there will
+       be element redundancy, since multiple ranks will store the same elems
+       on the boundaries of the initial linear partitioning. ---*/
+      
+      element_count=0; loc_element_count=0; ielem_div=0;
+      while (ielem_div < nElem) {
+        getline(mesh_file, text_line);
+        istringstream elem_line(text_line);
+        
+        /*--- If this element was marked as required, check type and store. ---*/
+        
+        map<unsigned long, bool>::const_iterator MI = ElemIn.find(ielem_div);
+        if (MI != ElemIn.end()) {
+          
+          elem_line >> VTK_Type;
+          
+          switch(VTK_Type) {
+              
+            case TRIANGLE:
+              
+              /*--- Load the connectivity for this element. ---*/
+              
+              elem_line >> vnodes_triangle[0];
+              elem_line >> vnodes_triangle[1];
+              elem_line >> vnodes_triangle[2];
+              
+              /*--- If any of the nodes were within the linear partition, the
+               element is added to our element data structure. ---*/
+              
+              Global_to_local_elem[element_count] = loc_element_count;
+              elem[loc_element_count] = new CTriangle(vnodes_triangle[0],
+                                                      vnodes_triangle[1],
+                                                      vnodes_triangle[2], 2);
+              loc_element_count++;
+              nelem_triangle++;
+              
+              break;
+              
+            case QUADRILATERAL:
+              
+              /*--- Load the connectivity for this element. ---*/
+              
+              elem_line >> vnodes_quad[0];
+              elem_line >> vnodes_quad[1];
+              elem_line >> vnodes_quad[2];
+              elem_line >> vnodes_quad[3];
+              
+              /*--- If any of the nodes were within the linear partition, the
+               element is added to our element data structure. ---*/
+              
+              Global_to_local_elem[element_count] = loc_element_count;
+              elem[loc_element_count] = new CQuadrilateral(vnodes_quad[0],
+                                                           vnodes_quad[1],
+                                                           vnodes_quad[2],
+                                                           vnodes_quad[3], 2);
+              loc_element_count++;
+              nelem_quad++;
+              
+              break;
+              
+            case TETRAHEDRON:
+              
+              /*--- Load the connectivity for this element. ---*/
+              
+              elem_line >> vnodes_tetra[0];
+              elem_line >> vnodes_tetra[1];
+              elem_line >> vnodes_tetra[2];
+              elem_line >> vnodes_tetra[3];
+              
+              /*--- If any of the nodes were within the linear partition, the
+               element is added to our element data structure. ---*/
+              
+              Global_to_local_elem[element_count] = loc_element_count;
+              elem[loc_element_count] = new CTetrahedron(vnodes_tetra[0],
+                                                         vnodes_tetra[1],
+                                                         vnodes_tetra[2],
+                                                         vnodes_tetra[3]);
+              loc_element_count++;
+              nelem_tetra++;
+              
+              break;
+              
+            case HEXAHEDRON:
+              
+              /*--- Load the connectivity for this element. ---*/
+              
+              elem_line >> vnodes_hexa[0];
+              elem_line >> vnodes_hexa[1];
+              elem_line >> vnodes_hexa[2];
+              elem_line >> vnodes_hexa[3];
+              elem_line >> vnodes_hexa[4];
+              elem_line >> vnodes_hexa[5];
+              elem_line >> vnodes_hexa[6];
+              elem_line >> vnodes_hexa[7];
+              
+              /*--- If any of the nodes were within the linear partition, the
+               element is added to our element data structure. ---*/
+              
+              Global_to_local_elem[element_count] = loc_element_count;
+              elem[loc_element_count] = new CHexahedron(vnodes_hexa[0],
+                                                        vnodes_hexa[1],
+                                                        vnodes_hexa[2],
+                                                        vnodes_hexa[3],
+                                                        vnodes_hexa[4],
+                                                        vnodes_hexa[5],
+                                                        vnodes_hexa[6],
+                                                        vnodes_hexa[7]);
+              loc_element_count++;
+              nelem_hexa++;
+              
+              break;
+              
+            case PRISM:
+              
+              /*--- Load the connectivity for this element. ---*/
+              
+              elem_line >> vnodes_prism[0];
+              elem_line >> vnodes_prism[1];
+              elem_line >> vnodes_prism[2];
+              elem_line >> vnodes_prism[3];
+              elem_line >> vnodes_prism[4];
+              elem_line >> vnodes_prism[5];
+              
+              /*--- If any of the nodes were within the linear partition, the
+               element is added to our element data structure. ---*/
+              
+              Global_to_local_elem[element_count] = loc_element_count;
+              elem[loc_element_count] = new CPrism(vnodes_prism[0],
+                                                   vnodes_prism[1],
+                                                   vnodes_prism[2],
+                                                   vnodes_prism[3],
+                                                   vnodes_prism[4],
+                                                   vnodes_prism[5]);
+              loc_element_count++;
+              nelem_prism++;
+              
+              break;
+              
+            case PYRAMID:
+              
+              /*--- Load the connectivity for this element. ---*/
+              
+              elem_line >> vnodes_pyramid[0];
+              elem_line >> vnodes_pyramid[1];
+              elem_line >> vnodes_pyramid[2];
+              elem_line >> vnodes_pyramid[3];
+              elem_line >> vnodes_pyramid[4];
+              
+              /*--- If any of the nodes were within the linear partition, the
+               element is added to our element data structure. ---*/
+              
+              Global_to_local_elem[element_count]=loc_element_count;
+              elem[loc_element_count] = new CPyramid(vnodes_pyramid[0],
+                                                     vnodes_pyramid[1],
+                                                     vnodes_pyramid[2],
+                                                     vnodes_pyramid[3],
+                                                     vnodes_pyramid[4]);
+              loc_element_count++;
+              nelem_pyramid++;
+              
+              break;
+              
+          }
+        }
+        ielem_div++;
+        element_count++;
+      }
+      if (element_count == nElem) break;
+    }
+  }
+  
+  mesh_file.close();
   
   /*--- For now, the boundary marker information is still read by the
    master node alone (and eventually distributed by the master as well).
