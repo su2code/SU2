@@ -1105,9 +1105,11 @@ inline void CSolver::DE_Sensitivity(CGeometry *geometry, CSolver **solver_contai
 
 inline unsigned short CSolver::Get_iElem_iDe(unsigned long iElem){ return 0; }
 
-inline void CSolver::Set_EField_Mod(su2double val_EField, unsigned short i_DV){ }
+inline void CSolver::Set_DV_Val(su2double val_EField, unsigned short i_DV){ }
 
-inline su2double CSolver::Get_EField_Mod(unsigned short i_DV){ return 0.0; }
+inline su2double CSolver::Get_DV_Val(unsigned short i_DV){ return 0.0; }
+
+inline su2double CSolver::Get_val_I(void){ return 0.0; }
 
 inline su2double CSolver::Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar){ return 0.0; }
 
@@ -1116,9 +1118,9 @@ inline su2double CFEM_ElasticitySolver::Get_MassMatrix(unsigned long iPoint, uns
 
 inline unsigned short CFEM_ElasticitySolver::Get_iElem_iDe(unsigned long iElem){ return iElem_iDe[iElem]; }
 
-inline void CFEM_ElasticitySolver::Set_EField_Mod(su2double val_EField, unsigned short i_DV){ EField_Mod[i_DV] = val_EField;}
+inline void CFEM_ElasticitySolver::Set_DV_Val(su2double val_EField, unsigned short i_DV){ DV_Val[i_DV] = val_EField;}
 
-inline su2double CFEM_ElasticitySolver::Get_EField_Mod(unsigned short i_DV){ return EField_Mod[i_DV]; }
+inline su2double CFEM_ElasticitySolver::Get_DV_Val(unsigned short i_DV){ return DV_Val[i_DV]; }
 
 inline su2double CFEM_ElasticitySolver::GetRes_FEM(unsigned short val_var) { return Conv_Check[val_var]; }
 
@@ -1140,9 +1142,11 @@ inline void CFEM_ElasticitySolver::SetFSI_ConvValue(unsigned short val_index, su
 
 inline su2double CFEM_ElasticitySolver::GetFSI_ConvValue(unsigned short val_index){ return FSI_Conv[val_index]; }
 
-inline void CFEM_ElasticitySolver_Adj::Set_EField_Mod(su2double val_EField, unsigned short i_DV){ EField_Mod[i_DV] = val_EField;}
+inline void CFEM_ElasticitySolver_Adj::Set_DV_Val(su2double val_EField, unsigned short i_DV){ DV_Val[i_DV] = val_EField;}
 
-inline su2double CFEM_ElasticitySolver_Adj::Get_EField_Mod(unsigned short i_DV){ return EField_Mod[i_DV]; }
+inline su2double CFEM_ElasticitySolver_Adj::Get_DV_Val(unsigned short i_DV){ return DV_Val[i_DV]; }
+
+inline su2double CFEM_ElasticitySolver_Adj::Get_val_I(void){ return val_I; }
 
 inline su2double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
 

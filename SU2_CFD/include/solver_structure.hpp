@@ -2576,14 +2576,20 @@ public:
    * \param[in] i_DV - number of design variable.
    * \param[in] val_EField - value of the design variable.
    */
-  virtual void Set_EField_Mod(su2double val_EField, unsigned short i_DV);
+  virtual void Set_DV_Val(su2double val_EField, unsigned short i_DV);
 
   /*!
    * \brief A virtual member.
    * \param[in] i_DV - number of design variable.
-   * \param[out] EField_Mod - value of the design variable.
+   * \param[out] DV_Val - value of the design variable.
    */
-  virtual su2double Get_EField_Mod(unsigned short i_DV);
+  virtual su2double Get_DV_Val(unsigned short i_DV);
+
+  /*!
+   * \brief A virtual member.
+   * \param[out] val_I - value of the objective function.
+   */
+  virtual su2double Get_val_I(void);
 
   /*!
    * \brief A virtual member.
@@ -6813,7 +6819,7 @@ private:
 	su2double **mId_Aux;				/*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
 
 	unsigned short *iElem_iDe;			/*!< \brief For DE cases, ID of the region considered for each iElem. */
-	su2double *EField_Mod;          /*!< \brief For DE cases, value of the modulus of the electric field (design variable). */
+	su2double *DV_Val;          /*!< \brief For DE cases, value of the modulus of the electric field (design variable). */
 	unsigned short n_DV;          /*!< \brief For DE cases, number of design variables. */
 
 	su2double a_dt[9];					/*!< \brief Integration constants. */
@@ -7300,14 +7306,14 @@ public:
    * \param[in] i_DV - number of design variable.
    * \param[in] val_EField - value of the design variable.
    */
-  void Set_EField_Mod(su2double val_EField, unsigned short i_DV);
+  void Set_DV_Val(su2double val_EField, unsigned short i_DV);
 
   /*!
    * \brief Retrieve the Electric Field modulus, design variable for DE computations
    * \param[in] i_DV - number of design variable.
-   * \param[out] EField_Mod - value of the design variable.
+   * \param[out] DV_Val - value of the design variable.
    */
-  su2double Get_EField_Mod(unsigned short i_DV);
+  su2double Get_DV_Val(unsigned short i_DV);
 
   /*!
    * \brief Retrieve the Mass Matrix term (to add to the Jacobian of the adjoint problem)
@@ -7348,7 +7354,7 @@ private:
 
 	unsigned short n_DV;				/*!< \brief Number of Design Variables. */
 	su2double *sensI_adjoint;			/*!< \brief Adjoint sensitivities for the number of design variables. */
-  su2double *EField_Mod;          /*!< \brief For DE cases, value of the modulus of the electric field (design variable). */
+  su2double *DV_Val;          /*!< \brief For DE cases, value of the modulus of the electric field (design variable). */
 
 	CSysVector LinSysSol_Direct;		/*!< \brief Vector structure for storing the solution of the direct problem. */
 	CSysVector LinSysRes_dSdv;			/*!< \brief Vector structure for storing the sensitivity of the FEA equations respect to the design dS/dv. */
@@ -7546,14 +7552,20 @@ public:
    * \param[in] i_DV - number of design variable.
    * \param[in] val_EField - value of the design variable.
    */
-  void Set_EField_Mod(su2double val_EField, unsigned short i_DV);
+  void Set_DV_Val(su2double val_EField, unsigned short i_DV);
 
   /*!
    * \brief Retrieve the Electric Field modulus, design variable for DE computations
    * \param[in] i_DV - number of design variable.
-   * \param[out] EField_Mod - value of the design variable.
+   * \param[out] DV_Val - value of the design variable.
    */
-  su2double Get_EField_Mod(unsigned short i_DV);
+  su2double Get_DV_Val(unsigned short i_DV);
+
+  /*!
+   * \brief Retrieve the value of the interest function for adjoint optimizations in FEM
+   * \param[out] val_I - value of the objective function.
+   */
+  su2double Get_val_I(void);
 
 };
 

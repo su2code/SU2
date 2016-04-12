@@ -82,6 +82,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 
 	iElem_iDe		= NULL;
 
+	DV_Val      = NULL;
+
 }
 
 CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *config) : CSolver() {
@@ -501,155 +503,149 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
 	solutionPredictor = new su2double [nVar];
 
-  /*---- If we are solving an adjoint problem ---*/
-  if (config->GetKind_Solver() == ADJ_ELASTICITY){
+  /*---- If we are solving an adjoint problem we need to define the number of design variables and delimit the regions ---*/
+	if (config->GetKind_Solver() == ADJ_ELASTICITY){
 
-    unsigned short i_DV;
+	  unsigned short i_DV;
+	  unsigned long iElem;
+	  iElem_iDe = new unsigned short [nElement];
 
-    /*---- Initialize the number of design variables ---*/
-    switch (config->GetDV_FEA()) {
-    case YOUNG_MODULUS:
-      n_DV = 1;
-      break;
-    case ELECTRIC_FIELD:
-      unsigned short nEField_Read, nDelimiters;
-      nEField_Read = config->GetnElectric_Field();
-      nDelimiters = config->GetnDel_EField() - 1;         // Number of region delimiters - 1 (has to be equal to nElectric_Field)
-      if (nEField_Read == 1){
-        if (nDelimiters == 0){
-          n_DV = 1;       // If there are no delimiters
-          EField_Mod = new su2double[n_DV];
-          for (i_DV = 0; i_DV < n_DV; i_DV++){
-            EField_Mod[i_DV] = config->Get_Electric_Field_Mod(0);
-          }
-        }
-        else{
-          n_DV = nDelimiters;
-          EField_Mod = new su2double[n_DV];
-          for (i_DV = 0; i_DV < n_DV; i_DV++){
-            EField_Mod[i_DV] = config->Get_Electric_Field_Mod(i_DV);   // Only one value is passed in
-          }
-        }
-      } else{
-        if (nDelimiters == nEField_Read){
-          n_DV = nEField_Read;
-          EField_Mod = new su2double[n_DV];
-          for (i_DV = 0; i_DV < n_DV; i_DV++){
-            EField_Mod[i_DV] = config->Get_Electric_Field_Mod(i_DV);
-          }
-        }
-        else{
-          cout << "DIMENSIONS OF ELECTRIC FIELD AND DELIMITERS DON'T AGREE!!!" << endl;
-          exit(EXIT_FAILURE);
-        }
-      }
-      break;
-    default:
-      n_DV = 1;
-    }
+	  /*--- The number of design variables is equal to the total number of regions ---*/
+	  if (nDim == 2) n_DV = config->GetnDV_X() * config->GetnDV_Y();
+	  else n_DV = config->GetnDV_X() * config->GetnDV_Y() * config->GetnDV_Z();
 
-  } else{
-    n_DV = 0;
-    EField_Mod = NULL;
-  }
+	  cout << "Number of design regions: " << n_DV << endl;
 
+	  /*--- Allocate the vector that stores the design variables ---*/
+	  DV_Val = new su2double[n_DV];
 
-	/*---- Initialize and store the region of each element in the case of DE effects and multiple regions ---*/
-	if (de_effects){
+	  /*---- Initialize the number of design variables ---*/
+	  switch (config->GetDV_FEA()) {
+	  case YOUNG_MODULUS:
+	    DV_Val[0] = config->GetElasticyMod();
+	    break;
+	  case ELECTRIC_FIELD:
+	    unsigned short nEField_Read;
+	    nEField_Read = config->GetnElectric_Field();
+	    cout << nEField_Read << " " << n_DV << endl;
+	    if (nEField_Read == n_DV){
+	      for (i_DV = 0; i_DV < n_DV; i_DV++){
+	        DV_Val[i_DV] = config->Get_Electric_Field_Mod(i_DV);
+	      }
+	    } else if (nEField_Read == 1){
+	      for (i_DV = 0; i_DV < n_DV; i_DV++){
+	        DV_Val[i_DV] = config->Get_Electric_Field_Mod(0);
+	      }
+	    } else{
+	      cout << "THE NUMBER OF ELECTRIC FIELD AND DESIGN REGIONS IS NOT IN AGREEMENT!!!" << endl;
+	      exit(EXIT_FAILURE);
+	    }
+	    break;
+	  default:
+	    DV_Val[0] = 0.0;
+	  }
 
-		/*--- Initialize the structure to store the iDe ---*/
-		iElem_iDe = new unsigned short [nElement];
+	  /*---- Initialize and store the region of each element in the case of DE effects and multiple regions ---*/
+	  if (n_DV > 1){
 
-		bool multiple_de = (config->GetnDel_EField() > 1);
-		unsigned long iElem;
-		bool iTest;
+	    bool iTest;
 
-		if (multiple_de){
-			unsigned short iNode, nNodes, iKind;
-			unsigned long indexNode;
-			su2double cornerCoord[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-			su2double centerCoord = 0.0;
-			/*--- Loop over all the elements ---*/
-			for (iElem = 0; iElem < nElement; iElem++){
+	    unsigned short iNode, nNodes, iKind;
+	    unsigned long indexNode;
+	    su2double cornerCoord_X[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+	    su2double cornerCoord_Y[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+	    su2double cornerCoord_Z[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+	    su2double centerCoord_X = 0.0, centerCoord_Y = 0.0, centerCoord_Z = 0.0;
+	    /*--- Loop over all the elements ---*/
+	    for (iElem = 0; iElem < nElement; iElem++){
 
-				/*--- Check what kind of element is each ---*/
-				if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; iKind = 0;}
-				if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){nNodes = 4; iKind = 1;}
+	      /*--- Check what kind of element is each ---*/
+	      if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; iKind = 0;}
+	      if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL){nNodes = 4; iKind = 1;}
 
-				if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; iKind = 2;}
-				if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; iKind = 3;}
-				if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; iKind = 4;}
-				if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; iKind = 5;}
+	      if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; iKind = 2;}
+	      if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; iKind = 3;}
+	      if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; iKind = 4;}
+	      if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; iKind = 5;}
 
-				/*--- Retrieve the corner coordinates for the dimension of the axis considered ---*/
-				for (iNode = 0; iNode < nNodes; iNode++) {
-					indexNode = geometry->elem[iElem]->GetNode(iNode);
-					cornerCoord[iNode] = geometry->node[indexNode]->GetCoord(config->GetAxis_EField());
-				}
+	      /*--- Retrieve the corner coordinates for the dimension of the axis considered ---*/
+	      for (iNode = 0; iNode < nNodes; iNode++) {
+	        indexNode = geometry->elem[iElem]->GetNode(iNode);
+	        cornerCoord_X[iNode] = geometry->node[indexNode]->GetCoord(0);
+	        cornerCoord_Y[iNode] = geometry->node[indexNode]->GetCoord(1);
+	        if (nDim == 3) cornerCoord_Z[iNode] = geometry->node[indexNode]->GetCoord(2);
+	      }
 
-				switch (iKind){
-					case 0:
-						cout << "The element is a TRIA and this is not yet implemented." << endl;
-						iTest = false;		// This prevents incorrect setting of the value of iDe while it's not implemented
-						break;
-					case 1:
-						centerCoord = (((cornerCoord[0] + cornerCoord[2]) / 2.0) +
-								       ((cornerCoord[1] + cornerCoord[3]) / 2.0)) / 2.0;
-						iTest = true;
-						break;
-					case 2:
-						cout << "The element is a TETRA and this is not yet implemented." << endl;
-						iTest = false;		// This prevents incorrect setting of the value of iDe while it's not implemented
-						break;
-					case 3:
-						cout << "The element is a PYRAMID and this is not yet implemented." << endl;
-						iTest = false;		// This prevents incorrect setting of the value of iDe while it's not implemented
-						break;
-					case 4:
-						cout << "The element is a PRISM and this is not yet implemented." << endl;
-						iTest = false;		// This prevents incorrect setting of the value of iDe while it's not implemented
-						break;
-					case 5:
-						cout << "The element is a HEXA and this is not yet implemented." << endl;
-						iTest = false;		// This prevents incorrect setting of the value of iDe while it's not implemented
-						break;
-					default:
-						cout << "The element is not yet implemented." << endl;
-						iTest = false;		// This prevents incorrect setting of the value of iDe while it's not implemented
-						break;
-				}
+	      switch (iKind){
+	      case 0:
+	        cout << "The element is a TRIA and this is not yet implemented." << endl;
+	        iTest = false;    // This prevents incorrect setting of the value of iDe while it's not implemented
+	        break;
+	      case 1:
+	        centerCoord_X = (((cornerCoord_X[0] + cornerCoord_X[2]) / 2.0) +
+	            ((cornerCoord_X[1] + cornerCoord_X[3]) / 2.0)) / 2.0;
+	        centerCoord_Y = (((cornerCoord_Y[0] + cornerCoord_Y[2]) / 2.0) +
+	            ((cornerCoord_Y[1] + cornerCoord_Y[3]) / 2.0)) / 2.0;
+	        iTest = true;
+	        break;
+	      case 2:
+	        cout << "The element is a TETRA and this is not yet implemented." << endl;
+	        iTest = false;    // This prevents incorrect setting of the value of iDe while it's not implemented
+	        break;
+	      case 3:
+	        cout << "The element is a PYRAMID and this is not yet implemented." << endl;
+	        iTest = false;    // This prevents incorrect setting of the value of iDe while it's not implemented
+	        break;
+	      case 4:
+	        cout << "The element is a PRISM and this is not yet implemented." << endl;
+	        iTest = false;    // This prevents incorrect setting of the value of iDe while it's not implemented
+	        break;
+	      case 5:
+	        cout << "The element is a HEXA and this is not yet implemented." << endl;
+	        iTest = false;    // This prevents incorrect setting of the value of iDe while it's not implemented
+	        break;
+	      default:
+	        cout << "The element is not yet implemented." << endl;
+	        iTest = false;    // This prevents incorrect setting of the value of iDe while it's not implemented
+	        break;
+	      }
 
-				for (iVar = 1; iVar < config->GetnDel_EField(); iVar++){
-					if ( (config->Get_Electric_Field_Del(iVar-1) <= centerCoord)
-						&& (config->Get_Electric_Field_Del(iVar)) > centerCoord){
-							iElem_iDe[iElem] = iVar-1;
-						break;
-					}
-				}
+	      unsigned short iVar_X = 0, iVar_Y = 0, iVar_Z = 0;
 
-				/*--- If the element centerCoord is not implemented yet... sets iElem_iDe = 0 ---*/
-				if (!iTest){
-					iElem_iDe[iElem] = 0;
-				}
+	      if ((nDim == 2) && (iTest)){
+	        /*--- Loop over X variables ---*/
+	        for (iVar_X = 0; iVar_X < config->GetnDV_X(); iVar_X++){
+	          /*--- If X is in the range ---*/
+	          if ( (config->Get_DV_Del_X(iVar_X) <= centerCoord_X)
+	              && (config->Get_DV_Del_X(iVar_X+1)) > centerCoord_X){
+	            /*--- Loop over Y variables ---*/
+	            for (iVar_Y = 0; iVar_Y < config->GetnDV_Y(); iVar_Y++){
+	              /*--- If Y is in the range ---*/
+	              if ( (config->Get_DV_Del_Y(iVar_Y) <= centerCoord_Y)
+	                  && (config->Get_DV_Del_Y(iVar_Y+1)) > centerCoord_Y){
+	                iElem_iDe[iElem] = config->GetnDV_Y()*iVar_X + iVar_Y;
+	              }
+	            }
+	          }
+	        }
+	      } else {
+	        cout << "FEATURE NOT READY YET" << endl;
+	        exit(EXIT_FAILURE);
+	      }
 
-			}
-		} else {
-			/*--- If there are no multiple DEs, the ID is 0 for all the cases ---*/
-			for (iElem = 0; iElem < nElement; iElem++){
-				iElem_iDe[iElem] = 0;
-			}
+	    }
 
-		}
+	  } else {
+	    /*--- If there are no multiple regions, the ID is 0 for all the cases ---*/
+	    for (iElem = 0; iElem < nElement; iElem++){
+	      iElem_iDe[iElem] = 0;
+	    }
 
-	} else {
-		iElem_iDe = NULL;
+	  }
+	} else{
+	  n_DV = 0;
+	  DV_Val = NULL;
 	}
-
-	/*---- Initialize the linear solver structures for the adjoint problem (temporary) ---*/
-//	if (structural_adj){
-//		LinSysSol_Adj.Initialize(nPoint, nPointDomain, nVar, 0.0);
-//		LinSysRes_Adj.Initialize(nPoint, nPointDomain, nVar, 0.0);
-//	}
 
 	/*--- Perform the MPI communication of the solution ---*/
 
@@ -716,7 +712,7 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
 	delete [] stressTensor;
 
 	if (iElem_iDe != NULL) delete [] iElem_iDe;
-  if (EField_Mod != NULL) delete[] EField_Mod;
+  if (DV_Val != NULL) delete[] DV_Val;
 
 }
 
@@ -1399,9 +1395,9 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
       unsigned short i_DV;
       cout << " The design variables are now: ";
       for (i_DV = 0; i_DV < n_DV; i_DV++){
-        cout << EField_Mod[i_DV] << " ";
-        numerics[FEA_TERM]->Set_ElectricField(i_DV, EField_Mod[i_DV]);
-        numerics[DE_TERM]->Set_ElectricField(i_DV, EField_Mod[i_DV]);
+        cout << DV_Val[i_DV] << " ";
+        numerics[FEA_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
+        numerics[DE_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
       }
 
       cout << endl;

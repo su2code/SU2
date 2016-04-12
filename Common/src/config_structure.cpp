@@ -145,6 +145,7 @@ void CConfig::SetPointersNull(void) {
   Load_Sine_Dir = NULL;	      Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
   Electric_Field_Mod = NULL;  Electric_Field_Dir = NULL;      Electric_Field_Max = NULL;
   Electric_Field_Min = NULL;  Electric_Field_Del = NULL;
+  DV_Del_X = NULL;        DV_Del_Y = NULL;            DV_Del_Z = NULL;
 
   /*--- Miscellaneous/unsorted ---*/
 
@@ -1153,6 +1154,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Modulus of the electric fields */
   addDoubleListOption("ELECTRIC_FIELD_DELIMITERS", nDel_EField, Electric_Field_Del);
 
+  /* DESCRIPTION: Delimiters of the Design variable regions (this would be easier by element...)*/
+  addDoubleListOption("DV_DEL_X", nDV_Del_X, DV_Del_X);
+  addDoubleListOption("DV_DEL_Y", nDV_Del_Y, DV_Del_Y);
+  addDoubleListOption("DV_DEL_Z", nDV_Del_Z, DV_Del_Z);
+
+  /* DESCRIPTION: Convergence criteria for FEM adjoint */
+  addDoubleOption("CRITERIA_FEM_ADJ", Res_FEM_ADJ, -5.0);
+
   /*!\brief DESIGN_VARIABLE_FEA
    *  \n DESCRIPTION: Design variable for FEA problems (Temp) \n OPTIONS: See \link DVFEA_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config */
   addEnumOption("DESIGN_VARIABLE_FEA", Kind_DV_FEA, DVFEA_Map, YOUNG_MODULUS);
@@ -1187,6 +1196,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*  DESCRIPTION: Apply dead loads
   *  Options: NO, YES \ingroup Config */
   addBoolOption("DEAD_LOAD", DeadLoad, false);
+  /*  DESCRIPTION: Temporary: pseudo static analysis (no density in dynamic analysis)
+  *  Options: NO, YES \ingroup Config */
+  addBoolOption("PSEUDO_STATIC", PseudoStatic, false);
   /* DESCRIPTION: Dynamic or static structural analysis */
   addEnumOption("DYNAMIC_ANALYSIS", Dynamic_Analysis, Dynamic_Map, STATIC);
   /* DESCRIPTION: Time Step for dynamic analysis (s) */
@@ -2474,6 +2486,21 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if (nDel_EField == 0) {
 	nDel_EField = 1;
 	Electric_Field_Del = new su2double[1]; Electric_Field_Del[0] = 0.0;
+  }
+
+  if ((nDV_Del_X == 0) || (nDV_Del_X == 1)) {
+  nDV_Del_X = 2;
+  DV_Del_X = new su2double[2]; DV_Del_X[0] = -1.0E15; DV_Del_X[1] = 1.0E15; // This ensures all the values are within the range
+  }
+
+  if ((nDV_Del_Y == 0) || (nDV_Del_Y == 1)) {
+  nDV_Del_Y = 2;
+  DV_Del_Y = new su2double[2]; DV_Del_Y[0] = -1.0E15; DV_Del_Y[1] = 1.0E15; // This ensures all the values are within the range
+  }
+
+  if ((nDV_Del_Z == 0) || (nDV_Del_Z == 1)) {
+  nDV_Del_Z = 2;
+  DV_Del_Z = new su2double[2]; DV_Del_Z[0] = -1.0E15; DV_Del_Z[1] = 1.0E15; // This ensures all the values are within the range
   }
 
   if (nDim_Electric_Field == 0) {
