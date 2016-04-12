@@ -4015,26 +4015,24 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
     for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_TurboPerformance(); iMarker_Monitoring++) {
 
       stringstream tag;
-      tag << iMarker_Monitoring;
+      tag << iMarker_Monitoring + 1;
 
-      turbo_coeff += ",\"PressureRatio_" + tag.str() + "\"";
-      turbo_coeff += ",\"PressureOut_" + tag.str() + "\"";
-      turbo_coeff += ",\"EnthalpyOut_" + tag.str() + "\"";
-      turbo_coeff += ",\"Total_EnthalpyIn_" + tag.str() + "\"";
 			turbo_coeff += ",\"TotalPressureLoss_" + tag.str() + "\"";
 			turbo_coeff += ",\"KineticEnergyLoss_" + tag.str() + "\"";
+			turbo_coeff += ",\"EntropyGen_" + tag.str() + "\"";
 			turbo_coeff += ",\"EulerianWork_" + tag.str() + "\"";
-			turbo_coeff += ",\"VelocityOutIs_" + tag.str() + "\"";
+			turbo_coeff += ",\"PressureRatio_" + tag.str() + "\"";
 			turbo_coeff += ",\"FlowAngleIn_" + tag.str() + "\"";
 			turbo_coeff += ",\"FlowAngleOut_" + tag.str() + "\"";
+			turbo_coeff += ",\"AbsFlowAngleIn_" + tag.str() + "\"";
+			turbo_coeff += ",\"AbsFlowAngleOut_" + tag.str() + "\"";
 			turbo_coeff += ",\"MassFlowIn_" + tag.str() + "\"";
 			turbo_coeff += ",\"MassFlowOut_" + tag.str() + "\"";
 			turbo_coeff += ",\"MachIn_" + tag.str() + "\"";
 			turbo_coeff += ",\"MachOut_" + tag.str() + "\"";
-			turbo_coeff += ",\"NormalMachIn_" + tag.str() + "\"";
-			turbo_coeff += ",\"NormalMachOut_" + tag.str() + "\"";
-//			turbo_coeff += ",\"TotalEfficiency_" + tag.str() + "\"";
-//			turbo_coeff += ",\"TotalStaticEfficiency_" + tag.str() + "\"";
+			// different from zero only in multi-zone computation
+			turbo_coeff += ",\"TotalEfficiency_" + tag.str() + "\"";
+			turbo_coeff += ",\"TotalStaticEfficiency_" + tag.str() + "\"";
 
     }
   }
@@ -4881,50 +4879,44 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 strcat(monitoring_coeff, surface_coeff);
               }
             }
-            
+
             if (turbo){
               for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_TurboPerformance(); iMarker_Monitoring++){
                 if (iMarker_Monitoring == 0){
-                  SPRINTF(turbo_coeff, ", %12.10f", PressureRatio[iMarker_Monitoring]);
+                  SPRINTF(turbo_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring]);
                 }else{
-                  SPRINTF(surface_coeff, ", %12.10f", PressureRatio[iMarker_Monitoring]);
+                  SPRINTF(surface_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring]);
                   strcat(turbo_coeff, surface_coeff);
                 }
-                SPRINTF(surface_coeff, ", %12.10f", PressureOut[iMarker_Monitoring]);
-                strcat(turbo_coeff, surface_coeff);
-                SPRINTF(surface_coeff, ", %12.10f", EnthalpyOut[iMarker_Monitoring]);
-                strcat(turbo_coeff, surface_coeff);
-                SPRINTF(surface_coeff, ", %12.10f", TotalEnthalpyIn[iMarker_Monitoring]);
-                strcat(turbo_coeff, surface_coeff);
-								SPRINTF(surface_coeff, ", %12.10f", TotalPressureLoss[iMarker_Monitoring]);
-								strcat(turbo_coeff, surface_coeff);
 								SPRINTF(surface_coeff, ", %12.10f", KineticEnergyLoss[iMarker_Monitoring]);
+								strcat(turbo_coeff, surface_coeff);
+								SPRINTF(surface_coeff, ", %12.10f", EntropyGen[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
 								SPRINTF(surface_coeff, ", %12.10f", EulerianWork[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
-								SPRINTF(surface_coeff, ", %12.10f", VelocityOutIs[iMarker_Monitoring]);
+								SPRINTF(surface_coeff, ", %12.10f", PressureRatio[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
 								SPRINTF(surface_coeff, ", %12.10f", 180.0/PI_NUMBER*FlowAngleIn[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
 								SPRINTF(surface_coeff, ", %12.10f", 180.0/PI_NUMBER*FlowAngleOut[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
+								SPRINTF(surface_coeff, ", %12.10f", 180.0/PI_NUMBER*AbsFlowAngleIn[iMarker_Monitoring]);
+								strcat(turbo_coeff, surface_coeff);
+								SPRINTF(surface_coeff, ", %12.10f", 180.0/PI_NUMBER*AbsFlowAngleOut[iMarker_Monitoring]);
+								strcat(turbo_coeff, surface_coeff);
 								SPRINTF(surface_coeff, ", %12.10f", MassFlowIn[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
 								SPRINTF(surface_coeff, ", %12.10f", MassFlowOut[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
-								SPRINTF(surface_coeff, ", %12.10f", MachIn[iMarker_Monitoring][1]);
+								SPRINTF(surface_coeff, ", %12.10f", sqrt(MachIn[iMarker_Monitoring][1]*MachIn[iMarker_Monitoring][1] + MachIn[iMarker_Monitoring][0]*MachIn[iMarker_Monitoring][0]));
 								strcat(turbo_coeff, surface_coeff);
-								SPRINTF(surface_coeff, ", %12.10f", MachOut[iMarker_Monitoring][1]);
+								SPRINTF(surface_coeff, ", %12.10f", sqrt(MachOut[iMarker_Monitoring][1]*MachOut[iMarker_Monitoring][1] + MachOut[iMarker_Monitoring][0]*MachOut[iMarker_Monitoring][0]));
 								strcat(turbo_coeff, surface_coeff);
-								SPRINTF(surface_coeff, ", %12.10f", MachIn[iMarker_Monitoring][0]);
+								//
+								SPRINTF(surface_coeff, ", %12.10f", TotalTotalEfficiency[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
-								SPRINTF(surface_coeff, ", %12.10f", MachOut[iMarker_Monitoring][0]);
+								SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring]);
 								strcat(turbo_coeff, surface_coeff);
-
-//                    SPRINTF(surface_coeff, ", %12.10f", TotalTotalEfficiency[iMarker_Monitoring]);
-//                    strcat(turbo_coeff, surface_coeff);
-//                    SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring]);
-//                    strcat(turbo_coeff, surface_coeff);
 
               }
             }
@@ -5155,7 +5147,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 									// if BC outlet
 										cout << "BC outlet convergence monitoring  marker " << outMarker_Tag << " : "<<endl;
 										cout << endl;
-										cout << "     Outlet Pressure" << "          Outlet Pressure BC" << "     err(%)" <<  endl;
+										cout << "     Outlet Pressure" << "          Outlet Pressure BC" << "          err(%)" <<  endl;
 										cout.width(25); cout << PressureOut[iMarker_Monitoring]*config[ZONE_0]->GetPressure_Ref();
 										cout.width(25); cout << PressureOut_BC[iMarker_Monitoring]*config[ZONE_0]->GetPressure_Ref();
 										cout.width(25); cout << abs((PressureOut[iMarker_Monitoring] - PressureOut_BC[iMarker_Monitoring])/PressureOut_BC[iMarker_Monitoring])*100.0;
@@ -5185,12 +5177,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 									cout << "     Total Pressure Loss(%)" << "   Kinetic Energy Loss(%)" << "      Entropy Generation(%)" << endl;
 									cout.width(25); cout << TotalPressureLoss[iMarker_Monitoring]*100.0;
 									cout.width(25); cout << KineticEnergyLoss[iMarker_Monitoring]*100.0;
-									if(EntropyIn[iMarker_Monitoring] >= 0){
-										cout.width(25); cout << EntropyGen[iMarker_Monitoring]*100.0;
-									}
-									else{
-										cout.width(25); cout << -1.0*EntropyGen[iMarker_Monitoring]*100.0;
-									}
+									cout.width(25); cout << EntropyGen[iMarker_Monitoring]*100.0;
 									cout << endl;
 									cout << endl;
 									cout << "     Total Inlet Enthalpy" << "     Eulerian Work" << "               Pressure Ratio" <<  endl;
@@ -5390,11 +5377,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
               	if(nZone  < 2){
               		/*--- single zone output ---*/
-              		cout << "     Res[Rho]" << "     Res[RhoE]"  << "  KineticLoss(%)" << "  D_MassFlow(%)" << endl;
+              		cout << "     Res[Rho]" << "     Res[RhoE]"  << "  KineticLoss(%)" << "  Entropy Gen.(%)" << endl;
               	}
               	else{
               		/* --- multi-zone output ---*/
-              		cout << "     Res[Rho]" << "     Res[RhoE]"  << " TSEfficiency(%)" << " Outlet Pressure" << endl;
+              		cout << "     Res[Rho]" << "     Res[RhoE]"  << " TSEfficiency(%)" << " Entropy Gen.(%)" << endl;
               	}
             	}
               else cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
@@ -5450,11 +5437,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else if (turbo){
             	if (nZone < 2){
 								/*--- single zone output ---*/
-								cout << "  KineticLoss(%)" << "  D_MassFlow(%)" << endl;
+								cout << "  KineticLoss(%)" << "  Entropy Gen.(%)" << endl;
             	}
             	else{
 								/*--- multi zone output ---*/
-								cout << " TSEfficiency(%)" << " Outlet Pressure" << endl;
+								cout << " TSEfficiency(%)" << " Entropy Gen.(%)" << endl;
 
             	}
             }
@@ -5670,12 +5657,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           	/*--- singlezone output---*/
           	if (nZone < 2){
 							cout.width(15); cout << KineticEnergyLoss[0]*100.0;
-							cout.width(15); cout << abs((MassFlowIn[0] - MassFlowOut[0])/MassFlowIn[0])*100.0;
+							cout.width(15); cout << EntropyGen[0]*100.0;
           	}
           	else{
 							/*--- multizone output---*/
 							cout.width(15); cout << TotalStaticEfficiency[nTurboPerf -1]*100.0;
-							cout.width(15); cout << PressureOut[0]*config[ZONE_0]->GetPressure_Ref();
+							cout.width(15); cout << EntropyGen[nTurboPerf -1]*100.0;
 
           	}
           	cout.unsetf(ios_base::floatfield);
@@ -5740,12 +5727,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           	if (nZone < 2){
 							/*--- single zone output ---*/
 							cout.width(15); cout << KineticEnergyLoss[0]*100.0;
-							cout.width(15); cout << abs((MassFlowIn[0] - MassFlowOut[0])/MassFlowIn[0])*100.0;
+							cout.width(15); cout << EntropyGen[0]*100.0;
           	}
           	else{
 						/*--- multi zone output ---*/
 							cout.width(15); cout << TotalStaticEfficiency[nTurboPerf - 1]*100.0;
-							cout.width(15); cout << PressureOut[0]*config[ZONE_0]->GetPressure_Ref();
+							cout.width(15); cout << EntropyGen[nTurboPerf -1]*100.0;
           	}
 						cout.unsetf(ios_base::floatfield);
           }

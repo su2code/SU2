@@ -219,17 +219,16 @@ def get_headerMap():
                  "D(CFy)"          : "D_FORCE_Y"               ,
                  "D(CFz)"          : "D_FORCE_Z"               ,
                  "D(CL/CD)"        : "D_EFFICIENCY"            ,
-                 "TotalEfficiency_0"       : "TOTAL_EFFICIENCY"       ,
-                 "TotalPressureLoss_0"     : "TOTAL_PRESSURE_LOSS"    ,
-                 "KineticEnergyLoss_0"     : "KINETIC_ENERGY_LOSS"    ,
-                 "TotalStaticEfficiency_0" : "TOTAL_STATIC_EFFICIENCY",
-                 "FlowAngleOut_0"          : "FLOW_ANGLE_OUT"         ,
-                 "FlowAngleIn_0"           : "FLOW_ANGLE_IN"          ,
-                 "MassFlowIn_0"            : "MASS_FLOW_IN"           ,
-                 "MassFlowOut_0"           : "MASS_FLOW_OUT"          ,
-                 "PressureRatio_0"         : "PRESSURE_RATIO"         ,
-                 "EnthalpyOut_0"           : "ENTHALPY_OUT"           ,
-                 "TotalEnthalpy_0"         : "TOTAL_ENTHALPY_OUT"     ,
+                 "TotalPressureLoss_1"     : "TOTAL_PRESSURE_LOSS"    ,
+                 "KineticEnergyLoss_1"     : "KINETIC_ENERGY_LOSS"    ,
+                 "EntropyGen_1"            : "ENTROPY_GENERATION"     ,                   
+                 "FlowAngleOut_1"          : "FLOW_ANGLE_OUT"         ,
+                 "FlowAngleIn_1"           : "FLOW_ANGLE_IN"          ,
+                 "MassFlowIn_1"            : "MASS_FLOW_IN"           ,
+                 "MassFlowOut_1"           : "MASS_FLOW_OUT"          ,
+                 "PressureRatio_1"         : "PRESSURE_RATIO"         ,
+                 "TotalEfficiency_3"       : "TOTAL_EFFICIENCY"       ,
+                 "TotalStaticEfficiency_3" : "TOTAL_STATIC_EFFICIENCY",
                  "D(TotalPressureLoss_0)"  : "D_TOTAL_PRESSURE_LOSS"  ,
                  "D(TotalEfficiency_0)"       : "D_TOTAL_EFFICIENCY"       ,
                  "D(TotalPressureLoss_0)"     : "D_TOTAL_PRESSURE_LOSS"    ,
@@ -281,18 +280,18 @@ optnames_aero = [ "LIFT"                    ,
                   "MAXIMUM_HEATFLUX"        ]
 
 # Turbo performance optimizer Function Names
-optnames_turbo = ["TOTAL_EFFICIENCY"        ,
-                  "TOTAL_PRESSURE_LOSS"     ,
+optnames_turbo = ["TOTAL_PRESSURE_LOSS"     ,
                   "KINETIC_ENERGY_LOSS"     ,
-                  "TOTAL_STATIC_EFFICIENCY" ,
+                  "ENTROPY_GENERATION"      ,
                   "EULERIAN_WORK"           ,
-                  "TOTAL_ENTHALPY_IN"       ,
-                  "ENTHALPY_OUT"            ,
                   "FLOW_ANGLE_IN"           ,
                   "FLOW_ANGLE_OUT"          ,
                   "MASS_FLOW_IN"            ,
                   "MASS_FLOW_OUT"           ,
-                  "PRESSURE_RATIO"         ]
+                  "PRESSURE_RATIO"          ,
+                  "TOTAL_EFFICIENCY"        ,
+                  "TOTAL_STATIC_EFFICIENCY" ,
+                 ]
 
 #: optnames_aero
 
@@ -539,15 +538,15 @@ def get_adjointSuffix(objective_function=None):
                  "FREE_SURFACE"            : "fs"        ,
                  "KINETIC_ENERGY_LOSS"     : "ke"        ,
                  "TOTAL_PRESSURE_LOSS"     : "pl"        ,
+                 "ENTROPY_GENERATION"      : "entg"      ,
+                 "EULERIAN_WORK"           : "ew"        ,
                  "FLOW_ANGLE_OUT"          : "fao"       ,
                  "FLOW_ANGLE_IN"           : "fai"       ,
-                 "TOTAL_EFFICIENCY"        : "teff"      ,
-                 "TOTAL_STATIC_EFFICIENCY" : "tseff"     ,
-                 "EULERIAN_WORK"           : "ew"        ,
-                 "TOTAL_ENTHALPY_IN"       : "tei"       ,
-                 "ENTHALPY_OUT"            : "eo"        ,
                  "MASS_FLOW_OUT"           : "mfo"       ,
-                 "MASS_FLOW_IN"            : "mfi"       }
+                 "MASS_FLOW_IN"            : "mfi"       ,
+                 "TOTAL_EFFICIENCY"        : "teff"      ,
+                 "TOTAL_STATIC_EFFICIENCY" : "tseff"     
+                 }
     
     # if none or false, return map
     if not objective_function:

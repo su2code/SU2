@@ -339,29 +339,29 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
 
   switch (config->GetKind_ObjFunc()){
   case DRAG_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CDrag();
-      break;
+		ObjFunc_Value = direct_solver->GetTotal_CDrag();
+		break;
   case LIFT_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CLift();
-      break;
+     ObjFunc_Value = direct_solver->GetTotal_CLift();
+		break;
   case SIDEFORCE_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CSideForce();
-      break;
+		ObjFunc_Value = direct_solver->GetTotal_CSideForce();
+		break;
   case EFFICIENCY:
-      ObjFunc_Value = direct_solver->GetTotal_CEff();
-      break;
+		ObjFunc_Value = direct_solver->GetTotal_CEff();
+		break;
   case MOMENT_X_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMx();
-      break;
+		ObjFunc_Value = direct_solver->GetTotal_CMx();
+		break;
   case MOMENT_Y_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMy();
-      break;
+		ObjFunc_Value = direct_solver->GetTotal_CMy();
+		break;
   case MOMENT_Z_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMz();
-      break;
+		ObjFunc_Value = direct_solver->GetTotal_CMz();
+		break;
   case EQUIVALENT_AREA:
-      ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
-      break;
+		ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
+    break;
   case AVG_TOTAL_PRESSURE:
     ObjFunc_Value = direct_solver->GetOneD_TotalPress();
     break;
@@ -371,36 +371,38 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
   case MASS_FLOW_RATE:
     ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
     break;
+  // only valid for stator-rotor single stage
   case TOTAL_EFFICIENCY:
-      ObjFunc_Value = direct_solver->GetTotalTotalEfficiency(0);
-      break;
-    case TOTAL_PRESSURE_LOSS:
-        ObjFunc_Value = direct_solver->GetTotalPressureLoss(0);
-      break;
-    case KINETIC_ENERGY_LOSS:
-        ObjFunc_Value = direct_solver->GetKineticEnergyLoss(0);
-      break;
-    case TOTAL_STATIC_EFFICIENCY:
-        ObjFunc_Value = direct_solver->GetTotalStaticEfficiency(0);
-      break;
-    case EULERIAN_WORK:
-        ObjFunc_Value = direct_solver->GetEulerianWork(0);
-      break;
-    case TOTAL_ENTHALPY_IN:
-        ObjFunc_Value = direct_solver->GetTotalEnthalpyIn(0);
-      break;
-    case FLOW_ANGLE_IN:
-        ObjFunc_Value = 180.0/PI_NUMBER*direct_solver->GetFlowAngleIn(0);
-      break;
-    case FLOW_ANGLE_OUT:
-        ObjFunc_Value = 180.0/PI_NUMBER*direct_solver->GetFlowAngleOut(0);
-      break;
-    case MASS_FLOW_IN:
-        ObjFunc_Value = direct_solver->GetMassFlowIn(0);
-      break;
-    case MASS_FLOW_OUT:
-        ObjFunc_Value = direct_solver->GetMassFlowOut(0);
-      break;
+		ObjFunc_Value = direct_solver->GetTotalTotalEfficiency(2);
+		break;
+	case TOTAL_PRESSURE_LOSS:
+		ObjFunc_Value = direct_solver->GetTotalPressureLoss(0);
+		break;
+	case KINETIC_ENERGY_LOSS:
+		ObjFunc_Value = direct_solver->GetKineticEnergyLoss(0);
+		break;
+	// only valid for stator-rotor single stage
+	case TOTAL_STATIC_EFFICIENCY:
+		ObjFunc_Value = direct_solver->GetTotalStaticEfficiency(2);
+		break;
+	case ENTROPY_GENERATION:
+		ObjFunc_Value = direct_solver->GetEntropyGen(0);
+		break;
+	case EULERIAN_WORK:
+		ObjFunc_Value = direct_solver->GetEulerianWork(0);
+		break;
+	case FLOW_ANGLE_IN:
+		ObjFunc_Value = 180.0/PI_NUMBER*direct_solver->GetFlowAngleIn(0);
+		break;
+	case FLOW_ANGLE_OUT:
+		ObjFunc_Value = 180.0/PI_NUMBER*direct_solver->GetFlowAngleOut(0);
+		break;
+	case MASS_FLOW_IN:
+		ObjFunc_Value = direct_solver->GetMassFlowIn(0);
+		break;
+	case MASS_FLOW_OUT:
+		ObjFunc_Value = direct_solver->GetMassFlowOut(0);
+		break;
  /*--- Template for new objective functions where TemplateObjFunction()
   *  is the routine that returns the obj. function value. The computation
   * must be done while the tape is active, i.e. between AD::StartRecording() and
