@@ -1348,6 +1348,13 @@ static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<st
 ("REYNOLDS", D_REYNOLDS)
 ("DESIGN_VARIABLES", D_DESIGN);
 
+
+enum ENUM_RECORDING {
+  SOLUTION = 1,
+  GEOMETRY = 2,
+  COMBINED = 3
+};
+
 /*!
  * \brief types of schemes for dynamic structural computations
  */

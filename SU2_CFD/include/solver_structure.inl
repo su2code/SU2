@@ -1352,10 +1352,6 @@ inline su2double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
 
 inline su2double CHeatSolver::GetTotal_CHeat() { return Total_CHeat; }
 
-inline void CSolver::RegisterSolution(CGeometry *geometry_container, CConfig *config){}
-
-inline void CSolver::RegisterOutput(CGeometry *geometry_container, CConfig *config){}
-
 inline void CSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){}
@@ -1384,7 +1380,7 @@ inline su2double CDiscAdjSolver::GetCSensitivity(unsigned short val_marker, unsi
 
 inline unsigned long CSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {return 0;}
 
-inline void CSolver::SetRecording(CGeometry *geometry, CConfig *config, unsigned short kind_recording){}
+inline void CSolver::SetRecording(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::SetPressure_Inf(su2double p_inf){}
 

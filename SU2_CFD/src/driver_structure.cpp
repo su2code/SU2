@@ -1418,62 +1418,319 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
     iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
                                         surface_movement, grid_movement, FFDBox, iZone);
-    
+
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
                                        solver_container, numerics_container, config_container,
                                        surface_movement, grid_movement, FFDBox, iZone);
-    
+
     iteration_container[iZone]->Monitor();     /*--- Does nothing for now. ---*/
-    
+
     iteration_container[iZone]->Output();      /*--- Does nothing for now. ---*/
-    
+
     iteration_container[iZone]->Postprocess(); /*--- Does nothing for now. ---*/
-    
+
   }
   /* --- Set turboperformance for multi-zone ---*/
-	if (config_container[ZONE_0]->GetnMarker_Turbomachinery() > 0){
-		SetTurboPerformance(geometry_container, solver_container, config_container, interpolator_container, transfer_container, ZONE_0);
-	}
-  
+  if (config_container[ZONE_0]->GetnMarker_Turbomachinery() > 0){
+    SetTurboPerformance(geometry_container, solver_container, config_container, interpolator_container, transfer_container, ZONE_0);
+  }
+
 }
 
 void CMultiZoneDriver::SetMixingPlane(CGeometry ***geometry_container,
-         	 	 	 	 	 	 	 	 	 	 	 	 	 	 	CSolver ****solver_container,
-																			CConfig **config_container,
-																			CInterpolator ***interpolator_container,
-																			CTransfer ***transfer_container,
-																			unsigned short donorZone){
+                                      CSolver ****solver_container,
+                                      CConfig **config_container,
+                                      CInterpolator ***interpolator_container,
+                                      CTransfer ***transfer_container,
+                                      unsigned short donorZone){
 
-	unsigned short targetZone;
-	/* --- transfer the average value from the donorZone to the targetZone*/
-	for (targetZone = 0; targetZone < nZone; targetZone++) {
-		if (targetZone != donorZone){
-			transfer_container[donorZone][targetZone]->Allgather_InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
-																																	geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-																																	config_container[donorZone], config_container[targetZone]);
-		}
-	}
+  unsigned short targetZone;
+  /* --- transfer the average value from the donorZone to the targetZone*/
+  for (targetZone = 0; targetZone < nZone; targetZone++) {
+    if (targetZone != donorZone){
+      transfer_container[donorZone][targetZone]->Allgather_InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+                                                                  geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+                                                                  config_container[donorZone], config_container[targetZone]);
+    }
+  }
 }
 void CMultiZoneDriver::SetTurboPerformance(CGeometry ***geometry_container,
-         	 	 	 	 	 	 	 	 	 	 	 	 	 	 	CSolver ****solver_container,
-																			CConfig **config_container,
-																			CInterpolator ***interpolator_container,
-																			CTransfer ***transfer_container,
-																			unsigned short targetZone){
+                                      CSolver ****solver_container,
+                                      CConfig **config_container,
+                                      CInterpolator ***interpolator_container,
+                                      CTransfer ***transfer_container,
+                                      unsigned short targetZone){
 
-	unsigned short donorZone;
-	//IMPORTANT this approach of multi-zone performances rely upon the fact that turbomachinery markers follow the natural (stator-rotor) development of the real machine.
-	/* --- transfer the local turboperfomance quantities (for each blade)  from all the donorZones to the targetZone (ZONE_0) ---*/
-	for (donorZone = 1; donorZone < nZone; donorZone++) {
-			transfer_container[donorZone][targetZone]->StoreTurboPerformance(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
-																																		geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-																																		config_container[donorZone], config_container[targetZone], donorZone);
-	}
+  unsigned short donorZone;
+  //IMPORTANT this approach of multi-zone performances rely upon the fact that turbomachinery markers follow the natural (stator-rotor) development of the real machine.
+  /* --- transfer the local turboperfomance quantities (for each blade)  from all the donorZones to the targetZone (ZONE_0) ---*/
+  for (donorZone = 1; donorZone < nZone; donorZone++) {
+      transfer_container[donorZone][targetZone]->StoreTurboPerformance(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+                                                                    geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+                                                                    config_container[donorZone], config_container[targetZone], donorZone);
+  }
 
-	/* --- compute turboperformance for each stage and the global machine ---*/
-	solver_container[targetZone][MESH_0][FLOW_SOL]->TurboPerformance2nd(config_container[targetZone]);
+  /* --- compute turboperformance for each stage and the global machine ---*/
+  solver_container[targetZone][MESH_0][FLOW_SOL]->TurboPerformance2nd(config_container[targetZone]);
 }
 
+CDiscAdjMultiZoneDriver::CDiscAdjMultiZoneDriver(CIteration **iteration_container,
+                                                 CSolver ****solver_container,
+                                                 CGeometry ***geometry_container,
+                                                 CIntegration ***integration_container,
+                                                 CNumerics *****numerics_container,
+                                                 CInterpolator ***interpolator_container,
+                                                 CTransfer ***transfer_container,
+                                                 CConfig **config_container,
+                                                 unsigned short val_nZone,
+                                                 unsigned short val_nDim) : CMultiZoneDriver(iteration_container,
+                                                                                     solver_container,
+                                                                                     geometry_container,
+                                                                                     integration_container,
+                                                                                     numerics_container,
+                                                                                     interpolator_container,
+                                                                                     transfer_container,
+                                                                                     config_container,
+                                                                                     val_nZone,
+                                                                                     val_nDim) {
+  direct_iteration = new CIteration*[nZone];
+
+  unsigned short iZone;
+  switch (config_container[iZone]->GetKind_Solver()) {
+    case DISC_ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
+      direct_iteration = new CIteration*[nZone];
+      for (iZone = 0; iZone < nZone; iZone++){
+        direct_iteration[iZone] = new CMeanFlowIteration(config_container[iZone]);
+      }
+      break;
+    default:
+      break;
+  }
+
+  this->direct_driver = direct_driver;
+
+  RecordingState = NONE;
+}
+
+CDiscAdjMultiZoneDriver::~CDiscAdjMultiZoneDriver(){}
+
+void CDiscAdjMultiZoneDriver::Run(CIteration **iteration_container,
+                           COutput *output,
+                           CIntegration ***integration_container,
+                           CGeometry ***geometry_container,
+                           CSolver ****solver_container,
+                           CNumerics *****numerics_container,
+                           CConfig **config_container,
+                           CSurfaceMovement **surface_movement,
+                           CVolumetricMovement **grid_movement,
+                           CFreeFormDefBox*** FFDBox,
+                           CInterpolator ***interpolator_container,
+                           CTransfer ***transfer_container) {
+  unsigned short iZone;
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+
+  /* --- Set the average for geometric quantities and steady grid velocity   ---*/
+  if(ExtIter == 0){
+    if(config_container[iZone]->GetBoolTurbomachinery()){
+      for (iZone = 0; iZone < nZone; iZone++) {
+        /*--- set rotating frame and turbo average quantities ---*/
+        if ((config_container[iZone]->GetGrid_Movement())){
+          geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone);
+        }
+        geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],INFLOW, true);
+        geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],OUTFLOW, true);
+        solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+        solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+      }
+    }
+  }
+
+
+  SetSensitivity(iteration_container, output, integration_container, geometry_container, solver_container,
+                             numerics_container, config_container, surface_movement, grid_movement, FFDBox,
+                             interpolator_container, transfer_container, SOLUTION);
+
+
+  if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) ||
+      ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0)) ||
+      integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence()){
+
+    SetSensitivity(iteration_container, output, integration_container, geometry_container, solver_container,
+                               numerics_container, config_container, surface_movement, grid_movement, FFDBox,
+                               interpolator_container, transfer_container, GEOMETRY);
+
+  }
+}
+
+void CDiscAdjMultiZoneDriver::SetSensitivity(CIteration **iteration_container,
+                                             COutput *output,
+                                             CIntegration ***integration_container,
+                                             CGeometry ***geometry_container,
+                                             CSolver ****solver_container,
+                                             CNumerics *****numerics_container,
+                                             CConfig **config_container,
+                                             CSurfaceMovement **surface_movement,
+                                             CVolumetricMovement **grid_movement,
+                                             CFreeFormDefBox*** FFDBox,
+                                             CInterpolator ***interpolator_container,
+                                             CTransfer ***transfer_container,
+                                             unsigned short kind_sensitivity){
+  unsigned short iZone;
+
+  if (RecordingState != kind_sensitivity){
+    if (RecordingState != NONE){
+      for (iZone = 0; iZone < nZone; iZone++) {
+
+        iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
+                                               solver_container, numerics_container, config_container,
+                                               surface_movement, grid_movement, FFDBox, iZone);
+
+      }
+
+      SetRecording(iteration_container, output, integration_container, geometry_container,
+                   solver_container, numerics_container, config_container, surface_movement,
+                   grid_movement, FFDBox, interpolator_container, transfer_container, NONE);
+
+    }
+    for (iZone = 0; iZone < nZone; iZone++) {
+
+      iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
+                                             solver_container, numerics_container, config_container,
+                                             surface_movement, grid_movement, FFDBox, iZone);
+
+    }
+
+    SetRecording(iteration_container, output, integration_container, geometry_container,
+                 solver_container, numerics_container, config_container, surface_movement,
+                 grid_movement, FFDBox, interpolator_container, transfer_container, kind_sensitivity);
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    iteration_container[iZone]->InitializeAdjoint(solver_container, geometry_container, config_container, iZone);
+
+  }
+
+  AD::ComputeAdjoint();
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    if (kind_sensitivity == GEOMETRY){
+      solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][MESH_0], config_container[iZone]);
+    }
+    if (kind_sensitivity == SOLUTION){
+      iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
+                                          solver_container, numerics_container, config_container,
+                                          surface_movement, grid_movement, FFDBox, iZone);
+    }
+  }
+
+  AD::ClearAdjoints();
+}
+
+
+void CDiscAdjMultiZoneDriver::SetRecording(CIteration **iteration_container,
+                                           COutput *output,
+                                           CIntegration ***integration_container,
+                                           CGeometry ***geometry_container,
+                                           CSolver ****solver_container,
+                                           CNumerics *****numerics_container,
+                                           CConfig **config_container,
+                                           CSurfaceMovement **surface_movement,
+                                           CVolumetricMovement **grid_movement,
+                                           CFreeFormDefBox*** FFDBox,
+                                           CInterpolator ***interpolator_container,
+                                           CTransfer ***transfer_container,
+                                           unsigned short kind_recording){
+  unsigned short iZone;
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  AD::Reset();
+
+  if (kind_recording != NONE){
+
+    AD::StartRecording();
+
+    if ((rank == MASTER_NODE) && (kind_recording == SOLUTION) && (config_container[ZONE_0]->GetExtIter() == 0)){
+      cout << "Direct iteration to store computational graph." << endl;
+    }
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+      iteration_container[iZone]->RegisterInput(solver_container, geometry_container, config_container, iZone, kind_recording);
+    }
+
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    iteration_container[iZone]->SetDependencies(solver_container, geometry_container, config_container, iZone, kind_recording);
+  }
+
+  /* --- Set the mixing-plane interface ---*/
+  if (config_container[ZONE_0]->GetBoolMixingPlaneInterface()){
+    for (iZone = 0; iZone < nZone; iZone++) {
+      SetMixingPlane(geometry_container, solver_container, config_container, interpolator_container, transfer_container, iZone);
+    }
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    direct_iteration[iZone]->Preprocess(output, integration_container, geometry_container,
+                                        solver_container, numerics_container, config_container,
+                                        surface_movement, grid_movement, FFDBox, iZone);
+
+    direct_iteration[iZone]->Iterate(output, integration_container, geometry_container,
+                                      solver_container, numerics_container, config_container,
+                                      surface_movement, grid_movement, FFDBox, iZone);
+
+    /*--- For flux-avg or area-avg objective functions the 1D values must be calculated first ---*/
+    if (config_container[iZone]->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE ||
+        config_container[iZone]->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
+        config_container[iZone]->GetKind_ObjFunc()==MASS_FLOW_RATE)
+      output->OneDimensionalOutput(solver_container[iZone][MESH_0][FLOW_SOL],
+                                   geometry_container[iZone][MESH_0], config_container[iZone]);
+
+  }
+
+
+  /* --- Set turboperformance for multi-zone ---*/
+
+  if (config_container[ZONE_0]->GetnMarker_Turbomachinery() > 0){
+     SetTurboPerformance(geometry_container, solver_container, config_container, interpolator_container, transfer_container, ZONE_0);
+  }
+
+  RecordingState = kind_recording;
+
+  /*--- Print residuals in the first iteration ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    if ((rank == MASTER_NODE) && (kind_recording == SOLUTION) && (config_container[iZone]->GetExtIter() == 0)){
+
+      cout << endl << "Convergence of direct solver for Zone " << iZone << ": " << endl;
+
+      cout << "  log10[RMS Density]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
+           <<", Drag: " <<solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag()
+          <<", Lift: " << solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CLift() << "." << endl;
+
+      if (config_container[iZone]->GetKind_Turb_Model() != NONE){
+        cout << "  log10[RMS k]:       " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
+        if (config_container[iZone]->GetKind_Turb_Model() == SST){
+          cout << "  log10[RMS omega]:   " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(1)) << endl;
+        }
+      }
+    }
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    iteration_container[iZone]->RegisterOutput(solver_container, geometry_container, config_container, iZone);
+  }
+
+
+  AD::StopRecording();
+
+}
 
 CSpectralDriver::CSpectralDriver(CIteration **iteration_container,
                                  CSolver ****solver_container,
