@@ -1728,8 +1728,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if(val_nDim ==2) nSpanWiseSections=1;
 
   /*--- Set number of TurboPerformance markers ---*/
-  if(nMarker_Turbomachinery > 0)
-  	nMarker_TurboPerformance = nMarker_Turbomachinery + int(nMarker_Turbomachinery/2) + 1;
+  if(nMarker_Turbomachinery > 0){
+  	if(nMarker_Turbomachinery > 1){
+  		nMarker_TurboPerformance = nMarker_Turbomachinery + int(nMarker_Turbomachinery/2) + 1;
+  	}else{
+  		nMarker_TurboPerformance = nMarker_Turbomachinery;
+  	}
+  }
 
 
 
@@ -4804,9 +4809,9 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case TOTAL_EFFICIENCY:        AdjExt = "_teff";      break;
       case TOTAL_STATIC_EFFICIENCY: AdjExt = "_tseff";     break;
       case EULERIAN_WORK:           AdjExt = "_ew";        break;
-      case TOTAL_ENTHALPY_IN:       AdjExt = "_tei";       break;
       case MASS_FLOW_IN:            AdjExt = "_mfi";       break;
       case MASS_FLOW_OUT:           AdjExt = "_mfo";       break;
+      case ENTROPY_GENERATION:      AdjExt = "_entg";       break;
     }
     Filename.append(AdjExt);
 

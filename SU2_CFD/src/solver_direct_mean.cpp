@@ -4805,6 +4805,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
   avgTotalRothalpyIn     = -1.0;
   avgTotalEnthalpyIn		 = -1.0;
   avgEntropyIn           = -1.0;
+  avgEntropyOut          = -1.0;
   avgTotalRelPressureIn  = -1.0;
 	flowAngleIn						 = -1.0;
 	massFlowIn						 = -1.0;
@@ -4836,6 +4837,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 	absFlowAngleIn         = -1.0;
 	absFlowAngleOut        = -1.0;
 	pressureOut_BC         = -1.0;
+	avgVel2Out						 = -1.0;
 	markerTP				       = -1;
 
 
@@ -5165,7 +5167,7 @@ if (rank == MASTER_NODE){
 		TotalRothalpyOut[markerTP -1]   	= avgTotalRothalpyOut;
 		TotalEnthalpyOutIs[markerTP -1]		=	avgTotalEnthalpyOutIs;
 		EntropyIn[markerTP -1]				 		= avgEntropyIn;
-		EntropyGen[markerTP -1]           = (avgEntropyOut - avgEntropyIn)/avgEntropyIn;
+		EntropyGen[markerTP -1]           = (avgEntropyOut - avgEntropyIn)/abs(avgEntropyIn);
 		AbsFlowAngleIn[markerTP -1]       = absFlowAngleIn;
 		AbsFlowAngleOut[markerTP -1]      = absFlowAngleOut;
 		FlowAngleIn[markerTP -1]       		= flowAngleIn;
@@ -5218,7 +5220,7 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
 	//IMPORTANT this approach of multi-zone performances rely upon the fact that turbomachinery markers follow the natural (stator-rotor) development of the real machine.
 
   nBladesRow = config->GetnMarker_Turbomachinery();
-  nStages    = int(nBladesRow/2);
+  nStages    = SU2_TYPE::Int(nBladesRow/2);
   su2double  vel2out;
   if (rank == MASTER_NODE){
   	EulerianWork[nBladesRow + nStages]        = 0.0;
@@ -5234,7 +5236,7 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
 
   		TotalTotalEfficiency[nBladesRow + iStage]  = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 1])/(TotalEnthalpyIn[iStage*2] - TotalEnthalpyOutIs[nBladesRow + iStage]);
   		TotalStaticEfficiency[nBladesRow + iStage] = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 1])/(TotalEnthalpyIn[iStage*2] - EnthalpyOutIs[nBladesRow + iStage]);
-  		EntropyGen[nBladesRow + iStage]            = ((EntropyIn[iStage*2 + 1]*EntropyGen[iStage*2 + 1] + EntropyIn[iStage*2 + 1]) - EntropyIn[iStage*2])/abs(EntropyIn[iStage*2]);
+  		EntropyGen[nBladesRow + iStage]            = ((abs(EntropyIn[iStage*2 + 1])*EntropyGen[iStage*2 + 1] + EntropyIn[iStage*2 + 1]) - EntropyIn[iStage*2])/abs(EntropyIn[iStage*2]);
   		PressureRatio[nBladesRow + iStage]         = (PressureRatio[iStage*2]*PressureOut[iStage*2]/PressureOut[iStage*2 + 1]);
   		MassFlowIn[nBladesRow + iStage]         	 = MassFlowIn[iStage*2];
   		MassFlowOut[nBladesRow + iStage]         	 = MassFlowIn[iStage*2 + 1];
@@ -5252,7 +5254,7 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
 
 		TotalTotalEfficiency[nBladesRow + nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - TotalEnthalpyOutIs[nBladesRow + nStages]);
     TotalStaticEfficiency[nBladesRow +nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - EnthalpyOutIs[nBladesRow + nStages]);
-  	EntropyGen[nBladesRow + iStage]            = ((EntropyIn[nBladesRow-1]*EntropyGen[nBladesRow-1] + EntropyIn[nBladesRow-1]) - EntropyIn[0])/abs(EntropyIn[0]);
+  	EntropyGen[nBladesRow + iStage]            = ((abs(EntropyIn[nBladesRow-1])*EntropyGen[nBladesRow-1] + EntropyIn[nBladesRow-1]) - EntropyIn[0])/abs(EntropyIn[0]);
     PressureRatio[nBladesRow + nStages]        = PressureRatio[0]*PressureOut[0]/PressureOut[nBladesRow-1];
 		MassFlowIn[nBladesRow + nStages]         	 = MassFlowIn[0];
   	MassFlowOut[nBladesRow + nStages]          = MassFlowIn[nBladesRow-1];
@@ -8275,14 +8277,14 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
   unsigned long iVertex, iPoint, nVert;
   unsigned short iDim, iVar, iMarker, iMarkerTP, iSpan;
   unsigned short mixing_process = config->GetKind_MixingProcess();
-  su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL, *gridVel,
+  su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL,
   Area, TotalArea, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, *UnitNormal;
   string Marker_Tag, Monitoring_Tag;
   su2double val_init_pressure;
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool grid_movement        = config->GetGrid_Movement();
   su2double TotalDensity, TotalPressure, *TotalVelocity, *AverageTurboNormal, *AverageNormal, AverageTangGridVelocity, avgVel2,
-						avgTotalEnthaply, *TotalFluxes, AverageTangRotVel, RelTangVelocity;
+						avgTotalEnthaply, *TotalFluxes, RelTangVelocity;
 
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -8671,10 +8673,10 @@ void CEulerSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Av
 
 void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics, unsigned short marker_flag) {
   /* Implementation of Fuorier Transformations for non-regfelcting BC will come soon */
-	su2double cj_inf,cj_out1, cj_out2, cc, rhoc, AvgMach, Density_i, Pressure_i, deltaPressure, NormalVelocity, deltaNormalVelocity, c4temp,jk_nVert, *turboNormal, *turboVelocity, *Velocity_i;
-	su2double deltaTangVelocity, TangVelocity, *deltaprim, *cj;
+	su2double cj_inf,cj_out1, cj_out2, Density_i, Pressure_i, *turboNormal, *turboVelocity, *Velocity_i;
+	su2double *deltaprim, *cj, jk_nVert;
 	unsigned short iMarker, iSpan, iMarkerTP, iDim;
-	unsigned long iVertex, iPoint, kstart, kend, k;
+	unsigned long iVertex, iPoint, kend, k;
 	unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
 	int j;
 	int rank = MASTER_NODE;
@@ -8703,10 +8705,6 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 				for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
 					if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
 						if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-
-							cc = AverageSoundSpeed[iMarker][iSpan]*AverageSoundSpeed[iMarker][iSpan];
-							rhoc = AverageSoundSpeed[iMarker][iSpan]*AverageDensity[iMarker][iSpan];
-							AvgMach = AverageMach[iMarker][iSpan];
 							nVert = complex<su2double>(geometry->GetnTotVertexSpan(iMarker,iSpan));
 							for (iVertex = 0; iVertex < geometry->nVertexSpan[iMarker][iSpan]; iVertex++) {
 
@@ -8725,8 +8723,6 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 									Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
 								}
 								ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag);
-								NormalVelocity	= turboVelocity[0];
-								TangVelocity    = turboVelocity[1];
 
 								deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
 								deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[iMarker][iSpan][0];
@@ -8813,7 +8809,7 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 void CEulerSolver::ComputeResJacobianNRBC(su2double pressure, su2double density, su2double vn, su2double vt, su2double alphaInBC, su2double **R_c, su2double **R_c_inv){
 	su2double rhoc, cc, **test, det;
 	su2double dhdrho_P, dhdP_rho, dsdrho_P,dsdP_rho;
-	unsigned short iVar, jVar, kVar;
+	unsigned short iVar;
 
 	test= new su2double*[nVar-1];
 	for (iVar = 0; iVar < nVar-1; iVar++)
@@ -8932,7 +8928,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
                                     CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim, iVar, jVar, kVar, iSpan;
   unsigned long iVertex, iPoint, Point_Normal, oldVertex, k, kend;
-  su2double  Area, *UnitNormal, *turboVelocity, *turboNormal;
+  su2double  *UnitNormal, *turboVelocity, *turboNormal;
   
   su2double *Velocity_b, Velocity2_b, Enthalpy_b, Energy_b, StaticEnergy_b, Density_b, Kappa_b, Chi_b, Pressure_b, Temperature_b;
   su2double *Velocity_i, Velocity2_i, Enthalpy_i, Energy_i, StaticEnergy_i, Density_i, Kappa_i, Chi_i, Pressure_i, SoundSpeed_i, Entropy_i;
@@ -8976,9 +8972,9 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   
   /*--- new declarations ---*/
   
-  su2double  deltaDensity, deltaPressure, AvgMach, deltaTangVelocity, deltaNormalVelocity, cc,rhoc,c1j,c2j,c3j,c4j,jk_nVert, *cj,
-  avg_c1, avg_c2, avg_c3, avg_c4,TangVelocity, NormalVelocity, GilesBeta, dc4js, *delta_c, **R_Matrix, *deltaprim, **R_c_inv,**R_c, alphaIn_BC,
-	P_Total, T_Total, *FlowDir, Enthalpy_BC, Entropy_BC, *R, *c_avg,*dcjs, Beta_inf2, c2js_Re, c4js_Re, avgVel2, undRelax;
+  su2double  AvgMach ,jk_nVert, *cj, GilesBeta, *delta_c, **R_Matrix, *deltaprim, **R_c_inv,**R_c, alphaIn_BC,
+	P_Total, T_Total, *FlowDir, Enthalpy_BC, Entropy_BC, *R, *c_avg,*dcjs, Beta_inf2, c2js_Re, c4js_Re, avgVel2 =0.0;
+
   int j;
   unsigned long nVert;
   
@@ -9008,9 +9004,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 	I = complex<su2double>(0.0,1.0);
   
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
-  	cc = AverageSoundSpeed[val_marker][iSpan]*AverageSoundSpeed[val_marker][iSpan];
-  	rhoc = AverageSoundSpeed[val_marker][iSpan]*AverageDensity[val_marker][iSpan];
-
   	AvgMach = AverageMach[val_marker][iSpan];
 
   	nVert = geometry->GetnTotVertexSpan(val_marker,iSpan);
@@ -9101,7 +9094,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 			/*--- Normalize Normal vector for this vertex (already for outward convention) ---*/
   		geometry->turbovertex[val_marker][iSpan][iVertex]->GetNormal(UnitNormal);
 			geometry->turbovertex[val_marker][iSpan][iVertex]->GetTurboNormal(turboNormal);
-			Area = geometry->turbovertex[val_marker][iSpan][iVertex]->GetArea();
 
 			/*--- Retrieve solution at this boundary node ---*/
 			V_domain = node[iPoint]->GetPrimitive();
@@ -9135,8 +9127,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 				ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
 
 			ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, config->GetMarker_All_TurbomachineryFlag(val_marker));
-			NormalVelocity	= turboVelocity[0];
-			TangVelocity		= turboVelocity[1];
 			deltaprim[0] = Density_i - AverageDensity[val_marker][iSpan];
 			deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[val_marker][iSpan][0];
 			deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[val_marker][iSpan][1];
