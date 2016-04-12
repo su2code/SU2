@@ -10163,13 +10163,24 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 
 	if (rank == MASTER_NODE){
 		//			VICENTE here in this if underneath you have to implemented the writing of the file using the vector x_loc, y_loc, z_loc, globIdx_loc
-		//      istead of the video print
-		for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+		//      instead of the video print
+	  ofstream myfile;
+	  if (marker_flag == INFLOW){
+	    myfile.open ("spanwise_division_inflow.dat", ios::out | ios::trunc);
+	  }
+	  else{
+	    myfile.open ("spanwise_division_outflow.dat", ios::out | ios::trunc);
+	  }
+    myfile << "iSpan " << "x_coord " << " y_coord " <<  "z_coord " << " global_index " <<endl;
+	  for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 			for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
-				cout << "iSpan " << iSpan << " y coord " <<  y_loc[iSpan][iSpanVertex] << " global index " << globIdx_loc[iSpan][iSpanVertex]<<endl;
+//				cout << "iSpan " << iSpan << " y_coord " <<  y_loc[iSpan][iSpanVertex] << " global_index " << globIdx_loc[iSpan][iSpanVertex]<<endl;
+				myfile << iSpan  << "\t" <<  x_loc[iSpan][iSpanVertex] << "\t"  <<  y_loc[iSpan][iSpanVertex] << "\t" <<  z_loc[iSpan][iSpanVertex] << "\t"  << globIdx_loc[iSpan][iSpanVertex]<<endl;
 			}
-			cout <<endl;
+//			cout <<endl;
+			myfile << endl;
 		}
+	  myfile.close();
 	}
 
 //			FINAL TEST
