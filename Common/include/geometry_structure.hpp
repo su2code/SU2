@@ -142,7 +142,6 @@ public:
   idx_t * xadj;
 #endif
 #endif
-  unsigned long local_node;
   unsigned long local_elem;
   unsigned long xadj_size;
   unsigned long adjacency_size;
