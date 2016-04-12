@@ -380,11 +380,20 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
 and potential are incompatible, they use the same position in sol container ---*/
   for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 
-    /*--- Allocate solution for a template problem ---*/
+    /*--- DeAllocate solution for a template problem ---*/
     if (template_solver) {
       delete solver_container[iMGlevel][TEMPLATE_SOL];
     }
-    /*--- Allocate solution for direct problem, and run the preprocessing and postprocessing ---*/
+
+    /*--- DeAllocate solution for adjoint problem ---*/
+    if (adj_euler || adj_ns || disc_adj) {
+      delete solver_container[iMGlevel][ADJFLOW_SOL];
+      if (turbulent or adj_turb){
+        delete solver_container[iMGlevel][ADJTURB_SOL];
+      }
+    }
+
+    /*--- DeAllocate solution for direct problem ---*/
     if (euler || ns) {
       delete solver_container[iMGlevel][FLOW_SOL];
     }
@@ -410,13 +419,7 @@ and potential are incompatible, they use the same position in sol container ---*
       delete solver_container[iMGlevel][FEA_SOL];
     }
 
-    /*--- Allocate solution for adjoint problem ---*/
-    if (adj_euler || adj_ns || disc_adj) {
-      delete solver_container[iMGlevel][ADJFLOW_SOL];
-      if (turbulent or adj_turb){
-        delete solver_container[iMGlevel][ADJTURB_SOL];
-      }
-    }
+
     //delete[] solver_container[iMGlevel];
   }
 }
@@ -519,10 +522,10 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
 
   }
 
-  /*--- Allocate solution for a template problem ---*/
+  /*--- DeAllocate solution for a template problem ---*/
   if (template_solver) integration_container[TEMPLATE_SOL] = new CSingleGridIntegration(config);
 
-  /*--- Allocate solution for direct problem ---*/
+  /*--- DeAllocate solution for direct problem ---*/
   if (euler || ns) delete integration_container[FLOW_SOL];
   if (turbulent) delete integration_container[TURB_SOL];
   if (transition) delete integration_container[TRANS_SOL];
@@ -531,7 +534,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   if (heat) delete integration_container[HEAT_SOL];
   if (fem) delete integration_container[FEA_SOL];
 
-  /*--- Allocate solution for adjoint problem ---*/
+  /*--- DeAllocate solution for adjoint problem ---*/
   if (adj_euler || adj_ns || disc_adj) delete integration_container[ADJFLOW_SOL];
   if (adj_turb) delete integration_container[ADJTURB_SOL];
 
