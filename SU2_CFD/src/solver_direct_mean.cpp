@@ -860,8 +860,10 @@ CEulerSolver::~CEulerSolver(void) {
   }
   
   if (CPressure != NULL) {
+    /* This causes failure in AD dealloc
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete CPressure[iMarker];
+    */
     delete [] CPressure;
   }
   
