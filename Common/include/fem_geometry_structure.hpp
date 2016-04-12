@@ -127,6 +127,18 @@ public:
    * \brief Destructor of the class. Nothing to be done.
    */
   ~CVolumeElementFEM(void);
+
+  /*!
+   * \brief Get all the corner points of all the faces of this element. It must be made sure
+            that the numbering of the faces is identical to the numbering used for the
+            standard elements.
+   * \param[out] nFaces         - Number of faces of this element.
+   * \param[out] nPointsPerFace - Number of corner points for each of the faces.
+   * \param[out] faceConn       - Global IDs of the corner points of the faces.
+   */
+  void GetCornerPointsAllFaces(unsigned short &numFaces,
+                               unsigned short nPointsPerFace[],
+                               unsigned long  faceConn[6][4]);
 };
 
 /*!
@@ -277,6 +289,12 @@ protected:
   vector<CPointFEM> meshPoints;      /*!< \brief Vector of the points of the FEM mesh. */
 
   vector<CBoundaryFEM> boundaries;   /*!< \brief Vector of the boundaries of the FEM mesh. */
+
+  vector<unsigned short> rotPerMarkers; /*!< \brief Vector, which contains the indices of the rotational
+                                                    periodic markers. */
+  vector<vector<unsigned long> > rotPerHalos; /*!< \brief Vector of vector, which contains the indices of
+                                                          to halo elements for which a rotationally periodic
+                                                          correction must be applied. */
 
   vector<int> ranksComm;             /*!< \brief Vector of ranks, which this rank exchanges information.
                                                  Self communication is included. */
