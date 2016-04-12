@@ -9004,9 +9004,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 	I = complex<su2double>(0.0,1.0);
   
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
-  	cc = AverageSoundSpeed[val_marker][iSpan]*AverageSoundSpeed[val_marker][iSpan];
-  	rhoc = AverageSoundSpeed[val_marker][iSpan]*AverageDensity[val_marker][iSpan];
-
   	AvgMach = AverageMach[val_marker][iSpan];
 
   	nVert = geometry->GetnTotVertexSpan(val_marker,iSpan);
