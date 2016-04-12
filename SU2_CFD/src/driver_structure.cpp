@@ -1380,7 +1380,7 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
                            CInterpolator ***interpolator_container,
                            CTransfer ***transfer_container) {
   
-  unsigned short iZone;
+  unsigned short iZone =0;
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
   /* --- Set the average for geometric quantities and steady grid velocity   ---*/
