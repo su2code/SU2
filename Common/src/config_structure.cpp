@@ -1734,6 +1734,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   	}else{
   		nMarker_TurboPerformance = nMarker_Turbomachinery;
   	}
+  } else {
+    nMarker_TurboPerformance = 0;
   }
 
 

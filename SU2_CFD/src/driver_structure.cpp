@@ -1169,7 +1169,10 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
 
     /*--- Set the target boolean: as of now, only Fluid-Structure Interaction considered ---*/
     switch (config_container[targetZone]->GetKind_Solver()) {
-      case EULER : case NAVIER_STOKES: case RANS: fluid_target  = true;     break;
+      case EULER : case NAVIER_STOKES: case RANS:
+      case DISC_ADJ_EULER : case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+        fluid_target  = true;
+        break;
       case FEM_ELASTICITY:            structural_target = true;   break;
     }
 
@@ -1180,7 +1183,10 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
 
 	    /*--- Set the donor boolean: as of now, only Fluid-Structure Interaction considered ---*/
 	    switch (config_container[donorZone]->GetKind_Solver()) {
-	      case EULER : case NAVIER_STOKES: case RANS: fluid_donor  = true;    break;
+        case EULER : case NAVIER_STOKES: case RANS:
+        case DISC_ADJ_EULER : case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+          fluid_donor  = true;
+          break;
 	      case FEM_ELASTICITY:            structural_donor = true;  break;
 	    }
 
@@ -1500,7 +1506,6 @@ CDiscAdjMultiZoneDriver::CDiscAdjMultiZoneDriver(CIteration **iteration_containe
   unsigned short iZone;
   switch (config_container[iZone]->GetKind_Solver()) {
     case DISC_ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
-      direct_iteration = new CIteration*[nZone];
       for (iZone = 0; iZone < nZone; iZone++){
         direct_iteration[iZone] = new CMeanFlowIteration(config_container[iZone]);
       }
@@ -1535,12 +1540,7 @@ void CDiscAdjMultiZoneDriver::Run(CIteration **iteration_container,
   if(ExtIter == 0){
     if(config_container[iZone]->GetBoolTurbomachinery()){
       for (iZone = 0; iZone < nZone; iZone++) {
-        /*--- set rotating frame and turbo average quantities ---*/
-        if ((config_container[iZone]->GetGrid_Movement())){
-          geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone);
-        }
-        geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],INFLOW, true);
-        geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],OUTFLOW, true);
+        SetGeoTurboAvgValues(geometry_container, config_container, iZone, true);
         solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
         solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
       }
@@ -1581,24 +1581,10 @@ void CDiscAdjMultiZoneDriver::SetSensitivity(CIteration **iteration_container,
 
   if (RecordingState != kind_sensitivity){
     if (RecordingState != NONE){
-      for (iZone = 0; iZone < nZone; iZone++) {
-
-        iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
-                                               solver_container, numerics_container, config_container,
-                                               surface_movement, grid_movement, FFDBox, iZone);
-
-      }
 
       SetRecording(iteration_container, output, integration_container, geometry_container,
                    solver_container, numerics_container, config_container, surface_movement,
                    grid_movement, FFDBox, interpolator_container, transfer_container, NONE);
-
-    }
-    for (iZone = 0; iZone < nZone; iZone++) {
-
-      iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
-                                             solver_container, numerics_container, config_container,
-                                             surface_movement, grid_movement, FFDBox, iZone);
 
     }
 
@@ -1651,6 +1637,14 @@ void CDiscAdjMultiZoneDriver::SetRecording(CIteration **iteration_container,
 #endif
 
   AD::Reset();
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
+                                           solver_container, numerics_container, config_container,
+                                           surface_movement, grid_movement, FFDBox, iZone);
+
+  }
 
   if (kind_recording != NONE){
 
@@ -1708,8 +1702,8 @@ void CDiscAdjMultiZoneDriver::SetRecording(CIteration **iteration_container,
   /*--- Print residuals in the first iteration ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    if ((rank == MASTER_NODE) && (kind_recording == SOLUTION) && (config_container[iZone]->GetExtIter() == 0)){
-
+//    if ((rank == MASTER_NODE) && (kind_recording == SOLUTION) && (config_container[iZone]->GetExtIter() == 0)){
+    if (rank == MASTER_NODE){
       cout << endl << "Convergence of direct solver for Zone " << iZone << ": " << endl;
 
       cout << "  log10[RMS Density]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
