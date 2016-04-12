@@ -207,7 +207,7 @@ void Driver_Preprocessing(CDriver **driver,
   /*--- fsi implementations will use, as of now, BGS implentation. More to come. ---*/
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
   
-  if (val_nZone == SINGLE_ZONE) {
+  if (val_nZone == SINGLE_ZONE && !config_container[ZONE_0]->GetDiscrete_Adjoint()) {
     
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     if (rank == MASTER_NODE) cout << "Instantiating a single zone driver for the problem. " << endl;
@@ -231,6 +231,13 @@ void Driver_Preprocessing(CDriver **driver,
 
 	 if (rank == MASTER_NODE) cout << "Instantiating a Fluid-Structure Interaction driver for the problem. " << endl;
 	 *driver = new CFSIDriver(iteration_container, solver_container, geometry_container,
+                      integration_container, numerics_container, interpolator_container,
+                            transfer_container, config_container, val_nZone, val_nDim);
+
+  } else if (config_container[ZONE_0]->GetDiscrete_Adjoint()){
+
+    if (rank == MASTER_NODE) cout << "Instantiating a multi-zone discrete adjoint driver for the problem. " << endl;
+    *driver = new CDiscAdjMultiZoneDriver(iteration_container, solver_container, geometry_container,
 	            			  integration_container, numerics_container, interpolator_container,
 	                          transfer_container, config_container, val_nZone, val_nDim);
 
@@ -244,10 +251,11 @@ void Driver_Preprocessing(CDriver **driver,
             					   integration_container, numerics_container, interpolator_container,
                                    transfer_container, config_container, val_nZone, val_nDim);
     
-    /*--- Future multi-zone drivers instatiated here. ---*/
+
     
   }
-  
+
+      /*--- Future multi-zone drivers instatiated here. ---*/
 }
 
 

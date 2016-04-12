@@ -3156,7 +3156,7 @@ public:
    * \brief A virtual member.
    * \param[in] kind_recording - Kind of AD recording.
    */
-  virtual void SetRecording(CGeometry *geometry, CConfig *config, unsigned short kind_recording);
+  virtual void SetRecording(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.
