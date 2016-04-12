@@ -1309,14 +1309,10 @@ void CSingleZoneDriver::Run(CIteration **iteration_container,
 
 	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
+	/*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
 	if(ExtIter == 0){
-		/*--- set rotating frame and turbo average quantities ---*/
 		if(config_container[ZONE_0]->GetBoolTurbomachinery()){
-			if ((config_container[ZONE_0]->GetGrid_Movement())){
-				geometry_container[ZONE_0][MESH_0]->SetRotationalVelocity(config_container[ZONE_0], ZONE_0);
-			}
-			geometry_container[ZONE_0][MESH_0]->SetAvgTurboValue(config_container[ZONE_0],INFLOW, true);
-			geometry_container[ZONE_0][MESH_0]->SetAvgTurboValue(config_container[ZONE_0],OUTFLOW, true);
+			SetGeoTurboAvgValues(geometry_container, config_container, ZONE_0, true);
 		}
 	}
 
@@ -1343,6 +1339,16 @@ void CSingleZoneDriver::Run(CIteration **iteration_container,
   
 }
 
+void CSingleZoneDriver::SetGeoTurboAvgValues(CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, bool allocate){
+
+	if ((config_container[iZone]->GetGrid_Movement())){
+					geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone);
+	}
+	geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],INFLOW, allocate);
+	geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],OUTFLOW, allocate);
+
+}
+
 
 CMultiZoneDriver::CMultiZoneDriver(CIteration **iteration_container,
                                    CSolver ****solver_container,
@@ -1353,7 +1359,7 @@ CMultiZoneDriver::CMultiZoneDriver(CIteration **iteration_container,
                                    CTransfer ***transfer_container,
                                    CConfig **config_container,
                                    unsigned short val_nZone,
-                                   unsigned short val_nDim) : CDriver(iteration_container,
+                                   unsigned short val_nDim) : CSingleZoneDriver(iteration_container,
                                                                        solver_container,
                                                                        geometry_container,
                                                                        integration_container,
@@ -1380,19 +1386,15 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
                            CInterpolator ***interpolator_container,
                            CTransfer ***transfer_container) {
   
-  unsigned short iZone;
+  unsigned short iZone =0;
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
-  /* --- Set the average for geometric quantities and steady grid velocity   ---*/
+
   if(ExtIter == 0){
+  	/*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
   	if(config_container[iZone]->GetBoolTurbomachinery()){
   		for (iZone = 0; iZone < nZone; iZone++) {
-  			/*--- set rotating frame and turbo average quantities ---*/
-  			if ((config_container[iZone]->GetGrid_Movement())){
-  				geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone);
-  			}
-  			geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],INFLOW, true);
-				geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],OUTFLOW, true);
+  			SetGeoTurboAvgValues(geometry_container, config_container, iZone, true);
 				solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
 				solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
 			}
