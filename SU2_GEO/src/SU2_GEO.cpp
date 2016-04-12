@@ -2,7 +2,7 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -460,12 +460,15 @@ int main(int argc, char *argv[]) {
         }
         surface_movement->SetParabolic(geometry_container[ZONE_0], config_container[ZONE_0]);
       }
-      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == CUSTOM)
+      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == CUSTOM and rank==MASTER_NODE)
         cout <<"Custom design variable will be used in external script" << endl;
 
       /*--- Design variable not implement ---*/
       
-      else { cout << "Design Variable not implement yet" << endl; }
+      else {
+        if (rank==MASTER_NODE)
+          cout << "Design Variable not implemented yet" << endl;
+      }
       
       /*--- Create airfoil structure ---*/
       for (iPlane = 0; iPlane < nPlane; iPlane++) {
