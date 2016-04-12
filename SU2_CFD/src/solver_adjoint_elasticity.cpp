@@ -52,7 +52,7 @@ CFEM_ElasticitySolver_Adj::CFEM_ElasticitySolver_Adj(void) : CSolver() {
 
   sensI_adjoint		= NULL;
 
-  EField_Mod      = NULL;
+  DV_Val      = NULL;
 
 }
 
@@ -311,50 +311,40 @@ CFEM_ElasticitySolver_Adj::CFEM_ElasticitySolver_Adj(CGeometry *geometry, CConfi
 //
 //  }
 
-   /*--- EField_Mod: Vector to store the modulus of the electric field (which is the design variable for DE problems). ---*/
+   /*--- DV_Val: Vector to store the value of the design variable. ---*/
 
+  unsigned short i_DV;
+
+  /*--- The number of design variables is equal to the total number of regions ---*/
+  if (nDim == 2) n_DV = config->GetnDV_X() * config->GetnDV_Y();
+  else n_DV = config->GetnDV_X() * config->GetnDV_Y() * config->GetnDV_Z();
+
+  /*--- Allocate the vector that stores the design variables ---*/
+  DV_Val = new su2double[n_DV];
+
+  /*---- Initialize the number of design variables ---*/
   switch (config->GetDV_FEA()) {
   case YOUNG_MODULUS:
-    n_DV = 1;
-    EField_Mod = new su2double[n_DV];
+    DV_Val[0] = config->GetElasticyMod();
     break;
   case ELECTRIC_FIELD:
-    unsigned short nEField_Read, nDelimiters;
-    unsigned short i_DV;
+    unsigned short nEField_Read;
     nEField_Read = config->GetnElectric_Field();
-    nDelimiters = config->GetnDel_EField() - 1;					// Number of region delimiters - 1 (has to be equal to nElectric_Field)
-    if (nEField_Read == 1){
-      if (nDelimiters == 0){
-        n_DV = 1;				// If there are no delimiters
-        EField_Mod = new su2double[n_DV];
-        for (i_DV = 0; i_DV < n_DV; i_DV++){
-          EField_Mod[i_DV] = config->Get_Electric_Field_Mod(0);
-        }
+    if (nEField_Read == n_DV){
+      for (i_DV = 0; i_DV < n_DV; i_DV++){
+        DV_Val[i_DV] = config->Get_Electric_Field_Mod(i_DV);
       }
-      else{
-        n_DV = nDelimiters;
-        EField_Mod = new su2double[n_DV];
-        for (i_DV = 0; i_DV < n_DV; i_DV++){
-          EField_Mod[i_DV] = config->Get_Electric_Field_Mod(i_DV);   // Only one value is passed in
-        }
+    } else if (nEField_Read == 1){
+      for (i_DV = 0; i_DV < n_DV; i_DV++){
+        DV_Val[i_DV] = config->Get_Electric_Field_Mod(0);
       }
     } else{
-      if (nDelimiters == nEField_Read){
-        n_DV = nEField_Read;
-        EField_Mod = new su2double[n_DV];
-        for (i_DV = 0; i_DV < n_DV; i_DV++){
-          EField_Mod[i_DV] = config->Get_Electric_Field_Mod(i_DV);
-        }
-      }
-      else{
-        cout << "DIMENSIONS OF ELECTRIC FIELD AND DELIMITERS DON'T AGREE!!!" << endl;
-        exit(EXIT_FAILURE);
-      }
+      cout << "THE NUMBER OF ELECTRIC FIELD AND DESIGN REGIONS IS NOT IN AGREEMENT!!!" << endl;
+      exit(EXIT_FAILURE);
     }
     break;
   default:
-    n_DV = 1;
-    EField_Mod = new su2double[n_DV];
+    DV_Val[0] = 0.0;
   }
 
   /*--- Initialize the sensitivity variable for the linear system ---*/
@@ -385,10 +375,21 @@ CFEM_ElasticitySolver_Adj::CFEM_ElasticitySolver_Adj(CGeometry *geometry, CConfi
     break;
   }
 
+  /*--- Header of the temporary output file ---*/
   ofstream myfile_res;
   myfile_res.open ("Results_E.txt");
 
-  myfile_res << "E(1) E(2) val_I Sens(1) Sens(2)" << endl;
+  for (i_DV = 0; i_DV < n_DV; i_DV++){
+    myfile_res << "E(" << i_DV << ") ";
+  }
+
+  myfile_res << "val_I ";
+
+  for (i_DV = 0; i_DV < n_DV; i_DV++){
+    myfile_res << "Sens(" << i_DV << ") ";
+  }
+
+  myfile_res << endl;
 
   myfile_res.close();
 
@@ -434,7 +435,7 @@ CFEM_ElasticitySolver_Adj::~CFEM_ElasticitySolver_Adj(void) {
   delete [] mId_Aux;
 
   if (sensI_adjoint != NULL) delete [] sensI_adjoint;
-  if (EField_Mod != NULL) delete [] EField_Mod;
+  if (DV_Val != NULL) delete [] DV_Val;
 
 }
 
@@ -1340,13 +1341,13 @@ void CFEM_ElasticitySolver_Adj::DE_Sensitivity(CGeometry *geometry, CSolver **so
 
     cout << "DV (" << i_DV << "): " ;
 
-    cout << EField_Mod[i_DV] << " ";
+    cout << DV_Val[i_DV] << " ";
 
     /*--- Using a Newton method, the update value is E2 = E1 - alpha * val(I) / grad(I) ---*/
     /*--- However, we may be far away from the solution, so in this first (naive) implementation... ---*/
 
     /*--- 1) We compute the new value of the design variable ---*/
-    dv_val = EField_Mod[i_DV] - config->GetDE_Rate() * val_I / sensI_adjoint[i_DV];
+    dv_val = DV_Val[i_DV] - config->GetDE_Rate() * val_I / sensI_adjoint[i_DV];
 
     cout << dv_val << " " ;
 
@@ -1361,29 +1362,29 @@ void CFEM_ElasticitySolver_Adj::DE_Sensitivity(CGeometry *geometry, CSolver **so
     cout << dv_val << " " ;
 
 //    /*--- 4) We limit the change rate so as it can only increase by a % of the previous value ---*/
-//    if (dv_val > EField_Mod[i_DV]){
+//    if (dv_val > DV_Val[i_DV]){
 //
-//      dv_val = min(dv_val, ((1.0 +config->GetDE_Rate())* EField_Mod[i_DV]));
+//      dv_val = min(dv_val, ((1.0 +config->GetDE_Rate())* DV_Val[i_DV]));
 //
 //    }
 //    else{
 //
-//      dv_val = max(dv_val, ((1.0 - config->GetDE_Rate())*EField_Mod[i_DV]));
+//      dv_val = max(dv_val, ((1.0 - config->GetDE_Rate())*DV_Val[i_DV]));
 //
 //    }
 
     cout << dv_val << " " ;
 
     /*--- 5) We store the value in the direct and the adjoint solvers ---*/
-    EField_Mod[i_DV] = dv_val;
+    DV_Val[i_DV] = dv_val;
 
     cout << endl;
 
-    direct_solver->Set_EField_Mod(dv_val,i_DV);
+    direct_solver->Set_DV_Val(dv_val,i_DV);
 
-    numerics[FEA_TERM]->Set_ElectricField(i_DV, EField_Mod[i_DV]);
-    numerics[DE_TERM]->Set_ElectricField(i_DV, EField_Mod[i_DV]);
-    numerics[DE_ADJ]->Set_ElectricField(i_DV, EField_Mod[i_DV]);
+    numerics[FEA_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
+    numerics[DE_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
+    numerics[DE_ADJ]->Set_ElectricField(i_DV, DV_Val[i_DV]);
 
   }
 
@@ -1400,7 +1401,7 @@ void CFEM_ElasticitySolver_Adj::DE_Sensitivity(CGeometry *geometry, CSolver **so
       myfile_res <<  config->GetElasticyMod() << " ";
       break;
     case ELECTRIC_FIELD:
-      myfile_res << scientific << EField_Mod[i_DV] << " ";
+      myfile_res << scientific << DV_Val[i_DV] << " ";
       break;
     }
   }

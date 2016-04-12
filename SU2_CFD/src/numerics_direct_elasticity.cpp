@@ -36,10 +36,13 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
                                    CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
 	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+	bool pseudo_static = config->GetPseudoStatic();
 
 	E = config->GetElasticyMod();
 	Nu = config->GetPoissonRatio();
-	Rho_s = config->GetMaterialDensity();
+	Rho_s = config->GetMaterialDensity();       // For inertial effects
+	Rho_s_DL = config->GetMaterialDensity();    // For dead loads
+	if (pseudo_static) Rho_s = 0.0;             // Pseudo-static: no inertial effects considered
 	Mu = E / (2.0*(1.0 + Nu));
 	Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
 	Kappa = Lambda + (2/3)*Mu;
@@ -219,7 +222,7 @@ void CFEM_Elasticity::Compute_Dead_Load(CElement *element, CConfig *config){
 		for (iNode = 0; iNode < nNode; iNode++){
 
 			for (iDim = 0; iDim < nDim; iDim++){
-				FAux_Dead_Load[iDim] = Weight * Ni_Vec[iNode] * Jac_X * Rho_s * g_force[iDim];
+				FAux_Dead_Load[iDim] = Weight * Ni_Vec[iNode] * Jac_X * Rho_s_DL * g_force[iDim];
 			}
 
 			element->Add_FDL_a(FAux_Dead_Load,iNode);

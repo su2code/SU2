@@ -72,6 +72,7 @@ private:
 	su2double Res_FEM_UTOL; 		/*!< \brief UTOL criteria for structural FEM. */
 	su2double Res_FEM_RTOL; 		/*!< \brief RTOL criteria for structural FEM. */
 	su2double Res_FEM_ETOL; 		/*!< \brief ETOL criteria for structural FEM. */
+  su2double Res_FEM_ADJ;     /*!< \brief Convergence criteria for adjoint FEM. */
 	su2double EA_ScaleFactor; /*!< \brief Equivalent Area scaling factor */
 	su2double* EA_IntLimit; /*!< \brief Integration limits of the Equivalent Area computation */
   su2double AdjointLimit; /*!< \brief Adjoint variable limit */
@@ -693,6 +694,7 @@ private:
   long Visualize_CV; /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
   bool DeadLoad; 		/*!< Application of dead loads to the FE analysis */
+  bool PseudoStatic;    /*!< Application of dead loads to the FE analysis */
   bool MatchingMesh; 	/*!< Matching mesh (while implementing interpolation procedures). */
   bool SteadyRestart; 	/*!< Restart from a steady state for FSI problems. */
   su2double Newmark_alpha,			/*!< \brief Parameter alpha for Newmark method. */
@@ -710,6 +712,12 @@ private:
   su2double *Electric_Field_Max,  /*!< \brief Maximum value of the modulus of the electric field. */
   *Electric_Field_Min;            /*!< \brief Minimum value of the modulus of the electric field. */
   su2double *Electric_Field_Del;	/*!< \brief Values of the delimiters of the Electric Field (along axis Axis_EField). */
+  su2double *DV_Del_X,        /*!< \brief Values of the delimiters of the Electric Field (along axis X). */
+  *DV_Del_Y,                  /*!< \brief Values of the delimiters of the Electric Field (along axis Y). */
+  *DV_Del_Z;                  /*!< \brief Values of the delimiters of the Electric Field (along axis Z). */
+  unsigned short nDV_Del_X,   /*!< \brief Number of delimiters for the electric field (along axis X). */
+  nDV_Del_Y,                    /*!< \brief Number of delimiters for the electric field (along axis Y). */
+  nDV_Del_Z;                    /*!< \brief Number of delimiters for the electric field (along axis Z). */
   bool Sigmoid_Load,		/*!< \brief Apply the load using a sigmoid. */
   Ramp_Load;				/*!< \brief Apply the load with linear increases. */
   bool IncrementalLoad;		/*!< \brief Apply the load in increments (for nonlinear structural analysis). */
@@ -4552,6 +4560,12 @@ public:
 	su2double GetResidual_FEM_ETOL(void);
 
   /*!
+   * \brief Value of the maximum objective function for FEM elasticity adjoint (log10 scale).
+   * \return Value of Res_FEM_ADJ (log10 scale).
+   */
+  su2double GetCriteria_FEM_ADJ(void);
+
+  /*!
    * \brief Value of the damping factor for the engine inlet bc.
    * \return Value of the damping factor.
    */
@@ -5421,6 +5435,13 @@ public:
 
 	bool GetDeadLoad(void);
 
+  /*!
+    * \brief Pseudo-static analysis (the density is 0 for inertial effects but nonzero for dead loads).
+    * \return <code>TRUE</code> if the inertial effects are not considered, <code>FALSE</code> otherwise.
+    */
+
+  bool GetPseudoStatic(void);
+
 	/*!
 	  * \brief Identifies if the mesh is matching or not (temporary, while implementing interpolation procedures).
 	  * \return <code>TRUE</code> if the mesh is matching, <code>FALSE</code> otherwise.
@@ -5547,6 +5568,46 @@ public:
 	 * \return Alpha coefficient for the Runge-Kutta integration scheme.
 	 */
 	su2double Get_Electric_Field_Del(unsigned short val_coeff);
+
+  /*!
+   * \brief Get the values that limit regions in the X axis.
+   * \param[in] val_coeff - Index of the coefficient.
+   * \return del_x - X coordinate.
+   */
+  su2double Get_DV_Del_X(unsigned short val_coeff);
+
+  /*!
+   * \brief Get the values that limit regions in the Y axis.
+   * \param[in] val_coeff - Index of the coefficient.
+   * \return del_y - Y coordinate.
+   */
+  su2double Get_DV_Del_Y(unsigned short val_coeff);
+
+  /*!
+   * \brief Get the values that limit regions in the Z axis.
+   * \param[in] val_coeff - Index of the coefficient.
+   * \return del_z - Z coordinate.
+   */
+  su2double Get_DV_Del_Z(unsigned short val_coeff);
+
+  /*!
+   * \brief Get the number of regions that are delimited in the X axis.
+   * \return nDV_Del_X-1 - number of REGIONS in X direction (delimiters - 1)
+   */
+  unsigned short GetnDV_X(void);
+
+  /*!
+   * \brief Get the number of regions that are delimited in the Y axis.
+   * \return nDV_Del_Y-1 - number of REGIONS in Y direction (delimiters - 1)
+   */
+  unsigned short GetnDV_Y(void);
+
+  /*!
+   * \brief Get the number of regions that are delimited in the Z axis.
+   * \return nDV_Del_Z-1 - Number of REGIONS in Z direction (delimiters - 1)
+   */
+  unsigned short GetnDV_Z(void);
+
 
 	/*!
 	 * \brief Set the values for the electric field modulus.

@@ -930,7 +930,11 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ***geometry, CSolver
 //
 //  monitor = log10(solver_container[iZone][MESH_0][FEA_SOL]->GetRes_RMS(0));
 
+  switch (RunTime_EqSystem) {
+    case RUNTIME_FEA_SYS: Convergence_Monitoring_FEM(geometry[iZone][MESH_0], config[iZone], solver_container[iZone][MESH_0][SolContainer_Position], Iteration); break;
+    case RUNTIME_ADJFEA_SYS: Convergence_Monitoring_FEM_Adj(geometry[iZone][MESH_0], config[iZone], solver_container[iZone][MESH_0][SolContainer_Position], Iteration); break;
+  }
   /*--- Convergence strategy ---*/
-  Convergence_Monitoring_FEM(geometry[iZone][MESH_0], config[iZone], solver_container[iZone][MESH_0][SolContainer_Position], Iteration);
+
 
 }

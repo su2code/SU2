@@ -1157,6 +1157,8 @@ inline su2double CConfig::GetAitkenDynMinInit(void) { return AitkenDynMinInit; }
 
 inline bool CConfig::GetDeadLoad(void) { return DeadLoad; }
 
+inline bool CConfig::GetPseudoStatic(void) { return PseudoStatic; }
+
 inline bool CConfig::GetMatchingMesh(void) { return MatchingMesh; }
 
 inline bool CConfig::GetSteadyRestart(void) { return SteadyRestart; }
@@ -1199,6 +1201,18 @@ inline unsigned short CConfig::GetnDel_EField(void) { return nDel_EField; }
 
 inline su2double CConfig::Get_Electric_Field_Del(unsigned short val_coeff) { return Electric_Field_Del[val_coeff]; }
 
+inline su2double CConfig::Get_DV_Del_X(unsigned short val_coeff) { return DV_Del_X[val_coeff]; }
+
+inline su2double CConfig::Get_DV_Del_Y(unsigned short val_coeff) { return DV_Del_Y[val_coeff]; }
+
+inline su2double CConfig::Get_DV_Del_Z(unsigned short val_coeff) { return DV_Del_Z[val_coeff]; }
+
+inline unsigned short CConfig::GetnDV_X(void) { return nDV_Del_X - 1; }
+
+inline unsigned short CConfig::GetnDV_Y(void) { return nDV_Del_Y - 1; }
+
+inline unsigned short CConfig::GetnDV_Z(void) { return nDV_Del_Z - 1; }
+
 inline bool CConfig::GetSigmoid_Load(void) { return Sigmoid_Load; }
 
 inline bool CConfig::GetRamp_Load(void) { return Ramp_Load; }
@@ -1234,6 +1248,8 @@ inline su2double CConfig::GetResidual_FEM_UTOL(void) { return Res_FEM_UTOL; }
 inline su2double CConfig::GetResidual_FEM_RTOL(void) { return Res_FEM_RTOL; }
 
 inline su2double CConfig::GetResidual_FEM_ETOL(void) { return Res_FEM_ETOL; }
+
+inline su2double CConfig::GetCriteria_FEM_ADJ(void) { return Res_FEM_ADJ; }
 
 inline unsigned short CConfig::GetDirectDiff(){ return DirectDiff;}
 
