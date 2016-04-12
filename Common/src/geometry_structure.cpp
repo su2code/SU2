@@ -86,7 +86,7 @@ CGeometry::CGeometry(void) {
 
 CGeometry::~CGeometry(void) {
   
-  unsigned long iElem, iElem_Bound, iFace, iVertex, iEdge;
+  unsigned long iElem, iElem_Bound, iFace, iVertex, iEdge, iPoint;
   unsigned short iMarker;
   
 //  if (elem != NULL) {
@@ -110,11 +110,11 @@ CGeometry::~CGeometry(void) {
     delete[] face;
   }
   
-//  if (node != NULL) {
-//    for (iPoint = 0; iPoint < nPoint; iPoint ++)
-//      if (node[iPoint] != NULL) delete node[iPoint];
-//    delete[] node;
-//  }
+  if (node != NULL) {
+    for (iPoint = 0; iPoint < nPoint; iPoint ++)
+      if (node[iPoint] != NULL) delete node[iPoint];
+    delete[] node;
+  }
   
   if (edge != NULL) {
     for (iEdge = 0; iEdge < nEdge; iEdge ++)
@@ -155,6 +155,10 @@ CGeometry::~CGeometry(void) {
   //	Zcoord_plane.~vector()
   //	FaceArea_plane.~vector()
   //	Plane_points.~vector()
+  
+  if (starting_node != NULL) delete [] starting_node;
+  if (ending_node   != NULL) delete [] ending_node;
+  if (npoint_procs  != NULL) delete [] npoint_procs;
   
 }
 
@@ -1263,6 +1267,9 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
 
+  starting_node = NULL;
+  ending_node   = NULL;
+  npoint_procs  = NULL;
 }
 
 CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
@@ -1272,10 +1279,14 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
   
+  starting_node = NULL;
+  ending_node   = NULL;
+  npoint_procs  = NULL;
+  
   string text_line, Marker_Tag;
   ifstream mesh_file;
   unsigned short iDim, iMarker, iNodes;
-  unsigned long iPoint, LocaNodes = 0, iElem_Bound;
+  unsigned long iPoint, iElem_Bound;
   su2double *NewCoord;
   nZone = val_nZone;
   ofstream boundary_file;
@@ -1297,11 +1308,9 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   switch (val_format) {
     case SU2:
       Read_SU2_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
-      LocaNodes = local_node;
       break;
     case CGNS:
       Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
-      LocaNodes = local_node;
       break;
     default:
       if (rank == MASTER_NODE) cout << "Unrecognized mesh format specified!" << endl;
@@ -1327,7 +1336,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
     /*--- The US system uses feet, but SU2 assumes that the grid is in inches ---*/
     
     if (config->GetSystemMeasurements() == US) {
-      for (iPoint = 0; iPoint < LocaNodes; iPoint++) {
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (iDim = 0; iDim < nDim; iDim++) {
           NewCoord[iDim] = node[iPoint]->GetCoord(iDim)/12.0;
         }
@@ -1391,6 +1400,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   Local_to_Global_Point  = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
+  
+  starting_node = NULL;
+  ending_node   = NULL;
+  npoint_procs  = NULL;
   
   /*--- Local variables and counters for the following communications. ---*/
   
@@ -1658,7 +1671,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   /*--- MEMORY WARNING: Bad usage of memory here for local_colour_values. Not scalable. 
         In the future, we should avoid sharing a single array of all colors in all nodes. ---*/
-  unsigned long *local_colour_values = new unsigned long[geometry->GetnPoint()];
+  unsigned long *local_colour_values = new unsigned long[geometry->GetGlobal_nPoint()];
   unsigned long *local_colour_temp   = new unsigned long[geometry->ending_node[rank]-geometry->starting_node[rank]];
   
   for (unsigned long i=0; i<geometry->ending_node[rank]-geometry->starting_node[rank]; i++) {
@@ -1767,7 +1780,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
               
               /*--- Increment our counters ---*/
               if ( local_colour_values[iPoint] == iDomain ) {
-                if ( iPoint > geometry->GetnPointDomain() - 1)
+                if ( iPoint > geometry->GetGlobal_nPointDomain() - 1)
                   Buffer_Send_nPointPeriodic++;
                 else
                   Buffer_Send_nPointDomainTotal++;
@@ -2143,7 +2156,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                 /*--- If iDomain owns the point, it must be either an interior
                  node (iPoint < nPointDomain) or a periodic node. ---*/
                 
-                if (iPoint > geometry->GetnPointDomain() - 1)
+                if (iPoint > geometry->GetGlobal_nPointDomain() - 1)
                   iPointCurrent = iPointPeriodic;
                 else
                   iPointCurrent = iPointDomain;
@@ -2174,7 +2187,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
               
               /*--- Increment our counters ---*/
               if ( local_colour_values[iPoint] == iDomain ) {
-                if ( iPoint > geometry->GetnPointDomain() - 1)
+                if ( iPoint > geometry->GetGlobal_nPointDomain() - 1)
                   iPointPeriodic++;
                 else
                   iPointDomain++;
@@ -2476,7 +2489,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
           /*--- If iDomain owns the point, it must be either an interior
            node (iPoint < nPointDomain) or a periodic node. ---*/
           
-          if (Buffer_Receive_GlobalPointIndex[iPoint] > geometry->GetnPointDomain() - 1) {
+          if (Buffer_Receive_GlobalPointIndex[iPoint] > geometry->GetGlobal_nPointDomain() - 1) {
             
             /*--- Set the starting point for the local index of the recv points.
              The temp_node_count increments for the interior nodes, between 0 up
@@ -2584,7 +2597,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
           /*--- If iDomain owns the point, it must be either an interior
            node (iPoint < nPointDomain) or a periodic node. ---*/
           
-          if (Buffer_Receive_GlobalPointIndex_loc[iPoint] > geometry->GetnPointDomain() - 1) {
+          if (Buffer_Receive_GlobalPointIndex_loc[iPoint] > geometry->GetGlobal_nPointDomain() - 1) {
             
             index = temp_node_count_periodic;
             
@@ -4869,9 +4882,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         npoint_procs[i]++;
       }
       
-      /*--- Store the local number of nodes and the beginning/end index ---*/
+      /*--- Store the local number of nodes and the beginning/end index.
+       nPoint is always used to store the local number of points. ---*/
       
-      local_node = npoint_procs[rank];
+      nPoint = npoint_procs[rank];
       starting_node[0] = 0;
       ending_node[0]   = starting_node[0] + npoint_procs[0];
       for (unsigned long i = 1; i < (unsigned long)size; i++) {
@@ -4883,9 +4897,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
        and if so, then store it on the local processor. We only create enough
        space in the node container for the local nodes at this point. ---*/
       
-      node = new CPoint*[local_node];
+      node = new CPoint*[nPoint];
       iPoint = 0; node_count = 0;
-      while (node_count < nPoint) {
+      while (node_count < Global_nPoint) {
         getline(mesh_file, text_line);
         istringstream point_line(text_line);
         
@@ -4928,7 +4942,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifdef HAVE_PARMETIS
   
   /*--- Initialize the vector for the adjacency information (ParMETIS). ---*/
-  vector< vector<unsigned long> > adj_nodes(local_node, vector<unsigned long>(0));
+  vector< vector<unsigned long> > adj_nodes(nPoint, vector<unsigned long>(0));
 
 #endif
 #endif
@@ -5010,7 +5024,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               
               local_index = vnodes_triangle[i]-starting_node[rank];
 
-              if ((local_index >= 0) && (local_index < (long)local_node)) {
+              if ((local_index >= 0) && (local_index < (long)nPoint)) {
                 
                 /*--- This node is within our linear partition. Mark this 
                  entire element to be added to our list for this rank, and 
@@ -5052,7 +5066,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               
               local_index = vnodes_quad[i]-starting_node[rank];
               
-              if ((local_index >= 0) && (local_index < (long)local_node)) {
+              if ((local_index >= 0) && (local_index < (long)nPoint)) {
                 
                 /*--- This node is within our linear partition. Mark this
                  entire element to be added to our list for this rank, and
@@ -5093,7 +5107,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               
               local_index = vnodes_tetra[i]-starting_node[rank];
               
-              if ((local_index >= 0) && (local_index < (long)local_node)) {
+              if ((local_index >= 0) && (local_index < (long)nPoint)) {
                 
                 /*--- This node is within our linear partition. Mark this
                  entire element to be added to our list for this rank, and
@@ -5139,7 +5153,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               
               local_index = vnodes_hexa[i]-starting_node[rank];
               
-              if ((local_index >= 0) && (local_index < (long)local_node)) {
+              if ((local_index >= 0) && (local_index < (long)nPoint)) {
                 
                 /*--- This node is within our linear partition. Mark this
                  entire element to be added to our list for this rank, and
@@ -5188,7 +5202,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               
               local_index = vnodes_prism[i]-starting_node[rank];
               
-              if ((local_index >= 0) && (local_index < (long)local_node)) {
+              if ((local_index >= 0) && (local_index < (long)nPoint)) {
                 
                 /*--- This node is within our linear partition. Mark this
                  entire element to be added to our list for this rank, and
@@ -5236,7 +5250,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               
               local_index = vnodes_pyramid[i]-starting_node[rank];
               
-              if ((local_index >= 0) && (local_index < (long)local_node)) {
+              if ((local_index >= 0) && (local_index < (long)nPoint)) {
                 
                 /*--- This node is within our linear partition. Mark this
                  entire element to be added to our list for this rank, and
@@ -5313,7 +5327,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
    the entries and remove the duplicates we find for each node, then we
    copy it into the single vect and clear memory from the multi-dim vec. ---*/
   
-  for (unsigned long i = 0; i < local_node; i++) {
+  for (unsigned long i = 0; i < nPoint; i++) {
     
     for (j = 0; j<adj_nodes[i].size(); j++) {
       temp_adjacency.push_back(adj_nodes[i][j]);
@@ -6091,7 +6105,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
       
       /*--- Store the local number of nodes and the beginning/end index ---*/
       
-      local_node = npoint_procs[rank];
+      nPoint = npoint_procs[rank];
       starting_node[0] = 0;
       ending_node[0]   = starting_node[0] + npoint_procs[0];
       nPoint_Linear[0] = 0;
@@ -6109,14 +6123,14 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
       
       range_min = (cgsize_t)starting_node[rank]+1;
       range_max = (cgsize_t)ending_node[rank];
-      coordArray[j-1] = new passivedouble[local_node];
+      coordArray[j-1] = new passivedouble[nPoint];
       
       /*--- Allocate memory for the 2-D array that will store the x, y,
        & z (if required) coordinates for writing into the SU2 mesh. ---*/
       
       gridCoords[j-1] = new passivedouble*[ncoords];
       for (int ii = 0; ii < ncoords; ii++) {
-        *(gridCoords[j-1]+ii) = new passivedouble[local_node];
+        *(gridCoords[j-1]+ii) = new passivedouble[nPoint];
       }
       
       /*--- Loop over each set of coordinates. Note again
@@ -6160,7 +6174,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         /*--- Copy these coords into the array for storage until
          writing the SU2 mesh. ---*/
         
-        for (unsigned long m = 0; m < local_node; m++ ) {
+        for (unsigned long m = 0; m < nPoint; m++ ) {
           gridCoords[j-1][k-1][m] = coordArray[j-1][m];
         }
         
@@ -6883,7 +6897,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   
   /*--- Initialize an array for the adjacency information (ParMETIS). ---*/
   
-  vector< vector<unsigned long> > adj_nodes(local_node, vector<unsigned long>(0));
+  vector< vector<unsigned long> > adj_nodes(nPoint, vector<unsigned long>(0));
   
   /*--- Store the total number of interior elements (global). ---*/
   
@@ -7151,7 +7165,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   vector<unsigned long> temp_adjacency;
   unsigned long local_count=0;
   
-  for (unsigned long i = 0; i < local_node; i++) {
+  for (unsigned long i = 0; i < nPoint; i++) {
     
     for (unsigned long j=0; j<adj_nodes[i].size(); j++) {
       temp_adjacency.push_back(adj_nodes[i][j]);
@@ -7193,16 +7207,16 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   /*--- Store the nodal coordinates from the linear partitioning. ---*/
 
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE)) {
-    cout << nPoint << " grid points before linear partitioning." << endl;
+    cout << Global_nPoint << " grid points before linear partitioning." << endl;
   } else if (rank == MASTER_NODE) {
-    cout << nPoint << " grid points." << endl;
+    cout << Global_nPoint << " grid points." << endl;
   }
   
   iPoint = 0;
-  node = new CPoint*[local_node];
+  node = new CPoint*[nPoint];
   GlobalIndex = starting_node[rank];
   for (int k = 0; k < nzones; k++ ) {
-    for (unsigned long i = 0; i < local_node; i++ ) {
+    for (unsigned long i = 0; i < nPoint; i++ ) {
       for (int j = 0; j < cell_dim; j++ ) Coord_cgns[j] = gridCoords[k][j][i];
       switch(nDim) {
         case 2:
@@ -10315,7 +10329,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
   
   /*--- Initialize the color vector ---*/
   
-  for (unsigned long iPoint = 0; iPoint < local_node; iPoint++)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint]->SetColor(0);
   
   /*--- This routine should only ever be called if we have parallel support
@@ -10339,7 +10353,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     idx_t numflag, nparts, edgecut, wgtflag, ncon;
     
     idx_t *vtxdist = new idx_t[size+1];
-    idx_t *part    = new idx_t[local_node];
+    idx_t *part    = new idx_t[nPoint];
     
     real_t ubvec;
     real_t *tpwgts = new real_t[size];
@@ -10382,7 +10396,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
      since each processor is calling ParMETIS in parallel and storing the
      results for its initial piece of the grid. ---*/
     
-    for (iPoint = 0; iPoint < local_node; iPoint++) {
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
       node[iPoint]->SetColor(part[iPoint]);
     }
     
