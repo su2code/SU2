@@ -1497,6 +1497,23 @@ public:
                               unsigned long  faceConn[6][4]);
 
  /*!
+  * \brief Static member function to get the local the corner points of all the faces
+           of this element. It must be made sure that the numbering of the faces is
+           identical to the numbering used for the standard elements.
+  * \param[in]  elementType    - Type of the element using the VTK convention.
+  * \param[in]  nPoly          - Polynomial degree of the element.
+  * \param[in]  nDOFs          - Number of DOFs of the element.
+  * \param[out] nFaces         - Number of faces of this element.
+  * \param[out] nPointsPerFace - Number of corner points for each of the faces.
+  * \param[out] faceConn       - Global IDs of the corner points of the faces.
+  */
+ static void GetLocalCornerPointsAllFaces(unsigned short elementType,
+                                          unsigned short nPoly,
+                                          unsigned short nDOFs,
+                                          unsigned short &numFaces,
+                                          unsigned short nPointsPerFace[],
+                                          unsigned long  faceConn[6][4]);
+ /*!
   * \brief Function to get whether or not the Jacobian is considered constant.
   * \return True if the Jacobian is (almost) constant and false otherwise.
   */

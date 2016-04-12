@@ -76,10 +76,15 @@ FaceOfElementClass::FaceOfElementClass(){
   nCornerPoints   = 0;
   cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = 0;
   elemID0         = elemID1 = ULONG_MAX;
-  nPoly0          = nPoly1     = 0;
+  nPolyGrid0      = nPolyGrid1 = 0;
+  nPolySol0       = nPolySol1  = 0;
   nDOFsElem0      = nDOFsElem1 = 0;
+  elemType0       = elemType1  = 0;
+  faceID0         = faceID1    = 0;
   periodicIndex   = 0;
   faceIndicator   = 0;
+
+  JacFaceIsConsideredConstant = false;
 }
 
 bool FaceOfElementClass::operator<(const FaceOfElementClass &other) const {
@@ -105,17 +110,137 @@ void FaceOfElementClass::Copy(const FaceOfElementClass &other) {
   elemID0 = other.elemID0;
   elemID1 = other.elemID1;
 
-  nPoly0 = other.nPoly0;
-  nPoly1 = other.nPoly1;
+  nPolyGrid0 = other.nPolyGrid0;
+  nPolyGrid1 = other.nPolyGrid1;
+  nPolySol0  = other.nPolySol0;
+  nPolySol1  = other.nPolySol1;
 
   nDOFsElem0 = other.nDOFsElem0;
   nDOFsElem1 = other.nDOFsElem1;
+  elemType0  = other.elemType0;
+  elemType1  = other.elemType1;
+  faceID0    = other.faceID0;
+  faceID1    = other.faceID1;
 
   periodicIndex = other.periodicIndex;
   faceIndicator = other.faceIndicator;
 
-  faceConnSide0 = other.faceConnSide0;
-  faceConnSide1 = other.faceConnSide1;
+  JacFaceIsConsideredConstant = other.JacFaceIsConsideredConstant;
+}
+
+void FaceOfElementClass::CreateUniqueNumberingWithOrientation(void) {
+
+  /*--- Determine the element type and create the unique numbering accordingly. ---*/
+  bool swapElements = false;
+  switch( nCornerPoints ) {
+
+    case 2: {
+      /* Element is a line. Check if the node numbering must be swapped. If so
+         also the element information must be swapped, because element 0 is to
+         the left of the face and element 1 to the right. */
+      if(cornerPoints[1] < cornerPoints[0]) {
+        swap(cornerPoints[0], cornerPoints[1]);
+        swapElements = true;
+      }
+      break;
+    }
+
+    case 3: {
+      /* Element is a triangle. The vertices are sorted in increasing order.
+         If the sequence of the new numbering is opposite to the current
+         numbering, the element information must be exchanged, because
+         element 0 is to the left of the face and element 1 to the right. */
+      unsigned long nn[] = {cornerPoints[0], cornerPoints[1], cornerPoints[2]};
+      unsigned short ind = 0;
+      if(nn[1] < nn[ind]) ind = 1;
+      if(nn[2] < nn[ind]) ind = 2;
+
+      unsigned short indm1 = ind==0 ? 2 : ind - 1;   // Next lower index.
+      unsigned short indp1 = ind==2 ? 0 : ind + 1;   // Next upper index.
+
+      if(nn[indp1] < nn[indm1]) {
+
+        /* The orientation of the triangle remains the same.
+           Store the new sorted node numbering. */
+        cornerPoints[0] = nn[ind];
+        cornerPoints[1] = nn[indp1];
+        cornerPoints[2] = nn[indm1];
+      }
+      else {
+
+        /* The orientation of the triangle changes. Store the new
+           sorted node numbering and set swapElements to true. */
+        cornerPoints[0] = nn[ind];
+        cornerPoints[1] = nn[indm1];
+        cornerPoints[2] = nn[indp1];
+        swapElements    = true;
+      }
+
+      break;
+    }
+
+    case 4: {
+      /* Element is a quadrilateral. The vertices are sorted in increasing order
+         under the condition neighboring vertices remain neighbors. If the
+         sequence of the new numbering is opposite to the current
+         numbering, the element information must be exchanged, because
+         element 0 is to the left of the face and element 1 to the right. */
+      unsigned long nn[] = {cornerPoints[0], cornerPoints[1],
+                            cornerPoints[2], cornerPoints[3]};
+      unsigned short ind = 0;
+      if(nn[1] < nn[ind]) ind = 1;
+      if(nn[2] < nn[ind]) ind = 2;
+      if(nn[3] < nn[ind]) ind = 3;
+
+      unsigned short indm1 = ind==0 ?       3 : ind - 1; // Next lower index.
+      unsigned short indp1 = ind==3 ?       0 : ind + 1; // Next upper index.
+      unsigned short indp2 = ind>=2 ? ind - 2 : ind + 2; // Opposite index.
+
+      if(nn[indp1] < nn[indm1]) {
+
+        /* The orientation of the quadrilateral remains the same.
+           Store the new sorted node numbering. */
+        cornerPoints[0] = nn[ind];
+        cornerPoints[1] = nn[indp1];
+        cornerPoints[2] = nn[indp2];
+        cornerPoints[3] = nn[indm1];
+      }
+      else {
+
+        /* The orientation of the quadrilateral changes. Store the new
+           sorted node numbering and set swapElements to true. */
+        cornerPoints[0] = nn[ind];
+        cornerPoints[1] = nn[indm1];
+        cornerPoints[2] = nn[indp2];
+        cornerPoints[3] = nn[indp1];
+        swapElements    = true;
+      }
+
+      break;
+    }
+
+    default: {
+      cout << "Unknown surface element type with " << nCornerPoints
+           << " corners." << endl;
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+      break;
+    }
+  }
+
+  /* Swap the element information, if needed. */
+  if( swapElements ) {
+    swap(elemID0,    elemID1);
+    swap(nPolyGrid0, nPolyGrid1);
+    swap(nPolySol0,  nPolySol1);
+    swap(nDOFsElem0, nDOFsElem1);
+    swap(elemType0,  elemType1);
+    swap(faceID0,    faceID1);
+  }
 }
 
 void BoundaryFaceClass::Copy(const BoundaryFaceClass &other) {
@@ -12213,7 +12338,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
       thisFace.elemID0    = starting_node[rank] + k;
-      thisFace.nPoly0     = elem[k]->GetNPolySol();
+      thisFace.nPolySol0  = elem[k]->GetNPolySol();
       thisFace.nDOFsElem0 = elem[k]->GetNDOFsSol();
 
       thisFace.CreateUniqueNumbering();
@@ -12262,7 +12387,8 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   for(unsigned long i=1; i<nFacesLoc; ++i) {
     if(localFaces[i] == localFaces[i-1]) {
       localFaces[i-1].elemID1    = localFaces[i].elemID0;
-      localFaces[i-1].nPoly0     = max(localFaces[i-1].nPoly0, localFaces[i].nPoly0);
+      localFaces[i-1].nPolySol0  = max(localFaces[i-1].nPolySol0,
+                                       localFaces[i].nPolySol0);
       localFaces[i-1].nDOFsElem1 = localFaces[i].nDOFsElem0;
       localFaces[i].elemID0      = Global_nElem + 10;
     }
@@ -12362,7 +12488,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     sendBufFace[ii+3] = localFacesComm[i].cornerPoints[2];
     sendBufFace[ii+4] = localFacesComm[i].cornerPoints[3];
 				sendBufFace[ii+5] = localFacesComm[i].elemID0;
-    sendBufFace[ii+6] = localFacesComm[i].nPoly0;
+    sendBufFace[ii+6] = localFacesComm[i].nPolySol0;
     sendBufFace[ii+7] = localFacesComm[i].nDOFsElem0;
   }
 
@@ -12420,7 +12546,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       facesRecv[j].cornerPoints[2] = recvBuf[ii+3];
       facesRecv[j].cornerPoints[3] = recvBuf[ii+4];
       facesRecv[j].elemID0         = recvBuf[ii+5];
-      facesRecv[j].nPoly0          = recvBuf[ii+6];
+      facesRecv[j].nPolySol0       = recvBuf[ii+6];
       facesRecv[j].nDOFsElem0      = recvBuf[ii+7];
     }
   }
@@ -12436,8 +12562,8 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   for(unsigned long i=1; i<localFacesComm.size(); ++i) {
     if(localFacesComm[i] == localFacesComm[i-1]) {
       localFacesComm[i-1].elemID1    = localFacesComm[i].elemID0;
-      localFacesComm[i-1].nPoly0     = max(localFacesComm[i-1].nPoly0,
-                                           localFacesComm[i].nPoly0);
+      localFacesComm[i-1].nPolySol0  = max(localFacesComm[i-1].nPolySol0,
+                                           localFacesComm[i].nPolySol0);
       localFacesComm[i-1].nDOFsElem1 = localFacesComm[i].nDOFsElem0;
 
       localFacesComm[i].nCornerPoints = 4;
@@ -12466,7 +12592,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       sendBufFace[ii+2] = facesRecv[j].cornerPoints[1];
       sendBufFace[ii+3] = facesRecv[j].cornerPoints[2];
       sendBufFace[ii+4] = facesRecv[j].cornerPoints[3];
-      sendBufFace[ii+6] = facesRecv[j].nPoly0;
+      sendBufFace[ii+6] = facesRecv[j].nPolySol0;
 
       vector<FaceOfElementClass>::iterator low;
       low = lower_bound(localFacesComm.begin(), localFacesComm.end(),
@@ -12514,7 +12640,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
       low->elemID1 = recvBuf[jj+5];
 
-      if(recvBuf[jj+6] > low->nPoly0) low->nPoly0 = recvBuf[jj+6];
+      if(recvBuf[jj+6] > low->nPolySol0) low->nPolySol0 = recvBuf[jj+6];
 
       low->nDOFsElem1 = recvBuf[jj+7];
     }
@@ -12581,7 +12707,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
       thisFace.elemID0    = starting_node[rank] + k;
-      thisFace.nPoly0     = elem[k]->GetNPolySol();
+      thisFace.nPolySol0  = elem[k]->GetNPolySol();
       thisFace.nDOFsElem0 = elem[k]->GetNDOFsSol();
 
       thisFace.CreateUniqueNumbering();
@@ -12812,7 +12938,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
         facesDonor[k].nDim          = nDim;
         facesDonor[k].nCornerPoints = nPointsPerFace[0];
         facesDonor[k].elemID        = low->elemID0;
-        facesDonor[k].nPoly         = low->nPoly0;
+        facesDonor[k].nPoly         = low->nPolySol0;
         facesDonor[k].nDOFsElem     = low->nDOFsElem0;
 
         for(unsigned short j=0; j<nPointsPerFace[0]; ++j) {
@@ -12908,7 +13034,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
         thisMatchingFace.nDim          = nDim;
         thisMatchingFace.nCornerPoints = nPointsPerFace[0];
         thisMatchingFace.elemID        = low->elemID0;
-        thisMatchingFace.nPoly         = low->nPoly0;
+        thisMatchingFace.nPoly         = low->nPolySol0;
         thisMatchingFace.nDOFsElem     = low->nDOFsElem0;
 
         for(unsigned short j=0; j<nPointsPerFace[0]; ++j) {
@@ -12940,7 +13066,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
           donorLow = lower_bound(facesDonor.begin(), facesDonor.end(), thisMatchingFace);
 
           low->elemID1    = donorLow->elemID;
-          low->nPoly0     = max(low->nPoly0, donorLow->nPoly);
+          low->nPolySol0  = max(low->nPolySol0, donorLow->nPoly);
           low->nDOFsElem1 = donorLow->nDOFsElem;
         }
       }
@@ -13329,7 +13455,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
       if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
         vector<FaceOfElementClass>::const_iterator low;
         low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
-        nPolyFace = low->nPoly0;
+        nPolyFace = low->nPolySol0;
       }
 
       /*--- Determine the number of integration points for this face as well as

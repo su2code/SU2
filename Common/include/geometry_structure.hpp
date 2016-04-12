@@ -103,19 +103,22 @@ public:
   unsigned short nCornerPoints;          /*!< \brief Number of corner points of the face. */
   unsigned long  cornerPoints[4];        /*!< \brief Global ID's of ther corner points. */
   unsigned long  elemID0, elemID1;       /*!< \brief Element ID's to the left and right. */
-  unsigned short nPoly0, nPoly1;         /*!< \brief Polynomial degree of the face. */
+  unsigned short nPolyGrid0, nPolyGrid1; /*!< \brief Polynomial degrees of the grid of the elements
+                                                     to the left and right. */
+  unsigned short nPolySol0,  nPolySol1;  /*!< \brief Polynomial degrees of the solution of the elements
+                                                     to the left and right. */
   unsigned short nDOFsElem0, nDOFsElem1; /*!< \brief Number of DOFs of the elements to the left and right. */
+  unsigned short elemType0,  elemType1;  /*!< \brief Type of the elements to the left and right. */
+  unsigned short faceID0, faceID1;       /*!< \brief The local face ID in the corresponding elements
+                                                     to the left and right of the face. */
   unsigned short periodicIndex;          /*!< \brief Periodic indicator of the face. A value of 0 means no
                                                      periodic face. A value larger than 0 gives the index of
                                                      the periodic boundary + 1. */
   short faceIndicator;                   /*!< \brief The corresponding boundary marker if this face is on a
                                                      boundary. If not, a -1 indicates a face of an owned
                                                      element and -2 indicates a face of an unowned element. */
-
-  vector<unsigned long> faceConnSide0;   /*!< \brief DOFs of side 0 of the face, where side 0 is defined as
-                                                     the element to the left of the face. */
-  vector<unsigned long> faceConnSide1;   /*!< \brief DOFs of side 0 of the face, where side 1 is defined as
-                                                     the element to the right of the face. */
+  bool JacFaceIsConsideredConstant;      /*!< \brief Whether or not the Jacobian of the transformation
+                                                     to the standard element is considered constant. */
 
   /* Standard constructor and destructor. */
   FaceOfElementClass();
@@ -135,6 +138,10 @@ public:
   /*--- Member function, which creates a unique numbering for the corner points.
         A sort in increasing order is OK for this purpose.                       ---*/
   void CreateUniqueNumbering(void);
+
+  /*--- Member function, which creates a unique numbering for the corner points
+        while the orientation is taken into account. ---*/
+  void CreateUniqueNumberingWithOrientation(void);
 
 private:
   /*--- Copy function, which copies the data of the given object into the current object. ---*/

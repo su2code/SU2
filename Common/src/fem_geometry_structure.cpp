@@ -72,6 +72,23 @@ bool CPointFEM::operator==(const CPointFEM &other) const {
          periodIndexToDonor == other.periodIndexToDonor);
 }
 
+void CVolumeElementFEM::GetCornerPointsAllFaces(unsigned short &numFaces,
+                                                unsigned short nPointsPerFace[],
+                                                unsigned long  faceConn[6][4]) {
+
+  /*--- Get the corner connectivities of the faces, local to the element. ---*/
+  CPrimalGridFEM::GetLocalCornerPointsAllFaces(VTK_Type, nPolyGrid, nDOFsGrid,
+                                               numFaces, nPointsPerFace, faceConn);
+
+  /*--- Convert the local values of faceConn to global values. ---*/
+  for(unsigned short i=0; i<numFaces; ++i) {
+    for(unsigned short j=0; j<nPointsPerFace[i]; ++j) {
+      unsigned long nn = faceConn[i][j];
+      faceConn[i][j] = nodeIDsGrid[nn];
+    }
+  }
+}
+
 su2double CSurfaceElementFEM::DetermineLengthScale(vector<CPointFEM> &meshPoints) {
 
   /* Variables needed to make a generic treatment possible. */
@@ -1273,6 +1290,43 @@ void CMeshFEM_DG::SetFaces(void) {
   /*--- Step 1: Determine the faces of the locally stored part of the grid. ---*/
   /*---------------------------------------------------------------------------*/
 
+  /*--- Loop over the volume elements stored on this rank, including the halos. ---*/
+  vector<FaceOfElementClass> localFaces;
+
+  for(unsigned long k=0; k<nVolElemTot; ++k) {
+
+    /* Determine the corner points of all the faces of this element. */
+    unsigned short nFaces;
+    unsigned short nPointsPerFace[6];
+    unsigned long  faceConn[6][4];
+
+    volElem[k].GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
+
+    /* Loop over the faces of this element, set the appropriate information,
+       create a unique numbering and add the faces to localFaces. */
+    for(unsigned short i=0; i<nFaces; ++i) {
+      FaceOfElementClass thisFace;
+      thisFace.nCornerPoints = nPointsPerFace[i];
+      for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
+        thisFace.cornerPoints[j] = faceConn[i][j];
+
+      thisFace.elemID0       = k;
+      thisFace.nPolyGrid0    = volElem[k].nPolyGrid;
+      thisFace.nPolySol0     = volElem[k].nPolySol;
+      thisFace.nDOFsElem0    = volElem[k].nDOFsSol;
+      thisFace.elemType0     = volElem[k].VTK_Type;
+      thisFace.faceID0       = i;
+      thisFace.faceIndicator = volElem[k].elemIsOwned ? -1 : -2;
+
+      thisFace.JacFaceIsConsideredConstant = volElem[k].JacFacesIsConsideredConstant[i];
+
+      thisFace.CreateUniqueNumberingWithOrientation();
+
+      localFaces.push_back(thisFace);
+    }
+  }
+
+  cout << "nLocalFaces: " << localFaces.size() << endl;
   cout << "CMeshFEM_DG::SetFaces: Not implemented yet." << endl;
 #ifndef HAVE_MPI
   exit(EXIT_FAILURE);
@@ -1297,7 +1351,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
   /*----------------------------------------------------------------------------*/
   /*--- Step 1: Determine the ranks which this rank has to communicate       ---*/
   /*---         during the actual communication of halo data, as well as the ---*/
-  /*            that must be communicated.                                   ---*/
+  /*            data that must be communicated.                              ---*/
   /*----------------------------------------------------------------------------*/
 
   /* Determine for every element the local offset of the solution DOFs. */
@@ -1422,4 +1476,47 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
   }
 
 #endif
+
+  /*----------------------------------------------------------------------------*/
+  /*--- Step 2: Determine the rotational periodic transformations as well as ---*/
+  /*---         the halo elements for which these must be applied.           ---*/
+  /*----------------------------------------------------------------------------*/
+
+  /*--- Loop over the markers and determine the mapping for the rotationally
+        periodic transformations. The mapping is from the marker to the first
+        index in the vectors to store the rotationally periodic halo elements. ---*/
+  map<short,unsigned short> mapRotationalPeriodicToInd;
+
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    if(config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+
+      su2double *angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
+      if(fabs(angles[0]) > 1.e-5 || fabs(angles[1]) > 1.e-5 || fabs(angles[2]) > 1.e-5) {
+
+        unsigned short curSize = mapRotationalPeriodicToInd.size();
+        mapRotationalPeriodicToInd[iMarker] = curSize;
+      }
+    }
+  }
+
+  /* Store the rotationally periodic indices in rotPerMarkers. */
+  rotPerMarkers.reserve(mapRotationalPeriodicToInd.size());
+  for(map<short,unsigned short>::iterator SMI =mapRotationalPeriodicToInd.begin();
+                                          SMI!=mapRotationalPeriodicToInd.end(); ++SMI)
+    rotPerMarkers.push_back(SMI->first);
+
+  /* Resize the first index of rotPerHalos to the correct size. */
+  rotPerHalos.resize(mapRotationalPeriodicToInd.size());
+
+  /*--- Loop over the volume elements and store the indices of the rotationally
+        periodic halo elements in rotPerHalos.     ---*/
+  for(unsigned long i=0; i<nVolElemTot; ++i) {
+    if(volElem[i].periodIndexToDonor > -1) {
+      map<short,unsigned short>::const_iterator SMI;
+      SMI = mapRotationalPeriodicToInd.find(volElem[i].periodIndexToDonor);
+
+      if(SMI != mapRotationalPeriodicToInd.end())
+        rotPerHalos[SMI->second].push_back(i);
+    }
+  }
 }
