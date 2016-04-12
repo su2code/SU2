@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,7 +56,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CGridMovement {
 public:
@@ -84,7 +84,7 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -738,7 +738,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -748,6 +748,8 @@ protected:
   
 	unsigned long nPoint;		/*!< \brief Number of points. */
 	unsigned long nPointDomain;		/*!< \brief Number of points in the domain. */
+
+	unsigned long nIterMesh;	/*!< \brief Number of iterations in the mesh update. +*/
 
   CSysMatrix StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
   CSysVector LinSysSol;
@@ -1047,13 +1049,25 @@ public:
 	 */
 	su2double Determinant_3x3(su2double A00, su2double A01, su2double A02, su2double A10, su2double A11, su2double A12, su2double A20, su2double A21, su2double A22);
 
+
+	/*!
+	 * \brief Store the number of iterations when moving the mesh.
+	 * \param[in] val_nIterMesh - Number of iterations.
+	 */
+	void Set_nIterMesh(unsigned long val_nIterMesh);
+
+	/*!
+	 * \brief Retrieve the number of iterations when moving the mesh.
+	 * \param[out] Number of iterations.
+	 */
+	unsigned long Get_nIterMesh(void);
 };
 
 /*! 
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CSurfaceMovement : public CGridMovement {
 protected:

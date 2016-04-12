@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>geometry_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -14,7 +14,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -65,7 +65,7 @@ using namespace std;
  * \brief Parent class for defining the geometry of the problem (complete geometry, 
  *        multigrid agglomerated geometry, only boundary geometry, etc..)
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CGeometry {
 protected:
@@ -134,9 +134,14 @@ public:
 	CPrimalGrid*** newBound;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
 	unsigned long *nNewElem_Bound;			/*!< \brief Number of new periodic elements of the boundary. */
 
-  //--------Parmetis variables-----
-  unsigned long * adjacency;
-  unsigned long * xadj;
+  
+  /*--- Partitioning-specific variables ---*/
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  idx_t * adjacency;
+  idx_t * xadj;
+#endif
+#endif
   unsigned long local_node;
   unsigned long local_elem;
   unsigned long xadj_size;
@@ -599,6 +604,12 @@ public:
 	 */
   virtual void Set_MPI_GridVel(CConfig *config);
   
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  virtual void Set_MPI_OldCoord(CConfig *config);
+
 	/*!
 	 * \brief A virtual member.
    * \param[in] geometry - Geometry of the fine mesh.
@@ -901,16 +912,16 @@ public:
  * \brief Class for reading a defining the primal grid which is read from the 
  *        grid file in .su2 format.
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CPhysicalGeometry : public CGeometry {
 
   long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
-	long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
-	unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
-	unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
-    unsigned long *adj_counter; /*!< \brief Adjacency counter. */
-    unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
+  long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
+  unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
+  unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
+  unsigned long *adj_counter; /*!< \brief Adjacency counter. */
+  unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
   su2double* Sensitivity; /*! <\brief Vector holding the sensitivities at each point. */
 
 public:
@@ -1204,6 +1215,12 @@ public:
 	 */
   void Set_MPI_GridVel(CConfig *config);
   
+  /*!
+	 * \brief Perform the MPI communication for the grid coordinates (dynamic meshes) for restart purposes.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void Set_MPI_OldCoord(CConfig *config);
+
 	/*! 
 	 * \brief Set the periodic boundary conditions.
 	 * \param[in] config - Definition of the particular problem.		 
@@ -1453,7 +1470,7 @@ public:
  * \brief Class for defining the multigrid geometry, the main delicated part is the 
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CMultiGridGeometry : public CGeometry {
 
@@ -1629,7 +1646,7 @@ public:
  * \class CPeriodicGeometry
  * \brief Class for defining a periodic boundary condition.
  * \author T. Economon, F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CPeriodicGeometry : public CGeometry {
 	CPrimalGrid*** newBoundPer;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
@@ -1675,7 +1692,7 @@ public:
  * \struct CMultiGridQueue
  * \brief Class for a multigrid queue system
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  * \date Aug 12, 2012
  */
 class CMultiGridQueue {
