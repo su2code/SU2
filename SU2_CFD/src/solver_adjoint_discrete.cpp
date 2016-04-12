@@ -217,7 +217,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   }
 }
 
-void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned short kind_recording){
+void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
   unsigned long iPoint;
 
@@ -234,34 +234,10 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned
 
   /*--- Set indices to zero ---*/
 
-  RegisterVariables(geometry, config, true);
+//  RegisterVariables(geometry, config, true);
 
 }
 
-void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
-  unsigned long iPoint, nPoint = geometry->GetnPoint();
-
-  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
-  time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND,
-  input = true;
-
-  /*--- Register solution at all necessary time instances and other variables on the tape ---*/
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->node[iPoint]->RegisterSolution(input);
-  }
-  if (time_n_needed){
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->node[iPoint]->RegisterSolution_time_n();
-    }
-  }
-  if (time_n1_needed){
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->node[iPoint]->RegisterSolution_time_n1();
-    }
-  }
-}
 
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
 
@@ -313,20 +289,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
    * extracted in the ExtractAdjointVariables routine. ---*/
 }
 
-void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint, nPoint = geometry->GetnPoint();
-
-  /*--- Register variables as output of the solver iteration ---*/
-
-  bool input = false;
-
-  /*--- Register output variables on the tape ---*/
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->node[iPoint]->RegisterSolution(input);
-  }
-}
 
 void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
 
