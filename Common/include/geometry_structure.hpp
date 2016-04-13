@@ -136,20 +136,18 @@ public:
 
   
   /*--- Partitioning-specific variables ---*/
+  map<unsigned long,unsigned long> Global_to_Local_Elem;
+  unsigned long xadj_size;
+  unsigned long adjacency_size;
+  unsigned long *starting_node;
+  unsigned long *ending_node;
+  unsigned long *npoint_procs;
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
   idx_t * adjacency;
   idx_t * xadj;
 #endif
 #endif
-  unsigned long local_elem;
-  unsigned long xadj_size;
-  unsigned long adjacency_size;
-  unsigned long *starting_node;
-  unsigned long *ending_node;
-  unsigned long *npoint_procs;
-  unsigned long no_of_local_elements;
-  map<unsigned long,unsigned long> Global_to_local_elem;
   
 	/*!
 	 * \brief Constructor of the class.

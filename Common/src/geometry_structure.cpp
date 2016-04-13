@@ -89,11 +89,11 @@ CGeometry::~CGeometry(void) {
   unsigned long iElem, iElem_Bound, iFace, iVertex, iEdge, iPoint;
   unsigned short iMarker;
   
-//  if (elem != NULL) {
-//    for (iElem = 0; iElem < nElem; iElem++)
-//      if (elem[iElem] != NULL) delete elem[iElem];
-//    delete[] elem;
-//  }
+  if (elem != NULL) {
+    for (iElem = 0; iElem < nElem; iElem++)
+      if (elem[iElem] != NULL) delete elem[iElem];
+    delete[] elem;
+  }
   
   if (bound != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -1644,13 +1644,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   nDomain = size;
   
-  Marker_All_SendRecv = new short[nMarker_Max];
-  nSendDomain_Periodic = new unsigned long [nDomain];
+  Marker_All_SendRecv      = new short[nMarker_Max];
+  nSendDomain_Periodic     = new unsigned long [nDomain];
   nReceivedDomain_Periodic = new unsigned long [nDomain];
   
   /*--- Auxiliar vector based on the original geometry ---*/
   
-  ElemIn = new bool[geometry->no_of_local_elements];
+  ElemIn = new bool[geometry->GetnElem()];
   
   /*--- Define some mapping variables ---*/
   map<unsigned long,bool> PointIn;
@@ -1662,10 +1662,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   /*--- Divide the elements in color list to speed up the grid partitioning ---*/
   
   map<unsigned long,unsigned long> Local_to_global_elem;
-  for (unsigned long i=0; i<geometry->GetnElem(); i++) {
-    map<unsigned long, unsigned long>::const_iterator MI = geometry->Global_to_local_elem.find(i);
-    if (MI != geometry->Global_to_local_elem.end()) {
-      Local_to_global_elem[geometry->Global_to_local_elem[i]] = i;
+  for (unsigned long i=0; i<geometry->GetGlobal_nElem(); i++) {
+    map<unsigned long, unsigned long>::const_iterator MI = geometry->Global_to_Local_Elem.find(i);
+    if (MI != geometry->Global_to_Local_Elem.end()) {
+      Local_to_global_elem[geometry->Global_to_Local_Elem[i]] = i;
     }
   }
   
@@ -1744,7 +1744,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     /*--- Loop over all of the local elements and count the number of each
      type of point and element that needs to be sent. ---*/
     
-    for (iElem = 0; iElem < geometry->no_of_local_elements; iElem++) {
+    for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
       
       /*--- Check if the element belongs to the domain ---*/
       
@@ -1864,18 +1864,18 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   /*--- Initialize the counters for the larger send buffers (by domain) ---*/
   
-  ElemTotal_Counter   = 0;
-  PointTotal_Counter  = 0;
-  PointDomain_Counter = 0;
+  ElemTotal_Counter         = 0;
+  PointTotal_Counter        = 0;
+  PointDomain_Counter       = 0;
   /*--- WARNING: check the next two counters ---*/
-  PointPeriodic_Counter = 0;
-  PointGhost_Counter    = 0;
-  ElemTriangle_Counter    = 0;
-  ElemQuadrilateral_Counter   = 0;
-  ElemTetrahedron_Counter = 0;
-  ElemHexahedron_Counter  = 0;
-  ElemPrism_Counter       = 0;
-  ElemPyramid_Counter     = 0;
+  PointPeriodic_Counter     = 0;
+  PointGhost_Counter        = 0;
+  ElemTriangle_Counter      = 0;
+  ElemQuadrilateral_Counter = 0;
+  ElemTetrahedron_Counter   = 0;
+  ElemHexahedron_Counter    = 0;
+  ElemPrism_Counter         = 0;
+  ElemPyramid_Counter       = 0;
   
   /*--- Now that we know the sizes of the point, elem, etc. arrays, we can
    allocate and send the information in large chunks to all processors. ---*/
@@ -2081,7 +2081,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
     
-    
     /*--- Above was number of elements to send and receive, and here is where
      we send/recv the actual elements. Here you're sending global index values,
      which are later changed to local. ---*/
@@ -2106,7 +2105,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     
     /*--- Load up the actual elements into the buffers for sending. ---*/
     
-    for (iElem = 0; iElem < geometry->no_of_local_elements; iElem++) {
+    for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
       
       /*--- Check if the element belongs to the domain ---*/
       
@@ -2400,18 +2399,18 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     
     /*--- Increment the counters for the send buffers (iDomain loop) ---*/
     
-    ElemTotal_Counter       += iElemTotal;
-    PointTotal_Counter      += iPointTotal;
-    PointDomain_Counter     += iPointDomain;
+    ElemTotal_Counter         += iElemTotal;
+    PointTotal_Counter        += iPointTotal;
+    PointDomain_Counter       += iPointDomain;
     /*--- WARNING: check the next two counters ---*/
-    PointPeriodic_Counter   += iPointPeriodic;
-    PointGhost_Counter      += iPointGhost;
-    ElemTriangle_Counter    += iElemTriangle;
-    ElemQuadrilateral_Counter   += iElemQuadrilateral;
-    ElemTetrahedron_Counter += iElemTetrahedron;
-    ElemHexahedron_Counter  += iElemHexahedron;
-    ElemPrism_Counter       += iElemPrism;
-    ElemPyramid_Counter     += iElemPyramid;
+    PointPeriodic_Counter     += iPointPeriodic;
+    PointGhost_Counter        += iPointGhost;
+    ElemTriangle_Counter      += iElemTriangle;
+    ElemQuadrilateral_Counter += iElemQuadrilateral;
+    ElemTetrahedron_Counter   += iElemTetrahedron;
+    ElemHexahedron_Counter    += iElemHexahedron;
+    ElemPrism_Counter         += iElemPrism;
+    ElemPyramid_Counter       += iElemPyramid;
     
   }
   
@@ -2729,10 +2728,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       SU2_MPI::Recv(&Buffer_Receive_Pyramid_presence[iDomain][0],
                     recv_count, MPI_UNSIGNED_LONG, source,
                     rank*16+15, MPI_COMM_WORLD, &status2);
-      
-      /*--- Wait to complete the above sends ---*/
-      
-      //if (rank!=iDomain)  SU2_MPI::Waitall(6, &send_req[10], &send_stat[10]);
       
       /*--- Allocating the elements after the recv ---*/
       
@@ -4709,7 +4704,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned short nMarker_Max = config->GetnMarker_Max();
   unsigned long VTK_Type, iMarker, iChar;
   unsigned long iCount = 0;
-  unsigned long iElem_Bound = 0, iPoint = 0, ielem_div = 0, ielem = 0;
+  unsigned long iElem_Bound = 0, iPoint = 0, ielem = 0;
   unsigned long vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4];
   unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_prism[6],
   vnodes_pyramid[5], dummyLong, GlobalIndex;
@@ -4731,7 +4726,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long element_count = 0;
   unsigned long boundary_marker_count = 0;
   unsigned long node_count = 0;
-  unsigned long loc_element_count = 0;
+  unsigned long local_element_count = 0;
   
   /*--- Initialize counters for local/global points & elements ---*/
 #ifdef HAVE_MPI
@@ -4792,7 +4787,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       }
     }
   }
-
+  
   /*--- Read grid file with format SU2 ---*/
   
   while (getline (mesh_file, text_line)) {
@@ -4820,7 +4815,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       /*--- Check for ghost points. ---*/
       stringstream test_line(text_line);
       while (test_line >> dummyLong)
-      iCount++;
+        iCount++;
       
       /*--- Now read and store the number of points and possible ghost points. ---*/
       
@@ -4830,7 +4825,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         stream_line >> nPointDomain;
         
         /*--- Set some important point information for parallel simulations. ---*/
-
+        
         Global_nPoint = nPoint;
         Global_nPointDomain = nPointDomain;
         if (rank == MASTER_NODE && size > SINGLE_NODE) {
@@ -4938,15 +4933,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   mesh_file.close();
   strcpy (cstr, val_mesh_filename.c_str());
   
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-  
-  /*--- Initialize the vector for the adjacency information (ParMETIS). ---*/
-  vector< vector<unsigned long> > adj_nodes(nPoint, vector<unsigned long>(0));
-
-#endif
-#endif
-  
   /*--- Read the elements in the file with two loops. The first finds
    elements that live in the local partition and builds the adjacency
    for ParMETIS (if parallel). Once we know how many elements we have
@@ -4954,28 +4940,34 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   map<unsigned long,bool> ElemIn;
   map<unsigned long, bool>::const_iterator MI;
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  /*--- Initialize a vector for the adjacency information (ParMETIS). ---*/
+  vector< vector<unsigned long> > adj_nodes(nPoint, vector<unsigned long>(0));
+#endif
+#endif
   
   /*--- Open the mesh file and find the section with the elements. ---*/
   
   mesh_file.open(cstr, ios::in);
-
+  
   /*--- If more than one, find the zone in the mesh file  ---*/
   
   if (val_nZone > 1 && !time_spectral) {
-      while (getline (mesh_file,text_line)) {
-        /*--- Search for the current domain ---*/
-        position = text_line.find ("IZONE=",0);
-        if (position != string::npos) {
-          text_line.erase (0,6);
-          unsigned short jDomain = atoi(text_line.c_str());
-          if (jDomain == val_iZone+1) {
-            if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << " elements:" << endl;
-            break;
-          }
+    while (getline (mesh_file,text_line)) {
+      /*--- Search for the current domain ---*/
+      position = text_line.find ("IZONE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,6);
+        unsigned short jDomain = atoi(text_line.c_str());
+        if (jDomain == val_iZone+1) {
+          if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << " elements:" << endl;
+          break;
         }
       }
+    }
   }
-
+  
   while (getline (mesh_file, text_line)) {
     
     /*--- Read the information about inner elements ---*/
@@ -4983,29 +4975,28 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     position = text_line.find ("NELEM=",0);
     if (position != string::npos) {
       text_line.erase (0,6); nElem = atoi(text_line.c_str());
-
+      
       /*--- Store total number of elements in the original mesh ---*/
       
       Global_nElem = nElem;
       if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-      cout << Global_nElem << " interior elements before parallel partitioning." << endl;
+        cout << Global_nElem << " interior elements before parallel partitioning." << endl;
       
       /*--- Loop over all the volumetric elements and store any element that
        contains at least one of an owned node for this rank (i.e., there will
        be element redundancy, since multiple ranks will store the same elems
        on the boundaries of the initial linear partitioning. ---*/
       
-      element_count=0; loc_element_count=0; ielem_div=0;
-      while (ielem_div < nElem) {
+      element_count = 0; local_element_count = 0;
+      while (element_count < Global_nElem) {
         getline(mesh_file, text_line);
         istringstream elem_line(text_line);
-        
-        elem_line >> VTK_Type;
         
         /*--- Decide whether this rank needs each element. If so, build the
          adjacency arrays needed by ParMETIS and store the element connectivity.
          Note that every proc starts it's node indexing from zero. ---*/
         
+        elem_line >> VTK_Type;
         switch(VTK_Type) {
             
           case TRIANGLE:
@@ -5023,19 +5014,18 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             for (int i = 0; i < N_POINTS_TRIANGLE; i++) {
               
               local_index = vnodes_triangle[i]-starting_node[rank];
-
+              
               if ((local_index >= 0) && (local_index < (long)nPoint)) {
                 
-                /*--- This node is within our linear partition. Mark this 
-                 entire element to be added to our list for this rank, and 
+                /*--- This node is within our linear partition. Mark this
+                 entire element to be added to our list for this rank, and
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
-                ElemIn[ielem_div] = true;
+                ElemIn[element_count] = true;
                 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
-                
                 for (int j=0; j<N_POINTS_TRIANGLE; j++) {
                   if (i != j) adj_nodes[local_index].push_back(vnodes_triangle[j]);
                 }
@@ -5044,8 +5034,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               }
             }
             
-            MI = ElemIn.find(ielem_div);
-            if (MI != ElemIn.end()) loc_element_count++;
+            MI = ElemIn.find(element_count);
+            if (MI != ElemIn.end()) local_element_count++;
             
             break;
             
@@ -5072,12 +5062,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  entire element to be added to our list for this rank, and
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
-                ElemIn[ielem_div] = true;
+                ElemIn[element_count] = true;
                 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
-
                 adj_nodes[local_index].push_back(vnodes_quad[(i+1)%4]);
                 adj_nodes[local_index].push_back(vnodes_quad[(i+3)%4]);
 #endif
@@ -5085,9 +5074,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               }
             }
             
-            MI = ElemIn.find(ielem_div);
-            if (MI != ElemIn.end()) loc_element_count++;
-
+            MI = ElemIn.find(element_count);
+            if (MI != ElemIn.end()) local_element_count++;
+            
             break;
             
           case TETRAHEDRON:
@@ -5113,12 +5102,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  entire element to be added to our list for this rank, and
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
-                ElemIn[ielem_div] = true;
+                ElemIn[element_count] = true;
                 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
-                
                 for (int j=0; j<N_POINTS_TETRAHEDRON; j++) {
                   if (i != j) adj_nodes[local_index].push_back(vnodes_tetra[j]);
                 }
@@ -5127,8 +5115,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               }
             }
             
-            MI = ElemIn.find(ielem_div);
-            if (MI != ElemIn.end()) loc_element_count++;
+            MI = ElemIn.find(element_count);
+            if (MI != ElemIn.end()) local_element_count++;
             
             break;
             
@@ -5159,12 +5147,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  entire element to be added to our list for this rank, and
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
-                ElemIn[ielem_div] = true;
+                ElemIn[element_count] = true;
                 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
-                
                 if (i < 4) {
                   adj_nodes[local_index].push_back(vnodes_hexa[(i+1)%4]);
                   adj_nodes[local_index].push_back(vnodes_hexa[(i+3)%4]);
@@ -5177,9 +5164,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #endif
               }
             }
-
-            MI = ElemIn.find(ielem_div);
-            if (MI != ElemIn.end()) loc_element_count++;
+            
+            MI = ElemIn.find(element_count);
+            if (MI != ElemIn.end()) local_element_count++;
             
             break;
             
@@ -5208,12 +5195,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  entire element to be added to our list for this rank, and
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
-                ElemIn[ielem_div] = true;
+                ElemIn[element_count] = true;
                 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
-                
                 if (i < 3) {
                   adj_nodes[local_index].push_back(vnodes_prism[(i+1)%3]);
                   adj_nodes[local_index].push_back(vnodes_prism[(i+2)%3]);
@@ -5226,9 +5212,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #endif
               }
             }
-
-            MI = ElemIn.find(ielem_div);
-            if (MI != ElemIn.end()) loc_element_count++;
+            
+            MI = ElemIn.find(element_count);
+            if (MI != ElemIn.end()) local_element_count++;
             
             break;
             
@@ -5256,12 +5242,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                  entire element to be added to our list for this rank, and
                  add the neighboring nodes to this nodes' adjacency list. ---*/
                 
-                ElemIn[ielem_div] = true;
+                ElemIn[element_count] = true;
                 
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
                 /*--- Build adjacency assuming the VTK connectivity ---*/
-                
                 if (i < 4) {
                   adj_nodes[local_index].push_back(vnodes_pyramid[(i+1)%4]);
                   adj_nodes[local_index].push_back(vnodes_pyramid[(i+3)%4]);
@@ -5277,15 +5262,14 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               }
             }
             
-            MI = ElemIn.find(ielem_div);
-            if (MI != ElemIn.end()) loc_element_count++;
+            MI = ElemIn.find(element_count);
+            if (MI != ElemIn.end()) local_element_count++;
             
             break;
         }
-        ielem_div++;
         element_count++;
       }
-      if (element_count == nElem) break;
+      if (element_count == Global_nElem) break;
     }
   }
   
@@ -5294,10 +5278,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- Store the number of local elements on each rank after determining
    which elements must be kept in the loop above. ---*/
   
-  no_of_local_elements = loc_element_count;
+  nElem = local_element_count;
   
   /*--- Begin dealing with the partitioning by adjusting the adjacency
    information and clear out memory where possible. ---*/
+  
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
   
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << "Calling the partitioning functions." << endl;
@@ -5305,9 +5292,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- Post process the adjacency information in order to get it into the
    proper format before sending the data to ParMETIS. We need to remove
    repeats and adjust the size of the array for each local node. ---*/
-  
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
   
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
     cout << "Building the graph adjacency structure." << endl;
@@ -5368,7 +5352,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #endif
 #endif
   
-  
   /*--- Open the mesh file again and now that we know the number of
    elements needed on each partition, allocate memory for them. ---*/
   
@@ -5399,10 +5382,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     if (position != string::npos) {
       
       /*--- Allocate space for elements ---*/
-      elem = new CPrimalGrid*[no_of_local_elements];
+      elem = new CPrimalGrid*[nElem];
       
       /*--- Set up the global to local element mapping. ---*/
-      Global_to_local_elem.clear();
+      Global_to_Local_Elem.clear();
       
       if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
         cout << "Distributing elements across all ranks." << endl;
@@ -5412,18 +5395,17 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
        be element redundancy, since multiple ranks will store the same elems
        on the boundaries of the initial linear partitioning. ---*/
       
-      element_count=0; loc_element_count=0; ielem_div=0;
-      while (ielem_div < nElem) {
+      element_count = 0; local_element_count = 0;
+      while (element_count < Global_nElem) {
         getline(mesh_file, text_line);
         istringstream elem_line(text_line);
         
         /*--- If this element was marked as required, check type and store. ---*/
         
-        map<unsigned long, bool>::const_iterator MI = ElemIn.find(ielem_div);
+        map<unsigned long, bool>::const_iterator MI = ElemIn.find(element_count);
         if (MI != ElemIn.end()) {
           
           elem_line >> VTK_Type;
-          
           switch(VTK_Type) {
               
             case TRIANGLE:
@@ -5437,13 +5419,12 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               /*--- If any of the nodes were within the linear partition, the
                element is added to our element data structure. ---*/
               
-              Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CTriangle(vnodes_triangle[0],
-                                                      vnodes_triangle[1],
-                                                      vnodes_triangle[2], 2);
-              loc_element_count++;
+              Global_to_Local_Elem[element_count] = local_element_count;
+              elem[local_element_count] = new CTriangle(vnodes_triangle[0],
+                                                        vnodes_triangle[1],
+                                                        vnodes_triangle[2], 2);
+              local_element_count++;
               nelem_triangle++;
-              
               break;
               
             case QUADRILATERAL:
@@ -5458,14 +5439,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               /*--- If any of the nodes were within the linear partition, the
                element is added to our element data structure. ---*/
               
-              Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CQuadrilateral(vnodes_quad[0],
-                                                           vnodes_quad[1],
-                                                           vnodes_quad[2],
-                                                           vnodes_quad[3], 2);
-              loc_element_count++;
+              Global_to_Local_Elem[element_count] = local_element_count;
+              elem[local_element_count] = new CQuadrilateral(vnodes_quad[0],
+                                                             vnodes_quad[1],
+                                                             vnodes_quad[2],
+                                                             vnodes_quad[3], 2);
+              local_element_count++;
               nelem_quad++;
-              
               break;
               
             case TETRAHEDRON:
@@ -5480,14 +5460,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               /*--- If any of the nodes were within the linear partition, the
                element is added to our element data structure. ---*/
               
-              Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CTetrahedron(vnodes_tetra[0],
-                                                         vnodes_tetra[1],
-                                                         vnodes_tetra[2],
-                                                         vnodes_tetra[3]);
-              loc_element_count++;
+              Global_to_Local_Elem[element_count] = local_element_count;
+              elem[local_element_count] = new CTetrahedron(vnodes_tetra[0],
+                                                           vnodes_tetra[1],
+                                                           vnodes_tetra[2],
+                                                           vnodes_tetra[3]);
+              local_element_count++;
               nelem_tetra++;
-              
               break;
               
             case HEXAHEDRON:
@@ -5506,18 +5485,17 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               /*--- If any of the nodes were within the linear partition, the
                element is added to our element data structure. ---*/
               
-              Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CHexahedron(vnodes_hexa[0],
-                                                        vnodes_hexa[1],
-                                                        vnodes_hexa[2],
-                                                        vnodes_hexa[3],
-                                                        vnodes_hexa[4],
-                                                        vnodes_hexa[5],
-                                                        vnodes_hexa[6],
-                                                        vnodes_hexa[7]);
-              loc_element_count++;
+              Global_to_Local_Elem[element_count] = local_element_count;
+              elem[local_element_count] = new CHexahedron(vnodes_hexa[0],
+                                                          vnodes_hexa[1],
+                                                          vnodes_hexa[2],
+                                                          vnodes_hexa[3],
+                                                          vnodes_hexa[4],
+                                                          vnodes_hexa[5],
+                                                          vnodes_hexa[6],
+                                                          vnodes_hexa[7]);
+              local_element_count++;
               nelem_hexa++;
-              
               break;
               
             case PRISM:
@@ -5534,16 +5512,15 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               /*--- If any of the nodes were within the linear partition, the
                element is added to our element data structure. ---*/
               
-              Global_to_local_elem[element_count] = loc_element_count;
-              elem[loc_element_count] = new CPrism(vnodes_prism[0],
-                                                   vnodes_prism[1],
-                                                   vnodes_prism[2],
-                                                   vnodes_prism[3],
-                                                   vnodes_prism[4],
-                                                   vnodes_prism[5]);
-              loc_element_count++;
+              Global_to_Local_Elem[element_count] = local_element_count;
+              elem[local_element_count] = new CPrism(vnodes_prism[0],
+                                                     vnodes_prism[1],
+                                                     vnodes_prism[2],
+                                                     vnodes_prism[3],
+                                                     vnodes_prism[4],
+                                                     vnodes_prism[5]);
+              local_element_count++;
               nelem_prism++;
-              
               break;
               
             case PYRAMID:
@@ -5559,23 +5536,21 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               /*--- If any of the nodes were within the linear partition, the
                element is added to our element data structure. ---*/
               
-              Global_to_local_elem[element_count]=loc_element_count;
-              elem[loc_element_count] = new CPyramid(vnodes_pyramid[0],
-                                                     vnodes_pyramid[1],
-                                                     vnodes_pyramid[2],
-                                                     vnodes_pyramid[3],
-                                                     vnodes_pyramid[4]);
-              loc_element_count++;
+              Global_to_Local_Elem[element_count]=local_element_count;
+              elem[local_element_count] = new CPyramid(vnodes_pyramid[0],
+                                                       vnodes_pyramid[1],
+                                                       vnodes_pyramid[2],
+                                                       vnodes_pyramid[3],
+                                                       vnodes_pyramid[4]);
+              local_element_count++;
               nelem_pyramid++;
-              
               break;
               
           }
         }
-        ielem_div++;
         element_count++;
       }
-      if (element_count == nElem) break;
+      if (element_count == Global_nElem) break;
     }
   }
   
@@ -5586,24 +5561,24 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
    In the future, this component will also be performed in parallel. ---*/
   
   mesh_file.open(cstr, ios::in);
-
+  
   /*--- If more than one, find the zone in the mesh file ---*/
   
   if (val_nZone > 1 && !time_spectral) {
-      while (getline (mesh_file,text_line)) {
-        /*--- Search for the current domain ---*/
-        position = text_line.find ("IZONE=",0);
-        if (position != string::npos) {
-          text_line.erase (0,6);
-          unsigned short jDomain = atoi(text_line.c_str());
-          if (jDomain == val_iZone+1) {
-            if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << " markers:" << endl;
-            break;
-          }
+    while (getline (mesh_file,text_line)) {
+      /*--- Search for the current domain ---*/
+      position = text_line.find ("IZONE=",0);
+      if (position != string::npos) {
+        text_line.erase (0,6);
+        unsigned short jDomain = atoi(text_line.c_str());
+        if (jDomain == val_iZone+1) {
+          if (rank == MASTER_NODE) cout << "Reading zone " << val_iZone+1 << " markers:" << endl;
+          break;
         }
       }
+    }
   }
-
+  
   if (rank == MASTER_NODE) {
     
     while (getline (mesh_file, text_line)) {
@@ -5637,7 +5612,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             getline (mesh_file, text_line);
             text_line.erase (0,13); nElem_Bound[iMarker] = atoi(text_line.c_str());
             if (rank == MASTER_NODE)
-            cout << nElem_Bound[iMarker]  << " boundary elements in index "<< iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
+              cout << nElem_Bound[iMarker]  << " boundary elements in index "<< iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
             
             
             /*--- Allocate space for elements ---*/
@@ -5692,7 +5667,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
             config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
             config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
-			      config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
+            config->SetMarker_All_FSIinterface(iMarker, config->GetMarker_CfgFile_FSIinterface(Marker_Tag));
             config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
             config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
             config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -5714,12 +5689,12 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             getline (mesh_file, text_line); text_line.erase (0,8);
             config->SetMarker_All_KindBC(iMarker, SEND_RECEIVE);
             config->SetMarker_All_SendRecv(iMarker, atoi(text_line.c_str()));
-
+            
             for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
               getline(mesh_file, text_line);
               istringstream bound_line(text_line);
               bound_line >> VTK_Type; bound_line >> vnodes_vertex; bound_line >> transform;
-
+              
               bound[iMarker][ielem] = new CVertexMPI(vnodes_vertex, nDim);
               bound[iMarker][ielem]->SetRotation_Type(transform);
               ielem++; nelem_vertex++;
@@ -5731,7 +5706,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         if (boundary_marker_count == nMarker) break;
       }
     }
-
+    
     while (getline (mesh_file, text_line)) {
       
       /*--- Read periodic transformation info (center, rotation, translation) ---*/
@@ -5747,7 +5722,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         text_line.erase (0,10); nPeriodic = atoi(text_line.c_str());
         if (rank == MASTER_NODE) {
           if (nPeriodic - 1 != 0)
-          cout << nPeriodic - 1 << " periodic transformations." << endl;
+            cout << nPeriodic - 1 << " periodic transformations." << endl;
         }
         config->SetnPeriodicIndex(nPeriodic);
         
@@ -6899,32 +6874,44 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   
   vector< vector<unsigned long> > adj_nodes(nPoint, vector<unsigned long>(0));
   
+  /*--- Loop to check total number of elements we have locally. ---*/
+  
+  ielem = 0;
+  for (int k = 0; k < nzones; k++) {
+    for (int s = 0; s < nsections; s++) {
+      if (isInternal[k][s]) {
+        for ( int i = 0; i < nElems[k][s]; i++) {
+          ielem++;
+        }
+      }
+    }
+  }
+  nElem = ielem;
+  
   /*--- Store the total number of interior elements (global). ---*/
   
 #ifdef HAVE_MPI
   Local_nElem = interiorElems;
   SU2_MPI::Allreduce(&Local_nElem, &Global_nElem, 1, MPI_UNSIGNED_LONG,
                 MPI_SUM, MPI_COMM_WORLD);
-  nElem = Global_nElem;
 #else
   Global_nElem = interiorElems;
-  nElem = Global_nElem;
+  nElem        = Global_nElem;
 #endif
   
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE)) {
-    cout << nElem << " interior elements before linear partitioning." << endl;
+    cout << Global_nElem << " interior elements before linear partitioning." << endl;
   } else if (rank == MASTER_NODE) {
-    cout << nElem << " interior elements." << endl;
+    cout << Global_nElem << " interior elements." << endl;
   }
   
   /*--- Set up the global to local element mapping. ---*/
-  Global_to_local_elem.clear();
+  Global_to_Local_Elem.clear();
   
   /*--- Allocate space for elements. We allocate enough for all interior
    elements globally, but we will only instantiate our local set. ---*/
   
   elem = new CPrimalGrid*[nElem];
-  for (unsigned long iElem = 0; iElem < nElem; iElem++) elem[iElem] = NULL;
   ielem = 0;
   unsigned long global_id = 0;
   
@@ -6959,7 +6946,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                   }
                 }
               }
-              Global_to_local_elem[global_id]=ielem;
+              Global_to_Local_Elem[global_id]=ielem;
               elem[ielem] = new CTriangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], nDim);
               ielem++; nelem_triangle++;
               break;
@@ -6982,7 +6969,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 }
               }
               
-              Global_to_local_elem[global_id]=ielem;
+              Global_to_Local_Elem[global_id]=ielem;
               elem[ielem] = new CQuadrilateral(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], nDim);
               ielem++; nelem_quad++;
               break;
@@ -7002,7 +6989,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                   }
                 }
               }
-              Global_to_local_elem[global_id]=ielem;
+              Global_to_Local_Elem[global_id]=ielem;
               elem[ielem] = new CTetrahedron(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3]);
               ielem++; nelem_tetra++;
               break;
@@ -7031,7 +7018,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 }
               }
               
-              Global_to_local_elem[global_id]=ielem;
+              Global_to_Local_Elem[global_id]=ielem;
               elem[ielem] = new CHexahedron(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4], vnodes_cgns[5], vnodes_cgns[6], vnodes_cgns[7]);
               ielem++; nelem_hexa++;
               break;
@@ -7060,7 +7047,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 }
               }
               
-              Global_to_local_elem[global_id]=ielem;
+              Global_to_Local_Elem[global_id]=ielem;
               elem[ielem] = new CPrism(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4], vnodes_cgns[5]);
               ielem++; nelem_prism++;
               break;
@@ -7091,7 +7078,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 }
               }
               
-              Global_to_local_elem[global_id]=ielem;
+              Global_to_Local_Elem[global_id]=ielem;
               elem[ielem] = new CPyramid(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4]);
               ielem++; nelem_pyramid++;
               break;
@@ -7139,12 +7126,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   Global_nelem_prism    = nelem_prism;
   Global_nelem_pyramid  = nelem_pyramid;
 #endif
-  
-  /*--- Store the number of local elements on each rank after determining
-   which elements must be kept in the loop above. ---*/
-  
-  no_of_local_elements = ielem;
-  
+
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
   
