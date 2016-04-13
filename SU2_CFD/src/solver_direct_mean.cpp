@@ -12738,8 +12738,6 @@ CNSSolver::~CNSSolver(void) {
   if (MaxHeatFlux_Visc != NULL) delete [] MaxHeatFlux_Visc;
   if (ForceViscous != NULL)     delete [] ForceViscous;
   if (MomentViscous != NULL)    delete [] MomentViscous;
-  if (Point_Max_Coord!=NULL)  delete[] Point_Max_Coord;
-  
   
   if (Surface_CLift_Visc != NULL)      delete [] Surface_CLift_Visc;
   if (Surface_CDrag_Visc != NULL)      delete [] Surface_CDrag_Visc;
