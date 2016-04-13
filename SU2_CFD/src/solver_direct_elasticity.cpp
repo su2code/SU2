@@ -508,8 +508,6 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
   }
   
   if (element_container != NULL) delete [] element_container;
-  delete [] node;
-  delete [] Jacobian_ij;
   if (Jacobian_s_ij != NULL) delete [] Jacobian_s_ij;
   if (Jacobian_c_ij != NULL) delete [] Jacobian_c_ij;
   if (Jacobian_k_ij != NULL) delete [] Jacobian_k_ij;
