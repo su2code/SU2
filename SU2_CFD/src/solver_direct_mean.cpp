@@ -9024,7 +9024,8 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 //TODO(Vicente) here a new angle should be define for 3D see how is defined
 				gammaIn_BC = 0;
 				if (nDim == 3){
-				  gammaIn_BC = atan(FlowDir[2]/FlowDir[0]);
+				  // Review definition of angle
+				  gammaIn_BC = FlowDir[2];
 				}
 
 				/*--- Non-dim. the inputs---*/
