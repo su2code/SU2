@@ -5836,7 +5836,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   int** dataSize = NULL;
   bool** isInternal = NULL;
   char*** sectionNames = NULL;
-  //int indexMax; // check memory issue
+  int indexElem = 0;
+  int indexElemMaster = 0;
   
   /*--- Initialize counters for local/global points & elements ---*/
   
@@ -6535,11 +6536,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
              store it in the proper data structure for post-processing. ---*/
             
             connElemTemp = new cgsize_t[dataSize[j-1][s-1]];
-            
             connElems[j-1][s-1] = new cgsize_t*[elemIndex[j-1][s-1]];
             for (int jj = 0; jj < elemIndex[j-1][s-1]; jj++) {
               connElems[j-1][s-1][jj] = new cgsize_t[nElems[j-1][s-1]];
             }
+            indexElemMaster = elemIndex[j-1][s-1];
             
             /*--- Retrieve the connectivity information and store. ---*/
             
@@ -6818,17 +6819,17 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           /*--- Store the connectivity for this rank in the proper data
            structure before post-processing below. First, allocate the
            appropriate amount of memory for this section. ---*/
-          
+
           connElems[j-1][s-1] = new cgsize_t*[connSize];
           for (int jj = 0; jj < connSize; jj++) {
             connElems[j-1][s-1][jj] = new cgsize_t[nElem_Recv[size]];
           }
-          
           for (int ii = 0; ii < nElem_Recv[size]; ii++) {
             for (int jj = 0; jj < connSize; jj++) {
               connElems[j-1][s-1][jj][ii] = (cgsize_t)connRecv[ii*connSize+jj];
             }
           }
+          indexElem = connSize;
           
           /*--- Store the total number of elements I now have for
            the current section after completing the communications. ---*/
@@ -7371,6 +7372,24 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   delete[] cells;
   delete[] boundVerts;
   
+  for ( int kk = 0; kk < nzones; kk++) {
+    for (int ii = 0; ii < nsections; ii++) {
+      if (isInternal[kk][ii]) {
+        for (int jj = 0; jj < indexElem; jj++) {
+          delete [] connElems[kk][ii][jj];
+        }
+        delete connElems[kk][ii];
+      } else if (!isInternal[kk][ii] && rank == MASTER_NODE) {
+        for (int jj = 0; jj < indexElemMaster; jj++) {
+          delete [] connElems[kk][ii][jj];
+        }
+        delete connElems[kk][ii];
+      }
+    }
+    delete connElems[kk];
+  }
+  delete[] connElems;
+  
   for ( int j = 0; j < nzones; j++) {
     delete[] coordArray[j];
     delete[] elemTypeVTK[j];
@@ -7380,6 +7399,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
     delete[] isInternal[j];
     delete[] sectionNames[j];
   }
+  
   delete[] coordArray;
   delete[] elemTypeVTK;
   delete[] elemIndex;
@@ -7395,17 +7415,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
     delete[] gridCoords[j];
   }
   delete[] gridCoords;
-  
-  //  for ( int kk = 0; kk < nzones; kk++) {
-  //    for (int ii = 0; ii < nsections; ii++) {
-  //      for (int jj = 0; jj < indexMax; jj++) {
-  //        delete[] connElems[kk][ii][jj];
-  //      }
-  //      delete connElems[kk][ii];
-  //    }
-  //    delete connElems[kk];
-  //  }
-  //  delete[] connElems;
   
   delete [] nPoint_Linear;
   delete [] nElem_Linear;
