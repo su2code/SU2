@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -48,7 +48,7 @@ using namespace std;
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CDualGrid{
 protected:
@@ -65,7 +65,7 @@ public:
 	/*! 
 	 * \brief Destructor of the class. 
 	 */
-	~CDualGrid(void);
+	virtual ~CDualGrid(void);
 	
 	/*! 
 	 * \brief A pure virtual member.
@@ -133,7 +133,7 @@ public:
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CPoint : public CDualGrid {
 private:
@@ -740,7 +740,7 @@ public:
  * \class CEdge
  * \brief Class for defining an edge.
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CEdge : public CDualGrid {
 private:
@@ -877,7 +877,7 @@ public:
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CVertex : public CDualGrid {
 private:

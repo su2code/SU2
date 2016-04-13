@@ -2,7 +2,7 @@
  * \file transfer_structure.cpp
  * \brief Main subroutines for physics of the information transfer between zones
  * \author R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -132,7 +132,7 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 	// Dij: Dirac delta
 	su2double Pn = 0.0, div_vel = 0.0, Dij = 0.0;
 	su2double Viscosity = 0.0;
-	su2double **Grad_PrimVar;
+	su2double **Grad_PrimVar = NULL;
 	su2double Tau[3][3] = { {0.0, 0.0, 0.0} ,
 							{0.0, 0.0, 0.0} ,
 							{0.0, 0.0, 0.0} } ;
