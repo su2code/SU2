@@ -1496,7 +1496,7 @@ void CFEAIteration_Adj::Iterate_Adjoint(COutput *output,
                                   unsigned short val_iZone
                          	 	  ) {
 
-	cout << "HERE IS WHERE THE ADJOINT ITERATION GOES" << endl;
+//	cout << "HERE IS WHERE THE ADJOINT ITERATION GOES" << endl;
 
 	unsigned short RunTime_EqSystem = RUNTIME_FEA_SYS;
 

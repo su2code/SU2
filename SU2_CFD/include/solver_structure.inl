@@ -1103,6 +1103,8 @@ inline void CSolver::RefGeom_Sensitivity(CGeometry *geometry, CSolver **solver_c
 
 inline void CSolver::DE_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config){ }
 
+inline void CSolver::Stiffness_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config){ }
+
 inline unsigned short CSolver::Get_iElem_iDe(unsigned long iElem){ return 0; }
 
 inline void CSolver::Set_DV_Val(su2double val_EField, unsigned short i_DV){ }

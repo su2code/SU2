@@ -39,6 +39,8 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(void) : CSolver() {
 
 	nFEA_Terms = 1;
 
+	n_DV = 0;
+
 	nPoint = 0;
 	nPointDomain = 0;
 
@@ -1306,6 +1308,7 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
 	bool incremental_load = config->GetIncrementalLoad();								// If an incremental load is applied
 
 	bool body_forces = config->GetDeadLoad();											// Body forces (dead loads).
+	bool de_effects = config->GetDE_Effects();
 
 	/*--- Set vector entries to zero ---*/
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
@@ -1396,10 +1399,17 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
       cout << " The design variables are now: ";
       for (i_DV = 0; i_DV < n_DV; i_DV++){
         cout << DV_Val[i_DV] << " ";
-        numerics[FEA_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
-        numerics[DE_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
+        switch (config->GetDV_FEA()) {
+        case YOUNG_MODULUS:
+          numerics[FEA_TERM]->Set_YoungModulus(i_DV, DV_Val[i_DV]);
+          if(de_effects) numerics[DE_TERM]->Set_YoungModulus(i_DV, DV_Val[i_DV]);
+          break;
+        case ELECTRIC_FIELD:
+          numerics[FEA_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
+          numerics[DE_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
+          break;
+        }
       }
-
       cout << endl;
 
 
@@ -1558,7 +1568,7 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
 
 		if (de_effects){
 
-			bool multiple_de = (config->GetnDel_EField() > 1);
+			bool multiple_de = (n_DV > 1);
 			/*--- So far, this will only be enabled for quadrilateral elements ---*/
 			bool feature_enabled = (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL);
 

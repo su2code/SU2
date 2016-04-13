@@ -2564,6 +2564,15 @@ public:
 	 */
 	virtual void DE_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Stiffness_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] iElem - element parameter.
@@ -7352,9 +7361,11 @@ private:
 	su2double **mZeros_Aux;			/*!< \brief Submatrix to make zeros and impose clamped boundary conditions. */
 	su2double **mId_Aux;				/*!< \brief Diagonal submatrix to impose clamped boundary conditions. */
 
-	unsigned short n_DV;				/*!< \brief Number of Design Variables. */
-	su2double *sensI_adjoint;			/*!< \brief Adjoint sensitivities for the number of design variables. */
-  su2double *DV_Val;          /*!< \brief For DE cases, value of the modulus of the electric field (design variable). */
+	unsigned short n_DV;				    /*!< \brief Number of Design Variables. */
+	su2double *sensI_adjoint;			  /*!< \brief Adjoint sensitivities for the number of design variables. */
+  su2double *DV_Val;              /*!< \brief Value of the Design Variable. */
+  su2double *DV_Val_Max,          /*!< \brief Maximum value for the DV. */
+  *DV_Val_Min;                    /*!< \brief Minimum value for the DV. */
 
 	CSysVector LinSysSol_Direct;		/*!< \brief Vector structure for storing the solution of the direct problem. */
 	CSysVector LinSysRes_dSdv;			/*!< \brief Vector structure for storing the sensitivity of the FEA equations respect to the design dS/dv. */
@@ -7546,6 +7557,14 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void DE_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
+
+  /*!
+   * \brief Compute the sensitivity vector for the Young modulus
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Stiffness_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config);
 
   /*!
    * \brief Set the value of the Electric Field modulus, design variable for DE computations
