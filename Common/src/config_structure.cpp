@@ -4451,12 +4451,10 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
 }
 
 CConfig::~CConfig(void) {
-  /* These cause seg faults, but only on a few of the reg tests
+
   if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
   if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
   if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
-  if (U_FreeStreamND!=NULL) delete [] U_FreeStreamND;
-   */
   /*--- Free memory for Aeroelastic problems. ---*/
 
 
