@@ -104,9 +104,10 @@ void CInterpolator::Determine_ArraySize(bool faces, int markDonor, int markTarge
   unsigned short iDonor;
   unsigned int nFaces=0, iFace, nNodes=0;
   bool face_on_marker = true;
+
+#ifdef HAVE_MPI
   int rank = MASTER_NODE;
   int nProcessor = SINGLE_NODE;
-#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
@@ -198,9 +199,10 @@ void CInterpolator::Collect_VertexInfo(bool faces, int markDonor, int markTarget
   unsigned short iDim;
   /* Only needed if face data is also collected */
   su2double  *Normal;
+
+#ifdef HAVE_MPI
   int rank = MASTER_NODE;
   int nProcessor = SINGLE_NODE;
-#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
@@ -296,10 +298,10 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
   su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
 
-  int rank = MASTER_NODE;
   int nProcessor = SINGLE_NODE;
 
 #ifdef HAVE_MPI
+  int rank = MASTER_NODE;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
@@ -682,13 +684,13 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
         /*---Loop over the faces previously communicated/stored ---*/
         for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
 
-          nFaces = Buffer_Receive_nFace_Donor[iProcessor];
+          nFaces = (unsigned int)Buffer_Receive_nFace_Donor[iProcessor];
 
           for (iFace = 0; iFace< nFaces; iFace++){
             /*--- ---*/
 
-            nNodes = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace+1] -
-                    Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace];
+            nNodes = (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace+1] -
+                    (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace];
 
             su2double *X = new su2double[nNodes*nDim];
             faceindex = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace]; // first index of this face
@@ -748,7 +750,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
                 storeCoeff[iDonor] = myCoeff[iDonor];
                 jVertex = Buffer_Receive_FaceNodes[faceindex+iDonor];
                 storeGlobal[iDonor] =Buffer_Receive_GlobalPoint[jVertex];
-                storeProc[iDonor] = Buffer_Receive_FaceProc[faceindex+iDonor];
+                storeProc[iDonor] = (int)Buffer_Receive_FaceProc[faceindex+iDonor];
               }
             }
           
@@ -1184,7 +1186,7 @@ void CMirror::Set_TransferCoeff(CConfig **config){
         for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
           for (iFace = 0; iFace < Buffer_Receive_nFace_Donor[iProcessor]; iFace++) {
             faceindex = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace]; // first index of this face
-            iNodes = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace+1]- faceindex;
+            iNodes = (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace+1]- (unsigned int)faceindex;
             for (iTarget=0; iTarget<iNodes; iTarget++){
               if (Global_Point == Buffer_Receive_GlobalPoint[faceindex+iTarget])
                 nNodes++;
@@ -1201,7 +1203,7 @@ void CMirror::Set_TransferCoeff(CConfig **config){
           for (iFace = 0; iFace < Buffer_Receive_nFace_Donor[iProcessor]; iFace++) {
 
             faceindex = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace]; // first index of this face
-            iNodes = Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace+1]- faceindex;
+            iNodes = (unsigned int)Buffer_Receive_FaceIndex[iProcessor*MaxFace_Donor+iFace+1]- (unsigned int)faceindex;
             for (iTarget=0; iTarget<iNodes; iTarget++){
               if (Global_Point == Buffer_Receive_GlobalPoint[faceindex+iTarget]){
                 coeff =Buffer_Receive_Coeff[faceindex+iTarget];
