@@ -10171,11 +10171,14 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 	  else{
 	    myfile.open ("spanwise_division_outflow.dat", ios::out | ios::trunc);
 	  }
-    myfile << "iSpan " << "x_coord " << " y_coord " <<  "z_coord " << " global_index " <<endl;
+	  myfile << "TITLE = \"Global index visualization file\"" << endl;
+	  myfile << "VARIABLES =" << endl;
+	  myfile << "\"iSpan\" " << "\"x_coord\" " << "\"y_coord\" " <<  "\"z_coord\" " << "\"global_index\" " <<endl;
+
 	  for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 			for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
 //				cout << "iSpan " << iSpan << " y_coord " <<  y_loc[iSpan][iSpanVertex] << " global_index " << globIdx_loc[iSpan][iSpanVertex]<<endl;
-				myfile << iSpan  << "\t" <<  x_loc[iSpan][iSpanVertex] << "\t"  <<  y_loc[iSpan][iSpanVertex] << "\t" <<  z_loc[iSpan][iSpanVertex] << "\t"  << globIdx_loc[iSpan][iSpanVertex]<<endl;
+				myfile << iSpan  << "\t" <<  x_loc[iSpan][iSpanVertex] << "\t"   <<  y_loc[iSpan][iSpanVertex] << "\t"  <<  z_loc[iSpan][iSpanVertex] << "\t"  << globIdx_loc[iSpan][iSpanVertex]<<endl;
 			}
 //			cout <<endl;
 			myfile << endl;
