@@ -491,7 +491,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
   
   unsigned short iVar, jVar;
-  unsigned long iPoint;
   
   for (iVar = 0; iVar < MAX_TERMS; iVar++){
     for (jVar = 0; jVar < MAX_FE_KINDS; iVar++)
