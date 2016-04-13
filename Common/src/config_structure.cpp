@@ -165,7 +165,6 @@ void CConfig::SetPointersNull(void) {
   PlaneTag = NULL;
   Kappa_Flow = NULL;    Kappa_AdjFlow = NULL;
   Section_Location = NULL;
-  U_FreeStreamND = NULL;
   ParamDV=NULL;     DV_Value = NULL;    Design_Variable=NULL;
   MG_CorrecSmooth = NULL;
   Subsonic_Engine_Box = NULL;
