@@ -115,7 +115,7 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver()
 
 CPoissonSolver::~CPoissonSolver(void) {
   
-	unsigned short iVar, iDim;
+	unsigned short iVar;
   
 	delete [] Source_Vector;
   
