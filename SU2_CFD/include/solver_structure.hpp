@@ -7661,6 +7661,11 @@ public:
   CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
 
   /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjSolver(void);
+
+  /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
    *        Registers all necessary variables on the tape. Called while tape is active.
    * \param[in] geometry_container - The geometry container holding all grid levels.

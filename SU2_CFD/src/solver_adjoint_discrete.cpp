@@ -35,11 +35,11 @@ CDiscAdjSolver::CDiscAdjSolver(void) : CSolver (){
 
 }
 
-CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config){
+CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config)  : CSolver(){
 
 }
 
-CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh){
+CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CSolver(){
 
   unsigned short iVar, iMarker, iDim;
 
@@ -208,6 +208,9 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     node[iPoint]->SetSolution_Direct(direct_solver->node[iPoint]->GetSolution());
   }
+}
+
+CDiscAdjSolver::~CDiscAdjSolver(void){
 }
 
 void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned short kind_recording){
