@@ -1168,51 +1168,50 @@ void CNumerics::ComputeResJacobianNRBC(CFluidModel *FluidModel, su2double pressu
     R_c[3][2] = turboVel[2]/rhoc;                                        //a43
     R_c[3][3] = 0.5/cc*dhdrho_P + 0.5*turboVel[0]/rhoc + 0.5*dhdP_rho;   //a44
 
-
     InvMatrix4D(R_c, R_c_inv);
   }
 
-  //   check inversion
-    for(iVar=0; iVar < nVar-1; iVar++){
-      for(jVar=0; jVar < nVar-1; jVar++){
-        test[iVar][jVar]= 0.0;
-      }
-    }
-
-
-  //   check R_c matrix
-  cout << "ORIGINAL MATRIX "  << endl;
-  for(iVar=0; iVar < nVar-1; iVar++){
-    for(jVar=0; jVar < nVar-1; jVar++){
-      cout << R_c[iVar][jVar] << "   ,    " ;
-    }
-    cout << " "  << endl;
-  }
-
-  cout << "AND THE INVERSE VERIFICATION"  << endl;
-  cout << " "  << endl;
-    for(iVar=0; iVar < nVar-1; iVar++){
-      for(jVar=0; jVar < nVar-1; jVar++){
-        for(kVar=0; kVar < nVar-1; kVar++){
-          test[iVar][jVar] += R_c_inv[kVar][jVar]*R_c[iVar][kVar];
-        }
-  //      cout << test[iVar][jVar] << " i " << iVar << " j "<< jVar << endl;
-        cout << test[iVar][jVar] << "   ,    " ;
-      }
-      cout << endl << endl;
-    }
-
-
-
-    //getchar();
-  for (iVar = 0; iVar < nVar-1; iVar++)
-  {
-    delete [] test[iVar];
-  }
-  delete [] test;
+//  //   check inversion
+//    for(iVar=0; iVar < nVar-1; iVar++){
+//      for(jVar=0; jVar < nVar-1; jVar++){
+//        test[iVar][jVar]= 0.0;
+//      }
+//    }
+//
+//
+//  //   check R_c matrix
+//  cout << "ORIGINAL MATRIX "  << endl;
+//  for(iVar=0; iVar < nVar-1; iVar++){
+//    for(jVar=0; jVar < nVar-1; jVar++){
+//      cout << R_c[iVar][jVar] << "   ,    " ;
+//    }
+//    cout << " "  << endl;
+//  }
+//
+//  cout << "AND THE INVERSE VERIFICATION"  << endl;
+//  cout << " "  << endl;
+//    for(iVar=0; iVar < nVar-1; iVar++){
+//      for(jVar=0; jVar < nVar-1; jVar++){
+//        for(kVar=0; kVar < nVar-1; kVar++){
+//          test[iVar][jVar] += R_c_inv[kVar][jVar]*R_c[iVar][kVar];
+//        }
+//  //      cout << test[iVar][jVar] << " i " << iVar << " j "<< jVar << endl;
+//        cout << test[iVar][jVar] << "   ,    " ;
+//      }
+//      cout << endl << endl;
+//    }
+//
+//
+//
+//    //getchar();
+//  for (iVar = 0; iVar < nVar-1; iVar++)
+//  {
+//    delete [] test[iVar];
+//  }
+//  delete [] test;
+//
 
 }
-
 
 void CNumerics::InvMatrix3D(su2double **matrix, su2double **invMatrix){
 

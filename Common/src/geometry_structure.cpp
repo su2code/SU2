@@ -9963,16 +9963,24 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 								turbovertex[iMarker][iSpan][iSpanVertex]->SetNormal(unitnormal[iSpan][kSpanVertex]);
 								checkAssign[iSpan][kSpanVertex] = true;
 								coord = node[ordered[iSpan][iSpanVertex]]->GetCoord();
-								Normal2 = 0.0;
-								for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
-								if (marker_flag == INFLOW){
-									TurboNormal[0] = -coord[0]/sqrt(Normal2);
-									TurboNormal[1] = -coord[1]/sqrt(Normal2);
-									if(nDim == 3) TurboNormal[2] = 0.0;
-								}else{
-									TurboNormal[0] = coord[0]/sqrt(Normal2);
-									TurboNormal[1] = coord[1]/sqrt(Normal2);
-									if(nDim == 3) TurboNormal[2] = 0.0;
+								switch (config->GetKind_TurboMachinery()){
+								case CENTRIFUGAL:
+								  Normal2 = 0.0;
+								  for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+								  if (marker_flag == INFLOW){
+								    TurboNormal[0] = -coord[0]/sqrt(Normal2);
+								    TurboNormal[1] = -coord[1]/sqrt(Normal2);
+								    TurboNormal[2] = 0.0;
+								  }else{
+								    TurboNormal[0] = coord[0]/sqrt(Normal2);
+								    TurboNormal[1] = coord[1]/sqrt(Normal2);
+								    TurboNormal[2] = 0.0;
+								  }
+								  break;
+								default:
+								  cout << "TURBONORMAL CENTRIPETAL AND AXIAL 3D NOT IMPLEMENTED YET"<<endl;
+								  exit(EXIT_FAILURE);
+								  break;
 								}
 								turbovertex[iMarker][iSpan][iSpanVertex]->SetTurboNormal(TurboNormal);
 								target = coord[1];
@@ -10174,7 +10182,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 	  myfile << "TITLE = \"Global index visualization file\"" << endl;
 	  myfile << "VARIABLES =" << endl;
 	  myfile << "\"iSpan\" " << "\"x_coord\" " << "\"y_coord\" " <<  "\"z_coord\" " << "\"global_index\" " <<endl;
-
 	  for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 			for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
 //				cout << "iSpan " << iSpan << " y_coord " <<  y_loc[iSpan][iSpanVertex] << " global_index " << globIdx_loc[iSpan][iSpanVertex]<<endl;
