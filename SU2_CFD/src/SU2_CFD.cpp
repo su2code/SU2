@@ -515,17 +515,20 @@ int main(int argc, char *argv[]) {
   /*--- Deallocations: may not be strictly necessary to explicitly call (as they should be called
    * when the object is out of scope, but useful for debugging the deallocation functions and finding true
    * memory leaks---*/
-
-
+  /*
+  if (rank == MASTER_NODE)
+      cout << endl <<"------------------------ Driver Postprocessing ------------------------" << endl;
 
   driver->Postprocessing(iteration_container, solver_container, geometry_container,
       integration_container, numerics_container, interpolator_container,
       transfer_container, config_container, nZone);
-
+  */
   delete driver;
-  if (rank == MASTER_NODE) cout <<"Driver deallocated." << endl;
-  /*--- Geometry class deallocation ---*/
 
+
+  /*--- Geometry class deallocation ---*/
+  if (rank == MASTER_NODE)
+        cout << endl <<"------------------------ Geometry Postprocessing ------------------------" << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     if (geometry_container[iZone]!=NULL){
       for (unsigned short iMGlevel = 1; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++){
@@ -535,7 +538,6 @@ int main(int argc, char *argv[]) {
     }
   }
   delete [] geometry_container;
-  cout <<"Geometry container deallocated." << endl;
 
   /*--- Free-form deformation class deallocation ---*/
 
@@ -544,14 +546,13 @@ int main(int argc, char *argv[]) {
   }
   delete [] FFDBox;
 
-  cout <<"FFD container deallocated." << endl;
-
+  /*--- Grid movement and surface movement class deallocation ---*/
   delete [] surface_movement;
-  cout <<"Surface movement container deallocated." << endl;
-  /*--- Grid movement class deallocation ---*/
   delete [] grid_movement;
-  cout <<"Grid movement container deallocated." << endl;
-    /*Deallocate config container*/
+
+  /*Deallocate config container*/
+  if (rank == MASTER_NODE)
+        cout << endl <<"------------------------ Config Postprocessing ------------------------" << endl;
   if (config_container!=NULL){
     for (iZone = 0; iZone < nZone; iZone++) {
       if (config_container[iZone]!=NULL){
@@ -560,12 +561,9 @@ int main(int argc, char *argv[]) {
     }
     delete [] config_container;
   }
-  cout <<"Config container deallocated." << endl;
 
   /*--- Deallocate output container ---*/
   if (output!=NULL) delete output;
-  cout <<"Output deallocated." << endl;
-
   
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/

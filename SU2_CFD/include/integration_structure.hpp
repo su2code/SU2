@@ -435,7 +435,7 @@ public:
 	/*! 
 	 * \brief Destructor of the class. 
 	 */
-	~CMultiGridIntegration(void);
+	virtual ~CMultiGridIntegration(void);
 	
 	/*! 
 	 * \brief This subroutine calls the MultiGrid_Cycle and also prepare the multigrid levels and the monitoring.
@@ -605,7 +605,7 @@ public:
 	/*! 
 	 * \brief Destructor of the class. 
 	 */
-	~CSingleGridIntegration(void);
+	virtual ~CSingleGridIntegration(void);
 	
 	/*! 
 	 * \brief Do the numerical integration (implicit) of the turbulence solver. 
@@ -666,7 +666,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CStructuralIntegration(void);
+	virtual ~CStructuralIntegration(void);
 
 	/*!
 	 * \brief Do the numerical integration (implicit) of the structural solver.
