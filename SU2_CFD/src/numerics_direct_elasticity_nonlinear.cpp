@@ -115,28 +115,33 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 		ke_DE = config->GetDE_Modulus();
 
 		nEField_Read = config->GetnElectric_Field();
-		nDelimiters = config->GetnDel_EField() - 1;					// Number of region delimiters - 1 (has to be equal to nElectric_Field)
 		nDim_Electric_Field = config->GetnDim_Electric_Field();
 
 		if (nDim != nDim_Electric_Field) cout << "DIMENSIONS DON'T AGREE (Fix this)" << endl;
 
-		/*--- If the input of values for the electric field is only 1, every region gets the same value ---*/
-		if (nEField_Read == 1){
-			if (nDelimiters == 0){
-				nElectric_Field = 1;
-			}
-			else{
-				nElectric_Field = nDelimiters;
-			}
-		} else{
-			if (nDelimiters == nEField_Read){
-				nElectric_Field = nEField_Read;
-			}
-			else{
-				cout << "DIMENSIONS OF ELECTRIC FIELD AND DELIMITERS DON'T AGREE!!!" << endl;
-				exit(EXIT_FAILURE);
-			}
-		}
+	   /*--- DV_Val: Vector to store the value of the design variable. ---*/
+
+	  /*--- The number of design variables is equal to the total number of regions ---*/
+	  if (nDim == 2) nElectric_Field = config->GetnDV_X() * config->GetnDV_Y();
+	  else nElectric_Field = config->GetnDV_X() * config->GetnDV_Y() * config->GetnDV_Z();
+
+//		/*--- If the input of values for the electric field is only 1, every region gets the same value ---*/
+//		if (nEField_Read == 1){
+//			if (nDelimiters == 0){
+//				nElectric_Field = 1;
+//			}
+//			else{
+//				nElectric_Field = nDelimiters;
+//			}
+//		} else{
+//			if (nDelimiters == nEField_Read){
+//				nElectric_Field = nEField_Read;
+//			}
+//			else{
+//				cout << "DIMENSIONS OF ELECTRIC FIELD AND DELIMITERS DON'T AGREE!!!" << endl;
+//				exit(EXIT_FAILURE);
+//			}
+//		}
 
 
 		/*--- We initialize the modulus ---*/
@@ -173,7 +178,6 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 				EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
 			}
 		}
-
 
 		/*--- Auxiliary vector for computing the electric field in the current configuration ---*/
 		EField_Curr_Unit = new su2double[nDim_Electric_Field];

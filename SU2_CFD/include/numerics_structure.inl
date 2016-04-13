@@ -80,6 +80,23 @@ inline void CFEM_Elasticity::Set_ElectricField(unsigned short i_DV, su2double va
 inline void CFEM_NonlinearElasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ 
   EField_Ref_Mod[i_DV] = val_EField; }
 
+inline void CFEM_DielectricElastomer_Adj::Set_ElectricField(unsigned short i_DV, su2double val_EField){ 
+  EField_Ref_Mod[i_DV] = val_EField; }
+
+inline void CNumerics::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ }
+
+inline void CFEM_Elasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){
+  E = val_Young; Mu = E / (2.0*(1.0 + Nu)); Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu)); Kappa = Lambda + (2/3)*Mu;
+}
+
+inline void CFEM_NonlinearElasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ 
+  E = val_Young; Mu = E / (2.0*(1.0 + Nu)); Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu)); Kappa = Lambda + (2/3)*Mu; 
+}
+
+inline void CFEM_NeoHookean_Comp_Adj::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ 
+  E = val_Young; Mu = E / (2.0*(1.0 + Nu)); Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu)); Kappa = Lambda + (2/3)*Mu;
+}
+
 inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config){ }
 
 inline void CFEM_Elasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config){ }

@@ -139,11 +139,16 @@ CFEM_DielectricElastomer_Adj::CFEM_DielectricElastomer_Adj(unsigned short val_nD
 	su2double *Electric_Field_Dir = config->Get_Electric_Field_Dir();
 	unsigned short iVar, iDim;
 	su2double ref_Efield_mod;
+	unsigned short nEField_Read;
 
 	ke_DE = config->GetDE_Modulus();
 
-	nElectric_Field = config->GetnElectric_Field();
-	nDim_Electric_Field = config->GetnDim_Electric_Field();
+  nEField_Read = config->GetnElectric_Field();
+  nDim_Electric_Field = config->GetnDim_Electric_Field();
+
+  /*--- The number of design variables is equal to the total number of regions ---*/
+  if (nDim == 2) nElectric_Field = config->GetnDV_X() * config->GetnDV_Y();
+  else nElectric_Field = config->GetnDV_X() * config->GetnDV_Y() * config->GetnDV_Z();
 
 	if (nDim != nDim_Electric_Field) cout << "DIMENSIONS DON'T AGREE (Fix this)" << endl;
 
@@ -167,11 +172,24 @@ CFEM_DielectricElastomer_Adj::CFEM_DielectricElastomer_Adj(unsigned short val_nD
 		EField_Ref_Unit[iDim] = Electric_Field_Dir[iDim]/ref_Efield_mod;
 	}
 
-	/*--- Auxiliary vector for hosting the electric field modulus in the reference configuration ---*/
+//	/*--- Auxiliary vector for hosting the electric field modulus in the reference configuration ---*/
+//	EField_Ref_Mod = new su2double[nElectric_Field];
+//	for (iVar = 0; iVar < nElectric_Field; iVar++) {
+//		EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
+//	}
+
+  /*--- If the input of values for the electric field is only 1, every region gets the same value for a start ---*/
 	EField_Ref_Mod = new su2double[nElectric_Field];
-	for (iVar = 0; iVar < nElectric_Field; iVar++) {
-		EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
-	}
+  if (nEField_Read == 1){
+    for (iVar = 0; iVar < nElectric_Field; iVar++) {
+      EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(0);
+    }
+  }
+  else{
+    for (iVar = 0; iVar < nElectric_Field; iVar++) {
+      EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
+    }
+  }
 
 	/*--- Auxiliary vector for computing the electric field in the current configuration ---*/
 	EField_Curr_Unit = new su2double[nDim_Electric_Field];
@@ -236,6 +254,7 @@ void CFEM_DielectricElastomer_Adj::Compute_Stress_Tensor(CElement *element, CCon
 
 	unsigned short iVar, iDim, jDim;
 	su2double mod_Curr, mod_Ref;
+  unsigned short iRegion;
 
 	su2double E00 = 0.0, E11 = 0.0, E22 = 0.0;
 	su2double E01 = 0.0, E02 = 0.0, E12 = 0.0;
@@ -254,6 +273,8 @@ void CFEM_DielectricElastomer_Adj::Compute_Stress_Tensor(CElement *element, CCon
 	mod_Curr = sqrt(pow(EField_Curr_Unit[0],2)+pow(EField_Curr_Unit[1],2));
 	mod_Ref = sqrt(pow(EField_Ref_Unit[0],2)+pow(EField_Ref_Unit[1],2));
 
+	iRegion = element->Get_iDe();
+
 //	// Temporary
 //	for (iDim = 0; iDim < nDim; iDim++){
 //		EField_Curr_Unit[iDim] = EField_Curr_Unit[iDim] / mod_Curr;
@@ -266,15 +287,15 @@ void CFEM_DielectricElastomer_Adj::Compute_Stress_Tensor(CElement *element, CCon
 
 	/*--- v = Electric_Field_Curr[iDim] ---*/
 
-	E00 = (2*(pow(EField_Curr_Unit[0],2))-pow(mod_Curr,2))*EField_Ref_Mod[0];
-	E11 = (2*(pow(EField_Curr_Unit[1],2))-pow(mod_Curr,2))*EField_Ref_Mod[0];
-	E01 = 2*EField_Curr_Unit[0]*EField_Curr_Unit[1]*EField_Ref_Mod[0];
-	E22 = -1*pow(mod_Curr,2)*EField_Ref_Mod[0];
+	E00 = (2*(pow(EField_Curr_Unit[0],2))-pow(mod_Curr,2))*EField_Ref_Mod[iRegion];
+	E11 = (2*(pow(EField_Curr_Unit[1],2))-pow(mod_Curr,2))*EField_Ref_Mod[iRegion];
+	E01 = 2*EField_Curr_Unit[0]*EField_Curr_Unit[1]*EField_Ref_Mod[iRegion];
+	E22 = -1*pow(mod_Curr,2)*EField_Ref_Mod[iRegion];
 
 	if (nDim == 3){
-		E02 = 2*EField_Curr_Unit[0]*EField_Curr_Unit[2]*EField_Ref_Mod[0];
-		E12 = 2*EField_Curr_Unit[1]*EField_Curr_Unit[2]*EField_Ref_Mod[0];
-		E22+=2*(pow(EField_Curr_Unit[1],2))*EField_Ref_Mod[0];
+		E02 = 2*EField_Curr_Unit[0]*EField_Curr_Unit[2]*EField_Ref_Mod[iRegion];
+		E12 = 2*EField_Curr_Unit[1]*EField_Curr_Unit[2]*EField_Ref_Mod[iRegion];
+		E22+=2*(pow(EField_Curr_Unit[1],2))*EField_Ref_Mod[iRegion];
 	}
 
 	Stress_Tensor[0][0] = ke_DE*E00;	Stress_Tensor[0][1] = ke_DE*E01;	Stress_Tensor[0][2] = ke_DE*E02;

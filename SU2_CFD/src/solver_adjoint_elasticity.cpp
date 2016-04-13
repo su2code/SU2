@@ -53,6 +53,8 @@ CFEM_ElasticitySolver_Adj::CFEM_ElasticitySolver_Adj(void) : CSolver() {
   sensI_adjoint		= NULL;
 
   DV_Val      = NULL;
+  DV_Val_Max  = NULL;
+  DV_Val_Min  = NULL;
 
 }
 
@@ -321,11 +323,15 @@ CFEM_ElasticitySolver_Adj::CFEM_ElasticitySolver_Adj(CGeometry *geometry, CConfi
 
   /*--- Allocate the vector that stores the design variables ---*/
   DV_Val = new su2double[n_DV];
+  DV_Val_Max = new su2double[n_DV];
+  DV_Val_Min = new su2double[n_DV];
 
   /*---- Initialize the number of design variables ---*/
   switch (config->GetDV_FEA()) {
   case YOUNG_MODULUS:
     DV_Val[0] = config->GetElasticyMod();
+    DV_Val_Max[0] = 1.0E5 * config->GetElasticyMod();
+    DV_Val_Min[0] = 1.0E-5 * config->GetElasticyMod();
     break;
   case ELECTRIC_FIELD:
     unsigned short nEField_Read;
@@ -333,10 +339,14 @@ CFEM_ElasticitySolver_Adj::CFEM_ElasticitySolver_Adj(CGeometry *geometry, CConfi
     if (nEField_Read == n_DV){
       for (i_DV = 0; i_DV < n_DV; i_DV++){
         DV_Val[i_DV] = config->Get_Electric_Field_Mod(i_DV);
+        DV_Val_Max[i_DV] = config->Get_Electric_Field_Max(i_DV);
+        DV_Val_Min[i_DV] = config->Get_Electric_Field_Min(i_DV);
       }
     } else if (nEField_Read == 1){
       for (i_DV = 0; i_DV < n_DV; i_DV++){
         DV_Val[i_DV] = config->Get_Electric_Field_Mod(0);
+        DV_Val_Max[i_DV] = config->Get_Electric_Field_Max(0);
+        DV_Val_Min[i_DV] = config->Get_Electric_Field_Min(0);
       }
     } else{
       cout << "THE NUMBER OF ELECTRIC FIELD AND DESIGN REGIONS IS NOT IN AGREEMENT!!!" << endl;
@@ -345,6 +355,8 @@ CFEM_ElasticitySolver_Adj::CFEM_ElasticitySolver_Adj(CGeometry *geometry, CConfi
     break;
   default:
     DV_Val[0] = 0.0;
+    DV_Val_Max[0] = 0.0;
+    DV_Val_Min[0] = 0.0;
   }
 
   /*--- Initialize the sensitivity variable for the linear system ---*/
@@ -604,7 +616,7 @@ void CFEM_ElasticitySolver_Adj::Set_MPI_RefGeom(CGeometry *geometry, CConfig *co
 void CFEM_ElasticitySolver_Adj::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics,
     unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
 
-  cout << "PREPROCESSING ADJOINT" << endl;
+//  cout << "PREPROCESSING ADJOINT" << endl;
 
 }
 
@@ -1061,7 +1073,7 @@ void CFEM_ElasticitySolver_Adj::Postprocessing(CGeometry *geometry, CSolver **so
 
   switch (config->GetDV_FEA()) {
   case YOUNG_MODULUS:
-    cout << "Young Modulus " << endl;
+    Stiffness_Sensitivity(geometry, solver_container, numerics, config);
     break;
   case ELECTRIC_FIELD:
     DE_Sensitivity(geometry, solver_container, numerics, config);
@@ -1306,6 +1318,8 @@ void CFEM_ElasticitySolver_Adj::DE_Sensitivity(CGeometry *geometry, CSolver **so
           }
         }
 
+        element_container[DV_TERM][EL_KIND]->Set_iDe(i_DV);
+
         numerics[DV_TERM]->Compute_NodalStress_Term(element_container[DV_TERM][EL_KIND], config);
 
         NelNodes = element_container[DV_TERM][EL_KIND]->GetnNodes();
@@ -1332,12 +1346,37 @@ void CFEM_ElasticitySolver_Adj::DE_Sensitivity(CGeometry *geometry, CSolver **so
 
   }
 
+  ofstream myfile_res;
+  myfile_res.open ("Results_E.txt", ios::app);
+
+  myfile_res.precision(15);
+
+  for (i_DV = 0; i_DV < n_DV; i_DV++){
+    switch (config->GetDV_FEA()) {
+    case YOUNG_MODULUS:
+      myfile_res << scientific << DV_Val[i_DV] << " ";
+      break;
+    case ELECTRIC_FIELD:
+      myfile_res << scientific << DV_Val[i_DV] << " ";
+      break;
+    }
+  }
+
+  myfile_res << scientific << " " << val_I << " ";
+
+  for (i_DV = 0; i_DV < n_DV; i_DV++){
+    myfile_res << scientific << sensI_adjoint[i_DV] << " ";
+  }
+
+  myfile_res << endl;
+
+  myfile_res.close();
+
   /*--- Now, we are going to compute the values of the new design variables ---*/;
 
   su2double dv_val;
 
   for (i_DV = 0; i_DV < n_DV; i_DV++){
-
 
     cout << "DV (" << i_DV << "): " ;
 
@@ -1352,12 +1391,12 @@ void CFEM_ElasticitySolver_Adj::DE_Sensitivity(CGeometry *geometry, CSolver **so
     cout << dv_val << " " ;
 
     /*--- 2) We limit the maximum value ---*/
-    dv_val = min(dv_val, config->Get_Electric_Field_Max(i_DV));
+    dv_val = min(dv_val, DV_Val_Max[i_DV]);
 
     cout << dv_val << " " ;
 
     /*--- 3) We limit the minimum value ---*/
-    dv_val = max(dv_val, config->Get_Electric_Field_Min(i_DV));
+    dv_val = max(dv_val, DV_Val_Min[i_DV]);
 
     cout << dv_val << " " ;
 
@@ -1382,13 +1421,115 @@ void CFEM_ElasticitySolver_Adj::DE_Sensitivity(CGeometry *geometry, CSolver **so
 
     direct_solver->Set_DV_Val(dv_val,i_DV);
 
-    numerics[FEA_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
-    numerics[DE_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
-    numerics[DE_ADJ]->Set_ElectricField(i_DV, DV_Val[i_DV]);
+    switch (config->GetDV_FEA()) {
+    case YOUNG_MODULUS:
+      numerics[FEA_TERM]->Set_YoungModulus(i_DV, DV_Val[i_DV]);
+      numerics[DE_TERM]->Set_YoungModulus(i_DV, DV_Val[i_DV]);
+      numerics[FEA_ADJ]->Set_YoungModulus(i_DV, DV_Val[i_DV]);
+      break;
+    case ELECTRIC_FIELD:
+      numerics[FEA_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
+      numerics[DE_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
+      numerics[DE_ADJ]->Set_ElectricField(i_DV, DV_Val[i_DV]);
+      break;
+    }
+
+
 
   }
 
   //  sensI_adjoint = dotProd(LinSysSol,LinSysRes_dSdv);
+
+
+
+}
+
+void CFEM_ElasticitySolver_Adj::Stiffness_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config){
+
+  unsigned long iElem, iVar, iPoint;
+  unsigned short iNode, iDim, nNodes;
+  unsigned short i_DV;
+  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  su2double val_Coord, val_Sol;
+  int EL_KIND, DV_TERM;
+
+  su2double *Ta = NULL;
+  unsigned short NelNodes;
+
+  bool de_effects = config->GetDE_Effects();
+
+  switch (config->GetDV_FEA()) {
+  case YOUNG_MODULUS:
+    DV_TERM = FEA_ADJ;
+    break;
+  case ELECTRIC_FIELD:
+    DV_TERM = DE_ADJ;
+    break;
+  }
+
+
+  /*--- For the solution of the adjoint problem, this routine computes dK/dv, being v the design variables ---*/
+
+  /*--- TODO: This needs to be extended to n Design Variables. As of now, only for E. ---*/
+
+  for (i_DV = 0; i_DV < n_DV; i_DV++){
+
+    /*--- Set the value of the Residual vectors to 0 ---*/
+    LinSysRes_dSdv.SetValZero();
+
+    /*--- Loops over all the elements ---*/
+
+    for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+      if (direct_solver->Get_iElem_iDe(iElem) == i_DV){
+
+        if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)     {nNodes = 3; EL_KIND = EL_TRIA;}
+        if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL)    {nNodes = 4; EL_KIND = EL_QUAD;}
+
+        if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)  {nNodes = 4; EL_KIND = EL_TETRA;}
+        if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)      {nNodes = 5; EL_KIND = EL_TRIA;}
+        if (geometry->elem[iElem]->GetVTK_Type() == PRISM)        {nNodes = 6; EL_KIND = EL_TRIA;}
+        if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)   {nNodes = 8; EL_KIND = EL_HEXA;}
+
+        /*--- For the number of nodes, we get the coordinates from the connectivity matrix ---*/
+        /*--- The solution comes from the direct solver ---*/
+        for (iNode = 0; iNode < nNodes; iNode++) {
+          indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+          for (iDim = 0; iDim < nDim; iDim++) {
+            val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+            val_Sol = direct_solver->node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+            element_container[DV_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+            element_container[DV_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+          }
+        }
+
+        element_container[DV_TERM][EL_KIND]->Set_iDe(i_DV);
+
+        numerics[DV_TERM]->Compute_NodalStress_Term(element_container[DV_TERM][EL_KIND], config);
+
+        NelNodes = element_container[DV_TERM][EL_KIND]->GetnNodes();
+
+        for (iNode = 0; iNode < NelNodes; iNode++){
+
+          Ta = element_container[DV_TERM][EL_KIND]->Get_Kt_a(iNode);
+          for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = Ta[iVar];
+
+          LinSysRes_dSdv.SubtractBlock(indexNode[iNode], Residual);
+
+        }
+
+      }
+
+    }
+
+    sensI_adjoint[i_DV] = 0.0;
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      for (iVar = 0; iVar < nVar; iVar++){
+        sensI_adjoint[i_DV] += node[iPoint]->GetSolution(iVar) * LinSysRes_dSdv.GetBlock(iPoint,iVar);
+      }
+    }
+
+  }
 
   ofstream myfile_res;
   myfile_res.open ("Results_E.txt", ios::app);
@@ -1398,7 +1539,7 @@ void CFEM_ElasticitySolver_Adj::DE_Sensitivity(CGeometry *geometry, CSolver **so
   for (i_DV = 0; i_DV < n_DV; i_DV++){
     switch (config->GetDV_FEA()) {
     case YOUNG_MODULUS:
-      myfile_res <<  config->GetElasticyMod() << " ";
+      myfile_res << scientific << DV_Val[i_DV] << " ";
       break;
     case ELECTRIC_FIELD:
       myfile_res << scientific << DV_Val[i_DV] << " ";
@@ -1416,9 +1557,78 @@ void CFEM_ElasticitySolver_Adj::DE_Sensitivity(CGeometry *geometry, CSolver **so
 
   myfile_res.close();
 
+  /*--- Now, we are going to compute the values of the new design variables ---*/;
+
+  su2double dv_val;
+
+  for (i_DV = 0; i_DV < n_DV; i_DV++){
+
+//    cout << "DV (" << i_DV << "): " ;
+//
+//    cout << DV_Val[i_DV] << " ";
+
+    /*--- Using a Newton method, the update value is E2 = E1 - alpha * val(I) / grad(I) ---*/
+    /*--- However, we may be far away from the solution, so in this first (naive) implementation... ---*/
+
+    /*--- 1) We compute the new value of the design variable ---*/
+    dv_val = DV_Val[i_DV] - config->GetDE_Rate() * val_I / sensI_adjoint[i_DV];
+
+//    cout << dv_val << " " ;
+
+    /*--- 2) We limit the maximum value ---*/
+    dv_val = min(dv_val, DV_Val_Max[i_DV]);
+
+//    cout << dv_val << " " ;
+
+    /*--- 3) We limit the minimum value ---*/
+    dv_val = max(dv_val, DV_Val_Min[i_DV]);
+
+//    cout << dv_val << " " ;
+
+//    /*--- 4) We limit the change rate so as it can only increase by a % of the previous value ---*/
+//    if (dv_val > DV_Val[i_DV]){
+//
+//      dv_val = min(dv_val, ((1.0 +config->GetDE_Rate())* DV_Val[i_DV]));
+//
+//    }
+//    else{
+//
+//      dv_val = max(dv_val, ((1.0 - config->GetDE_Rate())*DV_Val[i_DV]));
+//
+//    }
+
+//    cout << dv_val << " " ;
+
+    /*--- 5) We store the value in the direct and the adjoint solvers ---*/
+    DV_Val[i_DV] = dv_val;
+
+//    cout << endl;
+
+    direct_solver->Set_DV_Val(dv_val,i_DV);
+
+    switch (config->GetDV_FEA()) {
+    case YOUNG_MODULUS:
+      numerics[FEA_TERM]->Set_YoungModulus(i_DV, DV_Val[i_DV]);
+      if (de_effects) numerics[DE_TERM]->Set_YoungModulus(i_DV, DV_Val[i_DV]);
+      numerics[FEA_ADJ]->Set_YoungModulus(i_DV, DV_Val[i_DV]);
+      break;
+    case ELECTRIC_FIELD:
+      numerics[FEA_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
+      numerics[DE_TERM]->Set_ElectricField(i_DV, DV_Val[i_DV]);
+      numerics[DE_ADJ]->Set_ElectricField(i_DV, DV_Val[i_DV]);
+      break;
+    }
+
+
+
+  }
+
+  //  sensI_adjoint = dotProd(LinSysSol,LinSysRes_dSdv);
+
 
 
 }
+
 
 
 

@@ -1487,6 +1487,12 @@ public:
   virtual void Set_ElectricField(unsigned short i_DV, su2double val_EField);
 
   /*!
+   * \brief A virtual member to set the young modulus
+   * \param[in] val_Young - Value of the Young Modulus.
+   */
+  virtual void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
+
+  /*!
    * \brief A virtual member to compute the mass matrix
    * \param[in] element_container - Element structure for the particular element integrated.
    */
@@ -3995,6 +4001,8 @@ public:
 
 	void Compute_Dead_Load(CElement *element_container, CConfig *config);
 
+  void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
+
 	virtual void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
 	virtual void Compute_MeanDilatation_Term(CElement *element_container, CConfig *config);
@@ -4161,6 +4169,8 @@ public:
 	void Assign_cijkl_D_Mat(void);
 
   void Set_ElectricField(unsigned short i_DV, su2double val_EField);
+
+  void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
 
 	su2double deltaij(unsigned short iVar, unsigned short jVar);
 
@@ -4375,6 +4385,8 @@ public:
 
 	void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
 
+  void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
+
 };
 
 
@@ -4418,6 +4430,8 @@ public:
   using CNumerics::Compute_Constitutive_Matrix;
 
 	void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
+
+  void Set_ElectricField(unsigned short i_DV, su2double val_EField);
 
 	void Compute_FmT_Mat(void);
 
