@@ -8724,13 +8724,19 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 									Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
 								}
 								ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag);
-
+								//TODO Vicente Extended to 3D
+								if(nDim ==2){
 								deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
 								deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[iMarker][iSpan][0];
 								deltaprim[2] = turboVelocity[1] - AverageTurboVelocity[iMarker][iSpan][1];
 								deltaprim[3] = Pressure_i - AveragePressure[iMarker][iSpan];
+								}
+								else{
+								  //Here 3d
+								}
 								conv_numerics->GetCharJump(AverageSoundSpeed[iMarker][iSpan], AverageDensity[iMarker][iSpan], deltaprim, cj);
 
+								/*-----this is only valid 2D ----*/
 								cj_out1 = cj[1];
 								cj_out2 = cj[2];
 								cj_inf  = cj[3];
@@ -8741,6 +8747,7 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 								cktemp_out1 +=  cj_out1*expArg/nVert;
 								cktemp_out2 +=  cj_out2*expArg/nVert;
 								cktemp_inf  +=  cj_inf*expArg/nVert;
+								/*-----end of only valid 2D ----*/
 
 							}
 						}
@@ -8748,6 +8755,7 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 				}
 			}
 
+			/*-----this is only valid 2D ----*/
 #ifdef HAVE_MPI
 			MyRe_inf = cktemp_inf.real(); Re_inf = 0.0;
 			MyIm_inf = cktemp_inf.imag(); Im_inf = 0.0;
@@ -8772,12 +8780,15 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 			cktemp_out1 = complex<su2double>(Re_out1,Im_out1);
 			cktemp_out2 = complex<su2double>(Re_out2,Im_out2);
 #endif
+			/*-----end of only valid 2D ----*/
 
 			for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
 				for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
 					if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
 						if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-							if (marker_flag == INFLOW){
+						  /*-----this is only valid 2D ----*/
+						  if (marker_flag == INFLOW){
+
 								CkInflow[iMarker][iSpan][k-1]= cktemp_inf;
 //								if(rank == 2)
 //									cout << "real "<< CkInflow[iMarker][iSpan][k-1].real()<< " imag "<< CkInflow[iMarker][iSpan][k-1].imag() << " at k "<< k << endl;
@@ -8786,7 +8797,7 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
 								CkOutflow2[iMarker][iSpan][k-1]=cktemp_out2;
 //							  cout << "real 1 "<< CkOutflow1[iMarker][iSpan][k-1].real()<< " imag 1 "<< CkOutflow1[iMarker][iSpan][k-1].imag() << " at k "<< k << endl;
 //							  cout << "real 2 "<< CkOutflow2[iMarker][iSpan][k-1].real()<< " imag 2 "<< CkOutflow2[iMarker][iSpan][k-1].imag() << " at k "<< k << endl;
-
+								/*-----end only valid 2D ----*/
 							}
 						}
 					}
@@ -9171,8 +9182,9 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 					//TODO(turbo), implement not uniform inlet and radial equilibrium for the outlet
 
 				case TOTAL_CONDITIONS_PT: case MIXING_IN:
-
-					if (AvgMach < 1.000){
+				  //TODO Vicente generilise for 3D
+					/*-----this is only valid 2D ----*/
+				  if (AvgMach < 1.000){
 						if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
 							Beta_inf= I*complex<su2double>(sqrt(1.0  - pow(AvgMach,2)));
 						}else{
@@ -9197,7 +9209,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 						c2js_Re = -cj[3]*(Beta_inf2 + AverageTurboMach[val_marker][iSpan][1])/( 1.0 + AverageTurboMach[val_marker][iSpan][0]);
 						dcjs[1]		= c2js_Re - cj[1];
 					}
-
+				  /*-----end of only valid 2D ----*/
 
 					/*--- compute local change for first and third charchteristic ---*/
 					alphaIn_BC_loc= atan(turboVelocity[1]/turboVelocity[0]);
@@ -9232,6 +9244,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 				case STATIC_PRESSURE:case MIXING_OUT:
 
 					/* --- implementation of NRBC ---*/
+				  /*-----this is only valid 2D ----*/
 					if (AvgMach >= 1.000){
 						if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
 							GilesBeta= -sqrt(pow(AvgMach,2)-1.0);
@@ -9258,7 +9271,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 						dcjs[3] = c4js_Re - cj[3];
 					}
-
+					/*-----end  only valid 2D ----*/
 					if (nDim == 2){
             /* --- Impose Outlet BC Non-Reflecting  --- */
             delta_c[0] = cj[0];
