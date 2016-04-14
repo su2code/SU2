@@ -9,7 +9,7 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - hlkline@stanford.edu
   
 branches:
     only:
@@ -26,10 +26,10 @@ env:
         - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR"
           TEST_SCRIPT=parallel_regression.py
         # Serial build and test for AD
-        - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
+        - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-autodiff"
           TEST_SCRIPT=serial_regression_AD.py
         # Parallel build and test for AD
-        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
+        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff"
           TEST_SCRIPT=parallel_regression_AD.py
 
 
@@ -37,7 +37,7 @@ env:
 before_install:
     # install the necessary packages
     - sudo apt-get update -qq
-    - sudo apt-get install -qq python-numpy python-scipy mpich2
+    - sudo apt-get install -qq python-numpy mpich2
 
 install:
     - echo $TRAVIS_BUILD_DIR
