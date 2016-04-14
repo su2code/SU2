@@ -85,7 +85,6 @@ class COutput {
 	int *Conn_Hexa;
 	int *Conn_Pris;
 	int *Conn_Pyra;
-	su2double *Volume;
 	su2double **Data;
 	unsigned short nVar_Consv, nVar_Total, nVar_Extra, nZones;
 	bool wrote_surf_file, wrote_CGNS_base, wrote_Tecplot_base, wrote_Paraview_base;
