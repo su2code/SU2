@@ -11,12 +11,12 @@ class DivergenceFailure(EvaluationFailure):
 # It's important for the whole python package to be accessible with one import SU2
 # See issue #246
 
-import run
-import io
-import mesh
-import eval
-import opt
-import util
+from SU2 import run
+from SU2 import io
+from SU2 import mesh
+from SU2 import eval
+from SU2 import opt
+from SU2 import util
 
 try:
     import readline
