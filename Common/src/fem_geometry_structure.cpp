@@ -557,7 +557,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   boundaries.resize(nMarker);
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
-    boundaries[iMarker].markerTag = config->GetMarker_All_TagBound(iMarker);
+    boundaries[iMarker].markerTag        = config->GetMarker_All_TagBound(iMarker);
+    boundaries[iMarker].periodicBoundary = config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY;
     boundaries[iMarker].surfElem.reserve(nElem_Bound[iMarker]);
   }
 
@@ -1326,7 +1327,89 @@ void CMeshFEM_DG::SetFaces(void) {
     }
   }
 
-  cout << "nLocalFaces: " << localFaces.size() << endl;
+  /*--- Sort the the local faces in increasing order. ---*/
+  sort(localFaces.begin(), localFaces.end());
+
+  /*--- Loop over the faces to merge the matching faces. As only one of the
+        faces is kept, the other face is invalidated by setting its faceIndicator
+        to -2, i.e. an unowned faces. In this way these faces can be removed
+        easily later on. ---*/
+  for(unsigned long i=1; i<localFaces.size(); ++i) {
+
+    /* Check for a matching face with the previous face in the vector.
+       Note that the == operator only checks the node IDs. */
+    if(localFaces[i] == localFaces[i-1]) {
+
+      /* Faces are matching. First check if at least one face belongs to an
+         owned element. In that case the face should be stored, because it
+         contributes to the surface integral of an owned element. */
+      if(localFaces[i].faceIndicator == -1 || localFaces[i-1].faceIndicator == -1) {
+
+        /* Store the of the neighboring elemen in faces[i-1]. */
+        if(localFaces[i].elemID0 < nVolElemTot) {
+          localFaces[i-1].elemID0    = localFaces[i].elemID0;
+          localFaces[i-1].nPolyGrid0 = localFaces[i].nPolyGrid0;
+          localFaces[i-1].nPolySol0  = localFaces[i].nPolySol0;
+          localFaces[i-1].nDOFsElem0 = localFaces[i].nDOFsElem0;
+          localFaces[i-1].elemType0  = localFaces[i].elemType0;
+          localFaces[i-1].faceID0    = localFaces[i].faceID0;
+        }
+        else {
+          localFaces[i-1].elemID1    = localFaces[i].elemID1;
+          localFaces[i-1].nPolyGrid1 = localFaces[i].nPolyGrid1;
+          localFaces[i-1].nPolySol1  = localFaces[i].nPolySol1;
+          localFaces[i-1].nDOFsElem1 = localFaces[i].nDOFsElem1;
+          localFaces[i-1].elemType1  = localFaces[i].elemType1;
+          localFaces[i-1].faceID1    = localFaces[i].faceID1;
+        }
+
+        /* Adapt the boolean to indicate whether or not the face has a constant
+           Jacobian of the transformation, although in principle this info
+           should be the same for both faces. */
+        if( !(localFaces[i-1].JacFaceIsConsideredConstant &&
+              localFaces[i].JacFaceIsConsideredConstant) ) {
+          localFaces[i-1].JacFaceIsConsideredConstant = false;
+        }
+
+        /* Set this face indicator to -1 to indicate that this face must be kept
+           and invalidate localFace[i] by setting its face indicator to -2. */
+        localFaces[i-1].faceIndicator = -1;
+        localFaces[i].faceIndicator   = -2;
+      }
+    }
+  }
+
+  /*--- Remove the invalidated faces. This is accomplished by giving the
+        face four points a global node ID that is larger than the largest
+        local point ID in the grid. In this way the sorting operator puts
+        these faces at the end of the vector, see also the < operator
+        of FaceOfElementClass. ---*/
+  unsigned long nFacesLoc = localFaces.size();
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+    if(localFaces[i].faceIndicator == -2) {
+      unsigned long invalID = meshPoints.size();
+      localFaces[i].nCornerPoints = 4;
+      localFaces[i].cornerPoints[0] = invalID;
+      localFaces[i].cornerPoints[1] = invalID;
+      localFaces[i].cornerPoints[2] = invalID;
+      localFaces[i].cornerPoints[3] = invalID;
+      --nFacesLoc;
+    }
+  }
+
+  sort(localFaces.begin(), localFaces.end());
+  localFaces.resize(nFacesLoc);
+
+  /*--- Loop over the boundary markers and its boundary elements to search for
+        the corresponding faces in localFaces. These faces should be found.
+        Note that periodic boundaries are skipped, because these are treated
+        via the halo elements, which are already in place. ---*/
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    if( !boundaries[iMarker].periodicBoundary ) {
+
+    }
+  }
+
   cout << "CMeshFEM_DG::SetFaces: Not implemented yet." << endl;
 #ifndef HAVE_MPI
   exit(EXIT_FAILURE);

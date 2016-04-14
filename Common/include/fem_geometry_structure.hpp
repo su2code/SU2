@@ -261,6 +261,8 @@ class CBoundaryFEM {
 public:
   string markerTag;  /*!< \brief Marker tag of this boundary. */
 
+  bool periodicBoundary; /*!< \brief Whether or not this boundary is a periodic boundary. */
+
   vector<CSurfaceElementFEM> surfElem; /*!< \brief Vector of the local surface elements. */
 
   /*!
