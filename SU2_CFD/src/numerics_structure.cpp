@@ -80,6 +80,10 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   Diffusion_Coeff_i = NULL;
   Diffusion_Coeff_j = NULL;
   
+  Enthalpy_formation = NULL;
+  Theta_v = NULL;
+  var = NULL;
+
   Ys          = NULL;
   dFdYj       = NULL;
   dFdYi       = NULL;
@@ -96,7 +100,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 }
 
 CNumerics::~CNumerics(void) {
-
   delete [] Normal;
 	delete [] UnitNormal;
 
@@ -118,9 +121,8 @@ CNumerics::~CNumerics(void) {
 	}
 	delete [] tau;
 	delete [] delta;
-	delete [] Enthalpy_formation;
-	delete [] Theta_v;
-  if (Ys != NULL) delete [] Ys;
+
+	if (Ys != NULL) delete [] Ys;
   if (sumdFdYih != NULL) delete [] sumdFdYih;
   if (sumdFdYjh != NULL) delete [] sumdFdYjh;
   if (sumdFdYieve != NULL) delete [] sumdFdYieve;
@@ -130,11 +132,8 @@ CNumerics::~CNumerics(void) {
   if (Vector != NULL) delete [] Vector;
   if (var != NULL) delete [] var;
 
-	unsigned short iVar;
-	for (iVar = 0; iVar < nVar; iVar++) {
-		delete [] dVdU[iVar];
-	}
-	delete [] dVdU;
+	if(Enthalpy_formation != NULL) delete [] Enthalpy_formation;
+	if(Theta_v != NULL) delete [] Theta_v;
 
 }
 

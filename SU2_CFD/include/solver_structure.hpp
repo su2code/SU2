@@ -3014,7 +3014,8 @@ protected:
 	su2double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
 	*PrimVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
 	su2double **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
-	unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
+	unsigned long nMarker,				/*!< \brief Total number of markers using the grid information. */
+  *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
 	bool space_centered,  /*!< \brief True if space centered scheeme used. */
 	euler_implicit,			/*!< \brief True if euler implicit scheme used. */
 	least_squares;        /*!< \brief True if computing gradients by least squares. */
@@ -6785,7 +6786,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CFEM_ElasticitySolver(void);
+	virtual ~CFEM_ElasticitySolver(void);
 
     /*!
 	 * \brief Impose the send-receive boundary condition.
@@ -7658,6 +7659,11 @@ public:
    * \param[in] Kind_Solver - The kind of direct solver.
    */
   CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CDiscAdjSolver(void);
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
