@@ -6786,7 +6786,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CFEM_ElasticitySolver(void);
+	virtual ~CFEM_ElasticitySolver(void);
 
     /*!
 	 * \brief Impose the send-receive boundary condition.
@@ -7663,7 +7663,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjSolver(void);
+  virtual ~CDiscAdjSolver(void);
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
