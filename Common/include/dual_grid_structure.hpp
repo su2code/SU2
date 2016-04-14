@@ -65,7 +65,7 @@ public:
 	/*! 
 	 * \brief Destructor of the class. 
 	 */
-	~CDualGrid(void);
+	virtual ~CDualGrid(void);
 	
 	/*! 
 	 * \brief A pure virtual member.

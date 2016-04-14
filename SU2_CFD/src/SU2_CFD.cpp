@@ -165,9 +165,9 @@ int main(int argc, char *argv[]) {
       }
     }
     else {
-      geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
+      geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
     }
-    
+
     /*--- Deallocate the memory of geometry_aux ---*/
     
     delete geometry_aux;
