@@ -49,10 +49,10 @@ sys.path.append( SU2_RUN )
 base_Command = os.path.join(SU2_RUN,'%s')
 
 # check for slurm
-slurm_job = os.environ.has_key('SLURM_JOBID')
+slurm_job = 'SLURM_JOBID' in os.environ
 
 #check for tacc
-tacc_job = os.environ.has_key('TACC_PUBLIC_MACHINE')
+tacc_job = 'TACC_PUBLIC_MACHINE' in os.environ
 
 # set mpi command
 if slurm_job:
