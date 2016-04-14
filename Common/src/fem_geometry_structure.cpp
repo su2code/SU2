@@ -198,7 +198,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*--- Determine a mapping from the global point ID to the local index
         of the points.            ---*/
   map<unsigned long,unsigned long> globalPointIDToLocalInd;
-  for(unsigned i=0; i<geometry->local_node; ++i)
+  for(unsigned i=0; i<geometry->GetnPoint(); ++i)
     globalPointIDToLocalInd[geometry->node[i]->GetGlobalIndex()] = i;
 
   /*----------------------------------------------------------------------------*/
@@ -209,7 +209,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*--- Determine the ranks to which I have to send my elements. ---*/
   vector<int> sendToRank(nRank, 0);
 
-  for(unsigned long i=0; i<geometry->local_elem; i++) {
+  for(unsigned long i=0; i<geometry->GetnElem(); i++) {
     sendToRank[geometry->elem[i]->GetColor()] = 1;
   }
 
@@ -243,7 +243,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 #endif
 
   /*--- Loop over the local elements to fill the communication buffers with element data. ---*/
-  for(unsigned long i=0; i<geometry->local_elem; ++i) {
+  for(unsigned long i=0; i<geometry->GetnElem(); ++i) {
     int ind = geometry->elem[i]->GetColor();
     map<int,int>::const_iterator MI = rankToIndCommBuf.find(ind);
     ind = MI->second;
@@ -459,11 +459,11 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
         Sort them in increasing order, such that an easy search can be done.
         In the same loop determine the upper bound for the local nodes (without
         halos) and the number of boundary elements for every marker. ---*/
-  local_elem = local_node = 0;
-  for(int i=0; i<nRankRecv; ++i) local_elem += longRecvBuf[i][0];
+  unsigned long nLocalElem = 0, nLocalNode = 0;
+  for(int i=0; i<nRankRecv; ++i) nLocalElem += longRecvBuf[i][0];
 
   vector<unsigned long> globalElemID;
-  globalElemID.reserve(local_elem);
+  globalElemID.reserve(nLocalElem);
 
   for(int i=0; i<nRankRecv; ++i) {
     unsigned long indL = 1, indS = 0;
@@ -477,7 +477,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     }
 
     long nNodesThisRank = longRecvBuf[i][indL];
-    local_node += nNodesThisRank;
+    nLocalNode += nNodesThisRank;
     indL       += nNodesThisRank+1;
 
     for(unsigned iMarker=0; iMarker<nMarker; ++iMarker) {
@@ -553,7 +553,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*--- Allocate the memory for the volume elements, the nodes
         and the surface elements of the boundaries.    ---*/
   volElem.resize(nVolElemTot);
-  meshPoints.reserve(local_node);
+  meshPoints.reserve(nLocalNode);
 
   boundaries.resize(nMarker);
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
