@@ -169,12 +169,12 @@ void CDriver::Postprocessing(CIteration **iteration_container,
 #endif
 
   for (iZone = 0; iZone < nZone; iZone++) {
-
+    /*
     if (rank == MASTER_NODE)
           cout << endl <<"----------------- Numerics Postprocessing ----------------" << endl;
     Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone],
                                    geometry_container[iZone], config_container[iZone]);
-
+    */
     if (rank == MASTER_NODE)
           cout << endl <<"----------------- Integration Postprocessing ----------------" << endl;
 

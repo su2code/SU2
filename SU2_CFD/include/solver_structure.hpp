@@ -7663,7 +7663,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CDiscAdjSolver(void);
+  ~CDiscAdjSolver(void);
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.

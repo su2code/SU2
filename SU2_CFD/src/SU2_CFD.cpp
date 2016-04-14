@@ -512,9 +512,8 @@ int main(int argc, char *argv[]) {
     cout << "History file, closed." << endl;
   }
   
-  /*--- Deallocations: may not be strictly necessary to explicitly call (as they should be called
-   * when the object is out of scope, but useful for debugging the deallocation functions and finding true
-   * memory leaks---*/
+  /*--- Deallocations: further work is needed,
+   * these routines can be used to check for memory leaks---*/
   /*
   if (rank == MASTER_NODE)
       cout << endl <<"------------------------ Driver Postprocessing ------------------------" << endl;
@@ -522,11 +521,12 @@ int main(int argc, char *argv[]) {
   driver->Postprocessing(iteration_container, solver_container, geometry_container,
       integration_container, numerics_container, interpolator_container,
       transfer_container, config_container, nZone);
-  */
-  delete driver;
 
+  delete driver;
+  */
 
   /*--- Geometry class deallocation ---*/
+  /*
   if (rank == MASTER_NODE)
         cout << endl <<"------------------------ Geometry Postprocessing ------------------------" << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -538,19 +538,21 @@ int main(int argc, char *argv[]) {
     }
   }
   delete [] geometry_container;
-
+  */
   /*--- Free-form deformation class deallocation ---*/
-
+  /*
   for (iZone = 0; iZone < nZone; iZone++) {
     delete FFDBox[iZone];
   }
   delete [] FFDBox;
-
+  */
   /*--- Grid movement and surface movement class deallocation ---*/
+  /*
   delete [] surface_movement;
   delete [] grid_movement;
-
+  */
   /*Deallocate config container*/
+  /*
   if (rank == MASTER_NODE)
         cout << endl <<"------------------------ Config Postprocessing ------------------------" << endl;
   if (config_container!=NULL){
@@ -561,10 +563,11 @@ int main(int argc, char *argv[]) {
     }
     delete [] config_container;
   }
-
+  */
   /*--- Deallocate output container ---*/
+  /*
   if (output!=NULL) delete output;
-  
+  */
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
