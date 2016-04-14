@@ -37,7 +37,7 @@
 
 import os, sys, shutil, copy
 import numpy as np
-from ..util import Bunch, OrderedBunch, switch
+from ..util import ordered_bunch, switch
 from .tools import *
 from .config_options import *
 
@@ -50,11 +50,11 @@ inf = 1.0e20
 #  Configuration Class
 # ----------------------------------------------------------------------
 
-class Config(OrderedBunch):
+class Config(ordered_bunch):
     """ config = SU2.io.Config(filename="")
         
         Starts a config class, an extension of 
-        OrderedBunch()
+        ordered_bunch()
         
         use 1: initialize by reading config file
             config = SU2.io.Config('filename')
