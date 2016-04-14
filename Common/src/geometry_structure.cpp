@@ -9630,7 +9630,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 }
 
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_flag, bool allocate) {
-	unsigned long  iPoint, jPoint, iVertex, jVertex, kVertex, iSpanVertex, jSpanVertex, kSpanVertex, **ordered, **disordered, oldVertex;
+	unsigned long  iPoint, jPoint, iVertex, jVertex, kVertex, iSpanVertex, jSpanVertex, kSpanVertex, **ordered, **disordered, **oldVertex3D, oldVertex;
 	unsigned long nVert, nVertMax;
 	unsigned short iMarker, iMarkerTP, iSpan,iSize, jSpan, iDim, nSpanWiseSections;
 	su2double min, max, *coord, *span, delta, dist, Normal2, *TurboNormal, *NormalArea, target, **area, ***unitnormal, Area;
@@ -9680,6 +9680,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 	NormalArea				= new su2double[nDim];
 	ordered     			= new unsigned long* [nSpanWiseSections];
 	disordered     		= new unsigned long* [nSpanWiseSections];
+	oldVertex3D       = new unsigned long* [nSpanWiseSections];
 	area 							= new su2double* [nSpanWiseSections];
 	unitnormal 				= new su2double** [nSpanWiseSections];
 	checkAssign       = new bool* [nSpanWiseSections];
@@ -9882,6 +9883,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 							}
 							ordered[iSpan]     					= new unsigned long [nVertexSpan[iMarker][iSpan]];
 							disordered[iSpan]  					= new unsigned long [nVertexSpan[iMarker][iSpan]];
+							oldVertex3D[iSpan]					= new unsigned long [nVertexSpan[iMarker][iSpan]];
 							checkAssign[iSpan]     			= new bool [nVertexSpan[iMarker][iSpan]];
 							area[iSpan]				 					= new su2double [nVertexSpan[iMarker][iSpan]];
 							unitnormal[iSpan]	 					= new su2double* [nVertexSpan[iMarker][iSpan]];
@@ -9918,6 +9920,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 								for (iDim = 0; iDim < nDim; iDim++) NormalArea[iDim] /= Area;
 								/*--- store all the all the info into the auxiliary containers ---*/
 								disordered[jSpan][nVertexSpan[iMarker][jSpan]] 	= iPoint;
+								oldVertex3D[jSpan][nVertexSpan[iMarker][jSpan]] = iVertex;
 								area[jSpan][nVertexSpan[iMarker][jSpan]]				= Area;
 								for (iDim = 0; iDim < nDim; iDim++){
 									unitnormal[jSpan][nVertexSpan[iMarker][jSpan]][iDim] = NormalArea[iDim];
@@ -9961,6 +9964,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 								}
 								turbovertex[iMarker][iSpan][iSpanVertex]->SetArea(area[iSpan][kSpanVertex]);
 								turbovertex[iMarker][iSpan][iSpanVertex]->SetNormal(unitnormal[iSpan][kSpanVertex]);
+								turbovertex[iMarker][iSpan][iSpanVertex]->SetOldVertex(oldVertex3D[iSpan][kSpanVertex]);
 								checkAssign[iSpan][kSpanVertex] = true;
 								coord = node[ordered[iSpan][iSpanVertex]]->GetCoord();
 								switch (config->GetKind_TurboMachinery()){
@@ -9997,6 +10001,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 
 							delete [] ordered[iSpan];
 							delete [] disordered[iSpan];
+							delete [] oldVertex3D[iSpan];
 							delete [] checkAssign[iSpan];
 							delete [] area[iSpan];
 							for(iVertex=0; iVertex < nVertexSpan[iMarker][iSpan]; iVertex++){
@@ -10194,8 +10199,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 	}
 
 //			FINAL TEST
-//      TODO  IMPORTANT oldVertexindex should be implemented in 3D
-
+////
 //  for (iMarker = 0; iMarker < nMarker; iMarker++){
 //  	for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
 //			if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
@@ -10204,14 +10208,15 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 //						for(iSpanVertex = 0; iSpanVertex<nVertexSpan[iMarker][iSpan]; iSpanVertex++){
 //							iPoint = turbovertex[iMarker][iSpan][iSpanVertex]->GetNode();
 //							coord = node[iPoint]->GetCoord();
-//							if(iSpan == 8 && marker_flag == INFLOW)
-//							cout <<"span " <<iSpan << " pitch wise " << coord[1]<< " local index " << iSpanVertex << " global index " << turbovertex[iMarker][iSpan][iSpanVertex]->GetGlobalVertexIndex() <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
-//							//check if the old vertex work ass well
-////							iVertex = turbovertex[iMarker][iSpan][iSpanVertex]->GetOldVertex();
-////							iPoint = vertex[iMarker][iVertex]->GetNode();
-////							coord = node[iPoint]->GetCoord();
-//							//if(rank == 3)
-//							//cout <<"old vertex check in Span  " <<iSpan << " pitch wise " << coord[1]<< " in vertex " << iVertex <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
+//							if(iSpan == 1 && marker_flag == INFLOW){
+//								cout <<"span " <<iSpan << " pitch wise " << coord[1]<< " local index " << iSpanVertex << " global index " << turbovertex[iMarker][iSpan][iSpanVertex]->GetGlobalVertexIndex() <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
+//								//check if the old vertex work ass well
+//								iVertex = turbovertex[iMarker][iSpan][iSpanVertex]->GetOldVertex();
+//								iPoint = vertex[iMarker][iVertex]->GetNode();
+//								coord = node[iPoint]->GetCoord();
+//								cout <<"old vertex check in Span  " <<iSpan << " pitch wise " << coord[1]<< " in vertex " << iVertex <<" in Marker " << config->GetMarker_All_TagBound(iMarker) << " in rank " << rank <<endl;
+//
+//							}
 //						}
 //					}
 //				}
@@ -10230,6 +10235,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
   delete [] area;
   delete [] ordered;
 	delete [] disordered;
+	delete [] oldVertex3D;
 	delete [] checkAssign;
 	delete [] span;
 	delete [] TurboNormal;
