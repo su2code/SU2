@@ -158,7 +158,7 @@ def read_history( History_filename ):
     
     # map header names
     for key in plot_data.keys():
-        if map_dict.has_key(key):
+        if key in map_dict:
             var = map_dict[key]
         else:
             var = key

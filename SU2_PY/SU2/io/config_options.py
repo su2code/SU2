@@ -31,7 +31,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-from ..util import OrderedBunch
+from ..util import ordered_bunch
 
 class OptionError(Exception):
     pass
@@ -62,7 +62,7 @@ class MathProblem(Option):
 
 #: class MathProblem
 
-class DEFINITION_DV(OrderedBunch):
+class DEFINITION_DV(ordered_bunch):
     """ SU2.io.config.DEFINITION_DV()
     
         List of design variables (Design variables are separated by semicolons)
@@ -86,13 +86,13 @@ class DEFINITION_DV(OrderedBunch):
     """
     
     def __init__(self,*args,**kwarg):
-        OrderedBunch.__init__(self)
+        ordered_bunch.__init__(self)
         self.KIND   = []
         self.SCALE  = []
         self.MARKER = []
         self.FFDTAG = []
         self.PARAM  = []
-        self.update(OrderedBunch(*args,**kwarg))
+        self.update(ordered_bunch(*args,**kwarg))
     
     def append(self,new_dv):
         self.KIND.  append(new_dv['KIND'])
@@ -111,7 +111,7 @@ class DEFINITION_DV(OrderedBunch):
 
 #: class DEFINITION_DV
 
-class DV_KIND(OrderedBunch):
+class DV_KIND(ordered_bunch):
   """ SU2.io.config.DV_KIND()
     
     List of design variables (Design variables are separated by semicolons)
@@ -135,10 +135,10 @@ class DV_KIND(OrderedBunch):
     """
   
   def __init__(self,*args,**kwarg):
-    OrderedBunch.__init__(self)
+    ordered_bunch.__init__(self)
     self.FFDTAG = []
     self.PARAM  = []
-    self.update(OrderedBunch(*args,**kwarg))
+    self.update(ordered_bunch(*args,**kwarg))
   
   def append(self,new_dv):
     self.FFDTAG.append(new_dv['FFDTAG'])

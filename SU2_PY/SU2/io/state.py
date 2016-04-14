@@ -37,7 +37,7 @@ import os, sys, shutil, copy, time
 from ..io   import expand_part, expand_time, get_adjointSuffix, add_suffix, \
                    get_specialCases, Config
 from ..util import bunch
-from ..util import OrderedBunch
+from ..util import ordered_bunch
 
 
 # ----------------------------------------------------------------------
@@ -47,7 +47,7 @@ from ..util import OrderedBunch
 def State_Factory(state=None,config=None):
     """ state = SU2.io.State()
         
-        Starts a state class, an extension of OrderedBunch().
+        Starts a state class, an extension of ordered_bunch().
         Stores data generated while traversing SU2 tool chain
         
         Fields:
@@ -103,7 +103,7 @@ def State_Factory(state=None,config=None):
     NewClass = State()
     
     for key in ['FUNCTIONS','GRADIENTS','VARIABLES','FILES','HISTORY']:
-        NewClass[key] = OrderedBunch()
+        NewClass[key] = ordered_bunch()
             
     if config:
         NewClass.find_files(config)
@@ -115,7 +115,7 @@ def State_Factory(state=None,config=None):
 #  State Class
 # ----------------------------------------------------------------------
 
-class State(OrderedBunch):
+class State(ordered_bunch):
     """ state = SU2.io.state.State()
         
         This is the State class that should be generated with the 
