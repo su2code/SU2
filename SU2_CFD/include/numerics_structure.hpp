@@ -1530,7 +1530,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwCUSP_Flow(void);
+  ~CUpwCUSP_Flow(void);
   
   /*!
    * \brief Compute the flow residual using a JST method.
@@ -1577,7 +1577,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwRoe_Flow(void);
+  ~CUpwRoe_Flow(void);
   
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
@@ -1631,7 +1631,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwGeneralRoe_Flow(void);
+  ~CUpwGeneralRoe_Flow(void);
   
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
@@ -1683,7 +1683,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwMSW_Flow(void);
+  ~CUpwMSW_Flow(void);
   
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
@@ -1733,7 +1733,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwTurkel_Flow(void);
+  ~CUpwTurkel_Flow(void);
   
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
@@ -1786,7 +1786,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwArtComp_Flow(void);
+  ~CUpwArtComp_Flow(void);
   
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
@@ -1833,7 +1833,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwArtComp_FreeSurf_Flow(void);
+  ~CUpwArtComp_FreeSurf_Flow(void);
   
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
@@ -1880,7 +1880,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwRoe_AdjFlow(void);
+  ~CUpwRoe_AdjFlow(void);
   
   /*!
    * \brief Compute the adjoint Roe's flux between two nodes i and j.
@@ -1925,7 +1925,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwRoeArtComp_AdjFlow(void);
+  ~CUpwRoeArtComp_AdjFlow(void);
   
   /*!
    * \brief Compute the adjoint Roe's flux between two nodes i and j.
@@ -1976,7 +1976,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwAUSM_Flow(void);
+  ~CUpwAUSM_Flow(void);
   
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
@@ -2026,7 +2026,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwHLLC_Flow(void);
+  ~CUpwHLLC_Flow(void);
   
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
@@ -2079,7 +2079,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwGeneralHLLC_Flow(void);
+  ~CUpwGeneralHLLC_Flow(void);
   
   /*!
 
@@ -2126,7 +2126,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwLin_TransLM(void);
+  ~CUpwLin_TransLM(void);
   
   /*!
    * \brief Compute the upwind flux between two nodes i and j.
@@ -2164,7 +2164,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwLin_AdjLevelSet(void);
+  ~CUpwLin_AdjLevelSet(void);
   
   /*!
    * \brief Compute the upwind flux between two nodes i and j.
@@ -2204,7 +2204,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwLin_AdjTurb(void);
+  ~CUpwLin_AdjTurb(void);
   
   /*!
    * \brief Compute the adjoint upwind flux between two nodes i and j.
@@ -2243,7 +2243,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwSca_TurbSA(void);
+  ~CUpwSca_TurbSA(void);
   
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
@@ -2282,7 +2282,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwSca_TurbML(void);
+  ~CUpwSca_TurbML(void);
   
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
@@ -2323,7 +2323,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwSca_TurbSST(void);
+  ~CUpwSca_TurbSST(void);
   
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
@@ -2362,7 +2362,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwSca_TransLM(void);
+  ~CUpwSca_TransLM(void);
   
   /*!
    * \brief Compute the scalar upwind flux between two nodes i and j.
@@ -2398,7 +2398,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CUpwSca_AdjTurb(void);
+  ~CUpwSca_AdjTurb(void);
   
   /*!
    * \param[out] val_residual_i - Pointer to the total residual at point i.
@@ -2454,7 +2454,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CCentJST_KE_Flow(void);
+  ~CCentJST_KE_Flow(void);
   
   /*!
    * \brief Compute the flow residual using a JST method.
@@ -2508,7 +2508,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CCentJST_Flow(void);
+  ~CCentJST_Flow(void);
   
   /*!
    * \brief Compute the flow residual using a JST method.
@@ -2561,7 +2561,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CCentJSTArtComp_Flow(void);
+  ~CCentJSTArtComp_Flow(void);
   
   /*!
    * \brief Compute the flow residual using a JST method.
@@ -2606,7 +2606,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CCentJST_AdjFlow(void);
+  ~CCentJST_AdjFlow(void);
   
   /*!
    * \brief Compute the adjoint flow residual using a JST method.
@@ -2656,7 +2656,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CCentJSTArtComp_AdjFlow(void);
+  ~CCentJSTArtComp_AdjFlow(void);
   
   /*!
    * \brief Compute the adjoint flow residual using a JST method.
@@ -2713,7 +2713,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CCentLax_Flow(void);
+  ~CCentLax_Flow(void);
   
   /*!
    * \brief Compute the flow residual using a Lax method.
@@ -2765,7 +2765,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CCentLaxArtComp_Flow(void);
+  ~CCentLaxArtComp_Flow(void);
   
   /*!
    * \brief Compute the flow residual using a Lax method.
@@ -2810,7 +2810,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CCentLax_AdjFlow(void);
+  ~CCentLax_AdjFlow(void);
   
   /*!
    * \brief Compute the adjoint flow residual using a Lax method.
@@ -2860,7 +2860,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CCentLaxArtComp_AdjFlow(void);
+  ~CCentLaxArtComp_AdjFlow(void);
   
   /*!
    * \brief Compute the adjoint flow residual using a Lax method.
@@ -2911,7 +2911,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGrad_Flow(void);
+  ~CAvgGrad_Flow(void);
   
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.
@@ -2959,7 +2959,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CGeneralAvgGrad_Flow(void);
+  ~CGeneralAvgGrad_Flow(void);
   
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.
@@ -2999,7 +2999,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGradArtComp_Flow(void);
+  ~CAvgGradArtComp_Flow(void);
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.
    * \param[out] val_residual - Pointer to the total residual.
@@ -3043,7 +3043,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGrad_TurbSA(void);
+  ~CAvgGrad_TurbSA(void);
   
   /*!
    * \brief Compute the viscous turbulence terms residual using an average of gradients.
@@ -3089,7 +3089,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGrad_TurbSA_Neg(void);
+  ~CAvgGrad_TurbSA_Neg(void);
   
   /*!
    * \brief Compute the viscous turbulence terms residual using an average of gradients.
@@ -3133,7 +3133,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGrad_TurbML(void);
+  ~CAvgGrad_TurbML(void);
   
   /*!
    * \brief Compute the viscous turbulence terms residual using an average of gradients.
@@ -3176,7 +3176,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGrad_TransLM(void);
+  ~CAvgGrad_TransLM(void);
   
   /*!
    * \brief Compute the viscous turbulence terms residual using an average of gradients.
@@ -3218,7 +3218,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGrad_AdjFlow(void);
+  ~CAvgGrad_AdjFlow(void);
   
   /*!
    * \brief Residual computation.
@@ -3258,7 +3258,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGradArtComp_AdjFlow(void);
+  ~CAvgGradArtComp_AdjFlow(void);
   
   /*!
    * \brief Residual computation.
@@ -3304,7 +3304,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGradCorrected_Flow(void);
+  ~CAvgGradCorrected_Flow(void);
   
   /*!
    * \brief Compute the viscous flow residual using an average of gradients with correction.
@@ -3353,7 +3353,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CGeneralAvgGradCorrected_Flow(void);
+  ~CGeneralAvgGradCorrected_Flow(void);
   
   /*!
    * \brief Compute the viscous flow residual using an average of gradients with correction.
@@ -3395,7 +3395,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGradCorrectedArtComp_Flow(void);
+  ~CAvgGradCorrectedArtComp_Flow(void);
   
   /*!
    * \brief Compute the viscous flow residual using an average of gradients with correction.
@@ -3436,7 +3436,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGradCorrected_TurbSA(void);
+  ~CAvgGradCorrected_TurbSA(void);
   
   /*!
    * \brief Compute the viscous turbulent residual using an average of gradients with correction.
@@ -3481,7 +3481,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGradCorrected_TurbSA_Neg(void);
+  ~CAvgGradCorrected_TurbSA_Neg(void);
   
   /*!
    * \brief Compute the viscous turbulent residual using an average of gradients with correction.
@@ -3522,7 +3522,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGradCorrected_TurbML(void);
+  ~CAvgGradCorrected_TurbML(void);
   
   /*!
    * \brief Compute the viscous turbulent residual using an average of gradients with correction.
@@ -3562,7 +3562,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGradCorrected_TransLM(void);
+  ~CAvgGradCorrected_TransLM(void);
   
   /*!
    * \brief Compute the viscous turbulent residual using an average of gradients with correction.
@@ -3618,7 +3618,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGrad_TurbSST(void);
+  ~CAvgGrad_TurbSST(void);
   
   /*!
    * \brief Sets value of first blending function.
@@ -3680,7 +3680,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGradCorrected_TurbSST(void);
+  ~CAvgGradCorrected_TurbSST(void);
   
   /*!
    * \brief Sets value of first blending function.
@@ -3730,7 +3730,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGradCorrected_AdjFlow(void);
+  ~CAvgGradCorrected_AdjFlow(void);
   
   /*!
    * \brief Compute the adjoint flow viscous residual in a non-conservative way using an average of gradients and derivative correction.
@@ -3776,7 +3776,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGradCorrectedArtComp_AdjFlow(void);
+  ~CAvgGradCorrectedArtComp_AdjFlow(void);
   
   /*!
    * \brief Compute the adjoint flow viscous residual in a non-conservative way using an average of gradients and derivative correction.
@@ -3818,7 +3818,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGradCorrected_AdjTurb(void);
+  ~CAvgGradCorrected_AdjTurb(void);
   
   /*!
    * \brief Compute the adjoint turbulent residual using average of gradients and a derivative correction.
@@ -3870,7 +3870,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CAvgGrad_AdjTurb(void);
+  ~CAvgGrad_AdjTurb(void);
   
   /*!
    * \brief Compute the adjoint turbulent residual using average of gradients and a derivative correction.
@@ -3917,7 +3917,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CGalerkin_Flow(void);
+  ~CGalerkin_Flow(void);
   
   /*!
    * \brief Computing stiffness matrix of the Galerkin method.
@@ -4015,7 +4015,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	virtual ~CFEM_LinearElasticity(void);
+	~CFEM_LinearElasticity(void);
 
 	void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
@@ -4109,7 +4109,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	virtual ~CFEM_NeoHookean_Comp(void);
+	~CFEM_NeoHookean_Comp(void);
 
 	void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
 
@@ -4142,7 +4142,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	virtual ~CFEM_NeoHookean_Incomp(void);
+	~CFEM_NeoHookean_Incomp(void);
 
 	void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
 
@@ -4176,7 +4176,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourceNothing(void);
+  ~CSourceNothing(void);
 };
 
 /*!
@@ -4223,7 +4223,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourcePieceWise_TurbSA(void);
+  ~CSourcePieceWise_TurbSA(void);
   
   /*!
    * \brief Residual for source term integration.
@@ -4318,7 +4318,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourcePieceWise_TurbSA_Neg(void);
+  ~CSourcePieceWise_TurbSA_Neg(void);
   
   /*!
    * \brief Residual for source term integration.
@@ -4420,7 +4420,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourcePieceWise_TransLM(void);
+  ~CSourcePieceWise_TransLM(void);
   
   /*!
    * \brief Residual for source term integration.
@@ -4474,7 +4474,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourcePieceWise_TurbSST(void);
+  ~CSourcePieceWise_TurbSST(void);
   
   /*!
    * \brief Set the value of the first blending function.
@@ -4531,7 +4531,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourceGravity(void);
+  ~CSourceGravity(void);
   
   /*!
    * \brief Source term integration for the poissonal potential.
@@ -4566,7 +4566,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourceViscous_AdjFlow(void);
+  ~CSourceViscous_AdjFlow(void);
   
   /*!
    * \brief Source term integration of the flow adjoint equation.
@@ -4601,7 +4601,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourcePieceWise_AdjTurb(void);
+  ~CSourcePieceWise_AdjTurb(void);
   
   /*!
    * \brief Source term integration of the adjoint turbulence equation.
@@ -4634,7 +4634,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourcePieceWise_AdjLevelSet(void);
+  ~CSourcePieceWise_AdjLevelSet(void);
   
   /*!
    * \brief Source term integration of the adjoint poisson potential equation.
@@ -4669,7 +4669,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourceConservative_AdjFlow(void);
+  ~CSourceConservative_AdjFlow(void);
   
   /*!
    * \brief Source term integration using a conservative scheme.
@@ -4700,7 +4700,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourceConservative_AdjTurb(void);
+  ~CSourceConservative_AdjTurb(void);
   
   /*!
    * \brief Source term integration using a conservative scheme.
@@ -4733,7 +4733,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourceRotatingFrame_Flow(void);
+  ~CSourceRotatingFrame_Flow(void);
   
   /*!
    * \brief Residual of the rotational frame source term.
@@ -4765,7 +4765,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourceRotatingFrame_AdjFlow(void);
+  ~CSourceRotatingFrame_AdjFlow(void);
   
   /*!
    * \brief Residual of the adjoint rotating frame source term.
@@ -4797,7 +4797,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourceAxisymmetric_Flow(void);
+  ~CSourceAxisymmetric_Flow(void);
   
   /*!
    * \brief Residual of the rotational frame source term.
@@ -4829,7 +4829,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourceAxisymmetric_AdjFlow(void);
+  ~CSourceAxisymmetric_AdjFlow(void);
   
   /*!
    * \brief Residual of the rotational frame source term.
@@ -4860,7 +4860,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSourceWindGust(void);
+  ~CSourceWindGust(void);
   
   /*!
    * \brief Residual of the wind gust source term.
@@ -4902,7 +4902,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CSource_Template(void);
+  ~CSource_Template(void);
 };
 
 /*!
@@ -4941,7 +4941,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CConvective_Template(void);
+  ~CConvective_Template(void);
   
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
@@ -4976,7 +4976,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CViscous_Template(void);
+  ~CViscous_Template(void);
   
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.
