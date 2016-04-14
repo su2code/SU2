@@ -6908,7 +6908,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       }
     }
 
-    while (getline (mesh_file, text_line)) {
+    while (getline (mesh_file, text_line) && (found_transform == false)) {
       
       /*--- Read periodic transformation info (center, rotation, translation) ---*/
       
