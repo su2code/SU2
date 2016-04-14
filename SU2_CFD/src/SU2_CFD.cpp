@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
   
   nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  
+  delete config;
   /*--- Definition and of the containers for all possible zones. ---*/
   
   iteration_container    = new CIteration*[nZone];
@@ -512,15 +512,60 @@ int main(int argc, char *argv[]) {
     cout << "History file, closed." << endl;
   }
   
-  //  /*--- Deallocate config container ---*/
-  //
-  //  for (iZone = 0; iZone < nZone; iZone++) {
-  //    if (config_container[iZone] != NULL) {
-  //      delete config_container[iZone];
-  //    }
-  //  }
-  //  if (config_container != NULL) delete[] config_container;
-  
+  /*--- Deallocations: may not be strictly necessary to explicitly call (as they should be called
+   * when the object is out of scope, but useful for debugging the deallocation functions and finding true
+   * memory leaks---*/
+
+
+
+  driver->Postprocessing(iteration_container, solver_container, geometry_container,
+      integration_container, numerics_container, interpolator_container,
+      transfer_container, config_container, nZone);
+
+  delete driver;
+  if (rank == MASTER_NODE) cout <<"Driver deallocated." << endl;
+  /*--- Geometry class deallocation ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if (geometry_container[iZone]!=NULL){
+      for (unsigned short iMGlevel = 1; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++){
+        if (geometry_container[iZone][iMGlevel]!=NULL) delete geometry_container[iZone][iMGlevel];
+      }
+      delete [] geometry_container[iZone];
+    }
+  }
+  delete [] geometry_container;
+  cout <<"Geometry container deallocated." << endl;
+
+  /*--- Free-form deformation class deallocation ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete FFDBox[iZone];
+  }
+  delete [] FFDBox;
+
+  cout <<"FFD container deallocated." << endl;
+
+  delete [] surface_movement;
+  cout <<"Surface movement container deallocated." << endl;
+  /*--- Grid movement class deallocation ---*/
+  delete [] grid_movement;
+  cout <<"Grid movement container deallocated." << endl;
+    /*Deallocate config container*/
+  if (config_container!=NULL){
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (config_container[iZone]!=NULL){
+        delete config_container[iZone];
+      }
+    }
+    delete [] config_container;
+  }
+  cout <<"Config container deallocated." << endl;
+
+  /*--- Deallocate output container ---*/
+  if (output!=NULL) delete output;
+  cout <<"Output deallocated." << endl;
+
   
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
@@ -543,13 +588,13 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
-  
+
 #ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
   MPI_Buffer_detach(&bptr, &bl);
   MPI_Finalize();
 #endif
-  
+
   return EXIT_SUCCESS;
-  
+
 }
