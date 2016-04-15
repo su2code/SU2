@@ -313,11 +313,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
 
 CPoint::~CPoint() {
   
-	Elem.~vector();
-	Point.~vector();
-	Edge.~vector();
-  Children_CV.~vector();
-
 	if (Volume != NULL) delete[] Volume;
 	if (Vertex != NULL) delete[] Vertex;
 	if (Coord != NULL) delete[] Coord;
