@@ -9696,10 +9696,12 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 						nVertexSpan[iMarker] 							= new unsigned long[nSpanWiseSections];
 						turbovertex[iMarker] 							= new CTurboVertex** [nSpanWiseSections];
-						nTotVertexSpan[iMarker]						= new unsigned long [nSpanWiseSections];
+						nTotVertexSpan[iMarker]						= new unsigned long [nSpanWiseSections +1];
 						for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 							nVertexSpan[iMarker][iSpan] 								= 0;
 							turbovertex[iMarker][iSpan] 								= NULL;
+						}
+						for(iSpan = 0; iSpan < nSpanWiseSections +1; iSpan++){
 							nTotVertexSpan[iMarker][iSpan]							= 0;
 						}
 					}
@@ -10088,7 +10090,8 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
 				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
 					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-						nTotVertexSpan[iMarker][iSpan]							= nVert;
+						nTotVertexSpan[iMarker][iSpan]													= nVert;
+						nTotVertexSpan[iMarker][nSpanWiseSections]							+= nVert;
 					}
 				}
 			}
@@ -10279,12 +10282,12 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
 				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
 					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-						AverageTurboNormal[iMarker] 			= new su2double *[nSpanWiseSections];
-						AverageNormal[iMarker]			 			= new su2double *[nSpanWiseSections];
-						AverageGridVel[iMarker] 					= new su2double *[nSpanWiseSections];
-						AverageTangGridVel[iMarker]				= new su2double [nSpanWiseSections];
-						SpanArea[iMarker] 								= new su2double [nSpanWiseSections];
-						for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
+						AverageTurboNormal[iMarker] 			= new su2double *[nSpanWiseSections + 1];
+						AverageNormal[iMarker]			 			= new su2double *[nSpanWiseSections + 1];
+						AverageGridVel[iMarker] 					= new su2double *[nSpanWiseSections + 1];
+						AverageTangGridVel[iMarker]				= new su2double [nSpanWiseSections + 1];
+						SpanArea[iMarker] 								= new su2double [nSpanWiseSections + 1];
+						for (iSpan= 0; iSpan < nSpanWiseSections + 1; iSpan++){
 							AverageTurboNormal[iMarker][iSpan] 					= new su2double [nDim];
 							AverageNormal[iMarker][iSpan]			 					= new su2double [nDim];
 							AverageGridVel[iMarker][iSpan] 	  					= new su2double [nDim];
@@ -10407,11 +10410,43 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 //							cout << "average turbo normal "<<AverageTurboNormal[iMarker][iSpan][iDim]<< " in span " << iSpan <<" in rank " <<rank <<endl;
 //							cout << "average  normal "<<AverageNormal[iMarker][iSpan][iDim]<< " in span " << iSpan <<" in rank " <<rank <<endl;
 //						}
+
+						/*--- Compute the 1D average values ---*/
+						AverageTangGridVel[iMarker][nSpanWiseSections]	+= AverageTangGridVel[iMarker][iSpan]/nSpanWiseSections;
+						SpanArea[iMarker][nSpanWiseSections]						+= SpanArea[iMarker][iSpan];
+						for(iDim=0; iDim < nDim; iDim++){
+							AverageTurboNormal[iMarker][nSpanWiseSections][iDim]	  += AverageTurboNormal[iMarker][iSpan][iDim];
+							AverageNormal[iMarker][nSpanWiseSections][iDim]	  			+= AverageNormal[iMarker][iSpan][iDim];
+							AverageGridVel[iMarker][nSpanWiseSections][iDim]				+= AverageGridVel[iMarker][iSpan][iDim]/nSpanWiseSections;
+
+						}
 					}
 				}
 			}
 		}
   }
+
+	/*--- Normalize 1D normals---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+		for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+			if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+				if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+					turboNormal2 = 0.0;
+					Normal2 		= 0.0;
+
+					for (iDim = 0; iDim < nDim; iDim++){
+						turboNormal2 += AverageTurboNormal[iMarker][nSpanWiseSections][iDim]*AverageTurboNormal[iMarker][nSpanWiseSections][iDim];
+						Normal2      += AverageNormal[iMarker][nSpanWiseSections][iDim]*AverageNormal[iMarker][nSpanWiseSections][iDim];
+					}
+					for (iDim = 0; iDim < nDim; iDim++){
+						AverageTurboNormal[iMarker][nSpanWiseSections][iDim] /=sqrt(turboNormal2);
+						AverageNormal[iMarker][nSpanWiseSections][iDim] /=sqrt(Normal2);
+					}
+				}
+			}
+		}
+  }
+
 
   delete [] TotalTurboNormal;
   delete [] TotalNormal;

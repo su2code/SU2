@@ -555,6 +555,9 @@ void CMeanFlowIteration::TurboPreprocess(CGeometry ***geometry_container, CSolve
 
 	solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0], config_container[iZone], INFLOW);
 	solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0], config_container[iZone], OUTFLOW);
+	solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0], config_container[iZone], INFLOW);
+	solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0], config_container[iZone], OUTFLOW);
+
 	if (config_container[iZone]->GetBoolNRBC()){
 		solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessBC_NonReflecting(geometry_container[iZone][MESH_0], config_container[iZone], numerics_container[iZone][MESH_0][FLOW_SOL][CONV_BOUND_TERM], INFLOW);
 		solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessBC_NonReflecting(geometry_container[iZone][MESH_0], config_container[iZone], numerics_container[iZone][MESH_0][FLOW_SOL][CONV_BOUND_TERM], OUTFLOW);
