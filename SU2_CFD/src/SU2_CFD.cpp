@@ -526,7 +526,6 @@ int main(int argc, char *argv[]) {
   */
 
   /*--- Geometry class deallocation ---*/
-  /*
   if (rank == MASTER_NODE)
         cout << endl <<"------------------------ Geometry Postprocessing ------------------------" << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -538,21 +537,18 @@ int main(int argc, char *argv[]) {
     }
   }
   delete [] geometry_container;
-  */
+
   /*--- Free-form deformation class deallocation ---*/
-  /*
   for (iZone = 0; iZone < nZone; iZone++) {
     delete FFDBox[iZone];
   }
   delete [] FFDBox;
-  */
+
   /*--- Grid movement and surface movement class deallocation ---*/
-  /*
   delete [] surface_movement;
   delete [] grid_movement;
-  */
+
   /*Deallocate config container*/
-  /*
   if (rank == MASTER_NODE)
         cout << endl <<"------------------------ Config Postprocessing ------------------------" << endl;
   if (config_container!=NULL){
@@ -563,11 +559,10 @@ int main(int argc, char *argv[]) {
     }
     delete [] config_container;
   }
-  */
+
   /*--- Deallocate output container ---*/
-  /*
   if (output!=NULL) delete output;
-  */
+
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
