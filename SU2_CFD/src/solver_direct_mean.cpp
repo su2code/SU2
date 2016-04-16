@@ -66,7 +66,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Inflow_MassFlow = NULL;   Inflow_Pressure = NULL;
   Inflow_Mach = NULL;       Inflow_Area = NULL;
   Bleed_MassFlow = NULL;    Bleed_Pressure = NULL;
-  Bleed_Temperature = NULL; Inflow_Area = NULL;
+  Bleed_Temperature = NULL; Bleed_Area = NULL;
   Exhaust_Pressure = NULL;  Exhaust_Temperature = NULL;
   Exhaust_MassFlow = NULL;  Exhaust_Area = NULL;
   
@@ -78,6 +78,8 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
   
+  Secondary=NULL; Secondary_i=NULL; Secondary_j=NULL;
+
   /*--- Fixed CL mode initialization (cauchy criteria) ---*/
   
   Cauchy_Value = 0;
@@ -86,6 +88,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   New_Func = 0;
   Cauchy_Counter = 0;
   Cauchy_Serie = NULL;
+  FluidModel=NULL;
   
 }
 
@@ -118,36 +121,62 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Array initialization ---*/
   
-  CDrag_Inv = NULL; CLift_Inv = NULL; CSideForce_Inv = NULL; CEff_Inv = NULL;
-  CMx_Inv = NULL;   CMy_Inv = NULL;   CMz_Inv = NULL;
-  CFx_Inv = NULL;   CFy_Inv = NULL;   CFz_Inv = NULL;
+  /*--- Basic array initialization ---*/
+
+  CDrag_Inv = NULL; CLift_Inv = NULL; CSideForce_Inv = NULL;  CEff_Inv = NULL;
+  CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
+  CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
+
+  CPressure = NULL; CPressureTarget = NULL; HeatFlux = NULL; HeatFluxTarget = NULL; YPlus = NULL;
+  ForceInviscid = NULL; MomentInviscid = NULL;
+
+  /*--- Surface based array initialization ---*/
   
   Surface_CLift_Inv = NULL; Surface_CDrag_Inv = NULL; Surface_CSideForce_Inv = NULL; Surface_CEff_Inv = NULL;
-  Surface_CFx_Inv = NULL;   Surface_CFy_Inv = NULL;   Surface_CFz_Inv = NULL;
-  Surface_CMx_Inv = NULL;   Surface_CMy_Inv = NULL;   Surface_CMz_Inv = NULL;
+  Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
+  Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
   
   Surface_CLift = NULL; Surface_CDrag = NULL; Surface_CSideForce = NULL; Surface_CEff = NULL;
-  Surface_CFx = NULL;   Surface_CFy = NULL;   Surface_CFz = NULL;
-  Surface_CMx = NULL;   Surface_CMy = NULL;   Surface_CMz = NULL;
+  Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
+  Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
+
+  /*--- Rotorcraft simulation array initialization ---*/
+
+  CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
+
+  /*--- Supersonic simulation array initialization ---*/
   
-  ForceInviscid = NULL;  MomentInviscid = NULL;
-  CPressure = NULL;      CPressureTarget = NULL; HeatFlux = NULL;
-  HeatFluxTarget = NULL; YPlus = NULL;
+  CEquivArea_Inv = NULL;
+  CNearFieldOF_Inv = NULL;
   
-  CMerit_Inv = NULL; CT_Inv = NULL; CQ_Inv = NULL;
+  /*--- Engine simulation array initialization ---*/
   
-  CEquivArea_Inv = NULL; CNearFieldOF_Inv = NULL;
+  Inflow_MassFlow = NULL;   Inflow_Pressure = NULL;
+  Inflow_Mach = NULL;       Inflow_Area = NULL;
+  Bleed_MassFlow = NULL;    Bleed_Pressure = NULL;
+  Bleed_Temperature = NULL; Bleed_Area = NULL;
+  Exhaust_Pressure = NULL;  Exhaust_Temperature = NULL;
+  Exhaust_MassFlow = NULL;  Exhaust_Area = NULL;
   
-  Inflow_MassFlow = NULL; Exhaust_MassFlow = NULL; Exhaust_Area = NULL;      Exhaust_Pressure = NULL;
-  Inflow_Pressure = NULL; Inflow_Mach = NULL;      Inflow_Area = NULL;       Exhaust_Temperature = NULL;
-  Bleed_MassFlow = NULL;  Bleed_Pressure = NULL;   Bleed_Temperature = NULL; Bleed_Area = NULL;
+  /*--- Numerical methods array initialization ---*/
   
-  iPoint_UndLapl = NULL;  jPoint_UndLapl = NULL;
+  iPoint_UndLapl = NULL;
+  jPoint_UndLapl = NULL;
   LowMach_Precontioner = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
-  Secondary = NULL; Secondary_i = NULL; Secondary_j = NULL;
   CharacPrimVar = NULL;
+
+  Secondary=NULL; Secondary_i=NULL; Secondary_j=NULL;
+
+  /*--- Fixed CL mode initialization (cauchy criteria) ---*/
+
+  Cauchy_Value = 0;
+  Cauchy_Func = 0;
+  Old_Func = 0;
+  New_Func = 0;
+  Cauchy_Counter = 0;
   Cauchy_Serie = NULL;
+  FluidModel=NULL;
   
   /*--- Set the gamma value ---*/
   
@@ -762,7 +791,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 CEulerSolver::~CEulerSolver(void) {
   unsigned short iVar, iMarker;
-  
   /*--- Array deallocation ---*/
   if (CDrag_Inv != NULL)         delete [] CDrag_Inv;
   if (CLift_Inv != NULL)         delete [] CLift_Inv;
@@ -808,19 +836,23 @@ CEulerSolver::~CEulerSolver(void) {
   if (Inflow_Mach != NULL)      delete [] Inflow_Mach;
   if (Inflow_Area != NULL)      delete [] Inflow_Area;
   if (Bleed_Pressure != NULL)  delete [] Bleed_Pressure;
+
   if (Bleed_Temperature != NULL)      delete [] Bleed_Temperature;
   if (Exhaust_Pressure != NULL)  delete [] Exhaust_Pressure;
   if (Exhaust_Temperature != NULL)      delete [] Exhaust_Temperature;
   if (Bleed_Area != NULL)      delete [] Bleed_Area;
-  if (iPoint_UndLapl != NULL)       delete [] iPoint_UndLapl;
-  if (jPoint_UndLapl != NULL)       delete [] jPoint_UndLapl;
+
+  //if (iPoint_UndLapl != NULL)       delete [] iPoint_UndLapl;
+  //if (jPoint_UndLapl != NULL)       delete [] jPoint_UndLapl;
+
   if (Primitive != NULL)        delete [] Primitive;
   if (Primitive_i != NULL)      delete [] Primitive_i;
   if (Primitive_j != NULL)      delete [] Primitive_j;
-  //  if (Secondary != NULL)        delete [] Secondary;
+
+  //if (Secondary != NULL)        delete [] Secondary;
   if (Secondary_i != NULL)      delete [] Secondary_i;
   if (Secondary_j != NULL)      delete [] Secondary_j;
-  
+
   if (LowMach_Precontioner != NULL) {
     for (iVar = 0; iVar < nVar; iVar ++)
       delete LowMach_Precontioner[iVar];
@@ -828,8 +860,10 @@ CEulerSolver::~CEulerSolver(void) {
   }
   
   if (CPressure != NULL) {
+    /* This causes failure in AD dealloc
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete CPressure[iMarker];
+    */
     delete [] CPressure;
   }
   
@@ -838,16 +872,20 @@ CEulerSolver::~CEulerSolver(void) {
       delete CPressureTarget[iMarker];
     delete [] CPressureTarget;
   }
-  
-  //  if (CharacPrimVar != NULL) {
-  //    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  //      for (iVertex = 0; iVertex < nVertex; iVertex++) {
-  //        delete CharacPrimVar[iMarker][iVertex];
-  //      }
-  //    }
-  //    delete [] CharacPrimVar;
-  //  }
-  
+  /*
+  if (CharacPrimVar != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (nVertex!=NULL){
+      for (iVertex=0; iVertex<nVertex[iMarker]; iVertex++)
+        delete [] CharacPrimVar[iMarker][iVertex];
+      }
+      delete [] CharacPrimVar[iMarker];
+    }
+    delete [] CharacPrimVar;
+  }
+  */
+  //if (nVertex!=NULL)  delete [] nVertex;
+
   if (HeatFlux != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete HeatFlux[iMarker];
@@ -868,10 +906,12 @@ CEulerSolver::~CEulerSolver(void) {
     }
     delete [] YPlus;
   }
-  
+  /*
   if (Cauchy_Serie != NULL)
     delete [] Cauchy_Serie;
-  
+  */
+  //if (FluidModel!=NULL) delete FluidModel;
+
 }
 
 void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -12698,7 +12738,6 @@ CNSSolver::~CNSSolver(void) {
   if (MaxHeatFlux_Visc != NULL) delete [] MaxHeatFlux_Visc;
   if (ForceViscous != NULL)     delete [] ForceViscous;
   if (MomentViscous != NULL)    delete [] MomentViscous;
-  
   
   if (Surface_CLift_Visc != NULL)      delete [] Surface_CLift_Visc;
   if (Surface_CDrag_Visc != NULL)      delete [] Surface_CDrag_Visc;

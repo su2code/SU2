@@ -49,6 +49,13 @@ COutput::COutput(void) {
   nGlobal_BoundTria = 0;
   nGlobal_BoundQuad = 0;
   
+  /*--- Initialize pointers to NULL ---*/
+  Coords=NULL;
+  Conn_Line=NULL;     Conn_BoundTria=NULL;  Conn_BoundQuad=NULL;
+  Conn_Tria=NULL;     Conn_Quad=NULL;       Conn_Tetr=NULL;
+  Conn_Hexa=NULL;     Conn_Pris=NULL;       Conn_Pyra=NULL;
+  Data=NULL;
+
   /*--- Initialize CGNS write flag ---*/
   
   wrote_base_file = false;
@@ -72,7 +79,12 @@ COutput::COutput(void) {
   
 }
 
-COutput::~COutput(void) { }
+COutput::~COutput(void) {
+  /* delete pointers initialized at construction*/
+  /* Coords and Conn_*(Connectivity) have their own dealloc functions */
+  /* Data is taken care of in DeallocateSolution function */
+
+}
 
 void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
                                  CSolver *FlowSolver, unsigned long iExtIter,
@@ -3712,7 +3724,6 @@ void COutput::DeallocateCoordinates(CConfig *config, CGeometry *geometry) {
       delete [] Coords[iDim];
     }
     delete [] Coords;
-    
   }
 }
 

@@ -150,10 +150,6 @@ CWaveSolver::~CWaveSolver(void) {
   
 	unsigned short iVar;
   
-	delete [] Residual;
-	delete [] Residual_Max;
-	delete [] Solution;
-  
 	for (iVar = 0; iVar < nDim+1; iVar++)
 		delete [] StiffMatrix_Elem[iVar];
   

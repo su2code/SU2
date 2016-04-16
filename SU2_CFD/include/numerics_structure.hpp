@@ -74,7 +74,6 @@ public:
   su2double
   **tau,		/*!< \brief Viscous stress tensor. */
   **delta;			/*!< \brief Identity matrix. */
-  su2double **dVdU; /*!< \brief Transformation matrix from primitive variables, V, to conserved, U. */
   su2double
   *Diffusion_Coeff_i, /*!< \brief Species diffusion coefficients at point i. */
   *Diffusion_Coeff_j; /*!< \brief Species diffusion coefficients at point j. */
@@ -3970,7 +3969,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CFEM_Elasticity(void);
+	virtual ~CFEM_Elasticity(void);
 
 	void Compute_Mass_Matrix(CElement *element_container, CConfig *config);
 
@@ -4069,7 +4068,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CFEM_NonlinearElasticity(void);
+	virtual ~CFEM_NonlinearElasticity(void);
 
 	void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 

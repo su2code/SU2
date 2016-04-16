@@ -466,7 +466,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CQUAD4(void);
+	virtual ~CQUAD4(void);
 
 	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
@@ -607,7 +607,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CHEXA8(void);
+	virtual ~CHEXA8(void);
 
 	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.

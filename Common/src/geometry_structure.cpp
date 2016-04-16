@@ -365,21 +365,24 @@ CGeometry::CGeometry(void) {
   nNewElem_Bound = NULL;
   Marker_All_SendRecv = NULL;
   
-  // PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
-  // PeriodicElem[MAX_NUMBER_PERIODIC].clear();
-  // XCoordList.clear();
-  
-  // Xcoord_plane.clear();
-  // Ycoord_plane.clear();
-  // Zcoord_plane.clear();
-  // FaceArea_plane.clear();
-  // Plane_points.clear();
-  
+  PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
+  PeriodicElem[MAX_NUMBER_PERIODIC].clear();
+  XCoordList.clear();
+
+  Xcoord_plane.clear();
+  Ycoord_plane.clear();
+  Zcoord_plane.clear();
+  FaceArea_plane.clear();
+  Plane_points.clear();
+  /*--- parmetis variables---*/
+  starting_node=NULL;
+  ending_node=NULL;
+  npoint_procs=NULL;
 }
 
 CGeometry::~CGeometry(void) {
   
-  unsigned long iElem, iElem_Bound, iFace, iVertex, iEdge, iPoint;
+  unsigned long iElem, iElem_Bound, iFace, iPoint;
   unsigned short iMarker;
   
   if (elem != NULL) {
@@ -409,17 +412,19 @@ CGeometry::~CGeometry(void) {
     delete[] node;
   }
   
+  /*
   if (edge != NULL) {
     for (iEdge = 0; iEdge < nEdge; iEdge ++)
-      if (edge[iEdge] != NULL) delete [] edge[iEdge];
+      if (edge[iEdge] != NULL) delete edge[iEdge];
     delete[] edge;
   }
-  
+
   if (vertex != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         if (vertex[iMarker][iVertex] != NULL) delete [] vertex[iMarker][iVertex];
       }
+      delete[] vertex[iMarker];
     }
     delete[] vertex;
   }
@@ -429,25 +434,16 @@ CGeometry::~CGeometry(void) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (newBound[iMarker][iElem_Bound] != NULL) delete [] newBound[iMarker][iElem_Bound];
       }
+      delete[] newBound[iMarker];
     }
     delete[] newBound;
   }
-  
+  */
   if (nElem_Bound != NULL) delete[] nElem_Bound;
   if (nVertex != NULL) delete[] nVertex;
   if (nNewElem_Bound != NULL) delete[] nNewElem_Bound;
   if (Marker_All_SendRecv != NULL) delete[] Marker_All_SendRecv;
   if (Tag_to_Marker != NULL) delete[] Tag_to_Marker;
-  
-  // PeriodicPoint[MAX_NUMBER_PERIODIC][2].~vector();
-  // PeriodicElem[MAX_NUMBER_PERIODIC].~vector();
-  // XCoordList.~vector();
-  
-  // Xcoord_plane.~vector()
-  // Ycoord_plane.~vector()
-  // Zcoord_plane.~vector()
-  // FaceArea_plane.~vector()
-  // Plane_points.~vector()
   
   if (starting_node != NULL) delete [] starting_node;
   if (ending_node   != NULL) delete [] ending_node;
