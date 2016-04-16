@@ -37,6 +37,42 @@
 using namespace std;
 
 /*!
+ * \class SortFacesClass
+ * \brief Functor, used for a different sorting of the faces than the < operator
+ *        of FaceOfElementClass.
+ * \author E. van der Weide
+ * \version 4.1.0 "Cardinal"
+ */
+class SortFacesClass {
+public:
+  /*!
+   * \brief Constructor of the class. Set the value of nVolElemTot.
+   */
+   SortFacesClass(unsigned long val_nVolElemTot);
+
+ /*!
+  * \brief Destructor of the class. Nothing to be done.
+  */
+  ~SortFacesClass();
+
+ /*!
+  * \brief Operator used for the comparison.
+  * \param[in] f0 - First face in the comparison.
+  * \param[in] f1 - Second face in the comparison.
+  */
+  bool operator()(const FaceOfElementClass &f0,
+                  const FaceOfElementClass &f1);
+private:
+  unsigned long nVolElemTot;  /*!< \brief Number of local volume elements . */
+
+  /*!
+   * \brief Default constructor of the class. Disabled.
+   */
+   SortFacesClass(void);
+
+};
+
+/*!
  * \class CPointCompare
  * \brief Helper class used to determine whether two points are identical.
  * \author E. van der Weide
@@ -194,6 +230,19 @@ private:
 };
 
 /*!
+ * \class CInternalFaceElementFEM
+ * \brief Class to store an internal face for the FEM solver.
+ * \author E. van der Weide
+ * \version 4.1.0 "Cardinal"
+ */
+class CInternalFaceElementFEM {
+public:
+  unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
+
+  unsigned short indStandardElement; /*!< \brief Index in the vector of standard elements. */
+};
+
+/*!
  * \class CSurfaceElementFEM
  * \brief Class to store a surface element for the FEM solver.
  * \author E. van der Weide
@@ -243,6 +292,14 @@ public:
    *  \return  The relevant length scale for this surface element.
    */
   su2double DetermineLengthScale(vector<CPointFEM> &meshPoints);
+
+  /*!
+   *  \brief Function, which determines the corner points of this surface element.
+   *  \param[out] nPointsPerFace - Number of corner points of the face.
+   *  \param[out] faceConn       - The corner points of the face.
+   */
+  void GetCornerPointsFace(unsigned short &nPointsPerFace,
+                           unsigned long  faceConn[]);
 
 private:
   /*!
@@ -306,7 +363,7 @@ protected:
   vector<vector<unsigned long> > DOFsReceive; /*!< \brief Vector of vector, which contains the DOFs that
                                                           must be received. Self communication is included. */
 public:
-  
+
 	/*!
 	 * \brief Constructor of the class.
 	 */
@@ -319,7 +376,7 @@ public:
 	 * \param[in] config   - Definition of the particular problem.
 	 */
   CMeshFEM(CGeometry *geometry, CConfig *config);
-  
+
 	/*!
 	 * \brief Destructor of the class.
 	 */
@@ -348,7 +405,7 @@ public:
   * \param[in] config   - Definition of the particular problem.
   */
   CMeshFEM_DG(CGeometry *geometry, CConfig *config);
- 
+
  /*!
   * \brief Destructor of the class.
   */

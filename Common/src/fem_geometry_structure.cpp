@@ -29,8 +29,70 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <iomanip>
 #include "../include/fem_geometry_structure.hpp"
+
+bool SortFacesClass::operator()(const FaceOfElementClass &f0,
+                                const FaceOfElementClass &f1) {
+
+  /*--- Comparison in case both faces are boundary faces. ---*/
+  if(f0.faceIndicator >= 0 && f1.faceIndicator >= 0) {
+
+    /* Both faces are boundary faces. The first comparison is the boundary
+       marker, which is stored in faceIndicator. */
+    if(f0.faceIndicator != f1.faceIndicator) return f0.faceIndicator < f1.faceIndicator;
+
+    /* Both faces belong to the same boundary marker. Make sure that the
+       sequence of the faces is identical to the sequence stored in the
+       surface connectivity of the boundary. This information is stored in
+       either nPolyGrid0 or nPolyGrid1, depending on which side of the face
+       the corresponding element is located. */
+    unsigned long ind0 = f0.elemID0 < nVolElemTot ? f0.nPolyGrid1 : f0.nPolyGrid0;
+    unsigned long ind1 = f1.elemID0 < nVolElemTot ? f1.nPolyGrid1 : f1.nPolyGrid0;
+
+    return ind0 < ind1;
+  }
+
+  /*--- Comparison in case both faces are internal faces. ---*/
+  if(f0.faceIndicator == -1 && f1.faceIndicator == -1) {
+
+    /* Both faces are internal faces. First determine the minimum and maximum
+       ID of its adjacent elements.  */
+    unsigned long elemIDMin0 = min(f0.elemID0, f0.elemID1);
+    unsigned long elemIDMax0 = max(f0.elemID0, f0.elemID1);
+
+    unsigned long elemIDMin1 = min(f1.elemID0, f1.elemID1);
+    unsigned long elemIDMax1 = max(f1.elemID0, f1.elemID1);
+
+    /* Determine the situation. */
+    if(elemIDMax0 < nVolElemTot && elemIDMax1 < nVolElemTot) {
+
+      /* Both faces are matching internal faces. These faces are sorted
+         according to their element ID's in order to increase cache performance.
+         This may be adapted to improve performance. */
+      if(elemIDMin0 != elemIDMin1) return elemIDMin0 < elemIDMin1;
+      return elemIDMax0 < elemIDMax1;
+    }
+    else if(elemIDMax0 >= nVolElemTot && elemIDMax1 >= nVolElemTot) {
+
+      /* Both faces are non-matching internal faces. Sort them according to
+         their relevant element ID. */
+      return elemIDMin0 < elemIDMin1;
+    }
+    else {
+
+      /* One face is a matching internal face and the other face is a
+         non-matching internal face. Make sure that the non-matching face
+         is numbered after the matching face. This is accomplished by comparing
+         the maximum element ID's. */
+      return elemIDMax0 < elemIDMax1;
+    }
+  }
+
+  /*--- One face is a boundary face and the other face is an internal face. ---*/
+  /*--- Make sure that the boundary face is numbered first. This can be     ---*/
+  /*--- accomplished by using the > operator for faceIndicator.             ---*/
+  return f0.faceIndicator > f1.faceIndicator;
+}
 
 void CPointCompare::Copy(const CPointCompare &other) {
   nDim           = other.nDim;
@@ -86,6 +148,20 @@ void CVolumeElementFEM::GetCornerPointsAllFaces(unsigned short &numFaces,
       unsigned long nn = faceConn[i][j];
       faceConn[i][j] = nodeIDsGrid[nn];
     }
+  }
+}
+
+void CSurfaceElementFEM::GetCornerPointsFace(unsigned short &nPointsPerFace,
+                                             unsigned long  faceConn[]) {
+
+  /*--- Get the corner connectivities of the face, local to the element. ---*/
+  CPrimalGridBoundFEM::GetLocalCornerPointsFace(VTK_Type, nPolyGrid, nDOFsGrid,
+                                                nPointsPerFace, faceConn);
+
+  /*--- Convert the local values of faceConn to global values. ---*/
+  for(unsigned short j=0; j<nPointsPerFace; ++j) {
+    unsigned long nn = faceConn[j];
+    faceConn[j] = nodeIDsGrid[nn];
   }
 }
 
@@ -149,7 +225,7 @@ su2double CSurfaceElementFEM::DetermineLengthScale(vector<CPointFEM> &meshPoints
 #endif
     }
   }
- 
+
   /* Loop over the edges, determine their length and take the minimum
      for the length scale. */
   for(unsigned short i=0; i<nEdges; ++i) {
@@ -459,11 +535,11 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
         Sort them in increasing order, such that an easy search can be done.
         In the same loop determine the upper bound for the local nodes (without
         halos) and the number of boundary elements for every marker. ---*/
-  unsigned long nLocalElem = 0, nLocalNode = 0;
-  for(int i=0; i<nRankRecv; ++i) nLocalElem += longRecvBuf[i][0];
+  nElem = nPoint = 0;
+  for(int i=0; i<nRankRecv; ++i) nElem += longRecvBuf[i][0];
 
   vector<unsigned long> globalElemID;
-  globalElemID.reserve(nLocalElem);
+  globalElemID.reserve(nElem);
 
   for(int i=0; i<nRankRecv; ++i) {
     unsigned long indL = 1, indS = 0;
@@ -477,8 +553,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     }
 
     long nNodesThisRank = longRecvBuf[i][indL];
-    nLocalNode += nNodesThisRank;
-    indL       += nNodesThisRank+1;
+    nPoint += nNodesThisRank;
+    indL   += nNodesThisRank+1;
 
     for(unsigned iMarker=0; iMarker<nMarker; ++iMarker) {
       long nBoundElemThisRank = longRecvBuf[i][indL]; ++indL;
@@ -553,7 +629,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*--- Allocate the memory for the volume elements, the nodes
         and the surface elements of the boundaries.    ---*/
   volElem.resize(nVolElemTot);
-  meshPoints.reserve(nLocalNode);
+  meshPoints.reserve(nPoint);
 
   boundaries.resize(nMarker);
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
@@ -1082,7 +1158,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   for(unsigned long i=0; i<haloPoints.size(); ++i) {
     if(haloPoints[i].periodIndexToDonor != -1) break;  // Test for nonperiodic.
-    
+
     meshPoints.push_back(haloPoints[i]);
   }
 
@@ -1407,7 +1483,144 @@ void CMeshFEM_DG::SetFaces(void) {
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
     if( !boundaries[iMarker].periodicBoundary ) {
 
+      for(unsigned long k=0; k<boundaries[iMarker].surfElem.size(); ++k) {
+
+        /* Determine the corner points of the face of this element. */
+        unsigned short nPointsPerFace;
+        unsigned long  faceConn[4];
+
+        boundaries[iMarker].surfElem[k].GetCornerPointsFace(nPointsPerFace, faceConn);
+
+        /* Create an object of FaceOfElementClass to carry out the search. */
+        FaceOfElementClass thisFace;
+        thisFace.nCornerPoints = nPointsPerFace;
+        for(unsigned short j=0; j<nPointsPerFace; ++j)
+          thisFace.cornerPoints[j] = faceConn[j];
+        thisFace.CreateUniqueNumberingWithOrientation();
+
+        /* Search for thisFace in localFaces. It must be found. */
+        if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
+          vector<FaceOfElementClass>::iterator low;
+          low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
+          low->faceIndicator = iMarker;
+
+          /* A few additional checks. */
+          bool side0IsBoundary = low->elemID0 < nVolElemTot;
+          unsigned long elemID = side0IsBoundary ? low->elemID0    : low->elemID1;
+          unsigned short nPoly = side0IsBoundary ? low->nPolyGrid0 : low->nPolyGrid1;
+
+          if(elemID != boundaries[iMarker].surfElem[k].volElemID ||
+             nPoly  != boundaries[iMarker].surfElem[k].nPolyGrid) {
+            cout << "Element ID and/or polynomial degree do not match "
+                 << "for this boundary element. This should not happen." << endl;
+#ifndef HAVE_MPI
+            exit(EXIT_FAILURE);
+#else
+            MPI_Abort(MPI_COMM_WORLD,1);
+            MPI_Finalize();
+#endif
+          }
+
+          /* Store the local index of the boundary face in the variable for the
+             polynomial degree, which is not used for in localFaces. */
+          if( side0IsBoundary ) low->nPolyGrid1 = k;
+          else                  low->nPolyGrid0 = k;
+        }
+        else {
+          cout << "Boundary face not found in localFaces. "
+               << "This should not happen." << endl;
+#ifndef HAVE_MPI
+          exit(EXIT_FAILURE);
+#else
+          MPI_Abort(MPI_COMM_WORLD,1);
+          MPI_Finalize();
+#endif
+        }
+      }
     }
+  }
+
+  /*---------------------------------------------------------------------------*/
+  /*--- Step 2: Create the local face based data structure for the          ---*/
+  /*---         computation of the surface integral in DG-FEM.              ---*/
+  /*---------------------------------------------------------------------------*/
+
+  /* Sort localFaces again, but now such that the boundary faces are numbered
+     first, followed by the matching faces and at the end of localFaces the
+     non-matching faces are stored. In order to carry out this sorting the
+     functor SortFacesClass is used for comparison. */
+  sort(localFaces.begin(), localFaces.end(), SortFacesClass(nVolElemTot));
+
+  /*--- In order to reduce the number of standard elements for the matching
+        faces, it is made sure that the VTK type of the element on side 0
+        must be less than or equal to the VTK type of the element on side 1.
+        Furthermore, make sure that for boundary faces and non-matching faces
+        the corresponding element is always on side 0. ---*/
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+
+    /* Determine whether or not the ajacent elements must be swapped. */
+    bool swapElements;
+    if(localFaces[i].elemID0 < nVolElemTot &&
+       localFaces[i].elemID1 < nVolElemTot) {
+
+      /* This is an internal matching face. Check the VTK types of the
+         adjacent elements. */
+      if(localFaces[i].elemType0 == localFaces[i].elemType1) {
+
+        /* The same element type on both sides. Make sure that the element
+           with the smallest ID is stored on side 0 of the face. */
+        swapElements = localFaces[i].elemID0 > localFaces[i].elemID1;
+      }
+      else {
+        /* Different element types. Make sure that the lowest element
+           type will be stored on side 0 of the face. */
+        swapElements = localFaces[i].elemType0 > localFaces[i].elemType1;
+      }
+    }
+    else {
+
+      /* Either a boundary face or a non-matching face. It must be swapped
+         if the element is currently on side 1 of the face. */
+      swapElements = localFaces[i].elemID1 < nVolElemTot;
+    }
+
+    /* Swap the adjacent elements of the face, if needed. Note that
+       also the sequence of the corner points must be altered in order
+       to obey the right hand rule. */
+    if( swapElements ) {
+      swap(localFaces[i].elemID0,    localFaces[i].elemID1);
+      swap(localFaces[i].nPolyGrid0, localFaces[i].nPolyGrid1);
+      swap(localFaces[i].nPolySol0,  localFaces[i].nPolySol1);
+      swap(localFaces[i].nDOFsElem0, localFaces[i].nDOFsElem1);
+      swap(localFaces[i].elemType0,  localFaces[i].elemType1);
+      swap(localFaces[i].faceID0,    localFaces[i].faceID1);
+
+      if(localFaces[i].nCornerPoints == 2)
+        swap(localFaces[i].cornerPoints[0], localFaces[i].cornerPoints[1]);
+      else
+        swap(localFaces[i].cornerPoints[0], localFaces[i].cornerPoints[2]);
+    }
+  }
+
+  /*--- Determine the number of matching and non-matching internal faces. ---*/
+  unsigned long nMatchingFaces = 0, nNonMatchingFaces = 0;
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+    if(localFaces[i].faceIndicator == -1) {
+      if(localFaces[i].elemID1 < nVolElemTot) ++nMatchingFaces;
+      else                                    ++nNonMatchingFaces;
+    }
+  }
+
+  if( nNonMatchingFaces ) {
+    cout << "CMeshFEM_DG::SetFaces: "
+         << nNonMatchingFaces << " non-matching internal faces found. "
+         << "This is not supported yet." << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
   }
 
   cout << "CMeshFEM_DG::SetFaces: Not implemented yet." << endl;

@@ -321,6 +321,8 @@ inline unsigned long CPrimalGridFEM::GetColor(void) { return color; }
 
 inline void CPrimalGridFEM::SetJacobianConsideredConstant(bool val_JacobianConsideredConstant) { JacobianConsideredConstant = val_JacobianConsideredConstant; }
 
+inline CPrimalGridBoundFEM::~CPrimalGridBoundFEM(){}
+
 inline unsigned long CPrimalGridBoundFEM::GetNode(unsigned short val_node) { return Nodes[val_node]; }
 
 inline unsigned short CPrimalGridBoundFEM::GetnNodesFace(unsigned short val_face) { return -1; }

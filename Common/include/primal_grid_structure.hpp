@@ -1674,6 +1674,21 @@ public:
                               unsigned long  faceConn[6][4]);
 
  /*!
+  * \brief Static member function to get the local the corner points of all the face
+           of this element.
+  * \param[in]  elementType    - Type of the element using the VTK convention.
+  * \param[in]  nPoly          - Polynomial degree of the element.
+  * \param[in]  nDOFs          - Number of DOFs of the element.
+  * \param[out] nPointsPerFace - Number of corner points of the face.
+  * \param[out] faceConn       - Global IDs of the corner points of the face.
+  */
+  static void GetLocalCornerPointsFace(unsigned short elementType,
+                                       unsigned short nPoly,
+                                       unsigned short nDOFs,
+                                       unsigned short &nPointsPerFace,
+                                       unsigned long  faceConn[]);
+
+ /*!
   * \brief Make available the global ID of this element.
   * \return The global ID of this element.
   */
