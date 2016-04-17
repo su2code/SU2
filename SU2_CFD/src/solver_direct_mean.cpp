@@ -12217,11 +12217,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Skin friction in all the markers ---*/
   
-  CSkinFriction = new su2double* [nMarker];
+  CSkinFriction = new su2double** [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CSkinFriction[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    CSkinFriction[iMarker] = new su2double* [geometry->nVertex[iMarker]];
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      CSkinFriction[iMarker][iVertex] = 0.0;
+      CSkinFriction[iMarker][iVertex] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        CSkinFriction[iMarker][iVertex][iDim] = 0.0;
+      }
     }
   }
   
@@ -12723,7 +12726,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 }
 
 CNSSolver::~CNSSolver(void) {
-  unsigned short iMarker;
+  unsigned short iMarker, iDim;
   
   if (CDrag_Visc != NULL)       delete [] CDrag_Visc;
   if (CLift_Visc != NULL)       delete [] CLift_Visc;
@@ -12758,9 +12761,11 @@ CNSSolver::~CNSSolver(void) {
   
   if (CSkinFriction != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete CSkinFriction[iMarker];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        delete CSkinFriction[iMarker][iDim];
+      }
+      delete [] CSkinFriction;
     }
-    delete [] CSkinFriction;
   }
   
 }
@@ -13228,7 +13233,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;
   su2double Viscosity = 0.0, div_vel, *Normal, MomentDist[3] = {0.0, 0.0, 0.0}, WallDist[3] = {0.0, 0.0, 0.0},
   *Coord, *Coord_Normal, Area, WallShearStress, TauNormal, factor, RefTemp, RefVel2,
-  RefDensity, GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
+  RefDensity, GradTemperature, Density = 0.0, Vel[3] = {0.0, 0.0, 0.0}, WallDistMod, FrictionVel,
   Mach2Vel, Mach_Motion, UnitNormal[3] = {0.0, 0.0, 0.0}, TauElem[3] = {0.0, 0.0, 0.0}, TauTangent[3] = {0.0, 0.0, 0.0},
   Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Force[3] = {0.0, 0.0, 0.0}, Cp, thermal_conductivity, MaxNorm = 8.0,
   Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Grad_Temp[3] = {0.0, 0.0, 0.0},
@@ -13371,19 +13376,25 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           }
         }
         
-        /*--- Compute wall shear stress (using the stress tensor) ---*/
+        /*--- Compute wall shear stress (using the stress tensor). Compute wall skin friction coefficient, and heat flux on the wall ---*/
         
         TauNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
-        for (iDim = 0; iDim < nDim; iDim++) TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-        WallShearStress = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallShearStress += TauTangent[iDim]*TauTangent[iDim];
+        
+        WallShearStress = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+          CSkinFriction[iMarker][iVertex][iDim] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
+          WallShearStress += CSkinFriction[iMarker][iVertex][iDim]*CSkinFriction[iMarker][iVertex][iDim];
+        }
         WallShearStress = sqrt(WallShearStress);
+        
+        for (iDim = 0; iDim < nDim; iDim++)
+          Vel[iDim] = node[iPointNormal]->GetVelocity(iDim);
         
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
         WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
         
-        /*--- Compute wall skin friction coefficient, and heat flux on the wall ---*/
         
-        CSkinFriction[iMarker][iVertex] = WallShearStress / (0.5*RefDensity*RefVel2);
         
         /*--- Compute y+ and non-dimensional velocity ---*/
         
