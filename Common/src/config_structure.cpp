@@ -360,10 +360,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("FIXED_CL_MODE", Fixed_CL_Mode, false);
   /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
   addDoubleOption("TARGET_CL", Target_CL, 0.0);
-  /* DESCRIPTION: Damping factor for fixed CL mode. */
-  addDoubleOption("DAMP_FIXED_CL", Damp_Fixed_CL, 0.2);
+  /* DESCRIPTION: Lift cure slope for fixed CL mode (0.2 per deg by default). */
+  addDoubleOption("DCL_DALPHA", dCl_dAlpha, 0.2);
   /* DESCRIPTION: Iterations to re-evaluate the angle of attack. */
-  addUnsignedLongOption("ITER_FIXED_CL", Iter_Fixed_CL, 100);
+  addUnsignedLongOption("ITER_FIXED_CL", Iter_Fixed_CL, 500);
 
 
   /*!\par CONFIG_CATEGORY: Reference Conditions \ingroup Config*/
@@ -2514,24 +2514,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       ActDisk_RootRadius[iMarker] = ActDisk_RootRadius[iMarker]/12.0;
       ActDisk_TipRadius[iMarker] = ActDisk_TipRadius[iMarker]/12.0;
     }
-    
-  }
-  
-  /*--- Check for constant lift mode  ---*/
-  if (Fixed_CL_Mode) {
-    
-    /*--- The initial AoA will be taken as the value input in the
-     config file (the default is zero). ---*/
-    
-    /*--- We will force the use of the cauchy convergence criteria for
-     constant lift mode. ---*/
-    
-    ConvCriteria = CAUCHY;
-    Cauchy_Func_Flow = LIFT_COEFFICIENT;
-    
-    /*--- Initialize the update flag for the AoA with each iteration to false ---*/
-    
-    Update_AoA = false;
     
   }
   
