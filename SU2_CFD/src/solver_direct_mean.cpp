@@ -6565,23 +6565,24 @@ void CEulerSolver::GetActuatorDisk_Properties(CGeometry *geometry, CConfig *conf
 void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh, bool Output) {
   
-  unsigned short iDim, iCounter;
-  bool Update_AoA = false;
-  su2double Target_CL, AoA_inc, AoA;
-  su2double DampingFactor = config->GetDamp_Fixed_CL();
+  su2double Target_CL, AoA, Vel_Infty[3], AoA_inc, Vel_Infty_Mag;
+  unsigned short iDim;
   unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
-  unsigned long ExtIter = config->GetExtIter();
-  su2double Beta = config->GetAoS()*PI_NUMBER/180.0;
-  su2double Vel_Infty[3], Vel_Infty_Mag;
+  unsigned long ExtIter       = config->GetExtIter();
+  su2double Beta              = config->GetAoS()*PI_NUMBER/180.0;
+  su2double dCl_dAlpha        = config->GetdCl_dAlpha()*180.0/PI_NUMBER;
+  bool Update_AoA             = false;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  if (ExtIter == 0) AoA_Counter = 0;
+  
   /*--- Only the fine mesh level should check the convergence criteria ---*/
   
-  if (iMesh == MESH_0) {
+  if ((iMesh == MESH_0) && Output) {
     
     /*--- Initialize the update flag to false ---*/
     
@@ -6589,7 +6590,11 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
     /*--- Reevaluate Angle of Attack at a fix number of iterations ---*/
     
-    if (ExtIter % Iter_Fixed_CL == 0) { Update_AoA = true; };
+    if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
+      AoA_Counter++;
+      if (AoA_Counter >= 2) Update_AoA = true;
+      else Update_AoA = false;
+    };
     
     /*--- Store the update boolean for use on other mesh levels in the MG ---*/
     
@@ -6602,30 +6607,34 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   }
   
   /*--- If we are within two digits of convergence in the CL coefficient,
-   compute an updated value for the AoA at the farfield. We are iterating
-   on the AoA in order to match the specified fixed lift coefficient. ---*/
+ *    compute an updated value for the AoA at the farfield. We are iterating
+ *       on the AoA in order to match the specified fixed lift coefficient. ---*/
   
-  if (Update_AoA) {
+  if (Update_AoA && Output) {
     
     /*--- Retrieve the specified target CL value. ---*/
     
     Target_CL = config->GetTarget_CL();
     
-    /*--- Retrieve the old AoA. ---*/
+    /*--- Retrieve the old AoA (radians) ---*/
     
     AoA_old = config->GetAoA()*PI_NUMBER/180.0;
     
-    /*--- Estimate the increment in AoA based on a 2*pi lift curve slope ---*/
+    /*--- Estimate the increment in AoA based on dCl_dAlpha (radians) ---*/
     
-    AoA_inc = (1.0/(2.0*PI_NUMBER))*(Target_CL - Total_CLift);
+    AoA_inc = (1.0/dCl_dAlpha)*(Target_CL - Total_CLift);
     
-    /*--- Compute a new value for AoA on the fine mesh only ---*/
+    /*--- Compute a new value for AoA on the fine mesh only (radians)---*/
     
-    if (iMesh == MESH_0)
-      AoA = (1.0 - DampingFactor)*AoA_old + DampingFactor * (AoA_old + AoA_inc);
-    else
-      AoA = config->GetAoA()*PI_NUMBER/180.0;
+    if (iMesh == MESH_0) AoA = AoA_old + AoA_inc;
+    else { AoA = config->GetAoA()*PI_NUMBER/180.0; }
     
+    /*--- Only the fine mesh stores the updated values for AoA in config ---*/
+
+    if (iMesh == MESH_0) {
+      config->SetAoA(AoA*180.0/PI_NUMBER);
+    }
+
     /*--- Update the freestream velocity vector at the farfield ---*/
     
     for (iDim = 0; iDim < nDim; iDim++)
@@ -6656,31 +6665,26 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
       Velocity_Inf[iDim] = Vel_Infty[iDim];
     }
     
-    /*--- Only the fine mesh stores the updated values for AoA in config ---*/
+    /*--- Only the fine mesh stores the updated values for velocity in config ---*/
+    
     if (iMesh == MESH_0) {
       for (iDim = 0; iDim < nDim; iDim++)
         config->SetVelocity_FreeStreamND(Vel_Infty[iDim], iDim);
-      config->SetAoA(AoA*180.0/PI_NUMBER);
     }
     
-    /*--- Reset the local cauchy criteria ---*/
-    Cauchy_Value = 0.0;
-    Cauchy_Counter = 0;
-    for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-      Cauchy_Serie[iCounter] = 0.0;
   }
   
   /*--- Output some information to the console with the headers ---*/
   
-  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
+  bool write_heads = ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0));
   if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
     cout.precision(7);
     cout.setf(ios::fixed, ios::floatfield);
     cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
     cout << "Target CL: " << config->GetTarget_CL();
-    cout << ", Current CL: " << Total_CLift;
-    cout << ", Current AoA: " << config->GetAoA() << " deg." << endl;
-    cout << "-------------------------------------------------------------------------" << endl;
+    cout << ", current CL: " << Total_CLift;
+    cout << ", current AoA: " << config->GetAoA() << " deg." << endl;
+    cout << "-------------------------------------------------------------------------" << endl << endl;
   }
   
   
