@@ -1504,7 +1504,7 @@ CDiscAdjMultiZoneDriver::CDiscAdjMultiZoneDriver(CIteration **iteration_containe
   direct_iteration = new CIteration*[nZone];
 
   unsigned short iZone;
-  switch (config_container[iZone]->GetKind_Solver()) {
+  switch (config_container[ZONE_0]->GetKind_Solver()) {
     case DISC_ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
       for (iZone = 0; iZone < nZone; iZone++){
         direct_iteration[iZone] = new CMeanFlowIteration(config_container[iZone]);
@@ -1664,6 +1664,16 @@ void CDiscAdjMultiZoneDriver::SetRecording(CIteration **iteration_container,
     iteration_container[iZone]->SetDependencies(solver_container, geometry_container, config_container, iZone, kind_recording);
   }
 
+  if(config_container[ZONE_0]->GetBoolTurbomachinery()){
+    for (iZone = 0; iZone < nZone; iZone++) {
+      SetGeoTurboAvgValues(geometry_container, config_container, iZone, false);
+      direct_iteration[iZone]->Preprocess(output, integration_container, geometry_container,
+                                          solver_container, numerics_container, config_container,
+                                          surface_movement, grid_movement, FFDBox, iZone);
+
+    }
+  }
+
   /* --- Set the mixing-plane interface ---*/
   if (config_container[ZONE_0]->GetBoolMixingPlaneInterface()){
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -1673,9 +1683,6 @@ void CDiscAdjMultiZoneDriver::SetRecording(CIteration **iteration_container,
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
-    direct_iteration[iZone]->Preprocess(output, integration_container, geometry_container,
-                                        solver_container, numerics_container, config_container,
-                                        surface_movement, grid_movement, FFDBox, iZone);
 
     direct_iteration[iZone]->Iterate(output, integration_container, geometry_container,
                                       solver_container, numerics_container, config_container,
