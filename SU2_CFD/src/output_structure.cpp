@@ -91,7 +91,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
                                  CSolver *FlowSolver, unsigned long iExtIter,
                                  unsigned short val_iZone) {
   
-  unsigned short iMarker, iDim;
+  unsigned short iMarker;
   unsigned long iPoint, iVertex, Global_Index;
   su2double PressCoeff = 0.0, SkinFrictionCoeff[3];
   su2double xCoord = 0.0, yCoord = 0.0, zCoord = 0.0, Mach, Pressure;
@@ -102,6 +102,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
 #ifndef HAVE_MPI
   
+  unsigned short iDim;
   su2double HeatFlux;
   char buffer [50];
   ofstream SurfFlow_file;
