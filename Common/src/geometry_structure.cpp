@@ -882,6 +882,9 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config){
 
     unsigned short iMesh;
     geometry_container[MESH_0]->Set_MPI_Coord(config);
+    if (config->GetGrid_Movement()){
+      geometry_container[MESH_0]->Set_MPI_GridVel(config);
+    }
 
     geometry_container[MESH_0]->SetCoord_CG();
     geometry_container[MESH_0]->SetControlVolume(config, UPDATE);

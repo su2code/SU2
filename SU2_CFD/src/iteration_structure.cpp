@@ -1523,17 +1523,10 @@ void CDiscAdjMeanFlowIteration::SetDependencies(CSolver ****solver_container, CG
 
   if ((kind_recording == GEOMETRY) || (kind_recording == NONE)){
 
-     if (config_container[iZone]->GetKind_GridMovement(iZone) == ROTATING_FRAME){
-       geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone],iZone);
-     }
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
     geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone], config_container[iZone]);
 
-    if (config_container[iZone]->GetBoolTurbomachinery()){
-      geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],INFLOW, false);
-      geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],OUTFLOW, false);
-    }
   }
 
   /*--- Compute coupling between flow and turbulent equations ---*/
