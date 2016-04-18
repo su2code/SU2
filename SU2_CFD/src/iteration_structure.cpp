@@ -1398,8 +1398,15 @@ void CAdjMeanFlowIteration::Iterate(COutput *output,
     }
     
   }
+
+  /*--- If the adjoint problem is converged, call the gradient calculation routine ---*/
+  if (integration_container[val_iZone][ADJFLOW_SOL]->GetConvergence()) {
+    ComputeGradient(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, val_iZone);
+  }
+  
   
 }
+
 void CAdjMeanFlowIteration::Update(COutput *output,
                                    CIntegration ***integration_container,
                                    CGeometry ***geometry_container,
@@ -1436,6 +1443,210 @@ void CAdjMeanFlowIteration::Update(COutput *output,
 void CAdjMeanFlowIteration::Monitor()     { }
 void CAdjMeanFlowIteration::Output()      { }
 void CAdjMeanFlowIteration::Postprocess() { }
+
+void CAdjMeanFlowIteration::ComputeGradient(COutput *output,
+                                            CIntegration ***integration_container,
+                                            CGeometry ***geometry_container,
+                                            CSolver ****solver_container,
+                                            CNumerics *****numerics_container,
+                                            CConfig **config_container,
+                                            CSurfaceMovement **surface_movement,
+                                            CVolumetricMovement **grid_movement,
+                                            CFreeFormDefBox*** FFDBox,
+                                            unsigned short val_iZone) {
+  
+  
+  /*--- We have the current adjoint solution, and the current DW from the
+   original solution. In here, we need to perturb the mesh for each DV and compute
+   one iteration of the flow on the new mesh (without updating), and then compute the
+   gradient. ---*/
+  
+  unsigned long iPoint;
+  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  unsigned long nPoint  = geometry_container[val_iZone][MESH_0]->GetnPoint();
+  unsigned long nPointDomain  = geometry_container[val_iZone][MESH_0]->GetnPointDomain();
+  unsigned short iVar, nVar = solver_container[val_iZone][MESH_0][FLOW_SOL]->GetnVar();
+  unsigned short iDim, nDim = geometry_container[val_iZone][MESH_0]->GetnDim();
+  unsigned short iDV = 0, nDV = config_container[val_iZone]->GetnDV();
+  
+  su2double *Gradient = new su2double[nDV];
+  su2double objfunc_base = 0, objfunc_step = 0;
+  su2double my_Gradient = 0.0;
+  su2double step = 0.0;
+  
+  ofstream grad_file;
+  
+  /*--- Compute non-dimensional factor for force coefficients. ---*/
+  
+  su2double RefAreaCoeff  = config_container[val_iZone]->GetRefAreaCoeff();
+  su2double *Velocity_Inf = config_container[val_iZone]->GetVelocity_FreeStreamND();
+  su2double RefVel2 = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++){
+    RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+  }
+  su2double RefDensity  = config_container[val_iZone]->GetDensity_FreeStreamND();
+  su2double factor      = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  /*--- Reload the initial flow solution ---*/
+  
+  solver_container[val_iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], 0);
+  
+  /*--- Continuous adjoint Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations ---*/
+  
+  if (config_container[val_iZone]->GetKind_Solver() == ADJ_EULER)
+    config_container[val_iZone]->SetGlobalParam(ADJ_EULER, RUNTIME_FLOW_SYS, ExtIter);
+  if (config_container[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES)
+    config_container[val_iZone]->SetGlobalParam(ADJ_NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
+  if (config_container[val_iZone]->GetKind_Solver() == ADJ_RANS)
+    config_container[val_iZone]->SetGlobalParam(ADJ_RANS, RUNTIME_FLOW_SYS, ExtIter);
+  
+  /*--- Run one iteration of the primal solver to compute DW0 ---*/
+  
+  integration_container[val_iZone][FLOW_SOL]->Residual_Evaluation(geometry_container, solver_container, numerics_container,
+                                                                  config_container, RUNTIME_FLOW_SYS, 0, val_iZone);
+  
+  /*--- Store the force coefficients on the original mesh ---*/
+  
+  objfunc_base = solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+  
+  /*--- Store DW0 ---*/
+  
+  su2double **DW0 = new su2double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    DW0[iVar] = new su2double[nPointDomain];
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      DW0[iVar][iPoint] = solver_container[val_iZone][MESH_0][FLOW_SOL]->LinSysRes.GetBlock(iPoint,iVar);
+    }
+  }
+  
+  /*--- Store the original mesh node positions for quick resetting ---*/
+  
+  su2double **X = new su2double*[nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    X[iDim] = new su2double[nPoint];
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      X[iDim][iPoint] = geometry_container[val_iZone][MESH_0]->node[iPoint]->GetCoord(iDim);
+    }
+  }
+  
+  /*--- Perturb the mesh for each DV ---*/
+  /*--- Definition of the Class for surface deformation ---*/
+  
+  grid_movement[val_iZone]    = new CVolumetricMovement(geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
+  surface_movement[val_iZone] = new CSurfaceMovement();
+  
+  /*--- Copy coordinates to the surface structure ---*/
+  
+  surface_movement[val_iZone]->CopyBoundary(geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
+  
+  /*--- Open the gradient file (only the master writes) ---*/
+  
+  if (rank == MASTER_NODE) {
+    grad_file.open("of_grad_cd_vol.dat", ios::out);
+    grad_file.precision(15);
+    grad_file << "VARIABLES=\"VARIABLE\"      , \"GRADIENT\"      , \"FINDIFF_STEP\"" << endl;
+    cout << endl;
+  }
+  
+  for (iDV = 0; iDV < nDV; iDV++) {
+    
+    if (rank == MASTER_NODE && val_iZone == ZONE_0)
+      cout << "Computing domain adjoint sensitivity for DV " << iDV << "." << endl;
+    
+    /*--- Get this DV's step size ---*/
+    
+    step = config_container[val_iZone]->GetDV_Value(iDV);
+    
+    /*--- Perturb the particular type of design variable ---*/
+    
+    if (config_container[val_iZone]->GetDesign_Variable(iDV) == HICKS_HENNE) {
+      surface_movement[val_iZone]->SetHicksHenne(geometry_container[val_iZone][MESH_0], config_container[val_iZone], iDV, true);
+    }
+    
+    /*--- Deform the volume grid around the new boundary locations ---*/
+    
+    grid_movement[val_iZone]->SetVolume_Deformation(geometry_container[val_iZone][MESH_0],config_container[val_iZone], true);
+    
+    /*--- Update the multigrid structure after moving the finest grid,
+     including computing the grid velocities on the coarser levels. ---*/
+    
+    grid_movement[val_iZone]->UpdateDualGrid(geometry_container[val_iZone][MESH_0],config_container[val_iZone]);
+    grid_movement[val_iZone]->UpdateMultiGrid(geometry_container[val_iZone],config_container[val_iZone]);
+    
+    /*--- Recompute the residuals with the base solution and perturbed mesh ---*/
+    
+    integration_container[val_iZone][FLOW_SOL]->Residual_Evaluation(geometry_container, solver_container, numerics_container,
+                                                                    config_container, RUNTIME_FLOW_SYS, 0, val_iZone);
+    
+    /*--- Store the objective as computed on the original mesh ---*/
+    
+    objfunc_step = solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+    
+    if (rank == MASTER_NODE) {
+      /*--- Gradient contribution from boundaries ---*/
+      my_Gradient = (objfunc_step-objfunc_base);
+    }
+    else {
+      my_Gradient = 0.0;
+    }
+    
+    /*--- Compute the volume integral portion of the gradient using
+     the adjoint variables and the difference between the residuals ---*/
+    
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        my_Gradient -= solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->node[iPoint]->GetSolution(iVar) * (solver_container[val_iZone][MESH_0][FLOW_SOL]->LinSysRes.GetBlock(iPoint,iVar) - DW0[iVar][iPoint]) * factor;
+      }
+    }
+    
+    /*--- Divide by the step size ---*/
+    my_Gradient /= step;
+    
+    /*--- Reduce the gradient across all ranks ---*/
+    
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&my_Gradient, &Gradient[iDV], 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    Gradient[iDV] = my_Gradient;
+#endif
+    
+    if (rank == MASTER_NODE) {
+      grad_file << iDV << " , " << Gradient[iDV] << " , " << step << endl;
+      grad_file.flush();
+      cout << endl;
+    }
+    
+    /*--- Reset the mesh before the next mesh perturbation ---*/
+    
+    for (iPoint = 0; iPoint < nPoint; iPoint++)
+      for (iDim = 0; iDim < nDim; iDim++) {
+        geometry_container[val_iZone][MESH_0]->node[iPoint]->SetCoord(iDim, X[iDim][iPoint]);
+      }
+    grid_movement[val_iZone]->UpdateDualGrid(geometry_container[val_iZone][MESH_0],config_container[val_iZone]);
+    grid_movement[val_iZone]->UpdateMultiGrid(geometry_container[val_iZone],config_container[val_iZone]);
+  }
+  
+  grad_file.close();
+  
+  /*--- Delete memory --- */
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    delete [] DW0[iVar];
+  }
+  delete [] DW0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    delete [] X[iDim];
+  }
+  delete [] X;
+  delete [] Gradient;
+  
+}
 
 CDiscAdjMeanFlowIteration::CDiscAdjMeanFlowIteration(CConfig *config) : CIteration(config), CurrentRecording(NONE){
   

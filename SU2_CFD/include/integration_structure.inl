@@ -88,3 +88,6 @@ inline void CIntegration::SetPotential_Solver(CGeometry ***geometry, CSolver ***
                                               CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone) { }
                                               
 inline void CIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry, unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) { }
+
+inline void CIntegration::Residual_Evaluation(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
+                                              CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) { }
