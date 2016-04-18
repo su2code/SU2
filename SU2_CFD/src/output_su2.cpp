@@ -31,25 +31,19 @@
 
 #include "../include/output_structure.hpp"
 
-void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
+void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned short val_iZone, ofstream& output_file) {
   
-  char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
   unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], iNode, nElem;
   unsigned short iMarker, iDim, nDim = geometry->GetnDim(), iChar, iPeriodic, nPeriodic = 0, VTK_Type, nMarker_;
   su2double *center, *angles, *transl;
-  ofstream output_file;
   ifstream input_file;
   string Grid_Marker, text_line, Marker_Tag, str;
   string::size_type position;
 
-  /*--- Read the name of the output and input file ---*/
-  
-  str = config->GetMesh_Out_FileName();
-  strcpy (out_file, str.c_str());
-  strcpy (cstr, out_file);
-  output_file.precision(15);
-  output_file.open(cstr, ios::out);
-  
+  if (config->GetnZone() > 1){
+    output_file << "IZONE= " << val_iZone+1 << endl;
+  }
+
   /*--- Write dimensions data. ---*/
 
   output_file << "NDIME= " << nDim << endl;
@@ -128,8 +122,15 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   }
   
   /*--- Read the boundary information ---*/
-  
-  input_file.open("boundary.su2", ios::out);
+
+  str = "boundary";
+
+  if(config->GetnZone() > 1){
+    str.append("_" + val_iZone);
+  }
+  str.append(".su2");
+
+  input_file.open(str.c_str(), ios::out);
   
   /*--- Read grid file with format SU2 ---*/
   
@@ -204,7 +205,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
   
   input_file.close();
 
-  remove("boundary.su2");
+  remove(str.c_str());
 
   /*--- Get the total number of periodic transformations ---*/
   
@@ -227,9 +228,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
     output_file << transl[0] << "\t" << transl[1] << "\t" << transl[2] << endl;
     
   }
-  
-  output_file.close();
-  
+
 }
 
 void COutput::SetSU2_MeshBinary(CConfig *config, CGeometry *geometry) { }

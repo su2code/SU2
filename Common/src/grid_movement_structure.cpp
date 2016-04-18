@@ -6725,10 +6725,10 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
+void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeometry **geometry, CConfig **config) {
   
   
-	unsigned short iOrder, jOrder, kOrder, iFFDBox, iCornerPoints, iParentFFDBox, iChildFFDBox;
+  unsigned short iOrder, jOrder, kOrder, iFFDBox, iCornerPoints, iParentFFDBox, iChildFFDBox, iZone;
 	unsigned long iSurfacePoints;
   char cstr[MAX_STRING_SIZE], mesh_file[MAX_STRING_SIZE];
   string str;
@@ -6742,19 +6742,49 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  unsigned short nDim = geometry->GetnDim();
+  unsigned short nDim = geometry[ZONE_0]->GetnDim();
   
-  /*--- Merge the FFD info ---*/
+  for (iZone = 0; iZone < config[ZONE_0]->GetnZone(); iZone++){
+
+    /*--- Merge the parallel FFD info ---*/
   
-  MergeFFDInfo(geometry, config);
+    surface_movement[iZone]->MergeFFDInfo(geometry[iZone], config[iZone]);
+
+    if (iZone > 0){
+
+      /* --- Merge the per-zone FFD info from the other zones into ZONE_0 ---*/
+
+      for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++){
+
+        surface_movement[ZONE_0]->GlobalCoordX[iFFDBox].insert(surface_movement[ZONE_0]->GlobalCoordX[iFFDBox].end(),
+                                                               surface_movement[iZone]->GlobalCoordX[iFFDBox].begin(),
+                                                               surface_movement[iZone]->GlobalCoordX[iFFDBox].end());
+        surface_movement[ZONE_0]->GlobalCoordY[iFFDBox].insert(surface_movement[ZONE_0]->GlobalCoordY[iFFDBox].end(),
+                                                               surface_movement[iZone]->GlobalCoordY[iFFDBox].begin(),
+                                                               surface_movement[iZone]->GlobalCoordY[iFFDBox].end());
+        surface_movement[ZONE_0]->GlobalCoordZ[iFFDBox].insert(surface_movement[ZONE_0]->GlobalCoordZ[iFFDBox].end(),
+                                                               surface_movement[iZone]->GlobalCoordZ[iFFDBox].begin(),
+                                                               surface_movement[iZone]->GlobalCoordZ[iFFDBox].end());
+        surface_movement[ZONE_0]->GlobalTag[iFFDBox].insert(surface_movement[ZONE_0]->GlobalTag[iFFDBox].end(),
+                                                               surface_movement[iZone]->GlobalTag[iFFDBox].begin(),
+                                                               surface_movement[iZone]->GlobalTag[iFFDBox].end());
+        surface_movement[ZONE_0]->GlobalPoint[iFFDBox].insert(surface_movement[ZONE_0]->GlobalPoint[iFFDBox].end(),
+                                                               surface_movement[iZone]->GlobalPoint[iFFDBox].begin(),
+                                                               surface_movement[iZone]->GlobalPoint[iFFDBox].end());
+      }
+    }
+  }
+
+
+
   
-  /*--- Attach to the mesh file the FFD information ---*/
+  /*--- Attach to the mesh file the FFD information (all information is in ZONE_0) ---*/
   
   if (rank == MASTER_NODE) {
     
     /*--- Read the name of the output file ---*/
     
-    str = config->GetMesh_Out_FileName();
+    str = config[ZONE_0]->GetMesh_Out_FileName();
     strcpy (mesh_file, str.c_str());
     strcpy (cstr, mesh_file);
     
