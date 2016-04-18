@@ -13233,7 +13233,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;
   su2double Viscosity = 0.0, div_vel, *Normal, MomentDist[3] = {0.0, 0.0, 0.0}, WallDist[3] = {0.0, 0.0, 0.0},
   *Coord, *Coord_Normal, Area, WallShearStress, TauNormal, factor, RefTemp, RefVel2,
-  RefDensity, GradTemperature, Density = 0.0, Vel[3] = {0.0, 0.0, 0.0}, WallDistMod, FrictionVel,
+  RefDensity, GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
   Mach2Vel, Mach_Motion, UnitNormal[3] = {0.0, 0.0, 0.0}, TauElem[3] = {0.0, 0.0, 0.0}, TauTangent[3] = {0.0, 0.0, 0.0},
   Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Force[3] = {0.0, 0.0, 0.0}, Cp, thermal_conductivity, MaxNorm = 8.0,
   Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Grad_Temp[3] = {0.0, 0.0, 0.0},
@@ -13387,9 +13387,6 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           WallShearStress += CSkinFriction[iMarker][iVertex][iDim]*CSkinFriction[iMarker][iVertex][iDim];
         }
         WallShearStress = sqrt(WallShearStress);
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          Vel[iDim] = node[iPointNormal]->GetVelocity(iDim);
         
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
         WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
