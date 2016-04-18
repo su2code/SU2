@@ -113,7 +113,7 @@ protected:
     unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
 public:
-  
+  su2double SlidingState[1000][15];
   CSysVector LinSysSol;		/*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector LinSysRes;		/*!< \brief vector to store iterative residual of implicit linear system. */
   CSysVector LinSysAux;		/*!< \brief vector to store iterative residual of implicit linear system. */
@@ -679,6 +679,15 @@ public:
 	virtual void BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                               unsigned short val_marker);
     
+    /*!
+	 * \brief Impose the interface state across sliding meshes.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+                                         
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -3449,6 +3458,15 @@ public:
 	 */
 	void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
     
+    /*!
+	 * \brief Impose the interface state across sliding meshes.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+                                         
 	/*!
 	 * \brief Impose the interface boundary condition using the residual.
 	 * \param[in] geometry - Geometrical definition of the problem.

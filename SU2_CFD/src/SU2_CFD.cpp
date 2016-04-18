@@ -265,8 +265,9 @@ int main(int argc, char *argv[]) {
   /*--- Coupling between zones (limited to two zones at the moment) ---*/
 
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
+  bool matching_meshes = config_container[ZONE_0]->GetMatchingMesh();
   
-  if ((nZone == 2) && !(fsi)) {
+  if (nZone == 2 && matching_meshes  && !(fsi)) {
     if (rank == MASTER_NODE)
       cout << endl <<"--------------------- Setting Coupling Between Zones --------------------" << endl;
     geometry_container[ZONE_0][MESH_0]->MatchZone(config_container[ZONE_0], geometry_container[ZONE_1][MESH_0],
@@ -383,8 +384,9 @@ int main(int argc, char *argv[]) {
 	/*--- Update the convergence history file (serial and parallel computations). ---*/
 
 	if (!fsi){
+		for(iZone = 0; iZone < nZone; iZone++)
 		output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
-				config_container, integration_container, false, UsedTime, ZONE_0);
+				config_container, integration_container, false, UsedTime, iZone);
 
 	}
 

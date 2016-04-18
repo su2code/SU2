@@ -127,6 +127,7 @@ void CConfig::SetPointersNull(void) {
   Marker_Euler = NULL;            Marker_FarField = NULL;           Marker_Custom = NULL;
   Marker_SymWall = NULL;          Marker_Pressure = NULL;           Marker_PerBound = NULL;
   Marker_PerDonor = NULL;         Marker_NearFieldBound = NULL;     Marker_InterfaceBound = NULL;
+  Marker_Fluid_InterfaceBound = NULL;
   Marker_Dirichlet = NULL;        Marker_Inlet = NULL;
   Marker_Supersonic_Inlet = NULL; Marker_Outlet = NULL;             Marker_Out_1D = NULL;
   Marker_Isothermal = NULL;       Marker_HeatFlux = NULL;           Marker_EngineInflow = NULL;
@@ -413,6 +414,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("MARKER_PRESSURE", nMarker_Pressure, Marker_Pressure);
   /*!\brief MARKER_NEARFIELD\n DESCRIPTION: Near-Field boundary condition \ingroup Config*/
   addStringListOption("MARKER_NEARFIELD", nMarker_NearFieldBound, Marker_NearFieldBound);
+  /*!\brief MARKER_FLUID_INTERFACE\n DESCRIPTION: Fluid interface boundary marker(s) \ingroup Config*/
+  addStringListOption("MARKER_FLUID_INTERFACE", nMarker_Fluid_InterfaceBound, Marker_Fluid_InterfaceBound);
   /*!\brief MARKER_INTERFACE\n DESCRIPTION: Zone interface boundary marker(s) \ingroup Config*/
   addStringListOption("MARKER_INTERFACE", nMarker_InterfaceBound, Marker_InterfaceBound);
   /*!\brief MARKER_FSI_INTERFACE \n DESCRIPTION: FSI interface boundary marker(s) \ingroup Config*/
@@ -1796,8 +1799,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    rotating frame specified in GRID_MOVEMENT_KIND. ---*/
   
   if (Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) &&
-      (nGridMovement > 1)) {
-    cout << "Can not support more than one type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
+      (nGridMovement > 2)) {
+    cout << "Can not support more than 2 type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
     exit(EXIT_FAILURE);
   }
   
@@ -2583,7 +2586,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_Pressure, iMarker_PerBound,
-  iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
+  iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet,
   iMarker_Inlet, iMarker_Riemann, iMarker_NRBC, iMarker_Outlet, iMarker_Isothermal,
   iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
@@ -2602,7 +2605,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Compute the total number of markers in the config file ---*/
   
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
-  nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound +
+  nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound + nMarker_Fluid_InterfaceBound +
   nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
   nMarker_NRBC + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
@@ -2732,6 +2735,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
   for (iMarker_InterfaceBound = 0; iMarker_InterfaceBound < nMarker_InterfaceBound; iMarker_InterfaceBound++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_InterfaceBound[iMarker_InterfaceBound];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = INTERFACE_BOUNDARY;
+    iMarker_CfgFile++;
+  }
+  
+  for (iMarker_Fluid_InterfaceBound = 0; iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound; iMarker_Fluid_InterfaceBound++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Fluid_InterfaceBound[iMarker_Fluid_InterfaceBound];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = FLUID_INTERFACE;
     iMarker_CfgFile++;
   }
 
@@ -2939,7 +2948,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
-  iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
+  iMarker_InterfaceBound, iMarker_Fluid_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
   iMarker_NRBC, iMarker_MixBound, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
@@ -3972,6 +3981,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       else cout <<"."<< endl;
     }
   }
+  
+  if (nMarker_Fluid_InterfaceBound != 0) {
+    cout << "Fluid interface boundary marker(s): ";
+    for (iMarker_Fluid_InterfaceBound = 0; iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound; iMarker_Fluid_InterfaceBound++) {
+      cout << Marker_Fluid_InterfaceBound[iMarker_Fluid_InterfaceBound];
+      if (iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound-1) cout << ", ";
+      else cout <<"."<< endl;
+    }
+  }
 
   if (nMarker_Dirichlet != 0) {
     cout << "Dirichlet boundary marker(s): ";
@@ -4591,6 +4609,7 @@ CConfig::~CConfig(void) {
   if (Marker_PerDonor != NULL )           delete[] Marker_PerDonor;
   if (Marker_NearFieldBound != NULL )     delete[] Marker_NearFieldBound;
   if (Marker_InterfaceBound != NULL )     delete[] Marker_InterfaceBound;
+  if (Marker_Fluid_InterfaceBound != NULL )     delete[] Marker_Fluid_InterfaceBound;
   if (Marker_Dirichlet != NULL )          delete[] Marker_Dirichlet;
   if (Marker_Inlet != NULL )              delete[] Marker_Inlet;
   if (Marker_Supersonic_Inlet != NULL )   delete[] Marker_Supersonic_Inlet;

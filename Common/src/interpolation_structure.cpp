@@ -381,12 +381,13 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
 			  /*--- Loop over all the boundaries to find the pair ---*/
 			  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-				  for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
-					  Global_Point_Donor = Buffer_Receive_GlobalPoint[iProcessor*MaxLocalVertex_Donor+jVertex];
+				  for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
+					  
+					  Global_Point_Donor = donor_geometry->vertex[markDonor][jVertex]->GetNode();
 
 					  /*--- Compute the dist ---*/
 					  dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
-						  Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Donor+jVertex)*nDim+iDim];
+						  Coord_j[iDim] = donor_geometry->node[Global_Point_Donor]->GetCoord(iDim);
 						  dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
 					  }
 
@@ -397,6 +398,25 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 					  if (dist == 0.0) break;
 				  }
 			  }
+			  
+			/*--- Loop over all the boundaries to find the pair ---*/
+			//for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+			//	for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
+			//	  Global_Point_Donor = Buffer_Receive_GlobalPoint[iProcessor*MaxLocalVertex_Donor+jVertex];
+			//
+			//	  /*--- Compute the dist ---*/
+			//	  dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
+			//			  Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Donor+jVertex)*nDim+iDim];
+			//			  dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
+			//  	}
+			//
+			//		if (dist < mindist) {
+			//			mindist = dist; pProcessor = iProcessor; pGlobalPoint = Global_Point_Donor;
+			//		  }
+			//
+			//				  if (dist == 0.0) break;
+			//		  }
+			//}
 
 			  /*--- Store the value of the pair ---*/
 			  maxdist = max(maxdist, mindist);

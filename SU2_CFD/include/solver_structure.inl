@@ -521,6 +521,9 @@ inline void CSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 inline void CSolver::BC_Dirichlet(CGeometry *geometry, CSolver **solver_container, CConfig *config, 
 								  unsigned short val_marker) { }
 
+inline void CSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                         CConfig *config){ }
+
 inline void CSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 									CConfig *config) { }
                   
