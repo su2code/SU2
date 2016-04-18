@@ -87,8 +87,8 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
   
-  nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   
   /*--- Definition and of the containers for all possible zones. ---*/
   

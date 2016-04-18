@@ -53,23 +53,6 @@
 
 using namespace std;
 
-/*! 
- * \brief Gets the number of zones in the mesh file.
- * \param[in] val_mesh_filename - Name of the file with the grid information.
- * \param[in] val_format - Format of the file with the grid information.
- * \param[in] config - Definition of the particular problem.
- * \return Total number of zones in the grid file.
- */
-unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config);
-
-/*! 
- * \brief Gets the number of dimensions in the mesh file
- * \param[in] val_mesh_filename - Name of the file with the grid information.
- * \param[in] val_format - Format of the file with the grid information.
- * \return Total number of domains in the grid file.
- */
-unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
-
 /*!
  * \brief Definition of the driver class for single and multi-zone problems.
  * \param[in] driver - Pointer to the driver object to be instantiated.
