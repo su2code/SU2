@@ -128,11 +128,11 @@ CDriver::CDriver(CIteration **iteration_container,
 	 *--- Also, at the moment this capability is limited to two zones (nZone < 3).
 	 *--- This will change in the future. ---*/
 
-	if ((rank == MASTER_NODE) && (fsi))
+	if ((rank == MASTER_NODE) && nZone > 1)
 		cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
 
 
-	if (((nZone > 1) && (nZone < 3)) && (fsi)) {
+	if (((nZone > 1) && (nZone < 3)) ) {
 
 		for (iZone = 0; iZone < nZone; iZone++){
 			transfer_container[iZone] = new CTransfer*[nZone];
@@ -1927,22 +1927,38 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
                            CInterpolator ***interpolator_container,
                            CTransfer ***transfer_container) {
   
-  unsigned short iZone;
+   unsigned short iZone, jZone;
   
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/
+   
   
   for (iZone = 0; iZone < nZone; iZone++) {
     
     iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
                                            solver_container, numerics_container, config_container,
                                            surface_movement, grid_movement, FFDBox, iZone);
-    
+  }
+ 
+ //if unsteady blabla   
+	for (iZone = 0; iZone < nZone; iZone++) {                                        
+		for (jZone = 0; jZone < nZone; jZone++)
+			if(jZone != iZone)
+				interpolator_container[iZone][jZone]->Set_TransferCoeff(config_container);
+				
+	 //cout << endl;
+	}
+	
+for (jZone = 0; jZone < 10; jZone++)
+  for (iZone = 0; iZone < nZone; iZone++) {
     iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
                                         surface_movement, grid_movement, FFDBox, iZone);
+  
+//}  
     
+//    for (iZone = 0; iZone < nZone; iZone++) {
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
                                        solver_container, numerics_container, config_container,
                                        surface_movement, grid_movement, FFDBox, iZone);

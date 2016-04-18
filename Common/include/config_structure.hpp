@@ -158,6 +158,7 @@ private:
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
+	nMarker_Fluid_InterfaceBound,				/*!< \brief Number of fluid interface markers. */
 	nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
 	nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
@@ -196,6 +197,7 @@ private:
 	*Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
 	*Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
+	*Marker_Fluid_InterfaceBound,				/*!< \brief Fluid interface markers. */
   *Marker_ActDisk_Inlet,
   *Marker_ActDisk_Outlet,
 	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
@@ -2108,6 +2110,12 @@ public:
 	 * \return Total number of boundary markers.
 	 */
 	unsigned short GetnMarker_InterfaceBound(void);
+	
+	/*!
+	 * \brief Get the total number of boundary markers.
+	 * \return Total number of boundary markers.
+	 */
+	unsigned short GetnMarker_Fluid_InterfaceBound(void);
 
   /*!
 	 * \brief Get the total number of boundary markers.

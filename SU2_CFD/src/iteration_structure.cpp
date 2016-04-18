@@ -147,6 +147,8 @@ void CMeanFlowIteration::Iterate(COutput *output,
   
   /*--- Update global parameters ---*/
   
+  SetSlidingInterface(geometry_container, solver_container, config_container, RUNTIME_FLOW_SYS);
+  
   if ((config_container[val_iZone]->GetKind_Solver() == EULER) ||
       (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_EULER)) {
     config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
@@ -200,6 +202,8 @@ void CMeanFlowIteration::Iterate(COutput *output,
       config_container[val_iZone]->SetIntIter(IntIter);
       
       /*--- Pseudo-timestepping for the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes equations ---*/
+      
+      SetSlidingInterface(geometry_container, solver_container, config_container, RUNTIME_FLOW_SYS);
       
       if ((config_container[val_iZone]->GetKind_Solver() == EULER) ||
           (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_EULER)) {
@@ -551,6 +555,86 @@ void CMeanFlowIteration::InitializeVortexDistribution(unsigned long &nVortex, ve
   // number of vortices
   nVortex = x0.size();
   
+}
+
+void CMeanFlowIteration::SetSlidingInterface(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, unsigned short RunTime_EqSystem) {
+  
+  int jZone, iZone, iDim, nDim;
+  int iMarker, nMarker;
+  int iVar, nVar;
+  int iVertex, nVertex;
+  int nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
+  
+  int iPoint, jPoint;
+  int iMainSolver, jMainSolver;
+  
+  su2double* gridVel;
+  su2double  sq_vel, dtmp;
+  
+  string intMarker_Tag, extMarker_Tag;
+  
+  nDim = geometry_container[ZONE_0][MESH_0]->GetnDim();
+  
+  nVar = solver_container[ZONE_0][MESH_0][iMainSolver]->GetnPrimVar();
+
+	for (iZone = 0; iZone < nZone; iZone++) {             
+	
+	iMainSolver = config_container[iZone]->GetContainerPosition(RunTime_EqSystem);
+	
+		for (iMarker = 0; iMarker < config_container[iZone]->GetnMarker_All(); iMarker++) {
+
+			if (config_container[iZone]->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {		
+		
+				for (jZone = 0; jZone < nZone; jZone++){
+					
+					if(jZone != iZone){
+						
+						jMainSolver = config_container[jZone]->GetContainerPosition(RunTime_EqSystem);
+						
+						nVertex = geometry_container[iZone][MESH_0]->GetnVertex(iMarker);
+
+						for (iVertex= 0; iVertex < nVertex; iVertex++){
+													
+							iPoint = geometry_container[iZone][MESH_0]->vertex[iMarker][iVertex]->GetInterpDonorPoint(0);
+							
+							for (iVar = 0; iVar < nVar; iVar++)
+								 solver_container[iZone][MESH_0][iMainSolver]->SlidingState[iVertex][iVar] = solver_container[jZone][MESH_0][jMainSolver]->node[iPoint]->GetPrimitive(iVar);
+
+							/*
+							if(config_container[jZone]->GetGrid_Movement()){
+								
+									gridVel = geometry_container[jZone][MESH_0]->node[iPoint]->GetGridVel();
+								
+								
+									sq_vel = 0;
+									for (iDim = 0; iDim < nDim; iDim++){
+									
+										dtmp = solver_container[iZone][MESH_0][iMainSolver]->SlidingState[iVertex][1 + iDim];
+										sq_vel += dtmp*dtmp;
+										
+										solver_container[iZone][MESH_0][iMainSolver]->SlidingState[iVertex][1 + iDim] -= gridVel[iDim];
+									}
+									
+									solver_container[iZone][MESH_0][iMainSolver]->SlidingState[iVertex][nDim+3] -= 0.5 * sq_vel;
+									
+									for (iDim = 0; iDim < nDim; iDim++){
+										dtmp = solver_container[iZone][MESH_0][iMainSolver]->SlidingState[iVertex][1 + iDim];
+										sq_vel += dtmp*dtmp;
+									}
+									
+									solver_container[iZone][MESH_0][iMainSolver]->SlidingState[iVertex][nDim+3] += 0.5 * sq_vel;
+								
+							}
+							*/						
+								
+						}
+						
+					}
+				
+				}
+			}
+		}
+	}		
 }
 
 void CMeanFlowIteration::SetMixingPlane(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, unsigned short iZone) {
@@ -2033,7 +2117,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
     case RIGID_MOTION:
       
       if (rank == MASTER_NODE) {
-        cout << endl << " Performing rigid mesh transformation." << endl;
+        cout << endl << " Performing rigid mesh transformation. Zone " << iZone << endl;
       }
       
       /*--- Move each node in the volume mesh using the specified type
