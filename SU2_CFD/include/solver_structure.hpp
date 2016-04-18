@@ -2093,8 +2093,8 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the skin friction coefficient.
 	 */
-	virtual su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex);
-    
+  virtual su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -4666,7 +4666,7 @@ private:
 	*CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for each boundary. */
   *Heat_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
   *MaxHeatFlux_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
-	**CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
+  ***CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
 	su2double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
 	*MomentViscous;			/*!< \brief Inviscid moment for each boundary. */
 	su2double AllBound_CDrag_Visc, /*!< \brief Drag coefficient (viscous contribution) for all the boundaries. */
@@ -4842,8 +4842,8 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the skin friction coefficient.
 	 */
-	su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex);
-    
+  su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
+  
 	/*!
 	 * \brief Get the skin friction coefficient.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
