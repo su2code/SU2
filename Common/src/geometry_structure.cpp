@@ -1384,9 +1384,17 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   
   if ((config->GetKind_SU2() == SU2_DEF) && (rank == MASTER_NODE)) {
 
+    string str = "boundary";
+
+    if(val_nZone > 1){
+      str.append("_" + val_iZone);
+    }
+
+    str.append(".su2");
+
     /*--- Open .su2 grid file ---*/
     
-    boundary_file.open("boundary.su2", ios::out);
+    boundary_file.open(str.c_str(), ios::out);
     
     /*--- Loop through and write the boundary info ---*/
     

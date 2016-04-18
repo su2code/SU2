@@ -7267,9 +7267,28 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
+  char cstr[MAX_STRING_SIZE], out_file[MAX_STRING_SIZE];
   unsigned short iZone;
-  
+  ofstream output_file;
+  string str;
+
+  /*--- Read the name of the output and input file ---*/
+
+  if (rank == MASTER_NODE) {
+    if (su2_file){
+      str = config[ZONE_0]->GetMesh_Out_FileName();
+      strcpy (out_file, str.c_str());
+      strcpy (cstr, out_file);
+      output_file.precision(15);
+      output_file.open(cstr, ios::out);
+
+      if (val_nZone > 1){
+        output_file << "NZONE= " << val_nZone << endl;
+      }
+    }
+  }
+
   for (iZone = 0; iZone < val_nZone; iZone++) {
     
     /*--- Flags identifying the types of files to be written. ---*/
@@ -7303,7 +7322,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         
         /*--- Write a Tecplot ASCII file ---*/
         if (config[iZone]->GetOutput_FileFormat()==PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false,new_file);
-        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], false, new_file);
+        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, false, new_file);
         
       }
       
@@ -7313,7 +7332,7 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         
         /*--- Write a Tecplot ASCII file ---*/
         if (config[iZone]->GetOutput_FileFormat()==PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true,new_file);
-        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], true, new_file);
+        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, true, new_file);
         
 
       }
@@ -7322,14 +7341,15 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
       
       /*--- Write a .su2 ASCII file ---*/
       
-      if (su2_file) SetSU2_MeshASCII(config[iZone], geometry[iZone]);
-      
+      if (su2_file){
+        SetSU2_MeshASCII(config[iZone], geometry[iZone], iZone, output_file);
+      }
       /*--- Deallocate connectivity ---*/
 
       DeallocateConnectivity(config[iZone], geometry[iZone], true);
       
     }
-    
+
     /*--- Final broadcast (informing other procs that the base output
      file was written). ---*/
     
@@ -7337,6 +7357,12 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
     SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
 #endif
     
+  }
+
+  if (rank == MASTER_NODE) {
+    if (su2_file){
+      output_file.close();
+    }
   }
 }
 
