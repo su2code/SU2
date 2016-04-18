@@ -50,11 +50,12 @@ COutput::COutput(void) {
   nGlobal_BoundQuad = 0;
   
   /*--- Initialize pointers to NULL ---*/
-  Coords=NULL;
-  Conn_Line=NULL;     Conn_BoundTria=NULL;  Conn_BoundQuad=NULL;
-  Conn_Tria=NULL;     Conn_Quad=NULL;       Conn_Tetr=NULL;
-  Conn_Hexa=NULL;     Conn_Pris=NULL;       Conn_Pyra=NULL;
-  Data=NULL;
+  
+  Coords = NULL;
+  Conn_Line = NULL;     Conn_BoundTria = NULL;  Conn_BoundQuad = NULL;
+  Conn_Tria = NULL;     Conn_Quad = NULL;       Conn_Tetr = NULL;
+  Conn_Hexa = NULL;     Conn_Pris = NULL;       Conn_Pyra = NULL;
+  Data = NULL;
 
   /*--- Initialize CGNS write flag ---*/
   
@@ -92,7 +93,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
   unsigned short iMarker;
   unsigned long iPoint, iVertex, Global_Index;
-  su2double PressCoeff = 0.0, SkinFrictionCoeff;
+  su2double PressCoeff = 0.0, SkinFrictionCoeff[3];
   su2double xCoord = 0.0, yCoord = 0.0, zCoord = 0.0, Mach, Pressure;
   char cstr[200];
   
@@ -101,6 +102,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
 #ifndef HAVE_MPI
   
+  unsigned short iDim;
   su2double HeatFlux;
   char buffer [50];
   ofstream SurfFlow_file;
@@ -131,11 +133,14 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
   SurfFlow_file << "\"Global_Index\", \"x_coord\", \"y_coord\", ";
   if (nDim == 3) SurfFlow_file << "\"z_coord\", ";
-  SurfFlow_file << "\"Pressure\", \"Pressure_Coefficient\", ";
+  SurfFlow_file << "\"Pressure\", \"C<sub>p</sub>\", ";
   
   switch (solver) {
-    case EULER : SurfFlow_file <<  "\"Mach_Number\"" << endl; break;
-    case NAVIER_STOKES: case RANS: SurfFlow_file <<  "\"Skin_Friction_Coefficient\", \"Heat_Flux\"" << endl; break;
+    case EULER : SurfFlow_file <<  "\"Mach\"" << endl; break;
+    case NAVIER_STOKES: case RANS:
+      if (nDim == 2) SurfFlow_file <<  "\"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"h\"" << endl;
+      if (nDim == 3) SurfFlow_file <<  "\"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"C<sub>f</sub>_z\", \"h\"" << endl;
+      break;
   }
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -164,10 +169,15 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             Mach = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
             SurfFlow_file << scientific << Mach << endl;
             break;
-          case NAVIER_STOKES: case RANS:
-            SkinFrictionCoeff = FlowSolver->GetCSkinFriction(iMarker, iVertex);
+          case RANS:
+            
+            for (iDim = 0; iDim < nDim; iDim++)
+              SkinFrictionCoeff[iDim] = FlowSolver->GetCSkinFriction(iMarker, iVertex, iDim);
             HeatFlux = FlowSolver->GetHeatFlux(iMarker, iVertex);
-            SurfFlow_file << scientific << SkinFrictionCoeff << ", " << HeatFlux << endl;
+            
+            if (nDim == 2) SurfFlow_file << scientific << SkinFrictionCoeff[0] << ", " << SkinFrictionCoeff[1] << ", " << HeatFlux << endl;
+            if (nDim == 3) SurfFlow_file << scientific << SkinFrictionCoeff[0] << ", " << SkinFrictionCoeff[1] << ", " << SkinFrictionCoeff[2] << ", " << HeatFlux << endl;
+            
             break;
         }
       }
@@ -227,8 +237,14 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   su2double *Buffer_Send_Mach = new su2double [MaxLocalVertex_Surface];
   su2double *Buffer_Recv_Mach = NULL;
   
-  su2double *Buffer_Send_SkinFriction = new su2double [MaxLocalVertex_Surface];
-  su2double *Buffer_Recv_SkinFriction = NULL;
+  su2double *Buffer_Send_SkinFriction_x = new su2double [MaxLocalVertex_Surface];
+  su2double *Buffer_Recv_SkinFriction_x = NULL;
+  
+  su2double *Buffer_Send_SkinFriction_y = new su2double [MaxLocalVertex_Surface];
+  su2double *Buffer_Recv_SkinFriction_y = NULL;
+  
+  su2double *Buffer_Send_SkinFriction_z = new su2double [MaxLocalVertex_Surface];
+  su2double *Buffer_Recv_SkinFriction_z = NULL;
   
   su2double *Buffer_Send_HeatTransfer = new su2double [MaxLocalVertex_Surface];
   su2double *Buffer_Recv_HeatTransfer = NULL;
@@ -245,7 +261,9 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     Buffer_Recv_Press   = new su2double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Recv_CPress  = new su2double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Recv_Mach    = new su2double [nProcessor*MaxLocalVertex_Surface];
-    Buffer_Recv_SkinFriction = new su2double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_SkinFriction_x = new su2double [nProcessor*MaxLocalVertex_Surface];
+    Buffer_Recv_SkinFriction_y = new su2double [nProcessor*MaxLocalVertex_Surface];
+    if (nDim == 3) Buffer_Recv_SkinFriction_z = new su2double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Recv_HeatTransfer = new su2double [nProcessor*MaxLocalVertex_Surface];
     Buffer_Recv_GlobalIndex  = new unsigned long [nProcessor*MaxLocalVertex_Surface];
   }
@@ -278,8 +296,11 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
           
           if (solver == EULER)
             Buffer_Send_Mach[nVertex_Surface] = sqrt(FlowSolver->node[iPoint]->GetVelocity2()) / FlowSolver->node[iPoint]->GetSoundSpeed();
-          if ((solver == NAVIER_STOKES) || (solver == RANS))
-            Buffer_Send_SkinFriction[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker, iVertex);
+          if ((solver == NAVIER_STOKES) || (solver == RANS)) {
+            Buffer_Send_SkinFriction_x[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker, iVertex, 0);
+            Buffer_Send_SkinFriction_y[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker, iVertex, 1);
+            if (nDim == 3) Buffer_Send_SkinFriction_z[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker, iVertex, 2);
+          }
           nVertex_Surface++;
         }
       }
@@ -292,7 +313,11 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   SU2_MPI::Gather(Buffer_Send_Press, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Press, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Gather(Buffer_Send_CPress, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_CPress, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   if (solver == EULER) SU2_MPI::Gather(Buffer_Send_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_Mach, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  if ((solver == NAVIER_STOKES) || (solver == RANS)) SU2_MPI::Gather(Buffer_Send_SkinFriction, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  if ((solver == NAVIER_STOKES) || (solver == RANS)) {
+    SU2_MPI::Gather(Buffer_Send_SkinFriction_x, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_x, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_SkinFriction_y, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_y, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    if (nDim == 3) SU2_MPI::Gather(Buffer_Send_SkinFriction_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  }
   SU2_MPI::Gather(Buffer_Send_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   
   /*--- The master node unpacks the data and writes the surface CSV file ---*/
@@ -329,11 +354,14 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     
     SurfFlow_file << "\"Global_Index\", \"x_coord\", \"y_coord\", ";
     if (nDim == 3) SurfFlow_file << "\"z_coord\", ";
-    SurfFlow_file << "\"Pressure\", \"Pressure_Coefficient\", ";
+    SurfFlow_file << "\"Pressure\", \"C<sub>p</sub>\", ";
     
     switch (solver) {
-      case EULER : SurfFlow_file <<  "\"Mach_Number\"" << endl; break;
-      case NAVIER_STOKES: case RANS: SurfFlow_file <<  "\"Skin_Friction_Coefficient\"" << endl; break;
+      case EULER : SurfFlow_file <<  "\"Mach\"" << endl; break;
+      case NAVIER_STOKES: case RANS:
+        if (nDim == 2) SurfFlow_file << "\"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\"" << endl;
+        if (nDim == 3) SurfFlow_file << "\"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"C<sub>f</sub>_z\"" << endl;
+        break;
     }
     
     /*--- Loop through all of the collected data and write each node's values ---*/
@@ -365,8 +393,11 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             SurfFlow_file << scientific << Mach << endl;
             break;
           case NAVIER_STOKES: case RANS:
-            SkinFrictionCoeff = Buffer_Recv_SkinFriction[Total_Index];
-            SurfFlow_file << scientific << SkinFrictionCoeff << endl;
+            SkinFrictionCoeff[0] = Buffer_Recv_SkinFriction_x[Total_Index];
+            SkinFrictionCoeff[1] = Buffer_Recv_SkinFriction_y[Total_Index];
+            if (nDim == 3) SkinFrictionCoeff[2] = Buffer_Recv_SkinFriction_z[Total_Index];
+            if (nDim == 2) SurfFlow_file << scientific << SkinFrictionCoeff[0] << ", " << SkinFrictionCoeff[1] << endl;
+            if (nDim == 3) SurfFlow_file << scientific << SkinFrictionCoeff[0] << ", " << SkinFrictionCoeff[1] << ", " << SkinFrictionCoeff[2] << endl;
             break;
         }
       }
@@ -383,7 +414,9 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     delete [] Buffer_Recv_Press;
     delete [] Buffer_Recv_CPress;
     delete [] Buffer_Recv_Mach;
-    delete [] Buffer_Recv_SkinFriction;
+    delete [] Buffer_Recv_SkinFriction_x;
+    delete [] Buffer_Recv_SkinFriction_y;
+    if (nDim == 3) delete [] Buffer_Recv_SkinFriction_z;
     delete [] Buffer_Recv_HeatTransfer;
     delete [] Buffer_Recv_GlobalIndex;
     
@@ -399,7 +432,9 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   delete [] Buffer_Send_Press;
   delete [] Buffer_Send_CPress;
   delete [] Buffer_Send_Mach;
-  delete [] Buffer_Send_SkinFriction;
+  delete [] Buffer_Send_SkinFriction_x;
+  delete [] Buffer_Send_SkinFriction_y;
+  delete [] Buffer_Send_SkinFriction_z;
   delete [] Buffer_Send_HeatTransfer;
   delete [] Buffer_Send_GlobalIndex;
   
@@ -1853,13 +1888,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   unsigned short iVar = 0, jVar = 0, FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE;
   unsigned short nVar_First = 0, nVar_Second = 0, nVar_Third = 0;
   unsigned short iVar_GridVel = 0, iVar_PressCp = 0, iVar_Density = 0, iVar_Lam = 0, iVar_MachMean = 0,
-  iVar_ViscCoeffs = 0, iVar_Sens = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
+  iVar_ViscCoeffs = 0, iVar_HeatCoeffs = 0, iVar_Sens = 0, iVar_Extra = 0, iVar_Eddy = 0, iVar_Sharp = 0,
   iVar_FEA_Vel = 0, iVar_FEA_Accel = 0, iVar_FEA_Stress = 0, iVar_FEA_Stress_3D = 0,
   iVar_FEA_Extra = 0, iVar_SensDim = 0;
   unsigned long iPoint = 0, jPoint = 0, iVertex = 0, iMarker = 0;
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   
-  su2double *Aux_Frict = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Sens = NULL;
+  su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Sens = NULL;
   
   unsigned short CurrentIndex;
   int *Local_Halo;
@@ -1972,8 +2007,13 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
 
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      iVar_Lam = nVar_Total; nVar_Total += 1;
-      iVar_ViscCoeffs = nVar_Total; nVar_Total += 3;
+      iVar_Lam = nVar_Total;
+      nVar_Total += 1;
+      iVar_ViscCoeffs = nVar_Total;
+      if (geometry->GetnDim() == 2) nVar_Total += 2;
+      else if (geometry->GetnDim() == 3) nVar_Total += 3;
+      iVar_HeatCoeffs = nVar_Total;
+      nVar_Total += 2;
     }
     
     /*--- Add Eddy Viscosity to the restart file ---*/
@@ -2097,7 +2137,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   /*--- Auxiliary vectors for surface coefficients ---*/
   
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-    Aux_Frict = new su2double[geometry->GetnPoint()];
+    Aux_Frict_x = new su2double[geometry->GetnPoint()];
+    Aux_Frict_y = new su2double[geometry->GetnPoint()];
+    Aux_Frict_z = new su2double[geometry->GetnPoint()];
     Aux_Heat  = new su2double[geometry->GetnPoint()];
     Aux_yPlus = new su2double[geometry->GetnPoint()];
   }
@@ -2554,7 +2596,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         }
       }
     
-      /*--- Communicate skin friction, heat transfer, y+ ---*/
+      /*--- Communicate skin friction ---*/
       
       /*--- First, loop through the mesh in order to find and store the
        value of the viscous coefficients at any surface nodes. They
@@ -2562,16 +2604,98 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
        all other volumetric variables. ---*/
       
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-        Aux_Frict[iPoint] = 0.0;
-        Aux_Heat[iPoint]  = 0.0;
+        Aux_Frict_x[iPoint] = 0.0;
+        Aux_Frict_y[iPoint] = 0.0;
+        Aux_Frict_z[iPoint] = 0.0;
+      }
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+        if (config->GetMarker_All_Plotting(iMarker) == YES) {
+          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            Aux_Frict_x[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0);
+            Aux_Frict_y[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1);
+            if (geometry->GetnDim() == 3) Aux_Frict_z[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2);
+          }
+        }
+      
+      /*--- Loop over this partition to collect the current variable ---*/
+      
+      jPoint = 0;
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+        
+        /*--- Check for halos & write only if requested ---*/
+        
+        if (!Local_Halo[iPoint] || Wrt_Halo) {
+          
+          /*--- Load buffers with the three grid velocity components. ---*/
+          
+          Buffer_Send_Var[jPoint] = Aux_Frict_x[iPoint];
+          Buffer_Send_Res[jPoint] = Aux_Frict_y[iPoint];
+          if (geometry->GetnDim() == 3)
+            Buffer_Send_Vol[jPoint] = Aux_Frict_z[iPoint];
+          jPoint++;
+        }
+      }
+      
+      /*--- Gather the data on the master node. ---*/
+      
+#ifdef HAVE_MPI
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      if (geometry->GetnDim() == 3) {
+        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      }
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++)
+        Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++)
+        Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+      if (geometry->GetnDim() == 3) {
+        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++)
+          Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
+      }
+#endif
+      
+      /*--- The master node unpacks and sorts this variable by global index ---*/
+      
+      if (rank == MASTER_NODE) {
+        jPoint = 0;
+        iVar = iVar_ViscCoeffs;
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
+          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+            
+            /*--- Get global index, then loop over each variable and store ---*/
+            
+            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+            Data[iVar][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+            Data[iVar + 1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+            if (geometry->GetnDim() == 3)
+              Data[iVar + 2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
+            jPoint++;
+          }
+          
+          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+          
+          jPoint = (iProcessor + 1) * nBuffer_Scalar;
+        }
+      }
+      
+      /*--- Communicate heat transfer, y+ ---*/
+      
+      /*--- First, loop through the mesh in order to find and store the
+       value of the viscous coefficients at any surface nodes. They
+       will be placed in an auxiliary vector and then communicated like
+       all other volumetric variables. ---*/
+      
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+        Aux_Heat[iPoint] = 0.0;
         Aux_yPlus[iPoint] = 0.0;
       }
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
         if (config->GetMarker_All_Plotting(iMarker) == YES) {
           for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            Aux_Frict[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex);
-            Aux_Heat[iPoint]  = solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex);
+            Aux_Heat[iPoint] = solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex);
             Aux_yPlus[iPoint] = solver[FLOW_SOL]->GetYPlus(iMarker, iVertex);
           }
         }
@@ -2583,18 +2707,15 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         
         /*--- Check for halos & write only if requested ---*/
         
-        
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the skin friction, heat transfer, y+ variables. ---*/
           
           if (compressible) {
-            Buffer_Send_Var[jPoint] = Aux_Frict[iPoint];
             Buffer_Send_Res[jPoint] = Aux_Heat[iPoint];
             Buffer_Send_Vol[jPoint] = Aux_yPlus[iPoint];
           }
           if (incompressible || freesurface) {
-            Buffer_Send_Var[jPoint] = Aux_Frict[iPoint];
             Buffer_Send_Res[jPoint] = Aux_Heat[iPoint];
             Buffer_Send_Vol[jPoint] = Aux_yPlus[iPoint];
           }
@@ -2605,38 +2726,39 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       /*--- Gather the data on the master node. ---*/
       
 #ifdef HAVE_MPI
-      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
       SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
 #else
-      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
-      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
-      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++)
+        Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++)
+        Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
 #endif
       
       /*--- The master node unpacks and sorts this variable by global index ---*/
       
       if (rank == MASTER_NODE) {
-        jPoint = 0; iVar = iVar_ViscCoeffs;
-
+        jPoint = 0;
+        iVar = iVar_HeatCoeffs;
+        
         for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
             /*--- Get global index, then loop over each variable and store ---*/
             
             iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-            Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
-            Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
-            Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
+            Data[iVar + 0][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+            Data[iVar + 1][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
             jPoint++;
           }
           
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
           
-          jPoint = (iProcessor+1)*nBuffer_Scalar;
+          jPoint = (iProcessor + 1) * nBuffer_Scalar;
         }
       }
     }
+    
     
     /*--- Communicate the Eddy Viscosity ---*/
     
@@ -3259,7 +3381,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
   delete [] Local_Halo;
   
   if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-    delete [] Aux_Frict; delete [] Aux_Heat; delete [] Aux_yPlus;
+    delete[] Aux_Frict_x; delete[] Aux_Frict_y; delete[] Aux_Frict_z;
+    delete [] Aux_Heat; delete [] Aux_yPlus;
   }
   if (( Kind_Solver == ADJ_EULER              ) ||
       ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
@@ -3587,15 +3710,16 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     }
     
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      restart_file << "\t\"Pressure\"\t\"Temperature\"\t\"Pressure_Coefficient\"\t\"Mach\"";
+      restart_file << "\t\"Pressure\"\t\"Temperature\"\t\"C<sub>p</sub>\"\t\"Mach\"";
     }
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      restart_file << "\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient\"\t\"Heat_Flux\"\t\"Y_Plus\"";
+      if (nDim == 2) restart_file << "\t\"<greek>m</greek>\"\t\"C<sub>f</sub>_x\"\t\"C<sub>f</sub>_y\"\t\"h\"\t\"y<sup>+</sup>\"";
+      if (nDim == 3) restart_file << "\t\"<greek>m</greek>\"\t\"C<sub>f</sub>_x\"\t\"C<sub>f</sub>_y\"\t\"C<sub>f</sub>_z\"\t\"h\"\t\"y<sup>+</sup>\"";
     }
     
     if (Kind_Solver == RANS) {
-      restart_file << "\t\"Eddy_Viscosity\"";
+      restart_file << "\t\"<greek>m</greek><sub>t</sub>\"";
     }
     
     if (config->GetWrt_SharpEdges()) {
