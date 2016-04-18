@@ -13645,6 +13645,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
         filename = config->GetUnsteady_FileName(filename, iExtIter);
       }
 
+      if (config->GetnZone() > 1){
+        filename = config->GetMultizone_FileName(filename, config->GetiZone());
+      }
+
       restart_file.open(filename.data(), ios::in);
       if (restart_file.fail()) {
         cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;

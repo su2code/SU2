@@ -2843,7 +2843,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       
       /*--- Output original FFD FFDBox ---*/
       
-      if (rank == MASTER_NODE) {
+      if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
         cout << "Writing a Tecplot file of the FFD boxes." << endl;
         for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
           FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
@@ -2934,7 +2934,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         
         /*--- Output the deformed FFD Boxes ---*/
         
-        if (rank == MASTER_NODE) {
+        if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
           cout << "Writing a Tecplot file of the FFD boxes." << endl;
           for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
             FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, false);
