@@ -44,7 +44,9 @@
 #include <cmath>
 #include <map>
 #include <assert.h>
-
+#ifdef HAVE_CGNS
+  #include "cgnslib.h"
+#endif
 #include "./option_structure.hpp"
 #include "./datatype_structure.hpp"
 
