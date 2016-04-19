@@ -113,7 +113,7 @@ protected:
     unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
 
 public:
-  su2double SlidingState[1000][15];
+			
   CSysVector LinSysSol;		/*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector LinSysRes;		/*!< \brief vector to store iterative residual of implicit linear system. */
   CSysVector LinSysAux;		/*!< \brief vector to store iterative residual of implicit linear system. */
@@ -1213,6 +1213,23 @@ public:
 	  * \return Value of the Average Tangent Velocity on the surface <i>val_marker</i>.
 	  */
 	 virtual su2double GetAveragedTangVelocity(unsigned short valMarker);
+	 
+	 /*!
+	 * \brief Get the outer state for fluid interface nodes.
+	 * \param[in] val_marker - marker index
+	 * \param[in] val_vertex - vertex index
+	 * \param[in] val_state  - requested state component
+	 */
+	virtual su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state);
+	
+	/*!
+	 * \brief Set the outer state for fluid interface nodes.
+	 * \param[in] val_marker - marker index
+	 * \param[in] val_vertex - vertex index
+	 * \param[in] val_state  - requested state component
+	 * \param[in] component  - set value
+	 */
+    virtual void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component);
 
 	/*!
 	 * \brief A virtual member.
@@ -3095,10 +3112,13 @@ protected:
 			*NormalMachOut,
 			*VelocityOutIs;
 
+/* Sliding meshes variables */
+
+			su2double ***SlidingState;
+	
 
 
 public:
-
 
 	/*!
 	 * \brief Constructor of the class.
@@ -4016,6 +4036,14 @@ public:
 	su2double GetCMz_Inv(unsigned short val_marker);
     
     /*!
+	 * \brief Get the outer state for fluid interface nodes.
+	 * \param[in] val_marker - marker index
+	 * \param[in] val_vertex - vertex index
+	 * \param[in] val_state  - requested state component
+	 */
+	su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state);
+	
+    /*!
 	 * \brief Provide the non dimensional lift coefficient.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
 	 * \return Value of the lift coefficient on the surface <i>val_marker</i>.
@@ -4594,6 +4622,15 @@ public:
 	 */
 	void SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config,
                               CGeometry **fea_geometry, CSolver ***fea_solution);
+                              
+     /*!
+	 * \brief Set the outer state for fluid interface nodes.
+	 * \param[in] val_marker - marker index
+	 * \param[in] val_vertex - vertex index
+	 * \param[in] val_state  - requested state component
+	 * \param[in] component  - set value
+	 */
+    void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component);
     
 	/*!
 	 * \brief Load a solution from a restart file.

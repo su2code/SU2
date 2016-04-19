@@ -1733,20 +1733,36 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
     fluid_target  = false;  structural_target  = false;
 
     /*--- Set the target boolean: as of now, only Fluid-Structure Interaction considered ---*/
-    switch (config_container[targetZone]->GetKind_Solver()) {
-      case EULER : case NAVIER_STOKES: case RANS: fluid_target  = true;     break;
-      case FEM_ELASTICITY:            structural_target = true;   break;
+    
+    switch ( config_container[targetZone]->GetKind_Solver() ) {
+      
+      case EULER : case NAVIER_STOKES: case RANS: 
+						fluid_target  = true;     
+						break;
+						
+      case FEM_ELASTICITY:            
+						structural_target = true;   
+						break;
     }
 
 		for (donorZone = 0; donorZone < nZone; donorZone++){
+			
 	    /*--- Initialize donor booleans ---*/
+	    
 	    fluid_donor  = false;  structural_donor  = false;
+	    
 	    matching_mesh = config_container[donorZone]->GetMatchingMesh();
 
 	    /*--- Set the donor boolean: as of now, only Fluid-Structure Interaction considered ---*/
-	    switch (config_container[donorZone]->GetKind_Solver()) {
-	      case EULER : case NAVIER_STOKES: case RANS: fluid_donor  = true;    break;
-	      case FEM_ELASTICITY:            structural_donor = true;  break;
+	   
+	    switch ( config_container[donorZone]->GetKind_Solver() ) {
+	      case EULER : case NAVIER_STOKES: case RANS: 
+						fluid_donor  = true;    
+						break;
+						
+	      case FEM_ELASTICITY:            
+						structural_donor = true;  
+						break;
 	    }
 
 
@@ -1776,14 +1792,17 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
 				/*--- Else: interpolate ---*/
 				else {
           switch (config_container[donorZone]->GetKindInterpolation()){
+			  
             case NEAREST_NEIGHBOR:
               interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, donorZone, targetZone);
               if (rank == MASTER_NODE) cout << "using a nearest-neighbor approach." << endl;
               break;
+              
             case ISOPARAMETRIC:
               interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
               if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
               break;
+              
             case CONSISTCONSERVE:
               if (targetZone>0 && structural_target){
                 interpolator_container[donorZone][targetZone] = new CMirror(geometry_container, config_container, donorZone, targetZone);
@@ -1797,6 +1816,7 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
                 if (rank == MASTER_NODE) cout << "Consistent and conservative interpolation assumes the structure model mesh is evaluated second. Somehow this has not happened. The isoparametric coefficients will be calculated for both meshes, and are not guaranteed to be consistent." << endl;
               }
               break;
+              
 				  }
 				}
 
@@ -1927,49 +1947,47 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
                            CInterpolator ***interpolator_container,
                            CTransfer ***transfer_container) {
   
-   unsigned short iZone, jZone;
+   unsigned short iZone, jZone, intIter, nIntIter;
   
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/
    
-  
-  for (iZone = 0; iZone < nZone; iZone++) {
-    
-    iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
-                                           solver_container, numerics_container, config_container,
-                                           surface_movement, grid_movement, FFDBox, iZone);
-  }
- 
- //if unsteady blabla   
-	for (iZone = 0; iZone < nZone; iZone++) {                                        
-		for (jZone = 0; jZone < nZone; jZone++)
-			if(jZone != iZone)
-				interpolator_container[iZone][jZone]->Set_TransferCoeff(config_container);
-				
-	 //cout << endl;
+   
+	nIntIter = 1; 
+
+	for (iZone = 0; iZone < nZone; iZone++)
+		iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+
+
+	if ( (config_container[0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)){
+
+		nIntIter = config_container[0]->GetExtIter();
+		
+		for (iZone = 0; iZone < nZone; iZone++) {                                        
+			for (jZone = 0; jZone < nZone; jZone++)
+				if(jZone != iZone)
+					interpolator_container[iZone][jZone]->Set_TransferCoeff(config_container);
+		}
 	}
-	
-for (jZone = 0; jZone < 10; jZone++)
-  for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
-                                        solver_container, numerics_container, config_container,
-                                        surface_movement, grid_movement, FFDBox, iZone);
-  
-//}  
-    
-//    for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone]->Update(output, integration_container, geometry_container,
-                                       solver_container, numerics_container, config_container,
-                                       surface_movement, grid_movement, FFDBox, iZone);
-    
-    iteration_container[iZone]->Monitor();     /*--- Does nothing for now. ---*/
-    
-    iteration_container[iZone]->Output();      /*--- Does nothing for now. ---*/
-    
-    iteration_container[iZone]->Postprocess(); /*--- Does nothing for now. ---*/
-    
-  }
+
+//	for (intIter = 0; intIter < nIntIter; intIter++){
+		for (iZone = 0; iZone < nZone; iZone++) {
+			iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
+			solver_container, numerics_container, config_container,
+			surface_movement, grid_movement, FFDBox, iZone);
+
+			iteration_container[iZone]->Update(output, integration_container, geometry_container,
+			solver_container, numerics_container, config_container,
+			surface_movement, grid_movement, FFDBox, iZone);
+
+			iteration_container[iZone]->Monitor();     /*--- Does nothing for now. ---*/
+
+			iteration_container[iZone]->Output();      /*--- Does nothing for now. ---*/
+
+			iteration_container[iZone]->Postprocess(); /*--- Does nothing for now. ---*/
+		}
+	//}
   
 }
 

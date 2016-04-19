@@ -598,7 +598,8 @@ void CMeanFlowIteration::SetSlidingInterface(CGeometry ***geometry_container, CS
 							iPoint = geometry_container[iZone][MESH_0]->vertex[iMarker][iVertex]->GetInterpDonorPoint(0);
 							
 							for (iVar = 0; iVar < nVar; iVar++)
-								 solver_container[iZone][MESH_0][iMainSolver]->SlidingState[iVertex][iVar] = solver_container[jZone][MESH_0][jMainSolver]->node[iPoint]->GetPrimitive(iVar);
+								 solver_container[iZone][MESH_0][iMainSolver]->SetSlidingState(iMarker, iVertex, iVar, solver_container[jZone][MESH_0][jMainSolver]->node[iPoint]->GetPrimitive(iVar));
+
 
 							/*
 							if(config_container[jZone]->GetGrid_Movement()){
