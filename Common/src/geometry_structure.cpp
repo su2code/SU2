@@ -1387,13 +1387,9 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   
   if ((config->GetKind_SU2() == SU2_DEF) && (rank == MASTER_NODE)) {
 
-    string str = "boundary";
+    string str = "boundary.dat";
 
-    if(val_nZone > 1){
-      str.append("_" + val_iZone);
-    }
-
-    str.append(".su2");
+    str = config->GetMultizone_FileName(str, val_iZone);
 
     /*--- Open .su2 grid file ---*/
     
@@ -1408,7 +1404,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
       Grid_Marker = config->GetMarker_All_TagBound(iMarker);
       boundary_file << "MARKER_TAG= " << Grid_Marker << endl;
       boundary_file << "MARKER_ELEMS= " << nElem_Bound[iMarker]<< endl;
-      
+      boundary_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
       if (nDim == 2) {
         for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
           boundary_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
