@@ -942,6 +942,15 @@ public:
 	virtual void TurboMixingProcess(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
 
 	/*!
+	 * \brief It performs the average value along a boundary.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+     * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the average is evaluated.
+	 */
+	virtual void MixingProcess1D(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+
+	/*!
 	 * \brief It computes Fourier transformation for the needed quantities along the pitch for each span in turbomachinery analysis.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -3397,7 +3406,7 @@ protected:
 
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   su2double ***AverageVelocity,
-		 ***AverageGridVel,
+	//	 ***AverageGridVel,
 		 ***AverageTurboVelocity,
 		 ***ExtAverageTurboVelocity,
 		 ***AverageTurboMach,
@@ -3999,6 +4008,15 @@ public:
 	 * \param[in] marker_flag - Surface marker flag where the function is applied.
 	 */
 	void TurboMixingProcess(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+
+	/*!
+	 * \brief It computes average quantities along the span for turbomachinery analysis.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+     * \param[in] config - Definition of the particular problem.
+	 * \param[in] marker_flag - Surface marker flag where the function is applied.
+	 */
+	void MixingProcess1D(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
 
 	/*!
 	 * \brief It computes Fourier transformation for the needed quantities along the pitch for each span in turbomachinery analysis.
