@@ -681,6 +681,9 @@ inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_containe
 
 inline void CSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
 
+
+inline void CSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
+
 inline void CSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics,unsigned short marker_flag){}
 
 inline void CSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
