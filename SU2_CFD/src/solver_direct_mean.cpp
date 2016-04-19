@@ -90,6 +90,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Cauchy_Serie = NULL;
   FluidModel=NULL;
   
+  SlidingState = NULL;
 }
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -471,6 +472,26 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     Bleed_Pressure[iMarker]      = Pressure_Inf;
     Bleed_Area[iMarker]          = 0.0;
   }
+  
+  /*--- Initializate quantities for SlidingMesh Interface ---*/
+  
+  SlidingState = new su2double** [nMarker];
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+	  
+		if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+			
+			SlidingState[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+			
+			for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++)
+					SlidingState[iMarker][iPoint] = new su2double[nPrimVar];
+
+		}
+		else
+			SlidingState[iMarker] =NULL;
+  }
+
+  
   
   /*--- Initializate quantities for the mixing process ---*/
   
@@ -10141,7 +10162,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                          CConfig *config) {
   
-  unsigned long iVertex, iPoint, jPoint;
+  unsigned long iVertex, iPoint;
   unsigned short iDim, iVar, iMarker;
   
   bool implicit 	 = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -10152,6 +10173,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   su2double *PrimVar_j = new su2double[nPrimVar];
 
 #ifndef HAVE_MPI
+  
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     
@@ -10164,9 +10186,9 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
             
             for (iVar = 0; iVar < nPrimVar; iVar++) {
               PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
-              PrimVar_j[iVar] = SlidingState[iVertex][iVar];
-            }
-                        
+              PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
+            }                     
+            
             /*--- Set primitive variables ---*/
             
             numerics->SetPrimitive(PrimVar_i, PrimVar_j);
