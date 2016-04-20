@@ -42,25 +42,25 @@ CInterpolator::CInterpolator(void){
 	donorZone  = 0;
 	targetZone = 0;
 
-  Buffer_Receive_nVertex_Donor=NULL;
-  Buffer_Receive_nFace_Donor=NULL;
-  Buffer_Receive_nFaceNodes_Donor=NULL;
-  Buffer_Send_nVertex_Donor=NULL;
-  Buffer_Send_nFace_Donor=NULL;
-  Buffer_Send_nFaceNodes_Donor=NULL;
-  Buffer_Receive_GlobalPoint=NULL;
-  Buffer_Send_GlobalPoint=NULL;
-  Buffer_Send_FaceIndex=NULL;
-  Buffer_Receive_FaceIndex=NULL;
-  Buffer_Send_FaceNodes=NULL;
-  Buffer_Receive_FaceNodes=NULL;
-  Buffer_Send_FaceProc=NULL;
-  Buffer_Receive_FaceProc=NULL;
+  Buffer_Receive_nVertex_Donor		= NULL;
+  Buffer_Receive_nFace_Donor		= NULL;
+  Buffer_Receive_nFaceNodes_Donor	= NULL;
+  Buffer_Send_nVertex_Donor			= NULL;
+  Buffer_Send_nFace_Donor			= NULL;
+  Buffer_Send_nFaceNodes_Donor		= NULL;
+  Buffer_Receive_GlobalPoint		= NULL;
+  Buffer_Send_GlobalPoint			= NULL;
+  Buffer_Send_FaceIndex				= NULL;
+  Buffer_Receive_FaceIndex			= NULL;
+  Buffer_Send_FaceNodes				= NULL;
+  Buffer_Receive_FaceNodes			= NULL;
+  Buffer_Send_FaceProc				= NULL;
+  Buffer_Receive_FaceProc			= NULL;
 
-  Buffer_Send_Coord=NULL;
-  Buffer_Send_Normal=NULL;
-  Buffer_Receive_Coord=NULL;
-  Buffer_Receive_Normal=NULL;
+  Buffer_Send_Coord					= NULL;
+  Buffer_Send_Normal				= NULL;
+  Buffer_Receive_Coord				= NULL;
+  Buffer_Receive_Normal				= NULL;
 
 }
 
@@ -298,16 +298,20 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
   su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
 
-  int nProcessor = SINGLE_NODE;
 
 #ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+
+	cout << "MPI still not working" << endl; getchar();
+	exit(EXIT_FAILURE);
+
+	int rank = MASTER_NODE;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+
+	Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
 #endif
 
-  Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
-
+  
   // For the markers on the interface
   for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
 
@@ -349,20 +353,29 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 		  }
 	  }
 
-	  Buffer_Send_nVertex_Donor = new unsigned long [1];
+
+#ifdef HAVE_MPI
+
+	Buffer_Send_nVertex_Donor = new unsigned long [1];
     Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
 
-	  /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
-	  Determine_ArraySize(false, markDonor,markTarget,nVertexDonor,nDim);
+	/* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
+	Determine_ArraySize(false, markDonor, markTarget, nVertexDonor,nDim);
 
     Buffer_Send_Coord = new su2double [MaxLocalVertex_Donor*nDim];
     Buffer_Send_GlobalPoint = new unsigned long [MaxLocalVertex_Donor];
 
-    Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_Donor*nDim];
-    Buffer_Receive_GlobalPoint = new unsigned long [nProcessor*MaxLocalVertex_Donor];
-
-	  /*-- Colllect coordinates, global points, and normal vectors ---*/
+    Buffer_Receive_Coord = new su2double [ nProcessor * MaxLocalVertex_Donor * nDim];
+    Buffer_Receive_GlobalPoint = new unsigned long [nProcessor * MaxLocalVertex_Donor];
+    
+    
+    
+    /*--- Send Interface vertex information --*/
+    
+    
+    /*-- Collect coordinates, global points, and normal vectors ---*/
 	  Collect_VertexInfo(false, markDonor,markTarget,nVertexDonor,nDim);
+#endif    
 
 	  /*--- Compute the closest point to a Near-Field boundary point ---*/
 	  maxdist = 0.0;
@@ -379,44 +392,54 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 			  Coord_i = target_geometry->node[Point_Target]->GetCoord();
 			  mindist = 1E6; pProcessor = 0;
 
-			  /*--- Loop over all the boundaries to find the pair ---*/
-			  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-				  for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
-					  
-					  Global_Point_Donor = donor_geometry->vertex[markDonor][jVertex]->GetNode();
-
-					  /*--- Compute the dist ---*/
-					  dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
-						  Coord_j[iDim] = donor_geometry->node[Global_Point_Donor]->GetCoord(iDim);
-						  dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
-					  }
-
-					  if (dist < mindist) {
-						  mindist = dist; pProcessor = iProcessor; pGlobalPoint = Global_Point_Donor;
-					  }
-
-					  if (dist == 0.0) break;
-				  }
-			  }
+#ifdef HAVE_MPI
 			  
-			/*--- Loop over all the boundaries to find the pair ---*/
-			//for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-			//	for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
-			//	  Global_Point_Donor = Buffer_Receive_GlobalPoint[iProcessor*MaxLocalVertex_Donor+jVertex];
-			//
-			//	  /*--- Compute the dist ---*/
-			//	  dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
-			//			  Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Donor+jVertex)*nDim+iDim];
-			//			  dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
-			//  	}
-			//
-			//		if (dist < mindist) {
-			//			mindist = dist; pProcessor = iProcessor; pGlobalPoint = Global_Point_Donor;
-			//		  }
-			//
-			//				  if (dist == 0.0) break;
-			//		  }
-			//}
+	/*--- Loop over all the boundaries to find the pair ---*/
+	for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+		for (jVertex = 0; jVertex < Buffer_Receive_nVertex_Donor[iProcessor]; jVertex++) {
+			
+			Global_Point_Donor = iProcessor * MaxLocalVertex_Donor + jVertex;
+
+			/*--- Compute the dist ---*/
+			dist = 0.0; 
+			for (iDim = 0; iDim < nDim; iDim++) {
+				Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor * nDim + iDim];
+				dist += pow( Coord_j[iDim] - Coord_i[iDim], 2.0);
+			}
+
+			if (dist < mindist) {
+			mindist = dist; pProcessor = iProcessor; pGlobalPoint = Buffer_Receive_GlobalPoint[ Global_Point_Donor ];
+			}
+
+			if (dist == 0.0) break;
+		}
+	}
+	
+#else			
+			
+	/*--- Loop over all the boundaries to find the pair ---*/
+	
+	for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
+
+		Global_Point_Donor = donor_geometry->vertex[markDonor][jVertex]->GetNode();
+
+		/*--- Compute the dist ---*/
+		
+		dist = 0.0; 
+		for (iDim = 0; iDim < nDim; iDim++) {
+			Coord_j[iDim] = donor_geometry->node[ Global_Point_Donor ]->GetCoord(iDim);
+			dist += pow( Coord_j[iDim] - Coord_i[iDim], 2.0 );
+		}
+
+		if (dist < mindist) {
+			mindist = dist; 
+			pGlobalPoint = Global_Point_Donor;
+		}
+
+		if (dist == 0.0) break;
+	}
+			  
+#endif					
 
 			  /*--- Store the value of the pair ---*/
 			  maxdist = max(maxdist, mindist);
@@ -427,6 +450,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 		  }
 	  }
 
+#ifdef HAVE_MPI	
 	  delete[] Buffer_Send_Coord;
 	  delete[] Buffer_Send_GlobalPoint;
 
@@ -435,7 +459,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
 	  delete[] Buffer_Send_nVertex_Donor;
 	  delete[] Buffer_Receive_nVertex_Donor;
-
+#endif
   }
 
 }
