@@ -110,84 +110,91 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 }
 
 void CConfig::SetPointersNull(void) {
-  Marker_CfgFile_Out_1D=NULL;       Marker_All_Out_1D=NULL;
-  Marker_CfgFile_GeoEval=NULL;      Marker_All_GeoEval=NULL;
-  Marker_CfgFile_Monitoring=NULL;   Marker_All_Monitoring=NULL;
-  Marker_CfgFile_Designing=NULL;    Marker_All_Designing=NULL;
-  Marker_CfgFile_Plotting=NULL;     Marker_All_Plotting=NULL;
-  Marker_CfgFile_DV=NULL;           Marker_All_DV=NULL;
-  Marker_CfgFile_Moving=NULL;       Marker_All_Moving=NULL;
-  Marker_CfgFile_PerBound=NULL;     Marker_All_PerBound=NULL;   Marker_PerBound=NULL;
+  Marker_CfgFile_Out_1D		= NULL;     Marker_All_Out_1D		= NULL;
+  Marker_CfgFile_GeoEval	= NULL;     Marker_All_GeoEval		= NULL;
+  Marker_CfgFile_Monitoring	= NULL;     Marker_All_Monitoring	= NULL;
+  Marker_CfgFile_Designing	= NULL;     Marker_All_Designing    = NULL;
+  Marker_CfgFile_Plotting	= NULL;     Marker_All_Plotting		= NULL;
+  Marker_CfgFile_DV			= NULL;     Marker_All_DV			= NULL;
+  Marker_CfgFile_Moving		= NULL;     Marker_All_Moving		= NULL;
+  Marker_CfgFile_PerBound	= NULL;		Marker_All_PerBound		= NULL;   Marker_PerBound = NULL;
 
-  Marker_DV=NULL;  Marker_Moving=NULL;  Marker_Monitoring=NULL;
-  Marker_Designing=NULL;  Marker_GeoEval=NULL;  Marker_Plotting=NULL;
-  Marker_CfgFile_KindBC=NULL;       Marker_All_KindBC=NULL;
+  Marker_DV				= NULL;  Marker_Moving	   = NULL;  Marker_Monitoring 	= NULL;
+  Marker_Designing		= NULL;  Marker_GeoEval	   = NULL;  Marker_Plotting		= NULL;
+  Marker_CfgFile_KindBC = NULL;  Marker_All_KindBC = NULL;
   /*--- Marker Pointers ---*/
 
-  Marker_Euler = NULL;            Marker_FarField = NULL;           Marker_Custom = NULL;
-  Marker_SymWall = NULL;          Marker_Pressure = NULL;           Marker_PerBound = NULL;
-  Marker_PerDonor = NULL;         Marker_NearFieldBound = NULL;     Marker_InterfaceBound = NULL;
-  Marker_Fluid_InterfaceBound = NULL;
-  Marker_Dirichlet = NULL;        Marker_Inlet = NULL;
-  Marker_Supersonic_Inlet = NULL; Marker_Outlet = NULL;             Marker_Out_1D = NULL;
-  Marker_Isothermal = NULL;       Marker_HeatFlux = NULL;           Marker_EngineInflow = NULL;
-  Marker_EngineBleed = NULL;      Marker_Supersonic_Outlet = NULL;
-  Marker_EngineExhaust = NULL;    Marker_Displacement = NULL;       Marker_Load = NULL;
-  Marker_Load_Dir = NULL;         Marker_Load_Sine = NULL;          Marker_Clamped = NULL;
-  Marker_FlowLoad = NULL;         Marker_Neumann = NULL;
-  Marker_All_TagBound = NULL;     Marker_CfgFile_TagBound = NULL;   Marker_All_KindBC = NULL;
-  Marker_CfgFile_KindBC = NULL;   Marker_All_SendRecv = NULL;       Marker_All_PerBound = NULL;
-  Marker_FSIinterface = NULL;     Marker_Riemann = NULL;
-  Marker_Load = NULL;
+  Marker_Euler					= NULL;     Marker_FarField 		 = NULL;     Marker_Custom 			= NULL;
+  Marker_SymWall 				= NULL;     Marker_Pressure 		 = NULL;     Marker_PerBound 		= NULL;
+  Marker_PerDonor 				= NULL;     Marker_NearFieldBound    = NULL;	 Marker_InterfaceBound 	= NULL;
+  Marker_Fluid_InterfaceBound 	= NULL;
+  Marker_Dirichlet 				= NULL;     Marker_Inlet 			 = NULL;
+  Marker_Supersonic_Inlet 		= NULL;		Marker_Outlet 			 = NULL;    Marker_Out_1D 			= NULL;
+  Marker_Isothermal 			= NULL;     Marker_HeatFlux 		 = NULL;    Marker_EngineInflow 	= NULL;
+  Marker_EngineBleed 			= NULL;     Marker_Supersonic_Outlet = NULL;
+  Marker_EngineExhaust 			= NULL;     Marker_Displacement 	 = NULL;    Marker_Load 			= NULL;
+  Marker_Load_Dir 				= NULL;     Marker_Load_Sine 		 = NULL;    Marker_Clamped 			= NULL;
+  Marker_FlowLoad 				= NULL;     Marker_Neumann 			 = NULL;
+  Marker_All_TagBound 			= NULL;     Marker_CfgFile_TagBound  = NULL;    Marker_All_KindBC 		= NULL;
+  Marker_CfgFile_KindBC 		= NULL;     Marker_All_SendRecv 	 = NULL;    Marker_All_PerBound 	= NULL;
+  Marker_FSIinterface 			= NULL;     Marker_Riemann 			 = NULL;
+  Marker_Load 					= NULL;
   /*--- Boundary Condition settings ---*/
 
-  Dirichlet_Value = NULL;         Exhaust_Temperature_Target = NULL;
-  Exhaust_Pressure_Target = NULL; Inlet_Ttotal = NULL;              Inlet_Ptotal = NULL;
-  Inlet_FlowDir = NULL;           Inlet_Temperature = NULL;         Inlet_Pressure = NULL;
-  Inlet_Velocity = NULL;          Inflow_Mach_Target = NULL;        Inflow_Mach = NULL;
-  Inflow_Pressure = NULL;         Bleed_Temperature_Target = NULL;  Bleed_Temperature = NULL;
-  Bleed_MassFlow_Target = NULL;   Bleed_MassFlow = NULL;            Exhaust_Pressure = NULL; Exhaust_Temperature = NULL;
-  Bleed_Pressure = NULL;          Outlet_Pressure = NULL;           Isothermal_Temperature = NULL;
-  Heat_Flux = NULL;               Displ_Value = NULL;               Load_Value = NULL;
-  FlowLoad_Value = NULL;          Periodic_RotCenter = NULL;        Periodic_RotAngles = NULL;
-  Periodic_Translation = NULL;    Periodic_Center = NULL;           Periodic_Rotation = NULL;
-  Periodic_Translate = NULL;
+  Dirichlet_Value 			= NULL;     Exhaust_Temperature_Target	= NULL;		Exhaust_Temperature 	= NULL;
+  Exhaust_Pressure_Target 	= NULL;		Inlet_Ttotal 				= NULL;		Inlet_Ptotal 			= NULL;
+  Inlet_FlowDir 			= NULL;     Inlet_Temperature 			= NULL;     Inlet_Pressure 			= NULL;
+  Inlet_Velocity 			= NULL;     Inflow_Mach_Target 			= NULL;     Inflow_Mach 			= NULL;
+  Inflow_Pressure 			= NULL;     Bleed_Temperature_Target 	= NULL;  	Bleed_Temperature		= NULL;
+  Bleed_MassFlow_Target 	= NULL;   	Bleed_MassFlow 				= NULL;     Exhaust_Pressure 		= NULL; 
+  Bleed_Pressure 			= NULL;     Outlet_Pressure				= NULL;     Isothermal_Temperature	= NULL;
+  Heat_Flux 				= NULL;     Displ_Value 				= NULL;     Load_Value 				= NULL;
+  FlowLoad_Value 			= NULL;     Periodic_RotCenter 			= NULL;     Periodic_RotAngles 		= NULL;
+  Periodic_Translation 		= NULL;     Periodic_Center 			= NULL;     Periodic_Rotation 		= NULL;
+  Periodic_Translate		= NULL;
 
-  Load_Dir = NULL;	          Load_Dir_Value = NULL;          Load_Dir_Multiplier = NULL;
+  Load_Dir 		= NULL;	      Load_Dir_Value	  = NULL;     Load_Dir_Multiplier = NULL;
   Load_Sine_Dir = NULL;	      Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
 
   /*--- Miscellaneous/unsorted ---*/
 
-  Aeroelastic_plunge = NULL;    Aeroelastic_pitch = NULL;
+  Aeroelastic_plunge  = NULL;    
+  Aeroelastic_pitch   = NULL;
   MassFrac_FreeStream = NULL;
   Velocity_FreeStream = NULL;
-  RefOriginMoment = NULL;
-  CFL_AdaptParam = NULL;            CFL=NULL;
-  PlaneTag = NULL;
-  Kappa_Flow = NULL;    Kappa_AdjFlow = NULL;
-  Section_Location = NULL;
-  ParamDV=NULL;     DV_Value = NULL;    Design_Variable=NULL;
-  MG_CorrecSmooth = NULL;
+  RefOriginMoment     = NULL;
+  CFL_AdaptParam      = NULL;            
+  CFL                 = NULL;
+  PlaneTag            = NULL;
+  Kappa_Flow 		  = NULL;    
+  Kappa_AdjFlow 	  = NULL;
+  Section_Location    = NULL;
+  ParamDV			  = NULL;     
+  DV_Value            = NULL;    
+  Design_Variable     = NULL;
   Subsonic_Engine_Box = NULL;
-  Hold_GridFixed_Coord=NULL;
-  EA_IntLimit=NULL;
-  RK_Alpha_Step=NULL;
+  Hold_GridFixed_Coord= NULL;
+  EA_IntLimit         = NULL;
+  RK_Alpha_Step       = NULL;
+  MG_CorrecSmooth     = NULL;
+  MG_PreSmooth        = NULL;
+  MG_PostSmooth       = NULL;
 
   /*--- Moving mesh pointers ---*/
 
-  Kind_GridMovement = NULL;
-  Motion_Origin_X = NULL;     Motion_Origin_Y = NULL;     Motion_Origin_Z = NULL;
-  Translation_Rate_X = NULL;  Translation_Rate_Y = NULL;  Translation_Rate_Z = NULL;
-  Rotation_Rate_X = NULL;     Rotation_Rate_Y = NULL;     Rotation_Rate_Z = NULL;
-  Pitching_Omega_X = NULL;    Pitching_Omega_Y = NULL;    Pitching_Omega_Z = NULL;
-  Pitching_Ampl_X = NULL;     Pitching_Ampl_Y = NULL;     Pitching_Ampl_Z = NULL;
-  Pitching_Phase_X = NULL;    Pitching_Phase_Y = NULL;    Pitching_Phase_Z = NULL;
-  Plunging_Omega_X = NULL;    Plunging_Omega_Y = NULL;    Plunging_Omega_Z = NULL;
-  Plunging_Ampl_X = NULL;     Plunging_Ampl_Y = NULL;     Plunging_Ampl_Z = NULL;
-  RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
-  MoveMotion_Origin = NULL;
-  Periodic_Translate=NULL;    Periodic_Rotation=NULL;    Periodic_Center=NULL;
-  Periodic_Translation=NULL;   Periodic_RotAngles=NULL;   Periodic_RotCenter=NULL;
+  Kind_GridMovement		= NULL;
+  Motion_Origin_X		= NULL;		Motion_Origin_Y 	= NULL;		Motion_Origin_Z			= NULL;
+  Translation_Rate_X	= NULL;		Translation_Rate_Y 	= NULL;  	Translation_Rate_Z		= NULL;
+  Rotation_Rate_X 		= NULL;     Rotation_Rate_Y 	= NULL;     Rotation_Rate_Z 		= NULL;
+  Pitching_Omega_X 		= NULL;     Pitching_Omega_Y 	= NULL;    	Pitching_Omega_Z 		= NULL;
+  Pitching_Ampl_X 		= NULL;     Pitching_Ampl_Y 	= NULL;     Pitching_Ampl_Z 		= NULL;
+  Pitching_Phase_X 		= NULL;     Pitching_Phase_Y 	= NULL;    	Pitching_Phase_Z 		= NULL;
+  Plunging_Omega_X 		= NULL;     Plunging_Omega_Y 	= NULL;    	Plunging_Omega_Z 		= NULL;
+  Plunging_Ampl_X 		= NULL;     Plunging_Ampl_Y 	= NULL;     Plunging_Ampl_Z 		= NULL;
+  RefOriginMoment_X 	= NULL;     RefOriginMoment_Y 	= NULL;   	RefOriginMoment_Z 		= NULL;
+  MoveMotion_Origin 	= NULL;
+  Periodic_Translate	= NULL;     Periodic_Rotation 	= NULL;     Periodic_Center			= NULL;
+  Periodic_Translation	= NULL;     Periodic_RotAngles	= NULL;		Periodic_RotCenter		= NULL;
 
   /*--- Variable initialization ---*/
   
@@ -4451,15 +4458,15 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
 
 CConfig::~CConfig(void) {
 
-  if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
-  if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
-  if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
+  if (RK_Alpha_Step !=NULL) delete [] RK_Alpha_Step;
+  if (MG_PreSmooth  !=NULL) delete [] MG_PreSmooth;
+  if (MG_PostSmooth !=NULL) delete [] MG_PostSmooth;
+  
   /*--- Free memory for Aeroelastic problems. ---*/
 
-
   if (Grid_Movement && Aeroelastic_Simulation) {
-    if (Aeroelastic_pitch!=NULL) delete[] Aeroelastic_pitch;
-    if (Aeroelastic_plunge!=NULL) delete[] Aeroelastic_plunge;
+    if (Aeroelastic_pitch  != NULL) delete[] Aeroelastic_pitch;
+    if (Aeroelastic_plunge != NULL) delete[] Aeroelastic_plunge;
   }
 
 
