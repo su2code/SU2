@@ -266,7 +266,8 @@ int main(int argc, char *argv[]) {
 
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
   bool matching_meshes = config_container[ZONE_0]->GetMatchingMesh();
-  
+ 
+ /* 
   if (nZone == 2 && matching_meshes  && !(fsi)) {
     if (rank == MASTER_NODE)
       cout << endl <<"--------------------- Setting Coupling Between Zones --------------------" << endl;
@@ -275,6 +276,7 @@ int main(int argc, char *argv[]) {
     geometry_container[ZONE_1][MESH_0]->MatchZone(config_container[ZONE_1], geometry_container[ZONE_0][MESH_0],
                                                   config_container[ZONE_0], ZONE_1, nZone);
   }
+  */
   
   /*--- Definition of the output class (one for all zones). The output class
    manages the writing of all restart, volume solution, surface solution,

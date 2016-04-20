@@ -1726,9 +1726,14 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
+if (fsi && nZone != 2)
+	{cout << "Error, cannot run the FSI solver on more than 2 zones!"endl;exit(EXIT_FAILURE);}
+
 /*--- Coupling between zones (limited to two zones at the moment) ---*/
 for (targetZone = 0; targetZone < nZone; targetZone++){
-
+	
+	cout << targetZone << "  " << Marker_FSIinterface[0] << endl;
+	
 	/*--- Initialize target booleans ---*/
 	fluid_target  = false;  structural_target  = false;
 
