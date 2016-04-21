@@ -1127,7 +1127,7 @@ enum ENUM_PARAM {
   SCALE = 2,			           /*!< \brief Surface rotation as design variable. */
   FFD_SETTING = 3,		       /*!< \brief No surface deformation. */
   FFD_CONTROL_POINT = 4,	   /*!< \brief Free form deformation for 3D design (change a control point). */
-  FFD_CAMBER = 5,		       /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_CAMBER = 5,		         /*!< \brief Free form deformation for 3D design (camber change). */
   FFD_THICKNESS = 6,		     /*!< \brief Free form deformation for 3D design (thickness change). */
   FFD_DIHEDRAL_ANGLE = 7,	   /*!< \brief Free form deformation for 3D design (change the dihedral angle). */
   FFD_TWIST_ANGLE = 8,		   /*!< \brief Free form deformation for 3D design (change the twist angle). */
@@ -1138,9 +1138,10 @@ enum ENUM_PARAM {
   FFD_CONTROL_SURFACE = 13,	 /*!< \brief Free form deformation for 3D design (control surface). */
   HICKS_HENNE = 14,	         /*!< \brief Hicks-Henne bump function for airfoil deformation. */
   PARABOLIC = 15,		         /*!< \brief Parabolic airfoil definition as design variables. */
-  NACA_4DIGITS = 16,	         /*!< \brief The four digits NACA airfoil family as design variables. */
+  NACA_4DIGITS = 16,	       /*!< \brief The four digits NACA airfoil family as design variables. */
   AIRFOIL = 17,		           /*!< \brief Airfoil definition as design variables. */
   SURFACE_FILE = 18,		     /*!< Nodal coordinates set using a surface file. */
+  GE_LITE = 20,		           /*!< Surface deformation by projecting points using the GELite library. */
   CUSTOM = 19                /*!< 'CUSTOM' for use in external python analysis. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
@@ -1163,6 +1164,7 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("PARABOLIC", PARABOLIC)
 ("AIRFOIL", AIRFOIL)
 ("SURFACE_FILE", SURFACE_FILE)
+("GE_LITE", GE_LITE)
 ("CUSTOM",CUSTOM);
 
 /*!
@@ -2072,6 +2074,7 @@ public:
         case FFD_CAMBER: nParamDV = 3; break;
         case FFD_THICKNESS: nParamDV = 3; break;
         case SURFACE_FILE: nParamDV = 0; break;
+        case GE_LITE: nParamDV = 0; break;
         case CUSTOM: nParamDV = 1; break;
         default : {
           string newstring;

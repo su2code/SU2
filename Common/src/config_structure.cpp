@@ -3272,7 +3272,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
       
       if ((Design_Variable[iDV] != FFD_SETTING) &&
-          (Design_Variable[iDV] != SURFACE_FILE)) {
+          (Design_Variable[iDV] != SURFACE_FILE) &&
+          (Design_Variable[iDV] != GE_LITE)) {
         
         if (iDV == 0)
           cout << "Design variables definition (markers <-> value <-> param):" << endl;

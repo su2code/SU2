@@ -2989,6 +2989,35 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     
   }
   
+  /*--- Set curved surfaces for high-order grids using the GELite library ---*/
+  
+  else if (config->GetDesign_Variable(0) == GE_LITE) {
+    
+    /*--- Check whether a surface file exists for input ---*/
+    ofstream Geometry_File;
+    string filename = config->GetMotion_FileName();
+    Geometry_File.open(filename.c_str(), ios::in);
+    
+    /*--- A surface file does not exist, so write a new one for the
+     markers that are specified as part of the motion. ---*/
+    if (Geometry_File.fail()) {
+      
+      if (rank == MASTER_NODE)
+        cout << "No GELite geometry file found: " << filename << endl;
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+    } else {
+      Geometry_File.close();
+      if (rank == MASTER_NODE) cout << "Computing surface deflections using GELite point projection." << endl;
+      SetCurved_Surfaces(geometry, config, ZONE_0, 0);
+    }
+    
+  }
+  
   /*--- 2D airfoil Hicks-Henne bump functions ---*/
 
   else if (config->GetDesign_Variable(0) == HICKS_HENNE) {
@@ -5726,6 +5755,147 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
         
       }
     }	
+  }
+}
+
+void CSurfaceMovement::SetCurved_Surfaces(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
+  
+  int rank;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+  rank = MASTER_NODE;
+#endif
+  
+  /*--- Local variables ---*/
+  
+  unsigned short nDim;
+  unsigned long iPoint = 0;
+  su2double VarCoord[3], *Coord_Old = NULL;;
+  unsigned long iVertex;
+  unsigned short iMarker;
+  string geometry_filename;
+  ifstream geometry_file;
+  
+  /*--- Load stuff from config ---*/
+  
+  nDim              = geometry->GetnDim();
+  geometry_filename = config->GetMotion_FileName();
+  
+  /*--- Initial preprocessing of the GELite library.
+  Read the file that contains the data base, if specified.
+  Build the BSP tree for optimized projections.  ---*/
+
+#ifdef HAVE_GELITE
+  
+  /*--- Set the user specified values for the member 
+   variables of the data base. ---*/
+  ProjectionDatabase projectionDatabase;
+  
+  projectionDatabase.MaxOffset       = 10.0*Tolerance::GetSamePoint();
+  projectionDatabase.SurfaceSamples  = 20;
+  projectionDatabase.CurveSamples    = 20;
+  projectionDatabase.FaceCoordinates = false;
+  projectionDatabase.Verbose         = false;
+  projectionDatabase.CreatePoints    = false;
+  
+  if(ReadGeomDefFile(geometry_filename.c_str(), &projectionDatabase)  != 0) {
+    if (rank == MASTER_NODE)
+      cout << "Reading of the geometry definition file " << geometry_filename
+      << " failed." << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+
+  }
+  
+  if(BuildBSPTree(&projectionDatabase) != 0) {
+    if (rank == MASTER_NODE)
+      cout << "Building of the BSP tree failed." << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+  
+#endif
+  
+  /*--- Loop through to find only moving surface markers ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Moving(iMarker) == YES) {
+      
+      /*--- WARNING: we need to put an error check here to make sure
+       that this particular marker is part of the geo definition, like you 
+       are doing in the existing code by checking a max tolerance, for example.
+       For now, maks sure the marker of interest is listed in MARKER_MOVING
+       within the config file. ---*/
+      
+      /*--- Loop over all surface points for this marker ---*/
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        /*--- Get current coordinates and prepare to call GELite ---*/
+        
+        Coord_Old = geometry->node[iPoint]->GetCoord();
+        
+#ifdef HAVE_GELITE
+        
+        Vector3D Coordinate;
+        Coordinate[Vector3D::iX] = Coord_Old[0];
+        Coordinate[Vector3D::iY] = Coord_Old[1];
+        if (nDim == 3)
+          Coordinate[Vector3D::iZ] = Coord_Old[2];
+        else
+          Coordinate[Vector3D::iZ] = 0.0;
+        
+        /*--- Project the coordinates using GELite ---*/
+        
+        if(ProjectOneCoordinate(Coordinate, projectionDatabase) != 0) {
+          if (rank == MASTER_NODE)
+            cout << "Coordinate projection failed." << endl;
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+        }
+        
+        /*--- Calculate delta change in the x, y, & z directions ---*/
+        
+        VarCoord[0] = Coordinate[Vector3D::iX] - Coord_Old[0];
+        VarCoord[1] = Coordinate[Vector3D::iY] - Coord_Old[1];
+        if (nDim == 3)
+          VarCoord[2] = Coordinate[Vector3D::iZ] - Coord_Old[2];
+        else
+          VarCoord[2] = 0.0;
+        
+#else
+        /*--- Dummy perturbation just to test without the lib. Will be deleted... ---*/
+        
+        VarCoord[0] = 1.0e-2;
+        VarCoord[1] = 1.0e-2;
+        if (nDim == 3)
+          VarCoord[2] = 1.0e-2;
+        else
+          VarCoord[2] = 0.0;
+        
+#endif
+        
+        /*--- Set surface node location changes to be imposed 
+         for the volume mesh deformation ---*/
+        
+        geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+        
+      }
+    }
   }
 }
 
