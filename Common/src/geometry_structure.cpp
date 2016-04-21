@@ -12004,13 +12004,8 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
   vector<FEMStandardElementClass> standardElements;
   vector<unsigned short> standElemForElem(nElem);
 
-  standardElements.push_back(FEMStandardElementClass(elem[0]->GetVTK_Type(),
-                                                     elem[0]->GetNPolyGrid(),
-                                                     true, config));
-  unsigned short nStandardElements = 1;
-  standElemForElem[0] = 0;
-
-  for(unsigned long i=1; i<nElem; ++i) {
+  unsigned short nStandardElements = 0;
+  for(unsigned long i=0; i<nElem; ++i) {
 
     unsigned short VTK_Type  = elem[i]->GetVTK_Type();
     unsigned short nPolyGrid = elem[i]->GetNPolyGrid();

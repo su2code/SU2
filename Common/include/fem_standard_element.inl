@@ -60,3 +60,5 @@ inline unsigned short* FEMStandardElementClass::GetConnFace5(void){return connFa
 inline unsigned short FEMStandardElementClass::GetNDOFs(void){return nDOFs;}
 
 inline unsigned short FEMStandardElementClass::GetNIntegration(void){return nIntegration;}
+
+inline unsigned short FEMStandardElementClass::GetOrderExact(void){return orderExact;}

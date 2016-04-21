@@ -399,11 +399,18 @@ void Geometrical_Preprocessing_DGFEM(CGeometry ***geometry, CConfig **config, un
 
   for(unsigned short iZone = 0; iZone < val_nZone; iZone++) {
 
+    /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
+          define all virtual functions in the base class CGeometry. ---*/
+    CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry[iZone][MESH_0]);
+
+    /*--- Determine the standard elements for the volume elements. ---*/
+    if (rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
+    DGMesh->CreateStandardVolumeElements(config[iZone]);
+
     /*--- Create the face information needed to compute the contour integral
           for the elements in the Discontinuous Galerkin formulation. ---*/
-
     if (rank == MASTER_NODE) cout << "Creating face information." << endl;
-    geometry[iZone][MESH_0]->SetFaces();
+    DGMesh->CreateFaces(config[iZone]);
   }
 
   cout << "Geometrical_Preprocessing_DGFEM: Not implemented yet." << endl;

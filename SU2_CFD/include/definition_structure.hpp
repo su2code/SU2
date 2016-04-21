@@ -45,6 +45,7 @@
 #include "output_structure.hpp"
 #include "numerics_structure.hpp"
 #include "transfer_structure.hpp"
+#include "../../Common/include/fem_geometry_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/interpolation_structure.hpp"

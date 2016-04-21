@@ -1361,7 +1361,7 @@ CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config) : CMeshFEM(geomet
 
 }
 
-void CMeshFEM_DG::SetFaces(void) {
+void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
   /*---------------------------------------------------------------------------*/
   /*--- Step 1: Determine the faces of the locally stored part of the grid. ---*/
@@ -1612,7 +1612,7 @@ void CMeshFEM_DG::SetFaces(void) {
   }
 
   if( nNonMatchingFaces ) {
-    cout << "CMeshFEM_DG::SetFaces: "
+    cout << "CMeshFEM_DG::CreateFaces: "
          << nNonMatchingFaces << " non-matching internal faces found. "
          << "This is not supported yet." << endl;
 #ifndef HAVE_MPI
@@ -1623,7 +1623,7 @@ void CMeshFEM_DG::SetFaces(void) {
 #endif
   }
 
-  cout << "CMeshFEM_DG::SetFaces: Not implemented yet." << endl;
+  cout << "CMeshFEM_DG::CreateFaces: Not implemented yet." << endl;
 #ifndef HAVE_MPI
   exit(EXIT_FAILURE);
 #else
@@ -1631,6 +1631,54 @@ void CMeshFEM_DG::SetFaces(void) {
   MPI_Abort(MPI_COMM_WORLD,1);
   MPI_Finalize();
 #endif
+}
+
+void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
+
+  /*--- Loop over the volume elements and create new standard elements if needed.
+        Note that a new standard elements is created when either the solution
+        element or the grid element does not match. Note further that for the
+        standard element of the grid the exact order for the integration of the
+        solution is used, such that the metric terms are computed in the correct
+        integration points in case the polynomial order of the solution differs
+        from that of the grid. ---*/
+  for(unsigned long i=0; i<nVolElemTot; ++i) {
+
+    if( volElem[i].elemIsOwned ) {
+
+      /* Check the existing standard elements in the list. */
+      unsigned long j;
+      for(j=0; j<standardElementsSol.size(); ++j) {
+        if(standardElementsSol[j].SameStandardElement(volElem[i].VTK_Type,
+                                                      volElem[i].nPolySol,
+                                                      volElem[i].JacIsConsideredConstant) &&
+           standardElementsSol[j].SameStandardElement(volElem[i].VTK_Type,
+                                                      volElem[i].nPolyGrid,
+                                                      volElem[i].JacIsConsideredConstant) ) {
+           volElem[i].indStandardElement = j;
+           break;
+        }
+      }
+
+      /* Create the new standard elements if no match was found. */
+      if(j == standardElementsSol.size()) {
+
+        standardElementsSol.push_back(FEMStandardElementClass(volElem[i].VTK_Type,
+                                                              volElem[i].nPolySol,
+                                                              volElem[i].JacIsConsideredConstant,
+                                                              config) );
+
+        standardElementsGrid.push_back(FEMStandardElementClass(volElem[i].VTK_Type,
+                                       volElem[i].nPolyGrid,
+                                       volElem[i].JacIsConsideredConstant,
+                                       config,
+                                       standardElementsSol[j].GetOrderExact()) );
+
+        volElem[i].indStandardElement = j;
+      }
+    }
+  }
+
 }
 
 void CMeshFEM_DG::SetSendReceive(CConfig *config) {
