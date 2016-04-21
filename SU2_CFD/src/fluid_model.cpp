@@ -2,7 +2,7 @@
  * fluid_model.cpp
  * \brief Source of the main thermo-physical subroutines of the SU2 solvers.
  * \author S.Vitale, M.Pini, G.Gori, A.Guardone, P.Colonna
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -54,8 +54,9 @@ CFluidModel::CFluidModel(void) {
 }
 
 CFluidModel::~CFluidModel(void) {
-
-  }
+  if (LaminarViscosity!=NULL) delete LaminarViscosity;
+  if (ThermalConductivity!=NULL) delete ThermalConductivity;
+}
 
 void CFluidModel::SetLaminarViscosityModel (CConfig *config) {
   

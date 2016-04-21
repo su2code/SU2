@@ -2,7 +2,7 @@
  * \file integration_time.cpp
  * \brief Time dependent numerical methods
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -901,42 +901,6 @@ CStructuralIntegration::CStructuralIntegration(CConfig *config) : CIntegration(c
 CStructuralIntegration::~CStructuralIntegration(void) { }
 
 void CStructuralIntegration::Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container,
-                                                  CNumerics *****numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
-  su2double monitor = 0.0;
-
-  unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
-
-  /*--- Preprocessing ---*/
-
-  solver_container[iZone][MESH_0][SolContainer_Position]->Preprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0],
-		  config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position], MESH_0, Iteration, RunTime_EqSystem, false);
-
-  /*--- Space integration ---*/
-
-  Space_Integration(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], numerics_container[iZone][MESH_0][SolContainer_Position],
-                    config[iZone], MESH_0, NO_RK_ITER, RunTime_EqSystem);
-
-  /*--- Time integration ---*/
-
-  Time_Integration(geometry[iZone][MESH_0], solver_container[iZone][MESH_0], config[iZone], NO_RK_ITER,
-                   RunTime_EqSystem, Iteration);
-
-  /*--- Postprocessing ---*/
-
-  solver_container[iZone][MESH_0][SolContainer_Position]->Postprocessing(geometry[iZone][MESH_0], solver_container[iZone][MESH_0],
-		  config[iZone], numerics_container[iZone][MESH_0][SolContainer_Position],  MESH_0);
-
-  /*--- Compute adimensional parameters and the convergence monitor ---*/
-
-  monitor = log10(solver_container[iZone][MESH_0][FEA_SOL]->GetRes_RMS(0));
-
-  /*--- Convergence strategy ---*/
-  Convergence_Monitoring(geometry[iZone][MESH_0], config[iZone], Iteration, monitor, MESH_0);
-
-
-}
-
-void CStructuralIntegration::Structural_Iteration_FEM(CGeometry ***geometry, CSolver ****solver_container,
                                                   CNumerics *****numerics_container, CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
 //  su2double monitor = 0.0;
 
