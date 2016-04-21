@@ -4425,6 +4425,12 @@ public:
 	 * \return Periodic information of the boundary in the config information of the marker <i>val_marker</i>.
 	 */
 	unsigned short GetMarker_CfgFile_PerBound(string val_marker);
+	
+	/*!
+	 * \brief  Get the name of the marker <i>val_marker</i>.
+	 * \return The interface which owns that marker <i>val_marker</i>.
+	 */
+	int GetMarker_FSIinterface(string val_marker);
 
 	/*!
 	 * \brief Determines if problem is adjoint
