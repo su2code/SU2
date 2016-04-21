@@ -39,7 +39,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 #endif
 
   /*--- Initialize pointers to Null---*/
-  
+ 
   SetPointersNull();
 
   /*--- Reading config options  ---*/
@@ -60,7 +60,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   /*--- Configuration file output ---*/
 
-  if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone != 1))
+  if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone == 0))
     SetOutput(val_software, val_iZone);
 
 }
@@ -1803,13 +1803,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Make sure that there aren't more than one rigid motion or
    rotating frame specified in GRID_MOVEMENT_KIND. ---*/
-  
+ /* 
   if (Grid_Movement && (Kind_GridMovement[ZONE_0] == RIGID_MOTION) &&
       (nGridMovement > 2)) {
     cout << "Can not support more than 2 type of rigid motion in GRID_MOVEMENT_KIND!!" << endl;
     exit(EXIT_FAILURE);
   }
-  
+ */ 
   /*--- In case the grid movement parameters have not been declared in the
    config file, set them equal to zero for safety. Also check to make sure
    that for each option, a value has been declared for each moving marker. ---*/
@@ -2919,12 +2919,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Identification of Fluid-Structure interface markers ---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-	unsigned short indexMarker=0;
+	unsigned short indexMarker = 0;
     Marker_CfgFile_FSIinterface[iMarker_CfgFile] = NO;
     for (iMarker_FSIinterface = 0; iMarker_FSIinterface < nMarker_FSIinterface; iMarker_FSIinterface++)
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_FSIinterface[iMarker_FSIinterface])
-      	indexMarker=(int)(iMarker_FSIinterface/2+1);
-        Marker_CfgFile_FSIinterface[iMarker_CfgFile] = indexMarker;
+			indexMarker = (int)(iMarker_FSIinterface/2+1);
+	  Marker_CfgFile_FSIinterface[iMarker_CfgFile] = indexMarker;
   }
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
@@ -4454,6 +4454,16 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
     if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
   return Marker_CfgFile_PerBound[iMarker_CfgFile];
 }
+
+int CConfig::GetMarker_FSIinterface(string val_marker) {	
+	  unsigned short iMarker_CfgFile;
+	  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    
+		  if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker)
+				return  Marker_CfgFile_FSIinterface[iMarker_CfgFile];
+    return 0;
+}
+
 
 CConfig::~CConfig(void) {
 

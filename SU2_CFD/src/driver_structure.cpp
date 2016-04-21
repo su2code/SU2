@@ -132,7 +132,7 @@ CDriver::CDriver(CIteration **iteration_container,
 		cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
 
 
-	if (((nZone > 1) && (nZone < 3)) ) {
+	if (((nZone > 1)) ) {
 
 		for (iZone = 0; iZone < nZone; iZone++){
 			transfer_container[iZone] = new CTransfer*[nZone];
@@ -1711,6 +1711,10 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
 	int rank = MASTER_NODE;
 	unsigned short donorZone, targetZone;
 	unsigned short nVar, nVarTransfer;
+	unsigned short nInterface;
+	unsigned short nMarkerTarget, iMarkerTarget, nMarkerDonor, iMarkerDonor;
+
+	int FSI_interface_marker, FSI_interface_marker_compare;
 
 	/*--- Initialize some useful booleans ---*/
 	bool fluid_donor, structural_donor;
@@ -1726,139 +1730,164 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-if (fsi && nZone != 2)
-	{cout << "Error, cannot run the FSI solver on more than 2 zones!"endl;exit(EXIT_FAILURE);}
+if (config_container[ZONE_0]->GetFSI_Simulation() && nZone != 2){
+		cout << "Error, cannot run the FSI solver on more than 2 zones!" << endl;exit(EXIT_FAILURE);
 
-/*--- Coupling between zones (limited to two zones at the moment) ---*/
+		/* --- Not sure about this, it also may work --- */
+}
+
+
+/*--- Coupling between zones ---*/
+// Limit: the interface boundary must connect only 2 zones
+
 for (targetZone = 0; targetZone < nZone; targetZone++){
 	
-	cout << targetZone << "  " << Marker_FSIinterface[0] << endl;
 	
-	/*--- Initialize target booleans ---*/
-	fluid_target  = false;  structural_target  = false;
-
-	/*--- Set the target boolean: as of now, only Fluid-Structure Interaction considered ---*/
-
-	switch ( config_container[targetZone]->GetKind_Solver() ) {
-
-	case EULER : case NAVIER_STOKES: case RANS: 
+	nMarkerTarget  = geometry_container[targetZone][MESH_0]->GetnMarker();
 	
-										fluid_target  = true;     
+	for( iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+			
+		FSI_interface_marker = config_container[targetZone]->GetMarker_FSIinterface( config_container[targetZone]->GetMarker_All_TagBound( iMarkerTarget ) );
+		
+		if(	FSI_interface_marker != 0 ){
+			
+			
+			/*--- Initialize target booleans ---*/
+			fluid_target  = false;  structural_target  = false;
+
+			/*--- Set the target boolean: as of now, only Fluid-Structure Interaction considered ---*/
+
+			switch ( config_container[targetZone]->GetKind_Solver() ) {
+
+			case EULER : case NAVIER_STOKES: case RANS: 
+			
+												fluid_target  = true;     
+												
+												break;
+
+			case FEM_ELASTICITY:            
+												structural_target = true;   
+			
+												break;
+			}
+
+			for (donorZone = 0; donorZone < nZone; donorZone++){
+				
+				if(donorZone == targetZone) continue;
+				
+				nMarkerDonor  = geometry_container[donorZone][MESH_0]->GetnMarker();
+				
+				for( iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+				
+						FSI_interface_marker_compare = config_container[donorZone]->GetMarker_FSIinterface( config_container[donorZone]->GetMarker_All_TagBound( iMarkerDonor) );
+						
+						if( FSI_interface_marker_compare != 0 && FSI_interface_marker == FSI_interface_marker_compare  ){
+							
+							cout << donorZone << "  " << targetZone << "  " << FSI_interface_marker_compare << "  " << FSI_interface_marker << "  " << endl;
+				
+							/*--- Initialize donor booleans ---*/
+
+							fluid_donor  = false;  structural_donor  = false;
+
+							matching_mesh = config_container[donorZone]->GetMatchingMesh();
+
+							/*--- Set the donor boolean: as of now, only Fluid-Structure Interaction considered ---*/
+
+							switch ( config_container[donorZone]->GetKind_Solver() ) {
+								
+								case EULER : case NAVIER_STOKES: case RANS: 
+								
+																	fluid_donor  = true;    
+																	
+																	break;
+
+								case FEM_ELASTICITY:            
+																	structural_donor = true;  
+																	
+																	break;
+							}
+
+
+							/*--- Retrieve the number of conservative variables (for problems not involving structural analysis ---*/
+							if (!structural_donor && !structural_target)
+								nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnVar();
+							else
+								/*--- If at least one of the components is structural ---*/
+								nVar = nDim;
+
+
+							if (rank == MASTER_NODE) cout << "From zone " << donorZone << " to zone " << targetZone << ": ";
+
+							/*--- Match Zones ---*/
+							if (rank == MASTER_NODE) cout << "Setting coupling "<<endl;
+
+							/*--- If the mesh is matching: match points ---*/
+							if (matching_mesh){
+								if (rank == MASTER_NODE) 
+									cout << "between matching meshes. " << endl;
+								geometry_container[donorZone][MESH_0]->MatchZone(config_container[donorZone], geometry_container[targetZone][MESH_0], config_container[targetZone], donorZone, nZone);
+							}
+							/*--- Else: interpolate ---*/
+							else {
+								switch (config_container[donorZone]->GetKindInterpolation()){
+
+									case NEAREST_NEIGHBOR:
+										interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, donorZone, targetZone);
+										if (rank == MASTER_NODE) cout << "using a nearest-neighbor approach." << endl;
 										
 										break;
 
-	case FEM_ELASTICITY:            
-										structural_target = true;   
-	
+									case ISOPARAMETRIC:
+										interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
+										if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
+										
 										break;
-	}
 
-	for (donorZone = 0; donorZone < nZone; donorZone++){
+									case CONSISTCONSERVE:
+										if ( targetZone > 0 && structural_target ){
+											interpolator_container[donorZone][targetZone] = new CMirror(geometry_container, config_container, donorZone, targetZone);
+											if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
+										}
+										else{
+											interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
+											if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
+										}
+										if ( targetZone == 0 && structural_target ){
+											if (rank == MASTER_NODE) cout << "Consistent and conservative interpolation assumes the structure model mesh is evaluated second. Somehow this has not happened. The isoparametric coefficients will be calculated for both meshes, and are not guaranteed to be consistent." << endl;
+										}
+										
+										break;
 
-		/*--- Interface conditions are only defined between different zones ---*/
-			if (donorZone != targetZone){
+								}
+							}
 
-			/*--- Initialize donor booleans ---*/
+							/*--- Initialize the appropriate transfer strategy ---*/
+							if (rank == MASTER_NODE) cout << "Transferring ";
 
-			fluid_donor  = false;  structural_donor  = false;
+							if (fluid_donor && structural_target) {
+								nVarTransfer = 2;
+								transfer_container[donorZone][targetZone] = new CTransfer_FlowTraction(nVar, nVarTransfer, config_container[donorZone]);
+								if (rank == MASTER_NODE) cout << "flow tractions. "<< endl;
+							}
+							else if (structural_donor && fluid_target){
+								nVarTransfer = 0;
+								transfer_container[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nVar, nVarTransfer, config_container[donorZone]);
+								if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
+							}
+							else {
+								nVarTransfer = 0;
+								transfer_container[donorZone][targetZone] = new CTransfer_ConservativeVars(nVar, nVarTransfer, config_container[donorZone]);
+								if (rank == MASTER_NODE) cout << "generic conservative variables. " << endl;
+							}
 
-			matching_mesh = config_container[donorZone]->GetMatchingMesh();
-
-			/*--- Set the donor boolean: as of now, only Fluid-Structure Interaction considered ---*/
-
-			switch ( config_container[donorZone]->GetKind_Solver() ) {
-				
-				case EULER : case NAVIER_STOKES: case RANS: 
-				
-													fluid_donor  = true;    
-													
-													break;
-
-				case FEM_ELASTICITY:            
-													structural_donor = true;  
-													
-													break;
-			}
-
-
-			/*--- Retrieve the number of conservative variables (for problems not involving structural analysis ---*/
-			if (!structural_donor && !structural_target)
-				nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnVar();
-			else
-				/*--- If at least one of the components is structural ---*/
-				nVar = nDim;
-
-
-			if (rank == MASTER_NODE) cout << "From zone " << donorZone << " to zone " << targetZone << ": ";
-
-			/*--- Match Zones ---*/
-			if (rank == MASTER_NODE) cout << "Setting coupling "<<endl;
-
-			/*--- If the mesh is matching: match points ---*/
-			if (matching_mesh){
-				if (rank == MASTER_NODE) 
-					cout << "between matching meshes. " << endl;
-				geometry_container[donorZone][MESH_0]->MatchZone(config_container[donorZone], geometry_container[targetZone][MESH_0], config_container[targetZone], donorZone, nZone);
-			}
-			/*--- Else: interpolate ---*/
-			else {
-				switch (config_container[donorZone]->GetKindInterpolation()){
-
-					case NEAREST_NEIGHBOR:
-						interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, donorZone, targetZone);
-						if (rank == MASTER_NODE) cout << "using a nearest-neighbor approach." << endl;
-						
-						break;
-
-					case ISOPARAMETRIC:
-						interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
-						if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
-						
-						break;
-
-					case CONSISTCONSERVE:
-						if ( targetZone > 0 && structural_target ){
-							interpolator_container[donorZone][targetZone] = new CMirror(geometry_container, config_container, donorZone, targetZone);
-							if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
 						}
-						else{
-							interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
-							if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
-						}
-						if ( targetZone == 0 && structural_target ){
-							if (rank == MASTER_NODE) cout << "Consistent and conservative interpolation assumes the structure model mesh is evaluated second. Somehow this has not happened. The isoparametric coefficients will be calculated for both meshes, and are not guaranteed to be consistent." << endl;
-						}
-						
-						break;
+
 
 				}
 			}
-
-			/*--- Initialize the appropriate transfer strategy ---*/
-			if (rank == MASTER_NODE) cout << "Transferring ";
-
-			if (fluid_donor && structural_target) {
-				nVarTransfer = 2;
-				transfer_container[donorZone][targetZone] = new CTransfer_FlowTraction(nVar, nVarTransfer, config_container[donorZone]);
-				if (rank == MASTER_NODE) cout << "flow tractions. "<< endl;
-			}
-			else if (structural_donor && fluid_target){
-				nVarTransfer = 0;
-				transfer_container[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nVar, nVarTransfer, config_container[donorZone]);
-				if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
-			}
-			else {
-				nVarTransfer = 0;
-				transfer_container[donorZone][targetZone] = new CTransfer_ConservativeVars(nVar, nVarTransfer, config_container[donorZone]);
-				if (rank == MASTER_NODE) cout << "generic conservative variables. " << endl;
-			}
-
-			}
-
-
 		}
-
 	}
+}
 
 }
 
@@ -1980,7 +2009,7 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
 		
 		for (iZone = 0; iZone < nZone; iZone++) {                                        
 			for (jZone = 0; jZone < nZone; jZone++)
-				if(jZone != iZone)
+				if(jZone != iZone && interpolator_container[iZone][jZone] != NULL)
 					interpolator_container[iZone][jZone]->Set_TransferCoeff(config_container);
 		}
 	}

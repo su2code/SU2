@@ -75,7 +75,7 @@ CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, 
   /* Store pointers*/
 	Geometry = geometry_container;
 
-	nZone = 2;
+	//nZone = 2;
 
 	donorZone  = iZone;
 	targetZone = jZone;
@@ -290,9 +290,11 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
   unsigned short int iDonor = 0;
   unsigned long Global_Point_Donor;
+  
+  int FSI_interface_marker_donor, FSI_interface_marker_target;
 
   /*--- Number of markers on the FSI interface ---*/
-  nMarkerInt     = (config[donorZone]->GetMarker_n_FSIinterface())/2;
+  nMarkerInt     = (int) (config[donorZone]->GetMarker_n_FSIinterface() /2);
   nMarkerTarget  = target_geometry->GetnMarker();
   nMarkerDonor   = donor_geometry->GetnMarker();
 
@@ -313,7 +315,9 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
   
   // For the markers on the interface
-  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
+  for (iMarkerInt = 0; iMarkerInt <= nMarkerInt; iMarkerInt++) {
+
+if (1==2)  {
 
 	  markDonor = -1;
 	  markTarget = -1;
@@ -321,6 +325,69 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 	  /*--- On the donor side ---*/
 
 	  for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+		  
+		  FSI_interface_marker_donor = config[donorZone]->GetMarker_FSIinterface( config[donorZone]->GetMarker_All_TagBound( iMarkerDonor ) );
+		  
+		  if ( FSI_interface_marker_donor == 0 )
+				continue;
+		  		  
+		  /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
+		  
+		  if ( (int) (FSI_interface_marker_donor/2 ) == iMarkerInt ){
+			  
+			  /*--- We have identified the identifier for the structural marker ---*/
+			  
+			  markDonor = iMarkerDonor;
+			  
+			  /*--- Store the number of local points that belong to markDonor ---*/
+			  
+			  nVertexDonor = donor_geometry->GetnVertex(iMarkerDonor);
+			  
+			  break;
+		  }
+		  else {
+			  /*--- If the tag hasn't matched any tag within the donor markers ---*/
+			  markDonor = -1;
+			  nVertexDonor = 0;
+		  }
+	  }
+
+	  /*--- On the target side ---*/
+	  for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+		  
+		  FSI_interface_marker_target = config[targetZone]->GetMarker_FSIinterface( config[targetZone]->GetMarker_All_TagBound( iMarkerTarget ) );
+		  
+		  if ( FSI_interface_marker_target == 0 )
+				continue;
+		  
+		  /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
+		  
+		  if ( (int) (FSI_interface_marker_target/2 ) == iMarkerInt ){
+			  
+			  /*--- We have identified the identifier for the target marker ---*/
+			  
+			  markTarget = iMarkerTarget;
+			  
+			  /*--- Store the number of local points that belong to markTarget ---*/
+			  
+			  nVertexTarget = target_geometry->GetnVertex(iMarkerTarget);
+			  
+			  break;
+		  }
+		  else {
+			  /*--- If the tag hasn't matched any tag within the Flow markers ---*/
+			  nVertexTarget = 0;
+			  markTarget = -1;
+		  }
+	  }
+	  
+}
+else{	  
+	
+	  /*--- On the donor side ---*/
+
+	  for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+		  
 		  /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
 		  if (config[donorZone]->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ){
 			  /*--- We have identified the identifier for the structural marker ---*/
@@ -338,6 +405,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
 	  /*--- On the target side ---*/
 	  for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+
 		  /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
 		  if (config[targetZone]->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ){
 			  /*--- We have identified the identifier for the target marker ---*/
@@ -352,7 +420,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 			  markTarget = -1;
 		  }
 	  }
-
+}
 
 #ifdef HAVE_MPI
 
@@ -446,7 +514,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 			  target_geometry->vertex[markTarget][iVertexTarget]->SetInterpDonorPoint(iDonor, pGlobalPoint);
 			  target_geometry->vertex[markTarget][iVertexTarget]->SetInterpDonorProcessor(iDonor, pProcessor);
 			  target_geometry->vertex[markTarget][iVertexTarget]->SetDonorCoeff(iDonor,1.0);
-	      //cout <<" Nearest Neighbor for target g.i " << target_geometry->node[Point_Target]->GetGlobalIndex() <<" is "<< pGlobalPoint << "; d = " << mindist<< endl;
+	      //cout << targetZone << "  " << donorZone << "  " << " Nearest Neighbor for target g.i " << target_geometry->node[Point_Target]->GetGlobalIndex() <<" is "<< pGlobalPoint << "; d = " << mindist<< endl;
 		  }
 	  }
 
