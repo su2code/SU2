@@ -101,16 +101,20 @@ public:
 
   /*!
   * \brief Alternative constructor.
-  * \param[in] val_VTK_Type - Type of the element using the VTK convention.
-  * \param[in] val_nPoly    - Polynomial degree of the element.
-  * \param[in] val_constJac - Whether or not the Jacobians are constant.
-  * \param[in] config       - Object, which contains the input parameters.
+  * \param[in] val_VTK_Type   - Type of the element using the VTK convention.
+  * \param[in] val_nPoly      - Polynomial degree of the element.
+  * \param[in] val_constJac   - Whether or not the Jacobians are constant.
+  * \param[in] config         - Object, which contains the input parameters.
+  * \param[in] val_orderExact - Default argument. If specified, it contains the
+                                order of the polynomials that must be integrated
+                                exactly by the integration rule.
   * \return Local (to the element) index of the nodes that compose the face.
   */
   FEMStandardElementClass(unsigned short val_VTK_Type,
                           unsigned short val_nPoly,
                           bool           val_constJac,
-                          CConfig        *config); 
+                          CConfig        *config,
+                          unsigned short val_orderExact = 0); 
   /*!
   * \brief Copy constructor.
   * \param[in] other - Object, whose data must be copied.
@@ -213,6 +217,12 @@ public:
   static unsigned short GetNIntegrationStatic(unsigned short VTK_Type,
                                               unsigned short nPoly,
                                               CConfig        *config);
+
+  /*!
+  * \brief Function, which makes available the polynomial order that must be integrated exactly.
+  * \return  The polynomial order that must be integrated exactly.
+  */
+  unsigned short GetOrderExact(void);
  
   /*!
   * \brief Function, which checks if the functions arguments corresponds to this standard element.

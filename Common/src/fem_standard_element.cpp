@@ -38,7 +38,8 @@
 FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
                                                  unsigned short val_nPoly,
                                                  bool           val_constJac,
-                                                 CConfig        *config) {
+                                                 CConfig        *config,
+                                                 unsigned short val_orderExact) {
 
   /*--- Copy the function arguments to the member variables. ---*/
   VTK_Type      = val_VTK_Type;
@@ -46,11 +47,18 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
   constJacobian = val_constJac;
 
   /*--- Determine the polynomial degree that must be integrated exactly by the
-        integration rule and the corresponding number of integration points. ---*/
-  if( constJacobian )
-    orderExact = (unsigned short) ceil(nPoly*config->GetQuadrature_Factor_Straight());
-  else
-    orderExact = (unsigned short) ceil(nPoly*config->GetQuadrature_Factor_Curved());
+        integration rule and the corresponding number of integration points.
+        If this degree is specified in the argument, just copy that value.
+        Otherwise, determine its value. ---*/
+  if(val_orderExact > 0) {
+    orderExact = val_orderExact;
+  }
+  else {
+    if( constJacobian )
+      orderExact = (unsigned short) ceil(nPoly*config->GetQuadrature_Factor_Straight());
+    else
+      orderExact = (unsigned short) ceil(nPoly*config->GetQuadrature_Factor_Curved());
+  }
 
   /*--- Determine the element type and compute the other member variables. ---*/
   switch( VTK_Type ) {

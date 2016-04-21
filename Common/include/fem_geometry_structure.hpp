@@ -239,7 +239,17 @@ class CInternalFaceElementFEM {
 public:
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
 
-  unsigned short indStandardElement; /*!< \brief Index in the vector of standard elements. */
+  unsigned short indStandardElement; /*!< \brief Index in the vector of standard face elements. */
+
+  unsigned long *DOFsGridFaceSide0;   /*!< \brief Pointer to the grid DOFs of side 0 of the face. */
+  unsigned long *DOFsGridFaceSide1;   /*!< \brief Pointer to the grid DOFs of side 1 of the face. */
+  unsigned long *DOFsSolFaceSide0;    /*!< \brief Pointer to the solution DOFs of side 0 of the face. */
+  unsigned long *DOFsSolFaceSide1;    /*!< \brief Pointer to the solution DOFs of side 1 of the face. */
+
+  unsigned long *DOFsGridElementSide0;   /*!< \brief Pointer to the grid DOFs of the element of side 0. */
+  unsigned long *DOFsGridElementSide1;   /*!< \brief Pointer to the grid DOFs of the element of side 1. */
+  unsigned long *DOFsSolElementSide0;    /*!< \brief Pointer to the solution DOFs of the element of side 0. */
+  unsigned long *DOFsSolElementSide1;    /*!< \brief Pointer to the solution DOFs of the element of side 1. */
 };
 
 /*!
@@ -390,6 +400,21 @@ public:
  * \version 4.1.0 "Cardinal"
  */
 class CMeshFEM_DG: public CMeshFEM {
+private:
+  vector<FEMStandardElementClass> standardElementsSol;  /*!< \brief Vector that contains the standard volume elements
+                                                                    used for the solution of the DG solver. */
+  vector<FEMStandardElementClass> standardElementsGrid; /*!< \brief Vector that contains the standard volume elements
+                                                                    used for the geometry of the DG solver. */
+
+  vector<unsigned long> VecDOFsGridFaceSide0; /*!< \brief Storage for the grid DOFs of side 0 of the faces. */
+  vector<unsigned long> VecDOFsGridFaceSide1; /*!< \brief Storage for the grid DOFs of side 1 of the faces. */
+  vector<unsigned long> VecDOFsSolFaceSide0;  /*!< \brief Storage for the solution DOFs of side 0 of the faces. */
+  vector<unsigned long> VecDOFsSolFaceSide1;  /*!< \brief Storage for the solution DOFs of side 1 of the faces. */
+
+  vector<unsigned long> VecDOFsGridElementSide0; /*!< \brief Storage for the grid DOFs of the elements adjacent to side 0. */
+  vector<unsigned long> VecDOFsGridElementSide1; /*!< \brief Storage for the grid DOFs of the elements adjacent to side 1. */
+  vector<unsigned long> VecDOFsSollementSide0;   /*!< \brief Storage for the solution DOFs of the elements adjacent to side 0. */
+  vector<unsigned long> VecDOFsSollementSide1;   /*!< \brief Storage for the solution DOFs of the elements adjacent to side 1. */
 
 public:
 
@@ -413,8 +438,15 @@ public:
 
  /*!
   * \brief Function to create the faces used in the DG formulation.
+  * \param[in] config - Definition of the particular problem.
   */
-  void SetFaces(void);
+  void CreateFaces(CConfig *config);
+
+ /*!
+  * \brief Function to create the standard volume elements.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void CreateStandardVolumeElements(CConfig *config);
 
  /*!
   * \brief Set the send receive boundaries of the grid.
