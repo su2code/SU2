@@ -137,6 +137,13 @@ AC_ARG_ENABLE(normal,
     AS_HELP_STRING([--disable-normal], [build executables with normal datatype (default = yes)]),
     [build_NORMAL=$enableval], [build_NORMAL="yes"])
 
+AC_ARG_WITH(GELITE-lib,
+        AS_HELP_STRING([--with-GELITE-lib[=ARG]], [GELITE library directory, ARG = path to libgelite.a]),
+        [with_GELITE_lib=$withval], [with_GELITE_lib="no"])
+AC_ARG_WITH(GELITE-include,
+        AS_HELP_STRING([--with-GELITE-include[=ARG]], [GELITE include directory, ARG = path to gelite.h]),
+        [with_GELITE_include=$withval], [with_GELITE_include="no"])
+
 # Check for the old  MPI option so that we can throw an error
 AC_ARG_WITH(MPI,
 AS_HELP_STRING(),
@@ -498,6 +505,51 @@ AC_SUBST([LAPACK_CXX])
 AC_SUBST([LAPACK_LD])
 
 ###########################
+
+# check for lib
+GELITElib=libgelite.a
+GELITEheader=gelite.h
+have_GELITE="no"
+
+if test "$with_GELITE_lib" != "no"
+then
+        AC_CHECK_FILE([$with_GELITE_lib/$GELITElib],[have_GELITE="yes"],[have_GELITE="no"])
+        if test "$have_GELITE" == "no"
+        then
+                AC_MSG_ERROR([GELITE requested but library file not found.])
+        fi
+fi
+
+# check for header
+if test "$have_GELITE" != "no"
+then
+        if test "$with_GELITE_include" != "no"
+        then
+                AC_CHECK_FILE([$with_GELITE_include/$GELITEheader],[have_GELITE='yes'],[have_GELITE='no'])
+                if test "$have_GELITE" == "no"
+                then
+                        AC_MSG_ERROR([GELITE requested but header file not found.])
+                fi
+        else
+                have_GELITE="no"
+        fi
+fi
+
+if test "$have_GELITE" != "no"
+then
+        AM_CONDITIONAL(BUILD_GELITE,true)
+        GELITE_CXX="-DHAVE_GELITE -I"$with_GELITE_include""
+        GELITE_LD="$with_GELITE_lib"/$GELITElib
+else
+        AM_CONDITIONAL(BUILD_GELITE,false)
+        GELITE_CXX=
+        GELITE_LD=
+fi
+AC_SUBST([GELITE_CXX])
+AC_SUBST([GELITE_LD])
+
+
+##########################
 # Determine what versions of the code to build
 
 # Complex type
@@ -625,6 +677,7 @@ Build Configuration Summary:
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
     LAPACK support:       $have_LAPACK
+    GELite support:       $have_GELITE
     Datatype support:
         double              $build_NORMAL
         complex             $build_COMPLEX

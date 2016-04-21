@@ -403,6 +403,8 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+GELITE_CXX = @GELITE_CXX@
+GELITE_LD = @GELITE_LD@
 GREP = @GREP@
 HDF5_CXX = @HDF5_CXX@
 HDF5_LD = @HDF5_LD@
@@ -523,10 +525,10 @@ lib_sources = \
   ../include/config_structure.inl \
   ../include/dual_grid_structure.hpp \
   ../include/dual_grid_structure.inl \
-		../include/fem_geometry_structure.hpp \
-		../include/fem_geometry_structure.inl \
-		../include/fem_standard_element.hpp \
-		../include/fem_standard_element.inl \
+  ../include/fem_geometry_structure.hpp \
+  ../include/fem_geometry_structure.inl \
+  ../include/fem_standard_element.hpp \
+  ../include/fem_standard_element.inl \
   ../include/geometry_structure.hpp \
   ../include/geometry_structure.inl \
   ../include/grid_adaptation_structure.hpp \
@@ -554,8 +556,8 @@ lib_sources = \
   ../include/element_structure.inl \
   ../src/config_structure.cpp \
   ../src/dual_grid_structure.cpp \
-		../src/fem_geometry_structure.cpp \
-		../src/fem_standard_element.cpp \
+  ../src/fem_geometry_structure.cpp \
+  ../src/fem_standard_element.cpp \
   ../src/geometry_structure.cpp \
   ../src/grid_adaptation_structure.cpp \
   ../src/grid_movement_structure.cpp \
@@ -590,11 +592,15 @@ lib_sources = \
 # endif
 
 # if BUILD_JSONCPP
+# endif
+
+# if BUILD_GELITE
 lib_cxxflags = @su2_externals_INCLUDES@ @CGNS_CXX@ @HDF5_CXX@ \
 	@SZIP_CXX@ @ZLIB_CXX@ @MUTATIONPP_CXX@ @JSONCPP_CXX@ \
-	$(am__empty)
+	@GELITE_CXX@ $(am__empty)
 lib_ldadd = @su2_externals_LIBS@ @CGNS_LD@ @HDF5_LD@ @SZIP_LD@ \
-	@ZLIB_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ $(am__empty)
+	@ZLIB_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ @GELITE_LD@ \
+	$(am__empty)
 # endif
 @BUILD_NORMAL_TRUE@libSU2_a_SOURCES = $(lib_sources)
 @BUILD_NORMAL_TRUE@libSU2_a_CXXFLAGS = ${lib_cxxflags}

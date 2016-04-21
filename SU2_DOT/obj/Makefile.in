@@ -209,6 +209,8 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+GELITE_CXX = @GELITE_CXX@
+GELITE_LD = @GELITE_LD@
 GREP = @GREP@
 HDF5_CXX = @HDF5_CXX@
 HDF5_LD = @HDF5_LD@
@@ -338,11 +340,15 @@ su2_dot_sources = ../include/SU2_DOT.hpp \
 # endif
 
 # if BUILD_ZLIB
+# endif
+
+# if BUILD_GELITE
 su2_dot_cxx_flags = @su2_externals_INCLUDES@ @CGNS_CXX@ \
 	@MUTATIONPP_CXX@ @JSONCPP_CXX@ @HDF5_CXX@ @SZIP_CXX@ \
-	@ZLIB_CXX@ $(am__empty)
+	@ZLIB_CXX@ @GELITE_CXX@ $(am__empty)
 su2_dot_ldadd = @su2_externals_LIBS@ @CGNS_LD@ @MUTATIONPP_LD@ \
-	@JSONCPP_LD@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ $(am__empty)
+	@JSONCPP_LD@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ @GELITE_LD@ \
+	$(am__empty)
 # endif
 @BUILD_NORMAL_TRUE@___bin_SU2_DOT_SOURCES = ${su2_dot_sources}
 @BUILD_NORMAL_TRUE@___bin_SU2_DOT_CXXFLAGS = ${su2_dot_cxx_flags}

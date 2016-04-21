@@ -168,6 +168,11 @@ su2_cfd_cxx_flags += @ZLIB_CXX@
 su2_cfd_ldadd += @ZLIB_LD@
 # endif
 
+# if BUILD_GELITE
+su2_cfd_cxx_flags += @GELITE_CXX@
+su2_cfd_ldadd += @GELITE_LD@
+# endif
+
 if BUILD_NORMAL
 ___bin_SU2_CFD_SOURCES = $(su2_cfd_sources)
 ___bin_SU2_CFD_CXXFLAGS = ${su2_cfd_cxx_flags}
