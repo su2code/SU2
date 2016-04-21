@@ -37,7 +37,7 @@ AC_DEFUN([CONFIGURE_METIS],
      AC_MSG_RESULT(<<< Configuring library with Metis support >>>)
 
      # look for thread-local storage
-     AX_TLS
+     #AX_TLS
  else
      METIS_INCLUDE=""
      METIS_LIB=""
