@@ -7384,23 +7384,23 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   delete[] cells;
   delete[] boundVerts;
   
-  for ( int kk = 0; kk < nzones; kk++) {
-    for (int ii = 0; ii < nsections; ii++) {
-      if (isInternal[kk][ii]) {
-        for (int jj = 0; jj < indexElem; jj++) {
-          delete [] connElems[kk][ii][jj];
-        }
-        delete connElems[kk][ii];
-      } else if (!isInternal[kk][ii] && rank == MASTER_NODE) {
-        for (int jj = 0; jj < indexElemMaster; jj++) {
-          delete [] connElems[kk][ii][jj];
-        }
-        delete connElems[kk][ii];
-      }
-    }
-    delete connElems[kk];
-  }
-  delete[] connElems;
+//  for ( int kk = 0; kk < nzones; kk++) {
+//    for (int ii = 0; ii < nsections; ii++) {
+//      if (isInternal[kk][ii]) {
+//        for (int jj = 0; jj < indexElem; jj++) {
+//          delete [] connElems[kk][ii][jj];
+//        }
+//        delete connElems[kk][ii];
+//      } else if (!isInternal[kk][ii] && rank == MASTER_NODE) {
+//        for (int jj = 0; jj < indexElemMaster; jj++) {
+//          delete [] connElems[kk][ii][jj];
+//        }
+//        delete connElems[kk][ii];
+//      }
+//    }
+//    delete connElems[kk];
+//  }
+//  delete[] connElems;
   
   for ( int j = 0; j < nzones; j++) {
     delete[] coordArray[j];
