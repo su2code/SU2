@@ -6566,11 +6566,23 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         
         isMixed = new bool[nElems[j-1][s-1]];
         for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) isMixed[ii] = false;
-        
+
+        /*--- Protect against the situation where there are fewer elements
+        in a section than number of ranks, or the linear partitioning will
+        fail. For now, assume that these must be surfaces, and we will 
+        avoid a parallel read and have the master read this section (the
+        master processes all of the markers anyway). ---*/
+
+        if (nElems[j-1][s-1] < rank+1) {
+
+          isInternal[j-1][s-1] = false;
+
+        } else {        
+
         /*--- Retrieve the connectivity information and store. Note that
          we are only accessing our rank's piece of the data here in the
          partial read function in the CGNS API. ---*/
-        
+
         if (cg_elements_partial_read(fn, i, j, s, (cgsize_t)elemB[rank],
                                     (cgsize_t)elemE[rank], connElemCGNS,
                                     parentData) != CG_OK) cg_error_exit();
@@ -6729,8 +6741,10 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           cout << "Loading section " << sectionNames[j-1][s-1];
           cout << " of element type " << currentElem << "." << endl;
         }
+       
+        } 
         
-        /*--- If we have found that this is a boundary section (we assume
+         /*--- If we have found that this is a boundary section (we assume
          that internal cells and boundary cells do not exist in the same
          section together), the master node reads the boundary section.
          Otherwise, we have all ranks read and communicate the internals. ---*/
@@ -7690,23 +7704,23 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   delete[] cells;
   delete[] boundVerts;
   
-  for ( int kk = 0; kk < nzones; kk++) {
-    for (int ii = 0; ii < nsections; ii++) {
-      if (isInternal[kk][ii]) {
-        for (int jj = 0; jj < indexElem; jj++) {
-          delete [] connElems[kk][ii][jj];
-        }
-        delete connElems[kk][ii];
-      } else if (!isInternal[kk][ii] && rank == MASTER_NODE) {
-        for (int jj = 0; jj < indexElemMaster; jj++) {
-          delete [] connElems[kk][ii][jj];
-        }
-        delete connElems[kk][ii];
-      }
-    }
-    delete connElems[kk];
-  }
-  delete[] connElems;
+//  for ( int kk = 0; kk < nzones; kk++) {
+//    for (int ii = 0; ii < nsections; ii++) {
+//      if (isInternal[kk][ii]) {
+//        for (int jj = 0; jj < indexElem; jj++) {
+//          delete [] connElems[kk][ii][jj];
+//        }
+//        delete connElems[kk][ii];
+//      } else if (!isInternal[kk][ii] && rank == MASTER_NODE) {
+//        for (int jj = 0; jj < indexElemMaster; jj++) {
+//          delete [] connElems[kk][ii][jj];
+//        }
+//        delete connElems[kk][ii];
+//      }
+//    }
+//    delete connElems[kk];
+//  }
+//  delete[] connElems;
   
   for ( int j = 0; j < nzones; j++) {
     delete[] coordArray[j];
