@@ -118,7 +118,8 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_DV=NULL;           Marker_All_DV=NULL;
   Marker_CfgFile_Moving=NULL;       Marker_All_Moving=NULL;
   Marker_CfgFile_PerBound=NULL;     Marker_All_PerBound=NULL;   Marker_PerBound=NULL;
-
+  Marker_CfgFile_FSIinterface=NULL;
+  
   Marker_DV=NULL;  Marker_Moving=NULL;  Marker_Monitoring=NULL;
   Marker_Designing=NULL;  Marker_GeoEval=NULL;  Marker_Plotting=NULL;
   Marker_CfgFile_KindBC=NULL;       Marker_All_KindBC=NULL;
@@ -136,7 +137,7 @@ void CConfig::SetPointersNull(void) {
   Marker_FlowLoad = NULL;         Marker_Neumann = NULL;
   Marker_All_TagBound = NULL;     Marker_CfgFile_TagBound = NULL;   Marker_All_KindBC = NULL;
   Marker_CfgFile_KindBC = NULL;   Marker_All_SendRecv = NULL;       Marker_All_PerBound = NULL;
-  Marker_FSIinterface = NULL;     Marker_Riemann = NULL;
+  Marker_FSIinterface = NULL;     Marker_All_FSIinterface=NULL; Marker_Riemann = NULL;
   Marker_Load = NULL;
   /*--- Boundary Condition settings ---*/
 
@@ -2651,17 +2652,17 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   /*--- Allocate the memory (markers in the config file) ---*/
 
-  Marker_CfgFile_TagBound   = new string[nMarker_CfgFile];
-  Marker_CfgFile_KindBC     = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Monitoring = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Designing  = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Plotting   = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_GeoEval    = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_TagBound     = new string[nMarker_CfgFile];
+  Marker_CfgFile_KindBC       = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Monitoring   = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Designing    = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Plotting     = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_GeoEval      = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_FSIinterface	= new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_DV         = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Moving     = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_PerBound   = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Out_1D     = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_DV           = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Moving       = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_PerBound     = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Out_1D       = new unsigned short[nMarker_CfgFile];
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile]   = "SEND_RECEIVE";
