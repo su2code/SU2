@@ -3,7 +3,7 @@
 ## \file parallel_computation_fsi.py
 #  \brief Python script for running FSI simulations using the SU2 suite.
 #  \author T. Economon, T. Lukaczyk, F. Palacios, H. Kline, R. Sanchez
-#  \version 4.1.1 "Cardinal"
+#  \version 4.1.2 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
