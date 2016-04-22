@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>integration_structure.cpp</i>,
  *        <i>integration_time.cpp</i>, and <i>integration_notime.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -50,7 +50,7 @@ using namespace std;
  * \brief Main class for doing the space integration, time integration, and monitoring
  *        of a system of Partial Differential Equations (PDE).
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CIntegration {
 protected:
@@ -332,84 +332,73 @@ public:
    * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
    */
   virtual void SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] sol_fine - Pointer to the solution on the fine grid.
-   * \param[out] sol_coarse - Pointer to the solution on the coarse grid.
-   * \param[in] geo_fine - Geometrical definition of the fine grid.
-   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
-                                      CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] flow - Flow solution.
-   */
-  virtual void SetResidual_Term(CGeometry *geometry, CSolver *flow);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] sol_fine - Pointer to the solution on the fine grid.
-   * \param[in] sol_coarse - Pointer to the solution on the coarse grid.
-   * \param[in] geo_fine - Geometrical definition of the fine grid.
-   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse,
-                               CConfig *config, unsigned short iMesh);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
-   */
-  virtual void SingleGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
-                                    CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
-   */
-  virtual void Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
-                                    CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
-   */
-  virtual void Structural_Iteration_FEM(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
-                                        CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
-  
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  virtual void SetPotential_Solver(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
+
+	/*! 
+	 * \brief A virtual member.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] sol_fine - Pointer to the solution on the fine grid.
+	 * \param[out] sol_coarse - Pointer to the solution on the coarse grid.
+	 * \param[in] geo_fine - Geometrical definition of the fine grid.
+	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+										CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+	
+	/*! 
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] flow - Flow solution.
+	 */
+	virtual void SetResidual_Term(CGeometry *geometry, CSolver *flow);
+	
+	/*! 
+	 * \brief A virtual member.
+	 * \param[in] sol_fine - Pointer to the solution on the fine grid.
+	 * \param[in] sol_coarse - Pointer to the solution on the coarse grid.
+	 * \param[in] geo_fine - Geometrical definition of the fine grid.
+	 * \param[in] geo_coarse - Geometrical definition of the coarse grid.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, 
+								 CConfig *config, unsigned short iMesh);
+	
+	/*! 
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] Iteration - Current iteration.
+	 */
+	virtual void SingleGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
+								  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] Iteration - Current iteration.
+	 */
+	virtual void Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
+								  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+
+	
+	/*! 
+	 * \brief A virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 */
+	virtual void SetPotential_Solver(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
                                    CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone);
   
   /*!
@@ -448,7 +437,7 @@ public:
  * \class CMultiGridIntegration
  * \brief Class for doing the numerical integration using a multigrid method.
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CMultiGridIntegration : public CIntegration {
 protected:
@@ -638,7 +627,7 @@ public:
  * \class CSingleGridIntegration
  * \brief Class for doing the numerical integration of the turbulence model.
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CSingleGridIntegration : public CIntegration {
 public:
@@ -699,46 +688,34 @@ public:
  * \class CStructuralIntegration
  * \brief Class for doing the numerical integration of the structural model.
  * \author R. Sanchez.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  */
 class CStructuralIntegration : public CIntegration {
 public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CStructuralIntegration(CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CStructuralIntegration(void);
-  
-  /*!
-   * \brief Do the numerical integration (implicit) of the structural solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
-   */
-  void Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
-                            CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
-  
-  /*!
-   * \brief Do the numerical integration (implicit) of the structural solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Iteration - Current iteration.
-   */
-  void Structural_Iteration_FEM(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
-                                CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
-  
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CStructuralIntegration(CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CStructuralIntegration(void);
+
+	/*!
+	 * \brief Do the numerical integration (implicit) of the structural solver.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	 * \param[in] Iteration - Current iteration.
+	 */
+	void Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
+							 CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+
 };
 
 #include "integration_structure.inl"

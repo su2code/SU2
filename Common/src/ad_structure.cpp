@@ -2,7 +2,7 @@
  * \file dataype_structure.cpp
  * \brief Main subroutines for the datatype structures.
  * \author T. Albring
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -37,12 +37,12 @@ namespace AD {
 
   int adjointVectorPosition = 0;
 
-  std::vector<unsigned int> inputValues;
-  std::vector<unsigned int> localInputValues;
+  std::vector<su2double::GradientData> inputValues;
+  std::vector<su2double::GradientData> localInputValues;
   std::vector<su2double*> localOutputValues;
 
-  codi::ChunkTape<double, int>& globalTape = codi::RealReverse::getGlobalTape();
-  codi::ChunkTape<double, int>::Position StartPosition, EndPosition;
+  su2double::TapeType& globalTape = su2double::getGlobalTape();
+  su2double::TapeType::Position StartPosition, EndPosition;
 
   bool Status = false;
   bool PreaccActive = false;
@@ -52,7 +52,7 @@ namespace AD {
     if(PreaccActive){
       unsigned short iVarOut, iVarIn;
       unsigned short nVarOut, nVarIn;
-      int index_out, index_in;
+      su2double::GradientData index_out, index_in;
 
       nVarOut = localOutputValues.size();
       nVarIn  = localInputValues.size();
@@ -63,7 +63,7 @@ namespace AD {
 
       /*--- Allocate local memory on the stack (does not need to be deleted at the end of the routine!) ---*/
 
-      double* local_jacobi     = (double*)alloca(sizeof(double)*(nVarOut*nVarIn));
+      passivedouble* local_jacobi     = (passivedouble*)alloca(sizeof(passivedouble)*(nVarOut*nVarIn));
       unsigned short* nNonzero = (unsigned short*)alloca(sizeof(unsigned short)*nVarOut);
 
       /*--- Compute the local Jacobi matrix of the code between the start and end position
@@ -98,7 +98,7 @@ namespace AD {
        * Note that the output variables need a new index since we did a reset of the tape section. ---*/
 
       for (iVarOut = 0; iVarOut < nVarOut; iVarOut++){
-        index_out = 0;
+        index_out = su2double::GradientData();
         if (nNonzero[iVarOut] != 0){
           globalTape.store(index_out, nNonzero[iVarOut]);
           for (iVarIn = 0; iVarIn < nVarIn; iVarIn++){
