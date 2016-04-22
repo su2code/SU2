@@ -2,7 +2,7 @@
  * \file transport_model.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

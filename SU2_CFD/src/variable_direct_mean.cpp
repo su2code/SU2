@@ -2,7 +2,7 @@
  * \file variable_direct_mean.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -36,10 +36,17 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
   /*--- Array initialization ---*/
 	TS_Source = NULL;
 	Primitive = NULL;
+	Secondary = NULL;
 	Gradient_Primitive = NULL;
+	Gradient_Secondary = NULL;
 	Limiter_Primitive = NULL;
+	Limiter_Secondary = NULL;
   WindGust = NULL;
   WindGustDer = NULL;
+  nSecondaryVarGrad=0;
+  nPrimVarGrad=0;
+  nSecondaryVar=0;
+  nPrimVar=0;
   
 }
 
@@ -64,6 +71,10 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
 	Limiter_Primitive = NULL;
   WindGust = NULL;
   WindGustDer = NULL;
+  nSecondaryVarGrad=0;
+  nPrimVarGrad=0;
+  nSecondaryVar=0;
+  nPrimVar=0;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   
@@ -237,6 +248,10 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   Limiter_Primitive = NULL;
   WindGust = NULL;
   WindGustDer = NULL;
+  nSecondaryVarGrad=0;
+  nPrimVarGrad=0;
+  nSecondaryVar=0;
+  nPrimVar=0;
   
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
@@ -359,14 +374,21 @@ CEulerVariable::~CEulerVariable(void) {
   
 	if (TS_Source         != NULL) delete [] TS_Source;
   if (Primitive         != NULL) delete [] Primitive;
+  if (Secondary         != NULL) delete [] Secondary;
   if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;
+  if (Limiter_Secondary != NULL) delete [] Limiter_Secondary;
   if (WindGust          != NULL) delete [] WindGust;
   if (WindGustDer       != NULL) delete [] WindGustDer;
 
   if (Gradient_Primitive != NULL) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-      delete Gradient_Primitive[iVar];
+      if (Gradient_Primitive!=NULL) delete [] Gradient_Primitive[iVar];
     delete [] Gradient_Primitive;
+  }
+  if (Gradient_Secondary != NULL) {
+    for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
+      if (Gradient_Secondary!=NULL) delete [] Gradient_Secondary[iVar];
+    delete [] Gradient_Secondary;
   }
   
 }
