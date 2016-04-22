@@ -2,7 +2,7 @@
  * \file dual_grid_structure.cpp
  * \brief Main classes for defining the dual grid
  * \author F. Palacios, T. Economon
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -313,11 +313,6 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
 
 CPoint::~CPoint() {
   
-	Elem.~vector();
-	Point.~vector();
-	Edge.~vector();
-  Children_CV.~vector();
-
 	if (Volume != NULL) delete[] Volume;
 	if (Vertex != NULL) delete[] Vertex;
 	if (Coord != NULL) delete[] Coord;
