@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for external libraries
 # \author B. Kirk, T. Economon, F. Palacios
-# \version 4.1.1 "Cardinal"
+# \version 4.1.2 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
