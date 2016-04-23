@@ -5377,7 +5377,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
               	if(nZone  < 2){
               		/*--- single zone output ---*/
-              		cout << "     Res[Rho]" << "     Res[RhoE]"  << "  KineticLoss(%)" << "  Entropy Gen.(%)" << endl;
+              		cout << "     Res[Rho]" << "     Res[RhoE]"  << "  TotPresLoss(%)" << "  Entropy Gen.(%)" << endl;
               	}
               	else{
               		/* --- multi-zone output ---*/
@@ -5437,7 +5437,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else if (turbo){
             	if (nZone < 2){
 								/*--- single zone output ---*/
-								cout << "  KineticLoss(%)" << "  Entropy Gen.(%)" << endl;
+								cout << "  TotPresLoss(%)" << "  Entropy Gen.(%)" << endl;
             	}
             	else{
 								/*--- multi zone output ---*/
@@ -5656,7 +5656,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           	cout.setf(ios::scientific, ios::floatfield);
           	/*--- singlezone output---*/
           	if (nZone < 2){
-							cout.width(15); cout << KineticEnergyLoss[0]*100.0;
+							cout.width(15); cout << TotalPressureLoss[0]*100.0;
 							cout.width(15); cout << EntropyGen[0]*100.0;
           	}
           	else{
@@ -5726,7 +5726,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           	cout.setf(ios::scientific, ios::floatfield);
           	if (nZone < 2){
 							/*--- single zone output ---*/
-							cout.width(15); cout << KineticEnergyLoss[0]*100.0;
+							cout.width(15); cout << TotalPressureLoss[0]*100.0;
 							cout.width(15); cout << EntropyGen[0]*100.0;
           	}
           	else{
