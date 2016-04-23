@@ -9201,11 +9201,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 						c4js_Re= (2.0 * AverageTurboMach[val_marker][iSpan][0])/(GilesBeta - AverageTurboMach[val_marker][iSpan][1])*cj[1] - (GilesBeta + AverageTurboMach[val_marker][iSpan][1])/(GilesBeta - AverageTurboMach[val_marker][iSpan][1])*cj[2];
 						dcjs[3] = c4js_Re - cj[3];
 					}else{
-						if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
 							Beta_inf= I*complex<su2double>(sqrt(1.0  - pow(AvgMach,2)));
-						}else{
-							Beta_inf= -I*complex<su2double>(sqrt(1.0 - pow(AvgMach,2)));
-						}
 						c4js 	= complex<su2double>(0.0,0.0);
 						j			 = geometry->turbovertex[val_marker][iSpan][iVertex]->GetGlobalVertexIndex();
 						for(k=1; k < kend+1; k++){
