@@ -8468,6 +8468,21 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
 
 								}else {
 									MixedOut_Average (val_init_pressure, AverageFlux[iMarker][iSpan], AverageNormal, &AveragePressure[iMarker][iSpan], &AverageDensity[iMarker][iSpan]);
+#ifdef HAVE_MPI
+									if (AverageDensity[iMarker][iSpan]!= AverageDensity[iMarker][iSpan]){
+										if(size > 1 && rank == MASTER_NODE) cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
+										else cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
+										AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
+										AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
+									}
+#else
+									if (AverageDensity[iMarker][iSpan]!= AverageDensity[iMarker][iSpan]){
+										cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
+										AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
+										AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
+									}
+#endif
+
 									if (AverageDensity[iMarker][iSpan] < 0.0){
 #ifdef HAVE_MPI
 										if(size > 1 && rank == MASTER_NODE)cout << " desnity in mixedout routine negative : " << endl;
@@ -8543,15 +8558,6 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
 						if(nDim == 3){
 							AverageTurboMach[iMarker][iSpan][2] = AverageTurboVelocity[iMarker][iSpan][2]/AverageSoundSpeed[iMarker][iSpan];
 						}
-#ifdef HAVE_MPI
-						if ((AverageDensity[iMarker][iSpan]!= AverageDensity[iMarker][iSpan]) || (AverageEnthalpy[iMarker][iSpan]!=AverageEnthalpy[iMarker][iSpan])){
-							if(size > 1 && rank == MASTER_NODE) cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
-							else cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
-						}
-#else
-						if ((AverageDensity[iMarker][iSpan]!= AverageDensity[iMarker][iSpan])||(AverageEnthalpy[iMarker][iSpan]!=AverageEnthalpy[iMarker][iSpan]))
-							cout<<"nan in mixing process in boundary "<<config->GetMarker_All_TagBound(iMarker)<< endl;
-#endif
 					}
 				}
 			}
@@ -8657,13 +8663,13 @@ void CEulerSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Av
   su2double enthalpy = FluidModel->GetStaticEnergy() + (*pressure)/(*density);
   *valfunc = val_Averaged_Flux[nDim+1]/val_Averaged_Flux[0] - enthalpy - velsq/2;
   if (*valfunc!=*valfunc){
-#ifdef HAVE_MPI
-		if(size > 1 && rank == MASTER_NODE) cout << " mixedout root func gives nan: " << endl;
-		else cout << " mixedout root func gives nan: " << endl;
-
-#else
-  cout << " mixedout root func gives nan: " << endl;
-#endif
+//#ifdef HAVE_MPI
+//		if(size > 1 && rank == MASTER_NODE) cout << " mixedout root func gives nan: " << endl;
+//		else cout << " mixedout root func gives nan: " << endl;
+//
+//#else
+//  cout << " mixedout root func gives nan: " << endl;
+//#endif
   }
   /*--- Free locally allocated memory ---*/
   delete [] vel;
