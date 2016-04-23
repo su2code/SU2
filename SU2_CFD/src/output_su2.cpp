@@ -35,6 +35,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned sh
   
   unsigned long iElem, iPoint, iElem_Bound, nElem_Bound_, vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4], iNode, nElem;
   unsigned short iMarker, iDim, nDim = geometry->GetnDim(), iChar, iPeriodic, nPeriodic = 0, VTK_Type, nMarker_;
+  short SendTo;
   su2double *center, *angles, *transl;
   ifstream input_file;
   string Grid_Marker, text_line, Marker_Tag, str;
@@ -123,12 +124,9 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned sh
   
   /*--- Read the boundary information ---*/
 
-  str = "boundary";
+  str = "boundary.dat";
 
-  if(config->GetnZone() > 1){
-    str.append("_" + val_iZone);
-  }
-  str.append(".su2");
+  str = config->GetMultizone_FileName(str, val_iZone);
 
   input_file.open(str.c_str(), ios::out);
   
@@ -166,10 +164,12 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned sh
           text_line.erase (0,13); nElem_Bound_ = atoi(text_line.c_str());
           output_file << "MARKER_TAG= " << Marker_Tag << endl;
           output_file << "MARKER_ELEMS= " << nElem_Bound_<< endl;
-          
+          getline (input_file, text_line);
+
+          text_line.erase (0,8); SendTo = atoi(text_line.c_str());
+
           if (Marker_Tag == "SEND_RECEIVE"){
-            if (config->GetMarker_All_SendRecv(iMarker) > 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
-            if (config->GetMarker_All_SendRecv(iMarker) < 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
+            output_file << "SEND_TO= " << SendTo << endl;
           }
           for (iElem_Bound = 0; iElem_Bound < nElem_Bound_; iElem_Bound++) {
             

@@ -34,7 +34,7 @@
 # ----------------------------------------------------------------------
 
 import os, sys, shutil, copy, time
-from ..io   import expand_part, expand_time, get_adjointSuffix, add_suffix, \
+from ..io   import expand_part, expand_zones, expand_time, get_adjointSuffix, add_suffix, \
                    get_specialCases, Config
 from ..util import bunch
 from ..util import ordered_bunch
@@ -181,10 +181,12 @@ class State(ordered_bunch):
                 link.extend(value)
             elif key == 'DIRECT':
                 # direct solution
+                value = expand_zones(value,config)
                 value = expand_time(value,config)
                 link.extend(value)
             elif 'ADJOINT_' in key:
                 # adjoint solution
+                value = expand_zones(value,config)
                 value = expand_time(value,config)
                 link.extend(value)
             #elif key == 'STABILITY':
