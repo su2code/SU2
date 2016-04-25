@@ -55,6 +55,10 @@ inline CPointFEM::CPointFEM(const CPointFEM &other) { Copy(other); }
 
 inline CPointFEM& CPointFEM::operator=(const CPointFEM &other) { Copy(other); return (*this); }
 
+inline CInternalFaceElementFEM::CInternalFaceElementFEM(void) { }
+
+inline CInternalFaceElementFEM::~CInternalFaceElementFEM(void) { }
+
 inline CSurfaceElementFEM::CSurfaceElementFEM(void) { indStandardElement = -1; }
 
 inline CSurfaceElementFEM::~CSurfaceElementFEM(void) { }

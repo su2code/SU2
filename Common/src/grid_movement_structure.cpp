@@ -5833,7 +5833,7 @@ void CSurfaceMovement::SetCurved_Surfaces(CGeometry *geometry, CConfig *config, 
       /*--- WARNING: we need to put an error check here to make sure
        that this particular marker is part of the geo definition, like you 
        are doing in the existing code by checking a max tolerance, for example.
-       For now, maks sure the marker of interest is listed in MARKER_MOVING
+       For now, make sure the marker of interest is listed in MARKER_MOVING
        within the config file. ---*/
       
       /*--- Loop over all surface points for this marker ---*/
