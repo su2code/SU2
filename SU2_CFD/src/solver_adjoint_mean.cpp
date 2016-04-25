@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -4476,7 +4476,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       Riemann=0.0, Entropy=0.0, Density_Outlet = 0.0, Vn_rel=0.0;
   su2double Velocity[3], UnitNormal[3];
   su2double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
-  su2double a1=0.0; /*Placeholder terms to simplify expressions/ repeated terms*/
+  su2double a1=0.0, a2=0.0; /*Placeholder terms to simplify expressions/ repeated terms*/
   /*Gradient terms for the generalized boundary */
   su2double density_gradient, pressure_gradient, velocity_gradient;
 
@@ -4569,7 +4569,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Psi_outlet[iVar] = 0.0;
         }
 
-        if (Vn >= SoundSpeed) {
+        if (Vn > SoundSpeed) {
           /*--- Objective-dependent additions to energy term ---*/
           Vn_Exit = Vn; /* Vn_Exit comes from Reiman conditions in subsonic case*/
           Vn_rel = Vn_Exit-ProjGridVel;
@@ -4592,7 +4592,13 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             for (iDim = 0; iDim < nDim; iDim++) {
               Velocity2 += Velocity[iDim]*Velocity[iDim];
             }
-            Psi_outlet[nDim+1]+=a1*Velocity2/(2.0*Vn_Exit);
+            a2 = Pressure*(Gamma/Gamma_Minus_One)*pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),1.0/Gamma_Minus_One);
+            density_gradient = a2*(Gamma_Minus_One*Velocity2/(2.0*Gamma*Pressure));
+            velocity_gradient = 0.0;
+            for (iDim=0; iDim<nDim; iDim++)
+              velocity_gradient+=a2*Gamma_Minus_One*Density/(Gamma*Pressure)*Velocity[iDim]*UnitNormal[iDim];
+            pressure_gradient = a2*(-Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*pow(Pressure,2.0)))+pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),(Gamma/Gamma_Minus_One));
+            Psi_outlet[nDim+1]+=a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
             break;
           case AVG_OUTLET_PRESSURE:
             /*Area averaged static pressure*/
@@ -4649,7 +4655,9 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           }
            */
           /*Constant-pressure version*/
-          a1 = SoundSpeed*SoundSpeed/Gamma_Minus_One/Vn;
+          a1 = 0.0;
+          if (Vn!=0.0)
+            a1 = SoundSpeed*SoundSpeed/Gamma_Minus_One/Vn;
           Psi_outlet[0] += Psi_outlet[nVar-1]*(Velocity2*0.5+Vn_rel*a1);
           for (iDim = 0; iDim < nDim; iDim++) {
             Psi_outlet[iDim+1] += -Psi_outlet[nVar-1]*(a1*UnitNormal[iDim] + Velocity[iDim]);
@@ -4737,9 +4745,11 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         }
          */
         /*Pressure-fixed version*/
-        Psi_outlet[0]+=density_gradient*2.0/Vn_Exit-velocity_gradient/Density/Vn_Exit;
-        for (iDim=0; iDim<nDim; iDim++){
-          Psi_outlet[iDim+1]+=config->GetCoeff_ObjChainRule(iDim+1)/Density/Vn_Exit-UnitNormal[iDim]*density_gradient/Vn_Exit/Vn_Exit;
+        if (Vn_Exit != 0.0){
+          Psi_outlet[0]+=density_gradient*2.0/Vn_Exit-velocity_gradient/Density/Vn_Exit;
+          for (iDim=0; iDim<nDim; iDim++){
+            Psi_outlet[iDim+1]+=config->GetCoeff_ObjChainRule(iDim+1)/Density/Vn_Exit-UnitNormal[iDim]*density_gradient/Vn_Exit/Vn_Exit;
+          }
         }
         break;
       case AVG_TOTAL_PRESSURE:
@@ -4754,8 +4764,16 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Psi_outlet[iDim+1] +=a1*UnitNormal[iDim]*(-Velocity2)/(2.0*Vn_Exit)+Velocity[iDim]/Vn_Exit;
          */
         /*Pressure-fixed version*/
-        for (iDim = 0; iDim < nDim; iDim++)
-          Psi_outlet[iDim+1] += Velocity[iDim]/Vn_Exit-UnitNormal[iDim]*Velocity2/(Vn_Exit*Vn_Exit);
+        if (Vn_Exit !=0.0){
+          a2 = Pressure*(Gamma/Gamma_Minus_One)*pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),1.0/(Gamma_Minus_One));
+          density_gradient = a2*(Gamma_Minus_One*Velocity2/(2.0*Gamma*Pressure));
+          velocity_gradient=a2*Gamma_Minus_One*Density/(Gamma*Pressure); // re-using variable as the constant multiplying V[i] for dj/dvi
+          Psi_outlet[0]+=density_gradient*2.0/Vn_Exit;
+          for (iDim=0; iDim<nDim; iDim++){
+            Psi_outlet[0]-=velocity_gradient*Velocity[iDim]*Velocity[iDim]/(Density*Vn_Exit);
+            Psi_outlet[iDim+1] += velocity_gradient*Velocity[iDim]/(Density*Vn_Exit) - UnitNormal[iDim]*density_gradient/(Vn_Exit*Vn_Exit);
+          }
+        }
         break;
       case AVG_OUTLET_PRESSURE:
         /* Characteristic-based version
