@@ -134,6 +134,7 @@ void CMeanFlowIteration::Iterate(COutput *output,
                                  unsigned short val_iZone) {
   
   unsigned long IntIter, ExtIter, nIntIter; 
+  unsigned long iZone, nZone; 
   
   bool fsi = config_container[val_iZone]->GetFSI_Simulation();
   bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);

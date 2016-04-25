@@ -2014,12 +2014,13 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
 	}
 
 		
-	for (iZone = 0; iZone < nZone; iZone++) {
+	//for (iZone = 0; iZone < nZone; iZone++) {
 					 
 		iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
 		solver_container, numerics_container, config_container,
 		surface_movement, grid_movement, FFDBox, iZone);
 
+for (iZone = 0; iZone < nZone; iZone++) {
 		iteration_container[iZone]->Update(output, integration_container, geometry_container,
 		solver_container, numerics_container, config_container,
 		surface_movement, grid_movement, FFDBox, iZone);
