@@ -207,7 +207,7 @@ void Driver_Preprocessing(CDriver **driver,
   /*--- fsi implementations will use, as of now, BGS implentation. More to come. ---*/
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
   
-  if (val_nZone == SINGLE_ZONE && 1 == 2) {
+  if (val_nZone == SINGLE_ZONE && config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY) {
     
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     if (rank == MASTER_NODE) cout << "Instantiating a single zone driver for the problem. " << endl;
