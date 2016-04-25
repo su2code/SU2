@@ -60,6 +60,9 @@ using namespace std;
 
 class CConfig {
 private:
+
+	int rank;
+	
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
