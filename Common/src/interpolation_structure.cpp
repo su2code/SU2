@@ -303,6 +303,8 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
 #ifdef HAVE_MPI
 
+    int nProcessor;
+
 	cout << "MPI still not working" << endl; getchar();
 	exit(EXIT_FAILURE);
 

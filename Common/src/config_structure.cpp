@@ -33,7 +33,8 @@
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
 
-  int rank = MASTER_NODE;
+  rank = MASTER_NODE;
+  
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -128,17 +129,18 @@ void CConfig::SetPointersNull(void) {
   Marker_SymWall 				= NULL;     Marker_Pressure 		 = NULL;     Marker_PerBound 		= NULL;
   Marker_PerDonor 				= NULL;     Marker_NearFieldBound    = NULL;	 Marker_InterfaceBound 	= NULL;
   Marker_Fluid_InterfaceBound 	= NULL;
-  Marker_Dirichlet 				= NULL;     Marker_Inlet 			 = NULL;
-  Marker_Supersonic_Inlet 		= NULL;		Marker_Outlet 			 = NULL;    Marker_Out_1D 			= NULL;
-  Marker_Isothermal 			= NULL;     Marker_HeatFlux 		 = NULL;    Marker_EngineInflow 	= NULL;
-  Marker_EngineBleed 			= NULL;     Marker_Supersonic_Outlet = NULL;
-  Marker_EngineExhaust 			= NULL;     Marker_Displacement 	 = NULL;    Marker_Load 			= NULL;
-  Marker_Load_Dir 				= NULL;     Marker_Load_Sine 		 = NULL;    Marker_Clamped 			= NULL;
-  Marker_FlowLoad 				= NULL;     Marker_Neumann 			 = NULL;
-  Marker_All_TagBound 			= NULL;     Marker_CfgFile_TagBound  = NULL;    Marker_All_KindBC 		= NULL;
-  Marker_CfgFile_KindBC 		= NULL;     Marker_All_SendRecv 	 = NULL;    Marker_All_PerBound 	= NULL;
-  Marker_FSIinterface 			= NULL;     Marker_Riemann 			 = NULL;
-  Marker_Load 					= NULL;
+  Marker_Dirichlet 				= NULL;     Marker_Inlet 			    = NULL;
+  Marker_Supersonic_Inlet 		= NULL;		Marker_Outlet 			    = NULL;    Marker_Out_1D 			= NULL;
+  Marker_Isothermal 			= NULL;     Marker_HeatFlux 		    = NULL;    Marker_EngineInflow 	= NULL;
+  Marker_EngineBleed 			= NULL;     Marker_Supersonic_Outlet    = NULL;
+  Marker_EngineExhaust 			= NULL;     Marker_Displacement 	    = NULL;    Marker_Load 			= NULL;
+  Marker_Load_Dir 				= NULL;     Marker_Load_Sine 		    = NULL;    Marker_Clamped 			= NULL;
+  Marker_FlowLoad 				= NULL;     Marker_Neumann 			    = NULL;
+  Marker_All_TagBound 			= NULL;     Marker_CfgFile_TagBound     = NULL;    Marker_All_KindBC 		= NULL;
+  Marker_CfgFile_KindBC 		= NULL;     Marker_All_SendRecv 	    = NULL;    Marker_All_PerBound 	= NULL;
+  Marker_FSIinterface 			= NULL;     Marker_All_FSIinterface     = NULL;    Marker_Riemann          = NULL;
+  Marker_Load 					= NULL;     Marker_CfgFile_FSIinterface = NULL;
+  
   /*--- Boundary Condition settings ---*/
 
   Dirichlet_Value 			= NULL;     Exhaust_Temperature_Target	= NULL;		Exhaust_Temperature 	= NULL;

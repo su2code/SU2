@@ -385,10 +385,9 @@ int main(int argc, char *argv[]) {
     
 	/*--- Update the convergence history file (serial and parallel computations). ---*/
 
-	if (!fsi &&  !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) || (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING))){
+	if (!fsi && rank == MASTER_NODE){//&&  !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) || (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING))){
 		for(iZone = 0; iZone < nZone; iZone++)
-		output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
-				config_container, integration_container, false, UsedTime, iZone);
+			output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, UsedTime, iZone);
 
 	}
 

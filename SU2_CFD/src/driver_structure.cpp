@@ -1998,11 +1998,10 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
    
    
 	nIntIter = 50; 
-
+	
 	for (iZone = 0; iZone < nZone; iZone++)
 		iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
-
-
+	
 	if ( (config_container[0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)){
 
 		nIntIter = config_container[0]->GetExtIter();
@@ -2014,33 +2013,23 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
 		}
 	}
 
-//	for (intIter = 0; intIter < nIntIter; intIter++){
 		
-	/*	
-		if (intIter %10 == 0);
-			for (iZone = 0; iZone < nZone; iZone++){
-				config_container[iZone]->SetIntIter(intIter);
-				output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, iZone);
-			}
-	*/	
-		
-		for (iZone = 0; iZone < nZone; iZone++) {
-						 
-			iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
-			solver_container, numerics_container, config_container,
-			surface_movement, grid_movement, FFDBox, iZone);
+	for (iZone = 0; iZone < nZone; iZone++) {
+					 
+		iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
+		solver_container, numerics_container, config_container,
+		surface_movement, grid_movement, FFDBox, iZone);
 
-			iteration_container[iZone]->Update(output, integration_container, geometry_container,
-			solver_container, numerics_container, config_container,
-			surface_movement, grid_movement, FFDBox, iZone);
+		iteration_container[iZone]->Update(output, integration_container, geometry_container,
+		solver_container, numerics_container, config_container,
+		surface_movement, grid_movement, FFDBox, iZone);
 
-			iteration_container[iZone]->Monitor();     /*--- Does nothing for now. ---*/
+		iteration_container[iZone]->Monitor();     /*--- Does nothing for now. ---*/
 
-			iteration_container[iZone]->Output();      /*--- Does nothing for now. ---*/
+		iteration_container[iZone]->Output();      /*--- Does nothing for now. ---*/
 
-			iteration_container[iZone]->Postprocess(); /*--- Does nothing for now. ---*/
-		}
-//	}
+		iteration_container[iZone]->Postprocess(); /*--- Does nothing for now. ---*/
+	}
   
 }
 
