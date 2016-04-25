@@ -250,6 +250,16 @@ public:
   unsigned long *DOFsGridElementSide1;   /*!< \brief Pointer to the grid DOFs of the element of side 1. */
   unsigned long *DOFsSolElementSide0;    /*!< \brief Pointer to the solution DOFs of the element of side 0. */
   unsigned long *DOFsSolElementSide1;    /*!< \brief Pointer to the solution DOFs of the element of side 1. */
+
+  /*!
+   * \brief Constructor of the class. Nothing to be done.
+   */
+  CInternalFaceElementFEM(void);
+
+  /*!
+   * \brief Destructor of the class. Nothing to be done.
+   */
+  ~CInternalFaceElementFEM(void); 
 };
 
 /*!
@@ -413,8 +423,10 @@ private:
 
   vector<unsigned long> VecDOFsGridElementSide0; /*!< \brief Storage for the grid DOFs of the elements adjacent to side 0. */
   vector<unsigned long> VecDOFsGridElementSide1; /*!< \brief Storage for the grid DOFs of the elements adjacent to side 1. */
-  vector<unsigned long> VecDOFsSollementSide0;   /*!< \brief Storage for the solution DOFs of the elements adjacent to side 0. */
-  vector<unsigned long> VecDOFsSollementSide1;   /*!< \brief Storage for the solution DOFs of the elements adjacent to side 1. */
+  vector<unsigned long> VecDOFsSolElementSide0;  /*!< \brief Storage for the solution DOFs of the elements adjacent to side 0. */
+  vector<unsigned long> VecDOFsSolElementSide1;  /*!< \brief Storage for the solution DOFs of the elements adjacent to side 1. */
+
+  vector<CInternalFaceElementFEM> matchingFaces; /*!< \brief Vector of the local matching internal faces. */
 
 public:
 

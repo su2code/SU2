@@ -1623,6 +1623,140 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 #endif
   }
 
+  /*--- Determine the sizes of the vectors, which store the connectivity of the faces.
+        Note that these sizes must be determined beforehand, such that no resize needs
+        to be carried out when the data is actually set. ---*/
+  unsigned long sizeVecDOFsGridFaceSide0    = 0, sizeVecDOFsGridFaceSide1    = 0;
+  unsigned long sizeVecDOFsSolFaceSide0     = 0, sizeVecDOFsSolFaceSide1     = 0;
+  unsigned long sizeVecDOFsGridElementSide0 = 0, sizeVecDOFsGridElementSide1 = 0;
+  unsigned long sizeVecDOFsSolElementSide0  = 0, sizeVecDOFsSolElementSide1  = 0;
+
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+    if(localFaces[i].faceIndicator == -1 && localFaces[i].elemID1 < nVolElemTot) {
+
+      /* Determine from the face type and the polynomial degree used on both
+         sides the number of DOFs for the grid and the solution. Update the
+         corresponding counters accordingly. */
+      switch( localFaces[i].nCornerPoints ) {
+        case 2:
+          /* Face is a line. */
+          sizeVecDOFsGridFaceSide0 += localFaces[i].nPolyGrid0 + 1;
+          sizeVecDOFsGridFaceSide1 += localFaces[i].nPolyGrid1 + 1;
+          sizeVecDOFsSolFaceSide0  += localFaces[i].nPolySol0  + 1;
+          sizeVecDOFsSolFaceSide1  += localFaces[i].nPolySol1  + 1;
+          break;
+
+        case 3:
+          /* Face is a triangle. */
+          sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+2)/2;
+          sizeVecDOFsGridFaceSide1 += (localFaces[i].nPolyGrid1+1)*(localFaces[i].nPolyGrid1+2)/2;
+          sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +2)/2;
+          sizeVecDOFsSolFaceSide1  += (localFaces[i].nPolySol1 +1)*(localFaces[i].nPolySol1 +2)/2;
+          break;
+
+        case 4:
+          /* Face is a quadrilateral. */
+          sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+1);
+          sizeVecDOFsGridFaceSide1 += (localFaces[i].nPolyGrid1+1)*(localFaces[i].nPolyGrid1+1);
+          sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +1);
+          sizeVecDOFsSolFaceSide1  += (localFaces[i].nPolySol1 +1)*(localFaces[i].nPolySol1 +1);
+          break;
+      }
+
+      /* Update the sizes to store the DOFs of the adjacent elements. */
+      unsigned long v0 = localFaces[i].elemID0;
+      unsigned long v1 = localFaces[i].elemID1;
+
+      sizeVecDOFsGridElementSide0 += volElem[v0].nDOFsGrid;
+      sizeVecDOFsGridElementSide1 += volElem[v1].nDOFsGrid;
+      sizeVecDOFsSolElementSide0  += volElem[v0].nDOFsSol;
+      sizeVecDOFsSolElementSide1  += volElem[v1].nDOFsSol;
+    }
+  }
+
+  /* Allocate the memory for the matching faces as well as the memory for the
+     storage of the DOFs of the connectivities of the faces. */
+  matchingFaces.resize(nMatchingFaces);
+
+  VecDOFsGridFaceSide0.resize(sizeVecDOFsGridFaceSide0);
+  VecDOFsGridFaceSide1.resize(sizeVecDOFsGridFaceSide1);
+  VecDOFsSolFaceSide0.resize(sizeVecDOFsSolFaceSide0);
+  VecDOFsSolFaceSide1.resize(sizeVecDOFsSolFaceSide1);
+
+  VecDOFsGridElementSide0.resize(sizeVecDOFsGridElementSide0);
+  VecDOFsGridElementSide1.resize(sizeVecDOFsGridElementSide1);
+  VecDOFsSolElementSide0.resize(sizeVecDOFsSolElementSide0);
+  VecDOFsSolElementSide1.resize(sizeVecDOFsSolElementSide1);
+
+  /*--- Loop again over localFaces, but now store the required information
+        in matchingFaces. ---*/
+  sizeVecDOFsGridFaceSide0    = sizeVecDOFsGridFaceSide1    = 0;
+  sizeVecDOFsSolFaceSide0     = sizeVecDOFsSolFaceSide1     = 0;
+  sizeVecDOFsGridElementSide0 = sizeVecDOFsGridElementSide1 = 0;
+  sizeVecDOFsSolElementSide0  = sizeVecDOFsSolElementSide1  = 0;
+
+  unsigned long ii = 0;
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+    if(localFaces[i].faceIndicator == -1 && localFaces[i].elemID1 < nVolElemTot) {
+
+      /* Set the pointers for the connectivities of the face. */
+      matchingFaces[ii].DOFsGridFaceSide0 = VecDOFsGridFaceSide0.data() + sizeVecDOFsGridFaceSide0;
+      matchingFaces[ii].DOFsGridFaceSide1 = VecDOFsGridFaceSide1.data() + sizeVecDOFsGridFaceSide1;
+      matchingFaces[ii].DOFsSolFaceSide0  = VecDOFsSolFaceSide0.data()  + sizeVecDOFsSolFaceSide0;
+      matchingFaces[ii].DOFsSolFaceSide1  = VecDOFsSolFaceSide1.data()  + sizeVecDOFsSolFaceSide1;
+
+      matchingFaces[ii].DOFsGridElementSide0 = VecDOFsGridElementSide0.data() + sizeVecDOFsGridElementSide0;
+      matchingFaces[ii].DOFsGridElementSide1 = VecDOFsGridElementSide1.data() + sizeVecDOFsGridElementSide1;
+      matchingFaces[ii].DOFsSolElementSide0  = VecDOFsSolElementSide0.data()  + sizeVecDOFsSolElementSide0;
+      matchingFaces[ii].DOFsSolElementSide1  = VecDOFsSolElementSide1.data()  + sizeVecDOFsSolElementSide1;
+
+      /* Update the counters for the face connectivities. This depends on the
+         type of surface element. */
+      switch( localFaces[i].nCornerPoints ) {
+        case 2:
+          /* Face is a line. */
+          sizeVecDOFsGridFaceSide0 += localFaces[i].nPolyGrid0 + 1;
+          sizeVecDOFsGridFaceSide1 += localFaces[i].nPolyGrid1 + 1;
+          sizeVecDOFsSolFaceSide0  += localFaces[i].nPolySol0  + 1;
+          sizeVecDOFsSolFaceSide1  += localFaces[i].nPolySol1  + 1;
+          break;
+
+        case 3:
+          /* Face is a triangle. */
+          sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+2)/2;
+          sizeVecDOFsGridFaceSide1 += (localFaces[i].nPolyGrid1+1)*(localFaces[i].nPolyGrid1+2)/2;
+          sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +2)/2;
+          sizeVecDOFsSolFaceSide1  += (localFaces[i].nPolySol1 +1)*(localFaces[i].nPolySol1 +2)/2;
+          break;
+
+        case 4:
+          /* Face is a quadrilateral. */
+          sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+1);
+          sizeVecDOFsGridFaceSide1 += (localFaces[i].nPolyGrid1+1)*(localFaces[i].nPolyGrid1+1);
+          sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +1);
+          sizeVecDOFsSolFaceSide1  += (localFaces[i].nPolySol1 +1)*(localFaces[i].nPolySol1 +1);
+          break;
+      }
+
+      /* Update the counters for the adjacent element connectivities. */
+      unsigned long v0 = localFaces[i].elemID0;
+      unsigned long v1 = localFaces[i].elemID1;
+
+      sizeVecDOFsGridElementSide0 += volElem[v0].nDOFsGrid;
+      sizeVecDOFsGridElementSide1 += volElem[v1].nDOFsGrid;
+      sizeVecDOFsSolElementSide0  += volElem[v0].nDOFsSol;
+      sizeVecDOFsSolElementSide1  += volElem[v1].nDOFsSol;
+
+      /*--- Search in the standard elements for faces for a matching
+            standard element. If not found, create a new standard element.
+            Note that both the grid and the solution representation must
+            match wit the standard element. ---*/
+
+      /* Update the counter ii for the next internal matching face. */
+      ++ii;
+    }
+  }
+
   cout << "CMeshFEM_DG::CreateFaces: Not implemented yet." << endl;
 #ifndef HAVE_MPI
   exit(EXIT_FAILURE);
