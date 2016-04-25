@@ -1990,37 +1990,67 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
                            CInterpolator ***interpolator_container,
                            CTransfer ***transfer_container) {
   
-   unsigned short iZone, jZone, intIter, nIntIter;
-  
-  /*--- Run a single iteration of a multi-zone problem by looping over all
-   zones and executing the iterations. Note that data transers between zones
-   and other intermediate procedures may be required. ---*/
-   
-   
-	nIntIter = 50; 
-	
+	unsigned short iZone, jZone, checkConvergence;
+	unsigned long IntIter, nIntIter;
+	bool unsteady = (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+
+	/*--- Run a single iteration of a multi-zone problem by looping over all
+	zones and executing the iterations. Note that data transers between zones
+	and other intermediate procedures may be required. ---*/
+
+	/*--- Zone preprocessing ---*/
+
 	for (iZone = 0; iZone < nZone; iZone++)
 		iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
-	
-	if ( (config_container[0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)){
 
-		nIntIter = config_container[0]->GetExtIter();
-		
-		for (iZone = 0; iZone < nZone; iZone++) {                                        
+	/*--- Updating zone interface communication patterns,
+	 needed only for unsteady simulation since for steady problems
+	 the transfer structure is already created in the 
+	 interpolator_container constructor---*/
+
+	if ( unsteady ){
+
+		for (iZone = 0; iZone < nZone; iZone++) {   
+			                                     
 			for (jZone = 0; jZone < nZone; jZone++)
+			
 				if(jZone != iZone && interpolator_container[iZone][jZone] != NULL)
 					interpolator_container[iZone][jZone]->Set_TransferCoeff(config_container);
 		}
 	}
 
-		
-	//for (iZone = 0; iZone < nZone; iZone++) {
-					 
-		iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
-		solver_container, numerics_container, config_container,
-		surface_movement, grid_movement, FFDBox, iZone);
 
-for (iZone = 0; iZone < nZone; iZone++) {
+	/*--- Begin Unsteady pseudo-time stepping internal loop, if not unstady it does only one step --*/
+	
+	if (unsteady) 
+		nIntIter = config_container[MESH_0]->GetUnst_nIntIter();
+	else
+		nIntIter = 1;
+
+	for (IntIter = 0; IntIter < nIntIter; IntIter++){
+		for (iZone = 0; iZone < nZone; iZone++) {
+
+			config_container[iZone]->SetIntIter(IntIter);
+
+			iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
+			solver_container, numerics_container, config_container,
+			surface_movement, grid_movement, FFDBox, iZone);
+		}
+
+		/*--- Check convergence in each zone --*/
+		
+		checkConvergence = 0;
+		for (iZone = 0; iZone < nZone; iZone++)
+			checkConvergence += (int) integration_container[iZone][FLOW_SOL]->GetConvergence();
+
+		/*--- If convergence was reached in every zone --*/
+
+		if (checkConvergence == nZone) break;
+	}
+
+
+	for (iZone = 0; iZone < nZone; iZone++) {
+		
 		iteration_container[iZone]->Update(output, integration_container, geometry_container,
 		solver_container, numerics_container, config_container,
 		surface_movement, grid_movement, FFDBox, iZone);
@@ -2565,6 +2595,7 @@ void CFSIDriver::Run(CIteration **iteration_container,
 	unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
 	unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
 	unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
+	unsigned long nIntIter;
 
 #ifdef HAVE_MPI
   int rank = MASTER_NODE;
@@ -2603,14 +2634,30 @@ void CFSIDriver::Run(CIteration **iteration_container,
 		/*-----------------------------------------------------------------*/
 		/*-------------------- Fluid subiteration -------------------------*/
 		/*-----------------------------------------------------------------*/
-
+		
+		
 		iteration_container[ZONE_FLOW]->Preprocess(output, integration_container, geometry_container,
 		                                       solver_container, numerics_container, config_container,
 		                                       surface_movement, grid_movement, FFDBox, ZONE_FLOW);
+		                                       
+		if ( (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) ) 
+			nIntIter = config_container[MESH_0]->GetUnst_nIntIter();
+		else
+			nIntIter = 1;
 
-		iteration_container[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
-		                                       solver_container, numerics_container, config_container,
-		                                       surface_movement, grid_movement, FFDBox, ZONE_FLOW);
+		for (IntIter = 0; IntIter < nIntIter; IntIter++){
+
+				config_container[ZONE_FLOW]->SetIntIter(IntIter);
+
+				iteration_container[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
+												   solver_container, numerics_container, config_container,
+												   surface_movement, grid_movement, FFDBox, ZONE_FLOW);
+
+			/*--- If convergence was reached in every zone --*/
+
+			if (integration_container[ZONE_FLOW][FLOW_SOL]->GetConvergence() == 1) break;
+		}
+
 
 		/*--- Write the convergence history for the fluid (only screen output) ---*/
 
