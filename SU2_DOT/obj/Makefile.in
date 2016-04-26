@@ -19,7 +19,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_DOT
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 4.1.0 "Cardinal"
+# \version 4.1.2 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -91,10 +91,10 @@ subdir = SU2_DOT/obj
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/ax_tls.m4 \
-	$(top_srcdir)/m4/codi.m4 $(top_srcdir)/m4/compiler.m4 \
-	$(top_srcdir)/m4/metis.m4 $(top_srcdir)/m4/parmetis.m4 \
-	$(top_srcdir)/m4/tecio.m4 $(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/codi.m4 \
+	$(top_srcdir)/m4/compiler.m4 $(top_srcdir)/m4/metis.m4 \
+	$(top_srcdir)/m4/parmetis.m4 $(top_srcdir)/m4/tecio.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d

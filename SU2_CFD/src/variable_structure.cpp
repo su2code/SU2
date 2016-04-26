@@ -2,7 +2,7 @@
  * \file variable_structure.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -149,7 +149,7 @@ CVariable::~CVariable(void) {
   
   if (Gradient != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Gradient[iVar];
+      delete [] Gradient[iVar];
     delete [] Gradient;
   }
 
