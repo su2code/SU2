@@ -5829,7 +5829,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   /*--- Open the restart file, throw an error if this fails. ---*/
   
   cout << "Enter the name of file with the airfoil information: ";
-  ierr = scanf("%s", AirfoilFile);
+  ierr = scanf("%255s", AirfoilFile);
   if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
   airfoil_file.open(AirfoilFile, ios::in);
   if (airfoil_file.fail()) {
@@ -5837,7 +5837,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
     exit(EXIT_FAILURE);
   }
   cout << "Enter the format of the airfoil (Selig or Lednicer): ";
-  ierr = scanf("%s", AirfoilFormat);
+  ierr = scanf("%14s", AirfoilFormat);
   if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
 
   cout << "Thickness scaling (1.0 means no scaling)?: ";
@@ -5845,11 +5845,11 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
 
   cout << "Close the airfoil (Yes or No)?: ";
-  ierr = scanf("%s", AirfoilClose);
+  ierr = scanf("%14s", AirfoilClose);
   if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
 
   cout << "Surface mesh orientation (clockwise, or anticlockwise): ";
-  ierr = scanf("%s", MeshOrientation);
+  ierr = scanf("%14s", MeshOrientation);
   if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
 
   /*--- The first line is the header ---*/
