@@ -83,116 +83,525 @@ void FEMStandardElementBaseClass::Copy(const FEMStandardElementBaseClass &other)
   wIntegration = other.wIntegration;
 }
 
-void FEMStandardElementBaseClass::InverseMatrix(unsigned short    n,
-                                                vector<su2double> &A) {
+void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesLine(
+                                       const unsigned short    nPoly,
+                                       const vector<su2double> &rPoints,
+                                       unsigned short          &nDOFs,
+                                       vector<su2double>       &rDOFs,
+                                       vector<su2double>       &lagBasisPoints,
+                                       vector<su2double>       &drLagBasisPoints) {
 
- /*--- Check the dimensions of A. ---*/
- if(A.size() != n*n) {
-   cout << "Wrong size of the A matrix in InverseMatrix" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  /*--- Determine the number of points in which the functions must
+        be determined. ---*/
+  const unsigned short nPoints = rPoints.size();
 
-  /*--- Create a local matrix to carry out the actual inversion. ---*/
-  vector<vector<su2double> > augmentedmatrix(n, vector<su2double>(2*n));
+  /*--- Determine the location of the DOFs of the line. ---*/
+  nDOFs = nPoly + 1;
+  rDOFs.resize(nDOFs);
 
-  /*--- Copy the data from A into the first part of augmentedmatrix. Note
-        that A is stored in column major order, such that also Lapack
-        routines can be used to invert the matrix.       ---*/
-  unsigned int ii = 0;
-  for(unsigned short j=0; j<n; ++j)
-    for(unsigned short i=0; i<n; ++i, ++ii)
-      augmentedmatrix[i][j] = A[ii];
+  su2double dh = 2.0/nPoly;
+  for(unsigned i=0; i<nDOFs; ++i)
+    rDOFs[i] = -1.0 + i*dh;
 
-  /*--- Augmenting with identity matrix of similar dimensions ---*/
-  for(unsigned short j=0; j<n; ++j)
-    for(unsigned short i=0; i<n; ++i)
-      augmentedmatrix[i][j+n] = i == j ? 1 : 0;
+  /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
+        compute the Vandermonde matrix in the given points. ---*/
+  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nPoints);
 
-  /*--- Outer loop of the Gauss-Jordan elimination. ---*/
-  for(unsigned short j=0; j<n; ++j) {
+  Vandermonde1D(nDOFs, rDOFs, VInv);
+  InverseMatrix(nDOFs, VInv);
 
-    /*--- Find the pivot in the current column. ---*/
-    unsigned short jj = j;
-    su2double  valMax = fabs(augmentedmatrix[j][j]);
-    for(unsigned short i=j+1; i<n; ++i) {
-      su2double val = fabs(augmentedmatrix[i][j]);
-      if(val > valMax){
-        jj = i;
-        valMax = val;
-      }
-    }
+  Vandermonde1D(nDOFs, rPoints, V);
 
-    /* Swap the rows j and jj, if needed. */
-    if(jj > j) {
-      for(unsigned short k=j; k<2*n; ++k) {
-        su2double valTmp       = augmentedmatrix[j][k];
-        augmentedmatrix[j][k]  = augmentedmatrix[jj][k];
-        augmentedmatrix[jj][k] = valTmp;
-      }
-    }
+  /*--- Allocate the memory for lagBasisPoints and determine its values.
+        The Lagrange basis functions in the points are equal to the
+        interpolation coefficients from the DOFs to the points and are
+        obtained from the matrix product V*Vinv. Note that from a mathematical
+        point of view the transpose of V*VInv is stored, because in this way the
+        interpolation data for a point is contiguous in memory.        ---*/
+  lagBasisPoints.resize(nDOFs*nPoints);
+  MatMulTranspose(nDOFs, nPoints, V, VInv, lagBasisPoints);
 
-    /*--- Performing row operations to form required identity matrix out
-          of the input matrix.              ---*/
-    for(unsigned i=0; i<n; ++i) {
-      if(i != j) {
-        valMax = augmentedmatrix[i][j]/augmentedmatrix[j][j];
-        for(unsigned short k=j; k<2*n; ++k)
-          augmentedmatrix[i][k] -= valMax*augmentedmatrix[j][k];
-      }
-    }
+  /*--- Compute the gradients of the 1D Vandermonde matrix in the
+        points. The vector V can be used to store the data.     ---*/
+  GradVandermonde1D(nDOFs, rPoints, V);
 
-    valMax = 1.0/augmentedmatrix[j][j];
-    for(unsigned short k=j; k<2*n; ++k)
-      augmentedmatrix[j][k] *= valMax;
-  }
-
-  /*--- Store the inverse in A. Again column major order is used. ---*/
-  ii = 0;
-  for(unsigned short j=0; j<n; ++j)
-    for(unsigned short i=0; i<n; ++i, ++ii)
-      A[ii] = augmentedmatrix[i][j+n];
+  /*--- Allocate the memory to store the derivatives in r-direction of the
+        Lagrange basis functions in the points and determine them.
+        The derivatives of the Lagrange basis functions in the points are
+        obtained from the matrix product V*Vinv. Note that from a mathematical
+        point of view the transpose of V*VInv is stored, because in this way the
+        gradient data for a point is contiguous in memory.  ---*/
+  drLagBasisPoints.resize(nDOFs*nPoints);
+  MatMulTranspose(nDOFs, nPoints, V, VInv, drLagBasisPoints);
 }
 
-void FEMStandardElementBaseClass::MatMulTranspose(unsigned short nDOFs,
-                                                  vector<su2double> &A,
-                                                  vector<su2double> &B,
-                                                  vector<su2double> &C) {
+void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTriangle(
+                                       const unsigned short    nPoly,
+                                       const vector<su2double> &rPoints,
+                                       const vector<su2double> &sPoints,
+                                       unsigned short          &nDOFs,
+                                       vector<su2double>       &rDOFs,
+                                       vector<su2double>       &sDOFs,
+                                       vector<su2double>       &lagBasisPoints,
+                                       vector<su2double>       &drLagBasisPoints,
+                                       vector<su2double>       &dsLagBasisPoints) {
 
-  /*--- Check if the dimensions of the matrices correspond to the
-        assumptions made in this function.                    ---*/
-  unsigned int dimA = nDOFs*nIntegration;
-  unsigned int dimB = nDOFs*nDOFs;
+  /*--- Determine the number of points in which the functions must
+        be determined. ---*/
+  const unsigned short nPoints = rPoints.size();
 
-  if(A.size() != dimA || B.size() != dimB || C.size() != dimA) {
-    cout << "Unexpected size of the matrices in FEMStandardElementClass::MatMulTranspose" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+  /*--- Determine the location of the DOFs of the standard triangle. ---*/
+  nDOFs = (nPoly+1)*(nPoly+2)/2;
+  rDOFs.resize(nDOFs);
+  sDOFs.resize(nDOFs);
+
+  su2double dh = 2.0/nPoly;
+
+  unsigned int ii = 0;
+  for(unsigned short j=0; j<=nPoly; ++j) {
+    su2double s = -1.0 + j*dh;
+    unsigned short uppBoundI = nPoly - j;
+    for(unsigned short i=0; i<=uppBoundI; ++i, ++ii) {
+      su2double r = -1.0 + i*dh;
+      rDOFs[ii]   = r;
+      sDOFs[ii]   = s;
+    }
   }
 
-  /*--- Carry out the actual matrix matrix multiplication and
-        store the transpose of the result.                    ---*/
-  for(unsigned short j=0; j<nDOFs; ++j) {
-    for(unsigned short i=0; i<nIntegration; ++i) {
-      unsigned int ii = i*nDOFs + j;
-      C[ii] = 0.0;
+  /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
+        compute the Vandermonde matrix in the points. ---*/
+  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nPoints);
 
-      for(unsigned short k=0; k<nDOFs; ++k) {
-        unsigned int indA = k*nIntegration + i;
-        unsigned int indB = j*nDOFs + k;
+  Vandermonde2D_Triangle(nPoly, nDOFs, rDOFs, sDOFs, VInv);
+  InverseMatrix(nDOFs, VInv);
 
-        C[ii] += A[indA]*B[indB];
+  Vandermonde2D_Triangle(nPoly, nDOFs, rPoints, sPoints, V);
+
+  /*--- Allocate the memory for lagBasisPoints and determine its values.
+        The Lagrange basis functions in the points are equal to the interpolation
+        coefficients from the DOFs to the points and are obtained from the matrix
+        product V*Vinv. Note that from a mathematical point of view the transpose
+        of V*VInv is stored, because in this way the interpolation data for a
+        point is contiguous in memory. ---*/
+  lagBasisPoints.resize(nDOFs*nPoints);
+  MatMulTranspose(nDOFs, nPoints, V, VInv, lagBasisPoints);
+
+  /*--- Compute the gradients of the 2D Vandermonde matrix in the points. ---*/
+  vector<su2double> VDr(nDOFs*nPoints), VDs(nDOFs*nPoints);
+  GradVandermonde2D_Triangle(nPoly, nDOFs, rPoints, sPoints, VDr, VDs);
+
+  /*--- Allocate the memory to store the derivatives in r- and s-direction of the
+        Lagrange basis functions in the points and determine them. The derivatives
+        of the Lagrange basis functions in the points are obtained from the matrix
+        product VDr*Vinv and VDs*Vinv. Note that from a mathematical point of view
+        the transpose of the result is stored, because in this way the gradient
+        data for a point is contiguous in memory. ---*/
+  drLagBasisPoints.resize(nDOFs*nPoints);
+  dsLagBasisPoints.resize(nDOFs*nPoints);
+
+  MatMulTranspose(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
+  MatMulTranspose(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
+}
+
+void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesQuadrilateral(
+                                       const unsigned short    nPoly,
+                                       const vector<su2double> &rPoints,
+                                       const vector<su2double> &sPoints,
+                                       unsigned short          &nDOFs,
+                                       vector<su2double>       &rDOFs,
+                                       vector<su2double>       &sDOFs,
+                                       vector<su2double>       &lagBasisPoints,
+                                       vector<su2double>       &drLagBasisPoints,
+                                       vector<su2double>       &dsLagBasisPoints) {
+
+  /*--- Determine the number of points in which the functions must
+        be determined. ---*/
+  const unsigned short nPoints = rPoints.size();
+
+  /*--- Determine the location of the DOFs of the standard quadrilateral. ---*/
+  nDOFs = (nPoly+1)*(nPoly+1);
+  rDOFs.resize(nDOFs);
+  sDOFs.resize(nDOFs);
+
+  su2double dh = 2.0/nPoly;
+
+  unsigned int ii = 0;
+  for(unsigned short j=0; j<=nPoly; ++j)
+  {
+    su2double s = -1.0 + j*dh;
+    for(unsigned short i=0; i<=nPoly; ++i, ++ii)
+    {
+      su2double r = -1.0 + i*dh;
+      rDOFs[ii]   = r;
+      sDOFs[ii]   = s;
+    }
+  }
+
+  /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
+        compute the Vandermonde matrix in the points. ---*/
+  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nPoints);
+
+  Vandermonde2D_Quadrilateral(nPoly, nDOFs, rDOFs, sDOFs, VInv);
+  InverseMatrix(nDOFs, VInv);
+
+  Vandermonde2D_Quadrilateral(nPoly, nDOFs, rPoints, sPoints, V);
+
+  /*--- Allocate the memory for lagBasisPoints and determine its values.
+        The Lagrange basis functions in the points are equal to the interpolation
+        coefficients from the DOFs to the points and are obtained from the matrix
+        product V*Vinv. Note that from a mathematical point of view the transpose
+        of V*VInv is stored, because in this way the interpolation data for a
+        point is contiguous in memory. ---*/
+  lagBasisPoints.resize(nDOFs*nPoints);
+  MatMulTranspose(nDOFs, nPoints, V, VInv, lagBasisPoints);
+
+  /*--- Compute the gradients of the 2D Vandermonde matrix in the points. ---*/
+  vector<su2double> VDr(nDOFs*nPoints), VDs(nDOFs*nPoints);
+  GradVandermonde2D_Quadrilateral(nPoly, nDOFs, rPoints, sPoints, VDr, VDs);
+
+  /*--- Allocate the memory to store the derivatives in r- and s-direction of the
+        Lagrange basis functions in the points and determine them. The derivatives
+        of the Lagrange basis functions in the points are obtained from the matrix
+        product VDr*Vinv and VDr*Vinv. Note that from a mathematical point of view
+        the transpose of the result is stored, because in this way the gradient
+        data for a point is contiguous in memory. ---*/
+  drLagBasisPoints.resize(nDOFs*nPoints);
+  dsLagBasisPoints.resize(nDOFs*nPoints);
+
+  MatMulTranspose(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
+  MatMulTranspose(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
+}
+
+void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTetrahedron(
+                                       const unsigned short    nPoly,
+                                       const vector<su2double> &rPoints,
+                                       const vector<su2double> &sPoints,
+                                       const vector<su2double> &tPoints,
+                                       unsigned short          &nDOFs,
+                                       vector<su2double>       &rDOFs,
+                                       vector<su2double>       &sDOFs,
+                                       vector<su2double>       &tDOFs,
+                                       vector<su2double>       &lagBasisPoints,
+                                       vector<su2double>       &drLagBasisPoints,
+                                       vector<su2double>       &dsLagBasisPoints,
+                                       vector<su2double>       &dtLagBasisPoints)
+{
+  /*--- Determine the number of points in which the functions must
+        be determined. ---*/
+  const unsigned short nPoints = rPoints.size();
+
+  /*--- Determine the location of the DOFs of the standard tetrahedron. ---*/
+  nDOFs = (nPoly+1)*(nPoly+2)*(nPoly+3)/6;
+  rDOFs.resize(nDOFs);
+  sDOFs.resize(nDOFs);
+  tDOFs.resize(nDOFs);
+
+  su2double dh = 2.0/nPoly;
+
+  unsigned int ii = 0;
+  for(unsigned short k=0; k<=nPoly; ++k) {
+    su2double t = -1.0 + k*dh;
+    unsigned short uppBoundJ = nPoly - k;
+    for(unsigned short j=0; j<=uppBoundJ; ++j) {
+      su2double s = -1.0 + j*dh;
+      unsigned short uppBoundI = nPoly - k - j;
+      for(unsigned short i=0; i<=uppBoundI; ++i, ++ii) {
+        su2double r = -1.0 + i*dh;
+        rDOFs[ii] = r;
+        sDOFs[ii] = s;
+        tDOFs[ii] = t;
       }
     }
   }
+
+  /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
+        compute the Vandermonde matrix in the points. ---*/
+  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nPoints);
+
+  Vandermonde3D_Tetrahedron(nPoly, nDOFs, rDOFs, sDOFs, tDOFs, VInv);
+  InverseMatrix(nDOFs, VInv);
+
+  Vandermonde3D_Tetrahedron(nPoly, nDOFs, rPoints, sPoints, tPoints, V);
+
+  /*--- Allocate the memory for lagBasisPoints and determine its values.
+        The Lagrange basis functions in the points are equal to the interpolation
+        coefficients from the DOFs to the points and are obtained from the matrix
+        product V*Vinv. Note that from a mathematical point of view the transpose
+        of V*VInv is stored, because in this way the interpolation data for a
+        point is contiguous in memory. ---*/
+  lagBasisPoints.resize(nDOFs*nPoints);
+  MatMulTranspose(nDOFs, nPoints, V, VInv, lagBasisPoints);
+
+  /*--- Compute the gradients of the 3D Vandermonde matrix in the points. ---*/
+  vector<su2double> VDr(nDOFs*nPoints), VDs(nDOFs*nPoints), VDt(nDOFs*nPoints);
+  GradVandermonde3D_Tetrahedron(nPoly, nDOFs, rPoints, sPoints,
+                                tPoints, VDr, VDs, VDt);
+
+  /*--- Allocate the memory to store the derivatives in r-, s- and t-direction
+        of the Lagrange basis functions in the points and determine them. The
+        derivatives of the Lagrange basis functions in the points are obtained
+        from the matrix product VDr*Vinv, VDr*Vinv and VDt*Vinv. Note that from
+        a mathematical point of view the transpose of the result is stored, because
+        in this way the gradient data for a point is contiguous in memory. ---*/
+  drLagBasisPoints.resize(nDOFs*nPoints);
+  dsLagBasisPoints.resize(nDOFs*nPoints);
+  dtLagBasisPoints.resize(nDOFs*nPoints);
+
+  MatMulTranspose(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
+  MatMulTranspose(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
+  MatMulTranspose(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
+}
+
+void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPyramid(
+                                       const unsigned short    nPoly,
+                                       const vector<su2double> &rPoints,
+                                       const vector<su2double> &sPoints,
+                                       const vector<su2double> &tPoints,
+                                       unsigned short          &nDOFs,
+                                       vector<su2double>       &rDOFs,
+                                       vector<su2double>       &sDOFs,
+                                       vector<su2double>       &tDOFs,
+                                       vector<su2double>       &lagBasisPoints,
+                                       vector<su2double>       &drLagBasisPoints,
+                                       vector<su2double>       &dsLagBasisPoints,
+                                       vector<su2double>       &dtLagBasisPoints)
+{
+  /*--- Determine the number of points in which the functions must
+        be determined. ---*/
+  const unsigned short nPoints = rPoints.size();
+
+  /*--- Allocate the memory for the DOFs of the standard pyramid. ---*/
+  unsigned short nDOFsEdge = nPoly+1;
+  nDOFs = nDOFsEdge*(nDOFsEdge+1)*(2*nDOFsEdge+1)/6;
+  rDOFs.resize(nDOFs);
+  sDOFs.resize(nDOFs);
+  tDOFs.resize(nDOFs);
+
+  /*--- Determine the location of the DOFs of the standard pyramid.
+        The outer loop is in the k-direction, which is from base to top. ---*/
+  su2double dt         = 2.0/nPoly;
+  unsigned short mPoly = nPoly;
+  unsigned int   ii = 0;
+
+  for(unsigned short k=0; k<=nPoly; ++k, --mPoly) {
+
+    /*--- Determine the minimum and maximum value for r and s for this t-value. ---*/
+    su2double t     = -1.0 + k*dt;
+    su2double rsMin =  0.5*(t-1.0);
+    su2double rsMax = -rsMin;
+
+    /*--- Determine the step size along the edges of the current quad.
+          Take the exceptional situation mPoly == 0 into account to avoid a
+          division by zero.     ---*/
+    su2double dh = mPoly ? (rsMax-rsMin)/mPoly : 0.0;
+
+    /*--- Loop over the vertices of the current quadrilateral. ---*/
+    for(unsigned short j=0; j<=mPoly; ++j) {
+      su2double s = rsMin + j*dh;
+      for(unsigned short i=0; i<=mPoly; ++i, ++ii) {
+        su2double r = rsMin + i*dh;
+        rDOFs[ii] = r;
+        sDOFs[ii] = s;
+        tDOFs[ii] = t;
+      }
+    }
+  }
+
+  /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
+        compute the Vandermonde matrix in the points. ---*/
+  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nPoints);
+
+  Vandermonde3D_Pyramid(nPoly, nDOFs, rDOFs, sDOFs, tDOFs, VInv);
+  InverseMatrix(nDOFs, VInv);
+
+  Vandermonde3D_Pyramid(nPoly, nDOFs, rPoints, sPoints, tPoints, V);
+
+  /*--- Allocate the memory for lagBasisPoints and determine its values.
+        The Lagrange basis functions in the points are equal to the interpolation
+        coefficients from the DOFs to the points and are obtained from the matrix
+        product V*Vinv. Note that from a mathematical point of view the transpose
+        of V*VInv is stored, because in this way the interpolation data for a
+        point is contiguous in memory.  ---*/
+  lagBasisPoints.resize(nDOFs*nPoints);
+  MatMulTranspose(nDOFs, nPoints, V, VInv, lagBasisPoints);
+
+  /*--- Compute the gradients of the 3D Vandermonde matrix in the points. ---*/
+  vector<su2double> VDr(nDOFs*nPoints), VDs(nDOFs*nPoints), VDt(nDOFs*nPoints);
+  GradVandermonde3D_Pyramid(nPoly, nDOFs, rPoints, sPoints, tPoints, VDr, VDs, VDt);
+
+  /*--- Allocate the memory to store the derivatives in r-, s- and t-direction
+        of the Lagrange basis functions in the points and determine them. The
+        derivatives of the Lagrange basis functions in the points are obtained
+        from the matrix product VDr*Vinv, VDr*Vinv and VDt*Vinv. Note that from
+        a mathematical point of view the transpose of the result is stored, because
+        in this way the gradient data for a point is contiguous in memory. ---*/
+  drLagBasisPoints.resize(nDOFs*nPoints);
+  dsLagBasisPoints.resize(nDOFs*nPoints);
+  dtLagBasisPoints.resize(nDOFs*nPoints);
+
+  MatMulTranspose(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
+  MatMulTranspose(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
+  MatMulTranspose(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
+}
+
+void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPrism(
+                                       const unsigned short    nPoly,
+                                       const vector<su2double> &rPoints,
+                                       const vector<su2double> &sPoints,
+                                       const vector<su2double> &tPoints,
+                                       unsigned short          &nDOFs,
+                                       vector<su2double>       &rDOFs,
+                                       vector<su2double>       &sDOFs,
+                                       vector<su2double>       &tDOFs,
+                                       vector<su2double>       &lagBasisPoints,
+                                       vector<su2double>       &drLagBasisPoints,
+                                       vector<su2double>       &dsLagBasisPoints,
+                                       vector<su2double>       &dtLagBasisPoints)
+{
+  /*--- Determine the number of points in which the functions must
+        be determined. ---*/
+  const unsigned short nPoints = rPoints.size();
+
+  /*--- Allocate the memory for the DOFs of the standard prism
+        and determine its locations. ---*/
+  unsigned short nDOFsEdge = nPoly+1;
+  nDOFs = nDOFsEdge*nDOFsEdge*(nDOFsEdge+1)/2;
+  rDOFs.resize(nDOFs);
+  sDOFs.resize(nDOFs);
+  tDOFs.resize(nDOFs);
+
+  su2double dh = 2.0/nPoly;
+
+  unsigned short ii = 0;
+  for(unsigned short k=0; k<=nPoly; ++k) {
+    const su2double t = -1.0 + k*dh;
+
+    for(unsigned short j=0; j<=nPoly; ++j) {
+      su2double s = -1.0 + j*dh;
+      unsigned short uppBoundI = nPoly - j;
+      for(unsigned short i=0; i<=uppBoundI; ++i, ++ii) {
+        su2double r = -1.0 + i*dh;
+        rDOFs[ii] = r;
+        sDOFs[ii] = s;
+        tDOFs[ii] = t;
+      }
+    }
+  }
+
+  /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
+        compute the Vandermonde matrix in the points. ---*/
+  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nPoints);
+
+  Vandermonde3D_Prism(nPoly, nDOFs, rDOFs, sDOFs, tDOFs, VInv);
+  InverseMatrix(nDOFs, VInv);
+
+  Vandermonde3D_Prism(nPoly, nDOFs, rPoints, sPoints, tPoints, V);
+
+  /*--- Allocate the memory for lagBasisPoints and determine its values.
+        The Lagrange basis functions in the points are equal to the interpolation
+        coefficients from the DOFs to the points and are obtained from the matrix
+        product V*Vinv. Note that from a mathematical point of view the transpose
+        of V*VInv is stored, because in this way the interpolation data for a
+        point is contiguous in memory.  ---*/
+  lagBasisPoints.resize(nDOFs*nPoints);
+  MatMulTranspose(nDOFs, nPoints, V, VInv, lagBasisPoints);
+
+  /*--- Compute the gradients of the 3D Vandermonde matrix in the points. ---*/
+  vector<su2double> VDr(nDOFs*nPoints), VDs(nDOFs*nPoints), VDt(nDOFs*nPoints);
+  GradVandermonde3D_Prism(nPoly, nDOFs,rPoints, sPoints, tPoints, VDr, VDs, VDt);
+
+  /*--- Allocate the memory to store the derivatives in r-, s- and t-direction
+        of the Lagrange basis functions in the points and determine them. The
+        derivatives of the Lagrange basis functions in the points are obtained
+        from the matrix product VDr*Vinv, VDr*Vinv and VDt*Vinv. Note that from
+        a mathematical point of view the transpose of the result is stored, because
+        in this way the gradient data for a point is contiguous in memory. ---*/
+  drLagBasisPoints.resize(nDOFs*nPoints);
+  dsLagBasisPoints.resize(nDOFs*nPoints);
+  dtLagBasisPoints.resize(nDOFs*nPoints);
+
+  MatMulTranspose(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
+  MatMulTranspose(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
+  MatMulTranspose(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
+}
+
+void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesHexahedron(
+                                       const unsigned short    nPoly,
+                                       const vector<su2double> &rPoints,
+                                       const vector<su2double> &sPoints,
+                                       const vector<su2double> &tPoints,
+                                       unsigned short          &nDOFs,
+                                       vector<su2double>       &rDOFs,
+                                       vector<su2double>       &sDOFs,
+                                       vector<su2double>       &tDOFs,
+                                       vector<su2double>       &lagBasisPoints,
+                                       vector<su2double>       &drLagBasisPoints,
+                                       vector<su2double>       &dsLagBasisPoints,
+                                       vector<su2double>       &dtLagBasisPoints)
+{
+  /*--- Determine the number of points in which the functions must
+        be determined. ---*/
+  const unsigned short nPoints = rPoints.size();
+
+  /*--- Allocate the memory for the DOFs of the standard hexahedron
+        and determine its locations. ---*/
+  unsigned short nDOFsEdge = nPoly+1;
+  nDOFs = nDOFsEdge*nDOFsEdge*nDOFsEdge;
+  rDOFs.resize(nDOFs);
+  sDOFs.resize(nDOFs);
+  tDOFs.resize(nDOFs);
+
+  su2double dh = 2.0/nPoly;
+
+  unsigned short ii = 0;
+  for(unsigned short k=0; k<=nPoly; ++k) {
+    su2double t = -1.0 + k*dh;
+    for(unsigned short j=0; j<=nPoly; ++j) {
+      su2double s = -1.0 + j*dh;
+      for(unsigned short i=0; i<=nPoly; ++i, ++ii) {
+        su2double r = -1.0 + i*dh;
+        rDOFs[ii] = r;
+        sDOFs[ii] = s;
+        tDOFs[ii] = t;
+      }
+    }
+  }
+
+  /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
+        compute the Vandermonde matrix in the points. ---*/
+  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nPoints);
+
+  Vandermonde3D_Hexahedron(nPoly, nDOFs, rDOFs, sDOFs, tDOFs, VInv);
+  InverseMatrix(nDOFs, VInv);
+
+  Vandermonde3D_Hexahedron(nPoly, nDOFs, rPoints, sPoints, tPoints, V);
+
+  /*--- Allocate the memory for lagBasisPoints and determine its values.
+        The Lagrange basis functions in the points are equal to the interpolation
+        coefficients from the DOFs to the points and are obtained from the matrix
+        product V*Vinv. Note that from a mathematical point of view the transpose
+        of V*VInv is stored, because in this way the interpolation data for a
+        point is contiguous in memory.  ---*/
+  lagBasisPoints.resize(nDOFs*nPoints);
+  MatMulTranspose(nDOFs, nPoints, V, VInv, lagBasisPoints);
+
+  /*--- Compute the gradients of the 3D Vandermonde matrix in the points. ---*/
+  vector<su2double> VDr(nDOFs*nPoints), VDs(nDOFs*nPoints), VDt(nDOFs*nPoints);
+  GradVandermonde3D_Hexahedron(nPoly, nDOFs, rPoints, sPoints, tPoints, VDr, VDs, VDt);
+
+  /*--- Allocate the memory to store the derivatives in r-, s- and t-direction
+        of the Lagrange basis functions in the points and determine them. The
+        derivatives of the Lagrange basis functions in the points are obtained
+        from the matrix product VDr*Vinv, VDr*Vinv and VDt*Vinv. Note that from
+        a mathematical point of view the transpose of the result is stored, because
+        in this way the gradient data for a point is contiguous in memory. ---*/
+  drLagBasisPoints.resize(nDOFs*nPoints);
+  dsLagBasisPoints.resize(nDOFs*nPoints);
+  dtLagBasisPoints.resize(nDOFs*nPoints);
+
+  MatMulTranspose(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
+  MatMulTranspose(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
+  MatMulTranspose(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
 }
 
 /*----------------------------------------------------------------------------------*/
@@ -286,6 +695,81 @@ void FEMStandardElementBaseClass::GaussLegendrePoints1D(vector<su2double> &GLPoi
     GLWeights[i] *= f;
 }
 
+void FEMStandardElementBaseClass::InverseMatrix(unsigned short    n,
+                                                vector<su2double> &A) {
+
+ /*--- Check the dimensions of A. ---*/
+ if(A.size() != n*n) {
+   cout << "Wrong size of the A matrix in InverseMatrix" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Create a local matrix to carry out the actual inversion. ---*/
+  vector<vector<su2double> > augmentedmatrix(n, vector<su2double>(2*n));
+
+  /*--- Copy the data from A into the first part of augmentedmatrix. Note
+        that A is stored in column major order, such that also Lapack
+        routines can be used to invert the matrix.       ---*/
+  unsigned int ii = 0;
+  for(unsigned short j=0; j<n; ++j)
+    for(unsigned short i=0; i<n; ++i, ++ii)
+      augmentedmatrix[i][j] = A[ii];
+
+  /*--- Augmenting with identity matrix of similar dimensions ---*/
+  for(unsigned short j=0; j<n; ++j)
+    for(unsigned short i=0; i<n; ++i)
+      augmentedmatrix[i][j+n] = i == j ? 1 : 0;
+
+  /*--- Outer loop of the Gauss-Jordan elimination. ---*/
+  for(unsigned short j=0; j<n; ++j) {
+
+    /*--- Find the pivot in the current column. ---*/
+    unsigned short jj = j;
+    su2double  valMax = fabs(augmentedmatrix[j][j]);
+    for(unsigned short i=j+1; i<n; ++i) {
+      su2double val = fabs(augmentedmatrix[i][j]);
+      if(val > valMax){
+        jj = i;
+        valMax = val;
+      }
+    }
+
+    /* Swap the rows j and jj, if needed. */
+    if(jj > j) {
+      for(unsigned short k=j; k<2*n; ++k) {
+        su2double valTmp       = augmentedmatrix[j][k];
+        augmentedmatrix[j][k]  = augmentedmatrix[jj][k];
+        augmentedmatrix[jj][k] = valTmp;
+      }
+    }
+
+    /*--- Performing row operations to form required identity matrix out
+          of the input matrix.              ---*/
+    for(unsigned i=0; i<n; ++i) {
+      if(i != j) {
+        valMax = augmentedmatrix[i][j]/augmentedmatrix[j][j];
+        for(unsigned short k=j; k<2*n; ++k)
+          augmentedmatrix[i][k] -= valMax*augmentedmatrix[j][k];
+      }
+    }
+
+    valMax = 1.0/augmentedmatrix[j][j];
+    for(unsigned short k=j; k<2*n; ++k)
+      augmentedmatrix[j][k] *= valMax;
+  }
+
+  /*--- Store the inverse in A. Again column major order is used. ---*/
+  ii = 0;
+  for(unsigned short j=0; j<n; ++j)
+    for(unsigned short i=0; i<n; ++i, ++ii)
+      A[ii] = augmentedmatrix[i][j+n];
+}
+
 void FEMStandardElementBaseClass::Legendre(su2double      x,
                                            unsigned short n,
                                            su2double      &Pnm1,
@@ -300,6 +784,834 @@ void FEMStandardElementBaseClass::Legendre(su2double      x,
     su2double tmp = Pnm1;
     Pnm1          = Pn;
     Pn            = ((2*i-1)*x*Pn - (i-1)*tmp)/i;
+  }
+}
+
+void FEMStandardElementBaseClass::MatMulTranspose(unsigned short nDOFs,
+                                                  unsigned short nPoints,
+                                                  vector<su2double> &A,
+                                                  vector<su2double> &B,
+                                                  vector<su2double> &C) {
+
+  /*--- Check if the dimensions of the matrices correspond to the
+        assumptions made in this function.                    ---*/
+  unsigned int dimA = nDOFs*nPoints;
+  unsigned int dimB = nDOFs*nDOFs;
+
+  if(A.size() != dimA || B.size() != dimB || C.size() != dimA) {
+    cout << "Unexpected size of the matrices in FEMStandardElementBaseClass::MatMulTranspose" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Carry out the actual matrix matrix multiplication and
+        store the transpose of the result.                    ---*/
+  for(unsigned short j=0; j<nDOFs; ++j) {
+    for(unsigned short i=0; i<nPoints; ++i) {
+      unsigned int ii = i*nDOFs + j;
+      C[ii] = 0.0;
+
+      for(unsigned short k=0; k<nDOFs; ++k) {
+        unsigned int indA = k*nPoints + i;
+        unsigned int indB = j*nDOFs + k;
+
+        C[ii] += A[indA]*B[indB];
+      }
+    }
+  }
+}
+
+su2double FEMStandardElementBaseClass::NormJacobi(unsigned short n,
+                                                  unsigned short alpha,
+                                                  unsigned short beta,
+                                                  su2double      x) {
+  /*--- Some abbreviations. ---*/
+  su2double ap1   = alpha + 1;
+  su2double bp1   = beta  + 1;
+  su2double apb   = alpha + beta;
+  su2double apbp1 = apb + 1;
+  su2double apbp2 = apb + 2;
+  su2double apbp3 = apb + 3;
+  su2double b2ma2 = beta*beta - alpha*alpha;
+
+  /*--- Initialize the normalized polynomials. ---*/
+  su2double Pnm1 = sqrt(pow(0.5,apbp1)*tgamma(apbp2)/(tgamma(ap1)*tgamma(bp1)));
+  su2double Pn   = 0.5*Pnm1*(apbp2*x + alpha - beta)*sqrt(apbp3/(ap1*bp1));
+
+  /*--- Take care of the special situation of n == 0. ---*/
+  if(n == 0) Pn = Pnm1;
+  else
+  {
+    /*--- The value of the normalized Legendre polynomial must be obtained via recursion. ---*/
+    for(unsigned short i=2; i<=n; ++i)
+    {
+      /*--- Compute the coefficients a for i and i-1 and the coefficient bi. ---*/
+      unsigned short j = i-1;
+      su2double   tmp  = 2*j + apb;
+      su2double   aim1 = 2.0*sqrt(j*(j+apb)*(j+alpha)*(j+beta)/((tmp-1.0)*(tmp+1.0)))
+                       / tmp;
+
+      su2double bi = b2ma2/(tmp*(tmp+2.0));
+
+      tmp          = 2*i + apb;
+      su2double ai = 2.0*sqrt(i*(i+apb)*(i+alpha)*(i+beta)/((tmp-1.0)*(tmp+1.0)))
+                   / tmp;
+
+      /*--- Compute the new value of Pn and make sure to store Pnm1 correctly. ---*/
+      tmp  = Pnm1;
+      Pnm1 = Pn;
+
+      Pn = ((x-bi)*Pn - aim1*tmp)/ai;
+    }
+  }
+
+  /*--- Return Pn. ---*/
+  return Pn;
+}
+
+su2double FEMStandardElementBaseClass::GradNormJacobi(unsigned short n,
+                                                      unsigned short alpha,
+                                                      unsigned short beta,
+                                                      su2double      x) {
+
+  /*--- Make a distinction for n == 0 and n > 0. For n == 0 the derivative is
+        zero, because the polynomial itself is constant. ---*/
+  su2double grad;
+  if(n == 0) grad = 0.0;
+  else
+  {
+    su2double tmp = n*(n+alpha+beta+1.0);
+    grad          = sqrt(tmp)*NormJacobi(n-1, alpha+1, beta+1, x);
+  }
+
+  /*--- Return the gradient. ---*/
+  return grad;
+}
+
+void FEMStandardElementBaseClass::Vandermonde1D(unsigned short          nDOFs,
+                                                const vector<su2double> &r,
+                                                vector<su2double>       &V) {
+
+  /*--- Determine the number or rows of the Vandermonde matrix and check
+        if the dimension of V is correct.     ---*/
+  unsigned short nRows = r.size();
+  if(V.size() != nRows*nDOFs) {
+    cout << "Wrong size of the V matrix in Vandermonde1D" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Compute the Vandermonde matrix. ---*/
+  unsigned int ii = 0;
+  for(unsigned short i=0; i<nDOFs; ++i) {
+    for(unsigned short k=0; k<nRows; ++k, ++ii) {
+      V[ii] = NormJacobi(i, 0, 0, r[k]);
+    }
+  }
+}
+
+void FEMStandardElementBaseClass::GradVandermonde1D(unsigned short          nDOFs,
+                                                    const vector<su2double> &r,
+                                                    vector<su2double>       &VDr) {
+
+  /*--- Determine the number or rows of the gradient of the Vandermonde matrix
+        and check if the dimension of VDr is correct.     ---*/
+  unsigned short nRows = r.size();
+  if(VDr.size() != nRows*nDOFs) {
+    cout << "Wrong size of the VDr matrix in GradVandermonde1D" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Compute the gradient of the Vandermonde matrix. ---*/
+  unsigned int ii = 0;
+  for(unsigned short i=0; i<nDOFs; ++i) {
+    for(unsigned short k=0; k<nRows; ++k, ++ii) {
+      VDr[ii] = GradNormJacobi(i, 0, 0, r[k]);
+    }
+  }
+}
+
+void FEMStandardElementBaseClass::Vandermonde2D_Triangle(unsigned short          nPoly,
+                                                         unsigned short          nDOFs,
+                                                         const vector<su2double> &r,
+                                                         const vector<su2double> &s,
+                                                         vector<su2double>       &V) {
+
+  /*--- Determine the number or rows of the Vandermonde matrix and check
+        if the dimension of V is correct.     ---*/
+  unsigned short nRows = r.size();
+  if(V.size() != nRows*nDOFs) {
+    cout << "Wrong size of the V matrix in Vandermonde2D_Triangle" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- For a triangle the orthogonal basis for the reference element is obtained
+        by a combination of a Jacobi polynomial and a Legendre polynomial. This
+        is the result of the orthonormalization of the monomial basis. ---*/
+  unsigned int ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=(nPoly-i); ++j) {
+      for(unsigned short k=0; k<nRows; ++k, ++ii) {
+
+        /*--- Determine the coefficients a and b. ---*/
+        su2double a;
+        if(fabs(s[k]-1.0) < 1.e-8) a = -1.0;
+        else a = 2.0*(1.0+r[k])/(1.0-s[k]) - 1.0;
+
+        su2double b = s[k];
+
+        /*--- Determine the value of the current basis function in this point. ---*/
+        su2double tmp = pow((1.0-b),i);
+        V[ii] = sqrt(2.0)*tmp*NormJacobi(i,0,0,a)*NormJacobi(j,2*i+1,0,b);
+      }
+    }
+  }
+}
+
+void FEMStandardElementBaseClass::GradVandermonde2D_Triangle(unsigned short          nPoly,
+                                                             unsigned short          nDOFs,
+                                                             const vector<su2double> &r,
+                                                             const vector<su2double> &s,
+                                                             vector<su2double>       &VDr,
+                                                             vector<su2double>       &VDs) {
+
+  /*--- Determine the number or rows of the gradient of the Vandermonde matrix
+        and check if the dimensions of VDr and VDs are correct.     ---*/
+  unsigned short nRows = r.size();
+  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs) {
+    cout << "Wrong size of the VDr and/or VDs matrices in GradVandermonde2D_Triangle" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- For a triangle the orthogonal basis for the reference element is obtained
+        by a combination of a Jacobi polynomial and a Legendre polynomial. This
+        is the result of the orthonormalization of the monomial basis. ---*/
+  unsigned int ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=(nPoly-i); ++j) {
+      for(unsigned k=0; k<nRows; ++k, ++ii) {
+
+        /*--- Determine the coefficients a and b. ---*/
+        su2double a;
+        if(fabs(s[k]-1.0) < 1.e-8) a = -1.0;
+        else a = 2.0*(1.0+r[k])/(1.0-s[k]) - 1.0;
+
+        su2double b = s[k];
+
+        /*--- Determine the value of the two 1D contributions to the 2D
+              basis functions as well as the gradients of these basis
+              functions w.r.t. to their arguments. ---*/
+        su2double fa  = NormJacobi(i,0,    0,a);
+        su2double gb  = NormJacobi(j,2*i+1,0,b);
+        su2double dfa = GradNormJacobi(i,0,    0,a);
+        su2double dgb = GradNormJacobi(j,2*i+1,0,b);
+
+        /*--- Determine the gradients of the basis functions w.r.t. the
+              coordinates r and s. The product rule must be used in order
+              to change the derivative of a to the derivative of r and s. ---*/
+        VDr[ii] = sqrt(2.0)*dfa*gb;
+        VDs[ii] = VDr[ii];
+        if(i > 0)
+        {
+          su2double tmp = pow((1.0-b), (i-1));
+          VDr[ii]       = 2.0*tmp*VDr[ii];
+          VDs[ii]       = (a+1.0)*tmp*VDs[ii] - i*tmp*sqrt(2.0)*fa*gb;
+        }
+
+        su2double tmp = pow((1.0-b), i);
+        VDs[ii] += sqrt(2.0)*fa*dgb*tmp;
+      }
+    }
+  }
+}
+
+void FEMStandardElementBaseClass::Vandermonde2D_Quadrilateral(unsigned short          nPoly,
+                                                              unsigned short          nDOFs,
+                                                              const vector<su2double> &r,
+                                                              const vector<su2double> &s,
+                                                              vector<su2double>       &V) {
+
+  /*--- Determine the number or rows of the Vandermonde matrix and check
+        if the dimension of V is correct.     ---*/
+  unsigned short nRows = r.size();
+  if(V.size() != nRows*nDOFs) {
+    cout << "Wrong size of the V matrix in Vandermonde2D_Quadrilateral" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- For a quadrilateral the basis functions are the product of the 1D
+        basis functions, which are the normalized Legendre polynomials.
+        The Legendre polynomials are implemented via Jacobi polynomials. ---*/
+  unsigned int ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=nPoly; ++j) {
+      for(unsigned short k=0; k<nRows; ++k, ++ii) {
+        V[ii] = NormJacobi(i,0,0,r[k])*NormJacobi(j,0,0,s[k]);
+      }
+    }
+  }
+}
+
+void FEMStandardElementBaseClass::GradVandermonde2D_Quadrilateral(unsigned short          nPoly,
+                                                                  unsigned short          nDOFs,
+                                                                  const vector<su2double> &r,
+                                                                  const vector<su2double> &s,
+                                                                  vector<su2double>       &VDr,
+                                                                  vector<su2double>       &VDs) {
+
+  /*--- Determine the number or rows of the gradient of the Vandermonde matrix
+        and check if the dimensions of VDr and VDs are correct.     ---*/
+  unsigned short nRows = r.size();
+  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs) {
+    cout << "Wrong size of the VDr and/or VDs matrices in GradVandermonde2D_Quadrilateral" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- For a quadrilateral the basis functions are the product of the 1D
+        basis functions, which are the normalized Legendre polynomials.
+        The Legendre polynomials are implemented via Jacobi polynomials.
+        Hence the derivatives in r- and s-direction can be computed easily. ---*/
+  unsigned int ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=nPoly; ++j) {
+      for(unsigned short k=0; k<nRows; ++k, ++ii) {
+        VDr[ii] = GradNormJacobi(i,0,0,r[k])*NormJacobi(j,0,0,s[k]);
+        VDs[ii] = GradNormJacobi(j,0,0,s[k])*NormJacobi(i,0,0,r[k]);
+      }
+    }
+  }
+}
+
+void FEMStandardElementBaseClass::Vandermonde3D_Tetrahedron(unsigned short          nPoly,
+                                                            unsigned short          nDOFs,
+                                                            const vector<su2double> &r,
+                                                            const vector<su2double> &s,
+                                                            const vector<su2double> &t,
+                                                            vector<su2double>       &V) {
+
+  /*--- Determine the number or rows of the Vandermonde matrix and check
+        if the dimension of V is correct.     ---*/
+  unsigned short nRows = r.size();
+  if(V.size() != nRows*nDOFs) {
+    cout << "Wrong size of the V matrix in Vandermonde3D_Tetrahedron" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- For a tetrahedron the orthogonal basis for the reference element is obtained by a
+        combination of Jacobi polynomials (of which the Legendre polynomials is a special
+        case). This is the result of the orthonormalization of the monomial basis. ---*/
+  unsigned int ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=(nPoly-i); ++j) {
+      for(unsigned short k=0; k<=(nPoly-i-j); ++k) {
+        for(unsigned short l=0; l<nRows; ++l, ++ii) {
+
+          /*--- Determine the coefficients a, b and c. ---*/
+          su2double a, b;
+          su2double tmp = s[l] + t[l];
+          if(fabs(tmp) < 1.e-8) a = -1.0;
+          else                  a = -1.0 - 2.0*(1.0+r[l])/tmp;
+
+          tmp = 1.0 - t[l];
+          if(fabs(tmp) < 1.e-8) b = -1.0;
+          else                  b = -1.0 + 2.0*(1.0+s[l])/tmp;
+
+          su2double c = t[l];
+
+          /*--- Determine the value of the current basis function in this point. ---*/
+          su2double tmpb = pow((1.0-b),i);
+          su2double tmpc = pow((1.0-c),i+j);
+          V[ii] = sqrt(8.0)*tmpb*tmpc*NormJacobi(i,0,0,a)*NormJacobi(j,2*i+1,0,b)
+                * NormJacobi(k,2*(i+j+1),0,c);
+        }
+      }
+    }
+  }
+}
+
+void FEMStandardElementBaseClass::GradVandermonde3D_Tetrahedron(unsigned short          nPoly,
+                                                                unsigned short          nDOFs,
+                                                                const vector<su2double> &r,
+                                                                const vector<su2double> &s,
+                                                                const vector<su2double> &t,
+                                                                vector<su2double>       &VDr,
+                                                                vector<su2double>       &VDs,
+                                                                vector<su2double>       &VDt) {
+
+  /*--- Determine the number or rows of the gradient of the Vandermonde matrix
+        and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
+  unsigned short nRows = r.size();
+  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs || VDt.size() != nRows*nDOFs) {
+    cout << "Wrong size of the VDr, VDs and VDt matrices in GradVandermonde3D_Tetrahedron" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- For a tetrahedron the orthogonal basis for the reference element is obtained by a
+        combination of Jacobi polynomials (of which the Legendre polynomials is a special
+        case). This is the result of the orthonormalization of the monomial basis.
+        Note that the sequence of the i, j and k loop must be identical to
+        the evaluation of the Vandermonde matrix itself.                ---*/
+  unsigned int ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=(nPoly-i); ++j) {
+      for(unsigned short k=0; k<=(nPoly-i-j); ++k) {
+        for(unsigned short l=0; l<nRows; ++l, ++ii) {
+
+          /*--- Determine the coefficients a, b and c. */
+          su2double a, b;
+          su2double tmp = s[l] + t[l];
+          if(fabs(tmp) < 1.e-8) a = -1.0;
+          else                  a = -1.0 - 2.0*(1.0+r[l])/tmp;
+
+          tmp = 1.0 - t[l];
+          if(fabs(tmp) < 1.e-8) b = -1.0;
+          else                  b = -1.0 + 2.0*(1.0+s[l])/tmp;
+
+          su2double c = t[l];
+
+          /*--- Determine the value of the three 1D contributions to the 3D basis functions as
+                well as the gradients of these basis functions w.r.t. to their arguments. ---*/
+          su2double fa  = NormJacobi(i,0,    0,a);
+          su2double gb  = NormJacobi(j,2*i+1,0,b);
+          su2double hc  = NormJacobi(k,2*(i+j+1),0,c);
+          su2double dfa = GradNormJacobi(i,0,    0,a);
+          su2double dgb = GradNormJacobi(j,2*i+1,0,b);
+          su2double dhc = GradNormJacobi(k,2*(i+j+1),0,c);
+
+          /*--- Compute the derivative of the basis function w.r.t. r. As r is only present in
+                the parameter a the derivative of the basis function w.r.t. a is multiplied by
+                dadr. Note that the implementation is such that all possible singularities are
+                divided out of the expression.                                  ---*/
+          VDr[ii] = sqrt(8.0)*dfa*gb*hc;
+          if(i   > 0) VDr[ii] *= 4.0*pow((1.0-b), (i-1));
+          if(i+j > 0) VDr[ii] *=     pow((1.0-c), (i+j-1));
+
+          /*--- Compute the derivative of the basis function w.r.t. s. As s is present in both
+                the parameters a and b, both variables must be taken into account when the
+                derivative is computed. Note that the implementation is such that all possible
+                singularities are divided out of the expression. The first part is the derivative
+                of the basis function w.r.t. b multiplied by dbds. This value is stored, because
+                it is needed later on to compute the derivative w.r.t. t.       ---*/
+          VDs[ii] = dgb*pow((1.0-b), i);
+          if(i   > 0) VDs[ii] -= i*gb*pow((1.0-b), (i-1));
+          if(i+j > 0) VDs[ii] *= 2.0*sqrt(8.0)*fa*hc*pow((1.0-c), (i+j-1));
+
+          su2double dPsidbXdbds = VDs[ii];
+
+          /*--- Add the contribution from the derivative of the basis function
+                w.r.t. a multiplied by dads.           ---*/
+          VDs[ii] += 0.5*(a+1.0)*VDr[ii];
+
+          /*--- Compute the derivative of the basis function w.r.t. t. As t is present in a, b and c,
+                all parameters must be taken into account when the derivative is computed. Note that
+                the implementation is such that all possible singularities are divided out of the
+                expression. The first part is the derivative of the basis function w.r.t. c,
+                which is equal to t.                                     ---*/
+          VDt[ii] = dhc*pow((1.0-c), (i+j));
+          if(i+j > 0) VDt[ii] -= (i+j)*hc*pow((1.0-c), (i+j-1));
+          VDt[ii] *= sqrt(8.0)*fa*gb*pow((1.0-b), i);
+
+          /*--- Add the contribution from the derivative of the basis function w.r.t. a multiplied
+                by dadt and the derivative w.r.t. b multiplied by dbdt.           ---*/
+          VDt[ii] += 0.5*(a+1.0)*VDr[ii] + 0.5*(b+1.0)*dPsidbXdbds;
+        }
+      }
+    }
+  }
+}
+
+void FEMStandardElementBaseClass::Vandermonde3D_Pyramid(unsigned short          nPoly,
+                                                        unsigned short          nDOFs,
+                                                        const vector<su2double> &r,
+                                                        const vector<su2double> &s,
+                                                        const vector<su2double> &t,
+                                                        vector<su2double>       &V) {
+
+  /*--- Determine the number or rows of the Vandermonde matrix and check
+        if the dimension of V is correct.     ---*/
+  unsigned short nRows = r.size();
+  if(V.size() != nRows*nDOFs) {
+    cout << "Wrong size of the V matrix in Vandermonde3D_Pyramid" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- For a pyramid the orthogonal basis for the reference element is
+        obtained by a combination of Jacobi polynomials (of which the Legendre
+        polynomials is a special case). This is the result of the
+        orthonormalization of the monomial basis. ---*/
+  unsigned int ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=nPoly; ++j) {
+      unsigned short muij = max(i,j);
+      for(unsigned short k=0; k<=(nPoly-muij); ++k) {
+        for(unsigned short l=0; l<nRows; ++l, ++ii) {
+
+          /*--- Determine the coefficients a, b and c. ---*/
+          su2double a, b;
+          su2double tmp = 0.5*(1.0-t[l]);
+          if(fabs(tmp) < 1.e-8) a = b = 0.0;
+          else {
+            a = r[l]/tmp;
+            b = s[l]/tmp;
+          }
+
+          su2double c = t[l];
+
+          /*--- Determine the value of the current basis function in this point. ---*/
+          su2double tmpt = pow(tmp,muij);
+          V[ii] = tmpt*NormJacobi(i,0,0,a)*NormJacobi(j,0,0,b)
+                * NormJacobi(k,2*(muij+1),0,c);
+        }
+      }
+    }
+  }
+}
+
+void FEMStandardElementBaseClass::GradVandermonde3D_Pyramid(unsigned short          nPoly,
+                                                            unsigned short          nDOFs,
+                                                            const vector<su2double> &r,
+                                                            const vector<su2double> &s,
+                                                            const vector<su2double> &t,
+                                                            vector<su2double>       &VDr,
+                                                            vector<su2double>       &VDs,
+                                                            vector<su2double>       &VDt) {
+
+  /*--- Determine the number or rows of the gradient of the Vandermonde matrix
+        and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
+  unsigned short nRows = r.size();
+  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs || VDt.size() != nRows*nDOFs) {
+    cout << "Wrong size of the VDr, VDs and VDt matrices in GradVandermonde3D_Pyramid" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- For a pyramid the orthogonal basis for the reference element is
+        obtained by a combination of Jacobi polynomials (of which the Legendre
+        polynomials is a special case). This is the result of the
+        orthonormalization of the monomial basis.
+        Note that the sequence of the i, j and k loop must be identical to
+        the evaluation of the Vandermonde matrix itself.  ---*/
+  unsigned int ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=nPoly; ++j) {
+      unsigned short muij = max(i,j);
+      for(unsigned short k=0; k<=(nPoly-muij); ++k) {
+        for(unsigned short l=0; l<nRows; ++l, ++ii) {
+
+          /*--- Determine the coefficients a, b and c. ---*/
+          su2double a, b;
+          su2double tmp = 0.5*(1.0-t[l]);
+          if(fabs(tmp) < 1.e-8) a = b = 0.0;
+          else {
+            a = r[l]/tmp;
+            b = s[l]/tmp;
+          }
+
+          su2double c = t[l];
+
+          /*--- Determine the value of the three 1D contributions to the 3D
+                basis functions as well as the gradients of these basis
+                functions w.r.t. to their arguments. ---*/
+          su2double fa  = NormJacobi(i,0,         0,a);
+          su2double gb  = NormJacobi(j,0,         0,b);
+          su2double hc  = NormJacobi(k,2*(muij+1),0,c);
+          su2double dfa = GradNormJacobi(i,0,         0,a);
+          su2double dgb = GradNormJacobi(j,0,         0,b);
+          su2double dhc = GradNormJacobi(k,2*(muij+1),0,c);
+
+          /*--- Compute the derivative of the basis function w.r.t. r and s.
+                As r is only present in the parameter a the derivative of
+                the basis function w.r.t. a is multiplied by dadr. A similar
+                argument holds for s, which is only present in the parameter b.
+                Note that the implementation is such that all possible
+                singularities are divided out of the expression.  ---*/
+          VDr[ii] = dfa*gb*hc;
+          VDs[ii] = fa*dgb*hc;
+          if(muij > 0)
+          {
+            su2double tmpt = pow(tmp, (muij-1));
+            VDr[ii] *= tmpt;
+            VDs[ii] *= tmpt;
+          }
+
+          /*--- Compute the derivative of the basis function w.r.t. t.
+                As t is present in a, b and c, all parameters must be taken into
+                account when the derivative is computed. Note that the
+                implementation is such that all possible singularities are
+                divided out of the expression.
+                The first part is the derivative of the basis function w.r.t. c,
+                which is equal to t.       --*/
+          VDt[ii] = dhc*pow(tmp, muij);
+          if(muij > 0) VDt[ii] -= 0.5*muij*hc*pow(tmp, (muij-1));
+          VDt[ii] *= fa*gb;
+
+          /*--- Add the contribution from the derivative of the basis function
+                w.r.t. a multiplied by dadt and the derivative w.r.t. b multiplied
+                by dbdt.                      ---*/
+          VDt[ii] += 0.5*a*VDr[ii] + 0.5*b*VDs[ii];
+        }
+      }
+    }
+  }
+}
+
+void FEMStandardElementBaseClass::Vandermonde3D_Prism(unsigned short          nPoly,
+                                                      unsigned short          nDOFs,
+                                                      const vector<su2double> &r,
+                                                      const vector<su2double> &s,
+                                                      const vector<su2double> &t,
+                                                      vector<su2double>       &V) {
+
+  /*--- Determine the number or rows of the Vandermonde matrix and check
+        if the dimension of V is correct.     ---*/
+  unsigned short nRows = r.size();
+  if(V.size() != nRows*nDOFs) {
+    cout << "Wrong size of the V matrix in Vandermonde3D_Prism" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- For a prism the orthogonal basis for the reference element is a tensor
+        product of the 1D basis functions in the structured direction of the prism
+        and the basis functions of a triangle. For that triangle the orthogonal
+        basis is obtained by a combination of a Jacobi polynomial and a Legendre
+        polynomial. This is the result of the orthonormalization of the
+        monomial basis.                   ---*/
+  unsigned int ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=(nPoly-i); ++j) {
+      for(unsigned short k=0; k<=nPoly; ++k) {
+        for(unsigned short l=0; l<nRows; ++l, ++ii) {
+
+          /*--- Determine the coefficients a and b. ---*/
+          su2double a;
+          if(fabs(s[l]-1.0) < 1.e-8) a = -1.0;
+          else a = 2.0*(1.0+r[l])/(1.0-s[l]) - 1.0;
+
+          su2double b = s[l];
+
+          /*--- Determine the value of the current basis function in this point. ---*/
+          su2double tmp = pow((1.0-b),i);
+          V[ii] = sqrt(2.0)*tmp*NormJacobi(i,0,0,a)*NormJacobi(j,2*i+1,0,b)
+                * NormJacobi(k,0,0,t[l]);
+        }
+      }
+    }
+  }
+}
+
+void FEMStandardElementBaseClass::GradVandermonde3D_Prism(unsigned short          nPoly,
+                                                          unsigned short          nDOFs,
+                                                          const vector<su2double> &r,
+                                                          const vector<su2double> &s,
+                                                          const vector<su2double> &t,
+                                                          vector<su2double>       &VDr,
+                                                          vector<su2double>       &VDs,
+                                                          vector<su2double>       &VDt) {
+
+  /*--- Determine the number or rows of the gradient of the Vandermonde matrix
+        and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
+  unsigned short nRows = r.size();
+  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs || VDt.size() != nRows*nDOFs) {
+    cout << "Wrong size of the VDr, VDs and VDt matrices in GradVandermonde3D_Prism" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- For a prism the orthogonal basis for the reference element is a tensor
+        product of the 1D basis functions in the structured direction of the prism
+        and the basis functions of a triangle. Hence the derivative matrices also
+        follows this tensor product rule.
+        Note that the sequence of the i, j and k loop must be identical to
+        the evaluation of the Vandermonde matrix itself.          ---*/
+  unsigned int ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=(nPoly-i); ++j) {
+      for(unsigned short k=0; k<=nPoly; ++k) {
+        for(unsigned short l=0; l<nRows; ++l, ++ii) {
+
+          /*--- Determine the coefficients a and b. ---*/
+          su2double a;
+          if(fabs(s[l]-1.0) < 1.e-8) a = -1.0;
+          else a = 2.0*(1.0+r[l])/(1.0-s[l]) - 1.0;
+
+          su2double b = s[l];
+
+          /*--- Determine the value of the two 1D contributions to the 2D
+                basis functions of the triangle as well as the gradients of
+                these basis functions w.r.t. to its argument. ---*/
+          su2double fa  = NormJacobi(i,0,    0,a);
+          su2double gb  = NormJacobi(j,2*i+1,0,b);
+          su2double dfa = GradNormJacobi(i,0,    0,a);
+          su2double dgb = GradNormJacobi(j,2*i+1,0,b);
+
+          /*--- Determine the gradients of the basis functions w.r.t. the
+                coordinates r and s. The product rule must be used in order
+                to change the derivative of a to the derivative of r and s. ---*/
+          VDr[ii] = sqrt(2.0)*dfa*gb;
+          VDs[ii] = VDr[ii];
+          if(i > 0)
+          {
+            su2double tmp = pow((1.0-b), (i-1));
+            VDr[ii]       = 2.0*tmp*VDr[ii];
+            VDs[ii]       = (a+1.0)*tmp*VDs[ii] - i*tmp*sqrt(2.0)*fa*gb;
+          }
+
+          su2double tmp = pow((1.0-b), i);
+          VDs[ii] += sqrt(2.0)*fa*dgb*tmp;
+
+          /*--- Multiply VDr and VDs with the contribution from the structured
+                direction of the prism.                 ---*/
+          VDr[ii] *= NormJacobi(k,0,0,t[l]);
+          VDs[ii] *= NormJacobi(k,0,0,t[l]);
+
+          /*--- Compute the derivative of the basis function in the t-direction,
+                which is the structured direction.             ---*/
+          VDt[ii] = sqrt(2.0)*tmp*fa*gb*GradNormJacobi(k,0,0,t[l]);
+        }
+      }
+    }
+  }
+}
+
+void FEMStandardElementBaseClass::Vandermonde3D_Hexahedron(unsigned short          nPoly,
+                                                           unsigned short          nDOFs,
+                                                           const vector<su2double> &r,
+                                                           const vector<su2double> &s,
+                                                           const vector<su2double> &t,
+                                                           vector<su2double>       &V) {
+
+  /*--- Determine the number or rows of the Vandermonde matrix and check
+        if the dimension of V is correct.     ---*/
+  unsigned short nRows = r.size();
+  if(V.size() != nRows*nDOFs) {
+    cout << "Wrong size of the V matrix in Vandermonde3D_Hexahedron" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- For a hexahedron the basis functions are the tensor product of the 1D
+        basis functions, which are the normalized Legendre polynomials. Note
+        that the Legendre polynomials are a special kind of Jacobi polynomials. ---*/
+  unsigned int ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=nPoly; ++j) {
+      for(unsigned short k=0; k<=nPoly; ++k) {
+        for(unsigned short l=0; l<nRows; ++l, ++ii) {
+          V[ii] = NormJacobi(i,0,0,r[l])*NormJacobi(j,0,0,s[l])
+                * NormJacobi(k,0,0,t[l]);
+        }
+      }
+    }
+  }
+}
+
+void FEMStandardElementBaseClass::GradVandermonde3D_Hexahedron(unsigned short          nPoly,
+                                                               unsigned short          nDOFs,
+                                                               const vector<su2double> &r,
+                                                               const vector<su2double> &s,
+                                                               const vector<su2double> &t,
+                                                               vector<su2double>       &VDr,
+                                                               vector<su2double>       &VDs,
+                                                               vector<su2double>       &VDt) {
+
+  /*--- Determine the number or rows of the gradient of the Vandermonde matrix
+        and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
+  unsigned short nRows = r.size();
+  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs || VDt.size() != nRows*nDOFs) {
+    cout << "Wrong size of the VDr, VDs and VDt matrices in GradVandermonde3D_Hexahedron" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- For a hexahedron the basis functions are the tensor product of the 1D
+        basis functions, which are the normalized Legendre polynomials.
+        The derivatives are therefore easy to compute.
+        Note that the Legendre polynomials are a special kind of Jacobi polynomials.
+        Also note that the sequence of the i, j and k loop must be identical to
+        the evaluation of the Vandermonde matrix itself.      ---*/
+  unsigned int ii = 0;
+  for(unsigned short i=0; i<=nPoly; ++i) {
+    for(unsigned short j=0; j<=nPoly; ++j) {
+      for(unsigned short k=0; k<=nPoly; ++k) {
+        for(unsigned short l=0; l<nRows; ++l, ++ii) {
+          VDr[ii] = NormJacobi(j,0,0,s[l])*NormJacobi(k,0,0,t[l])
+                  * GradNormJacobi(i,0,0,r[l]);
+          VDs[ii] = NormJacobi(i,0,0,r[l])*NormJacobi(k,0,0,t[l])
+                  * GradNormJacobi(j,0,0,s[l]);
+          VDt[ii] = NormJacobi(i,0,0,r[l])*NormJacobi(j,0,0,s[l])
+                  * GradNormJacobi(k,0,0,t[l]);
+        }
+      }
+    }
   }
 }
 
@@ -477,48 +1789,13 @@ void FEMStandardElementClass::Copy(const FEMStandardElementClass &other) {
   subConn2ForPlotting = other.subConn2ForPlotting;
 }
 
-void FEMStandardElementClass::DataStandardLine() {
+void FEMStandardElementClass::DataStandardLine(void) {
 
-  /*--- Determine the location of the DOFs of the edge. ---*/
-  nDOFs = nPoly + 1;
-  rDOFs.resize(nDOFs);
-
-  su2double dh = 2.0/nPoly;
-  for(unsigned i=0; i<nDOFs; ++i)
-    rDOFs[i] = -1.0 + i*dh;
-
-  /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
-        compute the Vandermonde matrix in the integration points. ---*/
-  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nIntegration);
-
-  Vandermonde1D(rDOFs, VInv);
-  InverseMatrix(nDOFs, VInv);
-
-  Vandermonde1D(rIntegration, V);
-
-  /*--- Allocate the memory for lagBasisIntegration and determine its values.
-        The Lagrange basis functions in the integration points are equal to
-        the interpolation coefficients from the DOFs to the integration points
-        and are obtained from the matrix product V*Vinv. Note that from a
-        mathematical point of view the transpose of V*VInv is stored, because
-        in this way the interpolation data for an integration point is
-        contiguous in memory.                                              ---*/
-  lagBasisIntegration.resize(nDOFs*nIntegration);
-  MatMulTranspose(nDOFs, V, VInv, lagBasisIntegration);
-
-  /*--- Compute the gradients of the 1D Vandermonde matrix in the integration
-        points. The vector V can be used to store the data.     ---*/
-  GradVandermonde1D(rIntegration, V);
-
-  /*--- Allocate the memory to store the derivatives in r-direction of the
-        Lagrange basis functions in the integration points and determine them.
-        The derivatives of the Lagrange basis functions in the integration points
-        are obtained from the matrix product V*Vinv. Note that from a
-        mathematical point of view the transpose of V*VInv is stored, because
-        in this way the gradient data for an integration point is
-        contiguous in memory.                                              ---*/
-  drLagBasisIntegration.resize(nDOFs*nIntegration);
-  MatMulTranspose(nDOFs, V, VInv, drLagBasisIntegration);
+  /*--- Determine the Lagrangian basis functions and its derivatives
+        in the integration points. ---*/
+  LagrangianBasisFunctionAndDerivativesLine(nPoly, rIntegration, nDOFs, rDOFs,
+                                            lagBasisIntegration,
+                                            drLagBasisIntegration);
 
   /*--- Determine the local connectivity of the two "faces" of the line element.
         For a line element the faces are just points.   ---*/
@@ -537,59 +1814,13 @@ void FEMStandardElementClass::DataStandardLine() {
 
 void FEMStandardElementClass::DataStandardTriangle(void) {
 
-  /*--- Determine the location of the DOFs of the standard triangle. ---*/
-  nDOFs = (nPoly+1)*(nPoly+2)/2;
-  rDOFs.resize(nDOFs);
-  sDOFs.resize(nDOFs);
-
-  su2double dh = 2.0/nPoly;
-
-  unsigned int ii = 0;
-  for(unsigned short j=0; j<=nPoly; ++j) {
-    su2double s = -1.0 + j*dh;
-    unsigned short uppBoundI = nPoly - j;
-    for(unsigned short i=0; i<=uppBoundI; ++i, ++ii) {
-      su2double r = -1.0 + i*dh;
-      rDOFs[ii]   = r;
-      sDOFs[ii]   = s;
-    }
-  }
-
-  /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
-        compute the Vandermonde matrix in the integration points. ---*/
-  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nIntegration);
-
-  Vandermonde2D_Triangle(rDOFs, sDOFs, VInv);
-  InverseMatrix(nDOFs, VInv);
-
-  Vandermonde2D_Triangle(rIntegration, sIntegration, V);
-
-  /*--- Allocate the memory for lagBasisIntegration and determine its values.
-        The Lagrange basis functions in the integration points are equal to
-        the interpolation coefficients from the DOFs to the integration points
-        and are obtained from the matrix product V*Vinv. Note that from a
-        mathematical point of view the transpose of V*VInv is stored, because
-        in this way the interpolation data for an integration point is
-        contiguous in memory.                                              ---*/
-  lagBasisIntegration.resize(nDOFs*nIntegration);
-  MatMulTranspose(nDOFs, V, VInv, lagBasisIntegration);
-
-  /*--- Compute the gradients of the 2D Vandermonde matrix in the integration points. ---*/
-  vector<su2double> VDr(nDOFs*nIntegration), VDs(nDOFs*nIntegration);
-  GradVandermonde2D_Triangle(rIntegration, sIntegration, VDr, VDs);
-
-  /*--- Allocate the memory to store the derivatives in r- and s-direction of the
-        Lagrange basis functions in the integration points and determine them.
-        The derivatives of the Lagrange basis functions in the integration points
-        are obtained from the matrix product VDr*Vinv and VDs*Vinv. Note that from
-        a mathematical point of view the transpose of the result is stored, because
-        in this way the gradient data for an integration point is
-        contiguous in memory.                                              ---*/
-  drLagBasisIntegration.resize(nDOFs*nIntegration);
-  dsLagBasisIntegration.resize(nDOFs*nIntegration);
-
-  MatMulTranspose(nDOFs, VDr, VInv, drLagBasisIntegration);
-  MatMulTranspose(nDOFs, VDs, VInv, dsLagBasisIntegration);
+  /*--- Determine the Lagrangian basis functions and its derivatives
+        in the integration points. ---*/
+  LagrangianBasisFunctionAndDerivativesTriangle(nPoly, rIntegration, sIntegration,
+                                                nDOFs, rDOFs, sDOFs,
+                                                lagBasisIntegration,
+                                                drLagBasisIntegration,
+                                                dsLagBasisIntegration);
 
   /*--- Determine the local connectivity of the three "faces" of the triangle.
         For a triangular element the faces are just lines. Make sure that the
@@ -644,60 +1875,14 @@ void FEMStandardElementClass::DataStandardTriangle(void) {
 
 void FEMStandardElementClass::DataStandardQuadrilateral(void) {
 
-  /*--- Determine the location of the DOFs of the standard quadrilateral. ---*/
-  nDOFs = (nPoly+1)*(nPoly+1);
-  rDOFs.resize(nDOFs);
-  sDOFs.resize(nDOFs);
-
-  su2double dh = 2.0/nPoly;
-
-  unsigned int ii = 0;
-  for(unsigned short j=0; j<=nPoly; ++j)
-  {
-    su2double s = -1.0 + j*dh;
-    for(unsigned short i=0; i<=nPoly; ++i, ++ii)
-    {
-      su2double r = -1.0 + i*dh;
-      rDOFs[ii]   = r;
-      sDOFs[ii]   = s;
-    }
-  }
-
-  /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
-        compute the Vandermonde matrix in the integration points. ---*/
-  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nIntegration);
-
-  Vandermonde2D_Quadrilateral(rDOFs, sDOFs, VInv);
-  InverseMatrix(nDOFs, VInv);
-
-  Vandermonde2D_Quadrilateral(rIntegration, sIntegration, V);
-
-  /*--- Allocate the memory for lagBasisIntegration and determine its values.
-        The Lagrange basis functions in the integration points are equal to
-        the interpolation coefficients from the DOFs to the integration points
-        and are obtained from the matrix product V*Vinv. Note that from a
-        mathematical point of view the transpose of V*VInv is stored, because
-        in this way the interpolation data for an integration point is
-        contiguous in memory.                                              ---*/
-  lagBasisIntegration.resize(nDOFs*nIntegration);
-  MatMulTranspose(nDOFs, V, VInv, lagBasisIntegration);
-
-  /*--- Compute the gradients of the 2D Vandermonde matrix in the integration points. ---*/
-  vector<su2double> VDr(nDOFs*nIntegration), VDs(nDOFs*nIntegration);
-  GradVandermonde2D_Quadrilateral(rIntegration, sIntegration, VDr, VDs);
-
-  /*--- Allocate the memory to store the derivatives in r- and s-direction of the
-        Lagrange basis functions in the integration points and determine them.
-        The derivatives of the Lagrange basis functions in the integration points
-        are obtained from the matrix product VDr*Vinv and VDr*Vinv. Note that from
-        a mathematical point of view the transpose of the result is stored, because
-        in this way the gradient data for an integration point is
-        contiguous in memory.                                              ---*/
-  drLagBasisIntegration.resize(nDOFs*nIntegration);
-  dsLagBasisIntegration.resize(nDOFs*nIntegration);
-
-  MatMulTranspose(nDOFs, VDr, VInv, drLagBasisIntegration);
-  MatMulTranspose(nDOFs, VDs, VInv, dsLagBasisIntegration);
+  /*--- Determine the Lagrangian basis functions and its derivatives
+        in the integration points. ---*/
+  LagrangianBasisFunctionAndDerivativesQuadrilateral(nPoly, rIntegration,
+                                                     sIntegration,
+                                                     nDOFs, rDOFs, sDOFs,
+                                                     lagBasisIntegration,
+                                                     drLagBasisIntegration,
+                                                     dsLagBasisIntegration);
 
   /*--- Determine the local connectivity of the four "faces" of the quad element.
         For a quad element the faces are just lines. Make sure that the element
@@ -730,66 +1915,15 @@ void FEMStandardElementClass::DataStandardQuadrilateral(void) {
 
 void FEMStandardElementClass::DataStandardTetrahedron(void) {
 
-  /*--- Determine the location of the DOFs of the standard tetrahedron. ---*/
-  nDOFs = (nPoly+1)*(nPoly+2)*(nPoly+3)/6;
-  rDOFs.resize(nDOFs);
-  sDOFs.resize(nDOFs);
-  tDOFs.resize(nDOFs);
-
-  su2double dh = 2.0/nPoly;
-
-  unsigned int ii = 0;
-  for(unsigned short k=0; k<=nPoly; ++k) {
-    su2double t = -1.0 + k*dh;
-    unsigned short uppBoundJ = nPoly - k;
-    for(unsigned short j=0; j<=uppBoundJ; ++j) {
-      su2double s = -1.0 + j*dh;
-      unsigned short uppBoundI = nPoly - k - j;
-      for(unsigned short i=0; i<=uppBoundI; ++i, ++ii) {
-        su2double r = -1.0 + i*dh;
-        rDOFs[ii] = r;
-        sDOFs[ii] = s;
-        tDOFs[ii] = t;
-      }
-    }
-  }
-
-  /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
-        compute the Vandermonde matrix in the integration points. ---*/
-  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nIntegration);
-
-  Vandermonde3D_Tetrahedron(rDOFs, sDOFs, tDOFs, VInv);
-  InverseMatrix(nDOFs, VInv);
-
-  Vandermonde3D_Tetrahedron(rIntegration, sIntegration, tIntegration, V);
-
-  /*--- Allocate the memory for lagBasisIntegration and determine its values.
-        The Lagrange basis functions in the integration points are equal to
-        the interpolation coefficients from the DOFs to the integration points
-        and are obtained from the matrix product V*Vinv. Note that from a
-        mathematical point of view the transpose of V*VInv is stored, because
-        in this way the interpolation data for an integration point is
-        contiguous in memory.                                              ---*/
-  lagBasisIntegration.resize(nDOFs*nIntegration);
-  MatMulTranspose(nDOFs, V, VInv, lagBasisIntegration);
-
-  /*--- Compute the gradients of the 3D Vandermonde matrix in the integration points. ---*/
-  vector<su2double> VDr(nDOFs*nIntegration), VDs(nDOFs*nIntegration), VDt(nDOFs*nIntegration);
-  GradVandermonde3D_Tetrahedron(rIntegration, sIntegration, tIntegration, VDr, VDs, VDt);
-
-  /*--- Allocate the memory to store the derivatives in r-, s- and t-direction of the
-        Lagrange basis functions in the integration points and determine them.
-        The derivatives of the Lagrange basis functions in the integration points
-        are obtained from the matrix product VDr*Vinv, VDr*Vinv and VDt*Vinv. Note that
-        from a mathematical point of view the transpose of the result is stored, because
-        in this way the gradient data for an integration point is contiguous in memory. ---*/
-  drLagBasisIntegration.resize(nDOFs*nIntegration);
-  dsLagBasisIntegration.resize(nDOFs*nIntegration);
-  dtLagBasisIntegration.resize(nDOFs*nIntegration);
-
-  MatMulTranspose(nDOFs, VDr, VInv, drLagBasisIntegration);
-  MatMulTranspose(nDOFs, VDs, VInv, dsLagBasisIntegration);
-  MatMulTranspose(nDOFs, VDt, VInv, dtLagBasisIntegration);
+  /*--- Determine the Lagrangian basis functions and its derivatives
+        in the integration points. ---*/
+  LagrangianBasisFunctionAndDerivativesTetrahedron(nPoly, rIntegration,
+                                                   sIntegration, tIntegration,
+                                                   nDOFs, rDOFs, sDOFs, tDOFs,
+                                                   lagBasisIntegration,
+                                                   drLagBasisIntegration,
+                                                   dsLagBasisIntegration,
+                                                   dtLagBasisIntegration);
 
   /*--- Determine the local connectivity of the four faces of the tetrahedron.
         For a tetrahedron the faces are triangles. ---*/
@@ -797,7 +1931,7 @@ void FEMStandardElementClass::DataStandardTetrahedron(void) {
   connFace0.reserve(nDOFsTriangle); connFace1.reserve(nDOFsTriangle);
   connFace2.reserve(nDOFsTriangle); connFace3.reserve(nDOFsTriangle);
 
-  ii = 0;
+  unsigned int ii = 0;
   for(unsigned short k=0; k<=nPoly; ++k) {
     unsigned short uppBoundJ = nPoly - k;
     for(unsigned short j=0; j<=uppBoundJ; ++j) {
@@ -830,78 +1964,15 @@ void FEMStandardElementClass::DataStandardTetrahedron(void) {
 
 void FEMStandardElementClass::DataStandardPyramid(void) {
 
-  /*--- Allocate the memory for the DOFs of the standard pyramid. ---*/
-  unsigned short nDOFsEdge = nPoly+1;
-  nDOFs = nDOFsEdge*(nDOFsEdge+1)*(2*nDOFsEdge+1)/6;
-  rDOFs.resize(nDOFs);
-  sDOFs.resize(nDOFs);
-  tDOFs.resize(nDOFs);
-
-  /*--- Determine the location of the DOFs of the standard pyramid.
-        The outer loop is in the k-direction, which is from base to top. ---*/
-  su2double dt         = 2.0/nPoly;
-  unsigned short mPoly = nPoly, ii = 0;
-
-  for(unsigned short k=0; k<=nPoly; ++k, --mPoly) {
-
-    /*--- Determine the minimum and maximum value for r and s for this t-value. ---*/
-    su2double t     = -1.0 + k*dt;
-    su2double rsMin =  0.5*(t-1.0);
-    su2double rsMax = -rsMin;
-
-    /*--- Determine the step size along the edges of the current quad.
-          Take the exceptional situation mPoly == 0 into account to avoid a
-          division by zero.     ---*/
-    su2double dh = mPoly ? (rsMax-rsMin)/mPoly : 0.0;
-
-    /*--- Loop over the vertices of the current quadrilateral. ---*/
-    for(unsigned short j=0; j<=mPoly; ++j) {
-      su2double s = rsMin + j*dh;
-      for(unsigned short i=0; i<=mPoly; ++i, ++ii) {
-        su2double r = rsMin + i*dh;
-        rDOFs[ii] = r;
-        sDOFs[ii] = s;
-        tDOFs[ii] = t;
-      }
-    }
-  }
-
-  /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
-        compute the Vandermonde matrix in the integration points. ---*/
-  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nIntegration);
-
-  Vandermonde3D_Pyramid(rDOFs, sDOFs, tDOFs, VInv);
-  InverseMatrix(nDOFs, VInv);
-
-  Vandermonde3D_Pyramid(rIntegration, sIntegration, tIntegration, V);
-
-  /*--- Allocate the memory for lagBasisIntegration and determine its values.
-        The Lagrange basis functions in the integration points are equal to
-        the interpolation coefficients from the DOFs to the integration points
-        and are obtained from the matrix product V*Vinv. Note that from a
-        mathematical point of view the transpose of V*VInv is stored, because
-        in this way the interpolation data for an integration point is
-        contiguous in memory.                                              ---*/
-  lagBasisIntegration.resize(nDOFs*nIntegration);
-  MatMulTranspose(nDOFs, V, VInv, lagBasisIntegration);
-
-  /*--- Compute the gradients of the 3D Vandermonde matrix in the integration points. ---*/
-  vector<su2double> VDr(nDOFs*nIntegration), VDs(nDOFs*nIntegration), VDt(nDOFs*nIntegration);
-  GradVandermonde3D_Pyramid(rIntegration, sIntegration, tIntegration, VDr, VDs, VDt);
-
-  /*--- Allocate the memory to store the derivatives in r-, s- and t-direction of the
-        Lagrange basis functions in the integration points and determine them.
-        The derivatives of the Lagrange basis functions in the integration points
-        are obtained from the matrix product VDr*Vinv, VDr*Vinv and VDt*Vinv. Note that
-        from a mathematical point of view the transpose of the result is stored, because
-        in this way the gradient data for an integration point is contiguous in memory. ---*/
-  drLagBasisIntegration.resize(nDOFs*nIntegration);
-  dsLagBasisIntegration.resize(nDOFs*nIntegration);
-  dtLagBasisIntegration.resize(nDOFs*nIntegration);
-
-  MatMulTranspose(nDOFs, VDr, VInv, drLagBasisIntegration);
-  MatMulTranspose(nDOFs, VDs, VInv, dsLagBasisIntegration);
-  MatMulTranspose(nDOFs, VDt, VInv, dtLagBasisIntegration);
+  /*--- Determine the Lagrangian basis functions and its derivatives
+        in the integration points. ---*/
+  LagrangianBasisFunctionAndDerivativesPyramid(nPoly, rIntegration,
+                                               sIntegration, tIntegration,
+                                               nDOFs, rDOFs, sDOFs, tDOFs,
+                                               lagBasisIntegration,
+                                               drLagBasisIntegration,
+                                               dsLagBasisIntegration,
+                                               dtLagBasisIntegration);
 
   /*--- Determine the local connectivity of the five faces of the pyramid.
         For a pyramid there are four triangular faces and one quadrilateral face. ---*/
@@ -914,7 +1985,8 @@ void FEMStandardElementClass::DataStandardPyramid(void) {
   connFace3.reserve(nDOFsTriangle);
   connFace4.reserve(nDOFsTriangle);
 
-  mPoly = nPoly; ii = 0;
+  unsigned short mPoly = nPoly;
+  unsigned int ii = 0;
   for(unsigned short k=0; k<=nPoly; ++k, --mPoly) {
     for(unsigned short j=0; j<=mPoly; ++j) {
       for(unsigned short i=0; i<=mPoly; ++i, ++ii) {
@@ -948,68 +2020,15 @@ void FEMStandardElementClass::DataStandardPyramid(void) {
 
 void FEMStandardElementClass::DataStandardPrism(void) {
 
-  /*--- Allocate the memory for the DOFs of the standard prism
-        and determine its locations. ---*/
-  unsigned short nDOFsEdge = nPoly+1;
-  nDOFs = nDOFsEdge*nDOFsEdge*(nDOFsEdge+1)/2;
-  rDOFs.resize(nDOFs);
-  sDOFs.resize(nDOFs);
-  tDOFs.resize(nDOFs);
-
-  su2double dh = 2.0/nPoly;
-
-  unsigned short ii = 0;
-  for(unsigned short k=0; k<=nPoly; ++k) {
-    const su2double t = -1.0 + k*dh;
-
-    for(unsigned short j=0; j<=nPoly; ++j) {
-      su2double s = -1.0 + j*dh;
-      unsigned short uppBoundI = nPoly - j;
-      for(unsigned short i=0; i<=uppBoundI; ++i, ++ii) {
-        su2double r = -1.0 + i*dh;
-        rDOFs[ii] = r;
-        sDOFs[ii] = s;
-        tDOFs[ii] = t;
-      }
-    }
-  }
-
-  /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
-        compute the Vandermonde matrix in the integration points. ---*/
-  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nIntegration);
-
-  Vandermonde3D_Prism(rDOFs, sDOFs, tDOFs, VInv);
-  InverseMatrix(nDOFs, VInv);
-
-  Vandermonde3D_Prism(rIntegration, sIntegration, tIntegration, V);
-
-  /*--- Allocate the memory for lagBasisIntegration and determine its values.
-        The Lagrange basis functions in the integration points are equal to
-        the interpolation coefficients from the DOFs to the integration points
-        and are obtained from the matrix product V*Vinv. Note that from a
-        mathematical point of view the transpose of V*VInv is stored, because
-        in this way the interpolation data for an integration point is
-        contiguous in memory.                                              ---*/
-  lagBasisIntegration.resize(nDOFs*nIntegration);
-  MatMulTranspose(nDOFs, V, VInv, lagBasisIntegration);
-
-  /*--- Compute the gradients of the 3D Vandermonde matrix in the integration points. ---*/
-  vector<su2double> VDr(nDOFs*nIntegration), VDs(nDOFs*nIntegration), VDt(nDOFs*nIntegration);
-  GradVandermonde3D_Prism(rIntegration, sIntegration, tIntegration, VDr, VDs, VDt);
-
-  /*--- Allocate the memory to store the derivatives in r-, s- and t-direction of the
-        Lagrange basis functions in the integration points and determine them.
-        The derivatives of the Lagrange basis functions in the integration points
-        are obtained from the matrix product VDr*Vinv, VDr*Vinv and VDt*Vinv. Note that
-        from a mathematical point of view the transpose of the result is stored, because
-        in this way the gradient data for an integration point is contiguous in memory. ---*/
-  drLagBasisIntegration.resize(nDOFs*nIntegration);
-  dsLagBasisIntegration.resize(nDOFs*nIntegration);
-  dtLagBasisIntegration.resize(nDOFs*nIntegration);
-
-  MatMulTranspose(nDOFs, VDr, VInv, drLagBasisIntegration);
-  MatMulTranspose(nDOFs, VDs, VInv, dsLagBasisIntegration);
-  MatMulTranspose(nDOFs, VDt, VInv, dtLagBasisIntegration);
+  /*--- Determine the Lagrangian basis functions and its derivatives
+        in the integration points. ---*/
+  LagrangianBasisFunctionAndDerivativesPrism(nPoly, rIntegration,
+                                             sIntegration, tIntegration,
+                                             nDOFs, rDOFs, sDOFs, tDOFs,
+                                             lagBasisIntegration,
+                                             drLagBasisIntegration,
+                                             dsLagBasisIntegration,
+                                             dtLagBasisIntegration);
 
   /*--- Determine the local connectivity of the five faces of the prism.
         For a prism there are two triangular faces and three quadrilateral faces. ---*/
@@ -1022,7 +2041,7 @@ void FEMStandardElementClass::DataStandardPrism(void) {
   connFace3.reserve(nDOFsQuad);
   connFace4.reserve(nDOFsQuad);
 
-  ii = 0;
+  unsigned int ii = 0;
   for(unsigned short k=0; k<=nPoly; ++k) {
     for(unsigned short j=0; j<=nPoly; ++j) {
       unsigned short uppBoundI = nPoly - j;
@@ -1058,66 +2077,15 @@ void FEMStandardElementClass::DataStandardPrism(void) {
 
 void FEMStandardElementClass::DataStandardHexahedron(void) {
 
-  /*--- Allocate the memory for the DOFs of the standard hexahedron
-        and determine its locations. ---*/
-  unsigned short nDOFsEdge = nPoly+1;
-  nDOFs = nDOFsEdge*nDOFsEdge*nDOFsEdge;
-  rDOFs.resize(nDOFs);
-  sDOFs.resize(nDOFs);
-  tDOFs.resize(nDOFs);
-
-  su2double dh = 2.0/nPoly;
-
-  unsigned short ii = 0;
-  for(unsigned short k=0; k<=nPoly; ++k) {
-    su2double t = -1.0 + k*dh;
-    for(unsigned short j=0; j<=nPoly; ++j) {
-      su2double s = -1.0 + j*dh;
-      for(unsigned short i=0; i<=nPoly; ++i, ++ii) {
-        su2double r = -1.0 + i*dh;
-        rDOFs[ii] = r;
-        sDOFs[ii] = s;
-        tDOFs[ii] = t;
-      }
-    }
-  }
-
-  /*--- Compute the inverse of the Vandermonde matrix in the DOFs and
-        compute the Vandermonde matrix in the integration points. ---*/
-  vector<su2double> VInv(nDOFs*nDOFs), V(nDOFs*nIntegration);
-
-  Vandermonde3D_Hexahedron(rDOFs, sDOFs, tDOFs, VInv);
-  InverseMatrix(nDOFs, VInv);
-
-  Vandermonde3D_Hexahedron(rIntegration, sIntegration, tIntegration, V);
-
-  /*--- Allocate the memory for lagBasisIntegration and determine its values.
-        The Lagrange basis functions in the integration points are equal to
-        the interpolation coefficients from the DOFs to the integration points
-        and are obtained from the matrix product V*Vinv. Note that from a
-        mathematical point of view the transpose of V*VInv is stored, because
-        in this way the interpolation data for an integration point is
-        contiguous in memory.                                              ---*/
-  lagBasisIntegration.resize(nDOFs*nIntegration);
-  MatMulTranspose(nDOFs, V, VInv, lagBasisIntegration);
-
-  /*--- Compute the gradients of the 3D Vandermonde matrix in the integration points. ---*/
-  vector<su2double> VDr(nDOFs*nIntegration), VDs(nDOFs*nIntegration), VDt(nDOFs*nIntegration);
-  GradVandermonde3D_Hexahedron(rIntegration, sIntegration, tIntegration, VDr, VDs, VDt);
-
-  /*--- Allocate the memory to store the derivatives in r-, s- and t-direction of the
-        Lagrange basis functions in the integration points and determine them.
-        The derivatives of the Lagrange basis functions in the integration points
-        are obtained from the matrix product VDr*Vinv, VDr*Vinv and VDt*Vinv. Note that
-        from a mathematical point of view the transpose of the result is stored, because
-        in this way the gradient data for an integration point is contiguous in memory. ---*/
-  drLagBasisIntegration.resize(nDOFs*nIntegration);
-  dsLagBasisIntegration.resize(nDOFs*nIntegration);
-  dtLagBasisIntegration.resize(nDOFs*nIntegration);
-
-  MatMulTranspose(nDOFs, VDr, VInv, drLagBasisIntegration);
-  MatMulTranspose(nDOFs, VDs, VInv, dsLagBasisIntegration);
-  MatMulTranspose(nDOFs, VDt, VInv, dtLagBasisIntegration);
+  /*--- Determine the Lagrangian basis functions and its derivatives
+        in the integration points. ---*/
+  LagrangianBasisFunctionAndDerivativesHexahedron(nPoly, rIntegration,
+                                                  sIntegration, tIntegration,
+                                                  nDOFs, rDOFs, sDOFs, tDOFs,
+                                                  lagBasisIntegration,
+                                                  drLagBasisIntegration,
+                                                  dsLagBasisIntegration,
+                                                  dtLagBasisIntegration);
 
   /*--- Determine the local connectivity of the six faces of the hexahedron.
         For a hexahedron the faces are all quadrilateral faces. ---*/
@@ -1130,7 +2098,7 @@ void FEMStandardElementClass::DataStandardHexahedron(void) {
   connFace4.reserve(nDOFsQuad);
   connFace5.reserve(nDOFsQuad);
 
-  ii = 0;
+  unsigned int ii = 0;
   for(unsigned short k=0; k<=nPoly; ++k) {
     for(unsigned short j=0; j<=nPoly; ++j) {
       for(unsigned short i=0; i<=nPoly; ++i, ++ii) {
@@ -1630,770 +2598,6 @@ void FEMStandardElementClass::SubConnHexahedron(void) {
         subConn1ForPlotting.push_back(n5);
         subConn1ForPlotting.push_back(n6);
         subConn1ForPlotting.push_back(n7);
-      }
-    }
-  }
-}
-
-su2double FEMStandardElementClass::NormJacobi(unsigned short n,
-                                              unsigned short alpha,
-                                              unsigned short beta,
-                                              su2double      x) {
-  /*--- Some abbreviations. ---*/
-  su2double ap1   = alpha + 1;
-  su2double bp1   = beta  + 1;
-  su2double apb   = alpha + beta;
-  su2double apbp1 = apb + 1;
-  su2double apbp2 = apb + 2;
-  su2double apbp3 = apb + 3;
-  su2double b2ma2 = beta*beta - alpha*alpha;
-
-  /*--- Initialize the normalized polynomials. ---*/
-  su2double Pnm1 = sqrt(pow(0.5,apbp1)*tgamma(apbp2)/(tgamma(ap1)*tgamma(bp1)));
-  su2double Pn   = 0.5*Pnm1*(apbp2*x + alpha - beta)*sqrt(apbp3/(ap1*bp1));
-
-  /*--- Take care of the special situation of n == 0. ---*/
-  if(n == 0) Pn = Pnm1;
-  else
-  {
-    /*--- The value of the normalized Legendre polynomial must be obtained via recursion. ---*/
-    for(unsigned short i=2; i<=n; ++i)
-    {
-      /*--- Compute the coefficients a for i and i-1 and the coefficient bi. ---*/
-      unsigned short j = i-1;
-      su2double   tmp  = 2*j + apb;
-      su2double   aim1 = 2.0*sqrt(j*(j+apb)*(j+alpha)*(j+beta)/((tmp-1.0)*(tmp+1.0)))
-                       / tmp;
-
-      su2double bi = b2ma2/(tmp*(tmp+2.0));
-
-      tmp          = 2*i + apb;
-      su2double ai = 2.0*sqrt(i*(i+apb)*(i+alpha)*(i+beta)/((tmp-1.0)*(tmp+1.0)))
-                   / tmp;
-
-      /*--- Compute the new value of Pn and make sure to store Pnm1 correctly. ---*/
-      tmp  = Pnm1;
-      Pnm1 = Pn;
-
-      Pn = ((x-bi)*Pn - aim1*tmp)/ai;
-    }
-  }
-
-  /*--- Return Pn. ---*/
-  return Pn;
-}
-
-su2double FEMStandardElementClass::GradNormJacobi(unsigned short n,
-                                                  unsigned short alpha,
-                                                  unsigned short beta,
-                                                  su2double      x) {
-
-  /*--- Make a distinction for n == 0 and n > 0. For n == 0 the derivative is
-        zero, because the polynomial itself is constant. ---*/
-  su2double grad;
-  if(n == 0) grad = 0.0;
-  else
-  {
-    su2double tmp = n*(n+alpha+beta+1.0);
-    grad          = sqrt(tmp)*NormJacobi(n-1, alpha+1, beta+1, x);
-  }
-
-  /*--- Return the gradient. ---*/
-  return grad;
-}
-
-void FEMStandardElementClass::Vandermonde1D(vector<su2double> &r,
-                                            vector<su2double> &V) {
-
-  /*--- Determine the number or rows of the Vandermonde matrix and check
-        if the dimension of V is correct.     ---*/
-  unsigned short nRows = r.size();
-  if(V.size() != nRows*nDOFs) {
-    cout << "Wrong size of the V matrix in Vandermonde1D" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  /*--- Compute the Vandermonde matrix. ---*/
-  unsigned int ii = 0;
-  for(unsigned short i=0; i<nDOFs; ++i) {
-    for(unsigned short k=0; k<nRows; ++k, ++ii) {
-      V[ii] = NormJacobi(i, 0, 0, r[k]);
-    }
-  }
-}
-
-void FEMStandardElementClass::GradVandermonde1D(vector<su2double> &r,
-                                                vector<su2double> &VDr) {
-
-  /*--- Determine the number or rows of the gradient of the Vandermonde matrix
-        and check if the dimension of VDr is correct.     ---*/
-  unsigned short nRows = r.size();
-  if(VDr.size() != nRows*nDOFs) {
-    cout << "Wrong size of the VDr matrix in GradVandermonde1D" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  /*--- Compute the gradient of the Vandermonde matrix. ---*/
-  unsigned int ii = 0;
-  for(unsigned short i=0; i<nDOFs; ++i) {
-    for(unsigned short k=0; k<nRows; ++k, ++ii) {
-      VDr[ii] = GradNormJacobi(i, 0, 0, r[k]);
-    }
-  }
-}
-
-void FEMStandardElementClass::Vandermonde2D_Triangle(vector<su2double> &r,
-                                                     vector<su2double> &s,
-                                                     vector<su2double> &V) {
-
-  /*--- Determine the number or rows of the Vandermonde matrix and check
-        if the dimension of V is correct.     ---*/
-  unsigned short nRows = r.size();
-  if(V.size() != nRows*nDOFs) {
-    cout << "Wrong size of the V matrix in Vandermonde2D_Triangle" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  /*--- For a triangle the orthogonal basis for the reference element is obtained
-        by a combination of a Jacobi polynomial and a Legendre polynomial. This
-        is the result of the orthonormalization of the monomial basis. ---*/
-  unsigned int ii = 0;
-  for(unsigned short i=0; i<=nPoly; ++i) {
-    for(unsigned short j=0; j<=(nPoly-i); ++j) {
-      for(unsigned short k=0; k<nRows; ++k, ++ii) {
-
-        /*--- Determine the coefficients a and b. ---*/
-        su2double a;
-        if(fabs(s[k]-1.0) < 1.e-8) a = -1.0;
-        else a = 2.0*(1.0+r[k])/(1.0-s[k]) - 1.0;
-
-        su2double b = s[k];
-
-        /*--- Determine the value of the current basis function in this point. ---*/
-        su2double tmp = pow((1.0-b),i);
-        V[ii] = sqrt(2.0)*tmp*NormJacobi(i,0,0,a)*NormJacobi(j,2*i+1,0,b);
-      }
-    }
-  }
-}
-
-void FEMStandardElementClass::GradVandermonde2D_Triangle(vector<su2double> &r,
-                                                         vector<su2double> &s,
-                                                         vector<su2double> &VDr,
-                                                         vector<su2double> &VDs) {
-
-  /*--- Determine the number or rows of the gradient of the Vandermonde matrix
-        and check if the dimensions of VDr and VDs are correct.     ---*/
-  unsigned short nRows = r.size();
-  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs) {
-    cout << "Wrong size of the VDr and/or VDs matrices in GradVandermonde2D_Triangle" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  /*--- For a triangle the orthogonal basis for the reference element is obtained
-        by a combination of a Jacobi polynomial and a Legendre polynomial. This
-        is the result of the orthonormalization of the monomial basis. ---*/
-  unsigned int ii = 0;
-  for(unsigned short i=0; i<=nPoly; ++i) {
-    for(unsigned short j=0; j<=(nPoly-i); ++j) {
-      for(unsigned k=0; k<nRows; ++k, ++ii) {
-
-        /*--- Determine the coefficients a and b. ---*/
-        su2double a;
-        if(fabs(s[k]-1.0) < 1.e-8) a = -1.0;
-        else a = 2.0*(1.0+r[k])/(1.0-s[k]) - 1.0;
-
-        su2double b = s[k];
-
-        /*--- Determine the value of the two 1D contributions to the 2D
-              basis functions as well as the gradients of these basis
-              functions w.r.t. to their arguments. ---*/
-        su2double fa  = NormJacobi(i,0,    0,a);
-        su2double gb  = NormJacobi(j,2*i+1,0,b);
-        su2double dfa = GradNormJacobi(i,0,    0,a);
-        su2double dgb = GradNormJacobi(j,2*i+1,0,b);
-
-        /*--- Determine the gradients of the basis functions w.r.t. the
-              coordinates r and s. The product rule must be used in order
-              to change the derivative of a to the derivative of r and s. ---*/
-        VDr[ii] = sqrt(2.0)*dfa*gb;
-        VDs[ii] = VDr[ii];
-        if(i > 0)
-        {
-          su2double tmp = pow((1.0-b), (i-1));
-          VDr[ii]       = 2.0*tmp*VDr[ii];
-          VDs[ii]       = (a+1.0)*tmp*VDs[ii] - i*tmp*sqrt(2.0)*fa*gb;
-        }
-
-        su2double tmp = pow((1.0-b), i);
-        VDs[ii] += sqrt(2.0)*fa*dgb*tmp;
-      }
-    }
-  }
-}
-
-void FEMStandardElementClass::Vandermonde2D_Quadrilateral(vector<su2double> &r,
-                                                          vector<su2double> &s,
-                                                          vector<su2double> &V) {
-
-  /*--- Determine the number or rows of the Vandermonde matrix and check
-        if the dimension of V is correct.     ---*/
-  unsigned short nRows = r.size();
-  if(V.size() != nRows*nDOFs) {
-    cout << "Wrong size of the V matrix in Vandermonde2D_Quadrilateral" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  /*--- For a quadrilateral the basis functions are the product of the 1D
-        basis functions, which are the normalized Legendre polynomials.
-        The Legendre polynomials are implemented via Jacobi polynomials. ---*/
-  unsigned int ii = 0;
-  for(unsigned short i=0; i<=nPoly; ++i) {
-    for(unsigned short j=0; j<=nPoly; ++j) {
-      for(unsigned short k=0; k<nRows; ++k, ++ii) {
-        V[ii] = NormJacobi(i,0,0,r[k])*NormJacobi(j,0,0,s[k]);
-      }
-    }
-  }
-}
-
-void FEMStandardElementClass::GradVandermonde2D_Quadrilateral(vector<su2double> &r,
-                                                              vector<su2double> &s,
-                                                              vector<su2double> &VDr,
-                                                              vector<su2double> &VDs) {
-
-  /*--- Determine the number or rows of the gradient of the Vandermonde matrix
-        and check if the dimensions of VDr and VDs are correct.     ---*/
-  unsigned short nRows = r.size();
-  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs) {
-    cout << "Wrong size of the VDr and/or VDs matrices in GradVandermonde2D_Quadrilateral" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  /*--- For a quadrilateral the basis functions are the product of the 1D
-        basis functions, which are the normalized Legendre polynomials.
-        The Legendre polynomials are implemented via Jacobi polynomials.
-        Hence the derivatives in r- and s-direction can be computed easily. ---*/
-  unsigned int ii = 0;
-  for(unsigned short i=0; i<=nPoly; ++i) {
-    for(unsigned short j=0; j<=nPoly; ++j) {
-      for(unsigned short k=0; k<nRows; ++k, ++ii) {
-        VDr[ii] = GradNormJacobi(i,0,0,r[k])*NormJacobi(j,0,0,s[k]);
-        VDs[ii] = GradNormJacobi(j,0,0,s[k])*NormJacobi(i,0,0,r[k]);
-      }
-    }
-  }
-}
-
-void FEMStandardElementClass::Vandermonde3D_Tetrahedron(vector<su2double> &r,
-                                                        vector<su2double> &s,
-                                                        vector<su2double> &t,
-                                                        vector<su2double> &V) {
-
-  /*--- Determine the number or rows of the Vandermonde matrix and check
-        if the dimension of V is correct.     ---*/
-  unsigned short nRows = r.size();
-  if(V.size() != nRows*nDOFs) {
-    cout << "Wrong size of the V matrix in Vandermonde3D_Tetrahedron" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  /*--- For a tetrahedron the orthogonal basis for the reference element is obtained by a
-        combination of Jacobi polynomials (of which the Legendre polynomials is a special
-        case). This is the result of the orthonormalization of the monomial basis. ---*/
-  unsigned int ii = 0;
-  for(unsigned short i=0; i<=nPoly; ++i) {
-    for(unsigned short j=0; j<=(nPoly-i); ++j) {
-      for(unsigned short k=0; k<=(nPoly-i-j); ++k) {
-        for(unsigned short l=0; l<nRows; ++l, ++ii) {
-
-          /*--- Determine the coefficients a, b and c. ---*/
-          su2double a, b;
-          su2double tmp = s[l] + t[l];
-          if(fabs(tmp) < 1.e-8) a = -1.0;
-          else                  a = -1.0 - 2.0*(1.0+r[l])/tmp;
-
-          tmp = 1.0 - t[l];
-          if(fabs(tmp) < 1.e-8) b = -1.0;
-          else                  b = -1.0 + 2.0*(1.0+s[l])/tmp;
-
-          su2double c = t[l];
-
-          /*--- Determine the value of the current basis function in this point. ---*/
-          su2double tmpb = pow((1.0-b),i);
-          su2double tmpc = pow((1.0-c),i+j);
-          V[ii] = sqrt(8.0)*tmpb*tmpc*NormJacobi(i,0,0,a)*NormJacobi(j,2*i+1,0,b)
-                * NormJacobi(k,2*(i+j+1),0,c);
-        }
-      }
-    }
-  }
-}
-
-void FEMStandardElementClass::GradVandermonde3D_Tetrahedron(vector<su2double> &r,
-                                                            vector<su2double> &s,
-                                                            vector<su2double> &t,
-                                                            vector<su2double> &VDr,
-                                                            vector<su2double> &VDs,
-                                                            vector<su2double> &VDt) {
-
-  /*--- Determine the number or rows of the gradient of the Vandermonde matrix
-        and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
-  unsigned short nRows = r.size();
-  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs || VDt.size() != nRows*nDOFs) {
-    cout << "Wrong size of the VDr, VDs and VDt matrices in GradVandermonde3D_Tetrahedron" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  /*--- For a tetrahedron the orthogonal basis for the reference element is obtained by a
-        combination of Jacobi polynomials (of which the Legendre polynomials is a special
-        case). This is the result of the orthonormalization of the monomial basis.
-        Note that the sequence of the i, j and k loop must be identical to
-        the evaluation of the Vandermonde matrix itself.                ---*/
-  unsigned int ii = 0;
-  for(unsigned short i=0; i<=nPoly; ++i) {
-    for(unsigned short j=0; j<=(nPoly-i); ++j) {
-      for(unsigned short k=0; k<=(nPoly-i-j); ++k) {
-        for(unsigned short l=0; l<nRows; ++l, ++ii) {
-
-          /*--- Determine the coefficients a, b and c. */
-          su2double a, b;
-          su2double tmp = s[l] + t[l];
-          if(fabs(tmp) < 1.e-8) a = -1.0;
-          else                  a = -1.0 - 2.0*(1.0+r[l])/tmp;
-
-          tmp = 1.0 - t[l];
-          if(fabs(tmp) < 1.e-8) b = -1.0;
-          else                  b = -1.0 + 2.0*(1.0+s[l])/tmp;
-
-          su2double c = t[l];
-
-          /*--- Determine the value of the three 1D contributions to the 3D basis functions as
-                well as the gradients of these basis functions w.r.t. to their arguments. ---*/
-          su2double fa  = NormJacobi(i,0,    0,a);
-          su2double gb  = NormJacobi(j,2*i+1,0,b);
-          su2double hc  = NormJacobi(k,2*(i+j+1),0,c);
-          su2double dfa = GradNormJacobi(i,0,    0,a);
-          su2double dgb = GradNormJacobi(j,2*i+1,0,b);
-          su2double dhc = GradNormJacobi(k,2*(i+j+1),0,c);
-
-          /*--- Compute the derivative of the basis function w.r.t. r. As r is only present in
-                the parameter a the derivative of the basis function w.r.t. a is multiplied by
-                dadr. Note that the implementation is such that all possible singularities are
-                divided out of the expression.                                  ---*/
-          VDr[ii] = sqrt(8.0)*dfa*gb*hc;
-          if(i   > 0) VDr[ii] *= 4.0*pow((1.0-b), (i-1));
-          if(i+j > 0) VDr[ii] *=     pow((1.0-c), (i+j-1));
-
-          /*--- Compute the derivative of the basis function w.r.t. s. As s is present in both
-                the parameters a and b, both variables must be taken into account when the
-                derivative is computed. Note that the implementation is such that all possible
-                singularities are divided out of the expression. The first part is the derivative
-                of the basis function w.r.t. b multiplied by dbds. This value is stored, because
-                it is needed later on to compute the derivative w.r.t. t.       ---*/
-          VDs[ii] = dgb*pow((1.0-b), i);
-          if(i   > 0) VDs[ii] -= i*gb*pow((1.0-b), (i-1));
-          if(i+j > 0) VDs[ii] *= 2.0*sqrt(8.0)*fa*hc*pow((1.0-c), (i+j-1));
-
-          su2double dPsidbXdbds = VDs[ii];
-
-          /*--- Add the contribution from the derivative of the basis function
-                w.r.t. a multiplied by dads.           ---*/
-          VDs[ii] += 0.5*(a+1.0)*VDr[ii];
-
-          /*--- Compute the derivative of the basis function w.r.t. t. As t is present in a, b and c,
-                all parameters must be taken into account when the derivative is computed. Note that
-                the implementation is such that all possible singularities are divided out of the
-                expression. The first part is the derivative of the basis function w.r.t. c,
-                which is equal to t.                                     ---*/
-          VDt[ii] = dhc*pow((1.0-c), (i+j));
-          if(i+j > 0) VDt[ii] -= (i+j)*hc*pow((1.0-c), (i+j-1));
-          VDt[ii] *= sqrt(8.0)*fa*gb*pow((1.0-b), i);
-
-          /*--- Add the contribution from the derivative of the basis function w.r.t. a multiplied
-                by dadt and the derivative w.r.t. b multiplied by dbdt.           ---*/
-          VDt[ii] += 0.5*(a+1.0)*VDr[ii] + 0.5*(b+1.0)*dPsidbXdbds;
-        }
-      }
-    }
-  }
-}
-
-void FEMStandardElementClass::Vandermonde3D_Pyramid(vector<su2double> &r,
-                                                    vector<su2double> &s,
-                                                    vector<su2double> &t,
-                                                    vector<su2double> &V) {
-
-  /*--- Determine the number or rows of the Vandermonde matrix and check
-        if the dimension of V is correct.     ---*/
-  unsigned short nRows = r.size();
-  if(V.size() != nRows*nDOFs) {
-    cout << "Wrong size of the V matrix in Vandermonde3D_Pyramid" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  /*--- For a pyramid the orthogonal basis for the reference element is
-        obtained by a combination of Jacobi polynomials (of which the Legendre
-        polynomials is a special case). This is the result of the
-        orthonormalization of the monomial basis. ---*/
-  unsigned int ii = 0;
-  for(unsigned short i=0; i<=nPoly; ++i) {
-    for(unsigned short j=0; j<=nPoly; ++j) {
-      unsigned short muij = max(i,j);
-      for(unsigned short k=0; k<=(nPoly-muij); ++k) {
-        for(unsigned short l=0; l<nRows; ++l, ++ii) {
-
-          /*--- Determine the coefficients a, b and c. ---*/
-          su2double a, b;
-          su2double tmp = 0.5*(1.0-t[l]);
-          if(fabs(tmp) < 1.e-8) a = b = 0.0;
-          else {
-            a = r[l]/tmp;
-            b = s[l]/tmp;
-          }
-
-          su2double c = t[l];
-
-          /*--- Determine the value of the current basis function in this point. ---*/
-          su2double tmpt = pow(tmp,muij);
-          V[ii] = tmpt*NormJacobi(i,0,0,a)*NormJacobi(j,0,0,b)
-                * NormJacobi(k,2*(muij+1),0,c);
-        }
-      }
-    }
-  }
-}
-
-void FEMStandardElementClass::GradVandermonde3D_Pyramid(vector<su2double> &r,
-                                                        vector<su2double> &s,
-                                                        vector<su2double> &t,
-                                                        vector<su2double> &VDr,
-                                                        vector<su2double> &VDs,
-                                                        vector<su2double> &VDt) {
-
-  /*--- Determine the number or rows of the gradient of the Vandermonde matrix
-        and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
-  unsigned short nRows = r.size();
-  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs || VDt.size() != nRows*nDOFs) {
-    cout << "Wrong size of the VDr, VDs and VDt matrices in GradVandermonde3D_Pyramid" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  /*--- For a pyramid the orthogonal basis for the reference element is
-        obtained by a combination of Jacobi polynomials (of which the Legendre
-        polynomials is a special case). This is the result of the
-        orthonormalization of the monomial basis.
-        Note that the sequence of the i, j and k loop must be identical to
-        the evaluation of the Vandermonde matrix itself.  ---*/
-  unsigned int ii = 0;
-  for(unsigned short i=0; i<=nPoly; ++i) {
-    for(unsigned short j=0; j<=nPoly; ++j) {
-      unsigned short muij = max(i,j);
-      for(unsigned short k=0; k<=(nPoly-muij); ++k) {
-        for(unsigned short l=0; l<nRows; ++l, ++ii) {
-
-          /*--- Determine the coefficients a, b and c. ---*/
-          su2double a, b;
-          su2double tmp = 0.5*(1.0-t[l]);
-          if(fabs(tmp) < 1.e-8) a = b = 0.0;
-          else {
-            a = r[l]/tmp;
-            b = s[l]/tmp;
-          }
-
-          su2double c = t[l];
-
-          /*--- Determine the value of the three 1D contributions to the 3D
-                basis functions as well as the gradients of these basis
-                functions w.r.t. to their arguments. ---*/
-          su2double fa  = NormJacobi(i,0,         0,a);
-          su2double gb  = NormJacobi(j,0,         0,b);
-          su2double hc  = NormJacobi(k,2*(muij+1),0,c);
-          su2double dfa = GradNormJacobi(i,0,         0,a);
-          su2double dgb = GradNormJacobi(j,0,         0,b);
-          su2double dhc = GradNormJacobi(k,2*(muij+1),0,c);
-
-          /*--- Compute the derivative of the basis function w.r.t. r and s.
-                As r is only present in the parameter a the derivative of
-                the basis function w.r.t. a is multiplied by dadr. A similar
-                argument holds for s, which is only present in the parameter b.
-                Note that the implementation is such that all possible
-                singularities are divided out of the expression.  ---*/
-          VDr[ii] = dfa*gb*hc;
-          VDs[ii] = fa*dgb*hc;
-          if(muij > 0)
-          {
-            su2double tmpt = pow(tmp, (muij-1));
-            VDr[ii] *= tmpt;
-            VDs[ii] *= tmpt;
-          }
-
-          /*--- Compute the derivative of the basis function w.r.t. t.
-                As t is present in a, b and c, all parameters must be taken into
-                account when the derivative is computed. Note that the
-                implementation is such that all possible singularities are
-                divided out of the expression.
-                The first part is the derivative of the basis function w.r.t. c,
-                which is equal to t.       --*/
-          VDt[ii] = dhc*pow(tmp, muij);
-          if(muij > 0) VDt[ii] -= 0.5*muij*hc*pow(tmp, (muij-1));
-          VDt[ii] *= fa*gb;
-
-          /*--- Add the contribution from the derivative of the basis function
-                w.r.t. a multiplied by dadt and the derivative w.r.t. b multiplied
-                by dbdt.                      ---*/
-          VDt[ii] += 0.5*a*VDr[ii] + 0.5*b*VDs[ii];
-        }
-      }
-    }
-  }
-}
-
-void FEMStandardElementClass::Vandermonde3D_Prism(vector<su2double> &r,
-                                                  vector<su2double> &s,
-                                                  vector<su2double> &t,
-                                                  vector<su2double> &V) {
-
-  /*--- Determine the number or rows of the Vandermonde matrix and check
-        if the dimension of V is correct.     ---*/
-  unsigned short nRows = r.size();
-  if(V.size() != nRows*nDOFs) {
-    cout << "Wrong size of the V matrix in Vandermonde3D_Prism" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  /*--- For a prism the orthogonal basis for the reference element is a tensor
-        product of the 1D basis functions in the structured direction of the prism
-        and the basis functions of a triangle. For that triangle the orthogonal
-        basis is obtained by a combination of a Jacobi polynomial and a Legendre
-        polynomial. This is the result of the orthonormalization of the
-        monomial basis.                   ---*/
-  unsigned int ii = 0;
-  for(unsigned short i=0; i<=nPoly; ++i) {
-    for(unsigned short j=0; j<=(nPoly-i); ++j) {
-      for(unsigned short k=0; k<=nPoly; ++k) {
-        for(unsigned short l=0; l<nRows; ++l, ++ii) {
-
-          /*--- Determine the coefficients a and b. ---*/
-          su2double a;
-          if(fabs(s[l]-1.0) < 1.e-8) a = -1.0;
-          else a = 2.0*(1.0+r[l])/(1.0-s[l]) - 1.0;
-
-          su2double b = s[l];
-
-          /*--- Determine the value of the current basis function in this point. ---*/
-          su2double tmp = pow((1.0-b),i);
-          V[ii] = sqrt(2.0)*tmp*NormJacobi(i,0,0,a)*NormJacobi(j,2*i+1,0,b)
-                * NormJacobi(k,0,0,t[l]);
-        }
-      }
-    }
-  }
-}
-
-void FEMStandardElementClass::GradVandermonde3D_Prism(vector<su2double> &r,
-                                                      vector<su2double> &s,
-                                                      vector<su2double> &t,
-                                                      vector<su2double> &VDr,
-                                                      vector<su2double> &VDs,
-                                                      vector<su2double> &VDt) {
-
-  /*--- Determine the number or rows of the gradient of the Vandermonde matrix
-        and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
-  unsigned short nRows = r.size();
-  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs || VDt.size() != nRows*nDOFs) {
-    cout << "Wrong size of the VDr, VDs and VDt matrices in GradVandermonde3D_Prism" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  /*--- For a prism the orthogonal basis for the reference element is a tensor
-        product of the 1D basis functions in the structured direction of the prism
-        and the basis functions of a triangle. Hence the derivative matrices also
-        follows this tensor product rule.
-        Note that the sequence of the i, j and k loop must be identical to
-        the evaluation of the Vandermonde matrix itself.          ---*/
-  unsigned int ii = 0;
-  for(unsigned short i=0; i<=nPoly; ++i) {
-    for(unsigned short j=0; j<=(nPoly-i); ++j) {
-      for(unsigned short k=0; k<=nPoly; ++k) {
-        for(unsigned short l=0; l<nRows; ++l, ++ii) {
-
-          /*--- Determine the coefficients a and b. ---*/
-          su2double a;
-          if(fabs(s[l]-1.0) < 1.e-8) a = -1.0;
-          else a = 2.0*(1.0+r[l])/(1.0-s[l]) - 1.0;
-
-          su2double b = s[l];
-
-          /*--- Determine the value of the two 1D contributions to the 2D
-                basis functions of the triangle as well as the gradients of
-                these basis functions w.r.t. to its argument. ---*/
-          su2double fa  = NormJacobi(i,0,    0,a);
-          su2double gb  = NormJacobi(j,2*i+1,0,b);
-          su2double dfa = GradNormJacobi(i,0,    0,a);
-          su2double dgb = GradNormJacobi(j,2*i+1,0,b);
-
-          /*--- Determine the gradients of the basis functions w.r.t. the
-                coordinates r and s. The product rule must be used in order
-                to change the derivative of a to the derivative of r and s. ---*/
-          VDr[ii] = sqrt(2.0)*dfa*gb;
-          VDs[ii] = VDr[ii];
-          if(i > 0)
-          {
-            su2double tmp = pow((1.0-b), (i-1));
-            VDr[ii]       = 2.0*tmp*VDr[ii];
-            VDs[ii]       = (a+1.0)*tmp*VDs[ii] - i*tmp*sqrt(2.0)*fa*gb;
-          }
-
-          su2double tmp = pow((1.0-b), i);
-          VDs[ii] += sqrt(2.0)*fa*dgb*tmp;
-
-          /*--- Multiply VDr and VDs with the contribution from the structured
-                direction of the prism.                 ---*/
-          VDr[ii] *= NormJacobi(k,0,0,t[l]);
-          VDs[ii] *= NormJacobi(k,0,0,t[l]);
-
-          /*--- Compute the derivative of the basis function in the t-direction,
-                which is the structured direction.             ---*/
-          VDt[ii] = sqrt(2.0)*tmp*fa*gb*GradNormJacobi(k,0,0,t[l]);
-        }
-      }
-    }
-  }
-}
-
-void FEMStandardElementClass::Vandermonde3D_Hexahedron(vector<su2double> &r,
-                                                       vector<su2double> &s,
-                                                       vector<su2double> &t,
-                                                       vector<su2double> &V) {
-
-  /*--- Determine the number or rows of the Vandermonde matrix and check
-        if the dimension of V is correct.     ---*/
-  unsigned short nRows = r.size();
-  if(V.size() != nRows*nDOFs) {
-    cout << "Wrong size of the V matrix in Vandermonde3D_Hexahedron" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  /*--- For a hexahedron the basis functions are the tensor product of the 1D
-        basis functions, which are the normalized Legendre polynomials. Note
-        that the Legendre polynomials are a special kind of Jacobi polynomials. ---*/
-  unsigned int ii = 0;
-  for(unsigned short i=0; i<=nPoly; ++i) {
-    for(unsigned short j=0; j<=nPoly; ++j) {
-      for(unsigned short k=0; k<=nPoly; ++k) {
-        for(unsigned short l=0; l<nRows; ++l, ++ii) {
-          V[ii] = NormJacobi(i,0,0,r[l])*NormJacobi(j,0,0,s[l])
-                * NormJacobi(k,0,0,t[l]);
-        }
-      }
-    }
-  }
-}
-
-void FEMStandardElementClass::GradVandermonde3D_Hexahedron(vector<su2double> &r,
-                                                           vector<su2double> &s,
-                                                           vector<su2double> &t,
-                                                           vector<su2double> &VDr,
-                                                           vector<su2double> &VDs,
-                                                           vector<su2double> &VDt) {
-
-  /*--- Determine the number or rows of the gradient of the Vandermonde matrix
-        and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
-  unsigned short nRows = r.size();
-  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs || VDt.size() != nRows*nDOFs) {
-    cout << "Wrong size of the VDr, VDs and VDt matrices in GradVandermonde3D_Hexahedron" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  /*--- For a hexahedron the basis functions are the tensor product of the 1D
-        basis functions, which are the normalized Legendre polynomials.
-        The derivatives are therefore easy to compute.
-        Note that the Legendre polynomials are a special kind of Jacobi polynomials.
-        Also note that the sequence of the i, j and k loop must be identical to
-        the evaluation of the Vandermonde matrix itself.      ---*/
-  unsigned int ii = 0;
-  for(unsigned short i=0; i<=nPoly; ++i) {
-    for(unsigned short j=0; j<=nPoly; ++j) {
-      for(unsigned short k=0; k<=nPoly; ++k) {
-        for(unsigned short l=0; l<nRows; ++l, ++ii) {
-          VDr[ii] = NormJacobi(j,0,0,s[l])*NormJacobi(k,0,0,t[l])
-                  * GradNormJacobi(i,0,0,r[l]);
-          VDs[ii] = NormJacobi(i,0,0,r[l])*NormJacobi(k,0,0,t[l])
-                  * GradNormJacobi(j,0,0,s[l]);
-          VDt[ii] = NormJacobi(i,0,0,r[l])*NormJacobi(j,0,0,s[l])
-                  * GradNormJacobi(k,0,0,t[l]);
-        }
       }
     }
   }
