@@ -31,6 +31,14 @@
 
 #pragma once
 
+inline FEMStandardElementBaseClass::FEMStandardElementBaseClass(){}
+
+inline FEMStandardElementBaseClass::~FEMStandardElementBaseClass(){}
+
+inline unsigned short FEMStandardElementBaseClass::GetNIntegration(void){return nIntegration;}
+
+inline unsigned short FEMStandardElementBaseClass::GetOrderExact(void){return orderExact;}
+
 inline FEMStandardElementClass::FEMStandardElementClass(){}
 
 inline FEMStandardElementClass::~FEMStandardElementClass(){}
@@ -58,7 +66,3 @@ inline unsigned short* FEMStandardElementClass::GetConnFace4(void){return connFa
 inline unsigned short* FEMStandardElementClass::GetConnFace5(void){return connFace5.data();}
 
 inline unsigned short FEMStandardElementClass::GetNDOFs(void){return nDOFs;}
-
-inline unsigned short FEMStandardElementClass::GetNIntegration(void){return nIntegration;}
-
-inline unsigned short FEMStandardElementClass::GetOrderExact(void){return orderExact;}
