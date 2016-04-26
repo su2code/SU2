@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -50,7 +50,7 @@ using namespace std;
  * \class CDriver
  * \brief Parent class for driving an iteration of a single or multi-zone problem.
  * \author T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CDriver {
 protected:
@@ -128,12 +128,28 @@ public:
   void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config);
 
   /*!
+   * \brief Definition and allocation of all solution classes.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Solver_Postprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+
+  /*!
    * \brief Definition and allocation of all integration classes.
    * \param[in] integration_container - Container vector with all the integration methods.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void Integration_Preprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config);
+
+  /*!
+   * \brief Definition and allocation of all integration classes.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Integration_Postprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config);
 
   /*!
    * \brief Definition and allocation of all interface classes.
@@ -158,6 +174,37 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+
+
+  /*!
+   * \brief Definition and allocation of all solver classes.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Numerics_Postprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+
+
+  /*!
+   * \brief Deallocation routine
+   * \param[in] iteration_container - Container vector with all the iteration methods.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - Total number of zones.
+   */
+  void Postprocessing(CIteration **iteration_container,
+                   CSolver ****solver_container,
+                   CGeometry ***geometry_container,
+                   CIntegration ***integration_container,
+                   CNumerics *****numerics_container,
+                   CInterpolator ***interpolator_container,
+                   CTransfer ***transfer_container,
+                   CConfig **config_container,
+                   unsigned short val_nZone);
 
   /*!
    * \brief A virtual member.
@@ -232,7 +279,7 @@ public:
  * \class CSingleZoneDriver
  * \brief Class for driving an iteration of the physics within a single zone.
  * \author T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSingleZoneDriver : public CDriver {
 public:
@@ -298,7 +345,7 @@ public:
  * \class CMultiZoneDriver
  * \brief Class for driving an iteration of the physics within multiple zones.
  * \author T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CMultiZoneDriver : public CDriver {
 public:
@@ -363,7 +410,7 @@ public:
  * \class CSpectralDriver
  * \brief Class for driving an iteration of a spectral method problem using multiple zones.
  * \author T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSpectralDriver : public CDriver {
 public:
@@ -458,7 +505,7 @@ public:
  * \class CFSIDriver
  * \brief Class for driving a BGS iteration for a fluid-structure interaction problem in multiple zones.
  * \author R. Sanchez.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CFSIDriver : public CDriver {
 public:
