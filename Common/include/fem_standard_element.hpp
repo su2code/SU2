@@ -41,29 +41,185 @@
 using namespace std;
 
 /*!
- * \class FEMStandardElementClass
- * \brief Class to define an FEM standard element.
+ * \class FEMStandardElementBaseClass
+ * \brief Base class for a FEM standard element.
  * \author E. van der Weide
  * \version 4.1.0 "Cardinal"
  */
-class FEMStandardElementClass {
-private:
+class FEMStandardElementBaseClass {
+protected:
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
-  unsigned short nPoly;        /*!< \brief Polynomial degree of the element. */
-  unsigned short nDOFs;        /*!< \brief Number of DOFs of the element. */
   unsigned short orderExact;   /*!< \brief Polynomial order that must be integrated exactly by the integration rule. */
   unsigned short nIntegration; /*!< \brief Number of points used in the numerical integration. */
 
   bool constJacobian;          /*!< \brief Whether or not the element has a constant Jacobian. */
 
-  vector<su2double> rDOFs;     /*!< \brief r-location of the DOFs for this standard element. */
-  vector<su2double> sDOFs;     /*!< \brief s-location of the DOFs for this standard element, if needed. */
-  vector<su2double> tDOFs;     /*!< \brief t-location of the DOFs for this standard element, if needed. */
-
   vector<su2double> rIntegration; /*!< \brief r-location of the integration points for this standard element. */
   vector<su2double> sIntegration; /*!< \brief s-location of the integration points for this standard element, if needed. */
   vector<su2double> tIntegration; /*!< \brief t-location of the integration points for this standard element, if needed. */
   vector<su2double> wIntegration; /*!< \brief The weights of the integration points for this standard element. */
+
+public:
+  /*!
+  * \brief Standard Constructor. Nothing to be done.
+  */
+  FEMStandardElementBaseClass();
+
+  /*!
+  * \brief Destructor. Nothing to be done, because the vectors are deleted automatically.
+  */
+  virtual ~FEMStandardElementBaseClass();
+
+protected:
+  /*!
+  * \brief Alternative constructor.
+  * \param[in] val_VTK_Type   - Type of the element using the VTK convention.
+  * \param[in] val_nPoly      - Polynomial degree of the element.
+  * \param[in] val_constJac   - Whether or not the Jacobians are constant.
+  * \param[in] config         - Object, which contains the input parameters.
+  * \param[in] val_orderExact - The order of the polynomials that must be integrated
+                                exactly by the integration rule. If 0, it will
+                                be determined from the polynomial degree and the
+                                parameters in config.
+  */
+  FEMStandardElementBaseClass(unsigned short val_VTK_Type,
+                              unsigned short val_nPoly,
+                              bool           val_constJac,
+                              CConfig        *config,
+                              unsigned short val_orderExact);
+
+public:
+  /*!
+  * \brief Function, which makes available the number of integration points for this standard element.
+  * \return  The number of integration points of this standard element.
+  */
+  unsigned short GetNIntegration(void);
+
+  /*!
+  * \brief Static function, which makes available the number of integration points for an element
+           corresponding to the arguments.
+  * \param[in] VTK_Type   - Type of the element using the VTK convention.
+  * \param[in] orderExact - Polynomial degree that must be integrated exactly.
+  * \param[in] config     - Object, which contains the input parameters.
+  * \return  The number of integration points.
+  */
+  static unsigned short GetNIntegrationStatic(unsigned short VTK_Type,
+                                              unsigned short nPoly,
+                                              CConfig        *config);
+  /*!
+  * \brief Function, which makes available the polynomial order that must be integrated exactly.
+  * \return  The polynomial order that must be integrated exactly.
+  */
+  unsigned short GetOrderExact(void);
+
+protected:
+  /*!
+  * \brief Function, which copies the data of the given object into the current object.
+  * \param[in] other - Object, whose data is copied.
+  */
+  void Copy(const FEMStandardElementBaseClass &other);
+
+  /*!
+  * \brief Function, which computes the inverse of the given square matrix.
+  * \param[in]     n - Number of rows/columns of the square matrix A.
+  * \param[in,out] A - On input the square matrix to be inverted. On output the inverse.
+  */
+  void InverseMatrix(unsigned short    n,
+                     vector<su2double> &A);
+
+  /*!
+  * \brief Function, which carries out a matrix matrix multiplication to obtain data in the integration
+           points and stores the transpose of the result.
+  * \param[in]  nDOFs - Dimension in the matrix. This typically corresponds to the number of DOFs
+                        that are considered.
+  * \param[in]  A     - First matrix in the matrix matrix product A*B, dimension nIntegration X nDOFs.
+  * \param[in]  B     - Second matrix in the matrix matrix product A*B, dimension nDOFs X nDOFs.
+  * \param[out] C     - Result of A*B. The transpose of the result is stored, dimension nDOFs X nIntegration.
+  */
+  void MatMulTranspose(unsigned short nDOFs,
+                       vector<su2double> &A,
+                       vector<su2double> &B,
+                       vector<su2double> &C);
+
+private:
+  /*!
+  * \brief Function, which determines the 1D Gauss Legendre integration points and weights.
+  * \param[in,out] GLPoints  - The location of the Gauss-Legendre integration points.
+  * \param[in,out] GLWeights - The weights of the Gauss-Legendre integration points.
+  */
+  void GaussLegendrePoints1D(vector<su2double> &GLPoints,
+                             vector<su2double> &GLWeights);
+
+  /*!
+  * \brief Function, which determines the integration points for a line
+           such that polynomials of orderExact are integrated exactly.
+  */
+  void IntegrationPointsLine(void);
+
+  /*!
+  * \brief Function, which determines the integration points for a triangle
+           such that polynomials of orderExact are integrated exactly.
+  */
+  void IntegrationPointsTriangle(void);
+
+  /*!
+  * \brief Function, which determines the integration points for a quadrilateral
+           such that polynomials of orderExact are integrated exactly.
+  */
+  void IntegrationPointsQuadrilateral(void);
+
+  /*!
+  * \brief Function, which determines the integration points for a tetrahedron
+           such that polynomials of orderExact are integrated exactly.
+  */
+  void IntegrationPointsTetrahedron(void);
+
+  /*!
+  * \brief Function, which determines the integration points for a pyramid
+           such that polynomials of orderExact are integrated exactly.
+  */
+  void IntegrationPointsPyramid(void);
+
+  /*!
+  * \brief Function, which determines the integration points for a prism
+           such that polynomials of orderExact are integrated exactly.
+  */
+  void IntegrationPointsPrism(void);
+
+  /*!
+  * \brief Function, which determines the integration points for a hexahedron
+           such that polynomials of orderExact are integrated exactly.
+  */
+  void IntegrationPointsHexahedron(void);
+
+  /*!
+  * \brief Function, which computes the value of the Legendre polynomials
+           Pn and Pnm1 for given x (-1 <= x <= 1) and n.
+  * \param[in]  x    - x-coordinate for which the Legendre polynomial must be computed.
+  * \param[in]  n    - order of the Legendre polynomial.
+  * \param[out] Pnm1 - Legendre polynomials of order n-1, which must be computed.
+  * \param[out] Pn   - Legendre polynomials of order n, which must be computed.
+  */
+  void Legendre(su2double      x,
+                unsigned short n,
+                su2double      &Pnm1,
+                su2double      &Pn);
+};
+
+/*!
+ * \class FEMStandardElementClass
+ * \brief Class to define a FEM standard element.
+ * \author E. van der Weide
+ * \version 4.1.0 "Cardinal"
+ */
+class FEMStandardElementClass : public FEMStandardElementBaseClass {
+private:
+  unsigned short nPoly;        /*!< \brief Polynomial degree of the element. */
+  unsigned short nDOFs;        /*!< \brief Number of DOFs of the element. */
+
+  vector<su2double> rDOFs;     /*!< \brief r-location of the DOFs for this standard element. */
+  vector<su2double> sDOFs;     /*!< \brief s-location of the DOFs for this standard element, if needed. */
+  vector<su2double> tDOFs;     /*!< \brief t-location of the DOFs for this standard element, if needed. */
 
   vector<su2double> lagBasisIntegration; /*!< \brief Lagrangian basis functions in the integration points. */
 
@@ -108,13 +264,12 @@ public:
   * \param[in] val_orderExact - Default argument. If specified, it contains the
                                 order of the polynomials that must be integrated
                                 exactly by the integration rule.
-  * \return Local (to the element) index of the nodes that compose the face.
   */
   FEMStandardElementClass(unsigned short val_VTK_Type,
                           unsigned short val_nPoly,
                           bool           val_constJac,
                           CConfig        *config,
-                          unsigned short val_orderExact = 0); 
+                          unsigned short val_orderExact = 0);
   /*!
   * \brief Copy constructor.
   * \param[in] other - Object, whose data must be copied.
@@ -201,30 +356,6 @@ public:
                                        unsigned long  typeErrorMessage = 0);
 
   /*!
-  * \brief Function, which makes available the number of integration points for this standard element.
-  * \return  The number of integration points of this standard element.
-  */
-  unsigned short GetNIntegration(void);
-
-  /*!
-  * \brief Static function, which makes available the number of integration points for an element
-           corresponding to the arguments.
-  * \param[in] VTK_Type   - Type of the element using the VTK convention.
-  * \param[in] orderExact - Polynomial degree that must be integrated exactly.
-  * \param[in] config     - Object, which contains the input parameters.
-  * \return  The number of integration points.
-  */
-  static unsigned short GetNIntegrationStatic(unsigned short VTK_Type,
-                                              unsigned short nPoly,
-                                              CConfig        *config);
-
-  /*!
-  * \brief Function, which makes available the polynomial order that must be integrated exactly.
-  * \return  The polynomial order that must be integrated exactly.
-  */
-  unsigned short GetOrderExact(void);
- 
-  /*!
   * \brief Function, which checks if the functions arguments corresponds to this standard element.
   * \param[in] val_VTK_Type - Type of the element using the VTK convention.
   * \param[in] val_nPoly    - Polynomial degree of the element.
@@ -304,14 +435,6 @@ private:
   * \brief Function, which creates all the data for a hexahedral element.
   */
   void DataStandardHexahedron(void);
-
-  /*!
-  * \brief Function, which determines the 1D Gauss Legendre integration points and weights.
-  * \param[in,out] GLPoints  - The location of the Gauss-Legendre integration points.
-  * \param[in,out] GLWeights - The weights of the Gauss-Legendre integration points.
-  */
-  void GaussLegendrePoints1D(vector<su2double> &GLPoints,
-                             vector<su2double> &GLWeights);
 
   /*!
   * \brief Function, which computes the value of the gradient of the Jacobi polynomial for the given x-coordinate.
@@ -423,55 +546,6 @@ private:
                                     vector<su2double> &VDt);
 
   /*!
-  * \brief Function, which determines the integration points for a triangle such that polynomials of
-           orderExact are integrated exactly.
-  */
-  void IntegrationPointsTriangle(void);
-
-  /*!
-  * \brief Function, which determines the integration points for a tetrahedron such that polynomials of
-           orderExact are integrated exactly.
-  */
-  void IntegrationPointsTetrahedron(void);
-
-  /*!
-  * \brief Function, which determines the integration points for a pyramid such that polynomials of
-           orderExact are integrated exactly.
-  */
-  void IntegrationPointsPyramid(void);
-
-  /*!
-  * \brief Function, which computes the inverse of the given square matrix.
-  * \param[in]     n - Number of rows/columns of the square matrix A.
-  * \param[in,out] A - On input the square matrix to be inverted. On output the inverse.
-  */
-  void InverseMatrix(unsigned short    n,
-                     vector<su2double> &A);
-
-  /*!
-  * \brief Function, which computes the value of the Legendre polynomials Pn and Pnm1 for given x (-1 <= x <= 1) and n.
-  * \param[in]  x    - x-coordinate for which the Legendre polynomial must be computed.
-  * \param[in]  n    - order of the Legendre polynomial.
-  * \param[out] Pnm1 - Legendre polynomials of order n-1, which must be computed.
-  * \param[out] Pn   - Legendre polynomials of order n, which must be computed.
-  */
-  void Legendre(su2double      x,
-                unsigned short n,
-                su2double      &Pnm1,
-                su2double      &Pn);
-
-  /*!
-  * \brief Function, which carries out a matrix matrix multiplication to obtain data in the integration
-           points and stores the transpose of the result.
-  * \param[in]  A - First matrix in the matrix matrix product A*B, dimension nIntegration X nDOFs.
-  * \param[in]  B - Second matrix in the matrix matrix product A*B, dimension nDOFs X nDOFs.
-  * \param[out] C - Result of A*B. The transpose of the result is stored, dimension nDOFs X nIntegration.
-  */
-  void MatMulTranspose(vector<su2double> &A,
-                       vector<su2double> &B,
-                       vector<su2double> &C);
-
-  /*!
   * \brief Function, which computes the value of the Jacobi polynomial for the given x-coordinate.
   * \param[in] n     - Order of the Jacobi polynomial.
   * \param[in] alpha - Alpha coefficient of the Jacobi polynomial.
@@ -491,7 +565,7 @@ private:
   void SubConnTetrahedron(void);
 
   /*!
-  * \brief Function, which determines the connectivity of the linear subpyramids and 
+  * \brief Function, which determines the connectivity of the linear subpyramids and
            subtetrahedra for a high order pyramid.
   */
   void SubConnPyramid(void);
