@@ -550,7 +550,7 @@ int main(int argc, char *argv[]) {
 
   /*Deallocate config container*/
   if (rank == MASTER_NODE)
-        cout << endl <<"------------------------ Config Postprocessing ------------------------" << endl;
+        cout << endl <<"------------------------- Config Postprocessing -------------------------" << endl;
   if (config_container!=NULL){
     for (iZone = 0; iZone < nZone; iZone++) {
       if (config_container[iZone]!=NULL){

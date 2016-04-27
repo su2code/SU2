@@ -485,6 +485,12 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 //      }
 //		}
 //	}
+  
+  delete [] U_domain;
+  delete [] U_wall;
+  delete [] Normal;
+  delete [] Residual;
+  
 }
 
 void CTransLMSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
