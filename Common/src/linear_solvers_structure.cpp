@@ -310,7 +310,7 @@ int rank = 0;
 //    }
 //  }
 	
-	return i;
+	return (unsigned long) i;
   
 }
 
@@ -465,7 +465,7 @@ int rank = 0;
 //  }
 	
   (*residual) = beta;
-	return i;
+	return (unsigned long) i;
   
 }
 
@@ -601,7 +601,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 //  }
 	
   (*residual) = norm_r;
-	return i;
+	return (unsigned long) i;
 }
 
 unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
