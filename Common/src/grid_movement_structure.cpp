@@ -5857,7 +5857,7 @@ void CSurfaceMovement::SetCurved_Surfaces(CGeometry *geometry, CConfig *config, 
         
         /*--- Project the coordinates using GELite ---*/
         
-        if(ProjectOneCoordinate(Coordinate, projectionDatabase) != 0) {
+        if(ProjectOneCoordinate(Coordinate, &projectionDatabase) != 0) {
           if (rank == MASTER_NODE)
             cout << "Coordinate projection failed." << endl;
 #ifndef HAVE_MPI

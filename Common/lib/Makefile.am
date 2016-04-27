@@ -64,6 +64,7 @@ lib_sources = \
   ../include/fem_geometry_structure.inl \
   ../include/fem_standard_element.hpp \
   ../include/fem_standard_element.inl \
+		../include/gelite.hpp \
   ../include/geometry_structure.hpp \
   ../include/geometry_structure.inl \
   ../include/grid_adaptation_structure.hpp \
@@ -94,6 +95,7 @@ lib_sources = \
   ../src/fem_geometry_structure.cpp \
 		../src/fem_integration_rules.cpp \
   ../src/fem_standard_element.cpp \
+	 ../src/gelite.cpp \
   ../src/geometry_structure.cpp \
   ../src/grid_adaptation_structure.cpp \
   ../src/grid_movement_structure.cpp \
