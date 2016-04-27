@@ -1523,9 +1523,10 @@ Optional Packages:
   --with-LAPACK-lib=ARG   LAPACK library directory, ARG = path to liblapacke.a
   --with-LAPACK-include=ARG
                           LAPACK include directory, ARG = path to lapacke.h
-  --with-GELITE-lib=ARG   GELITE library directory, ARG = path to libgelite.a
+  --with-GELITE-lib=ARG   GELITE library directory, ARG = path to libgeom.a
   --with-GELITE-include=ARG
-                          GELITE include directory, ARG = path to gelite.h
+                          GELITE include directory, ARG = path to
+                          geom/Geometry.h
 
   --with-metis-cppflags="-D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE"
                           Specific METIS C Preprocessor flags to use
@@ -6787,21 +6788,23 @@ fi
 ###########################
 
 # check for lib
-GELITElib=libgelite.a
-GELITEheader=gelite.h
+GELITElibgeom=libgeom.a
+GELITElibnmb=libnmb.a
+GELITElibvmath=libvmath.a
+GELITEheader=geom/Geometry.h
 have_GELITE="no"
 
 if test "$with_GELITE_lib" != "no"
 then
-        as_ac_File=`$as_echo "ac_cv_file_$with_GELITE_lib/$GELITElib" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_GELITE_lib/$GELITElib" >&5
-$as_echo_n "checking for $with_GELITE_lib/$GELITElib... " >&6; }
+        as_ac_File=`$as_echo "ac_cv_file_$with_GELITE_lib/$GELITElibgeom" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_GELITE_lib/$GELITElibgeom" >&5
+$as_echo_n "checking for $with_GELITE_lib/$GELITElibgeom... " >&6; }
 if eval \${$as_ac_File+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   test "$cross_compiling" = yes &&
   as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r "$with_GELITE_lib/$GELITElib"; then
+if test -r "$with_GELITE_lib/$GELITElibgeom"; then
   eval "$as_ac_File=yes"
 else
   eval "$as_ac_File=no"
@@ -6818,7 +6821,61 @@ fi
 
         if test "$have_GELITE" == "no"
         then
-                as_fn_error $? "GELITE requested but library file not found." "$LINENO" 5
+                as_fn_error $? "GELITE requested but geom library file not found." "$LINENO" 5
+        fi
+        as_ac_File=`$as_echo "ac_cv_file_$with_GELITE_lib/$GELITElibnmb" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_GELITE_lib/$GELITElibnmb" >&5
+$as_echo_n "checking for $with_GELITE_lib/$GELITElibnmb... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_GELITE_lib/$GELITElibnmb"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_GELITE="yes"
+else
+  have_GELITE="no"
+fi
+
+        if test "$have_GELITE" == "no"
+        then
+                as_fn_error $? "GELITE requested but nmb library file not found." "$LINENO" 5
+        fi
+        as_ac_File=`$as_echo "ac_cv_file_$with_GELITE_lib/$GELITElibvmath" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_GELITE_lib/$GELITElibvmath" >&5
+$as_echo_n "checking for $with_GELITE_lib/$GELITElibvmath... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_GELITE_lib/$GELITElibvmath"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_GELITE="yes"
+else
+  have_GELITE="no"
+fi
+
+        if test "$have_GELITE" == "no"
+        then
+                as_fn_error $? "GELITE requested but vmath library file not found." "$LINENO" 5
         fi
 fi
 
@@ -6870,7 +6927,7 @@ else
 fi
 
         GELITE_CXX="-DHAVE_GELITE -I"$with_GELITE_include""
-        GELITE_LD="$with_GELITE_lib"/$GELITElib
+        GELITE_LD=""$with_GELITE_lib"/$GELITElibgeom "$with_GELITE_lib"/$GELITElibnmb "$with_GELITE_lib"/$GELITElibvmath -lpthread"
 else
          if false; then
   BUILD_GELITE_TRUE=

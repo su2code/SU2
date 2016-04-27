@@ -138,10 +138,10 @@ AC_ARG_ENABLE(normal,
     [build_NORMAL=$enableval], [build_NORMAL="yes"])
 
 AC_ARG_WITH(GELITE-lib,
-        AS_HELP_STRING([--with-GELITE-lib[=ARG]], [GELITE library directory, ARG = path to libgelite.a]),
+        AS_HELP_STRING([--with-GELITE-lib[=ARG]], [GELITE library directory, ARG = path to libgeom.a]),
         [with_GELITE_lib=$withval], [with_GELITE_lib="no"])
 AC_ARG_WITH(GELITE-include,
-        AS_HELP_STRING([--with-GELITE-include[=ARG]], [GELITE include directory, ARG = path to gelite.h]),
+        AS_HELP_STRING([--with-GELITE-include[=ARG]], [GELITE include directory, ARG = path to geom/Geometry.h]),
         [with_GELITE_include=$withval], [with_GELITE_include="no"])
 
 # Check for the old  MPI option so that we can throw an error
@@ -507,16 +507,28 @@ AC_SUBST([LAPACK_LD])
 ###########################
 
 # check for lib
-GELITElib=libgelite.a
-GELITEheader=gelite.h
+GELITElibgeom=libgeom.a
+GELITElibnmb=libnmb.a
+GELITElibvmath=libvmath.a
+GELITEheader=geom/Geometry.h
 have_GELITE="no"
 
 if test "$with_GELITE_lib" != "no"
 then
-        AC_CHECK_FILE([$with_GELITE_lib/$GELITElib],[have_GELITE="yes"],[have_GELITE="no"])
+        AC_CHECK_FILE([$with_GELITE_lib/$GELITElibgeom],[have_GELITE="yes"],[have_GELITE="no"])
         if test "$have_GELITE" == "no"
         then
-                AC_MSG_ERROR([GELITE requested but library file not found.])
+                AC_MSG_ERROR([GELITE requested but geom library file not found.])
+        fi
+        AC_CHECK_FILE([$with_GELITE_lib/$GELITElibnmb],[have_GELITE="yes"],[have_GELITE="no"])
+        if test "$have_GELITE" == "no"
+        then
+                AC_MSG_ERROR([GELITE requested but nmb library file not found.])
+        fi
+        AC_CHECK_FILE([$with_GELITE_lib/$GELITElibvmath],[have_GELITE="yes"],[have_GELITE="no"])
+        if test "$have_GELITE" == "no"
+        then
+                AC_MSG_ERROR([GELITE requested but vmath library file not found.])
         fi
 fi
 
@@ -539,7 +551,7 @@ if test "$have_GELITE" != "no"
 then
         AM_CONDITIONAL(BUILD_GELITE,true)
         GELITE_CXX="-DHAVE_GELITE -I"$with_GELITE_include""
-        GELITE_LD="$with_GELITE_lib"/$GELITElib
+        GELITE_LD=""$with_GELITE_lib"/$GELITElibgeom "$with_GELITE_lib"/$GELITElibnmb "$with_GELITE_lib"/$GELITElibvmath -lpthread"
 else
         AM_CONDITIONAL(BUILD_GELITE,false)
         GELITE_CXX=
