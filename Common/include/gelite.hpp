@@ -76,8 +76,8 @@
 
 /*!
  * \class ProjectionDatabase
- * \brief Class used for the projection of a point the data base. It is copied
-          from the examples provided with the GELite library.
+ * \brief Class used for the projection of a point onto the data base. It is
+ *        copied from the examples provided with the GELite library.
  * \author J. P. Abelanet (developer of GELite)
  * \version 4.1.2 "Cardinal"
  */

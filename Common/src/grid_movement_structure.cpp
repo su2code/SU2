@@ -32,6 +32,10 @@
 #include "../include/grid_movement_structure.hpp"
 #include <list>
 
+#ifdef HAVE_GELITE
+#include "../include/gelite.hpp"
+#endif
+
 using namespace std;
 
 CGridMovement::CGridMovement(void) { }
@@ -5792,7 +5796,8 @@ void CSurfaceMovement::SetCurved_Surfaces(CGeometry *geometry, CConfig *config, 
    variables of the data base. ---*/
   ProjectionDatabase projectionDatabase;
   
-  projectionDatabase.MaxOffset       = 10.0*Tolerance::GetSamePoint();
+  //projectionDatabase.MaxOffset       = 10.0*Tolerance::GetSamePoint();
+  projectionDatabase.MaxOffset       = 10.0;
   projectionDatabase.SurfaceSamples  = 20;
   projectionDatabase.CurveSamples    = 20;
   projectionDatabase.FaceCoordinates = false;
@@ -5802,14 +5807,14 @@ void CSurfaceMovement::SetCurved_Surfaces(CGeometry *geometry, CConfig *config, 
   if(ReadGeomDefFile(geometry_filename.c_str(), &projectionDatabase)  != 0) {
     if (rank == MASTER_NODE)
       cout << "Reading of the geometry definition file " << geometry_filename
-      << " failed." << endl;
+           << " failed." << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Abort(MPI_COMM_WORLD,1);
     MPI_Finalize();
 #endif
-
   }
   
   if(BuildBSPTree(&projectionDatabase) != 0) {
@@ -5858,13 +5863,12 @@ void CSurfaceMovement::SetCurved_Surfaces(CGeometry *geometry, CConfig *config, 
         /*--- Project the coordinates using GELite ---*/
         
         if(ProjectOneCoordinate(Coordinate, &projectionDatabase) != 0) {
-          if (rank == MASTER_NODE)
-            cout << "Coordinate projection failed." << endl;
+          cout << "Coordinate projection failed." << endl;
 #ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
+          exit(EXIT_FAILURE);
 #else
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
+          MPI_Abort(MPI_COMM_WORLD,1);
+          MPI_Finalize();
 #endif
         }
         
@@ -5878,15 +5882,18 @@ void CSurfaceMovement::SetCurved_Surfaces(CGeometry *geometry, CConfig *config, 
           VarCoord[2] = 0.0;
         
 #else
-        /*--- Dummy perturbation just to test without the lib. Will be deleted... ---*/
-        
-        VarCoord[0] = 1.0e-2;
-        VarCoord[1] = 1.0e-2;
-        if (nDim == 3)
-          VarCoord[2] = 1.0e-2;
-        else
-          VarCoord[2] = 0.0;
-        
+        /*--- Write an error message the GELite is needed to carry out
+              the projection onto the geometry. ---*/
+
+        cout << " GELite support is needed to carry out this task" << endl;
+
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+
 #endif
         
         /*--- Set surface node location changes to be imposed 
