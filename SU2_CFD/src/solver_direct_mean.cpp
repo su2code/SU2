@@ -30,6 +30,7 @@
  */
 
 #include "../include/solver_structure.hpp"
+//#include "../include/inlet_funct.hpp"
 
 CEulerSolver::CEulerSolver(void) : CSolver() {
   
@@ -8586,9 +8587,59 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   }
   delete [] R_Matrix;
   
-  
 }
 
+/*!
+ * \brief Transform the real location value to a number between -1 and 1.
+ * \return A value between -1 and 1.
+ */
+
+su2double CEulerSolver::ScaleCoordinate(su2double y_max, su2double y_min, su2double y){
+	su2double z = (y-y_min)/(y_max-y_min)*2 - 1;
+	return z;
+}
+
+/*!
+ * \brief Evaluates a polynomial thst represent the inlet velocity profile.
+ * \return Normalized velocity profile from 0 to 1.
+ */
+su2double CEulerSolver::poly2D(su2double C1, su2double C2, su2double C3, su2double C4, su2double C5, su2double y){
+	su2double Vel = C1*y*y*y*y + C2*y*y*y + C3*y*y + C4*y + C5;
+	return Vel;
+}
+
+/*!
+ * \brief Evaluates a piecewise velocity profile and includes the amplitude.
+ * \return Velocity profile with amplitude A.
+ */
+su2double CEulerSolver::polydisc(su2double A , su2double y_max, su2double y_min, su2double y){
+	su2double rho = 1.217; // Average jet density obtained from 2D @ T=290 P=101325 R=287.058
+	su2double mu = 1.79820992909e-05; // Viscosity @ T=290
+	su2double W = 0.168; // Truck width
+	su2double Vel = 0;
+	
+	su2double Re = rho*A*W/mu; // Calculates the Reynolds Number to show jet development
+	su2double d = 0.382*W/pow(Re,0.2); //Turbulent BL thickness for a flow that travel W
+	
+	su2double y_mid = y_min+(y_max-y_min)/2; // Calculates the middle of the real range
+	
+	// The real coordinates are scaled to meet the needs of the function to be between -1 and 1
+	su2double z = ScaleCoordinate(y_max, y_min, y);
+	su2double dz = ScaleCoordinate(y_max, y_min, y_mid + d);
+	su2double hz = 2*dz;
+	
+	// Piecewise function
+	if (z <= -1 + dz){
+		Vel = A*( 1 - 4/pow(hz,2)*pow((z + 1 - dz),2));
+	} else if (z >= 1 - dz){
+		Vel = A*( 1 - 4/pow(hz,2)*pow((z - 1 + dz),2));
+	} else {
+		Vel = A;
+	}
+	return Vel;
+}
+	
+	
 void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim;
@@ -8863,23 +8914,94 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 						-*/
 
 						
-						
 						/*--- Retrieve the specified mass flow for the inlet. ---*/
+						// Specify the limits of the jet
+						//su2double yt_max, yt_min, yb_max, yb_min, y;
+						su2double y_max, y_min, z_max, z_min, y, z, A;
 						
+						// Read in the density & Initialize the velocity
 						Density  = config->GetInlet_Ttotal(Marker_Tag);
+						A = config->GetInlet_Ptotal(Marker_Tag); // AMplitude that can be controlled from the config file
+						Vel_Mag = 0;
+						
+						/* ---
+						//Based on the marker name determine which velocity polynomial to use - 2D
+						if (Marker_Tag == "jet_top") {
+							yt_max = 0.083921;
+							yt_min = 0.08339522;
+							y = ScaleCoordinate(yt_max, yt_min, Coord[1]);
+							//Vel_Mag = polydisc(10000000 , yt_max, yt_min, Coord[1]);
+							Vel_Mag = poly2D( -0.7085458261471165, 0.0082692314282440,-0.2913746290723793 ,-0.0082599222660065 , 0.9999361038208008, y);
+							Vel_Mag *= 74;
+						}
+						else if (Marker_Tag == "jet_bottom") {
+							yb_max = -0.08339522;
+							yb_min = -0.083921;
+							y = ScaleCoordinate(yb_max, yb_min, Coord[1]);
+							//Vel_Mag = polydisc(10000000 , yb_max, yb_min, Coord[1]);
+							Vel_Mag = poly2D( -0.7085458261471165, -0.0082692314282440,-0.2913746290723793 , 0.0082599222660065 , 0.9999361038208008, y);
+							Vel_Mag *= 74;
+						}
+						---*/
+						//Based on the marker name determine which velocity polynomial to use - 3D
+						if (Marker_Tag == "jet_top") {
+							y_max = 0.0634202199518;
+							y_min = -0.0634202199518;
+							z_max = 0.2344128;
+							z_min = 0.23363302;
+							
+							z = ScaleCoordinate(z_max, z_min, Coord[2]);
+							Vel_Mag = poly2D( -0.7085458261471165, 0.0082692314282440,-0.2913746290723793 ,-0.0082599222660065 , 0.9999361038208008, z);
+							Vel_Mag *= polydisc(A , y_max, y_min, Coord[1]);
+						}
+						else if (Marker_Tag == "jet_bottom") {
+							y_max = 0.0634202199518;
+							y_min = -0.0634202199518;
+							z_max = 0.00077978;
+							z_min = 0.0;
+							
+							z = ScaleCoordinate(z_max, z_min, Coord[2]);
+							Vel_Mag = poly2D( -0.7085458261471165, -0.0082692314282440,-0.2913746290723793 , 0.0082599222660065 , 0.9999361038208008, z);
+							Vel_Mag *= polydisc(A , y_max, y_min, Coord[1]);
+						}
+						else if (Marker_Tag == "jet_starboard") {
+							y_max = 0.0842;
+							y_min = 0.08342022;
+							z_max = 0.213633019741;
+							z_min = 0.02077978;
+							
+							y = ScaleCoordinate(y_max, y_min, Coord[1]);
+							Vel_Mag = poly2D( -0.7085458261471165, 0.0082692314282440, -0.2913746290723793 , -0.0082599222660065 , 0.9999361038208008, y);
+							Vel_Mag *= polydisc(A , z_max, z_min, Coord[2]);
+						}
+						else if (Marker_Tag == "jet_port") {
+							y_max = -0.08342022;
+							y_min = -0.0842;
+							z_max = 0.213633019741;
+							z_min = 0.02077978;
+							
+							y = ScaleCoordinate(y_max, y_min, Coord[1]);
+							Vel_Mag = poly2D( -0.7085458261471165, -0.0082692314282440,-0.2913746290723793 , 0.0082599222660065 , 0.9999361038208008, y);
+							Vel_Mag *= polydisc(A , z_max, z_min, Coord[2]);
+						}
+												
+						
+						
 						//Density = Rho;
 						
 						//Vel_Mag = UVel;
 						//Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
-						if (Coord[1]>0)
+						//if (Coord[1]>0)
 							//Vel_Mag = -1070792516.983605*(Coord[1]*Coord[1])+179160956.345980*(Coord[1])-7494059.493144;
-							Vel_Mag =-10978685552690526.000000*(Coord[1]*Coord[1]*Coord[1]*Coord[1])+3673858018331092.500000*(Coord[1]*Coord[1]*Coord[1])-461026566242547.000000*(Coord[1]*Coord[1]) + 25712678005167.066406*(Coord[1])  -537774533322.414001;
+							//Vel_Mag =-10978685552690526.000000*(Coord[1]*Coord[1]*Coord[1]*Coord[1])+3673858018331092.500000*(Coord[1]*Coord[1]*Coord[1])-461026566242547.000000*(Coord[1]*Coord[1]) + 25712678005167.066406*(Coord[1])  -537774533322.414001;
 							//Vel_Mag = 68.04-272.16*(Coord[1]*Coord[1]);
-						else
+						//else
 							//Vel_Mag = -1070792516.983605*(Coord[1]*Coord[1])-179160956.345980*(Coord[1])-7494059.493144;
-							Vel_Mag =-10978685552690526.000000*(Coord[1]*Coord[1]*Coord[1]*Coord[1]) -3673858018331092.500000*(Coord[1]*Coord[1]*Coord[1])-461026566242547.000000*(Coord[1]*Coord[1]) - 25712678005167.066406*(Coord[1])  -537774533322.414001;
+							//Vel_Mag =-10978685552690526.000000*(Coord[1]*Coord[1]*Coord[1]*Coord[1]) -3673858018331092.500000*(Coord[1]*Coord[1]*Coord[1])-461026566242547.000000*(Coord[1]*Coord[1]) - 25712678005167.066406*(Coord[1])  -537774533322.414001;
 							//Vel_Mag = -10983959871472600.000000*(Coord[1]*Coord[1]*Coord[1]*Coord[1]) -3675622941270522.000000*(Coord[1]*Coord[1]*Coord[1]) -461248037035403.000000*(Coord[1]*Coord[1]) -25725029648064.847656*(Coord[1]) -538032857070.865112;
 							//Vel_Mag = 68.04-272.16*(Coord[1]*Coord[1]);
+						
+						
 						
 						Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
 						

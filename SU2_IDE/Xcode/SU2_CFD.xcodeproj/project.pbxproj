@@ -71,6 +71,7 @@
 		05F1089C1978D2AE00F2F288 /* fluid_model_pvdw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05F108981978D2AE00F2F288 /* fluid_model_pvdw.cpp */; };
 		05F1089D1978D2AE00F2F288 /* fluid_model.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05F108991978D2AE00F2F288 /* fluid_model.cpp */; };
 		05F108A41978D2F200F2F288 /* transport_model.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05F108A31978D2F200F2F288 /* transport_model.cpp */; };
+		63B75FA11CD0110D002B4DB2 /* inlet_funct.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 63B75FA01CD0110D002B4DB2 /* inlet_funct.cpp */; };
 		E941BB8E1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB8D1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp */; };
 		E941BB931B71D124005C6C06 /* linear_solvers_structure_b.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB901B71D124005C6C06 /* linear_solvers_structure_b.cpp */; };
 		E941BB941B71D124005C6C06 /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BB911B71D124005C6C06 /* mpi_structure.cpp */; };
@@ -198,6 +199,8 @@
 		05F108A01978D2D700F2F288 /* fluid_model.inl */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; name = fluid_model.inl; path = ../../SU2_CFD/include/fluid_model.inl; sourceTree = "<group>"; };
 		05F108A11978D2D700F2F288 /* transport_model.inl */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; name = transport_model.inl; path = ../../SU2_CFD/include/transport_model.inl; sourceTree = "<group>"; };
 		05F108A31978D2F200F2F288 /* transport_model.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = transport_model.cpp; path = ../../SU2_CFD/src/transport_model.cpp; sourceTree = "<group>"; };
+		63B75FA01CD0110D002B4DB2 /* inlet_funct.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = inlet_funct.cpp; path = ../../SU2_CFD/src/inlet_funct.cpp; sourceTree = "<group>"; };
+		63B75FA31CD01FEE002B4DB2 /* inlet_funct.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = inlet_funct.hpp; path = ../../SU2_CFD/include/inlet_funct.hpp; sourceTree = "<group>"; };
 		E91CAC631B8C110D00EE3FCC /* .gitignore */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		E91CAC651B8C110E00EE3FCC /* ActDisk_Euler.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ActDisk_Euler.cfg; sourceTree = "<group>"; };
 		E91CAC671B8C110E00EE3FCC /* aeroelastic_NACA64A010.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = aeroelastic_NACA64A010.cfg; sourceTree = "<group>"; };
@@ -371,6 +374,7 @@
 				E941BB8D1B71D0D0005C6C06 /* solver_adjoint_discrete.cpp */,
 				05E6DBDD17EB62A100FA1F7E /* solver_adjoint_turbulent.cpp */,
 				05E6DBEB17EB62A100FA1F7E /* solver_template.cpp */,
+				63B75FA01CD0110D002B4DB2 /* inlet_funct.cpp */,
 			);
 			name = Solver;
 			sourceTree = "<group>";
@@ -481,6 +485,7 @@
 				05E6DBB717EB627400FA1F7E /* numerics_structure.hpp */,
 				E9D9CE951C62A272004119E9 /* transfer_structure.hpp */,
 				E9D9CE971C62A2A7004119E9 /* interpolation_structure.hpp */,
+				63B75FA31CD01FEE002B4DB2 /* inlet_funct.hpp */,
 			);
 			name = Include;
 			sourceTree = "<group>";
@@ -1418,6 +1423,7 @@
 				0530E56A17FDF7AC00733CE8 /* solver_direct_elasticity.cpp in Sources */,
 				05E6DB9617EB61E600FA1F7E /* grid_movement_structure.cpp in Sources */,
 				05E6DB9717EB61E600FA1F7E /* linear_solvers_structure.cpp in Sources */,
+				63B75FA11CD0110D002B4DB2 /* inlet_funct.cpp in Sources */,
 				05E6DB9817EB61E600FA1F7E /* matrix_structure.cpp in Sources */,
 				05E6DB9917EB61E600FA1F7E /* primal_grid_structure.cpp in Sources */,
 				05AF9F201BE1E1830062E1F1 /* element_linear.cpp in Sources */,

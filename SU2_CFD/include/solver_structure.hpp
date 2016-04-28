@@ -807,8 +807,8 @@ public:
 	 */
 	virtual void BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-		
-	/*!
+	
+		/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -3522,6 +3522,24 @@ public:
 
 
 	/*!
+	 * \brief Transform the real location value to a number between -1 and 1.
+	 * \return A value between -1 and 1.
+	 */
+	su2double ScaleCoordinate(su2double y_max, su2double y_min, su2double y);
+
+	/*!
+	 * \brief Evaluates a polynomial thst represent the inlet velocity profile.
+	 * \return Normalized velocity profile from 0 to 1.
+	 */
+	su2double poly2D(su2double C1, su2double C2, su2double C3, su2double C4, su2double C5, su2double y);
+	
+	/*!
+	 * \brief Evaluates a piecewise velocity profile and includes the amplitude.
+	 * \return Velocity profile with amplitude A.
+	 */
+	su2double polydisc(su2double A , su2double y_max, su2double y_min, su2double y);
+	
+	/*!
 	 * \brief Impose a subsonic inlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -5131,7 +5149,7 @@ public:
 	 */
 	void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
-    
+	
 	/*!
 	 * \brief Impose the inlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -5345,7 +5363,8 @@ public:
 	 */
 	void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
-    
+	
+	
 	/*!
 	 * \brief Impose the inlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -5513,7 +5532,7 @@ public:
 	 */
 	void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
-    
+	
 	/*!
 	 * \brief Impose the inlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -5816,7 +5835,7 @@ public:
 	 */
 	void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
-    
+	
 	/*!
 	 * \brief Impose the inlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -7363,7 +7382,7 @@ public:
 	 */
 	void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                       unsigned short val_marker);
-    
+	
 	/*!
 	 * \brief Impose the Far Field boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
