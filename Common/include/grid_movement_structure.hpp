@@ -49,10 +49,6 @@
 #include "vector_structure.hpp"
 #include "linear_solvers_structure.hpp"
 
-#ifdef HAVE_GELITE
-#include "gelite.hpp"
-#endif
-
 using namespace std;
 
 /*!

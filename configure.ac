@@ -551,7 +551,7 @@ if test "$have_GELITE" != "no"
 then
         AM_CONDITIONAL(BUILD_GELITE,true)
         GELITE_CXX="-DHAVE_GELITE -I"$with_GELITE_include""
-        GELITE_LD=""$with_GELITE_lib"/$GELITElibgeom "$with_GELITE_lib"/$GELITElibnmb "$with_GELITE_lib"/$GELITElibvmath -lpthread"
+        GELITE_LD=""$with_GELITE_lib"/$GELITElibnmb "$with_GELITE_lib"/$GELITElibgeom "$with_GELITE_lib"/$GELITElibvmath"
 else
         AM_CONDITIONAL(BUILD_GELITE,false)
         GELITE_CXX=
