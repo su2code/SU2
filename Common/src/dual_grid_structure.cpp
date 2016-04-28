@@ -314,7 +314,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
 CPoint::~CPoint() {
   
 	if (Volume != NULL) delete[] Volume;
-	if (Vertex != NULL) delete[] Vertex;
+	if (Vertex != NULL && Boundary) delete[] Vertex;
 	if (Coord != NULL) delete[] Coord;
 	if (Coord_Old != NULL) delete[] Coord_Old;
 	if (Coord_Sum != NULL) delete[] Coord_Sum;
