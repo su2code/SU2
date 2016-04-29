@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1373,7 +1373,7 @@ void CAdjMeanFlowIteration::ComputeGradient(COutput *output,
                                             CConfig **config_container,
                                             CSurfaceMovement **surface_movement,
                                             CVolumetricMovement **grid_movement,
-                                            CFreeFormDefBox*** FFDBox,
+                                            CFreeFormDefBox*** FFDBoxGlobal,
                                             unsigned short val_iZone) {
   
   
@@ -1390,6 +1390,7 @@ void CAdjMeanFlowIteration::ComputeGradient(COutput *output,
   unsigned short iVar, nVar = solver_container[val_iZone][MESH_0][FLOW_SOL]->GetnVar();
   unsigned short iDim, nDim = geometry_container[val_iZone][MESH_0]->GetnDim();
   unsigned short iDV = 0, nDV = config_container[val_iZone]->GetnDV();
+  unsigned short iFFDBox;
   
   su2double *Gradient = new su2double[nDV];
   su2double objfunc_base = 0, objfunc_step = 0;
@@ -1466,6 +1467,11 @@ void CAdjMeanFlowIteration::ComputeGradient(COutput *output,
   
   surface_movement[val_iZone]->CopyBoundary(geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
   
+  /*--- Definition of the FFD deformation class ---*/
+  
+  unsigned short nFFDBox = MAX_NUMBER_FFD;
+  CFreeFormDefBox **FFDBox = new CFreeFormDefBox*[nFFDBox];
+  
   /*--- Open the gradient file (only the master writes) ---*/
   
   if (rank == MASTER_NODE) {
@@ -1486,10 +1492,87 @@ void CAdjMeanFlowIteration::ComputeGradient(COutput *output,
     
     /*--- Perturb the particular type of design variable ---*/
     
-    if (config_container[val_iZone]->GetDesign_Variable(iDV) == HICKS_HENNE) {
-      surface_movement[val_iZone]->SetHicksHenne(geometry_container[val_iZone][MESH_0], config_container[val_iZone], iDV, true);
+    /*--- Free Form deformation based ---*/
+    
+    if ((config_container[val_iZone]->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
+        (config_container[val_iZone]->GetDesign_Variable(iDV) == FFD_CAMBER_2D) ||
+        (config_container[val_iZone]->GetDesign_Variable(iDV) == FFD_THICKNESS_2D) ||
+        (config_container[val_iZone]->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) ||
+        (config_container[val_iZone]->GetDesign_Variable(iDV) == FFD_DIHEDRAL_ANGLE) ||
+        (config_container[val_iZone]->GetDesign_Variable(iDV) == FFD_TWIST_ANGLE) ||
+        (config_container[val_iZone]->GetDesign_Variable(iDV) == FFD_ROTATION) ||
+        (config_container[val_iZone]->GetDesign_Variable(iDV) == FFD_CAMBER) ||
+        (config_container[val_iZone]->GetDesign_Variable(iDV) == FFD_THICKNESS) ) {
+      
+      /*--- Read the FFD information in the first iteration ---*/
+      
+      if (iDV == 0) {
+        
+        if (rank == MASTER_NODE)
+          cout << "Read the FFD information from mesh file." << endl;
+        
+        /*--- Read the FFD information from the grid file ---*/
+        
+        surface_movement[val_iZone]->ReadFFDInfo(geometry_container[val_iZone][MESH_0], config_container[val_iZone], FFDBox, config_container[val_iZone]->GetMesh_FileName());
+        
+        /*--- If the FFDBox was not defined in the input file ---*/
+        if (!surface_movement[val_iZone]->GetFFDBoxDefinition() && (rank == MASTER_NODE)) {
+          cout << "The input grid doesn't have the entire FFD information!" << endl;
+          cout << "Press any key to exit..." << endl;
+          cin.get();
+        }
+        
+        for (iFFDBox = 0; iFFDBox < surface_movement[val_iZone]->GetnFFDBox(); iFFDBox++) {
+          
+          if (rank == MASTER_NODE)
+            cout << "Check the FFD box intersections with the solid surfaces." << endl;
+          
+          surface_movement[val_iZone]->CheckFFDIntersections(geometry_container[val_iZone][MESH_0], config_container[val_iZone], FFDBox[iFFDBox], iFFDBox);
+          
+        }
+        
+        if (rank == MASTER_NODE)
+          cout <<"-------------------------------------------------------------------------" << endl;
+        
+      }
+      
+      /*--- Apply the control point change ---*/
+      
+      for (iFFDBox = 0; iFFDBox < surface_movement[val_iZone]->GetnFFDBox(); iFFDBox++) {
+        
+        /*--- Reset FFD box ---*/
+        
+        switch (config_container[val_iZone]->GetDesign_Variable(iDV) ) {
+          case FFD_CONTROL_POINT_2D : surface_movement[val_iZone]->SetFFDCPChange_2D(geometry_container[val_iZone][MESH_0], config_container[val_iZone], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_CAMBER_2D :        surface_movement[val_iZone]->SetFFDCamber_2D(geometry_container[val_iZone][MESH_0], config_container[val_iZone], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_THICKNESS_2D :     surface_movement[val_iZone]->SetFFDThickness_2D(geometry_container[val_iZone][MESH_0], config_container[val_iZone], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_CONTROL_POINT :    surface_movement[val_iZone]->SetFFDCPChange(geometry_container[val_iZone][MESH_0], config_container[val_iZone], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_DIHEDRAL_ANGLE :   surface_movement[val_iZone]->SetFFDDihedralAngle(geometry_container[val_iZone][MESH_0], config_container[val_iZone], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_TWIST_ANGLE :      surface_movement[val_iZone]->SetFFDTwistAngle(geometry_container[val_iZone][MESH_0], config_container[val_iZone], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_ROTATION :         surface_movement[val_iZone]->SetFFDRotation(geometry_container[val_iZone][MESH_0], config_container[val_iZone], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_CAMBER :           surface_movement[val_iZone]->SetFFDCamber(geometry_container[val_iZone][MESH_0], config_container[val_iZone], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_THICKNESS :        surface_movement[val_iZone]->SetFFDThickness(geometry_container[val_iZone][MESH_0], config_container[val_iZone], FFDBox[iFFDBox], iDV, true); break;
+          case FFD_CONTROL_SURFACE :  surface_movement[val_iZone]->SetFFDControl_Surface(geometry_container[val_iZone][MESH_0], config_container[val_iZone], FFDBox[iFFDBox], iDV, true); break;
+        }
+        
+        /*--- Recompute cartesian coordinates using the new control points position ---*/
+        
+        surface_movement[val_iZone]->SetCartesianCoord(geometry_container[val_iZone][MESH_0], config_container[val_iZone], FFDBox[iFFDBox], iFFDBox);
+        
+      }
+      
     }
     
+    /*--- Hicks Henne design variable ---*/
+    
+    else if (config_container[val_iZone]->GetDesign_Variable(iDV) == HICKS_HENNE) {
+      surface_movement[val_iZone]->SetHicksHenne(geometry_container[val_iZone][MESH_0], config_container[val_iZone], iDV, true);
+    }
+
+    /*--- Design variable not implement ---*/
+    
+    else { cout << "Design Variable not implement yet" << endl; }
+
     /*--- Deform the volume grid around the new boundary locations ---*/
     
     grid_movement[val_iZone]->SetVolume_Deformation(geometry_container[val_iZone][MESH_0],config_container[val_iZone], true);
