@@ -416,6 +416,13 @@ private:
   vector<FEMStandardElementClass> standardElementsGrid; /*!< \brief Vector that contains the standard volume elements
                                                                     used for the geometry of the DG solver. */
 
+  vector<FEMStandardInternalFaceClass> standardMatchingFacesSol;  /*!< \brief Vector that contains the standard matching
+                                                                              internal faces used for the solution of
+                                                                              the DG solver. */
+  vector<FEMStandardInternalFaceClass> standardMatchingFacesGrid; /*!< \brief Vector that contains the standard matching
+                                                                              internal faces used for the geometry of
+                                                                              the DG solver. */
+
   vector<unsigned long> VecDOFsGridFaceSide0; /*!< \brief Storage for the grid DOFs of side 0 of the faces. */
   vector<unsigned long> VecDOFsGridFaceSide1; /*!< \brief Storage for the grid DOFs of side 1 of the faces. */
   vector<unsigned long> VecDOFsSolFaceSide0;  /*!< \brief Storage for the solution DOFs of side 0 of the faces. */

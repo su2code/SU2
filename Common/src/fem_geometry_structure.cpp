@@ -939,6 +939,10 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
         longSendBuf[i].push_back(thisNodeID);
         nodeIDs.push_back(unsignedLong2T(thisNodeID,perIndex+1)); // Note the +1.
       }
+
+      for(unsigned short j=0; j<geometry->elem[locElemInd]->GetnFaces(); ++j) {
+        shortSendBuf[i].push_back((short) geometry->elem[locElemInd]->GetJacobianConstantFace(j));
+      }
     }
 
     /*--- Sort nodeIDs in increasing order and remove the double entities. ---*/
@@ -1096,6 +1100,10 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       volElem[indV].nodeIDsGrid.resize(volElem[indV].nDOFsGrid);
       for(unsigned short k=0; k<volElem[indV].nDOFsGrid; ++k)
         volElem[indV].nodeIDsGrid[k] = longRecvBuf[i][indL++];
+
+      volElem[indV].JacFacesIsConsideredConstant.resize(volElem[indV].nFaces);
+      for(unsigned short k=0; k<volElem[indV].nFaces; ++k)
+        volElem[indV].JacFacesIsConsideredConstant[k] = (bool) shortRecvBuf[i][indS++];
 
       /* Give the member variables that are not obtained via communication their
          values. Some of these variables are not used for halo elements. */
@@ -1712,9 +1720,11 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
       /* Update the counters for the face connectivities. This depends on the
          type of surface element. */
+      unsigned short VTK_Type;
       switch( localFaces[i].nCornerPoints ) {
         case 2:
           /* Face is a line. */
+          VTK_Type = LINE;
           sizeVecDOFsGridFaceSide0 += localFaces[i].nPolyGrid0 + 1;
           sizeVecDOFsGridFaceSide1 += localFaces[i].nPolyGrid1 + 1;
           sizeVecDOFsSolFaceSide0  += localFaces[i].nPolySol0  + 1;
@@ -1723,6 +1733,7 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
         case 3:
           /* Face is a triangle. */
+          VTK_Type = TRIANGLE;
           sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+2)/2;
           sizeVecDOFsGridFaceSide1 += (localFaces[i].nPolyGrid1+1)*(localFaces[i].nPolyGrid1+2)/2;
           sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +2)/2;
@@ -1731,6 +1742,7 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
         case 4:
           /* Face is a quadrilateral. */
+          VTK_Type = QUADRILATERAL;
           sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+1);
           sizeVecDOFsGridFaceSide1 += (localFaces[i].nPolyGrid1+1)*(localFaces[i].nPolyGrid1+1);
           sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +1);
@@ -1750,7 +1762,47 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
       /*--- Search in the standard elements for faces for a matching
             standard element. If not found, create a new standard element.
             Note that both the grid and the solution representation must
-            match wit the standard element. ---*/
+            match with the standard element. ---*/
+      unsigned long j;
+      for(j=0; j<standardMatchingFacesSol.size(); ++j) {
+        if(standardMatchingFacesSol[j].SameStandardMatchingFace(VTK_Type,
+                                                                localFaces[i].JacFaceIsConsideredConstant,
+                                                                localFaces[i].elemType0,
+                                                                localFaces[i].nPolySol0,
+                                                                localFaces[i].elemType1,
+                                                                localFaces[i].nPolySol1) &&
+           standardMatchingFacesGrid[j].SameStandardMatchingFace(VTK_Type,
+                                                                 localFaces[i].JacFaceIsConsideredConstant,
+                                                                 localFaces[i].elemType0,
+                                                                 localFaces[i].nPolyGrid0,
+                                                                 localFaces[i].elemType1,
+                                                                 localFaces[i].nPolyGrid1) ) {
+          matchingFaces[ii].indStandardElement = j;
+          break;
+        }
+      }
+
+      /* Create the new standard elements if no match was found. */
+      if(j == standardMatchingFacesSol.size()) {
+
+        standardMatchingFacesSol.push_back(FEMStandardInternalFaceClass(VTK_Type,
+                                                                        localFaces[i].elemType0,
+                                                                        localFaces[i].nPolySol0,
+                                                                        localFaces[i].elemType1,
+                                                                        localFaces[i].nPolySol1,
+                                                                        localFaces[i].JacFaceIsConsideredConstant,
+                                                                        config) );
+
+        standardMatchingFacesGrid.push_back(FEMStandardInternalFaceClass(VTK_Type,
+                                                                         localFaces[i].elemType0,
+                                                                         localFaces[i].nPolyGrid0,
+                                                                         localFaces[i].elemType1,
+                                                                         localFaces[i].nPolyGrid1,
+                                                                         localFaces[i].JacFaceIsConsideredConstant,
+                                                                         config,
+                                                                         standardMatchingFacesSol[j].GetOrderExact()) );
+        matchingFaces[ii].indStandardElement = j;
+      }
 
       /* Update the counter ii for the next internal matching face. */
       ++ii;
@@ -1803,11 +1855,10 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
                                                               config) );
 
         standardElementsGrid.push_back(FEMStandardElementClass(volElem[i].VTK_Type,
-                                       volElem[i].nPolyGrid,
-                                       volElem[i].JacIsConsideredConstant,
-                                       config,
-                                       standardElementsSol[j].GetOrderExact()) );
-
+                                                               volElem[i].nPolyGrid,
+                                                               volElem[i].JacIsConsideredConstant,
+                                                               config,
+                                                               standardElementsSol[j].GetOrderExact()) );
         volElem[i].indStandardElement = j;
       }
     }
