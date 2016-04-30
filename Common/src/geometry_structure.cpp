@@ -7925,10 +7925,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
         unsigned short VTK_Type = typeRead%100;
 
-        unsigned short nDOFsGrid = FEMStandardElementClass::GetNDOFsStatic(VTK_Type, nPolyGrid,
-                                                                           typeReadErrorMessage);
-        unsigned short nDOFsSol  = FEMStandardElementClass::GetNDOFsStatic(VTK_Type, nPolySol,
-                                                                           typeReadErrorMessage);
+        unsigned short nDOFsGrid = FEMStandardElementBaseClass::GetNDOFsStatic(VTK_Type, nPolyGrid,
+                                                                               typeReadErrorMessage);
+        unsigned short nDOFsSol  = FEMStandardElementBaseClass::GetNDOFsStatic(VTK_Type, nPolySol,
+                                                                               typeReadErrorMessage);
 
         /*--- Allocate the memory for a new primary grid FEM element if
               this element must be stored on this rank.                 ---*/
@@ -12371,7 +12371,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
 
       nIntegration = FEMStandardElementClass::GetNIntegrationStatic(VTK_Type, orderExact,
                                                                     config);
-      nDOFs = FEMStandardElementClass::GetNDOFsStatic(VTK_Type, nPolyFace);
+      nDOFs = FEMStandardElementBaseClass::GetNDOFsStatic(VTK_Type, nPolyFace);
 
       /*--- Update the amount of work for this element with the work for this face. ---*/
       vwgt[i] += workSurfaceIntegrationPoint*nIntegration

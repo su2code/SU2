@@ -66,3 +66,11 @@ inline unsigned short* FEMStandardElementClass::GetConnFace4(void){return connFa
 inline unsigned short* FEMStandardElementClass::GetConnFace5(void){return connFace5.data();}
 
 inline unsigned short FEMStandardElementClass::GetNDOFs(void){return nDOFs;}
+
+inline FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(){}
+
+inline FEMStandardInternalFaceClass::~FEMStandardInternalFaceClass(){}
+
+inline FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(const FEMStandardInternalFaceClass &other){Copy(other);}
+
+inline FEMStandardInternalFaceClass& FEMStandardInternalFaceClass::operator=(const FEMStandardInternalFaceClass &other){Copy(other); return (*this);}

@@ -3,7 +3,7 @@
  * \brief Headers of the main functions for the FEM standard elements.
  *        The functions are in the <i>fem_standard_element.cpp</i> file.
  * \author E. van der Weide
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -44,10 +44,11 @@ using namespace std;
  * \class FEMStandardElementBaseClass
  * \brief Base class for a FEM standard element.
  * \author E. van der Weide
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class FEMStandardElementBaseClass {
-protected:
+//protected:
+public:
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
   unsigned short orderExact;   /*!< \brief Polynomial order that must be integrated exactly by the integration rule. */
   unsigned short nIntegration; /*!< \brief Number of points used in the numerical integration. */
@@ -90,6 +91,18 @@ protected:
 
 public:
   /*!
+  * \brief Static function, which makes available the number of DOFs for an element
+           corresponding to the arguments.
+  * \param[in] VTK_Type         - Type of the element using the VTK convention.
+  * \param[in] nPoly            - Polynomial degree of the element.
+  * \param[in] typeErrorMessage - Default argument used to write a good error message.
+  * \return The number of DOFs
+  */
+  static unsigned short GetNDOFsStatic(unsigned short VTK_Type,
+                                       unsigned short nPoly,
+                                       unsigned long  typeErrorMessage = 0);
+
+  /*!
   * \brief Function, which makes available the number of integration points for this standard element.
   * \return  The number of integration points of this standard element.
   */
@@ -113,6 +126,30 @@ public:
   unsigned short GetOrderExact(void);
 
 protected:
+  /*!
+  * \brief Function, which checks if the sum of the given derivatives of the
+           Lagrangian interpolation functions is 0 in the points.
+  * \param[in] nPoints         - Number of points to be checked.
+  * \param[in] nDOFs           - Number of DOFs of the element.
+  * \param[in] dLagBasisPoints - Values of the derivatives of the Lagrangian
+                                 interpolation functions in the given points.
+  */
+  void CheckSumDerivativesLagrangianBasisFunctions(const unsigned short    nPoints,
+                                                   const unsigned short    nDOFs,
+                                                   const vector<su2double> &dLagBasisPoints);
+
+  /*!
+  * \brief Function, which checks if the sum of the given Lagrangian interpolation
+           functions is 1 in the points.
+  * \param[in]     nPoints        - Number of points to be checked.
+  * \param[in]     nDOFs          - Number of DOFs of the element.
+  * \param[in,out] lagBasisPoints - Values of the Lagrangian interpolation
+                                    functions in the given points.
+  */
+  void CheckSumLagrangianBasisFunctions(const unsigned short nPoints,
+                                        const unsigned short nDOFs,
+                                        vector<su2double>    &lagBasisPoints);
+
   /*!
   * \brief Function, which copies the data of the given object into the current object.
   * \param[in] other - Object, whose data is copied.
@@ -682,7 +719,7 @@ private:
  * \class FEMStandardElementClass
  * \brief Class to define a FEM standard element.
  * \author E. van der Weide
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class FEMStandardElementClass : public FEMStandardElementBaseClass {
 private:
@@ -816,19 +853,7 @@ public:
   unsigned short GetNDOFs(void);
 
   /*!
-  * \brief Static function, which makes available the number of DOFs for an element
-           corresponding to the arguments.
-  * \param[in] VTK_Type         - Type of the element using the VTK convention.
-  * \param[in] nPoly            - Polynomial degree of the element.
-  * \param[in] typeErrorMessage - Default argument used to write a good error message.
-  * \return  The number of DOFs
-  */
-  static unsigned short GetNDOFsStatic(unsigned short VTK_Type,
-                                       unsigned short nPoly,
-                                       unsigned long  typeErrorMessage = 0);
-
-  /*!
-  * \brief Function, which checks if the functions arguments corresponds to this standard element.
+  * \brief Function, which checks if the function arguments correspond to this standard element.
   * \param[in] val_VTK_Type - Type of the element using the VTK convention.
   * \param[in] val_nPoly    - Polynomial degree of the element.
   * \param[in] val_constJac - Whether or not the Jacobians are constant.
@@ -931,6 +956,143 @@ private:
            order hexahedron.
   */
   void SubConnHexahedron(void);
+};
+
+/*!
+ * \class FEMStandardInternalFaceClass
+ * \brief Class to define a FEM standard internal face.
+ * \author E. van der Weide
+ * \version 4.1.2 "Cardinal"
+ */
+class FEMStandardInternalFaceClass : public FEMStandardElementBaseClass {
+//private:
+public:
+  unsigned short nDOFsFaceSide0;    /*!< \brief Number of DOFs on side 0 of the face. */
+  unsigned short nDOFsFaceSide1;    /*!< \brief Number of DOFs on side 1 of the face. */
+
+  unsigned short nPolyElemSide0;    /*!< \brief Polynomial degree of the element on side 0 of the face. */
+  unsigned short nPolyElemSide1;    /*!< \brief Polynomial degree of the element on side 1 of the face. */
+  unsigned short nDOFsElemSide0;    /*!< \brief Number of DOFs of the element on side 0 of the face. */
+  unsigned short nDOFsElemSide1;    /*!< \brief Number of DOFs of the element on side 1 of the face. */
+  unsigned short VTK_TypeElemSide0; /*!< \brief Type of the element on side 0 of the face using the VTK convention. */
+  unsigned short VTK_TypeElemSide1; /*!< \brief Type of the element on side 1 of the face using the VTK convention. */
+
+  vector<su2double> rDOFsFaceSide0;   /*!< \brief r-location of the DOFs on side 0 of the face. */
+  vector<su2double> rDOFsFaceSide1;   /*!< \brief r-location of the DOFs on side 1 of the face. */
+  vector<su2double> sDOFsFaceSide0;   /*!< \brief s-location of the DOFs on side 0 of the face, if needed. */
+  vector<su2double> sDOFsFaceSide1;   /*!< \brief s-location of the DOFs on side 1 of the face, if needed. */
+
+  vector<su2double> lagBasisIntegrationSide0; /*!< \brief Lagrangian basis functions in the integration points
+                                                          of side0 of the face. */
+  vector<su2double> lagBasisIntegrationSide1; /*!< \brief Lagrangian basis functions in the integration points
+                                                          of side1 of the face. */
+
+  vector<su2double> drLagBasisIntegrationSide0; /*!< \brief r-derivatives of the Lagrangian basis functions in the
+                                                            integration points of the element on side 0 of the face. */
+  vector<su2double> drLagBasisIntegrationSide1; /*!< \brief r-derivatives of the Lagrangian basis functions in the
+                                                            integration points of the element on side 1 of the face. */
+  vector<su2double> dsLagBasisIntegrationSide0; /*!< \brief s-derivatives of the Lagrangian basis functions in the
+                                                            integration points of the element on side 0 of the face. */
+  vector<su2double> dsLagBasisIntegrationSide1; /*!< \brief s-derivatives of the Lagrangian basis functions in the
+                                                            integration points of the element on side 1 of the face. */
+  vector<su2double> dtLagBasisIntegrationSide0; /*!< \brief t-derivatives of the Lagrangian basis functions in the
+                                                            integration points of the element on side 0 of the face. */
+  vector<su2double> dtLagBasisIntegrationSide1; /*!< \brief t-derivatives of the Lagrangian basis functions in the
+                                                            integration points of the element on side 1 of the face. */
+public:
+  /*!
+  * \brief Standard Constructor. Nothing to be done.
+  */
+  FEMStandardInternalFaceClass();
+
+  /*!
+  * \brief Destructor. Nothing to be done, because the vectors are deleted automatically.
+  */
+  ~FEMStandardInternalFaceClass();
+
+  /*!
+  * \brief Alternative constructor.
+  * \param[in] val_VTK_TypeFace    - The type of the face using the VTK convention.
+  * \param[in] val_VTK_TypeSide0   - Type of the element adjacent to side 0 of the face
+                                     using the VTK convention.
+  * \param[in] val_nPolySide0      - Polynomial degree of the element adjacent to side 0
+                                     of the face.
+  * \param[in] val_VTK_TypeSide1   - Type of the element adjacent to side 1 of the face
+                                     using the VTK convention.
+  * \param[in] val_nPolySide1      - Polynomial degree of the element adjacent to side 1
+                                     of the face.
+  * \param[in] val_constJac        - Whether or not the Jacobians are constant.
+  * \param[in] config              - Object, which contains the input parameters.
+  * \param[in] val_orderExact      - Default argument. If specified, it contains the
+                                     order of the polynomials that must be integrated
+                                     exactly by the integration rule.
+  */
+  FEMStandardInternalFaceClass(unsigned short val_VTK_TypeFace,
+                               unsigned short val_VTK_TypeSide0,
+                               unsigned short val_nPolySide0,
+                               unsigned short val_VTK_TypeSide1,
+                               unsigned short val_nPolySide1,
+                               bool           val_constJac,
+                               CConfig        *config,
+                               unsigned short val_orderExact = 0);
+  /*!
+  * \brief Copy constructor.
+  * \param[in] other - Object, whose data must be copied.
+  */
+  FEMStandardInternalFaceClass(const FEMStandardInternalFaceClass &other);
+
+  /*!
+  * \brief Assignment operator.
+  * \param[in] other - Object, to which this object must be assigned.
+  * \return The current object, after the member variables were assigned the correct value.
+  */
+  FEMStandardInternalFaceClass& operator=(const FEMStandardInternalFaceClass &other);
+
+  /*!
+  * \brief Function, which checks if the function arguments correspond to this standard face.
+  * \param[in] val_VTK_TypeFace    - The type of the face using the VTK convention.
+  * \param[in] val_constJac        - Whether or not the Jacobians are constant.
+  * \param[in] val_VTK_TypeSide0   - Type of the element adjacent to side 0 of the face
+                                     using the VTK convention.
+  * \param[in] val_nPolySide0      - Polynomial degree of the element adjacent to side 0
+                                     of the face.
+  * \param[in] val_VTK_TypeSide1   - Type of the element adjacent to side 1 of the face
+                                     using the VTK convention.
+  * \param[in] val_nPolySide1      - Polynomial degree of the element adjacent to side 1
+                                     of the face.
+  */
+  bool SameStandardMatchingFace(unsigned short val_VTK_TypeFace,
+                                bool           val_constJac,
+                                unsigned short val_VTK_TypeSide0,
+                                unsigned short val_nPolySide0,
+                                unsigned short val_VTK_TypeSide1,
+                                unsigned short val_nPolySide1);
+private:
+  /*!
+  * \brief Function, which copies the data of the given object into the current object.
+  * \param[in] other - Object, whose data is copied.
+  */
+  void Copy(const FEMStandardInternalFaceClass &other);
+
+  /*!
+  * \brief Function, which computes the values of the derivatives of the basis functions
+           of the adjacent elements in the integration points of the face.
+  * \param[in]  VTK_TypeElem          - Type of the element adjacent to the face using the VTK convention.
+  * \param[in]  nPolyElem             - Polynomial degree of the element adjacent to the face.
+  * \param[out] nDOFsElem             - Number of DOFs of the element adjacent to the face.
+  * \param[out] drLagBasisIntegration - r-derivatives of the basis functions in the integration points
+                                        of the face.
+  * \param[out] dsLagBasisIntegration - s-derivatives of the basis functions in the integration points
+                                        of the face.
+  * \param[out] dtLagBasisIntegration - t-derivatives of the basis functions in the integration points
+                                        of the face.
+  */
+  void DerivativesBasisFunctionsAdjacentElement(unsigned short    VTK_TypeElem,
+                                                unsigned short    nPolyElem,
+                                                unsigned short    &nDOFsElem,
+                                                vector<su2double> &drLagBasisIntegration,
+                                                vector<su2double> &dsLagBasisIntegration,
+                                                vector<su2double> &dtLagBasisIntegration);
 };
 
 #include "fem_standard_element.inl"
