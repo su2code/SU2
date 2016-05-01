@@ -47,8 +47,7 @@ using namespace std;
  * \version 4.1.2 "Cardinal"
  */
 class FEMStandardElementBaseClass {
-//protected:
-public:
+protected:
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
   unsigned short orderExact;   /*!< \brief Polynomial order that must be integrated exactly by the integration rule. */
   unsigned short nIntegration; /*!< \brief Number of points used in the numerical integration. */
@@ -965,8 +964,7 @@ private:
  * \version 4.1.2 "Cardinal"
  */
 class FEMStandardInternalFaceClass : public FEMStandardElementBaseClass {
-//private:
-public:
+private:
   unsigned short nDOFsFaceSide0;    /*!< \brief Number of DOFs on side 0 of the face. */
   unsigned short nDOFsFaceSide1;    /*!< \brief Number of DOFs on side 1 of the face. */
 
