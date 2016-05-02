@@ -138,7 +138,7 @@ CDriver::CDriver(CIteration **iteration_container,
 			transfer_container[iZone] = new CTransfer*[nZone];
 			interpolator_container[iZone] = new CInterpolator*[nZone];
 			for (jZone = 0; jZone < nZone; jZone++){
-				transfer_container[iZone][jZone] = NULL;
+				transfer_container[iZone][jZone]     = NULL;
 				interpolator_container[iZone][jZone] = NULL;
 			}
 		}
@@ -1783,7 +1783,7 @@ for (targetZone = 0; targetZone < nZone; targetZone++){
 						
 						if( FSI_interface_marker_compare != 0 && FSI_interface_marker == FSI_interface_marker_compare  ){
 							
-							cout << donorZone << "  " << targetZone << "  " << FSI_interface_marker_compare << "  " << FSI_interface_marker << "  " << endl;
+							//cout << donorZone << "  " << targetZone << "  " << FSI_interface_marker_compare << "  " << FSI_interface_marker << "  " << endl;
 				
 							/*--- Initialize donor booleans ---*/
 
@@ -1876,8 +1876,14 @@ for (targetZone = 0; targetZone < nZone; targetZone++){
 							}
 							else {
 								nVarTransfer = 0;
-								transfer_container[donorZone][targetZone] = new CTransfer_ConservativeVars(nVar, nVarTransfer, config_container[donorZone]);
-								if (rank == MASTER_NODE) cout << "generic conservative variables. " << endl;
+								
+								nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnPrimVar();
+								transfer_container[donorZone][targetZone] = new CTransfer_SlidingInterface(nVar, nVarTransfer, config_container[donorZone]);
+								if (rank == MASTER_NODE) cout << "sliding interface. " << endl;
+								
+								
+								//transfer_container[donorZone][targetZone] = new CTransfer_ConservativeVars(nVar, nVarTransfer, config_container[donorZone]);
+								//if (rank == MASTER_NODE) cout << "generic conservative variables. " << endl;
 							}
 
 						}
@@ -2028,6 +2034,13 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
 		nIntIter = 1;
 
 	for (IntIter = 0; IntIter < nIntIter; IntIter++){
+	
+		for (iZone = 0; iZone < nZone; iZone++)   
+			for (jZone = 0; jZone < nZone; jZone++)
+				if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
+					Transfer_Data(output, integration_container, geometry_container, solver_container, numerics_container, config_container,
+								surface_movement, grid_movement, FFDBox, transfer_container, iZone, jZone);
+		
 		for (iZone = 0; iZone < nZone; iZone++) {
 
 			config_container[iZone]->SetIntIter(IntIter);
@@ -2062,6 +2075,69 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
 		iteration_container[iZone]->Postprocess(); /*--- Does nothing for now. ---*/
 	}
   
+}
+
+void CMultiZoneDriver::Transfer_Data(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+		     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+			 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+			 CTransfer ***transfer_container, unsigned short donorZone, unsigned short targetZone){
+
+#ifdef HAVE_MPI
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+	bool MatchingMesh = config_container[targetZone]->GetMatchingMesh();
+
+	/*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
+
+	switch (config_container[targetZone]->GetKind_TransferMethod()) {
+	case BROADCAST_DATA:
+		if (MatchingMesh){
+			transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+					config_container[donorZone], config_container[targetZone]);
+			/*--- Set the volume deformation for the fluid zone ---*/
+//			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+
+		}
+		else {
+			transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+					config_container[donorZone], config_container[targetZone]);
+			/*--- Set the volume deformation for the fluid zone ---*/
+//			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+
+		}
+		break;
+	case SCATTER_DATA:
+		if (MatchingMesh){
+			transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+					config_container[donorZone], config_container[targetZone]);
+			/*--- Set the volume deformation for the fluid zone ---*/
+//			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+		}
+		else {
+			cout << "Scatter method not implemented for non-matching meshes. Exiting..." << endl;
+			exit(EXIT_FAILURE);
+		}
+		break;
+	case ALLGATHER_DATA:
+		if (MatchingMesh){
+			cout << "Allgather method not yet implemented for matching meshes. Exiting..." << endl;
+			exit(EXIT_FAILURE);
+		}
+		else {
+			transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+					config_container[donorZone], config_container[targetZone]);
+			/*--- Set the volume deformation for the fluid zone ---*/
+//			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+		}
+		break;
+	}
+
 }
 
 CSpectralDriver::CSpectralDriver(CIteration **iteration_container,
