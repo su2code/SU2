@@ -156,10 +156,10 @@ void CMeanFlowIteration::Iterate(COutput *output,
 		
 	  /* Transferring states at zone interface boundaries for the computation 
 	   * interface fluxes, this will be moved to transfer container class */
-	   
+	/*
 	  if( nZone > 1 && !fsi && !config_container[val_iZone]->GetBoolMixingPlane() && !config_container[val_iZone]->GetMatchingMesh() && unsteady)// to change with bool value for sliding interface
 		SetSlidingInterface(geometry_container, solver_container, config_container, RUNTIME_FLOW_SYS);
-
+		*/
 
       /*--- Update global parameters ---*/
       
@@ -566,7 +566,7 @@ void CMeanFlowIteration::SetSlidingInterface(CGeometry ***geometry_container, CS
 								iPoint = geometry_container[iZone][MESH_0]->vertex[iMarker][iVertex]->GetInterpDonorPoint(0);
 								
 								for (iVar = 0; iVar < nVar; iVar++)
-									 solver_container[iZone][MESH_0][iMainSolver]->SetSlidingState(iMarker, iVertex, iVar, solver_container[jZone][MESH_0][jMainSolver]->node[iPoint]->GetPrimitive(iVar));
+									 solver_container[iZone][MESH_0][iMainSolver]->SetSlidingState(iMarker, iVertex, iVar, solver_container[jZone][MESH_0][jMainSolver]->node[iPoint]->GetPrimitive(iVar));		
 
 /*
 	for (iZone = 0; iZone < nZone; iZone++) {             

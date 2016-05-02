@@ -10168,6 +10168,8 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   bool implicit 	 = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   
+  su2double Density, sq_vel, StaticEnergy;
+  
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
@@ -10176,9 +10178,9 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
-       // cout << iMarker << "  " << config->GetMarker_All_KindBC(iMarker) << "  " << config->GetnMarker_All() << endl;getchar();
+	
+	if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE)	{
+       //cout << iMarker << "  " << config->GetMarker_All_KindBC(iMarker) << "  " << config->GetnMarker_All() << endl;getchar();
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         
@@ -10187,7 +10189,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
             for (iVar = 0; iVar < nPrimVar; iVar++) {
               PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
               PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
-            }                     
+            }
             
             /*--- Set primitive variables ---*/
             
@@ -10214,6 +10216,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
           
         }
       }
+
     }
   }
   

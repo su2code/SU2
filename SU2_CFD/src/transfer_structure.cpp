@@ -740,6 +740,8 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
+  bool fsi = donor_config->GetFSI_Simulation();
+  
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -829,6 +831,9 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
       }
     }
     
+    if(Marker_Target == -1 || Marker_Donor == -1)
+		continue;
+        
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
     
@@ -907,6 +912,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
       
     }
     
+    
 #ifdef HAVE_MPI
     /*--- Once all the messages have been prepared, we gather them all into the MASTER_NODE ---*/
     SU2_MPI::Gather(Buffer_Send_DonorVariables, nBuffer_DonorVariables, MPI_DOUBLE, Buffer_Recv_DonorVariables, nBuffer_DonorVariables, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
@@ -957,9 +963,15 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     long indexPoint_iVertex, Point_Target_Check;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
-    
+        
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0){
+      /*
+      cout << target_config->GetMarker_All_FSIinterface(Marker_Target) << "  " << donor_config->GetMarker_All_FSIinterface(Marker_Donor) << endl; 
+      cout << Marker_Target << "  " << Marker_Donor << endl;
+      cout << "nvar " << nVar << endl;
+           */
+      
       
       /*--- We have identified the local index of the Structural marker ---*/
       /*--- We loop over all the vertices in that marker and in that particular processor ---*/
@@ -986,27 +998,32 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
             donorCoeff = target_geometry->vertex[Marker_Target][iVertex]->GetDonorCoeff(iDonorPoint);
             
             /*--- Find the index of the global donor point in the buffer Buffer_Bcast_Indices ---*/
+           
             indexPoint_iVertex = std::distance(Buffer_Bcast_Indices, std::find(Buffer_Bcast_Indices, Buffer_Bcast_Indices + nBuffer_BcastIndices, Donor_Global_Index));
-            
+           
             Point_Target_Check = Buffer_Bcast_Indices[indexPoint_iVertex];
-            
-            if (Point_Target_Check < 0) {
+             //cout << "globalindex  " << Donor_Global_Index << "  Index  " << indexPoint_iVertex << "  check " << Point_Target_Check << endl;
+            if (Point_Target_Check < 0 && fsi) {
               cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
               exit(EXIT_FAILURE);
             }
             
-            for (iVar = 0; iVar < nVar; iVar++)
-              Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
+            //cout << "Target  ";
+            for (iVar = 0; iVar < nVar; iVar++){
+              Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];//cout << Target_Variable[iVar] << "  ";
+              }//cout << endl;
           }
-          
-          SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
-          
+          //getchar();
+          if (Point_Target_Check >= 0){
+			SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
+			//cout  << "transfer  " << Marker_Target << "  " << Marker_Donor << "  " << iVertex << "  " << Point_Target << endl;
+          }
         }
         
       }
       
     }
-    
+    //getchar();
     delete [] Buffer_Send_DonorVariables;
     delete [] Buffer_Send_DonorIndices;
     delete [] Buffer_Bcast_Variables;
