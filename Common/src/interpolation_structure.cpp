@@ -536,6 +536,9 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
       }
     }
 
+	if(markTarget == -1 || markDonor == -1)
+		continue;
+
     Buffer_Send_nVertex_Donor = new unsigned long [1];
     Buffer_Send_nFace_Donor= new unsigned long [1];
     Buffer_Send_nFaceNodes_Donor= new unsigned long [1];
