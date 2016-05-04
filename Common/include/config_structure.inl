@@ -470,6 +470,20 @@ inline su2double CConfig::GetTemperature_Critical(void) { return Temperature_Cri
 
 inline su2double CConfig::GetAcentric_Factor(void) { return Acentric_Factor; }
 
+inline string CConfig::GetFluidSubLib(void) { return FluidSubLib; }
+
+inline unsigned short CConfig::GetnComp(void) { return nComp; }
+
+inline string* CConfig::GetCompNames(void) { return CompNames; }
+
+inline su2double* CConfig::GetMoleFracs(void) { return MoleFracs; }
+
+inline bool CConfig::HasSinglePhaseOnly(void) { return SinglePhaseOnly; }
+
+inline string CConfig::GetLookupTableName(void) { return LookupTable; }
+
+inline unsigned short CConfig::GetErrorLevel(void) { return ErrorLevel; }
+
 inline unsigned short CConfig::GetKind_ViscosityModel(void) { return Kind_ViscosityModel; }
 
 inline unsigned short CConfig::GetKind_ConductivityModel(void) { return Kind_ConductivityModel; }

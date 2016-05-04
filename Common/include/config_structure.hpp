@@ -707,6 +707,13 @@ private:
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
 
+  string FluidSubLib;         /*!< \brief Name of fluid thermodynamic sub-library.  */
+  unsigned short nComp;       /*!< \brief Number of components in the fluid.  */
+  string* CompNames;          /*!< \brief Names of fluid components.  */
+  su2double *MoleFracs;       /*!< \brief Mole fractions of fluid components.  */
+  bool SinglePhaseOnly;       /*!< \brief Single phase only: no phase equilibria are considered.  */
+  string LookupTable;         /*!< \brief Name of fluid thermodynamic look-up table.  */
+  unsigned short ErrorLevel;  /*!< \brief Error level diagnostics.  */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map
@@ -2682,7 +2689,48 @@ public:
 	 * \return Critical pressure.
 	 */
 	su2double GetAcentric_Factor(void);
+	/*!
+	 * \brief Get the name of the fluid thermodynamic sub-library.
+	 * \return Fluid thermodynamic sub-library name.
+	 */
+	string GetFluidSubLib(void);
+	
+	/*!
+	 * \brief Get the number of the components in the fluid.
+	 * \return Numbers of components in the fluid.
+	 */
+	unsigned short GetnComp(void);
+	
+	/*!
+	 * \brief Get the names of the components of the fluid.
+	 * \return Component names of the fluid.
+	 */
+	string* GetCompNames(void);
+	
+	/*!
+	 * \brief Get the values of the mole fraction of the components.
+	 * \return Mole fractions of components.
+	 */
+	su2double* GetMoleFracs(void);
 
+	/*!
+	 * \brief Indicates whether phase equilibria are to be considered in the fluid thermodynamic model.
+	 * \return Single phase only.
+	 */
+	bool HasSinglePhaseOnly(void);
+
+	/*!
+	 * \brief Get the name of the look-up table for fluid thermodynamic sub-library.
+	 * \return Look-up table name for fluid thermodynamic sub-library.
+	 */
+	string GetLookupTableName(void);
+	
+	/*!
+	 * \brief Get error level diagnostics for fluid thermodynamic sub-library.
+	 * \return Error level diagnostics for fluid thermodynamic sub-library.
+	 */
+	unsigned short  GetErrorLevel(void);
+	
 	/*!
 	 * \brief Get the value of the critical temperature.
 	 * \return Critical temperature.

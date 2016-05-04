@@ -72,7 +72,12 @@ AC_ARG_WITH(CGNS-lib,
 AC_ARG_WITH(CGNS-include,
     	AS_HELP_STRING([--with-CGNS-include[=ARG]], [CGNS include directory, ARG = path to cgnslib.h]),
 	[with_CGNS_include=$withval], [with_CGNS_include="no"])
-
+AC_ARG_WITH(FluidProp-lib,
+    AS_HELP_STRING([--with-FluidProp-lib[=ARG]], [FluidProp library directory, ARG = path to libcFPapi.a]),
+    [with_FluidProp_lib=$withval], [with_FluidProp_lib="no"])
+AC_ARG_WITH(FluidProp-include,
+    AS_HELP_STRING([--with-FluidProp-include[=ARG]], [FluidProp include directory, ARG = path to fluidprop.h]),
+    [with_FluidProp_include=$withval], [with_FluidProp_include="no"])
 AC_ARG_WITH(HDF5-lib,
 AS_HELP_STRING([--with-HDF5-lib[=ARG]], [HDF5 library directory, ARG = path to libhdf5.a]),
 [with_HDF5_lib=$withval], [with_HDF5_lib="no"])
@@ -545,6 +550,60 @@ then
 fi
 ###########################
 
+# check for lib
+FluidProplib=libcfpapi.so
+FluidPropheader=fluidprop.h
+have_FluidProp="no"
+
+if test "$with_FluidProp_lib" != "no"
+then
+AC_CHECK_FILE([$with_FluidProp_lib/$FluidProplib],[have_FluidProp="yes"],[have_FluidProp="no"])
+if test "$have_FluidProp" == "no"
+then
+AC_MSG_ERROR([FluidProp requested but library file $FluidProplib not found.])
+fi
+fi
+
+# check for header
+if test "$have_FluidProp" != "no"
+then
+if test "$with_FluidProp_include" != "no"
+then
+AC_CHECK_FILE([$with_FluidProp_include/$FluidPropheader],[have_FluidProp='yes'],[have_FluidProp='no'])
+if test "$have_FluidProp" == "no"
+then
+AC_MSG_ERROR([FluidProp requested but header file $FluidPropheader not found.])
+fi
+else
+have_FluidProp="no"
+fi
+fi
+
+if test "$have_FluidProp" != "no"
+then
+AM_CONDITIONAL(BUILD_FluidProp,true)
+FluidProp_CXX="-DHAVE_FluidProp -I"$with_FluidProp_include""
+FluidProp_LD="$with_FluidProp_lib"/$FluidProplib
+else
+AM_CONDITIONAL(BUILD_FluidProp,false)
+FluidProp_CXX=
+FluidProp_LD=
+fi
+AC_SUBST([FluidProp_CXX])
+AC_SUBST([FluidProp_LD])
+
+########################### MPI
+
+have_MPI="no"
+if test "$with_MPI" != "no"
+then
+	CXX="$with_MPI"
+	CXXFLAGS="-DHAVE_MPI "$CXXFLAGS""
+	have_MPI="yes"
+fi
+
+###########################
+
 AM_CONDITIONAL([BUILD_CFD],[test $build_CFD != "no"])
 AM_CONDITIONAL([BUILD_DOT],[test $build_DOT != "no"])
 AM_CONDITIONAL([BUILD_MSH],[test $build_MSH != "no"])
@@ -624,6 +683,7 @@ Build Configuration Summary:
     ZLIB support:         $have_ZLIB
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
+    FluidProp support: 	  $have_FluidProp
     LAPACK support:       $have_LAPACK
     Datatype support:
         double              $build_NORMAL

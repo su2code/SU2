@@ -414,14 +414,16 @@ enum ENUM_FLUIDMODEL {
 	STANDARD_AIR = 0,
 	IDEAL_GAS = 1, /*!< \brief _____. */
 	VW_GAS = 2,
-	PR_GAS = 3
+	PR_GAS = 3,
+	FLUIDPROP = 4
 };
 
 static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, ENUM_FLUIDMODEL>
 ("STANDARD_AIR", STANDARD_AIR)
 ("IDEAL_GAS", IDEAL_GAS)
 ("VW_GAS", VW_GAS)
-("PR_GAS", PR_GAS);
+("PR_GAS", PR_GAS)
+("FLUIDPROP", FLUIDPROP);
 
 /*!
  * \brief types of initialization option
@@ -456,24 +458,28 @@ static const map<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = CCreateM
  */
 enum ENUM_VISCOSITYMODEL {
 	CONSTANT_VISCOSITY = 0, /*!< \brief _____. */
-	SUTHERLAND = 1
+	SUTHERLAND = 1,
+	FLUIDPROP_VISCOSITY = 2
 };
 
 static const map<string, ENUM_VISCOSITYMODEL> ViscosityModel_Map = CCreateMap<string, ENUM_VISCOSITYMODEL>
 ("CONSTANT_VISCOSITY", CONSTANT_VISCOSITY)
-("SUTHERLAND", SUTHERLAND);
+("SUTHERLAND", SUTHERLAND)
+("FLUIDPROP_VISCOSITY", FLUIDPROP_VISCOSITY);
 
 /*!
  * \brief types of thermal conductivity model
  */
 enum ENUM_CONDUCTIVITYMODEL {
 	CONSTANT_CONDUCTIVITY = 0, /*!< \brief _____. */
-	CONSTANT_PRANDTL = 1
+	CONSTANT_PRANDTL = 1,
+	FLUIDPROP_CONDUCTIVITY = 2
 };
 
 static const map<string, ENUM_CONDUCTIVITYMODEL> ConductivityModel_Map = CCreateMap<string, ENUM_CONDUCTIVITYMODEL>
 ("CONSTANT_CONDUCTIVITY", CONSTANT_CONDUCTIVITY)
-("CONSTANT_PRANDTL", CONSTANT_PRANDTL);
+("CONSTANT_PRANDTL", CONSTANT_PRANDTL)
+("FLUIDPROP_CONDUCTIVITY", FLUIDPROP_CONDUCTIVITY);
 
 /*!
  * \brief types of unsteady mesh motion
@@ -800,7 +806,8 @@ enum RIEMANN_TYPE {
   STATIC_SUPERSONIC_INFLOW_PT = 5, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
   STATIC_SUPERSONIC_INFLOW_PD = 6, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
   MIXING_IN = 7, /*!< \brief User does not specify anything information are retrieved from the other domain */
-  MIXING_OUT = 8 /*!< \brief User does not specify anything information are retrieved from the other domain */
+  MIXING_OUT = 8, /*!< \brief User does not specify anything information are retrieved from the other domain */
+  PRESSURE_DENSITY = 9 				/*!< \brief User specifies total pressure, density at total conditions and flow direction */
 };
 
 static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>
@@ -811,7 +818,8 @@ static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_
 ("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
 ("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD)
 ("MIXING_IN", MIXING_IN)
-("MIXING_OUT", MIXING_OUT);
+("MIXING_OUT", MIXING_OUT)
+("PRESSURE_DENSITY", PRESSURE_DENSITY);
 
 
 static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYPE>
@@ -822,7 +830,8 @@ static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYP
 ("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
 ("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD)
 ("MIXING_IN", MIXING_IN)
-("MIXING_OUT", MIXING_OUT);
+("MIXING_OUT", MIXING_OUT)
+("PRESSURE_DENSITY", PRESSURE_DENSITY);
 
 
 /*!

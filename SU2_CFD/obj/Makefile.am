@@ -74,6 +74,7 @@ su2_cfd_sources = \
   ../src/fluid_model_pig.cpp \
   ../src/fluid_model_pvdw.cpp \
   ../src/fluid_model_ppr.cpp \
+  ../src/fluid_model_flp.cpp \
   ../src/integration_structure.cpp \
   ../src/integration_time.cpp \
   ../src/driver_structure.cpp \
