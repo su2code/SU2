@@ -2210,15 +2210,15 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/
   long *Global2Local = NULL;
-  Global2Local = new long[geometry[ZONE_0]->GetGlobal_nPointDomain()];
+  Global2Local = new long[geometry[iZone]->GetGlobal_nPointDomain()];
   /*--- First, set all indices to a negative value by default ---*/
-  for (iPoint = 0; iPoint < geometry[ZONE_0]->GetGlobal_nPointDomain(); iPoint++) {
+  for (iPoint = 0; iPoint < geometry[iZone]->GetGlobal_nPointDomain(); iPoint++) {
     Global2Local[iPoint] = -1;
   }
   
   /*--- Now fill array with the transform values only for local points ---*/
-  for (iPoint = 0; iPoint < geometry[ZONE_0]->GetnPointDomain(); iPoint++) {
-    Global2Local[geometry[ZONE_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
+  for (iPoint = 0; iPoint < geometry[iZone]->GetnPointDomain(); iPoint++) {
+    Global2Local[geometry[iZone]->node[iPoint]->GetGlobalIndex()] = iPoint;
   }
   
   /*--- Read all lines in the restart file ---*/

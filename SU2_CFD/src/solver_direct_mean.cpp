@@ -10173,64 +10173,55 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
+  
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
-#ifndef HAVE_MPI
-  
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-	
-	if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE)	{
-       //cout << iMarker << "  " << config->GetMarker_All_KindBC(iMarker) << "  " << config->GetnMarker_All() << endl;getchar();
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        if (geometry->node[iPoint]->GetDomain()) {
-            
-            for (iVar = 0; iVar < nPrimVar; iVar++) {
-              PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
-              PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
-            }
-            
-            /*--- Set primitive variables ---*/
-            
-            numerics->SetPrimitive(PrimVar_i, PrimVar_j);
-            
-            /*--- Set the normal vector ---*/
-            
-            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-            for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-            numerics->SetNormal(Normal);
-            
-            if (grid_movement)
-				numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
-        
-            /*--- Compute the convective residual using an upwind scheme ---*/
-            
-            numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-            
-            /*--- Add Residuals and Jacobians ---*/
-            
-            LinSysRes.AddBlock(iPoint, Residual);
-            if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-            
-          
-        }
-      }
+		if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE)	{
 
-    }
-  }
+			for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+				iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+				if (geometry->node[iPoint]->GetDomain()) {
+
+					for (iVar = 0; iVar < nPrimVar; iVar++) {
+						PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+						PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
+					}
+
+					/*--- Set primitive variables ---*/
+
+					numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+
+					/*--- Set the normal vector ---*/
+
+					geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+					for (iDim = 0; iDim < nDim; iDim++) 
+						Normal[iDim] = -Normal[iDim];
+						
+					numerics->SetNormal(Normal);
+
+					if (grid_movement)
+						numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+
+					/*--- Compute the convective residual using an upwind scheme ---*/
+
+					numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+
+					/*--- Add Residuals and Jacobians ---*/
+
+					LinSysRes.AddBlock(iPoint, Residual);
+					if (implicit) 
+						Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+				}
+			}
+		}
+	}
   
-#else
-  
-  
-#endif
-  
-  /*--- Free locally allocated memory ---*/
-  
-  delete [] Normal;
-  delete [] PrimVar_i;
-  delete [] PrimVar_j;
-  
+	/*--- Free locally allocated memory ---*/
+
+	delete [] Normal;
+	delete [] PrimVar_i;
+	delete [] PrimVar_j;
 }
 
 void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,

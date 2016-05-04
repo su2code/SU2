@@ -254,7 +254,10 @@ int main(int argc, char *argv[]) {
 			su2double Physical_dt, Physical_t;
 			unsigned long iExtIter = 0;
 			bool StopCalc = false;
-			bool SolutionInstantiated = false;
+			bool *SolutionInstantiated = new bool[nZone];
+			
+			for (iZone = 0; iZone < nZone; iZone++)
+				SolutionInstantiated[iZone] = false;
 
 			/*--- Check for an unsteady restart. Update ExtIter if necessary. ---*/
 			if (config_container[ZONE_0]->GetWrt_Unsteady() && config_container[ZONE_0]->GetRestart())
@@ -277,19 +280,21 @@ int main(int argc, char *argv[]) {
 												(config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) &&
 												((iExtIter == 0) || (iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) {
 
-					/*--- Set the current iteration number in the config class. ---*/
-					config_container[ZONE_0]->SetExtIter(iExtIter);
+					
 
 					/*--- Read in the restart file for this time step ---*/
 					for (iZone = 0; iZone < nZone; iZone++) {
+						
+						/*--- Set the current iteration number in the config class. ---*/
+						config_container[iZone]->SetExtIter(iExtIter);
 
 						/*--- Either instantiate the solution class or load a restart file. ---*/
-						if (SolutionInstantiated == false && (iExtIter == 0 ||
+						if (SolutionInstantiated[iZone] == false && (iExtIter == 0 ||
 								(config_container[ZONE_0]->GetRestart() && ((long)iExtIter == config_container[ZONE_0]->GetUnst_RestartIter() ||
 										iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
 										iExtIter+1 == config_container[ZONE_0]->GetnExtIter())))) {
-							solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone], MESH_0);
-							SolutionInstantiated = true;
+							solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone], iZone);
+							SolutionInstantiated[iZone] = true;
 						}
 						else
 							solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0));
