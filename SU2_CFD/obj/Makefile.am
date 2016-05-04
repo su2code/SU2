@@ -167,6 +167,11 @@ su2_cfd_cxx_flags += @ZLIB_CXX@
 su2_cfd_ldadd += @ZLIB_LD@
 # endif
 
+# if BUILD_FluidProp
+su2_cfd_cxx_flags += @FluidProp_CXX@
+su2_cfd_ldadd += @FluidProp_LD@
+# endif
+
 if BUILD_NORMAL
 ___bin_SU2_CFD_SOURCES = $(su2_cfd_sources)
 ___bin_SU2_CFD_CXXFLAGS = ${su2_cfd_cxx_flags}

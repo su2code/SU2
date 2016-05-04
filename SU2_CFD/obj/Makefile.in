@@ -841,11 +841,15 @@ su2_cfd_sources = \
 # endif
 
 # if BUILD_ZLIB
+# endif
+
+# if BUILD_FluidProp
 su2_cfd_cxx_flags = @su2_externals_INCLUDES@ @CGNS_CXX@ \
 	@MUTATIONPP_CXX@ @JSONCPP_CXX@ @HDF5_CXX@ @SZIP_CXX@ \
-	@ZLIB_CXX@ $(am__empty)
+	@ZLIB_CXX@ @FluidProp_CXX@ $(am__empty)
 su2_cfd_ldadd = @su2_externals_LIBS@ @CGNS_LD@ @MUTATIONPP_LD@ \
-	@JSONCPP_LD@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ $(am__empty)
+	@JSONCPP_LD@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ @FluidProp_LD@ \
+	$(am__empty)
 # endif
 @BUILD_NORMAL_TRUE@___bin_SU2_CFD_SOURCES = $(su2_cfd_sources)
 @BUILD_NORMAL_TRUE@___bin_SU2_CFD_CXXFLAGS = ${su2_cfd_cxx_flags}
