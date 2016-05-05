@@ -259,7 +259,7 @@ public:
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  ~CInternalFaceElementFEM(void); 
+  ~CInternalFaceElementFEM(void);
 };
 
 /*!
@@ -472,6 +472,267 @@ public:
   * \param[in] config - Definition of the particular problem.
   */
   void SetSendReceive(CConfig *config);
+
+private:
+ /*!
+  * \brief Function, which computes the correct sequence of the connectivities
+           of a face, such that it matches the sequence of the given corner points.
+  * \param[in]  VTK_TypeFace       - Type of the face using the VTK convention.
+  * \param[in]  cornerPointsFace   - The corner points of the face in the desired
+                                     sequence.
+  * \param[in]  VTK_TypeElem       - Type of the element using the VTK convention.
+  * \param[in]  nPolyGrid          - Polynomial degree used in the grid definition
+                                     for the face and the element.
+  * \param[in]  elemNodeIDsGrid    - The node IDs of the grid DOFs of the element,
+                                     i.e. the element connectivity.
+  * \param[in]  nPolyConn          - Polynomial degree of the connectivities to
+                                     be modified.
+  * \param[in]  connElem           - Connectivity of the adjacent volume element.
+  * \param[out] swapFaceInElement  - Whether or not the connectivity of the face must
+                                     be swapped compared to the face of the corresponding
+                                     standard element. Only relevant for triangular faces
+                                     of a pyramid and quadrilateral faces of a prism.
+                                     corresponds to the top point of the adjacent pyramid.
+  * \param[out] modConnFace        - Connectivity of the face after the renumbering.
+  * \param[out] modConnElem        - Connectivity of the element after the renumbering.
+                                     This renumbering is such that the face corresponds
+                                     to the appropriate face of the element used in the
+                                     standard faces and also the corner points match.
+  */
+  void CreateConnectivitiesFace(const unsigned short        VTK_TypeFace,
+                                const unsigned long         *cornerPointsFace,
+                                const unsigned short        VTK_TypeElem,
+                                const unsigned short        nPolyGrid,
+                                const vector<unsigned long> &elemNodeIDsGrid,
+                                const unsigned short        nPolyConn,
+                                const unsigned long         *connElem,
+                                bool                        &swapFaceInElement,
+                                unsigned long               *modConnFace,
+                                unsigned long               *modConnElem);
+
+  /*!
+  * \brief Function, which computes the correct sequence of the connectivities
+           of a line adjacent to a quadrilateral, such that the line is face 0
+           of the quadrilateral and it matches the sequence of the given corner points.
+  * \param[in]  cornerPointsLine - The corner points of the line in the desired
+                                   sequence.
+  * \param[in]  nPolyGrid        - Polynomial degree used in the grid definition
+                                   for the line and the quadrilateral.
+  * \param[in]  quadNodeIDsGrid  - The node IDs of the grid DOFs of the quadrilateral,
+                                   i.e. the element connectivity.
+  * \param[in]  nPolyConn        - Polynomial degree of the connectivities to
+                                   be modified.
+  * \param[in]  connQuad         - Connectivity of the adjacent quadrilateral.
+  * \param[out] modConnLine      - Connectivity of the line after the renumbering.
+  * \param[out] modConnQuad      - Connectivity of the quadrilateral after the
+                                   renumbering. This renumbering is such that the
+                                   line corresponds to face 0 of the quadrilateral.
+  */
+  void CreateConnectivitiesLineAdjacentQuadrilateral(
+                                  const unsigned long         *cornerPointsLine,
+                                  const unsigned short        nPolyGrid,
+                                  const vector<unsigned long> &quadNodeIDsGrid,
+                                  const unsigned short        nPolyConn,
+                                  const unsigned long         *connQuad,
+                                  unsigned long               *modConnLine,
+                                  unsigned long               *modConnQuad);
+
+  /*!
+  * \brief Function, which computes the correct sequence of the connectivities
+           of a line adjacent to a triangle, such that the line is face 0
+           of the triangle and it matches the sequence of the given corner points.
+  * \param[in]  cornerPointsLine - The corner points of the line in the desired
+                                   sequence.
+  * \param[in]  nPolyGrid        - Polynomial degree used in the grid definition
+                                   for the line and the triangle.
+  * \param[in]  triaNodeIDsGrid  - The node IDs of the grid DOFs of the triangle,
+                                   i.e. the element connectivity.
+  * \param[in]  nPolyConn        - Polynomial degree of the connectivities to
+                                   be modified.
+  * \param[in]  connTria         - Connectivity of the adjacent triangle.
+  * \param[out] modConnLine      - Connectivity of the line after the renumbering.
+  * \param[out] modConnTria      - Connectivity of the triangle after the
+                                   renumbering. This renumbering is such that the
+                                   line corresponds to face 0 of the triangle.
+  */
+  void CreateConnectivitiesLineAdjacentTriangle(
+                                  const unsigned long         *cornerPointsLine,
+                                  const unsigned short        nPolyGrid,
+                                  const vector<unsigned long> &triaNodeIDsGrid,
+                                  const unsigned short        nPolyConn,
+                                  const unsigned long         *connTria,
+                                  unsigned long               *modConnLine,
+                                  unsigned long               *modConnTria);
+
+  /*!
+  * \brief Function, which computes the correct sequence of the connectivities
+           of a quad adjacent to a hexahedron, such that the quad is face 0
+           of the hexahedron and it matches the sequence of the given corner points.
+  * \param[in]  cornerPointsQuad - The corner points of the quad in the desired
+                                   sequence.
+  * \param[in]  nPolyGrid        - Polynomial degree used in the grid definition
+                                   for the quadrilateral and the hexahedron.
+  * \param[in]  hexaNodeIDsGrid  - The node IDs of the grid DOFs of the
+                                   hexahedron, i.e. the element connectivity.
+  * \param[in]  nPolyConn        - Polynomial degree of the connectivities to
+                                   be modified.
+  * \param[in]  connHexa         - Connectivity of the adjacent hexahedron.
+  * \param[out] modConnQuad      - Connectivity of the quad after the renumbering.
+  * \param[out] modConnHexa      - Connectivity of the hexahedron after the
+                                   renumbering. This renumbering is such that the
+                                   quad corresponds to face 0 of the hexahedron.
+  */
+  void CreateConnectivitiesQuadrilateralAdjacentHexahedron(
+                                  const unsigned long         *cornerPointsQuad,
+                                  const unsigned short        nPolyGrid,
+                                  const vector<unsigned long> &hexaNodeIDsGrid,
+                                  const unsigned short        nPolyConn,
+                                  const unsigned long         *connHexa,
+                                  unsigned long               *modConnQuad,
+                                  unsigned long               *modConnHexa);
+
+  /*!
+  * \brief Function, which computes the correct sequence of the connectivities
+           of a quad adjacent to a prism, such that the quad is face 2
+           of the prism and it matches the sequence of the given corner points.
+  * \param[in]  cornerPointsQuad  - The corner points of the quad in the desired
+                                    sequence.
+  * \param[in]  nPolyGrid         - Polynomial degree used in the grid definition
+                                    for the quadrilateral and the prism.
+  * \param[in]  prismNodeIDsGrid  - The node IDs of the grid DOFs of the prism,
+                                    i.e. the element connectivity.
+  * \param[in]  nPolyConn         - Polynomial degree of the connectivities to
+                                    be modified.
+  * \param[in]  connPrism         - Connectivity of the adjacent prism.
+  * \param[out] swapFaceInElement - Whether or not the connectivity of the face must
+                                    be swapped compared to the face of the corresponding
+                                    standard element.
+  * \param[out] modConnQuad       - Connectivity of the quad after the renumbering.
+  * \param[out] modConnPrism      - Connectivity of the prism after the
+                                    renumbering. This renumbering is such that the
+                                    quad corresponds to face 3 of the prism.
+  */
+  void CreateConnectivitiesQuadrilateralAdjacentPrism(
+                                  const unsigned long         *cornerPointsQuad,
+                                  const unsigned short        nPolyGrid,
+                                  const vector<unsigned long> &prismNodeIDsGrid,
+                                  const unsigned short        nPolyConn,
+                                  const unsigned long         *connPrism,
+                                  bool                        &swapFaceInElement,
+                                  unsigned long               *modConnQuad,
+                                  unsigned long               *modConnPrism);
+
+  /*!
+  * \brief Function, which computes the correct sequence of the connectivities
+           of a quad adjacent to a pyramid, such that the quad is face 0
+           of the pyramid and it matches the sequence of the given corner points.
+  * \param[in]  cornerPointsQuad - The corner points of the quad in the desired
+                                   sequence.
+  * \param[in]  nPolyGrid        - Polynomial degree used in the grid definition
+                                   for the quadrilateral and the pyramid.
+  * \param[in]  pyraNodeIDsGrid  - The node IDs of the grid DOFs of the pyramid,
+                                   i.e. the element connectivity.
+  * \param[in]  nPolyConn        - Polynomial degree of the connectivities to
+                                   be modified.
+  * \param[in]  connPyra         - Connectivity of the adjacent pyramid.
+  * \param[out] modConnQuad      - Connectivity of the quad after the renumbering.
+  * \param[out] modConnPyra      - Connectivity of the pyramid after the
+                                   renumbering. This renumbering is such that the
+                                   quad corresponds to face 0 of the pyramid.
+  */
+  void CreateConnectivitiesQuadrilateralAdjacentPyramid(
+                                  const unsigned long         *cornerPointsQuad,
+                                  const unsigned short        nPolyGrid,
+                                  const vector<unsigned long> &pyraNodeIDsGrid,
+                                  const unsigned short        nPolyConn,
+                                  const unsigned long         *connPyra,
+                                  unsigned long               *modConnQuad,
+                                  unsigned long               *modConnPyra);
+
+  /*!
+  * \brief Function, which computes the correct sequence of the connectivities
+           of a triangle adjacent to a prism, such that the triangle is face 0
+           of the prism and it matches the sequence of the given corner points.
+  * \param[in]  cornerPointsTria - The corner points of the triangle in the
+                                   desired sequence.
+  * \param[in]  nPolyGrid        - Polynomial degree used in the grid definition
+                                   for the triangle and the prism.
+  * \param[in]  prismNodeIDsGrid - The node IDs of the grid DOFs of the prism,
+                                   i.e. the element connectivity.
+  * \param[in]  nPolyConn        - Polynomial degree of the connectivities to
+                                   be modified.
+  * \param[in]  connPrism        - Connectivity of the adjacent prism.
+  * \param[out] modConnTria      - Connectivity of the triangle after the renumbering.
+  * \param[out] modConnPrism     - Connectivity of the prism after the
+                                   renumbering. This renumbering is such that the
+                                   triangle corresponds to face 0 of the prism.
+  */
+  void CreateConnectivitiesTriangleAdjacentPrism(
+                                  const unsigned long         *cornerPointsTria,
+                                  const unsigned short        nPolyGrid,
+                                  const vector<unsigned long> &prismNodeIDsGrid,
+                                  const unsigned short        nPolyConn,
+                                  const unsigned long         *connPrism,
+                                  unsigned long               *modConnTria,
+                                  unsigned long               *modConnPrism);
+
+  /*!
+  * \brief Function, which computes the correct sequence of the connectivities
+           of a triangle adjacent to a pyramid, such that the triangle is face 1
+           of the pyramid and it matches the sequence of the given corner points.
+  * \param[in]  cornerPointsTria   - The corner points of the triangle in the
+                                     desired sequence.
+  * \param[in]  nPolyGrid          - Polynomial degree used in the grid definition
+                                     for the triangle and the pyramid.
+  * \param[in]  pyraNodeIDsGrid    - The node IDs of the grid DOFs of the pyramid,
+                                     i.e. the element connectivity.
+  * \param[in]  nPolyConn          - Polynomial degree of the connectivities to
+                                     be modified.
+  * \param[in]  connPyra           - Connectivity of the adjacent pyramid.
+  * \param[out] swapFaceInElement  - Whether or not the connectivity of the face must
+                                     be swapped compared to the face of the corresponding
+                                     standard element.
+  * \param[out] modConnTria        - Connectivity of the triangle after the renumbering.
+  * \param[out] modConnPyra        - Connectivity of the pyramid after the
+                                     renumbering. This renumbering is such that the
+                                     triangle corresponds to face 3 of the pyramid.
+  */
+  void CreateConnectivitiesTriangleAdjacentPyramid(
+                                  const unsigned long         *cornerPointsTria,
+                                  const unsigned short        nPolyGrid,
+                                  const vector<unsigned long> &pyraNodeIDsGrid,
+                                  const unsigned short        nPolyConn,
+                                  const unsigned long         *connPyra,
+                                  bool                        &swapFaceInElement,
+                                  unsigned long               *modConnTria,
+                                  unsigned long               *modConnPyra);
+
+  /*!
+  * \brief Function, which computes the correct sequence of the connectivities
+           of a triangle adjacent to a tetrahedron, such that the triangle is face 0
+           of the tetrahedron and it matches the sequence of the given corner points.
+  * \param[in]  cornerPointsTria - The corner points of the triangle in the
+                                   desired sequence.
+  * \param[in]  nPolyGrid        - Polynomial degree used in the grid definition
+                                   for the triangle and the tetrahedron.
+  * \param[in]  tetNodeIDsGrid   - The node IDs of the grid DOFs of the
+                                   tetrahedron, i.e. the element connectivity.
+  * \param[in]  nPolyConn        - Polynomial degree of the connectivities to
+                                   be modified.
+  * \param[in]  connTet          - Connectivity of the adjacent tetrahedron.
+  * \param[out] modConnTria      - Connectivity of the triangle after the renumbering.
+  * \param[out] modConnTet       - Connectivity of the tetrahedron after the
+                                   renumbering. This renumbering is such that the
+                                   triangle corresponds to face 0 of the tetrahedron.
+  */
+  void CreateConnectivitiesTriangleAdjacentTetrahedron(
+                                  const unsigned long         *cornerPointsTria,
+                                  const unsigned short        nPolyGrid,
+                                  const vector<unsigned long> &tetNodeIDsGrid,
+                                  const unsigned short        nPolyConn,
+                                  const unsigned long         *connTet,
+                                  unsigned long               *modConnTria,
+                                  unsigned long               *modConnTet);
 };
 
 #include "fem_geometry_structure.inl"

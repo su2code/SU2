@@ -152,7 +152,7 @@ void FEMStandardElementBaseClass::CheckSumDerivativesLagrangianBasisFunctions(
 
 void FEMStandardElementBaseClass::CheckSumLagrangianBasisFunctions(
                                           const unsigned short nPoints,
-                                          const unsigned short nDOFs, 
+                                          const unsigned short nDOFs,
                                           vector<su2double>    &lagBasisPoints) {
 
   /*--- To reduce the error due to round off in the Lagrangian basis functions,
@@ -1761,7 +1761,7 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
     CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFs,
                                                 drLagBasisIntegration);
   if( !dsLagBasisIntegration.empty() )
-    CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFs, 
+    CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFs,
                                                 dsLagBasisIntegration);
   if( !dtLagBasisIntegration.empty() )
     CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFs,
@@ -2931,6 +2931,8 @@ FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(unsigned short val_VT
                                                            unsigned short val_VTK_TypeSide1,
                                                            unsigned short val_nPolySide1,
                                                            bool           val_constJac,
+                                                           bool           val_swapFaceInElementSide0,
+                                                           bool           val_swapFaceInElementSide1,
                                                            CConfig        *config,
                                                            unsigned short val_orderExact)
 
@@ -2938,10 +2940,12 @@ FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(unsigned short val_VT
                                 val_constJac, config, val_orderExact) {
 
   /*--- Copy the function arguments to the member variables. ---*/
-  nPolyElemSide0    = val_nPolySide0;
-  VTK_TypeElemSide0 = val_VTK_TypeSide0;
-  nPolyElemSide1    = val_nPolySide1;
-  VTK_TypeElemSide1 = val_VTK_TypeSide1;
+  nPolyElemSide0         = val_nPolySide0;
+  VTK_TypeElemSide0      = val_VTK_TypeSide0;
+  nPolyElemSide1         = val_nPolySide1;
+  VTK_TypeElemSide1      = val_VTK_TypeSide1;
+  swapFaceInElementSide0 = val_swapFaceInElementSide0;
+  swapFaceInElementSide1 = val_swapFaceInElementSide1;
 
   /*--- Determine the Lagrangian basis functions in the integration points for both sides
         of the face. The derivatives of the basis functions are not needed for the face,
@@ -2993,11 +2997,13 @@ FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(unsigned short val_VT
         adjacent elements in the integration points of the face for both sides
         of the face. ---*/
   DerivativesBasisFunctionsAdjacentElement(VTK_TypeElemSide0, nPolyElemSide0,
+                                           swapFaceInElementSide0,
                                            nDOFsElemSide0, drLagBasisIntegrationSide0,
                                            dsLagBasisIntegrationSide0,
                                            dtLagBasisIntegrationSide0);
 
   DerivativesBasisFunctionsAdjacentElement(VTK_TypeElemSide1, nPolyElemSide1,
+                                           swapFaceInElementSide1,
                                            nDOFsElemSide1, drLagBasisIntegrationSide1,
                                            dsLagBasisIntegrationSide1,
                                            dtLagBasisIntegrationSide1);
@@ -3029,13 +3035,17 @@ bool FEMStandardInternalFaceClass::SameStandardMatchingFace(unsigned short val_V
                                                             unsigned short val_VTK_TypeSide0,
                                                             unsigned short val_nPolySide0,
                                                             unsigned short val_VTK_TypeSide1,
-                                                            unsigned short val_nPolySide1) {
-  if(val_VTK_TypeFace  != VTK_Type)          return false;
-  if(val_constJac      != constJacobian)     return false;
-  if(val_VTK_TypeSide0 != VTK_TypeElemSide0) return false;
-  if(val_nPolySide0    != nPolyElemSide0)    return false;
-  if(val_VTK_TypeSide1 != VTK_TypeElemSide1) return false;
-  if(val_nPolySide1    != nPolyElemSide1)    return false;
+                                                            unsigned short val_nPolySide1,
+                                                            bool           val_swapFaceInElementSide0,
+                                                            bool           val_swapFaceInElementSide1) {
+  if(val_VTK_TypeFace           != VTK_Type)               return false;
+  if(val_constJac               != constJacobian)          return false;
+  if(val_VTK_TypeSide0          != VTK_TypeElemSide0)      return false;
+  if(val_nPolySide0             != nPolyElemSide0)         return false;
+  if(val_VTK_TypeSide1          != VTK_TypeElemSide1)      return false;
+  if(val_nPolySide1             != nPolyElemSide1)         return false;
+  if(val_swapFaceInElementSide0 != swapFaceInElementSide0) return false;
+  if(val_swapFaceInElementSide1 != swapFaceInElementSide1) return false;
 
   return true;
 }
@@ -3078,6 +3088,7 @@ void FEMStandardInternalFaceClass::Copy(const FEMStandardInternalFaceClass &othe
 void FEMStandardInternalFaceClass::DerivativesBasisFunctionsAdjacentElement(
                                         unsigned short    VTK_TypeElem,
                                         unsigned short    nPolyElem,
+                                        const bool        swapFaceInElement,
                                         unsigned short    &nDOFsElem,
                                         vector<su2double> &drLagBasisIntegration,
                                         vector<su2double> &dsLagBasisIntegration,
@@ -3130,10 +3141,11 @@ void FEMStandardInternalFaceClass::DerivativesBasisFunctionsAdjacentElement(
              a pyramid or a prism. For the tetrahedron and the prism the convention is
              that the face is face 0 of these elements, which corresponds to a
              parametric coordinate t = -1. For the pyramid the situation is a bit more
-             complicated. The face corresponds to face 3 of the pyramid. Furthermore,
-             face 3 of the standard pyramid is not a rectangular triangle, hence an
-             additional transformation is needed to obtain the equivalent integration
-             points of the face in the parametric coordinates of the pyramid. ---*/
+             complicated. The face corresponds to face 1 of the pyramid. However, it
+             is possible that the connectivity of triangle must be swapped compared to
+             the connectivity of the corresponding face of the pyramid. If this is the
+             case, also the parametric coordinates of the integration points must be
+             swapped in order to get the correct behavior. ---*/
 
       switch( VTK_TypeElem ) {
 
@@ -3167,10 +3179,19 @@ void FEMStandardInternalFaceClass::DerivativesBasisFunctionsAdjacentElement(
 
         case PYRAMID: {
           vector<su2double> rInt(nIntegration), sInt(nIntegration), tInt(nIntegration);
-          for(unsigned short i=0; i<nIntegration; ++i) {
-            rInt[i] = 0.5*(sIntegration[i]-1.0);
-            sInt[i] = rIntegration[i] + 0.5*(sIntegration[i]+1.0);
-            tInt[i] = sIntegration[i];
+          if( swapFaceInElement ) {
+            for(unsigned short i=0; i<nIntegration; ++i) {
+              rInt[i] = sIntegration[i] + 0.5*(rIntegration[i]+1.0);
+              sInt[i] = 0.5*(rIntegration[i]-1.0);
+              tInt[i] = rIntegration[i];
+            }
+          }
+          else {
+            for(unsigned short i=0; i<nIntegration; ++i) {
+              rInt[i] = rIntegration[i] + 0.5*(sIntegration[i]+1.0);
+              sInt[i] = 0.5*(sIntegration[i]-1.0);
+              tInt[i] = sIntegration[i];
+            }
           }
 
           LagrangianBasisFunctionAndDerivativesPyramid(nPolyElem,  rInt,
@@ -3194,8 +3215,11 @@ void FEMStandardInternalFaceClass::DerivativesBasisFunctionsAdjacentElement(
             a prism or a hexahedron. For the pyramid and the hexahedron the convention
             is that the face is face 0 of these elements, which corresponds to a
             parametric coordinate t = -1. For the prism, the convention is that the
-            face is face 3 of the standard prism, which corresponds to a parametric
-            coordinate r = -1. ---*/
+            face is face 2 of the standard prism, which corresponds to a parametric
+            coordinate s = -1. Furthermore, for the prism it could be necessary that a
+            swap of the parametric coordinates of the face was needed in order to obtain
+            the desired sequence. If that is the case, also the integration points of
+            the quadrilateral face must be swapped. ---*/
 
       switch( VTK_TypeElem ) {
 
@@ -3214,12 +3238,15 @@ void FEMStandardInternalFaceClass::DerivativesBasisFunctionsAdjacentElement(
         }
 
         case PRISM: {
-          vector<su2double> rInt(nIntegration, -1.0);
+          vector<su2double> sInt(nIntegration, -1.0), rInt, tInt;
 
-          LagrangianBasisFunctionAndDerivativesPrism(nPolyElem,    rInt,
-                                                     rIntegration, sIntegration,
-                                                     nDOFsElem,    rDOFsDummy,
-                                                     sDOFsDummy,   tDOFsDummy,
+          if( swapFaceInElement ) {rInt = sIntegration; tInt = rIntegration;}
+          else                    {rInt = rIntegration; tInt = sIntegration;}
+
+          LagrangianBasisFunctionAndDerivativesPrism(nPolyElem,  rInt,
+                                                     sInt,       tInt,
+                                                     nDOFsElem,  rDOFsDummy,
+                                                     sDOFsDummy, tDOFsDummy,
                                                      lagBasisPointsDummy,
                                                      drLagBasisIntegration,
                                                      dsLagBasisIntegration,

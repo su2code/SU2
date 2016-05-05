@@ -1549,8 +1549,9 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   }
 
   /*---------------------------------------------------------------------------*/
-  /*--- Step 2: Create the local face based data structure for the          ---*/
-  /*---         computation of the surface integral in DG-FEM.              ---*/
+  /*--- Step 2: Create the local face based data structure for the internal ---*/
+  /*---         faces. These are needed for the computation of the surface  ---*/
+  /*---         integral in DG-FEM.                                         ---*/
   /*---------------------------------------------------------------------------*/
 
   /* Sort localFaces again, but now such that the boundary faces are numbered
@@ -1607,6 +1608,76 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
         swap(localFaces[i].cornerPoints[0], localFaces[i].cornerPoints[1]);
       else
         swap(localFaces[i].cornerPoints[0], localFaces[i].cornerPoints[2]);
+    }
+  }
+
+  /*--- For triangular faces with a pyramid as an adjacent element, it    ---*/
+  /*--- must be made sure that the first corner point does not coincide   ---*/
+  /*--- with the top of the pyramid. Otherwise it is impossible to carry  ---*/
+  /*--- the transformation to the standard pyramid element.               ---*/
+  for(unsigned long i=0; i<localFaces.size(); ++i) {
+
+    /* Check for a triangular face. */
+    if(localFaces[i].nCornerPoints == 3) {
+
+      /* Determine if the corner points correspond to a corner point of a
+         pyramid. A pyramid can in principle occur on both sides of the face. */
+      bool cornerIsTopPyramid[] = {false, false, false};
+
+      if(localFaces[i].elemType0 == PYRAMID) {
+        unsigned long topPyramid = volElem[localFaces[i].elemID0].nodeIDsGrid.back();
+        if(localFaces[i].cornerPoints[0] == topPyramid) cornerIsTopPyramid[0] = true;
+        if(localFaces[i].cornerPoints[1] == topPyramid) cornerIsTopPyramid[1] = true;
+        if(localFaces[i].cornerPoints[2] == topPyramid) cornerIsTopPyramid[2] = true;
+      }
+
+      if(localFaces[i].elemType1 == PYRAMID) {
+        unsigned long topPyramid = volElem[localFaces[i].elemID1].nodeIDsGrid.back();
+        if(localFaces[i].cornerPoints[0] == topPyramid) cornerIsTopPyramid[0] = true;
+        if(localFaces[i].cornerPoints[1] == topPyramid) cornerIsTopPyramid[1] = true;
+        if(localFaces[i].cornerPoints[2] == topPyramid) cornerIsTopPyramid[2] = true;
+      }
+
+      /* Check if the first element corresponds to the top of a pyramid. */
+      if( cornerIsTopPyramid[0] ) {
+
+        /* The sequence of the points of the face must be altered. It is done in
+           such a way that the orientation remains the same. Store the original
+           point numbering. */
+        unsigned long tmp[] = {localFaces[i].cornerPoints[0],
+                               localFaces[i].cornerPoints[1],
+                               localFaces[i].cornerPoints[2]};
+
+        /* Determine the situation. */
+        if( !cornerIsTopPyramid[1] ) {
+
+          /* cornerPoint[1] is not a top of a pyramid. Hence this will become
+             the point 0 of the triangle. */
+          localFaces[i].cornerPoints[0] = tmp[1];
+          localFaces[i].cornerPoints[1] = tmp[2];
+          localFaces[i].cornerPoints[2] = tmp[0];
+        }
+        else {
+
+          /* Only cornerPoint[2] is not a top of a pyramid. Hence this will
+             become point 0 of the triangle. */
+          localFaces[i].cornerPoints[0] = tmp[2];
+          localFaces[i].cornerPoints[1] = tmp[0];
+          localFaces[i].cornerPoints[2] = tmp[1];
+        }
+      }
+      else if(cornerIsTopPyramid[1] && !cornerIsTopPyramid[2]) {
+
+        /* cornerPoint[1] is a top of a pyramid and the other two corners
+           are not. Change the sequence, such that cornerPoint[2] will become
+           point 0 of the triangle. */
+        unsigned long tmp[] = {localFaces[i].cornerPoints[0],
+                               localFaces[i].cornerPoints[1],
+                               localFaces[i].cornerPoints[2]};
+        localFaces[i].cornerPoints[0] = tmp[2];
+        localFaces[i].cornerPoints[1] = tmp[0];
+        localFaces[i].cornerPoints[2] = tmp[1];
+      }
     }
   }
 
@@ -1696,6 +1767,17 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   VecDOFsSolElementSide0.resize(sizeVecDOFsSolElementSide0);
   VecDOFsSolElementSide1.resize(sizeVecDOFsSolElementSide1);
 
+  /*--- Loop over the standard volume elements to determine the maximum number
+        of DOFs for the volume elements. Allocate the memory for the vector
+        used to store the DOFs of the element.  ---*/
+  unsigned short nDOFsVolMax = 0;
+  for(unsigned long i=0; i<standardElementsSol.size(); ++i) {
+    nDOFsVolMax = max(nDOFsVolMax, standardElementsSol[i].GetNDOFs());
+    nDOFsVolMax = max(nDOFsVolMax, standardElementsGrid[i].GetNDOFs());
+  }
+
+  vector<unsigned long> DOFsElem(nDOFsVolMax);
+
   /*--- Loop again over localFaces, but now store the required information
         in matchingFaces. ---*/
   sizeVecDOFsGridFaceSide0    = sizeVecDOFsGridFaceSide1    = 0;
@@ -1759,6 +1841,53 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
       sizeVecDOFsSolElementSide0  += volElem[v0].nDOFsSol;
       sizeVecDOFsSolElementSide1  += volElem[v1].nDOFsSol;
 
+      /*--- Create the connectivities of the adjacent elements in the correct
+            sequence as well as the connectivities of the face. The
+            connectivities of both sides of the face are determined for the
+            grid and solution. First for side 0.   ---*/
+      bool swapFaceInElementSide0;
+      for(unsigned short j=0; j<volElem[v0].nDOFsSol; ++j)
+        DOFsElem[j] = volElem[v0].offsetDOFsSolLocal + j;
+
+      CreateConnectivitiesFace(VTK_Type,                localFaces[i].cornerPoints,
+                               volElem[v0].VTK_Type,    volElem[v0].nPolyGrid,
+                               volElem[v0].nodeIDsGrid, volElem[v0].nPolySol,
+                               DOFsElem.data(),         swapFaceInElementSide0,
+                               matchingFaces[ii].DOFsSolFaceSide0,
+                               matchingFaces[ii].DOFsSolElementSide0);
+
+      for(unsigned short j=0; j<volElem[v0].nDOFsGrid; ++j)
+        DOFsElem[j] = volElem[v0].nodeIDsGrid[j];
+
+      CreateConnectivitiesFace(VTK_Type,                localFaces[i].cornerPoints,
+                               volElem[v0].VTK_Type,    volElem[v0].nPolyGrid,
+                               volElem[v0].nodeIDsGrid, volElem[v0].nPolyGrid,
+                               DOFsElem.data(),         swapFaceInElementSide0,
+                               matchingFaces[ii].DOFsGridFaceSide0,
+                               matchingFaces[ii].DOFsGridElementSide0);
+
+      /*--- And also for side 1 of the face. ---*/
+      bool swapFaceInElementSide1;
+      for(unsigned short j=0; j<volElem[v1].nDOFsSol; ++j)
+        DOFsElem[j] = volElem[v1].offsetDOFsSolLocal + j;
+
+      CreateConnectivitiesFace(VTK_Type,                localFaces[i].cornerPoints,
+                               volElem[v1].VTK_Type,    volElem[v1].nPolyGrid,
+                               volElem[v1].nodeIDsGrid, volElem[v1].nPolySol,
+                               DOFsElem.data(),         swapFaceInElementSide1,
+                               matchingFaces[ii].DOFsSolFaceSide1,
+                               matchingFaces[ii].DOFsSolElementSide1);
+
+      for(unsigned short j=0; j<volElem[v1].nDOFsGrid; ++j)
+        DOFsElem[j] = volElem[v1].nodeIDsGrid[j];
+
+      CreateConnectivitiesFace(VTK_Type,                localFaces[i].cornerPoints,
+                               volElem[v1].VTK_Type,    volElem[v1].nPolyGrid,
+                               volElem[v1].nodeIDsGrid, volElem[v1].nPolyGrid,
+                               DOFsElem.data(),         swapFaceInElementSide1,
+                               matchingFaces[ii].DOFsGridFaceSide1,
+                               matchingFaces[ii].DOFsGridElementSide1);
+
       /*--- Search in the standard elements for faces for a matching
             standard element. If not found, create a new standard element.
             Note that both the grid and the solution representation must
@@ -1770,13 +1899,17 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
                                                                 localFaces[i].elemType0,
                                                                 localFaces[i].nPolySol0,
                                                                 localFaces[i].elemType1,
-                                                                localFaces[i].nPolySol1) &&
+                                                                localFaces[i].nPolySol1,
+                                                                swapFaceInElementSide0,
+                                                                swapFaceInElementSide1) &&
            standardMatchingFacesGrid[j].SameStandardMatchingFace(VTK_Type,
                                                                  localFaces[i].JacFaceIsConsideredConstant,
                                                                  localFaces[i].elemType0,
                                                                  localFaces[i].nPolyGrid0,
                                                                  localFaces[i].elemType1,
-                                                                 localFaces[i].nPolyGrid1) ) {
+                                                                 localFaces[i].nPolyGrid1,
+                                                                 swapFaceInElementSide0,
+                                                                 swapFaceInElementSide1) ) {
           matchingFaces[ii].indStandardElement = j;
           break;
         }
@@ -1791,6 +1924,8 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
                                                                         localFaces[i].elemType1,
                                                                         localFaces[i].nPolySol1,
                                                                         localFaces[i].JacFaceIsConsideredConstant,
+                                                                        swapFaceInElementSide0,
+                                                                        swapFaceInElementSide1,
                                                                         config) );
 
         standardMatchingFacesGrid.push_back(FEMStandardInternalFaceClass(VTK_Type,
@@ -1799,6 +1934,8 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
                                                                          localFaces[i].elemType1,
                                                                          localFaces[i].nPolyGrid1,
                                                                          localFaces[i].JacFaceIsConsideredConstant,
+                                                                         swapFaceInElementSide0,
+                                                                         swapFaceInElementSide1,
                                                                          config,
                                                                          standardMatchingFacesSol[j].GetOrderExact()) );
         matchingFaces[ii].indStandardElement = j;
@@ -2048,4 +2185,1452 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
         rotPerHalos[SMI->second].push_back(i);
     }
   }
+}
+
+void CMeshFEM_DG::CreateConnectivitiesFace(
+                                const unsigned short        VTK_TypeFace,
+                                const unsigned long         *cornerPointsFace,
+                                const unsigned short        VTK_TypeElem,
+                                const unsigned short        nPolyGrid,
+                                const vector<unsigned long> &elemNodeIDsGrid,
+                                const unsigned short        nPolyConn,
+                                const unsigned long         *connElem,
+                                bool                        &swapFaceInElement,
+                                unsigned long               *modConnFace,
+                                unsigned long               *modConnElem) {
+
+  /*--- Set swapFaceInElement to false. This variable is only relevant for
+        triangular faces of a pyramid and quadrilateral faces of a prism.
+        Only for these situations this variable will be passed to the
+        appropriate functions. ---*/
+  swapFaceInElement = false;
+
+  /*--- Make a distinction between the types of the volume element and call
+        the appropriate function to do the actual job. ---*/
+  switch( VTK_TypeElem ) {
+    case TRIANGLE:
+      CreateConnectivitiesLineAdjacentTriangle(cornerPointsFace, nPolyGrid,
+                                               elemNodeIDsGrid,  nPolyConn,
+                                               connElem,         modConnFace,
+                                               modConnElem);
+      break;
+
+    case QUADRILATERAL:
+      CreateConnectivitiesLineAdjacentQuadrilateral(cornerPointsFace, nPolyGrid,
+                                                    elemNodeIDsGrid,  nPolyConn,
+                                                    connElem,         modConnFace,
+                                                    modConnElem);
+      break;
+
+    case TETRAHEDRON:
+      CreateConnectivitiesTriangleAdjacentTetrahedron(cornerPointsFace, nPolyGrid,
+                                                      elemNodeIDsGrid,  nPolyConn,
+                                                      connElem,         modConnFace,
+                                                      modConnElem);
+      break;
+
+    case PYRAMID: {
+      switch( VTK_TypeFace ) {
+        case TRIANGLE:
+          CreateConnectivitiesTriangleAdjacentPyramid(cornerPointsFace, nPolyGrid,
+                                                      elemNodeIDsGrid,  nPolyConn,
+                                                      connElem,         swapFaceInElement,
+                                                      modConnFace,      modConnElem);
+          break;
+
+        case QUADRILATERAL:
+          CreateConnectivitiesQuadrilateralAdjacentPyramid(cornerPointsFace, nPolyGrid,
+                                                           elemNodeIDsGrid,  nPolyConn,
+                                                           connElem,         modConnFace,
+                                                           modConnElem);
+          break;
+      }
+
+      break;
+    }
+
+    case PRISM: {
+      switch( VTK_TypeFace ) {
+        case TRIANGLE:
+          CreateConnectivitiesTriangleAdjacentPrism(cornerPointsFace, nPolyGrid,
+                                                    elemNodeIDsGrid,  nPolyConn,
+                                                    connElem,         modConnFace,
+                                                    modConnElem);
+          break;
+
+        case QUADRILATERAL:
+          CreateConnectivitiesQuadrilateralAdjacentPrism(cornerPointsFace, nPolyGrid,
+                                                         elemNodeIDsGrid,  nPolyConn,
+                                                         connElem,         swapFaceInElement,
+                                                         modConnFace,      modConnElem);
+          break;
+      }
+
+      break;
+    }
+
+    case HEXAHEDRON:
+      CreateConnectivitiesQuadrilateralAdjacentHexahedron(cornerPointsFace, nPolyGrid,
+                                                          elemNodeIDsGrid,  nPolyConn,
+                                                          connElem,         modConnFace,
+                                                          modConnElem);
+      break;
+  }
+}
+
+void CMeshFEM_DG::CreateConnectivitiesLineAdjacentQuadrilateral(
+                                const unsigned long         *cornerPointsLine,
+                                const unsigned short        nPolyGrid,
+                                const vector<unsigned long> &quadNodeIDsGrid,
+                                const unsigned short        nPolyConn,
+                                const unsigned long         *connQuad,
+                                unsigned long               *modConnLine,
+                                unsigned long               *modConnQuad) {
+
+  /* Determine the indices of the four corner points of the quadrilateral. */
+  const unsigned short ind0 = 0;
+  const unsigned short ind1 = nPolyGrid;
+  const unsigned short ind2 = (nPolyGrid+1)*(nPolyGrid+1) -1;
+  const unsigned short ind3 = ind2 - nPolyGrid;
+
+  /* Easier storage of the two corner points of the line in the new numbering. */
+  const unsigned long vert0 = cornerPointsLine[0];
+  const unsigned long vert1 = cornerPointsLine[1];
+
+  /*--- There exists a linear mapping from the indices of the numbering used in
+        quadNodeIDsGrid to the indices of the target numbering. This mapping is of
+        the form ii = a + b*i + c*j and jj = d + e*i + f*j, where ii,jj are the
+        indices of the new numbering and i,j the indices of the numbering used
+        in quadNodeIDsGrid (and connQuad). The values of the coefficients a,b,c,d,e,f
+        depend on how the corner points of the line coincide with the corner points
+        of the quad. This is determined below. The bool verticesDontMatch is
+        there to check if vertices do not match. This should not happen, but
+        it is checked for security. ---*/
+  signed short a, b, c, d, e, f;
+  bool verticesDontMatch = false;
+
+  if(vert0 == quadNodeIDsGrid[ind0]) {
+    /* Vert0 coincides with vertex 0 of the quad connectivity.
+       Determine the situation for vert1. */
+    if(vert1 == quadNodeIDsGrid[ind1]){
+      /* The new numbering is the same as the original numbering. */
+      a = d = 0; b = f = 1; c = e = 0;
+    }
+    else if(vert1 == quadNodeIDsGrid[ind3]) {
+      /* The i and j numbering are swapped. This is a left handed transformation. */
+      a = d = 0; b = f = 0; c = e = 1;
+    }
+    else {
+      verticesDontMatch = true;  // Vert1 does not match with a neigbor.
+    }
+  }
+  else if(vert0 == quadNodeIDsGrid[ind1]) {
+    /* Vert0 coincides with vertex 1 of the quad connectivity.
+       Determine the situation for vert1. */
+    if(vert1 == quadNodeIDsGrid[ind2]){
+      /* The i-direction of the new numbering corresponds to the j-direction
+         of the original numbering, while the new j-direction is the negative
+         i-direction of the original numbering. */
+      a = 0; d = nPolyConn; b = f = 0; c = 1; e = -1;
+    }
+    else if(vert1 == quadNodeIDsGrid[ind0]) {
+      /* The i-direction is negated, while the j-direction coincides.
+         This is a left handed transformation. */
+      a = nPolyConn; d = 0; b = -1; f = 1; c = e = 0;
+    }
+    else {
+      verticesDontMatch = true;  // Vert1 does not match with a neigbor.
+    }
+  }
+  else if(vert0 == quadNodeIDsGrid[ind2]) {
+    /* Vert0 coincides with vertex 2 of the quad connectivity.
+       Determine the situation for vert1. */
+    if(vert1 == quadNodeIDsGrid[ind3]){
+      /* Both the i- and j-direction are negated. */
+      a = d = nPolyConn; b = f = -1; c = e = 0;
+    }
+    else if(vert1 == quadNodeIDsGrid[ind1]) {
+      /* The new i-direction is the original negative j-direction, while the
+         new j-direction is the original negative i-direction. This is a
+         left handed transformation. */
+      a = d = nPolyConn; b = f = 0; c = e = -1;
+    }
+    else {
+      verticesDontMatch = true;  // Vert1 does not match with a neigbor.
+    }
+  }
+  else if(vert0 == quadNodeIDsGrid[ind3]) {
+    /* Vert0 coincides with vertex 3 of the quad connectivity.
+       Determine the situation for vert1. */
+    if(vert1 == quadNodeIDsGrid[ind0]){
+      /* The new i-direction is the original negative j-direction, while the
+         new j-direction is the original i-direction. */
+      a = nPolyConn; d = 0; b = f = 0; c = -1; e = 1;
+    }
+    else if(vert1 == quadNodeIDsGrid[ind2]){
+      /* The i-directions coincide while the j-direction is negated.
+         This is a left handed transformation. */
+      a = 0; d = nPolyConn; b = 1; f = -1; c = e = 0;
+    }
+    else {
+      verticesDontMatch = true;  // Vert1 does not match with a neigbor.
+    }
+  }
+  else {
+    /* Vert0 does not match with any of the corner vertices of the quad. */
+    verticesDontMatch = true;
+  }
+
+  /*--- If non-matching vertices have been found, terminate with an error message. ---*/
+  if( verticesDontMatch ) {
+    cout << "In function CMeshFEM_DG::CreateConnectivitiesLineAdjacentQuadrilateral." << endl;
+    cout << "Corner vertices do not match. This should not happen." << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Loop over the DOFs of the original quad to create the connectivity
+        of the quad that corresponds to the new numbering. ---*/
+  unsigned short ind = 0;
+  for(unsigned short j=0; j<=nPolyConn; ++j) {
+    for(unsigned short i=0; i<=nPolyConn; ++i, ++ind) {
+
+      /*--- Determine the ii and jj indices of the new numbering, convert it to
+            a 1D index and shore the modified index in modConnQuad. ---*/
+      unsigned short ii   = a + i*b + j*c;
+      unsigned short jj   = d + i*e + j*f;
+      unsigned short iind = jj*(nPolyConn+1) + ii;
+
+      modConnQuad[iind] = connQuad[ind];
+    }
+  }
+
+  /*--- The line corresponds to face 0 of the quadrilateral. Hence the first
+        nPolyConn+1 entries in modConnQuad are the DOFs of the line. Copy
+        these entries from modConnQuad. ---*/
+  for(unsigned short i=0; i<=nPolyConn; ++i)
+    modConnLine[i] = modConnQuad[i];
+}
+
+void CMeshFEM_DG::CreateConnectivitiesLineAdjacentTriangle(
+                                const unsigned long         *cornerPointsLine,
+                                const unsigned short        nPolyGrid,
+                                const vector<unsigned long> &triaNodeIDsGrid,
+                                const unsigned short        nPolyConn,
+                                const unsigned long         *connTria,
+                                unsigned long               *modConnLine,
+                                unsigned long               *modConnTria) {
+
+  /* Determine the indices of the 3 corner vertices of the triangle. */
+  const unsigned short ind0 = 0;
+  const unsigned short ind1 = nPolyGrid;
+  const unsigned short ind2 = (nPolyGrid+1)*(nPolyGrid+2)/2 -1;
+
+  /* Easier storage of the two corner points of the line in the new numbering. */
+  const unsigned long vert0 = cornerPointsLine[0];
+  const unsigned long vert1 = cornerPointsLine[1];
+
+  /*--- There exists a linear mapping from the indices of the numbering used in
+        triaNodeIDsGrid to the indices of the target numbering. This mapping is of
+        the form ii = a + b*i + c*j and jj = d + e*i + f*j, where ii,jj are the
+        indices of the new numbering and i,j the indices of the numbering used
+        in triaNodeIDsGrid (and connTria). The values of the coefficients a,b,c,d,e,f
+        depend on how the corner points of the line coincide with the corner points
+        of the triangle. This is determined below. The bool verticesDontMatch is
+        there to check if vertices do not match. This should not happen, but
+        it is checked for security. ---*/
+  signed short a, b, c, d, e, f;
+  bool verticesDontMatch = false;
+
+  if(vert0 == triaNodeIDsGrid[ind0]) {
+    /* Vert0 coincides with vertex 0 of the triangle connectivity.
+       Determine the situation for vert1. */
+    if(vert1 == triaNodeIDsGrid[ind1]){
+      /* The new numbering is the same as the original numbering. */
+      a = 0; b = 1; c = 0; d = 0; e = 0; f = 1;
+    }
+    else if(vert1 == triaNodeIDsGrid[ind2]) {
+      /* The i and j numbering are swapped. This is a left handed transformation. */
+      a = 0; b = 0; c = 1; d = 0; e = 1; f = 0;
+    }
+    else {
+      verticesDontMatch = true;  // Vert1 does not match with a neigbor.
+    }
+  }
+  else if(vert0 == triaNodeIDsGrid[ind1]) {
+    /* Vert0 coincides with vertex 1 of the triangle connectivity.
+       Determine the situation for vert1. */
+    if(vert1 == triaNodeIDsGrid[ind2]){
+      /* The i-direction of the new numbering corresponds to the j-direction
+         of the original numbering, while the new j-direction corresponds to
+         a combination of the original i- and j-direction. */
+      a = 0; b = 0; c = 1; d = nPolyConn; e = -1; f = -1;
+    }
+    else if(vert1 == triaNodeIDsGrid[ind0]) {
+      /* The i-direction of the new numbering corresponds to a combination of
+         the original i- and j-direction, while the new j-direction corresponds
+         to the j-direction of the original numbering. This is a left
+         handed transformation. */
+      a = nPolyConn; b = -1; c = -1; d = 0; e = 0; f = 1;
+    }
+    else {
+      verticesDontMatch = true;  // Vert1 does not match with a neigbor.
+    }
+  }
+  else if(vert0 == triaNodeIDsGrid[ind2]) {
+    /* Vert0 coincides with vertex 2 of the triangle connectivity.
+       Determine the situation for vert1. */
+    if(vert1 == triaNodeIDsGrid[ind0]){
+      /* The i-direction of the new numbering corresponds to a combination of
+         the original i- and j-direction, while the new j-direction corresponds
+         to the i-direction of the original numbering. */
+      a = nPolyConn; b = -1; c = -1; d = 0; e = 1; f = 0;
+    }
+    else if(vert1 == triaNodeIDsGrid[ind1]) {
+      /* The i-direction of the new numbering corresponds to the i-direction of
+         the original numbering, while the new j-direction corresponds to a
+         combination of the original i- and j-direction. This is a left handed
+         transformation. */
+      a = 0; b = 1; c = 0; d = nPolyConn; e = -1; f = -1;
+    }
+    else {
+      verticesDontMatch = true;  // Vert1 does not match with a neigbor.
+    }
+  }
+
+  /*--- If non-matching vertices have been found, terminate with an error message. ---*/
+  if( verticesDontMatch ) {
+    cout << "In function CMeshFEM_DG::CreateConnectivitiesLineAdjacentTriangle." << endl;
+    cout << "Corner vertices do not match. This should not happen." << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Loop over the DOFs of the original triangle to create the connectivity
+        of the triangle that corresponds to the new numbering. ---*/
+  unsigned short ind = 0;
+  for(unsigned short j=0; j<=nPolyConn; ++j) {
+    for(unsigned short i=0; i<=(nPolyConn-j); ++i, ++ind) {
+
+      /*--- Determine the ii and jj indices of the new numbering, convert it to
+            a 1D index and shore the modified index in modConnTria. ---*/
+      unsigned short ii = a + i*b + j*c;
+      unsigned short jj = d + i*e + j*f;
+
+      unsigned short iind = jj*(nPolyConn+1) + ii - jj*(jj-1)/2;
+
+      modConnTria[iind] = connTria[ind];
+    }
+  }
+
+  /*--- The line corresponds to face 0 of the triangle. Hence the first
+        nPolyConn+1 entries in modConnTria are the DOFs of the line. Copy
+        these entries from modConnTria. ---*/
+  for(unsigned short i=0; i<=nPolyConn; ++i)
+    modConnLine[i] = modConnTria[i];
+}
+
+void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentHexahedron(
+                                const unsigned long         *cornerPointsQuad,
+                                const unsigned short        nPolyGrid,
+                                const vector<unsigned long> &hexaNodeIDsGrid,
+                                const unsigned short        nPolyConn,
+                                const unsigned long         *connHexa,
+                                unsigned long               *modConnQuad,
+                                unsigned long               *modConnHexa) {
+
+  /* Determine the indices of the eight corner points of the hexahedron. */
+  const unsigned short ind0 = 0;
+  const unsigned short ind1 = nPolyGrid;
+  const unsigned short ind2 = (nPolyGrid+1)*(nPolyGrid+1) -1;
+  const unsigned short ind3 = ind2 - nPolyGrid;
+  const unsigned short ind4 = (nPolyGrid+1)*(nPolyGrid+1)*nPolyGrid;
+  const unsigned short ind5 = ind1 + ind4;
+  const unsigned short ind6 = ind2 + ind4;
+  const unsigned short ind7 = ind3 + ind4;
+
+  /* Easier storage of the four corner points of the quad in the new numbering. */
+  const unsigned long vert0 = cornerPointsQuad[0];
+  const unsigned long vert1 = cornerPointsQuad[1];
+  const unsigned long vert2 = cornerPointsQuad[2];
+  const unsigned long vert3 = cornerPointsQuad[3];
+
+  /*--- There exists a linear mapping from the indices of the numbering used in
+        hexaNodeIDsGrid to the indices of the target numbering. This mapping is of
+        the form ii = a + b*i + c*j + d*k, jj = e + f*i + g*j + h*k and
+        kk = l + m*i + n*j + o*k, where ii,jj,kk are the indices of the new
+        numbering and i,j,k the indices of the numbering used in in hexaNodeIDsGrid
+        (and connHexa). The values of the coefficients a,b,c,d,e,f,g,h,l,m,n,o
+        depend on how the corner points of the quad coincide with the corner points
+        of the hexahedron. This is determined below. The bool verticesDontMatch is
+        there to check if vertices do not match. This should not happen, but
+        it is checked for security. ---*/
+  signed short a = 0, b = 0, c = 0, d = 0, e = 0, f = 0, g = 0, h = 0,
+               l = 0, m = 0, n = 0, o = 0;
+  bool verticesDontMatch = false;
+
+  if(vert0 == hexaNodeIDsGrid[ind0] && vert1 == hexaNodeIDsGrid[ind1] &&   // ii = i.
+     vert2 == hexaNodeIDsGrid[ind2] && vert3 == hexaNodeIDsGrid[ind3]) {   // jj = j.
+    b = g = o = 1;                                                         // kk = k.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind0] && vert1 == hexaNodeIDsGrid[ind3] &&   // ii = j.
+          vert2 == hexaNodeIDsGrid[ind2] && vert3 == hexaNodeIDsGrid[ind1]) {   // jj = i.
+    c = f = o = 1;                                                              // kk = k.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind0] && vert1 == hexaNodeIDsGrid[ind1] && // ii = i.
+          vert2 == hexaNodeIDsGrid[ind5] && vert3 == hexaNodeIDsGrid[ind4]) { // jj = k.
+    b = h = n = 1;                                                            // kk = j.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind0] && vert1 == hexaNodeIDsGrid[ind4] && // ii = k.
+          vert2 == hexaNodeIDsGrid[ind5] && vert3 == hexaNodeIDsGrid[ind1]) { // jj = i.
+    d = f = n = 1;                                                            // kk = j.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind0] && vert1 == hexaNodeIDsGrid[ind3] && // ii = j.
+          vert2 == hexaNodeIDsGrid[ind7] && vert3 == hexaNodeIDsGrid[ind4]) { // jj = k.
+    c = h = m = 1;                                                            // kk = i.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind0] && vert1 == hexaNodeIDsGrid[ind4] && // ii = k.
+          vert2 == hexaNodeIDsGrid[ind7] && vert3 == hexaNodeIDsGrid[ind3]) { // jj = j.
+    d = g = m = 1;                                                            // kk = i.
+  }
+
+  else if(vert0 == hexaNodeIDsGrid[ind1] && vert1 == hexaNodeIDsGrid[ind0] && // ii = nPoly-i.
+          vert2 == hexaNodeIDsGrid[ind3] && vert3 == hexaNodeIDsGrid[ind2]) { // jj = j.
+    a = nPolyConn; b = -1; g = o = 1;                                         // kk = k.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind1] && vert1 == hexaNodeIDsGrid[ind2] && // ii = j.
+          vert2 == hexaNodeIDsGrid[ind3] && vert3 == hexaNodeIDsGrid[ind0]) { // jj = nPoly-i.
+    e = nPolyConn; f = -1; c = o = 1;                                         // kk = k.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind1] && vert1 == hexaNodeIDsGrid[ind0] && // ii = nPoly-i.
+          vert2 == hexaNodeIDsGrid[ind4] && vert3 == hexaNodeIDsGrid[ind5]) { // jj = k.
+    a = nPolyConn; b = -1; h = n = 1;                                         // kk = j.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind1] && vert1 == hexaNodeIDsGrid[ind5] && // ii = k.
+          vert2 == hexaNodeIDsGrid[ind4] && vert3 == hexaNodeIDsGrid[ind0]) { // jj = nPoly-i.
+    e = nPolyConn; f = -1; d = n = 1;                                         // kk = j.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind1] && vert1 == hexaNodeIDsGrid[ind2] && // ii = j.
+          vert2 == hexaNodeIDsGrid[ind6] && vert3 == hexaNodeIDsGrid[ind5]) { // jj = k.
+    l = nPolyConn; m = -1; c = h = 1;                                         // kk = nPoly-i.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind1] && vert1 == hexaNodeIDsGrid[ind5] && // ii = k.
+          vert2 == hexaNodeIDsGrid[ind6] && vert3 == hexaNodeIDsGrid[ind2]) { // jj = j.
+    l = nPolyConn; m = -1; d = g = 1;                                         // kk = nPoly-i.
+  }
+
+  else if(vert0 == hexaNodeIDsGrid[ind2] && vert1 == hexaNodeIDsGrid[ind1] && // ii = nPoly-j.
+          vert2 == hexaNodeIDsGrid[ind0] && vert3 == hexaNodeIDsGrid[ind3]) { // jj = nPoly-i.
+    a = e = nPolyConn; c = f = -1; o = 1;                                     // kk = k.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind2] && vert1 == hexaNodeIDsGrid[ind3] && // ii = nPoly-i.
+          vert2 == hexaNodeIDsGrid[ind0] && vert3 == hexaNodeIDsGrid[ind1]) { // jj = nPoly-j.
+    a = e = nPolyConn; b = g = -1; o = 1;                                     // kk = k.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind2] && vert1 == hexaNodeIDsGrid[ind1] && // ii = nPoly-j.
+          vert2 == hexaNodeIDsGrid[ind5] && vert3 == hexaNodeIDsGrid[ind6]) { // jj = k.
+    a = l = nPolyConn; c = m = -1; h = 1;                                     // kk = nPoly-i.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind2] && vert1 == hexaNodeIDsGrid[ind6] && // ii = k.
+          vert2 == hexaNodeIDsGrid[ind5] && vert3 == hexaNodeIDsGrid[ind1]) { // jj = nPoly-j.
+    e = l = nPolyConn; g = m = -1; d = 1;                                     // kk = nPoly-i.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind2] && vert1 == hexaNodeIDsGrid[ind3] && // ii = nPoly-i.
+          vert2 == hexaNodeIDsGrid[ind7] && vert3 == hexaNodeIDsGrid[ind6]) { // jj = k.
+    a = l = nPolyConn; b = n = -1; h = 1;                                     // kk = nPoly-j.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind2] && vert1 == hexaNodeIDsGrid[ind6] && // ii = k.
+          vert2 == hexaNodeIDsGrid[ind7] && vert3 == hexaNodeIDsGrid[ind3]) { // jj = nPoly-i.
+    e = l = nPolyConn; f = n = -1; d = 1;                                     // kk = nPoly-j.
+  }
+
+  else if(vert0 == hexaNodeIDsGrid[ind3] && vert1 == hexaNodeIDsGrid[ind0] && // ii = nPoly-j.
+          vert2 == hexaNodeIDsGrid[ind1] && vert3 == hexaNodeIDsGrid[ind2]) { // jj = i.
+    a = nPolyConn; c = -1; f = o = 1;                                         // kk = k.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind3] && vert1 == hexaNodeIDsGrid[ind2] && // ii = i.
+          vert2 == hexaNodeIDsGrid[ind1] && vert3 == hexaNodeIDsGrid[ind0]) { // jj = nPoly-j.
+    e = nPolyConn; g = -1; b = o = 1;                                         // kk = k.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind3] && vert1 == hexaNodeIDsGrid[ind0] && // ii = nPoly-j.
+          vert2 == hexaNodeIDsGrid[ind4] && vert3 == hexaNodeIDsGrid[ind7]) { // jj = k.
+    a = nPolyConn; c = -1; h = m = 1;                                         // kk = i.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind3] && vert1 == hexaNodeIDsGrid[ind7] && // ii = k.
+          vert2 == hexaNodeIDsGrid[ind4] && vert3 == hexaNodeIDsGrid[ind0]) { // jj = nPoly-j.
+    e = nPolyConn; g = -1; d = m = 1;                                         // kk = i.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind3] && vert1 == hexaNodeIDsGrid[ind2] && // ii = i.
+          vert2 == hexaNodeIDsGrid[ind6] && vert3 == hexaNodeIDsGrid[ind7]) { // jj = k.
+    l = nPolyConn; n = -1; b = h = 1;                                         // kk = nPoly-j.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind3] && vert1 == hexaNodeIDsGrid[ind7] && // ii = k.
+          vert2 == hexaNodeIDsGrid[ind6] && vert3 == hexaNodeIDsGrid[ind2]) { // jj = i.
+    l = nPolyConn; n = -1; d = f = 1;                                         // kk = nPoly-j.
+  }
+
+  else if(vert0 == hexaNodeIDsGrid[ind4] && vert1 == hexaNodeIDsGrid[ind5] && // ii = i.
+          vert2 == hexaNodeIDsGrid[ind6] && vert3 == hexaNodeIDsGrid[ind7]) { // jj = j.
+    l = nPolyConn; o = -1; b = g = 1;                                         // kk = nPoly-k.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind4] && vert1 == hexaNodeIDsGrid[ind7] && // ii = j.
+          vert2 == hexaNodeIDsGrid[ind6] && vert3 == hexaNodeIDsGrid[ind5]) { // jj = i.
+    l = nPolyConn; o = -1; c = f = 1;                                         // kk = nPoly-k.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind4] && vert1 == hexaNodeIDsGrid[ind5] && // ii = i.
+          vert2 == hexaNodeIDsGrid[ind1] && vert3 == hexaNodeIDsGrid[ind0]) { // jj = nPoly-k.
+    e = nPolyConn; h = -1; b = n = 1;                                         // kk = j.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind4] && vert1 == hexaNodeIDsGrid[ind0] && // ii = nPoly-k.
+          vert2 == hexaNodeIDsGrid[ind1] && vert3 == hexaNodeIDsGrid[ind5]) { // jj = i.
+    a = nPolyConn; d = -1; f = n = 1;                                         // kk = j.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind4] && vert1 == hexaNodeIDsGrid[ind7] && // ii = j.
+          vert2 == hexaNodeIDsGrid[ind3] && vert3 == hexaNodeIDsGrid[ind0]) { // jj = nPoly-k.
+    e = nPolyConn; h = -1; c = m = 1;                                         // kk = i.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind4] && vert1 == hexaNodeIDsGrid[ind0] && // ii = nPoly-k.
+          vert2 == hexaNodeIDsGrid[ind3] && vert3 == hexaNodeIDsGrid[ind7]) { // jj = j.
+    a = nPolyConn; d = -1; g = m = 1;                                         // kk = i.
+  }
+
+  else if(vert0 == hexaNodeIDsGrid[ind5] && vert1 == hexaNodeIDsGrid[ind6] && // ii = j.
+          vert2 == hexaNodeIDsGrid[ind7] && vert3 == hexaNodeIDsGrid[ind4]) { // jj = nPoly-i.
+    e = l = nPolyConn; f = o = -1; c = 1;                                     // kk = nPoly-k.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind5] && vert1 == hexaNodeIDsGrid[ind4] && // ii = nPoly-i.
+          vert2 == hexaNodeIDsGrid[ind7] && vert3 == hexaNodeIDsGrid[ind6]) { // jj = j.
+    a = l = nPolyConn; b = o = -1; g = 1;                                     // kk = nPoly-k.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind5] && vert1 == hexaNodeIDsGrid[ind6] && // ii = j.
+          vert2 == hexaNodeIDsGrid[ind2] && vert3 == hexaNodeIDsGrid[ind1]) { // jj = nPoly-k.
+    e = l = nPolyConn; h = m = -1; c = 1;                                     // kk = nPoly-i.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind5] && vert1 == hexaNodeIDsGrid[ind1] && // ii = nPoly-k.
+          vert2 == hexaNodeIDsGrid[ind2] && vert3 == hexaNodeIDsGrid[ind6]) { // jj = j.
+    a = l = nPolyConn; d = m = -1; g = 1;                                     // kk = nPoly-i.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind5] && vert1 == hexaNodeIDsGrid[ind1] && // ii = nPoly-k.
+          vert2 == hexaNodeIDsGrid[ind0] && vert3 == hexaNodeIDsGrid[ind4]) { // jj = nPoly-i.
+    a = e = nPolyConn; d = f = -1; n = 1;                                     // kk = j.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind5] && vert1 == hexaNodeIDsGrid[ind4] && // ii = nPoly-i.
+          vert2 == hexaNodeIDsGrid[ind0] && vert3 == hexaNodeIDsGrid[ind0]) { // jj = nPoly-k.
+    a = e = nPolyConn; b = h = -1; n = 1;                                     // kk = j.
+  }
+
+  else if(vert0 == hexaNodeIDsGrid[ind6] && vert1 == hexaNodeIDsGrid[ind7] && // ii = nPoly-i.
+          vert2 == hexaNodeIDsGrid[ind4] && vert3 == hexaNodeIDsGrid[ind5]) { // jj = nPoly-j.
+    a = e = l = nPolyConn; b = g = o = -1;                                    // kk = nPoly-k.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind6] && vert1 == hexaNodeIDsGrid[ind5] && // ii = nPoly-j.
+          vert2 == hexaNodeIDsGrid[ind4] && vert3 == hexaNodeIDsGrid[ind7]) { // jj = nPoly-i.
+    a = e = l = nPolyConn; c = f = o = -1;                                    // kk = nPoly-k.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind6] && vert1 == hexaNodeIDsGrid[ind7] && // ii = nPoly-i.
+          vert2 == hexaNodeIDsGrid[ind3] && vert3 == hexaNodeIDsGrid[ind2]) { // jj = nPoly-k.
+    a = e = l = nPolyConn; b = h = n = -1;                                    // kk = nPoly-j.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind6] && vert1 == hexaNodeIDsGrid[ind2] && // ii = nPoly-k.
+          vert2 == hexaNodeIDsGrid[ind3] && vert3 == hexaNodeIDsGrid[ind7]) { // jj = nPoly-i.
+    a = e = l = nPolyConn; d = f = n = -1;                                    // kk = nPoly-j.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind6] && vert1 == hexaNodeIDsGrid[ind2] && // ii = nPoly-k.
+          vert2 == hexaNodeIDsGrid[ind1] && vert3 == hexaNodeIDsGrid[ind5]) { // jj = nPoly-j.
+    a = e = l = nPolyConn; d = g = m = -1;                                    // kk = nPoly-i.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind6] && vert1 == hexaNodeIDsGrid[ind5] && // ii = nPoly-j.
+          vert2 == hexaNodeIDsGrid[ind1] && vert3 == hexaNodeIDsGrid[ind2]) { // jj = nPoly-k.
+    a = e = l = nPolyConn; c = h = m = -1;                                    // kk = nPoly-i.
+  }
+
+  else if(vert0 == hexaNodeIDsGrid[ind7] && vert1 == hexaNodeIDsGrid[ind4] && // ii = nPoly-j.
+          vert2 == hexaNodeIDsGrid[ind5] && vert3 == hexaNodeIDsGrid[ind6]) { // jj = i.
+    a = l = nPolyConn; c = o = -1; f = 1;                                     // kk = nPoly-k.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind7] && vert1 == hexaNodeIDsGrid[ind6] && // ii = i.
+          vert2 == hexaNodeIDsGrid[ind5] && vert3 == hexaNodeIDsGrid[ind4]) { // jj = nPoly-j.
+    e = l = nPolyConn; g = o = -1; b = 1;                                     // kk = nPoly-k.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind7] && vert1 == hexaNodeIDsGrid[ind4] && // ii = nPoly-j.
+          vert2 == hexaNodeIDsGrid[ind0] && vert3 == hexaNodeIDsGrid[ind3]) { // jj = nPoly-k.
+    a = e = nPolyConn; c = h = -1; m = 1;                                     // kk = i.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind7] && vert1 == hexaNodeIDsGrid[ind3] && // ii = nPoly-k.
+          vert2 == hexaNodeIDsGrid[ind0] && vert3 == hexaNodeIDsGrid[ind4]) { // jj = nPoly-j.
+    a = e = nPolyConn; d = g = -1; m = 1;                                     // kk = i.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind7] && vert1 == hexaNodeIDsGrid[ind6] && // ii = i.
+          vert2 == hexaNodeIDsGrid[ind2] && vert3 == hexaNodeIDsGrid[ind3]) { // jj = nPoly-k.
+    e = l = nPolyConn; h = n = -1; b = 1;                                     // kk = nPoly-j.
+  }
+  else if(vert0 == hexaNodeIDsGrid[ind7] && vert1 == hexaNodeIDsGrid[ind3] && // ii = nPoly-k.
+          vert2 == hexaNodeIDsGrid[ind2] && vert3 == hexaNodeIDsGrid[ind6]) { // jj = i.
+    a = l = nPolyConn; d = n = -1; f = 1;                                     // kk = nPoly-j.
+  }
+
+  else {
+    verticesDontMatch = true;
+  }
+
+  /*--- If non-matching vertices have been found, terminate with an error message. ---*/
+  if( verticesDontMatch ) {
+    cout << "In function CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentHexahedron." << endl;
+    cout << "Corner vertices do not match. This should not happen." << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Loop over the DOFs of the original hexahedron to create the connectivity
+        of the hexahedron that corresponds to the new numbering. ---*/
+  const unsigned short nn2 = (nPolyConn+1)*(nPolyConn+1);
+  unsigned short ind = 0;
+  for(unsigned short k=0; k<=nPolyConn; ++k) {
+    for(unsigned short j=0; j<=nPolyConn; ++j) {
+      for(unsigned short i=0; i<=nPolyConn; ++i, ++ind) {
+
+        /*--- Determine the ii, jj and kk indices of the new numbering, convert it to
+              a 1D index and shore the modified index in modConnHexa. ---*/
+        unsigned short ii   = a + i*b + j*c + k*d;
+        unsigned short jj   = e + i*f + j*g + k*h;
+        unsigned short kk   = l + i*m + j*n + k*o;
+        unsigned short iind = kk*nn2 + jj*(nPolyConn+1) + ii;
+
+        modConnHexa[iind] = connHexa[ind];
+      }
+    }
+  }
+
+  /*--- The quad corresponds to face 0 of the hexahedron. Hence the first
+        nn2 entries in modConnHexa are the DOFs of the quad. Copy
+        these entries from modConnHexa. ---*/
+  for(unsigned short i=0; i<nn2; ++i)
+    modConnQuad[i] = modConnHexa[i];
+}
+
+void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentPrism(
+                                const unsigned long         *cornerPointsQuad,
+                                const unsigned short        nPolyGrid,
+                                const vector<unsigned long> &prismNodeIDsGrid,
+                                const unsigned short        nPolyConn,
+                                const unsigned long         *connPrism,
+                                bool                        &swapFaceInElement,
+                                unsigned long               *modConnQuad,
+                                unsigned long               *modConnPrism) {
+
+  /* Determine the indices of the six corner points of the prism. */
+  const unsigned short ind0 = 0;
+  const unsigned short ind1 = nPolyGrid;
+  const unsigned short ind2 = (nPolyGrid+1)*(nPolyGrid+2)/2 -1;
+  const unsigned short ind3 = (nPolyGrid+1)*(nPolyGrid+3)*nPolyGrid/2;
+  const unsigned short ind4 = ind1 + ind3;
+  const unsigned short ind5 = ind2 + ind3;
+
+  /* Easier storage of the four corner points of the quad in the new numbering. */
+  const unsigned long vert0 = cornerPointsQuad[0];
+  const unsigned long vert1 = cornerPointsQuad[1];
+  const unsigned long vert2 = cornerPointsQuad[2];
+  const unsigned long vert3 = cornerPointsQuad[3];
+
+  /*--- There exists a linear mapping from the indices of the numbering used in
+        prismNodeIDsGrid to the indices of the target numbering. This mapping is
+        of the form ii = a + b*i + c*j, jj = d + e*i + f*j and kk = g + h*k,
+        where ii,jj,kk are the indices of the new numbering and i,j,k the indices
+        of the numbering used in in prismNodeIDsGrid (and connPrism). Note that
+        the k-direction can at most be reversed compared to the original definition.
+        This is due to the way the basis functions are defined for a prism. As a
+        consequence also the variable swapFaceInElement is needed to cover all
+        possible situations. The values of the coefficients a,b,c,d,e,f,g,h depend
+        on how the corner points of the quad coincide with the corner points of the
+        prism. This is determined below. The bool verticesDontMatch is there to
+        check if vertices do not match. This should not happen, but it is checked
+        for security. ---*/
+  signed short a = 0, b = 0, c = 0, d = 0, e = 0, f = 0, g = 0, h = 0;
+  bool verticesDontMatch = false;
+
+  if(vert0 == prismNodeIDsGrid[ind0] && vert1 == prismNodeIDsGrid[ind1] &&   // ii = i.
+     vert2 == prismNodeIDsGrid[ind4] && vert3 == prismNodeIDsGrid[ind3]) {   // jj = j.
+    b = f = h = 1; swapFaceInElement = false;                                // kk = k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind0] && vert1 == prismNodeIDsGrid[ind3] &&   // ii = i.
+          vert2 == prismNodeIDsGrid[ind4] && vert3 == prismNodeIDsGrid[ind1]) {   // jj = j.
+    b = f = h = 1; swapFaceInElement = true;                                      // kk = k. Plus swap.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind0] && vert1 == prismNodeIDsGrid[ind2] &&   // ii = j.
+          vert2 == prismNodeIDsGrid[ind5] && vert3 == prismNodeIDsGrid[ind3]) {   // jj = i.
+    c = e = h = 1; swapFaceInElement = false;                                     // kk = k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind0] && vert1 == prismNodeIDsGrid[ind3] &&   // ii = j.
+          vert2 == prismNodeIDsGrid[ind5] && vert3 == prismNodeIDsGrid[ind2]) {   // jj = i.
+    c = e = h = 1; swapFaceInElement = true;                                      // kk = k. Plus swap.
+  }
+
+  else if(vert0 == prismNodeIDsGrid[ind1] && vert1 == prismNodeIDsGrid[ind0] &&   // ii = nPoly-i-j.
+          vert2 == prismNodeIDsGrid[ind3] && vert3 == prismNodeIDsGrid[ind4]) {   // jj = j.
+    a = nPolyConn; b = c = -1; f = h = 1; swapFaceInElement = false;              // kk = k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind1] && vert1 == prismNodeIDsGrid[ind4] &&   // ii = nPoly-i-j.
+          vert2 == prismNodeIDsGrid[ind3] && vert3 == prismNodeIDsGrid[ind0]) {   // jj = j.
+    a = nPolyConn; b = c = -1; f = h = 1; swapFaceInElement = true;               // kk = k. Plus swap.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind1] && vert1 == prismNodeIDsGrid[ind2] &&   // ii = j.
+          vert2 == prismNodeIDsGrid[ind5] && vert3 == prismNodeIDsGrid[ind4]) {   // jj = nPoly-i-j.
+    d = nPolyConn; e = f = -1; c = h = 1; swapFaceInElement = false;              // kk = k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind1] && vert1 == prismNodeIDsGrid[ind4] &&   // ii = j.
+          vert2 == prismNodeIDsGrid[ind5] && vert3 == prismNodeIDsGrid[ind2]) {   // jj = nPoly-i-j.
+    d = nPolyConn; e = f = -1; c = h = 1; swapFaceInElement = true;               // kk = k. Plus swap.
+  }
+
+  else if(vert0 == prismNodeIDsGrid[ind2] && vert1 == prismNodeIDsGrid[ind0] &&   // ii = nPoly-i-j.
+          vert2 == prismNodeIDsGrid[ind3] && vert3 == prismNodeIDsGrid[ind5]) {   // jj = i.
+    a = nPolyConn; b = c = -1; e = h = 1; swapFaceInElement = false;              // kk = k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind2] && vert1 == prismNodeIDsGrid[ind5] &&   // ii = nPoly-i-j.
+          vert2 == prismNodeIDsGrid[ind3] && vert3 == prismNodeIDsGrid[ind0]) {   // jj = i.
+    a = nPolyConn; b = c = -1; e = h = 1; swapFaceInElement = true;               // kk = k. Plus swap.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind2] && vert1 == prismNodeIDsGrid[ind1] &&   // ii = i.
+          vert2 == prismNodeIDsGrid[ind4] && vert3 == prismNodeIDsGrid[ind5]) {   // jj = nPoly-i-j.
+    d = nPolyConn; e = f = -1; b = h = 1; swapFaceInElement = false;              // kk = k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind2] && vert1 == prismNodeIDsGrid[ind5] &&   // ii = i.
+          vert2 == prismNodeIDsGrid[ind4] && vert3 == prismNodeIDsGrid[ind1]) {   // jj = nPoly-i-j.
+    d = nPolyConn; e = f = -1; b = h = 1; swapFaceInElement = true;               // kk = k. Plus swap.
+  }
+
+  else if(vert0 == prismNodeIDsGrid[ind3] && vert1 == prismNodeIDsGrid[ind4] &&   // ii = i.
+          vert2 == prismNodeIDsGrid[ind1] && vert3 == prismNodeIDsGrid[ind0]) {   // jj = j.
+    g = nPolyConn; b = f = 1; h = -1; swapFaceInElement = false;                  // kk = nPoly-k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind3] && vert1 == prismNodeIDsGrid[ind0] &&   // ii = i.
+          vert2 == prismNodeIDsGrid[ind1] && vert3 == prismNodeIDsGrid[ind4]) {   // jj = j.
+    g = nPolyConn; b = f = 1; h = -1; swapFaceInElement = true;                   // kk = nPoly-k. Plus swap.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind3] && vert1 == prismNodeIDsGrid[ind5] &&   // ii = j.
+          vert2 == prismNodeIDsGrid[ind2] && vert3 == prismNodeIDsGrid[ind0]) {   // jj = i.
+    g = nPolyConn; c = e = 1; h = -1; swapFaceInElement = false;                  // kk = nPoly-k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind3] && vert1 == prismNodeIDsGrid[ind0] &&   // ii = j.
+          vert2 == prismNodeIDsGrid[ind2] && vert3 == prismNodeIDsGrid[ind5]) {   // jj = i.
+    g = nPolyConn; c = e = 1; h = -1; swapFaceInElement = true;                   // kk = nPoly-k. Plus swap.
+  }
+
+  else if(vert0 == prismNodeIDsGrid[ind4] && vert1 == prismNodeIDsGrid[ind3] &&   // ii = nPoly-i-j.
+          vert2 == prismNodeIDsGrid[ind0] && vert3 == prismNodeIDsGrid[ind1]) {   // jj = j.
+    a = g = nPolyConn; b = c = h = -1; f = 1; swapFaceInElement = false;          // kk = nPoly-k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind4] && vert1 == prismNodeIDsGrid[ind1] &&   // ii = nPoly-i-j.
+          vert2 == prismNodeIDsGrid[ind0] && vert3 == prismNodeIDsGrid[ind3]) {   // jj = j.
+    a = g = nPolyConn; b = c = h = -1; f = 1; swapFaceInElement = true;           // kk = nPoly-k. Plus swap.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind4] && vert1 == prismNodeIDsGrid[ind5] &&   // ii = j.
+          vert2 == prismNodeIDsGrid[ind2] && vert3 == prismNodeIDsGrid[ind1]) {   // jj = nPoly-i-j.
+    d = g = nPolyConn; e = f = h = -1; c = 1; swapFaceInElement = false;          // kk = nPoly-k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind4] && vert1 == prismNodeIDsGrid[ind1] &&   // ii = j.
+          vert2 == prismNodeIDsGrid[ind2] && vert3 == prismNodeIDsGrid[ind5]) {   // jj = nPoly-i-j.
+    d = g = nPolyConn; e = f = h = -1; c = 1; swapFaceInElement = true;           // kk = nPoly-k. Plus swap.
+  }
+
+  else if(vert0 == prismNodeIDsGrid[ind5] && vert1 == prismNodeIDsGrid[ind3] &&   // ii = nPoly-i-j.
+          vert2 == prismNodeIDsGrid[ind0] && vert3 == prismNodeIDsGrid[ind2]) {   // jj = i.
+    a = g = nPolyConn; b = c = h = -1; e = 1; swapFaceInElement = false;          // kk = nPoly-k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind5] && vert1 == prismNodeIDsGrid[ind2] &&   // ii = nPoly-i-j.
+          vert2 == prismNodeIDsGrid[ind0] && vert3 == prismNodeIDsGrid[ind3]) {   // jj = i.
+    a = g = nPolyConn; b = c = h = -1; e = 1; swapFaceInElement = true;           // kk = nPoly-k. Plus swap.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind5] && vert1 == prismNodeIDsGrid[ind4] &&   // ii = i.
+          vert2 == prismNodeIDsGrid[ind1] && vert3 == prismNodeIDsGrid[ind2]) {   // jj = nPoly-i-j.
+    d = g = nPolyConn; e = f = h = -1; b = 1; swapFaceInElement = false;          // kk = nPoly-k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind5] && vert1 == prismNodeIDsGrid[ind2] &&   // ii = i.
+          vert2 == prismNodeIDsGrid[ind1] && vert3 == prismNodeIDsGrid[ind4]) {   // jj = nPoly-i-j.
+    d = g = nPolyConn; e = f = h = -1; b = 1; swapFaceInElement = true;           // kk = nPoly-k. Plus swap.
+  }
+
+  else {
+    verticesDontMatch = true;
+  }
+
+  /*--- If non-matching vertices have been found, terminate with an error message. ---*/
+  if( verticesDontMatch ) {
+    cout << "In function CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentPrism." << endl;
+    cout << "Corner vertices do not match. This should not happen." << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Loop over the DOFs of the original prism to create the connectivity
+        of the prism that corresponds to the new numbering. ---*/
+  const unsigned short kOff = (nPolyConn+1)*(nPolyConn+1);
+  unsigned short ind = 0;
+  for(unsigned short k=0; k<=nPolyConn; ++k) {
+    for(unsigned short j=0; j<=nPolyConn; ++j) {
+      unsigned short uppBoundI = nPolyConn - j;
+      for(unsigned short i=0; i<=uppBoundI; ++i, ++ind) {
+
+        /*--- Determine the ii, jj and kk indices of the new numbering, convert it to
+              a 1D index and shore the modified index in modConnPrism. ---*/
+        unsigned short ii   = a + i*b + j*c;
+        unsigned short jj   = d + i*e + j*f;
+        unsigned short kk   = g + h*k;
+        unsigned short iind = kk*kOff + jj*(nPolyConn+1) + ii - jj*(jj-1)/2;
+
+        modConnPrism[iind] = connPrism[ind];
+      }
+    }
+  }
+
+  /*--- Determine the connectivity of the quadrilateral face. ---*/
+  if( swapFaceInElement ) {
+
+    /*--- The parametric coordinates r and s of the quad must be swapped
+          w.r.t. to the parametric coordinates of the face of the prism.
+          This means that the coordinate r of the quad runs from the base
+          triangle to the top triangle of the prism. This corresponds to
+          the k-direction of the prism. Hence the s-direction of the quad
+          corresponds to the i-direction of the prism. ---*/
+    for(unsigned short k=0; k<=nPolyConn; ++k) {
+      for(unsigned short i=0; i<=nPolyConn; ++i) {
+        const unsigned short iind = i*(nPolyConn+1) + k;
+        modConnQuad[iind] = modConnPrism[k*kOff+i];
+      }
+    }
+  }
+  else {
+    /*--- The parametric coordinates r and s of the quad correspond to the
+          parametric coordinates in i- and k-direction of the face of the
+          prism. So an easy copy can be made. ---*/
+    unsigned short iind = 0;
+    for(unsigned short k=0; k<=nPolyConn; ++k) {
+      for(unsigned short i=0; i<=nPolyConn; ++i, ++iind) {
+        modConnQuad[iind] = modConnPrism[k*kOff+i];
+      }
+    }
+  }
+}
+
+void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentPyramid(
+                                const unsigned long         *cornerPointsQuad,
+                                const unsigned short        nPolyGrid,
+                                const vector<unsigned long> &pyraNodeIDsGrid,
+                                const unsigned short        nPolyConn,
+                                const unsigned long         *connPyra,
+                                unsigned long               *modConnQuad,
+                                unsigned long               *modConnPyra) {
+
+  /* Determine the indices of the four corner points of the quadrilateral
+     base of the pyramid. Note that the top of the pyramid is not needed
+     in the comparison, because only triangular faces are attached to it. */
+  const unsigned short ind0 = 0;
+  const unsigned short ind1 = nPolyGrid;
+  const unsigned short ind2 = (nPolyGrid+1)*(nPolyGrid+1) -1;
+  const unsigned short ind3 = ind2 - nPolyGrid;
+
+  /* Easier storage of the four corner points of the quad in the new numbering. */
+  const unsigned long vert0 = cornerPointsQuad[0];
+  const unsigned long vert1 = cornerPointsQuad[1];
+  const unsigned long vert2 = cornerPointsQuad[2];
+  const unsigned long vert3 = cornerPointsQuad[3];
+
+  /*--- There exists a linear mapping from the indices of the numbering used in
+        pyraNodeIDsGrid to the indices of the target numbering. This mapping is of
+        the form ii = a + b*i + c*j, jj = d + e*i + f*j and kk = k, where
+        ii,jj,kk are the indices of the new numbering and i,j,k the indices of
+        the numbering used in in pyraNodeIDsGrid (and connPyra). The values of
+        the coefficients a,b,c,d,e,f depend on how the corner points of the quad
+        coincide with the corner points of the quadrilateral base of the pyramid.
+        This is determined below. The bool verticesDontMatch is there to check
+        if vertices do not match. This should not happen, but it is checked for
+        security. Note that this mapping is less complicated than for a prism or
+        hexahedron, because a pyramid only has one quadrilateral face and hence
+        the k-direction has to match. ---*/
+  signed short a = 0, b = 0, c = 0, d = 0, e = 0, f = 0;
+  bool verticesDontMatch = false;
+
+  if(vert0 == pyraNodeIDsGrid[ind0] && vert1 == pyraNodeIDsGrid[ind1] &&   // ii = i.
+     vert2 == pyraNodeIDsGrid[ind2] && vert3 == pyraNodeIDsGrid[ind3]) {   // jj = j.
+    b = f = 1;
+  }
+  else if(vert0 == pyraNodeIDsGrid[ind0] && vert1 == pyraNodeIDsGrid[ind3] &&   // ii = j.
+          vert2 == pyraNodeIDsGrid[ind2] && vert3 == pyraNodeIDsGrid[ind1]) {   // jj = i.
+    c = e = 1;
+  }
+
+  else if(vert0 == pyraNodeIDsGrid[ind1] && vert1 == pyraNodeIDsGrid[ind2] &&   // ii = j.
+          vert2 == pyraNodeIDsGrid[ind3] && vert3 == pyraNodeIDsGrid[ind0]) {   // jj = nPoly-i.
+    d = nPolyConn; c = 1; e = -1;
+  }
+  else if(vert0 == pyraNodeIDsGrid[ind1] && vert1 == pyraNodeIDsGrid[ind0] &&   // ii = nPoly-i.
+          vert2 == pyraNodeIDsGrid[ind3] && vert3 == pyraNodeIDsGrid[ind2]) {   // jj = j.
+    a = nPolyConn; b = -1; f = 1;
+  }
+
+  else if(vert0 == pyraNodeIDsGrid[ind2] && vert1 == pyraNodeIDsGrid[ind3] &&   // ii = nPoly-i.
+          vert2 == pyraNodeIDsGrid[ind0] && vert3 == pyraNodeIDsGrid[ind1]) {   // jj = nPoly-j.
+    a = d = nPolyConn; b = f = -1;
+  }
+  else if(vert0 == pyraNodeIDsGrid[ind2] && vert1 == pyraNodeIDsGrid[ind1] &&   // ii = nPoly-j.
+          vert2 == pyraNodeIDsGrid[ind0] && vert3 == pyraNodeIDsGrid[ind3]) {   // jj = nPoly-i.
+    a = d = nPolyConn; c = e = -1;
+  }
+
+  else if(vert0 == pyraNodeIDsGrid[ind3] && vert1 == pyraNodeIDsGrid[ind0] &&   // ii = nPoly-j.
+          vert2 == pyraNodeIDsGrid[ind1] && vert3 == pyraNodeIDsGrid[ind2]) {   // jj = i.
+    a = nPolyConn; c = -1; e = 1;
+  }
+  else if(vert0 == pyraNodeIDsGrid[ind3] && vert1 == pyraNodeIDsGrid[ind2] &&   // ii = i.
+          vert2 == pyraNodeIDsGrid[ind1] && vert3 == pyraNodeIDsGrid[ind0]) {   // jj = nPoly-j.
+    d = nPolyConn; b = 1; f = -1;
+  }
+
+  else {
+    verticesDontMatch = true;
+  }
+
+  /*--- If non-matching vertices have been found, terminate with an error message. ---*/
+  if( verticesDontMatch ) {
+    cout << "In function CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentPyramid." << endl;
+    cout << "Corner vertices do not match. This should not happen." << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Loop over the DOFs of the original pyramid to create the connectivity
+        of the pyramid that corresponds to the new numbering. Note that the
+        outer k-loop is the same for both numberings. ---*/
+  unsigned short mPoly    = nPolyConn;
+  unsigned short offLevel = 0;
+
+  for(unsigned short k=0; k<=nPolyConn; ++k, --mPoly) {
+    unsigned short ind = offLevel;
+
+    /* Loop over the DOFs of the current quadrilateral. */
+    for(unsigned short j=0; j<=nPolyConn; ++j) {
+      for(unsigned short i=0; i<=nPolyConn; ++i, ++ind) {
+
+        /*--- Determine the ii and jj indices of the new numbering, convert it
+              to a 1D index and shore the modified index in modConnPyra. ---*/
+        unsigned short ii   = a + i*b + j*c;
+        unsigned short jj   = d + i*e + j*f;
+        unsigned short iind = offLevel + jj*(mPoly+1) + ii;
+
+        modConnPyra[iind] = connPyra[ind];
+      }
+    }
+
+    /* Update offLevel for the next quadrilateral level of the pyramid. */
+    offLevel += (mPoly+1)*(mPoly+1);
+  }
+
+  /*--- The quad corresponds to face 0 of the pyramid. Hence the first
+        nn2 entries in modConnPyra are the DOFs of the quad. Copy
+        these entries from modConnPyra. ---*/
+  const unsigned short nn2 = (nPolyConn+1)*(nPolyConn+1);
+  for(unsigned short i=0; i<nn2; ++i)
+    modConnQuad[i] = modConnPyra[i];
+}
+
+void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPrism(
+                                const unsigned long         *cornerPointsTria,
+                                const unsigned short        nPolyGrid,
+                                const vector<unsigned long> &prismNodeIDsGrid,
+                                const unsigned short        nPolyConn,
+                                const unsigned long         *connPrism,
+                                unsigned long               *modConnTria,
+                                unsigned long               *modConnPrism) {
+
+  /* Determine the indices of the six corner points of the prism. */
+  const unsigned short ind0 = 0;
+  const unsigned short ind1 = nPolyGrid;
+  const unsigned short ind2 = (nPolyGrid+1)*(nPolyGrid+2)/2 -1;
+  const unsigned short ind3 = (nPolyGrid+1)*(nPolyGrid+3)*nPolyGrid/2;
+  const unsigned short ind4 = ind1 + ind3;
+  const unsigned short ind5 = ind2 + ind3;
+
+  /* Easier storage of the three corner points of the triangle in the new numbering. */
+  const unsigned long vert0 = cornerPointsTria[0];
+  const unsigned long vert1 = cornerPointsTria[1];
+  const unsigned long vert2 = cornerPointsTria[2];
+
+  /*--- There exists a linear mapping from the indices of the numbering used in
+        prismNodeIDsGrid to the indices of the target numbering. This mapping is
+        of the form ii = a + b*i + c*j, jj = d + e*i + f*j and kk = g + h*k,
+        where ii,jj,kk are the indices of the new numbering and i,j,k the indices
+        of the numbering used in in prismNodeIDsGrid (and connPrism). Note that
+        the k-direction can at most be reversed compared to the original definition.
+        This is due to the way the basis functions are defined for a prism.
+        The values of the coefficients a,b,c,d,e,f,g,h depend on how the corner
+        points of the triangle coincide with the corner points of the prism. This
+        is determined below. The bool verticesDontMatch is there to check if vertices
+        do not match. This should not happen, but it is checked for security. ---*/
+  signed short a = 0, b = 0, c = 0, d = 0, e = 0, f = 0, g = 0, h = 0;
+  bool verticesDontMatch = false;
+
+  if(vert0 == prismNodeIDsGrid[ind0] && vert1 == prismNodeIDsGrid[ind1] &&   // ii = i.
+     vert2 == prismNodeIDsGrid[ind2]) {                                      // jj = j.
+    b = f = h = 1;                                                           // kk = k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind0] && vert1 == prismNodeIDsGrid[ind2] &&   // ii = j.
+          vert2 == prismNodeIDsGrid[ind1]) {                                      // jj = i.
+    c = e = h = 1;                                                                // kk = k.
+  }
+
+  else if(vert0 == prismNodeIDsGrid[ind1] && vert1 == prismNodeIDsGrid[ind0] &&   // ii = nPoly-i-j.
+          vert2 == prismNodeIDsGrid[ind2]) {                                      // jj = j.
+    a = nPolyConn; b = c = -1; f = h = 1;                                         // kk = k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind1] && vert1 == prismNodeIDsGrid[ind2] &&   // ii = j.
+          vert2 == prismNodeIDsGrid[ind0]) {                                      // jj = nPoly-i-j.
+    d = nPolyConn; e = f = -1; c = h = 1;                                         // kk = k.
+  }
+
+  else if(vert0 == prismNodeIDsGrid[ind2] && vert1 == prismNodeIDsGrid[ind0] &&   // ii = nPoly-i-j.
+          vert2 == prismNodeIDsGrid[ind1]) {                                      // jj = i.
+    a = nPolyConn; b = c = -1; e = h = 1;                                         // kk = k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind2] && vert1 == prismNodeIDsGrid[ind1] &&   // ii = i.
+          vert2 == prismNodeIDsGrid[ind0]) {                                      // jj = nPoly-i-j.
+    d = nPolyConn; e = f = -1; b = h = 1;                                         // kk = k.
+  }
+
+  else if(vert0 == prismNodeIDsGrid[ind3] && vert1 == prismNodeIDsGrid[ind4] &&   // ii = i.
+     vert2 == prismNodeIDsGrid[ind5]) {                                           // jj = j.
+    g = nPolyConn; b = f = 1; h = -1;                                             // kk = nPoly-k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind3] && vert1 == prismNodeIDsGrid[ind5] &&   // ii = j.
+          vert2 == prismNodeIDsGrid[ind4]) {                                      // jj = i.
+    g = nPolyConn; c = e = 1; h = -1;                                             // kk = nPoly-k.
+  }
+
+  else if(vert0 == prismNodeIDsGrid[ind4] && vert1 == prismNodeIDsGrid[ind3] &&   // ii = nPoly-i-j.
+          vert2 == prismNodeIDsGrid[ind5]) {                                      // jj = j.
+    a = g = nPolyConn; b = c = h = -1; f = 1;                                     // kk = nPoly-k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind4] && vert1 == prismNodeIDsGrid[ind5] &&   // ii = j.
+          vert2 == prismNodeIDsGrid[ind3]) {                                      // jj = nPoly-i-j.
+    d = g = nPolyConn; e = f = h = -1; c = 1;                                     // kk = nPoly-k.
+  }
+
+  else if(vert0 == prismNodeIDsGrid[ind5] && vert1 == prismNodeIDsGrid[ind3] &&   // ii = nPoly-i-j.
+          vert2 == prismNodeIDsGrid[ind4]) {                                      // jj = i.
+    a = g = nPolyConn; b = c = h = -1; e = 1;                                     // kk = nPoly-k.
+  }
+  else if(vert0 == prismNodeIDsGrid[ind5] && vert1 == prismNodeIDsGrid[ind4] &&   // ii = i.
+          vert2 == prismNodeIDsGrid[ind3]) {                                      // jj = nPoly-i-j.
+    d = g = nPolyConn; e = f = h = -1; b = 1;                                     // kk = nPoly-k.
+  }
+
+  else {
+    verticesDontMatch = true;
+  }
+
+  /*--- If non-matching vertices have been found, terminate with an error message. ---*/
+  if( verticesDontMatch ) {
+    cout << "In function CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPrism." << endl;
+    cout << "Corner vertices do not match. This should not happen." << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Loop over the DOFs of the original prism to create the connectivity
+        of the prism that corresponds to the new numbering. ---*/
+  const unsigned short kOff = (nPolyConn+1)*(nPolyConn+1);
+  unsigned short ind = 0;
+  for(unsigned short k=0; k<=nPolyConn; ++k) {
+    for(unsigned short j=0; j<=nPolyConn; ++j) {
+      unsigned short uppBoundI = nPolyConn - j;
+      for(unsigned short i=0; i<=uppBoundI; ++i, ++ind) {
+
+        /*--- Determine the ii, jj and kk indices of the new numbering, convert it to
+              a 1D index and shore the modified index in modConnPrism. ---*/
+        unsigned short ii   = a + i*b + j*c;
+        unsigned short jj   = d + i*e + j*f;
+        unsigned short kk   = g + h*k;
+        unsigned short iind = kk*kOff + jj*(nPolyConn+1) + ii - jj*(jj-1)/2;
+
+        modConnPrism[iind] = connPrism[ind];
+      }
+    }
+  }
+
+  /*--- The triangle corresponds to face 0 of the prism. Hence the first
+        kOff entries in modConnPrism are the DOFs of the triangle. Copy
+        these entries from modConnPrism. ---*/
+  for(unsigned short i=0; i<kOff; ++i)
+    modConnTria[i] = modConnPrism[i];
+}
+
+void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPyramid(
+                                const unsigned long         *cornerPointsTria,
+                                const unsigned short        nPolyGrid,
+                                const vector<unsigned long> &pyraNodeIDsGrid,
+                                const unsigned short        nPolyConn,
+                                const unsigned long         *connPyra,
+                                bool                        &swapFaceInElement,
+                                unsigned long               *modConnTria,
+                                unsigned long               *modConnPyra) {
+
+  /* Determine the indices of the five corner points of the pyramid. */
+  const unsigned short ind0 = 0;
+  const unsigned short ind1 = nPolyGrid;
+  const unsigned short ind2 = (nPolyGrid+1)*(nPolyGrid+1) -1;
+  const unsigned short ind3 = ind2 - nPolyGrid;
+  const unsigned short ind4 = (nPolyGrid+1)*(nPolyGrid+2)*(2*nPolyGrid+3)/6 -1;
+
+  /* Check if the top of the pyramid coincides with either corner point 1 or
+     corner point 2 of the triangle. Set swapFaceInElement accordingly. */
+  if(     cornerPointsTria[1] == pyraNodeIDsGrid[ind4]) swapFaceInElement = true;
+  else if(cornerPointsTria[2] == pyraNodeIDsGrid[ind4]) swapFaceInElement = false;
+  else {
+    cout << "In function CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPyramid." << endl;
+    cout << "Top of the pyramid does not coincide with either corner point 1 or 2." << endl;
+    cout << "This should not happen" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /* Easier storage of the two other corner points of the triangle in the new numbering.
+     vert0 always corresponds to cornerPointsTria[0], while vert1 contains the other
+     point that is not equal to the top of the pyramid. This depends on swapFaceInElement. */
+  const unsigned long vert0 = cornerPointsTria[0];
+  const unsigned long vert1 = swapFaceInElement ? cornerPointsTria[2] : cornerPointsTria[1];
+
+  /*--- There exists a linear mapping from the indices of the numbering used in
+        pyraNodeIDsGrid to the indices of the target numbering. This mapping is of
+        the form ii = a + b*i + c*j, jj = d + e*i + f*j and kk = k, where
+        ii,jj,kk are the indices of the new numbering and i,j,k the indices of
+        the numbering used in in pyraNodeIDsGrid (and connPyra). The values of
+        the coefficients a,b,c,d,e,f depend on how the corner points of the triangle
+        coincide with the corner points of the triangular face of the pyramid.
+        This is determined below. The bool verticesDontMatch is there to check
+        if vertices do not match. This should not happen, but it is checked for
+        security. ---*/
+  signed short a = 0, b = 0, c = 0, d = 0, e = 0, f = 0;
+  bool verticesDontMatch = false;
+
+  if(vert0 == pyraNodeIDsGrid[ind0] && vert1 == pyraNodeIDsGrid[ind1]) {   // ii = i.
+    b = f = 1;                                                             // jj = j.
+  }
+  else if(vert0 == pyraNodeIDsGrid[ind0] && vert1 == pyraNodeIDsGrid[ind3]) {   // ii = j.
+    c = e = 1;                                                                  // jj = i.
+  }
+
+  else if(vert0 == pyraNodeIDsGrid[ind1] && vert1 == pyraNodeIDsGrid[ind2]) {   // ii = j.
+    d = nPolyConn; c = 1; e = -1;                                               // jj = nPoly-i.
+  }
+  else if(vert0 == pyraNodeIDsGrid[ind1] && vert1 == pyraNodeIDsGrid[ind0]) {   // ii = nPoly-i.
+    a = nPolyConn; b = -1; f = 1;                                               // jj = j.
+  }
+
+  else if(vert0 == pyraNodeIDsGrid[ind2] && vert1 == pyraNodeIDsGrid[ind3]) {   // ii = nPoly-i.
+    a = d = nPolyConn; b = f = -1;                                              // jj = nPoly-j.
+  }
+  else if(vert0 == pyraNodeIDsGrid[ind2] && vert1 == pyraNodeIDsGrid[ind1]) {   // ii = nPoly-j.
+    a = d = nPolyConn; c = e = -1;                                              // jj = nPoly-i.
+  }
+
+  else if(vert0 == pyraNodeIDsGrid[ind3] && vert1 == pyraNodeIDsGrid[ind0]) {   // ii = nPoly-j.
+    a = nPolyConn; c = -1; e = 1;                                               // jj = i.
+  }
+  else if(vert0 == pyraNodeIDsGrid[ind3] && vert1 == pyraNodeIDsGrid[ind2]) {   // ii = i.
+    d = nPolyConn; b = 1; f = -1;                                               // jj = nPoly-j.
+  }
+
+  else {
+    verticesDontMatch = true;
+  }
+
+  /*--- If non-matching vertices have been found, terminate with an error message. ---*/
+  if( verticesDontMatch ) {
+    d = nPolyConn; c = 1; e = -1;
+    cout << "In function CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPyramid." << endl;
+    cout << "Corner vertices do not match. This should not happen." << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Loop over the DOFs of the original pyramid to create the connectivity
+        of the pyramid that corresponds to the new numbering. Note that the
+        outer k-loop is the same for both numberings. ---*/
+  unsigned short mPoly    = nPolyConn;
+  unsigned short offLevel = 0;
+
+  for(unsigned short k=0; k<=nPolyConn; ++k, --mPoly) {
+    unsigned short ind = offLevel;
+
+    /* Loop over the DOFs of the current quadrilateral. */
+    for(unsigned short j=0; j<=nPolyConn; ++j) {
+      for(unsigned short i=0; i<=nPolyConn; ++i, ++ind) {
+
+        /*--- Determine the ii and jj indices of the new numbering, convert it
+              to a 1D index and shore the modified index in modConnPyra. ---*/
+        unsigned short ii   = a + i*b + j*c;
+        unsigned short jj   = d + i*e + j*f;
+        unsigned short iind = offLevel + jj*(mPoly+1) + ii;
+
+        modConnPyra[iind] = connPyra[ind];
+      }
+    }
+
+    /* Update offLevel for the next quadrilateral level of the pyramid. */
+    offLevel += (mPoly+1)*(mPoly+1);
+  }
+
+  /*--- Determine the connectivity of the triangular face. ---*/
+  if( swapFaceInElement ) {
+
+    /*--- The parametric coordinates r and s of the triangle must be swapped
+          w.r.t. to the parametric coordinates of the face of the pyramid.
+          This means that the coordinate r of the triangle runs from the base
+          to the top of the pyramid. This corresponds to the k-direction of the
+          pyramid. Hence the s-direction of the triangle corresponds to the
+          i-direction of the pyramid. ---*/
+    mPoly    = nPolyConn;
+    offLevel = 0;
+    for(unsigned short k=0; k<=nPolyConn; ++k, --mPoly) {
+      for(unsigned short i=0; i<=mPoly; ++i) {
+        unsigned short iind = i*(nPolyConn+1) + k - i*(i-1)/2;
+        modConnTria[iind] = modConnPyra[offLevel+i];
+      }
+      offLevel += (mPoly+1)*(mPoly+1);
+    }
+  }
+  else {
+    /*--- The parametric coordinates r and s of the triangle correspond to the
+          parametric coordinates in i- and k-direction of the face of the
+          pyramid. So an easy copy can be made. ---*/
+    mPoly    = nPolyConn;
+    offLevel = 0;
+    unsigned short iind = 0;
+    for(unsigned short k=0; k<=nPolyConn; ++k, --mPoly) {
+      for(unsigned short i=0; i<=mPoly; ++i, ++iind) {
+        modConnTria[iind] = modConnPyra[offLevel+i];
+      }
+      offLevel += (mPoly+1)*(mPoly+1);
+    }
+  }
+}
+
+void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentTetrahedron(
+                                const unsigned long         *cornerPointsTria,
+                                const unsigned short        nPolyGrid,
+                                const vector<unsigned long> &tetNodeIDsGrid,
+                                const unsigned short        nPolyConn,
+                                const unsigned long         *connTet,
+                                unsigned long               *modConnTria,
+                                unsigned long               *modConnTet) {
+
+  /* Determine the indices of the four corner points of the tetrahedron. */
+  const unsigned short ind0 = 0;
+  const unsigned short ind1 = nPolyGrid;
+  const unsigned short ind2 = (nPolyGrid+1)*(nPolyGrid+2)/2 -1;
+  const unsigned short ind3 = (nPolyGrid+1)*(nPolyGrid+2)*(nPolyGrid+3)/6;
+
+  /* Easier storage of the three corner points of the triangle in the new numbering. */
+  const unsigned long vert0 = cornerPointsTria[0];
+  const unsigned long vert1 = cornerPointsTria[1];
+  const unsigned long vert2 = cornerPointsTria[2];
+
+  /*--- There exists a linear mapping from the indices of the numbering used in
+        tetNodeIDsGrid to the indices of the target numbering. This mapping is of
+        the form ii = a + b*i + c*j + d*k, jj = e + f*i + g*j + h*k and
+        kk = l + m*i + n*j + o*k, where ii,jj,kk are the indices of the new
+        numbering and i,j,k the indices of the numbering used in in tetNodeIDsGrid
+        (and connTet). The values of the coefficients a,b,c,d,e,f,g,h,l,m,n,o
+        depend on how the corner points of the triangle coincide with the corner points
+        of the tetrahedron. This is determined below. The bool verticesDontMatch is
+        there to check if vertices do not match. This should not happen, but
+        it is checked for security. ---*/
+  signed short a = 0, b = 0, c = 0, d = 0, e = 0, f = 0, g = 0, h = 0,
+               l = 0, m = 0, n = 0, o = 0;
+  bool verticesDontMatch = false;
+
+  if(vert0 == tetNodeIDsGrid[ind0] && vert1 == tetNodeIDsGrid[ind1] &&   // ii = i.
+     vert2 == tetNodeIDsGrid[ind2]) {                                    // jj = j.
+    b = g = o = 1;                                                       // kk = k.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind0] && vert1 == tetNodeIDsGrid[ind2] &&   // ii = j.
+          vert2 == tetNodeIDsGrid[ind1]) {                                    // jj = i.
+    c = f = o = 1;                                                            // kk = k.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind0] && vert1 == tetNodeIDsGrid[ind1] &&   // ii = i.
+          vert2 == tetNodeIDsGrid[ind3]) {                                    // jj = k.
+    b = h = n = 1;                                                            // kk = j.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind0] && vert1 == tetNodeIDsGrid[ind3] &&   // ii = k.
+          vert2 == tetNodeIDsGrid[ind1]) {                                    // jj = i.
+    d = f = n = 1;                                                            // kk = j.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind0] && vert1 == tetNodeIDsGrid[ind2] &&   // ii = j.
+          vert2 == tetNodeIDsGrid[ind3]) {                                    // jj = k.
+    c = h = m = 1;                                                            // kk = i.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind0] && vert1 == tetNodeIDsGrid[ind3] &&   // ii = k.
+          vert2 == tetNodeIDsGrid[ind2]) {                                    // jj = j.
+    d = g = m = 1;                                                            // kk = i.
+  }
+
+  else if(vert0 == tetNodeIDsGrid[ind1] && vert1 == tetNodeIDsGrid[ind0] &&   // ii = nPoly-i-j-k.
+          vert2 == tetNodeIDsGrid[ind2]) {                                    // jj = j.
+    a = nPolyConn; b = c = d = -1; g = o = 1;                                 // kk = k.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind1] && vert1 == tetNodeIDsGrid[ind2] &&   // ii = j.
+          vert2 == tetNodeIDsGrid[ind0]) {                                    // jj = nPoly-i-j-k.
+    e = nPolyConn; f = g = h = -1; c = o = 1;                                 // kk = k.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind1] && vert1 == tetNodeIDsGrid[ind0] &&   // ii = nPoly-i-j-k.
+          vert2 == tetNodeIDsGrid[ind3]) {                                    // jj = k.
+    a = nPolyConn; b = c = d = -1; h = n = 1;                                 // kk = j.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind1] && vert1 == tetNodeIDsGrid[ind3] &&   // ii = k.
+          vert2 == tetNodeIDsGrid[ind0]) {                                    // jj = nPoly-i-j-k.
+    e = nPolyConn; f = g = h = -1; d = n = 1;                                 // kk = j.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind1] && vert1 == tetNodeIDsGrid[ind2] &&   // ii = j.
+          vert2 == tetNodeIDsGrid[ind3]) {                                    // jj = k.
+    l = nPolyConn; m = n = o = -1; c = h = 1;                                 // kk = nPoly-i-j-k.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind1] && vert1 == tetNodeIDsGrid[ind3] &&   // ii = k.
+          vert2 == tetNodeIDsGrid[ind2]) {                                    // jj = j.
+    l = nPolyConn; m = n = o = -1; d = g = 1;                                 // kk = nPoly-i-j-k.
+  }
+
+  else if(vert0 == tetNodeIDsGrid[ind2] && vert1 == tetNodeIDsGrid[ind0] &&   // ii = nPoly-i-j-k.
+          vert2 == tetNodeIDsGrid[ind1]) {                                    // jj = i.
+    a = nPolyConn; b = c = d = -1; f = o = 1;                                 // kk = k.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind2] && vert1 == tetNodeIDsGrid[ind1] &&   // ii = i.
+          vert2 == tetNodeIDsGrid[ind0]) {                                    // jj = nPoly-i-j-k.
+    e = nPolyConn; f = g = h = -1; b = o = 1;                                 // kk = k.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind2] && vert1 == tetNodeIDsGrid[ind0] &&   // ii = nPoly-i-j-k.
+          vert2 == tetNodeIDsGrid[ind3]) {                                    // jj = k.
+    a = nPolyConn; b = c = d = -1; h = m = 1;                                 // kk = i.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind2] && vert1 == tetNodeIDsGrid[ind3] &&   // ii = k.
+          vert2 == tetNodeIDsGrid[ind0]) {                                    // jj = nPoly-i-j-k.
+    e = nPolyConn; f = g = h = -1; d = m = 1;                                 // kk = i.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind2] && vert1 == tetNodeIDsGrid[ind0] &&   // ii = nPoly-i-j-k.
+          vert2 == tetNodeIDsGrid[ind3]) {                                    // jj = k.
+    a = nPolyConn; b = c = d = -1; h = m = 1;                                 // kk = i.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind2] && vert1 == tetNodeIDsGrid[ind1] &&   // ii = i.
+          vert2 == tetNodeIDsGrid[ind3]) {                                    // jj = k.
+    l = nPolyConn; m = n = o = -1; b = h = 1;                                 // kk = nPoly-i-j-k.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind2] && vert1 == tetNodeIDsGrid[ind3] &&   // ii = k.
+          vert2 == tetNodeIDsGrid[ind1]) {                                    // jj = i.
+    l = nPolyConn; m = n = o = -1; d = f = 1;                                 // kk = nPoly-i-j-k.
+  }
+
+  else if(vert0 == tetNodeIDsGrid[ind3] && vert1 == tetNodeIDsGrid[ind0] &&   // ii = nPoly-i-j-k.
+          vert2 == tetNodeIDsGrid[ind1]) {                                    // jj = i.
+    a = nPolyConn; b = c = d = -1; f = n = 1;                                 // kk = j.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind3] && vert1 == tetNodeIDsGrid[ind1] &&   // ii = i.
+          vert2 == tetNodeIDsGrid[ind0]) {                                    // jj = nPoly-i-j-k.
+    e = nPolyConn; f = g = h = -1; b = n = 1;                                 // kk = j.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind3] && vert1 == tetNodeIDsGrid[ind0] &&   // ii = nPoly-i-j-k.
+          vert2 == tetNodeIDsGrid[ind2]) {                                    // jj = j.
+    a = nPolyConn; b = c = d = -1; g = m = 1;                                 // kk = i.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind3] && vert1 == tetNodeIDsGrid[ind2] &&   // ii = j.
+          vert2 == tetNodeIDsGrid[ind0]) {                                    // jj = nPoly-i-j-k.
+    e = nPolyConn; f = g = h = -1; c = m = 1;                                 // kk = i.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind3] && vert1 == tetNodeIDsGrid[ind1] &&   // ii = i.
+          vert2 == tetNodeIDsGrid[ind2]) {                                    // jj = j.
+    l = nPolyConn; m = n = o = -1; b = g = 1;                                 // kk = nPoly-i-j-k.
+  }
+  else if(vert0 == tetNodeIDsGrid[ind3] && vert1 == tetNodeIDsGrid[ind2] &&   // ii = j.
+          vert2 == tetNodeIDsGrid[ind1]) {                                    // jj = i.
+    l = nPolyConn; m = n = o = -1; c = f = 1;                                 // kk = nPoly-i-j-k.
+  }
+
+  else {
+    verticesDontMatch = true;
+  }
+
+  /*--- If non-matching vertices have been found, terminate with an error message. ---*/
+  if( verticesDontMatch ) {
+    cout << "In function CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentTetrahedron." << endl;
+    cout << "Corner vertices do not match. This should not happen." << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Some constants to convert the (ii,jj,kk) indices to a 1D index. ---*/
+  const unsigned short abv1 = (11 + 12*nPolyConn + 3*nPolyConn*nPolyConn);
+  const unsigned short abv2 = (2*nPolyConn + 3)*3;
+  const unsigned short abv3 = (nPolyConn + 2)*3;
+
+  /*--- Loop over the DOFs of the original tetrahedron to create the connectivity
+        of the tetrahedron that corresponds to the new numbering. ---*/
+  unsigned short ind = 0;
+  for(unsigned short k=0; k<=nPolyConn; ++k) {
+    unsigned short uppBoundJ = nPolyConn - k;
+    for(unsigned short j=0; j<=uppBoundJ; ++j) {
+      unsigned short uppBoundI = nPolyConn - k - j;
+      for(unsigned short i=0; i<=nPolyConn; ++i, ++ind) {
+
+        /*--- Determine the ii, jj and kk indices of the new numbering, convert it to
+              a 1D index and shore the modified index in modConnTet. ---*/
+        unsigned short ii   = a + i*b + j*c + k*d;
+        unsigned short jj   = e + i*f + j*g + k*h;
+        unsigned short kk   = l + i*m + j*n + k*o;
+        unsigned short iind = (abv1*kk + abv2*jj + 6*ii - abv3*kk*kk
+                            -  6*kk*jj - 3*jj*jj + kk*kk*kk)/6;
+
+        modConnTet[iind] = connTet[ind];
+      }
+    }
+  }
+
+  /*--- The triangle corresponds to face 0 of the tetrahedron. Hence the first
+        nn2 entries in modConnTet are the DOFs of the triangle. Copy these
+        entries from modConnTet. ---*/
+  const unsigned short nn2 = (nPolyConn+1)*(nPolyConn+2)/2;
+  for(unsigned short i=0; i<nn2; ++i)
+    modConnTria[i] = modConnTet[i];
 }

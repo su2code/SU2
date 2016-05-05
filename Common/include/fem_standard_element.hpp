@@ -975,6 +975,13 @@ private:
   unsigned short VTK_TypeElemSide0; /*!< \brief Type of the element on side 0 of the face using the VTK convention. */
   unsigned short VTK_TypeElemSide1; /*!< \brief Type of the element on side 1 of the face using the VTK convention. */
 
+  bool swapFaceInElementSide0;      /*!< \brief Whether or not the connectivity of the face must
+                                                be swapped compared to the face of the corresponding
+                                                standard element on side 0 of the face. */
+  bool swapFaceInElementSide1;      /*!< \brief Whether or not the connectivity of the face must
+                                                be swapped compared to the face of the corresponding
+                                                standard element on side 1 of the face. */
+
   vector<su2double> rDOFsFaceSide0;   /*!< \brief r-location of the DOFs on side 0 of the face. */
   vector<su2double> rDOFsFaceSide1;   /*!< \brief r-location of the DOFs on side 1 of the face. */
   vector<su2double> sDOFsFaceSide0;   /*!< \brief s-location of the DOFs on side 0 of the face, if needed. */
@@ -1010,20 +1017,26 @@ public:
 
   /*!
   * \brief Alternative constructor.
-  * \param[in] val_VTK_TypeFace    - The type of the face using the VTK convention.
-  * \param[in] val_VTK_TypeSide0   - Type of the element adjacent to side 0 of the face
-                                     using the VTK convention.
-  * \param[in] val_nPolySide0      - Polynomial degree of the element adjacent to side 0
-                                     of the face.
-  * \param[in] val_VTK_TypeSide1   - Type of the element adjacent to side 1 of the face
-                                     using the VTK convention.
-  * \param[in] val_nPolySide1      - Polynomial degree of the element adjacent to side 1
-                                     of the face.
-  * \param[in] val_constJac        - Whether or not the Jacobians are constant.
-  * \param[in] config              - Object, which contains the input parameters.
-  * \param[in] val_orderExact      - Default argument. If specified, it contains the
-                                     order of the polynomials that must be integrated
-                                     exactly by the integration rule.
+  * \param[in] val_VTK_TypeFace            - The type of the face using the VTK convention.
+  * \param[in] val_VTK_TypeSide0           - Type of the element adjacent to side 0 of the face
+                                             using the VTK convention.
+  * \param[in] val_nPolySide0              - Polynomial degree of the element adjacent to side 0
+                                             of the face.
+  * \param[in] val_VTK_TypeSide1           - Type of the element adjacent to side 1 of the face
+                                             using the VTK convention.
+  * \param[in] val_nPolySide1              - Polynomial degree of the element adjacent to side 1
+                                             of the face.
+  * \param[in] val_constJac                - Whether or not the Jacobians are constant.
+  * \param[in] val_swapFaceInElementSide0  - Whether or not the connectivity of the face must be
+                                             swapped compared to the face of the corresponding
+                                             standard element on side 0 of the face.
+  * \param[in] val_swapFaceInElementSide1  - Whether or not the connectivity of the face must be
+                                             swapped compared to the face of the corresponding
+                                             standard element on side 1 of the face.
+  * \param[in] config                      - Object, which contains the input parameters.
+  * \param[in] val_orderExact              - Default argument. If specified, it contains the
+                                             order of the polynomials that must be integrated
+                                             exactly by the integration rule.
   */
   FEMStandardInternalFaceClass(unsigned short val_VTK_TypeFace,
                                unsigned short val_VTK_TypeSide0,
@@ -1031,6 +1044,8 @@ public:
                                unsigned short val_VTK_TypeSide1,
                                unsigned short val_nPolySide1,
                                bool           val_constJac,
+                               bool           val_swapFaceInElementSide0,
+                               bool           val_swapFaceInElementSide1,
                                CConfig        *config,
                                unsigned short val_orderExact = 0);
   /*!
@@ -1048,23 +1063,31 @@ public:
 
   /*!
   * \brief Function, which checks if the function arguments correspond to this standard face.
-  * \param[in] val_VTK_TypeFace    - The type of the face using the VTK convention.
-  * \param[in] val_constJac        - Whether or not the Jacobians are constant.
-  * \param[in] val_VTK_TypeSide0   - Type of the element adjacent to side 0 of the face
-                                     using the VTK convention.
-  * \param[in] val_nPolySide0      - Polynomial degree of the element adjacent to side 0
-                                     of the face.
-  * \param[in] val_VTK_TypeSide1   - Type of the element adjacent to side 1 of the face
-                                     using the VTK convention.
-  * \param[in] val_nPolySide1      - Polynomial degree of the element adjacent to side 1
-                                     of the face.
+  * \param[in] val_VTK_TypeFace           - The type of the face using the VTK convention.
+  * \param[in] val_constJac               - Whether or not the Jacobians are constant.
+  * \param[in] val_VTK_TypeSide0          - Type of the element adjacent to side 0
+                                            of the face using the VTK convention.
+  * \param[in] val_nPolySide0             - Polynomial degree of the element adjacent
+                                            to side 0 of the face.
+  * \param[in] val_VTK_TypeSide1          - Type of the element adjacent to side 1
+                                            of the face using the VTK convention.
+  * \param[in] val_nPolySide1             - Polynomial degree of the element adjacent
+                                            to side 1 of the face.
+  * \param[in] val_swapFaceInElementSide0 - Whether or not the connectivity of the face must
+                                            be swapped w.r.t. the connectivity of face of the
+                                            element on side 0.
+  * \param[in] val_swapFaceInElementSide1 - Whether or not the connectivity of the face must
+  *                                         be swapped w.r.t. the connectivity of face of the
+  *                                         element on side 1.
   */
   bool SameStandardMatchingFace(unsigned short val_VTK_TypeFace,
                                 bool           val_constJac,
                                 unsigned short val_VTK_TypeSide0,
                                 unsigned short val_nPolySide0,
                                 unsigned short val_VTK_TypeSide1,
-                                unsigned short val_nPolySide1);
+                                unsigned short val_nPolySide1,
+                                bool           val_swapFaceInElementSide0,
+                                bool           val_swapFaceInElementSide1);
 private:
   /*!
   * \brief Function, which copies the data of the given object into the current object.
@@ -1077,6 +1100,9 @@ private:
            of the adjacent elements in the integration points of the face.
   * \param[in]  VTK_TypeElem          - Type of the element adjacent to the face using the VTK convention.
   * \param[in]  nPolyElem             - Polynomial degree of the element adjacent to the face.
+  * \param[in]  swapFaceInElement     - Whether or not the connectivity of the face must be swapped
+                                        to get the desired numbering compared to the numbering used in the
+                                        corresponding face of the element.
   * \param[out] nDOFsElem             - Number of DOFs of the element adjacent to the face.
   * \param[out] drLagBasisIntegration - r-derivatives of the basis functions in the integration points
                                         of the face.
@@ -1087,6 +1113,7 @@ private:
   */
   void DerivativesBasisFunctionsAdjacentElement(unsigned short    VTK_TypeElem,
                                                 unsigned short    nPolyElem,
+                                                const bool        swapFaceInElement,
                                                 unsigned short    &nDOFsElem,
                                                 vector<su2double> &drLagBasisIntegration,
                                                 vector<su2double> &dsLagBasisIntegration,
