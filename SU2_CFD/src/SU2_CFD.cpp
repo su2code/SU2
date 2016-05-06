@@ -157,7 +157,7 @@ int main(int argc, char *argv[]) {
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
 
     if( fem_solver ) {
-      switch( config->GetKind_FEM_Flow() ) {
+      switch( config_container[iZone]->GetKind_FEM_Flow() ) {
         case DG: {
           geometry_container[iZone][MESH_0] = new CMeshFEM_DG(geometry_aux, config_container[iZone]);
           break;
@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
    computed, and the multigrid levels are created using an agglomeration procedure. ---*/
   
   if( fem_solver ) {
-    switch( config->GetKind_FEM_Flow() ) {
+    switch( config_container[ZONE_0]->GetKind_FEM_Flow() ) {
       case DG: {
         Geometrical_Preprocessing_DGFEM(geometry_container, config_container, nZone);
         break;
