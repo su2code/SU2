@@ -3069,6 +3069,9 @@ void FEMStandardInternalFaceClass::Copy(const FEMStandardInternalFaceClass &othe
   VTK_TypeElemSide0 = other.VTK_TypeElemSide0;
   VTK_TypeElemSide1 = other.VTK_TypeElemSide1;
 
+  swapFaceInElementSide0 = other.swapFaceInElementSide0;
+  swapFaceInElementSide1 = other.swapFaceInElementSide1;
+
   rDOFsFaceSide0 = other.rDOFsFaceSide0;
   rDOFsFaceSide1 = other.rDOFsFaceSide1;
   sDOFsFaceSide0 = other.sDOFsFaceSide0;

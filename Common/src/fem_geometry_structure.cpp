@@ -1946,6 +1946,7 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
     }
   }
 
+  cout << "Size: " << standardMatchingFacesSol.size() << endl;
   cout << "CMeshFEM_DG::CreateFaces: Not implemented yet." << endl;
 #ifndef HAVE_MPI
   exit(EXIT_FAILURE);
@@ -2723,7 +2724,7 @@ void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentHexahedron(
     a = e = nPolyConn; d = f = -1; n = 1;                                     // kk = j.
   }
   else if(vert0 == hexaNodeIDsGrid[ind5] && vert1 == hexaNodeIDsGrid[ind4] && // ii = nPoly-i.
-          vert2 == hexaNodeIDsGrid[ind0] && vert3 == hexaNodeIDsGrid[ind0]) { // jj = nPoly-k.
+          vert2 == hexaNodeIDsGrid[ind0] && vert3 == hexaNodeIDsGrid[ind1]) { // jj = nPoly-k.
     a = e = nPolyConn; b = h = -1; n = 1;                                     // kk = j.
   }
 
@@ -2834,7 +2835,7 @@ void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentPrism(
   const unsigned short ind0 = 0;
   const unsigned short ind1 = nPolyGrid;
   const unsigned short ind2 = (nPolyGrid+1)*(nPolyGrid+2)/2 -1;
-  const unsigned short ind3 = (nPolyGrid+1)*(nPolyGrid+3)*nPolyGrid/2;
+  const unsigned short ind3 = (nPolyGrid+1)*(nPolyGrid+2)*nPolyGrid/2;
   const unsigned short ind4 = ind1 + ind3;
   const unsigned short ind5 = ind2 + ind3;
 
@@ -3127,9 +3128,14 @@ void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentPyramid(
   for(unsigned short k=0; k<=nPolyConn; ++k, --mPoly) {
     unsigned short ind = offLevel;
 
+    /* The variables of a and d in the transformation are actually flexible. */
+    /* Create the correct values of a and d for the current k-level.         */
+    const signed short aa = a ? mPoly : 0;
+    const signed short dd = d ? mPoly : 0;
+
     /* Loop over the DOFs of the current quadrilateral. */
-    for(unsigned short j=0; j<=nPolyConn; ++j) {
-      for(unsigned short i=0; i<=nPolyConn; ++i, ++ind) {
+    for(unsigned short j=0; j<=mPoly; ++j) {
+      for(unsigned short i=0; i<=mPoly; ++i, ++ind) {
 
         /*--- Determine the ii and jj indices of the new numbering, convert it
               to a 1D index and shore the modified index in modConnPyra. ---*/
@@ -3166,7 +3172,7 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPrism(
   const unsigned short ind0 = 0;
   const unsigned short ind1 = nPolyGrid;
   const unsigned short ind2 = (nPolyGrid+1)*(nPolyGrid+2)/2 -1;
-  const unsigned short ind3 = (nPolyGrid+1)*(nPolyGrid+3)*nPolyGrid/2;
+  const unsigned short ind3 = (nPolyGrid+1)*(nPolyGrid+2)*nPolyGrid/2;
   const unsigned short ind4 = ind1 + ind3;
   const unsigned short ind5 = ind2 + ind3;
 
@@ -3393,14 +3399,19 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPyramid(
   for(unsigned short k=0; k<=nPolyConn; ++k, --mPoly) {
     unsigned short ind = offLevel;
 
+    /* The variables of a and d in the transformation are actually flexible. */
+    /* Create the correct values of a and d for the current k-level.         */
+    const signed short aa = a ? mPoly : 0;
+    const signed short dd = d ? mPoly : 0;
+
     /* Loop over the DOFs of the current quadrilateral. */
-    for(unsigned short j=0; j<=nPolyConn; ++j) {
-      for(unsigned short i=0; i<=nPolyConn; ++i, ++ind) {
+    for(unsigned short j=0; j<=mPoly; ++j) {
+      for(unsigned short i=0; i<=mPoly; ++i, ++ind) {
 
         /*--- Determine the ii and jj indices of the new numbering, convert it
               to a 1D index and shore the modified index in modConnPyra. ---*/
-        unsigned short ii   = a + i*b + j*c;
-        unsigned short jj   = d + i*e + j*f;
+        unsigned short ii   = aa + i*b + j*c;
+        unsigned short jj   = dd + i*e + j*f;
         unsigned short iind = offLevel + jj*(mPoly+1) + ii;
 
         modConnPyra[iind] = connPyra[ind];
@@ -3459,7 +3470,7 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentTetrahedron(
   const unsigned short ind0 = 0;
   const unsigned short ind1 = nPolyGrid;
   const unsigned short ind2 = (nPolyGrid+1)*(nPolyGrid+2)/2 -1;
-  const unsigned short ind3 = (nPolyGrid+1)*(nPolyGrid+2)*(nPolyGrid+3)/6;
+  const unsigned short ind3 = (nPolyGrid+1)*(nPolyGrid+2)*(nPolyGrid+3)/6 -1;
 
   /* Easier storage of the three corner points of the triangle in the new numbering. */
   const unsigned long vert0 = cornerPointsTria[0];
@@ -3612,7 +3623,7 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentTetrahedron(
     unsigned short uppBoundJ = nPolyConn - k;
     for(unsigned short j=0; j<=uppBoundJ; ++j) {
       unsigned short uppBoundI = nPolyConn - k - j;
-      for(unsigned short i=0; i<=nPolyConn; ++i, ++ind) {
+      for(unsigned short i=0; i<=uppBoundI; ++i, ++ind) {
 
         /*--- Determine the ii, jj and kk indices of the new numbering, convert it to
               a 1D index and shore the modified index in modConnTet. ---*/
