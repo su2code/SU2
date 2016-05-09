@@ -156,6 +156,30 @@ protected:
   void Copy(const FEMStandardElementBaseClass &other);
 
   /*!
+  * \brief Function, which computes the values of the derivatives of the basis functions
+           of the adjacent elements in the integration points of the face.
+  * \param[in]  VTK_TypeElem          - Type of the element adjacent to the face using the VTK convention.
+  * \param[in]  nPolyElem             - Polynomial degree of the element adjacent to the face.
+  * \param[in]  swapFaceInElement     - Whether or not the connectivity of the face must be swapped
+                                        to get the desired numbering compared to the numbering used in the
+                                        corresponding face of the element.
+  * \param[out] nDOFsElem             - Number of DOFs of the element adjacent to the face.
+  * \param[out] drLagBasisIntegration - r-derivatives of the basis functions in the integration points
+                                        of the face.
+  * \param[out] dsLagBasisIntegration - s-derivatives of the basis functions in the integration points
+                                        of the face.
+  * \param[out] dtLagBasisIntegration - t-derivatives of the basis functions in the integration points
+                                        of the face.
+  */
+  void DerivativesBasisFunctionsAdjacentElement(unsigned short    VTK_TypeElem,
+                                                unsigned short    nPolyElem,
+                                                const bool        swapFaceInElement,
+                                                unsigned short    &nDOFsElem,
+                                                vector<su2double> &drLagBasisIntegration,
+                                                vector<su2double> &dsLagBasisIntegration,
+                                                vector<su2double> &dtLagBasisIntegration);
+
+  /*!
   * \brief Function, which determines the values of the Lagrangian interpolation
            functions and its derivatives in the given set of points for a line.
   * \param[in]  nPoly            - Polynomial degree of the interpolation functions.
@@ -1062,6 +1086,18 @@ public:
   FEMStandardInternalFaceClass& operator=(const FEMStandardInternalFaceClass &other);
 
   /*!
+  * \brief Function, which makes available the number of DOFs on side 0 of the face.
+  * \return  The number of DOFs on side 0.
+  */
+  unsigned short GetNDOFsFaceSide0(void) const;
+
+  /*!
+  * \brief Function, which makes available the number of DOFs on side 1 of the face.
+  * \return  The number of DOFs on side 1.
+  */
+  unsigned short GetNDOFsFaceSide1(void) const;
+
+  /*!
   * \brief Function, which checks if the function arguments correspond to this standard face.
   * \param[in] val_VTK_TypeFace           - The type of the face using the VTK convention.
   * \param[in] val_constJac               - Whether or not the Jacobians are constant.
@@ -1094,30 +1130,102 @@ private:
   * \param[in] other - Object, whose data is copied.
   */
   void Copy(const FEMStandardInternalFaceClass &other);
+};
+
+/*!
+ * \class FEMStandardBoundaryFaceClass
+ * \brief Class to define a FEM standard boundary face.
+ * \author E. van der Weide
+ * \version 4.1.2 "Cardinal"
+ */
+class FEMStandardBoundaryFaceClass : public FEMStandardElementBaseClass {
+private:
+  unsigned short nDOFsFace;    /*!< \brief Number of DOFs of the face. */
+
+  unsigned short nPolyElem;    /*!< \brief Polynomial degree of the element adjacent to the face. */
+  unsigned short nDOFsElem;    /*!< \brief Number of DOFs of the element adjacent element to the face. */
+  unsigned short VTK_TypeElem; /*!< \brief Type of the element adjacent to the face using the VTK convention. */
+
+  bool swapFaceInElement;      /*!< \brief Whether or not the connectivity of the face must be swapped compared
+                                           to the face of the corresponding standard element adjacent to the face. */
+
+  vector<su2double> rDOFsFace;   /*!< \brief r-location of the DOFs of the face. */
+  vector<su2double> sDOFsFace;   /*!< \brief s-location of the DOFs of the face, if needed. */
+
+  vector<su2double> lagBasisIntegration; /*!< \brief Lagrangian basis functions in the integration points
+                                                     of the face. */
+
+  vector<su2double> drLagBasisIntegrationElem; /*!< \brief r-derivatives of the Lagrangian basis functions in the
+                                                           integration points of the element adjacent to the face. */
+  vector<su2double> dsLagBasisIntegrationElem; /*!< \brief s-derivatives of the Lagrangian basis functions in the
+                                                           integration points of the element adjacent to the face. */
+  vector<su2double> dtLagBasisIntegrationElem; /*!< \brief t-derivatives of the Lagrangian basis functions in the
+                                                           integration points of the element adjacent to the face. */
+
+public:
+  /*!
+  * \brief Standard Constructor. Nothing to be done.
+  */
+  FEMStandardBoundaryFaceClass();
 
   /*!
-  * \brief Function, which computes the values of the derivatives of the basis functions
-           of the adjacent elements in the integration points of the face.
-  * \param[in]  VTK_TypeElem          - Type of the element adjacent to the face using the VTK convention.
-  * \param[in]  nPolyElem             - Polynomial degree of the element adjacent to the face.
-  * \param[in]  swapFaceInElement     - Whether or not the connectivity of the face must be swapped
-                                        to get the desired numbering compared to the numbering used in the
-                                        corresponding face of the element.
-  * \param[out] nDOFsElem             - Number of DOFs of the element adjacent to the face.
-  * \param[out] drLagBasisIntegration - r-derivatives of the basis functions in the integration points
-                                        of the face.
-  * \param[out] dsLagBasisIntegration - s-derivatives of the basis functions in the integration points
-                                        of the face.
-  * \param[out] dtLagBasisIntegration - t-derivatives of the basis functions in the integration points
-                                        of the face.
+  * \brief Destructor. Nothing to be done, because the vectors are deleted automatically.
   */
-  void DerivativesBasisFunctionsAdjacentElement(unsigned short    VTK_TypeElem,
-                                                unsigned short    nPolyElem,
-                                                const bool        swapFaceInElement,
-                                                unsigned short    &nDOFsElem,
-                                                vector<su2double> &drLagBasisIntegration,
-                                                vector<su2double> &dsLagBasisIntegration,
-                                                vector<su2double> &dtLagBasisIntegration);
+  ~FEMStandardBoundaryFaceClass();
+
+  /*!
+  * \brief Alternative constructor.
+  * \param[in] val_VTK_TypeFace       - The type of the face using the VTK convention.
+  * \param[in] val_VTK_TypeElem       - Type of the element adjacent to the face using the VTK convention.
+  * \param[in] val_nPolyElem          - Polynomial degree of the element adjacent to the face.
+  * \param[in] val_constJac           - Whether or not the Jacobians are constant.
+  * \param[in] val_swapFaceInElement  - Whether or not the connectivity of the face must be swapped compared
+                                        to the face of the corresponding standard element adjacent to the face.
+  * \param[in] config                 - Object, which contains the input parameters.
+  * \param[in] val_orderExact         - Default argument. If specified, it contains the order of the
+                                        polynomials that must be integrated exactly by the integration rule.
+  */
+  FEMStandardBoundaryFaceClass(unsigned short val_VTK_TypeFace,
+                               unsigned short val_VTK_TypeElem,
+                               unsigned short val_nPolyElem,
+                               bool           val_constJac,
+                               bool           val_swapFaceInElement,
+                               CConfig        *config,
+                               unsigned short val_orderExact = 0);
+
+  /*!
+  * \brief Copy constructor.
+  * \param[in] other - Object, whose data must be copied.
+  */
+  FEMStandardBoundaryFaceClass(const FEMStandardBoundaryFaceClass &other);
+
+  /*!
+  * \brief Assignment operator.
+  * \param[in] other - Object, to which this object must be assigned.
+  * \return The current object, after the member variables were assigned the correct value.
+  */
+  FEMStandardBoundaryFaceClass& operator=(const FEMStandardBoundaryFaceClass &other);
+
+  /*!
+  * \brief Function, which checks if the function arguments correspond to this standard face.
+  * \param[in] val_VTK_TypeFace   - The type of the face using the VTK convention.
+  * \param[in] val_constJac       - Whether or not the Jacobians are constant.
+  * \param[in] val_VTK_TypeElem   - Type of the element adjacent to the face using the VTK convention.
+  * \param[in] val_nPolyElem      - Polynomial degree of the element adjacent to the face.
+  * \param[in] val_swapFaceInElem - Whether or not the connectivity of the face must be swapped w.r.t.
+                                    the connectivity of face of the adjacent element.
+  */
+  bool SameStandardMatchingFace(unsigned short val_VTK_TypeFace,
+                                bool           val_constJac,
+                                unsigned short val_VTK_TypeElem,
+                                unsigned short val_nPolyElem,
+                                bool           val_swapFaceInElem);
+private:
+  /*!
+  * \brief Function, which copies the data of the given object into the current object.
+  * \param[in] other - Object, whose data is copied.
+  */
+  void Copy(const FEMStandardBoundaryFaceClass &other);
 };
 
 #include "fem_standard_element.inl"

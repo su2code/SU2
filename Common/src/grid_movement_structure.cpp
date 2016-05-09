@@ -5763,7 +5763,9 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
 }
 
 void CSurfaceMovement::SetCurved_Surfaces(CGeometry *geometry, CConfig *config, unsigned short iZone, unsigned long iter) {
-  
+ 
+#ifdef HAVE_GELITE
+
   int rank;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -5790,8 +5792,6 @@ void CSurfaceMovement::SetCurved_Surfaces(CGeometry *geometry, CConfig *config, 
   Read the file that contains the data base, if specified.
   Build the BSP tree for optimized projections.  ---*/
 
-#ifdef HAVE_GELITE
-  
   /*--- Set the user specified values for the member 
    variables of the data base. ---*/
   ProjectionDatabase projectionDatabase;
@@ -5828,8 +5828,6 @@ void CSurfaceMovement::SetCurved_Surfaces(CGeometry *geometry, CConfig *config, 
 #endif
   }
   
-#endif
-  
   /*--- Loop through to find only moving surface markers ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -5849,8 +5847,6 @@ void CSurfaceMovement::SetCurved_Surfaces(CGeometry *geometry, CConfig *config, 
         /*--- Get current coordinates and prepare to call GELite ---*/
         
         Coord_Old = geometry->node[iPoint]->GetCoord();
-        
-#ifdef HAVE_GELITE
         
         Vector3D Coordinate;
         Coordinate[Vector3D::iX] = Coord_Old[0];
@@ -5881,21 +5877,6 @@ void CSurfaceMovement::SetCurved_Surfaces(CGeometry *geometry, CConfig *config, 
         else
           VarCoord[2] = 0.0;
         
-#else
-        /*--- Write an error message the GELite is needed to carry out
-              the projection onto the geometry. ---*/
-
-        cout << " GELite support is needed to carry out this task" << endl;
-
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#endif
-
-#endif
-        
         /*--- Set surface node location changes to be imposed 
          for the volume mesh deformation ---*/
         
@@ -5904,6 +5885,22 @@ void CSurfaceMovement::SetCurved_Surfaces(CGeometry *geometry, CConfig *config, 
       }
     }
   }
+
+#else
+  /*--- Write an error message the GELite is needed to carry out
+        the projection onto the geometry. ---*/
+
+  cout << " Function: CSurfaceMovement::SetCurved_Surfaces" << endl;
+  cout << " GELite support is needed to carry out this task" << endl;
+
+#ifndef HAVE_MPI
+  exit(EXIT_FAILURE);
+#else
+  MPI_Abort(MPI_COMM_WORLD,1);
+  MPI_Finalize();
+#endif
+
+#endif
 }
 
 void CSurfaceMovement::SetNACA_4Digits(CGeometry *boundary, CConfig *config) {

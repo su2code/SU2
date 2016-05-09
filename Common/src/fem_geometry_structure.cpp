@@ -359,7 +359,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     unsigned long indL = 3;
     unsigned long indS = 3;
-    for(unsigned long j=0; j<longSendBuf[i][0]; ++j) {
+    for(long j=0; j<longSendBuf[i][0]; ++j) {
       short nDOFsGrid = shortSendBuf[i][indS], nFaces = shortSendBuf[i][indS+2];
       indS += 2*nFaces+7;
 
@@ -543,7 +543,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   for(int i=0; i<nRankRecv; ++i) {
     unsigned long indL = 1, indS = 0;
-    for(unsigned long j=0; j<longRecvBuf[i][0]; ++j) {
+    for(long j=0; j<longRecvBuf[i][0]; ++j) {
       globalElemID.push_back(longRecvBuf[i][indL]);
 
       unsigned short nDOFsGrid = shortRecvBuf[i][indS+3];
@@ -579,7 +579,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   for(int i=0; i<nRankRecv; ++i) {
     unsigned long indL = 1, indS = 0;
-    for(unsigned long j=0; j<longRecvBuf[i][0]; ++j) {
+    for(long j=0; j<longRecvBuf[i][0]; ++j) {
       unsigned short nDOFsGrid = shortRecvBuf[i][indS+3];
       unsigned short nFaces    = shortRecvBuf[i][indS+5];
 
@@ -643,7 +643,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     /* The data for the volume elements. Loop over these elements in the buffer. */
     unsigned long indL = 1, indS = 0, indD = 0;
-    for(unsigned long j=0; j<longRecvBuf[i][0]; ++j) {
+    for(long j=0; j<longRecvBuf[i][0]; ++j) {
 
       /* Determine the location in volElem where this data must be stored. */
       unsigned long elemID = longRecvBuf[i][indL++];
@@ -905,7 +905,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       /* Determine the local index of the element in the original partitioning.
          Check if the index is valid. */
       long locElemInd = longRecvBuf[i][indL] - geometry->starting_node[rank];
-      if(locElemInd < 0 || locElemInd >= geometry->npoint_procs[rank]) {
+      if(locElemInd < 0 || locElemInd >= (long) geometry->npoint_procs[rank]) {
         cout << locElemInd << " " << geometry->npoint_procs[rank] << endl;
         cout << "Invalid local element ID in function CMeshFEM::CMeshFEM" << endl;
 #ifndef HAVE_MPI
@@ -1549,9 +1549,10 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   }
 
   /*---------------------------------------------------------------------------*/
-  /*--- Step 2: Create the local face based data structure for the internal ---*/
-  /*---         faces. These are needed for the computation of the surface  ---*/
-  /*---         integral in DG-FEM.                                         ---*/
+  /*--- Step 2: Preparation of the localFaces vector, such that the info    ---*/
+  /*---         stored in this vector can be separated in a contribution    ---*/
+  /*---         from the internal faces and a contribution from the faces   ---*/
+  /*---         that belong to physical boundaries.                         ---*/
   /*---------------------------------------------------------------------------*/
 
   /* Sort localFaces again, but now such that the boundary faces are numbered
@@ -1702,6 +1703,12 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 #endif
   }
 
+  /*---------------------------------------------------------------------------*/
+  /*--- Step 3: Create the local face based data structure for the internal ---*/
+  /*---         faces. These are needed for the computation of the surface  ---*/
+  /*---         integral in DG-FEM.                                         ---*/
+  /*---------------------------------------------------------------------------*/
+
   /*--- Determine the sizes of the vectors, which store the connectivity of the faces.
         Note that these sizes must be determined beforehand, such that no resize needs
         to be carried out when the data is actually set. ---*/
@@ -1767,13 +1774,13 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   VecDOFsSolElementSide0.resize(sizeVecDOFsSolElementSide0);
   VecDOFsSolElementSide1.resize(sizeVecDOFsSolElementSide1);
 
-  /*--- Loop over the standard volume elements to determine the maximum number
-        of DOFs for the volume elements. Allocate the memory for the vector
-        used to store the DOFs of the element.  ---*/
+  /*--- Loop over the volume elements to determine the maximum number
+        of DOFs for the volume elements. Allocate the memory for the
+        vector used to store the DOFs of the element.  ---*/
   unsigned short nDOFsVolMax = 0;
-  for(unsigned long i=0; i<standardElementsSol.size(); ++i) {
-    nDOFsVolMax = max(nDOFsVolMax, standardElementsSol[i].GetNDOFs());
-    nDOFsVolMax = max(nDOFsVolMax, standardElementsGrid[i].GetNDOFs());
+  for(unsigned long i=0; i<nVolElemTot; ++i) {
+    nDOFsVolMax = max(nDOFsVolMax, volElem[i].nDOFsGrid);
+    nDOFsVolMax = max(nDOFsVolMax, volElem[i].nDOFsSol);
   }
 
   vector<unsigned long> DOFsElem(nDOFsVolMax);
@@ -1946,7 +1953,11 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
     }
   }
 
-  cout << "Size: " << standardMatchingFacesSol.size() << endl;
+  /*---------------------------------------------------------------------------*/
+  /*--- Step 4: Create the local face based data structure for the faces    ---*/
+  /*---         that belong to the physical boundaries.                     ---*/
+  /*---------------------------------------------------------------------------*/
+
   cout << "CMeshFEM_DG::CreateFaces: Not implemented yet." << endl;
 #ifndef HAVE_MPI
   exit(EXIT_FAILURE);
@@ -2008,9 +2019,9 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
 
   /*--- Determine the number of ranks and the current rank. ---*/
   int nRank = SINGLE_NODE;
-  int rank  = MASTER_NODE;
 
 #ifdef HAVE_MPI
+  int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nRank);
 #endif
@@ -2043,7 +2054,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
 
   ranksComm.resize(rankToIndCommBuf.size());
   map<int,int>::const_iterator MI = rankToIndCommBuf.begin();
-  for(int i=0; i<rankToIndCommBuf.size(); ++i, ++MI)
+  for(unsigned long i=0; i<rankToIndCommBuf.size(); ++i, ++MI)
     ranksComm[i] = MI->first;
 
   /* Define and determine the buffers to send the global indices of my halo
@@ -2981,7 +2992,7 @@ void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentPrism(
 
   /*--- Loop over the DOFs of the original prism to create the connectivity
         of the prism that corresponds to the new numbering. ---*/
-  const unsigned short kOff = (nPolyConn+1)*(nPolyConn+1);
+  const unsigned short kOff = (nPolyConn+1)*(nPolyConn+2)/2;
   unsigned short ind = 0;
   for(unsigned short k=0; k<=nPolyConn; ++k) {
     for(unsigned short j=0; j<=nPolyConn; ++j) {
@@ -3139,8 +3150,8 @@ void CMeshFEM_DG::CreateConnectivitiesQuadrilateralAdjacentPyramid(
 
         /*--- Determine the ii and jj indices of the new numbering, convert it
               to a 1D index and shore the modified index in modConnPyra. ---*/
-        unsigned short ii   = a + i*b + j*c;
-        unsigned short jj   = d + i*e + j*f;
+        unsigned short ii   = aa + i*b + j*c;
+        unsigned short jj   = dd + i*e + j*f;
         unsigned short iind = offLevel + jj*(mPoly+1) + ii;
 
         modConnPyra[iind] = connPyra[ind];
@@ -3267,7 +3278,7 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentPrism(
 
   /*--- Loop over the DOFs of the original prism to create the connectivity
         of the prism that corresponds to the new numbering. ---*/
-  const unsigned short kOff = (nPolyConn+1)*(nPolyConn+1);
+  const unsigned short kOff = (nPolyConn+1)*(nPolyConn+2)/2;
   unsigned short ind = 0;
   for(unsigned short k=0; k<=nPolyConn; ++k) {
     for(unsigned short j=0; j<=nPolyConn; ++j) {

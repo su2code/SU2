@@ -194,6 +194,195 @@ void FEMStandardElementBaseClass::Copy(const FEMStandardElementBaseClass &other)
   wIntegration = other.wIntegration;
 }
 
+void FEMStandardElementBaseClass::DerivativesBasisFunctionsAdjacentElement(
+                                        unsigned short    VTK_TypeElem,
+                                        unsigned short    nPolyElem,
+                                        const bool        swapFaceInElement,
+                                        unsigned short    &nDOFsElem,
+                                        vector<su2double> &drLagBasisIntegration,
+                                        vector<su2double> &dsLagBasisIntegration,
+                                        vector<su2double> &dtLagBasisIntegration) {
+
+  /*--- Define a number of dummy variables, such that the general functions
+        to compute the gradients of the basis functions can be used. ---*/
+  vector<su2double> rDOFsDummy, sDOFsDummy, tDOFsDummy, lagBasisPointsDummy;
+
+  /*--- Determine the type of the face. ---*/
+  switch( VTK_Type ) {
+
+    case LINE: {
+
+      /*--- The face element is a line. The adjacent element can be either a
+            triangle or a quadrilateral. In order to use the member functions
+            LagrangianBasisFunctionAndDerivativesTriangle and
+            LagrangianBasisFunctionAndDerivativesQuadrilateral the parametric
+            s-coordinates must be set to -1 for both the triangle and
+            the quadrilateral. The convention used in this code is that the
+            face is face 0 of standard element, which corresponds to s = -1. ---*/
+      vector<su2double> sInt(nIntegration, -1.0);
+
+      switch( VTK_TypeElem ) {
+        case TRIANGLE:
+          LagrangianBasisFunctionAndDerivativesTriangle(nPolyElem,  rIntegration,
+                                                        sInt,       nDOFsElem,
+                                                        rDOFsDummy, sDOFsDummy,
+                                                        lagBasisPointsDummy,
+                                                        drLagBasisIntegration,
+                                                        dsLagBasisIntegration);
+          break;
+
+        case QUADRILATERAL:
+          LagrangianBasisFunctionAndDerivativesQuadrilateral(nPolyElem,  rIntegration,
+                                                             sInt,       nDOFsElem,
+                                                             rDOFsDummy, sDOFsDummy,
+                                                             lagBasisPointsDummy,
+                                                             drLagBasisIntegration,
+                                                             dsLagBasisIntegration);
+          break;
+      }
+
+      break;
+    }
+
+    case TRIANGLE: {
+
+      /*---- The face element is a triangle. The adjacent element can be a tetrahedron,
+             a pyramid or a prism. For the tetrahedron and the prism the convention is
+             that the face is face 0 of these elements, which corresponds to a
+             parametric coordinate t = -1. For the pyramid the situation is a bit more
+             complicated. The face corresponds to face 1 of the pyramid. However, it
+             is possible that the connectivity of triangle must be swapped compared to
+             the connectivity of the corresponding face of the pyramid. If this is the
+             case, also the parametric coordinates of the integration points must be
+             swapped in order to get the correct behavior. ---*/
+
+      switch( VTK_TypeElem ) {
+
+        case TETRAHEDRON: {
+          vector<su2double> tInt(nIntegration, -1.0);
+
+          LagrangianBasisFunctionAndDerivativesTetrahedron(nPolyElem,    rIntegration,
+                                                           sIntegration, tInt,
+                                                           nDOFsElem,    rDOFsDummy,
+                                                           sDOFsDummy,   tDOFsDummy,
+                                                           lagBasisPointsDummy,
+                                                           drLagBasisIntegration,
+                                                           dsLagBasisIntegration,
+                                                           dtLagBasisIntegration);
+          break;
+        }
+
+        case PRISM: {
+          vector<su2double> tInt(nIntegration, -1.0);
+
+          LagrangianBasisFunctionAndDerivativesPrism(nPolyElem,    rIntegration,
+                                                     sIntegration, tInt,
+                                                     nDOFsElem,    rDOFsDummy,
+                                                     sDOFsDummy,   tDOFsDummy,
+                                                     lagBasisPointsDummy,
+                                                     drLagBasisIntegration,
+                                                     dsLagBasisIntegration,
+                                                     dtLagBasisIntegration);
+          break;
+        }
+
+        case PYRAMID: {
+          vector<su2double> rInt(nIntegration), sInt(nIntegration), tInt(nIntegration);
+          if( swapFaceInElement ) {
+            for(unsigned short i=0; i<nIntegration; ++i) {
+              rInt[i] = sIntegration[i] + 0.5*(rIntegration[i]+1.0);
+              sInt[i] = 0.5*(rIntegration[i]-1.0);
+              tInt[i] = rIntegration[i];
+            }
+          }
+          else {
+            for(unsigned short i=0; i<nIntegration; ++i) {
+              rInt[i] = rIntegration[i] + 0.5*(sIntegration[i]+1.0);
+              sInt[i] = 0.5*(sIntegration[i]-1.0);
+              tInt[i] = sIntegration[i];
+            }
+          }
+
+          LagrangianBasisFunctionAndDerivativesPyramid(nPolyElem,  rInt,
+                                                       sInt,       tInt,
+                                                       nDOFsElem,  rDOFsDummy,
+                                                       sDOFsDummy, tDOFsDummy,
+                                                       lagBasisPointsDummy,
+                                                       drLagBasisIntegration,
+                                                       dsLagBasisIntegration,
+                                                       dtLagBasisIntegration);
+          break;
+        }
+      }
+
+      break;
+    }
+
+    case QUADRILATERAL: {
+
+      /*--- The face element is a quadrilateral. The adjacent element can be a pyramid,
+            a prism or a hexahedron. For the pyramid and the hexahedron the convention
+            is that the face is face 0 of these elements, which corresponds to a
+            parametric coordinate t = -1. For the prism, the convention is that the
+            face is face 2 of the standard prism, which corresponds to a parametric
+            coordinate s = -1. Furthermore, for the prism it could be necessary that a
+            swap of the parametric coordinates of the face was needed in order to obtain
+            the desired sequence. If that is the case, also the integration points of
+            the quadrilateral face must be swapped. ---*/
+
+      switch( VTK_TypeElem ) {
+
+        case HEXAHEDRON: {
+          vector<su2double> tInt(nIntegration, -1.0);
+
+          LagrangianBasisFunctionAndDerivativesHexahedron(nPolyElem,    rIntegration,
+                                                          sIntegration, tInt,
+                                                          nDOFsElem,    rDOFsDummy,
+                                                          sDOFsDummy,   tDOFsDummy,
+                                                          lagBasisPointsDummy,
+                                                          drLagBasisIntegration,
+                                                          dsLagBasisIntegration,
+                                                          dtLagBasisIntegration);
+          break;
+        }
+
+        case PRISM: {
+          vector<su2double> sInt(nIntegration, -1.0), rInt, tInt;
+
+          if( swapFaceInElement ) {rInt = sIntegration; tInt = rIntegration;}
+          else                    {rInt = rIntegration; tInt = sIntegration;}
+
+          LagrangianBasisFunctionAndDerivativesPrism(nPolyElem,  rInt,
+                                                     sInt,       tInt,
+                                                     nDOFsElem,  rDOFsDummy,
+                                                     sDOFsDummy, tDOFsDummy,
+                                                     lagBasisPointsDummy,
+                                                     drLagBasisIntegration,
+                                                     dsLagBasisIntegration,
+                                                     dtLagBasisIntegration);
+          break;
+        }
+
+        case PYRAMID: {
+          vector<su2double> tInt(nIntegration, -1.0);
+
+          LagrangianBasisFunctionAndDerivativesPyramid(nPolyElem,    rIntegration,
+                                                       sIntegration, tInt,
+                                                       nDOFsElem,    rDOFsDummy,
+                                                       sDOFsDummy,   tDOFsDummy,
+                                                       lagBasisPointsDummy,
+                                                       drLagBasisIntegration,
+                                                       dsLagBasisIntegration,
+                                                       dtLagBasisIntegration);
+          break;
+        }
+      }
+
+      break;
+    }
+  }
+}
+
 void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesLine(
                                        const unsigned short    nPoly,
                                        const vector<su2double> &rPoints,
@@ -810,7 +999,8 @@ void FEMStandardElementBaseClass::InverseMatrix(unsigned short    n,
                                                 vector<su2double> &A) {
 
  /*--- Check the dimensions of A. ---*/
- if(A.size() != n*n) {
+ unsigned long nEntities = n*n;
+ if(A.size() != nEntities) {
    cout << "Wrong size of the A matrix in InverseMatrix" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -1010,7 +1200,8 @@ void FEMStandardElementBaseClass::Vandermonde1D(unsigned short          nDOFs,
   /*--- Determine the number or rows of the Vandermonde matrix and check
         if the dimension of V is correct.     ---*/
   unsigned short nRows = r.size();
-  if(V.size() != nRows*nDOFs) {
+  unsigned long  nEntities = nRows*nDOFs;
+  if(V.size() != nEntities) {
     cout << "Wrong size of the V matrix in Vandermonde1D" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -1036,7 +1227,8 @@ void FEMStandardElementBaseClass::GradVandermonde1D(unsigned short          nDOF
   /*--- Determine the number or rows of the gradient of the Vandermonde matrix
         and check if the dimension of VDr is correct.     ---*/
   unsigned short nRows = r.size();
-  if(VDr.size() != nRows*nDOFs) {
+  unsigned long  nEntities = nRows*nDOFs;
+  if(VDr.size() != nEntities) {
     cout << "Wrong size of the VDr matrix in GradVandermonde1D" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -1064,7 +1256,8 @@ void FEMStandardElementBaseClass::Vandermonde2D_Triangle(unsigned short         
   /*--- Determine the number or rows of the Vandermonde matrix and check
         if the dimension of V is correct.     ---*/
   unsigned short nRows = r.size();
-  if(V.size() != nRows*nDOFs) {
+  unsigned long  nEntities = nRows*nDOFs;
+  if(V.size() != nEntities) {
     cout << "Wrong size of the V matrix in Vandermonde2D_Triangle" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -1107,7 +1300,8 @@ void FEMStandardElementBaseClass::GradVandermonde2D_Triangle(unsigned short     
   /*--- Determine the number or rows of the gradient of the Vandermonde matrix
         and check if the dimensions of VDr and VDs are correct.     ---*/
   unsigned short nRows = r.size();
-  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs) {
+  unsigned long  nEntities = nRows*nDOFs;
+  if(VDr.size() != nEntities || VDs.size() != nEntities) {
     cout << "Wrong size of the VDr and/or VDs matrices in GradVandermonde2D_Triangle" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -1168,7 +1362,8 @@ void FEMStandardElementBaseClass::Vandermonde2D_Quadrilateral(unsigned short    
   /*--- Determine the number or rows of the Vandermonde matrix and check
         if the dimension of V is correct.     ---*/
   unsigned short nRows = r.size();
-  if(V.size() != nRows*nDOFs) {
+  unsigned long  nEntities = nRows*nDOFs;
+  if(V.size() != nEntities) {
     cout << "Wrong size of the V matrix in Vandermonde2D_Quadrilateral" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -1201,7 +1396,8 @@ void FEMStandardElementBaseClass::GradVandermonde2D_Quadrilateral(unsigned short
   /*--- Determine the number or rows of the gradient of the Vandermonde matrix
         and check if the dimensions of VDr and VDs are correct.     ---*/
   unsigned short nRows = r.size();
-  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs) {
+  unsigned long  nEntities = nRows*nDOFs;
+  if(VDr.size() != nEntities || VDs.size() != nEntities) {
     cout << "Wrong size of the VDr and/or VDs matrices in GradVandermonde2D_Quadrilateral" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -1236,7 +1432,8 @@ void FEMStandardElementBaseClass::Vandermonde3D_Tetrahedron(unsigned short      
   /*--- Determine the number or rows of the Vandermonde matrix and check
         if the dimension of V is correct.     ---*/
   unsigned short nRows = r.size();
-  if(V.size() != nRows*nDOFs) {
+  unsigned long  nEntities = nRows*nDOFs;
+  if(V.size() != nEntities) {
     cout << "Wrong size of the V matrix in Vandermonde3D_Tetrahedron" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -1290,7 +1487,8 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Tetrahedron(unsigned short  
   /*--- Determine the number or rows of the gradient of the Vandermonde matrix
         and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
   unsigned short nRows = r.size();
-  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs || VDt.size() != nRows*nDOFs) {
+  unsigned long  nEntities = nRows*nDOFs;
+  if(VDr.size() != nEntities || VDs.size() != nEntities || VDt.size() != nEntities) {
     cout << "Wrong size of the VDr, VDs and VDt matrices in GradVandermonde3D_Tetrahedron" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -1384,7 +1582,8 @@ void FEMStandardElementBaseClass::Vandermonde3D_Pyramid(unsigned short          
   /*--- Determine the number or rows of the Vandermonde matrix and check
         if the dimension of V is correct.     ---*/
   unsigned short nRows = r.size();
-  if(V.size() != nRows*nDOFs) {
+  unsigned long  nEntities = nRows*nDOFs;
+  if(V.size() != nEntities) {
     cout << "Wrong size of the V matrix in Vandermonde3D_Pyramid" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -1438,7 +1637,8 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Pyramid(unsigned short      
   /*--- Determine the number or rows of the gradient of the Vandermonde matrix
         and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
   unsigned short nRows = r.size();
-  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs || VDt.size() != nRows*nDOFs) {
+  unsigned long  nEntities = nRows*nDOFs;
+  if(VDr.size() != nEntities || VDs.size() != nEntities || VDt.size() != nEntities) {
     cout << "Wrong size of the VDr, VDs and VDt matrices in GradVandermonde3D_Pyramid" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -1528,7 +1728,8 @@ void FEMStandardElementBaseClass::Vandermonde3D_Prism(unsigned short          nP
   /*--- Determine the number or rows of the Vandermonde matrix and check
         if the dimension of V is correct.     ---*/
   unsigned short nRows = r.size();
-  if(V.size() != nRows*nDOFs) {
+  unsigned long  nEntities = nRows*nDOFs;
+  if(V.size() != nEntities) {
     cout << "Wrong size of the V matrix in Vandermonde3D_Prism" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -1579,7 +1780,8 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Prism(unsigned short        
   /*--- Determine the number or rows of the gradient of the Vandermonde matrix
         and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
   unsigned short nRows = r.size();
-  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs || VDt.size() != nRows*nDOFs) {
+  unsigned long  nEntities = nRows*nDOFs;
+  if(VDr.size() != nEntities || VDs.size() != nEntities || VDt.size() != nEntities) {
     cout << "Wrong size of the VDr, VDs and VDt matrices in GradVandermonde3D_Prism" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -1655,7 +1857,8 @@ void FEMStandardElementBaseClass::Vandermonde3D_Hexahedron(unsigned short       
   /*--- Determine the number or rows of the Vandermonde matrix and check
         if the dimension of V is correct.     ---*/
   unsigned short nRows = r.size();
-  if(V.size() != nRows*nDOFs) {
+  unsigned long  nEntities = nRows*nDOFs;
+  if(V.size() != nEntities) {
     cout << "Wrong size of the V matrix in Vandermonde3D_Hexahedron" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -1693,7 +1896,8 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Hexahedron(unsigned short   
   /*--- Determine the number or rows of the gradient of the Vandermonde matrix
         and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
   unsigned short nRows = r.size();
-  if(VDr.size() != nRows*nDOFs || VDs.size() != nRows*nDOFs || VDt.size() != nRows*nDOFs) {
+  unsigned long  nEntities = nRows*nDOFs;
+  if(VDr.size() != nEntities || VDs.size() != nEntities || VDt.size() != nEntities) {
     cout << "Wrong size of the VDr, VDs and VDt matrices in GradVandermonde3D_Hexahedron" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
@@ -3088,191 +3292,111 @@ void FEMStandardInternalFaceClass::Copy(const FEMStandardInternalFaceClass &othe
   dtLagBasisIntegrationSide1 = other.dtLagBasisIntegrationSide1;
 }
 
-void FEMStandardInternalFaceClass::DerivativesBasisFunctionsAdjacentElement(
-                                        unsigned short    VTK_TypeElem,
-                                        unsigned short    nPolyElem,
-                                        const bool        swapFaceInElement,
-                                        unsigned short    &nDOFsElem,
-                                        vector<su2double> &drLagBasisIntegration,
-                                        vector<su2double> &dsLagBasisIntegration,
-                                        vector<su2double> &dtLagBasisIntegration) {
+/*----------------------------------------------------------------------------------*/
+/*         Public member functions of FEMStandardBoundaryFaceClass.                 */
+/*----------------------------------------------------------------------------------*/
 
-  /*--- Define a number of dummy variables, such that the general functions
-        to compute the gradients of the basis functions can be used. ---*/
-  vector<su2double> rDOFsDummy, sDOFsDummy, tDOFsDummy, lagBasisPointsDummy;
+FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(unsigned short val_VTK_TypeFace,
+                                                           unsigned short val_VTK_TypeElem,
+                                                           unsigned short val_nPolyElem,
+                                                           bool           val_constJac,
+                                                           bool           val_swapFaceInElement,
+                                                           CConfig        *config,
+                                                           unsigned short val_orderExact)
 
-  /*--- Determine the type of the face. ---*/
+  : FEMStandardElementBaseClass(val_VTK_TypeFace, val_nPolyElem,
+                                val_constJac, config, val_orderExact) {
+
+  /*--- Copy the function arguments to the member variables. ---*/
+  nPolyElem         = val_nPolyElem;
+  VTK_TypeElem      = val_VTK_TypeElem;
+  swapFaceInElement = val_swapFaceInElement;
+
+  /*--- Determine the Lagrangian basis functions in the integration points of the
+        face. The derivatives of the basis functions are not needed for the face,
+        hence dummy values can be passed to these functions. ---*/
+  vector<su2double> dummyGrad;
+
   switch( VTK_Type ) {
-
-    case LINE: {
-
-      /*--- The face element is a line. The adjacent element can be either a
-            triangle or a quadrilateral. In order to use the member functions
-            LagrangianBasisFunctionAndDerivativesTriangle and
-            LagrangianBasisFunctionAndDerivativesQuadrilateral the parametric
-            s-coordinates must be set to -1 for both the triangle and
-            the quadrilateral. The convention used in this code is that the
-            face is face 0 of standard element, which corresponds to s = -1. ---*/
-      vector<su2double> sInt(nIntegration, -1.0);
-
-      switch( VTK_TypeElem ) {
-        case TRIANGLE:
-          LagrangianBasisFunctionAndDerivativesTriangle(nPolyElem,  rIntegration,
-                                                        sInt,       nDOFsElem,
-                                                        rDOFsDummy, sDOFsDummy,
-                                                        lagBasisPointsDummy,
-                                                        drLagBasisIntegration,
-                                                        dsLagBasisIntegration);
-          break;
-
-        case QUADRILATERAL:
-          LagrangianBasisFunctionAndDerivativesQuadrilateral(nPolyElem,  rIntegration,
-                                                             sInt,       nDOFsElem,
-                                                             rDOFsDummy, sDOFsDummy,
-                                                             lagBasisPointsDummy,
-                                                             drLagBasisIntegration,
-                                                             dsLagBasisIntegration);
-          break;
-      }
-
+    case LINE:
+      LagrangianBasisFunctionAndDerivativesLine(nPolyElem, rIntegration, nDOFsFace,
+                                                rDOFsFace, lagBasisIntegration,
+                                                dummyGrad);
       break;
-    }
 
-    case TRIANGLE: {
-
-      /*---- The face element is a triangle. The adjacent element can be a tetrahedron,
-             a pyramid or a prism. For the tetrahedron and the prism the convention is
-             that the face is face 0 of these elements, which corresponds to a
-             parametric coordinate t = -1. For the pyramid the situation is a bit more
-             complicated. The face corresponds to face 1 of the pyramid. However, it
-             is possible that the connectivity of triangle must be swapped compared to
-             the connectivity of the corresponding face of the pyramid. If this is the
-             case, also the parametric coordinates of the integration points must be
-             swapped in order to get the correct behavior. ---*/
-
-      switch( VTK_TypeElem ) {
-
-        case TETRAHEDRON: {
-          vector<su2double> tInt(nIntegration, -1.0);
-
-          LagrangianBasisFunctionAndDerivativesTetrahedron(nPolyElem,    rIntegration,
-                                                           sIntegration, tInt,
-                                                           nDOFsElem,    rDOFsDummy,
-                                                           sDOFsDummy,   tDOFsDummy,
-                                                           lagBasisPointsDummy,
-                                                           drLagBasisIntegration,
-                                                           dsLagBasisIntegration,
-                                                           dtLagBasisIntegration);
-          break;
-        }
-
-        case PRISM: {
-          vector<su2double> tInt(nIntegration, -1.0);
-
-          LagrangianBasisFunctionAndDerivativesPrism(nPolyElem,    rIntegration,
-                                                     sIntegration, tInt,
-                                                     nDOFsElem,    rDOFsDummy,
-                                                     sDOFsDummy,   tDOFsDummy,
-                                                     lagBasisPointsDummy,
-                                                     drLagBasisIntegration,
-                                                     dsLagBasisIntegration,
-                                                     dtLagBasisIntegration);
-          break;
-        }
-
-        case PYRAMID: {
-          vector<su2double> rInt(nIntegration), sInt(nIntegration), tInt(nIntegration);
-          if( swapFaceInElement ) {
-            for(unsigned short i=0; i<nIntegration; ++i) {
-              rInt[i] = sIntegration[i] + 0.5*(rIntegration[i]+1.0);
-              sInt[i] = 0.5*(rIntegration[i]-1.0);
-              tInt[i] = rIntegration[i];
-            }
-          }
-          else {
-            for(unsigned short i=0; i<nIntegration; ++i) {
-              rInt[i] = rIntegration[i] + 0.5*(sIntegration[i]+1.0);
-              sInt[i] = 0.5*(sIntegration[i]-1.0);
-              tInt[i] = sIntegration[i];
-            }
-          }
-
-          LagrangianBasisFunctionAndDerivativesPyramid(nPolyElem,  rInt,
-                                                       sInt,       tInt,
-                                                       nDOFsElem,  rDOFsDummy,
-                                                       sDOFsDummy, tDOFsDummy,
-                                                       lagBasisPointsDummy,
-                                                       drLagBasisIntegration,
-                                                       dsLagBasisIntegration,
-                                                       dtLagBasisIntegration);
-          break;
-        }
-      }
-
+    case TRIANGLE:
+      LagrangianBasisFunctionAndDerivativesTriangle(nPolyElem,    rIntegration,
+                                                    sIntegration, nDOFsFace,
+                                                    rDOFsFace,    sDOFsFace,
+                                                    lagBasisIntegration,
+                                                    dummyGrad,     dummyGrad);
       break;
-    }
 
-    case QUADRILATERAL: {
-
-      /*--- The face element is a quadrilateral. The adjacent element can be a pyramid,
-            a prism or a hexahedron. For the pyramid and the hexahedron the convention
-            is that the face is face 0 of these elements, which corresponds to a
-            parametric coordinate t = -1. For the prism, the convention is that the
-            face is face 2 of the standard prism, which corresponds to a parametric
-            coordinate s = -1. Furthermore, for the prism it could be necessary that a
-            swap of the parametric coordinates of the face was needed in order to obtain
-            the desired sequence. If that is the case, also the integration points of
-            the quadrilateral face must be swapped. ---*/
-
-      switch( VTK_TypeElem ) {
-
-        case HEXAHEDRON: {
-          vector<su2double> tInt(nIntegration, -1.0);
-
-          LagrangianBasisFunctionAndDerivativesHexahedron(nPolyElem,    rIntegration,
-                                                          sIntegration, tInt,
-                                                          nDOFsElem,    rDOFsDummy,
-                                                          sDOFsDummy,   tDOFsDummy,
-                                                          lagBasisPointsDummy,
-                                                          drLagBasisIntegration,
-                                                          dsLagBasisIntegration,
-                                                          dtLagBasisIntegration);
-          break;
-        }
-
-        case PRISM: {
-          vector<su2double> sInt(nIntegration, -1.0), rInt, tInt;
-
-          if( swapFaceInElement ) {rInt = sIntegration; tInt = rIntegration;}
-          else                    {rInt = rIntegration; tInt = sIntegration;}
-
-          LagrangianBasisFunctionAndDerivativesPrism(nPolyElem,  rInt,
-                                                     sInt,       tInt,
-                                                     nDOFsElem,  rDOFsDummy,
-                                                     sDOFsDummy, tDOFsDummy,
-                                                     lagBasisPointsDummy,
-                                                     drLagBasisIntegration,
-                                                     dsLagBasisIntegration,
-                                                     dtLagBasisIntegration);
-          break;
-        }
-
-        case PYRAMID: {
-          vector<su2double> tInt(nIntegration, -1.0);
-
-          LagrangianBasisFunctionAndDerivativesPyramid(nPolyElem,    rIntegration,
-                                                       sIntegration, tInt,
-                                                       nDOFsElem,    rDOFsDummy,
-                                                       sDOFsDummy,   tDOFsDummy,
-                                                       lagBasisPointsDummy,
-                                                       drLagBasisIntegration,
-                                                       dsLagBasisIntegration,
-                                                       dtLagBasisIntegration);
-          break;
-        }
-      }
-
+    case QUADRILATERAL:
+      LagrangianBasisFunctionAndDerivativesQuadrilateral(nPolyElem,    rIntegration,
+                                                         sIntegration, nDOFsFace,
+                                                         rDOFsFace,    sDOFsFace,
+                                                         lagBasisIntegration,
+                                                         dummyGrad,     dummyGrad);
       break;
-    }
   }
+
+  /*--- Check the sum of the Lagrangian basis functions. ---*/
+  CheckSumLagrangianBasisFunctions(nIntegration, nDOFsFace, lagBasisIntegration);
+
+  /*--- Determine the derivatives of the Lagrangian basis functions of the
+        adjacent element in the integration points of the face. ---*/
+  DerivativesBasisFunctionsAdjacentElement(VTK_TypeElem, nPolyElem,
+                                           swapFaceInElement,
+                                           nDOFsElem, drLagBasisIntegrationElem,
+                                           dsLagBasisIntegrationElem,
+                                           dtLagBasisIntegrationElem);
+
+  /*--- Check the sum of the derivatives of the Lagrangian basis functions. ---*/
+  if( !drLagBasisIntegrationElem.empty() )
+    CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsElem,
+                                                drLagBasisIntegrationElem);
+  if( !dsLagBasisIntegrationElem.empty() )
+    CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsElem,
+                                                dsLagBasisIntegrationElem);
+  if( !dtLagBasisIntegrationElem.empty() )
+    CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsElem,
+                                                dtLagBasisIntegrationElem);
+}
+
+bool FEMStandardBoundaryFaceClass::SameStandardMatchingFace(unsigned short val_VTK_TypeFace,
+                                                            bool           val_constJac,
+                                                            unsigned short val_VTK_TypeElem,
+                                                            unsigned short val_nPolyElem,
+                                                            bool           val_swapFaceInElem) {
+  if(val_VTK_TypeFace   != VTK_Type)          return false;
+  if(val_constJac       != constJacobian)     return false;
+  if(val_VTK_TypeElem   != VTK_TypeElem)      return false;
+  if(val_nPolyElem      != nPolyElem)         return false;
+  if(val_swapFaceInElem != swapFaceInElement) return false;
+
+  return true;
+}
+
+/*----------------------------------------------------------------------------------*/
+/*        Private member functions of FEMStandardBoundaryFaceClass.                 */
+/*----------------------------------------------------------------------------------*/
+
+void FEMStandardBoundaryFaceClass::Copy(const FEMStandardBoundaryFaceClass &other) {
+
+  FEMStandardElementBaseClass::Copy(other);
+
+  nDOFsFace         = other.nDOFsFace;
+  nPolyElem         = other.nPolyElem;
+  nDOFsElem         = other.nDOFsElem;
+  VTK_TypeElem      = other.VTK_TypeElem;
+  swapFaceInElement = other.swapFaceInElement;
+
+  rDOFsFace = other.rDOFsFace;
+  sDOFsFace = other.sDOFsFace;
+
+  lagBasisIntegration       = other.lagBasisIntegration;
+  drLagBasisIntegrationElem = other.drLagBasisIntegrationElem;
+  dsLagBasisIntegrationElem = other.dsLagBasisIntegrationElem;
+  dtLagBasisIntegrationElem = other.dtLagBasisIntegrationElem;
 }
