@@ -43,7 +43,7 @@ inline FEMStandardElementClass::FEMStandardElementClass(){}
 
 inline FEMStandardElementClass::~FEMStandardElementClass(){}
 
-inline FEMStandardElementClass::FEMStandardElementClass(const FEMStandardElementClass &other){Copy(other);}
+inline FEMStandardElementClass::FEMStandardElementClass(const FEMStandardElementClass &other) : FEMStandardElementBaseClass(other) {Copy(other);}
 
 inline FEMStandardElementClass& FEMStandardElementClass::operator=(const FEMStandardElementClass &other){Copy(other); return (*this);}
 
@@ -71,6 +71,18 @@ inline FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(){}
 
 inline FEMStandardInternalFaceClass::~FEMStandardInternalFaceClass(){}
 
-inline FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(const FEMStandardInternalFaceClass &other){Copy(other);}
+inline FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(const FEMStandardInternalFaceClass &other) : FEMStandardElementBaseClass(other) {Copy(other);}
 
 inline FEMStandardInternalFaceClass& FEMStandardInternalFaceClass::operator=(const FEMStandardInternalFaceClass &other){Copy(other); return (*this);}
+
+inline unsigned short FEMStandardInternalFaceClass::GetNDOFsFaceSide0(void) const {return nDOFsFaceSide0;}
+
+inline unsigned short FEMStandardInternalFaceClass::GetNDOFsFaceSide1(void) const {return nDOFsFaceSide1;}
+
+inline FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(){}
+
+inline FEMStandardBoundaryFaceClass::~FEMStandardBoundaryFaceClass(){}
+
+inline FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(const FEMStandardBoundaryFaceClass &other) : FEMStandardElementBaseClass(other) {Copy(other);}
+
+inline FEMStandardBoundaryFaceClass& FEMStandardBoundaryFaceClass::operator=(const FEMStandardBoundaryFaceClass &other){Copy(other); return (*this);}

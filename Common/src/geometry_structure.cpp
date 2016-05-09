@@ -11218,9 +11218,9 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   /*--- Determine my rank and the number of ranks. ---*/
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
 
 #ifdef HAVE_MPI
+  int size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -11447,7 +11447,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
     nFacesRecv[i+1] = nFacesRecv[i] + sizeMess/8;
     facesRecv.resize(nFacesRecv[i+1]);
-    int ii = 0;
+    unsigned long ii = 0;
     for(unsigned long j=nFacesRecv[i]; j<nFacesRecv[i+1]; ++j, ii+=8) {
       facesRecv[j].nCornerPoints   = recvBuf[ii];
       facesRecv[j].cornerPoints[0] = recvBuf[ii+1];
@@ -11639,12 +11639,12 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   /*-- Create the vectors that describe the connectivity of the graph. ---*/
   vector<unsigned long> xadj_l(nElem+1, 0);
   for(unsigned long i=0; i<nFacesLoc; ++i) {
-    unsigned long ii = localFaces[i].elemID0 - starting_node[rank];
+    long ii = localFaces[i].elemID0 - starting_node[rank];
     ++xadj_l[ii+1];
 
     if(localFaces[i].periodicIndex == 0) {
       ii = localFaces[i].elemID1 - starting_node[rank];
-      if(ii >= 0 && ii < nElem) ++xadj_l[ii+1];
+      if(ii >= 0 && ii < (long) nElem) ++xadj_l[ii+1];
     }
   }
 
@@ -11654,12 +11654,12 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   vector<unsigned long> xxadj_l = xadj_l;
   vector<unsigned long> adjacency_l(xadj_l[nElem]);
   for(unsigned long i=0; i<nFacesLoc; ++i) {
-    unsigned long ii = localFaces[i].elemID0 - starting_node[rank];
+    long ii = localFaces[i].elemID0 - starting_node[rank];
     adjacency_l[xxadj_l[ii]++] = localFaces[i].elemID1;
 
     if(localFaces[i].periodicIndex == 0) {
       ii = localFaces[i].elemID1 - starting_node[rank];
-      if(ii >= 0 && ii < nElem) adjacency_l[xxadj_l[ii]++] = localFaces[i].elemID0;
+      if(ii >= 0 && ii < (long) nElem) adjacency_l[xxadj_l[ii]++] = localFaces[i].elemID0;
     }
   }
 

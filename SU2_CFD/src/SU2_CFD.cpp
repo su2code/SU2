@@ -82,14 +82,21 @@ int main(int argc, char *argv[]) {
   
   /*--- Read the name and format of the input mesh file to get from the mesh
    file the number of zones and dimensions from the numerical grid (required
-   for variables allocation)  ---*/
+   for variables allocation). Also determine whether or not the FEM solver
+   is used.  ---*/
   
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
   
   nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+
+  const bool fem_solver = ((config->GetKind_Solver() == FEM_EULER)         ||
+                           (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
+                           (config->GetKind_Solver() == FEM_RANS)          ||
+                           (config->GetKind_Solver() == FEM_LES));
   delete config;
+
   /*--- Definition and of the containers for all possible zones. ---*/
   
   iteration_container    = new CIteration*[nZone];
@@ -117,13 +124,6 @@ int main(int argc, char *argv[]) {
     transfer_container[iZone]     = NULL;
   }
 
-  /*--- Determine whether or not the FEM solver is used. ---*/
-
-  const bool fem_solver = ((config->GetKind_Solver() == FEM_EULER)         ||
-                           (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                           (config->GetKind_Solver() == FEM_RANS)          ||
-                           (config->GetKind_Solver() == FEM_LES));
-  
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
    differential equation on a single block, unstructured mesh. ---*/
