@@ -1958,14 +1958,181 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   /*---         that belong to the physical boundaries.                     ---*/
   /*---------------------------------------------------------------------------*/
 
-  cout << "CMeshFEM_DG::CreateFaces: Not implemented yet." << endl;
-#ifndef HAVE_MPI
-  exit(EXIT_FAILURE);
-#else
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Abort(MPI_COMM_WORLD,1);
-  MPI_Finalize();
-#endif
+  /*--- Loop over the boundary markers. The periodic boundaries are skipped,
+        because these are not physical boundaries and are treated via the
+        halo elements, which are already in place. ---*/
+  unsigned long indBegMarker = 0;
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    if( !boundaries[iMarker].periodicBoundary ) {
+
+      /* Determine the end index for this marker in localFaces. Note that
+         localFaces is sorted such that the boundary faces are first and
+         also grouped per boundary, see the functor SortFacesClass. */
+      unsigned long indEndMarker = indBegMarker;
+      for(; indEndMarker<localFaces.size(); ++indEndMarker) {
+        if(localFaces[indEndMarker].faceIndicator != (short) iMarker) break;
+      }
+
+      /*--- Determine the sizes of the vectors, which store the connectivity of the faces.
+            Note that these sizes must be determined beforehand, such that no resize needs
+            to be carried out when the data is actually set. ---*/
+      sizeVecDOFsGridFaceSide0    = sizeVecDOFsSolFaceSide0    = 0;
+      sizeVecDOFsGridElementSide0 = sizeVecDOFsSolElementSide0 = 0;
+
+      for(unsigned long i=indBegMarker; i<indEndMarker; ++i) {
+        /* Determine from the face type and the polynomial degree used the number of DOFs for
+           the grid and the solution. Update the corresponding counters accordingly. */
+        switch( localFaces[i].nCornerPoints ) {
+          case 2:
+            /* Face is a line. */
+            sizeVecDOFsGridFaceSide0 += localFaces[i].nPolyGrid0 + 1;
+            sizeVecDOFsSolFaceSide0  += localFaces[i].nPolySol0  + 1;
+            break;
+
+          case 3:
+            /* Face is a triangle. */
+            sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+2)/2;
+            sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +2)/2;
+            break;
+
+          case 4:
+            /* Face is a quadrilateral. */
+            sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+1);
+            sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +1);
+            break;
+        }
+
+        /* Update the sizes to store the DOFs of the adjacent elements. */
+        unsigned long v0 = localFaces[i].elemID0;
+
+        sizeVecDOFsGridElementSide0 += volElem[v0].nDOFsGrid;
+        sizeVecDOFsSolElementSide0  += volElem[v0].nDOFsSol;
+      }
+
+      /* Allocate the memory for the storage of the DOFs of the
+         connectivities of the faces. */
+      boundaries[iMarker].VecDOFsGridFace.resize(sizeVecDOFsGridFaceSide0);
+      boundaries[iMarker].VecDOFsSolFace.resize(sizeVecDOFsSolFaceSide0);
+      boundaries[iMarker].VecDOFsGridElement.resize(sizeVecDOFsGridElementSide0);
+      boundaries[iMarker].VecDOFsSolElement.resize(sizeVecDOFsSolElementSide0);
+
+      /* Easier storage of the surface elements for this boundary. */
+      vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+
+      /*--- Loop again over localFaces for this boundary, but now
+            store the required information in surfElem. ---*/ 
+      sizeVecDOFsGridFaceSide0    = sizeVecDOFsSolFaceSide0    = 0;
+      sizeVecDOFsGridElementSide0 = sizeVecDOFsSolElementSide0 = 0;
+      for(unsigned long i=indBegMarker; i<indEndMarker; ++i) {
+
+        /* Set the pointers for the connectivities of the face. */
+        ii = i - indBegMarker;
+        surfElem[ii].DOFsGridFace = boundaries[iMarker].VecDOFsGridFace.data() + sizeVecDOFsGridFaceSide0;
+        surfElem[ii].DOFsSolFace  = boundaries[iMarker].VecDOFsSolFace.data()  + sizeVecDOFsSolFaceSide0;
+
+        surfElem[ii].DOFsGridElement = boundaries[iMarker].VecDOFsGridElement.data() + sizeVecDOFsGridElementSide0;
+        surfElem[ii].DOFsSolElement  = boundaries[iMarker].VecDOFsSolElement.data()  + sizeVecDOFsSolElementSide0;
+
+        /* Update the counters for the face connectivities. This depends on the
+           type of surface element. */
+        unsigned short VTK_Type;
+        switch( localFaces[i].nCornerPoints ) {
+          case 2:
+            /* Face is a line. */
+            VTK_Type = LINE;
+            sizeVecDOFsGridFaceSide0 += localFaces[i].nPolyGrid0 + 1;
+            sizeVecDOFsSolFaceSide0  += localFaces[i].nPolySol0  + 1;
+            break;
+
+          case 3:
+            /* Face is a triangle. */
+            VTK_Type = TRIANGLE;
+            sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+2)/2;
+            sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +2)/2;
+            break;
+
+          case 4:
+            /* Face is a quadrilateral. */
+            VTK_Type = QUADRILATERAL;
+            sizeVecDOFsGridFaceSide0 += (localFaces[i].nPolyGrid0+1)*(localFaces[i].nPolyGrid0+1);
+            sizeVecDOFsSolFaceSide0  += (localFaces[i].nPolySol0 +1)*(localFaces[i].nPolySol0 +1);
+            break;
+        }
+
+        /* Update the counters for the adjacent element connectivities. */
+        unsigned long v0 = localFaces[i].elemID0;
+
+        sizeVecDOFsGridElementSide0 += volElem[v0].nDOFsGrid;
+        sizeVecDOFsSolElementSide0  += volElem[v0].nDOFsSol;
+
+        /*--- Create the connectivities of the adjacent element in the correct
+              sequence as well as the connectivities of the face. The
+              connectivities are determined for the grid and solution. ---*/
+        bool swapFaceInElement;
+        for(unsigned short j=0; j<volElem[v0].nDOFsSol; ++j)
+          DOFsElem[j] = volElem[v0].offsetDOFsSolLocal + j;
+
+        CreateConnectivitiesFace(VTK_Type,                 localFaces[i].cornerPoints,
+                                 volElem[v0].VTK_Type,     volElem[v0].nPolyGrid,
+                                 volElem[v0].nodeIDsGrid,  volElem[v0].nPolySol,
+                                 DOFsElem.data(),          swapFaceInElement,
+                                 surfElem[ii].DOFsSolFace, surfElem[ii].DOFsSolElement);
+
+        for(unsigned short j=0; j<volElem[v0].nDOFsGrid; ++j)
+          DOFsElem[j] = volElem[v0].nodeIDsGrid[j];
+
+        CreateConnectivitiesFace(VTK_Type,                  localFaces[i].cornerPoints,
+                                 volElem[v0].VTK_Type,      volElem[v0].nPolyGrid,
+                                 volElem[v0].nodeIDsGrid,   volElem[v0].nPolyGrid,
+                                 DOFsElem.data(),           swapFaceInElement,
+                                 surfElem[ii].DOFsGridFace, surfElem[ii].DOFsGridElement);
+
+        /*--- Search in the standard elements for boundary faces for a matching
+              standard element. If not found, create a new standard element.
+              Note that both the grid and the solution representation must
+              match with the standard element. ---*/
+        unsigned long j;
+        for(j=0; j<standardBoundaryFacesSol.size(); ++j) {
+          if(standardBoundaryFacesSol[j].SameStandardBoundaryFace(VTK_Type,
+                                                                  localFaces[i].JacFaceIsConsideredConstant,
+                                                                  localFaces[i].elemType0,
+                                                                  localFaces[i].nPolySol0,
+                                                                  swapFaceInElement) &&
+             standardBoundaryFacesGrid[j].SameStandardBoundaryFace(VTK_Type,
+                                                                   localFaces[i].JacFaceIsConsideredConstant,
+                                                                   localFaces[i].elemType0,
+                                                                   localFaces[i].nPolyGrid0,
+                                                                   swapFaceInElement) ) {
+            surfElem[ii].indStandardElement = j;
+            break;
+          }
+        }
+
+        /* Create the new standard elements if no match was found. */
+        if(j == standardBoundaryFacesSol.size()) {
+
+          standardBoundaryFacesSol.push_back(FEMStandardBoundaryFaceClass(VTK_Type,
+                                                                          localFaces[i].elemType0,
+                                                                          localFaces[i].nPolySol0,
+                                                                          localFaces[i].JacFaceIsConsideredConstant,
+                                                                          swapFaceInElement,
+                                                                          config) );
+
+          standardBoundaryFacesGrid.push_back(FEMStandardBoundaryFaceClass(VTK_Type,
+                                                                           localFaces[i].elemType0,
+                                                                           localFaces[i].nPolyGrid0,
+                                                                           localFaces[i].JacFaceIsConsideredConstant,
+                                                                           swapFaceInElement,
+                                                                           config,
+                                                                           standardBoundaryFacesSol[j].GetOrderExact()) );
+          surfElem[ii].indStandardElement = j;
+        }
+      }
+
+      /* Set indBegMarker to indEndMarker for the next marker. */
+      indBegMarker = indEndMarker;
+    }
+  }
 }
 
 void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {

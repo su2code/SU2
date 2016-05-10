@@ -1215,7 +1215,7 @@ public:
   * \param[in] val_swapFaceInElem - Whether or not the connectivity of the face must be swapped w.r.t.
                                     the connectivity of face of the adjacent element.
   */
-  bool SameStandardMatchingFace(unsigned short val_VTK_TypeFace,
+  bool SameStandardBoundaryFace(unsigned short val_VTK_TypeFace,
                                 bool           val_constJac,
                                 unsigned short val_VTK_TypeElem,
                                 unsigned short val_nPolyElem,

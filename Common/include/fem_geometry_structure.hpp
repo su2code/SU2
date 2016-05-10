@@ -280,7 +280,17 @@ public:
   unsigned long boundElemIDGlobal; /*!< \brief Global ID of this surface element inside
                                         the boundary to which it belongs. */
 
-  vector<unsigned long> nodeIDsGrid; /*!< \brief Vector with the node IDs of the grid for this element. */
+  vector<unsigned long> nodeIDsGrid; /*!< \brief Vector with the node IDs of the grid for this element.
+                                                 In this vector the original sequence of the grid file
+                                                 is stored. */
+
+  unsigned long *DOFsGridFace;   /*!< \brief Pointer to the grid DOFs of the face. In principle
+                                             the same information as nodeIDsGrid, but the sequence
+                                             could be different. */
+  unsigned long *DOFsSolFace;    /*!< \brief Pointer to the solution DOFs of the face. */
+
+  unsigned long *DOFsGridElement;   /*!< \brief Pointer to the grid DOFs of the adjacent element. */
+  unsigned long *DOFsSolElement;    /*!< \brief Pointer to the solution DOFs of the adjacent element. */
 
   /*!
    * \brief Constructor of the class. Initialize some variables to avoid a valgrid warning.
@@ -341,6 +351,12 @@ public:
   bool periodicBoundary; /*!< \brief Whether or not this boundary is a periodic boundary. */
 
   vector<CSurfaceElementFEM> surfElem; /*!< \brief Vector of the local surface elements. */
+
+  vector<unsigned long> VecDOFsGridFace; /*!< \brief Storage for the grid DOFs of the faces. */
+  vector<unsigned long> VecDOFsSolFace;  /*!< \brief Storage for the solution DOFs of the faces. */
+
+  vector<unsigned long> VecDOFsGridElement; /*!< \brief Storage for the grid DOFs of the adjacent elements. */
+  vector<unsigned long> VecDOFsSolElement;  /*!< \brief Storage for the solution DOFs of the adjacent elements. */
 
   /*!
    * \brief Constructor of the class. Nothing to be done.
@@ -422,6 +438,11 @@ private:
   vector<FEMStandardInternalFaceClass> standardMatchingFacesGrid; /*!< \brief Vector that contains the standard matching
                                                                               internal faces used for the geometry of
                                                                               the DG solver. */
+
+  vector<FEMStandardBoundaryFaceClass> standardBoundaryFacesSol;  /*!< \brief Vector that contains the standard boundary
+                                                                              faces used for the solution of the DG solver. */
+  vector<FEMStandardBoundaryFaceClass> standardBoundaryFacesGrid; /*!< \brief Vector that contains the standard boundary
+                                                                              faces used for the geometry of the DG solver. */
 
   vector<unsigned long> VecDOFsGridFaceSide0; /*!< \brief Storage for the grid DOFs of side 0 of the faces. */
   vector<unsigned long> VecDOFsGridFaceSide1; /*!< \brief Storage for the grid DOFs of side 1 of the faces. */
