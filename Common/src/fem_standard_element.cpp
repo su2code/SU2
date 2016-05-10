@@ -3364,7 +3364,7 @@ FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(unsigned short val_VT
                                                 dtLagBasisIntegrationElem);
 }
 
-bool FEMStandardBoundaryFaceClass::SameStandardMatchingFace(unsigned short val_VTK_TypeFace,
+bool FEMStandardBoundaryFaceClass::SameStandardBoundaryFace(unsigned short val_VTK_TypeFace,
                                                             bool           val_constJac,
                                                             unsigned short val_VTK_TypeElem,
                                                             unsigned short val_nPolyElem,
