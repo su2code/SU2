@@ -8979,7 +8979,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   /*--- new declarations ---*/
   
   su2double  AvgMach ,jk_nVert, *cj, GilesBeta, *delta_c, **R_Matrix, *deltaprim, **R_c_inv,**R_c, alphaIn_BC,
-	P_Total, T_Total, *FlowDir, Enthalpy_BC, Entropy_BC, *R, *c_avg,*dcjs, Beta_inf2, c2js_Re, c4js_Re, avgVel2 =0.0;
+	P_Total, T_Total, *FlowDir, Enthalpy_BC, Entropy_BC, *R, *c_avg,*dcjs, Beta_inf2, c2js_Re, c3js_Re, c4js_Re, avgVel2 =0.0;
 
   int j;
   unsigned long nVert;
@@ -9006,7 +9006,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
     R_c_inv[iVar] = new su2double[nVar-1];
   }
 
-	complex<su2double> I, c2ks, c2js, c4ks, c4js, Beta_inf;
+	complex<su2double> I, c2ks, c2js,c3ks, c3js, c4ks, c4js, Beta_inf;
 	I = complex<su2double>(0.0,1.0);
   
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
@@ -9149,21 +9149,25 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 				case TOTAL_CONDITIONS_PT: case MIXING_IN:
 
 					if (AvgMach < 1.000){
-						if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
-							Beta_inf= I*complex<su2double>(sqrt(1.0  - pow(AvgMach,2)));
-						}else{
-							Beta_inf= -I*complex<su2double>(sqrt(1.0 - pow(AvgMach,2)));
-						}
+						Beta_inf= I*complex<su2double>(sqrt(1.0  - pow(AvgMach,2)));
 						c2js 	= complex<su2double>(0.0,0.0);
+						c3js 	= complex<su2double>(0.0,0.0);
 						j			 = geometry->turbovertex[val_marker][iSpan][iVertex]->GetGlobalVertexIndex();
 						for(k=1; k < kend+1; k++){
 							jk_nVert = j*k/su2double(nVert);
+
 							c2ks = -CkInflow[val_marker][iSpan][k-1]*complex<su2double>(Beta_inf + AverageTurboMach[val_marker][iSpan][1])/complex<su2double>( 1.0 + AverageTurboMach[val_marker][iSpan][0]);
+							c3ks = CkInflow[val_marker][iSpan][k-1]*complex<su2double>(Beta_inf + AverageTurboMach[val_marker][iSpan][1])/complex<su2double>( 1.0 + AverageTurboMach[val_marker][iSpan][0]);
+							c3ks *= complex<su2double>(Beta_inf + AverageTurboMach[val_marker][iSpan][1])/complex<su2double>( 1.0 + AverageTurboMach[val_marker][iSpan][0]);
 							c2js += c2ks*(complex<su2double>(cos(TwoPi*jk_nVert))+I*complex<su2double>(sin(TwoPi*jk_nVert)));
+							c3js += c3ks*(complex<su2double>(cos(TwoPi*jk_nVert))+I*complex<su2double>(sin(TwoPi*jk_nVert)));
 						}
 						c2js_Re = 2.0*c2js.real();
-
+						c3js_Re = 2.0*c3js.real();
+						dcjs[0]   = -cj[0];
 						dcjs[1]		= c2js_Re - cj[1];
+						dcjs[2]   = c3js_Re - cj[2];
+
 					}else{
 						if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
 							Beta_inf2= -sqrt(pow(AvgMach,2)- 1.0);
@@ -9177,10 +9181,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 					/*--- compute local change for first and third charchteristic ---*/
 					ComputeResJacobianNRBC(Pressure_i, Density_i, turboVelocity[0], turboVelocity[1], atan(turboVelocity[1]/turboVelocity[0]), R_c, R_c_inv);
-					R[0] = Entropy_i  - AverageEntropy[val_marker][iSpan];
-					R[2] = Enthalpy_i - AverageEnthalpy[val_marker][iSpan] - 0.5*avgVel2;
-					dcjs[2] = (R[2] + R_c[2][1]*dcjs[1] -R_c[2][0]*R_c[0][2]*(R_c[0][1]*dcjs[1] + R[0]))/(R_c[2][0]*R_c[0][2]/R_c[0][0]- R_c[2][2]);
-					dcjs[0] = - (R_c[0][1]*dcjs[1] + R_c[0][2]*dcjs[2] + R[0])/R_c[0][0];
 
 					/* --- Impose Inlet BC  Reflecting--- */
 					delta_c[0] = relfacAvg*c_avg[0] + relfacFou*dcjs[0];

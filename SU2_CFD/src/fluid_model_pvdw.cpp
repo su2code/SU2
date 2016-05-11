@@ -128,14 +128,8 @@ void CVanDerWaalsGas::SetTDState_hs (su2double h, su2double s ) {
 
     T = 1.0*h*Gamma_Minus_One/Gas_Constant/Gamma;
     v =exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
-    if (Zed<0.9999) {
-    	x1 = Zed*v;
-    	x2 = v;
-
-    } else{
-    	x1 = 0.5*v;
-    	x2 = v;
-    }
+    x1 = 0.2*v;
+    x2 = 0.35*v;
     fx1 = log(x1-b) - s/Gas_Constant + log((h+ 2*a/x1)/Gas_Constant/(1/Gamma_Minus_One+ x1/(x1-b)))/Gamma_Minus_One;
     fx2 = log(x2-b) - s/Gas_Constant + log((h+ 2*a/x2)/Gas_Constant/(1/Gamma_Minus_One+ x2/(x2-b)))/Gamma_Minus_One;
 
