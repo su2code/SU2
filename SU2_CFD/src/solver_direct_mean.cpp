@@ -2846,7 +2846,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     }
     if (gravity) {
       cout << "Froude number (non-dim): " << Froude << endl;
-      cout << "Lenght of the baseline wave (non-dim): " << 2.0*PI_NUMBER*Froude*Froude << endl;
+      cout << "Length of the baseline wave (non-dim): " << 2.0*PI_NUMBER*Froude*Froude << endl;
     }
 
     if (compressible) {
@@ -8271,7 +8271,8 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
   unsigned short iDim, iVar, iMarker, iMarkerTP, iSpan;
   unsigned short mixing_process = config->GetKind_MixingProcess();
   su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL,
-      Area, TotalArea, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, *UnitNormal;
+      Area, TotalArea, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, *UnitNormal,
+      MassFlow, TotalMassFlow, TotalMassPressure, TotalMassDensity, *TotalMassVelocity;
   string Marker_Tag, Monitoring_Tag;
   su2double val_init_pressure;
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -8286,6 +8287,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
   UnitNormal 						= new su2double[nDim];
   TotalVelocity 				= new su2double[nDim];
   TotalAreaVelocity 		= new su2double[nDim];
+  TotalMassVelocity     = new su2double[nDim];
   TotalFluxes 					= new su2double[nVar];
 
   unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
@@ -8294,8 +8296,8 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
 
 
 #ifdef HAVE_MPI
-  su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, *MyTotalFluxes = NULL;
-  su2double *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL;
+  su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, MyTotalMassPressure, MyTotalMassDensity, *MyTotalFluxes = NULL;
+  su2double *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL, *MyTotalMassVelocity = NULL;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -8306,14 +8308,18 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
     for (iVar=0;iVar<nVar;iVar++)
       TotalFluxes[iVar]= 0.0;
     for (iDim=0; iDim<nDim; iDim++) {
-      TotalVelocity[iDim]=0.0;
-      TotalAreaVelocity[iDim]=0.0;
+      TotalVelocity[iDim]     = 0.0;
+      TotalAreaVelocity[iDim] = 0.0;
+      TotalMassVelocity[iDim] = 0.0;
     }
 
-    TotalDensity = 0.0;
-    TotalPressure = 0.0;
-    TotalAreaPressure=0.0;
-    TotalAreaDensity=0.0;
+    TotalDensity      = 0.0;
+    TotalPressure     = 0.0;
+    TotalAreaPressure = 0.0;
+    TotalAreaDensity  = 0.0;
+    TotalMassPressure = 0.0;
+    TotalMassDensity  = 0.0;
+    TotalMassFlow     = 0.0;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
       for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
@@ -8351,8 +8357,15 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
 
               /*--- Compute the integral fluxes for the boundary of interest ---*/
 
-              if ((mixing_process == AREA_AVERAGE) || (mixing_process == MIXEDOUT_AVERAGE)){
+              switch(mixing_process){
+              case ALGEBRAIC_AVERAGE:
+                TotalDensity += Density;
+                TotalPressure += Pressure;
+                for (iDim = 0; iDim < nDim; iDim++)
+                  TotalVelocity[iDim] += Velocity[iDim];
+                break;
 
+              case AREA_AVERAGE: case MIXEDOUT_AVERAGE:
                 TotalFluxes[0] += Area*(Density*VelNormal );
                 for (iDim = 1; iDim < nDim+1; iDim++)
                   TotalFluxes[iDim] += Area*(Density*VelNormal*Velocity[iDim -1] + Pressure*UnitNormal[iDim -1] );
@@ -8362,15 +8375,21 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
                 TotalAreaDensity  += Area*Density;
                 for (iDim = 0; iDim < nDim; iDim++)
                   TotalAreaVelocity[iDim] += Area*Velocity[iDim];
+                break;
 
-              }else{
-
-                TotalDensity += Density;
-                TotalPressure += Pressure;
+              case MASS_AVERAGE:
+                TotalMassFlow     += Area*(Density*VelNormal ); //?
+                TotalMassPressure += Area*(Density*VelNormal )*Pressure;
+                TotalMassDensity  += Area*(Density*VelNormal )*Density;
                 for (iDim = 0; iDim < nDim; iDim++)
-                  TotalVelocity[iDim] += Velocity[iDim];
+                  TotalMassVelocity[iDim] += Area*(Density*VelNormal )*Velocity[iDim];
+                break;
 
 
+              default:
+                cout << "Warning! Invalid MIXING_PROCESS input!" << endl;
+                exit(EXIT_FAILURE);
+                break;
               }
             }
           }
@@ -8386,16 +8405,22 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
     MyTotalPressure      = TotalPressure;  					  TotalPressure        = 0;
     MyTotalAreaDensity   = TotalAreaDensity; 					TotalAreaDensity     = 0;
     MyTotalAreaPressure  = TotalAreaPressure;         TotalAreaPressure    = 0;
+    MyTotalMassDensity   = TotalMassDensity;          TotalMassDensity     = 0;
+    MyTotalMassPressure  = TotalMassPressure;         TotalMassPressure    = 0;
+
 
     SU2_MPI::Allreduce(&MyTotalDensity, &TotalDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&MyTotalPressure, &TotalPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&MyTotalAreaDensity, &TotalAreaDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&MyTotalAreaPressure, &TotalAreaPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalMassDensity, &TotalMassDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalMassPressure, &TotalMassPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
 
     MyTotalFluxes					 = new su2double[nVar];
     MyTotalVelocity        = new su2double[nDim];
     MyTotalAreaVelocity    = new su2double[nDim];
+    MyTotalMassVelocity    = new su2double[nDim];
 
     for (iVar = 0; iVar < nVar; iVar++) {
       MyTotalFluxes[iVar]  = TotalFluxes[iVar];
@@ -8407,13 +8432,16 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
       TotalVelocity[iDim]        			  = 0.0;
       MyTotalAreaVelocity[iDim]  			  = TotalAreaVelocity[iDim];
       TotalAreaVelocity[iDim]    				= 0.0;
+      MyTotalMassVelocity[iDim]         = TotalMassVelocity[iDim];
+      TotalMassVelocity[iDim]           = 0.0;
     }
 
     SU2_MPI::Allreduce(MyTotalFluxes, TotalFluxes, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(MyTotalVelocity, TotalVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(MyTotalAreaVelocity, TotalAreaVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(MyTotalMassVelocity, TotalMassVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-    delete [] MyTotalFluxes; delete [] MyTotalVelocity; delete [] MyTotalAreaVelocity;
+    delete [] MyTotalFluxes; delete [] MyTotalVelocity; delete [] MyTotalAreaVelocity; delete [] MyTotalMassVelocity;
 
 
 #endif
@@ -8429,7 +8457,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
             AverageNormal 			= geometry->GetAverageNormal(iMarker,iSpan);
             nVert								= geometry->GetnTotVertexSpan(iMarker,iSpan);
 
-
+            // cout << "Mass flow" << TotalMassFlow << "Total area" << TotalArea << endl;
             /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
             switch(mixing_process){
             case ALGEBRAIC_AVERAGE:
@@ -8444,6 +8472,13 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
               AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
               for (iDim = 0; iDim < nDim; iDim++)
                 AverageVelocity[iMarker][iSpan][iDim] = TotalAreaVelocity[iDim] / TotalArea;
+              break;
+
+            case MASS_AVERAGE:
+              AverageDensity[iMarker][iSpan] = TotalMassDensity / TotalMassFlow;
+              AveragePressure[iMarker][iSpan] = TotalMassPressure / TotalMassFlow;
+              for (iDim = 0; iDim < nDim; iDim++)
+                AverageVelocity[iMarker][iSpan][iDim] = TotalMassVelocity[iDim] / TotalMassFlow;
               break;
 
             case MIXEDOUT_AVERAGE:
@@ -8467,7 +8502,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
                   else cout << " desnity in mixedout routine negative : " << endl;
 
 #else
-                  cout << " desnity in mixedout routine negative : " << endl;
+                  cout << " density in mixedout routine negative : " << endl;
 #endif
                   AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
                   AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
@@ -8568,6 +8603,7 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
   unsigned short iDim, iVar, iMarker, iMarkerTP, iSpan;
   unsigned short mixing_process = config->GetKind_MixingProcess();
   su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL,
+      MassFlow, TotalMassFlow, TotalMassPressure, TotalMassDensity, *TotalMassVelocity,
       Area, TotalArea, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, *UnitNormal;
   string Marker_Tag, Monitoring_Tag;
   su2double val_init_pressure;
@@ -8583,6 +8619,7 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
   UnitNormal 						= new su2double[nDim];
   TotalVelocity 				= new su2double[nDim];
   TotalAreaVelocity 		= new su2double[nDim];
+  TotalMassVelocity     = new su2double[nDim];
   TotalFluxes 					= new su2double[nVar];
 
   unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
@@ -8591,8 +8628,8 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
 
 
 #ifdef HAVE_MPI
-  su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, *MyTotalFluxes = NULL;
-  su2double *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL;
+  su2double MyTotalDensity, MyTotalPressure, MyTotalAreaDensity, MyTotalAreaPressure, MyTotalMassDensity, MyTotalMassPressure, *MyTotalFluxes = NULL;
+  su2double *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL, *MyTotalMassVelocity = NULL;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -8603,12 +8640,15 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
   for (iDim=0; iDim<nDim; iDim++) {
     TotalVelocity[iDim]=0.0;
     TotalAreaVelocity[iDim]=0.0;
+    TotalMassVelocity[iDim]=0.0;
   }
 
   TotalDensity = 0.0;
   TotalPressure = 0.0;
   TotalAreaPressure=0.0;
   TotalAreaDensity=0.0;
+  TotalMassPressure=0.0;
+  TotalMassDensity=0.0;
 
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
 
@@ -8647,9 +8687,15 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
 
 
               /*--- Compute the integral fluxes for the boundary of interest ---*/
+              switch(mixing_process){
+              case ALGEBRAIC_AVERAGE:
+                TotalDensity += Density;
+                TotalPressure += Pressure;
+                for (iDim = 0; iDim < nDim; iDim++)
+                  TotalVelocity[iDim] += Velocity[iDim];
+                break;
 
-              if ((mixing_process == AREA_AVERAGE) || (mixing_process == MIXEDOUT_AVERAGE)){
-
+              case AREA_AVERAGE: case MIXEDOUT_AVERAGE:
                 TotalFluxes[0] += Area*(Density*VelNormal );
                 for (iDim = 1; iDim < nDim+1; iDim++)
                   TotalFluxes[iDim] += Area*(Density*VelNormal*Velocity[iDim -1] + Pressure*UnitNormal[iDim -1] );
@@ -8659,15 +8705,21 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
                 TotalAreaDensity  += Area*Density;
                 for (iDim = 0; iDim < nDim; iDim++)
                   TotalAreaVelocity[iDim] += Area*Velocity[iDim];
+                break;
 
-              }else{
-
-                TotalDensity += Density;
-                TotalPressure += Pressure;
+              case MASS_AVERAGE:
+                TotalMassFlow     += Area*(Density*VelNormal ); //?
+                TotalMassPressure += Area*(Density*VelNormal )*Pressure;
+                TotalMassDensity  += Area*(Density*VelNormal )*Density;
                 for (iDim = 0; iDim < nDim; iDim++)
-                  TotalVelocity[iDim] += Velocity[iDim];
+                  TotalMassVelocity[iDim] += Area*(Density*VelNormal )*Velocity[iDim];
+                break;
 
 
+              default:
+                cout << "Warning! Invalid MIXING_PROCESS input!" << endl;
+                exit(EXIT_FAILURE);
+                break;
               }
             }
           }
@@ -8686,16 +8738,22 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
   MyTotalPressure      = TotalPressure;  					  TotalPressure        = 0;
   MyTotalAreaDensity   = TotalAreaDensity; 					TotalAreaDensity     = 0;
   MyTotalAreaPressure  = TotalAreaPressure;         TotalAreaPressure    = 0;
+  MyTotalMassDensity   = TotalMassDensity;          TotalMassDensity     = 0;
+  MyTotalMassPressure  = TotalMassPressure;         TotalMassPressure    = 0;
+
 
   SU2_MPI::Allreduce(&MyTotalDensity, &TotalDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotalPressure, &TotalPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotalAreaDensity, &TotalAreaDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyTotalAreaPressure, &TotalAreaPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotalMassDensity, &TotalMassDensity, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyTotalMassPressure, &TotalMassPressure, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
 
   MyTotalFluxes					 = new su2double[nVar];
   MyTotalVelocity        = new su2double[nDim];
   MyTotalAreaVelocity    = new su2double[nDim];
+  MyTotalMassVelocity    = new su2double[nDim];
 
   for (iVar = 0; iVar < nVar; iVar++) {
     MyTotalFluxes[iVar]  = TotalFluxes[iVar];
@@ -8703,18 +8761,20 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
   }
 
   for (iDim = 0; iDim < nDim; iDim++) {
-    MyTotalVelocity[iDim]      			  = TotalVelocity[iDim];
-    TotalVelocity[iDim]        			  = 0.0;
-    MyTotalAreaVelocity[iDim]  			  = TotalAreaVelocity[iDim];
-    TotalAreaVelocity[iDim]    				= 0.0;
+    MyTotalVelocity[iDim]             = TotalVelocity[iDim];
+    TotalVelocity[iDim]               = 0.0;
+    MyTotalAreaVelocity[iDim]         = TotalAreaVelocity[iDim];
+    TotalAreaVelocity[iDim]           = 0.0;
+    MyTotalMassVelocity[iDim]         = TotalMassVelocity[iDim];
+    TotalMassVelocity[iDim]           = 0.0;
   }
 
   SU2_MPI::Allreduce(MyTotalFluxes, TotalFluxes, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(MyTotalVelocity, TotalVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(MyTotalAreaVelocity, TotalAreaVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(MyTotalMassVelocity, TotalMassVelocity, nDim, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-  delete [] MyTotalFluxes; delete [] MyTotalVelocity; delete [] MyTotalAreaVelocity;
-
+  delete [] MyTotalFluxes; delete [] MyTotalVelocity; delete [] MyTotalAreaVelocity; delete [] MyTotalMassVelocity;
 
 #endif
 
@@ -8729,7 +8789,7 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
           AverageNormal 			= geometry->GetAverageNormal(iMarker,nSpanWiseSections);
           nVert								= geometry->GetnTotVertexSpan(iMarker,nSpanWiseSections);
 
-
+          // cout << "Mass flow" << TotalMassFlow << "Total area" << TotalArea << endl;
           /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
           switch(mixing_process){
           case ALGEBRAIC_AVERAGE:
@@ -8746,6 +8806,14 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
               AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalAreaVelocity[iDim] / TotalArea;
             break;
 
+          case MASS_AVERAGE:
+            AverageDensity[iMarker][nSpanWiseSections] = TotalMassDensity / TotalMassFlow;
+            AveragePressure[iMarker][nSpanWiseSections] = TotalMassPressure / TotalMassFlow;
+            for (iDim = 0; iDim < nDim; iDim++)
+              AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalMassVelocity[iDim] / TotalMassFlow;
+            break;
+
+
           case MIXEDOUT_AVERAGE:
             for (iVar = 0; iVar<nVar; iVar++){
               AverageFlux[iMarker][nSpanWiseSections][iVar] = TotalFluxes[iVar]/TotalArea;
@@ -8753,7 +8821,7 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
             val_init_pressure = TotalAreaPressure/TotalArea;
 
             if (abs(AverageFlux[iMarker][nSpanWiseSections][0])<(10.0e-9)*TotalAreaDensity) {
-              cout << "Mass flux is 0.0 so a Area Averaged algorithm is used for the Mixing Procees" << endl;
+              cout << "Mass flux is 0.0 so a Area Averaged algorithm is used for the Mixing Process" << endl;
               AverageDensity[iMarker][nSpanWiseSections] = TotalAreaDensity / TotalArea;
               AveragePressure[iMarker][nSpanWiseSections] = TotalAreaPressure / TotalArea;
               for (iDim = 0; iDim < nDim; iDim++)
@@ -8763,11 +8831,11 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
               MixedOut_Average (val_init_pressure, AverageFlux[iMarker][nSpanWiseSections], AverageNormal, &AveragePressure[iMarker][nSpanWiseSections], &AverageDensity[iMarker][nSpanWiseSections]);
               if (AverageDensity[iMarker][nSpanWiseSections] < 0.0){
 #ifdef HAVE_MPI
-                if(size > 1 && rank == MASTER_NODE)cout << " desnity in mixedout routine negative : " << endl;
-                else cout << " desnity in mixedout routine negative : " << endl;
+                if(size > 1 && rank == MASTER_NODE)cout << " density in mixedout routine negative : " << endl;
+                else cout << " density in mixedout routine negative : " << endl;
 
 #else
-                cout << " desnity in mixedout routine negative : " << endl;
+                cout << " density in mixedout routine negative : " << endl;
 #endif
                 AverageDensity[iMarker][nSpanWiseSections] = TotalAreaDensity / TotalArea;
                 AveragePressure[iMarker][nSpanWiseSections] = TotalAreaPressure / TotalArea;
@@ -8857,6 +8925,7 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
   delete [] UnitNormal;
   delete [] TotalVelocity;
   delete [] TotalAreaVelocity;
+  delete [] TotalMassVelocity;
   delete [] TotalFluxes;
 }
 
@@ -8938,11 +9007,11 @@ void CEulerSolver::MixedOut_Root_Function(su2double *pressure, su2double *val_Av
   *density = val_Averaged_Flux[0] / velnormal;
   if (*density <= 0){
     //#ifdef HAVE_MPI
-    //		if(size > 1 && rank == MASTER_NODE)cout << " desnity in mixedout routine negative : " << endl;
-    //		else cout << " desnity in mixedout routine negative : " << endl;
+    //		if(size > 1 && rank == MASTER_NODE)cout << " density in mixedout routine negative : " << endl;
+    //		else cout << " density in mixedout routine negative : " << endl;
     //
     //#else
-    //  	cout << " desnity in mixedout routine negative : " << endl;
+    //  	cout << " density in mixedout routine negative : " << endl;
     //#endif
   }
   FluidModel->SetTDState_Prho(*pressure, *density);
