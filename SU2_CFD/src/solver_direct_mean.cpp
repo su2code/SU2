@@ -4412,8 +4412,9 @@ void CEulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
     }
     
     if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
-        (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY)) {
-      
+        (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY) ||
+				(Boundary == INLET_FLOW))
+		{
       /*--- Forces initialization at each Marker ---*/
       
       CDrag_Inv[iMarker] = 0.0;        CLift_Inv[iMarker] = 0.0; CSideForce_Inv[iMarker] = 0.0;
@@ -8984,8 +8985,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 							Vel_Mag = poly2D( -0.7085458261471165, -0.0082692314282440,-0.2913746290723793 , 0.0082599222660065 , 0.9999361038208008, y);
 							Vel_Mag *= polydisc(A , z_max, z_min, Coord[2]);
 						}
-												
-						
 						
 						//Density = Rho;
 						
