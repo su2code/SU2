@@ -3,7 +3,7 @@
 ## \file mesh_adaptation.py
 #  \brief Python script for doing the grid adaptation using the SU2 suite.
 #  \author F. Palacios
-#  \version 4.1.1 "Cardinal"
+#  \version 4.1.2 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
