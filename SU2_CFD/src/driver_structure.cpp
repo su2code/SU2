@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1748,7 +1748,8 @@ for (targetZone = 0; targetZone < nZone; targetZone++){
 	for( iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
 			
 		FSI_interface_marker = config_container[targetZone]->GetMarker_FSIinterface( config_container[targetZone]->GetMarker_All_TagBound( iMarkerTarget ) );
-		
+		if(rank == 0)
+			cout << nMarkerTarget << "  " << FSI_interface_marker << endl;
 		if(	FSI_interface_marker != 0 ){
 			
 			
@@ -1781,9 +1782,13 @@ for (targetZone = 0; targetZone < nZone; targetZone++){
 				
 						FSI_interface_marker_compare = config_container[donorZone]->GetMarker_FSIinterface( config_container[donorZone]->GetMarker_All_TagBound( iMarkerDonor) );
 						
+						if(rank == 0)
+							cout << nMarkerDonor << "  " << FSI_interface_marker_compare << endl;
+						
 						if( FSI_interface_marker_compare != 0 && FSI_interface_marker == FSI_interface_marker_compare  ){
 							
-							//cout << donorZone << "  " << targetZone << "  " << FSI_interface_marker_compare << "  " << FSI_interface_marker << "  " << endl;
+							if(rank == 0)
+								cout << donorZone << "  " << targetZone << "  " << FSI_interface_marker_compare << "  " << FSI_interface_marker << "  " << endl;
 				
 							/*--- Initialize donor booleans ---*/
 
@@ -1881,9 +1886,10 @@ for (targetZone = 0; targetZone < nZone; targetZone++){
 								transfer_container[donorZone][targetZone] = new CTransfer_SlidingInterface(nVar, nVarTransfer, config_container[donorZone]);
 								if (rank == MASTER_NODE) cout << "sliding interface. " << endl;
 								
-								
-								//transfer_container[donorZone][targetZone] = new CTransfer_ConservativeVars(nVar, nVarTransfer, config_container[donorZone]);
-								//if (rank == MASTER_NODE) cout << "generic conservative variables. " << endl;
+								/*
+								transfer_container[donorZone][targetZone] = new CTransfer_ConservativeVars(nVar, nVarTransfer, config_container[donorZone]);
+								if (rank == MASTER_NODE) cout << "generic conservative variables. " << endl;
+								*/
 							}
 
 						}
