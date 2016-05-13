@@ -3,7 +3,7 @@
  * \brief Headers of the Finite Element structure (gaussian points)
  *        The subroutines and functions are in the <i>gauss_structure.cpp</i> file.
  * \author R. Sanchez
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -48,7 +48,7 @@ using namespace std;
  * \class CGaussVariable
  * \brief Main class for defining the gaussian points.
  * \author R. Sanchez
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CGaussVariable {
 protected:
