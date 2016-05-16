@@ -307,6 +307,9 @@ ___bin_SU2_GEO_SOURCES = \
 # if BUILD_CGNS
 # endif
 
+# if BUILD_LAPACK
+# endif
+
 # if BUILD_HDF5
 # endif
 
@@ -324,11 +327,11 @@ ___bin_SU2_GEO_SOURCES = \
 
 # if BUILD_GELITE
 ___bin_SU2_GEO_CXXFLAGS = @su2_externals_INCLUDES@ @CGNS_CXX@ \
-	@HDF5_CXX@ @SZIP_CXX@ @ZLIB_CXX@ @MUTATIONPP_CXX@ \
+	@LAPACK_CXX@ @HDF5_CXX@ @SZIP_CXX@ @ZLIB_CXX@ @MUTATIONPP_CXX@ \
 	@JSONCPP_CXX@ @GELITE_CXX@ $(am__empty)
 ___bin_SU2_GEO_LDADD = ../../Common/lib/libSU2.a @su2_externals_LIBS@ \
-	@CGNS_LD@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ @MUTATIONPP_LD@ \
-	@JSONCPP_LD@ @GELITE_LD@ $(am__empty)
+	@CGNS_LD@ @LAPACK_LD@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ \
+	@MUTATIONPP_LD@ @JSONCPP_LD@ @GELITE_LD@ $(am__empty)
 all: all-am
 
 .SUFFIXES:

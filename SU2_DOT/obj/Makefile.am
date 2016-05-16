@@ -59,6 +59,11 @@ su2_dot_cxx_flags += @CGNS_CXX@
 su2_dot_ldadd += @CGNS_LD@
 # endif
 
+# if BUILD_LAPACK
+su2_dot_cxx_flags += @LAPACK_CXX@
+su2_dot_ldadd += @LAPACK_LD@
+# endif
+
 # if BUILD_MUTATIONPP
 su2_dot_cxx_flags += @MUTATIONPP_CXX@
 su2_dot_ldadd += @MUTATIONPP_LD@

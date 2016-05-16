@@ -123,6 +123,11 @@ lib_cxxflags += @CGNS_CXX@
 lib_ldadd += @CGNS_LD@
 # endif
 
+# if BUILD_LAPACK
+lib_cxxflags += @LAPACK_CXX@
+lib_ldadd += @LAPACK_LD@
+# endif
+
 # if BUILD_HDF5
 lib_cxxflags += @HDF5_CXX@
 lib_ldadd += @HDF5_LD@
