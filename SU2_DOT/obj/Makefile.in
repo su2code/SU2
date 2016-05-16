@@ -327,6 +327,9 @@ su2_dot_sources = ../include/SU2_DOT.hpp \
 # if BUILD_CGNS
 # endif
 
+# if BUILD_LAPACK
+# endif
+
 # if BUILD_MUTATIONPP
 # endif
 
@@ -343,12 +346,12 @@ su2_dot_sources = ../include/SU2_DOT.hpp \
 # endif
 
 # if BUILD_GELITE
-su2_dot_cxx_flags = @su2_externals_INCLUDES@ @CGNS_CXX@ \
+su2_dot_cxx_flags = @su2_externals_INCLUDES@ @CGNS_CXX@ @LAPACK_CXX@ \
 	@MUTATIONPP_CXX@ @JSONCPP_CXX@ @HDF5_CXX@ @SZIP_CXX@ \
 	@ZLIB_CXX@ @GELITE_CXX@ $(am__empty)
-su2_dot_ldadd = @su2_externals_LIBS@ @CGNS_LD@ @MUTATIONPP_LD@ \
-	@JSONCPP_LD@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ @GELITE_LD@ \
-	$(am__empty)
+su2_dot_ldadd = @su2_externals_LIBS@ @CGNS_LD@ @LAPACK_LD@ \
+	@MUTATIONPP_LD@ @JSONCPP_LD@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ \
+	@GELITE_LD@ $(am__empty)
 # endif
 @BUILD_NORMAL_TRUE@___bin_SU2_DOT_SOURCES = ${su2_dot_sources}
 @BUILD_NORMAL_TRUE@___bin_SU2_DOT_CXXFLAGS = ${su2_dot_cxx_flags}

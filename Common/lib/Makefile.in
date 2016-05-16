@@ -594,6 +594,9 @@ lib_sources = \
 # if BUILD_CGNS
 # endif
 
+# if BUILD_LAPACK
+# endif
+
 # if BUILD_HDF5
 # endif
 
@@ -610,11 +613,11 @@ lib_sources = \
 # endif
 
 # if BUILD_GELITE
-lib_cxxflags = @su2_externals_INCLUDES@ @CGNS_CXX@ @HDF5_CXX@ \
-	@SZIP_CXX@ @ZLIB_CXX@ @MUTATIONPP_CXX@ @JSONCPP_CXX@ \
-	@GELITE_CXX@ $(am__empty)
-lib_ldadd = @su2_externals_LIBS@ @CGNS_LD@ @HDF5_LD@ @SZIP_LD@ \
-	@ZLIB_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ @GELITE_LD@ \
+lib_cxxflags = @su2_externals_INCLUDES@ @CGNS_CXX@ @LAPACK_CXX@ \
+	@HDF5_CXX@ @SZIP_CXX@ @ZLIB_CXX@ @MUTATIONPP_CXX@ \
+	@JSONCPP_CXX@ @GELITE_CXX@ $(am__empty)
+lib_ldadd = @su2_externals_LIBS@ @CGNS_LD@ @LAPACK_LD@ @HDF5_LD@ \
+	@SZIP_LD@ @ZLIB_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ @GELITE_LD@ \
 	$(am__empty)
 # endif
 @BUILD_NORMAL_TRUE@libSU2_a_SOURCES = $(lib_sources)
