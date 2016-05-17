@@ -32,15 +32,15 @@
 #include "../include/config_structure.hpp"
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
-
-  rank = MASTER_NODE;
   
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+  rank = MASTER_NODE;
 #endif
 
   /*--- Initialize pointers to Null---*/
- 
+
   SetPointersNull();
 
   /*--- Reading config options  ---*/

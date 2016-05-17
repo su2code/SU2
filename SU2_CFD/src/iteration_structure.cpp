@@ -153,13 +153,6 @@ void CMeanFlowIteration::Iterate(COutput *output,
 			IntIter = ExtIter;
 	  else
 	        IntIter = config_container[val_iZone]->GetIntIter();
-		
-	  /* Transferring states at zone interface boundaries for the computation 
-	   * interface fluxes, this will be moved to transfer container class */
-	/*
-	  if( nZone > 1 && !fsi && !config_container[val_iZone]->GetBoolMixingPlane() && !config_container[val_iZone]->GetMatchingMesh() && unsteady)// to change with bool value for sliding interface
-		SetSlidingInterface(geometry_container, solver_container, config_container, RUNTIME_FLOW_SYS);
-		*/
 
       /*--- Update global parameters ---*/
       
@@ -513,121 +506,6 @@ void CMeanFlowIteration::InitializeVortexDistribution(unsigned long &nVortex, ve
   // number of vortices
   nVortex = x0.size();
   
-}
-
-void CMeanFlowIteration::SetSlidingInterface(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, unsigned short RunTime_EqSystem) {
-  
-  int jZone, iZone, iDim, nDim;
-  int iMarker, jMarker, nMarker;
-  int iVar, nVar;
-  int iVertex, nVertex;
-  int nZone = geometry_container[ZONE_0][MESH_0]->GetnZone();
-  int FSI_interface_marker, FSI_interface_marker_compare;
-  
-  int iPoint, jPoint;
-  int iMainSolver, jMainSolver;
-  
-  su2double* gridVel;
-  su2double  sq_vel, dtmp;
-  
-  string intMarker_Tag, extMarker_Tag;
-  
-  nDim = geometry_container[ZONE_0][MESH_0]->GetnDim();
-  
-  nVar = solver_container[ZONE_0][MESH_0][iMainSolver]->GetnPrimVar();
-  
-  	for (iZone = 0; iZone < nZone; iZone++) {             
-	
-		iMainSolver = config_container[iZone]->GetContainerPosition(RunTime_EqSystem);
-	
-		for (iMarker = 0; iMarker < config_container[iZone]->GetnMarker_All(); iMarker++) {
-			
-			FSI_interface_marker = config_container[iZone]->GetMarker_FSIinterface( config_container[iZone]->GetMarker_All_TagBound( iMarker) );
-			
-			if(	FSI_interface_marker != 0 ){
-				
-				for (jZone = 0; jZone < nZone; jZone++){
-					
-					if(jZone == iZone) continue;
-					
-					for (jMarker = 0; jMarker < config_container[jZone]->GetnMarker_All(); jMarker++){
-										
-						FSI_interface_marker_compare = config_container[jZone]->GetMarker_FSIinterface( config_container[jZone]->GetMarker_All_TagBound( jMarker) );
-					
-						if ( FSI_interface_marker_compare != 0 && FSI_interface_marker == FSI_interface_marker_compare  ) {
-							
-							
-							jMainSolver = config_container[jZone]->GetContainerPosition(RunTime_EqSystem);
-							
-							nVertex = geometry_container[iZone][MESH_0]->GetnVertex(iMarker);
-
-							for (iVertex= 0; iVertex < nVertex; iVertex++){
-														
-								iPoint = geometry_container[iZone][MESH_0]->vertex[iMarker][iVertex]->GetInterpDonorPoint(0);
-								
-								for (iVar = 0; iVar < nVar; iVar++)
-									 solver_container[iZone][MESH_0][iMainSolver]->SetSlidingState(iMarker, iVertex, iVar, solver_container[jZone][MESH_0][jMainSolver]->node[iPoint]->GetPrimitive(iVar));		
-
-/*
-	for (iZone = 0; iZone < nZone; iZone++) {             
-	
-		iMainSolver = config_container[iZone]->GetContainerPosition(RunTime_EqSystem);
-	
-		for (iMarker = 0; iMarker < config_container[iZone]->GetnMarker_All(); iMarker++) {
-
-			if (config_container[iZone]->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {		
-		
-				for (jZone = 0; jZone < nZone; jZone++){
-					
-					if(jZone != iZone){
-						
-						jMainSolver = config_container[jZone]->GetContainerPosition(RunTime_EqSystem);
-						
-						nVertex = geometry_container[iZone][MESH_0]->GetnVertex(iMarker);
-
-						for (iVertex= 0; iVertex < nVertex; iVertex++){
-													
-							iPoint = geometry_container[iZone][MESH_0]->vertex[iMarker][iVertex]->GetInterpDonorPoint(0);
-							
-							for (iVar = 0; iVar < nVar; iVar++)
-								 solver_container[iZone][MESH_0][iMainSolver]->SetSlidingState(iMarker, iVertex, iVar, solver_container[jZone][MESH_0][jMainSolver]->node[iPoint]->GetPrimitive(iVar));
-*/
-
-							/*
-							if(config_container[jZone]->GetGrid_Movement()){
-								
-									gridVel = geometry_container[jZone][MESH_0]->node[iPoint]->GetGridVel();
-								
-								
-									sq_vel = 0;
-									for (iDim = 0; iDim < nDim; iDim++){
-									
-										dtmp = solver_container[iZone][MESH_0][iMainSolver]->SlidingState[iVertex][1 + iDim];
-										sq_vel += dtmp*dtmp;
-										
-										solver_container[iZone][MESH_0][iMainSolver]->SlidingState[iVertex][1 + iDim] -= gridVel[iDim];
-									}
-									
-									solver_container[iZone][MESH_0][iMainSolver]->SlidingState[iVertex][nDim+3] -= 0.5 * sq_vel;
-									
-									for (iDim = 0; iDim < nDim; iDim++){
-										dtmp = solver_container[iZone][MESH_0][iMainSolver]->SlidingState[iVertex][1 + iDim];
-										sq_vel += dtmp*dtmp;
-									}
-									
-									solver_container[iZone][MESH_0][iMainSolver]->SlidingState[iVertex][nDim+3] += 0.5 * sq_vel;
-								
-							}
-							*/						
-								
-							}
-						}
-				
-					}
-				}
-			}
-		}	
-	}	
 }
 
 void CMeanFlowIteration::SetMixingPlane(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, unsigned short iZone) {
