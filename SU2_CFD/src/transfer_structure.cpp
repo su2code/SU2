@@ -173,6 +173,9 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
       }
     }
     
+    if(Marker_Target == -1 || Marker_Donor == -1)
+		continue;
+    
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
     Buffer_Send_nVertexTarget[0] = nLocalVertexTarget;							   // Retrieve total number of vertices on Target marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
@@ -537,6 +540,9 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
         Marker_Target = -1;
       }
     }
+    
+    if(Marker_Target == -1 || Marker_Donor == -1)
+		continue;
     
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
@@ -1144,6 +1150,9 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
         Marker_Target = -1;
       }
     }
+    
+    if(Marker_Target == -1 || Marker_Donor == -1)
+		continue;
     
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;	  // Retrieve total number of vertices on Donor marker
     Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side

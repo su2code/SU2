@@ -2630,6 +2630,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Basic dimensionalization of the markers (worst scenario) ---*/
 
   nMarker_All = nMarker_Max;
+  cout << "RANK  "<< rank << "  SIZE   " << size << "  nmarker all" << nMarker_All << endl;
 
   /*--- Allocate the memory (markers in each domain) ---*/
   

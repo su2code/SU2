@@ -132,7 +132,7 @@ CDriver::CDriver(CIteration **iteration_container,
 		cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
 
 
-	if (((nZone > 1)) ) {
+	if ( nZone > 1 ) {
 
 		for (iZone = 0; iZone < nZone; iZone++){
 			transfer_container[iZone] = new CTransfer*[nZone];
@@ -1781,15 +1781,15 @@ for (targetZone = 0; targetZone < nZone; targetZone++){
 				for( iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
 				
 						FSI_interface_marker_compare = config_container[donorZone]->GetMarker_FSIinterface( config_container[donorZone]->GetMarker_All_TagBound( iMarkerDonor) );
-						
+						/*
 						if(rank == 0)
 							cout << nMarkerDonor << "  " << FSI_interface_marker_compare << endl;
-						
+						*/
 						if( FSI_interface_marker_compare != 0 && FSI_interface_marker == FSI_interface_marker_compare  ){
-							
+							/*
 							if(rank == 0)
 								cout << donorZone << "  " << targetZone << "  " << FSI_interface_marker_compare << "  " << FSI_interface_marker << "  " << endl;
-				
+				*/
 							/*--- Initialize donor booleans ---*/
 
 							fluid_donor  = false;  structural_donor  = false;
@@ -2722,8 +2722,8 @@ void CFSIDriver::Run(CIteration **iteration_container,
 		                                       solver_container, numerics_container, config_container,
 		                                       surface_movement, grid_movement, FFDBox, ZONE_FLOW);
 		                                       
-		if ( (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) ) 
-			nIntIter = config_container[MESH_0]->GetUnst_nIntIter();
+		if ( (config_container[ZONE_FLOW]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[ZONE_FLOW]->GetUnsteady_Simulation() == DT_STEPPING_2ND) ) 
+			nIntIter = config_container[ZONE_FLOW]->GetUnst_nIntIter();
 		else
 			nIntIter = 1;
 
