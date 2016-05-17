@@ -60,6 +60,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
+  bool riemann_inflow;
+
+
   /*--- Compute inviscid residuals ---*/
   
   switch (config->GetKind_ConvNumScheme()) {
@@ -123,9 +126,11 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       		solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	break;
       case RIEMANN_BOUNDARY:
+      	riemann_inflow = ((config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker)) == TOTAL_CONDITIONS_PT) ||
+      	  												(config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker)) == UNSTEADY_TOTAL_CONDITIONS_PT));
       	if (MainSolver == FLOW_SOL)
       		solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-      	else if (MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker)) == TOTAL_CONDITIONS_PT)
+      	else if (riemann_inflow)
       		solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	else if (MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker)) == STATIC_PRESSURE)
       		solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
