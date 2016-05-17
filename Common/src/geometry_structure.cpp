@@ -1432,8 +1432,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   int size = SINGLE_NODE;
   unsigned short nMarker_Max = config->GetnMarker_Max();
   
-  cout << "CONSTRUCTOR  " << nMarker_Max << endl;
-  
+   
   /*--- Some dynamic arrays so we're not allocating too much on the stack ---*/
   
   unsigned long *nVertexDomain       = new unsigned long[nMarker_Max];
