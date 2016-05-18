@@ -7226,6 +7226,56 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
     invP_Tensor[iVar] = new su2double[nVar];
   }
   
+  string UnstExt, text_line;
+  ifstream input_file;
+  string input_filename = "test.csv";
+
+  input_file.open(input_filename.data(), ios::in);
+  if (input_file.fail()) {
+//    if (rank == MASTER_NODE)
+      cout << "There is no input file!! " << input_filename.data() << "."<< endl;
+    exit(EXIT_FAILURE);
+  }
+
+  /*--- Read all lines in the restart file ---*/
+
+  long iPoint_file = 0;
+
+  /*--- The first line is the header ---*/
+
+//  display getline (input_file, text_line);
+
+//  std::size_t lines_count =0;
+//  std::string line;
+//  while (getline(input_file , line))
+//          ++lines_count;
+//  while (getline (input_file, text_line)) {
+//    	istringstream point_line(text_line);
+//
+//    	point_line >> var_test ;
+//
+//    	iPoint_Global++;
+//  }
+
+  su2double var_test1, var_test2;
+  unsigned long points_number = 0;
+
+  while (getline (input_file, text_line)) {
+  	points_number++;
+  }
+  input_file.close();
+  input_file.open(input_filename.data(), ios::in);
+
+  getline (input_file, text_line, ',');
+  for (iPoint_file=0; iPoint_file < points_number; iPoint_file++){
+  	getline(input_file , text_line);
+  	istringstream point_line(text_line);
+  	point_line >> var_test1 >> var_test2 ;
+  }
+
+
+
+
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -7480,8 +7530,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           y_0 = -0.02755;
 
           if (config->GetUnsteady_Simulation() == 0) Physical_t = 0;
-          t_perio = fmod(Physical_t, Period);
-          y_perio = fmod(Boundary_Vel*t_perio + (yCoord - y_0), 0.105);
+          t_perio = fmod((long double)Physical_t,(long double) Period);
+          y_perio = fmod((long double)Boundary_Vel*t_perio + (yCoord - y_0), (long double) 0.105);
 
 
 
@@ -7532,7 +7582,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           break;
           
       }
-      
+
       /*--- Compute P (matrix of right eigenvectors) ---*/
       conv_numerics->GetPMatrix(&Density_i, Velocity_i, &SoundSpeed_i, &Enthalpy_i, &Chi_i, &Kappa_i, UnitNormal, P_Tensor);
       

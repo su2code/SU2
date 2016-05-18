@@ -3121,9 +3121,18 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
                 	omega_boundary += cf_omega[iPol]*pow(y_perio, 11-iPol);
       }
 
-      Solution_j[0]= kine_boundary;//kine_Inf;
-      Solution_j[1]= omega_boundary;////omega_Inf;
+      Solution_j[0]= fabs(kine_boundary);//kine_Inf;
+      Solution_j[1]= fabs(omega_boundary);////omega_Inf;
       
+
+      // Just for test purpose
+      if (config->GetUnsteady_Simulation() == 0){
+      	Solution_j[0]= kine_Inf;
+      	Solution_j[1]= omega_Inf;
+      };
+
+
+
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
       
       /*--- Set various other quantities in the solver class ---*/
