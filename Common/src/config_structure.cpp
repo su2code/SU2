@@ -172,6 +172,8 @@ void CConfig::SetPointersNull(void) {
   Hold_GridFixed_Coord=NULL;
   EA_IntLimit=NULL;
   RK_Alpha_Step=NULL;
+  MG_PreSmooth=NULL;
+  MG_PostSmooth=NULL;
 
   /*--- Moving mesh pointers ---*/
 
