@@ -5576,8 +5576,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       }
     }
   }
-  
-  if (rank == MASTER_NODE) {
     
     while (getline (mesh_file, text_line)) {
       /*--- Read number of markers ---*/
@@ -5775,7 +5773,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       config->SetPeriodicRotation(iPeriodic, rotation);
       config->SetPeriodicTranslate(iPeriodic, translate);
     }
-  }
   
   /*--- Close the input file ---*/
   
