@@ -1571,6 +1571,7 @@ void CFEM_ElasticitySolver_Adj::Stiffness_Sensitivity(CGeometry *geometry, CSolv
     /*--- However, we may be far away from the solution, so in this first (naive) implementation... ---*/
 
     /*--- 1) We compute the new value of the design variable ---*/
+    //dv_val = DV_Val[i_DV] - config->GetDE_Rate() * val_I / sensI_adjoint[i_DV];
     dv_val = DV_Val[i_DV] - config->GetDE_Rate() * val_I / sensI_adjoint[i_DV];
 
 //    cout << dv_val << " " ;
