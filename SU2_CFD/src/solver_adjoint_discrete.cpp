@@ -217,13 +217,8 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   }
 }
 
-<<<<<<< HEAD
-void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
-=======
-CDiscAdjSolver::~CDiscAdjSolver(void){ }
 
-void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned short kind_recording){
->>>>>>> develop
+void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
   unsigned long iPoint;
 
