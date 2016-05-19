@@ -4109,16 +4109,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       ConvHist_file[0] << begin << heat_coeff;
       ConvHist_file[0] << heat_resid << end;
       break;
-<<<<<<< HEAD
       
-    case LINEAR_ELASTICITY:
-      ConvHist_file[0] << begin << fea_coeff;
-      ConvHist_file[0] << fea_resid << end;
-      break;
-      
-=======
-
->>>>>>> develop
     case FEM_ELASTICITY:
       ConvHist_file[0] << begin << fem_coeff;
       ConvHist_file[0] << fem_resid << end;
@@ -4187,13 +4178,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     char begin[1000], direct_coeff[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000],
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
     adj_turb_resid[1000], levelset_resid[1000], adj_levelset_resid[1000], wave_coeff[1000],
-<<<<<<< HEAD
-    heat_coeff[1000], fea_coeff[1000], fem_coeff[1000], wave_resid[1000], heat_resid[1000], fea_resid[1000],
-	fem_resid[1000], end[1000], oneD_outputs[1000], massflow_outputs[1000], d_direct_coeff[1000], turbo_coeff[1000];
-=======
     heat_coeff[1000], fem_coeff[1000], wave_resid[1000], heat_resid[1000],
-	fem_resid[1000], end[1000], oneD_outputs[1000], massflow_outputs[1000], d_direct_coeff[1000];
->>>>>>> develop
+		fem_resid[1000], end[1000], oneD_outputs[1000], massflow_outputs[1000], d_direct_coeff[1000];
 
     su2double dummy = 0.0, *Coord;
     unsigned short iVar, iMarker, iMarker_Monitoring, iDim;
@@ -4788,14 +4774,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                      Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                      Total_CFz, Total_CEff);
-<<<<<<< HEAD
+
             if (direct_diff != NO_DERIVATIVE && !turbo){
               SPRINTF (d_direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f",
-=======
-            if (direct_diff != NO_DERIVATIVE){
-              SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
->>>>>>> develop
-                       D_Total_CLift, D_Total_CDrag, D_Total_CSideForce, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
+              				 D_Total_CLift, D_Total_CDrag, D_Total_CSideForce, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
                        D_Total_CFz, D_Total_CEff);
             } else if (direct_diff != NO_DERIVATIVE && turbo){
               SPRINTF (d_direct_coeff, ", %12.10f, %12.10f", D_TotalPressure_Loss, D_FlowAngle_Out);
@@ -7390,16 +7372,13 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Temperature = solver_container->node[iPoint]->GetTemperature();
           
           Mach = (sqrt(Velocity2))/ solver_container->node[iPoint]->GetSoundSpeed();
-<<<<<<< HEAD
-          //Stag_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),( Gamma/(Gamma-1.0) ) );
-          Tot_Pressure = Pressure + 0.5*Density*Velocity2;
-=======
+
           if (incompressible)
             Tot_Pressure = Pressure + 0.5*solver_container->node[iPoint]->GetDensity()*Velocity2;
           else
             Tot_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),( Gamma/(Gamma-1.0) ) );
 
->>>>>>> develop
+
 
           AveragePt += Tot_Pressure * Area;
           TotalArea += Area;
