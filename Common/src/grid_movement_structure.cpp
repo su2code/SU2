@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -4461,7 +4461,9 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
   
 #endif
   
-  //AoA = atan((LPCoord[1] - TPCoord[1]) / (TPCoord[0] - LPCoord[0]))*180/PI_NUMBER;
+  AoA = atan((LPCoord[1] - TPCoord[1]) / (TPCoord[0] - LPCoord[0]))*180/PI_NUMBER;
+  
+  /*--- WARNING: AoA currently overwritten to zero. ---*/
   AoA = 0.0;
 
 	/*--- Perform multiple airfoil deformation ---*/
@@ -5865,7 +5867,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   /*--- Open the restart file, throw an error if this fails. ---*/
   
   cout << "Enter the name of file with the airfoil information: ";
-  ierr = scanf("%s", AirfoilFile);
+  ierr = scanf("%255s", AirfoilFile);
   if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
   airfoil_file.open(AirfoilFile, ios::in);
   if (airfoil_file.fail()) {
@@ -5873,7 +5875,7 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
     exit(EXIT_FAILURE);
   }
   cout << "Enter the format of the airfoil (Selig or Lednicer): ";
-  ierr = scanf("%s", AirfoilFormat);
+  ierr = scanf("%14s", AirfoilFormat);
   if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
 
   cout << "Thickness scaling (1.0 means no scaling)?: ";
@@ -5881,11 +5883,11 @@ void CSurfaceMovement::SetAirfoil(CGeometry *boundary, CConfig *config) {
   if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
 
   cout << "Close the airfoil (Yes or No)?: ";
-  ierr = scanf("%s", AirfoilClose);
+  ierr = scanf("%14s", AirfoilClose);
   if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
 
   cout << "Surface mesh orientation (clockwise, or anticlockwise): ";
-  ierr = scanf("%s", MeshOrientation);
+  ierr = scanf("%14s", MeshOrientation);
   if (ierr == 0) { cout << "No input read!! "<< endl; exit(EXIT_FAILURE); }
 
   /*--- The first line is the header ---*/

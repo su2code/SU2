@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_CFD.
  *        The subroutines and functions are in the <i>definition_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -51,7 +51,7 @@ using namespace std;
  * \class CIteration
  * \brief Parent class for defining a single iteration of a physics problem.
  * \author T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CIteration {
 protected:
@@ -170,7 +170,7 @@ public:
  * \class CMeanFlowIteration
  * \brief Class for driving an iteration of the mean flow system.
  * \author T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CMeanFlowIteration : public CIteration {
 public:
@@ -295,7 +295,7 @@ public:
  * \class CWaveIteration
  * \brief Class for driving an iteration of the wave system.
  * \author T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CWaveIteration : public CIteration {
 public:
@@ -404,7 +404,7 @@ public:
  * \class CHeatIteration
  * \brief Class for driving an iteration of the heat system.
  * \author T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CHeatIteration : public CIteration {
 public:
@@ -497,7 +497,7 @@ public:
  * \class CPoissonIteration
  * \brief Class for driving an iteration of the poisson system.
  * \author T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CPoissonIteration : public CIteration {
 public:
@@ -585,100 +585,6 @@ public:
   void Postprocess();
   
 };
-
-/*!
- * \class CFEAIteration
- * \brief Class for driving an iteration of the FEA system.
- * \author T. Economon
- * \version 4.1.0 "Cardinal"
- */
-class CFEAIteration : public CIteration {
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CFEAIteration(CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEAIteration(void);
-  
-  /*!
-   * \brief Preprocessing to prepare for an iteration of the physics.
-   * \param[in] ??? - Description here.
-   */
-  void Preprocess(COutput *output,
-                  CIntegration ***integration_container,
-                  CGeometry ***geometry_container,
-                  CSolver ****solver_container,
-                  CNumerics *****numerics_container,
-                  CConfig **config_container,
-                  CSurfaceMovement **surface_movement,
-                  CVolumetricMovement **grid_movement,
-                  CFreeFormDefBox*** FFDBox,
-                  unsigned short val_iZone);
-  
-  /*!
-   * \brief Perform a single iteration of the FEA system.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
-   */
-  void Iterate(COutput *output,
-               CIntegration ***integration_container,
-               CGeometry ***geometry_container,
-               CSolver ****solver_container,
-               CNumerics *****numerics_container,
-               CConfig **config_container,
-               CSurfaceMovement **surface_movement,
-               CVolumetricMovement **grid_movement,
-               CFreeFormDefBox*** FFDBox,
-               unsigned short val_iZone);
-
-  /*!
-   * \brief Updates the containers for the FEA system.
-   * \param[in] ??? - Description here.
-   */
-  void Update(COutput *output,
-              CIntegration ***integration_container,
-              CGeometry ***geometry_container,
-              CSolver ****solver_container,
-              CNumerics *****numerics_container,
-              CConfig **config_container,
-              CSurfaceMovement **surface_movement,
-              CVolumetricMovement **grid_movement,
-              CFreeFormDefBox*** FFDBox,
-              unsigned short val_iZone);
-  
-  /*!
-   * \brief Monitors the convergence and other metrics for the FEA system.
-   * \param[in] ??? - Description here.
-   */
-  void Monitor();
-  
-  /*!
-   * \brief Outputs desired files and quantities for the FEA system.
-   * \param[in] ??? - Description here.
-   */
-  void Output();
-  
-  /*!
-   * \brief Postprocesses the FEA system before heading to another physics system or the next iteration.
-   * \param[in] ??? - Description here.
-   */
-  void Postprocess();
-  
-};
-
 
 /*!
  * \class CFEM_StructuralAnalysis
@@ -771,7 +677,7 @@ public:
  * \class CAdjMeanFlowIteration
  * \brief Class for driving an iteration of the adjoint mean flow system.
  * \author T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAdjMeanFlowIteration : public CIteration {
 public:
@@ -864,7 +770,7 @@ public:
  * \class CDiscAdjMeanFlowIteration
  * \brief Class for driving an iteration of the discrete adjoint mean flow system.
  * \author T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CDiscAdjMeanFlowIteration : public CIteration {
 
@@ -1012,26 +918,6 @@ public:
 
 };
 
-
-/*!
- * \brief Iteration function for Fluid-Structure Interaction applications.
- * \author F. Palacios, R. Sanchez.
- * \param[in] output - Pointer to the COutput class.
- * \param[in] integration_container - Container vector with all the integration methods.
- * \param[in] geometry_container - Geometrical definition of the problem.
- * \param[in] solver_container - Container vector with all the solutions.
- * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
- * \param[in] config_container - Definition of the particular problem.
- * \param[in] surface_movement - Surface movement classes of the problem.
- * \param[in] grid_movement - Volume grid movement classes of the problem.
- * \param[in] FFDBox - FFD FFDBoxes of the problem.
- * \param[in] ExtIter - Current physical time iteration number.
- * \param[in] nFluidIt - Number of fluid iterations within a fixed time step.
- */
-void FluidStructureIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container, 
-														 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container, 
-														 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
-														 unsigned long iFluidIt, unsigned long nFluidIt);
 
 /*!
  * \brief Iteration function for structural analysis using the Finite Element Method.

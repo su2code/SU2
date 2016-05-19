@@ -2,7 +2,7 @@
  * \file matrix_structure.cpp
  * \brief Main subroutines for doing the sparse structures
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -45,6 +45,9 @@ CSysMatrix::CSysMatrix(void) {
   sum_vector        = NULL;
   invM              = NULL;
   
+  block_weight      = NULL;
+  block_inverse     = NULL;
+
   /*--- Linelet preconditioner ---*/
   
   LineletBool     = NULL;
@@ -1189,7 +1192,7 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
   
-  return i;
+  return (unsigned long) i;
   
 }
 
@@ -1493,7 +1496,7 @@ unsigned long CSysMatrix::ILU0_Smoother(const CSysVector & b, CSysVector & x, CM
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
   
-  return i;
+  return (unsigned int) i;
   
 }
 
@@ -1656,7 +1659,7 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
   
-  return i;
+  return (unsigned int) i;
   
 }
 
