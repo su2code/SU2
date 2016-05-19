@@ -3,7 +3,7 @@
 # \file configure.ac
 # \brief Main file for configuring the autoconf/automake build process
 # \author M. Colonno, T. Economon, F. Palacios, B. Kirk
-# \version 4.1.0 "Cardinal"
+# \version 4.1.2 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -14,7 +14,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -35,10 +35,9 @@
 # METIS & TECIO integration added by Ben Kirk, 3/24/2014
 # LAPACK connection added by Teus van der Stelt, 11/13/2014
 # ParMETIS integration added by Ben Kirk & Thomas D. Economon, 2/3/2015
-#
-################################################################################
+##########################
 
-AC_INIT([SU2], [4.1.0], [su2code-dev@lists.stanford.edu],
+AC_INIT([SU2], [4.1.2], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
@@ -51,6 +50,8 @@ SU2_SET_COMPILERS
 AM_PROG_CC_C_O
 AC_PROG_RANLIB
 AC_PROG_MKDIR_P
+AC_PROG_CXX
+
 #PKG_PROG_PKG_CONFIG
 
 # --------------------------------------------------------------
@@ -572,7 +573,7 @@ AC_MSG_RESULT([
 
 -------------------------------------------------------------------------
 |    ___ _   _ ___                                                      |
-|   / __| | | |_  )   Release 4.1.0 'Cardinal'                          |
+|   / __| | | |_  )   Release 4.1.2 'Cardinal'                          |
 |   \\__ \\ |_| |/ /                                                      |
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
@@ -587,7 +588,7 @@ AC_MSG_RESULT([
 | - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |
 | - Prof. Rafael Palacios' group at Imperial College London.            |
 -------------------------------------------------------------------------
-| Copyright (C) 2012-2015 SU2, the open-source CFD code.                |
+| Copyright (C) 2012-2016 SU2, the open-source CFD code.                |
 |                                                                       |
 | SU2 is free software; you can redistribute it and/or                  |
 | modify it under the terms of the GNU Lesser General Public            |
