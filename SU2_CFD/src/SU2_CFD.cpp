@@ -87,15 +87,11 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
   
-<<<<<<< HEAD
+
   nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  
-=======
-  nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   delete config;
->>>>>>> develop
+
   /*--- Definition and of the containers for all possible zones. ---*/
   
   iteration_container    = new CIteration*[nZone];
