@@ -721,14 +721,8 @@ private:
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
-<<<<<<< HEAD
-#ifdef HAVE_MPI
-  MPI_Comm COMM_TurboPerf;
-#endif
-=======
 
   
->>>>>>> develop
   /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/

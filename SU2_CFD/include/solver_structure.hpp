@@ -2384,13 +2384,13 @@ public:
 	virtual su2double *GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex);
     
 	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-	 * \return Value of the skin friction coefficient.
-	 */
-	virtual su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex);
-    
+	* \brief A virtual member.
+	* \param[in] val_marker - Surface marker where the coefficient is computed.
+	* \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	* \return Value of the skin friction coefficient.
+	*/
+	virtual su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -2784,16 +2784,6 @@ public:
                                     CConfig *flow_config, CConfig *fea_config,
                                     CGeometry **fea_geometry,
                                     CSolver ***fea_solution);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] fea_geometry - Geometrical definition of the problem.
-	 * \param[in] fea_config - Geometrical definition of the problem.
-	 * \param[in] fea_geometry - Definition of the particular problem.
-	 */
-	virtual void SetStruct_Displacement(CGeometry **fea_geometry,
-            							CConfig *fea_config,
-            							CSolver ***fea_solution);
 
 	/*!
 	 * \brief A virtual member.
@@ -2997,7 +2987,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	virtual void Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -3006,7 +2996,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	virtual void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 
 	/*!
@@ -3016,7 +3006,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	virtual void Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -3025,7 +3015,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	virtual void Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -3035,7 +3025,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 
-	virtual void Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	virtual void Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -3070,12 +3060,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void Compute_IntegrationConstants(CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 */
-	virtual void SetSolution_time_n(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -3161,6 +3145,15 @@ public:
 	 * \brief Constructor of the class.
 	 */
 	CBaselineSolver(void);
+
+	/*!
+	 * \overload
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+   * \param[in] nVar - Number of variables.
+   * \param[in] field_names - Vector of variable names.
+	 */
+   CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names);
 
 	/*!
 	 * \overload

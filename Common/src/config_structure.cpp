@@ -322,17 +322,17 @@ void CConfig::SetPointersNull(void) {
   PlaneTag = NULL;
   Kappa_Flow = NULL;    Kappa_AdjFlow = NULL;
   Section_Location = NULL;
-<<<<<<< HEAD
-  U_FreeStreamND = NULL;
-  Design_Variable = NULL;
-=======
+//<<<<<<< HEAD
+//  U_FreeStreamND = NULL;
+//  Design_Variable = NULL;
+//=======
   ParamDV=NULL;     DV_Value = NULL;    Design_Variable=NULL;
   MG_CorrecSmooth = NULL;
   Subsonic_Engine_Box = NULL;
   Hold_GridFixed_Coord=NULL;
   EA_IntLimit=NULL;
   RK_Alpha_Step=NULL;
->>>>>>> develop
+
 
   /*--- Moving mesh pointers ---*/
 
@@ -2844,7 +2844,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   /*--- Allocate the memory (markers in the config file) ---*/
 
-<<<<<<< HEAD
   Marker_CfgFile_TagBound   					= new string[nMarker_CfgFile];
   Marker_CfgFile_KindBC    	 					= new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Monitoring 					= new unsigned short[nMarker_CfgFile];
@@ -2859,19 +2858,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   Marker_CfgFile_Moving     					= new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_PerBound   					= new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_Out_1D     					= new unsigned short[nMarker_CfgFile];
-=======
-  Marker_CfgFile_TagBound     = new string[nMarker_CfgFile];
-  Marker_CfgFile_KindBC       = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Monitoring   = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Designing    = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Plotting     = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_GeoEval      = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_FSIinterface	= new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_DV           = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Moving       = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_PerBound     = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Out_1D       = new unsigned short[nMarker_CfgFile];
->>>>>>> develop
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile]   						= "SEND_RECEIVE";
