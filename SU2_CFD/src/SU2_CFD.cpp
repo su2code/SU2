@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
     /*--- Deallocate the memory of geometry_aux ---*/
     
     delete geometry_aux;
-    cout << "MAIN nmarker" << rank << "  " << iZone << "  " << geometry_container[iZone][MESH_0]->GetnMarker() << endl;
+    
     /*--- Add the Send/Receive boundaries ---*/
     
     geometry_container[iZone][MESH_0]->SetSendReceive(config_container[iZone]);
@@ -356,8 +356,7 @@ int main(int argc, char *argv[]) {
                   geometry_container, solver_container, numerics_container,
                   config_container, surface_movement, grid_movement, FFDBox,
                   interpolator_container, transfer_container);
-      
-    
+
     /*--- Synchronization point after a single solver iteration. Compute the
      wall clock time required. ---*/
     
@@ -375,7 +374,7 @@ int main(int argc, char *argv[]) {
       output->SetEquivalentArea(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                 geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
     }
-    
+
     /*--- Check if there is any change in the runtime parameters ---*/
     
     CConfig *runtime = NULL;
@@ -385,13 +384,12 @@ int main(int argc, char *argv[]) {
     
 	/*--- Update the convergence history file (serial and parallel computations). ---*/
 
-	if (!fsi && rank == MASTER_NODE){//&&  !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) || (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING))){
+	if (!fsi){//&&  !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) || (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING))){
 		//for(iZone = 0; iZone < nZone; iZone++)
 			output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container, config_container, integration_container, false, UsedTime, ZONE_0);
 
 	}
-
-    
+	 
     /*--- Evaluate the new CFL number (adaptive). ---*/
     
     if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
@@ -400,7 +398,7 @@ int main(int argc, char *argv[]) {
     
     /*--- Check whether the current simulation has reached the specified
      convergence criteria, and set StopCalc to true, if so. ---*/
-    
+
     switch (config_container[ZONE_0]->GetKind_Solver()) {
       case EULER: case NAVIER_STOKES: case RANS:
         StopCalc = integration_container[ZONE_0][FLOW_SOL]->GetConvergence(); break;
@@ -418,7 +416,7 @@ int main(int argc, char *argv[]) {
 		/*--- Solution output. Determine whether a solution needs to be written
 		 after the current iteration, and if so, execute the output file writing
 		 routines. ---*/
-		
+
 		if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter())
 				
 				||

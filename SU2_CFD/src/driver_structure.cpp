@@ -1748,8 +1748,7 @@ for (targetZone = 0; targetZone < nZone; targetZone++){
 	for( iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
 			
 		FSI_interface_marker = config_container[targetZone]->GetMarker_FSIinterface( config_container[targetZone]->GetMarker_All_TagBound( iMarkerTarget ) );
-		if(rank == 0)
-			cout << nMarkerTarget << "  " << FSI_interface_marker << endl;
+
 		if(	FSI_interface_marker != 0 ){
 			
 			
@@ -1781,15 +1780,9 @@ for (targetZone = 0; targetZone < nZone; targetZone++){
 				for( iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
 				
 						FSI_interface_marker_compare = config_container[donorZone]->GetMarker_FSIinterface( config_container[donorZone]->GetMarker_All_TagBound( iMarkerDonor) );
-						/*
-						if(rank == 0)
-							cout << nMarkerDonor << "  " << FSI_interface_marker_compare << endl;
-						*/
-						if( FSI_interface_marker_compare != 0 && FSI_interface_marker == FSI_interface_marker_compare  ){
-							/*
-							if(rank == 0)
-								cout << donorZone << "  " << targetZone << "  " << FSI_interface_marker_compare << "  " << FSI_interface_marker << "  " << endl;
-				*/
+
+						if( FSI_interface_marker_compare != 0 && FSI_interface_marker == FSI_interface_marker_compare &&  transfer_container[donorZone][targetZone] == NULL){
+
 							/*--- Initialize donor booleans ---*/
 
 							fluid_donor  = false;  structural_donor  = false;
@@ -2046,7 +2039,7 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
 				if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
 					Transfer_Data(output, integration_container, geometry_container, solver_container, numerics_container, config_container,
 								surface_movement, grid_movement, FFDBox, transfer_container, iZone, jZone);
-		
+	
 		for (iZone = 0; iZone < nZone; iZone++) {
 
 			config_container[iZone]->SetIntIter(IntIter);
@@ -2067,7 +2060,6 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
 		if (checkConvergence == nZone) break;
 	}
 
-
 	for (iZone = 0; iZone < nZone; iZone++) {
 		
 		iteration_container[iZone]->Update(output, integration_container, geometry_container,
@@ -2080,7 +2072,6 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
 
 		iteration_container[iZone]->Postprocess(); /*--- Does nothing for now. ---*/
 	}
-  
 }
 
 void CMultiZoneDriver::Transfer_Data(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
@@ -2707,8 +2698,8 @@ void CFSIDriver::Run(CIteration **iteration_container,
 		/*-----------------------------------------------------------------*/
 		/*------------------- Transfer Displacements ----------------------*/
 		/*-----------------------------------------------------------------*/
-
-		Transfer_Displacements(output, integration_container, geometry_container,
+		if(transfer_container[ZONE_STRUCT][ZONE_FLOW] != NULL)
+			Transfer_Displacements(output, integration_container, geometry_container,
                 solver_container, numerics_container, config_container,
                 surface_movement, grid_movement, FFDBox, transfer_container,
                 ZONE_STRUCT, ZONE_FLOW);
@@ -2716,7 +2707,6 @@ void CFSIDriver::Run(CIteration **iteration_container,
 		/*-----------------------------------------------------------------*/
 		/*-------------------- Fluid subiteration -------------------------*/
 		/*-----------------------------------------------------------------*/
-		
 		
 		iteration_container[ZONE_FLOW]->Preprocess(output, integration_container, geometry_container,
 		                                       solver_container, numerics_container, config_container,
@@ -2752,8 +2742,8 @@ void CFSIDriver::Run(CIteration **iteration_container,
 		/*-----------------------------------------------------------------*/
 		/*------------------- Set FEA loads from fluid --------------------*/
 		/*-----------------------------------------------------------------*/
-
-		Transfer_Tractions(output, integration_container, geometry_container,
+		if(transfer_container[ZONE_FLOW][ZONE_STRUCT]!= NULL)
+			Transfer_Tractions(output, integration_container, geometry_container,
                 solver_container, numerics_container, config_container,
                 surface_movement, grid_movement, FFDBox, transfer_container,
                 ZONE_FLOW, ZONE_STRUCT);

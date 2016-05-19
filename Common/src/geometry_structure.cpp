@@ -3992,7 +3992,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       }
       
       /*--- Create the domain structures for the boundaries ---*/
-      cout << "NAMRKER DOMAIN "<< nMarkerDomain << endl;
+      
       nMarker                = nMarkerDomain;
       nElem_Bound            = new unsigned long[nMarker_Max];
       Local_to_Global_Marker = new unsigned short[nMarker_Max];
