@@ -1664,37 +1664,8 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-<<<<<<< HEAD
 	virtual void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config);
-    
-=======
-	virtual su2double GetCPressureTarget(unsigned short val_marker, unsigned long val_vertex);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-	 * \return Value of the pressure coefficient.
-	 */
-	virtual void SetCPressureTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_pressure);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-	 * \return Value of the pressure coefficient.
-	 */
-	virtual su2double *GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-	 * \return Value of the skin friction coefficient.
-	 */
-  virtual su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
-  
->>>>>>> develop
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2024,7 +1995,6 @@ public:
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \return Value of the y force coefficient on the surface <i>val_marker</i>.
    */
-<<<<<<< HEAD
   virtual su2double GetSurface_CFy_Inv(unsigned short val_marker);
   
   /*!
@@ -2062,10 +2032,6 @@ public:
 	 */
 	virtual su2double GetCSideForce_Visc(unsigned short val_marker);
     
-=======
-  virtual void SetOneD_FluxAvgEntalpy(su2double EnthalpyRef);
-
->>>>>>> develop
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -2120,7 +2086,6 @@ public:
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
 	 * \return Value of the drag coefficient (viscous contribution) on the surface <i>val_marker</i>.
 	 */
-<<<<<<< HEAD
 	virtual su2double GetCDrag_Visc(unsigned short val_marker);
     
 	/*!
@@ -2129,12 +2094,6 @@ public:
 	 */
 	virtual su2double GetTotal_CLift(void);
     
-=======
-	virtual void PredictStruct_Displacement(CGeometry **fea_geometry,
-            								CConfig *fea_config,
-            								CSolver ***fea_solution);
-
->>>>>>> develop
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the sideforce coefficient (inviscid + viscous contribution).
@@ -2199,65 +2158,36 @@ public:
 	 * \brief A virtual member.
 	 * \return Value of the difference of the presure and the target pressure.
 	 */
-<<<<<<< HEAD
 	virtual su2double GetTotal_CpDiff(void);
   
   /*!
-=======
-	virtual void Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
-	/*!
->>>>>>> develop
 	 * \brief A virtual member.
 	 * \return Value of the difference of the heat and the target heat.
 	 */
-<<<<<<< HEAD
 	virtual su2double GetTotal_HeatFluxDiff(void);
   
-=======
-	virtual void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
-
->>>>>>> develop
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the Free Surface coefficient (inviscid + viscous contribution).
 	 */
-<<<<<<< HEAD
 	virtual su2double GetTotal_CFreeSurface(void);
     
-=======
-	virtual void Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
->>>>>>> develop
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the FEA coefficient (inviscid + viscous contribution).
 	 */
-<<<<<<< HEAD
 	virtual su2double GetTotal_CFEA(void);
     
-=======
-	virtual void Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
->>>>>>> develop
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the Near-Field Pressure coefficient (inviscid + viscous contribution).
 	 */
-<<<<<<< HEAD
 	virtual su2double GetTotal_CNearFieldOF(void);
     
-=======
-
-	virtual void Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
->>>>>>> develop
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
 	 */
-<<<<<<< HEAD
 	virtual void SetTotal_CEquivArea(su2double val_cequivarea);
   
   /*!
@@ -2278,11 +2208,6 @@ public:
 	 */
 	virtual void SetTotal_CFreeSurface(su2double val_cfreesurface);
     
-=======
-
-	virtual void Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
-
->>>>>>> develop
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_cfea - Value of the FEA coefficient.
@@ -2303,7 +2228,6 @@ public:
     
 	/*!
 	 * \brief A virtual member.
-<<<<<<< HEAD
 	 * \return Value of the moment x coefficient (inviscid + viscous contribution).
 	 */
 	virtual su2double GetTotal_CMx(void);
@@ -2311,9 +2235,6 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the moment y coefficient (inviscid + viscous contribution).
-=======
-	 * \return Value of the dynamic Aitken relaxation factor
->>>>>>> develop
 	 */
 	virtual su2double GetTotal_CMy(void);
     
@@ -2410,23 +2331,8 @@ public:
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
-<<<<<<< HEAD
   virtual su2double GetAllBound_CFz_Inv(void);
   
-=======
-  virtual void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
-};
-
-/*!
- * \class CBaselineSolver
- * \brief Main class for defining a baseline solution from a restart file (for output).
- * \author F. Palacios, T. Economon.
- * \version 4.1.2 "Cardinal"
- */
-class CBaselineSolver : public CSolver {
-public:
-    
->>>>>>> develop
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the lift coefficient (viscous contribution).
@@ -2485,7 +2391,6 @@ public:
 	 */
 	virtual su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex);
     
-<<<<<<< HEAD
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -2493,154 +2398,6 @@ public:
 	 * \return Value of the heat transfer coefficient.
 	 */
 	virtual su2double GetHeatFlux(unsigned short val_marker, unsigned long val_vertex);
-=======
-};
-
-/*!
- * \class CEulerSolver
- * \brief Main class for defining the Euler's flow solver.
- * \ingroup Euler_Equations
- * \author F. Palacios
- * \version 4.1.2 "Cardinal"
- */
-class CEulerSolver : public CSolver {
-protected:
-	
-  su2double
-  Mach_Inf,	/*!< \brief Mach number at the infinity. */
-	Density_Inf,	/*!< \brief Density at the infinity. */
-	Energy_Inf,			/*!< \brief Energy at the infinity. */
-  Temperature_Inf,			/*!< \brief Energy at the infinity. */
-	Pressure_Inf,		/*!< \brief Pressure at the infinity. */
-	*Velocity_Inf;		/*!< \brief Flow Velocity vector at the infinity. */
-	
-  su2double
-  *CDrag_Inv,	/*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
-	*CLift_Inv,			/*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
-	*CSideForce_Inv,		/*!< \brief Sideforce coefficient (inviscid contribution) for each boundary. */
-	*CMx_Inv,			/*!< \brief x Moment coefficient (inviscid contribution) for each boundary. */
-	*CMy_Inv,			/*!< \brief y Moment coefficient (inviscid contribution) for each boundary. */
-	*CMz_Inv,			/*!< \brief z Moment coefficient (inviscid contribution) for each boundary. */
-	*CFx_Inv,			/*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
-	*CFy_Inv,			/*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
-	*CFz_Inv,			/*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
-  *Surface_CLift_Inv, /*!< \brief Lift coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CDrag_Inv, /*!< \brief Drag coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CSideForce_Inv, /*!< \brief Side-force coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CEff_Inv, /*!< \brief Side-force coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CFx_Inv,   /*!< \brief x Force coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CFy_Inv,   /*!< \brief y Force coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CFz_Inv,   /*!< \brief z Force coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CMx_Inv,   /*!< \brief x Moment coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CMy_Inv,   /*!< \brief y Moment coefficient (inviscid contribution) for each monitoring surface. */
-  *Surface_CMz_Inv,   /*!< \brief z Moment coefficient (inviscid contribution) for each monitoring surface. */
-	*CEff_Inv,				/*!< \brief Efficiency (Cl/Cd) (inviscid contribution) for each boundary. */
-	*CMerit_Inv,				/*!< \brief Rotor Figure of Merit (inviscid contribution) for each boundary. */
-	*CT_Inv,			/*!< \brief Thrust coefficient (force in -x direction, inviscid contribution) for each boundary. */
-	*CQ_Inv,			/*!< \brief Torque coefficient (moment in -x direction, inviscid contribution) for each boundary. */
-	*CEquivArea_Inv,				/*!< \brief Equivalent area (inviscid contribution) for each boundary. */
-	*CNearFieldOF_Inv,				/*!< \brief Near field pressure (inviscid contribution) for each boundary. */
-	**CPressure,		/*!< \brief Pressure coefficient for each boundary and vertex. */
-	**CPressureTarget,		/*!< \brief Target Pressure coefficient for each boundary and vertex. */
-	**HeatFlux,		/*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  **HeatFluxTarget,		/*!< \brief Heat transfer coefficient for each boundary and vertex. */
-  **YPlus,		/*!< \brief Yplus for each boundary and vertex. */
-  ***CharacPrimVar,		/*!< \brief Value of the characteristic variables at each boundary. */
-	*ForceInviscid,		/*!< \brief Inviscid force for each boundary. */
-	*MomentInviscid,	/*!< \brief Inviscid moment for each boundary. */
-	*Inflow_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
-  *Bleed_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
-	*Exhaust_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
-	*Inflow_Pressure,	/*!< \brief Fan face pressure for each boundary. */
-	*Inflow_Mach,	/*!< \brief Fan face mach number for each boundary. */
-	*Inflow_Area,	/*!< \brief Boundary total area. */
-  *Bleed_Pressure,	/*!< \brief Fan face pressure for each boundary. */
-  *Bleed_Temperature,	/*!< \brief Fan face mach number for each boundary. */
-  *Bleed_Area,	/*!< \brief Boundary total area. */
-  *Exhaust_Area,	/*!< \brief Boundary total area. */
-  *Exhaust_Pressure,	/*!< \brief Fan face pressure for each boundary. */
-  *Exhaust_Temperature,	/*!< \brief Fan face mach number for each boundary. */
-  Inflow_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
-  Bleed_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
-  Exhaust_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
-	Inflow_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */
-	Inflow_Mach_Total,	/*!< \brief Fan face mach number for each boundary. */
-  Bleed_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */
-  Bleed_Temperature_Total,	/*!< \brief Fan face mach number for each boundary. */
-	InverseDesign;	/*!< \brief Inverse design functional for each boundary. */
-	
-  su2double
-  AllBound_CDrag_Inv,	/*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CLift_Inv,			/*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CSideForce_Inv,			/*!< \brief Total sideforce coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CMx_Inv,			/*!< \brief Total x moment coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CMy_Inv,			/*!< \brief Total y moment coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CMz_Inv,			/*!< \brief Total z moment coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CFx_Inv,			/*!< \brief Total x force coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CFy_Inv,			/*!< \brief Total y force coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CFz_Inv,			/*!< \brief Total z force coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CEff_Inv,			/*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CMerit_Inv,			/*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
-	AllBound_CT_Inv,			/*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CQ_Inv,			/*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CEquivArea_Inv,			/*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */
-	AllBound_CNearFieldOF_Inv;			/*!< \brief Near-Field press coefficient (inviscid contribution) for all the boundaries. */
-	
-  su2double
-  OneD_TotalPress, /*!< \brief average total pressure evaluated at an exit */
-  OneD_Mach, /*!< \brief area average Mach evaluated at an exit */
-  OneD_Temp, /*!< \brief area average Temperature evaluated at an exit */
-  OneD_PressureRef, /*!< \brief area average Pressure evaluated at an exit */
-  OneD_MassFlowRate, /*!< \brief Mass flow rate at an exit */
-  OneD_DensityRef, /*!< \brief flux average density evaluated at an exit */
-  OneD_EnthalpyRef, /*!< \brief flux average enthalpy evaluated at an exit */
-  OneD_VelocityRef, /*!< \brief flux average velocity evaluated at an exit */
-  Total_CDrag, /*!< \brief Total drag coefficient for all the boundaries. */
-	Total_CLift,		/*!< \brief Total lift coefficient for all the boundaries. */
-	Total_CSideForce,		/*!< \brief Total sideforce coefficient for all the boundaries. */
-	Total_CMx,			/*!< \brief Total x moment coefficient for all the boundaries. */
-	Total_CMy,			/*!< \brief Total y moment coefficient for all the boundaries. */
-	Total_CMz,			/*!< \brief Total z moment coefficient for all the boundaries. */
-	Total_CFx,			/*!< \brief Total x force coefficient for all the boundaries. */
-	Total_CFy,			/*!< \brief Total y force coefficient for all the boundaries. */
-	Total_CFz,			/*!< \brief Total z force coefficient for all the boundaries. */
-	Total_CEff,			/*!< \brief Total efficiency coefficient for all the boundaries. */
-	Total_CMerit,			/*!< \brief Total rotor Figure of Merit for all the boundaries. */
-	Total_CT,		/*!< \brief Total thrust coefficient for all the boundaries. */
-	Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
-  Total_Heat,    /*!< \brief Total heat load for all the boundaries. */
-  Total_MaxHeat, /*!< \brief Maximum heat flux on all boundaries. */
-	Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-	Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
-  Total_CFreeSurface,			/*!< \brief Total Free Surface coefficient for all the boundaries. */
-  Total_CpDiff,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-	Total_HeatFluxDiff,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-  Total_MassFlowRate;     /*!< \brief Total Mass Flow Rate on monitored boundaries. */
-  su2double *Surface_CLift,   /*!< \brief Lift coefficient for each monitoring surface. */
-  *Surface_CDrag,          /*!< \brief Drag coefficient for each monitoring surface. */
-  *Surface_CSideForce,     /*!< \brief Side-force coefficient for each monitoring surface. */
-  *Surface_CEff,     /*!< \brief Side-force coefficient for each monitoring surface. */
-  *Surface_CFx,            /*!< \brief x Force coefficient for each monitoring surface. */
-  *Surface_CFy,            /*!< \brief y Force coefficient for each monitoring surface. */
-  *Surface_CFz,            /*!< \brief z Force coefficient for each monitoring surface. */
-  *Surface_CMx,            /*!< \brief x Moment coefficient for each monitoring surface. */
-  *Surface_CMy,            /*!< \brief y Moment coefficient for each monitoring surface. */
-  *Surface_CMz;            /*!< \brief z Moment coefficient for each monitoring surface. */
-	su2double *iPoint_UndLapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
-	*jPoint_UndLapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
-	su2double *SecondaryVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
-	*SecondaryVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
-	su2double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
-	*PrimVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
-	su2double **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
-	unsigned long nMarker,				/*!< \brief Total number of markers using the grid information. */
-  *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
-	bool space_centered,  /*!< \brief True if space centered scheeme used. */
-	euler_implicit,			/*!< \brief True if euler implicit scheme used. */
-	least_squares;        /*!< \brief True if computing gradients by least squares. */
-	su2double Gamma;									/*!< \brief Fluid's Gamma constant (ratio of specific heats). */
-	su2double Gamma_Minus_One;				/*!< \brief Fluids's Gamma - 1.0  . */
->>>>>>> develop
   
   /*!
 	 * \brief A virtual member.
@@ -2650,7 +2407,6 @@ protected:
 	 */
 	virtual su2double GetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex);
   
-<<<<<<< HEAD
   /*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -2666,67 +2422,6 @@ protected:
 	 * \return Value of the y plus.
 	 */
 	virtual su2double GetYPlus(unsigned short val_marker, unsigned long val_vertex);
-=======
-  su2double *Secondary,		/*!< \brief Auxiliary nPrimVar vector. */
-	*Secondary_i,				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point i. */
-	*Secondary_j;				/*!< \brief Auxiliary nPrimVar vector for storing the primitive at point j. */
-
-  su2double Cauchy_Value,	/*!< \brief Summed value of the convergence indicator. */
-	Cauchy_Func;			/*!< \brief Current value of the convergence indicator at one iteration. */
-	unsigned short Cauchy_Counter;	/*!< \brief Number of elements of the Cauchy serial. */
-	su2double *Cauchy_Serie;			/*!< \brief Complete Cauchy serial. */
-	su2double Old_Func,	/*!< \brief Old value of the objective function (the function which is monitored). */
-	New_Func;			/*!< \brief Current value of the objective function (the function which is monitored). */
-  su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
-  unsigned long AoA_Counter;
-
-  CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
-  su2double **AveragedVelocity,
-  	  	 **AveragedNormal,
-		 **AveragedGridVel,
-  	  	  **AveragedFlux,
-		  **TotalFlux,
-		  *TotalArea,
-		  *AveragedNormalVelocity,
-		  *ExtAveragedNormalVelocity,
-		  *AveragedTangVelocity,
-		  *ExtAveragedTangVelocity,
-		  *AveragedTangGridVelocity,
-		  *AveragedMach,
-		  *AveragedNormalMach,
-		  *AveragedTangMach,
-		  *AveragedEnthalpy,
-		  *AveragedPressure,
-		  *AveragedTotTemperature,
-		  *AveragedTotPressure,
-		  *ExtAveragedPressure,
-		  *ExtAveragedTotTemperature,
-		  *ExtAveragedTotPressure,
-		  *AveragedDensity,
-		  *ExtAveragedDensity,
-		  *AveragedSoundSpeed,
-		  *AveragedEntropy,
-		  *MassFlow,
-		  *FlowAngle;
-  su2double *TotalStaticEfficiency,
-  	  	  	*TotalTotalEfficiency,
-			*KineticEnergyLoss,
-			*TotalPressureLoss,
-  	  	  	*MassFlowIn,
-			*MassFlowOut,
-			*FlowAngleIn,
-			*FlowAngleOut,
-			*EulerianWork,
-			*TotalEnthalpyIn,
-			*PressureRatio,
-			*PressureOut,
-			*EnthalpyOut,
-			*MachIn,
-			*MachOut,
-			*NormalMachIn,
-			*NormalMachOut,
-			*VelocityOutIs;
->>>>>>> develop
 
   /*!
    * \brief A virtual member.
@@ -3005,13 +2700,6 @@ protected:
    * \ Set the flux averaged enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA ) }\f$
    */
   virtual void SetOneD_FluxAvgEntalpy(su2double EnthalpyRef);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  virtual void GetSurface_Pressure(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -3356,16 +3044,8 @@ protected:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
 
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void Compute_StiffMassDampMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	virtual void Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -3472,7 +3152,7 @@ protected:
  * \class CBaselineSolver
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CBaselineSolver : public CSolver {
 public:
@@ -3481,15 +3161,6 @@ public:
 	 * \brief Constructor of the class.
 	 */
 	CBaselineSolver(void);
-
-	/*!
-	 * \overload
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] nVar - Number of variables.
-   * \param[in] field_names - Vector of variable names.
-	 */
-   CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names);
 
 	/*!
 	 * \overload
@@ -3535,7 +3206,7 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CEulerSolver : public CSolver {
 protected:
@@ -3667,7 +3338,8 @@ protected:
 	su2double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
 	*PrimVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
 	su2double **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
-	unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
+	unsigned long nMarker,				/*!< \brief Total number of markers using the grid information. */
+  *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
 	bool space_centered,  /*!< \brief True if space centered scheeme used. */
 	euler_implicit,			/*!< \brief True if euler implicit scheme used. */
 	least_squares;        /*!< \brief True if computing gradients by least squares. */
@@ -3689,6 +3361,7 @@ protected:
 	su2double Old_Func,	/*!< \brief Old value of the objective function (the function which is monitored). */
 	New_Func;			/*!< \brief Current value of the objective function (the function which is monitored). */
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
+  unsigned long AoA_Counter;
 
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   su2double ***AverageVelocity,
@@ -8664,32 +8337,7 @@ public:
    */
   CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
 
-  /*!
-<<<<<<< HEAD
-=======
-   * \brief Destructor of the class.
-   */
-  ~CDiscAdjSolver(void);
-
-  /*!
-   * \brief Performs the preprocessing of the adjoint AD-based solver.
-   *        Registers all necessary variables on the tape. Called while tape is active.
-   * \param[in] geometry_container - The geometry container holding all grid levels.
-   * \param[in] config_container - The particular config.
-   */
-  void RegisterSolution(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Performs the preprocessing of the adjoint AD-based solver.
-   *        Registers all necessary variables that are output variables on the tape.
-   *        Called while tape is active.
-   * \param[in] geometry_container - The geometry container holding all grid levels.
-   * \param[in] config_container - The particular config.
-   */
-  void RegisterOutput(CGeometry *geometry, CConfig *config);
-
-  /*!
->>>>>>> develop
+ /*!
   * \brief Sets the adjoint values of the output of the flow (+turb.) iteration
   *         before evaluation of the tape.
   * \param[in] geometry - The geometrical definition of the problem.
