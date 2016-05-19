@@ -7226,52 +7226,52 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
     invP_Tensor[iVar] = new su2double[nVar];
   }
   
-  string UnstExt, text_line;
-  ifstream input_file;
-  string input_filename = "test.csv";
-
-  input_file.open(input_filename.data(), ios::in);
-  if (input_file.fail()) {
-//    if (rank == MASTER_NODE)
-      cout << "There is no input file!! " << input_filename.data() << "."<< endl;
-    exit(EXIT_FAILURE);
-  }
-
-  /*--- Read all lines in the restart file ---*/
-
-  long iPoint_file = 0;
-
-  /*--- The first line is the header ---*/
-
-//  display getline (input_file, text_line);
-
-//  std::size_t lines_count =0;
-//  std::string line;
-//  while (getline(input_file , line))
-//          ++lines_count;
-//  while (getline (input_file, text_line)) {
-//    	istringstream point_line(text_line);
+//  string UnstExt, text_line;
+//  ifstream input_file;
+//  string input_filename = "test.csv";
 //
-//    	point_line >> var_test ;
-//
-//    	iPoint_Global++;
+//  input_file.open(input_filename.data(), ios::in);
+//  if (input_file.fail()) {
+////    if (rank == MASTER_NODE)
+//      cout << "There is no input file!! " << input_filename.data() << "."<< endl;
+//    exit(EXIT_FAILURE);
 //  }
 
-  su2double var_test1, var_test2;
-  unsigned long points_number = 0;
+//  /*--- Read all lines in the restart file ---*/
+//
+//  long iPoint_file = 0;
+//
+//  /*--- The first line is the header ---*/
+//
+////  display getline (input_file, text_line);
+//
+////  std::size_t lines_count =0;
+////  std::string line;
+////  while (getline(input_file , line))
+////          ++lines_count;
+////  while (getline (input_file, text_line)) {
+////    	istringstream point_line(text_line);
+////
+////    	point_line >> var_test ;
+////
+////    	iPoint_Global++;
+////  }
 
-  while (getline (input_file, text_line)) {
-  	points_number++;
-  }
-  input_file.close();
-  input_file.open(input_filename.data(), ios::in);
-
-  getline (input_file, text_line, ',');
-  for (iPoint_file=0; iPoint_file < points_number; iPoint_file++){
-  	getline(input_file , text_line);
-  	istringstream point_line(text_line);
-  	point_line >> var_test1 >> var_test2 ;
-  }
+//  su2double var_test1, var_test2;
+//  unsigned long points_number = 0;
+//
+//  while (getline (input_file, text_line)) {
+//  	points_number++;
+//  }
+//  input_file.close();
+//  input_file.open(input_filename.data(), ios::in);
+//
+//  getline (input_file, text_line, ',');
+//  for (iPoint_file=0; iPoint_file < points_number; iPoint_file++){
+//  	getline(input_file , text_line);
+//  	istringstream point_line(text_line);
+//  	point_line >> var_test1 >> var_test2 ;
+//  }
 
 
 
@@ -7545,8 +7545,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           	P_Total += cf_Ptot[iPol]*pow(y_perio, 11-iPol);
           }
 
-//          P_Total = (cf_Ptot[0]*pow(Theta_perio,5) + cf_Ptot[1]*pow(Theta_perio,4) + cf_Ptot[2]*pow(Theta_perio,3) +
-//                    cf_Ptot[3]*pow(Theta_perio,2) + cf_Ptot[4]*Theta_perio + cf_Ptot[5]);
 
 
           /*--- Non-dim. the inputs if necessary. ---*/
