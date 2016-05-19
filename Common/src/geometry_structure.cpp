@@ -31,6 +31,13 @@
 
 #include "../include/geometry_structure.hpp"
 
+/* Blas or mkl include files, if supported. */
+#ifdef HAVE_LAPACK
+#include "cblas.h"
+#elif HAVE_MKL
+#include "mkl.h"
+#endif
+
 /*--- Epsilon definition ---*/
 
 #define EPSILON 0.000001
@@ -12047,14 +12054,29 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
     globalPointIDToLocalInd[node[i]->GetGlobalIndex()] = i;
   }
 
-  /*--- Determine the maximum number of DOFs in an element and allocate
-        the memory for the x-, y- and z-coordinates accordingly. ---*/
-  unsigned short nDOFsMax = 0;
-  for(unsigned short i=0; i<nStandardElements; ++i)
+  /*--- Determine the maximum number of DOFs and integration points in an
+        element and determine the size  for the help vectors  accordingly. ---*/
+  unsigned short nDOFsMax = 0, nIntMax = 0;
+  for(unsigned short i=0; i<nStandardElements; ++i) {
     nDOFsMax = max(nDOFsMax, standardElements[i].GetNDOFs());
+    nIntMax  = max(nIntMax,  standardElements[i].GetNIntegration());
+  }
 
-  vector<su2double> xVec(nDOFsMax), yVec(nDOFsMax), zVec(nDOFsMax);
-  su2double *x = xVec.data(), *y = yVec.data(), *z = zVec.data();
+  unsigned long sizeResult = nDim*nDim*nIntMax;
+  unsigned long sizeRHS    = nDim*nDOFsMax;
+
+  /* Allocate the memory. In case the MKL is used, a specialized allocation
+     is used to optimize performance. */
+  su2double *vecResult, *vecRHS;
+
+#ifdef HAVE_MKL
+  vecResult = (su2double *) mkl_malloc(sizeResult*sizeof(su2double), 64);
+  vecRHS    = (su2double *) mkl_malloc(sizeRHS   *sizeof(su2double), 64);
+#else
+  vector<su2double> helpVecResult(sizeResult), helpVecRHS(sizeRHS);
+  vecResult = helpVecResult.data();
+  vecRHS    = helpVecRHS.data();
+#endif
 
   /*--- Define the vector to store the normals of the integration points
         of the faces. In this way it is not needed to allocate the memory
@@ -12073,56 +12095,99 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
     unsigned short nDOFs        = standardElements[ii].GetNDOFs();
     unsigned short nIntegration = standardElements[ii].GetNIntegration();
 
-    su2double *dr = standardElements[ii].GetDrBasisFunctionsIntegration();
-    su2double *ds = standardElements[ii].GetDsBasisFunctionsIntegration();
-    su2double *dt = standardElements[ii].GetDtBasisFunctionsIntegration();
-
-    /*--- Store the coordinates of the DOFs in the local arrays x, y and z. ---*/
+    /* Store the coordinates in vecRHS. */
+    unsigned int jj = 0;
     for(unsigned short j=0; j<nDOFs; ++j) {
       unsigned long nodeID = elem[i]->GetNode(j);
 
       map<unsigned long,unsigned long>::const_iterator MI = globalPointIDToLocalInd.find(nodeID);
       unsigned long ind = MI->second;
-      x[j] = node[ind]->GetCoord(0);
-      y[j] = node[ind]->GetCoord(1);
-      if(nDim == 3) z[j] = node[ind]->GetCoord(2);
+      for(unsigned short k=0; k<nDim; ++k, ++jj)
+        vecRHS[jj] = node[ind]->GetCoord(k);
     }
 
-    /*--- Definition of the minimum and maximum values of the Jacobian. Make a
-          distinction between a two-dimensional and a three-dimensional element
-          in order to compute them. ---*/
-    su2double jacMin;
-    su2double jacMax;
+    /*--- Make a distinction whether LAPACK routines must be used to carry
+          out the multiplication or a standard implementation must be used. ---*/
+#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
+
+    /*--- Lapack routines must be used to compute the matrix product.
+          Get the pointer to the matrix storage of the basis functions and its
+          derivatives. The first nDOFs*nIntegration entries of this matrix
+          correspond to the interpolation data to the integration points
+          and are not needed. Hence this part is skipped. ---*/
+    const su2double *matBasisInt    = standardElements[ii].GetMatBasisFunctionsIntegration();
+    const su2double *matDerBasisInt = &matBasisInt[nDOFs*nIntegration];
+
+    /* Carry out the matrix matrix product using the blas routine dgemm. */
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nDim*nIntegration, nDim, nDOFs,
+                1.0, matDerBasisInt, nDOFs, vecRHS, nDim, 0.0, vecResult, nDim);
+
+    /*--- Make a distinction between a 2D and 3D element. ---*/
     switch( nDim ) {
       case 2: {
 
-        /*--- Loop over the integration points to compute the Jacobians and
-              determine the minimum and maximum value.        ---*/
+        /* 2D computation. Store the offset between the r and s derivatives. */
+        const unsigned int off = 2*nIntegration;
+
+        /*--- Loop over the integration points to compute the Jacobians. ---*/
+        for(unsigned short j=0; j<nIntegration; ++j) {
+          const unsigned int jx = 2*j; const unsigned int jy = jx+1;
+          const su2double dxdr = vecResult[jx],     dydr = vecResult[jy];
+          const su2double dxds = vecResult[jx+off], dyds = vecResult[jy+off];
+
+          vecResult[j] = dxdr*dyds - dxds*dydr;
+        }
+
+        break;
+      }
+
+      case 3: {
+        /* 3D computation. Store the offset between the r and s and r and t derivatives. */
+        const unsigned int offS = 3*nIntegration, offT = 6*nIntegration;
+
+        /*--- Loop over the integration points to compute the Jacobians. ---*/
+        for(unsigned short j=0; j<nIntegration; ++j) {
+          const unsigned int jx = 3*j; const unsigned int jy = jx+1, jz = jx+2;
+          const su2double dxdr = vecResult[jx],      dydr = vecResult[jy],      dzdr = vecResult[jz];
+          const su2double dxds = vecResult[jx+offS], dyds = vecResult[jy+offS], dzds = vecResult[jz+offS];
+          const su2double dxdt = vecResult[jx+offT], dydt = vecResult[jy+offT], dzdt = vecResult[jz+offT];
+
+          vecResult[j] = dxdr*(dyds*dzdt - dzds*dydt) - dxds*(dydr*dzdt - dzdr*dydt)
+                       + dxdt*(dydr*dzds - dzdr*dyds);
+        }
+
+        break;
+      }
+    }
+
+    /* Define the variables dr and ds, which are used later in this function. */
+    const su2double *dr, *ds;
+
+#else
+    /*--- Standard implementation to compute the derivatives of the
+          coordinates in the integration points. ---*/
+
+    const su2double *dr = standardElements[ii].GetDrBasisFunctionsIntegration();
+    const su2double *ds = standardElements[ii].GetDsBasisFunctionsIntegration();
+    const su2double *dt = standardElements[ii].GetDtBasisFunctionsIntegration();
+
+    /*--- Make a distinction between 2D and 3D and compute the Jacobians. ---*/
+    switch( nDim ) {
+      case 2: {
+
+        /*--- Loop over the integration points to compute the Jacobians. ---*/
         for(unsigned short j=0; j<nIntegration; ++j) {
 
           su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs];
           su2double dxdr = 0.0, dydr = 0.0, dxds = 0.0, dyds = 0.0;
           for(unsigned short k=0; k<nDOFs; ++k) {
-            dxdr += x[k]*drr[k]; dxds += x[k]*dss[k];
-            dydr += y[k]*drr[k]; dyds += y[k]*dss[k];
+            const su2double x = vecRHS[2*k], y = vecRHS[2*k+1];
+
+            dxdr += x*drr[k]; dxds += x*dss[k];
+            dydr += y*drr[k]; dyds += y*dss[k];
           }
 
-          su2double Jac = dxdr*dyds - dxds*dydr;
-          if(Jac <= 0.0) {
-            cout << "Negative Jacobian found" << endl;
-#ifndef HAVE_MPI
-            exit(EXIT_FAILURE);
-#else
-            MPI_Abort(MPI_COMM_WORLD,1);
-            MPI_Finalize();
-#endif
-          }
-
-          if(j == 0) jacMin = jacMax = Jac;
-          else {
-            jacMin = min(jacMin, Jac);
-            jacMax = max(jacMax, Jac);
-          }
+          vecResult[j] = dxdr*dyds - dxds*dydr;
         }
 
         break;
@@ -12130,8 +12195,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
 
       case 3: {
 
-        /*--- Loop over the integration points to compute the Jacobians and
-              determine the minimum and maximum value.        ---*/
+        /*--- Loop over the integration points to compute the Jacobians. ---*/
         for(unsigned short j=0; j<nIntegration; ++j) {
 
           su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs], *dtt = &dt[j*nDOFs];
@@ -12140,33 +12204,43 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
           su2double dzdr = 0.0, dzds = 0.0, dzdt = 0.0;
 
           for(unsigned short k=0; k<nDOFs; ++k) {
-            dxdr += x[k]*drr[k]; dxds += x[k]*dss[k]; dxdt += x[k]*dtt[k];
-            dydr += y[k]*drr[k]; dyds += y[k]*dss[k]; dydt += y[k]*dtt[k];
-            dzdr += z[k]*drr[k]; dzds += z[k]*dss[k]; dzdt += z[k]*dtt[k];
+            const su2double x = vecRHS[3*k], y = vecRHS[3*k+1], z = vecRHS[3*k+2];
+            dxdr += x*drr[k]; dxds += x*dss[k]; dxdt += x*dtt[k];
+            dydr += y*drr[k]; dyds += y*dss[k]; dydt += y*dtt[k];
+            dzdr += z*drr[k]; dzds += z*dss[k]; dzdt += z*dtt[k];
           }
 
-          su2double Jac = dxdr*(dyds*dzdt - dzds*dydt)
-                        - dxds*(dydr*dzdt - dzdr*dydt)
-                        + dxdt*(dydr*dzds - dzdr*dyds);
-
-          if(Jac <= 0.0) {
-            cout << "Negative Jacobian found" << endl;
-#ifndef HAVE_MPI
-            exit(EXIT_FAILURE);
-#else
-            MPI_Abort(MPI_COMM_WORLD,1);
-            MPI_Finalize();
-#endif
-          }
-
-          if(j == 0) jacMin = jacMax = Jac;
-          else {
-            jacMin = min(jacMin, Jac);
-            jacMax = max(jacMax, Jac);
-          }
+          vecResult[j] = dxdr*(dyds*dzdt - dzds*dydt)
+                       - dxds*(dydr*dzdt - dzdr*dydt)
+                       + dxdt*(dydr*dzds - dzdr*dyds);
         }
 
         break;
+      }
+    }
+#endif
+
+    /*--- Determine the minimum and maximum value of the Jacobian in the
+          integration points. Also check for negative Jacobians. ---*/
+    su2double jacMin, jacMax;
+    for(unsigned short j=0; j<nIntegration; ++j) {
+
+      const su2double Jac = vecResult[j];
+
+      if(Jac <= 0.0) {
+        cout << "Negative Jacobian found" << endl;
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
+
+      if(j == 0) jacMin = jacMax = Jac;
+      else {
+        jacMin = min(jacMin, Jac);
+        jacMax = max(jacMax, Jac);
       }
     }
 
@@ -12263,11 +12337,11 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
                 of the edge. Loop over the integration points. ---*/
           for(unsigned short k=0; k<nIntegration; ++k) {
 
-            su2double *drr = &dr[k*nDOFs];
+            const su2double *drr = &dr[k*nDOFs];
             su2double dxdr = 0.0, dydr = 0.0;
             for(unsigned short l=0; l<nDOFs; ++l) {
-              dxdr += x[connFace[l]]*drr[l];
-              dydr += y[connFace[l]]*drr[l];
+              dxdr += vecRHS[2*connFace[l]]  *drr[l];
+              dydr += vecRHS[2*connFace[l]+1]*drr[l];
             }
 
             normalsFace[3*k]   =  dydr;
@@ -12286,14 +12360,14 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
                 Loop over the integration points.               ---*/
           for(unsigned short k=0; k<nIntegration; ++k) {
 
-            su2double *drr = &dr[k*nDOFs], *dss = &ds[k*nDOFs];
+            const su2double *drr = &dr[k*nDOFs], *dss = &ds[k*nDOFs];
             su2double dxdr = 0.0, dydr = 0.0, dzdr = 0.0,
                       dxds = 0.0, dyds = 0.0, dzds = 0.0;
 
             for(unsigned short l=0; l<nDOFs; ++l) {
-              dxdr += x[connFace[l]]*drr[l]; dxds += x[connFace[l]]*dss[l];
-              dydr += y[connFace[l]]*drr[l]; dyds += y[connFace[l]]*dss[l];
-              dzdr += z[connFace[l]]*drr[l]; dzds += z[connFace[l]]*dss[l];
+              dxdr += vecRHS[3*connFace[l]]  *drr[l]; dxds += vecRHS[3*connFace[l]]  *dss[l];
+              dydr += vecRHS[3*connFace[l]+1]*drr[l]; dyds += vecRHS[3*connFace[l]+1]*dss[l];
+              dzdr += vecRHS[3*connFace[l]+2]*drr[l]; dzds += vecRHS[3*connFace[l]+2]*dss[l];
             }
 
             su2double nx = dydr*dzds - dyds*dzdr;
@@ -12378,6 +12452,12 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
                + workSurfaceDOF*nDOFs;
     }
   }
+
+  /* If the MKL is used, the help arrays must be deallocated. */
+#ifdef HAVE_MKL
+  mkl_free(vecResult);
+  mkl_free(vecRHS);
+#endif
 
   /*--- Determine the minimum vertex weight over the entire domain. ---*/
   su2double minvwgt = vwgt[0];

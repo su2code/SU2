@@ -31,6 +31,10 @@
 
 #include "../include/fem_standard_element.hpp"
 
+#ifdef HAVE_MKL
+#include "mkl.h"
+#endif
+
 /*----------------------------------------------------------------------------------*/
 /*          Public member functions of FEMStandardElementBaseClass.                 */
 /*----------------------------------------------------------------------------------*/
@@ -415,11 +419,11 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesLine(
   /*--- Allocate the memory for lagBasisPoints and determine its values.
         The Lagrange basis functions in the points are equal to the
         interpolation coefficients from the DOFs to the points and are
-        obtained from the matrix product V*Vinv. Note that from a mathematical
-        point of view the transpose of V*VInv is stored, because in this way the
-        interpolation data for a point is contiguous in memory.        ---*/
+        obtained from the matrix product V*Vinv. Note that the result is stored
+        in row major order, because in this way the interpolation data for a
+        point is contiguous in memory.        ---*/
   lagBasisPoints.resize(nDOFs*nPoints);
-  MatMulTranspose(nDOFs, nPoints, V, VInv, lagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, V, VInv, lagBasisPoints);
 
   /*--- Compute the gradients of the 1D Vandermonde matrix in the
         points. The vector V can be used to store the data.     ---*/
@@ -428,11 +432,11 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesLine(
   /*--- Allocate the memory to store the derivatives in r-direction of the
         Lagrange basis functions in the points and determine them.
         The derivatives of the Lagrange basis functions in the points are
-        obtained from the matrix product V*Vinv. Note that from a mathematical
-        point of view the transpose of V*VInv is stored, because in this way the
-        gradient data for a point is contiguous in memory.  ---*/
+        obtained from the matrix product V*Vinv. Note that the result is stored
+        in row major order, because in this way the gradient data for a point
+        is contiguous in memory.  ---*/
   drLagBasisPoints.resize(nDOFs*nPoints);
-  MatMulTranspose(nDOFs, nPoints, V, VInv, drLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, V, VInv, drLagBasisPoints);
 }
 
 void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTriangle(
@@ -480,11 +484,10 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTriangle(
   /*--- Allocate the memory for lagBasisPoints and determine its values.
         The Lagrange basis functions in the points are equal to the interpolation
         coefficients from the DOFs to the points and are obtained from the matrix
-        product V*Vinv. Note that from a mathematical point of view the transpose
-        of V*VInv is stored, because in this way the interpolation data for a
-        point is contiguous in memory. ---*/
+        product V*Vinv. Note that the result is stored in row major order, because
+        in this way the interpolation data for a point is contiguous in memory. ---*/
   lagBasisPoints.resize(nDOFs*nPoints);
-  MatMulTranspose(nDOFs, nPoints, V, VInv, lagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, V, VInv, lagBasisPoints);
 
   /*--- Compute the gradients of the 2D Vandermonde matrix in the points. ---*/
   vector<su2double> VDr(nDOFs*nPoints), VDs(nDOFs*nPoints);
@@ -493,14 +496,14 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTriangle(
   /*--- Allocate the memory to store the derivatives in r- and s-direction of the
         Lagrange basis functions in the points and determine them. The derivatives
         of the Lagrange basis functions in the points are obtained from the matrix
-        product VDr*Vinv and VDs*Vinv. Note that from a mathematical point of view
-        the transpose of the result is stored, because in this way the gradient
-        data for a point is contiguous in memory. ---*/
+        product VDr*Vinv and VDs*Vinv. Note that the result is stored in row major
+        order, because in this way the gradient data for a point is contiguous
+        in memory. ---*/
   drLagBasisPoints.resize(nDOFs*nPoints);
   dsLagBasisPoints.resize(nDOFs*nPoints);
 
-  MatMulTranspose(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
-  MatMulTranspose(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
 }
 
 void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesQuadrilateral(
@@ -549,11 +552,10 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesQuadrilat
   /*--- Allocate the memory for lagBasisPoints and determine its values.
         The Lagrange basis functions in the points are equal to the interpolation
         coefficients from the DOFs to the points and are obtained from the matrix
-        product V*Vinv. Note that from a mathematical point of view the transpose
-        of V*VInv is stored, because in this way the interpolation data for a
-        point is contiguous in memory. ---*/
+        product V*Vinv. Note that the result is stored in row major order, because
+        in this way the interpolation data for a point is contiguous in memory. ---*/
   lagBasisPoints.resize(nDOFs*nPoints);
-  MatMulTranspose(nDOFs, nPoints, V, VInv, lagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, V, VInv, lagBasisPoints);
 
   /*--- Compute the gradients of the 2D Vandermonde matrix in the points. ---*/
   vector<su2double> VDr(nDOFs*nPoints), VDs(nDOFs*nPoints);
@@ -562,14 +564,14 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesQuadrilat
   /*--- Allocate the memory to store the derivatives in r- and s-direction of the
         Lagrange basis functions in the points and determine them. The derivatives
         of the Lagrange basis functions in the points are obtained from the matrix
-        product VDr*Vinv and VDr*Vinv. Note that from a mathematical point of view
-        the transpose of the result is stored, because in this way the gradient
-        data for a point is contiguous in memory. ---*/
+        product VDr*Vinv and VDr*Vinv. Note that the result is stored in row major
+        order, because in this way the gradient data for a point is contiguous
+        in memory. ---*/
   drLagBasisPoints.resize(nDOFs*nPoints);
   dsLagBasisPoints.resize(nDOFs*nPoints);
 
-  MatMulTranspose(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
-  MatMulTranspose(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
 }
 
 void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTetrahedron(
@@ -626,11 +628,10 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTetrahedr
   /*--- Allocate the memory for lagBasisPoints and determine its values.
         The Lagrange basis functions in the points are equal to the interpolation
         coefficients from the DOFs to the points and are obtained from the matrix
-        product V*Vinv. Note that from a mathematical point of view the transpose
-        of V*VInv is stored, because in this way the interpolation data for a
-        point is contiguous in memory. ---*/
+        product V*Vinv. Note that the result is stored in row major order, because
+        in this way the interpolation data for a point is contiguous in memory. ---*/
   lagBasisPoints.resize(nDOFs*nPoints);
-  MatMulTranspose(nDOFs, nPoints, V, VInv, lagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, V, VInv, lagBasisPoints);
 
   /*--- Compute the gradients of the 3D Vandermonde matrix in the points. ---*/
   vector<su2double> VDr(nDOFs*nPoints), VDs(nDOFs*nPoints), VDt(nDOFs*nPoints);
@@ -640,16 +641,16 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTetrahedr
   /*--- Allocate the memory to store the derivatives in r-, s- and t-direction
         of the Lagrange basis functions in the points and determine them. The
         derivatives of the Lagrange basis functions in the points are obtained
-        from the matrix product VDr*Vinv, VDr*Vinv and VDt*Vinv. Note that from
-        a mathematical point of view the transpose of the result is stored, because
-        in this way the gradient data for a point is contiguous in memory. ---*/
+        from the matrix product VDr*Vinv, VDr*Vinv and VDt*Vinv. Note that the
+        result is stored in row major order, because in this way the gradient
+        data for a point is contiguous in memory. ---*/
   drLagBasisPoints.resize(nDOFs*nPoints);
   dsLagBasisPoints.resize(nDOFs*nPoints);
   dtLagBasisPoints.resize(nDOFs*nPoints);
 
-  MatMulTranspose(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
-  MatMulTranspose(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
-  MatMulTranspose(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
 }
 
 void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPyramid(
@@ -719,11 +720,10 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPyramid(
   /*--- Allocate the memory for lagBasisPoints and determine its values.
         The Lagrange basis functions in the points are equal to the interpolation
         coefficients from the DOFs to the points and are obtained from the matrix
-        product V*Vinv. Note that from a mathematical point of view the transpose
-        of V*VInv is stored, because in this way the interpolation data for a
-        point is contiguous in memory.  ---*/
+        product V*Vinv. Note that the result is stored in row major order, because
+        in this way the interpolation data for a point is contiguous in memory.  ---*/
   lagBasisPoints.resize(nDOFs*nPoints);
-  MatMulTranspose(nDOFs, nPoints, V, VInv, lagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, V, VInv, lagBasisPoints);
 
   /*--- Compute the gradients of the 3D Vandermonde matrix in the points. ---*/
   vector<su2double> VDr(nDOFs*nPoints), VDs(nDOFs*nPoints), VDt(nDOFs*nPoints);
@@ -732,16 +732,16 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPyramid(
   /*--- Allocate the memory to store the derivatives in r-, s- and t-direction
         of the Lagrange basis functions in the points and determine them. The
         derivatives of the Lagrange basis functions in the points are obtained
-        from the matrix product VDr*Vinv, VDr*Vinv and VDt*Vinv. Note that from
-        a mathematical point of view the transpose of the result is stored, because
-        in this way the gradient data for a point is contiguous in memory. ---*/
+        from the matrix product VDr*Vinv, VDr*Vinv and VDt*Vinv. Note that the
+        result is stored in row major order, because in this way the gradient
+        data for a point is contiguous in memory. ---*/
   drLagBasisPoints.resize(nDOFs*nPoints);
   dsLagBasisPoints.resize(nDOFs*nPoints);
   dtLagBasisPoints.resize(nDOFs*nPoints);
 
-  MatMulTranspose(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
-  MatMulTranspose(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
-  MatMulTranspose(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
 }
 
 void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPrism(
@@ -800,11 +800,10 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPrism(
   /*--- Allocate the memory for lagBasisPoints and determine its values.
         The Lagrange basis functions in the points are equal to the interpolation
         coefficients from the DOFs to the points and are obtained from the matrix
-        product V*Vinv. Note that from a mathematical point of view the transpose
-        of V*VInv is stored, because in this way the interpolation data for a
-        point is contiguous in memory.  ---*/
+        product V*Vinv. Note that the result is stored in row major order, because
+        in this way the interpolation data for a point is contiguous in memory.  ---*/
   lagBasisPoints.resize(nDOFs*nPoints);
-  MatMulTranspose(nDOFs, nPoints, V, VInv, lagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, V, VInv, lagBasisPoints);
 
   /*--- Compute the gradients of the 3D Vandermonde matrix in the points. ---*/
   vector<su2double> VDr(nDOFs*nPoints), VDs(nDOFs*nPoints), VDt(nDOFs*nPoints);
@@ -813,16 +812,16 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPrism(
   /*--- Allocate the memory to store the derivatives in r-, s- and t-direction
         of the Lagrange basis functions in the points and determine them. The
         derivatives of the Lagrange basis functions in the points are obtained
-        from the matrix product VDr*Vinv, VDr*Vinv and VDt*Vinv. Note that from
-        a mathematical point of view the transpose of the result is stored, because
-        in this way the gradient data for a point is contiguous in memory. ---*/
+        from the matrix product VDr*Vinv, VDr*Vinv and VDt*Vinv. Note that the
+        the result is stored in row major order, because in this way the gradient
+        data for a point is contiguous in memory. ---*/
   drLagBasisPoints.resize(nDOFs*nPoints);
   dsLagBasisPoints.resize(nDOFs*nPoints);
   dtLagBasisPoints.resize(nDOFs*nPoints);
 
-  MatMulTranspose(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
-  MatMulTranspose(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
-  MatMulTranspose(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
 }
 
 void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesHexahedron(
@@ -879,11 +878,10 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesHexahedro
   /*--- Allocate the memory for lagBasisPoints and determine its values.
         The Lagrange basis functions in the points are equal to the interpolation
         coefficients from the DOFs to the points and are obtained from the matrix
-        product V*Vinv. Note that from a mathematical point of view the transpose
-        of V*VInv is stored, because in this way the interpolation data for a
-        point is contiguous in memory.  ---*/
+        product V*Vinv. Note that the result is stored in row major order, because
+        in this way the interpolation data for a point is contiguous in memory.  ---*/
   lagBasisPoints.resize(nDOFs*nPoints);
-  MatMulTranspose(nDOFs, nPoints, V, VInv, lagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, V, VInv, lagBasisPoints);
 
   /*--- Compute the gradients of the 3D Vandermonde matrix in the points. ---*/
   vector<su2double> VDr(nDOFs*nPoints), VDs(nDOFs*nPoints), VDt(nDOFs*nPoints);
@@ -892,16 +890,16 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesHexahedro
   /*--- Allocate the memory to store the derivatives in r-, s- and t-direction
         of the Lagrange basis functions in the points and determine them. The
         derivatives of the Lagrange basis functions in the points are obtained
-        from the matrix product VDr*Vinv, VDr*Vinv and VDt*Vinv. Note that from
-        a mathematical point of view the transpose of the result is stored, because
-        in this way the gradient data for a point is contiguous in memory. ---*/
+        from the matrix product VDr*Vinv, VDr*Vinv and VDt*Vinv. Note that the
+        the result is stored in row major order, because in this way the gradient
+        data for a point is contiguous in memory. ---*/
   drLagBasisPoints.resize(nDOFs*nPoints);
   dsLagBasisPoints.resize(nDOFs*nPoints);
   dtLagBasisPoints.resize(nDOFs*nPoints);
 
-  MatMulTranspose(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
-  MatMulTranspose(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
-  MatMulTranspose(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, VDr, VInv, drLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, VDs, VInv, dsLagBasisPoints);
+  MatMulRowMajor(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
 }
 
 /*----------------------------------------------------------------------------------*/
@@ -1088,19 +1086,19 @@ void FEMStandardElementBaseClass::Legendre(su2double      x,
   }
 }
 
-void FEMStandardElementBaseClass::MatMulTranspose(unsigned short nDOFs,
-                                                  unsigned short nPoints,
-                                                  vector<su2double> &A,
-                                                  vector<su2double> &B,
-                                                  vector<su2double> &C) {
+void FEMStandardElementBaseClass::MatMulRowMajor(const unsigned short nDOFs,
+                                                 const unsigned short nPoints,
+                                                 const vector<su2double> &A,
+                                                 const vector<su2double> &B,
+                                                 vector<su2double>       &C) {
 
   /*--- Check if the dimensions of the matrices correspond to the
         assumptions made in this function.                    ---*/
-  unsigned int dimA = nDOFs*nPoints;
-  unsigned int dimB = nDOFs*nDOFs;
+  const unsigned int dimA = nDOFs*nPoints;
+  const unsigned int dimB = nDOFs*nDOFs;
 
   if(A.size() != dimA || B.size() != dimB || C.size() != dimA) {
-    cout << "Unexpected size of the matrices in FEMStandardElementBaseClass::MatMulTranspose" << endl;
+    cout << "Unexpected size of the matrices in FEMStandardElementBaseClass::MatMulRowMajor" << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
 #else
@@ -1109,16 +1107,16 @@ void FEMStandardElementBaseClass::MatMulTranspose(unsigned short nDOFs,
 #endif
   }
 
-  /*--- Carry out the actual matrix matrix multiplication and
-        store the transpose of the result.                    ---*/
+  /*--- Carry out the actual matrix matrix multiplication and store the result
+        in row major order (the matrices A and B are in column major order).  ---*/
   for(unsigned short j=0; j<nDOFs; ++j) {
     for(unsigned short i=0; i<nPoints; ++i) {
-      unsigned int ii = i*nDOFs + j;
+      const unsigned int ii = i*nDOFs + j;
       C[ii] = 0.0;
 
       for(unsigned short k=0; k<nDOFs; ++k) {
-        unsigned int indA = k*nPoints + i;
-        unsigned int indB = j*nDOFs + k;
+        const unsigned int indA = k*nPoints + i;
+        const unsigned int indB = j*nDOFs + k;
 
         C[ii] += A[indA]*B[indB];
       }
@@ -1946,6 +1944,10 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
   /*--- Copy the function arguments to the member variables. ---*/
   nPoly = val_nPoly;
 
+  /*--- Set the pointer matBasisIntegration to NULL to avoid problems
+        when it is not used. ---*/
+  matBasisIntegration = NULL;
+
   /*--- Determine the element type and compute the other member variables. ---*/
   switch( VTK_Type ) {
     case LINE:          DataStandardLine();          break;
@@ -1970,6 +1972,45 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
   if( !dtLagBasisIntegration.empty() )
     CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFs,
                                                 dtLagBasisIntegration);
+
+  /*--- If the Lapack routines are used it is beneficial to store lagBasisIntegration,
+        drLagBasisIntegration, dsLagBasisIntegration and dtLagBasisIntegration in
+        one array for efficiency reasons. Note that for the MKL the memory allocation
+        of the MKL itself is used and that the matrices are aligned on a 64-byte
+        boundary to increase performance. ---*/
+
+#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
+
+  unsigned long sizeMat = lagBasisIntegration.size()   + drLagBasisIntegration.size()
+                        + dsLagBasisIntegration.size() + dtLagBasisIntegration.size();
+#ifdef HAVE_MKL
+  matBasisIntegration = (su2double *) mkl_malloc(sizeMat*sizeof(su2double), 64);
+#else
+  matBasisIntegration = new su2double[sizeMat];
+#endif
+
+  unsigned int ii = 0;
+  for(unsigned long i=0; i<lagBasisIntegration.size(); ++i, ++ii)
+    matBasisIntegration[ii] = lagBasisIntegration[i];
+
+  for(unsigned long i=0; i<drLagBasisIntegration.size(); ++i, ++ii)
+    matBasisIntegration[ii] = drLagBasisIntegration[i];
+
+  for(unsigned long i=0; i<dsLagBasisIntegration.size(); ++i, ++ii)
+    matBasisIntegration[ii] = dsLagBasisIntegration[i];
+
+  for(unsigned long i=0; i<dtLagBasisIntegration.size(); ++i, ++ii)
+    matBasisIntegration[ii] = dtLagBasisIntegration[i];
+#endif
+}
+
+FEMStandardElementClass::~FEMStandardElementClass() {
+
+#ifdef HAVE_MKL
+  if( matBasisIntegration ) mkl_free(matBasisIntegration);
+#elif HAVE_LAPACK
+  if( matBasisIntegration ) delete[] matBasisIntegration;
+#endif
 }
 
 bool FEMStandardElementClass::SameStandardElement(unsigned short val_VTK_Type,
@@ -2012,6 +2053,23 @@ void FEMStandardElementClass::Copy(const FEMStandardElementClass &other) {
 
   subConn1ForPlotting = other.subConn1ForPlotting;
   subConn2ForPlotting = other.subConn2ForPlotting;
+
+#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
+
+  unsigned long sizeMat = lagBasisIntegration.size()   + drLagBasisIntegration.size()
+                        + dsLagBasisIntegration.size() + dtLagBasisIntegration.size();
+#ifdef HAVE_MKL
+  matBasisIntegration = (su2double *) mkl_malloc(sizeMat*sizeof(su2double), 64);
+#else
+  matBasisIntegration = new su2double[sizeMat];
+#endif
+
+  for(unsigned long i=0; i<sizeMat; ++i)
+    matBasisIntegration[i] = other.matBasisIntegration[i];
+
+#else
+  matBasisIntegration = NULL;
+#endif
 }
 
 void FEMStandardElementClass::DataStandardLine(void) {

@@ -154,6 +154,9 @@ public:
 
   vector<unsigned long> nodeIDsGrid; /*!< \brief Vector with the node IDs of the grid for this element. */
 
+  su2double *metricTerms;            /*!< \brief Pointer to the metric terms in the
+                                                 integration points of this element. */
+
   /*!
    * \brief Constructor of the class. Nothing to be done
    */
@@ -378,6 +381,7 @@ public:
 class CMeshFEM: public CGeometry {
 protected:
   unsigned long nVolElemTot;    /*!< \brief Total number of local volume elements, including halos. */
+  unsigned long nVolElemOwned;  /*!< \brief Number of owned local volume elements. */
 
   vector<CVolumeElementFEM> volElem; /*!< \brief Vector of the local volume elements, including halos. */
 
@@ -398,25 +402,29 @@ protected:
                                                           must be sent. Self communication is included. */
   vector<vector<unsigned long> > DOFsReceive; /*!< \brief Vector of vector, which contains the DOFs that
                                                           must be received. Self communication is included. */
+
+  vector<su2double> VecMetricTermsElements;  /*!< \brief Storage for the metric terms of the volume elements. */
+  vector<su2double> VecMassMatricesElements; /*!< \brief Storage for the mass matrices of the volume elements. */
+
 public:
 
-	/*!
-	 * \brief Constructor of the class.
-	 */
-	CMeshFEM(void);
+  /*!
+  * \brief Constructor of the class.
+  */
+ CMeshFEM(void);
 
   /*!
-	 * \overload
-	 * \brief Redistributes the grid over the ranks and creates the halo layer.
+  * \overload
+  * \brief Redistributes the grid over the ranks and creates the halo layer.
   * \param[in] geometry - The linear distributed grid that must be redistributed.
-	 * \param[in] config   - Definition of the particular problem.
-	 */
+  * \param[in] config   - Definition of the particular problem.
+  */
   CMeshFEM(CGeometry *geometry, CConfig *config);
 
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	virtual ~CMeshFEM(void);
+  /*!
+  * \brief Destructor of the class.
+  */
+  virtual ~CMeshFEM(void);
 };
 
 /*!
@@ -487,6 +495,20 @@ public:
   * \param[in] config - Definition of the particular problem.
   */
   void CreateStandardVolumeElements(CConfig *config);
+
+ /*!
+  * \brief Function, which computes the metric terms of the
+           surface elements.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void MetricTermsSurfaceElements(CConfig *config);
+
+ /*!
+  * \brief Function, which computes the metric terms of the
+           volume elements.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void MetricTermsVolumeElements(CConfig *config);
 
  /*!
   * \brief Set the send receive boundaries of the grid.

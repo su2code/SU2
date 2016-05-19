@@ -31,6 +31,14 @@
 
 #include "../include/fem_geometry_structure.hpp"
 
+/* Lapack or mkl include files, if supported. */
+#ifdef HAVE_LAPACK
+#include "lapacke.h"
+#include "cblas.h"
+#elif HAVE_MKL
+#include "mkl.h"
+#endif
+
 bool SortFacesClass::operator()(const FaceOfElementClass &f0,
                                 const FaceOfElementClass &f1) {
 
@@ -613,12 +621,13 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /* Determine the mapping from the global element number to the local entry.
      At the moment the sequence is based on the global element ID, but one can
-     change this in order to have a better load balance for the threads. */
+     change this in order to have a better load balance for the threads.
+     However, the owned elements should always be stored before the halos. */
   map<unsigned long,  unsigned long> mapGlobalElemIDToInd;
   map<unsignedLong2T, unsigned long> mapGlobalHaloElemToInd;
 
-  unsigned long nVolElemOwned = globalElemID.size();
-  nVolElemTot = nVolElemOwned + haloElements.size();
+  nVolElemOwned = globalElemID.size();
+  nVolElemTot   = nVolElemOwned + haloElements.size();
 
   for(unsigned long i=0; i<nVolElemOwned; ++i)
     mapGlobalElemIDToInd[globalElemID[i]] = i;
@@ -2020,7 +2029,7 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
       vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
 
       /*--- Loop again over localFaces for this boundary, but now
-            store the required information in surfElem. ---*/ 
+            store the required information in surfElem. ---*/
       sizeVecDOFsGridFaceSide0    = sizeVecDOFsSolFaceSide0    = 0;
       sizeVecDOFsGridElementSide0 = sizeVecDOFsSolElementSide0 = 0;
       for(unsigned long i=indBegMarker; i<indEndMarker; ++i) {
@@ -3822,4 +3831,336 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentTetrahedron(
   const unsigned short nn2 = (nPolyConn+1)*(nPolyConn+2)/2;
   for(unsigned short i=0; i<nn2; ++i)
     modConnTria[i] = modConnTet[i];
+}
+
+void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
+
+  cout << "CMeshFEM_DG::MetricTermsSurfaceElements. Not implemented yet." << endl;
+#ifndef HAVE_MPI
+  exit(EXIT_FAILURE);
+#else
+  MPI_Abort(MPI_COMM_WORLD,1);
+  MPI_Finalize();
+#endif
+}
+
+void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Determine the sizes of the vector, which store  the metric ---*/
+  /*---         terms and mass matrices of the volume elements. This are   ---*/
+  /*---         large, contiguous vectors to increase the performance.     ---*/
+  /*---         Each volume element has a pointers, which point to a       ---*/
+  /*---         particular region of the large vectors.                    ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Find out whether or not the full mass matrix is needed. This is only the
+     case for time accurate simulations. For steady simulations only a lumped
+     version is needed in order to be dimensionally consistent. Moreover, for
+     implicit time integration schemes the mass matrix itself is needed, while
+     for explicit time integration schemes the inverse of the mass matrix is
+     much more convenient. Note that for the DG_FEM the mass matrix is local
+     to the elements. */
+  bool FullMassMatrix, FullInverseMassMatrix, LumpedMassMatrix;
+  if(config->GetUnsteady_Simulation() == STEADY ||
+     config->GetUnsteady_Simulation() == ROTATIONAL_FRAME) {
+    FullMassMatrix   = FullInverseMassMatrix = false;
+    LumpedMassMatrix = true;
+  }
+  else if(config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
+          config->GetUnsteady_Simulation() == DT_STEPPING_2ND ||
+          config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+    FullMassMatrix        = LumpedMassMatrix = true;
+    FullInverseMassMatrix = false;
+  }
+  else {
+    FullMassMatrix        = LumpedMassMatrix = false;
+    FullInverseMassMatrix = true;
+  }
+
+  /* Determine the number of metric terms per integration point.
+     This depends on the number of spatial dimensions of the problem. */
+  const unsigned short nMetricPerPoint = nDim == 3 ? 10 : 5;
+
+  /*--- Loop over the owned volume elements to determine the size of
+        the metric vector and the size of the mass matrix vector. */
+  unsigned long sizeMetric = 0, sizeMassMatrix = 0;
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+
+    /* Determine the number of metric coefficients needed for this element
+       and update the counter sizeMetric accordingly. */
+    const unsigned short ind = volElem[i].indStandardElement;
+    sizeMetric += nMetricPerPoint*standardElementsGrid[ind].GetNIntegration();
+
+    /* Update the counter sizeMassMatrix, depending on which types of the
+       mass matrix is needed. Note that it is not possible to store both
+       the mass matrix and the inverse of the mass matrix. */
+    if(FullMassMatrix || FullInverseMassMatrix)
+      sizeMassMatrix += volElem[i].nDOFsSol * volElem[i].nDOFsSol;
+
+    if( LumpedMassMatrix ) sizeMassMatrix += volElem[i].nDOFsSol;
+  }
+
+  /* Allocate the memory for the vectors to store the metric terms and
+     the mass matrices of the volume elements. */
+  VecMetricTermsElements.resize(sizeMetric);
+  VecMassMatricesElements.resize(sizeMassMatrix);
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Determine the metric terms, drdx, drdy, drdz, dsdx, etc.   ---*/
+  /*---         and the Jacobian in the integration points of the owned    ---*/
+  /*---         volume elements.                                           ---*/
+  /*--------------------------------------------------------------------------*/
+
+#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
+
+  /* In case the Lapack routines must be used, some help arrays must be
+     allocated. Determine the sizes of these help arrays by looping over
+     the standard volume elements. */
+  unsigned long sizeResult = 0, sizeRHS = 0;
+
+  for(unsigned long i=0; i<standardElementsGrid.size(); ++i) {
+    unsigned long thisSize = standardElementsGrid[i].GetNIntegration();
+    sizeResult = max(sizeResult, thisSize);
+
+    thisSize = standardElementsGrid[i].GetNDOFs();
+    sizeRHS  = max(sizeRHS, thisSize);
+  }
+
+  sizeResult *= nDim*nDim;
+  sizeRHS    *= nDim;
+
+  /* Allocate the memory. In case the MKL is used, a specialized allocation
+     is used to optimize performance. */
+  su2double *vecResult, *vecRHS;
+
+#ifdef HAVE_MKL
+  vecResult = (su2double *) mkl_malloc(sizeResult*sizeof(su2double), 64);
+  vecRHS    = (su2double *) mkl_malloc(sizeRHS   *sizeof(su2double), 64);
+#else
+  vector<su2double> helpVecResult(sizeResult), helpVecRHS(sizeRHS);
+  vecResult = helpVecResult.data();
+  vecRHS    = helpVecRHS.data();
+#endif
+
+#endif
+
+  /* Loop over the owned volume elements. */
+  sizeMetric = 0;
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+
+    /* Easier storage of the index of the corresponding standard element
+       and determine the number of integration points as well as the number
+       of DOFs for the grid. */
+    const unsigned short ind   = volElem[i].indStandardElement;
+    const unsigned short nInt  = standardElementsGrid[ind].GetNIntegration();
+    const unsigned short nDOFs = volElem[i].nDOFsGrid;
+
+    /* Store the pointer for the metric terms for this element. */
+    volElem[i].metricTerms = VecMetricTermsElements.data() + sizeMetric;
+
+    /*--- Make a distinction whether LAPACK routines must be used to carry
+          out the multiplication or a standard implementation must be used. ---*/
+#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
+
+    /* Loop over the grid DOFs of the element and copy the coordinates in
+       vecRHS in row major order. */
+    unsigned long ic = 0;
+    for(unsigned short j=0; j<nDOFs; ++j) {
+      const unsigned long ii = volElem[i].nodeIDsGrid[j];
+      for(unsigned short k=0; k<nDim; ++k, ++ic)
+        vecRHS[ic] = meshPoints[ii].coor[k];
+    }
+
+    /* Get the pointer to the matrix storage of the basis functions
+       and its derivatives. The first nDOFs*nInt entries of this matrix
+       correspond to the interpolation data to the integration points
+       and are not needed. Hence this part is skipped. */
+    const su2double *matBasisInt    = standardElementsGrid[ind].GetMatBasisFunctionsIntegration();
+    const su2double *matDerBasisInt = &matBasisInt[nDOFs*nInt];
+
+    /* Carry out the matrix matrix product using the blas routine dgemm. */
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nDim*nInt, nDim, nDOFs,
+                1.0, matDerBasisInt, nDOFs, vecRHS, nDim, 0.0, vecResult, nDim);
+
+    /* Make a distinction between 2D and 3D. ---*/
+    unsigned int ii = 0;
+    switch( nDim ) {
+      case 2: {
+
+        /* 2D computation. Store the offset between the r and s derivatives. */
+        const unsigned int off = 2*nInt;
+
+        /* Loop over the integration points and store the metric terms. */
+        for(unsigned short j=0; j<nInt; ++j) {
+          const unsigned int jx = 2*j; const unsigned int jy = jx+1;
+          const su2double dxdr = vecResult[jx],     dydr = vecResult[jy];
+          const su2double dxds = vecResult[jx+off], dyds = vecResult[jy+off];
+
+          volElem[i].metricTerms[ii++] =  dxdr*dyds - dxds*dydr; // J
+          volElem[i].metricTerms[ii++] =  dyds;   // J drdx
+          volElem[i].metricTerms[ii++] = -dxds;   // J drdy
+          volElem[i].metricTerms[ii++] = -dydr;   // J dsdx
+          volElem[i].metricTerms[ii++] =  dxdr;   // J dsdy
+        }
+
+        break;
+      }
+
+      case 3: {
+        /* 3D computation. Store the offset between the r and s and r and t derivatives. */
+        const unsigned int offS = 3*nInt, offT = 6*nInt; 
+
+        /* Loop over the integration points and store the metric terms. */
+        for(unsigned short j=0; j<nInt; ++j) {
+          const unsigned int jx = 3*j; const unsigned int jy = jx+1, jz = jx+2;
+          const su2double dxdr = vecResult[jx],      dydr = vecResult[jy],      dzdr = vecResult[jz];
+          const su2double dxds = vecResult[jx+offS], dyds = vecResult[jy+offS], dzds = vecResult[jz+offS];
+          const su2double dxdt = vecResult[jx+offT], dydt = vecResult[jy+offT], dzdt = vecResult[jz+offT];
+
+          volElem[i].metricTerms[ii++] = dxdr*(dyds*dzdt - dzds*dydt)
+                                       - dxds*(dydr*dzdt - dzdr*dydt)
+                                       + dxdt*(dydr*dzds - dzdr*dyds); // J
+
+          volElem[i].metricTerms[ii++] = dyds*dzdt - dzds*dydt;  // J drdx
+          volElem[i].metricTerms[ii++] = dzds*dxdt - dxds*dzdt;  // J drdy
+          volElem[i].metricTerms[ii++] = dxds*dydt - dyds*dxdt;  // J drdz
+
+          volElem[i].metricTerms[ii++] = dzdr*dydt - dydr*dzdt;  // J dsdx
+          volElem[i].metricTerms[ii++] = dxdr*dzdt - dzdr*dxdt;  // J dsdy
+          volElem[i].metricTerms[ii++] = dydr*dxdt - dxdr*dydt;  // J dsdz
+
+          volElem[i].metricTerms[ii++] = dydr*dzds - dzdr*dyds;  // J dtdx
+          volElem[i].metricTerms[ii++] = dzdr*dxds - dxdr*dzds;  // J dtdy
+          volElem[i].metricTerms[ii++] = dxdr*dyds - dydr*dxds;  // J dtdz
+        }
+
+        break;
+      }
+    }
+
+#else
+    /*--- Standard implementation to compute the derivatives of the
+          coordinates in the integration points. ---*/
+
+    /* Get the derivatives of the basis function w.r.t. the parametric elements. */
+    const su2double *dr = standardElementsGrid[ind].GetDrBasisFunctionsIntegration();
+    const su2double *ds = standardElementsGrid[ind].GetDsBasisFunctionsIntegration();
+    const su2double *dt = standardElementsGrid[ind].GetDtBasisFunctionsIntegration();
+
+    /* Make a distinction between 2D and 3D. ---*/
+    unsigned int ii = 0;
+    switch( nDim ) {
+      case 2: {
+
+        /*--- 2D computation. Loop over the integration points. ---*/
+        for(unsigned short j=0; j<nInt; ++j) {
+
+          const su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs];
+          su2double dxdr = 0.0, dydr = 0.0, dxds = 0.0, dyds = 0.0;
+
+          /* Loop over the DOFs to compute dxdr, dydr, dxds and dyds. */
+          for(unsigned short k=0; k<nDOFs; ++k) {
+            const unsigned long jj = volElem[i].nodeIDsGrid[k];
+            const su2double x = meshPoints[jj].coor[0],
+                            y = meshPoints[jj].coor[1];
+
+            dxdr += x*drr[k]; dxds += x*dss[k];
+            dydr += y*drr[k]; dyds += y*dss[k];
+          }
+
+          /*--- Compute the Jacobian and the other metric terms.
+                Store them in the array metricTerms of volElem[i]. ---*/
+          volElem[i].metricTerms[ii++] =  dxdr*dyds - dxds*dydr; // J
+          volElem[i].metricTerms[ii++] =  dyds;   // J drdx
+          volElem[i].metricTerms[ii++] = -dxds;   // J drdy
+          volElem[i].metricTerms[ii++] = -dydr;   // J dsdx
+          volElem[i].metricTerms[ii++] =  dxdr;   // J dsdy
+        }
+
+        break;
+      }
+
+      case 3: {
+
+        /*--- 3D computation. Loop over the integration points. ---*/
+        for(unsigned short j=0; j<nInt; ++j) {
+
+          const su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs],
+                          *dtt = &dt[j*nDOFs];
+          su2double dxdr = 0.0, dxds = 0.0, dxdt = 0.0,
+                    dydr = 0.0, dyds = 0.0, dydt = 0.0,
+                    dzdr = 0.0, dzds = 0.0, dzdt = 0.0;
+
+          /* Loop over the DOFs to compute dxdr, dydr, etc. */
+          for(unsigned short k=0; k<nDOFs; ++k) {
+            const unsigned long jj = volElem[i].nodeIDsGrid[k];
+            const su2double x = meshPoints[jj].coor[0],
+                            y = meshPoints[jj].coor[1],
+                            z = meshPoints[jj].coor[2];
+
+            dxdr += x*drr[k]; dxds += x*dss[k]; dxdt += x*dtt[k];
+            dydr += y*drr[k]; dyds += y*dss[k]; dydt += y*dtt[k];
+            dzdr += z*drr[k]; dzds += z*dss[k]; dzdt += z*dtt[k];
+          }
+
+          /*--- Compute the Jacobian and the other metric terms.
+                Store them in the array metricTerms of volElem[i]. ---*/
+          volElem[i].metricTerms[ii++] = dxdr*(dyds*dzdt - dzds*dydt)
+                                       - dxds*(dydr*dzdt - dzdr*dydt)
+                                       + dxdt*(dydr*dzds - dzdr*dyds); // J
+
+          volElem[i].metricTerms[ii++] = dyds*dzdt - dzds*dydt;  // J drdx
+          volElem[i].metricTerms[ii++] = dzds*dxdt - dxds*dzdt;  // J drdy
+          volElem[i].metricTerms[ii++] = dxds*dydt - dyds*dxdt;  // J drdz
+
+          volElem[i].metricTerms[ii++] = dzdr*dydt - dydr*dzdt;  // J dsdx
+          volElem[i].metricTerms[ii++] = dxdr*dzdt - dzdr*dxdt;  // J dsdy
+          volElem[i].metricTerms[ii++] = dydr*dxdt - dxdr*dydt;  // J dsdz
+
+          volElem[i].metricTerms[ii++] = dydr*dzds - dzdr*dyds;  // J dtdx
+          volElem[i].metricTerms[ii++] = dzdr*dxds - dxdr*dzds;  // J dtdy
+          volElem[i].metricTerms[ii++] = dxdr*dyds - dydr*dxds;  // J dtdz
+        }
+      }
+    }
+
+#endif
+
+    /* Check for negative Jacobians in the integrations points. */
+    for(unsigned short j=0; j<nInt; ++j) {
+      if(volElem[i].metricTerms[nMetricPerPoint*j] <= 0.0) {
+        cout << "Negative Jacobian found" << endl;
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
+    }
+
+    /* Update the counter sizeMetric for the next element. */
+    sizeMetric += nMetricPerPoint*nInt;
+  }
+
+  /* If the MKL is used, the help arrays must be deallocated. */
+#ifdef HAVE_MKL
+  mkl_free(vecResult);
+  mkl_free(vecRHS);
+#endif
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 3: Determine the mass matrix (or its inverse) and/or the      ---*/
+  /*---         lumped mass matrix.                                        ---*/
+  /*--------------------------------------------------------------------------*/
+
+
+  cout << "CMeshFEM_DG::MetricTermsVolumeElements. Not implemented yet." << endl;
+#ifndef HAVE_MPI
+  exit(EXIT_FAILURE);
+#else
+  MPI_Abort(MPI_COMM_WORLD,1);
+  MPI_Finalize();
+#endif
 }
