@@ -411,17 +411,31 @@ void Geometrical_Preprocessing_DGFEM(CGeometry ***geometry, CConfig **config, un
           for the elements in the Discontinuous Galerkin formulation. ---*/
     if (rank == MASTER_NODE) cout << "Creating face information." << endl;
     DGMesh->CreateFaces(config[iZone]);
+
+    /*--- Compute the metric terms of the volume elements. ---*/
+    if (rank == MASTER_NODE) cout << "Computing metric terms volume elements." << endl;
+    DGMesh->MetricTermsVolumeElements(config[iZone]);
+
+    /*--- Compute the metric terms of the surface elements. ---*/
+    if (rank == MASTER_NODE) cout << "Computing metric terms surface elements." << endl;
+    DGMesh->MetricTermsSurfaceElements(config[iZone]);
   }
 
-  cout << "Geometrical_Preprocessing_DGFEM: Not implemented yet." << endl;
+  /*--- Loop to create the coarser grid levels. ---*/
+
+  for(unsigned short iMGlevel=1; iMGlevel<=config[ZONE_0]->GetnMGLevels(); iMGlevel++) {
+
+    if (rank == MASTER_NODE)
+      cout << "Geometrical_Preprocessing_DGFEM: Coarse grid levels not implemented yet." << endl;
 #ifndef HAVE_MPI
-  exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE);
 #else
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Abort(MPI_COMM_WORLD,1);
-  MPI_Finalize();
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
 #endif
 
+  }
 }
 
 void Partition_Analysis(CGeometry *geometry, CConfig *config) {

@@ -607,20 +607,23 @@ private:
 
   /*!
   * \brief Function, which carries out a matrix matrix multiplication to obtain
-           data in points and stores the transpose of the result.
+           data in points and stores the result row major order.
   * \param[in]  nDOFs   - Dimension of the matrices. This typically corresponds
                           to the number of DOFs that are considered.
   * \param[in]  nPoints - Dimension of the matrices. This typically corresponds
                           to the number of integration points used.
   * \param[in]  A       - First matrix in the matrix matrix product A*B, dimension nPoints X nDOFs.
+                          A is stored in column major order.
   * \param[in]  B       - Second matrix in the matrix matrix product A*B, dimension nDOFs X nDOFs.
-  * \param[out] C       - Result of A*B. The transpose of the result is stored, dimension nDOFs X nPoints.
+                          B is stored in column major order.
+  * \param[out] C       - Result of A*B, dimension nPoints X nDOFs. The result is stored in row
+                          major order
   */
-  void MatMulTranspose(unsigned short nDOFs,
-                       unsigned short nPoints,
-                       vector<su2double> &A,
-                       vector<su2double> &B,
-                       vector<su2double> &C);
+  void MatMulRowMajor(const unsigned short nDOFs,
+                      const unsigned short nPoints,
+                      const vector<su2double> &A,
+                      const vector<su2double> &B,
+                      vector<su2double>       &C);
 
   /*!
   * \brief Function, which computes the value of the Jacobi polynomial for the given x-coordinate.
@@ -759,6 +762,9 @@ private:
   vector<su2double> dsLagBasisIntegration; /*!< \brief s-derivatives of the Lagrangian basis functions in the integration points. */
   vector<su2double> dtLagBasisIntegration; /*!< \brief t-derivatives of the Lagrangian basis functions in the integration points. */
 
+  su2double *matBasisIntegration;  /*!< \brief Matrix of lagBasisIntegration, drLagBasisIntegration, dsLagBasisIntegration
+                                               and dtLagBasisIntegration combined for efficiency when using BLAS routines. */
+
   vector<unsigned short> connFace0; /*!< \brief Local connectivity of face 0 of the element. The numbering of the DOFs is
                                                 such that the element is to the left of the face. */
   vector<unsigned short> connFace1; /*!< \brief Local connectivity of face 1 of the element. The numbering of the DOFs is
@@ -783,7 +789,7 @@ public:
   FEMStandardElementClass();
 
   /*!
-  * \brief Destructor. Nothing to be done, because the vectors are deleted automatically.
+  * \brief Destructor. Only the allocated pointers must be deleted explicitly.
   */
   ~FEMStandardElementClass();
 
@@ -832,6 +838,12 @@ public:
   * \return  The pointer to data, which stores the t-derivatives of the basis functions.
   */
   su2double *GetDtBasisFunctionsIntegration(void);
+
+  /*!
+  * \brief Function, which makes available to matrix storage of the basis functions in the integration points.
+  * \return  The pointer to matBasisIntegration.
+  */
+  su2double *GetMatBasisFunctionsIntegration(void);
 
   /*!
   * \brief Function, which makes available the connectivity of face 0.
