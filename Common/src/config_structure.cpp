@@ -182,6 +182,7 @@ void CConfig::SetPointersNull(void) {
   MG_CorrecSmooth     = NULL;
   MG_PreSmooth        = NULL;
   MG_PostSmooth       = NULL;
+  Int_Coeffs		  = NULL;
 
   /*--- Moving mesh pointers ---*/
 
@@ -203,6 +204,7 @@ void CConfig::SetPointersNull(void) {
   
   ExtIter = 0;
   IntIter = 0;
+  nIntCoeffs = 0;
   
 }
 
@@ -2630,7 +2632,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
   /*--- Basic dimensionalization of the markers (worst scenario) ---*/
 
   nMarker_All = nMarker_Max;
-  cout << "RANK  "<< rank << "  SIZE   " << size << "  nmarker all" << nMarker_All << endl;
 
   /*--- Allocate the memory (markers in each domain) ---*/
   

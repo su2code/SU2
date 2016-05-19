@@ -87,6 +87,8 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
   
   unsigned long Point_Donor, Point_Target;
   
+  bool fsi = donor_config->GetFSI_Simulation();
+  
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
@@ -173,8 +175,10 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
       }
     }
     
+    /*
     if(Marker_Target == -1 || Marker_Donor == -1)
 		continue;
+    */
     
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
     Buffer_Send_nVertexTarget[0] = nLocalVertexTarget;							   // Retrieve total number of vertices on Target marker
@@ -395,7 +399,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
           
           Point_Target_Check = Buffer_Recv_TargetIndices[indexPoint_iVertex];
           
-          if (Point_Target_Check < 0) {
+          if (Point_Target_Check < 0 && fsi) {
             cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
             exit(EXIT_FAILURE);
           }
@@ -403,8 +407,8 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
           for (iVar = 0; iVar < nVar; iVar++)
             Target_Variable[iVar] = Buffer_Recv_TargetVariables[indexPoint_iVertex*nVar+iVar];
           
-          SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
-          
+          SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target); 
+    
         }
         
       }
@@ -448,6 +452,8 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
   
   unsigned long Point_Donor_Global, Donor_Global_Index;
   unsigned long Point_Donor, Point_Target;
+  
+  bool fsi = donor_config->GetFSI_Simulation();
   
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -540,10 +546,10 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
         Marker_Target = -1;
       }
     }
-    
+/*    
     if(Marker_Target == -1 || Marker_Donor == -1)
 		continue;
-    
+  */  
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
     
@@ -671,6 +677,9 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
     
     long indexPoint_iVertex, Point_Target_Check;
     
+    if(Marker_Target == -1)// || Marker_Donor == -1)
+		continue;
+		
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0){
       
@@ -692,7 +701,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
           
           Point_Target_Check = Buffer_Bcast_Indices[indexPoint_iVertex];
           
-          if (Point_Target_Check < 0) {
+          if (Point_Target_Check < 0 && fsi) {
             cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
             exit(EXIT_FAILURE);
           }
@@ -700,7 +709,8 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
           for (iVar = 0; iVar < nVar; iVar++)
             Target_Variable[iVar] = Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
           
-          SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
+          if (Point_Target_Check >= 0)
+			SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
           
         }
         
@@ -836,10 +846,10 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
         Marker_Target = -1;
       }
     }
-    
+    /*
     if(Marker_Target == -1 || Marker_Donor == -1)
 		continue;
-        
+        */
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
     
@@ -969,15 +979,12 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     long indexPoint_iVertex, Point_Target_Check;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
+    
+    if(Marker_Target == -1 || Marker_Donor == -1)
+		continue;
         
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0){
-      /*
-      cout << target_config->GetMarker_All_FSIinterface(Marker_Target) << "  " << donor_config->GetMarker_All_FSIinterface(Marker_Donor) << endl; 
-      cout << Marker_Target << "  " << Marker_Donor << endl;
-      cout << "nvar " << nVar << endl;
-           */
-      
       
       /*--- We have identified the local index of the Structural marker ---*/
       /*--- We loop over all the vertices in that marker and in that particular processor ---*/
@@ -1008,28 +1015,25 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
             indexPoint_iVertex = std::distance(Buffer_Bcast_Indices, std::find(Buffer_Bcast_Indices, Buffer_Bcast_Indices + nBuffer_BcastIndices, Donor_Global_Index));
            
             Point_Target_Check = Buffer_Bcast_Indices[indexPoint_iVertex];
-             //cout << "globalindex  " << Donor_Global_Index << "  Index  " << indexPoint_iVertex << "  check " << Point_Target_Check << endl;
+
             if (Point_Target_Check < 0 && fsi) {
               cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
               exit(EXIT_FAILURE);
             }
-            
-            //cout << "Target  ";
-            for (iVar = 0; iVar < nVar; iVar++){
-              Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];//cout << Target_Variable[iVar] << "  ";
-              }//cout << endl;
+
+            for (iVar = 0; iVar < nVar; iVar++)
+              Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
+              
           }
-          //getchar();
-          if (Point_Target_Check >= 0){
+
+          if (Point_Target_Check >= 0)
 			SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
-			//cout  << "transfer  " << Marker_Target << "  " << Marker_Donor << "  " << iVertex << "  " << Point_Target << endl;
-          }
         }
         
       }
       
     }
-    //getchar();
+
     delete [] Buffer_Send_DonorVariables;
     delete [] Buffer_Send_DonorIndices;
     delete [] Buffer_Bcast_Variables;
@@ -1063,6 +1067,8 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
   
   unsigned long Point_Donor_Global, Donor_Global_Index;
   unsigned long Point_Donor, Point_Target;
+  
+  bool fsi = donor_config->GetFSI_Simulation();
   
   int size = SINGLE_NODE;
   
@@ -1151,8 +1157,10 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
       }
     }
     
+    /*
     if(Marker_Target == -1 || Marker_Donor == -1)
 		continue;
+    */
     
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;	  // Retrieve total number of vertices on Donor marker
     Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
@@ -1267,7 +1275,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
             
             Point_Target_Check = Buffer_Recv_DonorIndices[indexPoint_iVertex];
             
-            if (Point_Target_Check < 0) {
+            if (Point_Target_Check < 0 && fsi) {
               cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
               exit(EXIT_FAILURE);
             }
@@ -1276,7 +1284,8 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
               Target_Variable[iVar] += donorCoeff * Buffer_Recv_DonorVariables[indexPoint_iVertex*nVar+iVar];
           }
           
-          SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
+          if (Point_Target_Check >= 0)
+			SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);          
           
         }
         
