@@ -2,7 +2,7 @@
  * \file element_linear.cpp
  * \brief Definition of the linear element structure for structural applications
  * \author R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,6 +41,8 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 	unsigned short iNode, iGauss, jNode;
 	unsigned short nDimSq;
 
+	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+
 	nNodes = 3;
 	nGaussPoints = 1;
 
@@ -62,7 +64,6 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 	}
 
 	/*--- Initialize structure for current and reference configuration ---*/
-	/*--- TODO: Initialize structures depending on the kind of problem ---*/
 
 	CurrentCoord = new su2double*[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
@@ -83,8 +84,6 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 
 	GaussCoord[0][0] = 0.333333333333333;  GaussCoord[0][1] = 0.333333333333333;  GaussWeight[0] = 0.5;
 
-	//TODO: Check if all of these structures may be moved to the common structure (avoids repetition).
-	//TODO: this structure should only be initialized if the problem is dynamic
 	Mab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
 		Mab[iNode] = new su2double [nNodes];
@@ -98,7 +97,6 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 		}
 	}
 
-	//TODO: these structures should only be initialized if the problem is nonlinear
 	Ks_ab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
 		Ks_ab[iNode] = new su2double [nNodes];
@@ -107,6 +105,16 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 	Kt_a = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
 		Kt_a[iNode] = new su2double [nDim];
+	}
+
+	if (body_forces){
+		FDL_a = new su2double *[nNodes];
+		for (iNode = 0; iNode < nNodes; iNode++){
+			FDL_a[iNode] = new su2double [nDim];
+		}
+	}
+	else{
+		FDL_a = NULL;
 	}
 
 	su2double Xi, Eta, val_Ni;
@@ -149,19 +157,12 @@ CTRIA1::~CTRIA1(void) {
 		delete [] Kab[iVar];
 		delete [] Ks_ab[iVar];
 		delete [] Kt_a[iVar];
+		if (FDL_a != NULL) delete [] FDL_a[iVar];
 		delete [] NodalExtrap[iVar];
 	}
 
-	delete [] GaussCoord;
-	delete [] GaussPoint;
-	delete [] CurrentCoord;
-	delete [] RefCoord;
-	delete [] Mab;
-	delete [] Kab;
-	delete [] Ks_ab;
-	delete [] Kt_a;
-	delete [] GaussWeight;
 	delete [] NodalExtrap;
+
 
 }
 
@@ -315,6 +316,8 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 	unsigned short iNode, iGauss, jNode;
 	unsigned short nDimSq;
 
+	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+
 	nNodes = 4;
 	nGaussPoints = 4;
 
@@ -359,7 +362,6 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 	GaussCoord[2][0] = 0.577350269189626;   GaussCoord[2][1] = 0.577350269189626;   GaussWeight[2] = 1.0;
 	GaussCoord[3][0] = -0.577350269189626;  GaussCoord[3][1] = 0.577350269189626;   GaussWeight[3] = 1.0;
 
-	//TODO: this structure should only be initialized if the problem is dynamic
 	Mab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
 		Mab[iNode] = new su2double [nNodes];
@@ -373,7 +375,6 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 		}
 	}
 
-	//TODO: these structures should only be initialized if the problem is nonlinear
 	Ks_ab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
 		Ks_ab[iNode] = new su2double [nNodes];
@@ -382,6 +383,16 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 	Kt_a = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
 		Kt_a[iNode] = new su2double [nDim];
+	}
+
+	if (body_forces){
+		FDL_a = new su2double *[nNodes];
+		for (iNode = 0; iNode < nNodes; iNode++){
+			FDL_a[iNode] = new su2double [nDim];
+		}
+	}
+	else{
+		FDL_a = NULL;
 	}
 
 	/*--- Store the shape functions (they only need to be computed once) ---*/
@@ -442,19 +453,12 @@ CQUAD4::~CQUAD4(void) {
 		delete [] Kab[iVar];
 		delete [] Ks_ab[iVar];
 		delete [] Kt_a[iVar];
+		if (FDL_a != NULL) delete [] FDL_a[iVar];
 		delete [] NodalExtrap[iVar];
 	}
 
-	delete [] GaussCoord;
-	delete [] GaussPoint;
-	delete [] CurrentCoord;
-	delete [] RefCoord;
-	delete [] Mab;
-	delete [] Kab;
-	delete [] Ks_ab;
-	delete [] Kt_a;
-	delete [] GaussWeight;
 	delete [] NodalExtrap;
+
 
 }
 
@@ -666,10 +670,6 @@ CQUAD4P1::~CQUAD4P1(void) {
 		delete [] Kk_ab[iVar];
 	}
 
-	delete [] GaussCoordP;
-	delete [] GaussPointP;
-	delete [] Kk_ab;
-	delete [] GaussWeightP;
 
 }
 
@@ -765,6 +765,8 @@ CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
 	unsigned short iNode, iGauss, jNode;
 	unsigned short nDimSq;
 
+	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+
 	nNodes = 4;
 	nGaussPoints = 1;
 
@@ -806,7 +808,6 @@ CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
 
 	GaussCoord[0][0] = 0.25;  GaussCoord[0][1] = 0.25; GaussCoord[0][2] = 0.25;  GaussWeight[0] = 0.166666666666666;
 
-	//TODO: this structure should only be initialized if the problem is dynamic
 	Mab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
 		Mab[iNode] = new su2double [nNodes];
@@ -820,7 +821,6 @@ CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
 		}
 	}
 
-	//TODO: these structures should only be initialized if the problem is nonlinear
 	Ks_ab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
 		Ks_ab[iNode] = new su2double [nNodes];
@@ -829,6 +829,16 @@ CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
 	Kt_a = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
 		Kt_a[iNode] = new su2double [nDim];
+	}
+
+	if (body_forces){
+		FDL_a = new su2double *[nNodes];
+		for (iNode = 0; iNode < nNodes; iNode++){
+			FDL_a[iNode] = new su2double [nDim];
+		}
+	}
+	else{
+		FDL_a = NULL;
 	}
 
 	/*--- Store the shape functions (they only need to be computed once) ---*/
@@ -872,19 +882,12 @@ CTETRA1::~CTETRA1(void) {
 		delete [] Kab[iVar];
 		delete [] Ks_ab[iVar];
 		delete [] Kt_a[iVar];
+		if (FDL_a != NULL) delete [] FDL_a[iVar];
 		delete [] NodalExtrap[iVar];
 	}
 
-	delete [] GaussCoord;
-	delete [] GaussPoint;
-	delete [] CurrentCoord;
-	delete [] RefCoord;
-	delete [] Mab;
-	delete [] Kab;
-	delete [] Ks_ab;
-	delete [] Kt_a;
-	delete [] GaussWeight;
 	delete [] NodalExtrap;
+
 
 }
 
@@ -1055,6 +1058,8 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 	unsigned short iNode, iGauss, jNode;
 	unsigned short nDimSq;
 
+	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
+
 	nNodes = 8;
 	nGaussPoints = 8;
 
@@ -1103,7 +1108,6 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 	GaussCoord[6][0] = 0.577350269189626;   GaussCoord[6][1] = 0.577350269189626;  	GaussCoord[6][2] = 0.577350269189626;  	GaussWeight[6] = 1.0;
 	GaussCoord[7][0] = -0.577350269189626;  GaussCoord[7][1] = 0.577350269189626;  	GaussCoord[7][2] = 0.577350269189626;  	GaussWeight[7] = 1.0;
 
-	//TODO: this structure should only be initialized if the problem is dynamic
 	Mab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
 		Mab[iNode] = new su2double [nNodes];
@@ -1117,7 +1121,6 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 		}
 	}
 
-	//TODO: these structures should only be initialized if the problem is nonlinear
 	Ks_ab = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
 		Ks_ab[iNode] = new su2double [nNodes];
@@ -1126,6 +1129,16 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 	Kt_a = new su2double *[nNodes];
 	for (iNode = 0; iNode < nNodes; iNode++){
 		Kt_a[iNode] = new su2double [nDim];
+	}
+
+	if (body_forces){
+		FDL_a = new su2double *[nNodes];
+		for (iNode = 0; iNode < nNodes; iNode++){
+			FDL_a[iNode] = new su2double [nDim];
+		}
+	}
+	else{
+		FDL_a = NULL;
 	}
 
 
@@ -1196,19 +1209,12 @@ CHEXA8::~CHEXA8(void) {
 		delete [] Kab[iVar];
 		delete [] Ks_ab[iVar];
 		delete [] Kt_a[iVar];
+		if (FDL_a != NULL) delete [] FDL_a[iVar];
 		delete [] NodalExtrap[iVar];
 	}
 
-	delete [] GaussCoord;
-	delete [] GaussPoint;
-	delete [] CurrentCoord;
-	delete [] RefCoord;
-	delete [] Mab;
-	delete [] Kab;
-	delete [] Ks_ab;
-	delete [] Kt_a;
-	delete [] GaussWeight;
 	delete [] NodalExtrap;
+
 
 
 }
@@ -1491,10 +1497,6 @@ CHEXA8P1::~CHEXA8P1(void) {
 		delete [] Kk_ab[iVar];
 	}
 
-	delete [] GaussCoordP;
-	delete [] GaussPointP;
-	delete [] Kk_ab;
-	delete [] GaussWeightP;
 
 }
 

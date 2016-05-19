@@ -5,7 +5,7 @@
  *        <i>numerics_convective.cpp</i>, <i>numerics_viscous.cpp</i>, and
  *        <i>numerics_source.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -16,7 +16,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,7 +52,7 @@ using namespace std;
  * \class CNumerics
  * \brief Class for defining the numerical methods.
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CNumerics {
 protected:
@@ -74,7 +74,6 @@ public:
   su2double
   **tau,		/*!< \brief Viscous stress tensor. */
   **delta;			/*!< \brief Identity matrix. */
-  su2double **dVdU; /*!< \brief Transformation matrix from primitive variables, V, to conserved, U. */
   su2double
   *Diffusion_Coeff_i, /*!< \brief Species diffusion coefficients at point i. */
   *Diffusion_Coeff_j; /*!< \brief Species diffusion coefficients at point j. */
@@ -1431,75 +1430,61 @@ public:
                                su2double **val_Jacobian_j,
                                su2double *val_Jacobian_muj,
                                su2double ***val_Jacobian_gradj, CConfig *config);
-  
+
   /*!
-   * \brief Computing stiffness matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
+   * \brief A virtual member to compute the tangent matrix in structural problems
+   * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void SetFEA_StiffMatrix2D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
-  
+  virtual void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
+
   /*!
-   * \brief Computing stiffness matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
+   * \brief A virtual member to compute the pressure term in incompressible or nearly-incompressible structural problems
+   * \param[in] element_container - Definition of the particular element integrated.
    */
-  virtual void SetFEA_StiffMatrix3D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
-  
+  virtual void Compute_MeanDilatation_Term(CElement *element_container, CConfig *config);
+
   /*!
-   * \brief Computing mass matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
+   * \brief A virtual member to compute the nodal stress term in non-linear structural problems
+   * \param[in] element_container - Definition of the particular element integrated.
    */
-  virtual void SetFEA_StiffMassMatrix2D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
-  
+  virtual void Compute_NodalStress_Term(CElement *element_container, CConfig *config);
+
   /*!
-   * \brief Computing mass matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
+   * \brief A virtual member to compute the plane stress term in an element for nonlinear structural problems
+   * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void SetFEA_StiffMassMatrix3D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
-  
+  virtual void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
+
   /*!
-   * \brief Computing dead load vector of the Galerkin method.
-   * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
+   * \brief A virtual member to compute the constitutive matrix in an element for structural problems
+   * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void SetFEA_DeadLoad2D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
-  
+  virtual void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
+
   /*!
-   * \brief Computing stiffness matrix of the Galerkin method.
-   * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
+   * \brief A virtual member to compute the stress tensor in an element for structural problems
+   * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void SetFEA_DeadLoad3D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
-  
-  
+  virtual void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
+
   /*!
-   * \brief Computing stresses in FEA method.
-   * \param[in] config - Definition of the particular problem.
+   * \brief A virtual member to compute the mass matrix
+   * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void GetFEA_StressNodal2D(su2double StressVector[8][3], su2double DispElement[8], su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
-  
-  
+  virtual void Compute_Mass_Matrix(CElement *element_container, CConfig *config);
+
   /*!
-   * \brief Computing stresses in FEA method.
-   * \param[in] config - Definition of the particular problem.
+   * \brief A virtual member to compute the residual component due to dead loads
+   * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void GetFEA_StressNodal3D(su2double StressVector[8][6], su2double DispElement[24], su2double CoordCorners[8][3], unsigned short nNodes);
-  
+  virtual void Compute_Dead_Load(CElement *element_container, CConfig *config);
+
   /*!
-   * \brief A virtual member to linearly interpolate pressures
-   * \param[in] config - Definition of the particular problem.
+   * \brief A virtual member to compute the averaged nodal stresses
+   * \param[in] element_container - Element structure for the particular element integrated.
    */
-  virtual void PressInt_Linear(su2double CoordCorners[4][3], su2double *tn_e, su2double Fnodal[12]);
-  
-  /*!
-   * \brief A virtual member to linearly interpolate viscous stresses
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void ViscTermInt_Linear(su2double CoordCorners[2][2], su2double Tau_0[3][3], su2double Tau_1[3][3],  su2double FviscNodal[4]);
-  
+  virtual void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
+
   /*!
    * \brief Computes a basis of orthogonal vectors from a suppled vector
    * \param[in] config - Normal vector
@@ -1513,7 +1498,7 @@ public:
  * \brief Class for centered scheme - CUSP.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwCUSP_Flow : public CNumerics {
   
@@ -1563,7 +1548,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe for the flow equations.
  * \ingroup ConvDiscr
  * \author A. Bueno, F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwRoe_Flow : public CNumerics {
 private:
@@ -1610,7 +1595,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe for the flow equations for a general fluid model.
  * \ingroup ConvDiscr
  * \author S.Vitale, G.Gori, M.Pini
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwGeneralRoe_Flow : public CNumerics {
 private:
@@ -1671,7 +1656,7 @@ public:
  * \brief Class for solving a flux-vector splitting method by Steger & Warming, modified version.
  * \ingroup ConvDiscr
  * \author S. Copeland
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwMSW_Flow : public CNumerics {
 private:
@@ -1716,7 +1701,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe with Turkel Preconditioning for the flow equations.
  * \ingroup ConvDiscr
  * \author A. K. Lonkar
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwTurkel_Flow : public CNumerics {
 private:
@@ -1771,7 +1756,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe for the incompressible flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwArtComp_Flow : public CNumerics {
 private:
@@ -1818,7 +1803,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of Roe for the incompressible flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwArtComp_FreeSurf_Flow : public CNumerics {
 private:
@@ -1866,7 +1851,7 @@ public:
  *        for the adjoint flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwRoe_AdjFlow : public CNumerics {
 private:
@@ -1917,7 +1902,7 @@ public:
  *        for the adjoint flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwRoeArtComp_AdjFlow : public CNumerics {
 private:
@@ -1961,7 +1946,7 @@ public:
  * \brief Class for solving an approximate Riemann AUSM.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwAUSM_Flow : public CNumerics {
 private:
@@ -2005,26 +1990,28 @@ public:
 
 /*!
  * \class CUpwHLLC_Flow
- * \brief Class for solving an approximate Riemann AUSM.
+ * \brief Class for solving an approximate Riemann HLLC.
  * \ingroup ConvDiscr
- * \author F. Palacios, based on the Joe code implementation
- * \version 4.1.0 "Cardinal"
+ * \author G. Gori, Politecnico di Milano
+ * \version 4.0.2 "Cardinal"
  */
 class CUpwHLLC_Flow : public CNumerics {
 private:
-  bool implicit;
-  su2double *Diff_U;
+  bool implicit, grid_movement;
+  unsigned short iDim, jDim, iVar, jVar;
+  
+  su2double *IntermediateState;
   su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  su2double sq_vel_i, sq_vel_j, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
-  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
-  RoeProjVelocity, ProjVelocity_i, ProjVelocity_j;
-  unsigned short iDim, iVar, jVar, kVar;
-  su2double Rrho, tmp, sq_velRoe, sL, sR, sM, pStar, invSLmSs, sLmuL, rhoSL, rhouSL[3],
-  eSL, invSRmSs, sRmuR, rhoSR, rhouSR[3], eSR;
+
+  su2double sq_vel_i, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i, ProjVelocity_i;
+  su2double sq_vel_j, Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, ProjVelocity_j;
+  
+  su2double sq_velRoe, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeProjVelocity, ProjInterfaceVel;
+
+  su2double sL, sR, sM, pStar, EStar, rhoSL, rhoSR, Rrho, kappa;
+
+  su2double Omega, RHO, OmegaSM;
+  su2double *dSm_dU, *dPI_dU, *drhoStar_dU, *dpStar_dU, *dEStar_dU;
   
 public:
   
@@ -2049,34 +2036,34 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
 };
 
 /*!
  * \class CUpwGeneralHLLC_Flow
- * \brief Class for solving an approximate Riemann AUSM.
+ * \brief Class for solving an approximate Riemann HLLC.
  * \ingroup ConvDiscr
- * \author F. Palacios, based on the Joe code implementation
- * \version 4.1.0 "Cardinal"
+ * \author G. Gori, Politecnico di Milano
+ * \version 4.0.2 "Cardinal"
  */
 class CUpwGeneralHLLC_Flow : public CNumerics {
 private:
-  bool implicit;
-  unsigned short iDim, iVar, jVar, kVar;
+  bool implicit, grid_movement;
+  unsigned short iDim, jDim, iVar, jVar;
   
-  su2double *Diff_U;
+  su2double *IntermediateState;
   su2double *Velocity_i, *Velocity_j, *RoeVelocity;
-  su2double *ProjFlux_i, *ProjFlux_j;
-  su2double *delta_wave, *delta_vel;
-  su2double *Lambda, *Epsilon;
-  su2double **P_Tensor, **invP_Tensor;
-  
+
   su2double sq_vel_i, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i, ProjVelocity_i, StaticEnthalpy_i, StaticEnergy_i;
   su2double sq_vel_j, Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, ProjVelocity_j, StaticEnthalpy_j, StaticEnergy_j;
   
-  su2double sq_velRoe, Proj_ModJac_Tensor_ij, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeSoundSpeed2, RoeProjVelocity;
+  su2double sq_velRoe, RoeDensity, RoeEnthalpy, RoeSoundSpeed, RoeProjVelocity, ProjInterfaceVel;
   su2double Kappa_i, Kappa_j, Chi_i, Chi_j, RoeKappa, RoeChi, RoeKappaStaticEnthalpy;
 
-  su2double sL, sR, sM, pStar, invSLmSs, sLmuL, rhoSL, rhouSL[3], Rrho, eSL, invSRmSs, sRmuR, rhoSR, rhouSR[3], eSR, kappa;
+  su2double sL, sR, sM, pStar, EStar, rhoSL, rhoSR, Rrho, kappa;
+
+  su2double Omega, RHO, OmegaSM;
+  su2double *dSm_dU, *dPI_dU, *drhoStar_dU, *dpStar_dU, *dEStar_dU;
 
   
 public:
@@ -2084,14 +2071,12 @@ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
-
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   CUpwGeneralHLLC_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
   
   /*!
-
    * \brief Destructor of the class.
    */
   ~CUpwGeneralHLLC_Flow(void);
@@ -2103,20 +2088,14 @@ public:
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
    * \param[in] config - Definition of the particular problem.
-
    */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 
    /*!
-
    * \brief Compute the Average quantities for a general fluid flux between two nodes i and j.
-
    * Using the approach of Vinokur and Montagne'
-
    */
-  
-  void VinokurMontagne();
-
+   void VinokurMontagne();
 };
 
 /*!
@@ -2124,7 +2103,7 @@ public:
  * \brief Class for performing a linear upwind solver for the Spalart-Allmaras turbulence model equations with transition
  * \ingroup ConvDiscr
  * \author A. Aranake
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwLin_TransLM : public CNumerics {
 private:
@@ -2164,7 +2143,7 @@ public:
  * \brief Class for performing a linear upwind solver for the adjoint Level Set equations.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwLin_AdjLevelSet : public CNumerics {
 private:
@@ -2206,7 +2185,7 @@ public:
  * \brief Class for performing a linear upwind solver for the adjoint turbulence equations.
  * \ingroup ConvDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwLin_AdjTurb : public CNumerics {
 private:
@@ -2242,7 +2221,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the Spalar-Allmaral turbulence model equations.
  * \ingroup ConvDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwSca_TurbSA : public CNumerics {
 private:
@@ -2281,7 +2260,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the Spalar-Allmaral turbulence model equations.
  * \ingroup ConvDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwSca_TurbML : public CNumerics {
 private:
@@ -2320,7 +2299,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the Menter SST turbulence model equations.
  * \ingroup ConvDiscr
  * \author A. Campos.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwSca_TurbSST : public CNumerics {
 private:
@@ -2361,7 +2340,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the Spalart-Allmaras turbulence model equations with transition.
  * \ingroup ConvDiscr
  * \author A. Aranake.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwSca_TransLM : public CNumerics {
 private:
@@ -2400,7 +2379,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the adjoint turbulence equations.
  * \ingroup ConvDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CUpwSca_AdjTurb : public CNumerics {
 private:
@@ -2440,7 +2419,7 @@ public:
  * \brief Class for centered shceme - JST.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CCentJST_KE_Flow : public CNumerics {
   
@@ -2494,7 +2473,7 @@ public:
  * \brief Class for centered scheme - JST.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CCentJST_Flow : public CNumerics {
   
@@ -2548,7 +2527,7 @@ public:
  * \brief Class for centered scheme - JST (artificial compressibility).
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CCentJSTArtComp_Flow : public CNumerics {
   
@@ -2601,7 +2580,7 @@ public:
  * \brief Class for and adjoint centered scheme - JST.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CCentJST_AdjFlow : public CNumerics {
 private:
@@ -2651,7 +2630,7 @@ public:
  * \brief Class for and adjoint centered scheme - JST.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CCentJSTArtComp_AdjFlow : public CNumerics {
 private:
@@ -2701,7 +2680,7 @@ public:
  * \brief Class for computing the Lax-Friedrich centered scheme.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CCentLax_Flow : public CNumerics {
 private:
@@ -2753,7 +2732,7 @@ public:
  * \brief Class for computing the Lax-Friedrich centered scheme (artificial compressibility).
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CCentLaxArtComp_Flow : public CNumerics {
 private:
@@ -2805,7 +2784,7 @@ public:
  * \brief Class for computing the Lax-Friedrich adjoint centered scheme.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CCentLax_AdjFlow : public CNumerics {
 private:
@@ -2855,7 +2834,7 @@ public:
  * \brief Class for computing the Lax-Friedrich adjoint centered scheme.
  * \ingroup ConvDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CCentLaxArtComp_AdjFlow : public CNumerics {
 private:
@@ -2905,7 +2884,7 @@ public:
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author A. Bueno, and F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGrad_Flow : public CNumerics {
 private:
@@ -2997,7 +2976,7 @@ public:
  * \brief Class for computing viscous term using an average of gradients.
  * \ingroup ViscDiscr
  * \author A. Bueno, and F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGradArtComp_Flow : public CNumerics {
 private:
@@ -3036,7 +3015,7 @@ public:
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGrad_TurbSA : public CNumerics {
 private:
@@ -3081,7 +3060,7 @@ public:
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGrad_TurbSA_Neg : public CNumerics {
 private:
@@ -3127,7 +3106,7 @@ public:
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGrad_TurbML : public CNumerics {
 private:
@@ -3171,7 +3150,7 @@ public:
  * \brief Class for computing viscous term using average of gradients (Spalart-Allmaras Turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGrad_TransLM : public CNumerics {
 private:
@@ -3214,7 +3193,7 @@ public:
  * \brief Class for computing the adjoint viscous terms.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGrad_AdjFlow : public CNumerics {
 private:
@@ -3256,7 +3235,7 @@ public:
  * \brief Class for computing the adjoint viscous terms.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGradArtComp_AdjFlow : public CNumerics {
 private:
@@ -3296,7 +3275,7 @@ public:
  * \brief Class for computing viscous term using the average of gradients with a correction.
  * \ingroup ViscDiscr
  * \author A. Bueno, and F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGradCorrected_Flow : public CNumerics {
 private:
@@ -3391,7 +3370,7 @@ public:
  * \brief Class for computing viscous term using an average of gradients with correction (artificial compresibility).
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGradCorrectedArtComp_Flow : public CNumerics {
 private:
@@ -3433,7 +3412,7 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGradCorrected_TurbSA : public CNumerics {
 private:
@@ -3474,7 +3453,7 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGradCorrected_TurbSA_Neg : public CNumerics {
 private:
@@ -3519,7 +3498,7 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGradCorrected_TurbML : public CNumerics {
 private:
@@ -3560,7 +3539,7 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGradCorrected_TransLM : public CNumerics {
 private:
@@ -3600,7 +3579,7 @@ public:
  * \brief Class for computing viscous term using average of gradient with correction (Menter SST turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGrad_TurbSST : public CNumerics {
 private:
@@ -3662,7 +3641,7 @@ public:
  * \brief Class for computing viscous term using average of gradient with correction (Menter SST turbulence model).
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGradCorrected_TurbSST : public CNumerics {
 private:
@@ -3724,7 +3703,7 @@ public:
  * \brief Class for computing the adjoint viscous terms, including correction.
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGradCorrected_AdjFlow : public CNumerics {
 private:
@@ -3772,7 +3751,7 @@ public:
  * \brief Class for computing the adjoint viscous terms, including correction.
  * \ingroup ViscDiscr
  * \author F.Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGradCorrectedArtComp_AdjFlow : public CNumerics {
 private:
@@ -3818,7 +3797,7 @@ public:
  * \brief Class for adjoint turbulent using average of gradients with a correction.
  * \ingroup ViscDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGradCorrected_AdjTurb : public CNumerics {
 private:
@@ -3870,7 +3849,7 @@ public:
  * \brief Class for adjoint turbulent using average of gradients with a correction.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CAvgGrad_AdjTurb : public CNumerics {
 private:
@@ -3922,7 +3901,7 @@ public:
  * \brief Class for computing the stiffness matrix of the Galerkin method.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CGalerkin_Flow : public CNumerics {
 public:
@@ -3949,175 +3928,239 @@ public:
 };
 
 /*!
- * \class CGalerkin_FEA
- * \brief Class for computing the stiffness matrix of the Galerkin method.
- * \ingroup ViscDiscr
- * \author F. Palacios, R.Sanchez
- * \version 4.1.0 "Cardinal"
+ * \class CFEM_Elasticity
+ * \brief Generic class for computing the tangent matrix and the residual for structural problems
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
  */
-class CGalerkin_FEA : public CNumerics {
-  
-  su2double E;				/*!< \brief Young's modulus of elasticity. */
-  su2double Nu;			/*!< \brief Poisson's ratio. */
-  su2double Rho_s;		/*!< \brief Structural density. */
-  su2double Mu;			/*!< \brief Lame's coeficient. */
-  su2double Lambda;	/*!< \brief Lame's coeficient. */
+class CFEM_Elasticity : public CNumerics {
+
+protected:
+
+	su2double E;				/*!< \brief Young's modulus of elasticity. */
+	su2double Nu;			/*!< \brief Poisson's ratio. */
+	su2double Rho_s;		/*!< \brief Structural density. */
+	su2double Mu;			/*!< \brief Lame's coeficient. */
+	su2double Lambda;		/*!< \brief Lame's coeficient. */
+	su2double Kappa;		/*!< \brief Compressibility constant. */
+	bool plane_stress;		/*!< \brief Checks if we are solving a plane stress case */
+
+	su2double **Ba_Mat,	 /*!< \brief Matrix B for node a - Auxiliary. */
+	**Bb_Mat;	 		 /*!< \brief Matrix B for node b - Auxiliary. */
+	su2double *Ni_Vec;	 	 /*!< \brief Vector of shape functions - Auxiliary. */
+	su2double **D_Mat;		 /*!< \brief Constitutive matrix - Auxiliary. */
+	su2double **KAux_ab;	 /*!< \brief Node ab stiffness matrix - Auxiliary. */
+	su2double **GradNi_Ref_Mat;/*!< \brief Gradients of Ni - Auxiliary. */
+	su2double **GradNi_Curr_Mat;/*!< \brief Gradients of Ni - Auxiliary. */
+
+	su2double *FAux_Dead_Load;		/*!< \brief Auxiliar vector for the dead loads */
 
 public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CFEM_Elasticity(void);
+
+	void Compute_Mass_Matrix(CElement *element_container, CConfig *config);
+
+	void Compute_Dead_Load(CElement *element_container, CConfig *config);
+
+	virtual void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
+
+	virtual void Compute_MeanDilatation_Term(CElement *element_container, CConfig *config);
+
+	virtual void Compute_NodalStress_Term(CElement *element_container, CConfig *config);
+
+	virtual void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
+
+	virtual void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
+
+	virtual void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
   
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CGalerkin_FEA(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CGalerkin_FEA(void);
-  
-  /*!
-   * \brief Shape functions and derivative of the shape functions
-   * \param[in] Fnodal - Forces at the nodes in cartesian coordinates.
-   * \param[in] Pnodal - Pressure at the nodes.
-   * \param[in] CoordCorners[2][2] - Coordiantes of the corners.
-   */
-  void PressInt_Linear(su2double CoordCorners[4][3], su2double *tn_e, su2double Fnodal[12]);
-  
-  /*!
-   * \brief Shape functions and derivative of the shape functions
-   * \param[in] Tau_0 - Stress tensor at the node 0.
-   * \param[in] Tau_1 - Stress tensor at the node 1.
-   * \param[in] Fnodal - Forces at the nodes in cartesian coordinates.
-   * \param[in] CoordCorners[2][2] - Coordiantes of the corners.
-   */
-  void ViscTermInt_Linear(su2double CoordCorners[2][2], su2double Tau_0[3][3], su2double Tau_1[3][3],  su2double FviscNodal[4]);
-  
-  /*!
-   * \brief Shape functions and derivative of the shape functions
-   * \param[in] Xi - Local coordinates.
-   * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
-   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
-   */
-  su2double ShapeFunc_Triangle(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
-  /*!
-   * \brief Shape functions and derivative of the shape functions
-   * \param[in] Xi - Local coordinates.
-   * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
-   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
-   */
-  su2double ShapeFunc_Quadrilateral(su2double Xi, su2double Eta, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
-  /*!
-   * \brief Shape functions and derivative of the shape functions
-   * \param[in] Xi - Local coordinates.
-   * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
-   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
-   */
-  su2double ShapeFunc_Tetra(su2double Xi, su2double Eta, su2double Mu, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
-  /*!
-   * \brief Shape functions and derivative of the shape functions
-   * \param[in] Xi - Local coordinates.
-   * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
-   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
-   */
-  su2double ShapeFunc_Prism(su2double Xi, su2double Eta, su2double Mu, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
-  /*!
-   * \brief Shape functions and derivative of the shape functions
-   * \param[in] Xi - Local coordinates.
-   * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
-   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
-   */
-  su2double ShapeFunc_Pyram(su2double Xi, su2double Eta, su2double Mu, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
-  /*!
-   * \brief Shape functions and derivative of the shape functions
-   * \param[in] Xi - Local coordinates.
-   * \param[in] Eta - Local coordinates.
-   * \param[in] Mu - Local coordinates.
-   * \param[in] CoordCorners[8][3] - Coordiantes of the corners.
-   * \param[in] shp[8][4] - Shape function information
-   */
-  su2double ShapeFunc_Hexa(su2double Xi, su2double Eta, su2double Mu, su2double CoordCorners[8][3], su2double DShapeFunction[8][4]);
-  
-  /*!
-   * \brief Computing stiffness matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_StiffMatrix2D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
-  
-  /*!
-   * \brief Computing stiffness matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_StiffMatrix3D(su2double **StiffMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
-  
-  /*!
-   * \brief Computing mass matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_StiffMassMatrix2D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
-  
-  /*!
-   * \brief Computing mass matrix of the Galerkin method.
-   * \param[out] val_stiffmatrix_elem - Stiffness matrix for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_StiffMassMatrix3D(su2double **StiffMatrix_Elem, su2double **MassMatrix_Elem, su2double CoordCorners[8][3], unsigned short nNodes);
-  
-  /*!
-   * \brief Computing stresses in FEA method at the nodes.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void GetFEA_StressNodal2D(su2double StressVector[8][3], su2double DispElement[8], su2double CoordCorners[8][3], unsigned short nNodes, unsigned short form2d);
-  
-  
-  /*!
-   * \brief Computing stresses in FEA method at the nodes.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void GetFEA_StressNodal3D(su2double StressVector[8][6], su2double DispElement[24], su2double CoordCorners[8][3], unsigned short nNodes);
-  
-  /*!
-   * \brief Computing dead load vector of the Galerkin method.
-   * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_DeadLoad2D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
-  
-  /*!
-   * \brief Computing stiffness matrix of the Galerkin method.
-   * \param[out] val_deadloadvector_elem - Dead load at the nodes for Galerkin computation.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetFEA_DeadLoad3D(su2double *DeadLoadVector_Elem, su2double CoordCorners[8][3], unsigned short nNodes, su2double matDensity);
-  
+	virtual void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
+
 };
+
+/*!
+ * \class CFEM_LinearElasticity
+ * \brief Class for computing the stiffness matrix of a linear, elastic problem.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_LinearElasticity : public CFEM_Elasticity {
+
+	su2double **nodalDisplacement;
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_LinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_LinearElasticity(void);
+
+	void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
+
+	void Compute_Constitutive_Matrix(void);
+  using CNumerics::Compute_Constitutive_Matrix;
+
+	void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
+
+//	virtual void Compute_Stress_Tensor(void);
+
+//	virtual void Compute_MeanDilatation_Term(CElement *element_container, CConfig *config);
+
+//	virtual void Compute_NodalStress_Term(CElement *element_container, CConfig *config);
+
+};
+
+/*!
+ * \class CFEM_LinearElasticity
+ * \brief Class for computing the stiffness matrix of a nonlinear, elastic problem.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_NonlinearElasticity : public CFEM_Elasticity {
+
+protected:
+
+	su2double **F_Mat;	 			/*!< \brief Deformation gradient. */
+	su2double **b_Mat;	 			/*!< \brief Left Cauchy-Green Tensor. */
+	su2double **currentCoord;	 	/*!< \brief Current coordinates. */
+	su2double **Stress_Tensor;		/*!< \brief Cauchy stress tensor */
+
+	su2double **KAux_P_ab;			/*!< \brief Auxiliar matrix for the pressure term */
+	su2double *KAux_t_a;			/*!< \brief Auxiliar matrix for the pressure term */
+
+	su2double J_F;		 			/*!< \brief Jacobian of the transformation (determinant of F) */
+
+	su2double f33;		 			/*!< \brief Plane stress term for non-linear 2D plane stress analysis */
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_NonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CFEM_NonlinearElasticity(void);
+
+	void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
+
+	void Compute_MeanDilatation_Term(CElement *element_container, CConfig *config);
+
+	void Compute_NodalStress_Term(CElement *element_container, CConfig *config);
+
+	void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
+
+	virtual void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
+
+	virtual void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
+
+	virtual void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
+
+
+};
+
+/*!
+ * \class CFEM_NeoHookean_Comp
+ * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model, compressible.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_NeoHookean_Comp : public CFEM_NonlinearElasticity {
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_NeoHookean_Comp(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_NeoHookean_Comp(void);
+
+	void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
+
+	void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
+  using CNumerics::Compute_Constitutive_Matrix;
+
+	void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
+
+};
+
+/*!
+ * \class CFEM_NeoHookean_Incomp
+ * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model, incompressible.
+ * \ingroup FEM_Discr
+ * \author R.Sanchez
+ * \version 4.0.0 "Cardinal"
+ */
+class CFEM_NeoHookean_Incomp : public CFEM_NonlinearElasticity {
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 * \param[in] val_nDim - Number of dimensions of the problem.
+	 * \param[in] val_nVar - Number of variables of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CFEM_NeoHookean_Incomp(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	~CFEM_NeoHookean_Incomp(void);
+
+	void Compute_Plane_Stress_Term(CElement *element_container, CConfig *config);
+
+	void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
+  using CNumerics::Compute_Constitutive_Matrix;
+
+	void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
+
+};
+
+
 
 /*!
  * \class CSourceNothing
  * \brief Dummy class.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSourceNothing : public CNumerics {
 public:
@@ -4141,7 +4184,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSourcePieceWise_TurbSA : public CNumerics {
 private:
@@ -4236,7 +4279,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSourcePieceWise_TurbSA_Neg : public CNumerics {
 private:
@@ -4331,7 +4374,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras turbulence model equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSourcePieceWise_TransLM : public CNumerics {
 private:
@@ -4396,7 +4439,7 @@ public:
  * \brief Class for integrating the source terms of the Menter SST turbulence model equations.
  * \ingroup SourceDiscr
  * \author A. Campos.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSourcePieceWise_TurbSST : public CNumerics {
 private:
@@ -4470,7 +4513,7 @@ public:
  * \brief Class for the source term integration of the gravity force.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSourceGravity : public CNumerics {
   su2double Froude;
@@ -4503,7 +4546,7 @@ public:
  * \brief Class for source term integration in adjoint problem.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSourceViscous_AdjFlow : public CNumerics {
 private:
@@ -4539,7 +4582,7 @@ public:
  * \brief Class for source term integration of the adjoint turbulent equation.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSourcePieceWise_AdjTurb : public CNumerics {
 private:
@@ -4575,7 +4618,7 @@ public:
  * \brief Class for source term integration of the adjoint level set equation.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSourcePieceWise_AdjLevelSet : public CNumerics {
 public:
@@ -4606,7 +4649,7 @@ public:
  * \brief Class for source term integration in adjoint problem using a conservative scheme.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSourceConservative_AdjFlow : public CNumerics {
 private:
@@ -4641,7 +4684,7 @@ public:
  * \brief Class for source term integration in adjoint turbulent problem using a conservative scheme.
  * \ingroup SourceDiscr
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSourceConservative_AdjTurb : public CNumerics {
 public:
@@ -4674,7 +4717,7 @@ public:
  * \brief Class for a rotating frame source term.
  * \ingroup SourceDiscr
  * \author F. Palacios, T. Economon.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSourceRotatingFrame_Flow : public CNumerics {
 public:
@@ -4706,7 +4749,7 @@ public:
  * \brief Source term class for rotating frame adjoint.
  * \ingroup SourceDiscr
  * \author T. Economon.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSourceRotatingFrame_AdjFlow : public CNumerics {
 public:
@@ -4738,7 +4781,7 @@ public:
  * \brief Class for source term for solving axisymmetric problems.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSourceAxisymmetric_Flow : public CNumerics {
 public:
@@ -4770,7 +4813,7 @@ public:
  * \brief Class for source term for solving axisymmetric problems.
  * \ingroup SourceDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSourceAxisymmetric_AdjFlow : public CNumerics {
 public:
@@ -4801,7 +4844,7 @@ public:
  * \brief Class for a source term due to a wind gust.
  * \ingroup SourceDiscr
  * \author S. Padrón
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSourceWindGust : public CNumerics {
 public:
@@ -4833,7 +4876,7 @@ public:
  * \brief Dummy class.
  * \ingroup SourceDiscr
  * \author A. Lonkar.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSource_Template : public CNumerics {
 public:
@@ -4867,7 +4910,7 @@ public:
  * \brief Class for setting up new method for spatial discretization of convective terms in flow Equations
  * \ingroup ConvDiscr
  * \author A. Lonkar
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CConvective_Template : public CNumerics {
 private:
@@ -4915,7 +4958,7 @@ public:
  * \brief Class for computing viscous term using average of gradients.
  * \ingroup ViscDiscr
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CViscous_Template : public CNumerics {
 private:

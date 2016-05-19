@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -66,7 +66,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Inflow_MassFlow = NULL;   Inflow_Pressure = NULL;
   Inflow_Mach = NULL;       Inflow_Area = NULL;
   Bleed_MassFlow = NULL;    Bleed_Pressure = NULL;
-  Bleed_Temperature = NULL; Inflow_Area = NULL;
+  Bleed_Temperature = NULL; Bleed_Area = NULL;
   Exhaust_Pressure = NULL;  Exhaust_Temperature = NULL;
   Exhaust_MassFlow = NULL;  Exhaust_Area = NULL;
   
@@ -78,6 +78,8 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
   
+  Secondary=NULL; Secondary_i=NULL; Secondary_j=NULL;
+
   /*--- Fixed CL mode initialization (cauchy criteria) ---*/
   
   Cauchy_Value = 0;
@@ -86,6 +88,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   New_Func = 0;
   Cauchy_Counter = 0;
   Cauchy_Serie = NULL;
+  FluidModel=NULL;
   
 }
 
@@ -106,7 +109,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   string filename = config->GetSolution_FlowFileName();
   
   unsigned short direct_diff = config->GetDirectDiff();
@@ -118,36 +121,62 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Array initialization ---*/
   
-  CDrag_Inv = NULL; CLift_Inv = NULL; CSideForce_Inv = NULL; CEff_Inv = NULL;
-  CMx_Inv = NULL;   CMy_Inv = NULL;   CMz_Inv = NULL;
-  CFx_Inv = NULL;   CFy_Inv = NULL;   CFz_Inv = NULL;
+  /*--- Basic array initialization ---*/
+
+  CDrag_Inv = NULL; CLift_Inv = NULL; CSideForce_Inv = NULL;  CEff_Inv = NULL;
+  CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
+  CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
+
+  CPressure = NULL; CPressureTarget = NULL; HeatFlux = NULL; HeatFluxTarget = NULL; YPlus = NULL;
+  ForceInviscid = NULL; MomentInviscid = NULL;
+
+  /*--- Surface based array initialization ---*/
   
   Surface_CLift_Inv = NULL; Surface_CDrag_Inv = NULL; Surface_CSideForce_Inv = NULL; Surface_CEff_Inv = NULL;
-  Surface_CFx_Inv = NULL;   Surface_CFy_Inv = NULL;   Surface_CFz_Inv = NULL;
-  Surface_CMx_Inv = NULL;   Surface_CMy_Inv = NULL;   Surface_CMz_Inv = NULL;
+  Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
+  Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
   
   Surface_CLift = NULL; Surface_CDrag = NULL; Surface_CSideForce = NULL; Surface_CEff = NULL;
-  Surface_CFx = NULL;   Surface_CFy = NULL;   Surface_CFz = NULL;
-  Surface_CMx = NULL;   Surface_CMy = NULL;   Surface_CMz = NULL;
+  Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
+  Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
+
+  /*--- Rotorcraft simulation array initialization ---*/
+
+  CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
+
+  /*--- Supersonic simulation array initialization ---*/
   
-  ForceInviscid = NULL;  MomentInviscid = NULL;
-  CPressure = NULL;      CPressureTarget = NULL; HeatFlux = NULL;
-  HeatFluxTarget = NULL; YPlus = NULL;
+  CEquivArea_Inv = NULL;
+  CNearFieldOF_Inv = NULL;
   
-  CMerit_Inv = NULL; CT_Inv = NULL; CQ_Inv = NULL;
+  /*--- Engine simulation array initialization ---*/
   
-  CEquivArea_Inv = NULL; CNearFieldOF_Inv = NULL;
+  Inflow_MassFlow = NULL;   Inflow_Pressure = NULL;
+  Inflow_Mach = NULL;       Inflow_Area = NULL;
+  Bleed_MassFlow = NULL;    Bleed_Pressure = NULL;
+  Bleed_Temperature = NULL; Bleed_Area = NULL;
+  Exhaust_Pressure = NULL;  Exhaust_Temperature = NULL;
+  Exhaust_MassFlow = NULL;  Exhaust_Area = NULL;
   
-  Inflow_MassFlow = NULL; Exhaust_MassFlow = NULL; Exhaust_Area = NULL;      Exhaust_Pressure = NULL;
-  Inflow_Pressure = NULL; Inflow_Mach = NULL;      Inflow_Area = NULL;       Exhaust_Temperature = NULL;
-  Bleed_MassFlow = NULL;  Bleed_Pressure = NULL;   Bleed_Temperature = NULL; Bleed_Area = NULL;
+  /*--- Numerical methods array initialization ---*/
   
-  iPoint_UndLapl = NULL;  jPoint_UndLapl = NULL;
+  iPoint_UndLapl = NULL;
+  jPoint_UndLapl = NULL;
   LowMach_Precontioner = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
-  Secondary = NULL; Secondary_i = NULL; Secondary_j = NULL;
   CharacPrimVar = NULL;
+
+  Secondary=NULL; Secondary_i=NULL; Secondary_j=NULL;
+
+  /*--- Fixed CL mode initialization (cauchy criteria) ---*/
+
+  Cauchy_Value = 0;
+  Cauchy_Func = 0;
+  Old_Func = 0;
+  New_Func = 0;
+  Cauchy_Counter = 0;
   Cauchy_Serie = NULL;
+  FluidModel=NULL;
   
   /*--- Set the gamma value ---*/
   
@@ -556,6 +585,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       node[iPoint] = new CEulerVariable(Density_Inf, Velocity_Inf, Energy_Inf, nDim, nVar, config);
     
   } else {
+
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+    if (nZone > 1)
+	  filename = config->GetMultizone_FileName(filename, iZone);
     
     /*--- Modify file name for a dual-time unsteady restart ---*/
     
@@ -569,8 +603,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       
       filename = config->GetUnsteady_FileName(filename, Unst_RestartIter);
     }
-    if (nZone >1)
-      filename= config->GetRestart_FlowFileName(filename, iZone);
     
 		/*--- Modify file name for a time stepping unsteady restart ---*/
 		
@@ -759,7 +791,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 CEulerSolver::~CEulerSolver(void) {
   unsigned short iVar, iMarker;
-  
   /*--- Array deallocation ---*/
   if (CDrag_Inv != NULL)         delete [] CDrag_Inv;
   if (CLift_Inv != NULL)         delete [] CLift_Inv;
@@ -805,19 +836,23 @@ CEulerSolver::~CEulerSolver(void) {
   if (Inflow_Mach != NULL)      delete [] Inflow_Mach;
   if (Inflow_Area != NULL)      delete [] Inflow_Area;
   if (Bleed_Pressure != NULL)  delete [] Bleed_Pressure;
+
   if (Bleed_Temperature != NULL)      delete [] Bleed_Temperature;
   if (Exhaust_Pressure != NULL)  delete [] Exhaust_Pressure;
   if (Exhaust_Temperature != NULL)      delete [] Exhaust_Temperature;
   if (Bleed_Area != NULL)      delete [] Bleed_Area;
-  if (iPoint_UndLapl != NULL)       delete [] iPoint_UndLapl;
-  if (jPoint_UndLapl != NULL)       delete [] jPoint_UndLapl;
+
+  //if (iPoint_UndLapl != NULL)       delete [] iPoint_UndLapl;
+  //if (jPoint_UndLapl != NULL)       delete [] jPoint_UndLapl;
+
   if (Primitive != NULL)        delete [] Primitive;
   if (Primitive_i != NULL)      delete [] Primitive_i;
   if (Primitive_j != NULL)      delete [] Primitive_j;
-  //  if (Secondary != NULL)        delete [] Secondary;
+
+  //if (Secondary != NULL)        delete [] Secondary;
   if (Secondary_i != NULL)      delete [] Secondary_i;
   if (Secondary_j != NULL)      delete [] Secondary_j;
-  
+
   if (LowMach_Precontioner != NULL) {
     for (iVar = 0; iVar < nVar; iVar ++)
       delete LowMach_Precontioner[iVar];
@@ -825,8 +860,10 @@ CEulerSolver::~CEulerSolver(void) {
   }
   
   if (CPressure != NULL) {
+    /* This causes failure in AD dealloc
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete CPressure[iMarker];
+    */
     delete [] CPressure;
   }
   
@@ -835,16 +872,20 @@ CEulerSolver::~CEulerSolver(void) {
       delete CPressureTarget[iMarker];
     delete [] CPressureTarget;
   }
-  
-  //  if (CharacPrimVar != NULL) {
-  //    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  //      for (iVertex = 0; iVertex < nVertex; iVertex++) {
-  //        delete CharacPrimVar[iMarker][iVertex];
-  //      }
-  //    }
-  //    delete [] CharacPrimVar;
-  //  }
-  
+  /*
+  if (CharacPrimVar != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (nVertex!=NULL){
+      for (iVertex=0; iVertex<nVertex[iMarker]; iVertex++)
+        delete [] CharacPrimVar[iMarker][iVertex];
+      }
+      delete [] CharacPrimVar[iMarker];
+    }
+    delete [] CharacPrimVar;
+  }
+  */
+  //if (nVertex!=NULL)  delete [] nVertex;
+
   if (HeatFlux != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete HeatFlux[iMarker];
@@ -865,10 +906,12 @@ CEulerSolver::~CEulerSolver(void) {
     }
     delete [] YPlus;
   }
-  
+  /*
   if (Cauchy_Serie != NULL)
     delete [] Cauchy_Serie;
-  
+  */
+  //if (FluidModel!=NULL) delete FluidModel;
+
 }
 
 void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -3123,7 +3166,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 #endif
   
   unsigned long ExtIter = config->GetExtIter();
-  bool adjoint          = config->GetAdjoint();
+  bool adjoint          = config->GetContinuous_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool second_order     = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
@@ -3656,26 +3699,35 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Low-Mach number correction ---*/
 
       if (low_mach_corr) {
-        su2double z, sq_vel_i = 0.0, sq_vel_j = 0.0, mach_i, mach_j;
-
-        mach_i = sqrt(sq_vel_i)/Primitive_i[nDim+4];
-        mach_j = sqrt(sq_vel_j)/Primitive_j[nDim+4];
-
-        z = min(max(mach_i,mach_j),1.0);
+        su2double z, velocity2_i = 0.0, velocity2_j = 0.0, mach_i, mach_j, vel_i_corr[3], vel_j_corr[3];
 
         for (iDim = 0; iDim < nDim; iDim++) {
-        	Primitive_i[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 + z * \
-        			( Primitive_i[iDim+1] - Primitive_j[iDim+1] )/2.0;
-        	sq_vel_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
-        	Primitive_j[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 + z * \
-        			( Primitive_j[iDim+1] - Primitive_i[iDim+1] )/2.0;
-        	sq_vel_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
+          velocity2_i += Primitive_i[iDim+1]*Primitive_i[iDim+1];
+          velocity2_j += Primitive_j[iDim+1]*Primitive_j[iDim+1];
+        }
+        mach_i = sqrt(velocity2_i)/Primitive_i[nDim+4];
+        mach_j = sqrt(velocity2_j)/Primitive_j[nDim+4];
+
+        z = min(max(mach_i,mach_j),1.0);
+        velocity2_i = 0.0;
+        velocity2_j = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+        	vel_i_corr[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
+        			+ z * ( Primitive_i[iDim+1] - Primitive_j[iDim+1] )/2.0;
+        	vel_j_corr[iDim+1] = ( Primitive_i[iDim+1] + Primitive_j[iDim+1] )/2.0 \
+        			+ z * ( Primitive_j[iDim+1] - Primitive_i[iDim+1] )/2.0;
+
+        	velocity2_j += vel_j_corr[iDim+1]*vel_j_corr[iDim+1];
+        	velocity2_i += vel_i_corr[iDim+1]*vel_i_corr[iDim+1];
+
+        	Primitive_i[iDim+1] = vel_i_corr[iDim+1];
+        	Primitive_j[iDim+1] = vel_j_corr[iDim+1];
         }
 
-        FluidModel->SetEnergy_Prho(Primitive_i[iDim+1],Primitive_i[iDim+2]);
-        Primitive_i[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_i[nDim+1]/Primitive_i[nDim+2] + 0.5*sq_vel_i;
-        FluidModel->SetEnergy_Prho(Primitive_j[iDim+1],Primitive_j[iDim+2]);
-        Primitive_j[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_j[nDim+1]/Primitive_j[nDim+2] + 0.5*sq_vel_j;
+        FluidModel->SetEnergy_Prho(Primitive_i[nDim+1],Primitive_i[nDim+2]);
+        Primitive_i[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_i[nDim+1]/Primitive_i[nDim+2] + 0.5*velocity2_i;
+        FluidModel->SetEnergy_Prho(Primitive_j[nDim+1],Primitive_j[nDim+2]);
+        Primitive_j[nDim+3]= FluidModel->GetStaticEnergy() + Primitive_j[nDim+1]/Primitive_j[nDim+2] + 0.5*velocity2_j;
       }
       
       /*--- Check for non-physical solutions after reconstruction. If found,
@@ -3770,7 +3822,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
-    MPI_Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #else
     counter_global = counter_local;
 #endif
@@ -4723,7 +4775,7 @@ void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_co
   unsigned long iPoint;
   
   su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
@@ -4766,7 +4818,7 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned short iVar;
   unsigned long iPoint;
   
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
@@ -4809,7 +4861,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned long iPoint, total_index, IterLinSol = 0;
   su2double Delta, *local_Res_TruncError, Vol;
   
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
   
   /*--- Set maximum residual to zero ---*/
@@ -6513,23 +6565,24 @@ void CEulerSolver::GetActuatorDisk_Properties(CGeometry *geometry, CConfig *conf
 void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh, bool Output) {
   
-  unsigned short iDim, iCounter;
-  bool Update_AoA = false;
-  su2double Target_CL, AoA_inc, AoA;
-  su2double DampingFactor = config->GetDamp_Fixed_CL();
+  su2double Target_CL, AoA, Vel_Infty[3], AoA_inc, Vel_Infty_Mag;
+  unsigned short iDim;
   unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
-  unsigned long ExtIter = config->GetExtIter();
-  su2double Beta = config->GetAoS()*PI_NUMBER/180.0;
-  su2double Vel_Infty[3], Vel_Infty_Mag;
+  unsigned long ExtIter       = config->GetExtIter();
+  su2double Beta              = config->GetAoS()*PI_NUMBER/180.0;
+  su2double dCl_dAlpha        = config->GetdCl_dAlpha()*180.0/PI_NUMBER;
+  bool Update_AoA             = false;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  if (ExtIter == 0) AoA_Counter = 0;
+  
   /*--- Only the fine mesh level should check the convergence criteria ---*/
   
-  if (iMesh == MESH_0) {
+  if ((iMesh == MESH_0) && Output) {
     
     /*--- Initialize the update flag to false ---*/
     
@@ -6537,7 +6590,11 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
     /*--- Reevaluate Angle of Attack at a fix number of iterations ---*/
     
-    if (ExtIter % Iter_Fixed_CL == 0) { Update_AoA = true; };
+    if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
+      AoA_Counter++;
+      if (AoA_Counter >= 2) Update_AoA = true;
+      else Update_AoA = false;
+    };
     
     /*--- Store the update boolean for use on other mesh levels in the MG ---*/
     
@@ -6550,30 +6607,34 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   }
   
   /*--- If we are within two digits of convergence in the CL coefficient,
-   compute an updated value for the AoA at the farfield. We are iterating
-   on the AoA in order to match the specified fixed lift coefficient. ---*/
+ *    compute an updated value for the AoA at the farfield. We are iterating
+ *       on the AoA in order to match the specified fixed lift coefficient. ---*/
   
-  if (Update_AoA) {
+  if (Update_AoA && Output) {
     
     /*--- Retrieve the specified target CL value. ---*/
     
     Target_CL = config->GetTarget_CL();
     
-    /*--- Retrieve the old AoA. ---*/
+    /*--- Retrieve the old AoA (radians) ---*/
     
     AoA_old = config->GetAoA()*PI_NUMBER/180.0;
     
-    /*--- Estimate the increment in AoA based on a 2*pi lift curve slope ---*/
+    /*--- Estimate the increment in AoA based on dCl_dAlpha (radians) ---*/
     
-    AoA_inc = (1.0/(2.0*PI_NUMBER))*(Target_CL - Total_CLift);
+    AoA_inc = (1.0/dCl_dAlpha)*(Target_CL - Total_CLift);
     
-    /*--- Compute a new value for AoA on the fine mesh only ---*/
+    /*--- Compute a new value for AoA on the fine mesh only (radians)---*/
     
-    if (iMesh == MESH_0)
-      AoA = (1.0 - DampingFactor)*AoA_old + DampingFactor * (AoA_old + AoA_inc);
-    else
-      AoA = config->GetAoA()*PI_NUMBER/180.0;
+    if (iMesh == MESH_0) AoA = AoA_old + AoA_inc;
+    else { AoA = config->GetAoA()*PI_NUMBER/180.0; }
     
+    /*--- Only the fine mesh stores the updated values for AoA in config ---*/
+
+    if (iMesh == MESH_0) {
+      config->SetAoA(AoA*180.0/PI_NUMBER);
+    }
+
     /*--- Update the freestream velocity vector at the farfield ---*/
     
     for (iDim = 0; iDim < nDim; iDim++)
@@ -6604,31 +6665,26 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
       Velocity_Inf[iDim] = Vel_Infty[iDim];
     }
     
-    /*--- Only the fine mesh stores the updated values for AoA in config ---*/
+    /*--- Only the fine mesh stores the updated values for velocity in config ---*/
+    
     if (iMesh == MESH_0) {
       for (iDim = 0; iDim < nDim; iDim++)
         config->SetVelocity_FreeStreamND(Vel_Infty[iDim], iDim);
-      config->SetAoA(AoA*180.0/PI_NUMBER);
     }
     
-    /*--- Reset the local cauchy criteria ---*/
-    Cauchy_Value = 0.0;
-    Cauchy_Counter = 0;
-    for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-      Cauchy_Serie[iCounter] = 0.0;
   }
   
   /*--- Output some information to the console with the headers ---*/
   
-  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
+  bool write_heads = ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0));
   if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
     cout.precision(7);
     cout.setf(ios::fixed, ios::floatfield);
     cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
     cout << "Target CL: " << config->GetTarget_CL();
-    cout << ", Current CL: " << Total_CLift;
-    cout << ", Current AoA: " << config->GetAoA() << " deg." << endl;
-    cout << "-------------------------------------------------------------------------" << endl;
+    cout << ", current CL: " << Total_CLift;
+    cout << ", current AoA: " << config->GetAoA() << " deg." << endl;
+    cout << "-------------------------------------------------------------------------" << endl << endl;
   }
   
   
@@ -11072,113 +11128,417 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
 
 void CEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement,
                                         CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) {
-  unsigned short iMarker, iDim;
-  unsigned long iVertex, iPoint;
-  su2double *Coord, VarCoord[3];
-  
-  //#ifndef HAVE_MPI
-  unsigned long iPoint_Donor;
-  su2double *CoordDonor, *DisplacementDonor;
-  
-  for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
-    
-    if (flow_config->GetMarker_All_FSIinterface(iMarker) != 0) {
-      
-      for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-        
-        iPoint = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-        
-        iPoint_Donor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorPoint();
-        
-        Coord = flow_geometry[MESH_0]->node[iPoint]->GetCoord();
-        
-        CoordDonor = fea_geometry[MESH_0]->node[iPoint_Donor]->GetCoord();
-        
-        /*--- The displacements come from the predicted solution ---*/
-        DisplacementDonor = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred();
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          
-          VarCoord[iDim] = (CoordDonor[iDim]+DisplacementDonor[iDim])-Coord[iDim];
-        
-        flow_geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+    unsigned short iDim;
+    unsigned long iVertex;
+    su2double *Coord, VarCoord[3] = {0,0,0};
+
+  #ifndef HAVE_MPI
+    unsigned long iPoint_Donor, iPoint;
+    unsigned short iMarker;
+    su2double *CoordDonor, *DisplacementDonor;
+
+    for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
+
+      if (flow_config->GetMarker_All_FSIinterface(iMarker) != 0) {
+
+        for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+
+          iPoint = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+
+          iPoint_Donor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorPoint();
+
+          Coord = flow_geometry[MESH_0]->node[iPoint]->GetCoord();
+
+          CoordDonor = fea_geometry[MESH_0]->node[iPoint_Donor]->GetCoord();
+
+          /*--- The displacements come from the predicted solution ---*/
+          DisplacementDonor = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred();
+
+          for (iDim = 0; iDim < nDim; iDim++)
+
+            VarCoord[iDim] = (CoordDonor[iDim]+DisplacementDonor[iDim])-Coord[iDim];
+
+          flow_geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+        }
       }
     }
-  }
-  flow_grid_movement->SetVolume_Deformation(flow_geometry[MESH_0], flow_config, true);
-  
-  
-  //#else
-  //
-  //  int rank = MPI::COMM_WORLD.Get_rank(), jProcessor;
-  //  su2double *Buffer_Send_Coord = new su2double [nDim];
-  //  su2double *Buffer_Receive_Coord = new su2double [nDim];
-  //  unsigned long jPoint;
-  //
-  //  /*--- Do the send process, by the moment we are sending each
-  //   node individually, this must be changed ---*/
-  //  for (iMarker = 0; iMarker < fea_config->GetnMarker_All(); iMarker++) {
-  //    if (fea_config->GetMarker_All_KindBC(iMarker) == LOAD_BOUNDARY) {
-  //      for (iVertex = 0; iVertex < fea_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-  //        iPoint = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  //
-  //        if (fea_geometry[MESH_0]->node[iPoint]->GetDomain()) {
-  //
-  //          /*--- Find the associate pair to the original node (index and processor) ---*/
-  //          jPoint = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
-  //          jProcessor = fea_geometry[MESH_0]->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
-  //
-  //          /*--- We only send the pressure that belong to other boundary ---*/
-  //          if (jProcessor != rank) {
-  //            for (iDim = 0; iDim < nDim; iDim++)
-  //              Buffer_Send_Coord[iDim] = fea_geometry[MESH_0]->node[iPoint]->GetCoord(iDim);
-  //
-  //            MPI::COMM_WORLD.Bsend(Buffer_Send_Coord, nDim, MPI::DOUBLE, jProcessor, iPoint);
-  //          }
-  //
-  //        }
-  //      }
-  //    }
-  //  }
-  //
-  //  /*--- Now the loop is over the fea points ---*/
-  //  for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
-  //    if ((flow_config->GetMarker_All_KindBC(iMarker) == EULER_WALL) &&
-  //        (flow_config->GetMarker_All_Moving(iMarker) == YES)) {
-  //      for (iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-  //        iPoint = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-  //        if (flow_geometry[MESH_0]->node[iPoint]->GetDomain()) {
-  //
-  //          /*--- Find the associate pair to the original node ---*/
-  //          jPoint = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[0];
-  //          jProcessor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetPeriodicPointDomain()[1];
-  //
-  //          /*--- We only receive the information that belong to other boundary ---*/
-  //          if (jProcessor != rank)
-  //            MPI::COMM_WORLD.Recv(Buffer_Receive_Coord, nDim, MPI::DOUBLE, jProcessor, jPoint);
-  //          else {
-  //            for (iDim = 0; iDim < nDim; iDim++)
-  //              Buffer_Send_Coord[iDim] = fea_geometry[MESH_0]->node[jPoint]->GetCoord(iDim);
-  //          }
-  //
-  //          /*--- Store the solution for both points ---*/
-  //          Coord = flow_geometry[MESH_0]->node[iPoint]->GetCoord();
-  //
-  //          for (iDim = 0; iDim < nDim; iDim++)
-  //            VarCoord[iDim] = Buffer_Send_Coord[iDim]-Coord[iDim];
-  //
-  //          flow_geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-  //
-  //
-  //        }
-  //      }
-  //    }
-  //  }
-  //  delete[] Buffer_Send_Coord;
-  //  delete[] Buffer_Receive_Coord;
-  //
-  //#endif
-  //
+
+  #else
+
+    int rank = MASTER_NODE;
+    int size = SINGLE_NODE;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    unsigned long nLocalVertexStruct = 0, nLocalVertexFlow = 0;
+
+	unsigned short nMarkerFSI, nMarkerStruct, nMarkerFlow;		// Number of markers on FSI problem, FEA and Flow side
+	unsigned short iMarkerFSI, iMarkerStruct, iMarkerFlow;		// Variables for iteration over markers
+
+	unsigned long MaxLocalVertexStruct = 0, MaxLocalVertexFlow = 0;
+
+	unsigned long nBuffer_StructCoord = 0, nBuffer_FlowNewCoord = 0;
+	unsigned long nBuffer_DonorIndices = 0, nBuffer_SetIndex = 0;
+
+	unsigned long Point_Flow, Point_Struct;
+	long Point_Flow_Rcv, Processor_Flow_Rcv;
+	unsigned long Processor_Flow;
+
+	int Marker_Flow = -1, Marker_Struct = -1;
+
+	int iProcessor, nProcessor = 0;
+
+
+	su2double *Coord_Struct, *Displacement_Struct;
+
+	/*--- Number of markers on the FSI interface ---*/
+
+	nMarkerFSI     = (flow_config->GetMarker_n_FSIinterface())/2;
+	nMarkerStruct  = fea_geometry[MESH_0]->GetnMarker();
+	nMarkerFlow    = flow_geometry[MESH_0]->GetnMarker();
+
+	nProcessor = size;
+
+	/*--- Outer loop over the markers on the FSI interface: compute one by one ---*/
+	/*--- The tags are always an integer greater than 1: loop from 1 to nMarkerFSI ---*/
+
+	for (iMarkerFSI = 1; iMarkerFSI <= nMarkerFSI; iMarkerFSI++){
+
+		Marker_Struct = -1;
+		Marker_Flow = -1;
+
+		/*--- Initialize pointer buffers inside the loop, so we can delete for each marker. ---*/
+		unsigned long Buffer_Send_nVertexStruct[1], *Buffer_Recv_nVertexStruct = NULL;
+		unsigned long Buffer_Send_nVertexFlow[1], *Buffer_Recv_nVertexFlow = NULL;
+
+		/*--- The markers on the fluid and structural side are tagged with the same index.
+		 *--- This is independent of the MPI domain decomposition.
+		 *--- We need to loop over all markers on structural side and get the number of nodes
+		 *--- that belong to each FSI marker for each processor ---*/
+
+		/*--- On the structural side ---*/
+
+		for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++){
+			/*--- If the tag GetMarker_All_FSIinterface(iMarkerFEA) equals the index we are looping at ---*/
+			if ( fea_config->GetMarker_All_FSIinterface(iMarkerStruct) == iMarkerFSI ){
+				/*--- We have identified the local index of the FEA marker ---*/
+				/*--- Store the number of local points that belong to markFEA on each processor ---*/
+				/*--- This includes the halo nodes ---*/
+				nLocalVertexStruct = fea_geometry[MESH_0]->GetnVertex(iMarkerStruct);
+				/*--- Store the identifier for the structural marker ---*/
+				Marker_Struct = iMarkerStruct;
+				/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
+				break;
+			}
+			else {
+				/*--- If the tag hasn't matched any tag within the FEA markers ---*/
+				nLocalVertexStruct = 0;
+				Marker_Struct = -1;
+			}
+		}
+
+		/*--- On the fluid side ---*/
+
+		for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
+			/*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
+			if ( flow_config->GetMarker_All_FSIinterface(iMarkerFlow) == iMarkerFSI ){
+				/*--- We have identified the local index of the Flow marker ---*/
+				/*--- Store the number of local points that belong to markFlow on each processor ---*/
+				/*--- This includes the halo nodes ---*/
+				nLocalVertexFlow = flow_geometry[MESH_0]->GetnVertex(iMarkerFlow);
+				/*--- Store the identifier for the fluid marker ---*/
+				Marker_Flow = iMarkerFlow;
+				/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
+				break;
+			}
+			else {
+				/*--- If the tag hasn't matched any tag within the Flow markers ---*/
+				nLocalVertexFlow = 0;
+				Marker_Flow = -1;
+			}
+		}
+
+		Buffer_Send_nVertexStruct[0] = nLocalVertexStruct;								 // Retrieve total number of vertices on FEA marker
+		Buffer_Send_nVertexFlow[0] = nLocalVertexFlow;								 // Retrieve total number of vertices on Flow marker
+		if (rank == MASTER_NODE) Buffer_Recv_nVertexStruct = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
+		if (rank == MASTER_NODE) Buffer_Recv_nVertexFlow = new unsigned long[size];  // Allocate memory to receive how many vertices are on each rank on the fluid side
+
+		/*--- We receive MaxLocalVertexFEA as the maximum number of vertices in one single processor on the structural side---*/
+		SU2_MPI::Allreduce(&nLocalVertexStruct, &MaxLocalVertexStruct, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+		/*--- We receive MaxLocalVertexFlow as the maximum number of vertices in one single processor on the fluid side ---*/
+		SU2_MPI::Allreduce(&nLocalVertexFlow, &MaxLocalVertexFlow, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+
+		/*--- We gather a vector in MASTER_NODE that determines how many elements are there on each processor on the structural side ---*/
+		SU2_MPI::Gather(&Buffer_Send_nVertexStruct, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertexStruct, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+		/*--- We gather a vector in MASTER_NODE that determines how many elements are there on each processor on the fluid side ---*/
+		SU2_MPI::Gather(&Buffer_Send_nVertexFlow, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertexFlow, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+
+		/*--- We will be gathering the structural coordinates into the master node ---*/
+		/*--- Then we will distribute them using a scatter operation into the appropriate fluid processor ---*/
+		nBuffer_StructCoord = MaxLocalVertexStruct * nDim;
+		nBuffer_FlowNewCoord = MaxLocalVertexFlow * nDim;
+
+		/*--- We will be gathering donor index and donor processor (for structure -> donor = flow) ---*/
+		/*--- Then we will pass on to the fluid side the index (flow point) to the appropriate processor ---*/
+		nBuffer_DonorIndices = 2 * MaxLocalVertexStruct;
+		nBuffer_SetIndex = MaxLocalVertexFlow;
+
+		/*--- Send and Recv buffers ---*/
+
+		/*--- Buffers to send and receive the structural coordinates ---*/
+		su2double *Buffer_Send_StructCoord = new su2double[nBuffer_StructCoord];
+		su2double *Buffer_Recv_StructCoord = NULL;
+
+		/*--- Buffers to send and receive the donor index and processor ---*/
+		long *Buffer_Send_DonorIndices = new long[nBuffer_DonorIndices];
+		long *Buffer_Recv_DonorIndices = NULL;
+
+		/*--- Buffers to send and receive the new fluid coordinates ---*/
+		su2double *Buffer_Send_FlowNewCoord = NULL;
+		su2double *Buffer_Recv_FlowNewCoord = new su2double[nBuffer_FlowNewCoord];
+
+		/*--- Buffers to send and receive the fluid index ---*/
+		long *Buffer_Send_SetIndex = NULL;
+		long *Buffer_Recv_SetIndex = new long[nBuffer_SetIndex];
+
+		/*--- Prepare the receive buffers (1st step) and send buffers (2nd step) on the master node only. ---*/
+
+		if (rank == MASTER_NODE) {
+			Buffer_Recv_StructCoord  = new su2double[size*nBuffer_StructCoord];
+			Buffer_Recv_DonorIndices = new long[size*nBuffer_DonorIndices];
+			Buffer_Send_FlowNewCoord = new su2double[size*nBuffer_FlowNewCoord];
+			Buffer_Send_SetIndex     = new long[size*nBuffer_SetIndex];
+		}
+
+		/*--- On the structural side ---*/
+
+		/*--- If this processor owns the marker we are looping at on the structural side ---*/
+
+		/*--- First we initialize all of the indices and processors to -1 ---*/
+		/*--- This helps on identifying halo nodes and avoids setting wrong values ---*/
+		for (iVertex = 0; iVertex < nBuffer_DonorIndices; iVertex++)
+			Buffer_Send_DonorIndices[iVertex] = -1;
+
+		if (Marker_Struct >= 0){
+
+			/*--- We have identified the local index of the FEA marker ---*/
+			/*--- We loop over all the vertices in that marker and in that particular processor ---*/
+
+			for (iVertex = 0; iVertex < nLocalVertexStruct; iVertex++){
+
+		        Point_Struct = fea_geometry[MESH_0]->vertex[Marker_Struct][iVertex]->GetNode();
+
+		        Point_Flow = fea_geometry[MESH_0]->vertex[Marker_Struct][iVertex]->GetDonorPoint();
+
+		        Processor_Flow = fea_geometry[MESH_0]->vertex[Marker_Struct][iVertex]->GetDonorProcessor();
+
+		        Coord_Struct = fea_geometry[MESH_0]->node[Point_Struct]->GetCoord();
+
+		        /*--- The displacements come from the predicted solution ---*/
+		        Displacement_Struct = fea_solution[MESH_0][FEA_SOL]->node[Point_Struct]->GetSolution_Pred();
+
+				for (iDim = 0; iDim < nDim; iDim++){
+					Buffer_Send_StructCoord[iVertex*nDim+iDim] = Coord_Struct[iDim] + Displacement_Struct[iDim];
+				}
+				/*--- If this processor owns the node ---*/
+				if (fea_geometry[MESH_0]->node[Point_Struct]->GetDomain()){
+					Buffer_Send_DonorIndices[2*iVertex]     = Point_Flow;
+					Buffer_Send_DonorIndices[2*iVertex + 1] = Processor_Flow;
+				}
+				else{
+					/*--- We set the values to be -1 to be able to identify them later as halo nodes ---*/
+					Buffer_Send_DonorIndices[2*iVertex]     = -1;
+					Buffer_Send_DonorIndices[2*iVertex + 1] = -1;
+				}
+
+			}
+		}
+
+		/*--- Once all the messages have been sent, we gather them all into the MASTER_NODE ---*/
+		SU2_MPI::Gather(Buffer_Send_StructCoord, nBuffer_StructCoord, MPI_DOUBLE, Buffer_Recv_StructCoord, nBuffer_StructCoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		SU2_MPI::Gather(Buffer_Send_DonorIndices, nBuffer_DonorIndices, MPI_LONG, Buffer_Recv_DonorIndices, nBuffer_DonorIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
+
+		/*--- Counter to determine where in the array we have to set the information ---*/
+		long *Counter_Processor_Flow = NULL;
+		long iProcessor_Struct = 0, iIndex_Struct = 0;
+		long iProcessor_Flow = 0, iPoint_Flow = 0, iIndex_Flow = 0;
+
+		/*--- Now we pack the information to send it over to the different processors ---*/
+
+		if (rank == MASTER_NODE){
+
+			/*--- We set the counter to 0 ---*/
+			Counter_Processor_Flow = new long[nProcessor];
+			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+				Counter_Processor_Flow[iProcessor] = 0;
+			}
+
+			/*--- First we initialize the index vector to -1 ---*/
+			/*--- This helps on identifying halo nodes and avoids setting wrong values ---*/
+			for (iVertex = 0; iVertex < nProcessor*nBuffer_SetIndex; iVertex++)
+				Buffer_Send_SetIndex[iVertex] = -2;
+
+			/*--- As of now we do the loop over the structural points ---*/
+			/*--- The number of points for flow and structure does not necessarily have to match ---*/
+			/*--- In fact, it's possible that a processor asks for nFlow nodes and there are only ---*/
+			/*--- nStruc < nFlow available; this is due to halo nodes ---*/
+
+			/*--- For every processor from which we have received information ---*/
+			/*--- (This is, for every processor on the structural side) ---*/
+			for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+
+				/*--- This is the initial index on the coordinates buffer for that particular processor on the structural side ---*/
+				iProcessor_Struct = iProcessor*nBuffer_StructCoord;
+				/*--- This is the initial index on the donor index/processor buffer for that particular processor on the structural side ---*/
+				iIndex_Struct = iProcessor*nBuffer_DonorIndices;
+
+				/*--- For every vertex in the information retreived from iProcessor ---*/
+				for (iVertex = 0; iVertex < Buffer_Recv_nVertexStruct[iProcessor]; iVertex++) {
+
+					/*--- The processor and index for the flow are: ---*/
+					Processor_Flow_Rcv = Buffer_Recv_DonorIndices[iIndex_Struct+iVertex*2+1];
+					Point_Flow_Rcv     = Buffer_Recv_DonorIndices[iIndex_Struct+iVertex*2];
+
+					/*--- Load the buffer at the appropriate position ---*/
+					/*--- This is determined on the fluid side by:
+					 *--- Processor_Flow*nBuffer_FlowNewCoord -> Initial position of the processor array (fluid side)
+					 *--- +
+					 *--- Counter_Processor_Flow*nDim -> Initial position of the nDim array for the particular point on the fluid side
+					 *--- +
+					 *--- iDim -> Position within the nDim array that corresponds to a point
+					 *---
+					 *--- While on the structural side is:
+					 *--- iProcessor*nBuffer_StructCoord -> Initial position on the processor array (structural side)
+					 *--- +
+					 *--- iVertex*nDim -> Initial position of the nDim array for the particular point on the structural side
+					 */
+
+					/*--- We check that we are not setting the value for a halo node ---*/
+					if (Point_Flow_Rcv != -1){
+						iProcessor_Flow = Processor_Flow_Rcv*nBuffer_FlowNewCoord;
+						iIndex_Flow = Processor_Flow_Rcv*nBuffer_SetIndex;
+						iPoint_Flow = Counter_Processor_Flow[Processor_Flow_Rcv]*nDim;
+
+						for (iDim = 0; iDim < nDim; iDim++)
+							Buffer_Send_FlowNewCoord[iProcessor_Flow + iPoint_Flow + iDim] = Buffer_Recv_StructCoord[iProcessor_Struct + iVertex*nDim + iDim];
+
+						/*--- We set the fluid index at an appropriate position matching the coordinates ---*/
+						Buffer_Send_SetIndex[iIndex_Flow + Counter_Processor_Flow[Processor_Flow_Rcv]] = Point_Flow_Rcv;
+
+						Counter_Processor_Flow[Processor_Flow_Rcv]++;
+					}
+
+				}
+
+			}
+
+		}
+
+		/*--- Once all the messages have been prepared, we scatter them all from the MASTER_NODE ---*/
+		SU2_MPI::Scatter(Buffer_Send_FlowNewCoord, nBuffer_FlowNewCoord, MPI_DOUBLE, Buffer_Recv_FlowNewCoord, nBuffer_FlowNewCoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+		SU2_MPI::Scatter(Buffer_Send_SetIndex, nBuffer_SetIndex, MPI_LONG, Buffer_Recv_SetIndex, nBuffer_SetIndex, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
+
+		long indexPoint_iVertex, Point_Flow_Check;
+
+		/*--- For the flow marker we are studying ---*/
+		if (Marker_Flow >= 0){
+
+			/*--- We have identified the local index of the Flow marker ---*/
+			/*--- We loop over all the vertices in that marker and in that particular processor ---*/
+
+			for (iVertex = 0; iVertex < nLocalVertexFlow; iVertex++){
+
+				Point_Flow = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetNode();
+
+				if (flow_geometry[MESH_0]->node[Point_Flow]->GetDomain()){
+					/*--- Find the index of the point Point_Flow in the buffer Buffer_Recv_SetIndex ---*/
+					indexPoint_iVertex = std::distance(Buffer_Recv_SetIndex, std::find(Buffer_Recv_SetIndex, Buffer_Recv_SetIndex + MaxLocalVertexFlow, Point_Flow));
+
+					Point_Flow_Check = Buffer_Recv_SetIndex[indexPoint_iVertex];
+
+					if (Point_Flow_Check < 0) {
+						cout << "WARNING: A nonphysical point is being considered for mesh deformation." << endl;
+						exit(EXIT_FAILURE);
+					}
+
+					Coord = flow_geometry[MESH_0]->node[Point_Flow]->GetCoord();
+
+					for (iDim = 0; iDim < nDim; iDim++)
+						VarCoord[iDim] = (Buffer_Recv_FlowNewCoord[indexPoint_iVertex*nDim+iDim])-Coord[iDim];
+
+					flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->SetVarCoord(VarCoord);
+
+				}
+
+			}
+
+		}
+
+		delete [] Buffer_Send_StructCoord;
+		delete [] Buffer_Send_DonorIndices;
+		delete [] Buffer_Recv_FlowNewCoord;
+		delete [] Buffer_Recv_SetIndex;
+
+		if (rank == MASTER_NODE) {
+			delete [] Buffer_Recv_nVertexStruct;
+			delete [] Buffer_Recv_nVertexFlow;
+			delete [] Buffer_Recv_StructCoord;
+			delete [] Buffer_Recv_DonorIndices;
+			delete [] Buffer_Send_FlowNewCoord;
+			delete [] Buffer_Send_SetIndex;
+			delete [] Counter_Processor_Flow;
+		}
+
+
+	}
+
+  #endif
+
+    flow_grid_movement->SetVolume_Deformation(flow_geometry[MESH_0], flow_config, true);
+
+}
+
+void CEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement,
+                                        CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) {
+    unsigned short iMarker, iDim, iDonor, nDonor;
+    unsigned long iVertex;
+    su2double VarCoord[3];
+
+    unsigned long iPoint_Donor;
+    su2double *DisplacementDonor, *DisplacementDonor_Prev, coeff;
+
+    for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
+
+      if (flow_config->GetMarker_All_FSIinterface(iMarker) != 0) {
+
+        for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+
+          for (iDim = 0; iDim < nDim; iDim++)
+            VarCoord[iDim]=0.0;
+
+          nDonor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetnDonorPoints();
+
+          for (iDonor = 0; iDonor < nDonor; iDonor++){
+            iPoint_Donor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetInterpDonorPoint(iDonor);
+            coeff = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorCoeff(iDonor);
+
+            /*--- The displacements come from the predicted solution ---*/
+            DisplacementDonor = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred();
+
+            DisplacementDonor_Prev = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred_Old();
+
+            for (iDim = 0; iDim < nDim; iDim++)
+
+              VarCoord[iDim] += (DisplacementDonor[iDim] - DisplacementDonor_Prev[iDim])*coeff;
+          }
+
+          flow_geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+        }
+      }
+    }
+    flow_grid_movement->SetVolume_Deformation(flow_geometry[MESH_0], flow_config, true);
+
 }
 
 void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
@@ -11194,12 +11554,16 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   bool grid_movement  = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool steady_restart = config->GetSteadyRestart();
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   string UnstExt, text_line;
   ifstream restart_file;
   
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry[iZone]->GetnZone();
+
   string restart_filename = config->GetSolution_FlowFileName();
-  
+
   Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
     Coord[iDim] = 0.0;
@@ -11209,6 +11573,11 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+  if (nZone > 1)
+	restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
+
   /*--- Modify file name for an unsteady restart ---*/
   
   if (dual_time || time_stepping)
@@ -11288,10 +11657,15 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
         }
         
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
+        /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
+        /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
         
         su2double GridVel[3] = {0.0,0.0,0.0};
-        if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
-        else point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
+        if (!steady_restart){
+            if (nDim == 2) point_line >> GridVel[0] >> GridVel[1];
+            else point_line >> GridVel[0] >> GridVel[1] >> GridVel[2];
+        }
+
         
         for (iDim = 0; iDim < nDim; iDim++) {
           geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
@@ -11625,7 +11999,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   string filename = config->GetSolution_FlowFileName();
   
   unsigned short direct_diff = config->GetDirectDiff();
@@ -11843,11 +12217,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Skin friction in all the markers ---*/
   
-  CSkinFriction = new su2double* [nMarker];
+  CSkinFriction = new su2double** [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CSkinFriction[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    CSkinFriction[iMarker] = new su2double* [geometry->nVertex[iMarker]];
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      CSkinFriction[iMarker][iVertex] = 0.0;
+      CSkinFriction[iMarker][iVertex] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        CSkinFriction[iMarker][iVertex][iDim] = 0.0;
+      }
     }
   }
   
@@ -12133,6 +12510,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   else {
     
     /*--- Modify file name for an unsteady restart ---*/
+
+    if (nZone >1)
+    	filename = config->GetMultizone_FileName(filename, iZone);
     
     if (dual_time) {
       
@@ -12147,8 +12527,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       
     }
     
-    if (nZone >1)
-      filename= config->GetRestart_FlowFileName(filename, iZone);
 		
 		
 		/*--- Modify file name for a simple unsteady restart ---*/
@@ -12348,7 +12726,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 }
 
 CNSSolver::~CNSSolver(void) {
-  unsigned short iMarker;
+  unsigned short iMarker, iDim;
   
   if (CDrag_Visc != NULL)       delete [] CDrag_Visc;
   if (CLift_Visc != NULL)       delete [] CLift_Visc;
@@ -12368,7 +12746,6 @@ CNSSolver::~CNSSolver(void) {
   if (ForceViscous != NULL)     delete [] ForceViscous;
   if (MomentViscous != NULL)    delete [] MomentViscous;
   
-  
   if (Surface_CLift_Visc != NULL)      delete [] Surface_CLift_Visc;
   if (Surface_CDrag_Visc != NULL)      delete [] Surface_CDrag_Visc;
   if (Surface_CSideForce_Visc != NULL) delete [] Surface_CSideForce_Visc;
@@ -12384,9 +12761,11 @@ CNSSolver::~CNSSolver(void) {
   
   if (CSkinFriction != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete CSkinFriction[iMarker];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        delete CSkinFriction[iMarker][iDim];
+      }
+      delete [] CSkinFriction;
     }
-    delete [] CSkinFriction;
   }
   
 }
@@ -12402,7 +12781,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 #endif
   
   unsigned long ExtIter     = config->GetExtIter();
-  bool adjoint              = config->GetAdjoint();
+  bool adjoint              = config->GetContinuous_Adjoint();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool center               = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
@@ -12997,19 +13376,22 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           }
         }
         
-        /*--- Compute wall shear stress (using the stress tensor) ---*/
+        /*--- Compute wall shear stress (using the stress tensor). Compute wall skin friction coefficient, and heat flux on the wall ---*/
         
         TauNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
-        for (iDim = 0; iDim < nDim; iDim++) TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-        WallShearStress = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallShearStress += TauTangent[iDim]*TauTangent[iDim];
+        
+        WallShearStress = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+          CSkinFriction[iMarker][iVertex][iDim] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
+          WallShearStress += CSkinFriction[iMarker][iVertex][iDim]*CSkinFriction[iMarker][iVertex][iDim];
+        }
         WallShearStress = sqrt(WallShearStress);
         
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
         WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
         
-        /*--- Compute wall skin friction coefficient, and heat flux on the wall ---*/
         
-        CSkinFriction[iMarker][iVertex] = WallShearStress / (0.5*RefDensity*RefVel2);
         
         /*--- Compute y+ and non-dimensional velocity ---*/
         

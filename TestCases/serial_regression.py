@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 4.1.0 "Cardinal"
+#  \version 4.1.2 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -14,7 +14,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -38,7 +38,7 @@ def main():
        to make sure nothing is broken. '''
 
     test_list = []
-
+    
     ##########################
     ### Compressible Euler ###
     ##########################
@@ -70,7 +70,7 @@ def main():
     wedge.cfg_dir   = "euler/wedge"
     wedge.cfg_file  = "inv_wedge_HLLC.cfg"
     wedge.test_iter = 100
-    wedge.test_vals = [-1.711318, 3.913749, -0.252131, 0.044402] #last 4 columns
+    wedge.test_vals = [-1.769374, 3.848733, -0.252191, 0.044410] #last 4 columns
     wedge.su2_exec  = "SU2_CFD"
     wedge.timeout   = 1600
     wedge.tol       = 0.00001
@@ -112,6 +112,17 @@ def main():
     cylinder.timeout   = 1600
     cylinder.tol       = 0.00001
     test_list.append(cylinder)
+
+    # Laminar cylinder (low Mach correction)
+    cylinder_lowmach           = TestCase('cylinder_lowmach')
+    cylinder_lowmach.cfg_dir   = "navierstokes/cylinder"
+    cylinder_lowmach.cfg_file  = "cylinder_lowmach.cfg"
+    cylinder_lowmach.test_iter = 25
+    cylinder_lowmach.test_vals = [-6.850123, -1.388088, -0.056090, 108.140177] #last 4 columns
+    cylinder_lowmach.su2_exec  = "SU2_CFD"
+    cylinder_lowmach.timeout   = 1600
+    cylinder_lowmach.tol       = 0.00001
+    test_list.append(cylinder_lowmach)
 
     ##########################
     ### Compressible RANS  ###
@@ -482,11 +493,139 @@ def main():
     centrifugal_stage.tol       = 0.000001
     test_list.append(centrifugal_stage) 
 
+
+    ##########################
+    ### FEA - FSI          ###
+    ##########################
+
+    # Static beam, 3d
+    statbeam3d           = TestCase('statbeam3d')
+    statbeam3d.cfg_dir   = "fea_fsi/StatBeam_3d"
+    statbeam3d.cfg_file  = "configBeam_3d.cfg"
+    statbeam3d.test_iter = 0
+    statbeam3d.test_vals = [-8.498274, -8.230638, -8.123824, 6.4095e+04] #last 4 columns
+    statbeam3d.su2_exec  = "SU2_CFD"
+    statbeam3d.timeout   = 1600
+    statbeam3d.tol       = 0.00001
+    test_list.append(statbeam3d)
+
+    # Dynamic beam, 2d
+    dynbeam2d           = TestCase('dynbeam2d')
+    dynbeam2d.cfg_dir   = "fea_fsi/DynBeam_2d"
+    dynbeam2d.cfg_file  = "configBeam_2d.cfg"
+    dynbeam2d.test_iter = 6
+    dynbeam2d.test_vals = [-9.420640, -5.365872, -12.430382, 6.5210e+04] #last 4 columns
+    dynbeam2d.su2_exec  = "SU2_CFD"
+    dynbeam2d.timeout   = 1600
+    dynbeam2d.tol       = 0.00001
+    test_list.append(dynbeam2d)
+
+    # FSI, 2d
+    fsi2d           = TestCase('fsi2d')
+    fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
+    fsi2d.cfg_file  = "configFSI_2D.cfg"
+    fsi2d.test_iter = 4
+    fsi2d.test_vals = [2, 0.500000, -7.779713, -1.141613] #last 4 columns
+    fsi2d.su2_exec  = "SU2_CFD"
+    fsi2d.timeout   = 1600
+    fsi2d.tol       = 0.00001
+    test_list.append(fsi2d)    
+   
+
     ######################################
     ### RUN TESTS                      ###
     ######################################  
 
     pass_list = [ test.run_test() for test in test_list ]
+    
+    
+    ######################################
+    ### RUN SU2_GEO TESTS               ###
+    ######################################
+    
+    # NACA0012
+    naca0012_geo           = TestCase('naca0012_geo')
+    naca0012_geo.cfg_dir   = "optimization_euler/steady_naca0012"
+    naca0012_geo.cfg_file  = "inv_NACA0012_adv.cfg"
+    naca0012_geo.test_vals = [0.120011, 0.0816925, 0.0, 1.0] #max thickness, area, twist, chord
+    naca0012_geo.su2_exec  = "SU2_GEO"
+    naca0012_geo.timeout   = 1600
+    naca0012_geo.tol       = 0.00001
+    pass_list.append(naca0012_geo.run_geo())
+    test_list.append(naca0012_geo)
+        
+    
+    ######################################
+    ### RUN SU2_DEF TESTS              ###
+    ######################################
+    
+    # RAE2822
+    rae2822_def            = TestCase('rae2822_def')
+    rae2822_def.cfg_dir   = "optimization_rans/steady_rae2822"
+    rae2822_def.cfg_file  = "def_SA_RAE2822.cfg"
+    rae2822_def.test_iter = 100
+    rae2822_def.test_vals = [8.06616e-14] #residual
+    rae2822_def.su2_exec  = "SU2_DEF"
+    rae2822_def.timeout   = 1600
+    rae2822_def.tol       = 1e-14
+    
+    pass_list.append(rae2822_def.run_def())
+    test_list.append(rae2822_def)    
+
+    # Inviscid ONERAM6
+    oneram6_sa_def            = TestCase('oneram6_sa_def')
+    oneram6_sa_def.cfg_dir   = "optimization_euler/steady_oneram6"
+    oneram6_sa_def.cfg_file  = "def_ONERAM6.cfg"
+    oneram6_sa_def.test_iter = 600
+    oneram6_sa_def.test_vals = [3.46695e-13] #residual
+    oneram6_sa_def.su2_exec  = "SU2_DEF"
+    oneram6_sa_def.timeout   = 1600
+    oneram6_sa_def.tol       = 1e-13
+    
+    pass_list.append(oneram6_sa_def.run_def())
+    test_list.append(oneram6_sa_def)       
+
+    
+    ######################################
+    ### RUN PYTHON TESTS               ###
+    ###################################### 
+    
+    # test continuous_adjoint.py
+    contadj_euler_py = TestCase('contadj_euler_py')
+    contadj_euler_py.cfg_dir = "cont_adj_euler/naca0012"
+    contadj_euler_py.cfg_file  = "inv_NACA0012.cfg"
+    contadj_euler_py.test_iter = 10
+    contadj_euler_py.su2_exec  = "continuous_adjoint.py"
+    contadj_euler_py.timeout   = 1600
+    contadj_euler_py.reference_file = "of_grad_cd.dat.ref"
+    contadj_euler_py.test_file = "of_grad_cd.dat"
+    pass_list.append(contadj_euler_py.run_filediff())
+    test_list.append(contadj_euler_py)
+
+    # test finite_difference.py
+    findiff_euler_py = TestCase('findiff_euler_py')
+    findiff_euler_py.cfg_dir = "cont_adj_euler/naca0012"
+    findiff_euler_py.cfg_file  = "inv_NACA0012_FD.cfg"
+    findiff_euler_py.test_iter = 10
+    findiff_euler_py.su2_exec  = "finite_differences.py"
+    findiff_euler_py.timeout   = 1600
+    findiff_euler_py.reference_file = "of_grad_findiff.dat.ref"
+    findiff_euler_py.test_file = "FINDIFF/of_grad_findiff.dat"
+    pass_list.append(findiff_euler_py.run_filediff())
+    test_list.append(findiff_euler_py)
+    
+    # test shape_optimization.py
+    shape_opt_euler_py           = TestCase('shape_opt_euler_py')
+    shape_opt_euler_py.cfg_dir   = "optimization_euler/steady_naca0012"
+    shape_opt_euler_py.cfg_file  = "inv_NACA0012_adv.cfg"
+    shape_opt_euler_py.test_iter = 1
+    shape_opt_euler_py.test_vals = [1, 1, 2.134974E-05, 3.829535E-03] #last 4 columns
+    shape_opt_euler_py.su2_exec  = "shape_optimization.py -f"
+    shape_opt_euler_py.timeout   = 1600
+    shape_opt_euler_py.tol       = 0.00001
+    pass_list.append(shape_opt_euler_py.run_opt())
+    test_list.append(shape_opt_euler_py)
+    
     
     # Tests summary
     print '=================================================================='

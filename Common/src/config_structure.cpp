@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -110,7 +110,19 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 }
 
 void CConfig::SetPointersNull(void) {
-
+  Marker_CfgFile_Out_1D=NULL;       Marker_All_Out_1D=NULL;
+  Marker_CfgFile_GeoEval=NULL;      Marker_All_GeoEval=NULL;
+  Marker_CfgFile_Monitoring=NULL;   Marker_All_Monitoring=NULL;
+  Marker_CfgFile_Designing=NULL;    Marker_All_Designing=NULL;
+  Marker_CfgFile_Plotting=NULL;     Marker_All_Plotting=NULL;
+  Marker_CfgFile_DV=NULL;           Marker_All_DV=NULL;
+  Marker_CfgFile_Moving=NULL;       Marker_All_Moving=NULL;
+  Marker_CfgFile_PerBound=NULL;     Marker_All_PerBound=NULL;   Marker_PerBound=NULL;
+  Marker_CfgFile_FSIinterface=NULL;
+  
+  Marker_DV=NULL;  Marker_Moving=NULL;  Marker_Monitoring=NULL;
+  Marker_Designing=NULL;  Marker_GeoEval=NULL;  Marker_Plotting=NULL;
+  Marker_CfgFile_KindBC=NULL;       Marker_All_KindBC=NULL;
   /*--- Marker Pointers ---*/
 
   Marker_Euler = NULL;            Marker_FarField = NULL;           Marker_Custom = NULL;
@@ -125,8 +137,8 @@ void CConfig::SetPointersNull(void) {
   Marker_FlowLoad = NULL;         Marker_Neumann = NULL;
   Marker_All_TagBound = NULL;     Marker_CfgFile_TagBound = NULL;   Marker_All_KindBC = NULL;
   Marker_CfgFile_KindBC = NULL;   Marker_All_SendRecv = NULL;       Marker_All_PerBound = NULL;
-  Marker_FSIinterface = NULL;     Marker_Riemann = NULL;
-
+  Marker_FSIinterface = NULL;     Marker_All_FSIinterface=NULL; Marker_Riemann = NULL;
+  Marker_Load = NULL;
   /*--- Boundary Condition settings ---*/
 
   Dirichlet_Value = NULL;         Exhaust_Temperature_Target = NULL;
@@ -149,12 +161,17 @@ void CConfig::SetPointersNull(void) {
   Aeroelastic_plunge = NULL;    Aeroelastic_pitch = NULL;
   MassFrac_FreeStream = NULL;
   Velocity_FreeStream = NULL;
-  RefOriginMoment = NULL;     RefOriginMoment_X=NULL;  RefOriginMoment_Y=NULL;
-  RefOriginMoment_Z=NULL;   CFL_AdaptParam = NULL;            CFL=NULL;
+  RefOriginMoment = NULL;
+  CFL_AdaptParam = NULL;            CFL=NULL;
   PlaneTag = NULL;
   Kappa_Flow = NULL;    Kappa_AdjFlow = NULL;
   Section_Location = NULL;
-  U_FreeStreamND = NULL;
+  ParamDV=NULL;     DV_Value = NULL;    Design_Variable=NULL;
+  MG_CorrecSmooth = NULL;
+  Subsonic_Engine_Box = NULL;
+  Hold_GridFixed_Coord=NULL;
+  EA_IntLimit=NULL;
+  RK_Alpha_Step=NULL;
 
   /*--- Moving mesh pointers ---*/
 
@@ -169,6 +186,8 @@ void CConfig::SetPointersNull(void) {
   Plunging_Ampl_X = NULL;     Plunging_Ampl_Y = NULL;     Plunging_Ampl_Z = NULL;
   RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
   MoveMotion_Origin = NULL;
+  Periodic_Translate=NULL;    Periodic_Rotation=NULL;    Periodic_Center=NULL;
+  Periodic_Translation=NULL;   Periodic_RotAngles=NULL;   Periodic_RotCenter=NULL;
 
   /* Harmonic Balance Frequency pointer */
   Omega_HB = NULL;
@@ -221,7 +240,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
-  addMathProblemOption("MATH_PROBLEM" , Adjoint, false , Restart_Flow, false, DiscreteAdjoint, false);
+  addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
 
@@ -342,10 +361,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("FIXED_CL_MODE", Fixed_CL_Mode, false);
   /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
   addDoubleOption("TARGET_CL", Target_CL, 0.0);
-  /* DESCRIPTION: Damping factor for fixed CL mode. */
-  addDoubleOption("DAMP_FIXED_CL", Damp_Fixed_CL, 0.2);
+  /* DESCRIPTION: Lift cure slope for fixed CL mode (0.2 per deg by default). */
+  addDoubleOption("DCL_DALPHA", dCl_dAlpha, 0.2);
   /* DESCRIPTION: Iterations to re-evaluate the angle of attack. */
-  addUnsignedLongOption("ITER_FIXED_CL", Iter_Fixed_CL, 100);
+  addUnsignedLongOption("ITER_FIXED_CL", Iter_Fixed_CL, 500);
 
 
   /*!\par CONFIG_CATEGORY: Reference Conditions \ingroup Config*/
@@ -547,6 +566,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addLongOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
   addLongOption("UNST_ADJOINT_ITER", Unst_AdjointIter, 0);
+  /* DESCRIPTION: Iteration number to begin unsteady restarts (structural analysis) */
+  addLongOption("DYN_RESTART_ITER", Dyn_RestartIter, 0);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_FLOW", Kind_TimeIntScheme_Flow, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
@@ -626,6 +647,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("RESIDUAL_REDUCTION_FSI", OrderMagResidualFSI, 3.0);
   /* DESCRIPTION: Min value of the residual (log10 of the residual) */
   addDoubleOption("RESIDUAL_MINVAL_FSI", MinLogResidualFSI, -5.0);
+  /* DESCRIPTION: FEM: UTOL = norm(Delta_U(k)) / norm(U(k)) */
+  addDoubleOption("RESIDUAL_FEM_UTOL", Res_FEM_UTOL, -9.0);
+  /* DESCRIPTION: FEM: RTOL = norm(Residual(k)) / norm(Residual(0)) */
+  addDoubleOption("RESIDUAL_FEM_RTOL", Res_FEM_RTOL, -9.0);
+  /* DESCRIPTION: FEM: ETOL = Delta_U(k) * Residual(k) / Delta_U(0) * Residual(0) */
+  addDoubleOption("RESIDUAL_FEM_ETOL", Res_FEM_ETOL, -9.0);
   /*!\brief RESIDUAL_FUNC_FLOW\n DESCRIPTION: Flow functional for the Residual criteria\n OPTIONS: See \link Residual_Map \endlink \n DEFAULT: RHO_RESIDUAL \ingroup Config*/
   addEnumOption("RESIDUAL_FUNC_FLOW", Residual_Func_Flow, Residual_Map, RHO_RESIDUAL);
   /*!\brief STARTCONV_ITER\n DESCRIPTION: Iteration number to begin convergence monitoring\n DEFAULT: 5 \ingroup Config*/
@@ -808,12 +835,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
   /*!\brief SOLUTION_ADJ_FILENAME\n DESCRIPTION: Restart adjoint input file. Objective function abbreviation is expected. \ingroup Config*/
   addStringOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj.dat"));
+  /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart structure input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n Default: solution_flow.dat \ingroup Config */
+  addStringOption("SOLUTION_STRUCTURE_FILENAME", Solution_FEMFileName, string("solution_structure.dat"));
   /*!\brief RESTART_FLOW_FILENAME \n DESCRIPTION: Output file restart flow \ingroup Config*/
   addStringOption("RESTART_FLOW_FILENAME", Restart_FlowFileName, string("restart_flow.dat"));
   /*!\brief RESTART_ADJ_FILENAME  \n DESCRIPTION: Output file restart adjoint. Objective function abbreviation will be appended. \ingroup Config*/
   addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
   /*!\brief RESTART_WAVE_FILENAME \n DESCRIPTION: Output file restart wave \ingroup Config*/
   addStringOption("RESTART_WAVE_FILENAME", Restart_WaveFileName, string("restart_wave.dat"));
+  /*!\brief RESTART_FLOW_FILENAME \n DESCRIPTION: Output file restart structure \ingroup Config*/
+  addStringOption("RESTART_STRUCTURE_FILENAME", Restart_FEMFileName, string("restart_structure.dat"));
   /*!\brief VOLUME_FLOW_FILENAME  \n DESCRIPTION: Output file flow (w/o extension) variables \ingroup Config */
   addStringOption("VOLUME_FLOW_FILENAME", Flow_FileName, string("flow"));
   /*!\brief VOLUME_STRUCTURE_FILENAME
@@ -1055,8 +1086,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	addEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
 	/* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
   addStringListOption("DV_MARKER", nMarker_DV, Marker_DV);
-	/* DESCRIPTION: New value of the shape deformation */
-	addDoubleListOption("DV_VALUE", nDV, DV_Value);
 	/* DESCRIPTION: Parameters of the shape deformation
    - FFD_CONTROL_POINT_2D ( FFDBox ID, i_Ind, j_Ind, x_Disp, y_Disp )
    - FFD_RADIUS_2D ( FFDBox ID )
@@ -1079,6 +1108,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    - FFD_CAMBER ( FFDBox ID, i_Ind, j_Ind )
    - FFD_THICKNESS ( FFDBox ID, i_Ind, j_Ind ) */
 	addDVParamOption("DV_PARAM", nDV, ParamDV, FFDTag, Design_Variable);
+  /* DESCRIPTION: New value of the shape deformation */
+  addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
 	/* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
 	default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
@@ -1122,13 +1153,29 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("POISSON_RATIO", PoissonRatio, 0.30);
   /* DESCRIPTION: Material density */
   addDoubleOption("MATERIAL_DENSITY", MaterialDensity, 7854);
+  /*!\brief BULK_MODULUS_STRUCT \n DESCRIPTION: Value of the Bulk Modulus for a structural problem \n DEFAULT 160E9 */
+  /* This is a temporal definition */
+  addDoubleOption("BULK_MODULUS_STRUCT", Bulk_Modulus_Struct, 160E9);
+
+  /*!\brief REGIME_TYPE \n  DESCRIPTION: Geometric condition \n OPTIONS: see \link Struct_Map \endlink \ingroup Config*/
+  addEnumOption("GEOMETRIC_CONDITIONS", Kind_Struct_Solver, Struct_Map, SMALL_DEFORMATIONS);
+  /*!\brief REGIME_TYPE \n  DESCRIPTION: Material model \n OPTIONS: see \link Material_Map \endlink \ingroup Config*/
+  addEnumOption("MATERIAL_MODEL", Kind_Material, Material_Map, LINEAR_ELASTIC);
+  /*!\brief REGIME_TYPE \n  DESCRIPTION: Compressibility of the material \n OPTIONS: see \link MatComp_Map \endlink \ingroup Config*/
+  addEnumOption("MATERIAL_COMPRESSIBILITY", Kind_Material_Compress, MatComp_Map, COMPRESSIBLE_MAT);
+
+  /* DESCRIPTION: Iterative method for non-linear structural analysis */
+  addEnumOption("NONLINEAR_FEM_SOLUTION_METHOD", Kind_SpaceIteScheme_FEA, Space_Ite_Map_FEA, NEWTON_RAPHSON);
+  /* DESCRIPTION: Number of internal iterations for Newton-Raphson Method in nonlinear structural applications */
+  addUnsignedLongOption("NONLINEAR_FEM_INT_ITER", Dyn_nIntIter, 10);
+
   /* DESCRIPTION: Formulation for bidimensional elasticity solver */
-  addEnumOption("FORMULATION_ELASTICITY_2D", Kind_2DElasForm, ElasForm_2D, PLANE_STRESS);
+  addEnumOption("FORMULATION_ELASTICITY_2D", Kind_2DElasForm, ElasForm_2D, PLANE_STRAIN);
   /*  DESCRIPTION: Apply dead loads
   *  Options: NO, YES \ingroup Config */
   addBoolOption("DEAD_LOAD", DeadLoad, false);
   /* DESCRIPTION: Dynamic or static structural analysis */
-  addEnumOption("DYNAMIC_ANALYSYS", Dynamic_Analysis, Dynamic_Map, STATIC);
+  addEnumOption("DYNAMIC_ANALYSIS", Dynamic_Analysis, Dynamic_Map, STATIC);
   /* DESCRIPTION: Time Step for dynamic analysis (s) */
   addDoubleOption("DYN_TIMESTEP", Delta_DynTime, 0.0);
   /* DESCRIPTION: Total Physical Time for dual time stepping simulations (s) */
@@ -1138,44 +1185,83 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Parameter delta for Newmark scheme (s) */
   addDoubleOption("NEWMARK_DELTA", Newmark_delta, 0.5);
   /* DESCRIPTION: Apply the load slowly or suddenly */
-  addBoolOption("SIGMOID_LOADING", Gradual_Load, false);
+  addBoolOption("SIGMOID_LOADING", Sigmoid_Load, false);
   /* DESCRIPTION: Apply the load as a ramp */
   addBoolOption("RAMP_LOADING", Ramp_Load, false);
   /* DESCRIPTION: Time while the load is to be increased linearly */
   addDoubleOption("RAMP_TIME", Ramp_Time, 1.0);
+  /* DESCRIPTION: Time while the load is to be increased linearly */
+  addDoubleOption("SIGMOID_TIME", Sigmoid_Time, 1.0);
+  /* DESCRIPTION: Constant of steepness of the sigmoid */
+  addDoubleOption("SIGMOID_K", Sigmoid_K, 10.0);
+
+  /* DESCRIPTION: Newmark - Generalized alpha - coefficients */
+  addDoubleListOption("TIME_INT_STRUCT_COEFFS", nIntCoeffs, Int_Coeffs);
+
+  /*  DESCRIPTION: Apply dead loads. Options: NO, YES \ingroup Config */
+  addBoolOption("INCREMENTAL_LOAD", IncrementalLoad, false);
+  /* DESCRIPTION: Maximum number of increments of the  */
+  addUnsignedLongOption("NUMBER_INCREMENTS", IncLoad_Nincrements, 10);
+
+  default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
+  /* DESCRIPTION: Definition of the  UTOL RTOL ETOL*/
+  addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, IncLoad_Criteria, default_vec_3d);
 
   /* DESCRIPTION: Time while the structure is static */
-  addDoubleOption("STATIC_TIME", Static_Time, 1.0);
+  addDoubleOption("STATIC_TIME", Static_Time, 0.0);
 
   /* DESCRIPTION: Order of the predictor */
   addUnsignedShortOption("PREDICTOR_ORDER", Pred_Order, 0);
+
+  /* DESCRIPTION: Transfer method used for multiphysics problems */
+  addEnumOption("MULTIPHYSICS_TRANSFER_METHOD", Kind_TransferMethod, Transfer_Method_Map, BROADCAST_DATA);
+
+
+  /* CONFIG_CATEGORY: FSI solver */
+  /*--- Options related to the FSI solver ---*/
 
   /*!\brief PHYSICAL_PROBLEM_FLUID_FSI
    *  DESCRIPTION: Physical governing equations \n
    *  Options: NONE (default),EULER, NAVIER_STOKES, RANS,
    *  \ingroup Config*/
   addEnumOption("FSI_FLUID_PROBLEM", Kind_Solver_Fluid_FSI, FSI_Fluid_Solver_Map, NO_SOLVER_FFSI);
+
   /*!\brief PHYSICAL_PROBLEM_STRUCTURAL_FSI
    *  DESCRIPTION: Physical governing equations \n
-   *  Options: NONE (default), LINEAR_ELASTICITY, NONLINEAR_ELASTICITY
+   *  Options: NONE (default), FEM_ELASTICITY
    *  \ingroup Config*/
   addEnumOption("FSI_STRUCTURAL_PROBLEM", Kind_Solver_Struc_FSI, FSI_Struc_Solver_Map, NO_SOLVER_SFSI);
 
+  /* DESCRIPTION: Linear solver for the structural side on FSI problems */
+  addEnumOption("FSI_LINEAR_SOLVER_STRUC", Kind_Linear_Solver_FSI_Struc, Linear_Solver_Map, FGMRES);
   /* DESCRIPTION: Preconditioner for the Krylov linear solvers */
-  addEnumOption("FSI_LINEAR_SOLVER_PREC_STRUC", Kind_Linear_Solver_Prec_FSI_Struc, Linear_Solver_Prec_Map, ILU);
-
+  addEnumOption("FSI_LINEAR_SOLVER_PREC_STRUC", Kind_Linear_Solver_Prec_FSI_Struc, Linear_Solver_Prec_Map, LU_SGS);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("FSI_LINEAR_SOLVER_ITER_STRUC", Linear_Solver_Iter_FSI_Struc, 500);
+  /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
+  addDoubleOption("FSI_LINEAR_SOLVER_ERROR_STRUC", Linear_Solver_Error_FSI_Struc, 1E-6);
 
+  /* DESCRIPTION: Restart from a steady state (sets grid velocities to 0 when loading the restart). */
+  addBoolOption("RESTART_STEADY_STATE", SteadyRestart, false);
 
-  /* CONFIG_CATEGORY: FSI solver */
-  /*--- Options related to the FSI solver ---*/
+  /*  DESCRIPTION: Apply dead loads
+  *  Options: NO, YES \ingroup Config */
+  addBoolOption("MATCHING_MESH", MatchingMesh, true);
+
+  /*!\par KIND_INTERPOLATION \n
+   * DESCRIPTION: Type of interpolation to use for multi-zone problems. \n OPTIONS: see \link Interpolator_Map \endlink
+   * Sets Kind_Interpolation \ingroup Config
+   */
+  addEnumOption("KIND_INTERPOLATION", Kind_Interpolation, Interpolator_Map, NEAREST_NEIGHBOR);
+
   /* DESCRIPTION: Maximum number of FSI iterations */
   addUnsignedShortOption("FSI_ITER", nIterFSI, 1);
   /* DESCRIPTION: Aitken's static relaxation factor */
   addDoubleOption("STAT_RELAX_PARAMETER", AitkenStatRelax, 0.4);
   /* DESCRIPTION: Aitken's dynamic maximum relaxation factor for the first iteration */
-  addDoubleOption("AITKEN_DYN_MAX_INITIAL", AitkenDynMaxInit, 0.4);
+  addDoubleOption("AITKEN_DYN_MAX_INITIAL", AitkenDynMaxInit, 0.5);
+  /* DESCRIPTION: Aitken's dynamic minimum relaxation factor for the first iteration */
+  addDoubleOption("AITKEN_DYN_MIN_INITIAL", AitkenDynMinInit, 0.5);
   /* DESCRIPTION: Type of gust */
   addEnumOption("BGS_RELAXATION", Kind_BGS_RelaxMethod, AitkenForm_Map, NO_RELAXATION);
 
@@ -1231,11 +1317,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Surface continuity at the intersection with the FFD */
   addEnumOption("FFD_CONTINUITY", FFD_Continuity, Continuity_Map, DERIVATIVE_2ND);
 
-  /*--- Options for the direct differentiation methods ---*/
-  /*!\par CONFIG_CATEGORY: Direct Differentation options\ingroup Config*/
 
-  /* DESCRIPTION: Direct differentiation mode */
+  /*--- Options for the automatic differentiation methods ---*/
+  /*!\par CONFIG_CATEGORY: Automatic Differentation options\ingroup Config*/
+
+  /* DESCRIPTION: Direct differentiation mode (forward) */
   addEnumOption("DIRECT_DIFF", DirectDiff, DirectDiff_Var_Map, NO_DERIVATIVE);
+
+  /* DESCRIPTION: Automatic differentiation mode (reverse) */
+  addBoolOption("AUTO_DIFF", AD_Mode, NO);
 
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /*!\par CONFIG_CATEGORY:Python Options\ingroup Config*/
@@ -1507,7 +1597,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE || Kind_ObjFunc == OUTFLOW_GENERALIZED) {
     Wrt_1D_Output = YES;
-    Marker_Out_1D = Marker_Monitoring;
+    Marker_Out_1D = new string[nMarker_Monitoring];
+    for (unsigned short iMarker=0; iMarker<nMarker_Monitoring; iMarker++){
+      Marker_Out_1D[iMarker] = Marker_Monitoring[iMarker];
+    }
     nMarker_Out_1D = nMarker_Monitoring;
   }
   
@@ -1517,7 +1610,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Deactivate the multigrid in the adjoint problem ---*/
   
-  if ((Adjoint && !MG_AdjointFlow) ||
+  if ((ContinuousAdjoint && !MG_AdjointFlow) ||
       (Unsteady_Simulation == TIME_STEPPING)) { nMGLevels = 0; }
 
   /*--- If Fluid Structure Interaction, set the solver for each zone.
@@ -1529,7 +1622,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	  if (val_izone==0) {	Kind_Solver = Kind_Solver_Fluid_FSI; 		FSI_Problem = true;}
 
 	  else {			 	Kind_Solver = Kind_Solver_Struc_FSI;	  	FSI_Problem = true;
+	  	  	  	  	  	  	Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
 	  	  	  	  	  	  	Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
+	  	  	  	  	  	  	Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
 	  	  	  	  	  	  	Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;}
   }
   else{ FSI_Problem = false; }
@@ -1567,9 +1662,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     else Unst_nIntIter = 2;
   }
   
-  if (Kind_Solver == LINEAR_ELASTICITY) {
+  if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
-    if (Dynamic_Analysis == STATIC) 
+    if (Dynamic_Analysis == STATIC)
 	nExtIter = 1;
   }
 
@@ -1580,11 +1675,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Kind_Regime == FREESURFACE) { Wrt_Unsteady = false; }
   else { Wrt_Unsteady = true; }
 
-  if (Kind_Solver == LINEAR_ELASTICITY) {
+  if (Kind_Solver == FEM_ELASTICITY) {
 
 	  if (Dynamic_Analysis == STATIC) { Wrt_Dynamic = false; }
 	  else { Wrt_Dynamic = true; }
 
+  } else {
+    Wrt_Dynamic = false;
   }
 
   
@@ -1699,6 +1796,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_GridMovement[ZONE_0] != RIGID_MOTION) &&
       (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
       (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION) &&
+      (Kind_GridMovement[ZONE_0] != FLUID_STRUCTURE) &&
       (Kind_GridMovement[ZONE_0] != GUST) &&
       (nGridMovement != nMarker_Moving)) {
     cout << "Number of GRID_MOVEMENT_KIND must match number of MARKER_MOVING!!" << endl;
@@ -2250,6 +2348,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = 0; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PreSmooth[i];
       delete [] MG_PreSmooth;
+      MG_PreSmooth=NULL;
     } else {
       
       /*--- Add additional elements equal to last element ---*/
@@ -2259,6 +2358,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = nMG_PreSmooth; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PreSmooth[nMG_PreSmooth-1];
       delete [] MG_PreSmooth;
+      MG_PreSmooth=NULL;
     }
     
     nMG_PreSmooth = nMGLevels+1;
@@ -2282,6 +2382,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = 0; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PostSmooth[i];
       delete [] MG_PostSmooth;
+      MG_PostSmooth=NULL;
     } else {
       
       /*--- Add additional elements equal to last element ---*/
@@ -2291,7 +2392,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = nMG_PostSmooth; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_PostSmooth[nMG_PostSmooth-1];
       delete [] MG_PostSmooth;
-      
+      MG_PostSmooth=NULL;
     }
     
     nMG_PostSmooth = nMGLevels+1;
@@ -2317,6 +2418,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = 0; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_CorrecSmooth[i];
       delete [] MG_CorrecSmooth;
+      MG_CorrecSmooth = NULL;
     } else {
       
       /*--- Add additional elements equal to last element ---*/
@@ -2326,6 +2428,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned int i = nMG_CorrecSmooth; i <= nMGLevels; i++)
         tmp_smooth[i] = MG_CorrecSmooth[nMG_CorrecSmooth-1];
       delete [] MG_CorrecSmooth;
+      MG_CorrecSmooth = NULL;
     }
     nMG_CorrecSmooth = nMGLevels+1;
     MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
@@ -2352,7 +2455,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Restart) MGCycle = V_CYCLE;
   
-  if (Adjoint) {
+  if (ContinuousAdjoint) {
     if (Kind_Solver == EULER) Kind_Solver = ADJ_EULER;
     if (Kind_Solver == NAVIER_STOKES) Kind_Solver = ADJ_NAVIER_STOKES;
     if (Kind_Solver == RANS) Kind_Solver = ADJ_RANS;
@@ -2361,7 +2464,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   nCFL = nMGLevels+1;
   CFL = new su2double[nCFL];
   CFL[0] = CFLFineGrid;
-  if (Adjoint){
+  if (ContinuousAdjoint){
     CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[2]*=CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[3]*=CFLRedCoeff_AdjFlow;
@@ -2375,6 +2478,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     RK_Alpha_Step = new su2double[1]; RK_Alpha_Step[0] = 1.0;
   }
   
+  if (nIntCoeffs == 0) {
+	nIntCoeffs = 2;
+	Int_Coeffs = new su2double[2]; Int_Coeffs[0] = 0.25; Int_Coeffs[1] = 0.5;
+  }
+
   if ((Kind_SU2 == SU2_CFD) && (Kind_Solver == NO_SOLVER)) {
     cout << "PHYSICAL_PROBLEM must be set in the configuration file" << endl;
     exit(EXIT_FAILURE);
@@ -2434,24 +2542,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
   
-  /*--- Check for constant lift mode  ---*/
-  if (Fixed_CL_Mode) {
-    
-    /*--- The initial AoA will be taken as the value input in the
-     config file (the default is zero). ---*/
-    
-    /*--- We will force the use of the cauchy convergence criteria for
-     constant lift mode. ---*/
-    
-    ConvCriteria = CAUCHY;
-    Cauchy_Func_Flow = LIFT_COEFFICIENT;
-    
-    /*--- Initialize the update flag for the AoA with each iteration to false ---*/
-    
-    Update_AoA = false;
-    
-  }
-  
   if (DirectDiff != NO_DERIVATIVE){
 #if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE && !defined CODI_FORWARD_TYPE
       if (Kind_SU2 == SU2_CFD){
@@ -2482,6 +2572,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         break;
       }
   }
+
+#if defined CODI_REVERSE_TYPE
+  AD_Mode = YES;
+#else
+  if (AD_Mode == YES){
+    cout << "AUTO_DIFF=YES requires Automatic Differentiation support." << endl;
+    cout << "Please use correct executables (configuration/compilation is done using the preconfigure.py script)." << endl;
+  }
+#endif
 
   if (DiscreteAdjoint){
 #if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
@@ -2595,17 +2694,17 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   /*--- Allocate the memory (markers in the config file) ---*/
 
-  Marker_CfgFile_TagBound   = new string[nMarker_CfgFile];
-  Marker_CfgFile_KindBC     = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Monitoring = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Designing  = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Plotting   = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_GeoEval    = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_TagBound     = new string[nMarker_CfgFile];
+  Marker_CfgFile_KindBC       = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Monitoring   = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Designing    = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Plotting     = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_GeoEval      = new unsigned short[nMarker_CfgFile];
   Marker_CfgFile_FSIinterface	= new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_DV         = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Moving     = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_PerBound   = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Out_1D     = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_DV           = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Moving       = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_PerBound     = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Out_1D       = new unsigned short[nMarker_CfgFile];
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile]   = "SEND_RECEIVE";
@@ -2887,7 +2986,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_NRBC, iMarker_MixBound, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
-  iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV,
+  iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iDV_Value,
   iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDisk_Inlet,
   iMarker_ActDisk_Outlet;
@@ -2900,7 +2999,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 4.1.0  \"Cardinal\"                         |" << endl;
+  cout << "|   / __| | | |_  )   Release 4.1.2  \"Cardinal\"                         |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -2924,7 +3023,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
   cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
-  cout << "| Copyright (C) 2012-2015 SU2, the open-source CFD code.                |" << endl;
+  cout << "| Copyright (C) 2012-2016 SU2, the open-source CFD code.                |" << endl;
   cout << "|                                                                       |" << endl;
   cout << "| SU2 is free software; you can redistribute it and/or                  |" << endl;
   cout << "| modify it under the terms of the GNU Lesser General Public            |" << endl;
@@ -2987,7 +3086,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
       case WAVE_EQUATION: cout << "Wave equation." << endl; break;
       case HEAT_EQUATION: cout << "Heat equation." << endl; break;
-      case LINEAR_ELASTICITY: cout << "Linear elasticity solver." << endl; break;
+      case FEM_ELASTICITY:
+    	  if (Kind_Struct_Solver == SMALL_DEFORMATIONS) cout << "Geometrically linear elasticity solver." << endl;
+    	  if (Kind_Struct_Solver == LARGE_DEFORMATIONS) cout << "Geometrically non-linear elasticity solver." << endl;
+    	  if (Kind_Material == LINEAR_ELASTIC) cout << "Linear elastic material." << endl;
+    	  if (Kind_Material == NEO_HOOKEAN) {
+    		  if (Kind_Material_Compress == COMPRESSIBLE_MAT) cout << "Compressible Neo-Hookean material model." << endl;
+    		  if (Kind_Material_Compress == INCOMPRESSIBLE_MAT) cout << "Incompressible Neo-Hookean material model (mean dilatation method)." << endl;
+    	  }
+    	  break;
       case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
       case ADJ_NAVIER_STOKES:
         if (Frozen_Visc)
@@ -3005,7 +3112,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
 
-    if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != LINEAR_ELASTICITY) &&
+    if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != FEM_ELASTICITY) &&
         (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
       cout << "Mach number: " << Mach <<"."<< endl;
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
@@ -3036,14 +3143,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     if (Restart) {
-      if (!Adjoint) cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
-      if (Adjoint) cout << "Read adjoint solution from: " << Solution_AdjFileName << "." << endl;
+      if (!ContinuousAdjoint && Kind_Solver != FEM_ELASTICITY) cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
+      if (ContinuousAdjoint) cout << "Read adjoint solution from: " << Solution_AdjFileName << "." << endl;
+      if (Kind_Solver == FEM_ELASTICITY) cout << "Read structural solution from: " << Solution_FEMFileName << "." << endl;
     }
     else {
       cout << "No restart solution, use the values at infinity (freestream)." << endl;
     }
 
-    if (Adjoint)
+    if (ContinuousAdjoint)
       cout << "Read flow solution from: " << Solution_FlowFileName << "." << endl;
 
     
@@ -3208,7 +3316,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           if (iMarker_DV < nMarker_DV-1) cout << ", ";
           else cout << " <-> ";
         }
-        cout << DV_Value[iDV] << " <-> ";
+
+        for (iDV_Value = 0; iDV_Value < nDV_Value[iDV]; iDV_Value++){
+          cout << DV_Value[iDV][iDV_Value];
+          if (iDV_Value != nDV_Value[iDV]-1) cout << ", ";
+        }
+        cout << " <-> ";
 
         if (Design_Variable[iDV] == FFD_SETTING) nParamDV = 0;
         if (Design_Variable[iDV] == SCALE) nParamDV = 0;
@@ -3289,7 +3402,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 		}
 	}
 
-	if (((val_software == SU2_CFD) && ( Adjoint )) || (val_software == SU2_DOT)) {
+	if (((val_software == SU2_CFD) && ( ContinuousAdjoint )) || (val_software == SU2_DOT)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
 		switch (Kind_ObjFunc) {
@@ -3511,7 +3624,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;
 
-    if ((Kind_Solver != LINEAR_ELASTICITY)) {
+    if (Kind_Solver != FEM_ELASTICITY) {
 		switch (Unsteady_Simulation) {
 		  case NO:
 			cout << "Local time stepping (steady state simulation)." << endl; break;
@@ -3610,9 +3723,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<< endl;
     }
 
-    if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
+    if ((Kind_Solver != FEM_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
 
-      if (CFL_AdaptParam[0] == 1.0) cout << "No CFL adaptation." << endl;
+      if (!CFL_Adapt) cout << "No CFL adaptation." << endl;
       else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
         <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
 
@@ -3673,7 +3786,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
 
     if (ConvCriteria == CAUCHY) {
-      if (!Adjoint && !DiscreteAdjoint)
+      if (!ContinuousAdjoint && !DiscreteAdjoint)
         switch (Cauchy_Func_Flow) {
           case LIFT_COEFFICIENT: cout << "Cauchy criteria for Lift using "
             << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
@@ -3681,7 +3794,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
         }
 
-      if (Adjoint || DiscreteAdjoint)
+      if (ContinuousAdjoint || DiscreteAdjoint)
         switch (Cauchy_Func_AdjFlow) {
           case SENS_GEOMETRY: cout << "Cauchy criteria for geo. sensitivity using "
             << Cauchy_Elems << " elements and epsilon " <<Cauchy_Eps<< "."<< endl; break;
@@ -3695,13 +3808,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
 
     if (ConvCriteria == RESIDUAL) {
-      if (!Adjoint && !DiscreteAdjoint) {
+      if (!ContinuousAdjoint && !DiscreteAdjoint) {
         cout << "Reduce the density residual " << OrderMagResidual << " orders of magnitude."<< endl;
         cout << "The minimum bound for the density residual is 10^(" << MinLogResidual<< ")."<< endl;
         cout << "Start convergence criteria at iteration " << StartConv_Iter<< "."<< endl;
       }
 
-      if (Adjoint || DiscreteAdjoint) {
+      if (ContinuousAdjoint || DiscreteAdjoint) {
         cout << "Reduce the adjoint density residual " << OrderMagResidual << " orders of magnitude."<< endl;
         cout << "The minimum value for the adjoint density residual is 10^(" << MinLogResidual<< ")."<< endl;
       }
@@ -3766,14 +3879,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << "Forces breakdown file name: " << Breakdown_FileName << "." << endl;
 
-    if ((Kind_Solver != LINEAR_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
-      if (!Adjoint && !DiscreteAdjoint) {
+    if ((Kind_Solver != FEM_ELASTICITY) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
+      if (!ContinuousAdjoint && !DiscreteAdjoint) {
         cout << "Surface flow coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
         cout << "Flow variables file name: " << Flow_FileName << "." << endl;
         cout << "Restart flow file name: " << Restart_FlowFileName << "." << endl;
       }
 
-      if (Adjoint || DiscreteAdjoint) {
+      if (ContinuousAdjoint || DiscreteAdjoint) {
         cout << "Adjoint solution file name: " << Solution_AdjFileName << "." << endl;
         cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
         cout << "Adjoint variables file name: " << Adj_FileName << "." << endl;
@@ -3783,7 +3896,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     else {
       cout << "Surface structure coefficients file name: " << SurfStructure_FileName << "." << endl;
       cout << "Structure variables file name: " << Structure_FileName << "." << endl;
-      cout << "Restart structure file name: " << Restart_FlowFileName << "." << endl;
+      cout << "Restart structure file name: " << Restart_FEMFileName << "." << endl;
     }
 
   }
@@ -3791,11 +3904,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   if (val_software == SU2_SOL) {
     if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
     switch (Output_FileFormat) {
-      case PARAVIEW: cout << "The output file format is Paraview ASCII (.dat)." << endl; break;
+      case PARAVIEW: cout << "The output file format is Paraview ASCII (.vtk)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
       case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
-      case FIELDVIEW: cout << "The output file format is FieldView ASCII (.dat)." << endl; break;
-      case FIELDVIEW_BINARY: cout << "The output file format is FieldView ASCII (.dat)." << endl; break;
+      case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
+      case FIELDVIEW_BINARY: cout << "The output file format is FieldView binary (.uns)." << endl; break;
       case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
     }
     cout << "Flow variables file name: " << Flow_FileName << "." << endl;
@@ -4362,98 +4475,70 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
 }
 
 CConfig::~CConfig(void) {
-  
-  if (RK_Alpha_Step != NULL) delete [] RK_Alpha_Step;
-  if (MG_PreSmooth != NULL) delete [] MG_PreSmooth;
-  if (MG_PostSmooth != NULL) delete [] MG_PostSmooth;
-  if (U_FreeStreamND != NULL) delete [] U_FreeStreamND;
 
+  if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
+  if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
+  if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
   /*--- Free memory for Aeroelastic problems. ---*/
-  
-  if (Grid_Movement && Aeroelastic_Simulation) {
 
-    delete[] Aeroelastic_pitch;
-    delete[] Aeroelastic_plunge;
+
+  if (Grid_Movement && Aeroelastic_Simulation) {
+    if (Aeroelastic_pitch!=NULL) delete[] Aeroelastic_pitch;
+    if (Aeroelastic_plunge!=NULL) delete[] Aeroelastic_plunge;
   }
+
 
   /*--- Free memory for unspecified grid motion parameters ---*/
 
-  if (Kind_GridMovement != NULL)
-    delete [] Kind_GridMovement;
+ if (Kind_GridMovement != NULL)    delete [] Kind_GridMovement;
 
   /*--- motion origin: ---*/
-  
-  if (Motion_Origin_X != NULL)
-    delete [] Motion_Origin_X;
-  if (Motion_Origin_Y != NULL)
-    delete [] Motion_Origin_Y;
-  if (Motion_Origin_Z != NULL)
-    delete [] Motion_Origin_Z;
-  if (MoveMotion_Origin != NULL)
-    delete [] MoveMotion_Origin;
+
+  if (Motion_Origin_X != NULL)    delete [] Motion_Origin_X;
+  if (Motion_Origin_Y != NULL)    delete [] Motion_Origin_Y;
+  if (Motion_Origin_Z != NULL)    delete [] Motion_Origin_Z;
+  if (MoveMotion_Origin != NULL)    delete [] MoveMotion_Origin;
 
   /*--- rotation: ---*/
-  
-  if (Rotation_Rate_X != NULL)
-    delete [] Rotation_Rate_X;
-  if (Rotation_Rate_Y != NULL)
-    delete [] Rotation_Rate_Y;
-  if (Rotation_Rate_Z != NULL)
-    delete [] Rotation_Rate_Z;
+
+  if (Rotation_Rate_X != NULL)    delete [] Rotation_Rate_X;
+  if (Rotation_Rate_Y != NULL)    delete [] Rotation_Rate_Y;
+  if (Rotation_Rate_Z != NULL)    delete [] Rotation_Rate_Z;
 
   /*--- pitching: ---*/
-  
-  if (Pitching_Omega_X != NULL)
-    delete [] Pitching_Omega_X;
-  if (Pitching_Omega_Y != NULL)
-    delete [] Pitching_Omega_Y;
-  if (Pitching_Omega_Z != NULL)
-    delete [] Pitching_Omega_Z;
+
+  if (Pitching_Omega_X != NULL)    delete [] Pitching_Omega_X;
+  if (Pitching_Omega_Y != NULL)    delete [] Pitching_Omega_Y;
+  if (Pitching_Omega_Z != NULL)    delete [] Pitching_Omega_Z;
 
   /*--- pitching amplitude: ---*/
-  
-  if (Pitching_Ampl_X != NULL)
-    delete [] Pitching_Ampl_X;
-  if (Pitching_Ampl_Y != NULL)
-    delete [] Pitching_Ampl_Y;
-  if (Pitching_Ampl_Z != NULL)
-    delete [] Pitching_Ampl_Z;
+
+  if (Pitching_Ampl_X != NULL)    delete [] Pitching_Ampl_X;
+  if (Pitching_Ampl_Y != NULL)    delete [] Pitching_Ampl_Y;
+  if (Pitching_Ampl_Z != NULL)    delete [] Pitching_Ampl_Z;
 
   /*--- pitching phase: ---*/
-  
-  if (Pitching_Phase_X != NULL)
-    delete [] Pitching_Phase_X;
-  if (Pitching_Phase_Y != NULL)
-    delete [] Pitching_Phase_Y;
-  if (Pitching_Phase_Z != NULL)
-    delete [] Pitching_Phase_Z;
+
+  if (Pitching_Phase_X != NULL)    delete [] Pitching_Phase_X;
+  if (Pitching_Phase_Y != NULL)    delete [] Pitching_Phase_Y;
+  if (Pitching_Phase_Z != NULL)    delete [] Pitching_Phase_Z;
 
   /*--- plunging: ---*/
-  
-  if (Plunging_Omega_X != NULL)
-    delete [] Plunging_Omega_X;
-  if (Plunging_Omega_Y != NULL)
-    delete [] Plunging_Omega_Y;
-  if (Plunging_Omega_Z != NULL)
-    delete [] Plunging_Omega_Z;
+
+  if (Plunging_Omega_X != NULL)    delete [] Plunging_Omega_X;
+  if (Plunging_Omega_Y != NULL)    delete [] Plunging_Omega_Y;
+  if (Plunging_Omega_Z != NULL)    delete [] Plunging_Omega_Z;
 
   /*--- plunging amplitude: ---*/
-  
-  if (Plunging_Ampl_X != NULL)
-    delete [] Plunging_Ampl_X;
-  if (Plunging_Ampl_Y != NULL)
-    delete [] Plunging_Ampl_Y;
-  if (Plunging_Ampl_Z != NULL)
-    delete [] Plunging_Ampl_Z;
 
-  if (RefOriginMoment != NULL)
-    delete [] RefOriginMoment;
-  if (RefOriginMoment_X != NULL)
-    delete [] RefOriginMoment_X;
-  if (RefOriginMoment_Y != NULL)
-    delete [] RefOriginMoment_Y;
-  if (RefOriginMoment_Z != NULL)
-    delete [] RefOriginMoment_Z;
+  if (Plunging_Ampl_X != NULL)    delete [] Plunging_Ampl_X;
+  if (Plunging_Ampl_Y != NULL)    delete [] Plunging_Ampl_Y;
+  if (Plunging_Ampl_Z != NULL)    delete [] Plunging_Ampl_Z;
+
+  if (RefOriginMoment != NULL)    delete [] RefOriginMoment;
+  if (RefOriginMoment_X != NULL)    delete [] RefOriginMoment_X;
+  if (RefOriginMoment_Y != NULL)    delete [] RefOriginMoment_Y;
+  if (RefOriginMoment_Z != NULL)    delete [] RefOriginMoment_Z;
 
   /*--- Free memory for Harmonic Blance Frequency  pointer ---*/
     
@@ -4461,7 +4546,7 @@ CConfig::~CConfig(void) {
     delete [] Omega_HB;
     
   /*--- Marker pointers ---*/
-  
+
   if (Marker_CfgFile_Out_1D != NULL)   delete[] Marker_CfgFile_Out_1D;
   if (Marker_All_Out_1D != NULL)      delete[] Marker_All_Out_1D;
   if (Marker_CfgFile_GeoEval != NULL)  delete[] Marker_CfgFile_GeoEval;
@@ -4493,7 +4578,6 @@ CConfig::~CConfig(void) {
   if (Marker_Plotting != NULL)        delete[] Marker_Plotting;
   if (Marker_FSIinterface != NULL)        delete[] Marker_FSIinterface;
   if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
-
   if (EA_IntLimit != NULL)    delete[] EA_IntLimit;
   if (Hold_GridFixed_Coord != NULL)    delete[] Hold_GridFixed_Coord ;
   if (Subsonic_Engine_Box != NULL)    delete[] Subsonic_Engine_Box ;
@@ -4536,17 +4620,16 @@ CConfig::~CConfig(void) {
   if (Periodic_Rotation != NULL)    delete[] Periodic_Rotation;
   if (Periodic_Translate != NULL)    delete[] Periodic_Translate;
 
-  if (ParamDV!=NULL  )    delete[] ParamDV;
-  if (MG_CorrecSmooth != NULL    )    delete[] MG_CorrecSmooth;
-  if (Section_Location != NULL)    delete[] Section_Location;
-  if (Kappa_Flow != NULL      )    delete[] Kappa_Flow;
-  if (Kappa_AdjFlow != NULL             )    delete[] Kappa_AdjFlow;
-  if (PlaneTag != NULL)    delete[] PlaneTag;
-  if (CFL_AdaptParam != NULL)    delete[] CFL_AdaptParam;
-  if (CFL!=NULL)    delete[] CFL;
-  
+  if (ParamDV!=NULL)                  delete[] ParamDV;
+  if (MG_CorrecSmooth != NULL)        delete[] MG_CorrecSmooth;
+  if (Section_Location != NULL)       delete[] Section_Location;
+  if (Kappa_Flow != NULL )            delete[] Kappa_Flow;
+  if (Kappa_AdjFlow != NULL)          delete[] Kappa_AdjFlow;
+  if (PlaneTag != NULL)               delete[] PlaneTag;
+  if (CFL_AdaptParam != NULL)         delete[] CFL_AdaptParam;
+  if (CFL!=NULL)                      delete[] CFL;
+
   /*--- String markers ---*/
-  
   if (Marker_Euler != NULL )              delete[] Marker_Euler;
   if (Marker_FarField != NULL )           delete[] Marker_FarField;
   if (Marker_Custom != NULL )             delete[] Marker_Custom;
@@ -4589,7 +4672,8 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   }
 
   /*--- Append iteration number for unsteady cases ---*/
-  if ((Wrt_Unsteady) || (Unsteady_Simulation == SPECTRAL_METHOD)) {
+
+  if ((Wrt_Unsteady) || (Unsteady_Simulation == SPECTRAL_METHOD) || (Wrt_Dynamic)) {
     unsigned short lastindex = UnstFilename.find_last_of(".");
     UnstFilename = UnstFilename.substr(0, lastindex);
     if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d.dat", val_iter);
@@ -4604,7 +4688,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
   return UnstFilename;
 }
 
-string CConfig::GetRestart_FlowFileName(string val_filename, int val_iZone) {
+string CConfig::GetMultizone_FileName(string val_filename, int val_iZone) {
 
     string multizone_filename = val_filename;
     char buffer[50];
@@ -4623,7 +4707,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
 
   string AdjExt, Filename = val_filename;
 
-  if (Adjoint || DiscreteAdjoint) {
+  if (ContinuousAdjoint || DiscreteAdjoint) {
 
     /*--- Remove filename extension (.dat) ---*/
     unsigned short lastindex = Filename.find_last_of(".");
@@ -4651,9 +4735,9 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case FIGURE_OF_MERIT:         AdjExt = "_merit";    break;
       case FREE_SURFACE:            AdjExt = "_fs";       break;
       case AVG_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
-      case AVG_OUTLET_PRESSURE:      AdjExt = "_pe";       break;
+      case AVG_OUTLET_PRESSURE:     AdjExt = "_pe";       break;
       case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
-      case OUTFLOW_GENERALIZED:       AdjExt = "_chn";       break;
+      case OUTFLOW_GENERALIZED:     AdjExt = "_chn";       break;
     }
     Filename.append(AdjExt);
 
@@ -4813,7 +4897,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
-    case LINEAR_ELASTICITY:
+    case FEM_ELASTICITY:
 
       Current_DynTime = static_cast<su2double>(val_extiter)*Delta_DynTime;
 

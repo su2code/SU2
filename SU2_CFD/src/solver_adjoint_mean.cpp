@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1270,8 +1270,19 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
     for (AngleInt = 0; AngleInt < 180; AngleInt++)
       IndexNF_inv[AngleInt] = -1;
     
-    for (iIndex = 0; iIndex < IndexNF.size(); iIndex++)
-      IndexNF_inv[IndexNF[iIndex]] = iIndex;
+	if (IndexNF.size() <= 180) {
+		for (iIndex = 0; iIndex < IndexNF.size(); iIndex++)
+			IndexNF_inv[IndexNF[iIndex]] = iIndex;
+	}
+	else {
+		#ifndef HAVE_MPI
+				exit(EXIT_FAILURE);
+		#else
+				MPI_Barrier(MPI_COMM_WORLD);
+				MPI_Abort(MPI_COMM_WORLD, 1);
+				MPI_Finalize();
+		#endif
+	}
     
   }
   
@@ -4476,7 +4487,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       Riemann=0.0, Entropy=0.0, Density_Outlet = 0.0, Vn_rel=0.0;
   su2double Velocity[3], UnitNormal[3];
   su2double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
-  su2double a1=0.0; /*Placeholder terms to simplify expressions/ repeated terms*/
+  su2double a1=0.0, a2=0.0; /*Placeholder terms to simplify expressions/ repeated terms*/
   /*Gradient terms for the generalized boundary */
   su2double density_gradient, pressure_gradient, velocity_gradient;
 
@@ -4569,7 +4580,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Psi_outlet[iVar] = 0.0;
         }
 
-        if (Vn >= SoundSpeed) {
+        if (Vn > SoundSpeed) {
           /*--- Objective-dependent additions to energy term ---*/
           Vn_Exit = Vn; /* Vn_Exit comes from Reiman conditions in subsonic case*/
           Vn_rel = Vn_Exit-ProjGridVel;
@@ -4592,7 +4603,13 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             for (iDim = 0; iDim < nDim; iDim++) {
               Velocity2 += Velocity[iDim]*Velocity[iDim];
             }
-            Psi_outlet[nDim+1]+=a1*Velocity2/(2.0*Vn_Exit);
+            a2 = Pressure*(Gamma/Gamma_Minus_One)*pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),1.0/Gamma_Minus_One);
+            density_gradient = a2*(Gamma_Minus_One*Velocity2/(2.0*Gamma*Pressure));
+            velocity_gradient = 0.0;
+            for (iDim=0; iDim<nDim; iDim++)
+              velocity_gradient+=a2*Gamma_Minus_One*Density/(Gamma*Pressure)*Velocity[iDim]*UnitNormal[iDim];
+            pressure_gradient = a2*(-Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*pow(Pressure,2.0)))+pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),(Gamma/Gamma_Minus_One));
+            Psi_outlet[nDim+1]+=a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
             break;
           case AVG_OUTLET_PRESSURE:
             /*Area averaged static pressure*/
@@ -4649,7 +4666,9 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           }
            */
           /*Constant-pressure version*/
-          a1 = SoundSpeed*SoundSpeed/Gamma_Minus_One/Vn;
+          a1 = 0.0;
+          if (Vn!=0.0)
+            a1 = SoundSpeed*SoundSpeed/Gamma_Minus_One/Vn;
           Psi_outlet[0] += Psi_outlet[nVar-1]*(Velocity2*0.5+Vn_rel*a1);
           for (iDim = 0; iDim < nDim; iDim++) {
             Psi_outlet[iDim+1] += -Psi_outlet[nVar-1]*(a1*UnitNormal[iDim] + Velocity[iDim]);
@@ -4737,9 +4756,11 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         }
          */
         /*Pressure-fixed version*/
-        Psi_outlet[0]+=density_gradient*2.0/Vn_Exit-velocity_gradient/Density/Vn_Exit;
-        for (iDim=0; iDim<nDim; iDim++){
-          Psi_outlet[iDim+1]+=config->GetCoeff_ObjChainRule(iDim+1)/Density/Vn_Exit-UnitNormal[iDim]*density_gradient/Vn_Exit/Vn_Exit;
+        if (Vn_Exit != 0.0){
+          Psi_outlet[0]+=density_gradient*2.0/Vn_Exit-velocity_gradient/Density/Vn_Exit;
+          for (iDim=0; iDim<nDim; iDim++){
+            Psi_outlet[iDim+1]+=config->GetCoeff_ObjChainRule(iDim+1)/Density/Vn_Exit-UnitNormal[iDim]*density_gradient/Vn_Exit/Vn_Exit;
+          }
         }
         break;
       case AVG_TOTAL_PRESSURE:
@@ -4754,8 +4775,16 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           Psi_outlet[iDim+1] +=a1*UnitNormal[iDim]*(-Velocity2)/(2.0*Vn_Exit)+Velocity[iDim]/Vn_Exit;
          */
         /*Pressure-fixed version*/
-        for (iDim = 0; iDim < nDim; iDim++)
-          Psi_outlet[iDim+1] += Velocity[iDim]/Vn_Exit-UnitNormal[iDim]*Velocity2/(Vn_Exit*Vn_Exit);
+        if (Vn_Exit !=0.0){
+          a2 = Pressure*(Gamma/Gamma_Minus_One)*pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),1.0/(Gamma_Minus_One));
+          density_gradient = a2*(Gamma_Minus_One*Velocity2/(2.0*Gamma*Pressure));
+          velocity_gradient=a2*Gamma_Minus_One*Density/(Gamma*Pressure); // re-using variable as the constant multiplying V[i] for dj/dvi
+          Psi_outlet[0]+=density_gradient*2.0/Vn_Exit;
+          for (iDim=0; iDim<nDim; iDim++){
+            Psi_outlet[0]-=velocity_gradient*Velocity[iDim]*Velocity[iDim]/(Density*Vn_Exit);
+            Psi_outlet[iDim+1] += velocity_gradient*Velocity[iDim]/(Density*Vn_Exit) - UnitNormal[iDim]*density_gradient/(Vn_Exit*Vn_Exit);
+          }
+        }
         break;
       case AVG_OUTLET_PRESSURE:
         /* Characteristic-based version
@@ -5219,8 +5248,9 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 #endif
   
   /*--- Norm heat flux objective test ---*/
-  
-  pnorm = 10;
+  pnorm = 1.0;
+  if (config->GetKind_ObjFunc()==MAXIMUM_HEATFLUX)
+    pnorm = 8.0; // Matches MaxNorm defined in solver_direct_mean.
   
   /*--- Set the gamma value ---*/
   
@@ -5359,7 +5389,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   if ((config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
       (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX) ||
       (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX))
-    PsiE_Inf = -1.0;
+    PsiE_Inf = 1.0;
   else
     PsiE_Inf = 0.0;
   Phi_Inf = new su2double [nDim];
@@ -6801,7 +6831,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   Sigma_xx, Sigma_yy, Sigma_zz, Sigma_xy, Sigma_xz, Sigma_yz,
   Sigma_xx5, Sigma_yy5, Sigma_zz5, Sigma_xy5, Sigma_xz5,
   Sigma_yz5, eta_xx, eta_yy, eta_zz, eta_xy, eta_xz, eta_yz;
-  su2double kGTdotn;
+  su2double kGTdotn=0.0, Area=0.0, Xi=0.0;
   
   su2double *Psi = new su2double[nVar];
   su2double **Tau = new su2double* [nDim];
@@ -6904,14 +6934,23 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         q = 0.0;
       }
       else {
+
+        Area = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+        Area = sqrt(Area);
+
+        /* --- Temperature gradient term ---*/
         GradT = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[0];
-        kGTdotn = 0;
-//        Xi = solver_container[FLOW_SOL]->GetTotal_MaxHeatFlux();
-//        Xi = 1.0;
+        kGTdotn = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
-          kGTdotn += Thermal_Conductivity*GradT[iDim]*Normal[iDim];
-        //q = - Xi * pnorm * pow(kGTdotn, pnorm-1.0);
-        q = -1.0;
+          kGTdotn += Cp * Laminar_Viscosity/Prandtl_Lam*GradT[iDim]*Normal[iDim]/Area;
+        // Cp * Viscosity/Prandtl_Lam matches term used in solver_direct_mean
+        /*--- constant term to multiply max heat flux objective ---*/
+        Xi = solver_container[FLOW_SOL]->GetTotal_HeatFlux(); // versions for max heat flux
+        Xi = pow(Xi, 1.0/pnorm-1.0)/pnorm;
+
+        /*--- Boundary condition value ---*/
+        q = Xi * pnorm * pow(kGTdotn, pnorm-1.0)*Area;
       }
       
       /*--- Strong BC enforcement of the energy equation ---*/
