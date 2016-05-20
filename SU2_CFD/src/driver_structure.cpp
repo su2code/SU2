@@ -1867,22 +1867,21 @@ for (targetZone = 0; targetZone < nZone; targetZone++){
 								transfer_container[donorZone][targetZone] = new CTransfer_FlowTraction(nVar, nVarTransfer, config_container[donorZone]);
 								if (rank == MASTER_NODE) cout << "flow tractions. "<< endl;
 							}
-							else if (structural_donor && fluid_target){
+							else if (structural_donor && fluid_target) {
 								nVarTransfer = 0;
 								transfer_container[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nVar, nVarTransfer, config_container[donorZone]);
 								if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
 							}
-							else {
+							else if (!structural_donor && !structural_target) {
 								nVarTransfer = 0;
-								
 								nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnPrimVar();
 								transfer_container[donorZone][targetZone] = new CTransfer_SlidingInterface(nVar, nVarTransfer, config_container[donorZone]);
 								if (rank == MASTER_NODE) cout << "sliding interface. " << endl;
-								
-								/*
+							}
+							else {
+								nVarTransfer = 0;
 								transfer_container[donorZone][targetZone] = new CTransfer_ConservativeVars(nVar, nVarTransfer, config_container[donorZone]);
-								if (rank == MASTER_NODE) cout << "generic conservative variables. " << endl;
-								*/
+								if (rank == MASTER_NODE) cout << "generic conservative variables. " << endl;	
 							}
 
 						}
