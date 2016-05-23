@@ -2,7 +2,7 @@
  * \file matrix_structure.inl
  * \brief In-Line subroutines of the <i>matrix_structure.hpp</i> file.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

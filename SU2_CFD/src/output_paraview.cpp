@@ -2,7 +2,7 @@
  * \file output_paraview.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -51,7 +51,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 		       (config->GetKind_Solver() == ADJ_ELASTICITY));
 
 	char cstr[200], buffer[50];
-	string filename;
+  string filename, fieldname;
     
 	/*--- Write file name with extension ---*/
   if (surf_sol) {
@@ -332,6 +332,8 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
      variables with the appropriate string tags stored in the config class. ---*/
     for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
       
+      fieldname = config->fields[iField];
+
       bool output_variable = true;
       size_t found = config->fields[iField].find("\"x\"");
       if (found!=string::npos) output_variable = false;
@@ -341,7 +343,9 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       if (found!=string::npos) output_variable = false;
       
       if (output_variable) {
-        Paraview_File << "\nSCALARS " << config->fields[iField] << " float 1\n";
+        fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'), fieldname.end());
+
+        Paraview_File << "\nSCALARS " << fieldname << " float 1\n";
         Paraview_File << "LOOKUP_TABLE default\n";
         
         for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
@@ -905,7 +909,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
 			     (config->GetKind_Solver() == ADJ_ELASTICITY));
   
 	char cstr[200], buffer[50];
-	string filename;
+  string filename, fieldname;
   
 	/*--- Write file name with extension ---*/
   if (surf_sol) {
@@ -1200,6 +1204,8 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
      variables with the appropriate string tags stored in the config class. ---*/
     for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
       
+      fieldname = config->fields[iField];
+      
       bool output_variable = true;
       size_t found = config->fields[iField].find("\"x\"");
       if (found!=string::npos) output_variable = false;
@@ -1209,7 +1215,9 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
       if (found!=string::npos) output_variable = false;
       
       if (output_variable) {
-        Paraview_File << "\nSCALARS " << config->fields[iField] << " float 1\n";
+        fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'), fieldname.end());
+
+        Paraview_File << "\nSCALARS " << fieldname << " float 1\n";
         Paraview_File << "LOOKUP_TABLE default\n";
         
         for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {

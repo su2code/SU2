@@ -2,7 +2,7 @@
  * \file variable_direct_elasticity.cpp
  * \brief Definition of the variables for FEM elastic structural problems.
  * \author R. Sanchez
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
