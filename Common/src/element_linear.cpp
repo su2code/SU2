@@ -2,7 +2,7 @@
  * \file element_linear.cpp
  * \brief Definition of the linear element structure for structural applications
  * \author R. Sanchez
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -161,18 +161,8 @@ CTRIA1::~CTRIA1(void) {
 		delete [] NodalExtrap[iVar];
 	}
 
-	delete [] GaussCoord;
-	delete [] GaussPoint;
-	delete [] CurrentCoord;
-	delete [] RefCoord;
-	delete [] Mab;
-	delete [] Kab;
-	delete [] Ks_ab;
-	delete [] Kt_a;
-	delete [] GaussWeight;
 	delete [] NodalExtrap;
 
-	if (FDL_a != NULL) delete [] FDL_a;
 
 }
 
@@ -461,18 +451,8 @@ CQUAD4::~CQUAD4(void) {
 		delete [] NodalExtrap[iVar];
 	}
 
-	delete [] GaussCoord;
-	delete [] GaussPoint;
-	delete [] CurrentCoord;
-	delete [] RefCoord;
-	delete [] Mab;
-	delete [] Kab;
-	delete [] Ks_ab;
-	delete [] Kt_a;
-	delete [] GaussWeight;
 	delete [] NodalExtrap;
 
-	if (FDL_a != NULL) delete [] FDL_a;
 
 }
 
@@ -1060,10 +1040,6 @@ CQUAD4P1::~CQUAD4P1(void) {
 		delete [] Kk_ab[iVar];
 	}
 
-	delete [] GaussCoordP;
-	delete [] GaussPointP;
-	delete [] Kk_ab;
-	delete [] GaussWeightP;
 
 }
 
@@ -1280,18 +1256,8 @@ CTETRA1::~CTETRA1(void) {
 		delete [] NodalExtrap[iVar];
 	}
 
-	delete [] GaussCoord;
-	delete [] GaussPoint;
-	delete [] CurrentCoord;
-	delete [] RefCoord;
-	delete [] Mab;
-	delete [] Kab;
-	delete [] Ks_ab;
-	delete [] Kt_a;
-	delete [] GaussWeight;
 	delete [] NodalExtrap;
 
-	if (FDL_a != NULL) delete [] FDL_a;
 
 }
 
@@ -1617,18 +1583,8 @@ CHEXA8::~CHEXA8(void) {
 		delete [] NodalExtrap[iVar];
 	}
 
-	delete [] GaussCoord;
-	delete [] GaussPoint;
-	delete [] CurrentCoord;
-	delete [] RefCoord;
-	delete [] Mab;
-	delete [] Kab;
-	delete [] Ks_ab;
-	delete [] Kt_a;
-	delete [] GaussWeight;
 	delete [] NodalExtrap;
 
-	if (FDL_a != NULL) delete [] FDL_a;
 
 
 }
@@ -1911,10 +1867,6 @@ CHEXA8P1::~CHEXA8P1(void) {
 		delete [] Kk_ab[iVar];
 	}
 
-	delete [] GaussCoordP;
-	delete [] GaussPointP;
-	delete [] Kk_ab;
-	delete [] GaussWeightP;
 
 }
 

@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -310,7 +310,7 @@ int rank = 0;
 //    }
 //  }
 	
-	return i;
+	return (unsigned long) i;
   
 }
 
@@ -465,7 +465,7 @@ int rank = 0;
 //  }
 	
   (*residual) = beta;
-	return i;
+	return (unsigned long) i;
   
 }
 
@@ -601,7 +601,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 //  }
 	
   (*residual) = norm_r;
-	return i;
+	return (unsigned long) i;
 }
 
 unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
@@ -715,14 +715,14 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
 
 
   if(TapeActive){
+    /*--- Start recording if it was stopped for the linear solver ---*/
+
+    AD::StartRecording();
 
     /*--- Prepare the externally differentiated linear solver ---*/
 
     SetExternalSolve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
-    /*--- Start recording if it was stopped for the linear solver ---*/
-
-    AD::StartRecording();
   }
 
   return IterLinSol;
@@ -741,14 +741,14 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
   /*--- Arrays to store the indices of the input/output of the linear solver.
      * Note: They will be deleted in the CSysSolve_b::Delete_b routine. ---*/
 
-  int *LinSysRes_Indices = new int[size];
-  int *LinSysSol_Indices = new int[size];
+  su2double::GradientData *LinSysRes_Indices = new su2double::GradientData[size];
+  su2double::GradientData *LinSysSol_Indices = new su2double::GradientData[size];
 
   for (i = 0; i < size; i++){
 
     /*--- Register the solution of the linear system (could already be registered when using multigrid) ---*/
 
-    if (LinSysSol[i].getGradientData() == 0){
+    if (!LinSysSol[i].isActive()){
       AD::globalTape.registerInput(LinSysSol[i]);
     }
 

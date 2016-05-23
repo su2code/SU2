@@ -2,7 +2,7 @@
  * \file codi_reverse_structure.hpp
  * \brief Header for codi reverse type definition.
  * \author T. Albring
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -33,4 +33,8 @@
 #include "codi.hpp"
 #include "tools/dataStore.hpp"
 
+#ifdef CODI_INDEX_TAPE
+typedef codi::RealReverseIndex su2double;
+#else
 typedef codi::RealReverse su2double;
+#endif

@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>element_structure.cpp</i>
  *        and <i>element_linear.cpp</i> files.
  * \author R. Sanchez
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -49,7 +49,7 @@ using namespace std;
  * \class CElement
  * \brief Main class for defining the element structure.
  * \author R. Sanchez
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 
 class CElement {
@@ -414,7 +414,7 @@ public:
  * \class CTRIA1
  * \brief Tria element with 1 Gauss Points
  * \author R. Sanchez
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 
 class CTRIA1 : public CElement {
@@ -462,7 +462,7 @@ public:
  * \class CQUAD4
  * \brief Quadrilateral element with 4 Gauss Points
  * \author R. Sanchez
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 
 class CQUAD4 : public CElement {
@@ -487,7 +487,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CQUAD4(void);
+	virtual ~CQUAD4(void);
 
 	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
@@ -568,7 +568,7 @@ public:
  * \class CQUAD4P1
  * \brief Quadrilateral element with 4 Gauss Points and 1 Gauss Point for pressure subintegration
  * \author R. Sanchez
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 
 class CQUAD4P1 : public CQUAD4 {
@@ -609,7 +609,7 @@ public:
  * \class CTETRA1
  * \brief Tetrahedral element with 1 Gauss Point
  * \author R. Sanchez
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 
 class CTETRA1 : public CElement {
@@ -656,7 +656,7 @@ public:
  * \class CHEXA8
  * \brief Hexahedral element with 8 Gauss Points
  * \author R. Sanchez
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 
 class CHEXA8 : public CElement {
@@ -681,7 +681,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CHEXA8(void);
+	virtual ~CHEXA8(void);
 
 	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
@@ -709,7 +709,7 @@ public:
  * \class CHEXA8P1
  * \brief Hexahedral element with 8 Gauss Points and 1 Gauss Point for pressure subintegration
  * \author R. Sanchez
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 
 class CHEXA8P1 : public CHEXA8 {
