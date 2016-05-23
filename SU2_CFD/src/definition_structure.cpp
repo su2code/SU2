@@ -179,10 +179,11 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
       cout << "Setting the multigrid structure." << endl;
     
     /*--- Create turbovertex structure ---*/
-
-    geometry[iZone][MESH_0]->SetTurboVertex(config[iZone], INFLOW, true);
-    geometry[iZone][MESH_0]->SetTurboVertex(config[iZone], OUTFLOW, true);
-  }
+    if (config[iZone]->GetBoolTurbomachinery()){
+    	geometry[iZone][MESH_0]->SetTurboVertex(config[iZone], INFLOW, true);
+			geometry[iZone][MESH_0]->SetTurboVertex(config[iZone], OUTFLOW, true);
+    }
+	}
   
   /*--- Loop over all the new grid ---*/
   
