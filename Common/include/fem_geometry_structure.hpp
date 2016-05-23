@@ -156,6 +156,8 @@ public:
 
   su2double *metricTerms;            /*!< \brief Pointer to the metric terms in the
                                                  integration points of this element. */
+  su2double *massMatrix;             /*!< \brief Pointer to the mass matrix (or the inverse) for this element. */
+  su2double *lumpedMassMatrix;       /*!< \brief Pointer to the lumped mass matrix for this element. */ 
 
   /*!
    * \brief Constructor of the class. Nothing to be done

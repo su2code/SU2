@@ -12178,7 +12178,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
         /*--- Loop over the integration points to compute the Jacobians. ---*/
         for(unsigned short j=0; j<nIntegration; ++j) {
 
-          su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs];
+          const su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs];
           su2double dxdr = 0.0, dydr = 0.0, dxds = 0.0, dyds = 0.0;
           for(unsigned short k=0; k<nDOFs; ++k) {
             const su2double x = vecRHS[2*k], y = vecRHS[2*k+1];
@@ -12198,7 +12198,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
         /*--- Loop over the integration points to compute the Jacobians. ---*/
         for(unsigned short j=0; j<nIntegration; ++j) {
 
-          su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs], *dtt = &dt[j*nDOFs];
+          const su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs], *dtt = &dt[j*nDOFs];
           su2double dxdr = 0.0, dxds = 0.0, dxdt = 0.0;
           su2double dydr = 0.0, dyds = 0.0, dydt = 0.0;
           su2double dzdr = 0.0, dzds = 0.0, dzdt = 0.0;
@@ -12248,8 +12248,15 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
           From this ratio, determine whether or not the element is considered to
           have a constant Jacobian and the total number of volume integration
           points necessary. Note that in order to determine this value the degree
-          of the solution must be taken and not the degree of the grid. ---*/
+          of the solution must be taken and not the degree of the grid.
+          Furthermore, for a pyramid always a non-constant Jacobian is used such
+          that a higher accuracy integration rule is used. This may be needed,
+          because the integration rule for a pyramid is not a tensor product rule
+          as is the case for other non-simplices. Tensor product rules are more
+          accurate for incomplete polynomials, which appear in the basis functions
+          of non-simplex elements. ---*/
     bool constJacobian = (jacMax/jacMin) <= 1.000001;
+    if(elem[i]->GetVTK_Type() == PYRAMID) constJacobian = false;
     elem[i]->SetJacobianConsideredConstant(constJacobian);
 
     unsigned short nPolySol = elem[i]->GetNPolySol();

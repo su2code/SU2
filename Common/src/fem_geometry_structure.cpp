@@ -4155,12 +4155,155 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
   /*---         lumped mass matrix.                                        ---*/
   /*--------------------------------------------------------------------------*/
 
+  /* Loop over the owned volume elements. */
+  sizeMassMatrix = 0;
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
 
-  cout << "CMeshFEM_DG::MetricTermsVolumeElements. Not implemented yet." << endl;
+    /* Easier storage of the index of the corresponding standard element and
+       determine the number of integration points, the number of DOFs for the
+       solution, the Lagrangian interpolation functions in the integration points
+       and the weights in the integration points. */
+    const unsigned short ind   = volElem[i].indStandardElement;
+    const unsigned short nInt  = standardElementsSol[ind].GetNIntegration();
+    const unsigned short nDOFs = volElem[i].nDOFsSol;
+    const su2double      *lag  = standardElementsSol[ind].GetBasisFunctionsIntegration();
+    const su2double      *w    = standardElementsSol[ind].GetWeightsIntegration();
+
+    /*--- Check if the mass matrix or its inverse must be computed. ---*/
+    if(FullMassMatrix || FullInverseMassMatrix) {
+
+      /* Store the pointer for the mass matrix for this element and update
+         the counter sizeMassMatrix. */
+      volElem[i].massMatrix = VecMassMatricesElements.data() + sizeMassMatrix;
+      sizeMassMatrix       += nDOFs*nDOFs;
+
+      /*--- Double loop over the DOFs to create the local mass matrix. ---*/
+      unsigned short ll = 0;
+      for(unsigned short k=0; k<nDOFs; ++k) {
+        for(unsigned short j=0; j<nDOFs; ++j, ++ll) {
+          volElem[i].massMatrix[ll] = 0.0;
+
+          /* Loop over the integration point to create the actual value of entry
+             (k,j) of the local mass matrix. */
+          for(unsigned short l=0; l<nInt; ++l)
+            volElem[i].massMatrix[ll] += volElem[i].metricTerms[l*nMetricPerPoint]
+                                       * w[l]*lag[l*nDOFs+k]*lag[l*nDOFs+j];
+        }
+      }
+
+      /*--- Check if the inverse of mass matrix is needed. ---*/
+      if( FullInverseMassMatrix ) {
+
+        /*--- Check if the LAPACK/MKL can be used to compute the inverse. ---*/
+
+#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
+
+        /* The inverse can be computed using the Lapack routines LAPACKE_dpotrf
+           and LAPACKE_dpotri. As the mass matrix is positive definite, a 
+           Cholesky decomposition is used, which is much more efficient than
+           a standard inverse. */
+        lapack_int errorCode;
+        errorCode = LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'U', nDOFs,
+                                    volElem[i].massMatrix, nDOFs);
+        if(errorCode != 0) {
+          cout << endl;
+          cout << "In function CMeshFEM_DG::MetricTermsVolumeElements." << endl;
+          if(errorCode < 0)  {
+            cout << "Something wrong when calling LAPACKE_dpotrf. Error code: "
+                 << errorCode << endl;
+          }
+          else {
+            cout << "Mass matrix not positive definite. " << endl;
+            cout << "This is most likely caused by a too low accuracy of the quadrature rule," << endl;
+            cout << "possibly combined with a low quality element." << endl;
+            cout << "Increase the accuracy of the quadrature rule." << endl;
+          }
+          cout << endl;
 #ifndef HAVE_MPI
-  exit(EXIT_FAILURE);
+          exit(EXIT_FAILURE);
 #else
-  MPI_Abort(MPI_COMM_WORLD,1);
-  MPI_Finalize();
+          MPI_Abort(MPI_COMM_WORLD,1);
+          MPI_Finalize();
 #endif
+        }
+
+        errorCode = LAPACKE_dpotri(LAPACK_ROW_MAJOR, 'U', nDOFs,
+                                   volElem[i].massMatrix, nDOFs);
+        if(errorCode != 0) {
+          cout << endl;
+          cout << "In function CMeshFEM_DG::MetricTermsVolumeElements." << endl;
+          if(errorCode < 0) {
+            cout << "Something wrong when calling LAPACKE_dpotri. Error code: "
+                 << errorCode << endl;
+          }
+          else {
+            cout << "Mass matrix is singular. " << endl;
+            cout << "The is most likely caused by a too low accuracy of the quadrature rule, " << endl;
+            cout << "possibly combined with a low quality element." << endl;
+            cout << "Increase the accuracy of the quadrature rule." << endl;
+          }
+          cout << endl;
+#ifndef HAVE_MPI
+          exit(EXIT_FAILURE);
+#else
+          MPI_Abort(MPI_COMM_WORLD,1);
+          MPI_Finalize();
+#endif
+        }
+
+        /* The Lapack routines for a Cholesky decomposition only store the upper
+           part of the matrix. Copy the data to the lower part. */
+        for(unsigned short k=0; k<nDOFs; ++k) {
+          for(unsigned short j=(k+1); j<nDOFs; ++j) {
+            volElem[i].massMatrix[j*nDOFs+k] = volElem[i].massMatrix[k*nDOFs+j];
+          }
+        }
+#else
+        /* No support for Lapack. Hence an internal routine is used.
+           This does not all the checking the Lapack routine does. */
+        vector<su2double> matA(nDOFs*nDOFs);
+        memcpy(matA.data(), volElem[i].massMatrix, nDOFs*nDOFs*sizeof(su2double));
+
+        FEMStandardElementBaseClass::InverseMatrix(nDOFs, matA);
+        memcpy(volElem[i].massMatrix, matA.data(), nDOFs*nDOFs*sizeof(su2double));
+#endif
+
+      }
+    }
+
+    /*--- Check if the lumped mass matrix is needed. ---*/
+    if( LumpedMassMatrix ) {
+
+      /* Store the pointer for the lumped mass matrix for this element and update
+         the counter sizeMassMatrix. */
+      volElem[i].lumpedMassMatrix = VecMassMatricesElements.data() + sizeMassMatrix;
+      sizeMassMatrix             += nDOFs;
+
+      /*--- Loop over the DOFs to compute the diagonal elements of the local mass
+            matrix. Determine the trace as well. ---*/
+      su2double traceMass = 0.0;
+      for(unsigned short j=0; j<nDOFs; ++j) {
+        volElem[i].lumpedMassMatrix[j] = 0.0;
+
+        /* Loop over the integration point to create the actual value. */
+        for(unsigned short l=0; l<nInt; ++l)
+          volElem[i].lumpedMassMatrix[j] += volElem[i].metricTerms[l*nMetricPerPoint]
+                                          * w[l]*lag[l*nDOFs+j]*lag[l*nDOFs+j];
+        traceMass += volElem[i].lumpedMassMatrix[j];
+      }
+
+      /* Compute the volume of the element and divide it by the trace of the
+         mass matrix. This is the scaling factor for currently stored diagonal
+         entries of the mass matrix to obtain the lumped version. */
+      su2double volume = 0.0;
+      for(unsigned short l=0; l<nInt; ++l)
+        volume += w[l]*volElem[i].metricTerms[l*nMetricPerPoint];
+      volume /= traceMass;
+
+      /* Compute the values of the lumped mass matrix for the DOFs. */
+      for(unsigned short j=0; j<nDOFs; ++j)
+        volElem[i].lumpedMassMatrix[j] *= volume;
+    }
+
+  }
 }

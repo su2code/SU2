@@ -90,6 +90,83 @@ unsigned short FEMStandardElementBaseClass::GetNDOFsStatic(unsigned short VTK_Ty
   return nDOFs;
 }
 
+
+void FEMStandardElementBaseClass::InverseMatrix(unsigned short    n,
+                                                vector<su2double> &A) {
+
+ /*--- Check the dimensions of A. ---*/
+ unsigned long nEntities = n*n;
+ if(A.size() != nEntities) {
+   cout << "Wrong size of the A matrix in InverseMatrix" << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Create a local matrix to carry out the actual inversion. ---*/
+  vector<vector<su2double> > augmentedmatrix(n, vector<su2double>(2*n));
+
+  /*--- Copy the data from A into the first part of augmentedmatrix. Note
+        that A is stored in column major order, such that also Lapack
+        routines can be used to invert the matrix.       ---*/
+  unsigned int ii = 0;
+  for(unsigned short j=0; j<n; ++j)
+    for(unsigned short i=0; i<n; ++i, ++ii)
+      augmentedmatrix[i][j] = A[ii];
+
+  /*--- Augmenting with identity matrix of similar dimensions ---*/
+  for(unsigned short j=0; j<n; ++j)
+    for(unsigned short i=0; i<n; ++i)
+      augmentedmatrix[i][j+n] = i == j ? 1 : 0;
+
+  /*--- Outer loop of the Gauss-Jordan elimination. ---*/
+  for(unsigned short j=0; j<n; ++j) {
+
+    /*--- Find the pivot in the current column. ---*/
+    unsigned short jj = j;
+    su2double  valMax = fabs(augmentedmatrix[j][j]);
+    for(unsigned short i=j+1; i<n; ++i) {
+      su2double val = fabs(augmentedmatrix[i][j]);
+      if(val > valMax){
+        jj = i;
+        valMax = val;
+      }
+    }
+
+    /* Swap the rows j and jj, if needed. */
+    if(jj > j) {
+      for(unsigned short k=j; k<2*n; ++k) {
+        su2double valTmp       = augmentedmatrix[j][k];
+        augmentedmatrix[j][k]  = augmentedmatrix[jj][k];
+        augmentedmatrix[jj][k] = valTmp;
+      }
+    }
+
+    /*--- Performing row operations to form required identity matrix out
+          of the input matrix.              ---*/
+    for(unsigned i=0; i<n; ++i) {
+      if(i != j) {
+        valMax = augmentedmatrix[i][j]/augmentedmatrix[j][j];
+        for(unsigned short k=j; k<2*n; ++k)
+          augmentedmatrix[i][k] -= valMax*augmentedmatrix[j][k];
+      }
+    }
+
+    valMax = 1.0/augmentedmatrix[j][j];
+    for(unsigned short k=j; k<2*n; ++k)
+      augmentedmatrix[j][k] *= valMax;
+  }
+
+  /*--- Store the inverse in A. Again column major order is used. ---*/
+  ii = 0;
+  for(unsigned short j=0; j<n; ++j)
+    for(unsigned short i=0; i<n; ++i, ++ii)
+      A[ii] = augmentedmatrix[i][j+n];
+}
+
 /*----------------------------------------------------------------------------------*/
 /*         Protected member functions of FEMStandardElementBaseClass.               */
 /*----------------------------------------------------------------------------------*/
@@ -991,82 +1068,6 @@ void FEMStandardElementBaseClass::GaussLegendrePoints1D(vector<su2double> &GLPoi
   f = 2.0/f;
   for(unsigned short i=0; i<nIntPoints; ++i)
     GLWeights[i] *= f;
-}
-
-void FEMStandardElementBaseClass::InverseMatrix(unsigned short    n,
-                                                vector<su2double> &A) {
-
- /*--- Check the dimensions of A. ---*/
- unsigned long nEntities = n*n;
- if(A.size() != nEntities) {
-   cout << "Wrong size of the A matrix in InverseMatrix" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  /*--- Create a local matrix to carry out the actual inversion. ---*/
-  vector<vector<su2double> > augmentedmatrix(n, vector<su2double>(2*n));
-
-  /*--- Copy the data from A into the first part of augmentedmatrix. Note
-        that A is stored in column major order, such that also Lapack
-        routines can be used to invert the matrix.       ---*/
-  unsigned int ii = 0;
-  for(unsigned short j=0; j<n; ++j)
-    for(unsigned short i=0; i<n; ++i, ++ii)
-      augmentedmatrix[i][j] = A[ii];
-
-  /*--- Augmenting with identity matrix of similar dimensions ---*/
-  for(unsigned short j=0; j<n; ++j)
-    for(unsigned short i=0; i<n; ++i)
-      augmentedmatrix[i][j+n] = i == j ? 1 : 0;
-
-  /*--- Outer loop of the Gauss-Jordan elimination. ---*/
-  for(unsigned short j=0; j<n; ++j) {
-
-    /*--- Find the pivot in the current column. ---*/
-    unsigned short jj = j;
-    su2double  valMax = fabs(augmentedmatrix[j][j]);
-    for(unsigned short i=j+1; i<n; ++i) {
-      su2double val = fabs(augmentedmatrix[i][j]);
-      if(val > valMax){
-        jj = i;
-        valMax = val;
-      }
-    }
-
-    /* Swap the rows j and jj, if needed. */
-    if(jj > j) {
-      for(unsigned short k=j; k<2*n; ++k) {
-        su2double valTmp       = augmentedmatrix[j][k];
-        augmentedmatrix[j][k]  = augmentedmatrix[jj][k];
-        augmentedmatrix[jj][k] = valTmp;
-      }
-    }
-
-    /*--- Performing row operations to form required identity matrix out
-          of the input matrix.              ---*/
-    for(unsigned i=0; i<n; ++i) {
-      if(i != j) {
-        valMax = augmentedmatrix[i][j]/augmentedmatrix[j][j];
-        for(unsigned short k=j; k<2*n; ++k)
-          augmentedmatrix[i][k] -= valMax*augmentedmatrix[j][k];
-      }
-    }
-
-    valMax = 1.0/augmentedmatrix[j][j];
-    for(unsigned short k=j; k<2*n; ++k)
-      augmentedmatrix[j][k] *= valMax;
-  }
-
-  /*--- Store the inverse in A. Again column major order is used. ---*/
-  ii = 0;
-  for(unsigned short j=0; j<n; ++j)
-    for(unsigned short i=0; i<n; ++i, ++ii)
-      A[ii] = augmentedmatrix[i][j+n];
 }
 
 void FEMStandardElementBaseClass::Legendre(su2double      x,
