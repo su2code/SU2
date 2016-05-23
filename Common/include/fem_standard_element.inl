@@ -35,6 +35,8 @@ inline FEMStandardElementBaseClass::FEMStandardElementBaseClass(){}
 
 inline FEMStandardElementBaseClass::~FEMStandardElementBaseClass(){}
 
+inline su2double* FEMStandardElementBaseClass::GetWeightsIntegration(void){return wIntegration.data();}
+
 inline unsigned short FEMStandardElementBaseClass::GetNIntegration(void){return nIntegration;}
 
 inline unsigned short FEMStandardElementBaseClass::GetOrderExact(void){return orderExact;}
@@ -44,6 +46,8 @@ inline FEMStandardElementClass::FEMStandardElementClass(){matBasisIntegration = 
 inline FEMStandardElementClass::FEMStandardElementClass(const FEMStandardElementClass &other) : FEMStandardElementBaseClass(other) {Copy(other);}
 
 inline FEMStandardElementClass& FEMStandardElementClass::operator=(const FEMStandardElementClass &other){Copy(other); return (*this);}
+
+inline su2double* FEMStandardElementClass::GetBasisFunctionsIntegration(void){return lagBasisIntegration.data();}
 
 inline su2double* FEMStandardElementClass::GetDrBasisFunctionsIntegration(void){return drLagBasisIntegration.data();}
 

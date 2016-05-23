@@ -90,6 +90,12 @@ protected:
 
 public:
   /*!
+  * \brief Function, which makes available the weights in the integration points.
+  * \return  The pointer to data, which stores the weights in the integration points.
+  */
+  su2double *GetWeightsIntegration(void);
+
+  /*!
   * \brief Static function, which makes available the number of DOFs for an element
            corresponding to the arguments.
   * \param[in] VTK_Type         - Type of the element using the VTK convention.
@@ -123,6 +129,14 @@ public:
   * \return  The polynomial order that must be integrated exactly.
   */
   unsigned short GetOrderExact(void);
+
+  /*!
+  * \brief Static function, which computes the inverse of the given square matrix.
+  * \param[in]     n - Number of rows/columns of the square matrix A.
+  * \param[in,out] A - On input the square matrix to be inverted. On output the inverse.
+  */
+  static void InverseMatrix(unsigned short    n,
+                            vector<su2double> &A);
 
 protected:
   /*!
@@ -585,14 +599,6 @@ private:
   void IntegrationPointsHexahedron(void);
 
   /*!
-  * \brief Function, which computes the inverse of the given square matrix.
-  * \param[in]     n - Number of rows/columns of the square matrix A.
-  * \param[in,out] A - On input the square matrix to be inverted. On output the inverse.
-  */
-  void InverseMatrix(unsigned short    n,
-                     vector<su2double> &A);
-
-  /*!
   * \brief Function, which computes the value of the Legendre polynomials
            Pn and Pnm1 for given x (-1 <= x <= 1) and n.
   * \param[in]  x    - x-coordinate for which the Legendre polynomial must be computed.
@@ -820,6 +826,12 @@ public:
   * \return The current object, after the member variables were assigned the correct value.
   */
   FEMStandardElementClass& operator=(const FEMStandardElementClass &other);
+
+  /*!
+  * \brief Function, which makes available the values of the basis functions in the integration points.
+  * \return The pointer to data, which stores the basis functions.
+  */
+  su2double *GetBasisFunctionsIntegration(void);
 
   /*!
   * \brief Function, which makes available the r-derivatives of the basis functions in the integration points.
