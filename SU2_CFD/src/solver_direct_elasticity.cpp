@@ -327,6 +327,11 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     
   }
   
+
+  bool prestretch_fem = config->GetPrestretch();
+  if (prestretch_fem) Set_Prestretch(geometry, config);
+
+
   /*--- Term ij of the Jacobian ---*/
   
   Jacobian_ij = new su2double*[nVar];
@@ -979,6 +984,128 @@ void CFEM_ElasticitySolver::Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConf
 }
 
 
+void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
+
+  unsigned long iPoint;
+  unsigned long index;
+
+  unsigned short iVar;
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry->GetnZone();
+
+  string filename;
+  su2double dull_val;
+  ifstream prestretch_file;
+
+  int rank = MASTER_NODE;
+  #ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  #endif
+
+
+  /*--- Restart the solution from file information ---*/
+
+  filename = config->GetPrestretch_FEMFileName();
+
+  /*--- If multizone, append zone name ---*/
+    if (nZone > 1)
+      filename = config->GetMultizone_FileName(filename, iZone);
+
+  cout << "Filename: " << filename << "." << endl;
+
+    prestretch_file.open(filename.data(), ios::in);
+
+  /*--- In case there is no file ---*/
+
+  if (prestretch_file.fail()) {
+      if (rank == MASTER_NODE)
+    cout << "There is no FEM prestretch reference file!!" << endl;
+    exit(EXIT_FAILURE);
+  }
+  /*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+
+  long *Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+
+  /*--- First, set all indices to a negative value by default ---*/
+
+    for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++)
+      Global2Local[iPoint] = -1;
+
+  /*--- Now fill array with the transform values only for local points ---*/
+
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+      Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+
+    /*--- Read all lines in the restart file ---*/
+
+    long iPoint_Local;
+    unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
+    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- The first line is the header ---*/
+
+  getline (prestretch_file, text_line);
+
+  while (getline (prestretch_file, text_line)) {
+     istringstream point_line(text_line);
+
+  /*--- Retrieve local index. If this node from the restart file lives
+       on a different processor, the value of iPoint_Local will be -1.
+       Otherwise, the local index for this node on the current processor
+       will be returned and used to instantiate the vars. ---*/
+
+     iPoint_Local = Global2Local[iPoint_Global];
+
+    if (iPoint_Local >= 0) {
+
+      if (nDim == 2) point_line >> Solution[0] >> Solution[1] >> index;
+      if (nDim == 3) point_line >> Solution[0] >> Solution[1] >> Solution[2] >> index;
+
+      for (iVar = 0; iVar < nVar; iVar++) node[iPoint_Local]->SetPrestretch(iVar, Solution[iVar]);
+
+      iPoint_Global_Local++;
+    }
+    iPoint_Global++;
+  }
+
+    /*--- Detect a wrong solution file ---*/
+
+    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+  #ifndef HAVE_MPI
+      rbuf_NotMatching = sbuf_NotMatching;
+  #else
+      SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+  #endif
+
+    if (rbuf_NotMatching != 0) {
+      if (rank == MASTER_NODE) {
+        cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+        cout << "It could be empty lines at the end of the file." << endl << endl;
+      }
+  #ifndef HAVE_MPI
+          exit(EXIT_FAILURE);
+  #else
+          MPI_Barrier(MPI_COMM_WORLD);
+          MPI_Abort(MPI_COMM_WORLD,1);
+          MPI_Finalize();
+  #endif
+    }
+
+  /*--- TODO: We need to communicate here the prestretched geometry for the halo nodes. ---*/
+
+  /*--- Close the restart file ---*/
+
+    prestretch_file.close();
+
+  /*--- Free memory needed for the transformation ---*/
+
+  delete [] Global2Local;
+
+}
+
+
 void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {
   
   
@@ -1171,9 +1298,11 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
   unsigned long iElem, iVar, jVar;
   unsigned short iNode, iDim, nNodes = 0;
   unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord, val_Sol;
+  su2double val_Coord, val_Sol, val_Ref = 0.0;
   int EL_KIND = 0;
   
+  bool prestretch_fem = config->GetPrestretch();
+
   su2double Ks_ab;
   su2double *Kab = NULL;
   su2double *Kk_ab = NULL;
@@ -1200,8 +1329,14 @@ void CFEM_ElasticitySolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geomet
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
         val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
-        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
         element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+        if (prestretch_fem){
+          val_Ref = node[indexNode[iNode]]->GetPrestretch(iDim);
+          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Ref, iNode, iDim);
+        }
+        else{
+          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        }
       }
     }
     
@@ -2108,7 +2243,49 @@ void CFEM_ElasticitySolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_c
                                          unsigned short val_marker) { }
 
 void CFEM_ElasticitySolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                        unsigned short val_marker) { }
+                                        unsigned short val_marker) {
+
+//su2double *Normal_Vec = NULL;
+//
+//
+//
+//unsigned long iPoint, iVertex;
+//unsigned short iVar, jVar;
+//
+//bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+//
+//for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+//
+//  cout << "iVertex " << iVertex << " is iPoint " << iPoint;
+//
+//  /*--- Get node index ---*/
+//
+//  iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+//
+//  if (geometry->node[iPoint]->GetDomain()) {
+//
+//    Normal_Vec = geometry->vertex[val_marker][iVertex]->GetNormal();
+//
+//    cout << ". The normal is (" << Normal_Vec[0] << "," << Normal_Vec[1] << ")." << endl;
+//
+//
+//  }
+//  else{
+//
+//    if (nDim == 2) {
+//      Residual[0] = 0.0;  Residual[1] = 0.0;
+//    }
+//    else {
+//      Residual[0] = 0.0;  Residual[1] = 0.0;  Residual[2] = 0.0;
+//    }
+//
+//  }
+//
+//}
+
+
+
+}
 
 void CFEM_ElasticitySolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
