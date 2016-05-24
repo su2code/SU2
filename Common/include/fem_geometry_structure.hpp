@@ -157,7 +157,7 @@ public:
   su2double *metricTerms;            /*!< \brief Pointer to the metric terms in the
                                                  integration points of this element. */
   su2double *massMatrix;             /*!< \brief Pointer to the mass matrix (or the inverse) for this element. */
-  su2double *lumpedMassMatrix;       /*!< \brief Pointer to the lumped mass matrix for this element. */ 
+  su2double *lumpedMassMatrix;       /*!< \brief Pointer to the lumped mass matrix for this element. */
 
   /*!
    * \brief Constructor of the class. Nothing to be done
@@ -499,11 +499,10 @@ public:
   void CreateStandardVolumeElements(CConfig *config);
 
  /*!
-  * \brief Function, which computes the metric terms of the
-           surface elements.
-  * \param[in] config - Definition of the particular problem.
+  * \brief Function, which computes the metric terms of the surface
+           elements, both internal faces and physical boundary faces.
   */
-  void MetricTermsSurfaceElements(CConfig *config);
+  void MetricTermsSurfaceElements(void);
 
  /*!
   * \brief Function, which computes the metric terms of the
@@ -778,6 +777,12 @@ private:
                                   const unsigned long         *connTet,
                                   unsigned long               *modConnTria,
                                   unsigned long               *modConnTet);
+
+  /*!
+  * \brief Function, which computes the metric terms for internal
+           matching faces.
+  */
+  void MetricTermsMatchingFaces(void);
 };
 
 #include "fem_geometry_structure.inl"

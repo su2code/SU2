@@ -3833,7 +3833,45 @@ void CMeshFEM_DG::CreateConnectivitiesTriangleAdjacentTetrahedron(
     modConnTria[i] = modConnTet[i];
 }
 
-void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
+void CMeshFEM_DG::MetricTermsMatchingFaces(void) {
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Determine the size of the vector, which stores the metric  ---*/
+  /*---         terms of the internal matching face elements. This is a    ---*/
+  /*---         large, contiguous vector to increase the performance.      ---*/
+  /*---         Each internal face element has a pointer, which point to a ---*/
+  /*---         particular region of the large vector.                     ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Determine the number of metric terms per integration point.
+     This depends on the number of spatial dimensions of the problem. */
+  const unsigned short nMetricPerPoint = nDim == 3 ? 22 : 11;
+
+  /*--- Loop over the internal faces stored on this rank and determine
+        the size of the metric vector for the faces. Note that apart the
+        nMetricPerPoint also the normal gradient of the basis functions
+        of the adjacent elements must be stored. These terms enter the
+        formulation in the Symmetric Interior Penalty (SIP) treatment
+        of the viscous terms. ---*/
+  for(unsigned long i=0; i<matchingFaces.size(); ++i) {
+
+    /*--- Determine the corresponding standard face element, the number of
+          integration points for this element and the number of DOFS of
+          the adjacent elements. ---*/
+  }
+}
+
+void CMeshFEM_DG::MetricTermsSurfaceElements(void) {
+
+  /*--- Compute the metric terms of the internal matching faces. ---*/
+  MetricTermsMatchingFaces();
+
+  /*--- Loop over the physical boundaries and compute the metric
+        terms of the boundary. ---*/
+  //for(unsigned short i=0; i<boundaries.size(); ++i) {
+  //  if( !boundaries[i].periodicBoundary )
+  //    boundaries[i].MetricTermsBoundaryFaces(meshPoints);
+  //}
 
   cout << "CMeshFEM_DG::MetricTermsSurfaceElements. Not implemented yet." << endl;
 #ifndef HAVE_MPI
@@ -3847,10 +3885,10 @@ void CMeshFEM_DG::MetricTermsSurfaceElements(CConfig *config) {
 void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
   /*--------------------------------------------------------------------------*/
-  /*--- Step 1: Determine the sizes of the vector, which store  the metric ---*/
-  /*---         terms and mass matrices of the volume elements. This are   ---*/
+  /*--- Step 1: Determine the sizes of the vector, which store the metric  ---*/
+  /*---         terms and mass matrices of the volume elements. These are  ---*/
   /*---         large, contiguous vectors to increase the performance.     ---*/
-  /*---         Each volume element has a pointers, which point to a       ---*/
+  /*---         Each volume element has pointers, which point to a         ---*/
   /*---         particular region of the large vectors.                    ---*/
   /*--------------------------------------------------------------------------*/
 
@@ -4009,7 +4047,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
       case 3: {
         /* 3D computation. Store the offset between the r and s and r and t derivatives. */
-        const unsigned int offS = 3*nInt, offT = 6*nInt; 
+        const unsigned int offS = 3*nInt, offT = 6*nInt;
 
         /* Loop over the integration points and store the metric terms. */
         for(unsigned short j=0; j<nInt; ++j) {
@@ -4199,7 +4237,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 #if defined (HAVE_LAPACK) || defined(HAVE_MKL)
 
         /* The inverse can be computed using the Lapack routines LAPACKE_dpotrf
-           and LAPACKE_dpotri. As the mass matrix is positive definite, a 
+           and LAPACKE_dpotri. As the mass matrix is positive definite, a
            Cholesky decomposition is used, which is much more efficient than
            a standard inverse. */
         lapack_int errorCode;
@@ -4304,6 +4342,5 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
       for(unsigned short j=0; j<nDOFs; ++j)
         volElem[i].lumpedMassMatrix[j] *= volume;
     }
-
   }
 }
