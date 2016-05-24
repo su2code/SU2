@@ -418,7 +418,7 @@ void Geometrical_Preprocessing_DGFEM(CGeometry ***geometry, CConfig **config, un
 
     /*--- Compute the metric terms of the surface elements. ---*/
     if (rank == MASTER_NODE) cout << "Computing metric terms surface elements." << endl;
-    DGMesh->MetricTermsSurfaceElements(config[iZone]);
+    DGMesh->MetricTermsSurfaceElements();
   }
 
   /*--- Loop to create the coarser grid levels. ---*/
