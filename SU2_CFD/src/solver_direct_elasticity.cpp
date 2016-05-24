@@ -1445,9 +1445,11 @@ void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver 
   unsigned long iElem, iVar;
   unsigned short iNode, iDim, nNodes = 0;
   unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord, val_Sol;
+  su2double val_Coord, val_Sol, val_Ref = 0.0;
   int EL_KIND = 0;
   
+  bool prestretch_fem = config->GetPrestretch();
+
   su2double *Ta = NULL;
   unsigned short NelNodes;
   
@@ -1466,11 +1468,23 @@ void CFEM_ElasticitySolver::Compute_NodalStressRes(CGeometry *geometry, CSolver 
     
     for (iNode = 0; iNode < nNodes; iNode++) {
       indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+//        val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+//        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+//        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+//      }
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
         val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
-        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
         element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+        if (prestretch_fem){
+          val_Ref = node[indexNode[iNode]]->GetPrestretch(iDim);
+          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Ref, iNode, iDim);
+        }
+        else{
+          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        }
       }
     }
     
@@ -1502,9 +1516,11 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
   unsigned short iNode, iDim, iStress;
   unsigned short nNodes = 0, nStress;
   unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord, val_Sol;
+  su2double val_Coord, val_Sol, val_Ref = 0.0;
   int EL_KIND = 0;
   
+  bool prestretch_fem = config->GetPrestretch();
+
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
   
   if (nDim == 2) nStress = 3;
@@ -1537,11 +1553,23 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
     
     for (iNode = 0; iNode < nNodes; iNode++) {
       indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+//      for (iDim = 0; iDim < nDim; iDim++) {
+//        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+//        val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+//        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+//        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+//      }
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
         val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
-        element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
         element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
+        if (prestretch_fem){
+          val_Ref = node[indexNode[iNode]]->GetPrestretch(iDim);
+          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Ref, iNode, iDim);
+        }
+        else{
+          element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        }
       }
     }
     
