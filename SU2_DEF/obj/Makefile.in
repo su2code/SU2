@@ -176,6 +176,10 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BLAS_CXX = @BLAS_CXX@
+BLAS_LD = @BLAS_LD@
+CBLAS_CXX = @CBLAS_CXX@
+CBLAS_LD = @CBLAS_LD@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
@@ -315,6 +319,12 @@ ___bin_SU2_DEF_SOURCES = \
 # if BUILD_CGNS
 # endif
 
+# if BUILD_BLAS
+# endif
+
+# if BUILD_CBLAS
+# endif
+
 # if BUILD_LAPACK
 # endif
 
@@ -335,8 +345,9 @@ ___bin_SU2_DEF_SOURCES = \
 
 # if BUILD_GELITE
 ___bin_SU2_DEF_CXXFLAGS = @su2_externals_INCLUDES@ @CGNS_CXX@ \
-	@LAPACK_CXX@ @HDF5_CXX@ @SZIP_CXX@ @ZLIB_CXX@ @MUTATIONPP_CXX@ \
-	@JSONCPP_CXX@ @GELITE_CXX@ $(am__empty)
+	@BLAS_CXX@ @CBLAS_CXX@ @LAPACK_CXX@ @HDF5_CXX@ @SZIP_CXX@ \
+	@ZLIB_CXX@ @MUTATIONPP_CXX@ @JSONCPP_CXX@ @GELITE_CXX@ \
+	$(am__empty)
 ___bin_SU2_DEF_LDADD = ../../Common/lib/libSU2.a \
 	../../SU2_CFD/src/___bin_SU2_CFD-output_structure.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-output_cgns.o \
@@ -346,9 +357,9 @@ ___bin_SU2_DEF_LDADD = ../../Common/lib/libSU2.a \
 	../../SU2_CFD/src/___bin_SU2_CFD-output_paraview.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-solver_structure.o \
 	../../SU2_CFD/src/___bin_SU2_CFD-variable_structure.o \
-	@su2_externals_LIBS@ @CGNS_LD@ @LAPACK_LD@ @HDF5_LD@ @SZIP_LD@ \
-	@ZLIB_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ @GELITE_LD@ \
-	$(am__empty)
+	@su2_externals_LIBS@ @CGNS_LD@ @BLAS_LD@ @CBLAS_LD@ \
+	@LAPACK_LD@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ @MUTATIONPP_LD@ \
+	@JSONCPP_LD@ @GELITE_LD@ $(am__empty)
 all: all-am
 
 .SUFFIXES:

@@ -61,6 +61,16 @@ ___bin_SU2_SOL_CXXFLAGS += @CGNS_CXX@
 ___bin_SU2_SOL_LDADD += @CGNS_LD@
 # endif
 
+# if BUILD_BLAS
+___bin_SU2_SOL_CXXFLAGS += @BLAS_CXX@
+___bin_SU2_SOL_LDADD += @BLAS_LD@
+# endif
+
+# if BUILD_CBLAS
+___bin_SU2_SOL_CXXFLAGS += @CBLAS_CXX@
+___bin_SU2_SOL_LDADD += @CBLAS_LD@
+# endif
+
 # if BUILD_LAPACK
 ___bin_SU2_SOL_CXXFLAGS += @LAPACK_CXX@
 ___bin_SU2_SOL_LDADD += @LAPACK_LD@

@@ -576,6 +576,10 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BLAS_CXX = @BLAS_CXX@
+BLAS_LD = @BLAS_LD@
+CBLAS_CXX = @CBLAS_CXX@
+CBLAS_LD = @CBLAS_LD@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
@@ -793,6 +797,12 @@ su2_cfd_sources = \
 # if BUILD_CGNS
 # endif
 
+# if BUILD_BLAS
+# endif
+
+# if BUILD_CBLAS
+# endif
+
 # if BUILD_LAPACK
 # endif
 
@@ -812,12 +822,12 @@ su2_cfd_sources = \
 # endif
 
 # if BUILD_GELITE
-su2_cfd_cxx_flags = @su2_externals_INCLUDES@ @CGNS_CXX@ @LAPACK_CXX@ \
-	@MUTATIONPP_CXX@ @JSONCPP_CXX@ @HDF5_CXX@ @SZIP_CXX@ \
-	@ZLIB_CXX@ @GELITE_CXX@ $(am__empty)
-su2_cfd_ldadd = @su2_externals_LIBS@ @CGNS_LD@ @LAPACK_LD@ \
-	@MUTATIONPP_LD@ @JSONCPP_LD@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ \
-	@GELITE_LD@ $(am__empty)
+su2_cfd_cxx_flags = @su2_externals_INCLUDES@ @CGNS_CXX@ @BLAS_CXX@ \
+	@CBLAS_CXX@ @LAPACK_CXX@ @MUTATIONPP_CXX@ @JSONCPP_CXX@ \
+	@HDF5_CXX@ @SZIP_CXX@ @ZLIB_CXX@ @GELITE_CXX@ $(am__empty)
+su2_cfd_ldadd = @su2_externals_LIBS@ @CGNS_LD@ @BLAS_LD@ @CBLAS_LD@ \
+	@LAPACK_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ @HDF5_LD@ @SZIP_LD@ \
+	@ZLIB_LD@ @GELITE_LD@ $(am__empty)
 # endif
 @BUILD_NORMAL_TRUE@___bin_SU2_CFD_SOURCES = $(su2_cfd_sources)
 @BUILD_NORMAL_TRUE@___bin_SU2_CFD_CXXFLAGS = ${su2_cfd_cxx_flags}
