@@ -760,8 +760,8 @@ Build Configuration Summary:
     ZLIB support:         $have_ZLIB
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	    $have_Jsoncpp
-    BLAS support:         $have_LAPACK
-    CBLAS support:        $have_LAPACK
+    BLAS support:         $have_BLAS
+    CBLAS support:        $have_CBLAS
     LAPACKE support:      $have_LAPACK
     GELite support:       $have_GELITE
     Datatype support:
