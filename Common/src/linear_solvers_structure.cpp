@@ -337,7 +337,7 @@ int rank = 0;
 
   /*---  Check the subspace size ---*/
   
-  if (m > 1000) {
+  if (m > 2000) {
     if (rank == MASTER_NODE) cerr << "CSysSolve::FGMRES: illegal value for subspace size (too high), m = " << m << endl;
 #ifndef HAVE_MPI
     exit(EXIT_FAILURE);
