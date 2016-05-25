@@ -1691,7 +1691,7 @@ CBOUND2D::~CBOUND2D(void) {
 void CBOUND2D::ComputeGrad_Linear(void){
 
   su2double Xi, Eta;
-  su2double Jacobian[2][2], dNiXj[4][2];
+  su2double Jacobian[2][2], dNiXj[2][1];
   su2double detJac, GradNi_Xj;
   su2double ad[2][2];
   unsigned short iNode, iDim, jDim, iGauss;
@@ -1699,14 +1699,11 @@ void CBOUND2D::ComputeGrad_Linear(void){
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
 
     Xi = GaussCoord[iGauss][0];
-    Eta = GaussCoord[iGauss][1];
 
-    /*--- dN/d xi, dN/d eta ---*/
+    /*--- dN/d xi ---*/
 
-    dNiXj[0][0] = -0.25*(1.0-Eta); dNiXj[0][1] = -0.25*(1.0-Xi);
-    dNiXj[1][0] =  0.25*(1.0-Eta); dNiXj[1][1] = -0.25*(1.0+Xi);
-    dNiXj[2][0] =  0.25*(1.0+Eta); dNiXj[2][1] =  0.25*(1.0+Xi);
-    dNiXj[3][0] = -0.25*(1.0+Eta); dNiXj[3][1] =  0.25*(1.0-Xi);
+    dNiXj[0][0] = -0.5;
+    dNiXj[1][0] =  0.5;
 
     /*--- Jacobian transformation ---*/
     /*--- This does dX/dXi transpose ---*/
@@ -1768,14 +1765,11 @@ void CBOUND2D::ComputeGrad_NonLinear(void){
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
 
     Xi = GaussCoord[iGauss][0];
-    Eta = GaussCoord[iGauss][1];
 
-    /*--- dN/d xi, dN/d eta ---*/
+    /*--- dN/d xi ---*/
 
-    dNiXj[0][0] = -0.25*(1.0-Eta); dNiXj[0][1] = -0.25*(1.0-Xi);
-    dNiXj[1][0] =  0.25*(1.0-Eta); dNiXj[1][1] = -0.25*(1.0+Xi);
-    dNiXj[2][0] =  0.25*(1.0+Eta); dNiXj[2][1] =  0.25*(1.0+Xi);
-    dNiXj[3][0] = -0.25*(1.0+Eta); dNiXj[3][1] =  0.25*(1.0-Xi);
+    dNiXj[0][0] = -0.5;
+    dNiXj[1][0] =  0.5;
 
     /*--- Jacobian transformation ---*/
     /*--- This does dX/dXi transpose ---*/

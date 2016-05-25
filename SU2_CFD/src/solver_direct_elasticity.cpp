@@ -2115,34 +2115,373 @@ void CFEM_ElasticitySolver::BC_Normal_Displacement(CGeometry *geometry, CSolver 
                                                    unsigned short val_marker) { }
 
 void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                           unsigned short val_marker) { }
+    unsigned short val_marker) {
+
+  /*--- Retrieve the normal pressure and the application conditions for the considered boundary ---*/
+
+  su2double NormalLoad = config->GetLoad_Value(config->GetMarker_All_TagBound(val_marker));
+  su2double TotalLoad = 0.0;
+  bool Sigmoid_Load = config->GetSigmoid_Load();
+  su2double Sigmoid_Time = config->GetSigmoid_Time();
+  su2double Sigmoid_K = config->GetSigmoid_K();
+  su2double SigAux = 0.0;
+
+  su2double CurrentTime=config->GetCurrent_DynTime();
+  su2double ModAmpl, NonModAmpl;
+
+  bool Ramp_Load = config->GetRamp_Load();
+  su2double Ramp_Time = config->GetRamp_Time();
+
+  if (Ramp_Load){
+    ModAmpl=NormalLoad*CurrentTime/Ramp_Time;
+    NonModAmpl=NormalLoad;
+    TotalLoad=min(ModAmpl,NonModAmpl);
+  }
+  else if (Sigmoid_Load){
+    SigAux = CurrentTime/ Sigmoid_Time;
+    ModAmpl = (1 / (1+exp(-1*Sigmoid_K*(SigAux - 0.5)) ) );
+    ModAmpl = max(ModAmpl,0.0);
+    ModAmpl = min(ModAmpl,1.0);
+    TotalLoad=ModAmpl*NormalLoad;
+  }
+  else{
+    TotalLoad=NormalLoad;
+  }
+
+  /*--- Do only if there is a load applied.
+   *--- This reduces the computational cost for cases in which we want boundaries with no load.
+   */
+
+  if (TotalLoad != 0.0){
+
+    unsigned long iElem;
+    unsigned short nNodes;
+    su2double Length_Elem_ref = 0.0,  Area_Elem_ref = 0.0;
+    su2double Length_Elem_curr = 0.0, Area_Elem_curr = 0.0;
+    int EL_KIND = 0;
+    unsigned long indexNode[4]   = {0,0,0,0};
+    unsigned long indexVertex[4] = {0,0,0,0};
+    su2double nodeCoord_ref[4][3], nodeCoord_curr[4][3];
+    su2double *nodal_normal, nodal_normal_unit[3];
+    su2double normal_ref_unit[3], normal_curr_unit[3];
+    su2double Norm, dot_Prod;
+    su2double val_Coord, val_Sol;
+    unsigned short iNode, iDim;
+    unsigned long iVertex, iPoint;
+    su2double a_ref[3], b_ref[3], AC_ref[3], BD_ref[3];
+    su2double a_curr[3], b_curr[3], AC_curr[3], BD_curr[3];
+
+    /*--- Determine whether the load conditions are applied in the reference or in the current configuration ---*/
+
+    bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
+    bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS); // Nonlinear analysis.
+
+    for (iNode = 0; iNode < 4; iNode++){
+      for (iDim = 0; iDim < 3; iDim++){
+        nodeCoord_ref[iNode][iDim]  = 0.0;
+        nodeCoord_curr[iNode][iDim] = 0.0;
+      }
+    }
+
+    ofstream myfile;
+    myfile.open ("pressure_load.txt", std::ios_base::app);
+
+//    myfile << "Index node[0], Index node[1],  Coord Ref 1 [0], Coord Ref 1 [1], Coord Ref 2 [0], Coord Ref 2 [1],";
+//    myfile << "Coord Curr 1 [0], Coord Curr 1 [1], Coord Curr 2 [0], Coord Curr 2 [1], indexVertex[0], indexVertex[1]";
+//    myfile << "nodal_normal_unit [0], nodal_normal_unit [1], normal_curr_unit[0], normal_curr_unit[1], Pressure[0], Pressure[1]" << endl;
+
+    for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
+
+      /*--- Identify the kind of boundary element ---*/
+      if (geometry->bound[val_marker][iElem]->GetVTK_Type() == LINE)           nNodes = 2;
+      if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE)       nNodes = 3;
+      if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL)  nNodes = 4;
+
+      /*--- Retrieve the boundary reference and current coordinates ---*/
+      for (iNode = 0; iNode < nNodes; iNode++) {
+        indexNode[iNode] = geometry->bound[val_marker][iElem]->GetNode(iNode);
+        for (iDim = 0; iDim < nDim; iDim++) {
+          val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+          val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
+          /*--- Assign values to the container ---*/
+          nodeCoord_ref[iNode][iDim]  = val_Coord;
+          nodeCoord_curr[iNode][iDim] = val_Sol;
+        }
+      }
+
+      if (iElem == 10) myfile  << indexNode[0] << "," << indexNode[1] << ",";
+      if (iElem == 10) myfile << nodeCoord_ref[0][0] << "," << nodeCoord_ref[0][1] << "," << nodeCoord_ref[1][0] << "," << nodeCoord_ref[1][1] << ",";
+      if (iElem == 10) myfile << nodeCoord_curr[0][0] << "," << nodeCoord_curr[0][1] << "," << nodeCoord_curr[1][0] << "," << nodeCoord_curr[1][1] << ",";
+
+
+      /*--- We need the indices of the vertices, which are "Dual Grid Info" ---*/
+      for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+        iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+        for (iNode = 0; iNode < nNodes; iNode++) {
+          if (iPoint == indexNode[iNode]) indexVertex[iNode] = iVertex;
+        }
+      }
+
+      if (iElem == 10) myfile << indexVertex[0] << "," << indexVertex[1] << ",";
+
+      /*--- Retrieve the reference normal for one of the points. They go INSIDE the structural domain. ---*/
+      nodal_normal = geometry->vertex[val_marker][indexVertex[0]]->GetNormal();
+      Norm = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++){
+        Norm += nodal_normal[iDim]*nodal_normal[iDim];
+      }
+      Norm = sqrt(Norm);
+      for (iDim = 0; iDim < nDim; iDim++){
+        nodal_normal_unit[iDim] = nodal_normal[iDim] / Norm;
+      }
+
+      if (iElem == 10) myfile << nodal_normal_unit[0] << "," << nodal_normal_unit[1] << ",";
+
+      /*--- Compute area (3D), and length of the surfaces (2D), and the unitary normal vector in current configuration ---*/
+
+      if (nDim == 2) {
+
+        /*-- Compute the vector a in reference and current configurations ---*/
+        for (iDim = 0; iDim < nDim; iDim++) {
+          a_ref[iDim]  = nodeCoord_ref[0][iDim] -nodeCoord_ref[1][iDim];
+          a_curr[iDim] = nodeCoord_curr[0][iDim]-nodeCoord_curr[1][iDim];
+        }
+
+        /*-- Compute the length of the boundary element in reference and current configurations ---*/
+        Length_Elem_curr = sqrt(a_curr[0]*a_curr[0]+a_curr[1]*a_curr[1]);
+        Length_Elem_ref  = sqrt(a_ref[0]*a_ref[0]+a_ref[1]*a_ref[1]);
+
+        /*-- Compute the length of the boundary element in reference and current configurations ---*/
+        normal_ref_unit[0] =   a_ref[1] /Length_Elem_ref;
+        normal_ref_unit[1] = -(a_ref[0])/Length_Elem_ref;
+
+        normal_curr_unit[0] =   a_curr[1] /Length_Elem_curr;
+        normal_curr_unit[1] = -(a_curr[0])/Length_Elem_curr;
+
+        /*-- Dot product to check the element orientation in the reference configuration ---*/
+        dot_Prod = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++){
+          dot_Prod += normal_ref_unit[iDim] * nodal_normal_unit[iDim];
+        }
+
+        /*--- If dot_Prod > 0, the normal goes inside the structural domain. ---*/
+        /*--- If dot_Prod < 0, the normal goes outside the structural domain. ---*/
+        /*--- We adopt the criteria of the normal going inside the domain, so if dot_Prod < 1, we change the orientation. ---*/
+        if (dot_Prod < 0){
+          for (iDim = 0; iDim < nDim; iDim++){
+            normal_ref_unit[iDim]  = -1.0*normal_ref_unit[iDim];
+            normal_curr_unit[iDim] = -1.0*normal_curr_unit[iDim];
+          }
+        }
+
+        if (iElem == 10) myfile << normal_curr_unit[0] << "," << normal_curr_unit[1] << ",";
+
+        if (linear_analysis){
+          Residual[0] = (1.0/2.0) * TotalLoad * Length_Elem_ref * normal_ref_unit[0];
+          Residual[1] = (1.0/2.0) * TotalLoad * Length_Elem_ref * normal_ref_unit[1];
+
+          node[indexNode[0]]->Add_SurfaceLoad_Res(Residual);
+          node[indexNode[1]]->Add_SurfaceLoad_Res(Residual);
+        }
+        else if (nonlinear_analysis){
+          Residual[0] = (1.0/2.0) * TotalLoad * Length_Elem_curr * normal_curr_unit[0];
+          Residual[1] = (1.0/2.0) * TotalLoad * Length_Elem_curr * normal_curr_unit[1];
+
+          node[indexNode[0]]->Add_SurfaceLoad_Res(Residual);
+          node[indexNode[1]]->Add_SurfaceLoad_Res(Residual);
+        }
+
+        if (iElem == 10) myfile << Residual[0] << "," << Residual[1] << endl;
+
+      }
+
+      if (nDim == 3) {
+
+        if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE){
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            a_ref[iDim] = nodeCoord_ref[1][iDim]-nodeCoord_ref[0][iDim];
+            b_ref[iDim] = nodeCoord_ref[2][iDim]-nodeCoord_ref[0][iDim];
+
+            a_curr[iDim] = nodeCoord_curr[1][iDim]-nodeCoord_curr[0][iDim];
+            b_curr[iDim] = nodeCoord_curr[2][iDim]-nodeCoord_curr[0][iDim];
+          }
+
+          su2double Ni=0, Nj=0, Nk=0;
+
+          /*--- Reference configuration ---*/
+          Ni = a_ref[1]*b_ref[2] - a_ref[2]*b_ref[1];
+          Nj = a_ref[2]*b_ref[0] - a_ref[0]*b_ref[2];
+          Nk = a_ref[0]*b_ref[1] - a_ref[1]*b_ref[0];
+
+          Area_Elem_ref = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
+
+          normal_ref_unit[0] = Ni / Area_Elem_ref;
+          normal_ref_unit[1] = Nj / Area_Elem_ref;
+          normal_ref_unit[2] = Nk / Area_Elem_ref;
+
+          /*--- Current configuration ---*/
+          Ni = a_curr[1]*b_curr[2] - a_curr[2]*b_curr[1];
+          Nj = a_curr[2]*b_curr[0] - a_curr[0]*b_curr[2];
+          Nk = a_curr[0]*b_curr[1] - a_curr[1]*b_curr[0];
+
+          Area_Elem_curr = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
+
+          normal_curr_unit[0] = Ni / Area_Elem_curr;
+          normal_curr_unit[1] = Nj / Area_Elem_curr;
+          normal_curr_unit[2] = Nk / Area_Elem_curr;
+
+          /*-- Dot product to check the element orientation in the reference configuration ---*/
+          dot_Prod = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++){
+            dot_Prod += normal_ref_unit[iDim] * nodal_normal_unit[iDim];
+          }
+
+          /*--- If dot_Prod > 0, the normal goes inside the structural domain. ---*/
+          /*--- If dot_Prod < 0, the normal goes outside the structural domain. ---*/
+          /*--- We adopt the criteria of the normal going inside the domain, so if dot_Prod < 1, we change the orientation. ---*/
+          if (dot_Prod < 0){
+            for (iDim = 0; iDim < nDim; iDim++){
+              normal_ref_unit[iDim]  = -1.0*normal_ref_unit[iDim];
+              normal_curr_unit[iDim] = -1.0*normal_curr_unit[iDim];
+            }
+          }
+
+          if (linear_analysis){
+            Residual[0] = (1.0/3.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[0];
+            Residual[1] = (1.0/3.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[1];
+            Residual[2] = (1.0/3.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[2];
+
+            node[indexNode[0]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[1]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[2]]->Add_SurfaceLoad_Res(Residual);
+          }
+          else if (nonlinear_analysis){
+            Residual[0] = (1.0/3.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[0];
+            Residual[1] = (1.0/3.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[1];
+            Residual[2] = (1.0/3.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[2];
+
+            node[indexNode[0]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[1]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[2]]->Add_SurfaceLoad_Res(Residual);
+          }
+
+        }
+
+        else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL){
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            AC_ref[iDim] = nodeCoord_ref[2][iDim]-nodeCoord_ref[0][iDim];
+            BD_ref[iDim] = nodeCoord_ref[3][iDim]-nodeCoord_ref[1][iDim];
+
+            AC_curr[iDim] = nodeCoord_curr[2][iDim]-nodeCoord_curr[0][iDim];
+            BD_curr[iDim] = nodeCoord_curr[3][iDim]-nodeCoord_curr[1][iDim];
+          }
+
+          su2double Ni=0, Nj=0, Nk=0;
+
+          /*--- Reference configuration ---*/
+          Ni=AC_ref[1]*BD_ref[2]-AC_ref[2]*BD_ref[1];
+          Nj=-AC_ref[0]*BD_ref[2]+AC_ref[2]*BD_ref[0];
+          Nk=AC_ref[0]*BD_ref[1]-AC_ref[1]*BD_ref[0];
+
+          Area_Elem_ref = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
+
+          normal_ref_unit[0] = Ni / Area_Elem_ref;
+          normal_ref_unit[1] = Nj / Area_Elem_ref;
+          normal_ref_unit[2] = Nk / Area_Elem_ref;
+
+          /*--- Current configuration ---*/
+          Ni=AC_curr[1]*BD_curr[2]-AC_curr[2]*BD_curr[1];
+          Nj=-AC_curr[0]*BD_curr[2]+AC_curr[2]*BD_curr[0];
+          Nk=AC_curr[0]*BD_curr[1]-AC_curr[1]*BD_curr[0];
+
+          Area_Elem_curr = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
+
+          normal_curr_unit[0] = Ni / Area_Elem_curr;
+          normal_curr_unit[1] = Nj / Area_Elem_curr;
+          normal_curr_unit[2] = Nk / Area_Elem_curr;
+
+          /*-- Dot product to check the element orientation in the reference configuration ---*/
+          dot_Prod = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++){
+            dot_Prod += normal_ref_unit[iDim] * nodal_normal_unit[iDim];
+          }
+
+          /*--- If dot_Prod > 0, the normal goes inside the structural domain. ---*/
+          /*--- If dot_Prod < 0, the normal goes outside the structural domain. ---*/
+          /*--- We adopt the criteria of the normal going inside the domain, so if dot_Prod < 1, we change the orientation. ---*/
+          if (dot_Prod < 0){
+            for (iDim = 0; iDim < nDim; iDim++){
+              normal_ref_unit[iDim]  = -1.0*normal_ref_unit[iDim];
+              normal_curr_unit[iDim] = -1.0*normal_curr_unit[iDim];
+            }
+          }
+
+          if (linear_analysis){
+            Residual[0] = (1.0/4.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[0];
+            Residual[1] = (1.0/4.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[1];
+            Residual[2] = (1.0/4.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[2];
+            Residual[3] = (1.0/4.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[3];
+
+            node[indexNode[0]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[1]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[2]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[3]]->Add_SurfaceLoad_Res(Residual);
+          }
+          else if (nonlinear_analysis){
+            Residual[0] = (1.0/4.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[0];
+            Residual[1] = (1.0/4.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[1];
+            Residual[2] = (1.0/4.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[2];
+            Residual[3] = (1.0/4.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[3];
+
+            node[indexNode[0]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[1]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[2]]->Add_SurfaceLoad_Res(Residual);
+            node[indexNode[3]]->Add_SurfaceLoad_Res(Residual);
+          }
+
+        }
+
+      }
+
+
+
+
+    }
+
+    myfile.close();
+
+  }
+
+}
 
 void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                                         unsigned short val_marker) {
-  
+
   su2double a[3], b[3], AC[3], BD[3];
   unsigned long iElem, Point_0 = 0, Point_1 = 0, Point_2 = 0, Point_3=0;
   su2double *Coord_0 = NULL, *Coord_1= NULL, *Coord_2= NULL, *Coord_3= NULL;
   su2double Length_Elem = 0.0, Area_Elem = 0.0;
   unsigned short iDim;
-  
+
   su2double LoadDirVal = config->GetLoad_Dir_Value(config->GetMarker_All_TagBound(val_marker));
   su2double LoadDirMult = config->GetLoad_Dir_Multiplier(config->GetMarker_All_TagBound(val_marker));
   su2double *Load_Dir_Local= config->GetLoad_Dir(config->GetMarker_All_TagBound(val_marker));
-  
+
   su2double TotalLoad;
-  
+
   bool Sigmoid_Load = config->GetSigmoid_Load();
   su2double Sigmoid_Time = config->GetSigmoid_Time();
   su2double Sigmoid_K = config->GetSigmoid_K();
   su2double SigAux = 0.0;
-  
+
   su2double CurrentTime=config->GetCurrent_DynTime();
   su2double ModAmpl, NonModAmpl;
-  
+
   bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
-  
+
   if (Ramp_Load){
     ModAmpl=LoadDirVal*LoadDirMult*CurrentTime/Ramp_Time;
     NonModAmpl=LoadDirVal*LoadDirMult;
@@ -2158,162 +2497,120 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
   else{
     TotalLoad=LoadDirVal*LoadDirMult;
   }
-  
+
   /*--- Compute the norm of the vector that was passed in the config file ---*/
   su2double Norm = 1.0;
   if (nDim==2) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]);
   if (nDim==3) Norm=sqrt(Load_Dir_Local[0]*Load_Dir_Local[0]+Load_Dir_Local[1]*Load_Dir_Local[1]+Load_Dir_Local[2]*Load_Dir_Local[2]);
-  
+
   for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
-    
+
     Point_0 = geometry->bound[val_marker][iElem]->GetNode(0);     Coord_0 = geometry->node[Point_0]->GetCoord();
     Point_1 = geometry->bound[val_marker][iElem]->GetNode(1);     Coord_1 = geometry->node[Point_1]->GetCoord();
     if (nDim == 3) {
-      
+
       Point_2 = geometry->bound[val_marker][iElem]->GetNode(2);	Coord_2 = geometry->node[Point_2]->GetCoord();
       if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL){
         Point_3 = geometry->bound[val_marker][iElem]->GetNode(3);	Coord_3 = geometry->node[Point_3]->GetCoord();
       }
-      
+
     }
-    
+
     /*--- Compute area (3D), and length of the surfaces (2D) ---*/
-    
+
     if (nDim == 2) {
-      
+
       for (iDim = 0; iDim < nDim; iDim++) a[iDim] = Coord_0[iDim]-Coord_1[iDim];
-      
+
       Length_Elem = sqrt(a[0]*a[0]+a[1]*a[1]);
       //			Normal_Elem[0] =   a[1];
       //			Normal_Elem[1] = -(a[0]);
-      
+
     }
-    
+
     if (nDim == 3) {
-      
+
       if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE){
-        
+
         for (iDim = 0; iDim < nDim; iDim++) {
           a[iDim] = Coord_1[iDim]-Coord_0[iDim];
           b[iDim] = Coord_2[iDim]-Coord_0[iDim];
         }
-        
+
         su2double Ni=0 , Nj=0, Nk=0;
-        
+
         Ni=a[1]*b[2]-a[2]*b[1];
         Nj=-a[0]*b[2]+a[2]*b[0];
         Nk=a[0]*b[1]-a[1]*b[0];
-        
+
         Area_Elem = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
-        
+
       }
-      
+
       else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL){
-        
+
         for (iDim = 0; iDim < nDim; iDim++) {
           AC[iDim] = Coord_2[iDim]-Coord_0[iDim];
           BD[iDim] = Coord_3[iDim]-Coord_1[iDim];
         }
-        
+
         su2double Ni=0 , Nj=0, Nk=0;
-        
+
         Ni=AC[1]*BD[2]-AC[2]*BD[1];
         Nj=-AC[0]*BD[2]+AC[2]*BD[0];
         Nk=AC[0]*BD[1]-AC[1]*BD[0];
-        
+
         Area_Elem = 0.5*sqrt(Ni*Ni+Nj*Nj+Nk*Nk);
-        
+
       }
     }
-    
+
     if (nDim == 2) {
-      
+
       Residual[0] = (1.0/2.0)*Length_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
       Residual[1] = (1.0/2.0)*Length_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
-      
+
       node[Point_0]->Add_SurfaceLoad_Res(Residual);
       node[Point_1]->Add_SurfaceLoad_Res(Residual);
-      
+
     }
-    
+
     else {
       if (geometry->bound[val_marker][iElem]->GetVTK_Type() == TRIANGLE){
-        
+
         Residual[0] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
         Residual[1] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
         Residual[2] = (1.0/3.0)*Area_Elem*TotalLoad*Load_Dir_Local[2]/Norm;
-        
+
         node[Point_0]->Add_SurfaceLoad_Res(Residual);
         node[Point_1]->Add_SurfaceLoad_Res(Residual);
         node[Point_2]->Add_SurfaceLoad_Res(Residual);
-        
+
       }
       else if (geometry->bound[val_marker][iElem]->GetVTK_Type() == QUADRILATERAL){
-        
+
         Residual[0] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[0]/Norm;
         Residual[1] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[1]/Norm;
         Residual[2] = (1.0/4.0)*Area_Elem*TotalLoad*Load_Dir_Local[2]/Norm;
-        
+
         node[Point_0]->Add_SurfaceLoad_Res(Residual);
         node[Point_1]->Add_SurfaceLoad_Res(Residual);
         node[Point_2]->Add_SurfaceLoad_Res(Residual);
         node[Point_3]->Add_SurfaceLoad_Res(Residual);
-        
+
       }
-      
+
     }
-    
+
   }
-  
+
 }
 
 void CFEM_ElasticitySolver::BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                                          unsigned short val_marker) { }
 
 void CFEM_ElasticitySolver::BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                                        unsigned short val_marker) {
-
-//su2double *Normal_Vec = NULL;
-//
-//
-//
-//unsigned long iPoint, iVertex;
-//unsigned short iVar, jVar;
-//
-//bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
-//
-//for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-//
-//  cout << "iVertex " << iVertex << " is iPoint " << iPoint;
-//
-//  /*--- Get node index ---*/
-//
-//  iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-//
-//  if (geometry->node[iPoint]->GetDomain()) {
-//
-//    Normal_Vec = geometry->vertex[val_marker][iVertex]->GetNormal();
-//
-//    cout << ". The normal is (" << Normal_Vec[0] << "," << Normal_Vec[1] << ")." << endl;
-//
-//
-//  }
-//  else{
-//
-//    if (nDim == 2) {
-//      Residual[0] = 0.0;  Residual[1] = 0.0;
-//    }
-//    else {
-//      Residual[0] = 0.0;  Residual[1] = 0.0;  Residual[2] = 0.0;
-//    }
-//
-//  }
-//
-//}
-
-
-
-}
+                                        unsigned short val_marker) { }
 
 void CFEM_ElasticitySolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
