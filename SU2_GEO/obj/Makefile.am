@@ -52,6 +52,16 @@ ___bin_SU2_GEO_CXXFLAGS += @CGNS_CXX@
 ___bin_SU2_GEO_LDADD += @CGNS_LD@
 # endif
 
+# if BUILD_BLAS
+___bin_SU2_GEO_CXXFLAGS += @BLAS_CXX@
+___bin_SU2_GEO_LDADD += @BLAS_LD@
+# endif
+
+# if BUILD_CBLAS
+___bin_SU2_GEO_CXXFLAGS += @CBLAS_CXX@
+___bin_SU2_GEO_LDADD += @CBLAS_LD@
+# endif
+
 # if BUILD_LAPACK
 ___bin_SU2_GEO_CXXFLAGS += @LAPACK_CXX@
 ___bin_SU2_GEO_LDADD += @LAPACK_LD@
