@@ -143,6 +143,16 @@ su2_cfd_cxx_flags += @CGNS_CXX@
 su2_cfd_ldadd += @CGNS_LD@
 # endif
 
+# if BUILD_BLAS
+su2_cfd_cxx_flags += @BLAS_CXX@
+su2_cfd_ldadd += @BLAS_LD@
+# endif
+
+# if BUILD_CBLAS
+su2_cfd_cxx_flags += @CBLAS_CXX@
+su2_cfd_ldadd += @CBLAS_LD@
+# endif
+
 # if BUILD_LAPACK
 su2_cfd_cxx_flags += @LAPACK_CXX@
 su2_cfd_ldadd += @LAPACK_LD@

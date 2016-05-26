@@ -106,6 +106,15 @@ AC_ARG_WITH(Jsoncpp-lib,
 AC_ARG_WITH(Jsoncpp-include,
    	AS_HELP_STRING([--with-Jsoncpp-include[=ARG]], [Jsoncpp include directory, ARG = path to json.h]),
 	[with_Jsoncpp_include=$withval], [with_Jsoncpp_include="no"])
+AC_ARG_WITH(BLAS-lib,
+    AS_HELP_STRING([--with-BLAS-lib[=ARG]], [BLAS library directory, ARG = path to libblas.a]),
+    [with_BLAS_lib=$withval], [with_BLAS_lib="no"])
+AC_ARG_WITH(CBLAS-lib,
+    AS_HELP_STRING([--with-CBLAS-lib[=ARG]], [CBLAS library directory, ARG = path to libcblas.a]),
+    [with_CBLAS_lib=$withval], [with_CBLAS_lib="no"])
+AC_ARG_WITH(CBLAS-include,
+    AS_HELP_STRING([--with-CBLAS-include[=ARG]], [CBLAS include directory, ARG = path to cblas.h]),
+    [with_CBLAS_include=$withval], [with_CBLAS_include="no"])
 AC_ARG_WITH(LAPACK-lib,
     AS_HELP_STRING([--with-LAPACK-lib[=ARG]], [LAPACK library directory, ARG = path to liblapacke.a]),
     [with_LAPACK_lib=$withval], [with_LAPACK_lib="no"])
@@ -463,6 +472,78 @@ AC_SUBST([JSONCPP_LD])
 ##########################
 
 # check for lib
+BLASlib=libblas.a
+have_BLAS="no"
+
+if test "$with_BLAS_lib" != "no"
+then
+AC_CHECK_FILE([$with_BLAS_lib/$BLASlib],[have_BLAS="yes"],[have_BLAS="no"])
+if test "$have_BLAS" == "no"
+then
+AC_MSG_ERROR([BLAS requested but library file not found.])
+fi
+fi
+
+if test "$have_BLAS" != "no"
+then
+AM_CONDITIONAL(BUILD_BLAS,true)
+BLAS_CXX="-DHAVE_BLAS"
+BLAS_LD="$with_BLAS_lib"/$BLASlib
+else
+AM_CONDITIONAL(BUILD_BLAS,false)
+BLAS_CXX=
+BLAS_LD=
+fi
+AC_SUBST([BLAS_CXX])
+AC_SUBST([BLAS_LD])
+
+###########################
+
+# check for lib
+CBLASlib=libcblas.a
+CBLASheader=cblas.h
+have_CBLAS="no"
+
+if test "$with_CBLAS_lib" != "no"
+then
+AC_CHECK_FILE([$with_CBLAS_lib/$CBLASlib],[have_CBLAS="yes"],[have_CBLAS="no"])
+if test "$have_CBLAS" == "no"
+then
+AC_MSG_ERROR([CBLAS requested but library file not found.])
+fi
+fi
+
+# check for header
+if test "$have_CBLAS" != "no"
+then
+if test "$with_CBLAS_include" != "no"
+then
+AC_CHECK_FILE([$with_CBLAS_include/$CBLASheader],[have_CBLAS='yes'],[have_CBLAS='no'])
+if test "$have_CBLAS" == "no"
+then
+AC_MSG_ERROR([CBLAS requested but header file not found.])
+fi
+else
+have_CBLAS="no"
+fi
+fi
+
+if test "$have_CBLAS" != "no"
+then
+AM_CONDITIONAL(BUILD_CBLAS,true)
+CBLAS_CXX="-DHAVE_CBLAS -I"$with_CBLAS_include""
+CBLAS_LD="$with_CBLAS_lib"/$CBLASlib
+else
+AM_CONDITIONAL(BUILD_CBLAS,false)
+CBLAS_CXX=
+CBLAS_LD=
+fi
+AC_SUBST([CBLAS_CXX])
+AC_SUBST([CBLAS_LD])
+
+###########################
+
+# check for lib
 LAPACKlib=liblapacke.a
 LAPACKheader=lapacke.h
 have_LAPACK="no"
@@ -687,8 +768,10 @@ Build Configuration Summary:
     SZIP support:         $have_SZIP
     ZLIB support:         $have_ZLIB
     Mutation++ support:   $have_Mutationpp
-    Jsoncpp support: 	  $have_Jsoncpp
-    LAPACK support:       $have_LAPACK
+    Jsoncpp support:      $have_Jsoncpp
+    BLAS support:         $have_BLAS
+    CBLAS support:        $have_CBLAS
+    LAPACKE support:      $have_LAPACK
     GELite support:       $have_GELITE
     Datatype support:
         double              $build_NORMAL
