@@ -71,22 +71,62 @@ inline unsigned short* FEMStandardElementClass::GetConnFace5(void){return connFa
 
 inline unsigned short FEMStandardElementClass::GetNDOFs(void){return nDOFs;}
 
-inline FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(){}
-
-inline FEMStandardInternalFaceClass::~FEMStandardInternalFaceClass(){}
+inline FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(){matDerBasisElemIntegrationSide0 = matDerBasisElemIntegrationSide1 = NULL;}
 
 inline FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(const FEMStandardInternalFaceClass &other) : FEMStandardElementBaseClass(other) {Copy(other);}
 
 inline FEMStandardInternalFaceClass& FEMStandardInternalFaceClass::operator=(const FEMStandardInternalFaceClass &other){Copy(other); return (*this);}
 
+inline su2double* FEMStandardInternalFaceClass::GetDrBasisElemIntegrationSide0(void) {return drLagBasisElemIntegrationSide0.data();}
+
+inline su2double* FEMStandardInternalFaceClass::GetDrBasisElemIntegrationSide1(void) {return drLagBasisElemIntegrationSide1.data();}
+
+inline su2double* FEMStandardInternalFaceClass::GetDsBasisElemIntegrationSide0(void) {return dsLagBasisElemIntegrationSide0.data();}
+
+inline su2double* FEMStandardInternalFaceClass::GetDsBasisElemIntegrationSide1(void) {return dsLagBasisElemIntegrationSide1.data();}
+
+inline su2double* FEMStandardInternalFaceClass::GetDtBasisElemIntegrationSide0(void) {return dtLagBasisElemIntegrationSide0.data();}
+
+inline su2double* FEMStandardInternalFaceClass::GetDtBasisElemIntegrationSide1(void) {return dtLagBasisElemIntegrationSide1.data();}
+
+inline su2double* FEMStandardInternalFaceClass::GetMatDerBasisElemIntegrationSide0(void) {return matDerBasisElemIntegrationSide0;}
+
+inline su2double* FEMStandardInternalFaceClass::GetMatDerBasisElemIntegrationSide1(void) {return matDerBasisElemIntegrationSide1;}
+
+inline su2double* FEMStandardInternalFaceClass::GetDrBasisFaceIntegrationSide0(void) {return drLagBasisFaceIntegrationSide0.data();}
+
+inline su2double* FEMStandardInternalFaceClass::GetDrBasisFaceIntegrationSide1(void) {return drLagBasisFaceIntegrationSide1.data();}
+
+inline su2double* FEMStandardInternalFaceClass::GetDsBasisFaceIntegrationSide0(void) {return dsLagBasisFaceIntegrationSide0.data();}
+
+inline su2double* FEMStandardInternalFaceClass::GetDsBasisFaceIntegrationSide1(void) {return dsLagBasisFaceIntegrationSide1.data();}
+
+inline unsigned short FEMStandardInternalFaceClass::GetNDOFsElemSide0(void) const {return nDOFsElemSide0;}
+
+inline unsigned short FEMStandardInternalFaceClass::GetNDOFsElemSide1(void) const {return nDOFsElemSide1;}
+
 inline unsigned short FEMStandardInternalFaceClass::GetNDOFsFaceSide0(void) const {return nDOFsFaceSide0;}
 
 inline unsigned short FEMStandardInternalFaceClass::GetNDOFsFaceSide1(void) const {return nDOFsFaceSide1;}
 
-inline FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(){}
-
-inline FEMStandardBoundaryFaceClass::~FEMStandardBoundaryFaceClass(){}
+inline FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(){matDerBasisElemIntegration = NULL;}
 
 inline FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(const FEMStandardBoundaryFaceClass &other) : FEMStandardElementBaseClass(other) {Copy(other);}
 
 inline FEMStandardBoundaryFaceClass& FEMStandardBoundaryFaceClass::operator=(const FEMStandardBoundaryFaceClass &other){Copy(other); return (*this);}
+
+inline su2double* FEMStandardBoundaryFaceClass::GetDrBasisElemIntegration(void) {return drLagBasisElemIntegration.data();}
+
+inline su2double* FEMStandardBoundaryFaceClass::GetDsBasisElemIntegration(void) {return dsLagBasisElemIntegration.data();}
+
+inline su2double* FEMStandardBoundaryFaceClass::GetDtBasisElemIntegration(void) {return dtLagBasisElemIntegration.data();}
+
+inline su2double* FEMStandardBoundaryFaceClass::GetMatDerBasisElemIntegration(void) {return matDerBasisElemIntegration;}
+
+inline su2double* FEMStandardBoundaryFaceClass::GetDrBasisFaceIntegration(void) {return drLagBasisFaceIntegration.data();}
+
+inline su2double* FEMStandardBoundaryFaceClass::GetDsBasisFaceIntegration(void) {return dsLagBasisFaceIntegration.data();}
+
+inline unsigned short FEMStandardBoundaryFaceClass::GetNDOFsElem(void) const {return nDOFsElem;}
+
+inline unsigned short FEMStandardBoundaryFaceClass::GetNDOFsFace(void) const {return nDOFsFace;}

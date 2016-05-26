@@ -31,11 +31,11 @@
 
 #include "../include/geometry_structure.hpp"
 
-/* Blas or mkl include files, if supported. */
-#ifdef HAVE_LAPACK
-#include "cblas.h"
-#elif HAVE_MKL
+/* MKL or BLAS include files, if supported. */
+#ifdef HAVE_MKL
 #include "mkl.h"
+#elif HAVE_CBLAS
+#include "cblas.h"
 #endif
 
 /*--- Epsilon definition ---*/
@@ -12106,9 +12106,9 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
         vecRHS[jj] = node[ind]->GetCoord(k);
     }
 
-    /*--- Make a distinction whether LAPACK routines must be used to carry
+    /*--- Make a distinction whether BLAS routines must be used to carry
           out the multiplication or a standard implementation must be used. ---*/
-#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
+#if defined (HAVE_CBLAS) || defined(HAVE_MKL)
 
     /*--- Lapack routines must be used to compute the matrix product.
           Get the pointer to the matrix storage of the basis functions and its

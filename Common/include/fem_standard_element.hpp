@@ -1035,31 +1035,47 @@ private:
   vector<su2double> sDOFsFaceSide0;   /*!< \brief s-location of the DOFs on side 0 of the face, if needed. */
   vector<su2double> sDOFsFaceSide1;   /*!< \brief s-location of the DOFs on side 1 of the face, if needed. */
 
-  vector<su2double> lagBasisIntegrationSide0; /*!< \brief Lagrangian basis functions in the integration points
-                                                          of side0 of the face. */
-  vector<su2double> lagBasisIntegrationSide1; /*!< \brief Lagrangian basis functions in the integration points
-                                                          of side1 of the face. */
+  vector<su2double> lagBasisFaceIntegrationSide0; /*!< \brief Lagrangian basis functions in the integration points
+                                                              of side0 of the face. */
+  vector<su2double> lagBasisFaceIntegrationSide1; /*!< \brief Lagrangian basis functions in the integration points
+                                                              of side1 of the face. */
 
-  vector<su2double> drLagBasisIntegrationSide0; /*!< \brief r-derivatives of the Lagrangian basis functions in the
-                                                            integration points of the element on side 0 of the face. */
-  vector<su2double> drLagBasisIntegrationSide1; /*!< \brief r-derivatives of the Lagrangian basis functions in the
-                                                            integration points of the element on side 1 of the face. */
-  vector<su2double> dsLagBasisIntegrationSide0; /*!< \brief s-derivatives of the Lagrangian basis functions in the
-                                                            integration points of the element on side 0 of the face. */
-  vector<su2double> dsLagBasisIntegrationSide1; /*!< \brief s-derivatives of the Lagrangian basis functions in the
-                                                            integration points of the element on side 1 of the face. */
-  vector<su2double> dtLagBasisIntegrationSide0; /*!< \brief t-derivatives of the Lagrangian basis functions in the
-                                                            integration points of the element on side 0 of the face. */
-  vector<su2double> dtLagBasisIntegrationSide1; /*!< \brief t-derivatives of the Lagrangian basis functions in the
-                                                            integration points of the element on side 1 of the face. */
+  vector<su2double> drLagBasisFaceIntegrationSide0; /*!< \brief r-derivatives of the face Lagrangian basis functions
+                                                                of side 0 in the integration points. */
+  vector<su2double> drLagBasisFaceIntegrationSide1; /*!< \brief r-derivatives of the face Lagrangian basis functions
+                                                                of side 1 in the integration points. */
+  vector<su2double> dsLagBasisFaceIntegrationSide0; /*!< \brief s-derivatives of the face Lagrangian basis functions
+                                                                of side 0 in the integration points. */
+  vector<su2double> dsLagBasisFaceIntegrationSide1; /*!< \brief s-derivatives of the face Lagrangian basis functions
+                                                                of side 1 in the integration points. */
+
+  vector<su2double> drLagBasisElemIntegrationSide0; /*!< \brief r-derivatives of the element Lagrangian basis functions
+                                                                of side 0 in the integration points. */
+  vector<su2double> drLagBasisElemIntegrationSide1; /*!< \brief r-derivatives of the element Lagrangian basis functions
+                                                                of side 1 in the integration points. */
+  vector<su2double> dsLagBasisElemIntegrationSide0; /*!< \brief s-derivatives of the element Lagrangian basis functions
+                                                                of side 0 in the integration points. */
+  vector<su2double> dsLagBasisElemIntegrationSide1; /*!< \brief s-derivatives of the element Lagrangian basis functions
+                                                                of side 1 in the integration points. */
+  vector<su2double> dtLagBasisElemIntegrationSide0; /*!< \brief t-derivatives of the element Lagrangian basis functions
+                                                                of side 0 in the integration points. */
+  vector<su2double> dtLagBasisElemIntegrationSide1; /*!< \brief t-derivatives of the element Lagrangian basis functions
+                                                                of side 1 in the integration points. */
+
+  su2double *matDerBasisElemIntegrationSide0;       /*!< \brief Matrix of drLagBasisElemIntegrationSide0, dsLagBasisElemIntegrationSide0
+                                                                and dtLagBasisElemIntegrationSide0 combined for efficiency
+                                                                when using BLAS routines. */
+  su2double *matDerBasisElemIntegrationSide1;       /*!< \brief Matrix of drLagBasisElemIntegrationSide1, dsLagBasisElemIntegrationSide1
+                                                                and dtLagBasisElemIntegrationSide1 combined for efficiency
+                                                                when using BLAS routines. */
 public:
   /*!
-  * \brief Standard Constructor. Nothing to be done.
+  * \brief Standard Constructor. Initialize some pointers to NULL.
   */
   FEMStandardInternalFaceClass();
 
   /*!
-  * \brief Destructor. Nothing to be done, because the vectors are deleted automatically.
+  * \brief Destructor.
   */
   ~FEMStandardInternalFaceClass();
 
@@ -1108,6 +1124,104 @@ public:
   * \return The current object, after the member variables were assigned the correct value.
   */
   FEMStandardInternalFaceClass& operator=(const FEMStandardInternalFaceClass &other);
+
+  /*!
+  * \brief Function, which makes available the r-derivatives of the elements
+           basis functions of side 0 in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetDrBasisElemIntegrationSide0(void);
+
+  /*!
+  * \brief Function, which makes available the r-derivatives of the elements
+           basis functions of side 1 in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetDrBasisElemIntegrationSide1(void);
+
+  /*!
+  * \brief Function, which makes available the s-derivatives of the elements
+           basis functions of side 0 in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetDsBasisElemIntegrationSide0(void);
+
+  /*!
+  * \brief Function, which makes available the s-derivatives of the elements
+           basis functions of side 1 in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetDsBasisElemIntegrationSide1(void);
+
+  /*!
+  * \brief Function, which makes available the t-derivatives of the elements
+           basis functions of side 0 in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetDtBasisElemIntegrationSide0(void);
+
+  /*!
+  * \brief Function, which makes available the t-derivatives of the elements
+           basis functions of side 1 in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetDtBasisElemIntegrationSide1(void);
+
+  /*!
+  * \brief Function, which makes available the matrix with the derivatives of
+           the element basis functions of side 0 in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetMatDerBasisElemIntegrationSide0(void);
+
+  /*!
+  * \brief Function, which makes available the matrix with the derivatives of
+           the element basis functions of side 1 in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetMatDerBasisElemIntegrationSide1(void);
+
+  /*!
+  * \brief Function, which makes available the r-derivatives of the face basis
+           functions of side 0 in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetDrBasisFaceIntegrationSide0(void);
+
+  /*!
+  * \brief Function, which makes available the r-derivatives of the face basis
+           functions of side 1 in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetDrBasisFaceIntegrationSide1(void);
+
+  /*!
+  * \brief Function, which makes available the s-derivatives of the face basis
+           functions of side 0 in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetDsBasisFaceIntegrationSide0(void);
+
+  /*!
+  * \brief Function, which makes available the s-derivatives of the face basis
+           functions of side 1 in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetDsBasisFaceIntegrationSide1(void);
+
+  /*!
+  * \brief Function, which makes available the number of DOFs of the element
+           on side 0 of the face.
+  * \return  The number of DOFs of the element on side 0.
+  */
+  unsigned short GetNDOFsElemSide0(void) const;
+
+  /*!
+  * \brief Function, which makes available the number of DOFs of the element
+           on side 1 of the face.
+  * \return  The number of DOFs on side 1.
+  */
+  unsigned short GetNDOFsElemSide1(void) const;
 
   /*!
   * \brief Function, which makes available the number of DOFs on side 0 of the face.
@@ -1176,19 +1290,27 @@ private:
   vector<su2double> rDOFsFace;   /*!< \brief r-location of the DOFs of the face. */
   vector<su2double> sDOFsFace;   /*!< \brief s-location of the DOFs of the face, if needed. */
 
-  vector<su2double> lagBasisIntegration; /*!< \brief Lagrangian basis functions in the integration points
-                                                     of the face. */
+  vector<su2double> lagBasisFaceIntegration; /*!< \brief Lagrangian basis functions in the integration points
+                                                         of the face. */
 
-  vector<su2double> drLagBasisIntegrationElem; /*!< \brief r-derivatives of the Lagrangian basis functions in the
+  vector<su2double> drLagBasisFaceIntegration; /*!< \brief r-derivatives of the face Lagrangian basis functions
+                                                           in the integration points. */
+  vector<su2double> dsLagBasisFaceIntegration; /*!< \brief s-derivatives of the face Lagrangian basis functions
+                                                           in the integration points. */
+
+  vector<su2double> drLagBasisElemIntegration; /*!< \brief r-derivatives of the Lagrangian basis functions in the
                                                            integration points of the element adjacent to the face. */
-  vector<su2double> dsLagBasisIntegrationElem; /*!< \brief s-derivatives of the Lagrangian basis functions in the
+  vector<su2double> dsLagBasisElemIntegration; /*!< \brief s-derivatives of the Lagrangian basis functions in the
                                                            integration points of the element adjacent to the face. */
-  vector<su2double> dtLagBasisIntegrationElem; /*!< \brief t-derivatives of the Lagrangian basis functions in the
+  vector<su2double> dtLagBasisElemIntegration; /*!< \brief t-derivatives of the Lagrangian basis functions in the
                                                            integration points of the element adjacent to the face. */
 
+  su2double *matDerBasisElemIntegration;       /*!< \brief Matrix of drLagBasisElemIntegration, dsLagBasisElemIntegration
+                                                           and dtLagBasisElemIntegration combined for efficiency
+                                                           when using BLAS routines. */
 public:
   /*!
-  * \brief Standard Constructor. Nothing to be done.
+  * \brief Standard Constructor. Initialize some pointers to NULL.
   */
   FEMStandardBoundaryFaceClass();
 
@@ -1229,6 +1351,61 @@ public:
   * \return The current object, after the member variables were assigned the correct value.
   */
   FEMStandardBoundaryFaceClass& operator=(const FEMStandardBoundaryFaceClass &other);
+
+  /*!
+  * \brief Function, which makes available the r-derivatives of the element
+           basis functions in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetDrBasisElemIntegration(void);
+
+  /*!
+  * \brief Function, which makes available the s-derivatives of the element
+           basis functions in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetDsBasisElemIntegration(void);
+
+  /*!
+  * \brief Function, which makes available the t-derivatives of the element
+           basis functions in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetDtBasisElemIntegration(void);
+
+  /*!
+  * \brief Function, which makes available the matrix with the derivatives of
+           the element basis functions in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetMatDerBasisElemIntegration(void);
+
+  /*!
+  * \brief Function, which makes available the r-derivatives of the face basis
+           functions in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetDrBasisFaceIntegration(void);
+
+  /*!
+  * \brief Function, which makes available the s-derivatives of the face basis
+           functions in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  su2double *GetDsBasisFaceIntegration(void);
+
+  /*!
+  * \brief Function, which makes available the number of DOFs of the
+           adjacent element.
+  * \return  The number of DOFs of the element.
+  */
+  unsigned short GetNDOFsElem(void) const;
+
+  /*!
+  * \brief Function, which makes available the number of DOFs of the face.
+  * \return  The number of DOFs of the face.
+  */
+  unsigned short GetNDOFsFace(void) const;
 
   /*!
   * \brief Function, which checks if the function arguments correspond to this standard face.

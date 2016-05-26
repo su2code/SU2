@@ -1974,14 +1974,11 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
     CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFs,
                                                 dtLagBasisIntegration);
 
-  /*--- If the Lapack routines are used it is beneficial to store lagBasisIntegration,
+  /*--- If the BLAS routines are used it is beneficial to store lagBasisIntegration,
         drLagBasisIntegration, dsLagBasisIntegration and dtLagBasisIntegration in
         one array for efficiency reasons. Note that for the MKL the memory allocation
         of the MKL itself is used and that the matrices are aligned on a 64-byte
         boundary to increase performance. ---*/
-
-#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
-
   unsigned long sizeMat = lagBasisIntegration.size()   + drLagBasisIntegration.size()
                         + dsLagBasisIntegration.size() + dtLagBasisIntegration.size();
 #ifdef HAVE_MKL
@@ -2002,14 +1999,13 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
 
   for(unsigned long i=0; i<dtLagBasisIntegration.size(); ++i, ++ii)
     matBasisIntegration[ii] = dtLagBasisIntegration[i];
-#endif
 }
 
 FEMStandardElementClass::~FEMStandardElementClass() {
 
 #ifdef HAVE_MKL
   if( matBasisIntegration ) mkl_free(matBasisIntegration);
-#elif HAVE_LAPACK
+#else
   if( matBasisIntegration ) delete[] matBasisIntegration;
 #endif
 }
@@ -2055,8 +2051,6 @@ void FEMStandardElementClass::Copy(const FEMStandardElementClass &other) {
   subConn1ForPlotting = other.subConn1ForPlotting;
   subConn2ForPlotting = other.subConn2ForPlotting;
 
-#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
-
   unsigned long sizeMat = lagBasisIntegration.size()   + drLagBasisIntegration.size()
                         + dsLagBasisIntegration.size() + dtLagBasisIntegration.size();
 #ifdef HAVE_MKL
@@ -2067,10 +2061,6 @@ void FEMStandardElementClass::Copy(const FEMStandardElementClass &other) {
 
   for(unsigned long i=0; i<sizeMat; ++i)
     matBasisIntegration[i] = other.matBasisIntegration[i];
-
-#else
-  matBasisIntegration = NULL;
-#endif
 }
 
 void FEMStandardElementClass::DataStandardLine(void) {
@@ -3210,87 +3200,153 @@ FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(unsigned short val_VT
   swapFaceInElementSide0 = val_swapFaceInElementSide0;
   swapFaceInElementSide1 = val_swapFaceInElementSide1;
 
-  /*--- Determine the Lagrangian basis functions in the integration points for both sides
-        of the face. The derivatives of the basis functions are not needed for the face,
-        hence dummy values can be passed to these functions. ---*/
-  vector<su2double> dummyGrad;
-
+  /*--- Determine the Lagrangian basis functions and its gradients in the
+        integration points for both sides of the face. ---*/
   switch( VTK_Type ) {
     case LINE:
       LagrangianBasisFunctionAndDerivativesLine(nPolyElemSide0, rIntegration, nDOFsFaceSide0,
-                                                rDOFsFaceSide0, lagBasisIntegrationSide0,
-                                                dummyGrad);
+                                                rDOFsFaceSide0, lagBasisFaceIntegrationSide0,
+                                                drLagBasisFaceIntegrationSide0);
       LagrangianBasisFunctionAndDerivativesLine(nPolyElemSide1, rIntegration, nDOFsFaceSide1,
-                                                rDOFsFaceSide1, lagBasisIntegrationSide1,
-                                                dummyGrad);
+                                                rDOFsFaceSide1, lagBasisFaceIntegrationSide1,
+                                                drLagBasisFaceIntegrationSide1);
       break;
 
     case TRIANGLE:
       LagrangianBasisFunctionAndDerivativesTriangle(nPolyElemSide0, rIntegration,
                                                     sIntegration,   nDOFsFaceSide0,
                                                     rDOFsFaceSide0, sDOFsFaceSide0,
-                                                    lagBasisIntegrationSide0,
-                                                    dummyGrad,      dummyGrad);
+                                                    lagBasisFaceIntegrationSide0,
+                                                    drLagBasisFaceIntegrationSide0,
+                                                    dsLagBasisFaceIntegrationSide0);
       LagrangianBasisFunctionAndDerivativesTriangle(nPolyElemSide1, rIntegration,
                                                     sIntegration,   nDOFsFaceSide1,
                                                     rDOFsFaceSide1, sDOFsFaceSide1,
-                                                    lagBasisIntegrationSide1,
-                                                    dummyGrad,      dummyGrad);
+                                                    lagBasisFaceIntegrationSide1,
+                                                    drLagBasisFaceIntegrationSide1,
+                                                    dsLagBasisFaceIntegrationSide1);
       break;
 
     case QUADRILATERAL:
       LagrangianBasisFunctionAndDerivativesQuadrilateral(nPolyElemSide0, rIntegration,
                                                          sIntegration,   nDOFsFaceSide0,
                                                          rDOFsFaceSide0, sDOFsFaceSide0,
-                                                         lagBasisIntegrationSide0,
-                                                         dummyGrad,      dummyGrad);
+                                                         lagBasisFaceIntegrationSide0,
+                                                         drLagBasisFaceIntegrationSide0,
+                                                         dsLagBasisFaceIntegrationSide0);
       LagrangianBasisFunctionAndDerivativesQuadrilateral(nPolyElemSide1, rIntegration,
                                                          sIntegration,   nDOFsFaceSide1,
                                                          rDOFsFaceSide0, sDOFsFaceSide1,
-                                                         lagBasisIntegrationSide1,
-                                                         dummyGrad,      dummyGrad);
+                                                         lagBasisFaceIntegrationSide1,
+                                                         drLagBasisFaceIntegrationSide1,
+                                                         dsLagBasisFaceIntegrationSide1);
       break;
   }
 
   /*--- Check the sum of the Lagrangian basis functions. ---*/
-  CheckSumLagrangianBasisFunctions(nIntegration, nDOFsFaceSide0, lagBasisIntegrationSide0);
-  CheckSumLagrangianBasisFunctions(nIntegration, nDOFsFaceSide1, lagBasisIntegrationSide1);
+  CheckSumLagrangianBasisFunctions(nIntegration, nDOFsFaceSide0, lagBasisFaceIntegrationSide0);
+  CheckSumLagrangianBasisFunctions(nIntegration, nDOFsFaceSide1, lagBasisFaceIntegrationSide1);
+
+  /*--- Check the sum of the derivatives of the Lagrangian basis functions. ---*/
+  if( !drLagBasisFaceIntegrationSide0.empty() )
+    CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsFaceSide0,
+                                                drLagBasisFaceIntegrationSide0);
+  if( !dsLagBasisFaceIntegrationSide0.empty() )
+    CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsFaceSide0,
+                                                dsLagBasisFaceIntegrationSide0);
+  if( !drLagBasisFaceIntegrationSide1.empty() )
+    CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsFaceSide1,
+                                                drLagBasisFaceIntegrationSide1);
+  if( !dsLagBasisFaceIntegrationSide1.empty() )
+    CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsFaceSide1,
+                                                dsLagBasisFaceIntegrationSide1);
 
   /*--- Determine the derivatives of the Lagrangian basis functions of the
         adjacent elements in the integration points of the face for both sides
         of the face. ---*/
   DerivativesBasisFunctionsAdjacentElement(VTK_TypeElemSide0, nPolyElemSide0,
                                            swapFaceInElementSide0,
-                                           nDOFsElemSide0, drLagBasisIntegrationSide0,
-                                           dsLagBasisIntegrationSide0,
-                                           dtLagBasisIntegrationSide0);
+                                           nDOFsElemSide0,
+                                           drLagBasisElemIntegrationSide0,
+                                           dsLagBasisElemIntegrationSide0,
+                                           dtLagBasisElemIntegrationSide0);
 
   DerivativesBasisFunctionsAdjacentElement(VTK_TypeElemSide1, nPolyElemSide1,
                                            swapFaceInElementSide1,
-                                           nDOFsElemSide1, drLagBasisIntegrationSide1,
-                                           dsLagBasisIntegrationSide1,
-                                           dtLagBasisIntegrationSide1);
+                                           nDOFsElemSide1,
+                                           drLagBasisElemIntegrationSide1,
+                                           dsLagBasisElemIntegrationSide1,
+                                           dtLagBasisElemIntegrationSide1);
 
   /*--- Check the sum of the derivatives of the Lagrangian basis functions. ---*/
-  if( !drLagBasisIntegrationSide0.empty() )
+  if( !drLagBasisElemIntegrationSide0.empty() )
     CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsElemSide0,
-                                                drLagBasisIntegrationSide0);
-  if( !dsLagBasisIntegrationSide0.empty() )
+                                                drLagBasisElemIntegrationSide0);
+  if( !dsLagBasisElemIntegrationSide0.empty() )
     CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsElemSide0,
-                                                dsLagBasisIntegrationSide0);
-  if( !dtLagBasisIntegrationSide0.empty() )
+                                                dsLagBasisElemIntegrationSide0);
+  if( !dtLagBasisElemIntegrationSide0.empty() )
     CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsElemSide0,
-                                                dtLagBasisIntegrationSide0);
+                                                dtLagBasisElemIntegrationSide0);
 
-  if( !drLagBasisIntegrationSide1.empty() )
+  if( !drLagBasisElemIntegrationSide1.empty() )
     CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsElemSide1,
-                                                drLagBasisIntegrationSide1);
-  if( !dsLagBasisIntegrationSide1.empty() )
+                                                drLagBasisElemIntegrationSide1);
+  if( !dsLagBasisElemIntegrationSide1.empty() )
     CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsElemSide1,
-                                                dsLagBasisIntegrationSide1);
-  if( !dtLagBasisIntegrationSide1.empty() )
+                                                dsLagBasisElemIntegrationSide1);
+  if( !dtLagBasisElemIntegrationSide1.empty() )
     CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsElemSide1,
-                                                dtLagBasisIntegrationSide1);
+                                                dtLagBasisElemIntegrationSide1);
+
+  /*--- If the BLAS routines are used it is beneficial to store all the
+        derivatives of the element basis functions in one array. Note that for
+        the MKL the memory allocation of the MKL itself is used and that the
+        matrices are aligned on a 64-byte boundary to increase performance. ---*/
+  unsigned long sizeMatSide0 = drLagBasisElemIntegrationSide0.size()
+                             + dsLagBasisElemIntegrationSide0.size()
+                             + dtLagBasisElemIntegrationSide0.size();
+  unsigned long sizeMatSide1 = drLagBasisElemIntegrationSide1.size()
+                             + dsLagBasisElemIntegrationSide1.size()
+                             + dtLagBasisElemIntegrationSide1.size();
+#ifdef HAVE_MKL
+  matDerBasisElemIntegrationSide0 = (su2double *) mkl_malloc(sizeMatSide0*sizeof(su2double), 64);
+  matDerBasisElemIntegrationSide1 = (su2double *) mkl_malloc(sizeMatSide1*sizeof(su2double), 64);
+#else
+  matDerBasisElemIntegrationSide0 = new su2double[sizeMatSide0];
+  matDerBasisElemIntegrationSide1 = new su2double[sizeMatSide1];
+#endif
+
+  unsigned int ii = 0;
+  for(unsigned long i=0; i<drLagBasisElemIntegrationSide0.size(); ++i, ++ii)
+    matDerBasisElemIntegrationSide0[ii] = drLagBasisElemIntegrationSide0[i];
+
+  for(unsigned long i=0; i<dsLagBasisElemIntegrationSide0.size(); ++i, ++ii)
+    matDerBasisElemIntegrationSide0[ii] = dsLagBasisElemIntegrationSide0[i];
+
+  for(unsigned long i=0; i<dtLagBasisElemIntegrationSide0.size(); ++i, ++ii)
+    matDerBasisElemIntegrationSide0[ii] = dtLagBasisElemIntegrationSide0[i];
+
+  ii = 0;
+  for(unsigned long i=0; i<drLagBasisElemIntegrationSide1.size(); ++i, ++ii)
+    matDerBasisElemIntegrationSide1[ii] = drLagBasisElemIntegrationSide1[i];
+
+  for(unsigned long i=0; i<dsLagBasisElemIntegrationSide1.size(); ++i, ++ii)
+    matDerBasisElemIntegrationSide1[ii] = dsLagBasisElemIntegrationSide1[i];
+
+  for(unsigned long i=0; i<dtLagBasisElemIntegrationSide1.size(); ++i, ++ii)
+    matDerBasisElemIntegrationSide1[ii] = dtLagBasisElemIntegrationSide1[i];
+}
+
+FEMStandardInternalFaceClass::~FEMStandardInternalFaceClass() {
+
+#ifdef HAVE_MKL
+  if( matDerBasisElemIntegrationSide0 ) mkl_free(matDerBasisElemIntegrationSide0);
+  if( matDerBasisElemIntegrationSide1 ) mkl_free(matDerBasisElemIntegrationSide1);
+#else
+  if( matDerBasisElemIntegrationSide0 ) delete[] matDerBasisElemIntegrationSide0;
+  if( matDerBasisElemIntegrationSide1 ) delete[] matDerBasisElemIntegrationSide1;
+#endif
 }
 
 bool FEMStandardInternalFaceClass::SameStandardMatchingFace(unsigned short val_VTK_TypeFace,
@@ -3340,15 +3396,40 @@ void FEMStandardInternalFaceClass::Copy(const FEMStandardInternalFaceClass &othe
   sDOFsFaceSide0 = other.sDOFsFaceSide0;
   sDOFsFaceSide1 = other.sDOFsFaceSide1;
 
-  lagBasisIntegrationSide0 = other.lagBasisIntegrationSide0;
-  lagBasisIntegrationSide1 = other.lagBasisIntegrationSide1;
+  lagBasisFaceIntegrationSide0 = other.lagBasisFaceIntegrationSide0;
+  lagBasisFaceIntegrationSide1 = other.lagBasisFaceIntegrationSide1;
 
-  drLagBasisIntegrationSide0 = other.drLagBasisIntegrationSide0;
-  drLagBasisIntegrationSide1 = other.drLagBasisIntegrationSide1;
-  dsLagBasisIntegrationSide0 = other.dsLagBasisIntegrationSide0;
-  dsLagBasisIntegrationSide1 = other.dsLagBasisIntegrationSide1;
-  dtLagBasisIntegrationSide0 = other.dtLagBasisIntegrationSide0;
-  dtLagBasisIntegrationSide1 = other.dtLagBasisIntegrationSide1;
+  drLagBasisFaceIntegrationSide0 = other.drLagBasisFaceIntegrationSide0;
+  drLagBasisFaceIntegrationSide1 = other.drLagBasisFaceIntegrationSide1;
+  dsLagBasisFaceIntegrationSide0 = other.dsLagBasisFaceIntegrationSide0;
+  dsLagBasisFaceIntegrationSide1 = other.dsLagBasisFaceIntegrationSide1;
+
+  drLagBasisElemIntegrationSide0 = other.drLagBasisElemIntegrationSide0;
+  drLagBasisElemIntegrationSide1 = other.drLagBasisElemIntegrationSide1;
+  dsLagBasisElemIntegrationSide0 = other.dsLagBasisElemIntegrationSide0;
+  dsLagBasisElemIntegrationSide1 = other.dsLagBasisElemIntegrationSide1;
+  dtLagBasisElemIntegrationSide0 = other.dtLagBasisElemIntegrationSide0;
+  dtLagBasisElemIntegrationSide1 = other.dtLagBasisElemIntegrationSide1;
+
+  unsigned long sizeMatSide0 = drLagBasisElemIntegrationSide0.size()
+                             + dsLagBasisElemIntegrationSide0.size()
+                             + dtLagBasisElemIntegrationSide0.size();
+  unsigned long sizeMatSide1 = drLagBasisElemIntegrationSide1.size()
+                             + dsLagBasisElemIntegrationSide1.size()
+                             + dtLagBasisElemIntegrationSide1.size();
+#ifdef HAVE_MKL
+  matDerBasisElemIntegrationSide0 = (su2double *) mkl_malloc(sizeMatSide0*sizeof(su2double), 64);
+  matDerBasisElemIntegrationSide1 = (su2double *) mkl_malloc(sizeMatSide1*sizeof(su2double), 64);
+#else
+  matDerBasisElemIntegrationSide0 = new su2double[sizeMatSide0];
+  matDerBasisElemIntegrationSide1 = new su2double[sizeMatSide1];
+#endif
+
+  for(unsigned long i=0; i<sizeMatSide0; ++i)
+    matDerBasisElemIntegrationSide0[i] = other.matDerBasisElemIntegrationSide0[i];
+
+  for(unsigned long i=0; i<sizeMatSide1; ++i)
+    matDerBasisElemIntegrationSide1[i] = other.matDerBasisElemIntegrationSide1[i];
 }
 
 /*----------------------------------------------------------------------------------*/
@@ -3371,56 +3452,95 @@ FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(unsigned short val_VT
   VTK_TypeElem      = val_VTK_TypeElem;
   swapFaceInElement = val_swapFaceInElement;
 
-  /*--- Determine the Lagrangian basis functions in the integration points of the
-        face. The derivatives of the basis functions are not needed for the face,
-        hence dummy values can be passed to these functions. ---*/
-  vector<su2double> dummyGrad;
-
+  /*--- Determine the Lagrangian basis functions in the integration
+        points of the face. ---*/
   switch( VTK_Type ) {
     case LINE:
       LagrangianBasisFunctionAndDerivativesLine(nPolyElem, rIntegration, nDOFsFace,
-                                                rDOFsFace, lagBasisIntegration,
-                                                dummyGrad);
+                                                rDOFsFace, lagBasisFaceIntegration,
+                                                drLagBasisFaceIntegration);
       break;
 
     case TRIANGLE:
       LagrangianBasisFunctionAndDerivativesTriangle(nPolyElem,    rIntegration,
                                                     sIntegration, nDOFsFace,
                                                     rDOFsFace,    sDOFsFace,
-                                                    lagBasisIntegration,
-                                                    dummyGrad,     dummyGrad);
+                                                    lagBasisFaceIntegration,
+                                                    drLagBasisFaceIntegration,
+                                                    dsLagBasisFaceIntegration);
       break;
 
     case QUADRILATERAL:
       LagrangianBasisFunctionAndDerivativesQuadrilateral(nPolyElem,    rIntegration,
                                                          sIntegration, nDOFsFace,
                                                          rDOFsFace,    sDOFsFace,
-                                                         lagBasisIntegration,
-                                                         dummyGrad,     dummyGrad);
+                                                         lagBasisFaceIntegration,
+                                                         drLagBasisFaceIntegration,
+                                                         dsLagBasisFaceIntegration);
       break;
   }
 
   /*--- Check the sum of the Lagrangian basis functions. ---*/
-  CheckSumLagrangianBasisFunctions(nIntegration, nDOFsFace, lagBasisIntegration);
+  CheckSumLagrangianBasisFunctions(nIntegration, nDOFsFace, lagBasisFaceIntegration);
+
+  /*--- Check the sum of the derivatives of the Lagrangian basis functions. ---*/
+  if( !drLagBasisFaceIntegration.empty() )
+    CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsFace,
+                                                drLagBasisFaceIntegration);
+  if( !dsLagBasisFaceIntegration.empty() )
+    CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsFace,
+                                                dsLagBasisFaceIntegration);
 
   /*--- Determine the derivatives of the Lagrangian basis functions of the
         adjacent element in the integration points of the face. ---*/
   DerivativesBasisFunctionsAdjacentElement(VTK_TypeElem, nPolyElem,
                                            swapFaceInElement,
-                                           nDOFsElem, drLagBasisIntegrationElem,
-                                           dsLagBasisIntegrationElem,
-                                           dtLagBasisIntegrationElem);
+                                           nDOFsElem, drLagBasisElemIntegration,
+                                           dsLagBasisElemIntegration,
+                                           dtLagBasisElemIntegration);
 
   /*--- Check the sum of the derivatives of the Lagrangian basis functions. ---*/
-  if( !drLagBasisIntegrationElem.empty() )
+  if( !drLagBasisElemIntegration.empty() )
     CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsElem,
-                                                drLagBasisIntegrationElem);
-  if( !dsLagBasisIntegrationElem.empty() )
+                                                drLagBasisElemIntegration);
+  if( !dsLagBasisElemIntegration.empty() )
     CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsElem,
-                                                dsLagBasisIntegrationElem);
-  if( !dtLagBasisIntegrationElem.empty() )
+                                                dsLagBasisElemIntegration);
+  if( !dtLagBasisElemIntegration.empty() )
     CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsElem,
-                                                dtLagBasisIntegrationElem);
+                                                dtLagBasisElemIntegration);
+
+  /*--- If the BLAS routines are used it is beneficial to store all the
+        derivatives of the element basis functions in one array. Note that for
+        the MKL the memory allocation of the MKL itself is used and that the
+        matrices are aligned on a 64-byte boundary to increase performance. ---*/
+  unsigned long sizeMat = drLagBasisElemIntegration.size()
+                        + dsLagBasisElemIntegration.size()
+                        + dtLagBasisElemIntegration.size();
+#ifdef HAVE_MKL
+  matDerBasisElemIntegration = (su2double *) mkl_malloc(sizeMat*sizeof(su2double), 64);
+#else
+  matDerBasisElemIntegration = new su2double[sizeMat];
+#endif
+
+  unsigned int ii = 0;
+  for(unsigned long i=0; i<drLagBasisElemIntegration.size(); ++i, ++ii)
+    matDerBasisElemIntegration[ii] = drLagBasisElemIntegration[i];
+
+  for(unsigned long i=0; i<dsLagBasisElemIntegration.size(); ++i, ++ii)
+    matDerBasisElemIntegration[ii] = dsLagBasisElemIntegration[i];
+
+  for(unsigned long i=0; i<dtLagBasisElemIntegration.size(); ++i, ++ii)
+    matDerBasisElemIntegration[ii] = dtLagBasisElemIntegration[i];
+}
+
+FEMStandardBoundaryFaceClass::~FEMStandardBoundaryFaceClass() {
+
+#ifdef HAVE_MKL
+  if( matDerBasisElemIntegration ) mkl_free(matDerBasisElemIntegration);
+#else
+  if( matDerBasisElemIntegration ) delete[] matDerBasisElemIntegration;
+#endif
 }
 
 bool FEMStandardBoundaryFaceClass::SameStandardBoundaryFace(unsigned short val_VTK_TypeFace,
@@ -3454,8 +3574,23 @@ void FEMStandardBoundaryFaceClass::Copy(const FEMStandardBoundaryFaceClass &othe
   rDOFsFace = other.rDOFsFace;
   sDOFsFace = other.sDOFsFace;
 
-  lagBasisIntegration       = other.lagBasisIntegration;
-  drLagBasisIntegrationElem = other.drLagBasisIntegrationElem;
-  dsLagBasisIntegrationElem = other.dsLagBasisIntegrationElem;
-  dtLagBasisIntegrationElem = other.dtLagBasisIntegrationElem;
+  lagBasisFaceIntegration   = other.lagBasisFaceIntegration;
+  drLagBasisFaceIntegration = other.drLagBasisFaceIntegration;
+  dsLagBasisFaceIntegration = other.dsLagBasisFaceIntegration;
+
+  drLagBasisElemIntegration = other.drLagBasisElemIntegration;
+  dsLagBasisElemIntegration = other.dsLagBasisElemIntegration;
+  dtLagBasisElemIntegration = other.dtLagBasisElemIntegration;
+
+  unsigned long sizeMat = drLagBasisElemIntegration.size()
+                        + dsLagBasisElemIntegration.size()
+                        + dtLagBasisElemIntegration.size();
+#ifdef HAVE_MKL
+  matDerBasisElemIntegration = (su2double *) mkl_malloc(sizeMat*sizeof(su2double), 64);
+#else
+  matDerBasisElemIntegration = new su2double[sizeMat];
+#endif
+
+  for(unsigned long i=0; i<sizeMat; ++i)
+    matDerBasisElemIntegration[i] = other.matDerBasisElemIntegration[i];
 }
