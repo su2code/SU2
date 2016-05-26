@@ -2,7 +2,7 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
     
-    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
+    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
     
     /*--- Deallocate the memory of geometry_aux ---*/
     
@@ -306,22 +306,22 @@ int main(int argc, char *argv[]) {
 
 		}
     
-    else if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+    else if (config_container[ZONE_0]->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
 
 			/*--- Time-spectral simulation: merge files for each time instance (each zone). ---*/
-			unsigned short nTimeSpectral = config_container[ZONE_0]->GetnTimeInstances();
-			unsigned short iTimeSpectral;
-			for (iTimeSpectral = 0; iTimeSpectral < nTimeSpectral; iTimeSpectral++) {
+			unsigned short nSpectralMethod = config_container[ZONE_0]->GetnTimeInstances();
+			unsigned short iSpectralMethod;
+			for (iSpectralMethod = 0; iSpectralMethod < nSpectralMethod; iSpectralMethod++) {
 
 				/*--- Set the current instance number in the config class to "ExtIter." ---*/
-				config_container[ZONE_0]->SetExtIter(iTimeSpectral);
+				config_container[ZONE_0]->SetExtIter(iSpectralMethod);
 
 				/*--- Read in the restart file for this time step ---*/
 				/*--- N.B. In SU2_SOL, nZone != nTimeInstances ---*/
 				for (iZone = 0; iZone < nZone; iZone++) {
 
 					/*--- Either instantiate the solution class or load a restart file. ---*/
-					if (iTimeSpectral == 0)
+					if (iSpectralMethod== 0)
 						solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone], MESH_0);
 					else
 						solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0));
@@ -329,10 +329,10 @@ int main(int argc, char *argv[]) {
 
 				/*--- Print progress in solution writing to the screen. ---*/
 				if (rank == MASTER_NODE) {
-					cout << "Writing the volume solution for time instance " << iTimeSpectral << "." << endl;
+					cout << "Writing the volume solution for time instance " << iSpectralMethod << "." << endl;
 				}
 
-				output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iTimeSpectral, nZone);
+				output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iSpectralMethod, nZone);
 			}
 		}
     
@@ -345,6 +345,7 @@ int main(int argc, char *argv[]) {
 			unsigned long iExtIter = 0;
 			bool StopCalc = false;
 			bool SolutionInstantiated = false;
+
 
 
 			/*--- Check for an dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
@@ -400,6 +401,7 @@ int main(int argc, char *argv[]) {
     else {
 
 			  /*--- Steady simulation: merge the single solution file. ---*/
+
 
 			  for (iZone = 0; iZone < nZone; iZone++) {
 				  /*--- Definition of the solution class ---*/

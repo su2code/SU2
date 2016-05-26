@@ -2,7 +2,7 @@
  * \file dual_grid_structure.inl
  * \brief In-Line subroutines of the <i>dual_grid_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -104,17 +104,17 @@ inline su2double **CPoint::GetGridVel_Grad(void) { return GridVel_Grad; }
 
 inline void CPoint::SetCoord_Old(su2double *val_coord_old) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-		Coord_Old[iDim] = val_coord_old[iDim]; 
+		Coord_Old[iDim] = val_coord_old[iDim];
 }
 
 inline void CPoint::SetCoord_SumZero(void) {
 	for (unsigned short iDim = 0; iDim < nDim; iDim++)
-	Coord_Sum[iDim] = 0.0; 
+	Coord_Sum[iDim] = 0.0;
 }
 
 inline void CPoint::AddCoord_Sum(su2double *val_coord_sum) { 
-	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
-		Coord_Sum[iDim] += val_coord_sum[iDim]; 
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Coord_Sum[iDim] += val_coord_sum[iDim];
 }
 
 inline void CPoint::SetGridVel(unsigned short val_dim, su2double val_gridvel) { GridVel[val_dim] = val_gridvel; }
@@ -138,13 +138,13 @@ inline bool CPoint::GetAgglomerate_Indirect (void) { return Agglomerate_Indirect
 
 inline void CPoint::SetAgglomerate_Indirect(bool val_agglomerate) { Agglomerate_Indirect = val_agglomerate; };
 
-inline void CPoint::SetVertex(long val_vertex, unsigned short val_nmarker) { 
+inline void CPoint::SetVertex(long val_vertex, unsigned short val_nmarker) {
 	if (Boundary) Vertex[val_nmarker] = val_vertex;
 }
 
 inline unsigned short CPoint::GetnChildren_CV (void) { return nChildren_CV; }
 
-inline long CPoint::GetVertex(unsigned short val_marker) { 
+inline long CPoint::GetVertex(unsigned short val_marker) {
 	if (Boundary) return Vertex[val_marker];
 	else return -1; 
 }

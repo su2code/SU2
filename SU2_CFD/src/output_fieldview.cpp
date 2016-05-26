@@ -2,7 +2,7 @@
  * \file output_fieldview.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,9 +38,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   unsigned long iPoint, iElem, iNode, nbfaces;
   
-  unsigned long iExtIter = config->GetExtIter();
-  bool adjoint = config->GetAdjoint();
-  bool disc_adjoint = config->GetDiscrete_Adjoint();
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
 
   bool grid_movement  = config->GetGrid_Movement();
 
@@ -49,10 +47,10 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   /*--- Write file name with extension ---*/
   
-  if (adjoint || disc_adjoint) filename = config->GetAdj_FileName();
+  if (adjoint) filename = config->GetAdj_FileName();
   else filename = config->GetFlow_FileName();
   
-  if (Kind_Solver == LINEAR_ELASTICITY)
+  if (Kind_Solver == FEM_ELASTICITY)
     filename = config->GetStructure_FileName().c_str();
   
   if (Kind_Solver == WAVE_EQUATION)
@@ -70,29 +68,29 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
+      (val_nZone > 1) && (config->GetUnsteady_Simulation() != SPECTRAL_METHOD)) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
   }
-  
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-    
-    if (config->GetKind_SU2() == SU2_SOL) { val_iZone = iExtIter; }
-    
-    if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.uns", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.uns", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.uns", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.uns", SU2_TYPE::Int(val_iZone));
-    if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.uns", SU2_TYPE::Int(val_iZone));
-    
-  }
-  else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
-    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.uns", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.uns", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.uns", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.uns", SU2_TYPE::Int(iExtIter));
-    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.uns", SU2_TYPE::Int(iExtIter));
-  }
+//
+//  if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
+//
+//    if (config->GetKind_SU2() == SU2_SOL) { val_iZone = iExtIter; }
+//
+//    if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.uns", SU2_TYPE::Int(val_iZone));
+//    if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.uns", SU2_TYPE::Int(val_iZone));
+//    if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.uns", SU2_TYPE::Int(val_iZone));
+//    if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.uns", SU2_TYPE::Int(val_iZone));
+//    if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.uns", SU2_TYPE::Int(val_iZone));
+//
+//  }
+//  else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
+//    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.uns", SU2_TYPE::Int(iExtIter));
+//    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.uns", SU2_TYPE::Int(iExtIter));
+//    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.uns", SU2_TYPE::Int(iExtIter));
+//    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.uns", SU2_TYPE::Int(iExtIter));
+//    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.uns", SU2_TYPE::Int(iExtIter));
+//  }
   else { SPRINTF (buffer, ".uns"); }
   
   strcat(cstr, buffer);
@@ -484,18 +482,17 @@ void COutput::SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned 
   
   unsigned long iPoint, iElem, iNode, nbfaces;
   unsigned long iExtIter = config->GetExtIter();
-  bool adjoint = config->GetAdjoint();
-  bool disc_adjoint = config->GetDiscrete_Adjoint();
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   
   char cstr[200], buffer[50];
   string filename;
   
   /*--- Write file name with extension ---*/
   
-  if (adjoint || disc_adjoint) filename = config->GetAdj_FileName();
+  if (adjoint) filename = config->GetAdj_FileName();
   else filename = config->GetFlow_FileName();
   
-  if (Kind_Solver == LINEAR_ELASTICITY)
+  if (Kind_Solver == FEM_ELASTICITY)
     filename = config->GetStructure_FileName().c_str();
   
   if (Kind_Solver == WAVE_EQUATION)
@@ -513,12 +510,12 @@ void COutput::SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned 
   
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
+      (val_nZone > 1) && (config->GetUnsteady_Simulation() != SPECTRAL_METHOD)) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
   }
   
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
     
     if (config->GetKind_SU2() == SU2_SOL) { val_iZone = iExtIter; }
     

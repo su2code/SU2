@@ -2,7 +2,7 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,7 @@
  */
 
 #include "../include/definition_structure.hpp"
+
 
 unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config) {
   string text_line, Marker_Tag;
@@ -79,8 +80,7 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
   }
   
   /*--- For time spectral integration, nZones = nTimeInstances. ---*/
-  
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
     nZone = config->GetnTimeInstances();
   }
   
@@ -216,7 +216,7 @@ void Driver_Preprocessing(CDriver **driver,
                                     integration_container, numerics_container, interpolator_container,
                                     transfer_container, config_container, val_nZone, val_nDim);
     
-  } else if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  } else if (config_container[ZONE_0]->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
     
     /*--- Use the spectral method driver. ---*/
     
@@ -289,7 +289,7 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     geometry[iZone][MESH_0]->SetBoundVolume();
     geometry[iZone][MESH_0]->Check_IntElem_Orientation(config[iZone]);
     geometry[iZone][MESH_0]->Check_BoundElem_Orientation(config[iZone]);
-    
+
     /*--- Create the edge structure ---*/
     
     if (rank == MASTER_NODE) cout << "Identifying edges and vertices." << endl;
@@ -477,7 +477,7 @@ void Partition_Analysis(CGeometry *geometry, CConfig *config) {
     /*--- Prepare and open the file ---*/
     Profile_File.open(cstr, ios::out);
     /*--- Create the CSV header ---*/
-    Profile_File << "\"Rank\", \"nNeighbors\", \"nPointTotal\", ,\"nEdge\", \"nPointGhost\", \"nSendTotal\", \"nRecvTotal\", \"nElemTotal\", \"nElemBoundary\", \"nElemHalo\", \"nnz\"" << endl;
+    Profile_File << "\"Rank\", \"nNeighbors\", \"nPointTotal\", \"nEdge\", \"nPointGhost\", \"nSendTotal\", \"nRecvTotal\", \"nElemTotal\", \"nElemBoundary\", \"nElemHalo\", \"nnz\"" << endl;
     Profile_File.close();
   }
 #ifdef HAVE_MPI

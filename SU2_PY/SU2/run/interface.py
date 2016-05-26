@@ -3,7 +3,7 @@
 ## \file interface.py
 #  \brief python package interfacing with the SU2 suite
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.1.0 "Cardinal"
+#  \version 4.1.2 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -14,7 +14,7 @@
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
 #
-# Copyright (C) 2012-2015 SU2, the open-source CFD code.
+# Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -84,7 +84,7 @@ def CFD(config):
     
     direct_diff = not konfig.get('DIRECT_DIFF',"") in ["NONE", ""]
 
-    discrete_adjoint = konfig.MATH_PROBLEM == 'DISCRETE_ADJOINT'
+    auto_diff = konfig.MATH_PROBLEM == 'DISCRETE_ADJOINT'
 
     if direct_diff:
         tempname = 'config_CFD_DIRECTDIFF.cfg'
@@ -93,9 +93,9 @@ def CFD(config):
 
         processes = konfig['NUMBER_PART']
 
-        the_Command = 'SU2_CFD_AD ' + tempname
+        the_Command = 'SU2_CFD_DIRECTDIFF ' + tempname
 
-    elif discrete_adjoint:
+    elif auto_diff:
         tempname = 'config_CFD_AD.cfg'
         konfig.dump(tempname)
 
@@ -167,9 +167,9 @@ def DOT(config):
     """    
     konfig = copy.deepcopy(config)
 
-    discrete_adjoint = konfig.MATH_PROBLEM == 'DISCRETE_ADJOINT'
+    auto_diff = konfig.MATH_PROBLEM == 'DISCRETE_ADJOINT' or konfig.get('AUTO_DIFF','NO') == 'YES'
 
-    if discrete_adjoint:
+    if auto_diff:
 
         tempname = 'config_DOT_AD.cfg'
         konfig.dump(tempname)

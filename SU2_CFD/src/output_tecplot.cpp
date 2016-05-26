@@ -2,7 +2,7 @@
  * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,7 +42,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   bool *SurfacePoint = NULL;
   
   bool grid_movement  = config->GetGrid_Movement();
-  bool adjoint = config->GetAdjoint() || config->GetDiscrete_Adjoint();
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
 
   char cstr[200], buffer[50];
   string filename;
@@ -59,7 +59,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     else filename = config->GetFlow_FileName();
   }
   
-  if (Kind_Solver == LINEAR_ELASTICITY) {
+  if (Kind_Solver == FEM_ELASTICITY) {
     if (surf_sol) filename = config->GetSurfStructure_FileName().c_str();
     else filename = config->GetStructure_FileName().c_str();
   }
@@ -86,12 +86,12 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
        Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS) &&
-      (val_nZone > 1) && (config->GetUnsteady_Simulation() != TIME_SPECTRAL)) {
+      (val_nZone > 1) && (config->GetUnsteady_Simulation() != SPECTRAL_METHOD)) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
   }
   
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
     
     if (config->GetKind_SU2() == SU2_SOL) { val_iZone = iExtIter; }
     
@@ -175,15 +175,16 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
       }
       
       if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-        Tecplot_File << ",\"Pressure\",\"Temperature\",\"Pressure_Coefficient\",\"Mach\"";
+        Tecplot_File << ",\"Pressure\",\"Temperature\",\"C<sub>p</sub>\",\"Mach\"";
       }
       
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-        Tecplot_File << ",\"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Flux\", \"Y_Plus\"";
+        if (nDim == 2) Tecplot_File << ", \"<greek>m</greek>\", \"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"h\", \"y<sup>+</sup>\"";
+        else Tecplot_File << ", \"<greek>m</greek>\", \"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"C<sub>f</sub>_z\", \"h\", \"y<sup>+</sup>\"";
       }
       
       if (Kind_Solver == RANS) {
-        Tecplot_File << ", \"Eddy_Viscosity\"";
+        Tecplot_File << ", \"<greek>m</greek><sub>t</sub>\"";
       }
       
       if (config->GetWrt_SharpEdges()) {
@@ -213,8 +214,8 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         }
       }
       
-      if (Kind_Solver == LINEAR_ELASTICITY) {
-        Tecplot_File << ", \"Von_Mises_Stress\", \"Flow_Pressure\"";
+      if (Kind_Solver == FEM_ELASTICITY) {
+        Tecplot_File << ", \"Von_Mises_Stress\"";
       }
       
       if (config->GetExtraOutput()) {
@@ -278,9 +279,9 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   Tecplot_File << "ZONE ";
   if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     Tecplot_File << "STRANDID="<<SU2_TYPE::Int(iExtIter+1)<<", SOLUTIONTIME="<<config->GetDelta_UnstTime()*iExtIter<<", ";
-  } else if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  } else if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
     /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
-    su2double period = config->GetTimeSpectral_Period();
+    su2double period = config->GetSpectralMethod_Period();
     su2double deltaT = period/(su2double)(config->GetnTimeInstances());
     Tecplot_File << "STRANDID="<<SU2_TYPE::Int(iExtIter+1)<<", SOLUTIONTIME="<<deltaT*iExtIter<<", ";
   }
@@ -412,7 +413,10 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   
   Tecplot_File.close();
   
-  if (surf_sol) delete [] LocalIndex;
+  if (surf_sol){
+    delete [] LocalIndex;
+    delete[] SurfacePoint;
+  }
   
 }
 
@@ -489,10 +493,11 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
       }
       
       if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-        Tecplot_File << ",\"Pressure\",\"Temperature\",\"Pressure_Coefficient\",\"Mach\"";
+        Tecplot_File << ", \"Pressure\",\"Temperature\",\"C<sub>p</sub>\",\"Mach\"";
         if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-          Tecplot_File << ",\"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Flux\", \"Y_Plus\"";
-          if (Kind_Solver == RANS) { Tecplot_File << ", \"Eddy_Viscosity\""; }
+          if (geometry->GetnDim() == 2) Tecplot_File << ", \"<greek>m</greek>\", \"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"h\", \"y<sup>+</sup>\"";
+          else Tecplot_File << ", \"<greek>m</greek>\", \"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"C<sub>f</sub>_z\", \"h\", \"y<sup>+</sup>\"";
+          if (Kind_Solver == RANS) { Tecplot_File << ", \"<greek>m</greek><sub>t</sub>\""; }
         }
         if (config->GetWrt_SharpEdges()) { Tecplot_File << ", \"Sharp_Edge_Dist\""; }
       }
@@ -696,7 +701,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
     string filename, text_line;
     char buffer_char[50], out_file[MAX_STRING_SIZE];
     
-    if (!config->GetAdjoint()) {
+    if (!config->GetContinuous_Adjoint()) {
       if (surf_sol) filename = config->GetSurfFlowCoeff_FileName();
       else filename = config->GetFlow_FileName();
     }
@@ -713,7 +718,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
     
     for (int iRank = 0; iRank < size; iRank++) {
       
-      if (!config->GetAdjoint()) {
+      if (!config->GetContinuous_Adjoint()) {
         if (surf_sol) filename = config->GetSurfFlowCoeff_FileName();
         else filename = config->GetFlow_FileName();
       }
@@ -2621,8 +2626,14 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
     }
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      variables << "Laminar_Viscosity Skin_Friction_Coefficient Heat_Flux Y_Plus ";
-      *NVar += 4;
+      if (nDim == 2) {
+        variables << "Laminar_Viscosity Skin_Friction_Coefficient_x Skin_Friction_Coefficient_y Heat_Flux Y_Plus ";
+        *NVar += 5;
+      }
+      else {
+        variables << "Laminar_Viscosity Skin_Friction_Coefficient_x Skin_Friction_Coefficient_y Skin_Friction_Coefficient_z Heat_Flux Y_Plus ";
+        *NVar += 6;
+      }
     }
     
     if (Kind_Solver == RANS) {

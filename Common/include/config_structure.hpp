@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -14,7 +14,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -55,7 +55,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 
 class CConfig {
@@ -84,7 +84,7 @@ private:
   su2double FFD_Tol;  	/*!< \brief Tolerance in the point inversion problem. */
   bool Viscous_Limiter_Flow, Viscous_Limiter_Turb;			/*!< \brief Viscous limiters. */
   bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
-  bool Adjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
+  bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
   InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
@@ -117,7 +117,7 @@ private:
 	unsigned short Dynamic_Analysis;	/*!< \brief Static or dynamic structural analysis. */
 	unsigned short nStartUpIter;	/*!< \brief Start up iterations using the fine grid. */
   su2double FixAzimuthalLine; /*!< \brief Fix an azimuthal line due to misalignments of the nearfield. */
-	su2double *DV_Value;		/*!< \brief Previous value of the design variable. */
+  su2double **DV_Value;		/*!< \brief Previous value of the design variable. */
 	su2double LimiterCoeff;				/*!< \brief Limiter coefficient */
   unsigned long LimiterIter;	/*!< \brief Freeze the value of the limiter after a number of iterations */
 	su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
@@ -135,8 +135,9 @@ private:
 	FreeSurface_Damping_Coeff,  /*!< \brief Damping coefficient of the free surface for a free surface problem. */
 	FreeSurface_Damping_Length;  /*!< \brief Damping length of the free surface for a free surface problem. */
 	unsigned short Kind_Adaptation;	/*!< \brief Kind of numerical grid adaptation. */
+    unsigned short SpectralMethod_Type; /*!< \brief Type of Spectral method, TimeSpectral or HarmonicBalance. */
 	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for Time Spectral integration. */
-	su2double TimeSpectral_Period;		/*!< \brief Period of oscillation to be used with time-spectral computations. */
+	su2double SpectralMethod_Period;		/*!< \brief Period of oscillation to be used with time-spectral computations. */
 	su2double New_Elem_Adapt;			/*!< \brief Elements to adapt in the numerical grid adaptation process. */
 	su2double Delta_UnstTime,			/*!< \brief Time step for unsteady computations. */
 	Delta_UnstTimeND;						/*!< \brief Time step for unsteady computations (non dimensional). */
@@ -295,6 +296,7 @@ private:
 	Unst_CFL;		/*!< \brief Unsteady CFL number. */
 	bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
 	unsigned short nDV;		/*!< \brief Number of design variables. */
+  unsigned short* nDV_Value;		/*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
   unsigned short nFFDBox;		/*!< \brief Number of ffd boxes. */
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
 	unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
@@ -322,6 +324,7 @@ private:
 	*Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
 	Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
 	Kind_Linear_Solver,		/*!< \brief Numerical solver for the implicit scheme. */
+	Kind_Linear_Solver_FSI_Struc,	 /*!< \brief Numerical solver for the structural part in FSI problems. */
 	Kind_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
 	Kind_Linear_Solver_Prec_FSI_Struc,		/*!< \brief Preconditioner of the linear solver for the structural part in FSI problems. */
 	Kind_AdjTurb_Linear_Solver,		/*!< \brief Numerical solver for the turbulent adjoint implicit scheme. */
@@ -378,6 +381,7 @@ private:
 	SpatialOrder_AdjTurb,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjLevelSet;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
+  bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
   Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
@@ -385,6 +389,7 @@ private:
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
 	su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
+	su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
 	unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
 	unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
@@ -426,11 +431,10 @@ private:
 	AoS;				/*!< \brief Angle of sideSlip (just external flow). */
   bool Fixed_CL_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
   su2double Target_CL;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
-  su2double Damp_Fixed_CL;			/*!< \brief Damping coefficient for fixed CL mode (external flow only). */
+  su2double dCl_dAlpha;			/*!< \brief Lift curve slope for fixed CL mode (1/deg, external flow only). */
   unsigned long Iter_Fixed_CL;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   bool Update_AoA;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
 	su2double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
-	su2double *U_FreeStreamND;			/*!< \brief Reference variables at the infinity, free stream values. */
 	unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
 	Cauchy_Func_AdjFlow,				/*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
 	Cauchy_Elems;						/*!< \brief Number of elements to evaluate. */
@@ -602,6 +606,7 @@ private:
 	unsigned short nIterFSI;	/*!< \brief Number of maximum number of subiterations in a FSI problem. */
 	su2double AitkenStatRelax;			/*!< \brief Aitken's relaxation factor (if set as static) */
 	su2double AitkenDynMaxInit;			/*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
+	su2double AitkenDynMinInit;			/*!< \brief Aitken's minimum dynamic relaxation factor for the first iteration */
 	su2double Wave_Speed;			/*!< \brief Wave speed used in the wave solver. */
 	su2double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
 	su2double Cyclic_Pitch,          /*!< \brief Cyclic pitch for rotorcraft simulations. */
@@ -631,7 +636,8 @@ private:
   *Plunging_Omega_Z,           /*!< \brief Angular frequency of the mesh plunging in the z-direction. */
   *Plunging_Ampl_X,           /*!< \brief Plunging amplitude in the x-direction. */
   *Plunging_Ampl_Y,           /*!< \brief Plunging amplitude in the y-direction. */
-  *Plunging_Ampl_Z;           /*!< \brief Plunging amplitude in the z-direction. */
+  *Plunging_Ampl_Z,           /*!< \brief Plunging amplitude in the z-direction. */
+  *Omega_HB;                  /*!< \brief Frequency for Harmonic Balance Operator (in rad/s). */
   unsigned short nMotion_Origin_X,    /*!< \brief Number of X-coordinate mesh motion origins. */
 	nMotion_Origin_Y,           /*!< \brief Number of Y-coordinate mesh motion origins. */
 	nMotion_Origin_Z,           /*!< \brief Number of Z-coordinate mesh motion origins. */
@@ -656,6 +662,7 @@ private:
 	nPlunging_Ampl_X,           /*!< \brief Number of Plunging amplitudes in the x-direction. */
 	nPlunging_Ampl_Y,           /*!< \brief Number of Plunging amplitudes in the y-direction. */
 	nPlunging_Ampl_Z,           /*!< \brief Number of Plunging amplitudes in the z-direction. */
+    nOmega_HB,                  /*!< \brief Number of frequencies in Harmonic Balance Operator. */
   nMoveMotion_Origin,         /*!< \brief Number of motion origins. */
   *MoveMotion_Origin;         /*!< \brief Keeps track if we should move moment origin. */
   vector<vector<vector<su2double> > > Aeroelastic_np1, /*!< \brief Aeroelastic solution at time level n+1. */
@@ -702,6 +709,7 @@ private:
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
+
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map
@@ -854,12 +862,12 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addMathProblemOption(const string name, bool & Adjoint, const bool & Adjoint_default,
-                      bool & Restart_Flow, const bool & Restart_Flow_default,
-                            bool &DiscreteAdjoint, const bool & DiscreteAdjoint_default) {
+  void addMathProblemOption(const string name, bool & ContinuousAdjoint, const bool & ContinuousAdjoint_default,
+                            bool & DiscreteAdjoint, const bool & DiscreteAdjoint_default,
+                            bool & Restart_Flow, const bool & Restart_Flow_default) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionMathProblem(name, Adjoint, Adjoint_default, Restart_Flow, Restart_Flow_default, DiscreteAdjoint, DiscreteAdjoint_default);
+    COptionBase* val = new COptionMathProblem(name, ContinuousAdjoint, ContinuousAdjoint_default, DiscreteAdjoint, DiscreteAdjoint_default, Restart_Flow, Restart_Flow_default);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -871,6 +879,14 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
+  void addDVValueOption(const string name, unsigned short* & nDVValue_field, su2double** & valueDV, unsigned short & nDV_field,  su2double** & paramDV,
+                        unsigned short* & design_variable) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionDVValue(name, nDVValue_field, valueDV, nDV_field, paramDV, design_variable);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+
   void addFFDDefOption(const string name, unsigned short & nFFD_field, su2double** & coordFFD, string* & FFDTag) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
@@ -2034,6 +2050,12 @@ public:
    * \brief Get the number of design variables.
    * \return Number of the design variables.
    */
+  unsigned short GetnDV_Value(unsigned short iDV);
+
+  /*!
+   * \brief Get the number of design variables.
+   * \return Number of the design variables.
+   */
   unsigned short GetnFFDBox(void);
   
   /*!
@@ -2158,6 +2180,12 @@ public:
   long GetUnst_AdjointIter(void);
 
   /*!
+   * \brief Provides information about the type of spectral method
+   * \return The kind of spectral method : TimeSpectral or HarmonicBalance
+   */
+  unsigned short GetSpectralMethod_Type(void);
+    
+  /*!
 	 * \brief Get the restart iteration number for dynamic structural simulations.
 	 * \return Restart iteration number for dynamic structural simulations.
 	 */
@@ -2173,7 +2201,7 @@ public:
 	 * \brief Retrieves the period of oscillations to be used with Time Spectral.
 	 * \return: Period for Time Spectral.
 	 */
-	su2double GetTimeSpectral_Period(void);
+	su2double GetSpectralMethod_Period(void);
 
 	/*!
 	 * \brief Set the number of external iterations.
@@ -3987,16 +4015,17 @@ public:
 	/*!
 	 * \brief Value of the design variable step, we use this value in design problems.
 	 * \param[in] val_dv - Number of the design variable that we want to read.
+   * \param[in] val_value - Value of the design variable that we want to read.
 	 * \return Design variable step.
 	 */
-	su2double GetDV_Value(unsigned short val_dv);
+  su2double GetDV_Value(unsigned short val_dv, unsigned short val_val = 0);
 
   /*!
    * \brief Set the value of the design variable step, we use this value in design problems.
    * \param[in] val_dv - Number of the design variable that we want to read.
    * \param[in] val    - Value of the design variable.
    */
-  void SetDV_Value(unsigned short val_dv, su2double val);
+  void SetDV_Value(unsigned short val_dv, unsigned short val_ind, su2double val);
 
 	/*!
 	 * \brief Get information about the grid movement.
@@ -4212,6 +4241,12 @@ public:
 	 * \return Plunging amplitude in the z-direction.
 	 */
 	su2double GetPlunging_Ampl_Z(unsigned short val_iZone);
+    
+    /*!
+     * \brief Get the Harmonic Balance frequency pointer.
+     * \return Harmonic Balance Frequency pointer.
+     */
+    su2double* GetOmega_HB(void);
 
   /*!
 	 * \brief Get if we should update the motion origin.
@@ -4402,7 +4437,7 @@ public:
 	 * \brief Determines if problem is adjoint
 	 * \return true if Adjoint
 	 */
-	bool GetAdjoint(void);
+	bool GetContinuous_Adjoint(void);
 
     /*!
 	 * \brief Determines if problem is viscous
@@ -5205,10 +5240,10 @@ public:
 	su2double GetTarget_CL(void);
 
   /*!
-	 * \brief Get the value of the damping coefficient for fixed CL mode.
-	 * \return Damping coefficient for fixed CL mode.
+	 * \brief Get the value for the lift curve slope for fixed CL mode.
+	 * \return Lift curve slope for fixed CL mode.
 	 */
-	su2double GetDamp_Fixed_CL(void);
+	su2double GetdCl_dAlpha(void);
   
   /*!
    * \brief Get the value of iterations to re-evaluate the angle of attack.
@@ -5291,6 +5326,12 @@ public:
   */
   bool GetDiscrete_Adjoint(void);
 
+  /*!
+   * \brief Get the indicator whether we want to benchmark the MPI performance of FSI problems
+   * \return The value for checking
+  */
+  bool CheckFSI_MPI(void);
+
 	/*!
 	 * \brief Get the number of fluid subiterations roblems.
 	 * \return Number of FSI subiters.
@@ -5308,6 +5349,12 @@ public:
 	 * \return Aitken's relaxation parameters.
 	 */
 	su2double GetAitkenDynMaxInit(void);
+
+	/*!
+	 * \brief Get Aitken's maximum relaxation parameter for dynamic relaxation cases and first iteration.
+	 * \return Aitken's relaxation parameters.
+	 */
+	su2double GetAitkenDynMinInit(void);
 
 
 	/*!
@@ -5468,7 +5515,10 @@ public:
 	 */
 	inline unsigned short GetKindInterpolation(void);
 
-
+  /*!
+   * \brief Get the AD support.
+   */
+  bool GetAD_Mode(void);
 };
 
 #include "config_structure.inl"

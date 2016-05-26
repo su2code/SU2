@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -14,7 +14,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,7 +50,7 @@ using namespace std;
  * \class CDriver
  * \brief Parent class for driving an iteration of a single or multi-zone problem.
  * \author T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CDriver {
 protected:
@@ -128,12 +128,28 @@ public:
   void Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config);
 
   /*!
+   * \brief Definition and allocation of all solution classes.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Solver_Postprocessing(CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+
+  /*!
    * \brief Definition and allocation of all integration classes.
    * \param[in] integration_container - Container vector with all the integration methods.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void Integration_Preprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config);
+
+  /*!
+   * \brief Definition and allocation of all integration classes.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Integration_Postprocessing(CIntegration **integration_container, CGeometry **geometry, CConfig *config);
 
   /*!
    * \brief Definition and allocation of all interface classes.
@@ -158,6 +174,37 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Numerics_Preprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+
+
+  /*!
+   * \brief Definition and allocation of all solver classes.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Numerics_Postprocessing(CNumerics ****numerics_container, CSolver ***solver_container, CGeometry **geometry, CConfig *config);
+
+
+  /*!
+   * \brief Deallocation routine
+   * \param[in] iteration_container - Container vector with all the iteration methods.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - Total number of zones.
+   */
+  void Postprocessing(CIteration **iteration_container,
+                   CSolver ****solver_container,
+                   CGeometry ***geometry_container,
+                   CIntegration ***integration_container,
+                   CNumerics *****numerics_container,
+                   CInterpolator ***interpolator_container,
+                   CTransfer ***transfer_container,
+                   CConfig **config_container,
+                   unsigned short val_nZone);
 
   /*!
    * \brief A virtual member.
@@ -232,7 +279,7 @@ public:
  * \class CSingleZoneDriver
  * \brief Class for driving an iteration of the physics within a single zone.
  * \author T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSingleZoneDriver : public CDriver {
 public:
@@ -298,7 +345,7 @@ public:
  * \class CMultiZoneDriver
  * \brief Class for driving an iteration of the physics within multiple zones.
  * \author T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CMultiZoneDriver : public CDriver {
 public:
@@ -363,7 +410,7 @@ public:
  * \class CSpectralDriver
  * \brief Class for driving an iteration of a spectral method problem using multiple zones.
  * \author T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CSpectralDriver : public CDriver {
 public:
@@ -430,7 +477,7 @@ public:
    * \param[in] nZone - Total number of zones (periodic instances).
    * \param[in] iZone - Current zone number.
    */
-  void SetTimeSpectral(CGeometry ***geometry_container, CSolver ****solver_container,
+  void SetSpectralMethod(CGeometry ***geometry_container, CSolver ****solver_container,
                        CConfig **config_container, unsigned short nZone, unsigned short iZone);
   
   /*!
@@ -440,17 +487,41 @@ public:
    * \param[in] nZone - Total number of zones (periodic instances).
    */
   void ComputeTimeSpectral_Operator(su2double **D, su2double period, unsigned short nZone);
-  
-  /*!
-   * \brief Computation and storage of the time-spectral mesh velocities.
-   * \author K. Naik, T. Economon
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] nZone - Total number of zones (periodic instances).
-   */
-  void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
-                                  CConfig **config_container, unsigned short nZone);
-  
+    
+    /*!
+     * \brief Dense matrix matrix Product A*B - A(nRows_prod*nRows_prod), B(nRows_prod*nCols_prod)
+     * \param[in] nRows_prod - nRows of product matrix, nCols_prod - nCols of product matrix
+     */
+    void MatrixMatrixProduct(unsigned short nRows_prod, unsigned short nCols_prod, su2double *matrix_a, su2double *matrix_b, su2double *product);
+    
+    /*!
+     * \brief Inverse of dense square matrix using Gauss-Jordan elimination
+     * \author Sravya NImmagadda
+     * \param[in] nVar_mat - size of square matrix (nRows/nCols)
+     * *block and *invblock - pointers to matrix and its inverse
+     */
+    void InverseBlock(unsigned short nVar_mat, su2double *block, su2double *invBlock);
+    
+    /*!
+     * \brief Computation of the Harmonic-Balance operator matrix.
+     * \author Sravya Nimmagadda
+     * \param[in] D - double pointer to the operator matrix.
+     * \param[in] omega_HB - single pointer to array of frequency values to be modelled.
+     * \param[in] nHarmonics - Total number of harmonics (Number of Frequency values).
+     * \param[in] nZone - Total number of zones (periodic instances).
+     */
+    void ComputeHarmonicBalance_Operator(su2double **D, su2double *omega_HB, su2double period, unsigned short nZone);
+    
+    /*!
+     * \brief Computation and storage of the time-spectral mesh velocities.
+     * \author K. Naik, T. Economon
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] nZone - Total number of zones (periodic instances).
+     */
+    void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
+                                      CConfig **config_container, unsigned short nZone);
+
 };
 
 
@@ -458,7 +529,7 @@ public:
  * \class CFSIDriver
  * \brief Class for driving a BGS iteration for a fluid-structure interaction problem in multiple zones.
  * \author R. Sanchez.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  */
 class CFSIDriver : public CDriver {
 public:

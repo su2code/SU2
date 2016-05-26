@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -66,7 +66,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Inflow_MassFlow = NULL;   Inflow_Pressure = NULL;
   Inflow_Mach = NULL;       Inflow_Area = NULL;
   Bleed_MassFlow = NULL;    Bleed_Pressure = NULL;
-  Bleed_Temperature = NULL; Inflow_Area = NULL;
+  Bleed_Temperature = NULL; Bleed_Area = NULL;
   Exhaust_Pressure = NULL;  Exhaust_Temperature = NULL;
   Exhaust_MassFlow = NULL;  Exhaust_Area = NULL;
   
@@ -78,6 +78,8 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
   
+  Secondary=NULL; Secondary_i=NULL; Secondary_j=NULL;
+
   /*--- Fixed CL mode initialization (cauchy criteria) ---*/
   
   Cauchy_Value = 0;
@@ -86,6 +88,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   New_Func = 0;
   Cauchy_Counter = 0;
   Cauchy_Serie = NULL;
+  FluidModel=NULL;
   
 }
 
@@ -106,7 +109,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   string filename = config->GetSolution_FlowFileName();
   
   unsigned short direct_diff = config->GetDirectDiff();
@@ -118,36 +121,62 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Array initialization ---*/
   
-  CDrag_Inv = NULL; CLift_Inv = NULL; CSideForce_Inv = NULL; CEff_Inv = NULL;
-  CMx_Inv = NULL;   CMy_Inv = NULL;   CMz_Inv = NULL;
-  CFx_Inv = NULL;   CFy_Inv = NULL;   CFz_Inv = NULL;
+  /*--- Basic array initialization ---*/
+
+  CDrag_Inv = NULL; CLift_Inv = NULL; CSideForce_Inv = NULL;  CEff_Inv = NULL;
+  CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
+  CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
+
+  CPressure = NULL; CPressureTarget = NULL; HeatFlux = NULL; HeatFluxTarget = NULL; YPlus = NULL;
+  ForceInviscid = NULL; MomentInviscid = NULL;
+
+  /*--- Surface based array initialization ---*/
   
   Surface_CLift_Inv = NULL; Surface_CDrag_Inv = NULL; Surface_CSideForce_Inv = NULL; Surface_CEff_Inv = NULL;
-  Surface_CFx_Inv = NULL;   Surface_CFy_Inv = NULL;   Surface_CFz_Inv = NULL;
-  Surface_CMx_Inv = NULL;   Surface_CMy_Inv = NULL;   Surface_CMz_Inv = NULL;
+  Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
+  Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
   
   Surface_CLift = NULL; Surface_CDrag = NULL; Surface_CSideForce = NULL; Surface_CEff = NULL;
-  Surface_CFx = NULL;   Surface_CFy = NULL;   Surface_CFz = NULL;
-  Surface_CMx = NULL;   Surface_CMy = NULL;   Surface_CMz = NULL;
+  Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
+  Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
+
+  /*--- Rotorcraft simulation array initialization ---*/
+
+  CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
+
+  /*--- Supersonic simulation array initialization ---*/
   
-  ForceInviscid = NULL;  MomentInviscid = NULL;
-  CPressure = NULL;      CPressureTarget = NULL; HeatFlux = NULL;
-  HeatFluxTarget = NULL; YPlus = NULL;
+  CEquivArea_Inv = NULL;
+  CNearFieldOF_Inv = NULL;
   
-  CMerit_Inv = NULL; CT_Inv = NULL; CQ_Inv = NULL;
+  /*--- Engine simulation array initialization ---*/
   
-  CEquivArea_Inv = NULL; CNearFieldOF_Inv = NULL;
+  Inflow_MassFlow = NULL;   Inflow_Pressure = NULL;
+  Inflow_Mach = NULL;       Inflow_Area = NULL;
+  Bleed_MassFlow = NULL;    Bleed_Pressure = NULL;
+  Bleed_Temperature = NULL; Bleed_Area = NULL;
+  Exhaust_Pressure = NULL;  Exhaust_Temperature = NULL;
+  Exhaust_MassFlow = NULL;  Exhaust_Area = NULL;
   
-  Inflow_MassFlow = NULL; Exhaust_MassFlow = NULL; Exhaust_Area = NULL;      Exhaust_Pressure = NULL;
-  Inflow_Pressure = NULL; Inflow_Mach = NULL;      Inflow_Area = NULL;       Exhaust_Temperature = NULL;
-  Bleed_MassFlow = NULL;  Bleed_Pressure = NULL;   Bleed_Temperature = NULL; Bleed_Area = NULL;
+  /*--- Numerical methods array initialization ---*/
   
-  iPoint_UndLapl = NULL;  jPoint_UndLapl = NULL;
+  iPoint_UndLapl = NULL;
+  jPoint_UndLapl = NULL;
   LowMach_Precontioner = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
-  Secondary = NULL; Secondary_i = NULL; Secondary_j = NULL;
   CharacPrimVar = NULL;
+
+  Secondary=NULL; Secondary_i=NULL; Secondary_j=NULL;
+
+  /*--- Fixed CL mode initialization (cauchy criteria) ---*/
+
+  Cauchy_Value = 0;
+  Cauchy_Func = 0;
+  Old_Func = 0;
+  New_Func = 0;
+  Cauchy_Counter = 0;
   Cauchy_Serie = NULL;
+  FluidModel=NULL;
   
   /*--- Set the gamma value ---*/
   
@@ -762,7 +791,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 CEulerSolver::~CEulerSolver(void) {
   unsigned short iVar, iMarker;
-  
   /*--- Array deallocation ---*/
   if (CDrag_Inv != NULL)         delete [] CDrag_Inv;
   if (CLift_Inv != NULL)         delete [] CLift_Inv;
@@ -808,19 +836,23 @@ CEulerSolver::~CEulerSolver(void) {
   if (Inflow_Mach != NULL)      delete [] Inflow_Mach;
   if (Inflow_Area != NULL)      delete [] Inflow_Area;
   if (Bleed_Pressure != NULL)  delete [] Bleed_Pressure;
+
   if (Bleed_Temperature != NULL)      delete [] Bleed_Temperature;
   if (Exhaust_Pressure != NULL)  delete [] Exhaust_Pressure;
   if (Exhaust_Temperature != NULL)      delete [] Exhaust_Temperature;
   if (Bleed_Area != NULL)      delete [] Bleed_Area;
-  if (iPoint_UndLapl != NULL)       delete [] iPoint_UndLapl;
-  if (jPoint_UndLapl != NULL)       delete [] jPoint_UndLapl;
+
+  //if (iPoint_UndLapl != NULL)       delete [] iPoint_UndLapl;
+  //if (jPoint_UndLapl != NULL)       delete [] jPoint_UndLapl;
+
   if (Primitive != NULL)        delete [] Primitive;
   if (Primitive_i != NULL)      delete [] Primitive_i;
   if (Primitive_j != NULL)      delete [] Primitive_j;
-  //  if (Secondary != NULL)        delete [] Secondary;
+
+  //if (Secondary != NULL)        delete [] Secondary;
   if (Secondary_i != NULL)      delete [] Secondary_i;
   if (Secondary_j != NULL)      delete [] Secondary_j;
-  
+
   if (LowMach_Precontioner != NULL) {
     for (iVar = 0; iVar < nVar; iVar ++)
       delete LowMach_Precontioner[iVar];
@@ -828,8 +860,10 @@ CEulerSolver::~CEulerSolver(void) {
   }
   
   if (CPressure != NULL) {
+    /* This causes failure in AD dealloc
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete CPressure[iMarker];
+    */
     delete [] CPressure;
   }
   
@@ -838,16 +872,20 @@ CEulerSolver::~CEulerSolver(void) {
       delete CPressureTarget[iMarker];
     delete [] CPressureTarget;
   }
-  
-  //  if (CharacPrimVar != NULL) {
-  //    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-  //      for (iVertex = 0; iVertex < nVertex; iVertex++) {
-  //        delete CharacPrimVar[iMarker][iVertex];
-  //      }
-  //    }
-  //    delete [] CharacPrimVar;
-  //  }
-  
+  /*
+  if (CharacPrimVar != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if (nVertex!=NULL){
+      for (iVertex=0; iVertex<nVertex[iMarker]; iVertex++)
+        delete [] CharacPrimVar[iMarker][iVertex];
+      }
+      delete [] CharacPrimVar[iMarker];
+    }
+    delete [] CharacPrimVar;
+  }
+  */
+  //if (nVertex!=NULL)  delete [] nVertex;
+
   if (HeatFlux != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       delete HeatFlux[iMarker];
@@ -868,10 +906,12 @@ CEulerSolver::~CEulerSolver(void) {
     }
     delete [] YPlus;
   }
-  
+  /*
   if (Cauchy_Serie != NULL)
     delete [] Cauchy_Serie;
-  
+  */
+  //if (FluidModel!=NULL) delete FluidModel;
+
 }
 
 void CEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -3126,7 +3166,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 #endif
   
   unsigned long ExtIter = config->GetExtIter();
-  bool adjoint          = config->GetAdjoint();
+  bool adjoint          = config->GetContinuous_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool second_order     = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
@@ -3782,7 +3822,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
-    MPI_Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #else
     counter_global = counter_local;
 #endif
@@ -3839,7 +3879,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool gravity        = (config->GetGravityForce() == YES);
-  bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool spectral_method  = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
   bool windgust       = config->GetWind_Gust();
   
   /*--- Initialize the source residual to zero ---*/
@@ -3969,7 +4009,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     
   }
   
-  if (time_spectral) {
+  if (spectral_method) {
     
     su2double Volume, Source;
     
@@ -3981,7 +4021,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Get stored time spectral source term ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
-        Source = node[iPoint]->GetTimeSpectral_Source(iVar);
+        Source = node[iPoint]->GetSpectralMethod_Source(iVar);
         Residual[iVar] = Source*Volume;
       }
       
@@ -4735,7 +4775,7 @@ void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_co
   unsigned long iPoint;
   
   su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
@@ -4778,7 +4818,7 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned short iVar;
   unsigned long iPoint;
   
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
@@ -4821,7 +4861,7 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   unsigned long iPoint, total_index, IterLinSol = 0;
   su2double Delta, *local_Res_TruncError, Vol;
   
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
   
   /*--- Set maximum residual to zero ---*/
@@ -6525,23 +6565,24 @@ void CEulerSolver::GetActuatorDisk_Properties(CGeometry *geometry, CConfig *conf
 void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh, bool Output) {
   
-  unsigned short iDim, iCounter;
-  bool Update_AoA = false;
-  su2double Target_CL, AoA_inc, AoA;
-  su2double DampingFactor = config->GetDamp_Fixed_CL();
+  su2double Target_CL, AoA, Vel_Infty[3], AoA_inc, Vel_Infty_Mag;
+  unsigned short iDim;
   unsigned long Iter_Fixed_CL = config->GetIter_Fixed_CL();
-  unsigned long ExtIter = config->GetExtIter();
-  su2double Beta = config->GetAoS()*PI_NUMBER/180.0;
-  su2double Vel_Infty[3], Vel_Infty_Mag;
+  unsigned long ExtIter       = config->GetExtIter();
+  su2double Beta              = config->GetAoS()*PI_NUMBER/180.0;
+  su2double dCl_dAlpha        = config->GetdCl_dAlpha()*180.0/PI_NUMBER;
+  bool Update_AoA             = false;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
+  if (ExtIter == 0) AoA_Counter = 0;
+  
   /*--- Only the fine mesh level should check the convergence criteria ---*/
   
-  if (iMesh == MESH_0) {
+  if ((iMesh == MESH_0) && Output) {
     
     /*--- Initialize the update flag to false ---*/
     
@@ -6549,7 +6590,11 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
     
     /*--- Reevaluate Angle of Attack at a fix number of iterations ---*/
     
-    if (ExtIter % Iter_Fixed_CL == 0) { Update_AoA = true; };
+    if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
+      AoA_Counter++;
+      if (AoA_Counter >= 2) Update_AoA = true;
+      else Update_AoA = false;
+    };
     
     /*--- Store the update boolean for use on other mesh levels in the MG ---*/
     
@@ -6562,30 +6607,34 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
   }
   
   /*--- If we are within two digits of convergence in the CL coefficient,
-   compute an updated value for the AoA at the farfield. We are iterating
-   on the AoA in order to match the specified fixed lift coefficient. ---*/
+ *    compute an updated value for the AoA at the farfield. We are iterating
+ *       on the AoA in order to match the specified fixed lift coefficient. ---*/
   
-  if (Update_AoA) {
+  if (Update_AoA && Output) {
     
     /*--- Retrieve the specified target CL value. ---*/
     
     Target_CL = config->GetTarget_CL();
     
-    /*--- Retrieve the old AoA. ---*/
+    /*--- Retrieve the old AoA (radians) ---*/
     
     AoA_old = config->GetAoA()*PI_NUMBER/180.0;
     
-    /*--- Estimate the increment in AoA based on a 2*pi lift curve slope ---*/
+    /*--- Estimate the increment in AoA based on dCl_dAlpha (radians) ---*/
     
-    AoA_inc = (1.0/(2.0*PI_NUMBER))*(Target_CL - Total_CLift);
+    AoA_inc = (1.0/dCl_dAlpha)*(Target_CL - Total_CLift);
     
-    /*--- Compute a new value for AoA on the fine mesh only ---*/
+    /*--- Compute a new value for AoA on the fine mesh only (radians)---*/
     
-    if (iMesh == MESH_0)
-      AoA = (1.0 - DampingFactor)*AoA_old + DampingFactor * (AoA_old + AoA_inc);
-    else
-      AoA = config->GetAoA()*PI_NUMBER/180.0;
+    if (iMesh == MESH_0) AoA = AoA_old + AoA_inc;
+    else { AoA = config->GetAoA()*PI_NUMBER/180.0; }
     
+    /*--- Only the fine mesh stores the updated values for AoA in config ---*/
+
+    if (iMesh == MESH_0) {
+      config->SetAoA(AoA*180.0/PI_NUMBER);
+    }
+
     /*--- Update the freestream velocity vector at the farfield ---*/
     
     for (iDim = 0; iDim < nDim; iDim++)
@@ -6616,31 +6665,26 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
       Velocity_Inf[iDim] = Vel_Infty[iDim];
     }
     
-    /*--- Only the fine mesh stores the updated values for AoA in config ---*/
+    /*--- Only the fine mesh stores the updated values for velocity in config ---*/
+    
     if (iMesh == MESH_0) {
       for (iDim = 0; iDim < nDim; iDim++)
         config->SetVelocity_FreeStreamND(Vel_Infty[iDim], iDim);
-      config->SetAoA(AoA*180.0/PI_NUMBER);
     }
     
-    /*--- Reset the local cauchy criteria ---*/
-    Cauchy_Value = 0.0;
-    Cauchy_Counter = 0;
-    for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-      Cauchy_Serie[iCounter] = 0.0;
   }
   
   /*--- Output some information to the console with the headers ---*/
   
-  bool write_heads = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
+  bool write_heads = ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0));
   if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && Output) {
     cout.precision(7);
     cout.setf(ios::fixed, ios::floatfield);
     cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
     cout << "Target CL: " << config->GetTarget_CL();
-    cout << ", Current CL: " << Total_CLift;
-    cout << ", Current AoA: " << config->GetAoA() << " deg." << endl;
-    cout << "-------------------------------------------------------------------------" << endl;
+    cout << ", current CL: " << Total_CLift;
+    cout << ", current AoA: " << config->GetAoA() << " deg." << endl;
+    cout << "-------------------------------------------------------------------------" << endl << endl;
   }
   
   
@@ -12066,7 +12110,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool adjoint = config->GetAdjoint();
+  bool adjoint = config->GetContinuous_Adjoint();
   string filename = config->GetSolution_FlowFileName();
   
   unsigned short direct_diff = config->GetDirectDiff();
@@ -12284,11 +12328,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Skin friction in all the markers ---*/
   
-  CSkinFriction = new su2double* [nMarker];
+  CSkinFriction = new su2double** [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CSkinFriction[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    CSkinFriction[iMarker] = new su2double* [geometry->nVertex[iMarker]];
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      CSkinFriction[iMarker][iVertex] = 0.0;
+      CSkinFriction[iMarker][iVertex] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        CSkinFriction[iMarker][iVertex][iDim] = 0.0;
+      }
     }
   }
   
@@ -12790,7 +12837,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 }
 
 CNSSolver::~CNSSolver(void) {
-  unsigned short iMarker;
+  unsigned short iMarker, iDim;
   
   if (CDrag_Visc != NULL)       delete [] CDrag_Visc;
   if (CLift_Visc != NULL)       delete [] CLift_Visc;
@@ -12810,7 +12857,6 @@ CNSSolver::~CNSSolver(void) {
   if (ForceViscous != NULL)     delete [] ForceViscous;
   if (MomentViscous != NULL)    delete [] MomentViscous;
   
-  
   if (Surface_CLift_Visc != NULL)      delete [] Surface_CLift_Visc;
   if (Surface_CDrag_Visc != NULL)      delete [] Surface_CDrag_Visc;
   if (Surface_CSideForce_Visc != NULL) delete [] Surface_CSideForce_Visc;
@@ -12826,9 +12872,11 @@ CNSSolver::~CNSSolver(void) {
   
   if (CSkinFriction != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete CSkinFriction[iMarker];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        delete CSkinFriction[iMarker][iDim];
+      }
+      delete [] CSkinFriction;
     }
-    delete [] CSkinFriction;
   }
   
 }
@@ -12844,7 +12892,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 #endif
   
   unsigned long ExtIter     = config->GetExtIter();
-  bool adjoint              = config->GetAdjoint();
+  bool adjoint              = config->GetContinuous_Adjoint();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool center               = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
@@ -13439,19 +13487,22 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
           }
         }
         
-        /*--- Compute wall shear stress (using the stress tensor) ---*/
+        /*--- Compute wall shear stress (using the stress tensor). Compute wall skin friction coefficient, and heat flux on the wall ---*/
         
         TauNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
-        for (iDim = 0; iDim < nDim; iDim++) TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-        WallShearStress = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallShearStress += TauTangent[iDim]*TauTangent[iDim];
+        
+        WallShearStress = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+          CSkinFriction[iMarker][iVertex][iDim] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
+          WallShearStress += CSkinFriction[iMarker][iVertex][iDim]*CSkinFriction[iMarker][iVertex][iDim];
+        }
         WallShearStress = sqrt(WallShearStress);
         
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
         WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
         
-        /*--- Compute wall skin friction coefficient, and heat flux on the wall ---*/
         
-        CSkinFriction[iMarker][iVertex] = WallShearStress / (0.5*RefDensity*RefVel2);
         
         /*--- Compute y+ and non-dimensional velocity ---*/
         

@@ -2,7 +2,7 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,33 @@
 
 #include "../include/numerics_structure.hpp"
 
-CNumerics::CNumerics(void) { }
+CNumerics::CNumerics(void) {
+
+  Normal = NULL;
+  UnitNormal = NULL;
+  U_n = NULL;
+  U_nM1 = NULL;
+  U_nP1  = NULL;
+  Proj_Flux_Tensor  = NULL;
+  Flux_Tensor = NULL;
+  tau  = NULL;
+  delta  = NULL;
+
+  Diffusion_Coeff_i = NULL;
+  Diffusion_Coeff_j = NULL;
+
+  Enthalpy_formation = NULL;
+  Theta_v = NULL;
+  var = NULL;
+
+  Ys          = NULL;
+  dFdYj       = NULL;
+  dFdYi       = NULL;
+  sumdFdYih   = NULL;
+  sumdFdYjh   = NULL;
+  sumdFdYieve = NULL;
+  sumdFdYjeve = NULL;
+}
 
 CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
                      CConfig *config) {
@@ -80,6 +106,10 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   Diffusion_Coeff_i = NULL;
   Diffusion_Coeff_j = NULL;
   
+  Enthalpy_formation = NULL;
+  Theta_v = NULL;
+  var = NULL;
+
   Ys          = NULL;
   dFdYj       = NULL;
   dFdYi       = NULL;
@@ -96,31 +126,33 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 }
 
 CNumerics::~CNumerics(void) {
+  if (Normal!=NULL) delete [] Normal;
+  if (UnitNormal!=NULL) delete [] UnitNormal;
 
-  delete [] Normal;
-	delete [] UnitNormal;
-
-	delete [] U_n;
-	delete [] U_nM1;
-	delete [] U_nP1;
+  if (U_n!=NULL) delete [] U_n;
+  if (U_nM1!=NULL) delete [] U_nM1;
+  if (U_nP1!=NULL) delete [] U_nP1;
 
 	// visc
-	delete [] Proj_Flux_Tensor;
+  if (Proj_Flux_Tensor!=NULL) delete [] Proj_Flux_Tensor;
 
-	for (unsigned short iVar = 0; iVar < nDim+3; iVar++) {
-		delete [] Flux_Tensor[iVar];
-	}
-	delete [] Flux_Tensor;
+  if (Flux_Tensor!=NULL){
+    for (unsigned short iVar = 0; iVar < nDim+3; iVar++) {
+      delete [] Flux_Tensor[iVar];
+    }
+    delete [] Flux_Tensor;
+  }
 
-	for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-		delete [] tau[iDim];
-		delete [] delta[iDim];
-	}
-	delete [] tau;
-	delete [] delta;
-	delete [] Enthalpy_formation;
-	delete [] Theta_v;
-  if (Ys != NULL) delete [] Ys;
+  if (tau!=NULL and delta != NULL){
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      delete [] tau[iDim];
+      delete [] delta[iDim];
+    }
+    delete [] tau;
+    delete [] delta;
+  }
+
+	if (Ys != NULL) delete [] Ys;
   if (sumdFdYih != NULL) delete [] sumdFdYih;
   if (sumdFdYjh != NULL) delete [] sumdFdYjh;
   if (sumdFdYieve != NULL) delete [] sumdFdYieve;
@@ -130,11 +162,8 @@ CNumerics::~CNumerics(void) {
   if (Vector != NULL) delete [] Vector;
   if (var != NULL) delete [] var;
 
-	unsigned short iVar;
-	for (iVar = 0; iVar < nVar; iVar++) {
-		delete [] dVdU[iVar];
-	}
-	delete [] dVdU;
+	if(Enthalpy_formation != NULL) delete [] Enthalpy_formation;
+	if(Theta_v != NULL) delete [] Theta_v;
 
 }
 
@@ -225,7 +254,6 @@ void CNumerics::GetInviscidProjFlux(su2double *val_density,
 	}
 
 }
-
 
 void CNumerics::GetInviscidArtCompProjFlux(su2double *val_density,
                                            su2double *val_velocity,
@@ -1091,7 +1119,6 @@ void CNumerics::GetLMatrix(su2double val_soundspeed, su2double val_density, su2d
 
 void CNumerics::GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* Lambda, su2double *val_normal,
 		su2double **val_absPeJac) {
-
 
 	su2double lam1, lam2, lam3, lam4;
 	lam1 = Lambda[0]; lam2 = Lambda[1]; lam3 = Lambda[2]; lam4 = Lambda[3];

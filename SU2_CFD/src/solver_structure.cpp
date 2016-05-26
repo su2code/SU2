@@ -2,7 +2,7 @@
  * \file solver_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,7 +13,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -69,105 +69,101 @@ CSolver::CSolver(void) {
 }
 
 CSolver::~CSolver(void) {
+
+  unsigned short iVar, iDim;
+  unsigned long iPoint;
+  /* Public variables, may be accessible outside */
+
   if ( OutputHeadingNames != NULL) {
-    delete []OutputHeadingNames;
+    delete [] OutputHeadingNames;
   }
-  //  delete [] OutputHeadingNames;
-  /*  unsigned short iVar, iDim;
-   unsigned long iPoint;
-   
-   if (Residual_RMS != NULL) delete [] Residual_RMS;
-   if (Residual_Max != NULL) delete [] Residual_Max;
-   if (Residual != NULL) delete [] Residual;
-   if (Residual_i != NULL) delete [] Residual_i;
-   if (Residual_j != NULL) delete [] Residual_j;
-   if (Point_Max != NULL) delete [] Point_Max;
-   
-   if (Point_Max_Coord != NULL) {
-   for (iVar = 0; iVar < nVar; iVar++)
-   delete Point_Max_Coord[iVar];
-   delete [] Point_Max_Coord;
-   }
-   
-   if (Solution != NULL) delete [] Solution;
-   if (Solution_i != NULL) delete [] Solution_i;
-   if (Solution_j != NULL) delete [] Solution_j;
-   if (Vector != NULL) delete [] Vector;
-   if (Vector_i != NULL) delete [] Vector_i;
-   if (Vector_j != NULL) delete [] Vector_j;
-   if (Res_Conv != NULL) delete [] Res_Conv;
-   if (Res_Visc != NULL) delete [] Res_Visc;
-   if (Res_Sour != NULL) delete [] Res_Sour;
-   if (Res_Conv_i != NULL) delete [] Res_Conv_i;
-   if (Res_Visc_i != NULL) delete [] Res_Visc_i;
-   if (Res_Visc_j != NULL) delete [] Res_Visc_j;
-   if (Res_Sour_j != NULL) delete [] Res_Sour_j;
-   if (rhs != NULL) delete [] rhs;
-   
-   if (Jacobian_i != NULL) {
-   for (iVar = 0; iVar < nVar; iVar++)
-   delete Jacobian_i[iVar];
-   delete [] Jacobian_i;
-   }
-   
-   if (Jacobian_j != NULL) {
-   for (iVar = 0; iVar < nVar; iVar++)
-   delete Jacobian_j[iVar];
-   delete [] Jacobian_j;
-   }
-   
-   if (Jacobian_MeanFlow_j != NULL) {
-   for (iVar = 0; iVar < nVar; iVar++)
-   delete Jacobian_MeanFlow_j[iVar];
-   delete [] Jacobian_MeanFlow_j;
-   }
-   
-   if (Jacobian_ii != NULL) {
-   for (iVar = 0; iVar < nVar; iVar++)
-   delete Jacobian_ii[iVar];
-   delete [] Jacobian_ii;
-   }
-   
-   if (Jacobian_ij != NULL) {
-   for (iVar = 0; iVar < nVar; iVar++)
-   delete Jacobian_ij[iVar];
-   delete [] Jacobian_ij;
-   }
-   
-   if (Jacobian_ji != NULL) {
-   for (iVar = 0; iVar < nVar; iVar++)
-   delete Jacobian_ji[iVar];
-   delete [] Jacobian_ji;
-   }
-   
-   if (Jacobian_jj != NULL) {
-   for (iVar = 0; iVar < nVar; iVar++)
-   delete Jacobian_jj[iVar];
-   delete [] Jacobian_jj;
-   }
-   
-   if (Smatrix != NULL) {
-   for (iDim = 0; iDim < nDim; iDim++)
-   delete Smatrix[iDim];
-   delete [] Smatrix;
-   }
-   
-   if (cvector != NULL) {
-   for (iVar = 0; iVar < nVar; iVar++)
-   delete cvector[iVar];
-   delete [] cvector;
-   }
-   
-   if (node != NULL) {
-   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-   delete node[iPoint];
-   }
-   delete [] node;
-   }
-   
-   //	delete [] **StiffMatrix_Elem;
-   //	delete [] **StiffMatrix_Node;*/
-  
+
+  if (node != NULL) {
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      delete node[iPoint];
+    }
+    delete [] node;
+  }
+
+  /* Private */
+
+  if (Residual_RMS != NULL) delete [] Residual_RMS;
+  if (Residual_Max != NULL) delete [] Residual_Max;
+  if (Residual != NULL) delete [] Residual;
+  if (Residual_i != NULL) delete [] Residual_i;
+  if (Residual_j != NULL) delete [] Residual_j;
+  if (Point_Max != NULL) delete [] Point_Max;
+
+  if (Point_Max_Coord != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Point_Max_Coord[iVar];
+    delete [] Point_Max_Coord;
+  }
+
+  if (Solution != NULL) delete [] Solution;
+  if (Solution_i != NULL) delete [] Solution_i;
+  if (Solution_j != NULL) delete [] Solution_j;
+  if (Vector != NULL) delete [] Vector;
+  if (Vector_i != NULL) delete [] Vector_i;
+  if (Vector_j != NULL) delete [] Vector_j;
+  if (Res_Conv != NULL) delete [] Res_Conv;
+  if (Res_Visc != NULL) delete [] Res_Visc;
+  if (Res_Sour != NULL) delete [] Res_Sour;
+  if (Res_Conv_i != NULL) delete [] Res_Conv_i;
+  if (Res_Visc_i != NULL) delete [] Res_Visc_i;
+  if (Res_Visc_j != NULL) delete [] Res_Visc_j;
+
+
+  if (Jacobian_i != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Jacobian_i[iVar];
+    delete [] Jacobian_i;
+  }
+
+  if (Jacobian_j != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Jacobian_j[iVar];
+    delete [] Jacobian_j;
+  }
+
+  if (Jacobian_ii != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Jacobian_ii[iVar];
+    delete [] Jacobian_ii;
+  }
+
+  if (Jacobian_ij != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Jacobian_ij[iVar];
+    delete [] Jacobian_ij;
+  }
+
+  if (Jacobian_ji != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Jacobian_ji[iVar];
+    delete [] Jacobian_ji;
+  }
+
+  if (Jacobian_jj != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete Jacobian_jj[iVar];
+    delete [] Jacobian_jj;
+  }
+
+  if (Smatrix != NULL) {
+    for (iDim = 0; iDim < nDim; iDim++)
+      delete Smatrix[iDim];
+    delete [] Smatrix;
+  }
+
+  if (cvector != NULL) {
+    for (iVar = 0; iVar < nVar; iVar++)
+      delete cvector[iVar];
+    delete [] cvector;
+  }
+
+
+
 }
 
 void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
@@ -1862,7 +1858,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Retrieve filename from config ---*/
   
-  if (config->GetAdjoint() || config->GetDiscrete_Adjoint()) {
+  if (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
@@ -1877,8 +1873,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
@@ -2170,7 +2165,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short nZone = geometry[iZone]->GetnZone();
 
   /*--- Retrieve filename from config ---*/
-  if (config->GetAdjoint()) {
+  if (config->GetContinuous_Adjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
@@ -2185,7 +2180,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
@@ -2284,7 +2279,7 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
   unsigned short nZone = geometry->GetnZone();
 
   /*--- Retrieve filename from config ---*/
-  if (config->GetAdjoint()) {
+  if (config->GetContinuous_Adjoint()) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){

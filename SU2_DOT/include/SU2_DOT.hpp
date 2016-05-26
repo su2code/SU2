@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_DOT.
  *        The subroutines and functions are in the <i>SU2_DOT.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -14,7 +14,7 @@
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
  *
- * Copyright (C) 2012-2015 SU2, the open-source CFD code.
+ * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,3 +44,33 @@
 #include "../../Common/include/grid_movement_structure.hpp"
 
 using namespace std;
+
+
+/*!
+ * \brief Projection of the surface sensitivity using finite differences (FD).
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] surface_movement - Surface movement class of the problem.
+ * \param[in] Gradient_file - Output file to store the gradient data.
+ */
+
+void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file);
+
+/*!
+ * \brief Projection of the surface sensitivity using algorithmic differentiation (AD).
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] surface_movement - Surface movement class of the problem.
+ * \param[in] Gradient_file - Output file to store the gradient data.
+ */
+
+void SetProjection_AD(CGeometry *geometry, CConfig *config, CSurfaceMovement *surface_movement, ofstream& Gradient_file);
+
+/*!
+ * \brief Prints the gradient information to a file.
+ * \param[in] Gradient - The gradient data.
+ * \param[in] config - Definition of the particular problem.
+ * \param[in] Gradient_file - Output file to store the gradient data.
+ */
+
+void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_file);
