@@ -256,6 +256,18 @@ public:
   unsigned long *DOFsSolElementSide0;    /*!< \brief Pointer to the solution DOFs of the element of side 0. */
   unsigned long *DOFsSolElementSide1;    /*!< \brief Pointer to the solution DOFs of the element of side 1. */
 
+  su2double *metricNormalsFace;     /*!< \brief Pointer to the location of the normals in the integration
+                                                points of the face. The normals point from side 0 to side 1. */
+  su2double *metricCoorDerivFace0;  /*!< \brief Pointer to the location of the terms drdx, dsdx, etc.
+                                                of side 0 in the integration points of the face. */
+  su2double *metricCoorDerivFace1;  /*!< \brief Pointer to the location of the terms dxdr, dydr, etc.
+                                                of side 1 in the integration points of the face. */
+  su2double *metricElemSide0;       /*!< \brief Pointer to the location of the metric terms of the
+                                                adjacent element on side 0 in the integration
+                                                points of the face. Needed for the SIP term. */
+  su2double *metricElemSide1;       /*!< \brief Pointer to the location of the metric terms of the
+                                                adjacent element on side 1 in the integration
+                                                points of the face. Needed for the SIP term. */
   /*!
    * \brief Constructor of the class. Nothing to be done.
    */
@@ -296,6 +308,15 @@ public:
 
   unsigned long *DOFsGridElement;   /*!< \brief Pointer to the grid DOFs of the adjacent element. */
   unsigned long *DOFsSolElement;    /*!< \brief Pointer to the solution DOFs of the adjacent element. */
+
+  su2double *metricNormalsFace;     /*!< \brief Pointer to the location of the normals in the integration
+                                                points of the face. The normals point out of the adjacent
+                                                element. */
+  su2double *metricCoorDerivFace;   /*!< \brief Pointer to the location of the terms drdx, dsdx, etc.
+                                                in the integration points of the face. */
+  su2double *metricElem;            /*!< \brief Pointer to the location of the metric terms of the
+                                                adjacent element in the integration points of the face.
+                                                Needed for the SIP term. */
 
   /*!
    * \brief Constructor of the class. Initialize some variables to avoid a valgrid warning.
@@ -363,6 +384,8 @@ public:
   vector<unsigned long> VecDOFsGridElement; /*!< \brief Storage for the grid DOFs of the adjacent elements. */
   vector<unsigned long> VecDOFsSolElement;  /*!< \brief Storage for the solution DOFs of the adjacent elements. */
 
+  vector <su2double> VecMetricTermsBoundaryFaces; /*!< \brief Storage for the metric terms of the boundary faces. */
+
   /*!
    * \brief Constructor of the class. Nothing to be done.
    */
@@ -408,8 +431,11 @@ protected:
   vector<su2double> VecMetricTermsElements;  /*!< \brief Storage for the metric terms of the volume elements. */
   vector<su2double> VecMassMatricesElements; /*!< \brief Storage for the mass matrices of the volume elements. */
 
+  vector<FEMStandardBoundaryFaceClass> standardBoundaryFacesSol;  /*!< \brief Vector that contains the standard boundary
+                                                                              faces used for the solution of the DG solver. */
+  vector<FEMStandardBoundaryFaceClass> standardBoundaryFacesGrid; /*!< \brief Vector that contains the standard boundary
+                                                                              faces used for the geometry of the DG solver. */
 public:
-
   /*!
   * \brief Constructor of the class.
   */
@@ -427,6 +453,94 @@ public:
   * \brief Destructor of the class.
   */
   virtual ~CMeshFEM(void);
+
+protected:
+  /*!
+  * \brief Function, which computes the gradients of the parametric coordinates
+           w.r.t. the Cartesian coordinates in the integration points of a face,
+           i.e. drdx, drdy, dsdx, etc.
+  * \param[in]  nIntegration   - Number of integration points on the face.
+  * \param[in]  nDOFs          - Number of DOFs of the grid associated with the
+                                 neighboring element.
+  * \param[in]  matDerBasisInt - Matrix, which contains the derivatives of the
+                                 basis functions w.r.t. the parametric
+                                 coordinates r, s and t in the integration points.
+  * \param[in]  DOFs           - The DOFs of the grid associated with the element.
+  * \param[out] derivCoor      - Storage for the derivatives of the coordinates.
+  */
+  void ComputeGradientsCoordinatesFace(const unsigned short nIntegration,
+                                       const unsigned short nDOFs,
+                                       const su2double      *matDerBasisInt,
+                                       const unsigned long  *DOFs,
+                                       su2double            *derivCoor);
+  /*!
+  * \brief Function, which computes the gradients of the Cartesian coordinates
+           w.r.t. the parametric coordinates in the given set of integration
+           points, i.e. dxdr, dydr, etc.
+  * \param[in]  nIntegration   - Number of integration points.
+  * \param[in]  nDOFs          - Number of DOFs of the grid associated with the
+                                 element.
+  * \param[in]  matDerBasisInt - Matrix, which contains the derivatives of the
+                                 basis functions w.r.t. the parametric
+                                 coordinates r, s and t in the integration points.
+  * \param[in]  DOFs           - The DOFs of the grid associated with the element.
+  * \param[out] derivCoor    - Storage for the derivatives of the coordinates.
+  */
+  void ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
+                                    const unsigned short nDOFs,
+                                    const su2double      *matDerBasisInt,
+                                    const unsigned long  *DOFs,
+                                    su2double            *derivCoor);
+  /*!
+  * \brief Function, which computes the metric terms needed for the SIP
+           treatment of the viscous terms. This is a dot product between the
+           Cartesian gradients of the basis functions and the normal.
+  * \param[in]  nIntegration - Number of integration points on the face.
+  * \param[in]  nDOFs        - Number of DOFs of the grid associated with the
+                               neighboring element.
+  * \param[in]  dr           - r-derivatives of the basis functions of the element.
+  * \param[in]  ds           - s-derivatives of the basis functions of the element.
+  * \param[in]  dt           - t-derivatives of the basis functions of the element.
+                               Only for 3D computations.
+  * \param[in]  normals      - Array, which contains the normals.
+  * \param[in]  derivCoor    - Array, which contains the derivatives of the
+                               parametric coordinates w.r.t. the Cartesian ones.
+  * \param[out] metricSIP    - Storage for the metrics of the SIP term in the
+                               integration points.
+  */
+  void ComputeMetricTermsSIP(const unsigned short nIntegration,
+                             const unsigned short nDOFs,
+                             const su2double      *dr,
+                             const su2double      *ds,
+                             const su2double      *dt,
+                             const su2double      *normals,
+                             const su2double      *derivCoor,
+                             su2double            *metricSIP);
+  /*!
+  * \brief Function, which computes the information of the normals in the
+           integration points of a face.
+  * \param[in]  nIntegration - Number of integration points on the face.
+  * \param[in]  nDOFs        - Number of DOFs of the grid associated with the face.
+  * \param[in]  dr           - r-derivatives of the basis functions of the face.
+  * \param[in]  ds           - s-derivatives of the basis functions of the face.
+                               Only for 3D computations.
+  * \param[in]  DOFs         - The DOFs of the grid associated with the face.
+  * \param[out] normals      - Storage for the normal information to be computed.
+  */
+  void ComputeNormalsFace(const unsigned short nIntegration,
+                          const unsigned short nDOFs,
+                          const su2double      *dr,
+                          const su2double      *ds,
+                          const unsigned long  *DOFs,
+                          su2double            *normals);
+
+  /*!
+  * \brief Function, which computes the metric terms of the faces of a
+           physical boundary.
+  * \param[inout] boundary - Boundary for whose faces the boundary metric
+                             terms must be computed.
+  */
+  void MetricTermsBoundaryFaces(CBoundaryFEM *boundary);
 };
 
 /*!
@@ -449,11 +563,6 @@ private:
                                                                               internal faces used for the geometry of
                                                                               the DG solver. */
 
-  vector<FEMStandardBoundaryFaceClass> standardBoundaryFacesSol;  /*!< \brief Vector that contains the standard boundary
-                                                                              faces used for the solution of the DG solver. */
-  vector<FEMStandardBoundaryFaceClass> standardBoundaryFacesGrid; /*!< \brief Vector that contains the standard boundary
-                                                                              faces used for the geometry of the DG solver. */
-
   vector<unsigned long> VecDOFsGridFaceSide0; /*!< \brief Storage for the grid DOFs of side 0 of the faces. */
   vector<unsigned long> VecDOFsGridFaceSide1; /*!< \brief Storage for the grid DOFs of side 1 of the faces. */
   vector<unsigned long> VecDOFsSolFaceSide0;  /*!< \brief Storage for the solution DOFs of side 0 of the faces. */
@@ -463,6 +572,8 @@ private:
   vector<unsigned long> VecDOFsGridElementSide1; /*!< \brief Storage for the grid DOFs of the elements adjacent to side 1. */
   vector<unsigned long> VecDOFsSolElementSide0;  /*!< \brief Storage for the solution DOFs of the elements adjacent to side 0. */
   vector<unsigned long> VecDOFsSolElementSide1;  /*!< \brief Storage for the solution DOFs of the elements adjacent to side 1. */
+
+  vector<su2double> VecMetricTermsInternalMatchingFaces; /*!< \brief Storage for the metric terms of the interal matching faces. */
 
   vector<CInternalFaceElementFEM> matchingFaces; /*!< \brief Vector of the local matching internal faces. */
 

@@ -31,12 +31,18 @@
 
 #include "../include/fem_geometry_structure.hpp"
 
-/* Lapack or mkl include files, if supported. */
+/* MKL, BLAS and LAPACK include files, if supported. */
+#ifdef HAVE_MKL
+#include "mkl.h"
+#else
+
 #ifdef HAVE_LAPACK
 #include "lapacke.h"
+#endif
+#ifdef HAVE_CBLAS
 #include "cblas.h"
-#elif HAVE_MKL
-#include "mkl.h"
+#endif
+
 #endif
 
 bool SortFacesClass::operator()(const FaceOfElementClass &f0,
@@ -1374,8 +1380,432 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   }
 }
 
-CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config) : CMeshFEM(geometry, config) {
+void CMeshFEM::ComputeGradientsCoordinatesFace(const unsigned short nIntegration,
+                                               const unsigned short nDOFs,
+                                               const su2double      *matDerBasisInt,
+                                               const unsigned long  *DOFs,
+                                               su2double            *derivCoor) {
 
+  /* Allocate the memory to store the values of dxdr, dydr, etc. When the
+     MKL is used a specialized allocation is used to increase performance. */
+  su2double *dxdrVec;
+#ifdef HAVE_MKL
+  dxdrVec = (su2double *) mkl_malloc(nIntegration*nDim*nDim*sizeof(su2double), 64);
+#else
+  vector<su2double> helpDxdrVec(nIntegration*nDim*nDim);
+  dxdrVec = helpDxdrVec.data();
+#endif
+
+  /* Determine the gradients of the Cartesian coordinates w.r.t. the
+     parametric coordinates. */
+  ComputeGradientsCoorWRTParam(nIntegration, nDOFs, matDerBasisInt, DOFs, dxdrVec);
+
+  /* Make a distinction between 2D and 3D to compute the derivatives drdx,
+     drdy, etc. */
+  switch( nDim ) {
+    case 2: {
+      /* 2D computation. Store the offset between the r and s derivatives. */
+      const unsigned short off = 2*nIntegration;
+
+      /* Loop over the integration points. */
+      unsigned short ii = 0;
+      for(unsigned short j=0; j<nIntegration; ++j) {
+
+        /* Retrieve the values of dxdr, dydr, dxds and dyds from dxdrVec
+           in this integration point. */
+        const unsigned short jx = 2*j; const unsigned short jy = jx+1;
+        const su2double dxdr = dxdrVec[jx],     dydr = dxdrVec[jy];
+        const su2double dxds = dxdrVec[jx+off], dyds = dxdrVec[jy+off];
+
+        /* Compute the inverse relations drdx, drdy, dsdx, dsdy. */
+        const su2double Jinv = 1.0/(dxdr*dyds - dxds*dydr);
+
+        derivCoor[ii++] =  dyds*Jinv;  // drdx
+        derivCoor[ii++] = -dxds*Jinv;  // drdy
+        derivCoor[ii++] = -dydr*Jinv;  // dsdx
+        derivCoor[ii++] =  dxdr*Jinv;  // dsdy
+      }
+      break;
+    }
+
+    case 3: {
+      /* 3D computation. Store the offset between the r and s and r and t derivatives. */
+      const unsigned short offS = 3*nIntegration, offT = 6*nIntegration;
+
+      /* Loop over the integration points. */
+      unsigned short ii = 0;
+      for(unsigned short j=0; j<nIntegration; ++j) {
+
+        /* Retrieve the values of dxdr, dydr, dzdr, dxds, dyds, dzds, dxdt, dydt
+           and dzdt from dxdrVec in this integration point. */
+        const unsigned short jx = 3*j; const unsigned short jy = jx+1, jz = jx+2;
+        const su2double dxdr = dxdrVec[jx],      dydr = dxdrVec[jy],      dzdr = dxdrVec[jz];
+        const su2double dxds = dxdrVec[jx+offS], dyds = dxdrVec[jy+offS], dzds = dxdrVec[jz+offS];
+        const su2double dxdt = dxdrVec[jx+offT], dydt = dxdrVec[jy+offT], dzdt = dxdrVec[jz+offT];
+
+        /* Compute the inverse relations drdx, drdy, drdz, dsdx, dsdy, dsdz,
+           dtdx, dtdy, dtdz. */
+        const su2double Jinv = 1.0/(dxdr*(dyds*dzdt - dzds*dydt)
+                             -      dxds*(dydr*dzdt - dzdr*dydt)
+                             +      dxdt*(dydr*dzds - dzdr*dyds));
+
+        derivCoor[ii++] = (dyds*dzdt - dzds*dydt)*Jinv;  // drdx
+        derivCoor[ii++] = (dzds*dxdt - dxds*dzdt)*Jinv;  // drdy
+        derivCoor[ii++] = (dxds*dydt - dyds*dxdt)*Jinv;  // drdz
+
+        derivCoor[ii++] = (dzdr*dydt - dydr*dzdt)*Jinv;  // dsdx
+        derivCoor[ii++] = (dxdr*dzdt - dzdr*dxdt)*Jinv;  // dsdy
+        derivCoor[ii++] = (dydr*dxdt - dxdr*dydt)*Jinv;  // dsdz
+
+        derivCoor[ii++] = (dydr*dzds - dzdr*dyds)*Jinv;  // dtdx
+        derivCoor[ii++] = (dzdr*dxds - dxdr*dzds)*Jinv;  // dtdy
+        derivCoor[ii++] = (dxdr*dyds - dydr*dxds)*Jinv;  // dtdz
+      }
+
+      break;
+    }
+  }
+
+  /* Release the memory when the MKL is used. */
+#ifdef HAVE_MKL
+  mkl_free(dxdxi);
+#endif
+}
+
+void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
+                                            const unsigned short nDOFs,
+                                            const su2double      *matDerBasisInt,
+                                            const unsigned long  *DOFs,
+                                            su2double            *derivCoor) {
+
+  /*--- Make a distinction whether BLAS routines must be used to carry
+        out the multiplication or a standard implementation must be used. ---*/
+#if defined (HAVE_CBLAS) || defined(HAVE_MKL)
+
+  /* Allocate the memory to store the coordinates as right hand side. when
+     the MKL is used, a specialized allocation is used to increase performance. */
+  su2double *vecRHS;
+
+#ifdef HAVE_MKL
+  vecRHS = (su2double *) mkl_malloc(nDOFs*nDim*sizeof(su2double), 64);
+#else
+  vector<su2double> helpVecRHS(nDOFs*nDim);
+  vecRHS = helpVecRHS.data();
+#endif
+
+  /* Loop over the grid DOFs of the element and copy the coordinates in
+     vecRHS in row major order. */
+  unsigned long ic = 0;
+  for(unsigned short j=0; j<nDOFs; ++j) {
+    for(unsigned short k=0; k<nDim; ++k, ++ic)
+      vecRHS[ic] = meshPoints[DOFs[j]].coor[k];
+  }
+
+  /* Carry out the matrix matrix product using the blas routine dgemm. */
+  cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nDim*nIntegration, nDim,
+              nDOFs, 1.0, matDerBasisInt, nDOFs, vecRHS, nDim, 0.0, derivCoor, nDim);
+
+  /* Release the memory of vecRHS in case the MKL was used. */
+#ifdef HAVE_MKL
+  mkl_free(vecRHS);
+#endif
+
+#else
+
+  /* Standard implementation of the matrix matrix multiplication. */
+  const unsigned short m = nDim*nIntegration;
+
+  for(unsigned short i=0; i<m; ++i) {
+    const unsigned short jj = i*nDOFs;
+    for(unsigned short j=0; j<nDim; ++j) {
+      const unsigned short ii = i*nDim + j;
+      derivCoor[ii] = 0.0;
+      for(unsigned short k=0; k<nDOFs; ++k)
+        derivCoor[ii] += matDerBasisInt[jj+k]*meshPoints[DOFs[k]].coor[j];
+    }
+  }
+
+#endif
+}
+
+void CMeshFEM::ComputeMetricTermsSIP(const unsigned short nIntegration,
+                                     const unsigned short nDOFs,
+                                     const su2double      *dr,
+                                     const su2double      *ds,
+                                     const su2double      *dt,
+                                     const su2double      *normals,
+                                     const su2double      *derivCoor,
+                                     su2double            *metricSIP) {
+
+  /* Initialize the counter ii to 0. This counter is the index in metricSIP
+     where the data is stored. */
+  unsigned int ii = 0;
+
+  /* Make a distinction between 2D and 3D. */
+  switch( nDim ) {
+    case 2: {
+      /* 2D computation. Loop over the integration points. */
+      for(unsigned short j=0; j<nIntegration; ++j) {
+
+        /* Easier storage for the derivatives of the basis functions in this
+           integration point. */
+        const su2double *drr = &dr[j*nDOFs];
+        const su2double *dss = &ds[j*nDOFs];
+
+        /* Idem for the normals and derivCoor. */
+        const su2double *norm  = &normals[3*j];   // j*(nDim+1)
+        const su2double *dCoor = &derivCoor[4*j]; // j*nDim*nDim
+
+        /* Loop over the DOFs. */
+        for(unsigned short i=0; i<nDOFs; ++i, ++ii) {
+
+          /* Compute the Cartesian derivatives of this basis function. */
+          const su2double dldx = drr[i]*dCoor[0] + dss[i]*dCoor[2];
+          const su2double dldy = drr[i]*dCoor[1] + dss[i]*dCoor[3];
+
+          /* Compute the SIP metric term for this DOF in this integration point. */
+          metricSIP[ii] = norm[2]*(dldx*norm[0] + dldy*norm[1]);
+        }
+      }
+
+      break;
+    }
+
+    case 3: {
+      /* 3D computation. Loop over the integration points. */
+      for(unsigned short j=0; j<nIntegration; ++j) {
+
+        /* Easier storage for the derivatives of the basis functions in this
+           integration point. */
+        const su2double *drr = &dr[j*nDOFs];
+        const su2double *dss = &ds[j*nDOFs];
+        const su2double *dtt = &dt[j*nDOFs];
+
+        /* Idem for the normals and derivCoor. */
+        const su2double *norm  = &normals[4*j];   // j*(nDim+1)
+        const su2double *dCoor = &derivCoor[9*j]; // j*nDim*nDim
+
+        /* Loop over the DOFs. */
+        for(unsigned short i=0; i<nDOFs; ++i, ++ii) {
+
+          /* Compute the Cartesian derivatives of this basis function. */
+          const su2double dldx = drr[i]*dCoor[0] + dss[i]*dCoor[3] + dtt[i]*dCoor[6];
+          const su2double dldy = drr[i]*dCoor[1] + dss[i]*dCoor[4] + dtt[i]*dCoor[7];
+          const su2double dldz = drr[i]*dCoor[2] + dss[i]*dCoor[5] + dtt[i]*dCoor[8];
+
+          /* Compute the SIP metric term for this DOF in this integration point. */
+          metricSIP[ii] = norm[3]*(dldx*norm[0] + dldy*norm[1] + dldz*norm[2]);
+        }
+      }
+    }
+  }
+}
+
+void CMeshFEM::ComputeNormalsFace(const unsigned short nIntegration,
+                                  const unsigned short nDOFs,
+                                  const su2double      *dr,
+                                  const su2double      *ds,
+                                  const unsigned long  *DOFs,
+                                  su2double            *normals) {
+
+  /* Initialize the counter ii to 0. ii is the index in normals where the
+     information is stored. */
+  unsigned int ii = 0;
+
+  /* Make a distinction between 2D and 3D. */
+  switch( nDim ) {
+    case 2: {
+      /* 2D computation. Loop over the integration points of the face. */
+      for(unsigned short j=0; j<nIntegration; ++j) {
+
+        /*--- Loop over the number of DOFs of the face to compute dxdr
+              and dydr. ---*/
+        const su2double *drr = &dr[j*nDOFs];
+        su2double dxdr = 0.0, dydr = 0.0;
+        for(unsigned short k=0; k<nDOFs; ++k) {
+          dxdr += drr[k]*meshPoints[DOFs[k]].coor[0];
+          dydr += drr[k]*meshPoints[DOFs[k]].coor[1];
+        }
+
+        /* Determine the length of the tangential vector (dxdr, dydr), which
+           is also the length of the corresponding normal vector. Also compute
+           the inverse of the length. Make sure that a division by zero is
+           avoided, although this is most likely never active. */
+        const su2double lenNorm    = sqrt(dxdr*dxdr + dydr*dydr);
+        const su2double invLenNorm = lenNorm < 1.e-50 ? 1.e+50 : 1.0/lenNorm;
+
+        /* Store the corresponding unit normal vector and its length. The
+           direction of the normal vector is such that it is outward pointing
+           for the element on side 0 of the face. */
+        normals[ii++] =  dydr*invLenNorm;
+        normals[ii++] = -dxdr*invLenNorm;
+        normals[ii++] =  lenNorm;
+      }
+
+      break;
+    }
+
+    case 3: {
+      /* 3D computation. Loop over the integration points of the face. */
+      for(unsigned short j=0; j<nIntegration; ++j) {
+
+        /*--- Loop over the number of DOFs of the face to compute dxdr,
+              dxds, dydr, dyds, dzdr and dzds. ---*/
+        const su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs];
+        su2double dxdr = 0.0, dydr = 0.0, dzdr = 0.0,
+                  dxds = 0.0, dyds = 0.0, dzds = 0.0;
+        for(unsigned short k=0; k<nDOFs; ++k) {
+          dxdr += drr[k]*meshPoints[DOFs[k]].coor[0];
+          dydr += drr[k]*meshPoints[DOFs[k]].coor[1];
+          dzdr += drr[k]*meshPoints[DOFs[k]].coor[2];
+
+          dxds += dss[k]*meshPoints[DOFs[k]].coor[0];
+          dyds += dss[k]*meshPoints[DOFs[k]].coor[1];
+          dzds += dss[k]*meshPoints[DOFs[k]].coor[2];
+        }
+
+        /* Compute the vector product dxdr X dxds, where x is the coordinate
+           vector (x,y,z). Compute the length of this vector, which is an area,
+           as well as the inverse.  Make sure that a division by zero is
+           avoided, although this is most likely never active. */
+        const su2double nx = dydr*dzds - dyds*dzdr;
+        const su2double ny = dxds*dzdr - dxdr*dzds;
+        const su2double nz = dxdr*dyds - dxds*dydr;
+
+        const su2double lenNorm    = sqrt(nx*nx + ny*ny + nz*nz);
+        const su2double invLenNorm = lenNorm < 1.e-50 ? 1.e+50 : 1.0/lenNorm;
+
+        /* Store the components of the unit normal as well as its length in the
+           normals. Note that the current direction of the normal is pointing
+           into the direction of the element on side 0 of the face. However,
+           in the actual computation of the integral over the faces, it is
+           assumed that the vector points in the opposite direction.
+           Hence the normal vector must be reversed. */
+        normals[ii++] = -nx*invLenNorm;
+        normals[ii++] = -ny*invLenNorm;
+        normals[ii++] = -nz*invLenNorm;
+        normals[ii++] =  lenNorm;
+      }
+      break;
+    }
+  }
+}
+
+void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary) {
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Determine the size of the vector, which stores the metric  ---*/
+  /*---         terms of the boundary face elements. This is a large,      ---*/
+  /*---         contiguous vector to increase the performance.             ---*/
+  /*---         Each boundary face element has pointers, which point to    ---*/
+  /*---         particular regions of the large vector.                     ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /*--- Loop over the boundary faces stored on this rank and determine
+        the size of the metric vector for the faces. Note that the normal
+        gradient of the basis functions of the adjacent element must be stored.
+        These terms enter the formulation in the Symmetric Interior Penalty
+        (SIP) treatment of the viscous terms. ---*/
+  unsigned long sizeMetric = 0;
+  for(unsigned long i=0; i<boundary->surfElem.size(); ++i) {
+
+    /* Determine the corresponding standard face element, the number of
+       integration points for this face element and the number of DOFS
+       of the adjacent volume element. */
+    const unsigned short ind       = boundary->surfElem[i].indStandardElement;
+    const unsigned short nInt      = standardBoundaryFacesSol[ind].GetNIntegration();
+    const unsigned short nDOFsElem = standardBoundaryFacesSol[ind].GetNDOFsElem();
+
+    /* Update the counter sizeMetric by adding the required number for
+       this face element. For each integration point the following data
+       is stored: - Unit normals + area (nDim+1).
+                  - drdx, dsdx, etc. (nDim*nDim).
+                  - Normal derivatives of the element basis functions
+                    (nDOFsElem). */
+    sizeMetric += nInt*(nDim + 1 + nDim*nDim + nDOFsElem);
+  }
+
+  /* Allocate the memory for the vector to store the metric terms.
+     Get its pointer to improve readability. */
+  boundary->VecMetricTermsBoundaryFaces.resize(sizeMetric);
+  su2double *VecMetricBoundary = boundary->VecMetricTermsBoundaryFaces.data();
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Set the pointers for storing the metric terms to the       ---*/
+  /*---         correct locations in VecMetricBoundary.                    ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Loop over the boundary faces. */
+  sizeMetric = 0;
+  for(unsigned long i=0; i<boundary->surfElem.size(); ++i) {
+
+    /* Determine the corresponding standard face element and get the
+       relevant information from it. */
+    const unsigned short ind       = boundary->surfElem[i].indStandardElement;
+    const unsigned short nInt      = standardBoundaryFacesSol[ind].GetNIntegration();
+    const unsigned short nDOFsElem = standardBoundaryFacesSol[ind].GetNDOFsElem();
+
+    /* Set the pointers to the locations in VecMetricBoundary
+       where the actual metric data for this boundary face is stored. */
+    boundary->surfElem[i].metricNormalsFace = VecMetricBoundary + sizeMetric;
+    sizeMetric += nInt*(nDim+1);
+
+    boundary->surfElem[i].metricCoorDerivFace = VecMetricBoundary + sizeMetric;
+    sizeMetric += nInt*nDim*nDim;
+
+    boundary->surfElem[i].metricElem = VecMetricBoundary + sizeMetric;
+    sizeMetric += nInt*nDOFsElem;
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 3: Determine the actual metric data in the integration points ---*/
+  /*---         of the faces.                                              ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Loop over the boundary faces. */
+  for(unsigned long i=0; i<boundary->surfElem.size(); ++i) {
+
+    /* Determine the corresponding standard face and its number of integration
+       points. Note that the standard element of the grid must be used here. */
+    const unsigned short ind  = boundary->surfElem[i].indStandardElement;
+    const unsigned short nInt = standardBoundaryFacesGrid[ind].GetNIntegration();
+
+    /* Call the function ComputeNormalsFace to compute the unit normals and
+       its corresponding area in the integration points. */
+    unsigned short nDOFs = standardBoundaryFacesGrid[ind].GetNDOFsFace();
+    const su2double *dr = standardBoundaryFacesGrid[ind].GetDrBasisFaceIntegration();
+    const su2double *ds = standardBoundaryFacesGrid[ind].GetDsBasisFaceIntegration();
+
+    ComputeNormalsFace(nInt, nDOFs, dr, ds, boundary->surfElem[i].DOFsGridFace,
+                       boundary->surfElem[i].metricNormalsFace);
+
+    /* Compute the derivatives of the parametric coordinates w.r.t. the
+       Cartesian coordinates, i.e. drdx, drdy, etc. in the integration points
+       of the face. */
+    nDOFs = standardBoundaryFacesGrid[ind].GetNDOFsElem();
+    dr = standardBoundaryFacesGrid[ind].GetMatDerBasisElemIntegration();
+
+    ComputeGradientsCoordinatesFace(nInt, nDOFs, dr,
+                                    boundary->surfElem[i].DOFsGridElement,
+                                    boundary->surfElem[i].metricCoorDerivFace);
+
+    /* Compute the metric terms needed for the SIP treatment of the viscous
+       terms. Note that now the standard element of the solution must be taken. */
+    const su2double *dt;
+    nDOFs = standardBoundaryFacesSol[ind].GetNDOFsElem();
+    dr = standardBoundaryFacesSol[ind].GetDrBasisElemIntegration();
+    ds = standardBoundaryFacesSol[ind].GetDsBasisElemIntegration();
+    dt = standardBoundaryFacesSol[ind].GetDtBasisElemIntegration();
+
+    ComputeMetricTermsSIP(nInt, nDOFs, dr, ds, dt,
+                          boundary->surfElem[i].metricNormalsFace,
+                          boundary->surfElem[i].metricCoorDerivFace,
+                          boundary->surfElem[i].metricElem);
+  }
+}
+
+CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config)
+  : CMeshFEM(geometry, config) {
 }
 
 void CMeshFEM_DG::CreateFaces(CConfig *config) {
@@ -3839,25 +4269,147 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(void) {
   /*--- Step 1: Determine the size of the vector, which stores the metric  ---*/
   /*---         terms of the internal matching face elements. This is a    ---*/
   /*---         large, contiguous vector to increase the performance.      ---*/
-  /*---         Each internal face element has a pointer, which point to a ---*/
-  /*---         particular region of the large vector.                     ---*/
+  /*---         Each internal face element has pointers, which point to    ---*/
+  /*---         particular regions of the large vector.                    ---*/
   /*--------------------------------------------------------------------------*/
 
-  /* Determine the number of metric terms per integration point.
-     This depends on the number of spatial dimensions of the problem. */
-  const unsigned short nMetricPerPoint = nDim == 3 ? 22 : 11;
-
   /*--- Loop over the internal faces stored on this rank and determine
-        the size of the metric vector for the faces. Note that apart the
-        nMetricPerPoint also the normal gradient of the basis functions
-        of the adjacent elements must be stored. These terms enter the
-        formulation in the Symmetric Interior Penalty (SIP) treatment
-        of the viscous terms. ---*/
+        the size of the metric vector for the faces. Note that the normal
+        gradient of the basis functions of the adjacent elements must be stored.
+        These terms enter the formulation in the Symmetric Interior Penalty
+        (SIP) treatment of the viscous terms. ---*/
+  unsigned long sizeMetric = 0;
   for(unsigned long i=0; i<matchingFaces.size(); ++i) {
 
-    /*--- Determine the corresponding standard face element, the number of
-          integration points for this element and the number of DOFS of
-          the adjacent elements. ---*/
+    /* Determine the corresponding standard face element, the number of
+       integration points for this face element and the number of DOFS
+       of the adjacent volume elements. */
+    const unsigned short ind        = matchingFaces[i].indStandardElement;
+    const unsigned short nInt       = standardMatchingFacesSol[ind].GetNIntegration();
+    const unsigned short nDOFsElem0 = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
+    const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
+
+    /* Update the counter sizeMetric by adding the required number for
+       this face element. For each integration point the following data
+       is stored: - Unit normals + area (nDim+1).
+                  - drdx, dsdx, etc. for both sides (2*nDim*nDim)
+                  - Normal derivatives of the element basis functions
+                    for both sides (nDOFsElem0 + nDOFsElem1. )*/
+    sizeMetric += nInt*(nDim + 1 + 2*nDim*nDim + nDOFsElem0 + nDOFsElem1);
+  }
+
+  /* Allocate the memory for the vector to store the metric terms. */
+  VecMetricTermsInternalMatchingFaces.resize(sizeMetric);
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Set the pointers for storing the metric terms to the       ---*/
+  /*---         correct locations in VecMetricTermsInternalMatchingFaces.  ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Loop over the internal matching faces. */
+  sizeMetric = 0;
+  for(unsigned long i=0; i<matchingFaces.size(); ++i) {
+
+    /* Determine the corresponding standard face element and get the
+       relevant information from it. */
+    const unsigned short ind  = matchingFaces[i].indStandardElement;
+    const unsigned short nInt = standardMatchingFacesSol[ind].GetNIntegration();
+
+    const unsigned short nDOFsElemSol0 = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
+    const unsigned short nDOFsElemSol1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
+
+    /* Set the pointers to the locations in VecMetricTermsInternalMatchingFaces
+       where the actual metric data for this matching face is stored. */
+    matchingFaces[i].metricNormalsFace = VecMetricTermsInternalMatchingFaces.data()
+                                       + sizeMetric;
+    sizeMetric += nInt*(nDim+1);
+
+    matchingFaces[i].metricCoorDerivFace0 = VecMetricTermsInternalMatchingFaces.data()
+                                          + sizeMetric;
+    sizeMetric += nInt*nDim*nDim;
+
+    matchingFaces[i].metricCoorDerivFace1 = VecMetricTermsInternalMatchingFaces.data()
+                                          + sizeMetric;
+    sizeMetric += nInt*nDim*nDim;
+
+    matchingFaces[i].metricElemSide0 = VecMetricTermsInternalMatchingFaces.data()
+                                     + sizeMetric;
+    sizeMetric += nInt*nDOFsElemSol0;
+
+    matchingFaces[i].metricElemSide1 = VecMetricTermsInternalMatchingFaces.data()
+                                     + sizeMetric;
+    sizeMetric += nInt*nDOFsElemSol1;
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 3: Determine the actual metric data in the integration points ---*/
+  /*---         of the faces.                                              ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Loop over the internal matching faces. */
+  for(unsigned long i=0; i<matchingFaces.size(); ++i) {
+
+    /* Determine the corresponding standard face and its number of integration
+       points. Note that the standard element of the grid must be used here. */
+    const unsigned short ind  = matchingFaces[i].indStandardElement;
+    const unsigned short nInt = standardMatchingFacesGrid[ind].GetNIntegration();
+
+    /* Call the function ComputeNormalsFace to compute the unit normals and
+       its corresponding area in the integration points. The data from side 0
+       is used, but the data from side 1 should give the same result. */
+    unsigned short nDOFs = standardMatchingFacesGrid[ind].GetNDOFsFaceSide0();
+    const su2double *dr = standardMatchingFacesGrid[ind].GetDrBasisFaceIntegrationSide0();
+    const su2double *ds = standardMatchingFacesGrid[ind].GetDsBasisFaceIntegrationSide0();
+
+    ComputeNormalsFace(nInt, nDOFs, dr, ds, matchingFaces[i].DOFsGridFaceSide0,
+                       matchingFaces[i].metricNormalsFace);
+
+    /* Compute the derivatives of the parametric coordinates w.r.t. the
+       Cartesian coordinates, i.e. drdx, drdy, etc. in the integration points
+       on side 0 of the face. */
+    nDOFs = standardMatchingFacesGrid[ind].GetNDOFsElemSide0();
+    dr = standardMatchingFacesGrid[ind].GetMatDerBasisElemIntegrationSide0();
+
+    ComputeGradientsCoordinatesFace(nInt, nDOFs, dr,
+                                    matchingFaces[i].DOFsGridElementSide0,
+                                    matchingFaces[i].metricCoorDerivFace0);
+
+    /* Compute the metric terms on side 0 needed for the SIP treatment
+       of the viscous terms. Note that now the standard element of the
+       solution must be taken. */
+    const su2double *dt;
+    nDOFs = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
+    dr = standardMatchingFacesSol[ind].GetDrBasisElemIntegrationSide0();
+    ds = standardMatchingFacesSol[ind].GetDsBasisElemIntegrationSide0();
+    dt = standardMatchingFacesSol[ind].GetDtBasisElemIntegrationSide0();
+
+    ComputeMetricTermsSIP(nInt, nDOFs, dr, ds, dt,
+                          matchingFaces[i].metricNormalsFace,
+                          matchingFaces[i].metricCoorDerivFace0,
+                          matchingFaces[i].metricElemSide0);
+
+    /* Compute the derivatives of the parametric coordinates w.r.t. the
+       Cartesian coordinates, i.e. drdx, drdy, etc. in the integration points
+       on side 1 of the face. */
+    nDOFs = standardMatchingFacesGrid[ind].GetNDOFsElemSide1();
+    dr = standardMatchingFacesGrid[ind].GetMatDerBasisElemIntegrationSide1();
+
+    ComputeGradientsCoordinatesFace(nInt, nDOFs, dr,
+                                    matchingFaces[i].DOFsGridElementSide1,
+                                    matchingFaces[i].metricCoorDerivFace1);
+
+    /* Compute the metric terms on side 1 needed for the SIP treatment
+       of the viscous terms. Note that now the standard element of the
+       solution must be taken. */
+    nDOFs = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
+    dr = standardMatchingFacesSol[ind].GetDrBasisElemIntegrationSide1();
+    ds = standardMatchingFacesSol[ind].GetDsBasisElemIntegrationSide1();
+    dt = standardMatchingFacesSol[ind].GetDtBasisElemIntegrationSide1();
+
+    ComputeMetricTermsSIP(nInt, nDOFs, dr, ds, dt,
+                          matchingFaces[i].metricNormalsFace,
+                          matchingFaces[i].metricCoorDerivFace1,
+                          matchingFaces[i].metricElemSide1);
   }
 }
 
@@ -3868,18 +4420,10 @@ void CMeshFEM_DG::MetricTermsSurfaceElements(void) {
 
   /*--- Loop over the physical boundaries and compute the metric
         terms of the boundary. ---*/
-  //for(unsigned short i=0; i<boundaries.size(); ++i) {
-  //  if( !boundaries[i].periodicBoundary )
-  //    boundaries[i].MetricTermsBoundaryFaces(meshPoints);
-  //}
-
-  cout << "CMeshFEM_DG::MetricTermsSurfaceElements. Not implemented yet." << endl;
-#ifndef HAVE_MPI
-  exit(EXIT_FAILURE);
-#else
-  MPI_Abort(MPI_COMM_WORLD,1);
-  MPI_Finalize();
-#endif
+  for(unsigned short i=0; i<boundaries.size(); ++i) {
+    if( !boundaries[i].periodicBoundary )
+      MetricTermsBoundaryFaces(&boundaries[i]);
+  }
 }
 
 void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
@@ -3928,7 +4472,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
     /* Determine the number of metric coefficients needed for this element
        and update the counter sizeMetric accordingly. */
     const unsigned short ind = volElem[i].indStandardElement;
-    sizeMetric += nMetricPerPoint*standardElementsGrid[ind].GetNIntegration();
+    sizeMetric += nMetricPerPoint*standardElementsSol[ind].GetNIntegration();
 
     /* Update the counter sizeMassMatrix, depending on which types of the
        mass matrix is needed. Note that it is not possible to store both
@@ -3950,11 +4494,11 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
   /*---         volume elements.                                           ---*/
   /*--------------------------------------------------------------------------*/
 
-#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
+#if defined (HAVE_CBLAS) || defined(HAVE_MKL)
 
-  /* In case the Lapack routines must be used, some help arrays must be
-     allocated. Determine the sizes of these help arrays by looping over
-     the standard volume elements. */
+  /* In case the Lapack/Blas routines must be used, some help arrays must
+     be allocated. Determine the sizes of these help arrays by looping
+     over the standard volume elements. */
   unsigned long sizeResult = 0, sizeRHS = 0;
 
   for(unsigned long i=0; i<standardElementsGrid.size(); ++i) {
@@ -3994,21 +4538,10 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
     const unsigned short nInt  = standardElementsGrid[ind].GetNIntegration();
     const unsigned short nDOFs = volElem[i].nDOFsGrid;
 
-    /* Store the pointer for the metric terms for this element. */
+    /* Store the pointer for the metric terms for this element and update
+       sizeMetric for the next element. */
     volElem[i].metricTerms = VecMetricTermsElements.data() + sizeMetric;
-
-    /*--- Make a distinction whether LAPACK routines must be used to carry
-          out the multiplication or a standard implementation must be used. ---*/
-#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
-
-    /* Loop over the grid DOFs of the element and copy the coordinates in
-       vecRHS in row major order. */
-    unsigned long ic = 0;
-    for(unsigned short j=0; j<nDOFs; ++j) {
-      const unsigned long ii = volElem[i].nodeIDsGrid[j];
-      for(unsigned short k=0; k<nDim; ++k, ++ic)
-        vecRHS[ic] = meshPoints[ii].coor[k];
-    }
+    sizeMetric += nMetricPerPoint*nInt;
 
     /* Get the pointer to the matrix storage of the basis functions
        and its derivatives. The first nDOFs*nInt entries of this matrix
@@ -4017,21 +4550,35 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
     const su2double *matBasisInt    = standardElementsGrid[ind].GetMatBasisFunctionsIntegration();
     const su2double *matDerBasisInt = &matBasisInt[nDOFs*nInt];
 
-    /* Carry out the matrix matrix product using the blas routine dgemm. */
-    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nDim*nInt, nDim, nDOFs,
-                1.0, matDerBasisInt, nDOFs, vecRHS, nDim, 0.0, vecResult, nDim);
+    /* Allocate the memory for the result vector. In case the MKL is used
+       a specialized allocation is used to optimize performance. */
+    su2double *vecResult;
 
-    /* Make a distinction between 2D and 3D. ---*/
-    unsigned int ii = 0;
+#ifdef HAVE_MKL
+    vecResult = (su2double *) mkl_malloc(nInt*nDim*nDim*sizeof(su2double), 64);
+#else
+    vector<su2double> helpVecResult(nInt*nDim*nDim);
+    vecResult = helpVecResult.data();
+#endif
+
+    /* Compute the gradient of the coordinates w.r.t. the parametric
+       coordinates for this element. */
+    ComputeGradientsCoorWRTParam(nInt, nDOFs, matDerBasisInt,
+                                 volElem[i].nodeIDsGrid.data(),
+                                 vecResult);
+
+    /*--- Convert the dxdr, dydr, etc. to the required metric terms.
+          Make a distinction between 2D and 3D. ---*/
+    unsigned short ii = 0;
     switch( nDim ) {
       case 2: {
 
         /* 2D computation. Store the offset between the r and s derivatives. */
-        const unsigned int off = 2*nInt;
+        const unsigned short off = 2*nInt;
 
         /* Loop over the integration points and store the metric terms. */
         for(unsigned short j=0; j<nInt; ++j) {
-          const unsigned int jx = 2*j; const unsigned int jy = jx+1;
+          const unsigned short jx = 2*j; const unsigned short jy = jx+1;
           const su2double dxdr = vecResult[jx],     dydr = vecResult[jy];
           const su2double dxds = vecResult[jx+off], dyds = vecResult[jy+off];
 
@@ -4047,11 +4594,11 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
       case 3: {
         /* 3D computation. Store the offset between the r and s and r and t derivatives. */
-        const unsigned int offS = 3*nInt, offT = 6*nInt;
+        const unsigned short offS = 3*nInt, offT = 6*nInt;
 
         /* Loop over the integration points and store the metric terms. */
         for(unsigned short j=0; j<nInt; ++j) {
-          const unsigned int jx = 3*j; const unsigned int jy = jx+1, jz = jx+2;
+          const unsigned short jx = 3*j; const unsigned short jy = jx+1, jz = jx+2;
           const su2double dxdr = vecResult[jx],      dydr = vecResult[jy],      dzdr = vecResult[jz];
           const su2double dxds = vecResult[jx+offS], dyds = vecResult[jy+offS], dzds = vecResult[jz+offS];
           const su2double dxdt = vecResult[jx+offT], dydt = vecResult[jy+offT], dzdt = vecResult[jz+offT];
@@ -4077,92 +4624,9 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
       }
     }
 
-#else
-    /*--- Standard implementation to compute the derivatives of the
-          coordinates in the integration points. ---*/
-
-    /* Get the derivatives of the basis function w.r.t. the parametric elements. */
-    const su2double *dr = standardElementsGrid[ind].GetDrBasisFunctionsIntegration();
-    const su2double *ds = standardElementsGrid[ind].GetDsBasisFunctionsIntegration();
-    const su2double *dt = standardElementsGrid[ind].GetDtBasisFunctionsIntegration();
-
-    /* Make a distinction between 2D and 3D. ---*/
-    unsigned int ii = 0;
-    switch( nDim ) {
-      case 2: {
-
-        /*--- 2D computation. Loop over the integration points. ---*/
-        for(unsigned short j=0; j<nInt; ++j) {
-
-          const su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs];
-          su2double dxdr = 0.0, dydr = 0.0, dxds = 0.0, dyds = 0.0;
-
-          /* Loop over the DOFs to compute dxdr, dydr, dxds and dyds. */
-          for(unsigned short k=0; k<nDOFs; ++k) {
-            const unsigned long jj = volElem[i].nodeIDsGrid[k];
-            const su2double x = meshPoints[jj].coor[0],
-                            y = meshPoints[jj].coor[1];
-
-            dxdr += x*drr[k]; dxds += x*dss[k];
-            dydr += y*drr[k]; dyds += y*dss[k];
-          }
-
-          /*--- Compute the Jacobian and the other metric terms.
-                Store them in the array metricTerms of volElem[i]. ---*/
-          volElem[i].metricTerms[ii++] =  dxdr*dyds - dxds*dydr; // J
-          volElem[i].metricTerms[ii++] =  dyds;   // J drdx
-          volElem[i].metricTerms[ii++] = -dxds;   // J drdy
-          volElem[i].metricTerms[ii++] = -dydr;   // J dsdx
-          volElem[i].metricTerms[ii++] =  dxdr;   // J dsdy
-        }
-
-        break;
-      }
-
-      case 3: {
-
-        /*--- 3D computation. Loop over the integration points. ---*/
-        for(unsigned short j=0; j<nInt; ++j) {
-
-          const su2double *drr = &dr[j*nDOFs], *dss = &ds[j*nDOFs],
-                          *dtt = &dt[j*nDOFs];
-          su2double dxdr = 0.0, dxds = 0.0, dxdt = 0.0,
-                    dydr = 0.0, dyds = 0.0, dydt = 0.0,
-                    dzdr = 0.0, dzds = 0.0, dzdt = 0.0;
-
-          /* Loop over the DOFs to compute dxdr, dydr, etc. */
-          for(unsigned short k=0; k<nDOFs; ++k) {
-            const unsigned long jj = volElem[i].nodeIDsGrid[k];
-            const su2double x = meshPoints[jj].coor[0],
-                            y = meshPoints[jj].coor[1],
-                            z = meshPoints[jj].coor[2];
-
-            dxdr += x*drr[k]; dxds += x*dss[k]; dxdt += x*dtt[k];
-            dydr += y*drr[k]; dyds += y*dss[k]; dydt += y*dtt[k];
-            dzdr += z*drr[k]; dzds += z*dss[k]; dzdt += z*dtt[k];
-          }
-
-          /*--- Compute the Jacobian and the other metric terms.
-                Store them in the array metricTerms of volElem[i]. ---*/
-          volElem[i].metricTerms[ii++] = dxdr*(dyds*dzdt - dzds*dydt)
-                                       - dxds*(dydr*dzdt - dzdr*dydt)
-                                       + dxdt*(dydr*dzds - dzdr*dyds); // J
-
-          volElem[i].metricTerms[ii++] = dyds*dzdt - dzds*dydt;  // J drdx
-          volElem[i].metricTerms[ii++] = dzds*dxdt - dxds*dzdt;  // J drdy
-          volElem[i].metricTerms[ii++] = dxds*dydt - dyds*dxdt;  // J drdz
-
-          volElem[i].metricTerms[ii++] = dzdr*dydt - dydr*dzdt;  // J dsdx
-          volElem[i].metricTerms[ii++] = dxdr*dzdt - dzdr*dxdt;  // J dsdy
-          volElem[i].metricTerms[ii++] = dydr*dxdt - dxdr*dydt;  // J dsdz
-
-          volElem[i].metricTerms[ii++] = dydr*dzds - dzdr*dyds;  // J dtdx
-          volElem[i].metricTerms[ii++] = dzdr*dxds - dxdr*dzds;  // J dtdy
-          volElem[i].metricTerms[ii++] = dxdr*dyds - dydr*dxds;  // J dtdz
-        }
-      }
-    }
-
+    /* If the MKL is used, the help array must be deallocated. */
+#ifdef HAVE_MKL
+    mkl_free(vecResult);
 #endif
 
     /* Check for negative Jacobians in the integrations points. */
@@ -4178,15 +4642,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
       }
     }
 
-    /* Update the counter sizeMetric for the next element. */
-    sizeMetric += nMetricPerPoint*nInt;
   }
-
-  /* If the MKL is used, the help arrays must be deallocated. */
-#ifdef HAVE_MKL
-  mkl_free(vecResult);
-  mkl_free(vecRHS);
-#endif
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 3: Determine the mass matrix (or its inverse) and/or the      ---*/
@@ -4305,7 +4761,6 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
         FEMStandardElementBaseClass::InverseMatrix(nDOFs, matA);
         memcpy(volElem[i].massMatrix, matA.data(), nDOFs*nDOFs*sizeof(su2double));
 #endif
-
       }
     }
 
