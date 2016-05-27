@@ -1116,6 +1116,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedLongOption("DEFORM_LINEAR_ITER", GridDef_Linear_Iter, 500);
   /* DESCRIPTION: Factor to multiply smallest volume for deform tolerance (0.001 default) */
   addDoubleOption("DEFORM_TOL_FACTOR", Deform_Tol_Factor, 0.001);
+  /* DESCRIPTION: Deform coefficient (-1.0 to 0.5) */
+  addDoubleOption("DEFORM_COEFF", Deform_Coeff, 1E6);
   /* DESCRIPTION: Type of element stiffness imposed for FEA mesh deformation (INVERSE_VOLUME, WALL_DISTANCE, CONSTANT_STIFFNESS) */
   addEnumOption("DEFORM_STIFFNESS_TYPE", Deform_Stiffness_Type, Deform_Stiffness_Map, INVERSE_VOLUME);
   /* DESCRIPTION: Poisson's ratio for constant stiffness FEA method of grid deformation*/
