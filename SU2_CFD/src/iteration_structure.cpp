@@ -1433,9 +1433,20 @@ void CAdjMeanFlowIteration::ComputeGradient(COutput *output,
   integration_container[val_iZone][FLOW_SOL]->Residual_Evaluation(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_FLOW_SYS, 0, val_iZone);
   
-  /*--- Store the force coefficients on the original mesh ---*/
+  /*--- Store the functional computed with the original mesh and solution ---*/
   
-  objfunc_base = solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+  switch (config_container[val_iZone]->GetKind_ObjFunc()) {
+    case DRAG_COEFFICIENT :
+      objfunc_base = solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+      break;
+    case LIFT_COEFFICIENT :
+      objfunc_base = solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CLift();
+      break;
+    default :
+      if (rank == MASTER_NODE) cout << "This functional is not implemented yet!!" << endl;
+      exit(EXIT_FAILURE);
+      break;
+  }
   
   /*--- Store DW0 ---*/
   
@@ -1588,9 +1599,20 @@ void CAdjMeanFlowIteration::ComputeGradient(COutput *output,
     integration_container[val_iZone][FLOW_SOL]->Residual_Evaluation(geometry_container, solver_container, numerics_container,
                                                                     config_container, RUNTIME_FLOW_SYS, 0, val_iZone);
     
-    /*--- Store the objective as computed on the original mesh ---*/
+    /*--- Store the functional as computed on the new perturbed mesh with the ofrozen solution ---*/
     
-    objfunc_step = solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+    switch (config_container[val_iZone]->GetKind_ObjFunc()) {
+      case DRAG_COEFFICIENT :
+        objfunc_step = solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+        break;
+      case LIFT_COEFFICIENT :
+        objfunc_step = solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CLift();
+        break;
+      default :
+        if (rank == MASTER_NODE) cout << "This functional is not implemented yet!!" << endl;
+        exit(EXIT_FAILURE);
+        break;
+    }
     
     if (rank == MASTER_NODE) {
       /*--- Gradient contribution from boundaries ---*/
