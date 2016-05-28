@@ -498,6 +498,15 @@ public:
   void SetCFL_Number(CSolver ****solver_container, CConfig **config, unsigned short val_iZone);
   
   /*!
+   * \brief Write the sensitivity (including mesh sensitivity) computed with the discrete adjoint method
+   *  on the surface and in the volume to a file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - Number of Zones.
+   */
+  void SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone);
+
+  /*!
    * \brief Write the sensitivities of the flow control parameters to file.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.

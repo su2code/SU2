@@ -2866,7 +2866,16 @@ public:
 	 * \brief Constructor of the class.
 	 */
 	CBaselineSolver(void);
-    
+
+	/*!
+	 * \overload
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+   * \param[in] nVar - Number of variables.
+   * \param[in] field_names - Vector of variable names.
+	 */
+   CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names);
+
 	/*!
 	 * \overload
 	 * \param[in] geometry - Geometrical definition of the problem.
