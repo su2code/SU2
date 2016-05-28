@@ -3159,9 +3159,9 @@ private:
   su2double *Edge_Vector;
   bool implicit, incompressible;
   su2double sigma;
-  su2double dist_ij_2;
-  su2double proj_vector_ij;
-  unsigned short iVar, iDim;
+  //su2double dist_ij_2;
+  //su2double proj_vector_ij;
+  //unsigned short iVar, iDim;
   
 public:
   
