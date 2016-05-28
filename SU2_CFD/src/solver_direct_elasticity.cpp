@@ -2,7 +2,7 @@
  * \file solver_direct_elasticity.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 4.1.1 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -491,11 +491,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
   
   unsigned short iVar, jVar;
-  unsigned long iPoint;
-  
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    delete [] node[iPoint];
-  }
   
   for (iVar = 0; iVar < MAX_TERMS; iVar++){
     for (jVar = 0; jVar < MAX_FE_KINDS; iVar++)
@@ -503,19 +498,15 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
   }
   
   for (iVar = 0; iVar < nVar; iVar++){
-    delete [] Jacobian_ij[iVar];
     if (Jacobian_s_ij != NULL) delete [] Jacobian_s_ij[iVar];
     if (Jacobian_c_ij != NULL) delete [] Jacobian_c_ij[iVar];
     if (Jacobian_k_ij != NULL) delete[] Jacobian_k_ij[iVar];
-    delete [] Point_Max_Coord[iVar];
     delete [] mZeros_Aux[iVar];
     delete [] mId_Aux[iVar];
     delete [] stressTensor[iVar];
   }
   
   if (element_container != NULL) delete [] element_container;
-  delete [] node;
-  delete [] Jacobian_ij;
   if (Jacobian_s_ij != NULL) delete [] Jacobian_s_ij;
   if (Jacobian_c_ij != NULL) delete [] Jacobian_c_ij;
   if (Jacobian_k_ij != NULL) delete [] Jacobian_k_ij;
@@ -523,16 +514,9 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
   delete [] Res_Ext_Surf;
   if (Res_Time_Cont != NULL) delete[] Res_Time_Cont;
   if (Res_Dead_Load != NULL) delete[] Res_Dead_Load;
-  delete [] Solution;
   delete [] SolRest;
   delete [] GradN_X;
   delete [] GradN_x;
-  
-  delete [] Residual;
-  delete [] Residual_RMS;
-  delete [] Residual_Max;
-  delete [] Point_Max;
-  delete [] Point_Max_Coord;
   
   delete [] mZeros_Aux;
   delete [] mId_Aux;
