@@ -6891,7 +6891,8 @@ fi
 ###########################
 
 # check for lib
-LAPACKlib=liblapacke.a
+LAPACKlib=liblapack.so
+LAPACKElib=liblapacke.a
 LAPACKheader=lapacke.h
 have_LAPACK="no"
 
@@ -6974,7 +6975,7 @@ else
 fi
 
 LAPACK_CXX="-DHAVE_LAPACK -I"$with_LAPACK_include""
-LAPACK_LD="$with_LAPACK_lib"/$LAPACKlib
+LAPACK_LD=""$with_LAPACK_lib"/$LAPACKElib "$with_LAPACK_lib"/$LAPACKlib"
 else
  if false; then
   BUILD_LAPACK_TRUE=

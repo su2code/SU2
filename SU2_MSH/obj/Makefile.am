@@ -52,6 +52,11 @@ ___bin_SU2_MSH_CXXFLAGS += @CGNS_CXX@
 ___bin_SU2_MSH_LDADD += @CGNS_LD@
 # endif
 
+# if BUILD_LAPACK
+___bin_SU2_MSH_CXXFLAGS += @LAPACK_CXX@
+___bin_SU2_MSH_LDADD += @LAPACK_LD@
+# endif
+
 # if BUILD_BLAS
 ___bin_SU2_MSH_CXXFLAGS += @BLAS_CXX@
 ___bin_SU2_MSH_LDADD += @BLAS_LD@
@@ -60,11 +65,6 @@ ___bin_SU2_MSH_LDADD += @BLAS_LD@
 # if BUILD_CBLAS
 ___bin_SU2_MSH_CXXFLAGS += @CBLAS_CXX@
 ___bin_SU2_MSH_LDADD += @CBLAS_LD@
-# endif
-
-# if BUILD_LAPACK
-___bin_SU2_MSH_CXXFLAGS += @LAPACK_CXX@
-___bin_SU2_MSH_LDADD += @LAPACK_LD@
 # endif
 
 # if BUILD_HDF5

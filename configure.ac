@@ -544,7 +544,8 @@ AC_SUBST([CBLAS_LD])
 ###########################
 
 # check for lib
-LAPACKlib=liblapacke.a
+LAPACKlib=liblapack.so
+LAPACKElib=liblapacke.a
 LAPACKheader=lapacke.h
 have_LAPACK="no"
 
@@ -576,7 +577,7 @@ if test "$have_LAPACK" != "no"
 then
 AM_CONDITIONAL(BUILD_LAPACK,true)
 LAPACK_CXX="-DHAVE_LAPACK -I"$with_LAPACK_include""
-LAPACK_LD="$with_LAPACK_lib"/$LAPACKlib
+LAPACK_LD=""$with_LAPACK_lib"/$LAPACKElib "$with_LAPACK_lib"/$LAPACKlib"
 else
 AM_CONDITIONAL(BUILD_LAPACK,false)
 LAPACK_CXX=
