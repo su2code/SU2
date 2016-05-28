@@ -1820,6 +1820,8 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 	/*--- It's necessary to communicate this information ---*/
 
 	geometry->Set_MPI_OldCoord(config);
+  
+  delete [] Coord;
 
 }
 

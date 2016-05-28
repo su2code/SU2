@@ -1468,7 +1468,7 @@ void CMeshFEM::ComputeGradientsCoordinatesFace(const unsigned short nIntegration
 
   /* Release the memory when the MKL is used. */
 #ifdef HAVE_MKL
-  mkl_free(dxdxi);
+  mkl_free(dxdrVec);
 #endif
 }
 
