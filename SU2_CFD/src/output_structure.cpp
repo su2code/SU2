@@ -2214,7 +2214,12 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           }
           
           if (config->GetWrt_Residuals()) {
-            Buffer_Send_Res[jPoint] = solver[CurrentIndex]->LinSysRes.GetBlock(iPoint, jVar);
+            if (!config->GetDiscrete_Adjoint()){
+              Buffer_Send_Res[jPoint] = solver[CurrentIndex]->LinSysRes.GetBlock(iPoint, jVar);
+            } else {
+              Buffer_Send_Res[jPoint] = solver[CurrentIndex]->node[iPoint]->GetSolution(jVar) -
+                                        solver[CurrentIndex]->node[iPoint]->GetSolution_Old(jVar);
+            }
           }
           
         }
