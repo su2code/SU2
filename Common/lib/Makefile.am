@@ -93,9 +93,10 @@ lib_sources = \
   ../src/config_structure.cpp \
   ../src/dual_grid_structure.cpp \
   ../src/fem_geometry_structure.cpp \
-		../src/fem_integration_rules.cpp \
+  ../src/fem_integration_rules.cpp \
   ../src/fem_standard_element.cpp \
-	 ../src/gelite.cpp \
+  ../src/fem_wall_distance.cpp \
+  ../src/gelite.cpp \
   ../src/geometry_structure.cpp \
   ../src/grid_adaptation_structure.cpp \
   ../src/grid_movement_structure.cpp \
