@@ -206,14 +206,18 @@ int main(int argc, char *argv[]) {
   for (iZone = 0; iZone < nZone; iZone++) {
     
     /*--- Computation of wall distances for turbulence modeling ---*/
-    
-    if (rank == MASTER_NODE)
-      cout << "Computing wall distances." << endl;
 
     if ((config_container[iZone]->GetKind_Solver() == RANS) ||
         (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
-        (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
+        (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS) ||
+        (config_container[iZone]->GetKind_Solver() == FEM_RANS) ||
+        (config_container[iZone]->GetKind_Solver() == FEM_LES) ) {
+    
+      if (rank == MASTER_NODE)
+        cout << "Computing wall distances." << endl;
+
       geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
+    }
     
     /*--- Computation of positive surface area in the z-plane which is used for
      the calculation of force coefficient (non-dimensionalization). ---*/
@@ -284,9 +288,11 @@ int main(int argc, char *argv[]) {
       
       /*--- Set the derivative of the wall-distance with respect to the surface nodes ---*/
       
-      if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
+      if ((config_container[iZone]->GetKind_Solver() == RANS) ||
           (config_container[iZone]->GetKind_Solver() == ADJ_RANS) ||
-          (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
+          (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS) ||
+          (config_container[iZone]->GetKind_Solver() == FEM_RANS) ||
+          (config_container[iZone]->GetKind_Solver() == FEM_LES))
         geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     }
     

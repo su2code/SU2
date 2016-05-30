@@ -598,6 +598,12 @@ public:
   ~CMeshFEM_DG(void);
 
  /*!
+  * \brief Function to compute the distance to the nearest viscous wall.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void ComputeWall_Distance(CConfig *config);
+
+ /*!
   * \brief Function to create the faces used in the DG formulation.
   * \param[in] config - Definition of the particular problem.
   */
