@@ -1840,6 +1840,12 @@ for (targetZone = 0; targetZone < nZone; targetZone++){
 										if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
 										
 										break;
+										
+									case SLIDING_MESH:
+										interpolator_container[donorZone][targetZone] = new CSlidingmesh(geometry_container, config_container, donorZone, targetZone);
+										if (rank == MASTER_NODE) cout << "using an sliding mesh approach." << endl;
+										
+										break;
 
 									case CONSISTCONSERVE:
 										if ( targetZone > 0 && structural_target ){

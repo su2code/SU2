@@ -279,29 +279,30 @@ static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENU
  * \brief types of interpolators
  */
 enum ENUM_INTERPOLATOR {
-  NEAREST_NEIGHBOR = 0,   /*!< \brief Nearest Neigbhor interpolation */
-  ISOPARAMETRIC = 1, /*!< \brief Isoparametric interpolation */
-  CONSISTCONSERVE = 2,/*!< \brief Consistent & Conservative interpolation (S.A. Brown 1997). Utilizes Isoparametric interpolation. */
+  NEAREST_NEIGHBOR 	= 0,   	/*!< \brief Nearest Neigbhor interpolation */
+  ISOPARAMETRIC 	= 1,	/*!< \brief Isoparametric interpolation */
+  CONSISTCONSERVE 	= 2,	/*!< \brief Consistent & Conservative interpolation (S.A. Brown 1997). Utilizes Isoparametric interpolation. */
+  SLIDING_MESH		= 3, 	/*!< \brief Sliding Mesh Approach E. Rinaldi 2015 */
 };
 
 static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string, ENUM_INTERPOLATOR>
 ("NEAREST_NEIGHBOR", NEAREST_NEIGHBOR)
-("ISOPARAMETRIC", ISOPARAMETRIC)
-("CONSISTCONSERVE", CONSISTCONSERVE);
-
+("ISOPARAMETRIC",    ISOPARAMETRIC)
+("CONSISTCONSERVE",  CONSISTCONSERVE)
+("SLIDING_MESH",     SLIDING_MESH);
 
 /*!
  * \brief different regime modes
  */
 enum ENUM_REGIME {
-  COMPRESSIBLE = 0,			/*!< \brief Definition of compressible solver. */
-  INCOMPRESSIBLE = 1,				/*!< \brief Definition of incompressible solver. */
-  FREESURFACE = 2			/*!< \brief Definition of freesurface solver (incompressible). */
+  COMPRESSIBLE	 = 0,			/*!< \brief Definition of compressible solver. */
+  INCOMPRESSIBLE = 1,			/*!< \brief Definition of incompressible solver. */
+  FREESURFACE	 = 2			/*!< \brief Definition of freesurface solver (incompressible). */
 };
 static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIME>
-("COMPRESSIBLE", COMPRESSIBLE)
+("COMPRESSIBLE",   COMPRESSIBLE)
 ("INCOMPRESSIBLE", INCOMPRESSIBLE)
-("FREESURFACE", FREESURFACE);
+("FREESURFACE",    FREESURFACE);
 
 /*!
  * \brief different non-dimensional modes

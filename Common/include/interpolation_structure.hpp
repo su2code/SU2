@@ -108,6 +108,12 @@ public:
    */
   virtual ~CInterpolator(void);
 
+  /*!
+   * \brief Find the index of the interface marker shared by that zone
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker_interface - Interface tag.
+   */
+  int Find_InterfaceMarker(CConfig *config, unsigned short val_marker_interface);
 
   /*!
    * \brief Set up transfer matrix defining relation between two meshes
@@ -245,5 +251,43 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_TransferCoeff(CConfig **config);
+  
+};
+
+/*!
+ * \brief Sliding mesh approach
+  */
+class CSlidingmesh : public CInterpolator {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iZone - index of the donor zone
+   * \param[in] jZone - index of the target zone
+   */
+  CSlidingmesh(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSlidingmesh(void);
+
+  /*!
+   * \brief Set up transfer matrix defining relation between two meshes
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_TransferCoeff(CConfig **config);
+  
+  /*!
+   * \brief Check if a point is inside a node centered cell
+   * \param[in] geometry - geometry where the node cell belongs
+   * \param[in] VertexID - node centered cell index
+   * \param[in] markID   - node centered cell index
+   */
+  bool CheckPointOwner(CGeometry *geometry, su2double *QueryPoint, unsigned long VertexID, unsigned long markID);
 
 };
+
+
