@@ -437,18 +437,17 @@ void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
 
   bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING)||((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                                                                               (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  unsigned long N_avg =  config->GetUnst_AdjointnObjAvg();
-  unsigned short nExtIter = config->GetnExtIter();
-  unsigned short ExtIter = config->GetExtIter();
+  unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
+  unsigned long ExtIter = config->GetExtIter();
   su2double seeding = 1.0;
 
-  if (time_stepping ){
-      if (ExtIter<N_avg){
-        seeding = 1.0/((su2double)N_avg);
-        }
-      else{
-       seeding = 0.0;
-        }
+  if (time_stepping){
+    if (ExtIter < IterAvg_Obj){
+      seeding = 1.0/((su2double)IterAvg_Obj);
+    }
+    else{
+      seeding = 0.0;
+    }
   }
 
 #ifdef HAVE_MPI
