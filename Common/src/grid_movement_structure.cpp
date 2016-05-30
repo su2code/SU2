@@ -524,7 +524,6 @@ void CVolumetricMovement::ComputeDeforming_Wall_Distance(CGeometry *geometry, CC
     if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)))
-      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           for (iDim = 0; iDim < nDim; iDim++)
@@ -650,11 +649,6 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
     AddFEA_StiffMatrix(geometry, StiffMatrix_Elem, PointCorners, nNodes);
     
 	}
-  
-#ifdef HAVE_MPI
-  unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
-  SU2_MPI::Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
   
   /*--- Deallocate memory and exit ---*/
   
