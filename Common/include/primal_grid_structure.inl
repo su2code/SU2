@@ -57,6 +57,10 @@ inline void CPrimalGrid::SetJacobianConstantFace(bool val_JacFaceIsConstant, uns
 
 inline long CPrimalGrid::GetNeighbor_Elements(unsigned short val_face) { return Neighbor_Elements[val_face]; }
 
+inline su2double CPrimalGrid::GetVolume(void) { return Volume; }
+
+inline void CPrimalGrid::SetVolume(su2double val_volume) { Volume = val_volume; }
+
 inline su2double CPrimalGrid::GetCG(unsigned short val_dim) { return Coord_CG[val_dim]; }
 
 inline su2double CPrimalGrid::GetFaceCG(unsigned short val_face, unsigned short val_dim) { return Coord_FaceElems_CG[val_face][val_dim]; }

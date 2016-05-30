@@ -64,9 +64,9 @@ protected:
                                  correspond with a boundary element is stored. */
 	bool Divide;                  /*!< \brief Marker used to know if we are going to divide this element
                                  in the adaptation proccess. */
- bool *JacobianFaceIsConstant; /*!< \brief Whether or not the Jacobian of the faces can be considered
-                                  constant in the transformation to the standard element. */
-  
+  su2double Volume;    /*!< \brief Volume of the element. */
+  bool *JacobianFaceIsConstant; /*!< \brief Whether or not the Jacobian of the faces can be considered
+                                            constant in the transformation to the standard element. */
 public:
 	
 	/*!
@@ -141,7 +141,20 @@ public:
 	 * \return Coordinates of the center of gravity.
 	 */
 	su2double GetCG(unsigned short val_dim);
-	
+		
+  /*!
+   * \brief Set the center of gravity of an element (including edges).
+   * \param[in] val_coord - Coordinates of the element.
+   */
+  void SetVolume(su2double val_volume);
+  
+  /*!
+   * \brief Get the center of gravity of an element (including edges).
+   * \param[in] val_dim - Coordinate of the center of gravity.
+   * \return Coordinates of the center of gravity.
+   */
+  su2double GetVolume(void);
+
 	/*!
 	 * \brief Get the CG of a face of an element.
 	 * \param[in] val_face - Local index of the face.

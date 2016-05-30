@@ -797,29 +797,31 @@ public:
 	su2double SetFEAMethodContributions_Elem(CGeometry *geometry, CConfig *config);
   
   /*!
-	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
+   * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
-	 * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
+   * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
    * \param[in] PointCorners - Index values for element corners
    * \param[in] nNodes - Number of nodes defining the element.
    * \param[in] scale
-	 */
-  void SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3], unsigned short nNodes, su2double scale);
-	
-  /*!
-	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
-	 * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
-   * \param[in] PointCorners - Index values for element corners
-   * \param[in] nNodes - Number of nodes defining the element.
-   * \param[in] scale
-	 */
-  void SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3], unsigned short nNodes, su2double scale);
+   */
+  void SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3],
+                            unsigned short nNodes, su2double ElemVolume, su2double ElemDistance);
   
+  /*!
+   * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
+   * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
+   * \param[in] PointCorners - Index values for element corners
+   * \param[in] nNodes - Number of nodes defining the element.
+   * \param[in] scale
+   */
+  void SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3],
+                            unsigned short nNodes, su2double ElemVolume, su2double ElemDistance);
+    
   /*!
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
@@ -927,15 +929,16 @@ public:
 	 * \brief Check for negative volumes (all elements) after performing grid deformation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
-	su2double Check_Grid(CGeometry *geometry);
+  void ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume);
+  
   
   /*!
 	 * \brief Compute the minimum distance to the nearest deforming surface.
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
 	 */
-  void ComputeDeforming_Wall_Distance(CGeometry *geometry, CConfig *config);
-  
+  void ComputeDeforming_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance);
+    
 	/*!
 	 * \brief Check the boundary vertex that are going to be moved.
 	 * \param[in] geometry - Geometrical definition of the problem.
