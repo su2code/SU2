@@ -2573,6 +2573,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       Restart_Flow = false;
 
+      if (Grid_Movement){
+        cout << "Dynamic mesh movement currently not supported for the discrete adjoint solver." << endl;
+        exit(EXIT_FAILURE);
+      }
+
       /* --- If the averaging interval is not set, we average over all time-steps ---*/
 
       if (Iter_Avg_Objective == 0.0){

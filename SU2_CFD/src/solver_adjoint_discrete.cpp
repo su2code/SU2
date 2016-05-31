@@ -241,15 +241,32 @@ CDiscAdjSolver::~CDiscAdjSolver(void){ }
 
 void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned short kind_recording){
 
-  bool unsteady = config->GetUnsteady_Simulation() != NONE;
+
+  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
+  time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
 
   unsigned long iPoint;
+  unsigned short iVar;
 
   /*--- Reset the solution to the initial (converged) solution ---*/
 
-  if (!unsteady){
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    direct_solver->node[iPoint]->SetSolution(node[iPoint]->GetSolution_Direct());
+  }
+
+  if (time_n_needed){
     for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->node[iPoint]->SetSolution(node[iPoint]->GetSolution_Direct());
+      for (iVar = 0; iVar < nVar; iVar++){
+        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_time_n()[iVar]);
+      }
+    }
+  }
+  if (time_n1_needed){
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      for (iVar = 0; iVar < nVar; iVar++){
+        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_time_n1()[iVar]);
+      }
     }
   }
 
@@ -626,7 +643,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config){
   unsigned short iDim;
   su2double *Coord, Sensitivity, eps;
 
-  bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
+  bool time_stepping = (config->GetUnsteady_Simulation() != STEADY);
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     Coord = geometry->node[iPoint]->GetCoord();
