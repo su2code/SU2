@@ -109,7 +109,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool adjoint = config->GetContinuous_Adjoint();
+  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename = config->GetSolution_FlowFileName();
   
   unsigned short direct_diff = config->GetDirectDiff();
@@ -3235,8 +3235,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Initialize the Jacobian matrices ---*/
   
-//  if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
-  if (implicit) Jacobian.SetValZero();
+  if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
+
   /*--- Error message ---*/
   
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
@@ -12298,7 +12298,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool adjoint = config->GetContinuous_Adjoint();
+  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename = config->GetSolution_FlowFileName();
   
   unsigned short direct_diff = config->GetDirectDiff();
@@ -13160,8 +13160,8 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   /*--- Initialize the Jacobian matrices ---*/
   
-  //if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
-    if (implicit ) Jacobian.SetValZero();
+  if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
+
   /*--- Error message ---*/
   
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
