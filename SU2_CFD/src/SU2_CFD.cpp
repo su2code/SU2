@@ -249,7 +249,6 @@ int main(int argc, char *argv[]) {
                        geometry_container, integration_container, numerics_container,
                        interpolator_container, transfer_container, config_container, nZone, nDim);
   
-  
   /*--- Instantiate the geometry movement classes for the solution of unsteady
    flows on dynamic meshes, including rigid mesh transformations, dynamically
    deforming meshes, and time-spectral preprocessing. ---*/

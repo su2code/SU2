@@ -210,7 +210,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   
   unsigned short iMGlevel;
   bool euler, ns, turbulent,
-  fem_euler, fem_ns, fem_turbulent, fem_les,
+  fem_euler, fem_ns, fem_turbulent, fem_les, fem_transition,
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
@@ -223,10 +223,10 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   adj_euler        = false;  adj_ns          = false;  adj_turb      = false;
   spalart_allmaras = false;  menter_sst      = false;
   poisson          = false;  neg_spalart_allmaras = false;
-  wave             = false;	 disc_adj        = false;
-  fem = false;
+  wave             = false;  disc_adj        = false;
+  fem              = false;
   heat             = false;
-  transition       = false;
+  transition       = false;  fem_transition  = false;
   template_solver  = false;
   
   /*--- Assign booleans ---*/
@@ -238,7 +238,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
     case FEM_EULER : fem_euler = true; break;
     case FEM_NAVIER_STOKES: fem_ns = true; break;
-    case FEM_RANS : fem_ns = true; fem_turbulent = true; break;
+    case FEM_RANS : fem_ns = true; fem_turbulent = true; if(config->GetKind_Trans_Model() == LM) fem_transition = true; break;
     case FEM_LES : fem_ns = true;  fem_les = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
@@ -304,11 +304,15 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       solver_container[iMGlevel][FEM_FLOW_SOL] = new CFEM_EulerSolver(geometry[iMGlevel], config, iMGlevel);
       solver_container[iMGlevel][FEM_FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     }
-    if (fem_ns) {
+    if (fem_ns || fem_les) {
       solver_container[iMGlevel][FEM_FLOW_SOL] = new CFEM_NSSolver(geometry[iMGlevel], config, iMGlevel);
     }
     if (fem_turbulent) {
-      cout << "Finite element turbulence model not yet implemented." << endl; exit(EXIT_FAILURE); break;
+      cout << "Finite element turbulence model not yet implemented." << endl; exit(EXIT_FAILURE);
+
+      if(fem_transition) {
+        cout << "Finite element transition model not yet implemented." << endl; exit(EXIT_FAILURE);
+      }
     }
     if (poisson) {
       solver_container[iMGlevel][POISSON_SOL] = new CPoissonSolver(geometry[iMGlevel], config);
