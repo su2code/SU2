@@ -2,7 +2,7 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -31,7 +31,33 @@
 
 #include "../include/numerics_structure.hpp"
 
-CNumerics::CNumerics(void) { }
+CNumerics::CNumerics(void) {
+
+  Normal = NULL;
+  UnitNormal = NULL;
+  U_n = NULL;
+  U_nM1 = NULL;
+  U_nP1  = NULL;
+  Proj_Flux_Tensor  = NULL;
+  Flux_Tensor = NULL;
+  tau  = NULL;
+  delta  = NULL;
+
+  Diffusion_Coeff_i = NULL;
+  Diffusion_Coeff_j = NULL;
+
+  Enthalpy_formation = NULL;
+  Theta_v = NULL;
+  var = NULL;
+
+  Ys          = NULL;
+  dFdYj       = NULL;
+  dFdYi       = NULL;
+  sumdFdYih   = NULL;
+  sumdFdYjh   = NULL;
+  sumdFdYieve = NULL;
+  sumdFdYjeve = NULL;
+}
 
 CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     CConfig *config) {
@@ -79,6 +105,11 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   Diffusion_Coeff_i = NULL;
   Diffusion_Coeff_j = NULL;
+  
+  Enthalpy_formation = NULL;
+  Theta_v = NULL;
+  var = NULL;
+
 
   Ys          = NULL;
   dFdYj       = NULL;
@@ -96,31 +127,33 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 }
 
 CNumerics::~CNumerics(void) {
+  if (Normal!=NULL) delete [] Normal;
+  if (UnitNormal!=NULL) delete [] UnitNormal;
 
-  delete [] Normal;
-  delete [] UnitNormal;
+  if (U_n!=NULL) delete [] U_n;
+  if (U_nM1!=NULL) delete [] U_nM1;
+  if (U_nP1!=NULL) delete [] U_nP1;
 
-  delete [] U_n;
-  delete [] U_nM1;
-  delete [] U_nP1;
+	// visc
+  if (Proj_Flux_Tensor!=NULL) delete [] Proj_Flux_Tensor;
 
-  // visc
-  delete [] Proj_Flux_Tensor;
-
-  for (unsigned short iVar = 0; iVar < nDim+3; iVar++) {
-    delete [] Flux_Tensor[iVar];
+  if (Flux_Tensor!=NULL){
+    for (unsigned short iVar = 0; iVar < nDim+3; iVar++) {
+      delete [] Flux_Tensor[iVar];
+    }
+    delete [] Flux_Tensor;
   }
-  delete [] Flux_Tensor;
 
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    delete [] tau[iDim];
-    delete [] delta[iDim];
+  if (tau!=NULL and delta != NULL){
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      delete [] tau[iDim];
+      delete [] delta[iDim];
+    }
+    delete [] tau;
+    delete [] delta;
   }
-  delete [] tau;
-  delete [] delta;
-  delete [] Enthalpy_formation;
-  delete [] Theta_v;
-  if (Ys != NULL) delete [] Ys;
+
+	if (Ys != NULL) delete [] Ys;
   if (sumdFdYih != NULL) delete [] sumdFdYih;
   if (sumdFdYjh != NULL) delete [] sumdFdYjh;
   if (sumdFdYieve != NULL) delete [] sumdFdYieve;
@@ -130,11 +163,9 @@ CNumerics::~CNumerics(void) {
   if (Vector != NULL) delete [] Vector;
   if (var != NULL) delete [] var;
 
-  unsigned short iVar;
-  for (iVar = 0; iVar < nVar; iVar++) {
-    delete [] dVdU[iVar];
-  }
-  delete [] dVdU;
+	if(Enthalpy_formation != NULL) delete [] Enthalpy_formation;
+	if(Theta_v != NULL) delete [] Theta_v;
+
 
 }
 

@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>element_structure.cpp</i>
  *        and <i>element_linear.cpp</i> files.
  * \author R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -49,7 +49,7 @@ using namespace std;
  * \class CElement
  * \brief Main class for defining the element structure.
  * \author R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CElement {
@@ -73,6 +73,7 @@ protected:
 	su2double **Ks_ab;						/*!< \brief Structure for the stress component of the tangent matrix. */
 	su2double ***Kk_ab;					/*!< \brief Structure for the pressure component of the tangent matrix. */
 	su2double **Kt_a;						/*!< \brief Structure for the nodal stress term for the residual computation. */
+	su2double **FDL_a;						/*!< \brief Structure for the dead loads for the residual computation. */
 	su2double el_Pressure;					/*!< \brief Pressure in the element */
 
 public:
@@ -240,6 +241,13 @@ public:
 	void Add_Kt_a(su2double *val_Kt_a, unsigned short nodeA);
 
 	/*!
+	 * \brief Add the value of the dead load for the computation of the residual.
+	 * \param[in] nodeA - index of Node a.
+	 * \param[in] val_FDL_a - value of the term that will constitute the diagonal of the stress contribution.
+	 */
+	void Add_FDL_a(su2double *val_FDL_a, unsigned short nodeA);
+
+	/*!
 	 * \brief Set the value of a submatrix K relating nodes a and b, for the pressure term (this term is subintegrated).
 	 * \param[in] nodeA - index of Node a.
 	 * \param[in] nodeB - index of Node b.
@@ -295,6 +303,13 @@ public:
 	 * \param[out] val_Kt_a - value of the stress term.
 	 */
 	su2double *Get_Kt_a(unsigned short nodeA);
+
+	/*!
+	 * \brief Return the value of the dead load component of the residual for node a.
+	 * \param[in] nodeA - index of Node a.
+	 * \param[out] val_Kt_a - value of the stress term.
+	 */
+	su2double *Get_FDL_a(unsigned short nodeA);
 
 	/*!
 	 * \brief Retrieve the value of the shape functions.
@@ -378,7 +393,7 @@ public:
  * \class CTRIA1
  * \brief Tria element with 1 Gauss Points
  * \author R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CTRIA1 : public CElement {
@@ -426,7 +441,7 @@ public:
  * \class CQUAD4
  * \brief Quadrilateral element with 4 Gauss Points
  * \author R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CQUAD4 : public CElement {
@@ -451,7 +466,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CQUAD4(void);
+	virtual ~CQUAD4(void);
 
 	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
@@ -479,7 +494,7 @@ public:
  * \class CQUAD4P1
  * \brief Quadrilateral element with 4 Gauss Points and 1 Gauss Point for pressure subintegration
  * \author R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CQUAD4P1 : public CQUAD4 {
@@ -520,7 +535,7 @@ public:
  * \class CTETRA1
  * \brief Tetrahedral element with 1 Gauss Point
  * \author R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CTETRA1 : public CElement {
@@ -567,7 +582,7 @@ public:
  * \class CHEXA8
  * \brief Hexahedral element with 8 Gauss Points
  * \author R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CHEXA8 : public CElement {
@@ -592,7 +607,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CHEXA8(void);
+	virtual ~CHEXA8(void);
 
 	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
@@ -620,7 +635,7 @@ public:
  * \class CHEXA8P1
  * \brief Hexahedral element with 8 Gauss Points and 1 Gauss Point for pressure subintegration
  * \author R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CHEXA8P1 : public CHEXA8 {

@@ -2,7 +2,7 @@
  * \file output_fieldview.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -51,7 +51,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   if (adjoint) filename = config->GetAdj_FileName();
   else filename = config->GetFlow_FileName();
   
-  if (Kind_Solver == LINEAR_ELASTICITY)
+  if (Kind_Solver == FEM_ELASTICITY)
     filename = config->GetStructure_FileName().c_str();
   
   if (Kind_Solver == WAVE_EQUATION)
@@ -497,7 +497,7 @@ void COutput::SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned 
   if (adjoint) filename = config->GetAdj_FileName();
   else filename = config->GetFlow_FileName();
   
-  if (Kind_Solver == LINEAR_ELASTICITY)
+  if (Kind_Solver == FEM_ELASTICITY)
     filename = config->GetStructure_FileName().c_str();
   
   if (Kind_Solver == WAVE_EQUATION)

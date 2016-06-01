@@ -2,7 +2,7 @@
  * \file solution_direct_heat.cpp
  * \brief Main subrotuines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -152,10 +152,6 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 CHeatSolver::~CHeatSolver(void) {
   
 	unsigned short iVar;
-  
-	delete [] Residual;
-	delete [] Residual_Max;
-	delete [] Solution;
   
 	for (iVar = 0; iVar < nDim+1; iVar++)
 		delete [] StiffMatrix_Elem[iVar];

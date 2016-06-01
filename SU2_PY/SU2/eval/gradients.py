@@ -3,7 +3,7 @@
 ## \file gradients.py
 #  \brief python package for gradients
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.1.0 "Cardinal"
+#  \version 4.1.3 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -117,7 +117,7 @@ def gradient( func_name, method, config, state=None ):
         else:
             raise Exception , 'unrecognized gradient method'
         
-        if ('CUSTOM' in config.DV_KIND):
+        if ('CUSTOM' in config.DV_KIND and 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION ):
             import downstream_function
             chaingrad = downstream_function.downstream_gradient(config,state)
             n_dv = len(grads[func_name])
@@ -227,12 +227,14 @@ def adjoint( func_name, config, state=None ):
 
     # files: direct solution
     name = files['DIRECT']
+    name = su2io.expand_zones(name,config)
     name = su2io.expand_time(name,config)
     link.extend(name)
 
     # files: adjoint solution
     if files.has_key( ADJ_NAME ):
         name = files[ADJ_NAME]
+        name = su2io.expand_zones(name,config)
         name = su2io.expand_time(name,config)
         link.extend(name)       
     else:
@@ -269,6 +271,7 @@ def adjoint( func_name, config, state=None ):
 
             # solution files to push
             name = state.FILES[ADJ_NAME]
+            name = su2io.expand_zones(name,config)
             name = su2io.expand_time(name,config)
             push.extend(name)
 
@@ -528,7 +531,7 @@ def findiff( config, state=None, step=1e-4 ):
         pull.append(files['TARGET_HEATFLUX'])
 
     # Use custom variable
-    if ('CUSTOM' in konfig.DV_KIND):
+    if ('CUSTOM' in konfig.DV_KIND and 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION):
         import downstream_function
         chaingrad = downstream_function.downstream_gradient(config,state)
         custom_dv=1

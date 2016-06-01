@@ -22,7 +22,6 @@
 		05E6DB6317EB61D100FA1F7E /* primal_grid_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5A17EB61D100FA1F7E /* primal_grid_structure.cpp */; };
 		05E6DB6417EB61D100FA1F7E /* vector_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB5B17EB61D100FA1F7E /* vector_structure.cpp */; };
 		05E6DC4E17EB635D00FA1F7E /* SU2_DEF.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DC4D17EB635D00FA1F7E /* SU2_DEF.cpp */; };
-		E941BBAA1B71D476005C6C06 /* datatype_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBA71B71D476005C6C06 /* datatype_structure.cpp */; };
 		E941BBAB1B71D476005C6C06 /* linear_solvers_structure_b.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBA81B71D476005C6C06 /* linear_solvers_structure_b.cpp */; };
 		E941BBAC1B71D476005C6C06 /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBA91B71D476005C6C06 /* mpi_structure.cpp */; };
 /* End PBXBuildFile section */
@@ -77,7 +76,6 @@
 		05E6DB5B17EB61D100FA1F7E /* vector_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = vector_structure.cpp; path = ../../Common/src/vector_structure.cpp; sourceTree = "<group>"; };
 		05E6DC4C17EB635800FA1F7E /* SU2_DEF.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = SU2_DEF.hpp; path = ../../SU2_DEF/include/SU2_DEF.hpp; sourceTree = "<group>"; };
 		05E6DC4D17EB635D00FA1F7E /* SU2_DEF.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SU2_DEF.cpp; path = ../../SU2_DEF/src/SU2_DEF.cpp; sourceTree = "<group>"; };
-		E941BBA71B71D476005C6C06 /* datatype_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = datatype_structure.cpp; path = ../../Common/src/datatype_structure.cpp; sourceTree = "<group>"; };
 		E941BBA81B71D476005C6C06 /* linear_solvers_structure_b.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = linear_solvers_structure_b.cpp; path = ../../Common/src/linear_solvers_structure_b.cpp; sourceTree = "<group>"; };
 		E941BBA91B71D476005C6C06 /* mpi_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mpi_structure.cpp; path = ../../Common/src/mpi_structure.cpp; sourceTree = "<group>"; };
 		E941BBAF1B71D5F5005C6C06 /* datatype_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = datatype_structure.hpp; path = ../../Common/include/datatype_structure.hpp; sourceTree = "<group>"; };
@@ -181,7 +179,6 @@
 				05E6DB5917EB61D100FA1F7E /* matrix_structure.cpp */,
 				05E6DB5A17EB61D100FA1F7E /* primal_grid_structure.cpp */,
 				05E6DB5B17EB61D100FA1F7E /* vector_structure.cpp */,
-				E941BBA71B71D476005C6C06 /* datatype_structure.cpp */,
 				E941BBA91B71D476005C6C06 /* mpi_structure.cpp */,
 			);
 			name = Source;
@@ -242,7 +239,7 @@
 		08FB7793FE84155DC02AAC07 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0510;
+				LastUpgradeCheck = 0720;
 			};
 			buildConfigurationList = 1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "SU2_DEF" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -271,7 +268,6 @@
 				05AF5D021A0D5A16004E14F6 /* output_cgns.cpp in Sources */,
 				05E6DB5C17EB61D100FA1F7E /* config_structure.cpp in Sources */,
 				05E6DB5D17EB61D100FA1F7E /* dual_grid_structure.cpp in Sources */,
-				E941BBAA1B71D476005C6C06 /* datatype_structure.cpp in Sources */,
 				05E6DB5E17EB61D100FA1F7E /* geometry_structure.cpp in Sources */,
 				05E6DB6017EB61D100FA1F7E /* grid_movement_structure.cpp in Sources */,
 				053306F51AAAD5F00049E156 /* output_fieldview.cpp in Sources */,
@@ -301,7 +297,7 @@
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				INSTALL_PATH = /usr/local/bin;
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				PRODUCT_NAME = SU2_DEF;
 			};
 			name = Debug;
@@ -313,7 +309,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
 				INSTALL_PATH = /usr/local/bin;
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
 				PRODUCT_NAME = SU2_DEF;
 			};
 			name = Release;
@@ -321,6 +317,7 @@
 		1DEB923608733DC60010E9CD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = (

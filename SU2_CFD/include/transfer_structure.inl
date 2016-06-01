@@ -42,3 +42,4 @@ inline void CTransfer::SetTarget_Variable(CSolver *target_solution, CGeometry *t
 										  unsigned long Vertex_Target, unsigned long Point_Target) { }
 
 inline void CTransfer::GetSetTurboPerformance(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone) { }
+

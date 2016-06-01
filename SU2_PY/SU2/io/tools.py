@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.1.0 "Cardinal"
+#  \version 4.1.3 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -480,6 +480,7 @@ def get_objectiveSign( ObjFun_name ):
     if ObjFun_name == "MASS_FLOW_RATE" : return -1.0
     if ObjFun_name == "AVG_TOTAL_PRESSURE" : return -1.0
     if ObjFun_name == "AVG_OUTLET_PRESSURE" : return -1.0
+    if ObjFun_name == "TOTAL_STATIC_EFFICIENCY" :return -1.0
     
     # otherwise
     return 1.0
@@ -964,12 +965,37 @@ def expand_part(name,config):
 def expand_time(name,config):
     if 'UNSTEADY_SIMULATION' in get_specialCases(config):
         n_time = config['UNST_ADJOINT_ITER']
-        name_pat = add_suffix(name,'%05d')
-        names = [name_pat%i for i in range(n_time)]
+        if not isinstance(name, list):
+            name_pat = add_suffix(name,'%05d')
+            names = [name_pat%i for i in range(n_time)]
+        else:
+            for n in range(len(name)):
+                name_pat[i] = add_suffix(name, '%05d')
+                names[i]    = [name_pat%i for i in range(n_time)]
     else:
-        names = [name]
+        if not isinstance(name, list):
+            names = [name]
+        else:
+            names = name
     return names
-        
+
+def expand_zones(name, config):
+    if config.NZONES > 1:
+        if not isinstance(name, list):
+            name_pat = add_suffix(name,'%d')
+            names = [name_pat%i for i in range(config.NZONES)]
+        else:
+            for n in range(len(name)):
+                name_pat[i] = add_suffix(name, '%d')
+                names[i]    = [name_pat%i for i in range(config.NZONES)]
+    else:
+        if not isinstance(name, list):
+            names = [name]
+        else:
+            names = name
+    return names
+
+
 def make_link(src,dst):
     """ make_link(src,dst)
         makes a relative link
@@ -1019,10 +1045,13 @@ def restart2solution(config,state={}):
     # direct solution
     if config.MATH_PROBLEM == 'DIRECT':
         restart  = config.RESTART_FLOW_FILENAME
-        solution = config.SOLUTION_FLOW_FILENAME        
+        solution = config.SOLUTION_FLOW_FILENAME
+        # expand zones
+        restarts  = expand_zones(restart,config)
+        solutions = expand_zones(solution,config)
         # expand unsteady time
-        restarts  = expand_time(restart,config)
-        solutions = expand_time(solution,config)
+        restarts  = expand_time(restarts,config)
+        solutions = expand_time(solutions,config)
         # move
         for res,sol in zip(restarts,solutions):
             shutil.move( res , sol )
@@ -1038,9 +1067,12 @@ def restart2solution(config,state={}):
         suffix    = get_adjointSuffix(func_name)
         restart   = add_suffix(restart,suffix)
         solution  = add_suffix(solution,suffix)
+        # expand zones
+        restarts  = expand_zones(restart,config)
+        solutions = expand_zones(solution,config)
         # expand unsteady time
-        restarts  = expand_time(restart,config)
-        solutions = expand_time(solution,config)        
+        restarts  = expand_time(restarts,config)
+        solutions = expand_time(solutions,config)
         # move
         for res,sol in zip(restarts,solutions):
             shutil.move( res , sol )

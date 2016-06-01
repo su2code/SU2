@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -65,7 +65,7 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, etc.)
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSolver {
 protected:
@@ -630,16 +630,6 @@ public:
 	virtual void BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                                  unsigned short val_marker);
     
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	virtual void BC_Flow_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                             unsigned short val_marker);
     
 	/*!
 	 * \brief A virtual member.
@@ -1684,7 +1674,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config);
-    
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2350,6 +2340,7 @@ public:
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid contribution).
    */
+
   virtual su2double GetAllBound_CFz_Inv(void);
   
 	/*!
@@ -2403,13 +2394,13 @@ public:
 	virtual su2double *GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex);
     
 	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-	 * \return Value of the skin friction coefficient.
-	 */
-	virtual su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex);
-    
+	* \brief A virtual member.
+	* \param[in] val_marker - Surface marker where the coefficient is computed.
+	* \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+	* \return Value of the skin friction coefficient.
+	*/
+	virtual su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -2719,13 +2710,6 @@ public:
    * \ Set the flux averaged enthalpy at a marker. =\f$ \frac{ \int(rho*u*h dA) }{ \int(rho *u *dA ) }\f$
    */
   virtual void SetOneD_FluxAvgEntalpy(su2double EnthalpyRef);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  virtual void GetSurface_Pressure(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -2810,16 +2794,6 @@ public:
                                     CConfig *flow_config, CConfig *fea_config,
                                     CGeometry **fea_geometry,
                                     CSolver ***fea_solution);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] fea_geometry - Geometrical definition of the problem.
-	 * \param[in] fea_config - Geometrical definition of the problem.
-	 * \param[in] fea_geometry - Definition of the particular problem.
-	 */
-	virtual void SetStruct_Displacement(CGeometry **fea_geometry,
-            							CConfig *fea_config,
-            							CSolver ***fea_solution);
 
 	/*!
 	 * \brief A virtual member.
@@ -3023,7 +2997,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	virtual void Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -3032,7 +3006,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	virtual void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 
 	/*!
@@ -3042,7 +3016,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	virtual void Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -3051,7 +3025,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	virtual void Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -3061,7 +3035,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 
-	virtual void Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	virtual void Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -3070,16 +3044,8 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
 
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	virtual void Compute_StiffMassDampMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	virtual void Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -3104,12 +3070,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void Compute_IntegrationConstants(CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 */
-	virtual void SetSolution_time_n(CGeometry *geometry, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -3165,7 +3125,7 @@ public:
    * \brief A virtual member.
    * \param[in] kind_recording - Kind of AD recording.
    */
-  virtual void SetRecording(CGeometry *geometry, CConfig *config, unsigned short kind_recording);
+  virtual void SetRecording(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -3186,7 +3146,7 @@ public:
  * \class CBaselineSolver
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CBaselineSolver : public CSolver {
 public:
@@ -3249,7 +3209,7 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CEulerSolver : public CSolver {
 protected:
@@ -3381,7 +3341,8 @@ protected:
 	su2double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
 	*PrimVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
 	su2double **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
-	unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
+	unsigned long nMarker,				/*!< \brief Total number of markers using the grid information. */
+  *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
 	bool space_centered,  /*!< \brief True if space centered scheeme used. */
 	euler_implicit,			/*!< \brief True if euler implicit scheme used. */
 	least_squares;        /*!< \brief True if computing gradients by least squares. */
@@ -3403,6 +3364,7 @@ protected:
 	su2double Old_Func,	/*!< \brief Old value of the objective function (the function which is monitored). */
 	New_Func;			/*!< \brief Current value of the objective function (the function which is monitored). */
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
+  unsigned long AoA_Counter;
 
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   su2double ***AverageVelocity,
@@ -5347,7 +5309,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CNSSolver : public CEulerSolver {
 private:
@@ -5380,7 +5342,7 @@ private:
 	*CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for each boundary. */
   *Heat_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
   *MaxHeatFlux_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
-	**CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
+  ***CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
 	su2double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
 	*MomentViscous;			/*!< \brief Inviscid moment for each boundary. */
 	su2double AllBound_CDrag_Visc, /*!< \brief Drag coefficient (viscous contribution) for all the boundaries. */
@@ -5556,8 +5518,8 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the skin friction coefficient.
 	 */
-	su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex);
-    
+  su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
+  
 	/*!
 	 * \brief Get the skin friction coefficient.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -5621,7 +5583,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CTurbSolver : public CSolver {
 protected:
@@ -5750,7 +5712,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CTurbSASolver: public CTurbSolver {
@@ -5955,7 +5917,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Aranake.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CTransLMSolver: public CTurbSolver {
@@ -6131,7 +6093,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CTurbSSTSolver: public CTurbSolver {
@@ -6277,7 +6239,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAdjEulerSolver : public CSolver {
 protected:
@@ -6769,7 +6731,7 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAdjNSSolver : public CAdjEulerSolver {
 public:
@@ -6878,7 +6840,7 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author F. Palacios, A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAdjTurbSolver : public CSolver {
 private:
@@ -7024,7 +6986,7 @@ public:
 /*! \class CPoissonSolver
  *  \brief Main class for defining the poisson potential solver.
  *  \author F. Palacios
- *  \version 4.1.0 "Cardinal"
+ *  \version 4.1.3 "Cardinal"
  *  \date May 3, 2010.
  */
 class CPoissonSolver : public CSolver {
@@ -7156,7 +7118,7 @@ public:
 /*! \class CWaveSolver
  *  \brief Main class for defining the wave solver.
  *  \author F. Palacios
- *  \version 4.1.0 "Cardinal"
+ *  \version 4.1.3 "Cardinal"
  *  \date May 3, 2010.
  */
 class CWaveSolver : public CSolver {
@@ -7315,7 +7277,7 @@ public:
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.
  *  \author F. Palacios
- *  \version 4.1.0 "Cardinal"
+ *  \version 4.1.3 "Cardinal"
  *  \date May 3, 2010.
  */
 class CHeatSolver : public CSolver {
@@ -7433,411 +7395,6 @@ public:
     
 };
 
-/*! \class CFEASolver
- *  \brief Main class for defining the FEA solver.
- *  \author F. Palacios, R. Sanchez.
- *  \version 4.1.0 "Cardinal"
- *  \date May 3, 2010.
- */
-class CFEASolver : public CSolver {
-private:
-  
-	su2double  Total_CFEA;			/*!< \brief Total FEA coefficient for all the boundaries. */
-    CSysMatrix StiffMatrixSpace; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-	CSysMatrix StiffMatrixTime;	/*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations. */
-
-    CSysMatrix MassMatrix; 		/*!< \brief Sparse structure for storing the mass matrix in Galerkin computations. */
-	CSysMatrix DampMatrix;	/*!< \brief Sparse structure for storing the damping matrix in Galerkin computations. */
-
-	CSysVector TimeRes_Aux;				/*!< \brief Auxiliary vector for adding mass and damping contributions to the residual. */
-	CSysVector TimeRes;					/*!< \brief Vector for adding mass and damping contributions to the residual */
-  
-  su2double **StiffMatrix_Elem,			/*!< \brief Auxiliary matrices for storing elem to elem Stiffness Matrices. */
-	**StiffMatrix_Node,					/*!< \brief Auxiliary matrices for storing point to point Stiffness Matrices. */
-	**MassMatrix_Elem,					/*!< \brief Auxiliary matrices for storing elem to elem Mass Matrices. */
-	**MassMatrix_Node,					/*!< \brief Auxiliary matrices for storing point to point Mass Matrices. */
-	**MassMatrix_Node_Int,				/*!< \brief Auxiliary matrices for storing point to point Mass Matrices * a0. */
-	**DampMatrix_Elem,					/*!< \brief Auxiliary matrices for storing elem to elem Damping Matrices. */
-	**DampMatrix_Node,					/*!< \brief Auxiliary matrices for storing point to point Damping Matrices. */
-	*DeadLoadVector_Elem,				/*!< \brief Auxiliary vector for storing point to point Dead Loads. */
-	*DeadLoadVector_Node;				/*!< \brief Auxiliary vector for storing point to point Dead Loads. */
-
-  su2double a_dt[8];				/*!< \brief Integration constants. */
-
-  su2double WAitken_Dyn;			/*!< \brief Aitken's dynamic coefficient */
-  su2double WAitken_Dyn_tn1;		/*!< \brief Aitken's dynamic coefficient in the previous iteration */
-
-  su2double FSI_Conv[2];		/*!< \brief Values to check the convergence of the FSI problem. */
-
-
-
-public:
-    
-	/*!
-	 * \brief Constructor of the class.
-	 */
-	CFEASolver(void);
-    
-	/*!
-	 * \overload
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CFEASolver(CGeometry *geometry, CConfig *config);
-    
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	~CFEASolver(void);
-    
-	/*!
-	 * \brief Integrate the Poisson equation using a Galerkin method.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                         unsigned short iMesh, unsigned short iRKStep);
-
-	/*!
-	 * \brief Impose a displacement (constraint) boundary condition --> Clamped boundary.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Clamped(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                         unsigned short val_marker);
-	/*!
-	 * \brief Impose a displacement (constraint) boundary condition --> Clamped boundary.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                         unsigned short val_marker);
-    
-	/*!
-	 * \brief Impose a displacement (constraint) boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Normal_Displacement(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                         unsigned short val_marker);
-    
-	/*!
-	 * \brief Impose a load boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Flow_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                     unsigned short val_marker);
-    
-	/*!
-	 * \brief Impose a load boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Normal_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                 unsigned short val_marker);
-  
-	/*!
-	 * \brief Impose a load boundary condition in cartesian coordinates.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Dir_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                 unsigned short val_marker);
-
-	/*!
-	 * \brief Impose a sine-wave load boundary condition in cartesian coordinates.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Sine_Load(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                 unsigned short val_marker);
-
-
-  /*!
-	 * \brief Impose a load boundary condition.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
-	void BC_Pressure(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
-                      unsigned short val_marker);
-    
-	/*!
-	 * \brief Set residuals to zero.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Output - boolean to determine whether to print output.
-	 */
-	void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output);
-
-	/*!
-	 * \brief Postprocessing.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,  CNumerics **numerics,
-			unsigned short iMesh);
-    
-	/*!
-	 * \brief Source term computation.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] numerics - Description of the numerical method.
-	 * \param[in] second_numerics - Description of the second numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 */
-	void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                         CConfig *config, unsigned short iMesh);
-    
-	/*!
-	 * \brief Update the solution using an implicit solver.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
-	/*!
-	 * \brief Update the solution using an implicit Newmark solver.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-    
-	/*!
-	 * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-	 * \param[in] iMesh - Index of the mesh in multigrid computations.
-	 * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-	 */
-	void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                              unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
-  
-  /*!
-	 * \brief Get the surface pressure from a file.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-  void GetSurface_Pressure(CGeometry *geometry, CConfig *config);
-  
-	/*!
-	 * \brief Set the the tractions in the in the FEA solver (matching mesh).
-	 * \param[in] fea_geometry - Geometrical definition of the problem.
-	 * \param[in] flow_solution - Container vector with all the solutions.
-	 * \param[in] fea_config - Definition of the particular problem.
-	 */
-	void SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics);
-
-	/*!
-	 * \brief Set the the tractions in the in the FEA solver (non-matching mesh).
-	 * \param[in] fea_geometry - Geometrical definition of the problem.
-	 * \param[in] flow_solution - Container vector with all the solutions.
-	 * \param[in] fea_config - Definition of the particular problem.
-	 */
-	void SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics);
-
-	/*!
-	 * \brief Set the initial condition for the FEA Equations.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] ExtIter - External iteration.
-	 */
-	void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
-    
-	/*!
-	 * \brief Provide the total (inviscid + viscous) non dimensional FEA coefficient.
-	 * \return Value of the FEA coefficient (inviscid + viscous contribution).
-	 */
-	su2double GetTotal_CFEA(void);
-    
-	/*!
-	 * \brief Set the value of the FEA coefficient.
-	 * \param[in] val_cfea - Value of the FEA coefficient.
-	 */
-	void SetTotal_CFEA(su2double val_cfea);
-
-	/*!
-	 * \brief Set the displacement for the nodes in the structural mesh
-	 * \param[in] fea_geometry - Geometrical definition of the problem.
-	 * \param[in] fea_grid_movement - Geometrical definition of the problem.
-	 * \param[in] fea_config - Geometrical definition of the problem.
-	 * \param[in] flow_geometry - Definition of the particular problem.
-	 */
-	void SetStruct_Displacement(CGeometry **fea_geometry,
-                                CConfig *fea_config,
-                                CSolver ***fea_solution);
-
-	/*!
-	 * \brief Predictor for structural displacements based on previous iterations
-	 * \param[in] fea_geometry - Geometrical definition of the problem.
-	 * \param[in] fea_grid_movement - Geometrical definition of the problem.
-	 * \param[in] fea_config - Geometrical definition of the problem.
-	 * \param[in] flow_geometry - Definition of the particular problem.
-	 */
-	void PredictStruct_Displacement(CGeometry **fea_geometry,
-                                	CConfig *fea_config,
-                                	CSolver ***fea_solution);
-
-	/*!
-	 * \brief Computation of Aitken's coefficient.
-	 * \param[in] fea_geometry - Geometrical definition of the problem.
-	 * \param[in] fea_config - Geometrical definition of the problem.
-	 * \param[in] fea_geometry - Definition of the particular problem.
-	 */
-	void ComputeAitken_Coefficient(CGeometry **fea_geometry,
-            				  CConfig *fea_config,
-            				  CSolver ***fea_solution,
-            				  unsigned long iFSIIter);
-
-	/*!
-	 * \brief Aitken's relaxation of the solution.
-	 * \param[in] fea_geometry - Geometrical definition of the problem.
-	 * \param[in] fea_config - Geometrical definition of the problem.
-	 * \param[in] fea_geometry - Definition of the particular problem.
-	 */
-	void SetAitken_Relaxation(CGeometry **fea_geometry,
-            				  CConfig *fea_config,
-            				  CSolver ***fea_solution);
-
-	/*!
-	 * \brief Aitken's relaxation of the solution.
-	 * \param[in] fea_geometry - Geometrical definition of the problem.
-	 * \param[in] fea_config - Geometrical definition of the problem.
-	 * \param[in] fea_geometry - Definition of the particular problem.
-	 */
-	void Update_StructSolution(CGeometry **fea_geometry,
-            				  CConfig *fea_config,
-            				  CSolver ***fea_solution);
-
-	/*!
-	 * \brief Get the value of the FSI convergence.
-	 * \param[in] Set value of interest: 0 - Initial value, 1 - Current value.
-	 */
-	void SetFSI_ConvValue(unsigned short val_index, su2double val_criteria);
-
-	/*!
-	 * \brief Get the value of the FSI convergence.
-	 * \param[in]  Value of interest: 0 - Initial value, 1 - Current value.
-	 * \return Values to compare
-	 */
-	su2double GetFSI_ConvValue(unsigned short val_index);
-
-	/*!
-	 * \brief Compute the stiffness matrix of the problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
-
-	/*!
-	 * \brief Compute the stiffness and mass matrices of the problem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Compute_StiffMassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Compute_StiffMassDampMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Initialize_SystemMatrix(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] solver - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void Compute_IntegrationConstants(CConfig *config);
-
-	/*!
-	 * \brief Set the solution variables at time n to the current solution.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 */
-	void SetSolution_time_n(CGeometry *geometry, CConfig *config);
-
-	/*!
-	 * \brief Retrieve the value of the dynamic Aitken relaxation factor.
-	 * \return Value of the dynamic Aitken relaxation factor.
-	 */
-	su2double GetWAitken_Dyn(void);
-
-	/*!
-	 * \brief Retrieve the value of the last Aitken relaxation factor in the previous time step.
-	 * \return Value of the last Aitken relaxation factor in the previous time step.
-	 */
-	su2double GetWAitken_Dyn_tn1(void);
-
-	/*!
-	 * \brief Set the value of the dynamic Aitken relaxation factor
-	 * \param[in] Value of the dynamic Aitken relaxation factor
-	 */
-	void SetWAitken_Dyn(su2double waitk);
-
-	/*!
-	 * \brief Set the value of the last Aitken relaxation factor in the current time step.
-	 * \param[in] Value of the last Aitken relaxation factor in the current time step.
-	 */
-	void SetWAitken_Dyn_tn1(su2double waitk_tn1);
-
-    
-};
-
 /*! \class CFEM_ElasticitySolver
  *  \brief Main class for defining a FEM solver for elastic structural problems.
  *  \author R. Sanchez.
@@ -7865,6 +7422,8 @@ private:
 	su2double *Res_Ext_Surf;			/*!< \brief Auxiliary vector to store the surface load contribution to the residual */
 	su2double *Res_Time_Cont;			/*!< \brief Auxiliary vector to store the surface load contribution to the residual */
 	su2double *Res_FSI_Cont;			/*!< \brief Auxiliary vector to store the surface load contribution to the residual */
+
+	su2double *Res_Dead_Load;			/*!< \brief Auxiliary vector to store the body load contribution to the residual */
 
 	su2double *solutionPredictor;		/*!< \brief Auxiliary vector to store the solution predictor */
 
@@ -7899,7 +7458,7 @@ private:
 
 public:
 
-	CElement** element_container; 	/*!< \brief Vector which the define the finite element structure for each problem. */
+	CElement*** element_container; 	/*!< \brief Vector which the define the finite element structure for each problem. */
 
 	/*!
 	 * \brief Constructor of the class.
@@ -7916,7 +7475,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CFEM_ElasticitySolver(void);
+	virtual ~CFEM_ElasticitySolver(void);
 
     /*!
 	 * \brief Impose the send-receive boundary condition.
@@ -8000,7 +7559,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	void Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 	/*!
 	 * \brief Compute the stiffness matrix of the problem and the nodal stress terms at the same time (more efficient if full Newton Raphson).
@@ -8009,7 +7568,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	void Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 	/*!
 	 * \brief Compute the mass matrix of the problem.
@@ -8018,7 +7577,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	void Compute_MassMatrix(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 	/*!
 	 * \brief Compute the nodal stress terms and add them to the residual.
@@ -8027,7 +7586,7 @@ public:
 	 * \param[in] solver - Description of the numerical method.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	void Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 	/*!
 	 * \brief Compute the stress at the nodes for output purposes.
@@ -8037,8 +7596,16 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 
-	void Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config);
+	void Compute_NodalStress(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
+	/*!
+	 * \brief Compute the dead loads.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] solver - Description of the numerical method.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void Compute_DeadLoad(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config);
 
 	/*!
 	 * \brief Initializes the matrices/residuals in the solution process (avoids adding over previous values).
@@ -8342,7 +7909,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAdjLevelSetSolver : public CSolver {
 protected:
@@ -8528,7 +8095,7 @@ public:
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CTemplateSolver : public CSolver {
 private:
@@ -8736,7 +8303,7 @@ public:
  * \brief Main class for defining the discrete adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CDiscAdjSolver : public CSolver {
 private:
@@ -8782,24 +8349,7 @@ public:
    */
   CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
 
-  /*!
-   * \brief Performs the preprocessing of the adjoint AD-based solver.
-   *        Registers all necessary variables on the tape. Called while tape is active.
-   * \param[in] geometry_container - The geometry container holding all grid levels.
-   * \param[in] config_container - The particular config.
-   */
-  void RegisterSolution(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Performs the preprocessing of the adjoint AD-based solver.
-   *        Registers all necessary variables that are output variables on the tape.
-   *        Called while tape is active.
-   * \param[in] geometry_container - The geometry container holding all grid levels.
-   * \param[in] config_container - The particular config.
-   */
-  void RegisterOutput(CGeometry *geometry, CConfig *config);
-
-  /*!
+ /*!
   * \brief Sets the adjoint values of the output of the flow (+turb.) iteration
   *         before evaluation of the tape.
   * \param[in] geometry - The geometrical definition of the problem.
@@ -8898,7 +8448,7 @@ public:
    * \brief Prepare the solver for a new recording.
    * \param[in] kind_recording - Kind of AD recording.
    */
-  void SetRecording(CGeometry *geometry, CConfig *config, unsigned short kind_recording);
+  void SetRecording(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.

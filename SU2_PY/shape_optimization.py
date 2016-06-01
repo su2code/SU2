@@ -3,7 +3,7 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 4.1.0 "Cardinal"
+#  \version 4.1.3 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -51,17 +51,21 @@ def main():
                       help="Method for computing the GRADIENT (CONTINUOUS_ADJOINT, FINDIFF, NONE)", metavar="GRADIENT")
     parser.add_option("-q", "--quiet", dest="quiet", default="True",
                       help="True/False Quiet all SU2 output (optimizer output only)", metavar="QUIET")
-    
+    parser.add_option("-z", "--zones", dest="nzones", default="1",
+                      help="Number of Zones", metavar="ZONES")
+
+
     (options, args)=parser.parse_args()
     
     # process inputs
     options.partitions  = int( options.partitions )
     options.quiet       = options.quiet.upper() == 'TRUE'
     options.gradient    = options.gradient.upper()
+    options.nzones      = int( options.nzones )
     
     sys.stdout.write('\n-------------------------------------------------------------------------\n')
     sys.stdout.write('|    ___ _   _ ___                                                      |\n')
-    sys.stdout.write('|   / __| | | |_  )   Release 4.1.0 \"Cardinal\"                          |\n')
+    sys.stdout.write('|   / __| | | |_  )   Release 4.1.3 \"Cardinal\"                          |\n')
     sys.stdout.write('|   \\__ \\ |_| |/ /                                                      |\n')
     sys.stdout.write('|   |___/\\___//___|   Aerodynamic Shape Optimization Script             |\n')
     sys.stdout.write('|                                                                       |\n')
@@ -96,7 +100,8 @@ def main():
                         options.projectname ,
                         options.partitions  ,
                         options.gradient    ,
-                        options.quiet        )
+                        options.quiet       ,
+                        options.nzones      )
     
 #: main()
 
@@ -104,11 +109,13 @@ def shape_optimization( filename                ,
                         projectname = ''        ,
                         partitions  = 0         , 
                         gradient    = 'CONTINUOUS_ADJOINT' ,
-                        quiet       = False      ):
+                        quiet       = False     ,
+                        nzones      = 1         ):
   
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
+    config.NZONES      = nzones
     if quiet: config.CONSOLE = 'CONCISE'
     config.GRADIENT_METHOD = gradient
     
