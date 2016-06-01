@@ -73,7 +73,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   /*--- Reading config options  ---*/
   
-  SetConfig_Options(1, 1);
+  SetConfig_Options(0, 1);
 
   /*--- Parsing the config file  ---*/
   
@@ -81,7 +81,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   /*--- Configuration file postprocessing ---*/
   
-  SetPostprocessing(val_software, 1, 1);
+  SetPostprocessing(val_software, 0, 1);
   
 }
 
@@ -167,6 +167,8 @@ void CConfig::SetPointersNull(void) {
   Kappa_Flow = NULL;    Kappa_AdjFlow = NULL;
   Section_Location = NULL;
   ParamDV=NULL;     DV_Value = NULL;    Design_Variable=NULL;
+  MG_PreSmooth = NULL;
+  MG_PostSmooth = NULL;
   MG_CorrecSmooth = NULL;
   Subsonic_Engine_Box = NULL;
   Hold_GridFixed_Coord=NULL;
