@@ -602,8 +602,8 @@ def main():
     brick_tets_def            = TestCase('brick_tets_def')
     brick_tets_def.cfg_dir   = "deformation/brick_tets"
     brick_tets_def.cfg_file  = "def_brick_tets.cfg"
-    brick_tets_def.test_iter = 100
-    brick_tets_def.test_vals = [5.22276e-15] #residual
+    brick_tets_def.test_iter = 50
+    brick_tets_def.test_vals = [7.34025e-15] #residual
     brick_tets_def.su2_exec  = "SU2_DEF"
     brick_tets_def.timeout   = 1600
     brick_tets_def.tol       = 1e-15
@@ -628,8 +628,8 @@ def main():
     brick_pyra_def           = TestCase('brick_pyra_def')
     brick_pyra_def.cfg_dir   = "deformation/brick_pyra"
     brick_pyra_def.cfg_file  = "def_brick_pyra.cfg"
-    brick_pyra_def.test_iter = 150
-    brick_pyra_def.test_vals = [4.35591e-15] #residual
+    brick_pyra_def.test_iter = 400
+    brick_pyra_def.test_vals = [3.79432e-15] #residual
     brick_pyra_def.su2_exec  = "SU2_DEF"
     brick_pyra_def.timeout   = 1600
     brick_pyra_def.tol       = 1e-15
@@ -642,7 +642,7 @@ def main():
     brick_prism_def.cfg_dir   = "deformation/brick_prism"
     brick_prism_def.cfg_file  = "def_brick_prism.cfg"
     brick_prism_def.test_iter = 150
-    brick_prism_def.test_vals = [6.79485e-15] #residual
+    brick_prism_def.test_vals = [9.14366e-15] #residual
     brick_prism_def.su2_exec  = "SU2_DEF"
     brick_prism_def.timeout   = 1600
     brick_prism_def.tol       = 1e-15
@@ -654,8 +654,8 @@ def main():
     brick_prism_rans_def           = TestCase('brick_prism_rans_def')
     brick_prism_rans_def.cfg_dir   = "deformation/brick_prism_rans"
     brick_prism_rans_def.cfg_file  = "def_brick_prism_rans.cfg"
-    brick_prism_rans_def.test_iter = 300
-    brick_prism_rans_def.test_vals = [1.3832e-15] #residual
+    brick_prism_rans_def.test_iter = 100
+    brick_prism_rans_def.test_vals = [1.64462e-15] #residual
     brick_prism_rans_def.su2_exec  = "SU2_DEF"
     brick_prism_rans_def.timeout   = 1600
     brick_prism_rans_def.tol       = 1e-15

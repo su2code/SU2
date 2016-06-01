@@ -96,7 +96,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-    flatplate.test_vals = [-5.231743, 0.261628, -0.166871, 0.012706] #last 4 columns
+    flatplate.test_vals = [-5.231727, 0.261637, -0.166869, 0.012707] #last 4 columns
     flatplate.su2_exec  = "parallel_computation.py -f"
     flatplate.timeout   = 1600
     flatplate.tol       = 0.00001
@@ -471,6 +471,13 @@ def main():
     
     
     ######################################
+    ### RUN TESTS                      ###
+    ######################################
+    
+    pass_list = [ test.run_test() for test in test_list ]
+    
+    
+    ######################################
     ### RUN SU2_DEF TESTS              ###
     ######################################
     
@@ -478,11 +485,13 @@ def main():
     naca0012_def            = TestCase('naca0012_def')
     naca0012_def.cfg_dir   = "deformation/naca0012"
     naca0012_def.cfg_file  = "def_NACA0012.cfg"
-    naca0012_def.test_iter = 400
-    naca0012_def.test_vals = [4.30698e-15] #residual
+    naca0012_def.test_iter = 250
+    naca0012_def.test_vals = [5.44754e-15] #residual
     naca0012_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     naca0012_def.timeout   = 1600
     naca0012_def.tol       = 1e-15
+    
+    pass_list.append(naca0012_def.run_def())
     test_list.append(naca0012_def)
 
     # RAE2822 (mixed tris + quads)
@@ -490,10 +499,12 @@ def main():
     rae2822_def.cfg_dir   = "deformation/rae2822"
     rae2822_def.cfg_file  = "def_RAE2822.cfg"
     rae2822_def.test_iter = 150
-    rae2822_def.test_vals = [5.59336e-16] #residual
+    rae2822_def.test_vals = [1.47076e-15] #residual
     rae2822_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     rae2822_def.timeout   = 1600
     rae2822_def.tol       = 1e-16
+    
+    pass_list.append(rae2822_def.run_def())
     test_list.append(rae2822_def)
     
     # Turb NACA4412 (quads, wall distance)
@@ -501,10 +512,12 @@ def main():
     naca4412_def.cfg_dir   = "deformation/naca4412"
     naca4412_def.cfg_file  = "def_NACA4412.cfg"
     naca4412_def.test_iter = 300
-    naca4412_def.test_vals = [3.26428e-15] #residual
+    naca4412_def.test_vals = [4.46129e-15] #residual
     naca4412_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     naca4412_def.timeout   = 1600
     naca4412_def.tol       = 1e-15
+    
+    pass_list.append(naca4412_def.run_def())
     test_list.append(naca4412_def)
     
     # Brick of tets (inverse volume)
@@ -516,69 +529,75 @@ def main():
     brick_tets_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     brick_tets_def.timeout   = 1600
     brick_tets_def.tol       = 1e-15
+    
+    pass_list.append(brick_tets_def.run_def())
     test_list.append(brick_tets_def)
     
     # Brick of isotropic hexas (inverse volume)
     brick_hex_def           = TestCase('brick_hex_def')
     brick_hex_def.cfg_dir   = "deformation/brick_hex"
     brick_hex_def.cfg_file  = "def_brick_hex.cfg"
-    brick_hex_def.test_iter = 50
-    brick_hex_def.test_vals = [1.55154e-15] #residual
+    brick_hex_def.test_iter = 1000
+    brick_hex_def.test_vals = [1.46423e-15] #residual
     brick_hex_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     brick_hex_def.timeout   = 1600
     brick_hex_def.tol       = 1e-15
+    
+    pass_list.append(brick_hex_def.run_def())
     test_list.append(brick_hex_def)
     
     # Brick with a pyramid layer (inverse volume)
     brick_pyra_def           = TestCase('brick_pyra_def')
     brick_pyra_def.cfg_dir   = "deformation/brick_pyra"
     brick_pyra_def.cfg_file  = "def_brick_pyra.cfg"
-    brick_pyra_def.test_iter = 150
-    brick_pyra_def.test_vals = [4.35591e-15] #residual
+    brick_pyra_def.test_iter = 100
+    brick_pyra_def.test_vals = [5.97202e-15] #residual
     brick_pyra_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     brick_pyra_def.timeout   = 1600
     brick_pyra_def.tol       = 1e-15
+    
+    pass_list.append(brick_pyra_def.run_def())
     test_list.append(brick_pyra_def)
     
     # Brick of isotropic prisms (inverse volume)
     brick_prism_def           = TestCase('brick_prism_def')
     brick_prism_def.cfg_dir   = "deformation/brick_prism"
     brick_prism_def.cfg_file  = "def_brick_prism.cfg"
-    brick_prism_def.test_iter = 150
-    brick_prism_def.test_vals = [6.79485e-15] #residual
+    brick_prism_def.test_iter = 100
+    brick_prism_def.test_vals = [2.80867e-14] #residual
     brick_prism_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     brick_prism_def.timeout   = 1600
     brick_prism_def.tol       = 1e-15
+    
+    pass_list.append(brick_prism_def.run_def())
     test_list.append(brick_prism_def)
     
     # Brick of prisms with high aspect ratio cells near the wall (wall distance)
     brick_prism_rans_def           = TestCase('brick_prism_rans_def')
     brick_prism_rans_def.cfg_dir   = "deformation/brick_prism_rans"
     brick_prism_rans_def.cfg_file  = "def_brick_prism_rans.cfg"
-    brick_prism_rans_def.test_iter = 300
-    brick_prism_rans_def.test_vals = [1.3832e-15] #residual
+    brick_prism_rans_def.test_iter = 50
+    brick_prism_rans_def.test_vals = [3.5265e-15] #residual
     brick_prism_rans_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     brick_prism_rans_def.timeout   = 1600
     brick_prism_rans_def.tol       = 1e-15
+    
+    pass_list.append(brick_prism_rans_def.run_def())
     test_list.append(brick_prism_rans_def)
     
     # Brick of hexas with high aspect ratio cells near the wall (inverse volume)
     brick_hex_rans_def           = TestCase('brick_hex_rans_def')
     brick_hex_rans_def.cfg_dir   = "deformation/brick_hex_rans"
     brick_hex_rans_def.cfg_file  = "def_brick_hex_rans.cfg"
-    brick_hex_rans_def.test_iter = 50
-    brick_hex_rans_def.test_vals = [9.29371e-16] #residual
+    brick_hex_rans_def.test_iter = 600
+    brick_hex_rans_def.test_vals = [2.75292e-14] #residual
     brick_hex_rans_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     brick_hex_rans_def.timeout   = 1600
     brick_hex_rans_def.tol       = 1e-16
+    
+    pass_list.append(brick_hex_rans_def.run_def())
     test_list.append(brick_hex_rans_def)
 
-
-    ######################################
-    ### RUN TESTS                      ###
-    ######################################
-
-    pass_list = [ test.run_test() for test in test_list ]
 
     # Tests summary
     print '=================================================================='
