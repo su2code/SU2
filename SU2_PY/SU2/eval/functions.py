@@ -3,7 +3,7 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.1.0 "Cardinal"
+#  \version 4.1.3 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -195,6 +195,7 @@ def aerodynamics( config, state=None ):
     # files: direct solution
     if files.has_key('DIRECT'):
         name = files['DIRECT']
+        name = su2io.expand_zones(name, config)
         name = su2io.expand_time(name,config)
         link.extend( name )
         ##config['RESTART_SOL'] = 'YES' # don't override config file
@@ -227,6 +228,7 @@ def aerodynamics( config, state=None ):
             
             # direct files to push
             name = info.FILES['DIRECT']
+            name = su2io.expand_zones(name,config)
             name = su2io.expand_time(name,config)
             push.extend(name)
             

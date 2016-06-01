@@ -5,7 +5,7 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -56,7 +56,7 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CGridMovement {
 public:
@@ -84,7 +84,7 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -738,7 +738,7 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -797,29 +797,31 @@ public:
 	su2double SetFEAMethodContributions_Elem(CGeometry *geometry, CConfig *config);
   
   /*!
-	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
+   * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
-	 * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
+   * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
    * \param[in] PointCorners - Index values for element corners
    * \param[in] nNodes - Number of nodes defining the element.
    * \param[in] scale
-	 */
-  void SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3], unsigned short nNodes, su2double scale);
-	
-  /*!
-	 * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-   * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
-	 * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
-   * \param[in] PointCorners - Index values for element corners
-   * \param[in] nNodes - Number of nodes defining the element.
-   * \param[in] scale
-	 */
-  void SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3], unsigned short nNodes, su2double scale);
+   */
+  void SetFEA_StiffMatrix3D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3],
+                            unsigned short nNodes, su2double ElemVolume, su2double ElemDistance);
   
+  /*!
+   * \brief Build the stiffness matrix for a 3-D hexahedron element. The result will be placed in StiffMatrix_Elem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] StiffMatrix_Elem - Element stiffness matrix to be filled.
+   * \param[in] CoordCorners - Index value for Node 1 of the current hexahedron.
+   * \param[in] PointCorners - Index values for element corners
+   * \param[in] nNodes - Number of nodes defining the element.
+   * \param[in] scale
+   */
+  void SetFEA_StiffMatrix2D(CGeometry *geometry, CConfig *config, su2double **StiffMatrix_Elem, unsigned long PointCorners[8], su2double CoordCorners[8][3],
+                            unsigned short nNodes, su2double ElemVolume, su2double ElemDistance);
+    
   /*!
 	 * \brief Shape functions and derivative of the shape functions
    * \param[in] Xi - Local coordinates.
@@ -927,15 +929,16 @@ public:
 	 * \brief Check for negative volumes (all elements) after performing grid deformation.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
-	su2double Check_Grid(CGeometry *geometry);
+  void ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume);
+  
   
   /*!
 	 * \brief Compute the minimum distance to the nearest deforming surface.
 	 * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
 	 */
-  void ComputeDeforming_Wall_Distance(CGeometry *geometry, CConfig *config);
-  
+  void ComputeDeforming_Wall_Distance(CGeometry *geometry, CConfig *config, su2double &MinDistance, su2double &MaxDistance);
+    
 	/*!
 	 * \brief Check the boundary vertex that are going to be moved.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -1067,7 +1070,7 @@ public:
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CSurfaceMovement : public CGridMovement {
 protected:
@@ -1075,14 +1078,14 @@ protected:
 	unsigned short nFFDBox;	/*!< \brief Number of FFD FFDBoxes. */
 	unsigned short nLevel;	/*!< \brief Level of the FFD FFDBoxes (parent/child). */
 	bool FFDBoxDefinition;	/*!< \brief If the FFD FFDBox has been defined in the input file. */
+
+public:
   vector<su2double> GlobalCoordX[MAX_NUMBER_FFD];
   vector<su2double> GlobalCoordY[MAX_NUMBER_FFD];
   vector<su2double> GlobalCoordZ[MAX_NUMBER_FFD];
   vector<string> GlobalTag[MAX_NUMBER_FFD];
   vector<unsigned long> GlobalPoint[MAX_NUMBER_FFD];
 
-public:
-	
 	/*! 
 	 * \brief Constructor of the class.
 	 */
@@ -1440,7 +1443,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] val_mesh_filename - Name of the grid output file.
 	 */		
-	void WriteFFDInfo(CGeometry *geometry, CConfig *config);
+  void WriteFFDInfo(CSurfaceMovement **surface_movement, CGeometry **geometry, CConfig **config);
 	
 	/*! 
 	 * \brief Get information about if there is a complete FFDBox definition, or it is necessary to 

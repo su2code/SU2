@@ -2,7 +2,7 @@
  * fluid_model_ppr.cpp
  * \brief Source of the Peng-Robinson model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -210,14 +210,9 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 	v = exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
 
 
-	if (Zed<0.9999) {
-		x1 = Zed*v;
-		x2 = v;
+	x1 = 0.2*v;
+	x2 = 0.35*v;
 
-	} else{
-		x1 = 0.2*v;
-		x2 = v;
-	}
 
 
 	T = T_v_h(x1, h);
@@ -276,6 +271,8 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 	v = xmid;
 	if (countrtb==ITMAX) {
 		cout <<"Too many bisections in rtbis" << endl;
+		cout << countrtb <<endl;
+
 	}
 
 	if (v!=v) {

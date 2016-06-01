@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -610,6 +610,8 @@ inline bool CConfig::GetDeform_Output(void) { return Deform_Output; }
 
 inline su2double CConfig::GetDeform_Tol_Factor(void) { return Deform_Tol_Factor; }
 
+inline su2double CConfig::GetDeform_Coeff(void) { return Deform_Coeff; }
+
 inline su2double CConfig::GetDeform_ElasticityMod(void) { return Deform_ElasticityMod; }
 
 inline su2double CConfig::GetDeform_PoissonRatio(void) { return Deform_PoissonRatio; }
@@ -1134,7 +1136,7 @@ inline bool CConfig::GetFixed_CL_Mode(void) { return Fixed_CL_Mode; }
 
 inline su2double CConfig::GetTarget_CL(void) {return Target_CL; }
 
-inline su2double CConfig::GetDamp_Fixed_CL(void) {return Damp_Fixed_CL; }
+inline su2double CConfig::GetdCl_dAlpha(void) {return dCl_dAlpha; }
 
 inline unsigned long CConfig::GetIter_Fixed_CL(void) {return Iter_Fixed_CL; }
 
@@ -1157,6 +1159,8 @@ inline unsigned short CConfig::GetnIterFSI(void) { return nIterFSI; }
 inline su2double CConfig::GetAitkenStatRelax(void) { return AitkenStatRelax; }
 
 inline su2double CConfig::GetAitkenDynMaxInit(void) { return AitkenDynMaxInit; }
+
+inline su2double CConfig::GetAitkenDynMinInit(void) { return AitkenDynMinInit; }
 
 inline bool CConfig::GetDeadLoad(void) { return DeadLoad; }
 

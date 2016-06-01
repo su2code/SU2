@@ -2,7 +2,7 @@
  * \file definition_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -31,162 +31,6 @@
 
 #include "../include/definition_structure.hpp"
 
-unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config) {
-  string text_line, Marker_Tag;
-  ifstream mesh_file;
-  short nZone = 1; // Default value
-  unsigned short iLine, nLine = 10;
-  char cstr[200];
-  string::size_type position;
-  
-  /*--- Search the mesh file for the 'NZONE' keyword. ---*/
-  
-  switch (val_format) {
-    case SU2:
-      
-      /*--- Open grid file ---*/
-      
-      strcpy (cstr, val_mesh_filename.c_str());
-      mesh_file.open(cstr, ios::in);
-      if (mesh_file.fail()) {
-        cout << "cstr=" << cstr << endl;
-        cout << "There is no geometry file (GetnZone))!" << endl;
-        
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#endif
-      }
-      
-      /*--- Read the SU2 mesh file ---*/
-      
-      for (iLine = 0; iLine < nLine ; iLine++) {
-        
-        getline (mesh_file, text_line);
-        
-        /*--- Search for the "NZONE" keyword to see if there are multiple Zones ---*/
-        
-        position = text_line.find ("NZONE=",0);
-        if (position != string::npos) {
-          text_line.erase (0,6); nZone = atoi(text_line.c_str());
-        }
-      }
-      
-      break;
-      
-  }
-  
-  /*--- For time spectral integration, nZones = nTimeInstances. ---*/
-  
-  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
-    nZone = config->GetnTimeInstances();
-  }
-  
-  return (unsigned short) nZone;
-}
-
-unsigned short GetnDim(string val_mesh_filename, unsigned short val_format) {
-  
-  string text_line, Marker_Tag;
-  ifstream mesh_file;
-  short nDim = 3;
-  unsigned short iLine, nLine = 10;
-  char cstr[200];
-  string::size_type position;
-  
-  /*--- Open grid file ---*/
-  
-  strcpy (cstr, val_mesh_filename.c_str());
-  mesh_file.open(cstr, ios::in);
-  
-  switch (val_format) {
-    case SU2:
-      
-      /*--- Read SU2 mesh file ---*/
-      
-      for (iLine = 0; iLine < nLine ; iLine++) {
-        
-        getline (mesh_file, text_line);
-        
-        /*--- Search for the "NDIM" keyword to see if there are multiple Zones ---*/
-        
-        position = text_line.find ("NDIME=",0);
-        if (position != string::npos) {
-          text_line.erase (0,6); nDim = atoi(text_line.c_str());
-        }
-      }
-      break;
-      
-    case CGNS:
-      
-#ifdef HAVE_CGNS
-      
-      /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
-      
-      int fn, nbases = 0, nzones = 0, file_type;
-      int cell_dim = 0, phys_dim = 0;
-      char basename[CGNS_STRING_SIZE];
-      
-      /*--- Check whether the supplied file is truly a CGNS file. ---*/
-      
-      if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
-        printf( "\n\n   !!! Error !!!\n" );
-        printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
-        printf( " Now exiting...\n\n");
-        exit(EXIT_FAILURE);
-      }
-      
-      /*--- Open the CGNS file for reading. The value of fn returned
-       is the specific index number for this file and will be
-       repeatedly used in the function calls. ---*/
-      
-      if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn)) cg_error_exit();
-      
-      /*--- Get the number of databases. This is the highest node
-       in the CGNS heirarchy. ---*/
-      
-      if (cg_nbases(fn, &nbases)) cg_error_exit();
-      
-      /*--- Check if there is more than one database. Throw an
-       error if there is because this reader can currently
-       only handle one database. ---*/
-      
-      if ( nbases > 1 ) {
-        printf("\n\n   !!! Error !!!\n" );
-        printf("CGNS reader currently incapable of handling more than 1 database.");
-        printf("Now exiting...\n\n");
-        exit(EXIT_FAILURE);
-      }
-      
-      /*--- Read the databases. Note that the indexing starts at 1. ---*/
-      
-      for ( int i = 1; i <= nbases; i++ ) {
-        
-        if (cg_base_read(fn, i, basename, &cell_dim, &phys_dim)) cg_error_exit();
-        
-        /*--- Get the number of zones for this base. ---*/
-        
-        if (cg_nzones(fn, i, &nzones)) cg_error_exit();
-        
-      }
-      
-      /*--- Set the problem dimension as read from the CGNS file ---*/
-      
-      nDim = cell_dim;
-      
-#endif
-      
-      break;
-      
-  }
-  
-  mesh_file.close();
-  
-  return (unsigned short) nDim;
-}
-
 void Driver_Preprocessing(CDriver **driver,
                           CIteration **iteration_container,
                           CSolver ****solver_container,
@@ -207,7 +51,7 @@ void Driver_Preprocessing(CDriver **driver,
   /*--- fsi implementations will use, as of now, BGS implentation. More to come. ---*/
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
   
-  if (val_nZone == SINGLE_ZONE) {
+  if (val_nZone == SINGLE_ZONE && !config_container[ZONE_0]->GetDiscrete_Adjoint()) {
     
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     if (rank == MASTER_NODE) cout << "Instantiating a single zone driver for the problem. " << endl;
@@ -231,6 +75,13 @@ void Driver_Preprocessing(CDriver **driver,
 
 	 if (rank == MASTER_NODE) cout << "Instantiating a Fluid-Structure Interaction driver for the problem. " << endl;
 	 *driver = new CFSIDriver(iteration_container, solver_container, geometry_container,
+                      integration_container, numerics_container, interpolator_container,
+                            transfer_container, config_container, val_nZone, val_nDim);
+
+  } else if (config_container[ZONE_0]->GetDiscrete_Adjoint()){
+
+    if (rank == MASTER_NODE) cout << "Instantiating a multi-zone discrete adjoint driver for the problem. " << endl;
+    *driver = new CDiscAdjMultiZoneDriver(iteration_container, solver_container, geometry_container,
 	            			  integration_container, numerics_container, interpolator_container,
 	                          transfer_container, config_container, val_nZone, val_nDim);
 
@@ -244,10 +95,11 @@ void Driver_Preprocessing(CDriver **driver,
             					   integration_container, numerics_container, interpolator_container,
                                    transfer_container, config_container, val_nZone, val_nDim);
     
-    /*--- Future multi-zone drivers instatiated here. ---*/
+
     
   }
-  
+
+      /*--- Future multi-zone drivers instatiated here. ---*/
 }
 
 
@@ -327,10 +179,11 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
       cout << "Setting the multigrid structure." << endl;
     
     /*--- Create turbovertex structure ---*/
-
-    geometry[iZone][MESH_0]->SetTurboVertex(config[iZone], INFLOW, true);
-    geometry[iZone][MESH_0]->SetTurboVertex(config[iZone], OUTFLOW, true);
-  }
+    if (config[iZone]->GetBoolTurbomachinery()){
+    	geometry[iZone][MESH_0]->SetTurboVertex(config[iZone], INFLOW, true);
+			geometry[iZone][MESH_0]->SetTurboVertex(config[iZone], OUTFLOW, true);
+    }
+	}
   
   /*--- Loop over all the new grid ---*/
   

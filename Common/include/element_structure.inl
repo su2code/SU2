@@ -2,7 +2,7 @@
  * \file element_structure.inl
  * \brief In-Line subroutines of the <i>element_structure.hpp</i> file.
  * \author R. Sanchez
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -68,6 +68,8 @@ inline su2double *CElement::Get_Kab(unsigned short nodeA, unsigned short nodeB){
 inline su2double *CElement::Get_Kk_ab(unsigned short nodeA, unsigned short nodeB){ return Kk_ab[nodeA][nodeB];}
 
 inline su2double *CElement::Get_Kt_a(unsigned short nodeA){ return Kt_a[nodeA];}
+
+inline su2double *CElement::Get_FDL_a(unsigned short nodeA){ return FDL_a[nodeA];}
 
 inline su2double CElement::Get_Ks_ab(unsigned short nodeA, unsigned short nodeB) { return Ks_ab[nodeA][nodeB]; }
 

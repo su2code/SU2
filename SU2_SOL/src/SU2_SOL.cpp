@@ -2,7 +2,7 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -57,15 +57,21 @@ int main(int argc, char *argv[]) {
 	CSolver **solver_container     = NULL;
 	CConfig **config_container     = NULL;
 	
-  /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
-   file is specified, default.cfg is used) ---*/
-  
-  if (argc == 2) { strcpy(config_file_name,argv[1]); }
-  else if (argc == 3) {
-	  strcpy(config_file_name,argv[1]);
-	  nZone = atoi(argv[2]);}
+  /*--- Load in the number of zones and spatial dimensions in the mesh file
+   (if no config file is specified, default.cfg is used) ---*/
+
+  if (argc == 2) { strcpy(config_file_name, argv[1]); }
   else { strcpy(config_file_name, "default.cfg"); }
-    
+
+  /*--- Read the name and format of the input mesh file to get from the mesh
+   file the number of zones and dimensions from the numerical grid (required
+   for variables allocation)  ---*/
+
+  CConfig *config = NULL;
+  config = new CConfig(config_file_name, SU2_SOL);
+
+  nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+
 	/*--- Definition of the containers per zones ---*/
   
 	solver_container = new CSolver*[nZone];
@@ -105,7 +111,7 @@ int main(int argc, char *argv[]) {
     /*--- Allocate the memory of the current domain, and
      divide the grid between the nodes ---*/
     
-    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
+    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
     
     /*--- Deallocate the memory of geometry_aux ---*/
     

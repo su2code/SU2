@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -87,9 +87,11 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
   
-  nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  
+
+  nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  delete config;
+
   /*--- Definition and of the containers for all possible zones. ---*/
   
   iteration_container    = new CIteration*[nZone];
@@ -146,7 +148,7 @@ int main(int argc, char *argv[]) {
      between the ranks. ---*/
     
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
-    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], 1);
+    geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
     
     /*--- Deallocate the memory of geometry_aux ---*/
     
@@ -250,7 +252,12 @@ int main(int argc, char *argv[]) {
       /*--- Update the multi-grid structure to propagate the derivative information to the coarser levels ---*/
       
       geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone],config_container[iZone]);
-      
+
+      if (config_container[iZone]->GetBoolTurbomachinery()){
+        geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], INFLOW, false);
+        geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], OUTFLOW, false);
+      }
+
       /*--- Set the derivative of the wall-distance with respect to the surface nodes ---*/
       
       if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
@@ -405,10 +412,6 @@ int main(int argc, char *argv[]) {
         StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
       case HEAT_EQUATION:
         StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
-      case LINEAR_ELASTICITY:
-        // This is a temporal fix, while we code the non-linear solver
-        //	        StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
-        StopCalc = false; break;
 	  case FEM_ELASTICITY:
 	    StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
       case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
@@ -516,16 +519,57 @@ int main(int argc, char *argv[]) {
     cout << "History file, closed." << endl;
   }
   
-  //  /*--- Deallocate config container ---*/
-  //
-  //  for (iZone = 0; iZone < nZone; iZone++) {
-  //    if (config_container[iZone] != NULL) {
-  //      delete config_container[iZone];
-  //    }
-  //  }
-  //  if (config_container != NULL) delete[] config_container;
-  
-  
+  /*--- Deallocations: further work is needed,
+   * these routines can be used to check for memory leaks---*/
+  /*
+  if (rank == MASTER_NODE)
+      cout << endl <<"------------------------ Driver Postprocessing ------------------------" << endl;
+
+  driver->Postprocessing(iteration_container, solver_container, geometry_container,
+      integration_container, numerics_container, interpolator_container,
+      transfer_container, config_container, nZone);
+
+  delete driver;
+  */
+
+  /*--- Geometry class deallocation ---*/
+  if (rank == MASTER_NODE)
+        cout << endl <<"------------------------ Geometry Postprocessing ------------------------" << endl;
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if (geometry_container[iZone]!=NULL){
+      for (unsigned short iMGlevel = 1; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++){
+        if (geometry_container[iZone][iMGlevel]!=NULL) delete geometry_container[iZone][iMGlevel];
+      }
+      delete [] geometry_container[iZone];
+    }
+  }
+  delete [] geometry_container;
+
+  /*--- Free-form deformation class deallocation ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete FFDBox[iZone];
+  }
+  delete [] FFDBox;
+
+  /*--- Grid movement and surface movement class deallocation ---*/
+  delete [] surface_movement;
+  delete [] grid_movement;
+
+  /*Deallocate config container*/
+  if (rank == MASTER_NODE)
+        cout << endl <<"------------------------- Config Postprocessing -------------------------" << endl;
+  if (config_container!=NULL){
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (config_container[iZone]!=NULL){
+        delete config_container[iZone];
+      }
+    }
+    delete [] config_container;
+  }
+
+  /*--- Deallocate output container ---*/
+  if (output!=NULL) delete output;
+
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
@@ -547,13 +591,13 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
-  
+
 #ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
   MPI_Buffer_detach(&bptr, &bl);
   MPI_Finalize();
 #endif
-  
+
   return EXIT_SUCCESS;
-  
+
 }

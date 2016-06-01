@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -44,10 +44,14 @@
 #include <cmath>
 #include <map>
 #include <assert.h>
-
+#ifdef HAVE_CGNS
+  #include "cgnslib.h"
+#endif
 #include "./option_structure.hpp"
 #include "./datatype_structure.hpp"
-
+#ifdef HAVE_CGNS
+  #include "cgnslib.h"
+#endif
 using namespace std;
 
 /*!
@@ -55,7 +59,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios
- * \version 4.1.0 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CConfig {
@@ -325,6 +329,7 @@ private:
 	*Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
 	Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
 	Kind_Linear_Solver,		/*!< \brief Numerical solver for the implicit scheme. */
+	Kind_Linear_Solver_FSI_Struc,	 /*!< \brief Numerical solver for the structural part in FSI problems. */
 	Kind_Linear_Solver_Prec,		/*!< \brief Preconditioner of the linear solver. */
 	Kind_Linear_Solver_Prec_FSI_Struc,		/*!< \brief Preconditioner of the linear solver for the structural part in FSI problems. */
 	Kind_AdjTurb_Linear_Solver,		/*!< \brief Numerical solver for the turbulent adjoint implicit scheme. */
@@ -389,6 +394,7 @@ private:
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
 	Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
 	su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
+	su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
 	unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
 	unsigned long Linear_Solver_Iter_FSI_Struc;		/*!< \brief Max iterations of the linear solver for FSI applications and structural solver. */
 	unsigned long Linear_Solver_Restart_Frequency;   /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
@@ -418,6 +424,7 @@ private:
   unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   su2double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
+  su2double Deform_Coeff; /*!< Deform coeffienct */
   unsigned short Deform_Linear_Solver; /*!< Numerical method to deform the grid */
   unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
   su2double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
@@ -430,11 +437,10 @@ private:
 	AoS;				/*!< \brief Angle of sideSlip (just external flow). */
   bool Fixed_CL_Mode;			/*!< \brief Activate fixed CL mode (external flow only). */
   su2double Target_CL;			/*!< \brief Specify a target CL instead of AoA (external flow only). */
-  su2double Damp_Fixed_CL;			/*!< \brief Damping coefficient for fixed CL mode (external flow only). */
+  su2double dCl_dAlpha;			/*!< \brief Lift curve slope for fixed CL mode (1/deg, external flow only). */
   unsigned long Iter_Fixed_CL;			/*!< \brief Iterations to re-evaluate the angle of attack (external flow only). */
   bool Update_AoA;			/*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
 	su2double ChargeCoeff;		/*!< \brief Charge coefficient (just for poisson problems). */
-	su2double *U_FreeStreamND;			/*!< \brief Reference variables at the infinity, free stream values. */
 	unsigned short Cauchy_Func_Flow,	/*!< \brief Function where to apply the convergence criteria in the flow problem. */
 	Cauchy_Func_AdjFlow,				/*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
 	Cauchy_Elems;						/*!< \brief Number of elements to evaluate. */
@@ -615,6 +621,7 @@ private:
 	unsigned short nIterFSI;	/*!< \brief Number of maximum number of subiterations in a FSI problem. */
 	su2double AitkenStatRelax;			/*!< \brief Aitken's relaxation factor (if set as static) */
 	su2double AitkenDynMaxInit;			/*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
+	su2double AitkenDynMinInit;			/*!< \brief Aitken's minimum dynamic relaxation factor for the first iteration */
 	su2double Wave_Speed;			/*!< \brief Wave speed used in the wave solver. */
 	su2double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
 	su2double Cyclic_Pitch,          /*!< \brief Cyclic pitch for rotorcraft simulations. */
@@ -715,9 +722,8 @@ private:
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
-#ifdef HAVE_MPI
-  MPI_Comm COMM_TurboPerf;
-#endif
+
+  
   /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -1023,6 +1029,23 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CConfig(void);
+
+  /*!
+   * \brief Gets the number of zones in the mesh file.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \param[in] config - Definition of the particular problem.
+   * \return Total number of zones in the grid file.
+   */
+  static unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config);
+
+  /*!
+   * \brief Gets the number of dimensions in the mesh file
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \return Total number of domains in the grid file.
+   */
+  static unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
 
   /*!
    * \brief Initializes pointers to null
@@ -2955,6 +2978,12 @@ public:
 	 * \return Factor to multiply smallest volume for deform tolerance.
 	 */
 	su2double GetDeform_Tol_Factor(void);
+  
+  /*!
+   * \brief Get factor to multiply smallest volume for deform tolerance.
+   * \return Factor to multiply smallest volume for deform tolerance.
+   */
+  su2double GetDeform_Coeff(void);
 
   /*!
    * \brief Get Young's modulus for deformation (constant stiffness deformation)
@@ -5335,10 +5364,10 @@ public:
 	su2double GetTarget_CL(void);
 
   /*!
-	 * \brief Get the value of the damping coefficient for fixed CL mode.
-	 * \return Damping coefficient for fixed CL mode.
+	 * \brief Get the value for the lift curve slope for fixed CL mode.
+	 * \return Lift curve slope for fixed CL mode.
 	 */
-	su2double GetDamp_Fixed_CL(void);
+	su2double GetdCl_dAlpha(void);
   
   /*!
    * \brief Get the value of iterations to re-evaluate the angle of attack.
@@ -5421,6 +5450,12 @@ public:
   */
   bool GetDiscrete_Adjoint(void);
 
+  /*!
+   * \brief Get the indicator whether we want to benchmark the MPI performance of FSI problems
+   * \return The value for checking
+  */
+  bool CheckFSI_MPI(void);
+
 	/*!
 	 * \brief Get the number of fluid subiterations roblems.
 	 * \return Number of FSI subiters.
@@ -5438,6 +5473,12 @@ public:
 	 * \return Aitken's relaxation parameters.
 	 */
 	su2double GetAitkenDynMaxInit(void);
+
+	/*!
+	 * \brief Get Aitken's maximum relaxation parameter for dynamic relaxation cases and first iteration.
+	 * \return Aitken's relaxation parameters.
+	 */
+	su2double GetAitkenDynMinInit(void);
 
 
 	/*!
