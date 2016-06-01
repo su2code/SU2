@@ -537,7 +537,7 @@ def main():
     ######################################  
 
     pass_list = [ test.run_test() for test in test_list ]
-    
+
     
     ######################################
     ### RUN SU2_GEO TESTS               ###
@@ -554,7 +554,7 @@ def main():
     pass_list.append(naca0012_geo.run_geo())
     test_list.append(naca0012_geo)
         
-    
+
     ######################################
     ### RUN SU2_DEF TESTS              ###
     ######################################
@@ -583,9 +583,87 @@ def main():
     oneram6_sa_def.tol       = 1e-13
     
     pass_list.append(oneram6_sa_def.run_def())
-    test_list.append(oneram6_sa_def)       
+    test_list.append(oneram6_sa_def)
 
+    # Brick of tets (inverse volume)
+    brick_tets_def            = TestCase('brick_tets_def')
+    brick_tets_def.cfg_dir   = "deformation/brick_tets"
+    brick_tets_def.cfg_file  = "def_brick_tets.cfg"
+    brick_tets_def.test_iter = 100
+    brick_tets_def.test_vals = [5.22276e-15] #residual
+    brick_tets_def.su2_exec  = "SU2_DEF"
+    brick_tets_def.timeout   = 1600
+    brick_tets_def.tol       = 1e-15
     
+    pass_list.append(brick_tets_def.run_def())
+    test_list.append(brick_tets_def)
+
+    # Brick of isotropic hexas (inverse volume)
+    brick_hex_def           = TestCase('brick_hex_def')
+    brick_hex_def.cfg_dir   = "deformation/brick_hex"
+    brick_hex_def.cfg_file  = "def_brick_hex.cfg"
+    brick_hex_def.test_iter = 50
+    brick_hex_def.test_vals = [1.55154e-15] #residual
+    brick_hex_def.su2_exec  = "SU2_DEF"
+    brick_hex_def.timeout   = 1600
+    brick_hex_def.tol       = 1e-15
+    
+    pass_list.append(brick_hex_def.run_def())
+    test_list.append(brick_hex_def)
+
+    # Brick with a pyramid layer (inverse volume)
+    brick_pyra_def           = TestCase('brick_pyra_def')
+    brick_pyra_def.cfg_dir   = "deformation/brick_pyra"
+    brick_pyra_def.cfg_file  = "def_brick_pyra.cfg"
+    brick_pyra_def.test_iter = 150
+    brick_pyra_def.test_vals = [4.35591e-15] #residual
+    brick_pyra_def.su2_exec  = "SU2_DEF"
+    brick_pyra_def.timeout   = 1600
+    brick_pyra_def.tol       = 1e-15
+    
+    pass_list.append(brick_pyra_def.run_def())
+    test_list.append(brick_pyra_def)
+
+    # Brick of isotropic prisms (inverse volume)
+    brick_prism_def           = TestCase('brick_prism_def')
+    brick_prism_def.cfg_dir   = "deformation/brick_prism"
+    brick_prism_def.cfg_file  = "def_brick_prism.cfg"
+    brick_prism_def.test_iter = 150
+    brick_prism_def.test_vals = [6.79485e-15] #residual
+    brick_prism_def.su2_exec  = "SU2_DEF"
+    brick_prism_def.timeout   = 1600
+    brick_prism_def.tol       = 1e-15
+    
+    pass_list.append(brick_prism_def.run_def())
+    test_list.append(brick_prism_def)
+    
+    # Brick of prisms with high aspect ratio cells near the wall (wall distance)
+    brick_prism_rans_def           = TestCase('brick_prism_rans_def')
+    brick_prism_rans_def.cfg_dir   = "deformation/brick_prism_rans"
+    brick_prism_rans_def.cfg_file  = "def_brick_prism_rans.cfg"
+    brick_prism_rans_def.test_iter = 300
+    brick_prism_rans_def.test_vals = [1.3832e-15] #residual
+    brick_prism_rans_def.su2_exec  = "SU2_DEF"
+    brick_prism_rans_def.timeout   = 1600
+    brick_prism_rans_def.tol       = 1e-15
+    
+    pass_list.append(brick_prism_rans_def.run_def())
+    test_list.append(brick_prism_rans_def)
+    
+    # Brick of hexas with high aspect ratio cells near the wall (inverse volume)
+    brick_hex_rans_def           = TestCase('brick_hex_rans_def')
+    brick_hex_rans_def.cfg_dir   = "deformation/brick_hex_rans"
+    brick_hex_rans_def.cfg_file  = "def_brick_hex_rans.cfg"
+    brick_hex_rans_def.test_iter = 50
+    brick_hex_rans_def.test_vals = [9.29371e-16] #residual
+    brick_hex_rans_def.su2_exec  = "SU2_DEF"
+    brick_hex_rans_def.timeout   = 1600
+    brick_hex_rans_def.tol       = 1e-16
+    
+    pass_list.append(brick_hex_rans_def.run_def())
+    test_list.append(brick_hex_rans_def)
+    
+
     ######################################
     ### RUN PYTHON TESTS               ###
     ###################################### 
@@ -625,7 +703,7 @@ def main():
     shape_opt_euler_py.tol       = 0.00001
     pass_list.append(shape_opt_euler_py.run_opt())
     test_list.append(shape_opt_euler_py)
-    
+
     
     # Tests summary
     print '=================================================================='
