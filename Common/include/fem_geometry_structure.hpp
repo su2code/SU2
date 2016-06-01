@@ -454,6 +454,12 @@ public:
   */
   virtual ~CMeshFEM(void);
 
+  /*! 
+  * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void SetPositive_ZArea(CConfig *config); 
+
 protected:
   /*!
   * \brief Function, which computes the gradients of the parametric coordinates

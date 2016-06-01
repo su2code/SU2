@@ -1804,6 +1804,82 @@ void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary) {
   }
 }
 
+void CMeshFEM::SetPositive_ZArea(CConfig *config) {
+
+  int rank = MASTER_NODE;
+
+  /*---------------------------------------------------------------------------*/
+  /*--- Step 1: Determine the local contribution to the positive z area.    ---*/
+  /*---------------------------------------------------------------------------*/
+
+  /* Loop over the boundary markers. */
+  su2double PositiveZArea = 0.0;
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+
+    /* Determine whether or not this boundary contributes. */
+    const unsigned short Boundary   = config->GetMarker_All_KindBC(iMarker);
+    const unsigned short Monitoring = config->GetMarker_All_Monitoring(iMarker);
+
+    if( ((Boundary == EULER_WALL)              ||
+         (Boundary == HEAT_FLUX)               ||
+         (Boundary == ISOTHERMAL)              ||
+         (Boundary == LOAD_BOUNDARY)           ||
+         (Boundary == DISPLACEMENT_BOUNDARY)) && (Monitoring == YES) ) {
+
+      /* Easier storage of the surface elements for this marker. */
+      const vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+
+      /* Loop over the surface elements. */
+      for(unsigned long i=0; i<surfElem.size(); ++i) {
+
+        /* Determine the number of integration points and their weights via
+           the corresponding standard element. */
+        const unsigned short ind     = surfElem[i].indStandardElement;
+        const unsigned short nInt    = standardBoundaryFacesGrid[ind].GetNIntegration();
+        const su2double     *weights = standardBoundaryFacesGrid[ind].GetWeightsIntegration();
+
+        /* Loop over the integration points for this element and update PositiveZArea
+           if the normal has a negative z-component. In that case it will give a
+           positive contribution to PositiveZArea as this must take the normal pointing
+           into the element into account. */
+        for(unsigned short j=0; j<nInt; ++j) {
+
+          /* Store the normal data for this integration point a bit easier and update
+             PositiveZArea, if needed. */
+          const su2double *normal = &surfElem[i].metricNormalsFace[j*(nDim+1)];
+          if(normal[nDim-1] < 0.0)
+            PositiveZArea -= weights[j]*normal[nDim-1]*normal[nDim];
+        }
+      }
+    }
+  }
+
+  /*---------------------------------------------------------------------------*/
+  /*--- Step 2: Perform an Allreduce such that the global value of          ---*/
+  /*---         PositiveZArea is known on all ranks.                        ---*/
+  /*---------------------------------------------------------------------------*/
+
+#ifdef HAVE_MPI
+  su2double locArea = PositiveZArea;
+  SU2_MPI::Allreduce(&locArea, &PositiveZArea, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*---------------------------------------------------------------------------*/
+  /*--- Step 3: Set the reference area, if this was not specified and write ---*/
+  /*---         a message about the projected area if I am the master.      ---*/
+  /*---------------------------------------------------------------------------*/
+
+  if (config->GetRefAreaCoeff() == 0.0)
+    config->SetRefAreaCoeff(PositiveZArea);
+
+  if (rank == MASTER_NODE) {
+    if (nDim == 2) cout << "Area projection in the y-plane = "<< PositiveZArea << "." << endl;
+    else           cout << "Area projection in the z-plane = "<< PositiveZArea << "." << endl;
+  }
+}
+
 CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config)
   : CMeshFEM(geometry, config) {
 }
