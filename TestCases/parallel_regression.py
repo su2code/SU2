@@ -524,8 +524,8 @@ def main():
     brick_tets_def            = TestCase('brick_tets_def')
     brick_tets_def.cfg_dir   = "deformation/brick_tets"
     brick_tets_def.cfg_file  = "def_brick_tets.cfg"
-    brick_tets_def.test_iter = 100
-    brick_tets_def.test_vals = [5.22276e-15] #residual
+    brick_tets_def.test_iter = 1000
+    brick_tets_def.test_vals = [9.35558e-16] #residual
     brick_tets_def.su2_exec  = "mpirun -n 2 SU2_DEF"
     brick_tets_def.timeout   = 1600
     brick_tets_def.tol       = 1e-15
