@@ -8698,6 +8698,17 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 											TurboNormal[1] = coord[1]/sqrt(Normal2);
 										}
 										break;
+									case CENTRIPETAL:
+										Normal2 = 0.0;
+										for(iDim = 0; iDim < nDim; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+										if (marker_flag == OUTFLOW){
+											TurboNormal[0] = -coord[0]/sqrt(Normal2);
+											TurboNormal[1] = -coord[1]/sqrt(Normal2);
+										}else{
+											TurboNormal[0] = coord[0]/sqrt(Normal2);
+											TurboNormal[1] = coord[1]/sqrt(Normal2);
+										}
+										break;
 									case AXIAL:
 										TurboNormal[0] = NormalArea[0];
 										TurboNormal[1] = NormalArea[1];
@@ -8899,6 +8910,20 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 								    TurboNormal[2] = 0.0;
 								  }
 								  break;
+								case CENTRIPETAL:
+									Normal2 = 0.0;
+									for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+									if (marker_flag == OUTFLOW){
+										TurboNormal[0] = -coord[0]/sqrt(Normal2);
+										TurboNormal[1] = -coord[1]/sqrt(Normal2);
+										TurboNormal[2] = 0.0;
+									}else{
+										TurboNormal[0] = coord[0]/sqrt(Normal2);
+										TurboNormal[1] = coord[1]/sqrt(Normal2);
+										TurboNormal[2] = 0.0;
+									}
+									break;
+									break;
 								default:
 								  cout << "TURBONORMAL CENTRIPETAL AND AXIAL 3D NOT IMPLEMENTED YET"<<endl;
 								  exit(EXIT_FAILURE);
