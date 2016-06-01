@@ -553,37 +553,50 @@ def main():
     naca0012_geo.tol       = 0.00001
     pass_list.append(naca0012_geo.run_geo())
     test_list.append(naca0012_geo)
-        
+
 
     ######################################
     ### RUN SU2_DEF TESTS              ###
     ######################################
     
-    # RAE2822
+    # Inviscid NACA0012 (triangles)
+    naca0012_def            = TestCase('naca0012_def')
+    naca0012_def.cfg_dir   = "deformation/naca0012"
+    naca0012_def.cfg_file  = "def_NACA0012.cfg"
+    naca0012_def.test_iter = 400
+    naca0012_def.test_vals = [4.30698e-15] #residual
+    naca0012_def.su2_exec  = "SU2_DEF"
+    naca0012_def.timeout   = 1600
+    naca0012_def.tol       = 1e-15
+    
+    pass_list.append(naca0012_def.run_def())
+    test_list.append(naca0012_def)
+    
+    # RAE2822 (mixed tris + quads)
     rae2822_def            = TestCase('rae2822_def')
-    rae2822_def.cfg_dir   = "optimization_rans/steady_rae2822"
-    rae2822_def.cfg_file  = "def_SA_RAE2822.cfg"
-    rae2822_def.test_iter = 100
-    rae2822_def.test_vals = [8.06616e-14] #residual
+    rae2822_def.cfg_dir   = "deformation/rae2822"
+    rae2822_def.cfg_file  = "def_RAE2822.cfg"
+    rae2822_def.test_iter = 150
+    rae2822_def.test_vals = [5.59336e-16] #residual
     rae2822_def.su2_exec  = "SU2_DEF"
     rae2822_def.timeout   = 1600
-    rae2822_def.tol       = 1e-14
+    rae2822_def.tol       = 1e-16
     
     pass_list.append(rae2822_def.run_def())
-    test_list.append(rae2822_def)    
-
-    # Inviscid ONERAM6
-    oneram6_sa_def            = TestCase('oneram6_sa_def')
-    oneram6_sa_def.cfg_dir   = "optimization_euler/steady_oneram6"
-    oneram6_sa_def.cfg_file  = "def_ONERAM6.cfg"
-    oneram6_sa_def.test_iter = 600
-    oneram6_sa_def.test_vals = [3.46695e-13] #residual
-    oneram6_sa_def.su2_exec  = "SU2_DEF"
-    oneram6_sa_def.timeout   = 1600
-    oneram6_sa_def.tol       = 1e-13
+    test_list.append(rae2822_def)
     
-    pass_list.append(oneram6_sa_def.run_def())
-    test_list.append(oneram6_sa_def)
+    # Turb NACA4412 (quads, wall distance)
+    naca4412_def            = TestCase('naca4412_def')
+    naca4412_def.cfg_dir   = "deformation/naca4412"
+    naca4412_def.cfg_file  = "def_NACA4412.cfg"
+    naca4412_def.test_iter = 300
+    naca4412_def.test_vals = [3.26428e-15] #residual
+    naca4412_def.su2_exec  = "SU2_DEF"
+    naca4412_def.timeout   = 1600
+    naca4412_def.tol       = 1e-15
+    
+    pass_list.append(naca4412_def.run_def())
+    test_list.append(naca4412_def)
 
     # Brick of tets (inverse volume)
     brick_tets_def            = TestCase('brick_tets_def')
@@ -662,7 +675,7 @@ def main():
     
     pass_list.append(brick_hex_rans_def.run_def())
     test_list.append(brick_hex_rans_def)
-    
+
 
     ######################################
     ### RUN PYTHON TESTS               ###

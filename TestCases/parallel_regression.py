@@ -474,6 +474,45 @@ def main():
     ### RUN SU2_DEF TESTS              ###
     ######################################
     
+    # Inviscid NACA0012 (triangles)
+    naca0012_def            = TestCase('naca0012_def')
+    naca0012_def.cfg_dir   = "deformation/naca0012"
+    naca0012_def.cfg_file  = "def_NACA0012.cfg"
+    naca0012_def.test_iter = 400
+    naca0012_def.test_vals = [4.30698e-15] #residual
+    naca0012_def.su2_exec  = "mpirun -n 2 SU2_DEF"
+    naca0012_def.timeout   = 1600
+    naca0012_def.tol       = 1e-15
+    
+    pass_list.append(naca0012_def.run_def())
+    test_list.append(naca0012_def)
+    
+    # RAE2822 (mixed tris + quads)
+    rae2822_def            = TestCase('rae2822_def')
+    rae2822_def.cfg_dir   = "deformation/rae2822"
+    rae2822_def.cfg_file  = "def_RAE2822.cfg"
+    rae2822_def.test_iter = 150
+    rae2822_def.test_vals = [5.59336e-16] #residual
+    rae2822_def.su2_exec  = "mpirun -n 2 SU2_DEF"
+    rae2822_def.timeout   = 1600
+    rae2822_def.tol       = 1e-16
+    
+    pass_list.append(rae2822_def.run_def())
+    test_list.append(rae2822_def)
+    
+    # Turb NACA4412 (quads, wall distance)
+    naca4412_def            = TestCase('naca4412_def')
+    naca4412_def.cfg_dir   = "deformation/naca4412"
+    naca4412_def.cfg_file  = "def_NACA4412.cfg"
+    naca4412_def.test_iter = 300
+    naca4412_def.test_vals = [3.26428e-15] #residual
+    naca4412_def.su2_exec  = "mpirun -n 2 SU2_DEF"
+    naca4412_def.timeout   = 1600
+    naca4412_def.tol       = 1e-15
+    
+    pass_list.append(naca4412_def.run_def())
+    test_list.append(naca4412_def)
+    
     # Brick of tets (inverse volume)
     brick_tets_def            = TestCase('brick_tets_def')
     brick_tets_def.cfg_dir   = "deformation/brick_tets"
