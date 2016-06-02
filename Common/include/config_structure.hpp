@@ -424,6 +424,7 @@ private:
   unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   su2double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
+  su2double Deform_Coeff; /*!< Deform coeffienct */
   unsigned short Deform_Linear_Solver; /*!< Numerical method to deform the grid */
   unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
   su2double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
@@ -2941,6 +2942,12 @@ public:
 	 * \return Factor to multiply smallest volume for deform tolerance.
 	 */
 	su2double GetDeform_Tol_Factor(void);
+  
+  /*!
+   * \brief Get factor to multiply smallest volume for deform tolerance.
+   * \return Factor to multiply smallest volume for deform tolerance.
+   */
+  su2double GetDeform_Coeff(void);
 
   /*!
    * \brief Get Young's modulus for deformation (constant stiffness deformation)
