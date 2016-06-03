@@ -1202,72 +1202,72 @@ CSlidingmesh::~CSlidingmesh(){}
 void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
 
-  unsigned long jVertex, iVertex;
-  unsigned short iDim;
-  unsigned short nDim = donor_geometry->GetnDim();
+	unsigned long jVertex, iVertex;
+	unsigned short iDim;
+	unsigned short nDim = donor_geometry->GetnDim();
 
-  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
-  unsigned short iMarkerInt;		// Variables for iteration over markers
-  int markDonor = -1, markTarget = -1, NearestNode;
+	unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
+	unsigned short iMarkerInt;		// Variables for iteration over markers
+	int markDonor = -1, markTarget = -1, NearestNode;
 
-  unsigned long nVertexDonor = 0, nVertexTarget= 0;
-  unsigned long Point_Target = 0, iPointDonor = 0;
-
-
-  unsigned long iVertexTarget, iVertexDonor;
-
-  unsigned short int iDonor;
-  
-  su2double *Normal;
-  su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
-  
-  int rank = MASTER_NODE;
-  int nProcessor = SINGLE_NODE;
-  
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
+	unsigned long nVertexDonor = 0, nVertexTarget= 0;
+	unsigned long Point_Target = 0, iPointDonor = 0;
 
 
-  /*--- Number of markers on the FSI interface ---*/
-  nMarkerInt     = (int) (config[donorZone]->GetMarker_n_FSIinterface() /2);
-  nMarkerTarget  = target_geometry->GetnMarker();
-  nMarkerDonor   = donor_geometry->GetnMarker();
-  
-  Normal  = new su2double[nDim];
-  Coord_i = new su2double[nDim];
+	unsigned long iVertexTarget, iVertexDonor;
+
+	unsigned short int iDonor;
+
+	su2double *Normal, *EdgeNormal;
+	su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
+
+	int rank = MASTER_NODE;
+	int nProcessor = SINGLE_NODE;
+
+
+	#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+	#endif
+
+
+	/*--- Number of markers on the FSI interface ---*/
+	nMarkerInt     = (int) (config[donorZone]->GetMarker_n_FSIinterface() /2);
+	nMarkerTarget  = target_geometry->GetnMarker();
+	nMarkerDonor   = donor_geometry->GetnMarker();
+
+	Normal  = new su2double[nDim];
+	Coord_i = new su2double[nDim];
 
 /* 1- Find boundary tag between touching grids */
 
-  /*--- Number of markers on the FSI interface ---*/
-  nMarkerInt     = (int)(config[donorZone]->GetMarker_n_FSIinterface())/2;
-  nMarkerTarget  = target_geometry->GetnMarker();
-  nMarkerDonor   = donor_geometry->GetnMarker();
+	/*--- Number of markers on the FSI interface ---*/
+	nMarkerInt    = (int)(config[donorZone]->GetMarker_n_FSIinterface())/2;
+	nMarkerTarget = target_geometry->GetnMarker();
+	nMarkerDonor  = donor_geometry->GetnMarker();
 
 
-  /*--- For the number of markers on the interface... ---*/
-  for (iMarkerInt=1; iMarkerInt <= nMarkerInt; iMarkerInt++){
-    /*--- Procedure:
-     * -Loop through vertices of the aero grid
-     * -Find nearest element and allocate enough space in the aero grid donor point info
-     *    -set the transfer coefficient values
-     */
-    nVertexDonor = 0;
-	nVertexTarget= 0;
+	/*--- For the number of markers on the interface... ---*/
+	for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+		/*--- Procedure:
+		* -Loop through vertices of the aero grid
+		* -Find nearest element and allocate enough space in the aero grid donor point info
+		*    -set the transfer coefficient values
+		*/
+		nVertexDonor = 0;
+		nVertexTarget= 0;
 
-	/*--- On the donor side ---*/
-	markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
-	  
-	/*--- On the target side ---*/
-    markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
+		/*--- On the donor side ---*/
+		markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
 
-	if(markTarget == -1 || markDonor == -1)
+		/*--- On the target side ---*/
+		markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
+
+		if(markTarget == -1 || markDonor == -1)
 		continue;
 
-	nVertexDonor  = donor_geometry->GetnVertex(markDonor);
-	nVertexTarget = target_geometry->GetnVertex(markTarget);
+		nVertexDonor  = donor_geometry->GetnVertex(markDonor);
+		nVertexTarget = target_geometry->GetnVertex(markTarget);
 
 
 
@@ -1277,134 +1277,251 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 */
 
 
-	Buffer_Send_nVertex_Donor = new unsigned long [1];
-    Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
+		Buffer_Send_nVertex_Donor    = new unsigned long [1];
+		Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
 
-	/* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
-	Determine_ArraySize(false, markDonor,markTarget,nVertexDonor,nDim);
+		/* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
+		Determine_ArraySize(false, markDonor, markTarget, nVertexDonor,nDim);
 
-    Buffer_Send_Coord = new su2double [MaxLocalVertex_Donor*nDim];
-    Buffer_Send_GlobalPoint = new unsigned long [MaxLocalVertex_Donor];
+		Buffer_Send_Coord       = new su2double [MaxLocalVertex_Donor*nDim];
+		Buffer_Send_GlobalPoint = new unsigned long [MaxLocalVertex_Donor];
 
-    Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_Donor*nDim];
-    Buffer_Receive_GlobalPoint = new unsigned long [nProcessor*MaxLocalVertex_Donor];
+		Buffer_Receive_Coord       = new su2double [nProcessor*MaxLocalVertex_Donor*nDim];
+		Buffer_Receive_GlobalPoint = new unsigned long [nProcessor*MaxLocalVertex_Donor];
 
-	  /*-- Collect coordinates, global points, and normal vectors ---*/
-	  Collect_VertexInfo(false, markDonor,markTarget,nVertexDonor,nDim);
+		/*-- Collect coordinates, global points, and normal vectors ---*/
+		Collect_VertexInfo(false, markDonor, markTarget, nVertexDonor,nDim);
 
-	  /*--- Compute the closest point to a Near-Field boundary point ---*/
-	  maxdist = 0.0;
-	  for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
 
-		  Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
+		int target_StartIndex, donor_StartIndex, iTMP, iPoint, jPoint, iEdge, nEdges, EdgeIndex;
+		int donor_iPoint, donor_jPoint, target_iPoint, target_jPoint, sIndex;
+		int donor_OldiPoint, target_OldiPoint;
+		
+		int* SuperMesh_Node_Index; // Index, referred to donor or target grid, to retrieve node coordinates 
+		bool* SuperMesh_Node_Owner; // 0 = donor grid owns the node, 1 = target grid owns the node
+		
+		su2double *donor_EdgeNormal, *target_EdgeNormal;
+		su2double dot, dist;
+		bool check;
+		
+		su2double edge[3];
+		int plane_normal;
+		su2double Normal[2];
+		su2double Tangent[3];
 
- 		  if (target_geometry->node[Point_Target]->GetDomain()) {
-
-			  /*--- Coordinates of the boundary point ---*/
-			  Coord_i = target_geometry->node[Point_Target]->GetCoord();
-			  mindist = 1E6; NearestNode = -1;
-
-			  /*--- Loop over all the boundaries to find the nearest neighbour ---*/
-				  for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
-					  iPointDonor = donor_geometry->vertex[markDonor][jVertex]->GetNode();
-					  
-					  if (donor_geometry->node[iPointDonor]->GetDomain()){
-						  
-						  dist = 0.0; 
-						  for (iDim = 0; iDim < nDim; iDim++) {
-						  Coord_j[iDim] = donor_geometry->node[iPointDonor]->GetCoord(iDim);
-						  dist += pow(Coord_j[iDim]-Coord_i[iDim], 2.0);
-						  }
-						  
-						  if (dist < mindist){
-							mindist = dist; 
-							NearestNode = iPointDonor;
-						  }
-
-						  if (dist == 0.0) break;
-						  
-					  }
-					  
-				  }
-				  //cout <<" Nearest Neighbor for target g.i " << target_geometry->node[Point_Target]->GetGlobalIndex() <<" is "<< NearestNode << "; d = " << mindist<< endl;
+		iTMP = 0;
+		target_StartIndex = target_geometry->vertex[markTarget][0]->GetNode();
+		donor_StartIndex  = donor_geometry->vertex[markDonor][iTMP]->GetNode();
+		
+		SuperMesh_Node_Index = new  int[nVertexDonor + nVertexTarget];
+		SuperMesh_Node_Owner = new bool[nVertexDonor + nVertexTarget];
+		
+		for (iDim = 0; iDim < nDim; iDim++)
+			Coord_i[iDim] = target_geometry->node[target_StartIndex]->GetCoord(iDim);
 			
-	/*
-	3- Build local donor dual grid edges, check that target point is inside donor face, otherwise search for different donor element
+		for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
+			donor_iPoint = donor_geometry->vertex[markDonor][jVertex]->GetNode();
 
-	loop over edges own by donor point and compute edge CGs
-	build projected (on target boundary plane) dual donor mesh element
-	check if target point is inside the dual projected donor mesh element
-	* just check if the distance from donor node projected on each edge normal is less than the distance between the donor vertex and the edge CG
-	if NOT
-		move along donor edges until it finds the correct donor dual element
-	end
-	*/
-			
-		if ( NearestNode != -1 ){
-bool flag;
-			flag = CheckPointOwner(donor_geometry, Coord_i, NearestNode, markDonor);
-			 
-			if(!flag){
-					cout << "ERROR! To fix..In sliding mesh interpolation structure target point ownership was not confirmed." << endl;getchar();
+			/*--- Compute the dist ---*/
+			dist = 0.0; 
+			for (iDim = 0; iDim < nDim; iDim++) {
+				Coord_j[iDim] = donor_geometry->node[donor_iPoint]->GetCoord(iDim);
+				dist += pow(Coord_j[iDim] - Coord_i[iDim], 2.0);
 			}
-			else{
-					// build target boundary dual mesh
-					/*
-					int jElem, nFaces, target_elem, iFace, nNodes, inode, jPoint;
-					bool face_on_marker;
-					
-					
-					for (jElem = 0; jElem < donor_geometry->node[Point_Target]->GetnElem(); jElem++){
-						
-						target_elem = donor_geometry->node[Point_Target]->GetElem(jElem);
-						nFaces      = target_geometry->elem[target_elem]->GetnFaces();
-						
-						for (iFace = 0; iFace < nFaces; iFace++){
-							  face_on_marker = true;
-							  nNodes = donor_geometry->elem[target_elem]->GetnNodesFace(iFace);
-							  
-							  for (iDonor = 0; iDonor < nNodes; iDonor++){
-								  
-								
-									inode  = target_geometry->elem[target_elem]->GetFaces(iFace, iDonor);
-									jPoint = target_geometry->elem[target_elem]->GetNode(inode);
-									face_on_marker = ( face_on_marker and (target_geometry->node[jPoint]->GetVertex(markTarget) != -1) );
-							  }
-							  
-							  if ( face_on_marker ){
-									//store face cg and edge cg
-									getchar();
-								
-							  }
-						}
-						
-					}
-					 
-					*/
-					// build andproject donor dual mesh on target boundary plane
+
+			if (dist < mindist) {
+				mindist = dist;  
+				donor_StartIndex = donor_iPoint;
+			}
+
+			if (dist == 0.0) 
+				break;
+		}
+		
+		donor_OldiPoint  = -1;
+		target_OldiPoint = -1;
+
+		target_iPoint = target_StartIndex;
+		donor_iPoint  =  donor_StartIndex;
+		
+		check = false;
+		sIndex = 0;
+
+		while( !check ){
+	
+			if (target_OldiPoint == -1 && donor_OldiPoint == -1){ 
 				
-			
+				// This is needed to initialize the direction of the loop,
+				
+				target_jPoint = FindNextNode_2D(target_geometry, target_OldiPoint, target_iPoint, markTarget);
+				
+				for(iDim = 0; iDim < nDim; iDim++)
+					edge[iDim] = target_geometry->node[target_jPoint]->GetCoord(iDim) - target_geometry->node[target_iPoint]->GetCoord(iDim);
+
+				donor_jPoint = FindNextNode_2D(donor_geometry, donor_OldiPoint, donor_iPoint, markDonor);
+				
+				dot = 0;
+				for(iDim = 0; iDim < nDim; iDim++)
+					dot += (donor_geometry->node[donor_jPoint]->GetCoord(iDim) - donor_geometry->node[donor_iPoint]->GetCoord(iDim)) * edge[iDim];
+				
+				if (dot < 0)
+					donor_OldiPoint = donor_jPoint;
+
+				dot = 0;
+				for(iDim = 0; iDim < nDim; iDim++)
+					dot +=  (donor_geometry->node[donor_iPoint]->GetCoord(iDim) - target_geometry->node[target_iPoint]->GetCoord(iDim)) * edge[iDim];
+
+				while( dot < 0 ){
+					donor_jPoint = FindNextNode_2D(donor_geometry, donor_OldiPoint, donor_iPoint, markDonor);
+					donor_OldiPoint = donor_iPoint;
+					donor_iPoint    = donor_jPoint;
+					
+					donor_StartIndex = donor_iPoint;
+				
+					dot = 0;
+					for(iDim = 0; iDim < nDim; iDim++)
+						dot +=  (donor_geometry->node[donor_iPoint]->GetCoord(iDim) - target_geometry->node[target_iPoint]->GetCoord(iDim)) * edge[iDim];
+
+				}
+							
+				SuperMesh_Node_Index[sIndex] = target_iPoint; // Index, referred to donor or target grid, to retrieve node coordinates 
+				SuperMesh_Node_Owner[sIndex] = 1;             // 0 = donor grid owns the node, 1 = target grid owns the node
+					
 			}
 
+			// Begin supermesh construction
+			
+			target_jPoint = FindNextNode_2D(target_geometry, target_OldiPoint, target_iPoint, markTarget);
+			
+			for(iDim = 0; iDim < nDim; iDim++)
+				edge[iDim] = target_geometry->node[target_jPoint]->GetCoord(iDim) - target_geometry->node[target_iPoint]->GetCoord(iDim);
+				
+			iTMP = target_geometry->node[target_jPoint]->GetVertex(markTarget);
+			
+			target_geometry->vertex[markTarget][iTMP]->GetNormal(Normal);
+			
+			for(iDim = 0; iDim < nDim; iDim++)
+				Normal[iDim] *= -1;
+				
+			// Compute the vector normal to plane (only for 2D grids)
+			// this is the cross vector n ^ edge(i, j)
+			
+			plane_normal = (Normal[0]*edge[1] - Normal[1]*edge[0]) / fabs(Normal[0]*edge[1] - Normal[1]*edge[0]);
+			
+			// this is the cross vector n ^ plane_normal
+			
+			Tangent[0] =  Normal[1]*plane_normal;
+			Tangent[1] = -Normal[0]*plane_normal;
+			Tangent[2] =  0;
+				
+			while (!check){
+				
+				dot = 0;
+				for(iDim = 0; iDim < nDim; iDim++)
+					dot += ( donor_geometry->node[donor_iPoint]->GetCoord(iDim) - target_geometry->node[target_jPoint]->GetCoord(iDim) ) * Tangent[iDim];
+				
+				
+				if ( dot > 0 ){
+					sIndex++;
+					SuperMesh_Node_Index[sIndex] = donor_iPoint; // Index, referred to donor or target grid, to retrieve node coordinates 
+					SuperMesh_Node_Owner[sIndex] = 0;            // 0 = donor grid owns the node, 1 = target grid owns the node
+					
+					donor_jPoint = FindNextNode_2D(donor_geometry, donor_OldiPoint, donor_iPoint, markDonor);
+			
+					donor_OldiPoint = donor_iPoint;
+					donor_iPoint    = donor_jPoint;
+				}
+				else
+					check = true;
+			}
+			sIndex++;
+			SuperMesh_Node_Index[sIndex] = target_iPoint; // Index, referred to donor or target grid, to retrieve node coordinates 
+			SuperMesh_Node_Owner[sIndex] = 1;             // 0 = donor grid owns the node, 1 = target grid owns the node
 
-		}	
+			target_OldiPoint = target_iPoint;
+			target_iPoint    = target_jPoint;
+			
+			check = target_jPoint == target_StartIndex;
+		}
+		
+		//cout << nVertexDonor + nVertexTarget << "  " << sIndex << endl;getchar();
+/*
+		su2double A[3] = {0, 0, 0}, B[3] = {3, -5, 0}, C[3] = {0, 0, 0}, D[3] = {3, -5, 0}, N[3] = {0, -1, 0};
+		cout << Compute_Intersectction_2D(A, B, C, D, N) << endl; getchar();
+*/
+
+
+/*		
+		// Compute intersection weights
+		su2double Target_Area, Donor_Area;
+		int target_forward_point, target_backward_point;
+		
+		iTMP = 1;
+		while( SuperMesh_Node_Owner[ sIndex + iTMP ] != 1 )
+				iTMP++;
+		sIndex = iTMP;
+				
+		for( jVertex = 1; jVertex < nVertexTarget-1; jVertex++ ){// Exclude first and last target element on supermesh
+			
+			target_iPoint = SuperMesh_Node_Index[sIndex];
+			
+			iTMP = target_geometry->node[target_iPoint]->GetVertex(markTarget);
+			
+			target_geometry->vertex[markTarget][iTMP]->GetNormal(Normal);
+			
+			iTMP = 1;
+			while( SuperMesh_Node_Owner[ sIndex + iTMP ] != 1 ){ // Finds next target point on supermesh
+				
+				
+				donor_iPoint = SuperMesh_Node_Index[ sIndex + iTMP ];
+				
+				
+				
+				iTMP++;
+			}
 			
 			
-	  }
+
+			while( SuperMesh_Node_Owner[ sIndex + iTMP ] != 1 ) // Finds previous target point on supermesh
+				iTMP--;
+				
+
+			Target_Area = 0;
+			for(iDim = 0; iDim < nDim; iDim++)
+				Target_Area += Normal[iDim];
 			
-	  }
+			
+			
+			while( SuperMesh_Node_Owner[sIndex] != 1 && sIndex < (nVertexDonor + nVertexTarget) ){
+				sIndex++;
+					
+					
+				
+			}
+			
+			if(jVertex == 0){cout << "err" << endl;}
+			
+			if(jVertex == nVertexTarget - 1){cout << "err" << endl;}
+		
+			
+			
+		}
+*/
+		
+		
 
-	  delete[] Buffer_Send_Coord;
-	  delete[] Buffer_Send_GlobalPoint;
+		delete [] Buffer_Send_Coord;
+		delete [] Buffer_Send_GlobalPoint;
 
-	  delete[] Buffer_Receive_Coord;
-	  delete[] Buffer_Receive_GlobalPoint;
+		delete [] Buffer_Receive_Coord;
+		delete [] Buffer_Receive_GlobalPoint;
 
-	  delete[] Buffer_Send_nVertex_Donor;
-	  delete[] Buffer_Receive_nVertex_Donor;
+		delete [] Buffer_Send_nVertex_Donor;
+		delete [] Buffer_Receive_nVertex_Donor;
 
 
-
+		delete [] SuperMesh_Node_Index;
+		delete [] SuperMesh_Node_Owner;
 
 
 
@@ -1435,9 +1552,121 @@ expand local supermesh until the target boundary face area is fully covered
 4- Store TransferCoefficient and related node conservative state
 */
 
+	}
+
+
 }
 
+su2double CSlidingmesh::PointsDistance(su2double *point_i, su2double *point_j){
 
+	unsigned short iDim, nDim = donor_geometry->GetnDim();
+	su2double m;
+	
+	m = 0 ;
+	for(iDim = 0; iDim < nDim; iDim++)
+		m += point_j[iDim] - point_i[iDim];
+	
+	return sqrt(m);
+}
+
+su2double CSlidingmesh::Compute_Intersectction_2D(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction){
+	
+	unsigned short iDim;
+	unsigned short nDim = donor_geometry->GetnDim();
+	
+	su2double Intersection;
+	
+	su2double dotA2, dotB1, dotB2, MaxArea;
+	
+	dotA2 = 0;
+	for(iDim = 0; iDim < nDim; iDim++)
+		dotA2 += ( A2[iDim] - A1[iDim] ) * Direction[iDim];
+
+	if( dotA2 >= 0 ){
+		dotB1 = 0;
+		dotB2 = 0;
+		for(iDim = 0; iDim < nDim; iDim++){
+			dotB1 += ( B1[iDim] - A1[iDim] ) * Direction[iDim];
+			dotB2 += ( B2[iDim] - A1[iDim] ) * Direction[iDim];
+		}
+	}
+	else{
+		dotA2 *= -1;
+		
+		dotB1 = 0;
+		dotB2 = 0;
+		for(iDim = 0; iDim < nDim; iDim++){
+			dotB1 -= ( B1[iDim] - A1[iDim] ) * Direction[iDim];
+			dotB2 -= ( B2[iDim] - A1[iDim] ) * Direction[iDim];
+		}
+	}
+	
+	
+	if( dotB1 >= 0 && dotB1 <= dotA2 ){
+		if ( dotB2 < 0 )
+			return fabs( dotB1 );
+		if ( dotB2 > dotA2 )
+			return fabs( dotA2 - dotB1 );
+			
+		return fabs( dotB1 - dotB2 );
+	}
+	
+	if( dotB2 >= 0 && dotB2 <= dotA2 ){
+		if ( dotB1 < 0 )
+			return fabs(dotB2);
+		if ( dotB1 > dotA2 )
+			return fabs( dotA2 - dotB2 );
+	}
+	
+	
+	return fabs( dotA2 );
+	
+/*	
+	Intersection -= fabs(dot1) + fabs(dot2);
+			
+	dot1 = 0;
+	dot2 = 0;
+	
+	for(iDim = 0; iDim < nDim; iDim++){
+			dot1 += ( A2[iDim] - A1[iDim] ) * Direction[iDim];
+			dot2 += ( B2[iDim] - B1[iDim] ) * Direction[iDim];
+	}
+	
+	MaxArea = min(fabs(dot1), fabs(dot2));
+	
+	cout << Intersection << endl;
+	Intersection = max(    0.0, Intersection);cout << Intersection << endl;
+	Intersection = min(MaxArea, Intersection);cout << Intersection << endl;
+	
+	return Intersection;
+*/
+}
+
+int CSlidingmesh::FindNextNode_2D(CGeometry *geometry, int PreviousNode, unsigned long NodeID, unsigned long markID){
+
+		int iPoint, jPoint, iEdge, nEdges, EdgeIndex;
+		bool check;
+//cout << "IN " << PreviousVertex << "  " << VertexID << "  " << markID << endl;
+
+		check = false;
+			
+		nEdges = geometry->node[NodeID]->GetnPoint();
+
+		for (iEdge = 0; iEdge < nEdges; iEdge++){
+			
+			EdgeIndex = geometry->node[NodeID]->GetEdge(iEdge);
+			
+			if( NodeID == geometry->edge[EdgeIndex]->GetNode(0) ){
+				jPoint =  geometry->edge[EdgeIndex]->GetNode(1);
+			}
+			else
+				jPoint = geometry->edge[EdgeIndex]->GetNode(0);
+			//cout << jPoint << "  ";
+			if ( geometry->node[jPoint]->GetVertex(markID) != -1 && jPoint != PreviousNode )
+				return jPoint;
+		}
+		//cout << endl;
+		return -1;
 }
 
 bool CSlidingmesh::CheckPointOwner(CGeometry *geometry, su2double *QueryPoint, unsigned long VertexID, unsigned long markID){
@@ -1458,7 +1687,7 @@ bool CSlidingmesh::CheckPointOwner(CGeometry *geometry, su2double *QueryPoint, u
 
 	for (iEdge = 0; iEdge < nEdges; iEdge++){
 
-		EdgeIndex = geometry->node[VertexID]->GetEdge(iEdge);
+		EdgeIndex  = geometry->node[VertexID]->GetEdge(iEdge);
 		EdgeNormal = geometry->edge[EdgeIndex]->GetNormal();
 		
 		if( VertexID == geometry->edge[EdgeIndex]->GetNode(0) ){
@@ -1475,7 +1704,7 @@ bool CSlidingmesh::CheckPointOwner(CGeometry *geometry, su2double *QueryPoint, u
 		
 		
 		if ( donor_geometry->node[jPoint]->GetVertex(markID) != -1 ){
-			cout << "edge  " << iEdge << endl;
+	//		cout << "edge  " << iEdge << endl;
 			nEdgesOnMarker++;
 			
 			bool face_on_marker, edge_on_face, element_flag;
@@ -1526,7 +1755,7 @@ bool CSlidingmesh::CheckPointOwner(CGeometry *geometry, su2double *QueryPoint, u
 							for(iDim = 0; iDim < nDim; iDim++)
 								face_CG[iDim] /= nNodes;
 													
-							
+							/*
 							for(iDim = 0; iDim < nDim; iDim++){
 									cout << geometry->edge[EdgeIndex]->GetCG(iDim) << "  ";
 							}cout << endl;
@@ -1534,8 +1763,8 @@ bool CSlidingmesh::CheckPointOwner(CGeometry *geometry, su2double *QueryPoint, u
 							for(iDim = 0; iDim < nDim; iDim++){
 									cout << face_CG[iDim] << "  ";
 							}cout << endl;
-						
-							getchar();
+						*/
+							//getchar();
 							
 							break;
 						}
@@ -1555,6 +1784,10 @@ bool CSlidingmesh::CheckPointOwner(CGeometry *geometry, su2double *QueryPoint, u
 
 			}
 			else{
+				/*
+				for(iDim = 0; iDim < nDim; iDim++)
+					EdgeNormal[iDim] = geometry->edge[EdgeIndex]->GetCG(iDim) - geometry->node[VertexID]->GetCoord(iDim);
+				*/
 				for(iDim = 0; iDim < nDim; iDim++)
 					dotproduct += (QueryPoint[iDim] - geometry->edge[EdgeIndex]->GetCG(iDim)) * EdgeNormal[iDim];
 			}
@@ -1562,18 +1795,19 @@ bool CSlidingmesh::CheckPointOwner(CGeometry *geometry, su2double *QueryPoint, u
 			/* if the target node is on the inner side of edge face, then the scalar product between (X-edgeCG) and edge normal must be negative */
 			/* In realta non dovrebbe essere il CG dell'edge ma il cg di una delle facce di boundary adiacenti all'edge */
 			
-			cout  << " dot product " << iEdge << "  " << dotproduct << "  ";cout << endl;
+			//cout  << " dot product " << iEdge << "  " << dotproduct << "  ";cout << endl;
 			if( dotproduct < 0 ) // target point on the inner side of edge
 				checkTargetOwner++;
 
 			}
 	}
-	cout << endl;getchar();
+	/*
+	cout << endl;//getchar();
 	if(checkTargetOwner == nEdgesOnMarker)
 		cout << "check true "  << true  << "  " << checkTargetOwner << "  " << nEdgesOnMarker << endl;
 	else
 		cout << "check false " << false << "  " << checkTargetOwner << "  " << nEdgesOnMarker << endl;
-	
+	*/
 	if( checkTargetOwner == nEdgesOnMarker )
 		return true;
 	else

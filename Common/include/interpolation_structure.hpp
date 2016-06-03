@@ -281,6 +281,32 @@ public:
   void Set_TransferCoeff(CConfig **config);
   
   /*!
+   * \brief compute distance between 2 points
+   * \param[in] point_i
+   * \param[in] point_i
+   */
+  su2double PointsDistance(su2double *point_i, su2double *point_j);
+   
+  /*!
+   * \brief For 2-Dimensional grids, compute intersection length of two segments projected along a given direction
+   * \param[in] A1 - first point of segment A
+   * \param[in] A2 - first point of segment A
+   * \param[in] B1 - first point of segment B
+   * \param[in] B2 - first point of segment B
+   * \param[in] Direction - along which segments are projected
+   */
+  su2double Compute_Intersectction_2D(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction);
+  
+  /*!
+   * \brief For 2-Dimensional grids, find the label of a vertex next to the current vertex, following a given direction
+   * \param[in] geometry - geometry where the node cell belongs
+   * \param[in] PreviousVertex - label of the previous vertex so that the direction is specified
+   * \param[in] VertexID - node centered cell index
+   * \param[in] markID   - node centered cell index
+   */
+  int FindNextNode_2D(CGeometry *geometry, int PreviousNode, unsigned long NodeID, unsigned long markID);
+  
+  /*!
    * \brief Check if a point is inside a node centered cell
    * \param[in] geometry - geometry where the node cell belongs
    * \param[in] VertexID - node centered cell index
