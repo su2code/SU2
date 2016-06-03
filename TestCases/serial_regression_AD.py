@@ -79,7 +79,7 @@ def main():
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001
     test_list.append(discadj_rans_naca0012_sst)
-    
+
     ######################################
     ### RUN TESTS                      ###
     ######################################  
