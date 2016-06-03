@@ -1296,6 +1296,9 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 		int target_StartIndex, donor_StartIndex, iTMP, iPoint, jPoint, iEdge, nEdges, EdgeIndex;
 		int donor_iPoint, donor_jPoint, target_iPoint, target_jPoint, sIndex;
 		int donor_OldiPoint, target_OldiPoint;
+		int target_forward_point, target_backward_point;
+		
+		su2double target_iMidEdge_point[3], target_jMidEdge_point[3], donor_iMidEdge_point[3], donor_jMidEdge_point[3], Direction[3];
 		
 		int* SuperMesh_Node_Index; // Index, referred to donor or target grid, to retrieve node coordinates 
 		bool* SuperMesh_Node_Owner; // 0 = donor grid owns the node, 1 = target grid owns the node
@@ -1316,197 +1319,67 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 		SuperMesh_Node_Index = new  int[nVertexDonor + nVertexTarget];
 		SuperMesh_Node_Owner = new bool[nVertexDonor + nVertexTarget];
 		
-		for (iDim = 0; iDim < nDim; iDim++)
-			Coord_i[iDim] = target_geometry->node[target_StartIndex]->GetCoord(iDim);
+		
+		
+		for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
 			
-		for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
-			donor_iPoint = donor_geometry->vertex[markDonor][jVertex]->GetNode();
+			target_StartIndex = targte_geometry->vertex[markTarget][iVertex]->GetNode();
+			
+			for (iDim = 0; iDim < nDim; iDim++)
+				Coord_i[iDim] = target_geometry->node[target_StartIndex]->GetCoord(iDim);
+			
+			for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
+				donor_iPoint = donor_geometry->vertex[markDonor][jVertex]->GetNode();
 
-			/*--- Compute the dist ---*/
-			dist = 0.0; 
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Coord_j[iDim] = donor_geometry->node[donor_iPoint]->GetCoord(iDim);
-				dist += pow(Coord_j[iDim] - Coord_i[iDim], 2.0);
-			}
+				/*--- Compute the dist ---*/
+				dist = 0.0; 
+				for (iDim = 0; iDim < nDim; iDim++) {
+					Coord_j[iDim] = donor_geometry->node[donor_iPoint]->GetCoord(iDim);
+					dist += pow(Coord_j[iDim] - Coord_i[iDim], 2.0);
+				}
 
-			if (dist < mindist) {
-				mindist = dist;  
-				donor_StartIndex = donor_iPoint;
-			}
-
-			if (dist == 0.0) 
-				break;
-		}
-		
-		donor_OldiPoint  = -1;
-		target_OldiPoint = -1;
-
-		target_iPoint = target_StartIndex;
-		donor_iPoint  =  donor_StartIndex;
-		
-		check = false;
-		sIndex = 0;
-
-		while( !check ){
-	
-			if (target_OldiPoint == -1 && donor_OldiPoint == -1){ 
-				
-				// This is needed to initialize the direction of the loop,
-				
-				target_jPoint = FindNextNode_2D(target_geometry, target_OldiPoint, target_iPoint, markTarget);
-				
-				for(iDim = 0; iDim < nDim; iDim++)
-					edge[iDim] = target_geometry->node[target_jPoint]->GetCoord(iDim) - target_geometry->node[target_iPoint]->GetCoord(iDim);
-
-				donor_jPoint = FindNextNode_2D(donor_geometry, donor_OldiPoint, donor_iPoint, markDonor);
-				
-				dot = 0;
-				for(iDim = 0; iDim < nDim; iDim++)
-					dot += (donor_geometry->node[donor_jPoint]->GetCoord(iDim) - donor_geometry->node[donor_iPoint]->GetCoord(iDim)) * edge[iDim];
-				
-				if (dot < 0)
-					donor_OldiPoint = donor_jPoint;
-
-				dot = 0;
-				for(iDim = 0; iDim < nDim; iDim++)
-					dot +=  (donor_geometry->node[donor_iPoint]->GetCoord(iDim) - target_geometry->node[target_iPoint]->GetCoord(iDim)) * edge[iDim];
-
-				while( dot < 0 ){
-					donor_jPoint = FindNextNode_2D(donor_geometry, donor_OldiPoint, donor_iPoint, markDonor);
-					donor_OldiPoint = donor_iPoint;
-					donor_iPoint    = donor_jPoint;
-					
+				if (dist < mindist) {
+					mindist = dist;  
 					donor_StartIndex = donor_iPoint;
-				
-					dot = 0;
-					for(iDim = 0; iDim < nDim; iDim++)
-						dot +=  (donor_geometry->node[donor_iPoint]->GetCoord(iDim) - target_geometry->node[target_iPoint]->GetCoord(iDim)) * edge[iDim];
-
 				}
-							
-				SuperMesh_Node_Index[sIndex] = target_iPoint; // Index, referred to donor or target grid, to retrieve node coordinates 
-				SuperMesh_Node_Owner[sIndex] = 1;             // 0 = donor grid owns the node, 1 = target grid owns the node
-					
+
+				if (dist == 0.0) 
+					break;
 			}
 
-			// Begin supermesh construction
+			donor_iPoint  =  donor_StartIndex;
+			donor_OldiPoint = -1;
+			donor_backward_point = -1;
 			
-			target_jPoint = FindNextNode_2D(target_geometry, target_OldiPoint, target_iPoint, markTarget);
+			target_forward_point  = FindNextNode_2D(target_geometry,                   -1, target_iPoint, markTarget);
+			target_backward_point = FindNextNode_2D(target_geometry, target_forward_point, target_iPoint, markTarget);
 			
-			for(iDim = 0; iDim < nDim; iDim++)
-				edge[iDim] = target_geometry->node[target_jPoint]->GetCoord(iDim) - target_geometry->node[target_iPoint]->GetCoord(iDim);
+			for(iDim = 0; iDim < nDim; iDim++){
+				target_iMidEdge_point[iDim] = ( target_geometry->node[target_forward_point ]->GetCoord(iDim) + target_geometry->node[ target_iPoint ]->GetCoord(iDim) );
+				target_jMidEdge_point[iDim] = ( target_geometry->node[target_backward_point]->GetCoord(iDim) + target_geometry->node[ target_iPoint ]->GetCoord(iDim) );
+				Direction = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
+			}
+
+			check = false;
+
+			while( !check ){
 				
-			iTMP = target_geometry->node[target_jPoint]->GetVertex(markTarget);
-			
-			target_geometry->vertex[markTarget][iTMP]->GetNormal(Normal);
-			
-			for(iDim = 0; iDim < nDim; iDim++)
-				Normal[iDim] *= -1;
+				donor_forward_point  = FindNextNode_2D(donor_geometry, donor_backward_point, donor_iPoint, markDonor);
+				donor_backward_point = FindNextNode_2D(donor_geometry,  donor_forward_point, donor_iPoint, markDonor);
 				
-			// Compute the vector normal to plane (only for 2D grids)
-			// this is the cross vector n ^ edge(i, j)
-			
-			plane_normal = (Normal[0]*edge[1] - Normal[1]*edge[0]) / fabs(Normal[0]*edge[1] - Normal[1]*edge[0]);
-			
-			// this is the cross vector n ^ plane_normal
-			
-			Tangent[0] =  Normal[1]*plane_normal;
-			Tangent[1] = -Normal[0]*plane_normal;
-			Tangent[2] =  0;
-				
-			while (!check){
-				
-				dot = 0;
-				for(iDim = 0; iDim < nDim; iDim++)
-					dot += ( donor_geometry->node[donor_iPoint]->GetCoord(iDim) - target_geometry->node[target_jPoint]->GetCoord(iDim) ) * Tangent[iDim];
-				
-				
-				if ( dot > 0 ){
-					sIndex++;
-					SuperMesh_Node_Index[sIndex] = donor_iPoint; // Index, referred to donor or target grid, to retrieve node coordinates 
-					SuperMesh_Node_Owner[sIndex] = 0;            // 0 = donor grid owns the node, 1 = target grid owns the node
-					
-					donor_jPoint = FindNextNode_2D(donor_geometry, donor_OldiPoint, donor_iPoint, markDonor);
-			
-					donor_OldiPoint = donor_iPoint;
-					donor_iPoint    = donor_jPoint;
+				for(iDim = 0; iDim < nDim; iDim++){
+					donor_iMidEdge_point[iDim] = ( donor_geometry->node[donor_forward_point ]->GetCoord(iDim) + donor_geometry->node[ donor_iPoint ]->GetCoord(iDim) );
+					donor_jMidEdge_point[iDim] = ( donor_geometry->node[donor_backward_point]->GetCoord(iDim) + donor_geometry->node[ donor_iPoint ]->GetCoord(iDim) );
 				}
-				else
+				
+				
+				
+				Intersection = Compute_Intersectction_2D(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
+				cout << Intersection << endl; getchar();
+				
+				if ( Intersection == 0 )
 					check = true;
 			}
-			sIndex++;
-			SuperMesh_Node_Index[sIndex] = target_iPoint; // Index, referred to donor or target grid, to retrieve node coordinates 
-			SuperMesh_Node_Owner[sIndex] = 1;             // 0 = donor grid owns the node, 1 = target grid owns the node
-
-			target_OldiPoint = target_iPoint;
-			target_iPoint    = target_jPoint;
-			
-			check = target_jPoint == target_StartIndex;
-		}
-		
-		//cout << nVertexDonor + nVertexTarget << "  " << sIndex << endl;getchar();
-/*
-		su2double A[3] = {0, 0, 0}, B[3] = {3, -5, 0}, C[3] = {0, 0, 0}, D[3] = {3, -5, 0}, N[3] = {0, -1, 0};
-		cout << Compute_Intersectction_2D(A, B, C, D, N) << endl; getchar();
-*/
-
-
-/*		
-		// Compute intersection weights
-		su2double Target_Area, Donor_Area;
-		int target_forward_point, target_backward_point;
-		
-		iTMP = 1;
-		while( SuperMesh_Node_Owner[ sIndex + iTMP ] != 1 )
-				iTMP++;
-		sIndex = iTMP;
-				
-		for( jVertex = 1; jVertex < nVertexTarget-1; jVertex++ ){// Exclude first and last target element on supermesh
-			
-			target_iPoint = SuperMesh_Node_Index[sIndex];
-			
-			iTMP = target_geometry->node[target_iPoint]->GetVertex(markTarget);
-			
-			target_geometry->vertex[markTarget][iTMP]->GetNormal(Normal);
-			
-			iTMP = 1;
-			while( SuperMesh_Node_Owner[ sIndex + iTMP ] != 1 ){ // Finds next target point on supermesh
-				
-				
-				donor_iPoint = SuperMesh_Node_Index[ sIndex + iTMP ];
-				
-				
-				
-				iTMP++;
-			}
-			
-			
-
-			while( SuperMesh_Node_Owner[ sIndex + iTMP ] != 1 ) // Finds previous target point on supermesh
-				iTMP--;
-				
-
-			Target_Area = 0;
-			for(iDim = 0; iDim < nDim; iDim++)
-				Target_Area += Normal[iDim];
-			
-			
-			
-			while( SuperMesh_Node_Owner[sIndex] != 1 && sIndex < (nVertexDonor + nVertexTarget) ){
-				sIndex++;
-					
-					
-				
-			}
-			
-			if(jVertex == 0){cout << "err" << endl;}
-			
-			if(jVertex == nVertexTarget - 1){cout << "err" << endl;}
-		
-			
-			
-		}
-*/
 		
 		
 
