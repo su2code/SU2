@@ -7246,6 +7246,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
+  bool spectral_method = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
   
   su2double *Normal, *FlowDirMix, TangVelocity, NormalVelocity, ext_flow_angle;
   Normal = new su2double[nDim];
@@ -7270,55 +7271,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
     invP_Tensor[iVar] = new su2double[nVar];
   }
   
-//  string UnstExt, text_line;
-//  ifstream input_file;
-//  string input_filename = "test.csv";
-//
-//  input_file.open(input_filename.data(), ios::in);
-//  if (input_file.fail()) {
-////    if (rank == MASTER_NODE)
-//      cout << "There is no input file!! " << input_filename.data() << "."<< endl;
-//    exit(EXIT_FAILURE);
-//  }
-
-//  /*--- Read all lines in the restart file ---*/
-//
-//  long iPoint_file = 0;
-//
-//  /*--- The first line is the header ---*/
-//
-////  display getline (input_file, text_line);
-//
-////  std::size_t lines_count =0;
-////  std::string line;
-////  while (getline(input_file , line))
-////          ++lines_count;
-////  while (getline (input_file, text_line)) {
-////    	istringstream point_line(text_line);
-////
-////    	point_line >> var_test ;
-////
-////    	iPoint_Global++;
-////  }
-
-//  su2double var_test1, var_test2;
-//  unsigned long points_number = 0;
-//
-//  while (getline (input_file, text_line)) {
-//  	points_number++;
-//  }
-//  input_file.close();
-//  input_file.open(input_filename.data(), ios::in);
-//
-//  getline (input_file, text_line, ',');
-//  for (iPoint_file=0; iPoint_file < points_number; iPoint_file++){
-//  	getline(input_file , text_line);
-//  	istringstream point_line(text_line);
-//  	point_line >> var_test1 >> var_test2 ;
-//  }
-
-
-
 
 
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -7379,10 +7331,13 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Build the external state u_e from boundary data and internal node ---*/
       
-      su2double cf_Ptot[12] =  {  -3.84556712e+18,   3.16691761e+18,  -1.05564478e+18,
-													         1.89717553e+17,  -2.03372202e+16,   1.34454047e+15,
-													        -5.43182928e+13,   1.27088075e+12,  -1.51526510e+10,
-													         6.65796153e+07,  -3.26720633e+04,   1.89887435e+04};
+
+      /*--- HARDCODED FOR TEST ONLY!! ---*/
+      su2double cf_Ptot[12] =  {   -6.73663689e+17,   1.12411856e+18,  -4.83226269e+17,
+               											9.88201983e+16,  -1.13992280e+16,   7.85444629e+14,
+                                   -3.22937326e+13,   7.48549094e+11,  -8.34675811e+09,
+                                    2.48684750e+07,   8.09013446e+04,   1.86888784e+04};
+      /*--------------------------------*/
       
       switch(config->GetKind_Data_Riemann(Marker_Tag))
       {
@@ -7562,22 +7517,29 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           
         case UNSTEADY_TOTAL_CONDITIONS_PT:
           su2double xCoord, yCoord, y_0, y_perio, Physical_dt, Physical_t, Total_t, t_perio, Period, Boundary_Vel;
-          xCoord = geometry->node[iPoint]->GetCoord(nDim-2);
-          yCoord = geometry->node[iPoint]->GetCoord(nDim-1);
 
-          Physical_dt = config->GetDelta_UnstTime();
-        	Physical_t  = (config->GetExtIter()+1)*Physical_dt;
-        	Total_t = config->GetTotal_UnstTime();
-
-          Period = 0.0048429906542056074;
-          Boundary_Vel = 21.4;
-          y_0 = -0.02755;
-
-          if (config->GetUnsteady_Simulation() == 0) Physical_t = 0;
-          t_perio = fmod((long double)Physical_t,(long double) Period);
-          y_perio = fmod((long double)Boundary_Vel*t_perio + (yCoord - y_0), (long double) 0.105);
+           xCoord = geometry->node[iPoint]->GetCoord(nDim-2);
+           yCoord = geometry->node[iPoint]->GetCoord(nDim-1);
 
 
+           if (spectral_method) {
+           	/*--- time interval using nTimeInstances ---*/
+          	 Physical_dt = (su2double)config->GetSpectralMethod_Period()/(su2double)(config->GetnTimeInstances());
+          	 Physical_t  = config->GetiZone()*Physical_dt;
+           }
+           else {
+          	 Physical_dt = (su2double)config->GetDelta_UnstTime();
+          	 Physical_t  = (config->GetExtIter()+1)*Physical_dt;
+           }
+
+           /*--- HARDCODED FOR TEST ONLY!! ---*/
+           Period = 0.0048429906542056074;
+           Boundary_Vel = 21.4;
+           y_0 = -0.02755;
+
+           if (config->GetUnsteady_Simulation() == 0) Physical_t = 0;
+           t_perio = fmod(Physical_t, Period);
+           y_perio = fmod(Boundary_Vel*t_perio + (yCoord - y_0), 0.105);
 
           /*--- Retrieve the specified total conditions for this boundary. ---*/
           if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
@@ -7585,11 +7547,11 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           T_Total  = config->GetRiemann_Var2(Marker_Tag);
           Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
 
+          /*--- HARDCODED FOR TEST ONLY!! ---*/
           for (iPol = 0; iPol < 11; iPol++) {
           	P_Total += cf_Ptot[iPol]*pow(y_perio, 11-iPol);
           }
-
-
+//          P_Total = config->GetRiemann_Var1(Marker_Tag)*(1+0.2*sin(3841.71901638980430303432*Physical_t));
 
           /*--- Non-dim. the inputs if necessary. ---*/
           P_Total /= config->GetPressure_Ref();

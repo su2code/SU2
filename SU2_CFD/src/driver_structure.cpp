@@ -1997,7 +1997,7 @@ void CSpectralDriver::Run(CIteration **iteration_container,
   
   /*--- If this is the first iteration, set up the spectral operators,
    initialize the source terms, and compute any grid veocities, if necessary. ---*/
-  
+
   if (ExtIter == 0) {
       if (config_container[ZONE_0]->GetGrid_Movement() && (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL)) {
           SetTimeSpectral_Velocities(geometry_container, config_container, nZone);
@@ -2019,8 +2019,7 @@ void CSpectralDriver::Run(CIteration **iteration_container,
     iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
                                         surface_movement, grid_movement, FFDBox, iZone);
-    
-    
+
     /*--- Update the spectral source terms across all zones ---*/
     
     SetSpectralMethod(geometry_container, solver_container, config_container, nZone, (iZone+1)%nZone);
