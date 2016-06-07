@@ -1076,158 +1076,150 @@ inline void CNSSolver::SetStrainMag_Max(su2double val_strainmag_max) { StrainMag
 
 inline void CNSSolver::SetOmega_Max(su2double val_omega_max) { Omega_Max = val_omega_max; }
 
-inline CFluidModel* CFEM_EulerSolver::GetFluidModel(void) { return FluidModel;}
+inline CFluidModel* CFEM_DG_EulerSolver::GetFluidModel(void) { return FluidModel;}
 
-inline su2double CFEM_EulerSolver::GetDensity_Inf(void) { return Density_Inf; }
+inline su2double CFEM_DG_EulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
-inline su2double CFEM_EulerSolver::GetModVelocity_Inf(void) {
+inline su2double CFEM_DG_EulerSolver::GetModVelocity_Inf(void) {
   su2double Vel2 = 0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Vel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
   return sqrt(Vel2);
 }
 
-inline su2double CFEM_EulerSolver::GetDensity_Energy_Inf(void) { return Density_Inf*Energy_Inf; }
+inline su2double CFEM_DG_EulerSolver::GetDensity_Energy_Inf(void) { return Density_Inf*Energy_Inf; }
 
-inline su2double CFEM_EulerSolver::GetDensity_Velocity_Inf(unsigned short val_dim) { return Density_Inf*Velocity_Inf[val_dim]; }
+inline su2double CFEM_DG_EulerSolver::GetDensity_Velocity_Inf(unsigned short val_dim) { return Density_Inf*Velocity_Inf[val_dim]; }
 
-inline su2double CFEM_EulerSolver::GetVelocity_Inf(unsigned short val_dim) { return Velocity_Inf[val_dim]; }
+inline su2double CFEM_DG_EulerSolver::GetVelocity_Inf(unsigned short val_dim) { return Velocity_Inf[val_dim]; }
 
-inline su2double *CFEM_EulerSolver::GetVelocity_Inf(void) { return Velocity_Inf; }
+inline su2double *CFEM_DG_EulerSolver::GetVelocity_Inf(void) { return Velocity_Inf; }
 
-inline su2double CFEM_EulerSolver::GetPressure_Inf(void) { return Pressure_Inf; }
+inline su2double CFEM_DG_EulerSolver::GetPressure_Inf(void) { return Pressure_Inf; }
 
-inline su2double CFEM_EulerSolver::GetCPressure(unsigned short val_marker, unsigned long val_vertex) { return CPressure[val_marker][val_vertex]; }
+inline su2double CFEM_DG_EulerSolver::GetCLift_Inv(unsigned short val_marker) { return CLift_Inv[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetCLift_Inv(unsigned short val_marker) { return CLift_Inv[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetCMz_Inv(unsigned short val_marker) { return CMz_Inv[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetCMz_Inv(unsigned short val_marker) { return CMz_Inv[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetCDrag_Inv(unsigned short val_marker) { return CDrag_Inv[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetCDrag_Inv(unsigned short val_marker) { return CDrag_Inv[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CLift(unsigned short val_marker) { return Surface_CLift[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CLift(unsigned short val_marker) { return Surface_CLift[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CDrag(unsigned short val_marker) { return Surface_CDrag[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CDrag(unsigned short val_marker) { return Surface_CDrag[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CSideForce(unsigned short val_marker) { return Surface_CSideForce[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CSideForce(unsigned short val_marker) { return Surface_CSideForce[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CEff(unsigned short val_marker) { return Surface_CEff[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CEff(unsigned short val_marker) { return Surface_CEff[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CFx(unsigned short val_marker) { return Surface_CFx[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CFx(unsigned short val_marker) { return Surface_CFx[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CFy(unsigned short val_marker) { return Surface_CFy[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CFy(unsigned short val_marker) { return Surface_CFy[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CFz(unsigned short val_marker) { return Surface_CFz[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CFz(unsigned short val_marker) { return Surface_CFz[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CMx(unsigned short val_marker) { return Surface_CMx[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CMx(unsigned short val_marker) { return Surface_CMx[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CMy(unsigned short val_marker) { return Surface_CMy[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CMy(unsigned short val_marker) { return Surface_CMy[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CMz(unsigned short val_marker) { return Surface_CMz[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CMz(unsigned short val_marker) { return Surface_CMz[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CLift_Inv(unsigned short val_marker) { return Surface_CLift_Inv[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CLift_Inv(unsigned short val_marker) { return Surface_CLift_Inv[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CDrag_Inv(unsigned short val_marker) { return Surface_CDrag_Inv[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CDrag_Inv(unsigned short val_marker) { return Surface_CDrag_Inv[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CSideForce_Inv(unsigned short val_marker) { return Surface_CSideForce_Inv[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CSideForce_Inv(unsigned short val_marker) { return Surface_CSideForce_Inv[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CEff_Inv(unsigned short val_marker) { return Surface_CEff_Inv[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CEff_Inv(unsigned short val_marker) { return Surface_CEff_Inv[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CFx_Inv(unsigned short val_marker) { return Surface_CFx_Inv[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CFx_Inv(unsigned short val_marker) { return Surface_CFx_Inv[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CFy_Inv(unsigned short val_marker) { return Surface_CFy_Inv[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CFy_Inv(unsigned short val_marker) { return Surface_CFy_Inv[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CFz_Inv(unsigned short val_marker) { return Surface_CFz_Inv[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CFz_Inv(unsigned short val_marker) { return Surface_CFz_Inv[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CMx_Inv(unsigned short val_marker) { return Surface_CMx_Inv[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CMx_Inv(unsigned short val_marker) { return Surface_CMx_Inv[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CMy_Inv(unsigned short val_marker) { return Surface_CMy_Inv[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CMy_Inv(unsigned short val_marker) { return Surface_CMy_Inv[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetSurface_CMz_Inv(unsigned short val_marker) { return Surface_CMz_Inv[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetSurface_CMz_Inv(unsigned short val_marker) { return Surface_CMz_Inv[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetCSideForce_Inv(unsigned short val_marker) { return CSideForce_Inv[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetCSideForce_Inv(unsigned short val_marker) { return CSideForce_Inv[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetCEff_Inv(unsigned short val_marker) { return CEff_Inv[val_marker]; }
 
-inline su2double CFEM_EulerSolver::GetCEff_Inv(unsigned short val_marker) { return CEff_Inv[val_marker]; }
+inline su2double CFEM_DG_EulerSolver::GetTotal_CLift() { return Total_CLift; }
 
-inline su2double CFEM_EulerSolver::GetTotal_CLift() { return Total_CLift; }
+inline su2double CFEM_DG_EulerSolver::GetTotal_CDrag() { return Total_CDrag; }
 
-inline su2double CFEM_EulerSolver::GetTotal_CDrag() { return Total_CDrag; }
+inline su2double CFEM_DG_EulerSolver::GetTotal_CMx() { return Total_CMx; }
 
-inline su2double CFEM_EulerSolver::GetTotal_CMx() { return Total_CMx; }
+inline su2double CFEM_DG_EulerSolver::GetTotal_CMy() { return Total_CMy; }
 
-inline su2double CFEM_EulerSolver::GetTotal_CMy() { return Total_CMy; }
+inline su2double CFEM_DG_EulerSolver::GetTotal_CMz() { return Total_CMz; }
 
-inline su2double CFEM_EulerSolver::GetTotal_CMz() { return Total_CMz; }
+inline su2double CFEM_DG_EulerSolver::GetTotal_CFx() { return Total_CFx; }
 
-inline su2double CFEM_EulerSolver::GetTotal_CFx() { return Total_CFx; }
+inline su2double CFEM_DG_EulerSolver::GetTotal_CFy() { return Total_CFy; }
 
-inline su2double CFEM_EulerSolver::GetTotal_CFy() { return Total_CFy; }
+inline su2double CFEM_DG_EulerSolver::GetTotal_CFz() { return Total_CFz; }
 
-inline su2double CFEM_EulerSolver::GetTotal_CFz() { return Total_CFz; }
+inline su2double CFEM_DG_EulerSolver::GetTotal_CSideForce() { return Total_CSideForce; }
 
-inline su2double CFEM_EulerSolver::GetTotal_CSideForce() { return Total_CSideForce; }
+inline su2double CFEM_DG_EulerSolver::GetTotal_CEff() { return Total_CEff; }
 
-inline su2double CFEM_EulerSolver::GetTotal_CEff() { return Total_CEff; }
+inline void CFEM_DG_EulerSolver::SetTotal_CLift(su2double val_Total_CLift) { Total_CLift = val_Total_CLift; }
 
-inline void CFEM_EulerSolver::SetTotal_CLift(su2double val_Total_CLift) { Total_CLift = val_Total_CLift; }
+inline void CFEM_DG_EulerSolver::SetTotal_CDrag(su2double val_Total_CDrag) { Total_CDrag = val_Total_CDrag; }
 
-inline void CFEM_EulerSolver::SetTotal_CDrag(su2double val_Total_CDrag) { Total_CDrag = val_Total_CDrag; }
+inline su2double CFEM_DG_EulerSolver::GetAllBound_CLift_Inv() { return AllBound_CLift_Inv; }
 
-inline su2double CFEM_EulerSolver::GetAllBound_CLift_Inv() { return AllBound_CLift_Inv; }
+inline su2double CFEM_DG_EulerSolver::GetAllBound_CDrag_Inv() { return AllBound_CDrag_Inv; }
 
-inline su2double CFEM_EulerSolver::GetAllBound_CDrag_Inv() { return AllBound_CDrag_Inv; }
+inline su2double CFEM_DG_EulerSolver::GetAllBound_CSideForce_Inv() { return AllBound_CSideForce_Inv; }
 
-inline su2double CFEM_EulerSolver::GetAllBound_CSideForce_Inv() { return AllBound_CSideForce_Inv; }
+inline su2double CFEM_DG_EulerSolver::GetAllBound_CEff_Inv() { return AllBound_CEff_Inv; }
 
-inline su2double CFEM_EulerSolver::GetAllBound_CEff_Inv() { return AllBound_CEff_Inv; }
+inline su2double CFEM_DG_EulerSolver::GetAllBound_CMx_Inv() { return AllBound_CMx_Inv; }
 
-inline su2double CFEM_EulerSolver::GetAllBound_CMx_Inv() { return AllBound_CMx_Inv; }
+inline su2double CFEM_DG_EulerSolver::GetAllBound_CMy_Inv() { return AllBound_CMy_Inv; }
 
-inline su2double CFEM_EulerSolver::GetAllBound_CMy_Inv() { return AllBound_CMy_Inv; }
+inline su2double CFEM_DG_EulerSolver::GetAllBound_CMz_Inv() { return AllBound_CMz_Inv; }
 
-inline su2double CFEM_EulerSolver::GetAllBound_CMz_Inv() { return AllBound_CMz_Inv; }
+inline su2double CFEM_DG_EulerSolver::GetAllBound_CFx_Inv() { return AllBound_CFx_Inv; }
 
-inline su2double CFEM_EulerSolver::GetAllBound_CFx_Inv() { return AllBound_CFx_Inv; }
+inline su2double CFEM_DG_EulerSolver::GetAllBound_CFy_Inv() { return AllBound_CFy_Inv; }
 
-inline su2double CFEM_EulerSolver::GetAllBound_CFy_Inv() { return AllBound_CFy_Inv; }
+inline su2double CFEM_DG_EulerSolver::GetAllBound_CFz_Inv() { return AllBound_CFz_Inv; }
 
-inline su2double CFEM_EulerSolver::GetAllBound_CFz_Inv() { return AllBound_CFz_Inv; }
+inline void CFEM_DG_EulerSolver::SetPressure_Inf(su2double p_inf){Pressure_Inf = p_inf;}
 
-inline void CFEM_EulerSolver::SetPressure_Inf(su2double p_inf){Pressure_Inf = p_inf;}
+inline void CFEM_DG_EulerSolver::SetTemperature_Inf(su2double t_inf){Temperature_Inf = t_inf;}
 
-inline void CFEM_EulerSolver::SetTemperature_Inf(su2double t_inf){Temperature_Inf = t_inf;}
+inline su2double CFEM_DG_NSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
-inline su2double CFEM_NSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
+inline su2double CFEM_DG_NSSolver::GetTke_Inf(void) { return Tke_Inf; }
 
-inline su2double CFEM_NSSolver::GetTke_Inf(void) { return Tke_Inf; }
+inline su2double CFEM_DG_NSSolver::GetCLift_Visc(unsigned short val_marker) { return CLift_Visc[val_marker]; }
 
-inline su2double CFEM_NSSolver::GetCLift_Visc(unsigned short val_marker) { return CLift_Visc[val_marker]; }
+inline su2double CFEM_DG_NSSolver::GetCMz_Visc(unsigned short val_marker) { return CMz_Visc[val_marker]; }
 
-inline su2double CFEM_NSSolver::GetCMz_Visc(unsigned short val_marker) { return CMz_Visc[val_marker]; }
+inline su2double CFEM_DG_NSSolver::GetCSideForce_Visc(unsigned short val_marker) { return CSideForce_Visc[val_marker]; }
 
-inline su2double CFEM_NSSolver::GetCSideForce_Visc(unsigned short val_marker) { return CSideForce_Visc[val_marker]; }
+inline su2double CFEM_DG_NSSolver::GetCDrag_Visc(unsigned short val_marker) { return CDrag_Visc[val_marker]; }
 
-inline su2double CFEM_NSSolver::GetCDrag_Visc(unsigned short val_marker) { return CDrag_Visc[val_marker]; }
+inline su2double CFEM_DG_NSSolver::GetAllBound_CLift_Visc() { return AllBound_CLift_Visc; }
 
-inline su2double CFEM_NSSolver::GetAllBound_CLift_Visc() { return AllBound_CLift_Visc; }
+inline su2double CFEM_DG_NSSolver::GetAllBound_CSideForce_Visc() { return AllBound_CSideForce_Visc; }
 
-inline su2double CFEM_NSSolver::GetAllBound_CSideForce_Visc() { return AllBound_CSideForce_Visc; }
+inline su2double CFEM_DG_NSSolver::GetAllBound_CDrag_Visc() { return AllBound_CDrag_Visc; }
 
-inline su2double CFEM_NSSolver::GetAllBound_CDrag_Visc() { return AllBound_CDrag_Visc; }
+inline su2double CFEM_DG_NSSolver::GetStrainMag_Max(void) { return StrainMag_Max; }
 
-inline su2double CFEM_NSSolver::GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex) { return CSkinFriction[val_marker][val_vertex]; }
+inline su2double CFEM_DG_NSSolver::GetOmega_Max(void) { return Omega_Max; }
 
-inline su2double CFEM_NSSolver::GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return HeatFlux[val_marker][val_vertex]; }
+inline void CFEM_DG_NSSolver::SetStrainMag_Max(su2double val_strainmag_max) { StrainMag_Max = val_strainmag_max; }
 
-inline su2double CFEM_NSSolver::GetYPlus(unsigned short val_marker, unsigned long val_vertex) { return YPlus[val_marker][val_vertex]; }
-
-inline su2double CFEM_NSSolver::GetStrainMag_Max(void) { return StrainMag_Max; }
-
-inline su2double CFEM_NSSolver::GetOmega_Max(void) { return Omega_Max; }
-
-inline void CFEM_NSSolver::SetStrainMag_Max(su2double val_strainmag_max) { StrainMag_Max = val_strainmag_max; }
-
-inline void CFEM_NSSolver::SetOmega_Max(su2double val_omega_max) { Omega_Max = val_omega_max; }
+inline void CFEM_DG_NSSolver::SetOmega_Max(su2double val_omega_max) { Omega_Max = val_omega_max; }
 
 inline su2double CAdjEulerSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 

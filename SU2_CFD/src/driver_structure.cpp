@@ -214,7 +214,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
-  template_solver, disc_adj;
+  template_solver, disc_adj, fem_dg_flow;
   
   /*--- Initialize some useful booleans ---*/
   
@@ -228,6 +228,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   heat             = false;
   transition       = false;  fem_transition  = false;
   template_solver  = false;
+  fem_dg_flow      = false;
   
   /*--- Assign booleans ---*/
   
@@ -250,6 +251,12 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
+  }
+
+  /*--- Determine the kind of FEM solver used for the flow. ---*/
+
+  switch( config->GetKind_FEM_Flow() ) {
+    case DG: fem_dg_flow = true; break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -301,11 +308,12 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       }
     }
     if (fem_euler) {
-      solver_container[iMGlevel][FEM_FLOW_SOL] = new CFEM_EulerSolver(geometry[iMGlevel], config, iMGlevel);
-      solver_container[iMGlevel][FEM_FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      if( fem_dg_flow )
+        solver_container[iMGlevel][FLOW_SOL] = new CFEM_DG_EulerSolver(geometry[iMGlevel], config, iMGlevel);
     }
     if (fem_ns || fem_les) {
-      solver_container[iMGlevel][FEM_FLOW_SOL] = new CFEM_NSSolver(geometry[iMGlevel], config, iMGlevel);
+      if( fem_dg_flow )
+        solver_container[iMGlevel][FLOW_SOL] = new CFEM_DG_NSSolver(geometry[iMGlevel], config, iMGlevel);
     }
     if (fem_turbulent) {
       cout << "Finite element turbulence model not yet implemented." << endl; exit(EXIT_FAILURE);
@@ -507,8 +515,8 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   
   /*--- Allocate integration container for finite element flow solver. ---*/
   
-  if (fem_euler) integration_container[FEM_FLOW_SOL] = new CMultiGridIntegration(config);
-  if (fem_ns)    integration_container[FEM_FLOW_SOL] = new CMultiGridIntegration(config);
+  if (fem_euler) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
+  if (fem_ns)    integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
   //if (fem_turbulent) integration_container[FEM_TURB_SOL] = new CSingleGridIntegration(config);
   
   /*--- Allocate solution for adjoint problem ---*/
@@ -664,8 +672,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   if (transition)   nVar_Trans = solver_container[MESH_0][TRANS_SOL]->GetnVar();
   if (poisson)      nVar_Poisson = solver_container[MESH_0][POISSON_SOL]->GetnVar();
   
-  if (fem_euler)        nVar_Flow = solver_container[MESH_0][FEM_FLOW_SOL]->GetnVar();
-  if (fem_ns)           nVar_Flow = solver_container[MESH_0][FEM_FLOW_SOL]->GetnVar();
+  if (fem_euler)        nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
+  if (fem_ns)           nVar_Flow = solver_container[MESH_0][FLOW_SOL]->GetnVar();
   //if (fem_turbulent)    nVar_Turb = solver_container[MESH_0][FEM_TURB_SOL]->GetnVar();
 
   if (wave)				nVar_Wave = solver_container[MESH_0][WAVE_SOL]->GetnVar();
@@ -954,16 +962,16 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
         /*--- Compressible flow ---*/
         switch (config->GetKind_FEM_Flow()) {
           case NO_FEM : cout << "No finite element scheme." << endl; break;
-          case DG : numerics_container[MESH_0][FEM_FLOW_SOL][CONV_TERM] = new CDiscGalerkin_Flow(nDim, nVar_Flow, config); break;
+          case DG : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CDiscGalerkin_Flow(nDim, nVar_Flow, config); break;
           default : cout << "Finite element scheme not implemented." << endl; exit(EXIT_FAILURE); break;
         }
         
         for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics_container[iMGlevel][FEM_FLOW_SOL][CONV_TERM] = new CDiscGalerkin_Flow(nDim, nVar_Flow, config);
+          numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CDiscGalerkin_Flow(nDim, nVar_Flow, config);
         
         /*--- Definition of the boundary condition method ---*/
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics_container[iMGlevel][FEM_FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
+          numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
         
         break;
         
@@ -974,20 +982,20 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     
-    numerics_container[MESH_0][FEM_FLOW_SOL][VISC_TERM] = new CFEMVisc_Flow(nDim, nVar_Flow, config);
+    numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CFEMVisc_Flow(nDim, nVar_Flow, config);
     for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-      numerics_container[iMGlevel][FEM_FLOW_SOL][VISC_TERM] = new CFEMVisc_Flow(nDim, nVar_Flow, config);
+      numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CFEMVisc_Flow(nDim, nVar_Flow, config);
     
     /*--- Definition of the boundary condition method ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-      numerics_container[iMGlevel][FEM_FLOW_SOL][VISC_BOUND_TERM] = new CFEMVisc_Flow(nDim, nVar_Flow, config);
+      numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CFEMVisc_Flow(nDim, nVar_Flow, config);
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       
-      numerics_container[iMGlevel][FEM_FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceFEM(nDim, nVar_Flow, config);
+      numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceFEM(nDim, nVar_Flow, config);
       
-      numerics_container[iMGlevel][FEM_FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
+      numerics_container[iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
     }
     
   }

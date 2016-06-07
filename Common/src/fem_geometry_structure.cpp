@@ -2741,32 +2741,27 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
 
   /* Define and determine the buffers to send the global indices of my halo
      elements to the appropriate ranks and the vectors which store the
-     DOFs that I will receive from these ranks. */
+     elements that I will receive from these ranks. */
   vector<vector<unsigned long> > longBuf(rankToIndCommBuf.size(), vector<unsigned long>(0));
-  DOFsReceive.resize(rankToIndCommBuf.size());
+  entitiesReceive.resize(rankToIndCommBuf.size());
 
-  for(unsigned long i=0; i<nVolElemTot; ++i) {
-    if( !volElem[i].elemIsOwned ) {
-      MI = rankToIndCommBuf.find(volElem[i].rankOriginal);
-      longBuf[MI->second].push_back(volElem[i].elemIDGlobal);
+  for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i) {
+    MI = rankToIndCommBuf.find(volElem[i].rankOriginal);
+    longBuf[MI->second].push_back(volElem[i].elemIDGlobal);
 
-      for(unsigned long j=0; j<volElem[i].nDOFsSol; ++j)
-        DOFsReceive[MI->second].push_back(volElem[i].offsetDOFsSolLocal+j);
-    }
+    entitiesReceive[MI->second].push_back(i);
   }
 
   /* Determine the mapping from global element ID to local owned element ID. */
   map<unsigned long,unsigned long> globalElemIDToLocalInd;
-  for(unsigned long i=0; i<nVolElemTot; ++i) {
-    if( volElem[i].elemIsOwned )
-      globalElemIDToLocalInd[volElem[i].elemIDGlobal] = i;
-  }
+  for(unsigned long i=0; i<nVolElemOwned; ++i)
+    globalElemIDToLocalInd[volElem[i].elemIDGlobal] = i;
 
-  /* Resize the first index of the vectors to store the DOFs that must be sent. */
-  DOFsSend.resize(rankToIndCommBuf.size());
+  /* Resize the first index of the vectors to store the elements that must be sent. */
+  entitiesSend.resize(rankToIndCommBuf.size());
 
   /*--- Make a distinction between sequential and parallel mode to
-        determine the DOFs to be sent.                 ---*/
+        determine the elements to be sent.  ---*/
 
 #ifdef HAVE_MPI
   /*--- Parallel mode. Send all the data using non-blocking sends. ---*/
@@ -2797,7 +2792,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
                   ranksComm[i], rank, MPI_COMM_WORLD, &status);
 
     /* Loop over the elements of longRecvBuf and set the contents
-       of DOFsSend accordingly. */
+       of entitiesSend accordingly. */
     for(int j=0; j<sizeMess; ++j) {
       map<unsigned long,unsigned long>::const_iterator LMI;
       LMI = globalElemIDToLocalInd.find(longRecvBuf[j]);
@@ -2808,8 +2803,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
         MPI_Finalize();
       }
 
-      for(unsigned long k=0; k<volElem[LMI->second].nDOFsSol; ++k)
-        DOFsSend[i].push_back(volElem[LMI->second].offsetDOFsSolLocal+k);
+      entitiesSend[i].push_back(LMI->second);
     }
   }
 
@@ -2830,8 +2824,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
         exit(EXIT_FAILURE);
       }
 
-      for(unsigned long j=0; j<volElem[LMI->second].nDOFsSol; ++j)
-        DOFsSend[0].push_back(volElem[LMI->second].offsetDOFsSolLocal+j);
+      entitiesSend[0].push_back(LMI->second);
     }
   }
 
@@ -2870,7 +2863,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
 
   /*--- Loop over the volume elements and store the indices of the rotationally
         periodic halo elements in rotPerHalos.     ---*/
-  for(unsigned long i=0; i<nVolElemTot; ++i) {
+  for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i) {
     if(volElem[i].periodIndexToDonor > -1) {
       map<short,unsigned short>::const_iterator SMI;
       SMI = mapRotationalPeriodicToInd.find(volElem[i].periodIndexToDonor);
