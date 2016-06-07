@@ -1682,7 +1682,7 @@ void CFEMFlowIteration::Preprocess(COutput *output,
   
   /*--- Set the initial condition ---*/
   
-  solver_container[val_iZone][MESH_0][FEM_FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
+  solver_container[val_iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], ExtIter);
 
 }
 
@@ -1720,12 +1720,12 @@ void CFEMFlowIteration::Iterate(COutput *output,
   
   /*--- Solve the Euler, Navier-Stokes, RANS or LES equations (one iteration) ---*/
   
-  integration_container[val_iZone][FEM_FLOW_SOL]->MultiGrid_Iteration(geometry_container,
-                                                                       solver_container,
-                                                                       numerics_container,
-                                                                       config_container,
-                                                                       RUNTIME_FLOW_SYS,
-                                                                       IntIter, val_iZone);
+  integration_container[val_iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container,
+                                                                  solver_container,
+                                                                  numerics_container,
+                                                                  config_container,
+                                                                  RUNTIME_FLOW_SYS,
+                                                                  IntIter, val_iZone);
   
 }
 

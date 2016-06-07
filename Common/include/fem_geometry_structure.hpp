@@ -159,6 +159,8 @@ public:
   su2double *massMatrix;             /*!< \brief Pointer to the mass matrix (or the inverse) for this element. */
   su2double *lumpedMassMatrix;       /*!< \brief Pointer to the lumped mass matrix for this element. */
 
+  su2double *solDOFs;                /*!< \brief Pointer to the independent solution variables in the DOFs. */
+
   /*!
    * \brief Constructor of the class. Nothing to be done
    */
@@ -417,16 +419,20 @@ protected:
   vector<unsigned short> rotPerMarkers; /*!< \brief Vector, which contains the indices of the rotational
                                                     periodic markers. */
   vector<vector<unsigned long> > rotPerHalos; /*!< \brief Vector of vector, which contains the indices of
-                                                          to halo elements for which a rotationally periodic
+                                                          the halo elements for which a rotationally periodic
                                                           correction must be applied. */
 
   vector<int> ranksComm;             /*!< \brief Vector of ranks, which this rank exchanges information.
                                                  Self communication is included. */
 
-  vector<vector<unsigned long> > DOFsSend;    /*!< \brief Vector of vector, which contains the DOFs that
-                                                          must be sent. Self communication is included. */
-  vector<vector<unsigned long> > DOFsReceive; /*!< \brief Vector of vector, which contains the DOFs that
-                                                          must be received. Self communication is included. */
+  vector<vector<unsigned long> > entitiesSend;    /*!< \brief Vector of vector, which contains the entities that
+                                                              must be sent. Self communication is included. For DG
+                                                              an entitity is an element, for regular FEM an entity
+                                                              is a DOF. */
+  vector<vector<unsigned long> > entitiesReceive; /*!< \brief Vector of vector, which contains the entities that
+                                                              must be received. Self communication is included. For DG
+                                                              an entity is an element, for regular FEM an entity
+                                                              is a DOF. */
 
   vector<su2double> VecMetricTermsElements;  /*!< \brief Storage for the metric terms of the volume elements. */
   vector<su2double> VecMassMatricesElements; /*!< \brief Storage for the mass matrices of the volume elements. */
@@ -453,6 +459,83 @@ public:
   * \brief Destructor of the class.
   */
   virtual ~CMeshFEM(void);
+
+  /*!
+  * \brief Function, which makes available the boundaries of the local FEM mesh.
+  * \return  Pointer to the boundaries of the local FEM mesh.
+  */
+  CBoundaryFEM *GetBoundaries(void);
+
+  /*!
+  * \brief Function, which makes available the mesh points of the local FEM mesh.
+  * \return  Pointer to the mesh points of the local FEM mesh.
+  */
+  CPointFEM *GetMeshPoints(void);
+
+  /*!
+  * \brief Function, which makes available the number of mesh points of the local FEM mesh.
+  * \return  Number of mesh points of the local FEM mesh.
+  */
+  unsigned long GetNMeshPoints(void);
+
+  /*!
+  * \brief Function, which makes available the number of owned volume elements in the local FEM mesh.
+  * \return  Number of owned volume elements of the local FEM mesh.
+  */
+  unsigned long GetNVolElemOwned(void);
+
+  /*!
+  * \brief Function, which makes available the total number of volume elements in the local FEM mesh.
+  * \return  Total number of volume elements of the local FEM mesh.
+  */
+  unsigned long GetNVolElemTot(void);
+
+  /*!
+  * \brief Function, which makes available the volume elements in the local FEM mesh.
+  * \return  Pointer to the volume elements of the local FEM mesh.
+  */
+  CVolumeElementFEM *GetVolElem(void);
+
+  /*!
+  * \brief Function, which makes available the standard boundary faces of the solution.
+  * \return  Pointer to the standard boundary faces of the solution.
+  */
+  FEMStandardBoundaryFaceClass *GetStandardBoundaryFacesSol(void);
+
+  /*!
+  * \brief Function, which makes available the vector of ranks with which the
+           current rank communicates as a const reference.
+  * \return  Const reference to the vector of ranks.
+  */
+  const vector<int> &GetRanksComm(void) const;
+
+  /*!
+  * \brief Function, which makes available the vector of vectors containing the receive
+           entities as a const reference.
+  * \return  Const reference to the vector of vectors of receive entities.
+  */
+  const vector<vector<unsigned long> > &GetEntitiesReceive(void) const;
+
+  /*!
+  * \brief Function, which makes available the vector of vectors containing the send
+           entities as a const reference.
+  * \return  Const reference to the vector of vectors of send entities.
+  */
+  const vector<vector<unsigned long> > &GetEntitiesSend(void) const;
+
+  /*!
+  * \brief Function, which makes available the vector of rotational periodic markers.
+           Note that a copy of this vector is made.
+  * \return  Copy of the vector with rotational periodic markers.
+  */
+  vector<unsigned short> GetRotPerMarkers(void) const;
+
+  /*!
+  * \brief Function, which makes available the vector of vectors containing the rotational
+           periodic halos. Note that a copy is made.
+  * \return  Copy of the vector of vectors with rotational periodic halos.
+  */
+  vector<vector<unsigned long> > GetRotPerHalos(void) const;
 
   /*! 
   * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
@@ -620,6 +703,30 @@ public:
   * \param[in] config - Definition of the particular problem.
   */
   void CreateStandardVolumeElements(CConfig *config);
+
+ /*!
+  * \brief Function, which makes available the number of matching internal faces.
+  * \return  The number of matching internal faces.
+  */
+  unsigned long GetNMatchingFaces(void);
+
+ /*!
+  * \brief Function, which makes available the matching internal faces.
+  * \return  Pointer to the matching internal faces.
+  */
+  CInternalFaceElementFEM *GetMatchingFaces(void);
+
+ /*!
+  * \brief Function, which makes available the standard volume elements of the solution.
+  * \return  Pointer to the standard volume elements of the solution.
+  */
+  FEMStandardElementClass *GetStandardElementsSol(void);
+
+ /*!
+  * \brief Function, which makes available the standard internal matching faces of the solution.
+  * \return  Pointer to the standard internal matching faces of the solution.
+  */
+  FEMStandardInternalFaceClass *GetStandardMatchingFacesSol(void);
 
  /*!
   * \brief Function, which computes the metric terms of the surface

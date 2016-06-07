@@ -77,6 +77,38 @@ inline CMeshFEM::CMeshFEM(void) { }
 
 inline CMeshFEM::~CMeshFEM(void) { }
 
+inline CBoundaryFEM* CMeshFEM::GetBoundaries(void) {return boundaries.data();}
+
+inline CPointFEM* CMeshFEM::GetMeshPoints(void) {return meshPoints.data();}
+
+inline unsigned long CMeshFEM::GetNMeshPoints(void) {return meshPoints.size();}
+
+inline unsigned long CMeshFEM::GetNVolElemOwned(void) {return nVolElemOwned;}
+
+inline unsigned long CMeshFEM::GetNVolElemTot(void) {return nVolElemTot;}
+
+inline CVolumeElementFEM* CMeshFEM::GetVolElem(void) {return volElem.data();}
+
+inline FEMStandardBoundaryFaceClass* CMeshFEM::GetStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.data();}
+
+inline const vector<int>& CMeshFEM::GetRanksComm(void) const {return ranksComm;}
+
+inline const vector<vector<unsigned long> >& CMeshFEM::GetEntitiesReceive(void) const {return entitiesReceive;}
+
+inline const vector<vector<unsigned long> >& CMeshFEM::GetEntitiesSend(void) const {return entitiesSend;}
+
+inline vector<unsigned short> CMeshFEM::GetRotPerMarkers(void) const {return rotPerMarkers;}
+
+inline vector<vector<unsigned long> > CMeshFEM::GetRotPerHalos(void) const {return rotPerHalos;}
+
 inline CMeshFEM_DG::CMeshFEM_DG(void) { }
 
 inline CMeshFEM_DG::~CMeshFEM_DG(void) { }
+
+inline unsigned long CMeshFEM_DG::GetNMatchingFaces(void) {return matchingFaces.size();}
+
+inline CInternalFaceElementFEM* CMeshFEM_DG::GetMatchingFaces(void) {return matchingFaces.data();}
+
+inline FEMStandardElementClass* CMeshFEM_DG::GetStandardElementsSol(void) {return standardElementsSol.data();}
+
+inline FEMStandardInternalFaceClass* CMeshFEM_DG::GetStandardMatchingFacesSol(void) {return standardMatchingFacesSol.data();}
