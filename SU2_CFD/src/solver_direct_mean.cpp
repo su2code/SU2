@@ -8422,7 +8422,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
                   TotalAreaVelocity[iDim] += Area*Velocity[iDim];
                 break;
 
-              case MASS_AVERAGE:
+              case MASSFLOW_AVERAGE:
                 TotalMassFlow     += Area*(Density*VelNormal ); //?
                 TotalMassPressure += Area*(Density*VelNormal )*Pressure;
                 TotalMassDensity  += Area*(Density*VelNormal )*Density;
@@ -8519,7 +8519,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
                 AverageVelocity[iMarker][iSpan][iDim] = TotalAreaVelocity[iDim] / TotalArea;
               break;
 
-            case MASS_AVERAGE:
+            case MASSFLOW_AVERAGE:
               AverageDensity[iMarker][iSpan] = TotalMassDensity / TotalMassFlow;
               AveragePressure[iMarker][iSpan] = TotalMassPressure / TotalMassFlow;
               for (iDim = 0; iDim < nDim; iDim++)
@@ -8758,7 +8758,7 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
                   TotalAreaVelocity[iDim] += Area*Velocity[iDim];
                 break;
 
-              case MASS_AVERAGE:
+              case MASSFLOW_AVERAGE:
                 TotalMassFlow     += Area*(Density*VelNormal ); //?
                 TotalMassPressure += Area*(Density*VelNormal )*Pressure;
                 TotalMassDensity  += Area*(Density*VelNormal )*Density;
@@ -8857,7 +8857,7 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
               AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalAreaVelocity[iDim] / TotalArea;
             break;
 
-          case MASS_AVERAGE:
+          case MASSFLOW_AVERAGE:
             AverageDensity[iMarker][nSpanWiseSections] = TotalMassDensity / TotalMassFlow;
             AveragePressure[iMarker][nSpanWiseSections] = TotalMassPressure / TotalMassFlow;
             for (iDim = 0; iDim < nDim; iDim++)
