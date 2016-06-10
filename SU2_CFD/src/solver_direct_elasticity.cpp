@@ -2,7 +2,7 @@
  * \file solver_direct_elasticity.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1883,10 +1883,6 @@ void CFEM_ElasticitySolver::Compute_IntegrationConstants(CConfig *config) {
   
   su2double delta = config->GetNewmark_delta(), alpha = config->GetNewmark_alpha();
   
-  su2double beta = config->Get_Int_Coeffs(0);
-  //	su2double gamma =  config->Get_Int_Coeffs(1);
-  su2double alpha_f = config->Get_Int_Coeffs(2), alpha_m =  config->Get_Int_Coeffs(3);
-  
   switch (config->GetKind_TimeIntScheme_FEA()) {
     case (CD_EXPLICIT):
       cout << "NOT IMPLEMENTED YET" << endl;
@@ -1912,15 +1908,19 @@ void CFEM_ElasticitySolver::Compute_IntegrationConstants(CConfig *config) {
       /*--- Integration constants for Generalized Alpha ---*/
       /*--- Needs to be updated if accounting for structural damping ---*/
       
-      a_dt[0]= (1 / (beta*pow(Delta_t,2.0))) * ((1 - alpha_m) / (1 - alpha_f)) ;
-      a_dt[1]= 0.0 ;
-      a_dt[2]= (1 - alpha_m) / (beta*Delta_t);
-      a_dt[3]= ((1 - 2*beta)*(1-alpha_m) / (2*beta)) - alpha_m;
-      a_dt[4]= 0.0;
-      a_dt[5]= 0.0;
-      a_dt[6]= Delta_t * (1-delta);
-      a_dt[7]= delta * Delta_t;
-      a_dt[8]= (1 - alpha_m) / (beta*pow(Delta_t,2.0));
+//      su2double beta = config->Get_Int_Coeffs(0);
+//      //	su2double gamma =  config->Get_Int_Coeffs(1);
+//      su2double alpha_f = config->Get_Int_Coeffs(2), alpha_m =  config->Get_Int_Coeffs(3);
+//      
+//      a_dt[0]= (1 / (beta*pow(Delta_t,2.0))) * ((1 - alpha_m) / (1 - alpha_f)) ;
+//      a_dt[1]= 0.0 ;
+//      a_dt[2]= (1 - alpha_m) / (beta*Delta_t);
+//      a_dt[3]= ((1 - 2*beta)*(1-alpha_m) / (2*beta)) - alpha_m;
+//      a_dt[4]= 0.0;
+//      a_dt[5]= 0.0;
+//      a_dt[6]= Delta_t * (1-delta);
+//      a_dt[7]= delta * Delta_t;
+//      a_dt[8]= (1 - alpha_m) / (beta*pow(Delta_t,2.0));
       
       break;
   }

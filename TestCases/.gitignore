@@ -11,6 +11,7 @@
 # Things appearing in TestCases/ repo to ignore:
 *.su2
 *.dat
+*.vtk
 *.csv
 *.plt
 *.pw
@@ -21,3 +22,5 @@ COPYING
 README.md
 *.autotest
 config_*.cfg
+*.ref
+*.eqn

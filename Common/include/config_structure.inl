@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -612,6 +612,8 @@ inline unsigned long CConfig::GetGridDef_Nonlinear_Iter(void) { return GridDef_N
 inline bool CConfig::GetDeform_Output(void) { return Deform_Output; }
 
 inline su2double CConfig::GetDeform_Tol_Factor(void) { return Deform_Tol_Factor; }
+
+inline su2double CConfig::GetDeform_Coeff(void) { return Deform_Coeff; }
 
 inline su2double CConfig::GetDeform_ElasticityMod(void) { return Deform_ElasticityMod; }
 

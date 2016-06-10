@@ -2,7 +2,7 @@
  * \file solver_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author F. Palacios, T. Economon
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1820,6 +1820,8 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 	/*--- It's necessary to communicate this information ---*/
 
 	geometry->Set_MPI_OldCoord(config);
+  
+  delete [] Coord;
 
 }
 

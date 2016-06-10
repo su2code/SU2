@@ -4,7 +4,7 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -49,7 +49,7 @@ using namespace std;
  * \class CVariable
  * \brief Main class for defining the variables.
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CVariable {
 protected:
@@ -2109,7 +2109,7 @@ public:
  * \class CBaselineVariable
  * \brief Main class for defining the variables of a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CBaselineVariable : public CVariable {
 public:
@@ -2139,7 +2139,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CPotentialVariable : public CVariable {
 	su2double *Charge_Density;
@@ -2183,7 +2183,7 @@ public:
  * \brief Main class for defining the variables of the wave equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CWaveVariable : public CVariable {
 protected:
@@ -2229,7 +2229,7 @@ public:
  * \brief Main class for defining the variables of the Heat equation solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CHeatVariable : public CVariable {
 protected:
@@ -2730,7 +2730,7 @@ public:
  * \brief Main class for defining the variables of the Euler's solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CEulerVariable : public CVariable {
 protected:
@@ -3214,7 +3214,7 @@ public:
  * \brief Main class for defining the variables of the Navier-Stokes' solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CNSVariable : public CEulerVariable {
 private:
@@ -3415,7 +3415,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CTurbVariable : public CVariable {
 protected:
@@ -3459,7 +3459,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CTurbSAVariable : public CTurbVariable {
@@ -3506,7 +3506,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CTurbMLVariable : public CTurbVariable {
@@ -3552,7 +3552,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CTransLMVariable : public CTurbVariable {
@@ -3605,7 +3605,7 @@ public:
  * \brief Main class for defining the variables of the turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CTurbSSTVariable : public CTurbVariable {
@@ -3670,7 +3670,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Euler solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAdjEulerVariable : public CVariable {
 protected:
@@ -3792,7 +3792,7 @@ public:
  * \brief Main class for defining the variables of the adjoint Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAdjNSVariable : public CAdjEulerVariable {	
 private:
@@ -3864,7 +3864,7 @@ public:
  * \brief Main class for defining the variables of the adjoint turbulence model.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAdjTurbVariable : public CVariable {
 protected:
@@ -3914,7 +3914,7 @@ public:
  * \brief Main class for defining the variables of the Level Set.
  * \ingroup LevelSet_Model
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CAdjLevelSetVariable : public CVariable {
 public:
@@ -3952,7 +3952,7 @@ public:
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CTemplateVariable : public CVariable {
 public:
@@ -3982,7 +3982,7 @@ public:
  * \brief Main class for defining the variables of the adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring.
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 class CDiscAdjVariable : public CVariable {
 private:
