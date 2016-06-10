@@ -2014,6 +2014,21 @@ public:
 	 * \return Pointer to the solution (at time n) vector.
 	 */
 	virtual su2double *GetSolution_Pred_Old(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetPrestretch(unsigned short iVar, su2double val_prestretch);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double *GetPrestretch(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double GetPrestretch(unsigned short iVar);
   
   /*!
    * \brief Register the variables in the solution array as input/output variable.
@@ -2289,6 +2304,8 @@ protected:
 
 	su2double *Solution_Pred,					/*!< \brief Predictor of the solution for FSI purposes */
 	*Solution_Pred_Old;						/*!< \brief Predictor of the solution at time n for FSI purposes */
+
+  su2double *Prestretch;        /*!< \brief Prestretch geometry */
 
 
 public:
@@ -2621,6 +2638,21 @@ public:
 	 * \return Pointer to the solution (at time n) vector.
 	 */
 	su2double *GetSolution_Pred_Old(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  void SetPrestretch(unsigned short iVar, su2double val_prestretch);
+
+  /*!
+   * \brief A virtual member.
+   */
+  su2double *GetPrestretch(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  su2double GetPrestretch(unsigned short iVar);
 
 	/*!
 	 * \brief Set the value of the Von Mises stress.

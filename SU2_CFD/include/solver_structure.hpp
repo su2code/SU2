@@ -2672,6 +2672,13 @@ public:
 	 */
 	virtual su2double GetFSI_ConvValue(unsigned short val_index);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Set_Prestretch(CGeometry *geometry, CConfig *config);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -7212,6 +7219,13 @@ public:
 	 * \param[in] Value of the coefficient
 	 */
 	void SetLoad_Increment(su2double val_loadIncrement);
+
+  /*!
+   * \brief Set a reference geometry for prestretched conditions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_Prestretch(CGeometry *geometry, CConfig *config);
 
 
 };
