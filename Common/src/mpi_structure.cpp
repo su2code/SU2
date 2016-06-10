@@ -295,8 +295,8 @@ void CAuxMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count,
     su2double* SendBuffer = static_cast< su2double*>(sendbuf);
     su2double* RecvBuffer = static_cast< su2double*>(recvbuf);
 
-    double  *SendAuxBuffer, *SendValueBuffer,
-            *RecvAuxBuffer, *RecvValueBuffer;
+    double  *SendAuxBuffer = NULL, *SendValueBuffer = NULL,
+            *RecvAuxBuffer = NULL, *RecvValueBuffer = NULL;
 
     unsigned long iVal = 0;
 
@@ -387,7 +387,7 @@ void CAuxMPIWrapper::Gather(void *sendbuf, int sendcnt,
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
 
-    double *RecvValueBuffer, *RecvAuxBuffer;
+    double *RecvValueBuffer = NULL, *RecvAuxBuffer = NULL;
 
     if (rank == root) {
       RecvValueBuffer = new double[recvcnt*size];
@@ -437,7 +437,7 @@ void CAuxMPIWrapper::Scatter(void *sendbuf, int sendcnt,
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
 
-    double *RecvValueBuffer, *RecvAuxBuffer;
+    double *RecvValueBuffer = NULL, *RecvAuxBuffer = NULL;
 
     RecvValueBuffer = new double[recvcnt*size];
     RecvAuxBuffer   = new double[recvcnt*size];
