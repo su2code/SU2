@@ -1623,15 +1623,10 @@ CBOUND2D::CBOUND2D(void) : CElement() {
 CBOUND2D::CBOUND2D(unsigned short val_nDim, CConfig *config)
 : CElement(val_nDim, config) {
 
-  unsigned short iNode, iGauss, jNode;
-  unsigned short nDimSq;
-
-  bool body_forces = config->GetDeadLoad(); // Body forces (dead loads).
+  unsigned short iNode, iGauss;
 
   nNodes = 2;
   nGaussPoints = 2;
-
-  nDimSq = nDim*nDim;
 
   GaussPoint = new CGaussVariable*[nGaussPoints];
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
@@ -1674,7 +1669,7 @@ CBOUND2D::CBOUND2D(unsigned short val_nDim, CConfig *config)
 
 CBOUND2D::~CBOUND2D(void) {
 
-  unsigned short iVar, jVar;
+  unsigned short iVar;
 
   for (iVar = 0; iVar < nGaussPoints; iVar++){
     delete [] GaussCoord[iVar];
@@ -1690,15 +1685,12 @@ CBOUND2D::~CBOUND2D(void) {
 
 void CBOUND2D::ComputeGrad_Linear(void){
 
-  su2double Xi, Eta;
   su2double Jacobian[2][2], dNiXj[2][1];
   su2double detJac, GradNi_Xj;
   su2double ad[2][2];
   unsigned short iNode, iDim, jDim, iGauss;
 
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
-
-    Xi = GaussCoord[iGauss][0];
 
     /*--- dN/d xi ---*/
 
@@ -1756,15 +1748,12 @@ void CBOUND2D::ComputeGrad_Linear(void){
 
 void CBOUND2D::ComputeGrad_NonLinear(void){
 
-  su2double Xi, Eta;
   su2double Jac_Ref[2][2], Jac_Curr[2][2], dNiXj[4][2];
   su2double detJac_Ref, detJac_Curr, GradNi_Xj_Ref, GradNi_Xj_Curr;
   su2double ad_Ref[2][2], ad_Curr[2][2];
   unsigned short iNode, iDim, jDim, iGauss;
 
   for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
-
-    Xi = GaussCoord[iGauss][0];
 
     /*--- dN/d xi ---*/
 

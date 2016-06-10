@@ -994,7 +994,6 @@ void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config)
   unsigned short nZone = geometry->GetnZone();
 
   string filename;
-  su2double dull_val;
   ifstream prestretch_file;
 
   int rank = MASTER_NODE;
@@ -1201,7 +1200,6 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
    */
   unsigned short iMarker;
   unsigned long iVertex;
-  su2double NormalLoad = 0.0;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     switch (config->GetMarker_All_KindBC(iMarker)) {
@@ -2181,7 +2179,6 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
     unsigned short nNodes;
     su2double Length_Elem_ref = 0.0,  Area_Elem_ref = 0.0;
     su2double Length_Elem_curr = 0.0, Area_Elem_curr = 0.0;
-    int EL_KIND = 0;
     unsigned long indexNode[4]   = {0,0,0,0};
     unsigned long indexVertex[4] = {0,0,0,0};
     su2double nodeCoord_ref[4][3], nodeCoord_curr[4][3];
@@ -2206,13 +2203,6 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
       }
     }
 
-//    ofstream myfile;
-//    myfile.open ("pressure_load.txt", std::ios_base::app);
-
-//    myfile << "Index node[0], Index node[1],  Coord Ref 1 [0], Coord Ref 1 [1], Coord Ref 2 [0], Coord Ref 2 [1],";
-//    myfile << "Coord Curr 1 [0], Coord Curr 1 [1], Coord Curr 2 [0], Coord Curr 2 [1], indexVertex[0], indexVertex[1]";
-//    myfile << "nodal_normal_unit [0], nodal_normal_unit [1], normal_curr_unit[0], normal_curr_unit[1], Pressure[0], Pressure[1]" << endl;
-
     for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
 
       /*--- Identify the kind of boundary element ---*/
@@ -2232,11 +2222,6 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
         }
       }
 
-//      if (iElem == 10) myfile  << indexNode[0] << "," << indexNode[1] << ",";
-//      if (iElem == 10) myfile << nodeCoord_ref[0][0] << "," << nodeCoord_ref[0][1] << "," << nodeCoord_ref[1][0] << "," << nodeCoord_ref[1][1] << ",";
-//      if (iElem == 10) myfile << nodeCoord_curr[0][0] << "," << nodeCoord_curr[0][1] << "," << nodeCoord_curr[1][0] << "," << nodeCoord_curr[1][1] << ",";
-
-
       /*--- We need the indices of the vertices, which are "Dual Grid Info" ---*/
       for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
         iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -2244,8 +2229,6 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
           if (iPoint == indexNode[iNode]) indexVertex[iNode] = iVertex;
         }
       }
-
-//      if (iElem == 10) myfile << indexVertex[0] << "," << indexVertex[1] << ",";
 
       /*--- Retrieve the reference normal for one of the points. They go INSIDE the structural domain. ---*/
       nodal_normal = geometry->vertex[val_marker][indexVertex[0]]->GetNormal();
@@ -2257,8 +2240,6 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
       for (iDim = 0; iDim < nDim; iDim++){
         nodal_normal_unit[iDim] = nodal_normal[iDim] / Norm;
       }
-
-//      if (iElem == 10) myfile << nodal_normal_unit[0] << "," << nodal_normal_unit[1] << ",";
 
       /*--- Compute area (3D), and length of the surfaces (2D), and the unitary normal vector in current configuration ---*/
 
@@ -2297,8 +2278,6 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
           }
         }
 
-//        if (iElem == 10) myfile << normal_curr_unit[0] << "," << normal_curr_unit[1] << ",";
-
         if (linear_analysis){
           Residual[0] = (1.0/2.0) * TotalLoad * Length_Elem_ref * normal_ref_unit[0];
           Residual[1] = (1.0/2.0) * TotalLoad * Length_Elem_ref * normal_ref_unit[1];
@@ -2313,8 +2292,6 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
           node[indexNode[0]]->Add_SurfaceLoad_Res(Residual);
           node[indexNode[1]]->Add_SurfaceLoad_Res(Residual);
         }
-
-//        if (iElem == 10) myfile << Residual[0] << "," << Residual[1] << endl;
 
       }
 
@@ -2445,7 +2422,6 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
             Residual[0] = (1.0/4.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[0];
             Residual[1] = (1.0/4.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[1];
             Residual[2] = (1.0/4.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[2];
-            Residual[3] = (1.0/4.0) * TotalLoad * Area_Elem_ref * normal_ref_unit[3];
 
             node[indexNode[0]]->Add_SurfaceLoad_Res(Residual);
             node[indexNode[1]]->Add_SurfaceLoad_Res(Residual);
@@ -2456,7 +2432,6 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
             Residual[0] = (1.0/4.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[0];
             Residual[1] = (1.0/4.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[1];
             Residual[2] = (1.0/4.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[2];
-            Residual[3] = (1.0/4.0) * TotalLoad * Area_Elem_curr * normal_curr_unit[3];
 
             node[indexNode[0]]->Add_SurfaceLoad_Res(Residual);
             node[indexNode[1]]->Add_SurfaceLoad_Res(Residual);
@@ -2469,11 +2444,7 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
       }
 
 
-
-
     }
-
-//    myfile.close();
 
   }
 
