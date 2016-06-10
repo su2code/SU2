@@ -137,7 +137,6 @@ inline unsigned short CConfig::GetElas2D_Formulation(void) { return Kind_2DElasF
 
 inline su2double CConfig::GetPoissonRatio(void) { return PoissonRatio; }
 
-
 inline su2double CConfig::GetMaterialDensity(void) { return MaterialDensity; }
 
 inline unsigned short CConfig::GetMaterialCompressibility(void) { return Kind_Material_Compress; }
@@ -145,6 +144,10 @@ inline unsigned short CConfig::GetMaterialCompressibility(void) { return Kind_Ma
 inline unsigned short CConfig::GetMaterialModel(void) { return Kind_Material; }
 
 inline unsigned short CConfig::GetGeometricConditions(void) { return Kind_Struct_Solver; }
+
+inline bool CConfig::GetPrestretch(void) { return Prestretch; }
+
+inline string CConfig::GetPrestretch_FEMFileName(void) { return Prestretch_FEMFileName; }
 
 inline su2double CConfig::GetRefLengthMoment(void) { return RefLengthMoment; }
 
