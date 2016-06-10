@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -550,7 +550,7 @@ int main(int argc, char *argv[]) {
 
   /*Deallocate config container*/
   if (rank == MASTER_NODE)
-        cout << endl <<"------------------------ Config Postprocessing ------------------------" << endl;
+        cout << endl <<"------------------------- Config Postprocessing -------------------------" << endl;
   if (config_container!=NULL){
     for (iZone = 0; iZone < nZone; iZone++) {
       if (config_container[iZone]!=NULL){
