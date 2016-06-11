@@ -1194,7 +1194,7 @@ su2double CVolumetricMovement::GetTetra_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   return Volume;
   
@@ -1221,7 +1221,7 @@ su2double CVolumetricMovement::GetPyram_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[2];
@@ -1238,7 +1238,7 @@ su2double CVolumetricMovement::GetPyram_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   return Volume;
 
@@ -1265,7 +1265,7 @@ su2double CVolumetricMovement::GetPrism_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
     
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[5];
@@ -1282,7 +1282,7 @@ su2double CVolumetricMovement::GetPrism_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[5];
@@ -1299,7 +1299,7 @@ su2double CVolumetricMovement::GetPrism_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   return Volume;
 
@@ -1326,7 +1326,7 @@ su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[2];
@@ -1343,7 +1343,7 @@ su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[2];
@@ -1360,7 +1360,7 @@ su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[5];
@@ -1377,7 +1377,7 @@ su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[2];
   Coord_1 = CoordCorners[7];
@@ -1394,7 +1394,7 @@ su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   return Volume;
 
