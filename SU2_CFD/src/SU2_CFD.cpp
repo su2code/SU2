@@ -31,6 +31,11 @@
 
 #include "../include/SU2_CFD.hpp"
 
+/* LIBXSMM include files, if supported. */
+#ifdef HAVE_LIBXSMM
+#include "libxsmm.h"
+#endif
+
 using namespace std;
 
 int main(int argc, char *argv[]) {
@@ -53,6 +58,11 @@ int main(int argc, char *argv[]) {
   MPI_Buffer_attach( malloc(BUFSIZE), BUFSIZE );
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
+  /*--- Initialize libxsmm, if supported. ---*/
+#ifdef HAVE_LIBXSMM
+  libxsmm_init();
 #endif
   
   /*--- Create pointers to all of the classes that may be used throughout
@@ -610,6 +620,11 @@ int main(int argc, char *argv[]) {
     cout << "\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
     if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
   }
+
+  /*---Finalize libxsmm, if supported. ---*/
+#ifdef HAVE_LIBXSMM
+  libxsmm_finalize();
+#endif
   
   /*--- Exit the solver cleanly ---*/
   

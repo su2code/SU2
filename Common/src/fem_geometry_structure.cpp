@@ -31,6 +31,11 @@
 
 #include "../include/fem_geometry_structure.hpp"
 
+/* LIBXSMM include files, if supported. */
+#ifdef HAVE_LIBXSMM
+#include "libxsmm.h"
+#endif
+
 /* MKL, BLAS and LAPACK include files, if supported. */
 #ifdef HAVE_MKL
 #include "mkl.h"
@@ -1478,11 +1483,11 @@ void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
                                             const unsigned long  *DOFs,
                                             su2double            *derivCoor) {
 
-  /*--- Make a distinction whether BLAS routines must be used to carry
+  /*--- Make a distinction whether libxsmm/blas routines must be used to carry
         out the multiplication or a standard implementation must be used. ---*/
-#if defined (HAVE_CBLAS) || defined(HAVE_MKL)
+#if defined (HAVE_CBLAS) || defined(HAVE_MKL) || defined(HAVE_LIBXSMM)
 
-  /* Allocate the memory to store the coordinates as right hand side. when
+  /* Allocate the memory to store the coordinates as right hand side. When
      the MKL is used, a specialized allocation is used to increase performance. */
   su2double *vecRHS;
 
@@ -1501,9 +1506,15 @@ void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
       vecRHS[ic] = meshPoints[DOFs[j]].coor[k];
   }
 
-  /* Carry out the matrix matrix product using the blas routine dgemm. */
+  /* Carry out the matrix matrix product using the libxsmm routine libxsmm_gemm
+     or the blas routine dgemm. */
+#ifdef HAVE_LIBXSMM
+  libxsmm_gemm(NULL, NULL, nDim*nIntegration, nDim, nDOFs, NULL, matDerBasisInt,
+               NULL, vecRHS, NULL, NULL, derivCoor, NULL);
+#else
   cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nDim*nIntegration, nDim,
               nDOFs, 1.0, matDerBasisInt, nDOFs, vecRHS, nDim, 0.0, derivCoor, nDim);
+#endif
 
   /* Release the memory of vecRHS in case the MKL was used. */
 #ifdef HAVE_MKL
@@ -4562,39 +4573,6 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
   /*---         and the Jacobian in the integration points of the owned    ---*/
   /*---         volume elements.                                           ---*/
   /*--------------------------------------------------------------------------*/
-
-#if defined (HAVE_CBLAS) || defined(HAVE_MKL)
-
-  /* In case the Lapack/Blas routines must be used, some help arrays must
-     be allocated. Determine the sizes of these help arrays by looping
-     over the standard volume elements. */
-  unsigned long sizeResult = 0, sizeRHS = 0;
-
-  for(unsigned long i=0; i<standardElementsGrid.size(); ++i) {
-    unsigned long thisSize = standardElementsGrid[i].GetNIntegration();
-    sizeResult = max(sizeResult, thisSize);
-
-    thisSize = standardElementsGrid[i].GetNDOFs();
-    sizeRHS  = max(sizeRHS, thisSize);
-  }
-
-  sizeResult *= nDim*nDim;
-  sizeRHS    *= nDim;
-
-  /* Allocate the memory. In case the MKL is used, a specialized allocation
-     is used to optimize performance. */
-  su2double *vecResult, *vecRHS;
-
-#ifdef HAVE_MKL
-  vecResult = (su2double *) mkl_malloc(sizeResult*sizeof(su2double), 64);
-  vecRHS    = (su2double *) mkl_malloc(sizeRHS   *sizeof(su2double), 64);
-#else
-  vector<su2double> helpVecResult(sizeResult), helpVecRHS(sizeRHS);
-  vecResult = helpVecResult.data();
-  vecRHS    = helpVecRHS.data();
-#endif
-
-#endif
 
   /* Loop over the owned volume elements. */
   sizeMetric = 0;
