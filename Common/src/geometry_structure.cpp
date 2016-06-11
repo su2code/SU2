@@ -31,6 +31,11 @@
 
 #include "../include/geometry_structure.hpp"
 
+/* LIBXSMM include files, if supported. */
+#ifdef HAVE_LIBXSMM
+#include "libxsmm.h"
+#endif
+
 /* MKL or BLAS include files, if supported. */
 #ifdef HAVE_MKL
 #include "mkl.h"
@@ -12108,11 +12113,11 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
         vecRHS[jj] = node[ind]->GetCoord(k);
     }
 
-    /*--- Make a distinction whether BLAS routines must be used to carry
+    /*--- Make a distinction whether libxsmm/blas routines must be used to carry
           out the multiplication or a standard implementation must be used. ---*/
-#if defined (HAVE_CBLAS) || defined(HAVE_MKL)
+#if defined (HAVE_CBLAS) || defined(HAVE_MKL) || defined(HAVE_LIBXSMM)
 
-    /*--- Lapack routines must be used to compute the matrix product.
+    /*--- Libxsmm/blas routines must be used to compute the matrix product.
           Get the pointer to the matrix storage of the basis functions and its
           derivatives. The first nDOFs*nIntegration entries of this matrix
           correspond to the interpolation data to the integration points
@@ -12120,9 +12125,15 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
     const su2double *matBasisInt    = standardElements[ii].GetMatBasisFunctionsIntegration();
     const su2double *matDerBasisInt = &matBasisInt[nDOFs*nIntegration];
 
-    /* Carry out the matrix matrix product using the blas routine dgemm. */
+    /* Carry out the matrix matrix product using the libxsmm routine libxsmm_gemm
+       or the blas routine dgemm. */
+#ifdef HAVE_LIBXSMM
+    libxsmm_gemm(NULL, NULL, nDim*nIntegration, nDim, nDOFs, NULL, matDerBasisInt,
+                 NULL, vecRHS, NULL, NULL, vecResult, NULL);
+#else
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nDim*nIntegration, nDim, nDOFs,
                 1.0, matDerBasisInt, nDOFs, vecRHS, nDim, 0.0, vecResult, nDim);
+#endif
 
     /*--- Make a distinction between a 2D and 3D element. ---*/
     switch( nDim ) {
