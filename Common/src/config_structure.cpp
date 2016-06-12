@@ -73,7 +73,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   /*--- Reading config options  ---*/
   
-  SetConfig_Options(1, 1);
+  SetConfig_Options(0, 1);
 
   /*--- Parsing the config file  ---*/
   
@@ -81,7 +81,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   /*--- Configuration file postprocessing ---*/
   
-  SetPostprocessing(val_software, 1, 1);
+  SetPostprocessing(val_software, 0, 1);
   
 }
 
@@ -167,6 +167,8 @@ void CConfig::SetPointersNull(void) {
   Kappa_Flow = NULL;    Kappa_AdjFlow = NULL;
   Section_Location = NULL;
   ParamDV=NULL;     DV_Value = NULL;    Design_Variable=NULL;
+  MG_PreSmooth = NULL;
+  MG_PostSmooth = NULL;
   MG_CorrecSmooth = NULL;
   Subsonic_Engine_Box = NULL;
   Hold_GridFixed_Coord=NULL;
@@ -1155,6 +1157,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("MATERIAL_MODEL", Kind_Material, Material_Map, LINEAR_ELASTIC);
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Compressibility of the material \n OPTIONS: see \link MatComp_Map \endlink \ingroup Config*/
   addEnumOption("MATERIAL_COMPRESSIBILITY", Kind_Material_Compress, MatComp_Map, COMPRESSIBLE_MAT);
+
+  /*  DESCRIPTION: Consider a prestretch in the structural domain
+  *  Options: NO, YES \ingroup Config */
+  addBoolOption("PRESTRETCH", Prestretch, false);
+  /*!\brief PRESTRETCH_FILENAME \n DESCRIPTION: Filename to input for prestretching membranes \n Default: prestretch_file.dat \ingroup Config */
+  addStringOption("PRESTRETCH_FILENAME", Prestretch_FEMFileName, string("prestretch_file.dat"));
 
   /* DESCRIPTION: Iterative method for non-linear structural analysis */
   addEnumOption("NONLINEAR_FEM_SOLUTION_METHOD", Kind_SpaceIteScheme_FEA, Space_Ite_Map_FEA, NEWTON_RAPHSON);
