@@ -668,7 +668,7 @@ def main():
     brick_hex_rans_def.cfg_dir   = "deformation/brick_hex_rans"
     brick_hex_rans_def.cfg_file  = "def_brick_hex_rans.cfg"
     brick_hex_rans_def.test_iter = 50
-    brick_hex_rans_def.test_vals = [9.29371e-16] #residual
+    brick_hex_rans_def.test_vals = [9.26657e-16] #residual
     brick_hex_rans_def.su2_exec  = "SU2_DEF"
     brick_hex_rans_def.timeout   = 1600
     brick_hex_rans_def.tol       = 1e-16
