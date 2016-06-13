@@ -1300,6 +1300,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 		
 		su2double target_iMidEdge_point[3], target_jMidEdge_point[3], donor_iMidEdge_point[3], donor_jMidEdge_point[3], Direction[3];
 		su2double length, m, dTMP;
+		unsigned long nDonorPoints;
 		
 		int* SuperMesh_Node_Index; // Index, referred to donor or target grid, to retrieve node coordinates 
 		bool* SuperMesh_Node_Owner; // 0 = donor grid owns the node, 1 = target grid owns the node
@@ -1323,6 +1324,8 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 		for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
 			
 			m = 0;
+			
+			nDonorPoints = 0;
 			
 			mindist = 1E6;
 			
@@ -1415,6 +1418,8 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 							
 				if ( Intersection == 0.0 )
 					check = true;
+					
+				nDonorPoints++;
 			}
 		
 		
@@ -1463,6 +1468,8 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 								
 					if ( Intersection == 0.0 )
 						check = true;
+						
+					nDonorPoints++;
 			}
 			
 			
@@ -1473,6 +1480,9 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 				cout << endl;
 				getchar();
 			}
+			
+			cout << nDonorPoints << endl; getchar();
+			target_geometry->vertex[markTarget][iVertexTarget]->SetnDonorPoints(nDonorPoints);
 		
 		}
 
