@@ -1296,15 +1296,16 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 		int target_StartIndex, donor_StartIndex, iTMP, iPoint, jPoint, iEdge, nEdges, EdgeIndex;
 		int donor_iPoint, donor_jPoint, target_iPoint, target_jPoint, sIndex;
 		int donor_OldiPoint, target_OldiPoint;
-		int target_forward_point, target_backward_point;
+		int target_forward_point, target_backward_point, donor_forward_point, donor_backward_point;
 		
 		su2double target_iMidEdge_point[3], target_jMidEdge_point[3], donor_iMidEdge_point[3], donor_jMidEdge_point[3], Direction[3];
+		su2double length, m, dTMP;
 		
 		int* SuperMesh_Node_Index; // Index, referred to donor or target grid, to retrieve node coordinates 
 		bool* SuperMesh_Node_Owner; // 0 = donor grid owns the node, 1 = target grid owns the node
 		
 		su2double *donor_EdgeNormal, *target_EdgeNormal;
-		su2double dot, dist;
+		su2double dot, dist, Intersection;
 		bool check;
 		
 		su2double edge[3];
@@ -1318,15 +1319,17 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 		
 		SuperMesh_Node_Index = new  int[nVertexDonor + nVertexTarget];
 		SuperMesh_Node_Owner = new bool[nVertexDonor + nVertexTarget];
-		
-		
-		
+			
 		for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
 			
-			target_StartIndex = targte_geometry->vertex[markTarget][iVertex]->GetNode();
+			m = 0;
+			
+			mindist = 1E6;
+			
+			target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
 			
 			for (iDim = 0; iDim < nDim; iDim++)
-				Coord_i[iDim] = target_geometry->node[target_StartIndex]->GetCoord(iDim);
+				Coord_i[iDim] = target_geometry->node[target_iPoint]->GetCoord(iDim);
 			
 			for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
 				donor_iPoint = donor_geometry->vertex[markDonor][jVertex]->GetNode();
@@ -1347,41 +1350,131 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 					break;
 			}
 
-			donor_iPoint  =  donor_StartIndex;
+			donor_iPoint    = donor_StartIndex;
 			donor_OldiPoint = -1;
-			donor_backward_point = -1;
 			
-			target_forward_point  = FindNextNode_2D(target_geometry,                   -1, target_iPoint, markTarget);
-			target_backward_point = FindNextNode_2D(target_geometry, target_forward_point, target_iPoint, markTarget);
+			target_forward_point  = FindNextNode_2D(target_geometry,                    -1, target_iPoint, markTarget);
+			target_backward_point = FindNextNode_2D(target_geometry,  target_forward_point, target_iPoint, markTarget);
 			
+			dTMP = 0;
 			for(iDim = 0; iDim < nDim; iDim++){
-				target_iMidEdge_point[iDim] = ( target_geometry->node[target_forward_point ]->GetCoord(iDim) + target_geometry->node[ target_iPoint ]->GetCoord(iDim) );
-				target_jMidEdge_point[iDim] = ( target_geometry->node[target_backward_point]->GetCoord(iDim) + target_geometry->node[ target_iPoint ]->GetCoord(iDim) );
-				Direction = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
+				target_iMidEdge_point[iDim] = ( target_geometry->node[target_forward_point ]->GetCoord(iDim) + target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
+				target_jMidEdge_point[iDim] = ( target_geometry->node[target_backward_point]->GetCoord(iDim) + target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
+				Direction[iDim] = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
+				dTMP += Direction[iDim] * Direction[iDim];
 			}
-
+			
+			dTMP = sqrt(dTMP);
+			for(iDim = 0; iDim < nDim; iDim++)
+				Direction[iDim] /= dTMP;
+			/*
+			cout << iVertex << endl;
+			for(iDim = 0; iDim < nDim; iDim++)
+				cout << target_iMidEdge_point[iDim] << "  ";
+			cout << endl;
+			for(iDim = 0; iDim < nDim; iDim++)
+				cout << target_jMidEdge_point[iDim] << "  ";
+			cout << endl;cout << endl;
+			*/
 			check = false;
+			
+			//cout << "forw" << endl;
 
 			while( !check ){
 				
-				donor_forward_point  = FindNextNode_2D(donor_geometry, donor_backward_point, donor_iPoint, markDonor);
+				donor_forward_point  = FindNextNode_2D(donor_geometry,      donor_OldiPoint, donor_iPoint, markDonor);
 				donor_backward_point = FindNextNode_2D(donor_geometry,  donor_forward_point, donor_iPoint, markDonor);
 				
 				for(iDim = 0; iDim < nDim; iDim++){
-					donor_iMidEdge_point[iDim] = ( donor_geometry->node[donor_forward_point ]->GetCoord(iDim) + donor_geometry->node[ donor_iPoint ]->GetCoord(iDim) );
-					donor_jMidEdge_point[iDim] = ( donor_geometry->node[donor_backward_point]->GetCoord(iDim) + donor_geometry->node[ donor_iPoint ]->GetCoord(iDim) );
+					donor_iMidEdge_point[iDim] = ( donor_geometry->node[donor_forward_point ]->GetCoord(iDim) + donor_geometry->node[ donor_iPoint ]->GetCoord(iDim) ) / 2;
+					donor_jMidEdge_point[iDim] = ( donor_geometry->node[donor_backward_point]->GetCoord(iDim) + donor_geometry->node[ donor_iPoint ]->GetCoord(iDim) ) / 2;
 				}
 				
 				
 				
 				Intersection = Compute_Intersectction_2D(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
-				cout << Intersection << endl; getchar();
 				
-				if ( Intersection == 0 )
+				m += Intersection;
+				/*
+				cout << iVertex << endl;
+				for(iDim = 0; iDim < nDim; iDim++)
+					cout << donor_iMidEdge_point[iDim] << "  ";
+				cout << endl;
+				for(iDim = 0; iDim < nDim; iDim++)
+					cout << donor_jMidEdge_point[iDim] << "  ";
+				cout << endl;
+				
+				cout << target_forward_point << "  " << target_backward_point << "  " << donor_forward_point << "  " << donor_iPoint << "  " << donor_backward_point << "  " << Intersection << endl; 
+				*/
+				/*
+				cout << endl;cout << endl;
+				getchar();
+				*/
+				donor_OldiPoint = donor_iPoint;
+				donor_iPoint = donor_forward_point;
+							
+				if ( Intersection == 0.0 )
 					check = true;
 			}
 		
 		
+			donor_iPoint    = donor_StartIndex;
+			donor_OldiPoint = FindNextNode_2D(donor_geometry, -1, donor_iPoint, markDonor);
+			
+			donor_iPoint = FindNextNode_2D(donor_geometry, donor_OldiPoint, donor_iPoint, markDonor);
+			donor_OldiPoint = donor_StartIndex;
+			
+			check = false;
+			
+			//cout << "back" << endl;
+			
+			while( !check ){
+					
+					donor_forward_point  = FindNextNode_2D(donor_geometry,     donor_OldiPoint, donor_iPoint, markDonor);
+					donor_backward_point = FindNextNode_2D(donor_geometry, donor_forward_point, donor_iPoint, markDonor);
+					
+					for(iDim = 0; iDim < nDim; iDim++){
+						donor_iMidEdge_point[iDim] = ( donor_geometry->node[donor_forward_point ]->GetCoord(iDim) + donor_geometry->node[ donor_iPoint ]->GetCoord(iDim) ) / 2;
+						donor_jMidEdge_point[iDim] = ( donor_geometry->node[donor_backward_point]->GetCoord(iDim) + donor_geometry->node[ donor_iPoint ]->GetCoord(iDim) ) / 2;
+					}
+					
+					
+					
+					Intersection = Compute_Intersectction_2D(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
+					
+					m += Intersection;
+					/*
+					cout << iVertex << endl;
+					for(iDim = 0; iDim < nDim; iDim++)
+						cout << donor_iMidEdge_point[iDim] << "  ";
+					cout << endl;
+					for(iDim = 0; iDim < nDim; iDim++)
+						cout << donor_jMidEdge_point[iDim] << "  ";
+					cout << endl;
+					
+					cout << target_forward_point << "  " << target_backward_point << "  " << donor_forward_point << "  " << donor_iPoint << "  " << donor_backward_point << "  " << Intersection << endl; 
+					*/
+					/*
+					cout << endl;cout << endl;
+					getchar();
+					*/
+					donor_OldiPoint = donor_iPoint;
+					donor_iPoint = donor_forward_point;
+								
+					if ( Intersection == 0.0 )
+						check = true;
+			}
+			
+			
+			length = PointsDistance(target_iMidEdge_point, target_jMidEdge_point);
+			
+			if( (m / length) < 0.9999999){
+				cout << "ratio  " << m << "  " << length << "  " <<  m/length << "  " << endl;
+				cout << endl;
+				getchar();
+			}
+		
+		}
 
 		delete [] Buffer_Send_Coord;
 		delete [] Buffer_Send_GlobalPoint;
@@ -1437,7 +1530,7 @@ su2double CSlidingmesh::PointsDistance(su2double *point_i, su2double *point_j){
 	
 	m = 0 ;
 	for(iDim = 0; iDim < nDim; iDim++)
-		m += point_j[iDim] - point_i[iDim];
+		m += (point_j[iDim] - point_i[iDim])*(point_j[iDim] - point_i[iDim]);
 	
 	return sqrt(m);
 }
@@ -1491,8 +1584,10 @@ su2double CSlidingmesh::Compute_Intersectction_2D(su2double* A1, su2double* A2, 
 			return fabs( dotA2 - dotB2 );
 	}
 	
-	
-	return fabs( dotA2 );
+	if( ( dotB1 <= 0 && dotA2 <= dotB2 ) || ( dotB2 <= 0 && dotA2 <= dotB1 ) )
+		return fabs( dotA2 );
+		
+	return 0.0;
 	
 /*	
 	Intersection -= fabs(dot1) + fabs(dot2);
