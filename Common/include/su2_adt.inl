@@ -31,6 +31,13 @@
  
 #pragma once
 
+inline su2_adtComparePointClass::~su2_adtComparePointClass(){}
+
+inline bool su2_adtComparePointClass::operator()(const unsigned long p0,
+                                                 const unsigned long p1) const {
+  return pointCoor[nDim*p0+splitDirection] < pointCoor[nDim*p1+splitDirection];
+}
+
 inline su2_adtNodeClass::su2_adtNodeClass(){}
 
 inline su2_adtNodeClass::~su2_adtNodeClass(){}
