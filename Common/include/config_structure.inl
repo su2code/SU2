@@ -923,6 +923,10 @@ inline string CConfig::GetSurfFlowCoeff_FileName(void) { return SurfFlowCoeff_Fi
 
 inline string CConfig::GetSurfAdjCoeff_FileName(void) { return SurfAdjCoeff_FileName; }
 
+inline string CConfig::GetSurfSens_FileName(void) { return SurfSens_FileName; }
+
+inline string CConfig::GetVolSens_FileName(void) { return VolSens_FileName; }
+
 inline unsigned short CConfig::GetResidual_Func_Flow(void) { return Residual_Func_Flow; }
 
 inline unsigned short CConfig::GetCauchy_Func_Flow(void) { return Cauchy_Func_Flow; }
