@@ -60,7 +60,7 @@ am__make_dryrun = \
           case $$am__flg in \
             *=*|--*) ;; \
             *n*) am__dry=yes; break;; \
-          esac; \
+    esac; \
         done;; \
     esac; \
     test $$am__dry = yes; \

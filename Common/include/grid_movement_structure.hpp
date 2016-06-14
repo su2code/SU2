@@ -1461,6 +1461,15 @@ public:
 	 */		
 	bool GetFFDBoxDefinition(void);
 	
+  /*!
+   * \brief Check if the design variable definition matches the FFD box definition.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iDV - Index of the design variable.
+   * \return <code>TRUE</code> if the FFD box name referenced with DV_PARAM can be found in the FFD box definition;
+   * otherwise <code>FALSE</code>.
+   */
+  bool CheckFFDBoxDefinition(CConfig* config, unsigned short iDV);
+
 	/*! 
 	 * \brief Obtain the number of FFDBoxes.
 	 * \return Number of FFD FFDBoxes.
