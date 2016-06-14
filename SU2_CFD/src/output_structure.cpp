@@ -898,6 +898,8 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned long iPoint;
   
+  unsigned short kind_SU2 = config->GetKind_SU2();
+  
 #ifndef HAVE_MPI
   
   /*--- In serial, the single process has access to all geometry, so simply
@@ -906,6 +908,8 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
   unsigned short iMarker;
   unsigned long iVertex, nTotalPoints = 0;
   int SendRecv;
+  
+  bool isPeriodic;
   
   /*--- First, create a structure to locate any periodic halo nodes ---*/
   int *Local_Halo = new int[geometry->GetnPoint()];
@@ -917,9 +921,19 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
       SendRecv = config->GetMarker_All_SendRecv(iMarker);
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-            (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1) &&
-            (SendRecv < 0)) {
+
+        /* --- For SU2_CFD and SU2_SOL we want to remove the periodic halo nodes,
+         * but for SU2_DEF we want them to be included, therefore the definition of a periodic point
+         * is different in each case --- */
+
+        if (kind_SU2 == SU2_DEF){
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0));
+        }else{
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
+        }
+
+        if (isPeriodic && (SendRecv < 0)) {
           Local_Halo[iPoint] = false;
         }
       }
@@ -1010,9 +1024,20 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
         
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          /* --- For SU2_CFD and SU2_SOL we want to remove the periodic halo nodes,
+           * but for SU2_DEF we want them to be included, therefore the definition of a periodic point
+           * is different in each case --- */
+
+          if (kind_SU2 == SU2_DEF){
+            isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0));
+          }else{
           isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
                         (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
-          if (isPeriodic) Local_Halo[iPoint] = false;
+          }
+          if (isPeriodic){
+            Local_Halo[iPoint] = false;
+          }
         }
       }
     }
@@ -1127,6 +1152,9 @@ void COutput::MergeCoordinates(CConfig *config, CGeometry *geometry) {
       for (iPoint = 0; iPoint < Buffer_Recv_nPoin[iProcessor]; iPoint++) {
         /*--- Get global index, then loop over each variable and store ---*/
         iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+        if (iGlobal_Index >= nGlobal_Poin){
+          cout << iGlobal_Index << " " << nGlobal_Poin << endl;
+        }
         Coords[0][iGlobal_Index] = Buffer_Recv_X[jPoint];
         Coords[1][iGlobal_Index] = Buffer_Recv_Y[jPoint];
         if (nDim == 3) Coords[2][iGlobal_Index] = Buffer_Recv_Z[jPoint];
@@ -1174,8 +1202,10 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   unsigned long MaxLocalElem = 0, iGlobal_Index, jPoint, kPoint;
   
   bool Wrt_Halo = config->GetWrt_Halo();
-  bool *Write_Elem = NULL, notPeriodic, notHalo, addedPeriodic;
-  
+  bool *Write_Elem = NULL, notPeriodic, notHalo, addedPeriodic, isPeriodic;
+
+  unsigned short kind_SU2 = config->GetKind_SU2();
+
   int *Conn_Elem = NULL;
   
   int rank = MASTER_NODE;
@@ -1261,11 +1291,14 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   
   vector<unsigned long> Added_Periodic;
   Added_Periodic.clear();
+
+  if (kind_SU2 != SU2_DEF){
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
       SendRecv = config->GetMarker_All_SendRecv(iMarker);
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
         if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
             (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 0) &&
             (SendRecv < 0)) {
@@ -1273,6 +1306,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         }
       }
     }
+  }
   }
   
   /*--- Now we communicate this information to all processors, so that they
@@ -1341,10 +1375,17 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         notHalo = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() == 0) &&
                    (SendRecv < 0) && (rank > RecvFrom));
         
-        /*--- We want to keep the periodic nodes that were part of the original domain ---*/
-        notPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                       (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1) &&
-                       (SendRecv < 0));
+        /*--- We want to keep the periodic nodes that were part of the original domain.
+         *    For SU2_DEF we want to keep all periodic nodes. ---*/
+
+        if (kind_SU2 == SU2_DEF){
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0));
+        }else{
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
+        }
+
+        notPeriodic = (isPeriodic && (SendRecv < 0));
         
         /*--- Lastly, check that this isn't an added periodic point that
          we will forcibly remove. Use the communicated list of these points. ---*/
@@ -2745,7 +2786,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       if (rank == MASTER_NODE) {
         jPoint = 0;
         iVar = iVar_HeatCoeffs;
-        
+
         for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
             
@@ -3140,7 +3181,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         }
       }
     }
-    
+
     /*--- Communicate the FEM elasticity stresses (2D) - New elasticity solver---*/
     
     if (Kind_Solver == FEM_ELASTICITY) {
@@ -5188,11 +5229,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (disc_adj){
               cout << "    Sens_Press" << "     Sens_Mach" << endl;
             } else {
-              cout << "      Sens_Geo" << "     Sens_Mach" << endl;
+                cout << "      Sens_Geo" << "     Sens_Mach" << endl;
             }
             if (freesurface) {
               cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo";
-              cout << "   Sens_Mach" << endl;
+                cout << "   Sens_Mach" << endl;
             }
             break;
             
@@ -5233,11 +5274,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (disc_adj){
               cout << "    Sens_Press" << "     Sens_Mach" << endl;
             } else {
-              cout << "      Sens_Geo" << "     Sens_Mach" << endl;
+               cout << "      Sens_Geo" << "     Sens_Mach" << endl;
             }
             if (freesurface) {
               cout << "   Res[Psi_Press]" << "   Res[Psi_Dist]" << "    Sens_Geo";
-              cout << "   Sens_Mach" << endl;
+                cout << "   Sens_Mach" << endl;
             }
             break;
             
@@ -5509,8 +5550,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(14); cout << Total_Sens_Geo;
-            cout.width(14); cout << Total_Sens_Mach;
-          }
+              cout.width(14); cout << Total_Sens_Mach;
+            }
           cout << endl;
           cout.unsetf(ios_base::floatfield);
           
@@ -5527,7 +5568,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(3);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(12); cout << Total_Sens_Geo;
-            cout.width(12); cout << Total_Sens_Mach;
+              cout.width(12); cout << Total_Sens_Mach;
             cout.unsetf(ios_base::floatfield);
             cout << endl;
           }
@@ -5568,8 +5609,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(14); cout << Total_Sens_Geo;
-            cout.width(14); cout << Total_Sens_Mach;
-          }
+              cout.width(14); cout << Total_Sens_Mach;
+            }
           cout << endl;
           cout.unsetf(ios_base::floatfield);
           if (freesurface) {
@@ -5587,7 +5628,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(12); cout << Total_Sens_Geo;
-            cout.width(14); cout << Total_Sens_Mach;
+              cout.width(14); cout << Total_Sens_Mach;
             cout << endl;
             cout.unsetf(ios_base::floatfield);
           }
@@ -7035,7 +7076,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           
           Mach = (sqrt(Velocity2))/ solver_container->node[iPoint]->GetSoundSpeed();
           if (incompressible)
-            Tot_Pressure = Pressure + 0.5*solver_container->node[iPoint]->GetDensity()*Velocity2;
+          Tot_Pressure = Pressure + 0.5*solver_container->node[iPoint]->GetDensity()*Velocity2;
           else
             Tot_Pressure = Pressure*pow((1.0+((Gamma-1.0)/2.0)*pow(Mach, 2.0)),( Gamma/(Gamma-1.0) ) );
           
@@ -8219,3 +8260,96 @@ void COutput::SetEquivalentArea(CSolver *solver_container, CGeometry *geometry, 
 #endif
   
 }
+
+void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone){
+
+  unsigned short iMarker,iDim, nDim, iVar, nMarker, nVar;
+  unsigned long iVertex, iPoint, nPoint, nVertex;
+  su2double *Normal, Prod, Sens = 0.0, SensDim, Area;
+
+  unsigned short iZone;
+
+  CSolver **solver = new CSolver*[val_nZone];
+
+  for (iZone = 0; iZone < val_nZone; iZone++) {
+
+
+    nPoint = geometry[iZone]->GetnPoint();
+    nDim   = geometry[iZone]->GetnDim();
+    nMarker = config[iZone]->GetnMarker_All();
+    nVar = nDim + 1;
+
+    /* --- We create a baseline solver to easily merge the sensitivity information --- */
+
+    vector<string> fieldnames;
+    fieldnames.push_back("\"Point\",");
+    fieldnames.push_back("\"x\",");
+    fieldnames.push_back("\"y\",");
+    if (nDim == 3){
+      fieldnames.push_back("\"z\",");
+    }
+    fieldnames.push_back("\"Sensitivity_x\",");
+    fieldnames.push_back("\"Sensitivity_y\",");
+    if (nDim == 3){
+      fieldnames.push_back("\"Sensitivity_z\",");
+    }
+    fieldnames.push_back("\"Sensitivity\"");
+
+    solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], nVar+nDim, fieldnames);
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      for (iDim = 0; iDim < nDim; iDim++){
+        solver[iZone]->node[iPoint]->SetSolution(iDim, geometry[iZone]->node[iPoint]->GetCoord(iDim));
+      }
+      for (iVar = 0; iVar < nDim; iVar++){
+        solver[iZone]->node[iPoint]->SetSolution(iVar+nDim, geometry[iZone]->GetSensitivity(iPoint, iVar));
+      }
+    }
+
+    /*--- Compute the sensitivity in normal direction ---*/
+
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+
+      if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )){
+
+        nVertex = geometry[iZone]->GetnVertex(iMarker);
+
+        for (iVertex = 0; iVertex < nVertex; iVertex++){
+          iPoint = geometry[iZone]->vertex[iMarker][iVertex]->GetNode();
+          Normal = geometry[iZone]->vertex[iMarker][iVertex]->GetNormal();
+          Prod = 0.0;
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++){
+
+            /*--- Retrieve the gradient calculated with discrete adjoint method --- */
+
+            SensDim = geometry[iZone]->GetSensitivity(iPoint, iDim);
+
+            /*--- Calculate scalar product for projection onto the normal vector ---*/
+
+            Prod += Normal[iDim]*SensDim;
+
+            Area += Normal[iDim]*Normal[iDim];
+          }
+
+          Area = sqrt(Area);
+
+          /*--- Projection of the gradient onto the normal vector of the surface ---*/
+
+          Sens = Prod/Area;
+
+          solver[iZone]->node[iPoint]->SetSolution(2*nDim, Sens);
+
+        }
+      }
+    }
+  }
+
+  /*--- Merge the information and write the output files ---*/
+
+  SetBaselineResult_Files(solver,geometry, config, 0, val_nZone);
+
+}
+

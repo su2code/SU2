@@ -487,6 +487,49 @@ bool CGeometry::RayIntersectsTriangle(su2double orig[3], su2double dir[3],
   
 }
 
+bool CGeometry::SegmentIntersectsLine(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]){
+
+  su2double det, diff0_A, diff0_B, diff1_A, diff1_B, intersect[2];
+
+  diff0_A = point0[0] - point1[0];
+  diff1_A = point0[1] - point1[1];
+
+  diff0_B = vert0[0] - vert1[0];
+  diff1_B = vert0[1] - vert1[1];
+
+  det = (diff0_A)*(diff1_B) - (diff1_A)*(diff0_B);
+
+  if (det == 0) return false;
+
+  /*--- Compute point of intersection ---*/
+
+  intersect[0] = ((point0[0]*point1[1] - point0[1]*point1[0])*diff0_B
+                -(vert0[0]* vert1[1]  - vert0[1]* vert1[0])*diff0_A)/det;
+
+  intersect[1] =  ((point0[0]*point1[1] - point0[1]*point1[0])*diff1_B
+                  -(vert0[0]* vert1[1]  - vert0[1]* vert1[0])*diff1_A)/det;
+
+
+  /*--- Check that the point is between the two surface points ---*/
+
+  su2double dist0, dist1, length;
+
+  dist0 = (intersect[0] - point0[0])*(intersect[0] - point0[0])
+         +(intersect[1] - point0[1])*(intersect[1] - point0[1]);
+
+  dist1 = (intersect[0] - point1[0])*(intersect[0] - point1[0])
+         +(intersect[1] - point1[1])*(intersect[1] - point1[1]);
+
+  length = diff0_A*diff0_A
+          +diff1_A*diff1_A;
+
+  if ( (dist0 > length) || (dist1 > length) ){
+    return false;
+  }
+
+  return true;
+}
+
 bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[3],
                                           su2double vert0[3], su2double vert1[3], su2double vert2[3]) {
   
@@ -1369,6 +1412,10 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           boundary_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
           for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
             boundary_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
+
+          if (bound[iMarker][iElem_Bound]->GetVTK_Type() == VERTEX){
+            boundary_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
+          }
           boundary_file	<< iElem_Bound << endl;
         }
       }
@@ -1378,6 +1425,10 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           boundary_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
           for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
             boundary_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
+
+          if (bound[iMarker][iElem_Bound]->GetVTK_Type() == VERTEX){
+            boundary_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
+          }
           boundary_file	<< iElem_Bound << endl;
         }
       }
@@ -10610,7 +10661,7 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
   unsigned short iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_Coord = NULL, *Buffer_Send_Coord = NULL, *Coord = NULL, *newCoord = NULL;
-  
+  su2double *translation;
   newCoord = new su2double[nDim];
   
 #ifdef HAVE_MPI
@@ -10677,6 +10728,7 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
         /*--- Retrieve the supplied periodic information. ---*/
         
         angles = config->GetPeriodicRotation(iPeriodic_Index);
+        translation = config->GetPeriodicTranslate(iPeriodic_Index);
         
         /*--- Store angles separately for clarity. ---*/
         
@@ -10702,9 +10754,9 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
         
         if (nDim == 2) {
           newCoord[0] = (rotMatrix[0][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
-                         rotMatrix[0][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]);
+                         rotMatrix[0][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]) - translation[0];
           newCoord[1] = (rotMatrix[1][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
-                         rotMatrix[1][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]);
+                         rotMatrix[1][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]) - translation[1];
         }
         else {
           newCoord[0] = (rotMatrix[0][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
