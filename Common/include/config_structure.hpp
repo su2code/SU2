@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -55,7 +55,7 @@ using namespace std;
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
  *        stores all the information.
  * \author F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  */
 
 class CConfig {
@@ -423,6 +423,7 @@ private:
   unsigned short Deform_Stiffness_Type; /*!< \brief Type of element stiffness imposed for FEA mesh deformation. */
   bool Deform_Output;  /*!< \brief Print the residuals during mesh deformation to the console. */
   su2double Deform_Tol_Factor; /*!< Factor to multiply smallest volume for deform tolerance (0.001 default) */
+  su2double Deform_Coeff; /*!< Deform coeffienct */
   unsigned short Deform_Linear_Solver; /*!< Numerical method to deform the grid */
   unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
   su2double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
@@ -706,6 +707,8 @@ private:
   su2double Static_Time;			/*!< \brief Time while the structure is not loaded in FSI applications. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
+  bool Prestretch;             /*!< Read a reference geometry for optimization purposes. */
+  string Prestretch_FEMFileName;         /*!< \brief File name for reference geometry. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
@@ -1574,6 +1577,19 @@ public:
 	 * \return Flag to 2D elasticity model.
 	 */
 	unsigned short GetElas2D_Formulation(void);
+
+  /*!
+    * \brief Decide whether it's necessary to read a reference geometry.
+    * \return <code>TRUE</code> if it's necessary to read a reference geometry, <code>FALSE</code> otherwise.
+    */
+
+  bool GetPrestretch(void);
+
+  /*!
+   * \brief Get the name of the file with the reference geometry of the structural problem.
+   * \return Name of the file with the reference geometry of the structural problem.
+   */
+  string GetPrestretch_FEMFileName(void);
 
 	/*!
 	 * \brief Get the Poisson's ratio.
@@ -2915,6 +2931,12 @@ public:
 	 * \return Factor to multiply smallest volume for deform tolerance.
 	 */
 	su2double GetDeform_Tol_Factor(void);
+  
+  /*!
+   * \brief Get factor to multiply smallest volume for deform tolerance.
+   * \return Factor to multiply smallest volume for deform tolerance.
+   */
+  su2double GetDeform_Coeff(void);
 
   /*!
    * \brief Get Young's modulus for deformation (constant stiffness deformation)
