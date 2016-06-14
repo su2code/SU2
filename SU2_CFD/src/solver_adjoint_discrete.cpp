@@ -595,9 +595,6 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
         /*--- Compute sensitivity for each surface point ---*/
         CSensitivity[iMarker][iVertex] = -Sens;
-        if (geometry->node[iPoint]->GetFlip_Orientation())
-          CSensitivity[iMarker][iVertex] = -CSensitivity[iMarker][iVertex];
-
         if (geometry->node[iPoint]->GetDomain()){
           Sens_Geo[iMarker] += Sens*Sens;
         }
