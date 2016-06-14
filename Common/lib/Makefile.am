@@ -85,6 +85,8 @@ lib_sources = \
   ../include/gauss_structure.inl \
   ../include/element_structure.hpp \
   ../include/element_structure.inl \
+  ../include/su2_adt.hpp \
+  ../include/su2_adt.inl \
   ../src/config_structure.cpp \
   ../src/dual_grid_structure.cpp \
   ../src/geometry_structure.cpp \
@@ -100,7 +102,8 @@ lib_sources = \
   ../src/gauss_structure.cpp \
   ../src/element_structure.cpp \
   ../src/element_linear.cpp \
-  ../src/interpolation_structure.cpp
+  ../src/interpolation_structure.cpp \
+  ../src/su2_adt.cpp
 
 lib_cxxflags =
 lib_ldadd =
