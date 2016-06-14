@@ -1264,7 +1264,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 		markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
 
 		if(markTarget == -1 || markDonor == -1)
-		continue;
+			continue;
 
 		nVertexDonor  = donor_geometry->GetnVertex(markDonor);
 		nVertexTarget = target_geometry->GetnVertex(markTarget);
@@ -1301,6 +1301,8 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 		su2double target_iMidEdge_point[3], target_jMidEdge_point[3], donor_iMidEdge_point[3], donor_jMidEdge_point[3], Direction[3];
 		su2double length, m, dTMP;
 		unsigned long nDonorPoints;
+		unsigned long *Donor_Vect = NULL, *tmp_Donor_Vect = NULL;
+		su2double *Coeff_Vect = NULL, *tmp_Coeff_Vect = NULL;
 		
 		int* SuperMesh_Node_Index; // Index, referred to donor or target grid, to retrieve node coordinates 
 		bool* SuperMesh_Node_Owner; // 0 = donor grid owns the node, 1 = target grid owns the node
@@ -1370,6 +1372,10 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 			dTMP = sqrt(dTMP);
 			for(iDim = 0; iDim < nDim; iDim++)
 				Direction[iDim] /= dTMP;
+				
+			length = PointsDistance(target_iMidEdge_point, target_jMidEdge_point);
+			
+			
 			/*
 			cout << iVertex << endl;
 			for(iDim = 0; iDim < nDim; iDim++)
@@ -1379,6 +1385,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 				cout << target_jMidEdge_point[iDim] << "  ";
 			cout << endl;cout << endl;
 			*/
+			
 			check = false;
 			
 			//cout << "forw" << endl;
@@ -1413,11 +1420,47 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 				cout << endl;cout << endl;
 				getchar();
 				*/
+				
+							
+				if ( Intersection == 0.0 ){
+					check = true;
+					continue;
+				}
+					
+				tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
+				tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
+				
+				for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
+					tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
+					tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
+				}
+				
+				if (Donor_Vect != NULL)
+					delete [] Donor_Vect;
+					
+				if (Coeff_Vect != NULL)
+					delete [] Coeff_Vect;
+				
+				Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
+				Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
+				
+				for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
+					Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
+					Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
+				}
+
+				Coeff_Vect[ nDonorPoints ] = Intersection / length;					
+				Donor_Vect[ nDonorPoints ] = donor_iPoint;
+
+				if (tmp_Donor_Vect != NULL)
+					delete [] tmp_Donor_Vect;
+		
+				if (tmp_Coeff_Vect != NULL)
+					delete [] tmp_Coeff_Vect;
+
+				
 				donor_OldiPoint = donor_iPoint;
 				donor_iPoint = donor_forward_point;
-							
-				if ( Intersection == 0.0 )
-					check = true;
 					
 				nDonorPoints++;
 			}
@@ -1463,26 +1506,75 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 					cout << endl;cout << endl;
 					getchar();
 					*/
+					
+					
+					if ( Intersection == 0.0 ){
+						check = true;
+						continue;
+					}
+					
+					tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
+					tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
+					
+					for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
+						tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
+						tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
+					}
+					
+					if (Donor_Vect != NULL)
+						delete [] Donor_Vect;
+						
+					if (Coeff_Vect != NULL)
+						delete [] Coeff_Vect;
+					
+					Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
+					Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
+					
+					for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
+						Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
+						Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
+					}
+						
+					Donor_Vect[ nDonorPoints ] = donor_iPoint;
+					Coeff_Vect[ nDonorPoints ] = Intersection / length;
+						
+					if (tmp_Donor_Vect != NULL)
+						delete [] tmp_Donor_Vect;
+					
+					if (tmp_Coeff_Vect != NULL)
+						delete [] tmp_Coeff_Vect;
+						
+						
 					donor_OldiPoint = donor_iPoint;
 					donor_iPoint = donor_forward_point;
-								
-					if ( Intersection == 0.0 )
-						check = true;
 						
 					nDonorPoints++;
 			}
 			
-			
-			length = PointsDistance(target_iMidEdge_point, target_jMidEdge_point);
-			
+
 			if( (m / length) < 0.9999999){
 				cout << "ratio  " << m << "  " << length << "  " <<  m/length << "  " << endl;
 				cout << endl;
 				getchar();
 			}
 			
-			cout << nDonorPoints << endl; getchar();
-			target_geometry->vertex[markTarget][iVertexTarget]->SetnDonorPoints(nDonorPoints);
+			//cout << nDonorPoints << endl; getchar();
+			
+			target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nDonorPoints);
+
+			target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
+			
+			
+			
+			//Buffer_Send_GlobalPoint[nLocalVertex_Donor] = donor_geometry->node[iPointDonor]->GetGlobalIndex();
+			
+			for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){			  
+				target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]);
+				target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, donor_geometry->node[ Donor_Vect[iDonor] ]->GetGlobalIndex() );
+				target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, 0);//storeProc[iDonor]);
+
+				//cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;
+			}
 		
 		}
 
