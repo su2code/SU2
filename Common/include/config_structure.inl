@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -137,7 +137,6 @@ inline unsigned short CConfig::GetElas2D_Formulation(void) { return Kind_2DElasF
 
 inline su2double CConfig::GetPoissonRatio(void) { return PoissonRatio; }
 
-
 inline su2double CConfig::GetMaterialDensity(void) { return MaterialDensity; }
 
 inline unsigned short CConfig::GetMaterialCompressibility(void) { return Kind_Material_Compress; }
@@ -145,6 +144,10 @@ inline unsigned short CConfig::GetMaterialCompressibility(void) { return Kind_Ma
 inline unsigned short CConfig::GetMaterialModel(void) { return Kind_Material; }
 
 inline unsigned short CConfig::GetGeometricConditions(void) { return Kind_Struct_Solver; }
+
+inline bool CConfig::GetPrestretch(void) { return Prestretch; }
+
+inline string CConfig::GetPrestretch_FEMFileName(void) { return Prestretch_FEMFileName; }
 
 inline su2double CConfig::GetRefLengthMoment(void) { return RefLengthMoment; }
 
@@ -609,6 +612,8 @@ inline unsigned long CConfig::GetGridDef_Nonlinear_Iter(void) { return GridDef_N
 inline bool CConfig::GetDeform_Output(void) { return Deform_Output; }
 
 inline su2double CConfig::GetDeform_Tol_Factor(void) { return Deform_Tol_Factor; }
+
+inline su2double CConfig::GetDeform_Coeff(void) { return Deform_Coeff; }
 
 inline su2double CConfig::GetDeform_ElasticityMod(void) { return Deform_ElasticityMod; }
 

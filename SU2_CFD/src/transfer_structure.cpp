@@ -2,7 +2,7 @@
  * \file transfer_structure.cpp
  * \brief Main subroutines for MPI transfer of information between zones
  * \author R. Sanchez
- * \version 4.1.2 "Cardinal"
+ * \version 4.1.3 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -546,10 +546,10 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
         Marker_Target = -1;
       }
     }
-    
+    /*
     if(Marker_Target == -1 || Marker_Donor == -1)
 		continue;
-  
+	*/
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
     
@@ -676,10 +676,10 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 #endif
     
     long indexPoint_iVertex, Point_Target_Check;
-    
+    /*
     if(Marker_Target == -1)// || Marker_Donor == -1)
 		continue;
-		
+	*/	
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0){
       
