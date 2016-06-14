@@ -33,8 +33,6 @@
 
 #pragma once
 
-#include "./mpi_structure.hpp"
-
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -42,7 +40,51 @@
 #include <vector>
 #include <algorithm>
 
+#include "./mpi_structure.hpp"
+#include "./option_structure.hpp"
+
 using namespace std;
+
+/*! 
+ * \class su2_adtComparePointClass
+ * \brief  Functor, used for the sorting of the points when building an ADT.
+ * \author E. van der Weide
+ * \version 4.1.3 "Cardinal"
+ */
+class su2_adtComparePointClass {
+private:
+  const su2double      *pointCoor;      /*!< \brief Pointer to the coordinates of the points. */
+  const unsigned short splitDirection;  /*!< \brief Split direction used in the sorting. */
+  const unsigned short nDim;            /*!< \brief Number of spatial dimensions stored in the coordinates. */
+
+public:
+  /*!
+   * \brief Constructor of the class. The member variables are initialized.
+   * \param[in] coor      Pointer to the coordinates of the points.
+   * \param[in] splitDir  Direction that must be used to sort the coordinates.
+   * \param[in] nDimADT   Number of spatial dimensions of the ADT and coordinates.
+   */
+  su2_adtComparePointClass(const su2double      *coor,
+                           const unsigned short splitDir,
+                           const unsigned short nDimADT);
+  /*!
+   * \brief Destructor, nothing to be done.
+   */
+  ~su2_adtComparePointClass();
+
+  /*!
+   * \brief Operator used for the sorting of the points.
+   * \param[in] p0  Index of the first point to be compared.
+   * \param[in] p1  Index of the second point to be compared.
+   */
+  bool operator()(const unsigned long p0,
+                  const unsigned long p1) const;
+private:
+  /*!
+   * \brief Default constructor of the class, disabled.
+   */
+  su2_adtComparePointClass();
+};
 
 /*! 
  * \class su2_adtNodeClass
