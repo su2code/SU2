@@ -3474,7 +3474,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       Buffer_Send_ReceivedDomain_PeriodicTrans  = new unsigned long[Buffer_Send_nTotalReceivedDomain_Periodic];
       Buffer_Send_ReceivedDomain_PeriodicDonor  = new unsigned long[Buffer_Send_nTotalReceivedDomain_Periodic];
       
-      if (iDomain != MASTER_NODE) {
+      if (iDomain != (unsigned long)MASTER_NODE) {
         
 #ifdef HAVE_MPI
         
@@ -3887,7 +3887,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Send the buffers with the geometrical information ---*/
       
-      if (iDomain != MASTER_NODE) {
+      if (iDomain != (unsigned long)MASTER_NODE) {
         
 #ifdef HAVE_MPI
         
