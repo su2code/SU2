@@ -2176,7 +2176,7 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
   if (TotalLoad != 0.0){
 
     unsigned long iElem;
-    unsigned short nNodes;
+    unsigned short nNodes = 0;
     su2double Length_Elem_ref = 0.0,  Area_Elem_ref = 0.0;
     su2double Length_Elem_curr = 0.0, Area_Elem_curr = 0.0;
     unsigned long indexNode[4]   = {0,0,0,0};
