@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1174,6 +1174,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("MATERIAL_MODEL", Kind_Material, Material_Map, LINEAR_ELASTIC);
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Compressibility of the material \n OPTIONS: see \link MatComp_Map \endlink \ingroup Config*/
   addEnumOption("MATERIAL_COMPRESSIBILITY", Kind_Material_Compress, MatComp_Map, COMPRESSIBLE_MAT);
+
+  /*  DESCRIPTION: Consider a prestretch in the structural domain
+  *  Options: NO, YES \ingroup Config */
+  addBoolOption("PRESTRETCH", Prestretch, false);
+  /*!\brief PRESTRETCH_FILENAME \n DESCRIPTION: Filename to input for prestretching membranes \n Default: prestretch_file.dat \ingroup Config */
+  addStringOption("PRESTRETCH_FILENAME", Prestretch_FEMFileName, string("prestretch_file.dat"));
 
   /* DESCRIPTION: Iterative method for non-linear structural analysis */
   addEnumOption("NONLINEAR_FEM_SOLUTION_METHOD", Kind_SpaceIteScheme_FEA, Space_Ite_Map_FEA, NEWTON_RAPHSON);
@@ -3001,7 +3007,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 4.1.3  \"Cardinal\"                         |" << endl;
+  cout << "|   / __| | | |_  )   Release 4.2.0  \"Cardinal\"                         |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
