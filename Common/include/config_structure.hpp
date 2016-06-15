@@ -160,7 +160,6 @@ private:
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
-    nMarker_InletUnst,					/*!< \brief Number of inlet flow markers for UNSTEADY flow actuation. */
 	nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
 	nMarker_NRBC,					/*!< \brief Number of NRBC flow markers. */
 	nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
@@ -201,7 +200,6 @@ private:
   *Marker_ActDisk_Outlet,
 	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
-    *Marker_InletUnst,					/*!< \brief Inlet flow markers for UNSTEADY flow actuation. */
 	*Marker_Riemann,					/*!< \brief Riemann markers. */
 	*Marker_NRBC,					/*!< \brief NRBC markers. */
 	*Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
@@ -225,13 +223,11 @@ private:
 	su2double *Exhaust_Temperature_Target;    /*!< \brief Specified total temperatures for nacelle boundaries. */
 	su2double *Exhaust_Pressure_Target;    /*!< \brief Specified total pressures for nacelle boundaries. */
 	su2double *Inlet_Ttotal;    /*!< \brief Specified total temperatures for inlet boundaries. */
-    su2double *Inlet_RhoUnst;    /*!< \brief Specified density for UNSTEADY inlet boundaries. */
 	su2double *Riemann_Var1, *Riemann_Var2;    /*!< \brief Specified values for Riemann boundary. */
 	su2double **Riemann_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
 	su2double *NRBC_Var1, *NRBC_Var2;    /*!< \brief Specified values for NRBC boundary. */
 	su2double **NRBC_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for NRBC boundaries. */
 	su2double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
-    su2double **Inlet_FlowParamUnst;  /*!< \brief Specified actuation parameters for UNSTEADY inlet boundaries. */
     su2double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
 	su2double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
 	su2double *Inlet_Pressure;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
@@ -337,7 +333,6 @@ private:
   Kind_DiscAdj_Linear_Prec,  /*!< \brief Preconditioner of the discrete adjoint linear solver. */
 	Kind_SlopeLimit,				/*!< \brief Global slope limiter. */
 	Kind_SlopeLimit_Flow,		/*!< \brief Slope limiter for flow equations.*/
-    Kind_OptProblem,            /*!< \brief Type of Optimization problem (eg. shape or flow control).*/
 	Kind_SlopeLimit_Turb,		/*!< \brief Slope limiter for the turbulence equation.*/
 	Kind_SlopeLimit_AdjLevelSet,		/*!< \brief Slope limiter for the adjoint level set equation.*/
 	Kind_SlopeLimit_AdjTurb,	/*!< \brief Slope limiter for the adjoint turbulent equation.*/
@@ -924,15 +919,6 @@ private:
     COptionBase* val = new COptionInlet(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal, FlowDir);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
-  void addInletUnstOption(const string name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
-                                 su2double* & Rho, su2double** & FlowParam) {
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionInletUnst(name, nMarker_Inlet, Marker_Inlet, Rho, FlowParam);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
-
   template <class Tenum>
   
   void addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,
@@ -2105,12 +2091,6 @@ public:
 	 * \return Total number of boundary markers.
 	 */
 	unsigned short GetnMarker_All(void);
-
-    /*!
-     * \brief Get the total number of boundary markers.
-     * \return Total number of boundary markers.
-     */
-    unsigned short GetnMarker_InletUnst(void);
   
   /*!
    * \brief Get the total number of boundary markers.
@@ -2435,14 +2415,6 @@ public:
 	string GetMarker_EngineExhaust(unsigned short val_marker);
 
   /*!
-   * \brief Get the index of the surface defined in the geometry file.
-   * \param[in] val_marker - Value of the marker in which we are interested.
-   * \return Value of the index that is in the geometry file for the surface that
-   *         has the marker <i>val_marker</i>.
-   */
-  string GetMarker_InletUnst(unsigned short val_marker);
-
-    /*!
 	 * \brief Get the name of the surface defined in the geometry file.
 	 * \param[in] val_marker - Value of the marker in which we are interested.
 	 * \return Name that is in the geometry file for the surface that
@@ -3259,14 +3231,6 @@ public:
 	 * \return Method for limiting the spatial gradients solving the flow equations.
 	 */
 	unsigned short GetKind_SlopeLimit_Flow(void);
-
-
-    /*!
-     * \brief Get the type of optimization problem
-     * \return  the type of optimization problem
-     */
-    unsigned short GetKind_Opt_Problem(void);
-
 
   /*!
 	 * \brief Get the method for limiting the spatial gradients.
@@ -4757,13 +4721,6 @@ public:
 	 */
 	su2double GetInlet_Ttotal(string val_index);
 
-    /*!
-     * \brief Get the density at an inlet boundary (UNSTEADY).
-     * \param[in] val_index - Index corresponding to the inlet boundary.
-     * \return The inlet density.
-     */
-    su2double GetInlet_RhoUnst(string val_index);
-
 	/*!
 	 * \brief Get the temperature at a supersonic inlet boundary.
 	 * \param[in] val_index - Index corresponding to the inlet boundary.
@@ -4805,14 +4762,6 @@ public:
 	 * \return The total pressure.
 	 */
 	su2double GetInlet_Ptotal(string val_index);
-
-
-    /*!
-     * \brief Get the flow actuation parameters at an inlet boundary (UNSTEADY).
-     * \param[in] val_index - Index corresponding to the inlet boundary.
-     * \return The flow direction vector.
-     */
-    su2double* GetInlet_FlowParamUnst(string val_index);
 
 	/*!
 	 * \brief Get the total pressure at an nacelle boundary.

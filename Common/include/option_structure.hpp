@@ -615,19 +615,6 @@ static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIM
 ("SHARP_EDGES", SHARP_EDGES)
 ("WALL_DISTANCE", SOLID_WALL_DISTANCE);
 
-
-  enum ENUM_OPT_PROBLEM_TYPE {
-    SHAPE_OPT = 0,        /*!< \brief Shape Optimization */
-    FLOW_CONTROL = 1,        /*!< \brief Flow Control*/
-  };
-  static const map<string, ENUM_OPT_PROBLEM_TYPE >   OptProblem_Map  = CCreateMap<string, ENUM_OPT_PROBLEM_TYPE >
-  ("SHAPE_OPT", SHAPE_OPT )
-  ("FLOW_CONTROL", FLOW_CONTROL  );
-
-
-
-
-
 /*!
  * \brief types of turbulent models
  */
@@ -771,7 +758,6 @@ enum BC_TYPE {
   LOAD_DIR_BOUNDARY = 35,		/*!< \brief Boundary Load definition. */
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
   NRBC_BOUNDARY= 37,   /*!< \brief NRBC Boundary definition. */
-  INLET_FLOW_UNST = 38,   /*!< \brief Boundary inlet flow definition for UNSTEADY flow actuation. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 
@@ -1299,8 +1285,7 @@ enum ENUM_DIRECTDIFF_VAR {
   D_SIDESLIP = 7,
   D_VISCOSITY = 8,
   D_REYNOLDS = 9,
-  D_DESIGN = 10,
-  D_FLOWCONTROL = 11
+  D_DESIGN = 10
 };
 static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<string, ENUM_DIRECTDIFF_VAR>
 ("NONE", NO_DERIVATIVE)
@@ -1313,8 +1298,7 @@ static const map<string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = CCreateMap<st
 ("SIDESLIP", D_SIDESLIP)
 ("VISCOSITY", D_VISCOSITY)
 ("REYNOLDS", D_REYNOLDS)
-("DESIGN_VARIABLES", D_DESIGN)
-("FLOW_CONTROL", D_FLOWCONTROL);
+("DESIGN_VARIABLES", D_DESIGN);
 
 /*!
  * \brief types of schemes for dynamic structural computations
@@ -2489,91 +2473,6 @@ public:
     this->size = 0; // There is no default value for list
   }
 };
-
-
-class COptionInletUnst : public COptionBase{
-  string name; // identifier for the option
-  unsigned short & size;
-  string * & marker;
-  su2double * & rho;
-  su2double ** & flowparam;
-
-public:
-  COptionInletUnst(string option_field_name, unsigned short & nMarker_Inlet, string* & Marker_Inlet, su2double* & Rho, su2double** & FlowParam) : size(nMarker_Inlet), marker(Marker_Inlet), rho(Rho), flowparam(FlowParam) {
-    this->name = option_field_name;
-  }
-
-  ~COptionInletUnst() {};
-  string SetValue(vector<string> option_value) {
-
-    unsigned short totalVals = option_value.size();
-    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
-      this->size = 0;
-      this->marker = NULL;
-      this->rho = NULL;
-      this->flowparam = NULL;
-      return "";
-    }
-
-    if (totalVals % 7 != 0) {
-      string newstring;
-      newstring.append(this->name);
-      newstring.append(": must have a number of entries divisible by 7");
-      this->size = 0;
-      this->marker = NULL;
-      this->rho = NULL;
-      this->flowparam = NULL;
-      return newstring;
-    }
-
-    unsigned short nVals = totalVals / 7;
-    this->size = nVals;
-    this->marker = new string[nVals];
-    this->rho = new su2double[nVals];
-    this->flowparam = new su2double*[nVals];
-    for (unsigned long i = 0; i < nVals; i++) {
-      this->flowparam[i] = new su2double[5];
-    }
-
-    for (unsigned long i = 0; i < nVals; i++) {
-      this->marker[i].assign(option_value[7*i]);
-      istringstream ss_1st(option_value[7*i + 1]);
-      if (!(ss_1st >> this->rho[i])) {
-        return badValue(option_value, "inlet", this->name);
-      }
-      istringstream ss_2nd(option_value[7*i + 2]);
-      if (!(ss_2nd >> this->flowparam[i][0])) {
-        return badValue(option_value, "inlet", this->name);
-      }
-      istringstream ss_3rd(option_value[7*i + 3]);
-      if (!(ss_3rd >> this->flowparam [i][1])) {
-        return badValue(option_value, "inlet", this->name);
-      }
-      istringstream ss_4th(option_value[7*i + 4]);
-      if (!(ss_4th >> this->flowparam [i][2])) {
-        return badValue(option_value, "inlet", this->name);
-      }
-      istringstream ss_5th(option_value[7*i + 5]);
-      if (!(ss_5th >> this->flowparam[i][3])) {
-        return badValue(option_value, "inlet", this->name);
-      }
-      istringstream ss_6th(option_value[7*i + 6]);
-      if (!(ss_6th >> this->flowparam[i][4])) {
-        return badValue(option_value, "inlet", this->name);
-      }
-    }
-
-    return "";
-  }
-
-  void SetDefault() {
-    this->marker = NULL;
-    this->rho = NULL;
-    this->flowparam = NULL;
-    this->size = 0; // There is no default value for list
-  }
-};
-
 
 template <class Tenum>
 class COptionRiemann : public COptionBase{
