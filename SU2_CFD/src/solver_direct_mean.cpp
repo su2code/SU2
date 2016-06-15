@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13683,14 +13683,12 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         for (iDim = 0; iDim < nDim; iDim++) {
           TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
           CSkinFriction[iMarker][iVertex][iDim] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
-          WallShearStress += CSkinFriction[iMarker][iVertex][iDim]*CSkinFriction[iMarker][iVertex][iDim];
+          WallShearStress += TauTangent[iDim] * TauTangent[iDim];
         }
         WallShearStress = sqrt(WallShearStress);
         
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
         WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
-        
-        
         
         /*--- Compute y+ and non-dimensional velocity ---*/
         

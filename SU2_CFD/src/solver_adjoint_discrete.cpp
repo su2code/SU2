@@ -2,7 +2,7 @@
  * \file solver_adjoint_discrete.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -712,9 +712,6 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
         /*--- Compute sensitivity for each surface point ---*/
         CSensitivity[iMarker][iVertex] = -Sens;
-        if (geometry->node[iPoint]->GetFlip_Orientation())
-          CSensitivity[iMarker][iVertex] = -CSensitivity[iMarker][iVertex];
-
         if (geometry->node[iPoint]->GetDomain()){
           Sens_Geo[iMarker] += Sens*Sens;
         }
