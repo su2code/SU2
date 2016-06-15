@@ -259,10 +259,6 @@ int main(int argc, char *argv[]) {
         geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     }
 
-    if (config_container[iZone]->GetDirectDiff() == D_FLOWCONTROL){
-      SU2_TYPE::SetDerivative(config_container[ZONE_0]->GetInlet_FlowParamUnst("Slit1")[0], 1.0);
-    }
-    
     
   }
   
@@ -485,11 +481,6 @@ int main(int argc, char *argv[]) {
           if (config_container[ZONE_0]->GetPlot_Section_Forces()) {
             output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                      geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
-          }
-          if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) &&
-              (config_container[ZONE_0]->GetKind_Opt_Problem() == FLOW_CONTROL) &&
-              (config_container[ZONE_0]->GetDiscrete_Adjoint())){
-            output->SetFlowControl_Sens(solver_container, config_container, ZONE_0);
           }
           
           if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;

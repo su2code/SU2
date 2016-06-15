@@ -548,9 +548,6 @@ inline void CSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_cont
 inline void CSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										 CConfig *config, unsigned short val_marker) { }
 
-inline void CSolver::BC_Inlet_Unst(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                         CConfig *config, unsigned short val_marker) { }
-
 inline void CSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										  CConfig *config, unsigned short val_marker) { }
                       
@@ -1183,8 +1180,4 @@ inline void CTurbSSTSolver::SetFreeStream_Solution(CConfig *config){
     node[iPoint]->SetSolution(1, omega_Inf);
   }
 }
-
-inline su2double CSolver::GetTotal_Sens_FlowParam(unsigned short iMarker, unsigned short iParam){return 0.0;}
-
-inline su2double CDiscAdjSolver::GetTotal_Sens_FlowParam(unsigned short iMarker, unsigned short iParam){return Total_Sens_FlowParam[iMarker][iParam];}
 

@@ -1606,8 +1606,8 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
   }
 
   
-  if ((((ExtIter+1 >= config_container[val_iZone]->GetnExtIter()) || (integration_container[val_iZone][ADJFLOW_SOL]->GetConvergence()) ||
-      ((ExtIter % config_container[val_iZone]->GetWrt_Sol_Freq() == 0))) && (config_container[val_iZone]->GetKind_Opt_Problem() == SHAPE_OPT)) || (dual_time)){
+  if (((ExtIter+1 >= config_container[val_iZone]->GetnExtIter()) || (integration_container[val_iZone][ADJFLOW_SOL]->GetConvergence()) ||
+      ((ExtIter % config_container[val_iZone]->GetWrt_Sol_Freq() == 0))) || (dual_time)){
     
     /*--- Record one mean flow iteration with geometry variables as input ---*/
     
@@ -1672,12 +1672,6 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
 
     SetDependencies(solver_container, geometry_container, config_container, val_iZone, ALL_VARIABLES);
 
-    /*--- Dynamic mesh update ---*/
-
-//    if ((config_container[val_iZone]->GetGrid_Movement())) {
-//      SetGrid_Movement(geometry_container[val_iZone], surface_movement[val_iZone], grid_movement[val_iZone], FFDBox[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_iZone, IntIter, ExtIter);
-//    }
-
     /*--- Run one iteration while tape is passive - this clears all indices ---*/
 
     meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
@@ -1713,19 +1707,10 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
     config_container[val_iZone]->SetExtIter(DirectExtIter);
   }
 
-  /*--- Dynamic mesh update ---*/
-
-//  if ((config_container[val_iZone]->GetGrid_Movement())) {
-//    SetGrid_Movement(geometry_container[val_iZone], surface_movement[val_iZone], grid_movement[val_iZone], FFDBox[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_iZone, IntIter, ExtIter);
-//  }
-
   /*--- Run the direct iteration ---*/
 
   meanflow_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
                               config_container,surface_movement,grid_movement,FFDBox, val_iZone);
-
-  //meanflow_iteration->Update(output,integration_container,geometry_container,solver_container,numerics_container,
- //                             config_container,surface_movement,grid_movement,FFDBox, val_iZone);
 
   config_container[val_iZone]->SetExtIter(ExtIter);
 
@@ -1747,6 +1732,8 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   /*--- Set the recording status ---*/
   
   CurrentRecording = kind_recording;
+
+  /* --- Reset the number of the internal iterations---*/
 
   config_container[ZONE_0]->SetIntIter(IntIter);
 
@@ -1839,14 +1826,7 @@ void CDiscAdjMeanFlowIteration::Update(COutput *output,
                                        CSurfaceMovement **surface_movement,
                                        CVolumetricMovement **grid_movement,
                                        CFreeFormDefBox*** FFDBox,
-                                       unsigned short val_iZone)      {
-
-  solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->Postprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0);
-
-  if (turbulent){
-    solver_container[val_iZone][MESH_0][ADJTURB_SOL]->Postprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0);
-  }
-}
+                                       unsigned short val_iZone)      { }
 void CDiscAdjMeanFlowIteration::Monitor()     { }
 void CDiscAdjMeanFlowIteration::Output()      { }
 void CDiscAdjMeanFlowIteration::Postprocess() { }

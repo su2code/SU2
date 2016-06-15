@@ -4914,9 +4914,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                     case D_DESIGN:
                       cout << "Design Variables." << endl;
                       break;
-                  case D_FLOWCONTROL:
-                    cout << "Flow Control Parameters." << endl;
-                    break;
                     default:
                       break;
                   }
@@ -8355,78 +8352,4 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
   SetBaselineResult_Files(solver,geometry, config, 0, val_nZone);
 
 }
-
-void COutput::SetFlowControl_Sens(CSolver ****solver_container, CConfig **config, unsigned short val_iZone){
-
-  ofstream FlowControl_file;
-
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-  unsigned short iParam, iMarker, iMarker_InletUnst, iMarker_InletUnst_Total,
-      nMarker_InletUnst = config[val_iZone]->GetnMarker_InletUnst();
-  string Marker_Tag;
-  su2double** Buffer_Send_Sens_FlowParam = new su2double*[nMarker_InletUnst];
-  su2double** Buffer_Recv_Sens_FlowParam = new su2double*[nMarker_InletUnst];
-
-  for (iMarker_InletUnst = 0; iMarker_InletUnst < nMarker_InletUnst; iMarker_InletUnst++){
-    Buffer_Send_Sens_FlowParam[iMarker_InletUnst] = new su2double[5];
-    Buffer_Recv_Sens_FlowParam[iMarker_InletUnst] = new su2double[5];
-    for (iParam = 0; iParam < 5 ; iParam++){
-      Buffer_Send_Sens_FlowParam[iMarker_InletUnst][iParam] = 0;
-    }
-  }
-
-  iMarker_InletUnst = 0;
-
-  for (iMarker_InletUnst_Total = 0; iMarker_InletUnst_Total < nMarker_InletUnst; iMarker_InletUnst_Total++){
-    for (iMarker = 0; iMarker < config[val_iZone]->GetnMarker_All(); iMarker++) {
-      Marker_Tag = config[val_iZone]->GetMarker_All_TagBound(iMarker);
-      if (config[val_iZone]->GetMarker_InletUnst(iMarker_InletUnst_Total) == Marker_Tag) {
-        for (iParam = 0; iParam < 5 ; iParam++){
-          Buffer_Send_Sens_FlowParam[iMarker_InletUnst_Total][iParam] = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_FlowParam(iMarker_InletUnst, iParam);
-        }
-        iMarker_InletUnst++;
-      }
-    }
-
-#ifdef HAVE_MPI
-    SU2_MPI::Reduce(Buffer_Send_Sens_FlowParam[iMarker_InletUnst_Total], Buffer_Recv_Sens_FlowParam[iMarker_InletUnst_Total], 5, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-#else
-    for (iParam = 0; iParam < 5 ; iParam++){
-      Buffer_Recv_Sens_FlowParam[iMarker_InletUnst_Total ][iParam] = Buffer_Send_Sens_FlowParam[iMarker_InletUnst_Total][iParam];
-    }
-
-#endif
-  }
-
-  if (rank == MASTER_NODE){
-    string Filename = "control_sens.dat";
-
-    Filename = config[val_iZone]->GetObjFunc_Extension(Filename);
-
-    FlowControl_file.open(Filename.c_str(), ios::out);
-    FlowControl_file.precision(12);
-
-    for (iMarker_InletUnst = 0; iMarker_InletUnst < nMarker_InletUnst; iMarker_InletUnst++){
-      for (iParam = 0; iParam < 5 ; iParam++){
-        FlowControl_file << std::scientific<<Buffer_Recv_Sens_FlowParam[iMarker_InletUnst][iParam] << " ";
-      }
-      FlowControl_file << endl;
-    }
-    FlowControl_file.close();
-  }
-
-  for (iMarker_InletUnst = 0; iMarker_InletUnst < nMarker_InletUnst; iMarker_InletUnst++){
-    delete [] Buffer_Send_Sens_FlowParam[iMarker_InletUnst];
-    delete [] Buffer_Recv_Sens_FlowParam[iMarker_InletUnst];
-  }
-  delete [] Buffer_Send_Sens_FlowParam;
-  delete [] Buffer_Recv_Sens_FlowParam;
-}
-
 

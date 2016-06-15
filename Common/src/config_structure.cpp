@@ -453,11 +453,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    flow_direction_y, flow_direction_z, ... ) where flow_direction is
    a unit vector. \ingroup Config*/
   addInletOption("MARKER_INLET", nMarker_Inlet, Marker_Inlet, Inlet_Ttotal, Inlet_Ptotal, Inlet_FlowDir);
-  /*!\brief MARKER_INLET  \n DESCRIPTION: Inlet boundary marker(s) for UNSTEADY flow actuaion with the following formats,
-   Total Conditions: (inlet marker, inlet density, actuation parameters, flow_angles ... ) where flow_angles is
-   a unit vector wrt averaged surface normal of a given inlet.
-  */
-  addInletUnstOption("MARKER_INLET_UNST", nMarker_InletUnst, Marker_InletUnst, Inlet_RhoUnst, Inlet_FlowParamUnst);
+
   /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector.
    * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
@@ -713,11 +709,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
-
-  /*!\brief OPT_PROBLEM_TYPE
-   *  \n DESCRIPTION: Type of Design Probelm \n OPTIONS: See \link OptProblem_Type  \endlink \n DEFAULT: SHAPE_OPT  \ingroup Config*/
-  addEnumOption("OPT_PROBLEM_TYPE", Kind_OptProblem, OptProblem_Map, SHAPE_OPT);
-
   default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
   /*!\brief AD_COEFF_FLOW \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients \ingroup Config*/
   addDoubleArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
@@ -2653,7 +2644,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir +
-  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D + nMarker_InletUnst;
+  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
   
   /*--- Add the possible send/receive domains ---*/
 
@@ -2790,13 +2781,6 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Marker_CfgFile_KindBC[iMarker_CfgFile] = INLET_FLOW;
     iMarker_CfgFile++;
   }
-
-  for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_InletUnst; iMarker_Inlet++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_InletUnst[iMarker_Inlet];
-    Marker_CfgFile_KindBC[iMarker_CfgFile] = INLET_FLOW_UNST;
-    iMarker_CfgFile++;
-  }
-
 
   for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Riemann[iMarker_Riemann];
@@ -5090,27 +5074,11 @@ su2double CConfig::GetInlet_Ttotal(string val_marker) {
   return Inlet_Ttotal[iMarker_Inlet];
 }
 
-su2double CConfig::GetInlet_RhoUnst(string val_marker) {
-  unsigned short iMarker_Inlet;
-  for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_InletUnst; iMarker_Inlet++)
-    if (Marker_InletUnst[iMarker_Inlet] == val_marker) break;
-  return Inlet_RhoUnst[iMarker_Inlet];
-}
-
-
 su2double CConfig::GetInlet_Ptotal(string val_marker) {
   unsigned short iMarker_Inlet;
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
   return Inlet_Ptotal[iMarker_Inlet];
-}
-
-
-su2double* CConfig::GetInlet_FlowParamUnst(string val_marker) {
-  unsigned short iMarker_Inlet;
-  for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_InletUnst; iMarker_Inlet++)
-    if (Marker_InletUnst[iMarker_Inlet] == val_marker) break;
-  return Inlet_FlowParamUnst[iMarker_Inlet];
 }
 
 su2double* CConfig::GetInlet_FlowDir(string val_marker) {

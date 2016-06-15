@@ -41,7 +41,8 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config)  : CSolver(
 
 CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CSolver(){
 
-  unsigned short iVar, iMarker, iDim, iParam;
+  unsigned short iVar, iMarker, iDim;
+
   bool restart = config->GetRestart();
 
   unsigned long iVertex, iPoint, index;
@@ -66,7 +67,6 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
 
   nMarker      = config->GetnMarker_All();
-  nMarker_InletUnst  = config->GetnMarker_InletUnst();
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
@@ -93,7 +93,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   Solution   = new su2double[nVar];
 
-  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 1e-16;
+  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 1e-16;
 
   /*--- Sensitivity definition and coefficient in all the markers ---*/
 
@@ -108,26 +108,6 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   Sens_AoA  = new su2double[nMarker];
   Sens_Press = new su2double[nMarker];
   Sens_Temp  = new su2double[nMarker];
-
-
-  Local_Sens_FlowParam = NULL;
-  Total_Sens_FlowParam = NULL;
-
-  if (config->GetKind_Opt_Problem() == FLOW_CONTROL){
-    Local_Sens_FlowParam = new su2double*[nMarker];
-    Total_Sens_FlowParam = new su2double*[nMarker];
-
-    for (iMarker = 0; iMarker < nMarker; iMarker++){
-      if(config->GetMarker_All_KindBC(iMarker) ==  INLET_FLOW_UNST){
-        Total_Sens_FlowParam[iMarker]    = new su2double[5];
-        Local_Sens_FlowParam[iMarker]    = new su2double[5];
-        for (iParam = 0; iParam < 5; iParam++){
-          Local_Sens_FlowParam[iMarker][iParam]    = 0.0;
-          Total_Sens_FlowParam[iMarker][iParam]    = 0.0;
-        }
-      }
-    }
-  }
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
       Sens_Geo[iMarker]  = 0.0;
@@ -307,9 +287,6 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 }
 
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
-  string Marker_Tag;
-  su2double *FlowParam;
-  unsigned short iMarker, iParam;
 
   /*--- Register farfield values as input ---*/
 
@@ -353,21 +330,6 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   }
 
-  /*--- Register flow control parameters as input ---*/
-
-  if((KindDirect_Solver == RUNTIME_FLOW_SYS) && (config->GetKind_Opt_Problem() == FLOW_CONTROL)){
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) ==  INLET_FLOW_UNST) {
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        FlowParam  =  config->GetInlet_FlowParamUnst(Marker_Tag);
-        if (!reset){
-          for (iParam = 0; iParam < 5; iParam++){
-            AD::RegisterInput(FlowParam[iParam]);
-          }
-        }
-      }
-    }
-  }
 
     /*--- Here it is possible to register other variables as input that influence the flow solution
      * and thereby also the objective function. The adjoint values (i.e. the derivatives) can be
@@ -452,8 +414,7 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
 void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
   int rank = MASTER_NODE;
 
-  bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING)||((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                                                                              (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() != STEADY;
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
   unsigned long ExtIter = config->GetExtIter();
   su2double seeding = 1.0;
@@ -551,10 +512,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
-  string Marker_Tag;
   su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
-  su2double *FlowParam;
-  unsigned short iMarker_InletUnst = 0, iMarker, iParam;
 
   /*--- Extract the adjoint values of the farfield values ---*/
 
@@ -577,43 +535,8 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 #endif
   }
 
-  /*--- Extract adjoint values of flow control parameters ---*/
-
-  if((KindDirect_Solver == RUNTIME_FLOW_SYS) && (config->GetKind_Opt_Problem() == FLOW_CONTROL)){
-
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) ==  INLET_FLOW_UNST) {
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-        FlowParam  =  config->GetInlet_FlowParamUnst(Marker_Tag);
-        for (iParam = 0; iParam < 5; iParam++){
-          Local_Sens_FlowParam[iMarker_InletUnst][iParam]  = SU2_TYPE::GetDerivative( FlowParam[iParam] );
-        }
-        iMarker_InletUnst++;
-      }
-    }
-  }
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
 
-}
-
-void CDiscAdjSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh){
-
-  unsigned short iMarker, iMarker_InletUnst = 0, iParam;
-
-
-  if((KindDirect_Solver == RUNTIME_FLOW_SYS) && (config->GetKind_Opt_Problem() == FLOW_CONTROL)){
-
-    /*--- Update the total flow control sensitivities ---*/
-
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) ==  INLET_FLOW_UNST) {
-        for (iParam = 0; iParam < 5; iParam++){
-          Total_Sens_FlowParam[iMarker_InletUnst][iParam] += Local_Sens_FlowParam[iMarker_InletUnst][iParam];
-        }
-        iMarker_InletUnst++;
-      }
-    }
-  }
 }
 
 void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){

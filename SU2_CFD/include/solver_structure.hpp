@@ -829,20 +829,6 @@ public:
      * \param[in] config - Definition of the particular problem.
      * \param[in] val_marker - Surface marker where the boundary condition is applied.
      */
-    virtual void BC_Inlet_Unst(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                          CConfig *config, unsigned short val_marker);
-
-
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
 	virtual void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
   
@@ -2849,15 +2835,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetFreeStream_Solution(CConfig *config);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iMarker - Unsteady inlet marker.
-   * \param[in] iParam - Parameter index.
-   * \return Flow control sensitivity of parameter iParam on marker iMarker.
-   */
-  virtual su2double GetTotal_Sens_FlowParam(unsigned short iMarker, unsigned short iParam);
-
 };
 
 /*!
@@ -3577,19 +3554,6 @@ public:
 	 */
 	void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                   CConfig *config, unsigned short val_marker);
-    
-    /*!
-     * \brief Impose a subsonic inlet boundary condition.
-     * \param[in] geometry - Geometrical definition of the problem.
-     * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-     * \param[in] config - Definition of the particular problem.
-     * \param[in] val_marker - Surface marker where the boundary condition is applied.
-     */
-    void BC_Inlet_Unst(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker);
-
 
 	/*!
 	 * \brief Impose a supersonic inlet boundary condition.
@@ -7717,9 +7681,8 @@ private:
   su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to outlet pressure. */
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
   su2double Mach, Alpha, Beta, Pressure, Temperature;
-  unsigned short nMarker, nMarker_InletUnst;				/*!< \brief Total number of markers using the grid information. */
-  su2double **Total_Sens_FlowParam,
-            **Local_Sens_FlowParam;
+  unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
+
 public:
 
   /*!
@@ -7846,14 +7809,6 @@ public:
   su2double GetTotal_Sens_Temp(void);
 
   /*!
-   * \brief Get the total sensitivity of the flow control parameters.
-   * \param[in] iMarker - Unsteady inlet marker.
-   * \param[in] iParam - Parameter index.
-   * \return Flow control sensitivity of parameter iParam on marker iMarker.
-   */
-  su2double GetTotal_Sens_FlowParam(unsigned short iMarker, unsigned short iParam);
-
-  /*!
    * \author H. Kline
    * \brief Get the total Back pressure number sensitivity coefficient.
    * \return Value of the Back sensitivity coefficient
@@ -7889,8 +7844,16 @@ public:
    */
   void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
 
-  void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
-
+	/*!
+	 * \brief Update the dual-time derivatives.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+	* \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	* \param[in] Output - boolean to determine whether to print output.
+	 */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
 };
 #include "solver_structure.inl"
