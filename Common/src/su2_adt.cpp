@@ -265,23 +265,26 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short      nDim,
   /*--- Gather the coordinates of the points on all ranks. ---*/
   for(int i=0; i<size; ++i) {recvCounts[i] *= nDim; displs[i] *= nDim;}
 
-  vector<su2double> allCoor(nDim*sizeGlobal);
-  MPI_Allgatherv(coor, nDim*sizeLocal, MPI_DOUBLE, allCoor.data(),
+  coorPoints.resize(nDim*sizeGlobal);
+  MPI_Allgatherv(coor, nDim*sizeLocal, MPI_DOUBLE, coorPoints.data(),
                  recvCounts.data(), displs.data(), MPI_DOUBLE, MPI_COMM_WORLD);
-
-  /*--- Build the tree. ---*/
-  BuildADT(nDim, sizeGlobal, allCoor.data());
-
 #else
 
-  /*--- Sequential mode. Copy the point IDs and set the ranks to MASTER_NODE. ---*/
+  /*--- Sequential mode. Copy the coordinates and point IDs and
+        set the ranks to MASTER_NODE. ---*/
+  coorPoints.assign(coor, coor + nDim*nPoints);
   localPointIDs.assign(pointID, pointID + nPoints);
   ranksOfPoints.assign(nPoints, MASTER_NODE);
 
-  /*--- Build the tree. ---*/
-  BuildADT(nDim, nPoints, coor);
-
 #endif
+
+  /*--- Build the tree. ---*/
+  BuildADT(nDim, localPointIDs.size(), coorPoints.data());
+
+  /*--- Reserve the memory for frontLeaves and frontLeavesNew,
+        which are needed during the tree search. ---*/
+  frontLeaves.reserve(200);
+  frontLeavesNew.reserve(200);
 }
 
 void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
@@ -289,6 +292,113 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
                                                   unsigned long   &pointID,
                                                   int             &rankID) {
 
-  cout << "su2_adtPointsOnlyClass::DetermineNearestNode: Not implemented yet" << endl;
-  exit(1);
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Initialize the nearest node to node 0. Note that the       ---*/
+  /*---         distance is the distance squared to avoid a sqrt.          ---*/
+  /*--------------------------------------------------------------------------*/
+
+  pointID = localPointIDs[0];
+  rankID  = ranksOfPoints[0];
+
+  dist = 0.0;
+  for(unsigned short l=0; l<nDimADT; ++l) {
+    const su2double ds = coor[l] - coorPoints[l];
+    dist += ds*ds;
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Traverse the tree and search for the nearest node.         ---*/
+  /*---         During the tree traversal the currently stored distance    ---*/
+  /*---         squared is modified, because the guaranteed minimum        ---*/
+  /*---         distance squared of the children could be smaller.         ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Start at the root leaf of the ADT, i.e. initialize frontLeaves such that
+     it only contains the root leaf. Make sure to wipe out any data from a
+     previous search. */
+  frontLeaves.clear();
+  frontLeaves.push_back(0);
+
+  /* Infinite loop of the tree traversal. */
+  for(;;) {
+
+    /* Initialize the new front, i.e. the front for the next round to empty. */
+    frontLeavesNew.clear();
+
+    /* Loop over the leaves of the current front. */
+    for(unsigned long i=0; i<frontLeaves.size(); ++i) {
+
+      /* Store the current leaf a bit easier in ll and loop over its children. */
+      const unsigned long ll = frontLeaves[i];
+      for(unsigned short mm=0; mm<2; ++mm) {
+
+        /* Determine whether this child contains a node or a leaf
+           of the next level of the ADT. */
+        const unsigned long kk = leaves[ll].children[mm];
+        if( leaves[ll].childrenAreTerminal[mm] ) {
+
+          /*--- Child contains a node. Compute the distance squared to this node
+                and store it if this distance squared is less than the currently
+                stored value. ---*/
+          const su2double *coorTarget = coorPoints.data() + nDimADT*kk;
+          su2double distTarget = 0;
+          for(unsigned short l=0; l<nDimADT; ++l) {
+            const su2double ds = coor[l] - coorTarget[l];
+            distTarget += ds*ds;
+          }
+
+          if(distTarget < dist) {
+            dist    = distTarget;
+            pointID = localPointIDs[kk];
+            rankID  = ranksOfPoints[kk];
+          }
+        }
+        else {
+
+          /*--- Child contains a leaf. Determine the possible minimum distance
+                squared to that leaf. ---*/
+          su2double posDist = 0.0;
+          for(unsigned short l=0; l<nDimADT; ++l) {
+            su2double ds = 0.0;
+            if(     coor[l] < leaves[kk].xMin[l]) ds = coor[l] - leaves[kk].xMin[l];
+            else if(coor[l] > leaves[kk].xMax[l]) ds = coor[l] - leaves[kk].xMax[l];
+
+            posDist += ds*ds;
+          }
+
+          /*--- Check if the possible minimum distance is less than the currently
+                stored minimum distance. If so this leaf must be stored for the
+                next round. In that case also the guaranteed minimum distance
+                squared is determined, which is used to update the currently
+                stored value. ---*/
+          if(posDist < dist) {
+            frontLeavesNew.push_back(kk);
+
+            su2double guarDist = 0.0;
+            for(unsigned short l=0; l<nDimADT; ++l) {
+              const su2double dsMin = fabs(coor[l] - leaves[kk].xMin[l]);
+              const su2double dsMax = fabs(coor[l] - leaves[kk].xMax[l]);
+              const su2double ds    = max(dsMin, dsMax);
+
+              guarDist += ds*ds;
+            }
+
+            dist = min(dist, guarDist);
+          }
+        }
+      }
+    }
+
+    /*--- End of the loop over the current front. Copy the data from
+          frontLeavesNew to frontLeaves for the next round. If the new front
+          is empty the entire tree has been traversed and a break can be made
+          from the infinite loop. ---*/
+    frontLeaves = frontLeavesNew;
+    if(frontLeaves.size() == 0) break;
+
+  }
+
+  /* At the moment the distance squared to the nearest node is stored.
+     Take the sqrt to obtain the correct value. */
+  dist = sqrt(dist);
 }
