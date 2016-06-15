@@ -3059,18 +3059,6 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
   
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
-  su2double xCoord, yCoord, y_0, y_perio, Physical_dt, Physical_t, Total_t, t_perio, Period, Boundary_Vel, kine_boundary, omega_boundary;
-  su2double cf_kine[12]  = { 3.89730829e+18,  -4.55651664e+18,   1.77708922e+18,
-      											-3.48765006e+17,   3.95506554e+16,  -2.72309170e+15,
-														 1.13880635e+14,  -2.76896802e+12,   3.51712578e+10,
-                            -1.84279953e+08,   2.72687598e+05,   2.55438016e+02 };
-  su2double cf_omega[12] = { 1.21948682e+20,  -2.12517413e+20,   9.24840370e+19,
-      											-1.90757174e+19,   2.22023659e+18,  -1.54813496e+17,
-														 6.48753320e+15,  -1.56063222e+14,   1.91633360e+12,
-														-9.13246014e+09,   1.19810669e+07,   3.25130911e+04};
-
-
-
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
@@ -3100,31 +3088,6 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       for (iVar = 0; iVar < nVar; iVar++)
       Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
       
-      xCoord = geometry->node[iPoint]->GetCoord(nDim-2);
-      yCoord = geometry->node[iPoint]->GetCoord(nDim-1);
-
-      Physical_dt = config->GetDelta_UnstTime();
-    	Physical_t  = (config->GetExtIter()+1)*Physical_dt;
-    	Total_t = config->GetTotal_UnstTime();
-
-      Period = 0.0048429906542056074;
-      Boundary_Vel = 21.4;
-      y_0 = -0.02755;
-
-      if (config->GetUnsteady_Simulation() == 0) Physical_t = 0;
-      t_perio = fmod(Physical_t, Period);
-      y_perio = fmod(Boundary_Vel*t_perio + (yCoord - y_0), 0.105);
-      kine_boundary = 0.0;
-			omega_boundary = 0.0;
-      for (iPol = 0; iPol < 11; iPol++) {
-                	kine_boundary  += cf_kine[iPol]*pow(y_perio, 11-iPol);
-                	omega_boundary += cf_omega[iPol]*pow(y_perio, 11-iPol);
-      }
-
-      Solution_j[0]= fabs(kine_boundary);//kine_Inf;
-      Solution_j[1]= fabs(omega_boundary);////omega_Inf;
-      
-
       Solution_j[0]= kine_Inf;
       Solution_j[1]= omega_Inf;
 

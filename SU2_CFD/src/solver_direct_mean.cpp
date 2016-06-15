@@ -7331,19 +7331,8 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Build the external state u_e from boundary data and internal node ---*/
       
-
-      /*--- HARDCODED FOR TEST ONLY!! ---*/
-      su2double cf_Ptot[12] =  {   -6.73663689e+17,   1.12411856e+18,  -4.83226269e+17,
-               											9.88201983e+16,  -1.13992280e+16,   7.85444629e+14,
-                                   -3.22937326e+13,   7.48549094e+11,  -8.34675811e+09,
-                                    2.48684750e+07,   8.09013446e+04,   1.86888784e+04};
-      /*--------------------------------*/
-      
       switch(config->GetKind_Data_Riemann(Marker_Tag))
       {
-          //TODO(turbo), generilize for 3D case
-          //TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
-          //TODO(turbo), implement not uniform inlet and radial equilibrium for the outlet
         case TOTAL_CONDITIONS_PT:
           /*--- Retrieve the specified total conditions for this boundary. ---*/
           if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
@@ -7518,10 +7507,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         case UNSTEADY_TOTAL_CONDITIONS_PT:
           su2double xCoord, yCoord, y_0, y_perio, Physical_dt, Physical_t, Total_t, t_perio, Period, Boundary_Vel;
 
-           xCoord = geometry->node[iPoint]->GetCoord(nDim-2);
-           yCoord = geometry->node[iPoint]->GetCoord(nDim-1);
-
-
            if (spectral_method) {
            	/*--- time interval using nTimeInstances ---*/
           	 Physical_dt = (su2double)config->GetSpectralMethod_Period()/(su2double)(config->GetnTimeInstances());
@@ -7532,14 +7517,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           	 Physical_t  = (config->GetExtIter()+1)*Physical_dt;
            }
 
-           /*--- HARDCODED FOR TEST ONLY!! ---*/
-           Period = 0.0048429906542056074;
-           Boundary_Vel = 21.4;
-           y_0 = -0.02755;
-
            if (config->GetUnsteady_Simulation() == 0) Physical_t = 0;
-           t_perio = fmod(Physical_t, Period);
-           y_perio = fmod(Boundary_Vel*t_perio + (yCoord - y_0), 0.105);
 
           /*--- Retrieve the specified total conditions for this boundary. ---*/
           if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
@@ -7548,14 +7526,12 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
 
           /*--- HARDCODED FOR TEST ONLY!! ---*/
-          for (iPol = 0; iPol < 11; iPol++) {
-          	P_Total += cf_Ptot[iPol]*pow(y_perio, 11-iPol);
-          }
-//          P_Total = config->GetRiemann_Var1(Marker_Tag)*(1+0.2*sin(3841.71901638980430303432*Physical_t));
+          P_Total = config->GetRiemann_Var1(Marker_Tag)*(1+0.3*sin(3841.71901638980430303432*Physical_t));
 
           /*--- Non-dim. the inputs if necessary. ---*/
           P_Total /= config->GetPressure_Ref();
           T_Total /= config->GetTemperature_Ref();
+
 
           /* --- Computes the total state --- */
           FluidModel->SetTDState_PT(P_Total, T_Total);
@@ -8684,6 +8660,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
+  bool spectral_method = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
   su2double *Normal = new su2double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -8737,11 +8714,24 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             /*--- Total properties have been specified at the inlet. ---*/
             
           case TOTAL_CONDITIONS:
-            
+          	su2double Physical_dt, Physical_t ;
+
+           if (spectral_method) {
+           	/*--- time interval using nTimeInstances ---*/
+          	 Physical_dt = (su2double)config->GetSpectralMethod_Period()/(su2double)(config->GetnTimeInstances());
+          	 Physical_t  = config->GetiZone()*Physical_dt;
+           }
+           else {
+          	 Physical_dt = (su2double)config->GetDelta_UnstTime();
+          	 Physical_t  = (config->GetExtIter())*Physical_dt;
+           }
             /*--- Retrieve the specified total conditions for this inlet. ---*/
             
-            if (gravity) P_Total = config->GetInlet_Ptotal(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;
-            else P_Total  = config->GetInlet_Ptotal(Marker_Tag);
+//            if (gravity) P_Total = config->GetInlet_Ptotal(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;
+//            else P_Total  = config->GetInlet_Ptotal(Marker_Tag);
+
+            P_Total = config->GetInlet_Ptotal(Marker_Tag)*(1+0.4*sin(3841.71901638980430303432*Physical_t));
+
             T_Total  = config->GetInlet_Ttotal(Marker_Tag);
             Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
             
@@ -9054,7 +9044,8 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
   su2double *Normal = new su2double[nDim];
-  
+  bool spectral_method = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
+
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
@@ -9086,11 +9077,22 @@ void CEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Build the fictitious intlet state based on characteristics ---*/
       if (compressible) {
-        
-        /*--- Retrieve the specified back pressure for this outlet. ---*/
+      	su2double xCoord, yCoord, y_0, y_perio, Physical_dt, Physical_t, Total_t, t_perio, Period, Boundary_Vel;
+
+      	if (spectral_method) {
+      		/*--- time interval using nTimeInstances ---*/
+      		Physical_dt = (su2double)config->GetSpectralMethod_Period()/(su2double)(config->GetnTimeInstances());
+      		Physical_t  = config->GetiZone()*Physical_dt;
+      	}
+      	else {
+      		Physical_dt = (su2double)config->GetDelta_UnstTime();
+      		Physical_t  = (config->GetExtIter())*Physical_dt;
+      	}
+      	/*--- Retrieve the specified back pressure for this outlet. ---*/
         if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;
         else P_Exit = config->GetOutlet_Pressure(Marker_Tag);
         
+//        P_Exit = config->GetOutlet_Pressure(Marker_Tag)*(1+0.2*sin(3841.71901638980430303432*Physical_t));
         /*--- Non-dim. the inputs if necessary. ---*/
         P_Exit = P_Exit/config->GetPressure_Ref();
         
