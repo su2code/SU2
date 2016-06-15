@@ -189,7 +189,7 @@ void CAuxMPIWrapper::Waitall(int nrequests, MPI_Request *request,
 
   /*--- Wait for aux. requests and finish communication ---*/
 
-  for (unsigned int iVal = 0; iVal < nrequests; iVal++) {
+  for (int iVal = 0; iVal < nrequests; iVal++) {
     if((CommInfoIterator = CommInfoMap.find(&request[iVal])) != CommInfoMap.end()) {
       FinalizeCommunication(CommInfoIterator);
     }
