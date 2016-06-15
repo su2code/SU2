@@ -205,9 +205,11 @@ private:
   vector<unsigned long> frontLeaves;    /*!< \brief Vector used in the tree traversal. */
   vector<unsigned long> frontLeavesNew; /*!< \brief Vector used in the tree traversal. */
 
+  vector<su2double>     coorPoints;    /*!< \brief Vector, which contains the coordinates
+                                                   of the points in the ADT. */
   vector<unsigned long> localPointIDs; /*!< \brief Vector, which contains the local point ID's
                                                    of the points in the ADT. */
-  vector<int>           ranksOfPoints; /*!< \brief Vector, which contains the  ranks
+  vector<int>           ranksOfPoints; /*!< \brief Vector, which contains the ranks
                                                    of the points in the ADT. */
 public:
   /*!
