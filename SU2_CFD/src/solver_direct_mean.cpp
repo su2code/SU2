@@ -109,7 +109,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool adjoint = config->GetContinuous_Adjoint();
+  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename = config->GetSolution_FlowFileName();
   
   unsigned short direct_diff = config->GetDirectDiff();
@@ -3236,7 +3236,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Initialize the Jacobian matrices ---*/
   
   if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
-  
+
   /*--- Error message ---*/
   
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
@@ -11960,6 +11960,31 @@ void CEulerSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config)
   
 }
 
+void CEulerSolver::SetFreeStream_Solution(CConfig *config){
+
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  unsigned long iPoint;
+  unsigned short iDim;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    if (compressible){
+      node[iPoint]->SetSolution(0, Density_Inf);
+      for (iDim = 0; iDim < nDim; iDim++){
+        node[iPoint]->SetSolution(iDim+1, Density_Inf*Velocity_Inf[iDim]);
+      }
+      node[iPoint]->SetSolution(nVar-1, Density_Inf*Energy_Inf);
+    }
+    if (incompressible){
+      node[iPoint]->SetSolution(0, Pressure_Inf);
+      for (iDim = 0; iDim < nDim; iDim++){
+        node[iPoint]->SetSolution(iDim+1, Density_Inf*Velocity_Inf[iDim]);
+      }
+    }
+  }
+}
+
 CNSSolver::CNSSolver(void) : CEulerSolver() {
   
   /*--- Basic array initialization ---*/
@@ -11999,7 +12024,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool adjoint = config->GetContinuous_Adjoint();
+  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename = config->GetSolution_FlowFileName();
   
   unsigned short direct_diff = config->GetDirectDiff();
@@ -12862,7 +12887,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   /*--- Initialize the Jacobian matrices ---*/
   
   if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
-  
+
   /*--- Error message ---*/
   
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
