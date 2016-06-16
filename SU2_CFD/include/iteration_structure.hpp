@@ -933,6 +933,19 @@ public:
                        unsigned short iZone,
                        unsigned short kind_recording);
 
+  /*!
+   * \brief load unsteady solution for unsteady problems
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_DirectIter - Direct iteration to load.
+   */
+  void LoadUnsteady_Solution(CGeometry ***geometry_container,
+                      CSolver ****solver_container,
+                      CConfig **config_container,
+                      unsigned short val_iZone,
+                      int val_DirectIter);
 };
 
 
