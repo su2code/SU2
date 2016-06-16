@@ -80,6 +80,22 @@ def main():
     discadj_rans_naca0012_sst.tol       = 0.00001
     test_list.append(discadj_rans_naca0012_sst)
 
+    #######################################################
+    ### Unsteady Disc. adj. compressible RANS           ###
+    #######################################################
+   
+    # Turbulent Cylinder
+    discadj_cylinder           = TestCase('unsteady_cylinder')
+    discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
+    discadj_cylinder.cfg_file  = "cylinder.cfg" 
+    discadj_cylinder.test_iter = 10
+    discadj_cylinder.test_vals = [3.522068,-1.787841,-1.2030e-02,1.1156e-03] #last 4 columns
+    discadj_cylinder.su2_exec  = "SU2_CFD_AD"
+    discadj_cylinder.timeout   = 1600
+    discadj_cylinder.tol       = 0.00001
+    discadj_cylinder.unsteady  = True
+    test_list.append(discadj_cylinder)
+
     ######################################
     ### RUN TESTS                      ###
     ######################################  

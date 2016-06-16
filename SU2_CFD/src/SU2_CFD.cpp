@@ -258,7 +258,7 @@ int main(int argc, char *argv[]) {
           (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS))
         geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     }
-    
+
     
   }
   
