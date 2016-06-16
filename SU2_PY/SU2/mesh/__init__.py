@@ -4,4 +4,4 @@ __all__ = ['adapt']
 
 from SU2.mesh import adapt
 
-from tools import *
+from SU2.mesh.tools import *
