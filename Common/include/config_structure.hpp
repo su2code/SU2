@@ -228,7 +228,7 @@ private:
 	su2double *NRBC_Var1, *NRBC_Var2;    /*!< \brief Specified values for NRBC boundary. */
 	su2double **NRBC_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for NRBC boundaries. */
 	su2double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
-	su2double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
+    su2double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
 	su2double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
 	su2double *Inlet_Pressure;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
 	su2double **Inlet_Velocity;  /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
@@ -281,6 +281,7 @@ private:
 	unsigned long Dyn_nIntIter;			/*!< \brief Number of internal iterations (Newton-Raphson Method for nonlinear structural analysis). */
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
   long Unst_AdjointIter;			/*!< \brief Iteration number to begin the reverse time integration in the direct solver for the unsteady adjoint. */
+  long Iter_Avg_Objective;			/*!< \brief Iteration the number of time steps to be averaged, counting from the back */
   long Dyn_RestartIter;			/*!< \brief Iteration number to restart a dynamic structural analysis. */
   unsigned short nRKStep;			/*!< \brief Number of steps of the explicit Runge-Kutta method. */
 	su2double *RK_Alpha_Step;			/*!< \brief Runge-Kutta beta coefficients. */
@@ -2195,7 +2196,13 @@ public:
   long GetUnst_AdjointIter(void);
 
   /*!
-	 * \brief Get the restart iteration number for dynamic structural simulations.
+  * \brief Number of iterations to average (reverse time integration).
+  * \return Starting direct iteration number for the unsteady adjoint.
+  */
+  unsigned long GetIter_Avg_Objective(void);
+
+  /*!
+   * \brief Get the restart iteration number for dynamic structural simulations.
 	 * \return Restart iteration number for dynamic structural simulations.
 	 */
   long GetDyn_RestartIter(void);
@@ -2407,7 +2414,7 @@ public:
 	 */
 	string GetMarker_EngineExhaust(unsigned short val_marker);
 
-    /*!
+  /*!
 	 * \brief Get the name of the surface defined in the geometry file.
 	 * \param[in] val_marker - Value of the marker in which we are interested.
 	 * \return Name that is in the geometry file for the surface that

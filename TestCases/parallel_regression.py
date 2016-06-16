@@ -376,10 +376,11 @@ def main():
     square_cylinder.cfg_dir   = "unsteady/square_cylinder"
     square_cylinder.cfg_file  = "turb_square.cfg"
     square_cylinder.test_iter = 3
-    square_cylinder.test_vals = [-1.544602, 0.048576, 1.398951, 2.196894] #last 4 columns
+    square_cylinder.test_vals = [-1.166422,0.076751,1.398549,2.197047] #last 4 columns
     square_cylinder.su2_exec  = "parallel_computation.py -f"
     square_cylinder.timeout   = 1600
     square_cylinder.tol       = 0.00001
+    square_cylinder.unsteady  = True
     test_list.append(square_cylinder)
 
     # Gust
