@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -88,6 +88,8 @@ inline unsigned long CConfig::GetDyn_nIntIter(void) { return Dyn_nIntIter; }
 inline long CConfig::GetUnst_RestartIter(void) { return Unst_RestartIter; }
 
 inline long CConfig::GetUnst_AdjointIter(void) { return Unst_AdjointIter; }
+
+inline unsigned long CConfig::GetIter_Avg_Objective(void) { return Iter_Avg_Objective ; }
 
 inline long CConfig::GetDyn_RestartIter(void) { return Dyn_RestartIter; }
 
@@ -924,6 +926,10 @@ inline string CConfig::GetObjFunc_Value_FileName(void) { return ObjFunc_Value_Fi
 inline string CConfig::GetSurfFlowCoeff_FileName(void) { return SurfFlowCoeff_FileName; }
 
 inline string CConfig::GetSurfAdjCoeff_FileName(void) { return SurfAdjCoeff_FileName; }
+
+inline string CConfig::GetSurfSens_FileName(void) { return SurfSens_FileName; }
+
+inline string CConfig::GetVolSens_FileName(void) { return VolSens_FileName; }
 
 inline unsigned short CConfig::GetResidual_Func_Flow(void) { return Residual_Func_Flow; }
 

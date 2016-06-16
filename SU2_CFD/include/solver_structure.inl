@@ -2,7 +2,7 @@
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -550,7 +550,7 @@ inline void CSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_cont
 
 inline void CSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										 CConfig *config, unsigned short val_marker) { }
-                     
+
 inline void CSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										  CConfig *config, unsigned short val_marker) { }
                       
@@ -1177,4 +1177,18 @@ inline su2double CSolver::GetSlidingState(unsigned short val_marker, unsigned lo
 inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){}
 
 inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){}
+
+inline void CSolver::SetFreeStream_Solution(CConfig *config){}
+
+inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config){
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint]->SetSolution(0, nu_tilde_Inf);
+}
+
+inline void CTurbSSTSolver::SetFreeStream_Solution(CConfig *config){
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+    node[iPoint]->SetSolution(0, kine_Inf);
+    node[iPoint]->SetSolution(1, omega_Inf);
+  }
+}
 
