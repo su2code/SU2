@@ -32,6 +32,8 @@
 
 #include "../include/su2_adt.hpp"
 
+#include <iomanip>
+
 su2_adtComparePointClass::su2_adtComparePointClass(const su2double      *coor,
                                                    const unsigned short splitDir,
                                                    const unsigned short nDimADT)
@@ -46,6 +48,8 @@ void su2_adtNodeClass::Copy(const su2_adtNodeClass &other) {
 
   children[0] = other.children[0];
   children[1] = other.children[1];
+
+  centralNodeID = other.centralNodeID;
 
   xMin = other.xMin;
   xMax = other.xMax;
@@ -129,6 +133,27 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
         }
       }
 
+      /*--- Determine the split direction for this leaf. The splitting is done
+            in such a way that isotropy is reached as quickly as possible.
+            Hence the split direction is the direction of the largest dimension
+            of the leaf. ---*/
+      unsigned short splitDir;
+      su2double distMax = -1.0;
+      for(unsigned short l=0; l<nDim; ++l) {
+        const su2double dist = leaves[mm].xMax[l] - leaves[mm].xMin[l];
+        if(dist > distMax) {distMax = dist; splitDir = l;}
+      }
+
+      /* Sort the points of the current leaf in increasing order. The sorting
+         is based on the coordinate in the split direction, for which the
+         functor su2_adtComparePointClass is used. */
+      sort(pointIDs.data() + nPointIDs[i], pointIDs.data() + nPointIDs[i+1],
+           su2_adtComparePointClass(coor, splitDir, nDim));
+
+      /* Determine the index of the node, which is approximately central
+         in this leave. */
+      leaves[mm].centralNodeID = pointIDs[nPointIDs[i] + nn/2];
+
       /*--- Determine the situation of the leaf. It is either a terminal leaf
             or a leaf that must be subdivided. ---*/
       if(nn <= 2) {
@@ -137,30 +162,16 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
            indicate that the children are terminal. */
         leaves[mm].children[0] = pointIDs[nPointIDs[i]];
         leaves[mm].children[1] = pointIDs[nPointIDs[i+1]-1];
+
+        leaves[mm].childrenAreTerminal[0] = true;
+        leaves[mm].childrenAreTerminal[1] = true;
       }
       else {
 
-        /*--- The leaf must be divided. First determine the split direction for
-              this leaf. The splitting is done in such a way that isotropy is
-              reached as quickly as possible. Hence the split direction is the
-              direction of the largest dimension of the leaf. ---*/
-        unsigned short splitDir = -1;
-        su2double distMax = -1.0;
-        for(unsigned short l=0; l<nDim; ++l) {
-          const su2double dist = leaves[mm].xMax[l] - leaves[mm].xMin[l];
-          if(dist > distMax) {distMax = dist; splitDir = l;}
-        }
-
-        /* Sort the points of the current leaf in increasing order. The sorting
-           is based on the coordinate in the split direction, for which the
-           functor su2_adtComparePointClass is used. */
-        sort(pointIDs.data() + nPointIDs[i], pointIDs.data() + nPointIDs[i+1],
-             su2_adtComparePointClass(coor, splitDir, nDim));
-
-        /* Determine the number of points in the left leaf. This number is
-           at least 2. The actual number stored in kk is this number plus an
-           offset. Also initialize the counter nfl, which is used to store the
-           bounding boxes in the arrays for the new round. */
+        /* The leaf must be divided. Determine the number of points in the
+           left leaf. This number is at least 2. The actual number stored in kk
+           is this number plus an offset. Also initialize the counter nfl, which
+           is used to store the bounding boxes in the arrays for the new round. */
         unsigned long kk  = (nn+1)/2 + nPointIDs[i];
         unsigned long nfl = nPointIDsNew[nLeavesToDivideNew];
 
@@ -293,16 +304,20 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
                                                   int             &rankID) {
 
   /*--------------------------------------------------------------------------*/
-  /*--- Step 1: Initialize the nearest node to node 0. Note that the       ---*/
-  /*---         distance is the distance squared to avoid a sqrt.          ---*/
+  /*--- Step 1: Initialize the nearest node to the central node of the     ---*/
+  /*---         root leaf. Note that the distance is the distance squared  ---*/
+  /*---         to avoid a sqrt.                                           ---*/
   /*--------------------------------------------------------------------------*/
 
-  pointID = localPointIDs[0];
-  rankID  = ranksOfPoints[0];
+  unsigned long kk = leaves[0].centralNodeID;
+  const su2double *coorTarget = coorPoints.data() + nDimADT*kk;
+
+  pointID = localPointIDs[kk];
+  rankID  = ranksOfPoints[kk];
 
   dist = 0.0;
   for(unsigned short l=0; l<nDimADT; ++l) {
-    const su2double ds = coor[l] - coorPoints[l];
+    const su2double ds = coor[l] - coorTarget[l];
     dist += ds*ds;
   }
 
@@ -322,7 +337,7 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
   /* Infinite loop of the tree traversal. */
   for(;;) {
 
-    /* Initialize the new front, i.e. the front for the next round to empty. */
+    /* Initialize the new front, i.e. the front for the next round, to empty. */
     frontLeavesNew.clear();
 
     /* Loop over the leaves of the current front. */
@@ -334,13 +349,13 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
 
         /* Determine whether this child contains a node or a leaf
            of the next level of the ADT. */
-        const unsigned long kk = leaves[ll].children[mm];
+        kk = leaves[ll].children[mm];
         if( leaves[ll].childrenAreTerminal[mm] ) {
 
           /*--- Child contains a node. Compute the distance squared to this node
                 and store it if this distance squared is less than the currently
                 stored value. ---*/
-          const su2double *coorTarget = coorPoints.data() + nDimADT*kk;
+          coorTarget = coorPoints.data() + nDimADT*kk;
           su2double distTarget = 0;
           for(unsigned short l=0; l<nDimADT; ++l) {
             const su2double ds = coor[l] - coorTarget[l];
@@ -368,22 +383,25 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
 
           /*--- Check if the possible minimum distance is less than the currently
                 stored minimum distance. If so this leaf must be stored for the
-                next round. In that case also the guaranteed minimum distance
-                squared is determined, which is used to update the currently
-                stored value. ---*/
+                next round. In that case the distance squared to the central node is
+                determined, which is used to update the currently stored value. ---*/
           if(posDist < dist) {
             frontLeavesNew.push_back(kk);
 
-            su2double guarDist = 0.0;
-            for(unsigned short l=0; l<nDimADT; ++l) {
-              const su2double dsMin = fabs(coor[l] - leaves[kk].xMin[l]);
-              const su2double dsMax = fabs(coor[l] - leaves[kk].xMax[l]);
-              const su2double ds    = max(dsMin, dsMax);
+            const unsigned long jj = leaves[kk].centralNodeID;
 
-              guarDist += ds*ds;
+            coorTarget = coorPoints.data() + nDimADT*jj;
+            su2double distTarget = 0;
+            for(unsigned short l=0; l<nDimADT; ++l) {
+              const su2double ds = coor[l] - coorTarget[l];
+              distTarget += ds*ds;
             }
 
-            dist = min(dist, guarDist);
+            if(distTarget < dist) {
+              dist    = distTarget;
+              pointID = localPointIDs[jj];
+              rankID  = ranksOfPoints[jj];
+            }
           }
         }
       }
@@ -395,7 +413,6 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
           from the infinite loop. ---*/
     frontLeaves = frontLeavesNew;
     if(frontLeaves.size() == 0) break;
-
   }
 
   /* At the moment the distance squared to the nearest node is stored.
