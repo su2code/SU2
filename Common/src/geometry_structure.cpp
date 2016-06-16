@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -485,6 +485,49 @@ bool CGeometry::RayIntersectsTriangle(su2double orig[3], su2double dir[3],
 
   return (true);
   
+}
+
+bool CGeometry::SegmentIntersectsLine(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]){
+
+  su2double det, diff0_A, diff0_B, diff1_A, diff1_B, intersect[2];
+
+  diff0_A = point0[0] - point1[0];
+  diff1_A = point0[1] - point1[1];
+
+  diff0_B = vert0[0] - vert1[0];
+  diff1_B = vert0[1] - vert1[1];
+
+  det = (diff0_A)*(diff1_B) - (diff1_A)*(diff0_B);
+
+  if (det == 0) return false;
+
+  /*--- Compute point of intersection ---*/
+
+  intersect[0] = ((point0[0]*point1[1] - point0[1]*point1[0])*diff0_B
+                -(vert0[0]* vert1[1]  - vert0[1]* vert1[0])*diff0_A)/det;
+
+  intersect[1] =  ((point0[0]*point1[1] - point0[1]*point1[0])*diff1_B
+                  -(vert0[0]* vert1[1]  - vert0[1]* vert1[0])*diff1_A)/det;
+
+
+  /*--- Check that the point is between the two surface points ---*/
+
+  su2double dist0, dist1, length;
+
+  dist0 = (intersect[0] - point0[0])*(intersect[0] - point0[0])
+         +(intersect[1] - point0[1])*(intersect[1] - point0[1]);
+
+  dist1 = (intersect[0] - point1[0])*(intersect[0] - point1[0])
+         +(intersect[1] - point1[1])*(intersect[1] - point1[1]);
+
+  length = diff0_A*diff0_A
+          +diff1_A*diff1_A;
+
+  if ( (dist0 > length) || (dist1 > length) ){
+    return false;
+  }
+
+  return true;
 }
 
 bool CGeometry::SegmentIntersectsTriangle(su2double point0[3], su2double point1[3],
@@ -1369,6 +1412,10 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           boundary_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
           for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
             boundary_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
+
+          if (bound[iMarker][iElem_Bound]->GetVTK_Type() == VERTEX){
+            boundary_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
+          }
           boundary_file	<< iElem_Bound << endl;
         }
       }
@@ -1378,6 +1425,10 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           boundary_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
           for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
             boundary_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
+
+          if (bound[iMarker][iElem_Bound]->GetVTK_Type() == VERTEX){
+            boundary_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
+          }
           boundary_file	<< iElem_Bound << endl;
         }
       }
@@ -3424,7 +3475,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       Buffer_Send_ReceivedDomain_PeriodicTrans  = new unsigned long[Buffer_Send_nTotalReceivedDomain_Periodic];
       Buffer_Send_ReceivedDomain_PeriodicDonor  = new unsigned long[Buffer_Send_nTotalReceivedDomain_Periodic];
       
-      if (iDomain != MASTER_NODE) {
+      if (iDomain != (unsigned long)MASTER_NODE) {
         
 #ifdef HAVE_MPI
         
@@ -3837,7 +3888,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Send the buffers with the geometrical information ---*/
       
-      if (iDomain != MASTER_NODE) {
+      if (iDomain != (unsigned long)MASTER_NODE) {
         
 #ifdef HAVE_MPI
         
@@ -10608,7 +10659,7 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
   unsigned short iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_Coord = NULL, *Buffer_Send_Coord = NULL, *Coord = NULL, *newCoord = NULL;
-  
+  su2double *translation;
   newCoord = new su2double[nDim];
   
 #ifdef HAVE_MPI
@@ -10675,6 +10726,7 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
         /*--- Retrieve the supplied periodic information. ---*/
         
         angles = config->GetPeriodicRotation(iPeriodic_Index);
+        translation = config->GetPeriodicTranslate(iPeriodic_Index);
         
         /*--- Store angles separately for clarity. ---*/
         
@@ -10700,9 +10752,9 @@ void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
         
         if (nDim == 2) {
           newCoord[0] = (rotMatrix[0][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
-                         rotMatrix[0][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]);
+                         rotMatrix[0][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]) - translation[0];
           newCoord[1] = (rotMatrix[1][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
-                         rotMatrix[1][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]);
+                         rotMatrix[1][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]) - translation[1];
         }
         else {
           newCoord[0] = (rotMatrix[0][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
@@ -11757,23 +11809,17 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
   bool sa = config->GetKind_Turb_Model() == SA;
   bool grid_movement = config->GetGrid_Movement();
   su2double Sens, dull_val;
-  //su2double delta_T, total_T;
-  unsigned short nExtIter, iDim, iExtIter;
+  unsigned short nExtIter, iDim;
   unsigned long iPoint, index;
-  
+
   Sensitivity = new su2double[nPoint*nDim];
-  
+
   if (config->GetUnsteady_Simulation()){
-    nExtIter = config->GetUnst_AdjointIter();
-    //    delta_T  = config->GetDelta_UnstTimeND();
-    //    delta_T  = 1.0;
-    //total_T  = (su2double)nExtIter*delta_T;
-  } else {
-    //total_T = 1.0;
+    nExtIter = config->GetnExtIter();
+  }else{
     nExtIter = 1;
   }
-  
-  int rank = MASTER_NODE;
+    int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -11814,55 +11860,48 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
     }
   }
   
-  for (iExtIter = 0; iExtIter < nExtIter; iExtIter++){
-    
-    iPoint_Global = 0;
-    
-    filename = config->GetSolution_AdjFileName();
-    
-    filename = config->GetObjFunc_Extension(filename);
-    
-    if (config->GetUnsteady_Simulation()){
-      filename = config->GetUnsteady_FileName(filename, iExtIter);
-    }
-    
-    restart_file.open(filename.data(), ios::in);
-    if (restart_file.fail()) {
-      cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-      exit(EXIT_FAILURE);
-    }
-    
-    if (rank == MASTER_NODE)
-      cout << "Reading in sensitivity at iteration " << iExtIter << "."<< endl;
-    /*--- The first line is the header ---*/
-    getline (restart_file, text_line);
-    
-    while (getline (restart_file, text_line)) {
-      istringstream point_line(text_line);
-      
-      /*--- Retrieve local index. If this node from the restart file lives
-       on a different processor, the value of iPoint_Local will be -1.
-       Otherwise, the local index for this node on the current processor
-       will be returned and used to instantiate the vars. ---*/
-      iPoint_Local = Global2Local[iPoint_Global];
-      
-      if (iPoint_Local >= 0){
-        point_line >> index;
-        for (iDim = 0; iDim < skipVar; iDim++){ point_line >> dull_val;}
-        for (iDim = 0; iDim < nDim; iDim++){
-          point_line >> Sens;
-          //                	  Sensitivity[iPoint_Local*nDim+iDim] += Sens*delta_T/total_T;
-          Sensitivity[iPoint_Local*nDim+iDim] += Sens;
-          
-        }
-      }
-      iPoint_Global++;
-    }
-    restart_file.close();
+
+  iPoint_Global = 0;
+
+  filename = config->GetSolution_AdjFileName();
+
+  filename = config->GetObjFunc_Extension(filename);
+
+  if (config->GetUnsteady_Simulation()){
+    filename = config->GetUnsteady_FileName(filename, nExtIter-1);
+  }
+
+  restart_file.open(filename.data(), ios::in);
+  if (restart_file.fail()) {
+    cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+    exit(EXIT_FAILURE);
   }
   
-  delete [] Global2Local;
+  if (rank == MASTER_NODE)
+    cout << "Reading in sensitivity at iteration " << nExtIter-1 << "."<< endl;
+  /*--- The first line is the header ---*/
+  getline (restart_file, text_line);
   
+  while (getline (restart_file, text_line)) {
+    istringstream point_line(text_line);
+
+    /*--- Retrieve local index. If this node from the restart file lives
+             on a different processor, the value of iPoint_Local will be -1.
+             Otherwise, the local index for this node on the current processor
+             will be returned and used to instantiate the vars. ---*/
+    iPoint_Local = Global2Local[iPoint_Global];
+
+    if (iPoint_Local >= 0){
+      point_line >> index;
+      for (iDim = 0; iDim < skipVar; iDim++){ point_line >> dull_val;}
+      for (iDim = 0; iDim < nDim; iDim++){
+        point_line >> Sens;
+        Sensitivity[iPoint_Local*nDim+iDim] = Sens;
+      }
+    }
+    iPoint_Global++;
+  }
+  restart_file.close();
 }
 
 su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) {

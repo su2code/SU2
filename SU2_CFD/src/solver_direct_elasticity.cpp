@@ -2,7 +2,7 @@
  * \file solver_direct_elasticity.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -2176,7 +2176,7 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
   if (TotalLoad != 0.0){
 
     unsigned long iElem;
-    unsigned short nNodes;
+    unsigned short nNodes = 0;
     su2double Length_Elem_ref = 0.0,  Area_Elem_ref = 0.0;
     su2double Length_Elem_curr = 0.0, Area_Elem_curr = 0.0;
     unsigned long indexNode[4]   = {0,0,0,0};

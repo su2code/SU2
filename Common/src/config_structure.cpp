@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -572,6 +572,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addLongOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
   addLongOption("UNST_ADJOINT_ITER", Unst_AdjointIter, 0);
+  /* DESCRIPTION: Number of iterations to average the objective */
+  addLongOption("ITER_AVERAGE_OBJ", Iter_Avg_Objective , 0);
   /* DESCRIPTION: Iteration number to begin unsteady restarts (structural analysis) */
   addLongOption("DYN_RESTART_ITER", Dyn_RestartIter, 0);
   /* DESCRIPTION: Time discretization */
@@ -889,6 +891,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SURFACE_ADJ_FILENAME
    *  \n DESCRIPTION: Output file surface adjoint coefficient (w/o extension)  \ingroup Config*/
   addStringOption("SURFACE_ADJ_FILENAME", SurfAdjCoeff_FileName, string("surface_adjoint"));
+  /*!\brief SURFACE_SENS_FILENAME_FILENAME
+   *  \n DESCRIPTION: Output file surface sensitivity (discrete adjoint) (w/o extension)  \ingroup Config*/
+  addStringOption("SURFACE_SENS_FILENAME", SurfSens_FileName, string("surface_sens"));
+  /*!\brief VOLUME_SENS_FILENAME
+   *  \n DESCRIPTION: Output file volume sensitivity (discrete adjoint))  \ingroup Config*/
+  addStringOption("VOLUME_SENS_FILENAME", VolSens_FileName, string("volume_sens"));
   /*!\brief WRT_SOL_FREQ
    *  \n DESCRIPTION: Writing solution file frequency  \ingroup Config*/
   addUnsignedLongOption("WRT_SOL_FREQ", Wrt_Sol_Freq, 1000);
@@ -2573,6 +2581,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Disable writing of limiters if enabled ---*/
     Wrt_Limiters = false;
 
+    if (Unsteady_Simulation){
+
+      Restart_Flow = false;
+
+      if (Grid_Movement){
+        cout << "Dynamic mesh movement currently not supported for the discrete adjoint solver." << endl;
+        exit(EXIT_FAILURE);
+      }
+
+      /* --- If the averaging interval is not set, we average over all time-steps ---*/
+
+      if (Iter_Avg_Objective == 0.0){
+        Iter_Avg_Objective = nExtIter;
+      }
+    }
+
     switch(Kind_Solver){
       case EULER:
         Kind_Solver = DISC_ADJ_EULER;
@@ -2984,7 +3008,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 4.1.3  \"Cardinal\"                         |" << endl;
+  cout << "|   / __| | | |_  )   Release 4.2.0  \"Cardinal\"                         |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3232,8 +3256,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "Input mesh file name: " << Mesh_FileName << endl;
 
 	if (val_software == SU2_DOT) {
+    if (DiscreteAdjoint){
+      cout << "Input sensitivity file name: " << GetObjFunc_Extension(Solution_AdjFileName) << "." << endl;
+    }else{
 		cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
 	}
+  }
 
 	if (val_software == SU2_MSH) {
 		switch (Kind_Adaptation) {
@@ -3263,8 +3291,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
   }
 
-  if ((val_software == SU2_DEF) || (val_software == SU2_DOT)) {
-
+  if (((val_software == SU2_DEF) || (val_software == SU2_DOT)) && (Design_Variable[0] != NONE)) {
 
     for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 
@@ -3921,6 +3948,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_DOT) {
+    if (DiscreteAdjoint){
+      cout << "Output Volume Sensitivity file name: " << VolSens_FileName << ". " << endl;
+      cout << "Output Surface Sensitivity file name: " << SurfSens_FileName << ". " << endl;
+    }
     cout << "Output gradient file name: " << ObjFunc_Grad_FileName << ". " << endl;
   }
 
@@ -4497,44 +4528,44 @@ CConfig::~CConfig(void) {
  if (Kind_GridMovement != NULL)    delete [] Kind_GridMovement;
 
   /*--- motion origin: ---*/
-
+  
   if (Motion_Origin_X != NULL)    delete [] Motion_Origin_X;
   if (Motion_Origin_Y != NULL)    delete [] Motion_Origin_Y;
   if (Motion_Origin_Z != NULL)    delete [] Motion_Origin_Z;
   if (MoveMotion_Origin != NULL)    delete [] MoveMotion_Origin;
 
   /*--- rotation: ---*/
-
+  
   if (Rotation_Rate_X != NULL)    delete [] Rotation_Rate_X;
   if (Rotation_Rate_Y != NULL)    delete [] Rotation_Rate_Y;
   if (Rotation_Rate_Z != NULL)    delete [] Rotation_Rate_Z;
 
   /*--- pitching: ---*/
-
+  
   if (Pitching_Omega_X != NULL)    delete [] Pitching_Omega_X;
   if (Pitching_Omega_Y != NULL)    delete [] Pitching_Omega_Y;
   if (Pitching_Omega_Z != NULL)    delete [] Pitching_Omega_Z;
 
   /*--- pitching amplitude: ---*/
-
+  
   if (Pitching_Ampl_X != NULL)    delete [] Pitching_Ampl_X;
   if (Pitching_Ampl_Y != NULL)    delete [] Pitching_Ampl_Y;
   if (Pitching_Ampl_Z != NULL)    delete [] Pitching_Ampl_Z;
 
   /*--- pitching phase: ---*/
-
+  
   if (Pitching_Phase_X != NULL)    delete [] Pitching_Phase_X;
   if (Pitching_Phase_Y != NULL)    delete [] Pitching_Phase_Y;
   if (Pitching_Phase_Z != NULL)    delete [] Pitching_Phase_Z;
 
   /*--- plunging: ---*/
-
+  
   if (Plunging_Omega_X != NULL)    delete [] Plunging_Omega_X;
   if (Plunging_Omega_Y != NULL)    delete [] Plunging_Omega_Y;
   if (Plunging_Omega_Z != NULL)    delete [] Plunging_Omega_Z;
 
   /*--- plunging amplitude: ---*/
-
+  
   if (Plunging_Ampl_X != NULL)    delete [] Plunging_Ampl_X;
   if (Plunging_Ampl_Y != NULL)    delete [] Plunging_Ampl_Y;
   if (Plunging_Ampl_Z != NULL)    delete [] Plunging_Ampl_Z;
@@ -4545,7 +4576,7 @@ CConfig::~CConfig(void) {
   if (RefOriginMoment_Z != NULL)    delete [] RefOriginMoment_Z;
 
   /*--- Marker pointers ---*/
-
+  
   if (Marker_CfgFile_Out_1D != NULL)   delete[] Marker_CfgFile_Out_1D;
   if (Marker_All_Out_1D != NULL)      delete[] Marker_All_Out_1D;
   if (Marker_CfgFile_GeoEval != NULL)  delete[] Marker_CfgFile_GeoEval;
@@ -4627,7 +4658,7 @@ CConfig::~CConfig(void) {
   if (PlaneTag != NULL)               delete[] PlaneTag;
   if (CFL_AdaptParam != NULL)         delete[] CFL_AdaptParam;
   if (CFL!=NULL)                      delete[] CFL;
-
+  
   /*--- String markers ---*/
   if (Marker_Euler != NULL )              delete[] Marker_Euler;
   if (Marker_FarField != NULL )           delete[] Marker_FarField;
