@@ -565,6 +565,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addLongOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
   addLongOption("UNST_ADJOINT_ITER", Unst_AdjointIter, 0);
+  /* DESCRIPTION: Number of iterations to average the objective */
+  addLongOption("ITER_AVERAGE_OBJ", Iter_Avg_Objective , 0);
   /* DESCRIPTION: Iteration number to begin unsteady restarts (structural analysis) */
   addLongOption("DYN_RESTART_ITER", Dyn_RestartIter, 0);
   /* DESCRIPTION: Time discretization */
@@ -2586,6 +2588,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
     /*--- Disable writing of limiters if enabled ---*/
     Wrt_Limiters = false;
+
+    if (Unsteady_Simulation){
+
+      Restart_Flow = false;
+
+      if (Grid_Movement){
+        cout << "Dynamic mesh movement currently not supported for the discrete adjoint solver." << endl;
+        exit(EXIT_FAILURE);
+      }
+
+      /* --- If the averaging interval is not set, we average over all time-steps ---*/
+
+      if (Iter_Avg_Objective == 0.0){
+        Iter_Avg_Objective = nExtIter;
+      }
+    }
 
     switch(Kind_Solver){
       case EULER:

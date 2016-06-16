@@ -112,6 +112,7 @@ namespace AD {
 
       /* --- Clear local vectors and reset indicator ---*/
 
+
       localInputValues.clear();
       localOutputValues.clear();
 
