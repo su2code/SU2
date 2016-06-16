@@ -289,13 +289,13 @@ public:
    
   /*!
    * \brief For 2-Dimensional grids, compute intersection length of two segments projected along a given direction
-   * \param[in] A1 - first point of segment A
-   * \param[in] A2 - first point of segment A
-   * \param[in] B1 - first point of segment B
-   * \param[in] B2 - first point of segment B
+   * \param[in] A1 - first  point of segment A
+   * \param[in] A2 - second point of segment A
+   * \param[in] B1 - first  point of segment B
+   * \param[in] B2 - second point of segment B
    * \param[in] Direction - along which segments are projected
    */
-  su2double Compute_Intersectction_2D(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction);
+  su2double Compute_Intersection_2D(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction);
   
   /*!
    * \brief For 2-Dimensional grids, find the label of a vertex next to the current vertex, following a given direction
@@ -305,6 +305,49 @@ public:
    * \param[in] markID   - node centered cell index
    */
   int FindNextNode_2D(CGeometry *geometry, int PreviousNode, unsigned long NodeID, unsigned long markID);
+  
+  /*!
+   * \brief For 3-Dimensional grids, compute intersection area between two triangle projected on a given plane
+   * \param[in] A1 - first  point of triangle A
+   * \param[in] A2 - second point of triangle A
+   * \param[in] A3 - third  point of triangle A
+   * \param[in] B1 - first  point of triangle B
+   * \param[in] B2 - second point of triangle B
+   * \param[in] B3 - third  point of triangle B
+   * \param[in] Direction - vector normal to projection plane
+   */
+  su2double Compute_Triangle_Intersection(su2double* A1, su2double* A2, su2double* A3, su2double* B1, su2double* B2, su2double* B3, su2double* Direction);
+  
+  /*!
+   * \brief For 3-Dimensional grids, compute intersection area between two triangle projected on a given plane
+   * P1 from triangle P MUST be inside triangle Q, points order doesn't matter
+   * \param[in] P1 - first  point of triangle A
+   * \param[in] P2 - second point of triangle A
+   * \param[in] P3 - third  point of triangle A
+   * \param[in] Q1 - first  point of triangle B
+   * \param[in] Q2 - second point of triangle B
+   * \param[in] Q3 - third  point of triangle B
+   */
+  su2double ComputeIntersectionArea( su2double* P1, su2double* P2, su2double* P3, su2double* Q1, su2double* Q2, su2double* Q3 );
+  
+  /*!
+   * \brief For 2-Dimensional grids, check whether, and compute, two lines are intersecting
+   * \param[in] A1 - first  defining first line
+   * \param[in] A2 - second defining first line
+   * \param[in] B1 - first  defining second line
+   * \param[in] B2 - second defining second line
+   * \param[in] IntersectionPoint - Container for intersection coordinates
+   */
+  void ComputeLineIntersectionPoint( su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* IntersectionPoint );
+  
+  /*!
+   * \brief For N-Dimensional grids, check whether a point is inside a triangle specified by 3 T points
+   * \param[in] Point - query point
+   * \param[in] T1 - first  point of triangle T
+   * \param[in] T2 - second point of triangle T
+   * \param[in] T3 - third  point of triangle T
+   */
+  bool CheckPointInsideTriangle(su2double* Point, su2double* T1, su2double* T2, su2double* T3);
   
   /*!
    * \brief Check if a point is inside a node centered cell

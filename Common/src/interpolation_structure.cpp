@@ -1400,7 +1400,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 					donor_jMidEdge_point[iDim] = ( donor_geometry->node[donor_backward_point]->GetCoord(iDim) + donor_geometry->node[ donor_iPoint ]->GetCoord(iDim) ) / 2;
 				}
 							
-				Intersection = Compute_Intersectction_2D(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
+				Intersection = Compute_Intersection_2D(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
 		
 				if ( Intersection == 0.0 ){
 					check = true;
@@ -1470,7 +1470,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 						donor_jMidEdge_point[iDim] = ( donor_geometry->node[donor_backward_point]->GetCoord(iDim) + donor_geometry->node[ donor_iPoint ]->GetCoord(iDim) ) / 2;
 					}		
 					
-					Intersection = Compute_Intersectction_2D(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
+					Intersection = Compute_Intersection_2D(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
 
 					if ( Intersection == 0.0 ){
 						check = true;
@@ -1572,7 +1572,7 @@ su2double CSlidingmesh::PointsDistance(su2double *point_i, su2double *point_j){
 	return sqrt(m);
 }
 
-su2double CSlidingmesh::Compute_Intersectction_2D(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction){
+su2double CSlidingmesh::Compute_Intersection_2D(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction){
 	
 	/*--- Given 2 segments, each defined by 2 points, it projects them along a given direction and it computes the length of the segment resulting from their intersection ---*/
 	/*--- The algorithm works both for 2D and 3D problems ---*/
@@ -1658,6 +1658,454 @@ int CSlidingmesh::FindNextNode_2D(CGeometry *geometry, int PreviousNode, unsigne
 		}
 
 		return -1;
+}
+
+su2double CSlidingmesh::Compute_Triangle_Intersection(su2double* A1, su2double* A2, su2double* A3, su2double* B1, su2double* B2, su2double* B3, su2double* Direction){
+	
+	/* --- This routine is ONLY for 3D grids --- */
+	
+	unsigned short iDim;
+	unsigned short nDim = donor_geometry->GetnDim();
+	
+	su2double I[3], J[3], K[3];
+	su2double a1[3], a2[3], a3[3];
+	su2double b1[3], b2[3], b3[3];
+	su2double m1, m2;
+	su2double dot, r[3], s[3];
+	
+	/* --- Reference frame is determined by: x = A1A2 y = x ^ ( -Direction ) --- */
+	
+	for(iDim = 0; iDim < 3; iDim++){
+		I[iDim] = 0;
+		K[iDim] = 0;
+		
+		s[iDim] = 0;
+		r[iDim] = 0;
+		
+		a1[iDim] = 0;
+		a2[iDim] = 0;
+		a3[iDim] = 0;
+		
+		b1[iDim] = 0;
+		b2[iDim] = 0;
+		b3[iDim] = 0;
+	}
+	
+	m1 = 0;
+	m2 = 0;
+	for(iDim = 0; iDim < nDim; iDim++){
+		I[iDim] = A2[iDim] - A1[iDim];
+		K[iDim] = Direction[iDim];
+		
+		m1 += I[iDim] * I[iDim];
+		m2 += K[iDim] * K[iDim];
+	}
+	
+	for(iDim = 0; iDim < nDim; iDim++){
+		I[iDim] /= m1;
+		K[iDim] /= m2;
+	}
+	
+	// Cross product to find Y, works both for 2D and 3D because versor where initially set to zero.
+	J[0] =   I[1]*(-K[2]) - (-K[1])*I[2];
+	J[1] = -(I[0]*(-K[2]) - (-K[0])*I[2]);
+	J[2] =   I[0]*(-K[1]) - (-K[0])*I[1];
+	
+	/* --- Project all points on the plane specified by Direction and change their reference frame taking A1 as origin --- */
+	
+	for(iDim = 0; iDim < nDim; iDim++){
+		a2[0] += (A2[iDim] - A1[iDim]) * I[iDim];
+		a2[1] += (A2[iDim] - A1[iDim]) * J[iDim];
+		a2[2] += (A2[iDim] - A1[iDim]) * K[iDim];
+		
+		a3[0] += (A3[iDim] - A1[iDim]) * I[iDim];
+		a3[1] += (A3[iDim] - A1[iDim]) * J[iDim];
+		a3[2] += (A3[iDim] - A1[iDim]) * K[iDim];
+		
+		b1[0] += (B1[iDim] - A1[iDim]) * I[iDim];
+		b1[1] += (B1[iDim] - A1[iDim]) * J[iDim];
+		b1[2] += (B1[iDim] - A1[iDim]) * K[iDim];
+		
+		b2[0] += (B2[iDim] - A1[iDim]) * I[iDim];
+		b2[1] += (B2[iDim] - A1[iDim]) * J[iDim];
+		b2[2] += (B2[iDim] - A1[iDim]) * K[iDim];
+		
+		b3[0] += (B3[iDim] - A1[iDim]) * I[iDim];
+		b3[1] += (B3[iDim] - A1[iDim]) * J[iDim];
+		b3[2] += (B3[iDim] - A1[iDim]) * K[iDim];		
+	}
+
+	/* --- Find a B point inside triangle A --- */
+	
+	if      ( CheckPointInsideTriangle(B1, A1, A2, A3) ) // B1 inside A
+		ComputeIntersectionArea( B1, B2, B3, A1, A2, A3 );
+	else if ( CheckPointInsideTriangle(B2, A1, A2, A3) ) // B2 inside A
+		ComputeIntersectionArea( B2, B3, B1, A1, A2, A3 );
+	else if ( CheckPointInsideTriangle(B3, A1, A2, A3) ) // B3 inside A
+		ComputeIntersectionArea( B3, B1, B2, A1, A2, A3 );
+	else if ( CheckPointInsideTriangle(A1, B1, B2, B3) ) // A1 inside B
+		ComputeIntersectionArea( A1, A2, A3, B1, B2, B3 );
+	else if ( CheckPointInsideTriangle(A2, B1, B2, B3) ) // A2 inside B
+		ComputeIntersectionArea( A2, A3, A1, B1, B2, B3 );
+	else if ( CheckPointInsideTriangle(A3, B1, B2, B3) ) // A3 inside B
+		ComputeIntersectionArea( A3, A1, A2, B1, B2, B3 );
+	else{
+		// Throw error
+		cout << "Oooops, something went wrong in interpolation_structure.cpp \"Compute_Triangle_Intersection\"" << endl;
+		getchar();
+	}
+
+
+	/* --- Compute intersection area --- */
+	
+	return 0.0;
+}
+
+su2double CSlidingmesh::ComputeIntersectionArea( su2double* P1, su2double* P2, su2double* P3, su2double* Q1, su2double* Q2, su2double* Q3 ){
+
+	// This function works for 2 co-planar triangle, it requires them to be represented on a local 2-dimensional reference frame
+	// P1 MUST be inside triangle Q
+	
+	unsigned short iDim, iPoints, nPoints, i;
+	unsigned short nDim = 2, IntersectionCounter;
+
+	su2double points[6][2], IntersectionPoint[2];
+	su2double TriangleQ[4][2];
+	su2double Area, det, dot;
+	
+	// store P1 (because that is indide triangle Q for sure) and prepare auxiliary data structure
+	
+	nPoints = 1;
+	for(iDim = 0; iDim < nDim; iDim++){
+		points[nPoints][iDim] = P1[iDim];
+		
+		TriangleQ[0][iDim] = Q1[iDim];
+		TriangleQ[1][iDim] = Q2[iDim];
+		TriangleQ[2][iDim] = Q3[iDim];
+		TriangleQ[3][iDim] = Q1[iDim];
+	}
+
+	// compute P1P2 intersection point
+	
+	for( i = 0; i < 3; i++){
+	
+		det = (P1[0] - P2[0]) * ( TriangleQ[i][1] - TriangleQ[i+1][1] ) - (P1[1] - P2[1]) * (TriangleQ[i][0] - TriangleQ[i+1][0]);
+		dot = 0;
+		
+		if ( det != 0.0 ){
+			ComputeLineIntersectionPoint( P1, P2, TriangleQ[i], TriangleQ[i+1], IntersectionPoint );
+			
+			dot = 0;
+			for(iDim = 0; iDim < nDim; iDim++)
+					dot += ( P1[iDim] - IntersectionPoint[iDim] ) * ( P2[iDim] - IntersectionPoint[iDim] );
+		}
+		
+		if(dot < 0) // It found the only one intersection
+			break;
+	}
+
+	if ( i == 3 ){ // no intersections	
+		
+		// Then P2 is also inside triangle Q, so store it
+		nPoints++;
+		for(iDim = 0; iDim < nDim; iDim++)
+			points[nPoints][iDim] = P2[iDim];
+			
+		// compute P2P3 intersection point
+		
+		for( i = 0; i < 3; i++){
+	
+			det = (P2[0] - P3[0]) * ( TriangleQ[i][1] - TriangleQ[i+1][1] ) - (P2[1] - P3[1]) * (TriangleQ[i][0] - TriangleQ[i+1][0]);
+			dot = 0;
+			
+			if ( det != 0.0 ){
+				ComputeLineIntersectionPoint( P2, P3, TriangleQ[i], TriangleQ[i], IntersectionPoint );
+				
+				dot = 0;
+				for(iDim = 0; iDim < nDim; iDim++)
+						dot += ( P2[iDim] - IntersectionPoint[iDim] ) * ( P3[iDim] - IntersectionPoint[iDim] );
+			}
+			
+			if(dot < 0) // It found the only one intersection
+				break;
+		}
+		
+		if ( i == 3 ){ // no intersections	
+			// Then P3 is also inside triangle Q, so store it
+			nPoints++;
+			for(iDim = 0; iDim < nDim; iDim++)
+				points[nPoints][iDim] = P3[iDim];
+		}
+		else{
+			// Store P2P3 Intersection point
+			nPoints++;
+			for(iDim = 0; iDim < nDim; iDim++)
+				points[nPoints][iDim] = IntersectionPoint[iDim];
+				
+			// compute P3P1 intersection point
+			
+			for( i = 0; i < 3; i++){
+	
+				det = (P3[0] - P1[0]) * ( TriangleQ[i][1] - TriangleQ[i+1][1] ) - (P3[1] - P1[1]) * (TriangleQ[i][0] - TriangleQ[i+1][0]);
+				dot = 0;
+				
+				if ( det != 0.0 ){
+					ComputeLineIntersectionPoint( P3, P1, TriangleQ[i], TriangleQ[i], IntersectionPoint );
+					
+					dot = 0;
+					for(iDim = 0; iDim < nDim; iDim++)
+							dot += ( P3[iDim] - IntersectionPoint[iDim] ) * ( P1[iDim] - IntersectionPoint[iDim] );
+				}
+				
+				if(dot < 0) // It found the only one intersection
+					break;
+			}
+			
+			// Store P3P1 Intersection point
+			nPoints++;
+			for(iDim = 0; iDim < nDim; iDim++)
+				points[nPoints][iDim] = IntersectionPoint[iDim];
+			
+		}
+
+	}
+	else{
+		
+		// Store P1P2 Intersection point
+		nPoints++;
+		for(iDim = 0; iDim < nDim; iDim++)
+			points[nPoints][iDim] = IntersectionPoint[iDim];
+		
+		// compute P2P3 intersection point, they can be 0, 1, 2
+		
+		IntersectionCounter = 0;
+		
+		for( i = 0; i < 3; i++){
+	
+				det = (P2[0] - P3[0]) * ( TriangleQ[i][1] - TriangleQ[i+1][1] ) - (P2[1] - P3[1]) * (TriangleQ[i][0] - TriangleQ[i+1][0]);
+				dot = 0;
+				
+				if ( det != 0.0 ){
+					ComputeLineIntersectionPoint( P2, P3, TriangleQ[i], TriangleQ[i], IntersectionPoint );
+					
+					dot = 0;
+					for(iDim = 0; iDim < nDim; iDim++)
+							dot += ( P2[iDim] - IntersectionPoint[iDim] ) * ( P3[iDim] - IntersectionPoint[iDim] );
+				}
+				
+				if(dot < 0){ // It found the one intersection
+					IntersectionCounter++;
+					if( IntersectionCounter == 0 ){
+						// Store temporarily the intersection point
+						nPoints++;
+						for(iDim = 0; iDim < nDim; iDim++)
+							points[nPoints][iDim] = IntersectionPoint[iDim];
+					}
+					else{
+						if( PointsDistance(P2, IntersectionPoint) < PointsDistance(P2, points[nPoints]) ){
+							// Need to change points order
+							for(iDim = 0; iDim < nDim; iDim++)
+								points[nPoints + 1][iDim] = points[nPoints][iDim];
+											
+							for(iDim = 0; iDim < nDim; iDim++)
+								points[nPoints][iDim] = IntersectionPoint[iDim];
+							nPoints++;
+						}
+						else{
+							nPoints++;
+							for(iDim = 0; iDim < nDim; iDim++)
+								points[nPoints][iDim] = IntersectionPoint[iDim];
+						}
+
+							
+						
+					}
+				}
+		}
+		
+		if ( IntersectionCounter == 0 ){ ////////////////////////////////////////////////// errore , puo essere che nessun punto si acontenuto e viceversa, stella israele. modificare riordinando i punti all'inizio
+			
+		}
+		else if ( IntersectionCounter == 1 ){
+			// Then P2 is also inside triangle Q, so store it
+			nPoints++;
+			for(iDim = 0; iDim < nDim; iDim++)
+				points[nPoints][iDim] = P3[iDim];
+		}
+		else if ( IntersectionCounter == 2 ){
+			// Then P3 is outside triangle Q so compute intersection P3P1
+
+			for( i = 0; i < 3; i++){
+	
+				det = (P3[0] - P1[0]) * ( TriangleQ[i][1] - TriangleQ[i+1][1] ) - (P3[1] - P1[1]) * (TriangleQ[i][0] - TriangleQ[i+1][0]);
+				dot = 0;
+				
+				if ( det != 0.0 ){
+					ComputeLineIntersectionPoint( P3, P1, TriangleQ[i], TriangleQ[i], IntersectionPoint );
+					
+					dot = 0;
+					for(iDim = 0; iDim < nDim; iDim++)
+							dot += ( P3[iDim] - IntersectionPoint[iDim] ) * ( P1[iDim] - IntersectionPoint[iDim] );
+				}
+				
+				if(dot < 0) // It found the only one intersection
+					break;
+			}
+			
+			// Store P3P1 Intersection point
+			nPoints++;
+			for(iDim = 0; iDim < nDim; iDim++)
+				points[nPoints][iDim] = IntersectionPoint[iDim];
+
+		}
+		
+	}
+	
+	
+	
+		// se non ci sono intersezioni allora store P2
+				// compute P2P3 intersection point
+				// se non ci sono intersezioni
+					// Store P3
+				// altrimenti 	
+					//Store intersection point P2P3
+					// compute P3P1 intersection point
+					// Store intersection points P3P1
+		// altrimenti 
+			// store intersezione
+			// Compute intersezione P2P3 (saranno 2, 1 o 0)
+			// se 0
+				// store Q point, c'e da capire quale, probabilmente quello che appartiene dall-edge Q intersecato ma fuori (rispetto al centroide di P) dall'edge intersecato P
+			// se 1
+				// store intersection & P3
+			// se 2
+				// store intersections a partire da quella piu vicina a P2
+				// compute intersection P3P1 & store it	
+}
+
+void CSlidingmesh::ComputeLineIntersectionPoint( su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* IntersectionPoint ){
+	
+	/* --- Uses determinant rule --- */
+	
+	unsigned short iDim, iPoints, nPoints;
+	unsigned short nDim = donor_geometry->GetnDim();
+	
+	su2double det;
+	
+	det = (A1[0] - A2[0]) * (B1[1] - B2[1]) - (A1[1] - A2[1]) * (B1[0] - B2[0]);
+	
+	if ( det != 0.0 ){ // else there is no intersection point
+		IntersectionPoint[0] = ( ( A1[0]*A2[1] - A1[1]*A2[0] ) * ( B1[0] - B2[0] ) - ( B1[0]*B2[1] - B1[1]*B2[0] ) * ( A1[0] - A2[0] ) ) / det;
+		IntersectionPoint[1] = ( ( A1[0]*A2[1] - A1[1]*A2[0] ) * ( B1[1] - B2[1] ) - ( B1[0]*B2[1] - B1[1]*B2[0] ) * ( A1[1] - A2[1] ) ) / det;
+	}
+	
+	return;
+}
+
+bool CSlidingmesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2double* T2, su2double* T3){
+
+	unsigned short iDim;
+	unsigned short nDim = donor_geometry->GetnDim();
+	unsigned short check;
+	
+	su2double vect1[3], vect2[3], r[3];
+	su2double dot;
+	
+	check = 0;
+	
+	/* --- Check first edge --- */
+	
+	dot = 0;
+	for(iDim = 0; iDim < nDim; iDim++){
+		vect1[iDim] = T3[iDim] - T1[iDim];
+		vect2[iDim] = T2[iDim] - T1[iDim];
+		
+		r[iDim] = T1[iDim] - Point[iDim];
+		
+		dot += vect2[iDim] * vect2[iDim];
+	}
+	dot = sqrt(dot);
+	
+	for(iDim = 0; iDim < nDim; iDim++)
+		vect2[iDim] /= dot;
+		
+	dot = 0;
+	for(iDim = 0; iDim < nDim; iDim++)
+		dot += vect1[iDim] * vect2[iDim];
+	
+	for(iDim = 0; iDim < nDim; iDim++)
+		vect1[iDim] = T3[iDim] - (T1[iDim] + dot * vect2[iDim]);
+		
+	dot = 0;
+	for(iDim = 0; iDim < nDim; iDim++)
+		dot += vect1[iDim] * r[iDim];
+		
+	if (dot >= 0)
+		check++;
+		
+	/* --- Check second edge --- */
+		
+	dot = 0;
+	for(iDim = 0; iDim < nDim; iDim++){
+		vect1[iDim] = T1[iDim] - T2[iDim];
+		vect2[iDim] = T3[iDim] - T2[iDim];
+		
+		r[iDim] = T2[iDim] - Point[iDim];
+		
+		dot += vect2[iDim] * vect2[iDim];
+	}
+	dot = sqrt(dot);
+	
+	for(iDim = 0; iDim < nDim; iDim++)
+		vect2[iDim] /= dot;
+		
+	dot = 0;
+	for(iDim = 0; iDim < nDim; iDim++)
+		dot += vect1[iDim] * vect2[iDim];
+	
+	for(iDim = 0; iDim < nDim; iDim++)
+		vect1[iDim] = T1[iDim] - (T2[iDim] + dot * vect2[iDim]);
+		
+	dot = 0;
+	for(iDim = 0; iDim < nDim; iDim++)
+		dot += vect1[iDim] * r[iDim];
+		
+	if (dot >= 0)
+		check++;
+		
+	/* --- Check third edge --- */
+	
+	dot = 0;
+	for(iDim = 0; iDim < nDim; iDim++){
+		vect1[iDim] = T2[iDim] - T3[iDim];
+		vect2[iDim] = T1[iDim] - T3[iDim];
+		
+		r[iDim] = T3[iDim] - Point[iDim];
+		
+		dot += vect2[iDim] * vect2[iDim];
+	}
+	dot = sqrt(dot);
+	
+	for(iDim = 0; iDim < nDim; iDim++)
+		vect2[iDim] /= dot;
+		
+	dot = 0;
+	for(iDim = 0; iDim < nDim; iDim++)
+		dot += vect1[iDim] * vect2[iDim];
+	
+	for(iDim = 0; iDim < nDim; iDim++)
+		vect1[iDim] = T2[iDim] - (T3[iDim] + dot * vect2[iDim]);
+		
+	dot = 0;
+	for(iDim = 0; iDim < nDim; iDim++)
+		dot += vect1[iDim] * r[iDim];
+		
+	if (dot >= 0)
+		check++;
+		
+		
+	return check == 3;
+		
 }
 
 bool CSlidingmesh::CheckPointOwner(CGeometry *geometry, su2double *QueryPoint, unsigned long VertexID, unsigned long markID){
