@@ -2222,12 +2222,12 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short iField;
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
-  
+  bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry[iZone]->GetnZone();
 
   /*--- Retrieve filename from config ---*/
-  if (config->GetContinuous_Adjoint()) {
+  if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
@@ -2336,12 +2336,12 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
   unsigned short iField;
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
-
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
 
   /*--- Retrieve filename from config ---*/
-  if (config->GetContinuous_Adjoint()) {
+  if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){

@@ -820,15 +820,15 @@ public:
 	virtual void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                           CConfig *config, unsigned short val_marker);
     
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
+    /*!
+     * \brief A virtual member.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
    * \param[in] visc_numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] val_marker - Surface marker where the boundary condition is applied.
+     */
 	virtual void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
   
@@ -2829,6 +2829,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetFreeStream_Solution(CConfig *config);
 };
 
 /*!
@@ -3548,7 +3554,7 @@ public:
 	 */
 	void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                   CConfig *config, unsigned short val_marker);
-    
+
 	/*!
 	 * \brief Impose a supersonic inlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -4630,6 +4636,12 @@ public:
    * \param[in] Value of freestream temperature.
    */
   void SetTemperature_Inf(su2double t_inf);
+
+  /*!
+   * \brief Set the solution using the Freestream values.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetFreeStream_Solution(CConfig *config);
 };
 
 /*!
@@ -5033,6 +5045,15 @@ public:
 	void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
   
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+
 };
 
 /*!
@@ -5227,17 +5248,13 @@ public:
 	 */
 	void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                CConfig *config);
-  
-  /*!
-	 * \brief Load a solution from a restart file.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_iter - Current external iteration number.
-	 */
-	void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
 
-    
+  /*!
+   * \brief Set the solution using the Freestream values.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetFreeStream_Solution(CConfig *config);
+
 };
 
 /*!
@@ -5559,6 +5576,12 @@ public:
 	 * \return A pointer to an array containing a set of constants
 	 */
 	su2double* GetConstants();
+
+  /*!
+   * \brief Set the solution using the Freestream values.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetFreeStream_Solution(CConfig *config);
     
 };
 
@@ -7820,5 +7843,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Update the dual-time derivatives.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+	* \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	* \param[in] Output - boolean to determine whether to print output.
+	 */
+  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
 };
 #include "solver_structure.inl"

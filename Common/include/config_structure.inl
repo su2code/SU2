@@ -89,6 +89,8 @@ inline long CConfig::GetUnst_RestartIter(void) { return Unst_RestartIter; }
 
 inline long CConfig::GetUnst_AdjointIter(void) { return Unst_AdjointIter; }
 
+inline unsigned long CConfig::GetIter_Avg_Objective(void) { return Iter_Avg_Objective ; }
+
 inline long CConfig::GetDyn_RestartIter(void) { return Dyn_RestartIter; }
 
 inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index]; }
