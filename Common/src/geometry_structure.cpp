@@ -8557,7 +8557,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 	min = 10.0E+06;
 	max = -10.0E+06;
 
-	su2double *ymin_loc;
+	su2double *ymin_loc, radius;
 	int *nVertex_loc;
 	int *nTotVertex_gb;
 	su2double **x_loc, **y_loc, **z_loc;
@@ -8756,10 +8756,19 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
 					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
 						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-								iPoint = vertex[iMarker][iVertex]->GetNode();
-								coord = node[iPoint]->GetCoord();
+							iPoint = vertex[iMarker][iVertex]->GetNode();
+							coord = node[iPoint]->GetCoord();
+							switch (config->GetKind_TurboMachinery()){
+							case CENTRIFUGAL: case CENTRIPETAL:
 								if (coord[2] < min) min = coord[2];
 								if (coord[2] > max) max = coord[2];
+								break;
+							case AXIAL:
+								radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+								if (radius < min) min = radius;
+								if (radius > max) max = radius;
+								break;
+							}
 						}
 					}
 				}
@@ -8795,12 +8804,26 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 							/*--- only physical point are counted ---*/
 							if(node[iPoint]->GetDomain()){
 								coord = node[iPoint]->GetCoord();
-								for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-									if (dist > (abs(coord[2]-span[iSpan]))){
-										dist= abs(coord[2]-span[iSpan]);
-										jSpan=iSpan;
+								switch (config->GetKind_TurboMachinery()){
+								case CENTRIFUGAL: case CENTRIPETAL:
+									for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+										if (dist > (abs(coord[2]-span[iSpan]))){
+											dist= abs(coord[2]-span[iSpan]);
+											jSpan=iSpan;
+										}
 									}
+									break;
+								case AXIAL:
+									radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+									for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+										if (dist > (abs(radius - span[iSpan]))){
+											dist= abs(radius-span[iSpan]);
+											jSpan=iSpan;
+										}
+									}
+									break;
 								}
+
 								nVertexSpan[iMarker][jSpan]++;
 							}
 						}
@@ -8832,11 +8855,24 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 							/*--- only physical point are stored ---*/
 							if(node[iPoint]->GetDomain()){
 								coord = node[iPoint]->GetCoord();
-								for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-									if (dist > (abs(coord[2]-span[iSpan]))){
-										dist= abs(coord[2]-span[iSpan]);
-										jSpan=iSpan;
+								switch (config->GetKind_TurboMachinery()){
+								case CENTRIFUGAL: case CENTRIPETAL:
+									for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+										if (dist > (abs(coord[2]-span[iSpan]))){
+											dist= abs(coord[2]-span[iSpan]);
+											jSpan=iSpan;
+										}
 									}
+									break;
+								case AXIAL:
+									radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+									for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+										if (dist > (abs(radius - span[iSpan]))){
+											dist= abs(radius-span[iSpan]);
+											jSpan=iSpan;
+										}
+									}
+									break;
 								}
 
 								/*--- compute the face area associated with the vertex ---*/
@@ -8923,6 +8959,18 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 										TurboNormal[2] = 0.0;
 									}
 									break;
+								case AXIAL:
+									Normal2 = 0.0;
+									for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+									if (marker_flag == INFLOW){
+										TurboNormal[0] = coord[0]/sqrt(Normal2);
+										TurboNormal[1] = coord[1]/sqrt(Normal2);
+										TurboNormal[2] = 0.0;
+									}else{
+										TurboNormal[0] = coord[0]/sqrt(Normal2);
+										TurboNormal[1] = coord[1]/sqrt(Normal2);
+										TurboNormal[2] = 0.0;
+									}
 									break;
 								default:
 								  cout << "TURBONORMAL CENTRIPETAL AND AXIAL 3D NOT IMPLEMENTED YET"<<endl;
@@ -9130,14 +9178,28 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 	  }
 	  myfile << "TITLE = \"Global index visualization file\"" << endl;
 	  myfile << "VARIABLES =" << endl;
-	  myfile << "\"iSpan\" " << "\"x_coord\" " << "\"y_coord\" " <<  "\"z_coord\" " << "\"global_index\" " <<endl;
-	  for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-			for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
-//				cout << "iSpan " << iSpan << " y_coord " <<  y_loc[iSpan][iSpanVertex] << " global_index " << globIdx_loc[iSpan][iSpanVertex]<<endl;
-				myfile << iSpan  << "\t" <<  x_loc[iSpan][iSpanVertex] << "\t"   <<  y_loc[iSpan][iSpanVertex] << "\t"  <<  z_loc[iSpan][iSpanVertex] << "\t"  << globIdx_loc[iSpan][iSpanVertex]<<endl;
-			}
+	  if (config->GetKind_TurboMachinery()== AXIAL && (nDim == 3)){
+	  	myfile << "\"iSpan\" " << "\"x_coord\" " << "\"y_coord\" " <<  "\"z_coord\" "<< "\"radius\" " << "\"global_index\" " <<endl;
+			for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+				for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
+		//				cout << "iSpan " << iSpan << " y_coord " <<  y_loc[iSpan][iSpanVertex] << " global_index " << globIdx_loc[iSpan][iSpanVertex]<<endl;
+					radius = sqrt(x_loc[iSpan][iSpanVertex]*x_loc[iSpan][iSpanVertex] + y_loc[iSpan][iSpanVertex]*y_loc[iSpan][iSpanVertex]);
+					myfile << iSpan  << "\t" <<  x_loc[iSpan][iSpanVertex] << "\t"   <<  y_loc[iSpan][iSpanVertex] << "\t"  <<  z_loc[iSpan][iSpanVertex] << "\t"  << radius << "\t"  << globIdx_loc[iSpan][iSpanVertex]<<endl;
+				}
 //			cout <<endl;
-			myfile << endl;
+				myfile << endl;
+			}
+	  }
+	  else{
+			myfile << "\"iSpan\" " << "\"x_coord\" " << "\"y_coord\" " <<  "\"z_coord\" " << "\"global_index\" " <<endl;
+			for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+				for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
+		//				cout << "iSpan " << iSpan << " y_coord " <<  y_loc[iSpan][iSpanVertex] << " global_index " << globIdx_loc[iSpan][iSpanVertex]<<endl;
+					myfile << iSpan  << "\t" <<  x_loc[iSpan][iSpanVertex] << "\t"   <<  y_loc[iSpan][iSpanVertex] << "\t"  <<  z_loc[iSpan][iSpanVertex] << "\t"  << globIdx_loc[iSpan][iSpanVertex]<<endl;
+				}
+//			cout <<endl;
+				myfile << endl;
+			}
 		}
 	  myfile.close();
 	}
