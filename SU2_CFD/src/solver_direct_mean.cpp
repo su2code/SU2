@@ -8423,7 +8423,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
                 break;
 
               case MASSFLOW_AVERAGE:
-                TotalMassFlow     += Area*(Density*VelNormal ); //?
+                TotalFluxes[0]     += Area*(Density*VelNormal ); //?
                 TotalMassPressure += Area*(Density*VelNormal )*Pressure;
                 TotalMassDensity  += Area*(Density*VelNormal )*Density;
                 for (iDim = 0; iDim < nDim; iDim++)
@@ -8520,10 +8520,10 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
               break;
 
             case MASSFLOW_AVERAGE:
-              AverageDensity[iMarker][iSpan] = TotalMassDensity / TotalMassFlow;
-              AveragePressure[iMarker][iSpan] = TotalMassPressure / TotalMassFlow;
+              AverageDensity[iMarker][iSpan] = TotalMassDensity / TotalFluxes[0];
+              AveragePressure[iMarker][iSpan] = TotalMassPressure / TotalFluxes[0];
               for (iDim = 0; iDim < nDim; iDim++)
-                AverageVelocity[iMarker][iSpan][iDim] = TotalMassVelocity[iDim] / TotalMassFlow;
+                AverageVelocity[iMarker][iSpan][iDim] = TotalMassVelocity[iDim] / TotalFluxes[0];
               break;
 
             case MIXEDOUT_AVERAGE:
@@ -8558,11 +8558,11 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
 
 								if (AverageDensity[iMarker][iSpan] < 0.0){
 #ifdef HAVE_MPI
-									if(size > 1 && rank == MASTER_NODE)cout << " desnity in mixedout routine negative : " << endl;
-									else cout << " desnity in mixedout routine negative : " << endl;
+									if(size > 1 && rank == MASTER_NODE)cout << " density in mixedout routine negative : " << endl;
+									else cout << " density in mixedout routine negative : " << endl;
 
 #else
-									cout << " desnity in mixedout routine negative : " << endl;
+									cout << " density in mixedout routine negative : " << endl;
 #endif
 									AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
                   AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
@@ -8587,8 +8587,8 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
             AverageEntropy[iMarker][iSpan] 						= FluidModel->GetEntropy();
 
             ComputeTurboVelocity(AverageVelocity[iMarker][iSpan], AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery());
-            SpanMassFlow[iMarker][iSpan]							= AverageDensity[iMarker][iSpan]*AverageTurboVelocity[iMarker][iSpan][0]*TotalArea;
-            SpanFlowAngle[iMarker][iSpan]							= atan(AverageTurboVelocity[iMarker][iSpan][1]/AverageTurboVelocity[iMarker][iSpan][0]);
+            SpanMassFlow[iMarker][iSpan]							= TotalFluxes[0]; //AverageDensity[iMarker][iSpan]*AverageTurboVelocity[iMarker][iSpan][0]*TotalArea;
+            SpanFlowAngle[iMarker][iSpan]							= atan2(AverageTurboVelocity[iMarker][iSpan][1],AverageTurboVelocity[iMarker][iSpan][0]);
 
             /* --- compute total averaged quantities ---*/
             avgVel2 = 0.0;
@@ -8759,7 +8759,7 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
                 break;
 
               case MASSFLOW_AVERAGE:
-                TotalMassFlow     += Area*(Density*VelNormal ); //?
+                TotalFluxes[0]     += Area*(Density*VelNormal ); //?
                 TotalMassPressure += Area*(Density*VelNormal )*Pressure;
                 TotalMassDensity  += Area*(Density*VelNormal )*Density;
                 for (iDim = 0; iDim < nDim; iDim++)
@@ -8858,10 +8858,10 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
             break;
 
           case MASSFLOW_AVERAGE:
-            AverageDensity[iMarker][nSpanWiseSections] = TotalMassDensity / TotalMassFlow;
-            AveragePressure[iMarker][nSpanWiseSections] = TotalMassPressure / TotalMassFlow;
+            AverageDensity[iMarker][nSpanWiseSections] = TotalMassDensity / TotalFluxes[0];
+            AveragePressure[iMarker][nSpanWiseSections] = TotalMassPressure / TotalFluxes[0];
             for (iDim = 0; iDim < nDim; iDim++)
-              AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalMassVelocity[iDim] / TotalMassFlow;
+              AverageVelocity[iMarker][nSpanWiseSections][iDim] = TotalMassVelocity[iDim] / TotalFluxes[0];
             break;
 
 
@@ -8897,11 +8897,11 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
 
 									if (AverageDensity[iMarker][nSpanWiseSections] < 0.0){
 #ifdef HAVE_MPI
-										if(size > 1 && rank == MASTER_NODE)cout << " desnity in mixedout routine negative : " << endl;
-										else cout << " desnity in mixedout routine negative : " << endl;
+										if(size > 1 && rank == MASTER_NODE)cout << " density in mixedout routine negative : " << endl;
+										else cout << " density in mixedout routine negative : " << endl;
 
 #else
-  									cout << " desnity in mixedout routine negative : " << endl;
+  									cout << " density in mixedout routine negative : " << endl;
 #endif
                 AverageDensity[iMarker][nSpanWiseSections] = TotalAreaDensity / TotalArea;
                 AveragePressure[iMarker][nSpanWiseSections] = TotalAreaPressure / TotalArea;
@@ -8926,8 +8926,8 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
           AverageEntropy[iMarker][nSpanWiseSections] 						= FluidModel->GetEntropy();
 
           ComputeTurboVelocity(AverageVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageTurboVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery());
-          SpanMassFlow[iMarker][nSpanWiseSections]							= AverageDensity[iMarker][nSpanWiseSections]*AverageTurboVelocity[iMarker][nSpanWiseSections][0]*TotalArea;
-          SpanFlowAngle[iMarker][nSpanWiseSections]							= atan(AverageTurboVelocity[iMarker][nSpanWiseSections][1]/AverageTurboVelocity[iMarker][nSpanWiseSections][0]);
+          SpanMassFlow[iMarker][nSpanWiseSections]							= TotalFluxes[0]; //AverageDensity[iMarker][nSpanWiseSections]*AverageTurboVelocity[iMarker][nSpanWiseSections][0]*TotalArea;
+          SpanFlowAngle[iMarker][nSpanWiseSections]							= atan2(AverageTurboVelocity[iMarker][nSpanWiseSections][1],AverageTurboVelocity[iMarker][nSpanWiseSections][0]);
 
           /* --- compute total averaged quantities ---*/
           avgVel2 = 0.0;
