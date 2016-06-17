@@ -4014,7 +4014,7 @@ public:
 	 * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
 	 * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
 	 */
-	void ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity, unsigned short marker_flag);
+	void ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity, unsigned short marker_flag, unsigned short marker_kindturb);
 
 	/*!
 	 * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
@@ -4022,7 +4022,7 @@ public:
 	 * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
 	 * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
 	 */
-	void ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity, unsigned short marker_flag);
+	void ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity, unsigned short marker_flag, unsigned short marker_kindturb);
 
 	/*!
 	 * \brief Provide the average density at the boundary of interest.

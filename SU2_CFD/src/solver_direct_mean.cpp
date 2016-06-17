@@ -8586,7 +8586,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
             AverageSoundSpeed[iMarker][iSpan]					= FluidModel->GetSoundSpeed();
             AverageEntropy[iMarker][iSpan] 						= FluidModel->GetEntropy();
 
-            ComputeTurboVelocity(AverageVelocity[iMarker][iSpan], AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag);
+            ComputeTurboVelocity(AverageVelocity[iMarker][iSpan], AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery());
             SpanMassFlow[iMarker][iSpan]							= AverageDensity[iMarker][iSpan]*AverageTurboVelocity[iMarker][iSpan][0]*TotalArea;
             SpanFlowAngle[iMarker][iSpan]							= atan(AverageTurboVelocity[iMarker][iSpan][1]/AverageTurboVelocity[iMarker][iSpan][0]);
 
@@ -8638,12 +8638,12 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
   }
 
   /*--- Free locally allocated memory ---*/
-  //  MPI_Comm_free(&marker_comm);
   delete [] Velocity;
   delete [] UnitNormal;
   delete [] TotalVelocity;
   delete [] TotalAreaVelocity;
   delete [] TotalFluxes;
+  delete [] TotalMassVelocity;
 }
 
 
@@ -8925,7 +8925,7 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
           AverageSoundSpeed[iMarker][nSpanWiseSections]					= FluidModel->GetSoundSpeed();
           AverageEntropy[iMarker][nSpanWiseSections] 						= FluidModel->GetEntropy();
 
-          ComputeTurboVelocity(AverageVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageTurboVelocity[iMarker][nSpanWiseSections], marker_flag);
+          ComputeTurboVelocity(AverageVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageTurboVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery());
           SpanMassFlow[iMarker][nSpanWiseSections]							= AverageDensity[iMarker][nSpanWiseSections]*AverageTurboVelocity[iMarker][nSpanWiseSections][0]*TotalArea;
           SpanFlowAngle[iMarker][nSpanWiseSections]							= atan(AverageTurboVelocity[iMarker][nSpanWiseSections][1]/AverageTurboVelocity[iMarker][nSpanWiseSections][0]);
 
@@ -9132,7 +9132,7 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
                 {
                   Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
                 }
-                ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag);
+                ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag, config->GetKind_TurboMachinery());
                 //TODO Vicente Extended to 3D
                 if(nDim ==2){
                   deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
@@ -9470,7 +9470,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       for (iDim = 0; iDim < nDim; iDim++)
         ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
 
-      ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, config->GetMarker_All_TurbomachineryFlag(val_marker));
+      ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery());
       if (nDim == 2){
         deltaprim[0] = Density_i - AverageDensity[val_marker][iSpan];
         deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[val_marker][iSpan][0];
@@ -9655,7 +9655,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         turboVelocity[2] = AverageTurboVelocity[val_marker][iSpan][2] + deltaprim[3];
         Pressure_b = AveragePressure[val_marker][iSpan] + deltaprim[4];
       }
-      ComputeBackVelocity(turboVelocity, turboNormal, Velocity_b, config->GetMarker_All_TurbomachineryFlag(val_marker));
+      ComputeBackVelocity(turboVelocity, turboNormal, Velocity_b, config->GetMarker_All_TurbomachineryFlag(val_marker), config->GetKind_TurboMachinery());
       Velocity2_b = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         Velocity2_b+= Velocity_b[iDim]*Velocity_b[iDim];
