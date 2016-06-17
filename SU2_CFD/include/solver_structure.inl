@@ -1219,33 +1219,44 @@ inline void CEulerSolver::SetAbsFlowAngleOut(su2double value, unsigned short inM
 
 inline void CEulerSolver::SetPressureOut_BC(su2double value, unsigned short inMarkerTP){PressureOut_BC[inMarkerTP]=value;}
 
-inline void CEulerSolver::ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity, unsigned short marker_flag){
+inline void CEulerSolver::ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity, unsigned short marker_flag, unsigned short kind_turb) {
 
-
-	turboVelocity[0] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
-	turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
-	if (marker_flag == INFLOW){
-		turboVelocity[0] *= -1.0;
-		turboVelocity[1] *= -1.0;
+	if (kind_turb == AXIAL && nDim == 3){
+		turboVelocity[2] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
+		turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
+		turboVelocity[0] = cartesianVelocity[2];
 	}
-	if(nDim == 3)
-		turboVelocity[2] = cartesianVelocity[2];
-
+	else{
+		turboVelocity[0] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
+		turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
+		if (marker_flag == INFLOW){
+			turboVelocity[0] *= -1.0;
+			turboVelocity[1] *= -1.0;
+		}
+		if(nDim == 3)
+			turboVelocity[2] = cartesianVelocity[2];
+	}
 }
 
-inline void CEulerSolver::ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity, unsigned short marker_flag){
+inline void CEulerSolver::ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity, unsigned short marker_flag, unsigned short kind_turb){
 
-	cartesianVelocity[0] =  turboVelocity[0]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
-	cartesianVelocity[1] =  turboVelocity[0]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
-
-	if (marker_flag == INFLOW){
-		cartesianVelocity[0] *= -1.0;
-		cartesianVelocity[1] *= -1.0;
+	if (kind_turb == AXIAL && nDim == 3){
+		cartesianVelocity[0] = turboVelocity[2]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
+		cartesianVelocity[1] = turboVelocity[2]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
+		cartesianVelocity[2] = turboVelocity[0];
 	}
+	else{
+		cartesianVelocity[0] =  turboVelocity[0]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
+		cartesianVelocity[1] =  turboVelocity[0]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
 
-	if(nDim == 3)
-		cartesianVelocity[2] = turboVelocity[2];
+		if (marker_flag == INFLOW){
+			cartesianVelocity[0] *= -1.0;
+			cartesianVelocity[1] *= -1.0;
+		}
 
+		if(nDim == 3)
+			cartesianVelocity[2] = turboVelocity[2];
+	}
 }
 
 inline su2double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
