@@ -11814,20 +11814,21 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
   MatchingFaceClass thisMatchingFace;
 
 #ifdef HAVE_MPI
-  int blockLen[] = {1, 1, 1, 1, 1, 12, 1};
+  int blockLen[] = {1, 1, 1, 1, 1, 12, 1, 1};
   MPI_Datatype type[] = {MPI_UNSIGNED_SHORT, MPI_UNSIGNED_SHORT,
                          MPI_UNSIGNED_SHORT, MPI_UNSIGNED_SHORT,
-                         MPI_UNSIGNED_LONG,  MPI_DOUBLE, MPI_DOUBLE};
+                         MPI_UNSIGNED_LONG,  MPI_DOUBLE, MPI_DOUBLE, MPI_UB};
   MPI_Aint disp[] = {(char *) &thisMatchingFace.nCornerPoints  - (char *) &thisMatchingFace,
                      (char *) &thisMatchingFace.nDim           - (char *) &thisMatchingFace,
                      (char *) &thisMatchingFace.nPoly          - (char *) &thisMatchingFace,
                      (char *) &thisMatchingFace.nDOFsElem      - (char *) &thisMatchingFace,
                      (char *) &thisMatchingFace.elemID         - (char *) &thisMatchingFace,
                      (char *) &thisMatchingFace.cornerCoor     - (char *) &thisMatchingFace,
-                     (char *) &thisMatchingFace.tolForMatching - (char *) &thisMatchingFace};
+                     (char *) &thisMatchingFace.tolForMatching - (char *) &thisMatchingFace,
+                     sizeof(thisMatchingFace)};
 
   MPI_Datatype MPI_MATCHINGFACE_TYPE;
-  MPI_Type_create_struct(7, blockLen, disp, type, &MPI_MATCHINGFACE_TYPE);
+  MPI_Type_create_struct(8, blockLen, disp, type, &MPI_MATCHINGFACE_TYPE);
   MPI_Type_commit(&MPI_MATCHINGFACE_TYPE);
 #endif
 
