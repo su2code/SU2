@@ -368,7 +368,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 #ifdef HAVE_MPI
   if( nCommRequests ) {
     MPI_Startall(nCommRequests, commRequests.data());
-    MPI_Waitall(nCommRequests, commRequests.data(), MPI_STATUSES_IGNORE);
+    SU2_MPI::Waitall(nCommRequests, commRequests.data(), MPI_STATUSES_IGNORE);
   }
 #endif
 
