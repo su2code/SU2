@@ -9516,9 +9516,9 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
         }else{
           if (AverageTurboVelocity[val_marker][iSpan][1] >= 0.0){
-            Beta_inf2= -sqrt(pow(AvgMach,2)- 1.0);
+            Beta_inf2= -sqrt(AvgMach - 1.0);
           }else{
-            Beta_inf2= sqrt(pow(AvgMach,2)-1.0);
+            Beta_inf2= sqrt(AvgMach-1.0);
           }
           if (nDim == 2){
             c2js_Re = -cj[3]*(Beta_inf2 + AverageTurboMach[val_marker][iSpan][1])/( 1.0 + AverageTurboMach[val_marker][iSpan][0]);
