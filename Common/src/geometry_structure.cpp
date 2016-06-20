@@ -9390,8 +9390,8 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 						turboNormal2 = 0.0;
 						Normal2 		= 0.0;
 						for (iDim = 0; iDim < nDim; iDim++){
-							TotalTurboNormal[iDim] /=nTotVertexSpan[iMarker][iSpan];
-							TotalNormal[iDim] /=nTotVertexSpan[iMarker][iSpan];
+//							TotalTurboNormal[iDim] /=nTotVertexSpan[iMarker][iSpan];
+//							TotalNormal[iDim] /=nTotVertexSpan[iMarker][iSpan];
 							turboNormal2 += TotalTurboNormal[iDim]*TotalTurboNormal[iDim];
 							Normal2 += TotalNormal[iDim]*TotalNormal[iDim];
 						}
