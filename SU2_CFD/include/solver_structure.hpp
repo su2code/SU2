@@ -2848,6 +2848,46 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetFreeStream_Solution(CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] DGGeometry - Geometrical definition of the DG problem.
+   * \param[in] config     - Definition of the particular problem.
+   */
+  virtual void Initiate_MPI_Communication(CGeometry *geometry,
+                                          CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] DGGeometry - Geometrical definition of the DG problem.
+   * \param[in] config     - Definition of the particular problem.
+   */
+  virtual void Complete_MPI_Communication(CGeometry *geometry,
+                                          CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  virtual void Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  virtual void External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
 };
 
 /*!
@@ -5177,7 +5217,7 @@ public:
                     unsigned short iMesh, unsigned long Iteration);
   
   /*!
-   * \brief Compute the spatial integration of the convective terms using a finite element method.
+   * \brief Compute the internal contributions to the spatial residual.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
@@ -5185,19 +5225,20 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Convective_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+  void Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh, unsigned short iRKStep);
-
+  
   /*!
-   * \brief Source term integration.
+   * \brief Compute the external contributions to the spatial residual.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                       CNumerics *second_numerics, CConfig *config, unsigned short iMesh);
+  void External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
   
   /*!
    * \brief Compute primitive variables and their gradients.
@@ -5585,7 +5626,23 @@ public:
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CFz_Inv(void);
-
+  
+  /*!
+   * \brief Routine that initiates the non-blocking communication between ranks.
+   * \param[in] DGGeometry - Geometrical definition of the DG problem.
+   * \param[in] config     - Definition of the particular problem.
+   */
+  void Initiate_MPI_Communication(CGeometry *geometry,
+                                  CConfig *config);
+  
+  /*!
+   * \brief Routine that completes the non-blocking communication between ranks.
+   * \param[in] DGGeometry - Geometrical definition of the DG problem.
+   * \param[in] config     - Definition of the particular problem.
+   */
+  void Complete_MPI_Communication(CGeometry *geometry,
+                                  CConfig *config);
+  
 private:
   /*!
    * \brief Function, which sets up the persistent communication of the flow
@@ -5594,7 +5651,7 @@ private:
    * \param[in] config     - Definition of the particular problem.
    */
   void Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
-                                 CConfig        *config);
+                                 CConfig *config);
 
 public:
   /*!
@@ -5706,7 +5763,7 @@ public:
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
   
   /*!
-   * \brief Compute the viscous residuals.
+   * \brief Compute the internal contributions to the spatial residual.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
@@ -5714,8 +5771,20 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
    */
-  void Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                        CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  void Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  
+  /*!
+   * \brief Compute the external contributions to the spatial residual.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                         CConfig *config, unsigned short iMesh, unsigned short iRKStep);
   
   /*!
    * \brief Impose a constant heat-flux condition at the wall.

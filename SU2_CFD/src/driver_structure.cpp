@@ -515,8 +515,8 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   
   /*--- Allocate integration container for finite element flow solver. ---*/
   
-  if (fem_euler) integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
-  if (fem_ns)    integration_container[FLOW_SOL] = new CMultiGridIntegration(config);
+  if (fem_euler) integration_container[FLOW_SOL] = new CFEM_DG_Integration(config);
+  if (fem_ns)    integration_container[FLOW_SOL] = new CFEM_DG_Integration(config);
   //if (fem_turbulent) integration_container[FEM_TURB_SOL] = new CSingleGridIntegration(config);
   
   /*--- Allocate solution for adjoint problem ---*/

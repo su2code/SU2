@@ -936,3 +936,165 @@ void CStructuralIntegration::Structural_Iteration(CGeometry ***geometry, CSolver
   Convergence_Monitoring_FEM(geometry[iZone][MESH_0], config[iZone], solver_container[iZone][MESH_0][SolContainer_Position], Iteration);
 
 }
+
+CFEM_DG_Integration::CFEM_DG_Integration(CConfig *config) : CIntegration(config) { }
+
+CFEM_DG_Integration::~CFEM_DG_Integration(void) { }
+
+void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ***geometry,
+                                               CSolver ****solver_container,
+                                               CNumerics *****numerics_container,
+                                               CConfig **config,
+                                               unsigned short RunTime_EqSystem,
+                                               unsigned long Iteration,
+                                               unsigned short iZone) {
+
+  unsigned short iMesh, iRKStep, iRKLimit = 1;
+  su2double monitor = 0.0;
+  unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
+  unsigned short FinestMesh = config[iZone]->GetFinestMesh();
+  
+  /*--- For now, we assume no geometric multigrid. ---*/
+  
+  iMesh = FinestMesh;
+  
+  /*--- Check for the number of RK stages. ---*/
+  
+  switch (config[iZone]->GetKind_TimeIntScheme()) {
+    case RUNGE_KUTTA_EXPLICIT: iRKLimit = config[iZone]->GetnRKStep(); break;
+    case EULER_EXPLICIT: case EULER_IMPLICIT: iRKLimit = 1; break; }
+  
+  /*--- Time and space integration ---*/
+  
+  for (iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
+    
+    /*--- Send-Receive boundary conditions, and preprocessing ---*/
+    
+    solver_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, iRKStep, RunTime_EqSystem, false);
+    
+    /*--- Space integration ---*/
+    
+    Space_Integration(geometry[iZone][iMesh], solver_container[iZone][iMesh], numerics_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, iRKStep, RunTime_EqSystem);
+    
+    /*--- Time integration, update solution using the old solution plus the solution increment ---*/
+    
+    Time_Integration(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iRKStep, RunTime_EqSystem, Iteration);
+    
+    /*--- Send-Receive boundary conditions, and postprocessing ---*/
+    
+    solver_container[iZone][iMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh);
+    
+  }
+  
+  /*--- Calculate the inviscid and viscous forces ---*/
+  
+  //solver_container[iZone][FinestMesh][SolContainer_Position]->Inviscid_Forces(geometry[FinestMesh], config);
+  //solver_container[iZone][FinestMesh][SolContainer_Position]->Viscous_Forces(geometry[FinestMesh], config);
+  
+  /*--- Convergence strategy ---*/
+  
+  //Convergence_Monitoring(geometry[iZone][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
+  
+  
+}
+
+void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
+                                            CSolver **solver_container,
+                                            CNumerics **numerics,
+                                            CConfig *config, unsigned short iMesh,
+                                            unsigned short iRKStep,
+                                            unsigned short RunTime_EqSystem) {
+  
+  unsigned short iMarker;
+  unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
+  unsigned long Iteration = 0;
+  
+  /*--- Initiate non-blocking comms. ---*/
+  
+  solver_container[MainSolver]->Initiate_MPI_Communication(geometry, config);
+  
+  /*--- Compute the internal portion of the residual (excluding halos) ---*/
+  
+  solver_container[MainSolver]->Internal_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
+  
+  /*--- Compute time step. ---*/
+
+  if (iRKStep == 0)
+    solver_container[MainSolver]->SetTime_Step(geometry, solver_container, config, iMesh, Iteration);
+  
+  /*--- Complete non-blocking comms. ---*/
+  
+  solver_container[MainSolver]->Complete_MPI_Communication(geometry, config);
+  
+  /*--- Compute remaining portion of the residual including halos. ---*/
+  
+  solver_container[MainSolver]->External_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
+  
+  /*--- Weak boundary conditions ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case EULER_WALL:
+        solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        break;
+      case FAR_FIELD:
+        solver_container[MainSolver]->BC_Far_Field(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case SYMMETRY_PLANE:
+        solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      default:
+        cout << "Weak BC not implemented." << endl;
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+    }
+  }
+  
+  /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case ISOTHERMAL:
+        solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case HEAT_FLUX:
+        solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      default:
+        cout << "Strong BC not implemented." << endl;
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+    }
+  
+}
+
+void CFEM_DG_Integration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
+                                    unsigned short RunTime_EqSystem, unsigned long Iteration) {
+  
+  unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
+  
+  /*--- Perform the time integration ---*/
+  
+    switch (config->GetKind_TimeIntScheme()) {
+      case (RUNGE_KUTTA_EXPLICIT):
+        solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
+        break;
+      default:
+        cout << "Time integration scheme not implemented." << endl;
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+    }
+  
+}
