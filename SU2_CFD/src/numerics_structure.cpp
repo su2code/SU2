@@ -143,7 +143,7 @@ CNumerics::~CNumerics(void) {
     delete [] Flux_Tensor;
   }
 
-  if (tau!=NULL and delta != NULL){
+  if (tau!=NULL && delta != NULL){
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       delete [] tau[iDim];
       delete [] delta[iDim];
