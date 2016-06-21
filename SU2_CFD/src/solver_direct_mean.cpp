@@ -666,8 +666,22 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       
       if (iPoint_Local >= 0) {
         if (compressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+					if(config->GetRestartWithConservative()){
+        		if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+						if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+					}
+					else{
+						if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> dull_val >> Temperature;
+						if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4] >> dull_val >> Temperature;
+						Density = Solution[0];
+						FluidModel->SetTDState_rhoT(Density, Temperature);
+						StaticEnergy= FluidModel->GetStaticEnergy();
+						Velocity2 = 0.0;
+						for (iDim = 0; iDim < nDim; iDim++)
+							Velocity2 += (Solution[iDim+1]/Solution[0])*(Solution[iDim+1]/Solution[0]);
+
+						Solution[nVar-1]= Density*(StaticEnergy + 0.5*Velocity2);
+					}
         }
         if (incompressible) {
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
@@ -12668,10 +12682,34 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
        node coordinates, and then the conservative variables. ---*/
       
       if (iPoint_Local >= 0) {
-        if (compressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-        }
+      	if (compressible) {
+					if(config->GetRestartWithConservative()){
+						if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+						if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+					}
+					else{
+						if(config->GetKind_Solver() == NAVIER_STOKES){
+							if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> dull_val >> Temperature;
+							if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4] >> dull_val >> Temperature;
+						}
+						if(config->GetKind_Solver() == RANS && config->GetKind_Turb_Model() == SA){
+							if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> dull_val >> dull_val >>Temperature;
+							if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4] >> dull_val >> dull_val >> Temperature;
+						}
+						if(config->GetKind_Solver() == RANS && config->GetKind_Turb_Model() == SST){
+							if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> dull_val >> dull_val >> dull_val >>Temperature;
+							if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4] >> dull_val >> dull_val >> dull_val >> Temperature;
+						}
+						Density = Solution[0];
+						FluidModel->SetTDState_rhoT(Density, Temperature);
+						StaticEnergy= FluidModel->GetStaticEnergy();
+						Velocity2 = 0.0;
+						for (iDim = 0; iDim < nDim; iDim++)
+							Velocity2 += (Solution[iDim+1]/Solution[0])*(Solution[iDim+1]/Solution[0]);
+
+						Solution[nVar-1]= Density*(StaticEnergy + 0.5*Velocity2);
+					}
+				}
         if (incompressible) {
           if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
           if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];

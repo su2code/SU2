@@ -101,7 +101,7 @@ void CSutherland::SetDerViscosity(su2double T, su2double rho) {
 }
 
 
-
+#ifdef HAVE_FluidProp
 CFluidPropViscosity::CFluidPropViscosity(void) : CViscosityModel() {
 
 }
@@ -130,6 +130,8 @@ void CFluidPropViscosity::SetDerViscosity(su2double T, su2double rho)  {
 	   printf( "T = %f, rho = %f, dmudT_rho = %f, dmudrho_dT = %f\n", T, rho, dmudT_rho, dmudT_rho);
         }
 }
+#endif
+
 /*-------------------------------------------------*/
 /*---------- Thermal Conductivity Models ----------*/
 /*-------------------------------------------------*/
@@ -189,7 +191,7 @@ CConstantPrandtl::~CConstantPrandtl(void) { }
 
 
 
-
+#ifdef HAVE_FluidProp
 CFluidPropConductivity::CFluidPropConductivity(void) : CConductivityModel() { }
 
 CFluidPropConductivity::CFluidPropConductivity(su2double pr_const) : CConductivityModel() {
@@ -224,4 +226,4 @@ void CFluidPropConductivity::SetDerConductivity(su2double T, su2double rho, su2d
 
 CFluidPropConductivity::~CFluidPropConductivity(void) { }
 
-
+#endif

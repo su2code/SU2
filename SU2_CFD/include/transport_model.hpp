@@ -182,6 +182,7 @@ public:
  * \author T.P. van der Stelt
  * \version 1.0
  */
+#ifdef HAVE_FluidProp
 class CFluidPropViscosity : public CViscosityModel {
 protected:
 
@@ -207,6 +208,7 @@ public:
 	void SetDerViscosity(double T, double rho);
 };
 
+#endif
 
 /*!
  * \class CThermalConductivityModel
@@ -329,7 +331,7 @@ public:
 
 };
 
-
+#ifdef HAVE_FluidProp
 /*!
  * \class CFluidPropConductivity
  * \brief this class defines a thermal conductivity according the Chung method implemented in FluidProp
@@ -369,5 +371,5 @@ public:
 		void SetDerConductivity(double T, double rho, double dmudrho_T, double dmudT_rho, double cp);
 };
 
-
+#endif
 #include "transport_model.inl"

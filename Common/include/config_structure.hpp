@@ -448,7 +448,8 @@ private:
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
 	bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
 	bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
-	Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
+	Restart_Flow,	/*!< \brief Restart flow solution for adjoint and linearized problems. */
+	RestartWCons; /*!< \brief Restart flow solution with the primitive variables. */
 	unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
 	nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
 	nMarker_GeoEval,					/*!< \brief Number of markers for the objective function. */
@@ -3720,6 +3721,11 @@ public:
 	 */
 	bool GetRestart(void);
 
+	/*!
+	 * \brief Provides the restart information.
+	 * \return Restart information, if <code>TRUE</code> then the code will use the primitive value density and temperature to restart the solution.
+	 */
+	bool GetRestartWithConservative(void);
 	/*!
 	 * \brief Provides the number of varaibles.
 	 * \return Number of variables.
