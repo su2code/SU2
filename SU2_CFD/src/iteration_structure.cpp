@@ -1888,7 +1888,7 @@ void CFEMFlowIteration::Iterate(COutput *output,
   
   /*--- Solve the Euler, Navier-Stokes, RANS or LES equations (one iteration) ---*/
   
-  integration_container[val_iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container,
+  integration_container[val_iZone][FLOW_SOL]->SingleGrid_Iteration(geometry_container,
                                                                   solver_container,
                                                                   numerics_container,
                                                                   config_container,

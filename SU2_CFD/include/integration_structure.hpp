@@ -682,4 +682,62 @@ public:
 
 };
 
+/*!
+ * \class CFEM_DG_Integration
+ * \brief Class for integration with the FEM DG solver.
+ * \author E. van der Weide, T. Economon
+ * \version 4.2.0 "Cardinal"
+ */
+class CFEM_DG_Integration : public CIntegration {
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CFEM_DG_Integration(CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CFEM_DG_Integration(void);
+  
+  /*!
+   * \brief Do the numerical integration (implicit) of the turbulence solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Iteration - Current iteration.
+   */
+  void SingleGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
+                            CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+  /*!
+   * \brief Perform the spatial integration of the numerical system.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   */
+  void Space_Integration(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics, CConfig *config,
+                         unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem);
+  
+  /*!
+   * \brief Perform the time integration (explicit or implicit) of the numerical system.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Iteration - Current iteration.
+   */
+  void Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                        unsigned short iRKStep, unsigned short RunTime_EqSystem, unsigned long Iteration);
+  
+};
+
 #include "integration_structure.inl"

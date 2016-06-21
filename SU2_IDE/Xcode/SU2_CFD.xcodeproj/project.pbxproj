@@ -86,6 +86,9 @@
 		E9D9CE8A1C62A1C8004119E9 /* transfer_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE881C62A1C8004119E9 /* transfer_structure.cpp */; };
 		E9F512C81CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F512C61CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp */; };
 		E9F512C91CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F512C71CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp */; };
+		E9F81E001D1922AB0080D669 /* fem_integration_rules.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F81DFD1D1922AB0080D669 /* fem_integration_rules.cpp */; };
+		E9F81E011D1922AB0080D669 /* fem_wall_distance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F81DFE1D1922AB0080D669 /* fem_wall_distance.cpp */; };
+		E9F81E021D1922AB0080D669 /* gelite.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F81DFF1D1922AB0080D669 /* gelite.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -343,6 +346,10 @@
 		E9F5F1C61CFF9CA200522F68 /* def_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_NACA0012.cfg; sourceTree = "<group>"; };
 		E9F5F1CE1CFF9CA200522F68 /* def_NACA4412.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_NACA4412.cfg; sourceTree = "<group>"; };
 		E9F5F1D11CFF9CA200522F68 /* def_RAE2822.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_RAE2822.cfg; sourceTree = "<group>"; };
+		E9F81DFD1D1922AB0080D669 /* fem_integration_rules.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_integration_rules.cpp; path = ../../Common/src/fem_integration_rules.cpp; sourceTree = "<group>"; };
+		E9F81DFE1D1922AB0080D669 /* fem_wall_distance.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_wall_distance.cpp; path = ../../Common/src/fem_wall_distance.cpp; sourceTree = "<group>"; };
+		E9F81DFF1D1922AB0080D669 /* gelite.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gelite.cpp; path = ../../Common/src/gelite.cpp; sourceTree = "<group>"; };
+		E9F81E031D1922D40080D669 /* gelite.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gelite.hpp; path = ../../Common/include/gelite.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -429,6 +436,9 @@
 				05E6DB8D17EB61E600FA1F7E /* grid_movement_structure.cpp */,
 				E965E9FF1CAB578200C6020B /* fem_geometry_structure.cpp */,
 				E965EA001CAB578200C6020B /* fem_standard_element.cpp */,
+				E9F81DFD1D1922AB0080D669 /* fem_integration_rules.cpp */,
+				E9F81DFE1D1922AB0080D669 /* fem_wall_distance.cpp */,
+				E9F81DFF1D1922AB0080D669 /* gelite.cpp */,
 			);
 			name = Geometry;
 			sourceTree = "<group>";
@@ -509,6 +519,7 @@
 				E9D9CE971C62A2A7004119E9 /* interpolation_structure.hpp */,
 				E965EA051CAB57DB00C6020B /* fem_geometry_structure.hpp */,
 				E965EA061CAB57DB00C6020B /* fem_standard_element.hpp */,
+				E9F81E031D1922D40080D669 /* gelite.hpp */,
 			);
 			name = Include;
 			sourceTree = "<group>";
@@ -1527,6 +1538,7 @@
 			files = (
 				E965EA021CAB578200C6020B /* fem_standard_element.cpp in Sources */,
 				E9D9CE8A1C62A1C8004119E9 /* transfer_structure.cpp in Sources */,
+				E9F81E011D1922AB0080D669 /* fem_wall_distance.cpp in Sources */,
 				05E6DB9217EB61E600FA1F7E /* config_structure.cpp in Sources */,
 				05755F0A1A54AC4500600019 /* output_su2.cpp in Sources */,
 				05E6DB9317EB61E600FA1F7E /* dual_grid_structure.cpp in Sources */,
@@ -1577,6 +1589,7 @@
 				0530E56C17FDF7BD00733CE8 /* variable_direct_poisson.cpp in Sources */,
 				05E6DC1D17EB62A100FA1F7E /* output_tecplot.cpp in Sources */,
 				E9D9CE861C62A1A7004119E9 /* interpolation_structure.cpp in Sources */,
+				E9F81E021D1922AB0080D669 /* gelite.cpp in Sources */,
 				05E6DC1E17EB62A100FA1F7E /* solver_adjoint_levelset.cpp in Sources */,
 				05F1089C1978D2AE00F2F288 /* fluid_model_pvdw.cpp in Sources */,
 				05E6DC1F17EB62A100FA1F7E /* solver_adjoint_mean.cpp in Sources */,
@@ -1604,6 +1617,7 @@
 				E941BB931B71D124005C6C06 /* linear_solvers_structure_b.cpp in Sources */,
 				05E6DC4417EB62A100FA1F7E /* variable_structure.cpp in Sources */,
 				05E6DC4517EB62A100FA1F7E /* variable_template.cpp in Sources */,
+				E9F81E001D1922AB0080D669 /* fem_integration_rules.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

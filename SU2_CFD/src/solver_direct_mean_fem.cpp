@@ -1206,6 +1206,31 @@ void CFEM_DG_EulerSolver::SelfCommunication(void) {
   }
 }
 
+void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CGeometry *geometry,
+                                                    CConfig *config) {
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  if (rank == MASTER_NODE) cout << " Initiate non-blocking comms here." << endl;
+
+}
+
+void CFEM_DG_EulerSolver::Complete_MPI_Communication(CGeometry *geometry,
+                                                    CConfig *config) {
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  if (rank == MASTER_NODE) cout << " Complete non-blocking comms here." << endl;
+
+}
+
+
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
   
   int rank = MASTER_NODE;
@@ -1292,7 +1317,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
   
 }
 
-void CFEM_DG_EulerSolver::Convective_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+void CFEM_DG_EulerSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                               CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
   int rank = MASTER_NODE;
@@ -1302,7 +1327,7 @@ void CFEM_DG_EulerSolver::Convective_Residual(CGeometry *geometry, CSolver **sol
   
   /*--- Compute finite element convective residual and store here. ---*/
   
-  if (rank == MASTER_NODE) cout << " Computing convective residual." << endl;
+  if (rank == MASTER_NODE) cout << " Computing internal contributions to residual." << endl;
   
   // numerics holds the CDiscGalerkin class for compute residual here
   
@@ -1317,19 +1342,17 @@ void CFEM_DG_EulerSolver::Convective_Residual(CGeometry *geometry, CSolver **sol
   
 }
 
-void CFEM_DG_EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
-                                       CConfig *config, unsigned short iMesh) {
+void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                                  CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  /*--- Compute source residual and store here. ---*/
+  /*--- Compute finite element convective residual and store here. ---*/
   
-  if (rank == MASTER_NODE) cout << " Computing source residual." << endl;
-  
-  // numerics holds the CSourceFEM class for source resid here
+  if (rank == MASTER_NODE) cout << " Computing external contributions to residual." << endl;
   
 }
 
@@ -1619,10 +1642,42 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   
 }
 
-void CFEM_DG_NSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                                  CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   
-  // numerics holds the CFEMVisc class for viscous resid here
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  /*--- Compute finite element convective residual and store here. ---*/
+  
+  if (rank == MASTER_NODE) cout << " Computing internal contributions to residual." << endl;
+  
+  // numerics holds the CDiscGalerkin class for compute residual here
+  
+  if ((config->GetRiemann_Solver_FEM() == ROE) && (rank == MASTER_NODE))
+    cout << " Using a Roe Riemann solver for the DG method." << endl;
+  
+  su2double quad_fact_straight = config->GetQuadrature_Factor_Straight();
+  if (rank == MASTER_NODE) cout << " Quad factor straight: " << quad_fact_straight << endl;
+  
+  su2double quad_fact_curved = config->GetQuadrature_Factor_Curved();
+  if (rank == MASTER_NODE) cout << " Quad factor curved: " << quad_fact_curved << endl;
+  
+}
+
+void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  /*--- Compute finite element convective residual and store here. ---*/
+  
+  if (rank == MASTER_NODE) cout << " Computing contour contributions to residual." << endl;
   
 }
 
