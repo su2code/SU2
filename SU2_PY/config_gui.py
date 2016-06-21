@@ -144,7 +144,7 @@ class config_gui(wx.Frame):
     self.list_ctrl = wx.ListCtrl(self.main_panel,style=wx.LC_REPORT|wx.BORDER_SUNKEN,size=(300,600))
     self.list_ctrl.InsertColumn(0, 'Option Category')
 
-    bigfont = wx.Font(20,wx.MODERN,wx.NORMAL,wx.BOLD)
+    bigfont = wx.Font(11,wx.MODERN,wx.NORMAL,wx.BOLD)
 
     # Read the option_data and build controls
     self.ctrldict  = {}
@@ -163,7 +163,7 @@ class config_gui(wx.Frame):
       self.ctrldict[category] = []
       yctr = 0
       for j,opt in enumerate(option_data[category]):
-        if opt.option_type in ["EnumOption","MathProblem","SpecialOption","ConvectOption"]:
+        if opt.option_type in ["BoolOption","EnumOption","MathProblemOption","SpecialOption","ConvectOption"]:
           self.ctrldict[category].append(LabeledComboBox(self.right_panel,opt.option_name,opt.option_name,opt.option_default,opt.option_values,opt.option_type,opt.option_description))
         else:
           self.ctrldict[category].append(LabeledTextCtrl(self.right_panel,opt.option_name,opt.option_name,opt.option_default,opt.option_type))

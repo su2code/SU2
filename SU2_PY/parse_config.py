@@ -62,7 +62,12 @@ class config_option:
 def parse_config(config_cpp, config_hpp):
 
   # List of option types
-  option_types = ['AddEnumOption', 'AddMathProblem', 'AddSpecialOption', 'AddScalarOption', 'AddMarkerOption', 'AddMarkerPeriodic', 'AddMarkerDirichlet', 'AddMarkerInlet', 'AddMarkerOutlet', 'AddMarkerDisplacement', 'AddMarkerLoad', 'AddMarkerFlowLoad', 'AddArrayOption', 'AddListOption', 'AddConvectOption', 'AddEnumListOption', 'AddDVParamOption']
+  option_types = ['addDoubleOption','addStringOption', 'addIntegerOption','addUnsignedLongOption','addUnsignedShortOption','addLongOption','addBoolOption','addEnumOption',
+                  'addEnumListOption', 'addDoubleArrayOption', 'addDoubleListOption', 'addUShortListOption','addDoubleOption', 'addConvectOption', 'addMathProblemOption',
+                  'addDVParamOption', 'addDVValueOption', 'addFFDDefOption', 'addFFDDegreeOption', 'addStringDoubleListOption', 'addInletOption', 'addInletUnstOption', 
+                  'addRiemannOption', 'addNRBCOption', 'addExhaustOption', 'addBleedOption', 'addPeriodicOption', 'addMixingPlaneOption', 'addTurboPerfOption', 'addActuatorDiskOption',
+	          'addPythonOption'] 
+
 
   # Build a dictionary of enum options from hpp file
   enum_options = {}
@@ -81,7 +86,8 @@ def parse_config(config_cpp, config_hpp):
       dict_val = []
       while(1):
         s2 = f.readline()
-        thisval = s2.split('"')[1]
+	if len(s2.split('"')) > 1:
+          thisval = s2.split('"')[1]
         dict_val.append(thisval)
         if s2.find(';')>-1:
           break;
@@ -114,6 +120,7 @@ def parse_config(config_cpp, config_hpp):
     # Check for a category description
     if line.find('CONFIG_CATEGORY')>-1:
       present_category = line.split(':')[1].strip().strip('*/').strip()
+      present_category = present_category.split('\ingroup')[0]
       print present_category
 
     # Check for an option type
@@ -124,7 +131,7 @@ def parse_config(config_cpp, config_hpp):
 
         # Permitted values
         values = ['YES','NO']
-        if option_type=='AddEnumOption':
+        if option_type=='addEnumOption':
           try:
             enum_mapname = line.split(',')[2].strip()
             values = enum_options[enum_mapname]
@@ -136,22 +143,24 @@ def parse_config(config_cpp, config_hpp):
             print "TypeError, key=%s"%enum_mapname 
             print "enum_options: ",enum_options
             sys.exit(1)
-        elif option_type=='AddMathProblem':
-          values = ['DIRECT','CONTINUOUS_ADJOINT','LINEARIZED']
-        elif option_type=='AddScalarOption':
-          values = ['A scalar constant']
-        elif option_type in ('AddMarkerOption', 'AddMarkerPeriodic', 'AddMarkerDirichlet', 'AddMarkerInlet', 'AddMarkerOutlet', 'AddMarkerDisplacement', 'AddMarkerLoad', 'AddMarkerFlowLoad'):
+        elif option_type=='addMathProblemOption':
+          values = ['DIRECT','CONTINUOUS_ADJOINT','DISCRETE_ADJOINT']
+        elif option_type=='addDoubleOption':
+          values = ['A scalar floating point constant']
+        elif option_type in ('addMarkerOption', 'addMarkerPeriodic', 'addMarkerDirichlet', 'addMarkerInlet', 'addMarkerOutlet', 'addMarkerDisplacement', 'addMarkerLoad', 'addMarkerFlowLoad'):
           values = ['Valid marker name from grid file']
-        elif option_type == 'AddArrayOption':
+        elif option_type == 'addDoubleArrayOption':
           values = ['Array']
-        elif option_type == 'AddListOption':
+        elif option_type in ('addUShortListOption', 'addULongListOption'):
           values = ['List']
-        elif option_type == 'AddConvectOption':
+	elif option_type in ('addUnsignedShortOption', 'addUnsignedLongOption'):
+	  values = ['A scalar integer value']
+        elif option_type == 'addConvectOption':
           values = scheme_list
           print "Convect Option: ", name
-        elif option_type == 'AddEnumListOption':
+        elif option_type == 'addEnumListOption':
           values = ['Enum list'] 
-        elif option_type == 'AddDVParamOption':
+        elif option_type == 'addDVParamOption':
           values = ['DV Param']
 
         # A first pass at finding the default value (Check the last item in parenthesis)
@@ -167,9 +176,9 @@ def parse_config(config_cpp, config_hpp):
           default = '(1.0, 100.0, 1.0)'
         if default=="default_vec_6d":
           default = '( -1E15, -1E15, -1E15, 1E15, 1E15, 1E15 )'
-        if option_type == "AddMathProblem":
+        if option_type == "addMathProblemOption":
           default = 'DIRECT'
-        if option_type == "AddConvectOption":
+        if option_type == "addConvectOption":
           default = 'ROE-1ST_ORDER'
         if default == 'RK_Alpha_Step':
           default = '( 0.66667, 0.66667, 1.000000 )'
@@ -186,10 +195,19 @@ def parse_config(config_cpp, config_hpp):
         if lines[j-1].find('DESCRIPTION')>-1:
           description = lines[j-1].split(':')[1].strip().strip('*/').strip()
 
-        # Add a new option
-        option_list.append(config_option(name,option_type[3:],present_category,values,default,description))
+	if name == "PHYSICAL_PROBLEM":
+	   values.remove("ADJ_EULER")
+	   values.remove("ADJ_NAVIER_STOKES")
+           values.remove("ADJ_RANS")
+           values.remove("DISC_ADJ_EULER")
+	   values.remove("DISC_ADJ_NAVIERSTOKES")
+	   values.remove("DISC_ADJ_RANS")
 
+        # add a new option
+        option_list.append(config_option(name,option_type[3:],present_category,values,default,description))
+        
         break
+
 
   return option_list
 

@@ -149,6 +149,8 @@ const int N_POINTS_HEXAHEDRON = 8;    /*!< \brief General output & CGNS defines.
 const int N_POINTS_PYRAMID = 5;       /*!< \brief General output & CGNS defines. */
 const int N_POINTS_PRISM = 6;         /*!< \brief General output & CGNS defines. */
 
+/* BEGIN_CONFIG_ENUMS */
+
 /*!
  * \brief Boolean answers
  */
@@ -192,7 +194,7 @@ enum ENUM_SOLVER {
   DISC_ADJ_RANS = 36,
   DISC_ADJ_NAVIER_STOKES = 37
 };
-/* BEGIN_CONFIG_ENUMS */
+
 static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVER>
 ("NONE", NO_SOLVER)
 ("EULER", EULER)
