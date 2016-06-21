@@ -360,7 +360,19 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 	  Collect_VertexInfo(false, markDonor,markTarget,nVertexDonor,nDim);
 
 	  /*--- Compute the closest point to a Near-Field boundary point ---*/
+	  su2double y_min;
 	  maxdist = 0.0;
+	  y_min = 1.0e6;
+	  iDim = 1;
+	  for (jVertex = 0; jVertex < nVertexTarget; jVertex++) {
+	  	/*--- Compute the min ---*/
+	  	Point_Target = target_geometry->vertex[markTarget][jVertex]->GetNode();
+	  	if (target_geometry->node[Point_Target]->GetDomain()) {
+	  		Coord_i = target_geometry->node[Point_Target]->GetCoord();
+	  		if (Coord_i[iDim] < y_min)
+	  			  		y_min = Coord_i[iDim];
+	  	}
+	  }
 	  for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
 
 		  Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
@@ -372,7 +384,9 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
 			  /*--- Coordinates of the boundary point ---*/
 			  Coord_i = target_geometry->node[Point_Target]->GetCoord();
+			  Coord_i[1] -= y_min;
 			  mindist = 1E6; pProcessor = 0;
+			  /*--- Loop over all the boundaries to find the min vertex coordinate ---*/
 
 			  /*--- Loop over all the boundaries to find the pair ---*/
 			  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
@@ -382,6 +396,9 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 					  /*--- Compute the dist ---*/
 					  dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
 						  Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
+						  if (iDim == 1){
+						  	Coord_j[iDim] = fmod(Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim] - y_min , 0.105) ;
+						  }
 						  dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
 					  }
 
