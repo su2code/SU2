@@ -1057,7 +1057,7 @@ inline su2double CNSSolver::GetAllBound_CSideForce_Visc() { return AllBound_CSid
 
 inline su2double CNSSolver::GetAllBound_CDrag_Visc() { return AllBound_CDrag_Visc; }
 
-inline su2double CNSSolver::GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return CSkinFriction[val_marker][val_vertex][val_dim]; }
+inline su2double CNSSolver::GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return CSkinFriction[val_marker][val_dim][val_vertex]; }
 
 inline su2double CNSSolver::GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return HeatFlux[val_marker][val_vertex]; }
 
