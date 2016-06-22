@@ -813,8 +813,11 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
   su2double *A2    = NULL;
   su2double *x2    = new su2double[nDim+1];
   
+  bool *test  = new bool[nDim+1];
+  bool *testi = new bool[nDim+1];
+  
   su2double eps = 1E-10;
-  bool test[nDim+1], testi[nDim+1];
+  
   short n = nDim+1;
 
   if (nDonor>2){
@@ -983,6 +986,9 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
   delete [] A;
   if (A2 != NULL) delete [] A2;
   delete [] x2;
+  
+  delete [] test;
+  delete [] testi;
 
 }
 
