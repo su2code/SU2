@@ -4883,7 +4883,8 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
     for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
         Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
-        pitch = config->GetPeriodicRotAngles(iMarkerTP -1);
+        pitch = 0.0;
+//        pitch = config->GetPeriodicRotAngles(iMarkerTP -1);
         // to avoid nan with 2D axial case.
         if(pitch <= EPS) pitch=2*PI_NUMBER;
         /*--- compute or retrieve inlet information ---*/
@@ -8513,12 +8514,16 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 				/*--- Retrieve the specified total conditions for this boundary. ---*/
 				P_Total = ExtAverageTotPressure[val_marker][iSpan];
 				T_Total = ExtAverageTotTemperature[val_marker][iSpan];
+//				cout << P_Total << endl;
+//				cout << T_Total << endl;
 				FlowDirMixMag = 0;
 				for (iDim = 0; iDim < nDim; iDim++)
 					FlowDirMixMag += ExtAverageTurboVelocity[val_marker][iSpan][iDim]*ExtAverageTurboVelocity[val_marker][iSpan][iDim];
-				for (iDim = 0; iDim < nDim; iDim++)
-					FlowDirMix[iDim] = ExtAverageTurboVelocity[val_marker][iSpan][iDim]/FlowDirMixMag;
-
+				for (iDim = 0; iDim < nDim; iDim++){
+					FlowDirMix[iDim] = ExtAverageTurboVelocity[val_marker][iSpan][iDim]/sqrt(FlowDirMixMag);
+//					cout << FlowDirMix[iDim] << endl;
+				}
+//				cout  << endl;
 				/* --- Computes the total state --- */
 				FluidModel->SetTDState_PT(P_Total, T_Total);
 				Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
@@ -8526,17 +8531,21 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
 				/* --- Compute the boundary state u_e --- */
 				Velocity2_e = Velocity2_i;
-				for (iDim = 0; iDim < nDim; iDim++)
+				for (iDim = 0; iDim < nDim; iDim++){
 					turboVelocity[iDim] = sqrt(Velocity2_e)*FlowDirMix[iDim];
-
+//					cout <<"turbovelocity" << turboVelocity[iDim] << endl;
+				}
 				ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery());
-
+//				cout << T_Total << endl;
+//				for (iDim = 0; iDim < nDim; iDim++){
+//					cout <<"Velocity_e" << Velocity_e[iDim] << endl;
+//				}
 				StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
 				FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
 				Density_e = FluidModel->GetDensity();
 				StaticEnergy_e = FluidModel->GetStaticEnergy();
 				Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-				if (tkeNeeded) Energy_e += GetTke_Inf();
+//				if (tkeNeeded) Energy_e += GetTke_Inf();
 				break;
 
 //			case DENSITY_VELOCITY:
