@@ -1005,34 +1005,25 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
                                             unsigned short iRKStep,
                                             unsigned short RunTime_EqSystem) {
   
-  unsigned short iMarker;
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
   unsigned long Iteration = 0;
   
   /*--- Initiate non-blocking comms. ---*/
   
-  solver_container[MainSolver]->Initiate_MPI_Communication(geometry, config);
-  
-  /*--- Compute the internal portion of the residual (excluding halos) ---*/
-  
-  solver_container[MainSolver]->Internal_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
-  
-  /*--- Compute time step. ---*/
+  solver_container[MainSolver]->Initiate_MPI_Communication();
+
+  /*--- Compute time step, if needed. ---*/
 
   if (iRKStep == 0)
     solver_container[MainSolver]->SetTime_Step(geometry, solver_container, config, iMesh, Iteration);
   
-  /*--- Complete non-blocking comms. ---*/
+  /*--- Compute the internal portion of the residual (excluding halos) ---*/
   
-  solver_container[MainSolver]->Complete_MPI_Communication(geometry, config);
+  solver_container[MainSolver]->Internal_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
+
+  /*--- Boundary conditions ---*/
   
-  /*--- Compute remaining portion of the residual including halos. ---*/
-  
-  solver_container[MainSolver]->External_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
-  
-  /*--- Weak boundary conditions ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     switch (config->GetMarker_All_KindBC(iMarker)) {
       case EULER_WALL:
         solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
@@ -1043,8 +1034,14 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
       case SYMMETRY_PLANE:
         solver_container[MainSolver]->BC_Sym_Plane(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
+      case ISOTHERMAL:
+        solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
+      case HEAT_FLUX:
+        solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        break;
       default:
-        cout << "Weak BC not implemented." << endl;
+        cout << "BC not implemented." << endl;
 #ifndef HAVE_MPI
         exit(EXIT_FAILURE);
 #else
@@ -1054,26 +1051,13 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
     }
   }
   
-  /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
+  /*--- Complete non-blocking comms. ---*/
   
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    switch (config->GetMarker_All_KindBC(iMarker)) {
-      case ISOTHERMAL:
-        solver_container[MainSolver]->BC_Isothermal_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        break;
-      case HEAT_FLUX:
-        solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-        break;
-      default:
-        cout << "Strong BC not implemented." << endl;
-#ifndef HAVE_MPI
-        exit(EXIT_FAILURE);
-#else
-        MPI_Abort(MPI_COMM_WORLD,1);
-        MPI_Finalize();
-#endif
-    }
+  solver_container[MainSolver]->Complete_MPI_Communication();
   
+  /*--- Compute remaining portion of the residual including halos. ---*/
+  
+  solver_container[MainSolver]->External_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
 }
 
 void CFEM_DG_Integration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,

@@ -1528,8 +1528,9 @@ void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
 
   for(unsigned short i=0; i<m; ++i) {
     const unsigned short jj = i*nDOFs;
+    const unsigned short kk = i*nDim;
     for(unsigned short j=0; j<nDim; ++j) {
-      const unsigned short ii = i*nDim + j;
+      const unsigned short ii = kk + j;
       derivCoor[ii] = 0.0;
       for(unsigned short k=0; k<nDOFs; ++k)
         derivCoor[ii] += matDerBasisInt[jj+k]*meshPoints[DOFs[k]].coor[j];
@@ -2322,6 +2323,13 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   for(unsigned long i=0; i<localFaces.size(); ++i) {
     if(localFaces[i].faceIndicator == -1 && localFaces[i].elemID1 < nVolElemTot) {
 
+      /* Abbreviate the adjecent element ID's and store them in matchingFaces. */
+      const unsigned long v0 = localFaces[i].elemID0;
+      const unsigned long v1 = localFaces[i].elemID1;
+
+      matchingFaces[ii].elemID0 = v0;
+      matchingFaces[ii].elemID1 = v1;
+
       /* Set the pointers for the connectivities of the face. */
       matchingFaces[ii].DOFsGridFaceSide0 = VecDOFsGridFaceSide0.data() + sizeVecDOFsGridFaceSide0;
       matchingFaces[ii].DOFsGridFaceSide1 = VecDOFsGridFaceSide1.data() + sizeVecDOFsGridFaceSide1;
@@ -2366,9 +2374,6 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
       }
 
       /* Update the counters for the adjacent element connectivities. */
-      unsigned long v0 = localFaces[i].elemID0;
-      unsigned long v1 = localFaces[i].elemID1;
-
       sizeVecDOFsGridElementSide0 += volElem[v0].nDOFsGrid;
       sizeVecDOFsGridElementSide1 += volElem[v1].nDOFsGrid;
       sizeVecDOFsSolElementSide0  += volElem[v0].nDOFsSol;
@@ -4493,6 +4498,96 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(void) {
   }
 }
 
+void CMeshFEM_DG::LengthScaleVolumeElements(void) {
+
+  /* Initialize the length scale of the elements to zero. */
+  for(unsigned long i=0; i<nVolElemTot; ++i)
+    volElem[i].lenScale = 0.0;
+
+  /*-------------------------------------------------------------------*/
+  /*--- Step 1: Determine the maximum value of the Jacobians of the ---*/
+  /*---         surrounding faces of the elements.                  ---*/
+  /*-------------------------------------------------------------------*/
+
+  /*--- First the physical boundaries. Loop over them. ---*/
+  for(unsigned short j=0; j<boundaries.size(); ++j) {
+    if( !boundaries[j].periodicBoundary ) {
+      for(unsigned long i=0; i<boundaries[j].surfElem.size(); ++i) {
+
+        /* Easier storage of corresponding volume element and the metric data
+           for the normals of this surface element, determine the number of
+           integration points for this surface element and loop over them. */
+        const unsigned long  volInd   = boundaries[j].surfElem[i].volElemID;
+        const su2double      *normals = boundaries[j].surfElem[i].metricNormalsFace;
+        const unsigned short ind      = boundaries[j].surfElem[i].indStandardElement;
+        const unsigned short nInt     = standardBoundaryFacesSol[ind].GetNIntegration();
+
+        /* Loop over the integration points and determine the maximum area
+           scale for this face. This is stored in the variable lenScale of
+           the corresponding volume element. */
+        for(unsigned short k=0; k<nInt; ++k)
+          volElem[volInd].lenScale = max(volElem[volInd].lenScale,
+                                         normals[k*(nDim+1)+nDim]);
+      }
+    }
+  }
+
+  /*--- Loop over the matching internal faces to update the maximum Jacobian
+        of the surrounding faces. ---*/
+  for(unsigned long i=0; i<matchingFaces.size(); ++i) {
+
+    /* Easier storage of the ID's of the two adjacent elements, determine the
+       corresponding standard face element, the number of integration points
+       and store the metric data of the face a bit easier. */
+    const unsigned long  v0       = matchingFaces[i].elemID0;
+    const unsigned long  v1       = matchingFaces[i].elemID1;
+    const su2double      *normals = matchingFaces[i].metricNormalsFace;
+    const unsigned short ind      = matchingFaces[i].indStandardElement;
+    const unsigned short nInt     = standardMatchingFacesSol[ind].GetNIntegration();
+
+    /* Loop over the integration points and determine the maximum area
+       scale for this face. This is stored in the variable lenScale of
+       the neigbhoring volume elements. */
+    for(unsigned short k=0; k<nInt; ++k) {
+      const su2double area = normals[k*(nDim+1)+nDim];
+      volElem[v0].lenScale = max(volElem[v0].lenScale, area);
+      volElem[v1].lenScale = max(volElem[v1].lenScale, area);
+    }
+  }
+
+  /*-------------------------------------------------------------------*/
+  /*--- Step 2: Determine the maximum value of the Jacobians of the ---*/
+  /*---         elements and from that its length scale.            ---*/
+  /*-------------------------------------------------------------------*/
+
+  /* Determine the number of metric terms per integration point.
+     This depends on the number of spatial dimensions of the problem. */
+  const unsigned short nMetricPerPoint = nDim*nDim + 1;
+
+  /* Loop over the owned volume elements. */
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+
+    /* Easier storage of the metric terms and determine the number of
+       integration points for this element. */
+    const su2double      *metric = volElem[i].metricTerms;
+    const unsigned short ind     = volElem[i].indStandardElement;
+    const unsigned short nInt    = standardElementsSol[ind].GetNIntegration();
+
+    /* Loop over the integration points and determine the minimum Jacobian
+       for this element. Note that the Jacobian is the first variable stored
+       in the metric terms of the integration points. */
+    su2double minJacElem = metric[0];
+    for(unsigned short k=1; k<nInt; ++k)
+      minJacElem = min(minJacElem, metric[k*nMetricPerPoint]);
+
+    /* Determine the length scale of the element, for which the polynomial
+       degree must be taken into account as well. */
+    const su2double lenScaleRef = 2.0/standardElementsSol[ind].GetNPoly();
+    const su2double maxJacFaces = volElem[i].lenScale;
+    volElem[i].lenScale         = lenScaleRef*minJacElem/maxJacFaces; 
+  }
+}
+
 void CMeshFEM_DG::MetricTermsSurfaceElements(void) {
 
   /*--- Compute the metric terms of the internal matching faces. ---*/
@@ -4542,7 +4637,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
   /* Determine the number of metric terms per integration point.
      This depends on the number of spatial dimensions of the problem. */
-  const unsigned short nMetricPerPoint = nDim == 3 ? 10 : 5;
+  const unsigned short nMetricPerPoint = nDim*nDim + 1;
 
   /*--- Loop over the owned volume elements to determine the size of
         the metric vector and the size of the mass matrix vector. */

@@ -35,13 +35,13 @@ inline FEMStandardElementBaseClass::FEMStandardElementBaseClass(){}
 
 inline FEMStandardElementBaseClass::~FEMStandardElementBaseClass(){}
 
-inline su2double* FEMStandardElementBaseClass::GetWeightsIntegration(void){return wIntegration.data();}
+inline const su2double* FEMStandardElementBaseClass::GetWeightsIntegration(void) const {return wIntegration.data();}
 
-inline unsigned short FEMStandardElementBaseClass::GetNIntegration(void){return nIntegration;}
+inline unsigned short FEMStandardElementBaseClass::GetNIntegration(void) const {return nIntegration;}
 
 inline unsigned short FEMStandardElementBaseClass::GetOrderExact(void){return orderExact;}
 
-inline FEMStandardElementClass::FEMStandardElementClass(){matBasisIntegration = NULL;}
+inline FEMStandardElementClass::FEMStandardElementClass(){matBasisIntegration = NULL; matDerBasisIntTrans = NULL;}
 
 inline FEMStandardElementClass::FEMStandardElementClass(const FEMStandardElementClass &other) : FEMStandardElementBaseClass(other) {Copy(other);}
 
@@ -55,7 +55,9 @@ inline su2double* FEMStandardElementClass::GetDsBasisFunctionsIntegration(void){
 
 inline su2double* FEMStandardElementClass::GetDtBasisFunctionsIntegration(void){return dtLagBasisIntegration.data();}
 
-inline su2double* FEMStandardElementClass::GetMatBasisFunctionsIntegration(void){return matBasisIntegration;}
+inline const su2double* FEMStandardElementClass::GetMatBasisFunctionsIntegration(void) const {return matBasisIntegration;}
+
+inline const su2double* FEMStandardElementClass::GetDerMatBasisFunctionsIntTrans(void) const {return matDerBasisIntTrans;}
 
 inline unsigned short* FEMStandardElementClass::GetConnFace0(void){return connFace0.data();}
 
@@ -70,6 +72,8 @@ inline unsigned short* FEMStandardElementClass::GetConnFace4(void){return connFa
 inline unsigned short* FEMStandardElementClass::GetConnFace5(void){return connFace5.data();}
 
 inline unsigned short FEMStandardElementClass::GetNDOFs(void){return nDOFs;}
+
+inline unsigned short FEMStandardElementClass::GetNPoly(void){return nPoly;}
 
 inline FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(){matDerBasisElemIntegrationSide0 = matDerBasisElemIntegrationSide1 = NULL;}
 

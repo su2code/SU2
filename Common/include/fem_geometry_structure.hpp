@@ -154,12 +154,11 @@ public:
 
   vector<unsigned long> nodeIDsGrid; /*!< \brief Vector with the node IDs of the grid for this element. */
 
+  su2double lenScale;                /*!< \brief Length scale of the element. */
   su2double *metricTerms;            /*!< \brief Pointer to the metric terms in the
                                                  integration points of this element. */
   su2double *massMatrix;             /*!< \brief Pointer to the mass matrix (or the inverse) for this element. */
   su2double *lumpedMassMatrix;       /*!< \brief Pointer to the lumped mass matrix for this element. */
-
-  su2double *solDOFs;                /*!< \brief Pointer to the independent solution variables in the DOFs. */
 
   /*!
    * \brief Constructor of the class. Nothing to be done
@@ -247,6 +246,9 @@ public:
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
 
   unsigned short indStandardElement; /*!< \brief Index in the vector of standard face elements. */
+
+  unsigned long elemID0;              /*!< \brief Element ID adjacent to side 0 of the face. */
+  unsigned long elemID1;              /*!< \brief Element ID adjacent to side 1 of the face. */
 
   unsigned long *DOFsGridFaceSide0;   /*!< \brief Pointer to the grid DOFs of side 0 of the face. */
   unsigned long *DOFsGridFaceSide1;   /*!< \brief Pointer to the grid DOFs of side 1 of the face. */
@@ -497,6 +499,12 @@ public:
   CVolumeElementFEM *GetVolElem(void);
 
   /*!
+  * \brief Function, which makes available the number of standard boundary faces of the solution.
+  * \return  Number of standard boundary faces of the solution.
+  */
+  unsigned short GetNStandardBoundaryFacesSol(void);
+
+  /*!
   * \brief Function, which makes available the standard boundary faces of the solution.
   * \return  Pointer to the standard boundary faces of the solution.
   */
@@ -717,16 +725,34 @@ public:
   CInternalFaceElementFEM *GetMatchingFaces(void);
 
  /*!
+  * \brief Function, which makes available the number of standard volume elements of the solution.
+  * \return  Number of standard volume elements of the solution.
+  */
+  unsigned short GetNStandardElementsSol(void);
+
+ /*!
   * \brief Function, which makes available the standard volume elements of the solution.
   * \return  Pointer to the standard volume elements of the solution.
   */
   FEMStandardElementClass *GetStandardElementsSol(void);
 
  /*!
+  * \brief Function, which makes available the number of standard internal matching faces of the solution.
+  * \return  Number of standard internal matching faces of the solution.
+  */
+  unsigned short GetNStandardMatchingFacesSol(void);
+
+ /*!
   * \brief Function, which makes available the standard internal matching faces of the solution.
   * \return  Pointer to the standard internal matching faces of the solution.
   */
   FEMStandardInternalFaceClass *GetStandardMatchingFacesSol(void);
+
+ /*!
+  * \brief Function, which computes a length scale of the volume elements.
+  * \param[in] config - Definition of the particular problem.
+  */
+  void LengthScaleVolumeElements(void);
 
  /*!
   * \brief Function, which computes the metric terms of the surface
