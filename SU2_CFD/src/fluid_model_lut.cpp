@@ -317,17 +317,17 @@ void CLookUpTable::NN4_KD_Tree (su2double thermo1, su2double thermo2, KD_node *r
 	//Recursive search for the 4 nearest neighbors of the KD tree, with unwinding
 	su2double dist;
 	dist = Dist_KD_Tree(thermo1, thermo2, root);
-	cout<<"Depth "<<root->depth;
+	//cout<<"Depth "<<root->depth;
 	int i=0;
 	while (i<4)
 	{
 		if(dist==best_dist[i]) i=5;
 		if (dist<best_dist[i])
 		{
-			cout<<" i:"<<i;
+			//cout<<" i:"<<i;
 			for (int j=3;j>i;j--)
 			{
-				cout<<" j: "<<j;
+				//cout<<" j: "<<j;
 				best_dist[j] = best_dist[j-1];
 				NN_i[j] = NN_i[j-1];
 				NN_j[j] = NN_j[j-1];
@@ -340,10 +340,10 @@ void CLookUpTable::NN4_KD_Tree (su2double thermo1, su2double thermo2, KD_node *r
 		i++;
 
 	}
-	cout<<endl;
-	cout<<"best_dist: ";
-	for (int i=0; i<4;i++) cout<<best_dist[i]<<" , ";
-	cout<<endl;
+	//cout<<endl;
+	//cout<<"best_dist: ";
+	//for (int i=0; i<4;i++) cout<<best_dist[i]<<" , ";
+	//cout<<endl;
 	if ((root->dim>1))
 	{
 		if (root->depth%2==0)
@@ -353,7 +353,7 @@ void CLookUpTable::NN4_KD_Tree (su2double thermo1, su2double thermo2, KD_node *r
 				NN4_KD_Tree(thermo1, thermo2, root->upper, best_dist);
 				if (dist<best_dist[3])
 				{
-					cout<<"Here"<<endl;
+
 					NN4_KD_Tree (thermo1, thermo2, root->lower, best_dist);
 				}
 			}
@@ -362,7 +362,7 @@ void CLookUpTable::NN4_KD_Tree (su2double thermo1, su2double thermo2, KD_node *r
 				NN4_KD_Tree(thermo1, thermo2, root->lower, best_dist);
 				if (dist<best_dist[3])
 				{
-					cout<<"Here"<<endl;
+
 					NN4_KD_Tree (thermo1, thermo2, root->upper, best_dist);
 				}
 			}
@@ -374,7 +374,6 @@ void CLookUpTable::NN4_KD_Tree (su2double thermo1, su2double thermo2, KD_node *r
 				NN4_KD_Tree (thermo1, thermo2, root->upper, best_dist);
 				if (dist<best_dist[3])
 				{
-					cout<<"Here"<<endl;
 					NN4_KD_Tree (thermo1, thermo2, root->lower, best_dist);
 				}
 			}
@@ -383,7 +382,6 @@ void CLookUpTable::NN4_KD_Tree (su2double thermo1, su2double thermo2, KD_node *r
 				NN4_KD_Tree (thermo1, thermo2, root->lower, best_dist);
 				if (dist<best_dist[3])
 				{
-					cout<<"Here"<<endl;
 					NN4_KD_Tree (thermo1, thermo2, root->upper, best_dist);
 				}
 			}
@@ -405,8 +403,14 @@ void CLookUpTable::SetTDState_rhoe (su2double rho, su2double e ) {
 	{
 		cerr<<"RHOE Input StaticEnergy out of bounds\n";
 	}
-	cout<<endl<<"rho desired : "<<rho<<endl;
-	cout<<"e desired   : "<<e<<endl;
+	//cout<<endl<<"rho desired : "<<rho<<endl;
+	//cout<<"e desired   : "<<e<<endl;
+	cerr<<"rho desired : "<<rho<<endl;
+	cerr<<"e desired   : "<<e<<endl;
+	if (rho>Density_limits[1]) {rho=Density_limits[1]; cerr<<"rho "<<Density_limits[1]<<endl;}
+	if (rho<Density_limits[0]) {rho=Density_limits[0];  cerr<<"rho "<<Density_limits[0]<<endl;}
+	if (e<StaticEnergy_limits[0]) {e=StaticEnergy_limits[0]; cerr<<"e "<<StaticEnergy_limits[0]<<endl;}
+	if (e>StaticEnergy_limits[1]) {e=StaticEnergy_limits[1]; cerr<<"e "<<StaticEnergy_limits[1]<<endl;}
 
 	su2double RunVal;
 	unsigned int CFL    = 2;
@@ -427,6 +431,7 @@ void CLookUpTable::SetTDState_rhoe (su2double rho, su2double e ) {
 
 	//Determine the I index: rho is equispaced (no restart)
 	LowerI = floor((rho-Density_limits[0])/(Density_limits[1]-Density_limits[0])*(rho_dim-1));
+	if (LowerI>(rho_dim-2)) LowerI = (rho_dim-2);
 	UpperI = LowerI + 1;
 
 	su2double grad, x00, y00, y10, x10;
@@ -438,8 +443,7 @@ void CLookUpTable::SetTDState_rhoe (su2double rho, su2double e ) {
 		y10 = ThermoTables[UpperI][LowerJ].StaticEnergy;
 		x00 = ThermoTables[LowerI][LowerJ].Density;
 		x10 = ThermoTables[UpperI][LowerJ].Density;
-		//BUG FIXED: interpolate the 'e' value along the line between the two rho values
-		//also applied to all other searches.
+
 		RunVal = y00 + (y10-y00)/(x10-x00)*(rho-x00);
 		grad = ThermoTables[LowerI][UpperJ].StaticEnergy-y00;
 		if (grad*RunVal<=grad*e)
@@ -451,10 +455,9 @@ void CLookUpTable::SetTDState_rhoe (su2double rho, su2double e ) {
 			UpperJ  = LowerJ;
 			LowerJ = LowerJ/CFL;
 		}
-		cout<<"Here"<<endl;
-		cout<<LowerJ<<"  "<<UpperJ<<endl;
-	}
 
+		//cout<<LowerJ<<"  "<<UpperJ<<endl;
+	}
 	iIndex = LowerI;
 	jIndex = LowerJ;
 //	cout<<"i "<<LowerI<<"  "<<UpperI<<endl;
@@ -481,11 +484,11 @@ void CLookUpTable::SetTDState_rhoe (su2double rho, su2double e ) {
 	NN_j[0]=jIndex; NN_j[1]=jIndex  ;NN_j[2]=jIndex+1; NN_j[3]=jIndex+1;
 	//Determine interpolation coefficients
 	Interp2D_ArbitrarySkewCoeff(x,y,"RHOE");
-	cout<<"Interpolation matrix inverse \n";
-	for (int j=0; j<3; j++)
-	{
-//		cout<<setw(15)<<coeff[j][0]<<"   "<<coeff[j][1]<<"   "<<coeff[j][2]<<endl;
-	}
+	//cout<<"Interpolation matrix inverse \n";
+//	for (int j=0; j<3; j++)
+//	{
+//  		cout<<setw(15)<<coeff[j][0]<<"   "<<coeff[j][1]<<"   "<<coeff[j][2]<<endl;
+//	}
 
 	StaticEnergy      = e;
 	Density           = rho ;
@@ -515,6 +518,7 @@ void CLookUpTable::SetTDState_rhoe (su2double rho, su2double e ) {
 	{
 		cerr<<"RHOE Interpolated Pressure out of bounds\n";
 	}
+	cerr<<endl;
 }
 
 void CLookUpTable::SetTDState_PT (su2double P, su2double T ) {
@@ -527,8 +531,8 @@ void CLookUpTable::SetTDState_PT (su2double P, su2double T ) {
 	{
 		cerr<<"PT Input Temperature out of bounds\n";
 	}
-	cout<<endl<<"P desired : "<<P<<endl;
-	cout<<"T desired   : "<<T<<endl;
+	//cout<<endl<<"P desired : "<<P<<endl;
+	//cout<<"T desired   : "<<T<<endl;
 
 	su2double RunVal;
 	unsigned int CFL = 2;
@@ -550,6 +554,7 @@ void CLookUpTable::SetTDState_PT (su2double P, su2double T ) {
 
 	//Determine the J index: P is equispaced (no restart)
 	LowerJ = floor((P-Pressure_limits[0])/(Pressure_limits[1]-Pressure_limits[0])*(p_dim-1));
+	if (LowerJ>(p_dim-2)) LowerJ = (p_dim-2);
 	UpperJ = LowerJ + 1;
 
 	//Determine the I index (for T)
@@ -571,13 +576,13 @@ void CLookUpTable::SetTDState_PT (su2double P, su2double T ) {
 			UpperI = LowerI;
 			LowerI = LowerI/CFL;
 		}
-		cout<<LowerI<<"  "<<UpperI<<endl;
+		//cout<<LowerI<<"  "<<UpperI<<endl;
 	}
 
 	iIndex = LowerI;
 	jIndex = LowerJ;
-	cout<<"i "<<LowerI<<"  "<<UpperI<<endl;
-	cout<<"j "<<LowerJ<<"  "<<UpperJ<<endl;
+	//cout<<"i "<<LowerI<<"  "<<UpperI<<endl;
+	//cout<<"j "<<LowerJ<<"  "<<UpperJ<<endl;
 
 //	cout<<"Closest fit box :"<<endl;
 //	cout<<"Point i j :"<<endl;
@@ -598,7 +603,7 @@ void CLookUpTable::SetTDState_PT (su2double P, su2double T ) {
 	NN_j[0]=jIndex; NN_j[1]=jIndex  ;NN_j[2]=jIndex+1; NN_j[3]=jIndex+1;
 	//Determine interpolation coefficients
 	Interp2D_ArbitrarySkewCoeff(x,y,"PT");
-	cout<<"Interpolation matrix inverse \n";
+//	cout<<"Interpolation matrix inverse \n";
 //	for (int j=0; j<3; j++)
 //	{
 //		cout<<setw(15)<<coeff[j][0]<<"   "<<coeff[j][1]<<"   "<<coeff[j][2]<<endl;
@@ -647,8 +652,8 @@ void CLookUpTable::SetTDState_Prho (su2double P, su2double rho ) {
 	{
 		cerr<<"PRHO Input Density out of bounds\n";
 	}
-	cout<<endl<<"rho desired : "<<rho<<endl;
-	cout<<"P desired   : "<<P<<endl;
+//	cout<<endl<<"rho desired : "<<rho<<endl;
+//	cout<<"P desired   : "<<P<<endl;
 
 	unsigned int LowerI;
 	unsigned int UpperI;
@@ -657,13 +662,15 @@ void CLookUpTable::SetTDState_Prho (su2double P, su2double rho ) {
 
 	//Determine the I index: RHO is equispaced
 	LowerI = floor((rho-Density_limits[0])/(Density_limits[1]-Density_limits[0])*(rho_dim-1));
+	if (LowerI>(rho_dim-2)) LowerI = (rho_dim-2);
 	UpperI = LowerI + 1;
 
 	//Determine the J index: P is equispaced (no restart)
 	LowerJ = floor((P-Pressure_limits[0])/(Pressure_limits[1]-Pressure_limits[0])*(p_dim-1));
+	if (LowerJ>(p_dim-2)) LowerJ = (p_dim-2);
 	UpperJ = LowerJ + 1;
-	cout<<"i "<<LowerI<<"  "<<UpperI<<endl;
-	cout<<"j "<<LowerJ<<"  "<<UpperJ<<endl;
+	//cout<<"i "<<LowerI<<"  "<<UpperI<<endl;
+	//cout<<"j "<<LowerJ<<"  "<<UpperJ<<endl;
 
 	iIndex = LowerI;
 	jIndex = LowerJ;
@@ -688,7 +695,7 @@ void CLookUpTable::SetTDState_Prho (su2double P, su2double rho ) {
 	NN_j[0]=jIndex; NN_j[1]=jIndex  ;NN_j[2]=jIndex+1; NN_j[3]=jIndex+1;
 	//Determine interpolation coefficients
 	Interp2D_ArbitrarySkewCoeff(x,y,"PRHO");
-	cout<<"Interpolation matrix inverse \n";
+	//cout<<"Interpolation matrix inverse \n";
 //	for (int j=0; j<3; j++)
 //	{
 //		cout<<setw(15)<<coeff[j][0]<<"   "<<coeff[j][1]<<"   "<<coeff[j][2]<<endl;
@@ -742,8 +749,10 @@ void CLookUpTable::SetTDState_hs (su2double h, su2double s ) {
 	{
 		cerr<<"HS Input Entropy out of bounds\n";
 	}
-	cout<<endl<<"h desired : "<<h<<endl;
-	cout<<"s desired   : "<<s<<endl;
+	//cout<<endl<<"h desired : "<<h<<endl;
+	//cout<<"s desired   : "<<s<<endl;
+	cerr<<endl<<"h desired : "<<h<<endl;
+	cerr<<"s desired   : "<<s<<endl;
 	iIndex = HS_tree->i_values[HS_tree->dim/2]/p_dim;
 	jIndex = HS_tree->i_values[HS_tree->dim/2]%p_dim;
 
@@ -759,24 +768,24 @@ void CLookUpTable::SetTDState_hs (su2double h, su2double s ) {
 		best_dist[i]=1E10;
 	}
 
-	cout<<"Search the HS_tree"<<endl;
+	//cout<<"Search the HS_tree"<<endl;
 	NN4_KD_Tree(h,s,HS_tree,best_dist);
-	cout<<"HS_tree searched"<<endl;
+	//cout<<"HS_tree searched"<<endl;
 
-	cout<<"NNi"<<endl;
-	for (int j=0;j<4;j++)
-	{
-
-		cout<<NN_i[j]<<", ";
-	}
-	cout<<endl;
-	cout<<"NNj"<<endl;
-	for (int j=0;j<4;j++)
-	{
-
-		cout<<NN_j[j]<<", ";
-	}
-	cout<<endl;
+//	cout<<"NNi"<<endl;
+//	for (int j=0;j<4;j++)
+//	{
+//
+//		cout<<NN_i[j]<<", ";
+//	}
+//	cout<<endl;
+//	cout<<"NNj"<<endl;
+//	for (int j=0;j<4;j++)
+//	{
+//
+//		cout<<NN_j[j]<<", ";
+//	}
+//	cout<<endl;
 
 //	cout<<"Closest fit box :"<<endl;
 //	cout<<"Point i j :"<<endl;
@@ -808,9 +817,9 @@ void CLookUpTable::SetTDState_hs (su2double h, su2double s ) {
 	dktdrho_T         = Interp2D_Inv_Dist("dktdrho_T", best_dist);
 	dktdT_rho         = Interp2D_Inv_Dist("dktdT_rho", best_dist);
 	//Intermediate variables only needed for StandAlone version
-	su2double Density = Density;
-	su2double Pressure = Pressure;
-	cout<<"Interpolated fit:"<<endl;
+	//su2double Density = Density;
+	//su2double Pressure = Pressure;
+	//cout<<"Interpolated fit:"<<endl;
 //	CTLprint ();
 	if ((Density>Density_limits[1]) or (Density<Density_limits[0]))
 	{
@@ -833,8 +842,8 @@ void CLookUpTable::SetTDState_Ps (su2double P, su2double s )
 	{
 		cerr<<"PS Input Entropy  out of bounds\n";
 	}
-	cout<<endl<<"P desired : "<<P<<endl;
-	cout<<"s desired   : "<<s<<endl;
+	//cout<<endl<<"P desired : "<<P<<endl;
+	//cout<<"s desired   : "<<s<<endl;
 
 	su2double RunVal;
 	unsigned int CFL = 2;
@@ -852,10 +861,11 @@ void CLookUpTable::SetTDState_Ps (su2double P, su2double s )
 	//		else UpperI = rho_dim-1;
 	LowerI = 0;
 	UpperI = rho_dim-1;
-	cout<<LowerI<<"  "<<UpperI<<endl;
+	//cout<<LowerI<<"  "<<UpperI<<endl;
 
 	//Determine the I index: RHO is equispaced (no restart)
 	LowerJ = floor((P-Pressure_limits[0])/(Pressure_limits[1]-Pressure_limits[0])*(p_dim-1));
+	if (LowerJ>(p_dim-2)) LowerJ = (p_dim-2);
 	UpperJ = LowerJ + 1;
 
 	//Determine the J index (for s)
@@ -877,14 +887,14 @@ void CLookUpTable::SetTDState_Ps (su2double P, su2double s )
 			UpperI = LowerI;
 			LowerI = LowerI/2;
 		}
-		cout<<LowerI<<"  "<<UpperI<<endl;
+		//cout<<LowerI<<"  "<<UpperI<<endl;
 	}
 
 
 	iIndex = LowerI;
 	jIndex = LowerJ;
-	cout<<"i "<<LowerI<<"  "<<UpperI<<endl;
-	cout<<"j "<<LowerJ<<"  "<<UpperJ<<endl;
+	//cout<<"i "<<LowerI<<"  "<<UpperI<<endl;
+	//cout<<"j "<<LowerJ<<"  "<<UpperJ<<endl;
 
 
 //	cout<<"Closest fit box :"<<endl;
@@ -907,11 +917,11 @@ void CLookUpTable::SetTDState_Ps (su2double P, su2double s )
 	NN_j[0]=jIndex; NN_j[1]=jIndex  ;NN_j[2]=jIndex+1; NN_j[3]=jIndex+1;
 	//Determine interpolation coefficients
 	Interp2D_ArbitrarySkewCoeff(x,y,"PS");
-	cout<<"Interpolation matrix inverse \n";
-	for (int j=0; j<3; j++)
-	{
-//		cout<<setw(15)<<coeff[j][0]<<"   "<<coeff[j][1]<<"   "<<coeff[j][2]<<endl;
-	}
+	//cout<<"Interpolation matrix inverse \n";
+//	for (int j=0; j<3; j++)
+//	{
+////		cout<<setw(15)<<coeff[j][0]<<"   "<<coeff[j][1]<<"   "<<coeff[j][2]<<endl;
+//	}
 
 	Entropy           = s;
 	Pressure          = P ;
@@ -933,7 +943,7 @@ void CLookUpTable::SetTDState_Ps (su2double P, su2double s )
 	//Intermediate variables only needed for StandAlone version
 	su2double Density = Density;
 	su2double Pressure = Pressure;
-	cout<<"Interpolated fit:"<<endl;
+	//cout<<"Interpolated fit:"<<endl;
 //	CTLprint ();
 	if ((Density>Density_limits[1]) or (Density<Density_limits[0]))
 	{
@@ -977,6 +987,7 @@ void CLookUpTable::SetTDState_rhoT (su2double rho, su2double T ) {
 
 	//Determine the I index: RHO is equispaced (no restart)
 	LowerI = floor((rho-Density_limits[0])/(Density_limits[1]-Density_limits[0])*(rho_dim-1));
+	if (LowerI>(rho_dim-2)) LowerI = (rho_dim-2);
 	UpperI = LowerI + 1;
 
 	//Determine the I index (for T)
@@ -1002,13 +1013,13 @@ void CLookUpTable::SetTDState_rhoT (su2double rho, su2double T ) {
 			UpperJ  = LowerJ;
 			LowerJ = LowerJ/CFL;
 		}
-		cout<<LowerJ<<"  "<<UpperJ<<endl;
+		//cout<<LowerJ<<"  "<<UpperJ<<endl;
 	}
 
 	iIndex = LowerI;
 	jIndex = LowerJ;
-	cout<<"i "<<LowerI<<"  "<<UpperI<<endl;
-	cout<<"j "<<LowerJ<<"  "<<UpperJ<<endl;
+	//cout<<"i "<<LowerI<<"  "<<UpperI<<endl;
+	//cout<<"j "<<LowerJ<<"  "<<UpperJ<<endl;
 
 //
 //	cout<<"Closest fit box :"<<endl;
@@ -1031,7 +1042,7 @@ void CLookUpTable::SetTDState_rhoT (su2double rho, su2double T ) {
 	NN_j[0]=jIndex; NN_j[1]=jIndex  ;NN_j[2]=jIndex+1; NN_j[3]=jIndex+1;
 	//Determine interpolation coefficients
 	Interp2D_ArbitrarySkewCoeff(x,y,"RHOT");
-	cout<<"Interpolation matrix inverse \n";
+	//cout<<"Interpolation matrix inverse \n";
 //	for (int j=0; j<3; j++)
 //	{
 //		cout<<setw(15)<<coeff[j][0]<<"   "<<coeff[j][1]<<"   "<<coeff[j][2]<<endl;
@@ -1057,7 +1068,7 @@ void CLookUpTable::SetTDState_rhoT (su2double rho, su2double T ) {
 	//Intermediate variables only needed for StandAlone version
 	su2double Density = Density;
 	su2double Pressure = Pressure;
-	cout<<"Interpolated fit:"<<endl;
+	//cout<<"Interpolated fit:"<<endl;
 	if ((Density>Density_limits[1]) or (Density<Density_limits[0]))
 	{
 		cerr<<"RHOT Interpolated Density out of bounds\n";
@@ -1219,7 +1230,7 @@ void CLookUpTable::Interp2D_ArbitrarySkewCoeff(su2double x, su2double y, std::st
 	A[2][0] = dx11;
 	A[2][1] = dy11;
 	A[2][2] = dx11*dy11;
-	cout<<"Interpolation LHM matrix \n"<<"[";
+	//cout<<"Interpolation LHM matrix \n"<<"[";
 
 //	for (int j=0; j<3; j++)
 //	{
@@ -1699,7 +1710,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 
 	ifstream table (filename.c_str());
 	assert(table.is_open());
-	cout<<"Looking for number of parameters"<<endl;
+	//cout<<"Looking for number of parameters"<<endl;
 	while ( getline(table,line) )
 	{
 		unsigned int found;
@@ -1710,7 +1721,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 			istringstream in(line);
 			in>>N_PARAM;
 			N_PARAM++;
-			cout<<"Number of parameters "<<N_PARAM<<endl;
+		//	cout<<"Number of parameters "<<N_PARAM<<endl;
 		}
 		for (int var=var_scanned; var<N_PARAM+1; var++)
 		{
@@ -1719,7 +1730,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 			if (found<10)
 			{
 				var_scanned = var;
-				cout<<found<<' '<<line<<endl;
+				//cout<<found<<' '<<line<<endl;
 				getline(table,line);
 				istringstream in(line);
 				int x,y;
@@ -1733,7 +1744,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 					}
 					set_x = x;
 					set_y = y;
-					cout<<"Tables have been allocated"<<var<<endl;
+			//		cout<<"Tables have been allocated"<<var<<endl;
 
 					//Fill in the densities
 					Density_limits[0] = 10E15;
@@ -1744,7 +1755,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 					for (int k =0; k<ceil(float(set_x)/10.0);k++)
 					{
 						getline(table,line);
-						cout<<line<<endl;
+				//		//cout<<line<<endl;
 						istringstream inD(line);
 						if ((set_x-k*10)<10) var_steps = (set_x-k*10);
 						for (int i =0; i<var_steps; i++)
@@ -1780,7 +1791,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 					{
 
 						getline(table,line);
-						cout<<line<<endl;
+						//cout<<line<<endl;
 						istringstream inP(line);
 						//Check if line contains less than 10 values
 						if ((set_y-k*10)<10) var_steps = (set_y-k*10);
@@ -1805,7 +1816,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 						}
 					}
 					delete vP;
-					cout<<"Tables have been filled with D and P values "<<var<<endl;
+				//	//cout<<"Tables have been filled with D and P values "<<var<<endl;
 
 				}
 				// Check that additional tables all adhere to the same x,y dimensions, otherwise throw an error
@@ -1832,7 +1843,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 							if ((j*set_x+i)%10==0)
 							{
 								getline(table,line);
-								cout<<line<<endl;
+								//cout<<line<<endl;
 								istringstream in(line);
 								for (int z = 0; z<10; z++)
 								{
@@ -1851,15 +1862,15 @@ void CLookUpTable::TableLoadCFX(string filename){
 						}
 
 					}
-					cout<<"Tables have been filled with Static Energy values "<<var<<endl;
+				// //cout<<"Tables have been filled with Static Energy values "<<var<<endl;
 				}
 				if(var==1)
 				{
 					//Fixed a bug: lines already skipped for var==1
 					//for (int k =0; k<ceil(float(set_x)/10.0);k++) getline(table,line); //skip density
 					//for (int k =0; k<ceil(float(set_y)/10.0);k++) getline(table,line); //skip pressure
-					cout<<"set_x "<<set_x<<endl;
-					cout<<"set_y "<<set_y<<endl;
+					//cout<<"set_x "<<set_x<<endl;
+					//cout<<"set_y "<<set_y<<endl;
 					Enthalpy_limits[0] = 10E20;//lower limit
 					Enthalpy_limits[1] = 0;//upper limit
 
@@ -1872,7 +1883,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 							if ((j*set_x+i)%10==0)
 							{
 								getline(table,line);
-								cout<<line<<endl;
+								//cout<<line<<endl;
 								istringstream in(line);
 								for (int z = 0; z<10; z++)
 								{
@@ -1891,7 +1902,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 						}
 
 					}
-					cout<<"Tables have been filled with speed of specific enthalpy values "<<var<<endl;
+					//cout<<"Tables have been filled with speed of specific enthalpy values "<<var<<endl;
 				}
 				if(var==2)
 				{
@@ -1910,7 +1921,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 							if ((j*set_x+i)%10==0)
 							{
 								getline(table,line);
-								cout<<line<<endl;
+								//cout<<line<<endl;
 								istringstream in(line);
 								for (int z = 0; z<10; z++)
 								{
@@ -1929,7 +1940,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 						}
 
 					}
-					cout<<"Tables have been filled with speed of sound values "<<var<<endl;
+					//cout<<"Tables have been filled with speed of sound values "<<var<<endl;
 				}
 				if(var==5)
 				{
@@ -1949,7 +1960,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 							if ((j*set_x+i)%10==0)
 							{
 								getline(table,line);
-								cout<<line<<endl;
+								//cout<<line<<endl;
 								istringstream in(line);
 								for (int z = 0; z<10; z++)
 								{
@@ -1968,7 +1979,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 						}
 
 					}
-					cout<<"Tables have been filled with isobaric heat capacity values "<<var<<endl;
+					//cout<<"Tables have been filled with isobaric heat capacity values "<<var<<endl;
 				}
 				if(var==7)
 				{
@@ -1987,7 +1998,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 							if ((j*set_x+i)%10==0)
 							{
 								getline(table,line);
-								cout<<line<<endl;
+								//cout<<line<<endl;
 								istringstream in(line);
 								for (int z = 0; z<10; z++)
 								{
@@ -2006,7 +2017,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 						}
 
 					}
-					cout<<"Tables have been filled with entropy values "<<var<<endl;
+					//cout<<"Tables have been filled with entropy values "<<var<<endl;
 
 				}
 				if(var==8)
@@ -2026,7 +2037,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 							if ((j*set_x+i)%10==0)
 							{
 								getline(table,line);
-								cout<<line<<endl;
+								//cout<<line<<endl;
 								istringstream in(line);
 								for (int z = 0; z<10; z++)
 								{
@@ -2045,7 +2056,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 						}
 
 					}
-					cout<<"Tables have been filled with viscosity values "<<var<<endl;
+					//cout<<"Tables have been filled with viscosity values "<<var<<endl;
 
 				}
 				if(var==9)
@@ -2065,7 +2076,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 							if ((j*set_x+i)%10==0)
 							{
 								getline(table,line);
-								cout<<line<<endl;
+								//cout<<line<<endl;
 								istringstream in(line);
 								for (int z = 0; z<10; z++)
 								{
@@ -2084,7 +2095,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 						}
 
 					}
-					cout<<"Tables have been filled with thermal conductivity values "<<var<<endl;
+					//cout<<"Tables have been filled with thermal conductivity values "<<var<<endl;
 
 				}
 				if(var==10)
@@ -2105,7 +2116,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 							if ((j*set_x+i)%10==0)
 							{
 								getline(table,line);
-								cout<<line<<endl;
+								//cout<<line<<endl;
 								istringstream in(line);
 								for (int z = 0; z<10; z++)
 								{
@@ -2124,7 +2135,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 						}
 
 					}
-					cout<<"Tables have been filled with specific dPdrho_e values "<<var<<endl;
+					//cout<<"Tables have been filled with specific dPdrho_e values "<<var<<endl;
 
 				}
 				if(var==11)
@@ -2145,7 +2156,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 							if ((j*set_x+i)%10==0)
 							{
 								getline(table,line);
-								cout<<line<<endl;
+								//cout<<line<<endl;
 								istringstream in(line);
 								for (int z = 0; z<10; z++)
 								{
@@ -2164,7 +2175,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 						}
 
 					}
-					cout<<"Tables have been filled with specific dPde_rho values "<<var<<endl;
+					//cout<<"Tables have been filled with specific dPde_rho values "<<var<<endl;
 				}
 				if(var==12)
 				{
@@ -2183,7 +2194,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 							if ((j*set_x+i)%10==0)
 							{
 								getline(table,line);
-								cout<<line<<endl;
+								//cout<<line<<endl;
 								istringstream in(line);
 								for (int z = 0; z<10; z++)
 								{
@@ -2202,7 +2213,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 						}
 
 					}
-					cout<<"Tables have been filled with specific dTdrho_e values "<<var<<endl;
+					// //cout<<"Tables have been filled with specific dTdrho_e values "<<var<<endl;
 				}
 				if(var==13)
 				{
@@ -2222,7 +2233,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 							if ((j*set_x+i)%10==0)
 							{
 								getline(table,line);
-								cout<<line<<endl;
+								//cout<<line<<endl;
 								istringstream in(line);
 								for (int z = 0; z<10; z++)
 								{
@@ -2241,7 +2252,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 						}
 
 					}
-					cout<<"Tables have been filled with specific dTde_rho values "<<var<<endl;
+					// //cout<<"Tables have been filled with specific dTde_rho values "<<var<<endl;
 				}
 				if(var==15)
 				{
@@ -2261,7 +2272,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 							if ((j*set_x+i)%10==0)
 							{
 								getline(table,line);
-								cout<<line<<endl;
+								//cout<<line<<endl;
 								istringstream in(line);
 								for (int z = 0; z<10; z++)
 								{
@@ -2280,7 +2291,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 						}
 
 					}
-					cout<<"Tables have been filled with Temperature values "<<var<<endl;
+					// //cout<<"Tables have been filled with Temperature values "<<var<<endl;
 				}
 
 			}
