@@ -2851,19 +2851,13 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \param[in] DGGeometry - Geometrical definition of the DG problem.
-   * \param[in] config     - Definition of the particular problem.
    */
-  virtual void Initiate_MPI_Communication(CGeometry *geometry,
-                                          CConfig *config);
+  virtual void Initiate_MPI_Communication(void);
   
   /*!
    * \brief A virtual member.
-   * \param[in] DGGeometry - Geometrical definition of the DG problem.
-   * \param[in] config     - Definition of the particular problem.
    */
-  virtual void Complete_MPI_Communication(CGeometry *geometry,
-                                          CConfig *config);
+  virtual void Complete_MPI_Communication(void);
   
   /*!
    * \brief A virtual member.
@@ -4995,7 +4989,9 @@ protected:
   Temperature_Inf,     /*!< \brief Energy at infinity. */
   Pressure_Inf,	       /*!< \brief Pressure at infinity. */
   *Velocity_Inf;       /*!< \brief Flow velocity vector at infinity. */
-  
+
+  vector<su2double> ConsVarFreeStream; /*!< \brief Vector, which contains the free stream
+                                                   conservative variables. */
   su2double
   *CLift_Inv,        /*!< \brief Lift coefficient (inviscid contribution) for each boundary. */
   *CDrag_Inv,        /*!< \brief Drag coefficient (inviscid contribution) for each boundary. */
@@ -5079,6 +5075,10 @@ protected:
 
   const CBoundaryFEM *boundaries;     /*!< \brief Array of the boundaries of the FEM mesh. */
 
+  unsigned short nStandardBoundaryFacesSol; /*!< \brief Number of standard boundary faces used for solution of the DG solver. */
+  unsigned short nStandardElementsSol;      /*!< \brief Number of standard volume elements used for solution of the DG solver. */
+  unsigned short nStandardMatchingFacesSol; /*!< \brief Number of standard matching internal faces used for solution of the DG solver. */
+
   const FEMStandardBoundaryFaceClass *standardBoundaryFacesSol; /*!< \brief Array that contains the standard boundary
                                                                             faces used for the solution of the DG solver. */
   const FEMStandardElementClass *standardElementsSol; /*!< \brief Array that contains the standard volume elements
@@ -5086,7 +5086,12 @@ protected:
   const FEMStandardInternalFaceClass *standardMatchingFacesSol;  /*!< \brief Array that contains the standard matching
                                                                              internal faces used for the solution of
                                                                              the DG solver. */
-  vector<su2double> VecSolDOFs;  /*!< \brief Vector, which stores the solution variables in all the DOFs. */
+
+  unsigned short nIntegrationMax; /*!< \brief Maximum number of integration points used. */
+
+  vector<su2double> VecSolDOFs;   /*!< \brief Vector, which stores the solution variables in all the DOFs. */
+  vector<su2double> VecDeltaTime; /*!< \brief Vector, which stores the time steps of the owned volume elements. */
+  vector<su2double> VecResDOFs;   /*!< \brief Vector, which stores the residuals in the owned DOFs. */
 
 private:
 
@@ -5252,21 +5257,13 @@ public:
                      unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
   
   /*!
-   * \brief A virtual member.
+   * \brief 
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
-  
-  /*!
-   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \return - The number of non-physical points.
-   */
-  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
   
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
@@ -5629,20 +5626,14 @@ public:
   
   /*!
    * \brief Routine that initiates the non-blocking communication between ranks.
-   * \param[in] DGGeometry - Geometrical definition of the DG problem.
-   * \param[in] config     - Definition of the particular problem.
    */
-  void Initiate_MPI_Communication(CGeometry *geometry,
-                                  CConfig *config);
+  void Initiate_MPI_Communication(void);
   
   /*!
    * \brief Routine that completes the non-blocking communication between ranks.
-   * \param[in] DGGeometry - Geometrical definition of the DG problem.
-   * \param[in] config     - Definition of the particular problem.
    */
-  void Complete_MPI_Communication(CGeometry *geometry,
-                                  CConfig *config);
-  
+  void Complete_MPI_Communication(void);
+
 private:
   /*!
    * \brief Function, which sets up the persistent communication of the flow

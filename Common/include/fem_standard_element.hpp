@@ -91,9 +91,9 @@ protected:
 public:
   /*!
   * \brief Function, which makes available the weights in the integration points.
-  * \return  The pointer to data, which stores the weights in the integration points.
+  * \return  The const pointer to data, which stores the weights in the integration points.
   */
-  su2double *GetWeightsIntegration(void);
+  const su2double *GetWeightsIntegration(void) const;
 
   /*!
   * \brief Static function, which makes available the number of DOFs for an element
@@ -111,7 +111,7 @@ public:
   * \brief Function, which makes available the number of integration points for this standard element.
   * \return  The number of integration points of this standard element.
   */
-  unsigned short GetNIntegration(void);
+  unsigned short GetNIntegration(void) const;
 
   /*!
   * \brief Static function, which makes available the number of integration points for an element
@@ -770,6 +770,8 @@ private:
 
   su2double *matBasisIntegration;  /*!< \brief Matrix of lagBasisIntegration, drLagBasisIntegration, dsLagBasisIntegration
                                                and dtLagBasisIntegration combined for efficiency when using BLAS routines. */
+  su2double *matDerBasisIntTrans;  /*!< \brief Matrix of the transpose of the derivative part of matBasisIntegration. It is
+                                               stored such that the volume residual can be computed in one matrix multiplication. */
 
   vector<unsigned short> connFace0; /*!< \brief Local connectivity of face 0 of the element. The numbering of the DOFs is
                                                 such that the element is to the left of the face. */
@@ -852,10 +854,16 @@ public:
   su2double *GetDtBasisFunctionsIntegration(void);
 
   /*!
-  * \brief Function, which makes available to matrix storage of the basis functions in the integration points.
+  * \brief Function, which makes available the matrix storage of the basis functions in the integration points.
   * \return  The pointer to matBasisIntegration.
   */
-  su2double *GetMatBasisFunctionsIntegration(void);
+  const su2double *GetMatBasisFunctionsIntegration(void) const;
+
+  /*!
+  * \brief Function, which makes available the transpose matrix of the derivative of the basis functions in the integration points.
+  * \return  The pointer to matDerBasisIntTrans;
+  */
+  const su2double *GetDerMatBasisFunctionsIntTrans(void) const;
 
   /*!
   * \brief Function, which makes available the connectivity of face 0.
@@ -898,6 +906,12 @@ public:
   * \return  The number of DOFs of this standard element.
   */
   unsigned short GetNDOFs(void);
+
+  /*!
+  * \brief Function, which makes available the polynomial degree for this standard element.
+  * \return  The polynomial degree of this standard element.
+  */
+  unsigned short GetNPoly(void);
 
   /*!
   * \brief Function, which checks if the function arguments correspond to this standard element.

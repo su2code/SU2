@@ -1945,9 +1945,10 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
   /*--- Copy the function arguments to the member variables. ---*/
   nPoly = val_nPoly;
 
-  /*--- Set the pointer matBasisIntegration to NULL to avoid problems
-        when it is not used. ---*/
+  /*--- Set the pointers matBasisIntegration and matDerBasisIntTrans to NULL to
+        avoid problems when it is not used. ---*/
   matBasisIntegration = NULL;
+  matDerBasisIntTrans = NULL;
 
   /*--- Determine the element type and compute the other member variables. ---*/
   switch( VTK_Type ) {
@@ -1979,12 +1980,16 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
         one array for efficiency reasons. Note that for the MKL the memory allocation
         of the MKL itself is used and that the matrices are aligned on a 64-byte
         boundary to increase performance. ---*/
-  unsigned long sizeMat = lagBasisIntegration.size()   + drLagBasisIntegration.size()
-                        + dsLagBasisIntegration.size() + dtLagBasisIntegration.size();
+  unsigned long sizeDerMat = drLagBasisIntegration.size() + dsLagBasisIntegration.size()
+                           + dtLagBasisIntegration.size();
+  unsigned long sizeMat    = lagBasisIntegration.size() + sizeDerMat;
+
 #ifdef HAVE_MKL
-  matBasisIntegration = (su2double *) mkl_malloc(sizeMat*sizeof(su2double), 64);
+  matBasisIntegration = (su2double *) mkl_malloc(sizeMat   *sizeof(su2double), 64);
+  matDerBasisIntTrans = (su2double *) mkl_malloc(sizeDerMat*sizeof(su2double), 64);
 #else
   matBasisIntegration = new su2double[sizeMat];
+  matDerBasisIntTrans = new su2double[sizeDerMat];
 #endif
 
   unsigned int ii = 0;
@@ -1999,14 +2004,35 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short val_VTK_Type,
 
   for(unsigned long i=0; i<dtLagBasisIntegration.size(); ++i, ++ii)
     matBasisIntegration[ii] = dtLagBasisIntegration[i];
+
+  /* The transpose of the matrix containing the derivative information is needed
+     for the volume integral. Create this info in such a way that the volume
+     residual can be computed with one matrix multiplication when the fluxes
+     are known. */
+  unsigned short nDim;
+  if(      dtLagBasisIntegration.size() ) nDim = 3;
+  else if( dsLagBasisIntegration.size() ) nDim = 2;
+  else                                    nDim = 1;
+
+  ii = 0;
+  for(unsigned short j=0; j<nDOFs; ++j) {
+    for(unsigned short i=0; i<nIntegration; ++i) {
+      for(unsigned short iDim=0; iDim<nDim; ++iDim, ++ii) {
+        const unsigned int ind = (iDim+1)*nDOFs*nIntegration + i*nDOFs + j;
+        matDerBasisIntTrans[ii] = matBasisIntegration[ind];
+      }
+    }
+  }
 }
 
 FEMStandardElementClass::~FEMStandardElementClass() {
 
 #ifdef HAVE_MKL
   if( matBasisIntegration ) mkl_free(matBasisIntegration);
+  if( matDerBasisIntTrans ) mkl_free(matDerBasisIntTrans);
 #else
   if( matBasisIntegration ) delete[] matBasisIntegration;
+  if( matDerBasisIntTrans ) delete[] matDerBasisIntTrans;
 #endif
 }
 
@@ -2051,16 +2077,23 @@ void FEMStandardElementClass::Copy(const FEMStandardElementClass &other) {
   subConn1ForPlotting = other.subConn1ForPlotting;
   subConn2ForPlotting = other.subConn2ForPlotting;
 
-  unsigned long sizeMat = lagBasisIntegration.size()   + drLagBasisIntegration.size()
-                        + dsLagBasisIntegration.size() + dtLagBasisIntegration.size();
+  unsigned long sizeDerMat = drLagBasisIntegration.size() + dsLagBasisIntegration.size()
+                           + dtLagBasisIntegration.size();
+  unsigned long sizeMat    = lagBasisIntegration.size() + sizeDerMat;
+
 #ifdef HAVE_MKL
-  matBasisIntegration = (su2double *) mkl_malloc(sizeMat*sizeof(su2double), 64);
+  matBasisIntegration = (su2double *) mkl_malloc(sizeMat   *sizeof(su2double), 64);
+  matDerBasisIntTrans = (su2double *) mkl_malloc(sizeDerMat*sizeof(su2double), 64);
 #else
   matBasisIntegration = new su2double[sizeMat];
+  matDerBasisIntTrans = new su2double[sizeDerMat];
 #endif
 
   for(unsigned long i=0; i<sizeMat; ++i)
     matBasisIntegration[i] = other.matBasisIntegration[i];
+
+  for(unsigned long i=0; i<sizeDerMat; ++i)
+    matDerBasisIntTrans[i] = other.matDerBasisIntTrans[i];
 }
 
 void FEMStandardElementClass::DataStandardLine(void) {

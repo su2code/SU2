@@ -31,6 +31,18 @@
 
 #include "../include/solver_structure.hpp"
 
+/* LIBXSMM include files, if supported. */
+#ifdef HAVE_LIBXSMM
+#include "libxsmm.h"
+#endif
+
+/* MKL or BLAS include files, if supported. */
+#ifdef HAVE_MKL
+#include "mkl.h"
+#elif HAVE_CBLAS
+#include "cblas.h"
+#endif
+
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
   
   /*--- Basic array initialization ---*/
@@ -108,9 +120,32 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   boundaries = DGGeometry->GetBoundaries();
 
+  nStandardBoundaryFacesSol = DGGeometry->GetNStandardBoundaryFacesSol();
+  nStandardElementsSol      = DGGeometry->GetNStandardElementsSol();
+  nStandardMatchingFacesSol = DGGeometry->GetNStandardMatchingFacesSol();
+
   standardBoundaryFacesSol = DGGeometry->GetStandardBoundaryFacesSol();
   standardElementsSol      = DGGeometry->GetStandardElementsSol();
   standardMatchingFacesSol = DGGeometry->GetStandardMatchingFacesSol();
+
+  /*--- Determine the maximum number of integration points used. Usually this
+        is for the volume integral, but to avoid problems the faces are also
+        taken into account.  ---*/
+  nIntegrationMax = 0;
+  for(unsigned short i=0; i<nStandardBoundaryFacesSol; ++i) {
+    const unsigned short nInt = standardBoundaryFacesSol[i].GetNIntegration();
+    nIntegrationMax = max(nIntegrationMax, nInt);
+  }
+
+  for(unsigned short i=0; i<nStandardElementsSol; ++i) {
+    const unsigned short nInt = standardElementsSol[i].GetNIntegration();
+    nIntegrationMax = max(nIntegrationMax, nInt);
+  }
+
+  for(unsigned short i=0; i<nStandardMatchingFacesSol; ++i) {
+    const unsigned short nInt = standardMatchingFacesSol[i].GetNIntegration();
+    nIntegrationMax = max(nIntegrationMax, nInt);
+  }
   
   /*--- Perform the non-dimensionalization for the flow equations using the
         specified reference values. ---*/
@@ -189,9 +224,8 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
       ConsVarFreeStream[iDim+1] = Density_Inf*Velocity_Inf[iDim];
   }
 
-  /*--- Determine the total number of DOFs stored on this rank. Allocate the memory
-        to store the conservative variables and set the pointers for this solution
-        in the elements. ---*/
+  /*--- Determine the total number of DOFs stored on this rank and allocate the memory
+        to store the conservative variables. ---*/
 
   nDOFsLocOwned = 0;
   for(unsigned long i=0; i<nVolElemOwned; ++i) nDOFsLocOwned += volElem[i].nDOFsSol;
@@ -201,13 +235,12 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   VecSolDOFs.resize(nVar*nDOFsLocTot);
 
-  nDOFsLocTot = 0;
-  for(unsigned long i=0; i<nVolElemTot; ++i) {
-    volElem[i].solDOFs = VecSolDOFs.data() + nVar*nDOFsLocTot;
 
-    nDOFsLocTot += volElem[i].nDOFsSol;
-  }
-  
+  /*--- Allocate the memory to store the time steps, residuals, etc. ---*/
+
+  VecDeltaTime.resize(nVolElemOwned);
+  VecResDOFs.resize(nVar*nDOFsLocOwned);
+
   /*--- Check for a restart and set up the variables at each node
    appropriately. Coarse multigrid levels will be intitially set to
    the farfield values bc the solver will immediately interpolate
@@ -320,23 +353,23 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
     for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
       const unsigned long ii = nVar*i;
-      su2double Density = VecSolDOFs[ii];
+      su2double DensityInv = 1.0/VecSolDOFs[ii];
 
       su2double Velocity2 = 0.0;
       for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
-        const su2double vel = VecSolDOFs[ii+iDim]/Density;
+        const su2double vel = VecSolDOFs[ii+iDim]*DensityInv;
         Velocity2 += vel*vel;
       }
 
-      su2double StaticEnergy = VecSolDOFs[ii+nDim+1]/Density - 0.5*Velocity2;
+      su2double StaticEnergy = VecSolDOFs[ii+nDim+1]*DensityInv - 0.5*Velocity2;
   
-      FluidModel->SetTDState_rhoe(Density, StaticEnergy);
+      FluidModel->SetTDState_rhoe(VecSolDOFs[ii], StaticEnergy);
       su2double Pressure = FluidModel->GetPressure();
       su2double Temperature = FluidModel->GetTemperature();
     
       /*--- Use the values at the infinity if the state is not physical. ---*/
     
-      if((Pressure < 0.0) || (Density < 0.0) || (Temperature < 0.0)) {
+      if((Pressure < 0.0) || (VecSolDOFs[ii] < 0.0) || (Temperature < 0.0)) {
         for(unsigned short j=0; j<nVar; ++j) {
           VecSolDOFs[ii+j] = ConsVarFreeStream[j];
         }
@@ -1174,10 +1207,10 @@ void CFEM_DG_EulerSolver::CorrectForRotationalPeriodicity(void) {
       const unsigned long ind = halosRotationalPeriodicity[k][j];
       for(unsigned short i=0; i<volElem[ind].nDOFsSol; ++i) {
 
-        /* Determine the pointer in solDOFs where the solution of this DOF
+        /* Determine the pointer in VecSolDOFs where the solution of this DOF
            is stored and copy the momentum variables. Note that a rotational
            correction can only take place for a 3D simulation. */
-        su2double *sol = volElem[ind].solDOFs + i*nVar;
+        su2double *sol = VecSolDOFs.data() + nVar*(volElem[ind].offsetDOFsSolLocal + i);
 
         const su2double ru = sol[1], rv = sol[2], rw = sol[3];
 
@@ -1198,148 +1231,325 @@ void CFEM_DG_EulerSolver::SelfCommunication(void) {
   /* Loop over the number of elements involved and copy the data of the DOFs. */
   const unsigned long nSelfElements = elementsSendSelfComm.size();
   for(unsigned long i=0; i<nSelfElements; ++i) {
-    const unsigned long indS   = elementsSendSelfComm[i];
-    const unsigned long indR   = elementsReceiveSelfComm[i];
-    const unsigned long nBytes = volElem[indS].nDOFsSol * sizeEntity;
+    const unsigned long indS   = nVar*volElem[elementsSendSelfComm[i]].offsetDOFsSolLocal;
+    const unsigned long indR   = nVar*volElem[elementsReceiveSelfComm[i]].offsetDOFsSolLocal;
+    const unsigned long nBytes = volElem[elementsSendSelfComm[i]].nDOFsSol * sizeEntity;
 
-    memcpy(volElem[indR].solDOFs, volElem[indS].solDOFs, nBytes);
+    memcpy(VecSolDOFs.data()+indR, VecSolDOFs.data()+indS, nBytes);
   }
 }
 
-void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CGeometry *geometry,
-                                                    CConfig *config) {
+void CFEM_DG_EulerSolver::Initiate_MPI_Communication(void) {
 
-  int rank = MASTER_NODE;
+  /*--- Start the MPI communication, if needed. ---*/
+
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  if( nCommRequests )
+    MPI_Startall(nCommRequests, commRequests.data());
 #endif
-  
-  if (rank == MASTER_NODE) cout << " Initiate non-blocking comms here." << endl;
-
 }
 
-void CFEM_DG_EulerSolver::Complete_MPI_Communication(CGeometry *geometry,
-                                                    CConfig *config) {
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-  if (rank == MASTER_NODE) cout << " Complete non-blocking comms here." << endl;
+void CFEM_DG_EulerSolver::Complete_MPI_Communication(void) {
+  /* Carry out the self communication. */
+  SelfCommunication();
 
+  /*--- Complete the MPI communication, if needed. ---*/
+
+#ifdef HAVE_MPI
+  if( nCommRequests )
+    SU2_MPI::Waitall(nCommRequests, commRequests.data(), MPI_STATUSES_IGNORE);
+#endif
+
+  /* Correct the vector quantities in the rotational periodic halo's. */
+  CorrectForRotationalPeriodicity();
 }
 
 
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-  /*--- Apply any problem-dependent initial conditions here. ---*/
-  
-  if (ExtIter == 0 && rank == MASTER_NODE) cout << " Setting initial condition." << endl;
-  
 }
 
 void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-  
+
   unsigned long ErrorCounter = 0;
   
-  int rank = MASTER_NODE;
+  /*-----------------------------------------------------------------------------*/
+  /*--- Check for non-physical points. Only needed for a compressible solver. ---*/
+  /*-----------------------------------------------------------------------------*/
+
+  if(config->GetKind_Regime() == COMPRESSIBLE) {
+
+    /*--- Loop over the owned DOFs and check for non-physical points. ---*/
+    for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
+
+      su2double *solDOF = VecSolDOFs.data() + nVar*i;
+
+      const su2double DensityInv = 1.0/solDOF[0];
+      su2double Velocity2 = 0.0;
+      for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
+        const su2double vel = solDOF[iDim]*DensityInv;
+        Velocity2 += vel*vel;
+      }
+
+      su2double StaticEnergy = solDOF[nDim+1]*DensityInv - 0.5*Velocity2;
+
+      FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
+      su2double Pressure = FluidModel->GetPressure();
+      su2double Temperature = FluidModel->GetTemperature();
+
+      if((Pressure < 0.0) || (solDOF[0] < 0.0) || (Temperature < 0.0)) {
+
+        /* Reset the state to the free-stream state. This usually does not work. */
+        for(unsigned short j=0; j<nVar; ++j) solDOF[j] = ConsVarFreeStream[j];
+
+        /* Update the error counter. */
+        ++ErrorCounter;
+      }
+    }
+
+    /*--- Collect the number of non-physical points for this iteration. ---*/
+    if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      unsigned long MyErrorCounter = ErrorCounter;
+      SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  
-  /*--- Set the primitive variables ---*/
-  
-  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
-  
-  /*--- Perform any preprocessing here, e.g., compute gradients, limiters, special dissipation, etc. ---*/
-  
-  if (rank == MASTER_NODE) cout << " Preprocessing." << endl;
-  
-  /*--- Collect the number of non-physical points for this iteration. ---*/
-  
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
-#ifdef HAVE_MPI
-    unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+      if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+    }
   }
-  
 }
 
 void CFEM_DG_EulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                       unsigned short iMesh) { }
 
-unsigned long CFEM_DG_EulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
-  
-  unsigned long iPoint, ErrorCounter = 0;
-  bool RightSol = true;
-  
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
-    
-    /*--- Initialize the non-physical points vector ---*/
-    
-    node[iPoint]->SetNon_Physical(false);
-    
-    /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
-    
-    RightSol = node[iPoint]->SetPrimVar_Compressible(FluidModel);
-    node[iPoint]->SetSecondaryVar_Compressible(FluidModel);
-    
-    if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
-    
-    /*--- Initialize the convective, source and viscous residual vector ---*/
-    
-    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
-    
-  }
-  
-  return ErrorCounter;
-}
-
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
-  
-  int rank = MASTER_NODE;
+
+  /* Easier storage of the CFL number. */
+  const su2double CFL = config->GetCFL(iMesh);
+
+  /*--- Check for a compressible solver. ---*/
+  if(config->GetKind_Regime() == COMPRESSIBLE) {
+
+    /*--- Loop over the owned volume elements. ---*/
+    for(unsigned long i=0; i<nVolElemOwned; ++i) {
+
+      /*--- Loop over the DOFs of this element and determine the maximum wave speed. ---*/
+      su2double charVel2Max = 0.0;
+      for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
+        const su2double *solDOF = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
+
+        su2double velAbs[3];
+        const su2double DensityInv = 1.0/solDOF[0];
+        su2double Velocity2 = 0.0;
+        for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
+          const su2double vel = solDOF[iDim]*DensityInv;
+          velAbs[iDim-1] = fabs(vel);
+          Velocity2 += vel*vel;
+        }
+
+        su2double StaticEnergy = solDOF[nDim+1]*DensityInv - 0.5*Velocity2;
+        FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
+        su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
+
+        su2double charVel2 = 0.0;
+        for(unsigned short iDim=0; iDim<nDim; ++iDim)
+          charVel2 += velAbs[iDim]*velAbs[iDim] + SoundSpeed2;
+
+        charVel2Max = max(charVel2Max, charVel2);
+      }
+
+      /* Compute the time step for element. */
+      VecDeltaTime[i] = CFL*volElem[i].lenScale/charVel2Max;
+    }
+  }
+  else {
+
+    /*--- Incompressible solver. ---*/
+
+    int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Barrier(MPI_COMM_WORLD);
 #endif
-  
-  /*--- Compute and store time step here. ---*/
-  
-  if (rank == MASTER_NODE) cout << " Setting time step." << endl;
-  
+
+    if(rank == MASTER_NODE) {
+      cout << "In function CFEM_DG_EulerSolver::SetTime_Step" << endl;
+      cout << "Incompressible solver not implemented yet" << endl;
+    }
+
+#ifdef HAVE_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#else
+    exit(EXIT_FAILURE);
+#endif
+
+  }
 }
 
 void CFEM_DG_EulerSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                               CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  /*--- Allocate the memory for some temporary storage needed to compute the
+        internal residual efficiently. Note that when the MKL library is used
+        a special allocation is used to optimize performance. ---*/
+  su2double *solInt, *fluxes;
+
+#ifdef HAVE_MKL
+  solInt = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  fluxes = (su2double *) mkl_malloc(nIntegrationMax*nVar*nDim*sizeof(su2double), 64);
+#else
+  vector<su2double> helpSolInt(nIntegrationMax*nVar);
+  vector<su2double> helpFluxes(nIntegrationMax*nVar*nDim);
+  solInt = helpSolInt.data();
+  fluxes = helpFluxes.data();
 #endif
-  
-  /*--- Compute finite element convective residual and store here. ---*/
-  
-  if (rank == MASTER_NODE) cout << " Computing internal contributions to residual." << endl;
-  
-  // numerics holds the CDiscGalerkin class for compute residual here
-  
-  if ((config->GetRiemann_Solver_FEM() == ROE) && (rank == MASTER_NODE))
-      cout << " Using a Roe Riemann solver for the DG method." << endl;
-  
-  su2double quad_fact_straight = config->GetQuadrature_Factor_Straight();
-  if (rank == MASTER_NODE) cout << " Quad factor straight: " << quad_fact_straight << endl;
-  
-  su2double quad_fact_curved = config->GetQuadrature_Factor_Curved();
-  if (rank == MASTER_NODE) cout << " Quad factor curved: " << quad_fact_curved << endl;
-  
+
+  /* Store the number of metric points per integration point, which depends
+     on the number of dimensions. */
+  const unsigned short nMetricPerPoint = nDim*nDim + 1;
+
+  /*--- Loop over the owned volume elements to compute the contribution of the
+        volume integral in the DG FEM formulation to the residual.       ---*/
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /* Get the data from the corresponding standard element. */
+    const unsigned short ind             = volElem[l].indStandardElement;
+    const unsigned short nInt            = standardElementsSol[ind].GetNIntegration();
+    const unsigned short nDOFs           = volElem[l].nDOFsSol;
+    const su2double *matBasisInt         = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
+    const su2double *matDerBasisIntTrans = standardElementsSol[ind].GetDerMatBasisFunctionsIntTrans();
+    const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 1: Interpolate the solution to the integration points of    ---*/
+    /*---         the elements. This is a matrix matrix multiplication,    ---*/
+    /*---         which can be carried out with either LIBXSMM, BLAS or    ---*/
+    /*---         a standard internal implementation.                      ---*/ 
+    /*------------------------------------------------------------------------*/
+
+    /* Easier storage of the solution variables for this element. */
+    su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+
+#ifdef HAVE_LIBXSMM
+
+    /* The gemm function of libxsmm is used to carry out the multiplication. */
+    libxsmm_gemm(NULL, NULL, nInt, nVar, nDOFs, NULL, matBasisInt,
+                 NULL, solDOFs, NULL, NULL, solInt, NULL);
+
+#elif defined (HAVE_CBLAS) || defined(HAVE_MKL)
+
+    /* The standard blas routine dgemm is used for the multiplication. */
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nInt, nVar, nDOFs,
+                1.0, matBasisInt, nDOFs, solDOFs, nVar, 0.0, solInt, nVar);
+#else
+
+    /* Standard internal implementation of the matrix matrix multiplication. */
+    for(unsigned short i=0; i<nInt; ++i) {
+      const unsigned short jj = i*nDOFs;
+      const unsigned short kk = i*nVar;
+      for(unsigned short j=0; j<nVar; ++j) {
+        const unsigned short ii = kk + j;
+        solInt[ii] = 0.0;
+        for(unsigned short k=0; k<nDOFs; ++k)
+          solInt[ii] += matBasisInt[jj+k]*solDOFs[k*nVar+j];
+      }
+    }
+#endif
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 2: Compute the inviscid fluxes, multiplied by minus the     ---*/
+    /*---         integration weight, in the integration points.           ---*/
+    /*------------------------------------------------------------------------*/ 
+
+    /* Loop over the integration points. */
+    unsigned short ll = 0;
+    for(unsigned short i=0; i<nInt; ++i) {
+
+      /*--- Compute the velocities and pressure in this integration point. ---*/
+      const su2double *sol = solInt + nVar*i;
+
+      const su2double DensityInv = 1.0/sol[0];
+      su2double vel[3], Velocity2 = 0.0;
+      for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+        vel[iDim] = sol[iDim+1]*DensityInv;
+        Velocity2 += vel[iDim]*vel[iDim];
+      }
+
+      su2double StaticEnergy = sol[nDim+1]*DensityInv - 0.5*Velocity2;
+
+      FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+      const su2double Pressure = FluidModel->GetPressure();
+
+      /* Easier storage of the metric terms in this integration point. The +1
+         is present, because the first element of the metric terms is the
+         Jacobian in the integration point. */
+      const su2double *metricTerms = volElem[l].metricTerms + i*nMetricPerPoint + 1;
+
+      /*--- Loop over the number of dimensions to compute the fluxes in the
+            direction of the parametric coordinates. ---*/
+      for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+
+        /* Pointer to the metric terms for this direction. */
+        const su2double *metric = metricTerms + iDim*nDim;
+
+        /* Compute the velocity in the direction of the current parametric coordinate. */
+        su2double vPar = 0.0;
+        for(unsigned short jDim=0; jDim<nDim; ++jDim)
+          vPar += vel[jDim]*metric[jDim];
+
+        /* Compute the flux, multiplied by minus the integration weight. */
+        fluxes[ll++] = -weights[i]*sol[0]*vPar;
+
+        for(unsigned short jDim=0; jDim<nDim; ++jDim)
+          fluxes[ll++] = -weights[i]*(sol[jDim+1]*vPar + Pressure*metric[jDim]);
+
+        fluxes[ll++] = -weights[i]*(sol[nDim+1] + Pressure)*vPar;
+      }
+    }
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 3: Compute the contribution to the residuals from the       ---*/
+    /*---         integration over the volume element.                     ---*/
+    /*------------------------------------------------------------------------*/
+
+    /* Easier storage of the residuals for this volume element. */
+    su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+
+#ifdef HAVE_LIBXSMM
+
+    /* The gemm function of libxsmm is used to carry out the multiplication. */
+    libxsmm_gemm(NULL, NULL, nDOFs, nVar, nInt*nDim, NULL, matDerBasisIntTrans,
+                 NULL, fluxes, NULL, NULL, res, NULL);
+
+#elif defined (HAVE_CBLAS) || defined(HAVE_MKL)
+
+    /* The standard blas routine dgemm is used for the multiplication. */
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nDOFs, nVar, nInt*nDim,
+                1.0, matDerBasisIntTrans, nInt*nDim, fluxes, nVar, 0.0, res, nVar);
+#else
+
+    /* Standard internal implementation of the matrix matrix multiplication. */
+    ll = nInt*nDim;
+    for(unsigned short i=0; i<nDOFs; ++i) {
+      const unsigned short jj = i*ll;
+      const unsigned short kk = i*nVar;
+      for(unsigned short j=0; j<nVar; ++j) {
+        const unsigned short ii = kk + j;
+        res[ii] = 0.0;
+        for(unsigned short k=0; k<ll; ++k)
+          res[ii] += matDerBasisIntTrans[jj+k]*fluxes[k*nVar+j];
+      }
+    }
+
+#endif
+  }
+
+  /*--- If the MKL is used the temporary storage must be released again. ---*/
+#ifdef HAVE_MKL
+  mkl_free(solInt);
+  mkl_free(fluxes);
+#endif
 }
 
 void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -1353,7 +1563,9 @@ void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solve
   /*--- Compute finite element convective residual and store here. ---*/
   
   if (rank == MASTER_NODE) cout << " Computing external contributions to residual." << endl;
-  
+
+  if ((config->GetRiemann_Solver_FEM() == ROE) && (rank == MASTER_NODE))
+    cout << " Using a Roe Riemann solver for the DG method." << endl;
 }
 
 void CFEM_DG_EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {

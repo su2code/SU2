@@ -1317,9 +1317,9 @@ inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
 inline void CSolver::SetFreeStream_Solution(CConfig *config){}
 
-inline void CSolver::Initiate_MPI_Communication(CGeometry *geometry, CConfig *config) {}
+inline void CSolver::Initiate_MPI_Communication(void) {}
 
-inline void CSolver::Complete_MPI_Communication(CGeometry *geometry, CConfig *config) {}
+inline void CSolver::Complete_MPI_Communication(void) {}
 
 inline void CSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) {}

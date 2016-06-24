@@ -89,6 +89,8 @@ inline unsigned long CMeshFEM::GetNVolElemTot(void) {return nVolElemTot;}
 
 inline CVolumeElementFEM* CMeshFEM::GetVolElem(void) {return volElem.data();}
 
+inline unsigned short CMeshFEM::GetNStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.size();}
+
 inline FEMStandardBoundaryFaceClass* CMeshFEM::GetStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.data();}
 
 inline const vector<int>& CMeshFEM::GetRanksComm(void) const {return ranksComm;}
@@ -109,6 +111,10 @@ inline unsigned long CMeshFEM_DG::GetNMatchingFaces(void) {return matchingFaces.
 
 inline CInternalFaceElementFEM* CMeshFEM_DG::GetMatchingFaces(void) {return matchingFaces.data();}
 
+inline unsigned short CMeshFEM_DG::GetNStandardElementsSol(void) {return standardElementsSol.size();}
+
 inline FEMStandardElementClass* CMeshFEM_DG::GetStandardElementsSol(void) {return standardElementsSol.data();}
+
+inline unsigned short CMeshFEM_DG::GetNStandardMatchingFacesSol(void) {return standardMatchingFacesSol.size();}
 
 inline FEMStandardInternalFaceClass* CMeshFEM_DG::GetStandardMatchingFacesSol(void) {return standardMatchingFacesSol.data();}
