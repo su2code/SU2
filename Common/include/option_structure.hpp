@@ -414,14 +414,16 @@ enum ENUM_FLUIDMODEL {
 	STANDARD_AIR = 0,
 	IDEAL_GAS = 1, /*!< \brief _____. */
 	VW_GAS = 2,
-	PR_GAS = 3
+	PR_GAS = 3,
+	LUT = 4
 };
 
 static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, ENUM_FLUIDMODEL>
 ("STANDARD_AIR", STANDARD_AIR)
 ("IDEAL_GAS", IDEAL_GAS)
 ("VW_GAS", VW_GAS)
-("PR_GAS", PR_GAS);
+("PR_GAS", PR_GAS)
+("LUT", LUT);
 
 /*!
  * \brief types of initialization option
@@ -800,11 +802,13 @@ enum RIEMANN_TYPE {
   STATIC_SUPERSONIC_INFLOW_PT = 5, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
   STATIC_SUPERSONIC_INFLOW_PD = 6, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
   MIXING_IN = 7, /*!< \brief User does not specify anything information are retrieved from the other domain */
-  MIXING_OUT = 8 /*!< \brief User does not specify anything information are retrieved from the other domain */
+  MIXING_OUT = 8, /*!< \brief User does not specify anything information are retrieved from the other domain */
+	TOTAL_CONDITIONS_PRHO = 9
 };
 
 static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>
 ("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
+("TOTAL_CONDITIONS_PRHO", TOTAL_CONDITIONS_PRHO)
 ("DENSITY_VELOCITY", DENSITY_VELOCITY)
 ("STATIC_PRESSURE", STATIC_PRESSURE)
 ("TOTAL_SUPERSONIC_INFLOW", TOTAL_SUPERSONIC_INFLOW)

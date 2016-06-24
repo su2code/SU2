@@ -35,6 +35,7 @@ CThermoList::CThermoList(){
 
 	StaticEnergy = 0.0;
 	Entropy      = 0.0;
+	Enthalpy     = 0.0;
 	Density      = 0.0;
 	Pressure     = 0.0;
 	SoundSpeed2  = 0.0;
@@ -86,7 +87,7 @@ CLookUpTable::CLookUpTable() : CFluidModel() {
 	{
 		for (int j=0; j<3; j++)
 		{
-			coeff[i][j] = 0;
+			coeff[i][j] = 0.0;
 		}
 	}
 	HS_tree= NULL;
@@ -100,13 +101,13 @@ CLookUpTable::CLookUpTable() : CFluidModel() {
 CLookUpTable::CLookUpTable(CConfig *config ):CFluidModel() {
 
 	ThermoTables = NULL;
-	CThermoList interpolated;
-	TableLoadCFX(Filename);
+//	CThermoList interpolated;
+	TableLoadCFX(config->GetLUTFileName());
 	for (int i=0; i<3; i++)
 	{
 		for (int j=0; j<3; j++)
 		{
-			coeff[i][j] = -1;
+			coeff[i][j] = -1.0;
 		}
 	}
 	iIndex = -1;//negative number means it hasn't been preset yet
@@ -505,7 +506,7 @@ void CLookUpTable::SetTDState_rhoe (su2double rho, su2double e ) {
 	dktdT_rho         = Interp2D_lin(x, y, "dktdT_rho" );
 
 //	cout<<"Interpolated fit:"<<endl;
-//	interpolated.CTLprint ();
+//	CTLprint ();
 	if ((Density>Density_limits[1]) or (Density<Density_limits[0]))
 	{
 		cerr<<"RHOE Interpolated Density out of bounds\n";
@@ -578,16 +579,16 @@ void CLookUpTable::SetTDState_PT (su2double P, su2double T ) {
 	cout<<"i "<<LowerI<<"  "<<UpperI<<endl;
 	cout<<"j "<<LowerJ<<"  "<<UpperJ<<endl;
 
-	cout<<"Closest fit box :"<<endl;
-	cout<<"Point i j :"<<endl;
-	ThermoTables[iIndex][jIndex].CTLprint();
-	cout<<"Point i+1 j :"<<endl;
-	ThermoTables[iIndex+1][jIndex].CTLprint();
-	cout<<"Point i j+1 :"<<endl;
-	ThermoTables[iIndex][jIndex+1].CTLprint();
-	cout<<"Point i+1 j+1 :"<<endl;
-	ThermoTables[iIndex+1][jIndex+1].CTLprint();
-	//Now use the closest fit box to interpolate
+//	cout<<"Closest fit box :"<<endl;
+//	cout<<"Point i j :"<<endl;
+//	ThermoTables[iIndex][jIndex].CTLprint();
+//	cout<<"Point i+1 j :"<<endl;
+//	ThermoTables[iIndex+1][jIndex].CTLprint();
+//	cout<<"Point i j+1 :"<<endl;
+//	ThermoTables[iIndex][jIndex+1].CTLprint();
+//	cout<<"Point i+1 j+1 :"<<endl;
+//	ThermoTables[iIndex+1][jIndex+1].CTLprint();
+//	//Now use the closest fit box to interpolate
 
 	su2double x, y;
 	x = T - ThermoTables[iIndex][jIndex].Temperature;
@@ -598,10 +599,10 @@ void CLookUpTable::SetTDState_PT (su2double P, su2double T ) {
 	//Determine interpolation coefficients
 	Interp2D_ArbitrarySkewCoeff(x,y,"PT");
 	cout<<"Interpolation matrix inverse \n";
-	for (int j=0; j<3; j++)
-	{
-		cout<<setw(15)<<coeff[j][0]<<"   "<<coeff[j][1]<<"   "<<coeff[j][2]<<endl;
-	}
+//	for (int j=0; j<3; j++)
+//	{
+//		cout<<setw(15)<<coeff[j][0]<<"   "<<coeff[j][1]<<"   "<<coeff[j][2]<<endl;
+//	}
 
 	Temperature       = T;
 	Pressure          = P ;
@@ -622,9 +623,9 @@ void CLookUpTable::SetTDState_PT (su2double P, su2double T ) {
 	dktdT_rho         = Interp2D_lin(x, y, "dktdT_rho" );
 	//Intermediate variables only needed for StandAlone version
 //	su2double Density d.Density;
-//	su2double Pressure = interpolated.Pressure;
+//	su2double Pressure = Pressure;
 //	cout<<"Interpolated fit:"<<endl;
-//	interpolated.CTLprint ();
+//	CTLprint ();
 	if ((Density>Density_limits[1]) or (Density<Density_limits[0]))
 	{
 		cerr<<"PT Interpolated Density out of bounds\n";
@@ -667,15 +668,15 @@ void CLookUpTable::SetTDState_Prho (su2double P, su2double rho ) {
 	iIndex = LowerI;
 	jIndex = LowerJ;
 
-	cout<<"Closest fit box :"<<endl;
-	cout<<"Point i j :"<<endl;
-	ThermoTables[iIndex][jIndex].CTLprint();
-	cout<<"Point i+1 j :"<<endl;
-	ThermoTables[iIndex+1][jIndex].CTLprint();
-	cout<<"Point i j+1 :"<<endl;
-	ThermoTables[iIndex][jIndex+1].CTLprint();
-	cout<<"Point i+1 j+1 :"<<endl;
-	ThermoTables[iIndex+1][jIndex+1].CTLprint();
+//	cout<<"Closest fit box :"<<endl;
+//	cout<<"Point i j :"<<endl;
+//	ThermoTables[iIndex][jIndex].CTLprint();
+//	cout<<"Point i+1 j :"<<endl;
+//	ThermoTables[iIndex+1][jIndex].CTLprint();
+//	cout<<"Point i j+1 :"<<endl;
+//	ThermoTables[iIndex][jIndex+1].CTLprint();
+//	cout<<"Point i+1 j+1 :"<<endl;
+//	ThermoTables[iIndex+1][jIndex+1].CTLprint();
 	//Now use the closest fit box to interpolate
 
 
@@ -688,10 +689,10 @@ void CLookUpTable::SetTDState_Prho (su2double P, su2double rho ) {
 	//Determine interpolation coefficients
 	Interp2D_ArbitrarySkewCoeff(x,y,"PRHO");
 	cout<<"Interpolation matrix inverse \n";
-	for (int j=0; j<3; j++)
-	{
-		cout<<setw(15)<<coeff[j][0]<<"   "<<coeff[j][1]<<"   "<<coeff[j][2]<<endl;
-	}
+//	for (int j=0; j<3; j++)
+//	{
+//		cout<<setw(15)<<coeff[j][0]<<"   "<<coeff[j][1]<<"   "<<coeff[j][2]<<endl;
+//	}
 
 	Pressure           = P;
 	Density           = rho ;
@@ -710,11 +711,11 @@ void CLookUpTable::SetTDState_Prho (su2double P, su2double rho ) {
 	Kt                = Interp2D_lin(x, y, "Kt" );
 	dktdrho_T         = Interp2D_lin(x, y, "dktdrho_T" );
 	dktdT_rho         = Interp2D_lin(x, y, "dktdT_rho" );
-	//Intermediate variables only needed for StandAlone version
-	su2double Density = interpolated.Density;
-	su2double Pressure = interpolated.Pressure;
-	cout<<"Interpolated fit:"<<endl;
-	interpolated.CTLprint ();
+//	//Intermediate variables only needed for StandAlone version
+//	su2double Density = Density;
+//	su2double Pressure = Pressure;
+//	cout<<"Interpolated fit:"<<endl;
+//	CTLprint ();
 	if ((Density>Density_limits[1]) or (Density<Density_limits[0]))
 	{
 		cerr<<"PRHO Interpolated Density out of bounds\n";
@@ -777,40 +778,40 @@ void CLookUpTable::SetTDState_hs (su2double h, su2double s ) {
 	}
 	cout<<endl;
 
-	cout<<"Closest fit box :"<<endl;
-	cout<<"Point i j :"<<endl;
-	ThermoTables[NN_i[0]][NN_j[0]].CTLprint();
-	cout<<"Point i+1 j :"<<endl;
-	ThermoTables[NN_i[1]][NN_j[1]].CTLprint();
-	cout<<"Point i j+1 :"<<endl;
-	ThermoTables[NN_i[2]][NN_j[2]].CTLprint();
-	cout<<"Point i+1 j+1 :"<<endl;
-	ThermoTables[NN_i[3]][NN_j[3]].CTLprint();
+//	cout<<"Closest fit box :"<<endl;
+//	cout<<"Point i j :"<<endl;
+//	ThermoTables[NN_i[0]][NN_j[0]].CTLprint();
+//	cout<<"Point i+1 j :"<<endl;
+//	ThermoTables[NN_i[1]][NN_j[1]].CTLprint();
+//	cout<<"Point i j+1 :"<<endl;
+//	ThermoTables[NN_i[2]][NN_j[2]].CTLprint();
+//	cout<<"Point i+1 j+1 :"<<endl;
+//	ThermoTables[NN_i[3]][NN_j[3]].CTLprint();
 	//Now use the closest fit box to interpolat
 	su2double x,y;
-	interpolated.Entropy           = s;
-	interpolated.Enthalpy          = h;
-	interpolated.StaticEnergy      = Interp2D_Inv_Dist("StaticEnergy", best_dist);
-	interpolated.Density           = Interp2D_Inv_Dist("Density", best_dist);
-	interpolated.Pressure          = Interp2D_Inv_Dist("Pressure", best_dist);
-	interpolated.SoundSpeed2       = Interp2D_Inv_Dist("SoundSpeed2", best_dist);
-	interpolated.Temperature       = Interp2D_Inv_Dist("Temperature", best_dist);
-	interpolated.dPdrho_e          = Interp2D_Inv_Dist("dPdrho_e", best_dist);
-	interpolated.dPde_rho          = Interp2D_Inv_Dist("dPde_rho", best_dist);
-	interpolated.dTdrho_e          = Interp2D_Inv_Dist("dTdrho_e", best_dist);
-	interpolated.dTde_rho          = Interp2D_Inv_Dist("dTde_rho", best_dist);
-	interpolated.Cp                = Interp2D_Inv_Dist("Cp", best_dist);
-	interpolated.Mu                = Interp2D_Inv_Dist("Mu", best_dist);
-	interpolated.dmudrho_T         = Interp2D_Inv_Dist("dmudrho_T", best_dist);
-	interpolated.dmudT_rho         = Interp2D_Inv_Dist("dmudT_rho", best_dist);
-	interpolated.Kt                = Interp2D_Inv_Dist("Kt", best_dist);
-	interpolated.dktdrho_T         = Interp2D_Inv_Dist("dktdrho_T", best_dist);
-	interpolated.dktdT_rho         = Interp2D_Inv_Dist("dktdT_rho", best_dist);
+	Entropy           = s;
+//	Enthalpy          = h;
+	StaticEnergy      = Interp2D_Inv_Dist("StaticEnergy", best_dist);
+	Density           = Interp2D_Inv_Dist("Density", best_dist);
+	Pressure          = Interp2D_Inv_Dist("Pressure", best_dist);
+	SoundSpeed2       = Interp2D_Inv_Dist("SoundSpeed2", best_dist);
+	Temperature       = Interp2D_Inv_Dist("Temperature", best_dist);
+	dPdrho_e          = Interp2D_Inv_Dist("dPdrho_e", best_dist);
+	dPde_rho          = Interp2D_Inv_Dist("dPde_rho", best_dist);
+	dTdrho_e          = Interp2D_Inv_Dist("dTdrho_e", best_dist);
+	dTde_rho          = Interp2D_Inv_Dist("dTde_rho", best_dist);
+	Cp                = Interp2D_Inv_Dist("Cp", best_dist);
+	Mu                = Interp2D_Inv_Dist("Mu", best_dist);
+	dmudrho_T         = Interp2D_Inv_Dist("dmudrho_T", best_dist);
+	dmudT_rho         = Interp2D_Inv_Dist("dmudT_rho", best_dist);
+	Kt                = Interp2D_Inv_Dist("Kt", best_dist);
+	dktdrho_T         = Interp2D_Inv_Dist("dktdrho_T", best_dist);
+	dktdT_rho         = Interp2D_Inv_Dist("dktdT_rho", best_dist);
 	//Intermediate variables only needed for StandAlone version
-	su2double Density = interpolated.Density;
-	su2double Pressure = interpolated.Pressure;
+	su2double Density = Density;
+	su2double Pressure = Pressure;
 	cout<<"Interpolated fit:"<<endl;
-	interpolated.CTLprint ();
+//	CTLprint ();
 	if ((Density>Density_limits[1]) or (Density<Density_limits[0]))
 	{
 		cerr<<"HS Interpolated Density out of bounds\n";
@@ -886,15 +887,15 @@ void CLookUpTable::SetTDState_Ps (su2double P, su2double s )
 	cout<<"j "<<LowerJ<<"  "<<UpperJ<<endl;
 
 
-	cout<<"Closest fit box :"<<endl;
-	cout<<"Point i j :"<<endl;
-	ThermoTables[iIndex][jIndex].CTLprint();
-	cout<<"Point i+1 j :"<<endl;
-	ThermoTables[iIndex+1][jIndex].CTLprint();
-	cout<<"Point i j+1 :"<<endl;
-	ThermoTables[iIndex][jIndex+1].CTLprint();
-	cout<<"Point i+1 j+1 :"<<endl;
-	ThermoTables[iIndex+1][jIndex+1].CTLprint();
+//	cout<<"Closest fit box :"<<endl;
+//	cout<<"Point i j :"<<endl;
+//	ThermoTables[iIndex][jIndex].CTLprint();
+//	cout<<"Point i+1 j :"<<endl;
+//	ThermoTables[iIndex+1][jIndex].CTLprint();
+//	cout<<"Point i j+1 :"<<endl;
+//	ThermoTables[iIndex][jIndex+1].CTLprint();
+//	cout<<"Point i+1 j+1 :"<<endl;
+//	ThermoTables[iIndex+1][jIndex+1].CTLprint();
 	//Now use the closest fit box to interpolate
 
 
@@ -909,32 +910,31 @@ void CLookUpTable::SetTDState_Ps (su2double P, su2double s )
 	cout<<"Interpolation matrix inverse \n";
 	for (int j=0; j<3; j++)
 	{
-		cout<<setw(15)<<coeff[j][0]<<"   "<<coeff[j][1]<<"   "<<coeff[j][2]<<endl;
+//		cout<<setw(15)<<coeff[j][0]<<"   "<<coeff[j][1]<<"   "<<coeff[j][2]<<endl;
 	}
 
-	interpolated.Entropy           = s;
-	interpolated.Pressure          = P ;
-	interpolated.Enthalpy          = Interp2D_lin(x, y, "Enthalpy" );
-	interpolated.StaticEnergy      = Interp2D_lin(x, y, "StaticEnergy" );
-	interpolated.Density           = Interp2D_lin(x, y, "Density" );
-	interpolated.SoundSpeed2       = Interp2D_lin(x, y, "SoundSpeed2" );
-	interpolated.Temperature       = Interp2D_lin(x, y, "Temperature" );
-	interpolated.dPdrho_e          = Interp2D_lin(x, y, "dPdrho_e" );
-	interpolated.dPde_rho          = Interp2D_lin(x, y, "dPde_rho" );
-	interpolated.dTdrho_e          = Interp2D_lin(x, y, "dTdrho_e" );
-	interpolated.dTde_rho          = Interp2D_lin(x, y, "dTde_rho" );
-	interpolated.Cp                = Interp2D_lin(x, y, "Cp" );
-	interpolated.Mu                = Interp2D_lin(x, y, "Mu" );
-	interpolated.dmudrho_T         = Interp2D_lin(x, y, "dmudrho_T" );
-	interpolated.dmudT_rho         = Interp2D_lin(x, y, "dmudT_rho" );
-	interpolated.Kt                = Interp2D_lin(x, y, "Kt" );
-	interpolated.dktdrho_T         = Interp2D_lin(x, y, "dktdrho_T" );
-	interpolated.dktdT_rho         = Interp2D_lin(x, y, "dktdT_rho" );
+	Entropy           = s;
+	Pressure          = P ;
+	StaticEnergy      = Interp2D_lin(x, y, "StaticEnergy" );
+	Density           = Interp2D_lin(x, y, "Density" );
+	SoundSpeed2       = Interp2D_lin(x, y, "SoundSpeed2" );
+	Temperature       = Interp2D_lin(x, y, "Temperature" );
+	dPdrho_e          = Interp2D_lin(x, y, "dPdrho_e" );
+	dPde_rho          = Interp2D_lin(x, y, "dPde_rho" );
+	dTdrho_e          = Interp2D_lin(x, y, "dTdrho_e" );
+	dTde_rho          = Interp2D_lin(x, y, "dTde_rho" );
+	Cp                = Interp2D_lin(x, y, "Cp" );
+	Mu                = Interp2D_lin(x, y, "Mu" );
+	dmudrho_T         = Interp2D_lin(x, y, "dmudrho_T" );
+	dmudT_rho         = Interp2D_lin(x, y, "dmudT_rho" );
+	Kt                = Interp2D_lin(x, y, "Kt" );
+	dktdrho_T         = Interp2D_lin(x, y, "dktdrho_T" );
+	dktdT_rho         = Interp2D_lin(x, y, "dktdT_rho" );
 	//Intermediate variables only needed for StandAlone version
-	su2double Density = interpolated.Density;
-	su2double Pressure = interpolated.Pressure;
+	su2double Density = Density;
+	su2double Pressure = Pressure;
 	cout<<"Interpolated fit:"<<endl;
-	interpolated.CTLprint ();
+//	CTLprint ();
 	if ((Density>Density_limits[1]) or (Density<Density_limits[0]))
 	{
 		cerr<<"PS Interpolated Density out of bounds\n";
@@ -1010,16 +1010,16 @@ void CLookUpTable::SetTDState_rhoT (su2double rho, su2double T ) {
 	cout<<"i "<<LowerI<<"  "<<UpperI<<endl;
 	cout<<"j "<<LowerJ<<"  "<<UpperJ<<endl;
 
-
-	cout<<"Closest fit box :"<<endl;
-	cout<<"Point i j :"<<endl;
-	ThermoTables[iIndex][jIndex].CTLprint();
-	cout<<"Point i+1 j :"<<endl;
-	ThermoTables[iIndex+1][jIndex].CTLprint();
-	cout<<"Point i j+1 :"<<endl;
-	ThermoTables[iIndex][jIndex+1].CTLprint();
-	cout<<"Point i+1 j+1 :"<<endl;
-	ThermoTables[iIndex+1][jIndex+1].CTLprint();
+//
+//	cout<<"Closest fit box :"<<endl;
+//	cout<<"Point i j :"<<endl;
+//	ThermoTables[iIndex][jIndex].CTLprint();
+//	cout<<"Point i+1 j :"<<endl;
+//	ThermoTables[iIndex+1][jIndex].CTLprint();
+//	cout<<"Point i j+1 :"<<endl;
+//	ThermoTables[iIndex][jIndex+1].CTLprint();
+//	cout<<"Point i+1 j+1 :"<<endl;
+//	ThermoTables[iIndex+1][jIndex+1].CTLprint();
 	//Now use the closest fit box to interpolate
 
 
@@ -1032,34 +1032,32 @@ void CLookUpTable::SetTDState_rhoT (su2double rho, su2double T ) {
 	//Determine interpolation coefficients
 	Interp2D_ArbitrarySkewCoeff(x,y,"RHOT");
 	cout<<"Interpolation matrix inverse \n";
-	for (int j=0; j<3; j++)
-	{
-		cout<<setw(15)<<coeff[j][0]<<"   "<<coeff[j][1]<<"   "<<coeff[j][2]<<endl;
-	}
+//	for (int j=0; j<3; j++)
+//	{
+//		cout<<setw(15)<<coeff[j][0]<<"   "<<coeff[j][1]<<"   "<<coeff[j][2]<<endl;
+//	}
 
-	interpolated.Temperature       = T;
-	interpolated.Density           = rho ;
-	interpolated.Enthalpy          = Interp2D_lin(x, y, "Enthalpy" );
-	interpolated.StaticEnergy      = Interp2D_lin(x, y, "StaticEnergy" );
-	interpolated.Entropy           = Interp2D_lin(x, y, "Entropy" );
-	interpolated.Pressure          = Interp2D_lin(x, y, "Pressure" );
-	interpolated.SoundSpeed2       = Interp2D_lin(x, y, "SoundSpeed2" );
-	interpolated.dPdrho_e          = Interp2D_lin(x, y, "dPdrho_e" );
-	interpolated.dPde_rho          = Interp2D_lin(x, y, "dPde_rho" );
-	interpolated.dTdrho_e          = Interp2D_lin(x, y, "dTdrho_e" );
-	interpolated.dTde_rho          = Interp2D_lin(x, y, "dTde_rho" );
-	interpolated.Cp                = Interp2D_lin(x, y, "Cp" );
-	interpolated.Mu                = Interp2D_lin(x, y, "Mu" );
-	interpolated.dmudrho_T         = Interp2D_lin(x, y, "dmudrho_T" );
-	interpolated.dmudT_rho         = Interp2D_lin(x, y, "dmudT_rho" );
-	interpolated.Kt                = Interp2D_lin(x, y, "Kt" );
-	interpolated.dktdrho_T         = Interp2D_lin(x, y, "dktdrho_T" );
-	interpolated.dktdT_rho         = Interp2D_lin(x, y, "dktdT_rho" );
+	Temperature       = T;
+	Density           = rho ;
+	StaticEnergy      = Interp2D_lin(x, y, "StaticEnergy" );
+	Entropy           = Interp2D_lin(x, y, "Entropy" );
+	Pressure          = Interp2D_lin(x, y, "Pressure" );
+	SoundSpeed2       = Interp2D_lin(x, y, "SoundSpeed2" );
+	dPdrho_e          = Interp2D_lin(x, y, "dPdrho_e" );
+	dPde_rho          = Interp2D_lin(x, y, "dPde_rho" );
+	dTdrho_e          = Interp2D_lin(x, y, "dTdrho_e" );
+	dTde_rho          = Interp2D_lin(x, y, "dTde_rho" );
+	Cp                = Interp2D_lin(x, y, "Cp" );
+	Mu                = Interp2D_lin(x, y, "Mu" );
+	dmudrho_T         = Interp2D_lin(x, y, "dmudrho_T" );
+	dmudT_rho         = Interp2D_lin(x, y, "dmudT_rho" );
+	Kt                = Interp2D_lin(x, y, "Kt" );
+	dktdrho_T         = Interp2D_lin(x, y, "dktdrho_T" );
+	dktdT_rho         = Interp2D_lin(x, y, "dktdT_rho" );
 	//Intermediate variables only needed for StandAlone version
-	su2double Density = interpolated.Density;
-	su2double Pressure = interpolated.Pressure;
+	su2double Density = Density;
+	su2double Pressure = Pressure;
 	cout<<"Interpolated fit:"<<endl;
-	interpolated.CTLprint ();
 	if ((Density>Density_limits[1]) or (Density<Density_limits[0]))
 	{
 		cerr<<"RHOT Interpolated Density out of bounds\n";
@@ -1223,11 +1221,11 @@ void CLookUpTable::Interp2D_ArbitrarySkewCoeff(su2double x, su2double y, std::st
 	A[2][2] = dx11*dy11;
 	cout<<"Interpolation LHM matrix \n"<<"[";
 
-	for (int j=0; j<3; j++)
-	{
-		cout<<setw(15)<<"["<<A[j][0]<<" ,  "<<A[j][1]<<"  , "<<A[j][2]<<"]"<<endl;
-	}
-	cout<<"]\n";
+//	for (int j=0; j<3; j++)
+//	{
+//		cout<<setw(15)<<"["<<A[j][0]<<" ,  "<<A[j][1]<<"  , "<<A[j][2]<<"]"<<endl;
+//	}
+//	cout<<"]\n";
 
 	//Store the inverse of the LHM matrix as coeff
 	coeff[0][0] = 1;
@@ -1619,76 +1617,76 @@ su2double CLookUpTable::Interp2D_lin(su2double x, su2double y, string interpolan
 
 void CLookUpTable::LUTprint(void)
 {
-	for (int i=0; i<rho_dim; i++)
-	{
-		for (int j=0; j<p_dim; j++)
-		{
-			ThermoTables[i][j].CTLprint();
-		}
-	}
+//	for (int i=0; i<rho_dim; i++)
+//	{
+//		for (int j=0; j<p_dim; j++)
+//		{
+////			ThermoTables[i][j].CTLprint();
+//		}
+//	}
 }
 
 void CLookUpTable::RecordState(char* file)
 {
-	fstream fs;
-	fs.open(file, fstream::app);
-	assert(fs.is_open());
-	fs << interpolated.Temperature<<", ";
-	fs << interpolated.Density<<", ";
-	fs << interpolated.Enthalpy<<", ";
-	fs << interpolated.StaticEnergy<<", ";
-	fs << interpolated.Entropy<<", ";
-	fs << interpolated.Pressure<<", ";
-	fs << interpolated.SoundSpeed2<<", ";
-	fs << interpolated.dPdrho_e<<", ";
-	fs << interpolated.dPde_rho<<", ";
-	fs << interpolated.dTdrho_e<<", ";
-	fs << interpolated.dTde_rho<<", ";
-	fs << interpolated.Cp<<", ";
-	fs << interpolated.Mu<<", ";
-	fs << interpolated.dmudrho_T<<", ";
-	fs << interpolated.dmudT_rho<<", ";
-	fs << interpolated.Kt<<", ";
-	fs << interpolated.dktdrho_T<<", ";
-	fs << interpolated.dktdT_rho<<", ";
-	fs << "\n";
-	fs.close();
+//	fstream fs;
+//	fs.open(file, fstream::app);
+//	assert(fs.is_open());
+//	fs << Temperature<<", ";
+//	fs << Density<<", ";
+//	fs << Enthalpy<<", ";
+//	fs << StaticEnergy<<", ";
+//	fs << Entropy<<", ";
+//	fs << Pressure<<", ";
+//	fs << SoundSpeed2<<", ";
+//	fs << dPdrho_e<<", ";
+//	fs << dPde_rho<<", ";
+//	fs << dTdrho_e<<", ";
+//	fs << dTde_rho<<", ";
+//	fs << Cp<<", ";
+//	fs << Mu<<", ";
+//	fs << dmudrho_T<<", ";
+//	fs << dmudT_rho<<", ";
+//	fs << Kt<<", ";
+//	fs << dktdrho_T<<", ";
+//	fs << dktdT_rho<<", ";
+//	fs << "\n";
+//	fs.close();
 
 }
 
 void CLookUpTable::TableDump(char* filename)
 {
-	for (int i=0; i<rho_dim;i++)
-	{
-		for (int j=0; j<p_dim;j++)
-		{
-			iIndex = i;
-			jIndex = j;
-			interpolated.Temperature       = ThermoTables[iIndex][jIndex].Temperature;
-			interpolated.Density           = ThermoTables[iIndex][jIndex].Density;
-			interpolated.Enthalpy          = ThermoTables[iIndex][jIndex].Enthalpy;
-			interpolated.StaticEnergy      = ThermoTables[iIndex][jIndex].StaticEnergy;
-			interpolated.Entropy           = ThermoTables[iIndex][jIndex].Entropy;
-			interpolated.Pressure          = ThermoTables[iIndex][jIndex].Pressure;
-			interpolated.SoundSpeed2       = ThermoTables[iIndex][jIndex].SoundSpeed2;
-			interpolated.dPdrho_e          = ThermoTables[iIndex][jIndex].dPdrho_e;
-			interpolated.dPde_rho          = ThermoTables[iIndex][jIndex].dPde_rho;
-			interpolated.dTdrho_e          = ThermoTables[iIndex][jIndex].dTdrho_e;
-			interpolated.dTde_rho          = ThermoTables[iIndex][jIndex].dTde_rho;
-			interpolated.Cp                = ThermoTables[iIndex][jIndex].Cp;
-			interpolated.Mu                = ThermoTables[iIndex][jIndex].Mu;
-			interpolated.dmudrho_T         = ThermoTables[iIndex][jIndex].dmudrho_T;
-			interpolated.dmudT_rho         = ThermoTables[iIndex][jIndex].dmudT_rho;
-			interpolated.Kt                = ThermoTables[iIndex][jIndex].Kt;
-			interpolated.dktdrho_T         = ThermoTables[iIndex][jIndex].dktdrho_T;
-			interpolated.dktdT_rho         = ThermoTables[iIndex][jIndex].dktdT_rho;
-			RecordState(filename);
-		}
-	}
+//	for (int i=0; i<rho_dim;i++)
+//	{
+//		for (int j=0; j<p_dim;j++)
+//		{
+//			iIndex = i;
+//			jIndex = j;
+//			Temperature       = ThermoTables[iIndex][jIndex].Temperature;
+//			Density           = ThermoTables[iIndex][jIndex].Density;
+//			Enthalpy          = ThermoTables[iIndex][jIndex].Enthalpy;
+//			StaticEnergy      = ThermoTables[iIndex][jIndex].StaticEnergy;
+//			Entropy           = ThermoTables[iIndex][jIndex].Entropy;
+//			Pressure          = ThermoTables[iIndex][jIndex].Pressure;
+//			SoundSpeed2       = ThermoTables[iIndex][jIndex].SoundSpeed2;
+//			dPdrho_e          = ThermoTables[iIndex][jIndex].dPdrho_e;
+//			dPde_rho          = ThermoTables[iIndex][jIndex].dPde_rho;
+//			dTdrho_e          = ThermoTables[iIndex][jIndex].dTdrho_e;
+//			dTde_rho          = ThermoTables[iIndex][jIndex].dTde_rho;
+//			Cp                = ThermoTables[iIndex][jIndex].Cp;
+//			Mu                = ThermoTables[iIndex][jIndex].Mu;
+//			dmudrho_T         = ThermoTables[iIndex][jIndex].dmudrho_T;
+//			dmudT_rho         = ThermoTables[iIndex][jIndex].dmudT_rho;
+//			Kt                = ThermoTables[iIndex][jIndex].Kt;
+//			dktdrho_T         = ThermoTables[iIndex][jIndex].dktdrho_T;
+//			dktdT_rho         = ThermoTables[iIndex][jIndex].dktdT_rho;
+//			RecordState(filename);
+//		}
+//	}
 
 }
 
-void CLookUpTable::TableLoadCFX(char* filename){
+void CLookUpTable::TableLoadCFX(string filename){
 	int N_PARAM = 0;
 	int set_x = 0;
 	int set_y = 0;
@@ -1699,7 +1697,7 @@ void CLookUpTable::TableLoadCFX(char* filename){
 	string value;
 
 
-	ifstream table (filename);
+	ifstream table (filename.c_str());
 	assert(table.is_open());
 	cout<<"Looking for number of parameters"<<endl;
 	while ( getline(table,line) )

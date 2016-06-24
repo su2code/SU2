@@ -69,6 +69,7 @@ public:
 	su2double   	 StaticEnergy,			/*!< \brief Internal Energy. */
 	Entropy,  				/*!< \brief Entropy. */
 	Density,  				/*!< \brief Density. */
+	Enthalpy,					/*!< \brief Enthalpy. */
 	Pressure, 				/*!< \brief Pressure. */
 	SoundSpeed2, 		/*!< \brief SpeedSound. */
 	Temperature,			/*!< \brief Temperature. */
@@ -114,8 +115,8 @@ class CLookUpTable : public CFluidModel {
 
 protected:
 	CThermoList **ThermoTables;
-	su2double *coeff; /*!< \brief Fluid derivative DktDT_rho. */
-	unsigned long iIndex, jIndex;
+	su2double coeff[3][3]; /*!< \brief Fluid derivative DktDT_rho. */
+	long iIndex, jIndex;
 	int p_dim, rho_dim; /*!< \brief The pressure and density dimensions of the table */
 	KD_node *HS_tree; //KD tree for HS thermoPair
 //	CThermoList interpolated;
@@ -232,7 +233,7 @@ public:
 	su2double Interp2D_Inv_Dist(std::string interpolant_var, su2double* dist);
 	void Interp2D_ArbitrarySkewCoeff(su2double x, su2double y, std::string grid_var);
 	su2double Interp2D_lin(su2double x, su2double y, std::string interpolant_var);
-	void TableLoadCFX(char* filename);
+	void TableLoadCFX(string filename);
 	void LUTprint(void);
 	void TableDump(char* filename);
 	void RecordState(char* file);

@@ -475,6 +475,8 @@ inline su2double CConfig::GetTemperature_Critical(void) { return Temperature_Cri
 
 inline su2double CConfig::GetAcentric_Factor(void) { return Acentric_Factor; }
 
+inline string CConfig::GetLUTFileName(void){return LUT_FileName;}
+
 inline unsigned short CConfig::GetKind_ViscosityModel(void) { return Kind_ViscosityModel; }
 
 inline unsigned short CConfig::GetKind_ConductivityModel(void) { return Kind_ConductivityModel; }

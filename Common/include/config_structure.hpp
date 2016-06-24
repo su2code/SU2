@@ -519,6 +519,7 @@ private:
 	AdjWave_FileName,					/*!< \brief Adjoint wave variables output file. */
 	Residual_FileName,				/*!< \brief Residual variables output file. */
 	Conv_FileName,					/*!< \brief Convergence history output file. */
+	LUT_FileName,					/*!< \brief Look up table file name. */
   Breakdown_FileName,			    /*!< \brief Breakdown output file. */
   Conv_FileName_FSI,					/*!< \brief Convergence history output file. */
   Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
@@ -2707,6 +2708,12 @@ public:
 	 * \return Critical pressure.
 	 */
 	su2double GetAcentric_Factor(void);
+
+	/*!
+	 * \brief Get the value of the critical pressure.
+	 * \return Critical pressure.
+	 */
+	string GetLUTFileName(void);
 
 	/*!
 	 * \brief Get the value of the critical temperature.

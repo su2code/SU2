@@ -2237,7 +2237,20 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
           config->SetTemperature_FreeStream(Temperature_FreeStream);
         }
         break;
-        
+
+      case LUT:
+        FluidModel = new CLookUpTable(config);
+        if (free_stream_temp) {
+          FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+          Density_FreeStream = FluidModel->GetDensity();
+          config->SetDensity_FreeStream(Density_FreeStream);
+        }
+        else {
+          FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+          Temperature_FreeStream = FluidModel->GetTemperature();
+          config->SetTemperature_FreeStream(Temperature_FreeStream);
+        }
+        break;
     }
     
     Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
@@ -2488,7 +2501,11 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
                                      config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
-      
+
+    case LUT:
+      FluidModel = new CLookUpTable(config);
+      FluidModel->SetTDState_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      break;
   }
   
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
@@ -2593,6 +2610,18 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
           cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
           break;
           
+        case LUT:
+            cout << "Fluid Model: Peng-Robinson "<< endl;
+            cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
+            cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
+            cout << "Specific Heat Ratio: "<< Gamma << endl;
+            cout << "Critical Pressure:   " << config->GetPressure_Critical()  << " Pa." << endl;
+            cout << "Critical Temperature:  " << config->GetTemperature_Critical() << " K." << endl;
+            cout << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << endl;
+            cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
+            break;
+
+
       }
       if (viscous) {
         switch (config->GetKind_ViscosityModel()) {
@@ -7369,7 +7398,41 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
           if (tkeNeeded) Energy_e += GetTke_Inf();
           break;
-          
+        case TOTAL_CONDITIONS_PRHO:
+
+        	/*--- Retrieve the specified total conditions for this boundary. ---*/
+        	if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
+        	else P_Total  = config->GetRiemann_Var1(Marker_Tag);
+        	T_Total  = config->GetRiemann_Var2(Marker_Tag);
+        	Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
+
+        	/*--- Non-dim. the inputs if necessary. ---*/
+        	P_Total /= config->GetPressure_Ref();
+        	T_Total /= config->GetDensity_Ref();
+
+        	/* --- Computes the total state --- */
+        	FluidModel->SetTDState_Prho(P_Total, T_Total);
+        	Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+        	Entropy_e = FluidModel->GetEntropy();
+
+        	/* --- Compute the boundary state u_e --- */
+        	Velocity2_e = Velocity2_i;
+        	if (nDim == 2){
+        		NormalVelocity= -sqrt(Velocity2_e)*Flow_Dir[0];
+        		TangVelocity= -sqrt(Velocity2_e)*Flow_Dir[1];
+        		Velocity_e[0]= UnitNormal[0]*NormalVelocity - UnitNormal[1]*TangVelocity;
+        		Velocity_e[1]= UnitNormal[1]*NormalVelocity + UnitNormal[0]*TangVelocity;
+        	}else{
+        		for (iDim = 0; iDim < nDim; iDim++)
+        			Velocity_e[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
+        	}
+        	StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
+        	FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
+        	Density_e = FluidModel->GetDensity();
+        	StaticEnergy_e = FluidModel->GetStaticEnergy();
+        	Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
+        	if (tkeNeeded) Energy_e += GetTke_Inf();
+        	break;
         case STATIC_SUPERSONIC_INFLOW_PT:
           
           /*--- Retrieve the specified total conditions for this boundary. ---*/
