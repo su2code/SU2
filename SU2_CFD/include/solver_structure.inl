@@ -1230,14 +1230,27 @@ inline void CEulerSolver::ComputeTurboVelocity(su2double *cartesianVelocity, su2
 		turboVelocity[0] = cartesianVelocity[2];
 	}
 	else{
-		turboVelocity[0] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
-		turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
-		if (marker_flag == INFLOW){
-			turboVelocity[0] *= -1.0;
-			turboVelocity[1] *= -1.0;
-		}
-		if(nDim == 3)
-			turboVelocity[2] = cartesianVelocity[2];
+//		if(kind_turb == CENTRIFUGAL || (kind_turb == AXIAL && nDim == 2)){
+			turboVelocity[0] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
+			turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
+			if (marker_flag == INFLOW){
+				turboVelocity[0] *= -1.0;
+				turboVelocity[1] *= -1.0;
+			}
+			if(nDim == 3)
+				turboVelocity[2] = cartesianVelocity[2];
+//			}
+//		else{
+//			turboVelocity[0] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
+//			turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
+//			if (marker_flag == OUTFLOW){
+//				turboVelocity[0] *= -1.0;
+//				turboVelocity[1] *= -1.0;
+//			}
+//			if(nDim == 3)
+//				turboVelocity[2] = cartesianVelocity[2];
+//	  }
+
 	}
 }
 
@@ -1249,16 +1262,30 @@ inline void CEulerSolver::ComputeBackVelocity(su2double *turboVelocity, su2doubl
 		cartesianVelocity[2] = turboVelocity[0];
 	}
 	else{
-		cartesianVelocity[0] =  turboVelocity[0]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
-		cartesianVelocity[1] =  turboVelocity[0]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
+//		if(kind_turb == CENTRIFUGAL || (kind_turb == AXIAL && nDim == 2)){
+			cartesianVelocity[0] =  turboVelocity[0]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
+			cartesianVelocity[1] =  turboVelocity[0]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
 
-		if (marker_flag == INFLOW){
-			cartesianVelocity[0] *= -1.0;
-			cartesianVelocity[1] *= -1.0;
-		}
+			if (marker_flag == INFLOW){
+				cartesianVelocity[0] *= -1.0;
+				cartesianVelocity[1] *= -1.0;
+			}
 
-		if(nDim == 3)
-			cartesianVelocity[2] = turboVelocity[2];
+			if(nDim == 3)
+				cartesianVelocity[2] = turboVelocity[2];
+//		}
+//		else{
+//			cartesianVelocity[0] =  turboVelocity[0]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
+//			cartesianVelocity[1] =  turboVelocity[0]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
+//
+//			if (marker_flag == OUTFLOW){
+//				cartesianVelocity[0] *= -1.0;
+//				cartesianVelocity[1] *= -1.0;
+//			}
+//
+//			if(nDim == 3)
+//				cartesianVelocity[2] = turboVelocity[2];
+//		}
 	}
 }
 
