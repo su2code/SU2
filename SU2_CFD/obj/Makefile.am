@@ -52,6 +52,7 @@ endif
 su2_cfd_sources = \
   ../include/definition_structure.hpp \
   ../include/fluid_model.hpp \
+  ../include/fluid_model_lut.hpp \
   ../include/fluid_model.inl \
   ../include/integration_structure.hpp \
   ../include/integration_structure.inl \
@@ -74,6 +75,7 @@ su2_cfd_sources = \
   ../src/fluid_model_pig.cpp \
   ../src/fluid_model_pvdw.cpp \
   ../src/fluid_model_ppr.cpp \
+  ../src/fluid_model_lut.cpp \
   ../src/integration_structure.cpp \
   ../src/integration_time.cpp \
   ../src/driver_structure.cpp \
