@@ -4883,8 +4883,8 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
     for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
         Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
-        pitch = 0.0;
-//        pitch = config->GetPeriodicRotAngles(iMarkerTP -1);
+//        pitch = 0.0;
+        pitch = config->GetPeriodicRotAngles(iMarkerTP -1);
         // to avoid nan with 2D axial case.
         if(pitch <= EPS) pitch=2*PI_NUMBER;
         /*--- compute or retrieve inlet information ---*/
@@ -10354,7 +10354,24 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
           delta_c[4] = relfacAvg*c_avg[4] + relfacFou*dcjs[4];
         }
 
+        if (abs(AverageTurboMach[val_marker][iSpan][0]) >= 1.0000){
+  				delta_c[0] = 0.0;
+  				delta_c[1] = 0.0;
+  				delta_c[2] = 0.0;
+  				delta_c[2] = 0.0;
+  				if (nDim == 3)delta_c[4] = 0.0;
+        }
+
         break;
+      case SUPERSONIC_OUTFLOW:
+				delta_c[0] = 0.0;
+				delta_c[1] = 0.0;
+				delta_c[2] = 0.0;
+				delta_c[2] = 0.0;
+				if (nDim == 3)delta_c[4] = 0.0;
+				break;
+
+
 
       default:
         cout << "Warning! Invalid NRBC input!" << endl;
@@ -10417,6 +10434,22 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       Enthalpy_b = Energy_b + Pressure_b/Density_b;
       Kappa_b = FluidModel->GetdPde_rho() / Density_b;
       Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
+      if (config->GetKind_Data_NRBC(Marker_Tag) == SUPERSONIC_OUTFLOW  || abs(AverageTurboMach[val_marker][iSpan][0]) >= 1.0000){
+      	Pressure_b = Pressure_i;
+				Density_b = Density_i;
+				for (iDim = 0; iDim < nDim; iDim++) {
+				  Velocity_b[iDim]= Velocity_i[iDim];
+				}
+				Velocity2_b = Velocity2_i;
+				FluidModel->SetTDState_Prho(Pressure_b, Density_b);
+				Energy_b = FluidModel->GetStaticEnergy() + 0.5*Velocity2_b;
+				StaticEnergy_b = FluidModel->GetStaticEnergy();
+				Temperature_b= FluidModel->GetTemperature();
+				Enthalpy_b = Energy_b + Pressure_b/Density_b;
+				Kappa_b = FluidModel->GetdPde_rho() / Density_b;
+				Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
+
+      }
 
       /*--- Compute the thermodynamic state in u_b ---*/
       u_b[0]=Density_b;
