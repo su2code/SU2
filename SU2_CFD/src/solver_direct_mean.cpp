@@ -4895,12 +4895,12 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
           avgGridVel2In= 0.0;
           avgVel2In= 0.0;
           for (iDim = 0; iDim < nDim; iDim++){
-            if(AverageTurboVelocity[iMarker][nSpanWiseSections][1] >= 0.0){
+//            if(AverageTurboVelocity[iMarker][nSpanWiseSections][1] >= 0.0){
               avgVelRel2In +=( AverageVelocity[iMarker][nSpanWiseSections][iDim] - geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim])*( AverageVelocity[iMarker][nSpanWiseSections][iDim] - geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim]);
-            }
-            else{
-              avgVelRel2In +=( AverageVelocity[iMarker][nSpanWiseSections][iDim] + geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim])*( AverageVelocity[iMarker][nSpanWiseSections][iDim] + geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim]);
-            }
+//            }
+//            else{
+//              avgVelRel2In +=( AverageVelocity[iMarker][nSpanWiseSections][iDim] + geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim])*( AverageVelocity[iMarker][nSpanWiseSections][iDim] + geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim]);
+//            }
             avgGridVel2In += geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim]*geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim];
             avgVel2In += AverageVelocity[iMarker][nSpanWiseSections][iDim]*AverageVelocity[iMarker][nSpanWiseSections][iDim];
           }
@@ -9257,12 +9257,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
 
             if(grid_movement){
               AverageTangGridVelocity = geometry->GetAverageTangGridVel(iMarker,iSpan);
-              if((marker_flag == INFLOW && AverageTurboVelocity[iMarker][iSpan][1] >= 0.0) || (marker_flag == OUTFLOW && AverageTurboVelocity[iMarker][iSpan][1] < 0.0)){
-                RelTangVelocity = (AverageTurboVelocity[iMarker][iSpan][1] - AverageTangGridVelocity);
-              }
-              else{
-                RelTangVelocity = (AverageTurboVelocity[iMarker][iSpan][1] + AverageTangGridVelocity);
-              }
+							RelTangVelocity = (AverageTurboVelocity[iMarker][iSpan][1] - AverageTangGridVelocity);
               if (nDim == 2){
                 AverageMach[iMarker][iSpan] = sqrt(AverageTurboVelocity[iMarker][iSpan][0]*AverageTurboVelocity[iMarker][iSpan][0] + RelTangVelocity*RelTangVelocity);
               }
@@ -9673,22 +9668,17 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
           AverageTotPressure[iMarker][nSpanWiseSections] 				= FluidModel->GetPressure();
 
           if(grid_movement){
-            AverageTangGridVelocity = geometry->GetAverageTangGridVel(iMarker,nSpanWiseSections);
-            if((marker_flag == INFLOW && AverageTurboVelocity[iMarker][nSpanWiseSections][1] >= 0.0) || (marker_flag == OUTFLOW && AverageTurboVelocity[iMarker][nSpanWiseSections][1] < 0.0)){
-              RelTangVelocity = (AverageTurboVelocity[iMarker][nSpanWiseSections][1] - AverageTangGridVelocity);
-            }
-            else{
-              RelTangVelocity = (AverageTurboVelocity[iMarker][nSpanWiseSections][1] + AverageTangGridVelocity);
-            }
-            if (nDim == 2){
-              AverageMach[iMarker][nSpanWiseSections] = sqrt(AverageTurboVelocity[iMarker][nSpanWiseSections][0]*AverageTurboVelocity[iMarker][nSpanWiseSections][0] + RelTangVelocity*RelTangVelocity);
-            }
-            else{
-              AverageMach[iMarker][nSpanWiseSections] = sqrt(AverageTurboVelocity[iMarker][nSpanWiseSections][0]*AverageTurboVelocity[iMarker][nSpanWiseSections][0] + RelTangVelocity*RelTangVelocity + AverageTurboVelocity[iMarker][nSpanWiseSections][2]*AverageTurboVelocity[iMarker][nSpanWiseSections][2]);
-            }
-            AverageMach[iMarker][nSpanWiseSections] /= AverageSoundSpeed[iMarker][nSpanWiseSections];
-            AverageTurboMach[iMarker][nSpanWiseSections][1] = (RelTangVelocity)/AverageSoundSpeed[iMarker][nSpanWiseSections];
-            SpanFlowAngle[iMarker][nSpanWiseSections]= atan((RelTangVelocity)/AverageTurboVelocity[iMarker][nSpanWiseSections][0]);
+          	AverageTangGridVelocity = geometry->GetAverageTangGridVel(iMarker,nSpanWiseSections);
+          	RelTangVelocity = (AverageTurboVelocity[iMarker][nSpanWiseSections][1] - AverageTangGridVelocity);
+          	if (nDim == 2){
+          		AverageMach[iMarker][nSpanWiseSections] = sqrt(AverageTurboVelocity[iMarker][nSpanWiseSections][0]*AverageTurboVelocity[iMarker][nSpanWiseSections][0] + RelTangVelocity*RelTangVelocity);
+          	}
+          	else{
+          		AverageMach[iMarker][nSpanWiseSections] = sqrt(AverageTurboVelocity[iMarker][nSpanWiseSections][0]*AverageTurboVelocity[iMarker][nSpanWiseSections][0] + RelTangVelocity*RelTangVelocity + AverageTurboVelocity[iMarker][nSpanWiseSections][2]*AverageTurboVelocity[iMarker][nSpanWiseSections][2]);
+          	}
+          	AverageMach[iMarker][nSpanWiseSections] /= AverageSoundSpeed[iMarker][nSpanWiseSections];
+          	AverageTurboMach[iMarker][nSpanWiseSections][1] = (RelTangVelocity)/AverageSoundSpeed[iMarker][nSpanWiseSections];
+          	SpanFlowAngle[iMarker][nSpanWiseSections]= atan((RelTangVelocity)/AverageTurboVelocity[iMarker][nSpanWiseSections][0]);
 
           }else{
             AverageMach[iMarker][nSpanWiseSections] = 0.0;
