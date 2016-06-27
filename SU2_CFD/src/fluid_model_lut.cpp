@@ -405,12 +405,10 @@ void CLookUpTable::SetTDState_rhoe (su2double rho, su2double e ) {
 	}
 	//cout<<endl<<"rho desired : "<<rho<<endl;
 	//cout<<"e desired   : "<<e<<endl;
-	cerr<<"rho desired : "<<rho<<endl;
-	cerr<<"e desired   : "<<e<<endl;
-	if (rho>Density_limits[1]) {rho=Density_limits[1]; cerr<<"rho "<<Density_limits[1]<<endl;}
-	if (rho<Density_limits[0]) {rho=Density_limits[0];  cerr<<"rho "<<Density_limits[0]<<endl;}
-	if (e<StaticEnergy_limits[0]) {e=StaticEnergy_limits[0]; cerr<<"e "<<StaticEnergy_limits[0]<<endl;}
-	if (e>StaticEnergy_limits[1]) {e=StaticEnergy_limits[1]; cerr<<"e "<<StaticEnergy_limits[1]<<endl;}
+//	if (rho>Density_limits[1]) {rho=Density_limits[1]; cerr<<"rho "<<Density_limits[1]<<endl;}
+//	if (rho<Density_limits[0]) {rho=Density_limits[0];  cerr<<"rho "<<Density_limits[0]<<endl;}
+//	if (e<StaticEnergy_limits[0]) {e=StaticEnergy_limits[0]; cerr<<"e "<<StaticEnergy_limits[0]<<endl;}
+//	if (e>StaticEnergy_limits[1]) {e=StaticEnergy_limits[1]; cerr<<"e "<<StaticEnergy_limits[1]<<endl;}
 
 	su2double RunVal;
 	unsigned int CFL    = 2;
@@ -474,8 +472,6 @@ void CLookUpTable::SetTDState_rhoe (su2double rho, su2double e ) {
 //	cout<<"Point i+1 j+1 :"<<endl;
 //	ThermoTables[iIndex+1][jIndex+1].CTLprint();
 	//Now use the closest fit box to interpolate
-
-
 	su2double x, y;
 	x = rho - ThermoTables[iIndex][jIndex].Density;
 	y = e - ThermoTables[iIndex][jIndex].StaticEnergy;
@@ -518,7 +514,6 @@ void CLookUpTable::SetTDState_rhoe (su2double rho, su2double e ) {
 	{
 		cerr<<"RHOE Interpolated Pressure out of bounds\n";
 	}
-	cerr<<endl;
 }
 
 void CLookUpTable::SetTDState_PT (su2double P, su2double T ) {
@@ -1926,6 +1921,7 @@ void CLookUpTable::TableLoadCFX(string filename){
 								for (int z = 0; z<10; z++)
 								{
 									in>>inp[z];
+									inp[z] = pow(inp[z],2); //bug fixed: table features speed of sound; should be squared
 								}
 							}
 							ThermoTables[i][j].SoundSpeed2 = inp[i%10];
