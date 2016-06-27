@@ -1644,7 +1644,7 @@ void CMeshFEM::ComputeNormalsFace(const unsigned short nIntegration,
            the inverse of the length. Make sure that a division by zero is
            avoided, although this is most likely never active. */
         const su2double lenNorm    = sqrt(dxdr*dxdr + dydr*dydr);
-        const su2double invLenNorm = lenNorm < 1.e-50 ? 1.e+50 : 1.0/lenNorm;
+        const su2double invLenNorm = lenNorm < 1.e-35 ? 1.e+35 : 1.0/lenNorm;
 
         /* Store the corresponding unit normal vector and its length. The
            direction of the normal vector is such that it is outward pointing

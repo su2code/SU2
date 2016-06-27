@@ -905,13 +905,13 @@ public:
   * \brief Function, which makes available the number of DOFs for this standard element.
   * \return  The number of DOFs of this standard element.
   */
-  unsigned short GetNDOFs(void);
+  unsigned short GetNDOFs(void) const;
 
   /*!
   * \brief Function, which makes available the polynomial degree for this standard element.
   * \return  The polynomial degree of this standard element.
   */
-  unsigned short GetNPoly(void);
+  unsigned short GetNPoly(void) const;
 
   /*!
   * \brief Function, which checks if the function arguments correspond to this standard element.
@@ -1053,6 +1053,9 @@ private:
                                                               of side0 of the face. */
   vector<su2double> lagBasisFaceIntegrationSide1; /*!< \brief Lagrangian basis functions in the integration points
                                                               of side1 of the face. */
+
+  vector<su2double> lagBasisFaceIntegrationTransposeSide0; /*!< \brief Transpose of lagBasisFaceIntegrationSide0. */
+  vector<su2double> lagBasisFaceIntegrationTransposeSide1; /*!< \brief Transpose of lagBasisFaceIntegrationSide1. */
 
   vector<su2double> drLagBasisFaceIntegrationSide0; /*!< \brief r-derivatives of the face Lagrangian basis functions
                                                                 of side 0 in the integration points. */
@@ -1304,8 +1307,9 @@ private:
   vector<su2double> rDOFsFace;   /*!< \brief r-location of the DOFs of the face. */
   vector<su2double> sDOFsFace;   /*!< \brief s-location of the DOFs of the face, if needed. */
 
-  vector<su2double> lagBasisFaceIntegration; /*!< \brief Lagrangian basis functions in the integration points
-                                                         of the face. */
+  vector<su2double> lagBasisFaceIntegration;          /*!< \brief Lagrangian basis functions in the integration
+                                                                  points of the face. */
+  vector<su2double> lagBasisFaceIntegrationTranspose; /*!< \brief Transpose of lagBasisFaceIntegration. */
 
   vector<su2double> drLagBasisFaceIntegration; /*!< \brief r-derivatives of the face Lagrangian basis functions
                                                            in the integration points. */
@@ -1371,42 +1375,56 @@ public:
            basis functions in the integration points.
   * \return  The pointer to data, which stores this information.
   */
-  su2double *GetDrBasisElemIntegration(void);
+  const su2double *GetDrBasisElemIntegration(void) const;
 
   /*!
   * \brief Function, which makes available the s-derivatives of the element
            basis functions in the integration points.
   * \return  The pointer to data, which stores this information.
   */
-  su2double *GetDsBasisElemIntegration(void);
+  const su2double *GetDsBasisElemIntegration(void) const;
 
   /*!
   * \brief Function, which makes available the t-derivatives of the element
            basis functions in the integration points.
   * \return  The pointer to data, which stores this information.
   */
-  su2double *GetDtBasisElemIntegration(void);
+  const su2double *GetDtBasisElemIntegration(void) const;
 
   /*!
   * \brief Function, which makes available the matrix with the derivatives of
            the element basis functions in the integration points.
   * \return  The pointer to data, which stores this information.
   */
-  su2double *GetMatDerBasisElemIntegration(void);
+  const su2double *GetMatDerBasisElemIntegration(void) const;
+
+  /*!
+  * \brief Function, which makes available the face basis functions in the
+           integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  const su2double *GetBasisFaceIntegration(void) const;
+
+  /*!
+  * \brief Function, which makes available transpose matrix of the face basis
+           functions in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  const su2double *GetBasisFaceIntegrationTranspose(void) const;
 
   /*!
   * \brief Function, which makes available the r-derivatives of the face basis
            functions in the integration points.
   * \return  The pointer to data, which stores this information.
   */
-  su2double *GetDrBasisFaceIntegration(void);
+  const su2double *GetDrBasisFaceIntegration(void) const;
 
   /*!
   * \brief Function, which makes available the s-derivatives of the face basis
            functions in the integration points.
   * \return  The pointer to data, which stores this information.
   */
-  su2double *GetDsBasisFaceIntegration(void);
+  const su2double *GetDsBasisFaceIntegration(void) const;
 
   /*!
   * \brief Function, which makes available the number of DOFs of the
