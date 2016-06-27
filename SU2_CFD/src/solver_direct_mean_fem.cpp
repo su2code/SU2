@@ -146,6 +146,13 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     const unsigned short nInt = standardMatchingFacesSol[i].GetNIntegration();
     nIntegrationMax = max(nIntegrationMax, nInt);
   }
+
+  /*--- Determine the maximum number of DOFs used. This is for the volume elements. */
+  nDOFsMax = 0;
+  for(unsigned short i=0; i<nStandardElementsSol; ++i) {
+    const unsigned short nDOFs = standardElementsSol[i].GetNDOFs();
+    nDOFsMax = max(nDOFsMax, nDOFs);
+  }
   
   /*--- Perform the non-dimensionalization for the flow equations using the
         specified reference values. ---*/
@@ -211,7 +218,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   /*--- Set the conservative variables of the free-stream. ---*/
 
-  vector<su2double> ConsVarFreeStream(nVar);
+  ConsVarFreeStream.resize(nVar);
   if( compressible ) {
     ConsVarFreeStream[0] = Density_Inf;
     for(unsigned short iDim=0; iDim<nDim; ++iDim)
@@ -235,11 +242,114 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   VecSolDOFs.resize(nVar*nDOFsLocTot);
 
-
   /*--- Allocate the memory to store the time steps, residuals, etc. ---*/
 
   VecDeltaTime.resize(nVolElemOwned);
   VecResDOFs.resize(nVar*nDOFsLocOwned);
+  nEntriesResFaces.assign(nDOFsLocOwned+1, 0);
+  startLocResFacesMarkers.resize(nMarker);
+
+  /*--- Determine the size of the vector to store residuals that come from the
+        integral over the faces and determine the number of entries in this
+        vector for the owned DOFs. ---*/
+
+  /* First the internal matching faces. */
+  unsigned long sizeVecResFaces = 0;
+  for(unsigned long i=0; i<nMatchingInternalFaces; ++i) {
+    const unsigned short ind = matchingInternalFaces[i].indStandardElement;
+    const unsigned short nDOFsFace0 = standardMatchingFacesSol[ind].GetNDOFsFaceSide0();
+    const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
+
+    sizeVecResFaces += nDOFsFace0;
+
+    for(unsigned short j=0; j<nDOFsFace0; ++j)
+      ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolFaceSide0[j]+1];
+
+    if(matchingInternalFaces[i].elemID1 < nVolElemOwned) {
+      sizeVecResFaces += nDOFsFace1;
+      for(unsigned short j=0; j<nDOFsFace1; ++j)
+        ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolFaceSide1[j]+1];
+    }
+  }
+
+  /* And the physical boundary faces. Exclude the periodic boundaries,
+     because these are not physical boundaries. */
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    startLocResFacesMarkers[iMarker] = sizeVecResFaces;
+
+    if( !(boundaries[iMarker].periodicBoundary) ) {
+
+      /* Easier storage of the variables for this boundary. */
+      const unsigned long      nSurfElem = boundaries[iMarker].surfElem.size();
+      const CSurfaceElementFEM *surfElem = boundaries[iMarker].surfElem.data();
+
+      /*--- Loop over the surface elements and update the required data. ---*/
+      for(unsigned long i=0; i<nSurfElem; ++i) {
+        const unsigned short ind       = surfElem[i].indStandardElement;
+        const unsigned short nDOFsFace = standardBoundaryFacesSol[ind].GetNDOFsFace();
+
+        sizeVecResFaces += nDOFsFace;
+        for(unsigned short j=0; j<nDOFsFace; ++j)
+          ++nEntriesResFaces[surfElem[i].DOFsSolFace[j]+1];
+      }
+    }
+  }
+
+  /*--- Put nEntriesResFaces in cumulative storage format and allocate the
+        memory for entriesResFaces and VecResFaces. ---*/
+  for(unsigned long i=0; i<nDOFsLocOwned; ++i)
+    nEntriesResFaces[i+1] += nEntriesResFaces[i];
+
+  entriesResFaces.resize(nEntriesResFaces[nDOFsLocOwned]);
+  VecResFaces.resize(nVar*sizeVecResFaces);
+
+  /*--- Repeat the loops over the internal and boundary faces, but now store
+        the enties in entriesResFaces. A counter variable is needed to keep
+        track of the appropriate location in entriesResFaces. ---*/
+  vector<unsigned long> counterEntries = nEntriesResFaces;
+
+  /* First the loop over the internal matching faces. */
+  sizeVecResFaces = 0;
+  for(unsigned long i=0; i<nMatchingInternalFaces; ++i) {
+    const unsigned short ind = matchingInternalFaces[i].indStandardElement;
+    const unsigned short nDOFsFace0 = standardMatchingFacesSol[ind].GetNDOFsFaceSide0();
+    const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
+
+    for(unsigned short j=0; j<nDOFsFace0; ++j) {
+      unsigned long jj    = counterEntries[matchingInternalFaces[i].DOFsSolFaceSide0[j]]++;
+      entriesResFaces[jj] = sizeVecResFaces++;
+    }
+
+    if(matchingInternalFaces[i].elemID1 < nVolElemOwned) {
+      for(unsigned short j=0; j<nDOFsFace1; ++j) {
+        unsigned long jj    = counterEntries[matchingInternalFaces[i].DOFsSolFaceSide1[j]]++;
+        entriesResFaces[jj] = sizeVecResFaces++;
+      }
+    }
+  }
+
+  /* And the physical boundary faces. Exclude the periodic boundaries,
+     because these are not physical boundaries. */
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    if( !(boundaries[iMarker].periodicBoundary) ) {
+
+      /* Easier storage of the variables for this boundary. */
+      const unsigned long      nSurfElem = boundaries[iMarker].surfElem.size();
+      const CSurfaceElementFEM *surfElem = boundaries[iMarker].surfElem.data();
+
+      /*--- Loop over the surface elements to set entriesResFaces. ---*/
+      for(unsigned long i=0; i<nSurfElem; ++i) {
+        const unsigned short ind       = surfElem[i].indStandardElement;
+        const unsigned short nDOFsFace = standardBoundaryFacesSol[ind].GetNDOFsFace();
+
+        sizeVecResFaces += nDOFsFace;
+        for(unsigned short j=0; j<nDOFsFace; ++j) {
+          unsigned long jj    = counterEntries[surfElem[i].DOFsSolFace[j]]++;
+          entriesResFaces[jj] = sizeVecResFaces++;
+        }
+      }
+    }
+  }
 
   /*--- Check for a restart and set up the variables at each node
    appropriately. Coarse multigrid levels will be intitially set to
@@ -1431,31 +1541,8 @@ void CFEM_DG_EulerSolver::Internal_Residual(CGeometry *geometry, CSolver **solve
     /* Easier storage of the solution variables for this element. */
     su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
-#ifdef HAVE_LIBXSMM
-
-    /* The gemm function of libxsmm is used to carry out the multiplication. */
-    libxsmm_gemm(NULL, NULL, nInt, nVar, nDOFs, NULL, matBasisInt,
-                 NULL, solDOFs, NULL, NULL, solInt, NULL);
-
-#elif defined (HAVE_CBLAS) || defined(HAVE_MKL)
-
-    /* The standard blas routine dgemm is used for the multiplication. */
-    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nInt, nVar, nDOFs,
-                1.0, matBasisInt, nDOFs, solDOFs, nVar, 0.0, solInt, nVar);
-#else
-
-    /* Standard internal implementation of the matrix matrix multiplication. */
-    for(unsigned short i=0; i<nInt; ++i) {
-      const unsigned short jj = i*nDOFs;
-      const unsigned short kk = i*nVar;
-      for(unsigned short j=0; j<nVar; ++j) {
-        const unsigned short ii = kk + j;
-        solInt[ii] = 0.0;
-        for(unsigned short k=0; k<nDOFs; ++k)
-          solInt[ii] += matBasisInt[jj+k]*solDOFs[k*nVar+j];
-      }
-    }
-#endif
+    /* Call the general function to carry out the matrix product. */
+    MatrixProduct(nInt, nVar, nDOFs, matBasisInt, solDOFs, solInt);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the inviscid fluxes, multiplied by minus the     ---*/
@@ -1516,33 +1603,8 @@ void CFEM_DG_EulerSolver::Internal_Residual(CGeometry *geometry, CSolver **solve
     /* Easier storage of the residuals for this volume element. */
     su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
 
-#ifdef HAVE_LIBXSMM
-
-    /* The gemm function of libxsmm is used to carry out the multiplication. */
-    libxsmm_gemm(NULL, NULL, nDOFs, nVar, nInt*nDim, NULL, matDerBasisIntTrans,
-                 NULL, fluxes, NULL, NULL, res, NULL);
-
-#elif defined (HAVE_CBLAS) || defined(HAVE_MKL)
-
-    /* The standard blas routine dgemm is used for the multiplication. */
-    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nDOFs, nVar, nInt*nDim,
-                1.0, matDerBasisIntTrans, nInt*nDim, fluxes, nVar, 0.0, res, nVar);
-#else
-
-    /* Standard internal implementation of the matrix matrix multiplication. */
-    ll = nInt*nDim;
-    for(unsigned short i=0; i<nDOFs; ++i) {
-      const unsigned short jj = i*ll;
-      const unsigned short kk = i*nVar;
-      for(unsigned short j=0; j<nVar; ++j) {
-        const unsigned short ii = kk + j;
-        res[ii] = 0.0;
-        for(unsigned short k=0; k<ll; ++k)
-          res[ii] += matDerBasisIntTrans[jj+k]*fluxes[k*nVar+j];
-      }
-    }
-
-#endif
+    /* Call the general function to carry out the matrix product. */
+    MatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
   }
 
   /*--- If the MKL is used the temporary storage must be released again. ---*/
@@ -1624,42 +1686,549 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
 }
 
 void CFEM_DG_EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
-                                     CNumerics *numerics, CConfig *config, unsigned short val_marker) {
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+                                        CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+
+  /*--- Allocate the memory for some temporary storage needed to compute the
+        residual efficiently. Note that when the MKL library is used
+        a special allocation is used to optimize performance. ---*/
+  su2double *solIntL, *solIntR, *fluxes;
+
+#ifdef HAVE_MKL
+  solIntL = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  solIntR = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  fluxes  = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
+#else
+  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
+  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
+  vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
+  solIntL = helpSolIntL.data();
+  solIntR = helpSolIntR.data();
+  fluxes  = helpFluxes.data();
 #endif
-  
-  /*--- Apply flow tangency boundary condition here. ---*/
-  
-  if (rank == MASTER_NODE) cout << " Euler wall BC." << endl;
-  
+
+  /* Set the pointer solFace to fluxes. This is just for readability, as the
+     same memory can be used for the storage of the solution of the DOFs of
+     the face and the fluxes. */
+  su2double *solFace = fluxes;
+
+  /* Set the starting position in the vector for the face residuals for
+     this boundary marker. */
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+
+  /* Easier storage of the boundary faces for this boundary marker. */
+  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
+  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
+
+  /*--- Loop over the boundary faces. ---*/
+  unsigned long indResFaces = 0;
+  for(unsigned long l=0; l<nSurfElem; ++l) {
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 1: Interpolate the left states in the integration points of ---*/
+    /*---         the face. From these left states, construct the right    ---*/
+    /*---         states using the boundary conditions.                    ---*/
+    /*------------------------------------------------------------------------*/
+
+    /* Compute the left states in the integration points of the face. */
+    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], solFace, solIntL);
+
+    /*--- Apply the inviscid wall boundary conditions to compute the right
+          state. There are two options. Either the normal velocity is negated
+          or the normal velocity is set to zero. Some experiments are needed
+          to see which formulation gives better results. ---*/
+    const unsigned short ind   = surfElem[l].indStandardElement;
+    const unsigned short nInt  = standardBoundaryFacesSol[ind].GetNIntegration();
+    const unsigned short nDOFs = standardBoundaryFacesSol[ind].GetNDOFsFace();
+    const su2double *weights   = standardBoundaryFacesSol[ind].GetWeightsIntegration();
+
+    for(unsigned short i=0; i<nInt; ++i) {
+
+      /* Easier storage of the left and right solution and the normals
+         for this integration point. */
+      const su2double *UL      = solIntL + i*nVar;
+            su2double *UR      = solIntR + i*nVar;
+      const su2double *normals = surfElem[l].metricNormalsFace + i*(nDim+1);
+
+      /* Compute the normal component of the momentum variables. */
+      su2double rVn = 0.0;
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        rVn += UL[iDim+1]*normals[iDim];
+
+      /* If the normal velocity must be mirrored instead of set to zero,
+         the normal component that must be subtracted must be doubled. If the
+         normal velocity must be set to zero, simply comment this line. */
+      rVn *= 2.0;
+
+      /* Set the right state. The initial value of the total energy is the
+         energy of the left state. */
+      UR[0]      = UL[0];
+      UR[nDim+1] = UL[nDim+1];
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        UR[iDim+1] = UL[iDim+1] - rVn*normals[iDim];
+
+      /*--- Actually, the internal energy of UR is equal to UL. If the kinetic
+            energy differs for UL and UR, the difference must be subtracted
+            from the total energy of UR to obtain the correct value. ---*/
+      su2double DensityInv = 1.0/UL[0];
+      su2double diffKin    = 0;
+      for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
+        const su2double velL = DensityInv*UL[iDim];
+        const su2double velR = DensityInv*UR[iDim];
+        diffKin += velL*velL - velR*velR;
+      }
+
+      UR[nDim+1] -= 0.5*UL[0]*diffKin;
+    }
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 2: Compute the fluxes in the integration points using the   ---*/
+    /*---         approximate Riemann solver.                              ---*/
+    /*------------------------------------------------------------------------*/
+
+    /* General function to compute the fluxes in the integration points. */
+    ComputeInviscidFluxesFace(config, nInt, surfElem[l].metricNormalsFace,
+                              solIntL, solIntR, fluxes);
+
+    /* Multiply the fluxes with the integration weight of the corresponding
+       integration point. */
+    for(unsigned short i=0; i<nInt; ++i) {
+      su2double *flux = fluxes + i*nVar;
+
+      for(unsigned short j=0; j<nVar; ++j)
+        flux[j] *= weights[i];
+    }
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 3: Compute the contribution to the residuals from the       ---*/
+    /*---         integration over the surface element.                    ---*/
+    /*------------------------------------------------------------------------*/
+
+    /* Easier storage of the position in the residual array for this face
+       and update the corresponding counter. */
+    su2double *resFace = resFaces + indResFaces*nVar;
+    indResFaces       += nDOFs;
+
+    /* Get the correct form of the basis functions needed for the matrix
+       multiplication to compute the residual. */
+    const su2double *basisFaceTrans = standardBoundaryFacesSol[ind].GetBasisFaceIntegrationTranspose();
+
+    /* Call the general function to carry out the matrix product. */
+    MatrixProduct(nDOFs, nVar, nInt, basisFaceTrans, fluxes, resFace);
+  }
+
+  /*--- If the MKL is used the temporary storage must be released again. ---*/
+#ifdef HAVE_MKL
+  mkl_free(solIntL);
+  mkl_free(solIntR);
+  mkl_free(fluxes);
+#endif
 }
 
 void CFEM_DG_EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  /*--- Allocate the memory for some temporary storage needed to compute the
+        residual efficiently. Note that when the MKL library is used
+        a special allocation is used to optimize performance. ---*/
+  su2double *solIntL, *solIntR, *fluxes;
+
+#ifdef HAVE_MKL
+  solIntL = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  solIntR = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  fluxes  = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
+#else
+  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
+  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
+  vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
+  solIntL = helpSolIntL.data();
+  solIntR = helpSolIntR.data();
+  fluxes  = helpFluxes.data();
 #endif
-  
-  /*--- Apply farfield boundary condition here. ---*/
-  
-  if (rank == MASTER_NODE) cout << " Far-field BC." << endl;
-  
+
+  /* Set the pointer solFace to fluxes. This is just for readability, as the
+     same memory can be used for the storage of the solution of the DOFs of
+     the face and the fluxes. */
+  su2double *solFace = fluxes;
+
+  /* Set the starting position in the vector for the face residuals for
+     this boundary marker. */
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+
+  /* Easier storage of the boundary faces for this boundary marker. */
+  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
+  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
+
+  /*--- Loop over the boundary faces. ---*/
+  unsigned long indResFaces = 0;
+  for(unsigned long l=0; l<nSurfElem; ++l) {
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 1: Interpolate the left states in the integration points of ---*/
+    /*---         the face. From these left states, construct the right    ---*/
+    /*---         states using the boundary conditions.                    ---*/
+    /*------------------------------------------------------------------------*/
+
+    /* Compute the left states in the integration points of the face. */
+    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], solFace, solIntL);
+
+    /*--- Apply the farfield boundary conditions to compute the right state. ---*/
+    const unsigned short ind   = surfElem[l].indStandardElement;
+    const unsigned short nInt  = standardBoundaryFacesSol[ind].GetNIntegration();
+    const unsigned short nDOFs = standardBoundaryFacesSol[ind].GetNDOFsFace();
+    const su2double *weights   = standardBoundaryFacesSol[ind].GetWeightsIntegration();
+
+    for(unsigned short i=0; i<nInt; ++i) {
+      su2double *UR = solIntR + i*nVar;
+      for(unsigned short j=0; j<nVar; ++j)
+        UR[j] = ConsVarFreeStream[j];
+    }
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 2: Compute the fluxes in the integration points using the   ---*/
+    /*---         approximate Riemann solver.                              ---*/
+    /*------------------------------------------------------------------------*/
+
+    /* General function to compute the fluxes in the integration points. */
+    ComputeInviscidFluxesFace(config, nInt, surfElem[l].metricNormalsFace,
+                              solIntL, solIntR, fluxes);
+
+    /* Multiply the fluxes with the integration weight of the corresponding
+       integration point. */
+    for(unsigned short i=0; i<nInt; ++i) {
+      su2double *flux = fluxes + i*nVar;
+
+      for(unsigned short j=0; j<nVar; ++j)
+        flux[j] *= weights[i];
+    }
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 3: Compute the contribution to the residuals from the       ---*/
+    /*---         integration over the surface element.                    ---*/
+    /*------------------------------------------------------------------------*/
+
+    /* Easier storage of the position in the residual array for this face
+       and update the corresponding counter. */
+    su2double *resFace = resFaces + indResFaces*nVar;
+    indResFaces       += nDOFs;
+
+    /* Get the correct form of the basis functions needed for the matrix
+       multiplication to compute the residual. */
+    const su2double *basisFaceTrans = standardBoundaryFacesSol[ind].GetBasisFaceIntegrationTranspose();
+
+    /* Call the general function to carry out the matrix product. */
+    MatrixProduct(nDOFs, nVar, nInt, basisFaceTrans, fluxes, resFace);
+  }
+
+  /*--- If the MKL is used the temporary storage must be released again. ---*/
+#ifdef HAVE_MKL
+  mkl_free(solIntL);
+  mkl_free(solIntR);
+  mkl_free(fluxes);
+#endif
 }
 
 void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                     CConfig *config, unsigned short val_marker) {
   
   /*--- Call the Euler residual ---*/
-  
   BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
-  
 }
 
+void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(const CSurfaceElementFEM *surfElem,
+                                                                  su2double *solFace, su2double *solIntL) {
+
+  /* Get the required information from the corresponding standard face. */
+  const unsigned short ind   = surfElem->indStandardElement;
+  const unsigned short nInt  = standardBoundaryFacesSol[ind].GetNIntegration();
+  const unsigned short nDOFs = standardBoundaryFacesSol[ind].GetNDOFsFace();
+  const su2double *basisFace = standardBoundaryFacesSol[ind].GetBasisFaceIntegration();
+
+  /* Easier storage of the DOFs of the face. */
+  const unsigned long *DOFs = surfElem->DOFsSolFace;
+
+  /* Copy the solution of the DOFs of the face such that it is contigious
+     in memory. */
+  for(unsigned short i=0; i<nDOFs; ++i) {
+    const su2double *solDOF = VecSolDOFs.data() + nVar*DOFs[i];
+    su2double       *sol    = solFace + nVar*i;
+    for(unsigned short j=0; j<nVar; ++j)
+      sol[j] = solDOF[j];
+  }
+
+  /* Call the general function to carry out the matrix product. */
+  MatrixProduct(nInt, nVar, nDOFs, basisFace, solFace, solIntL);
+}
+
+void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
+                                                    const unsigned long nPoints,
+                                                    const su2double     *normalsFace,
+                                                    const su2double     *solL,
+                                                    const su2double     *solR,
+                                                    su2double           *fluxes) {
+
+  /*****************************************************************************/
+  /* THIS IS A TEMPORARY IMPLEMENTATION, WHICH USES ROE'S APPROXIMATE RIEMANN  */
+  /* SOLVER. FOR THE ACTUAL IMPLEMENTATION THE RIEMANN SOLVERS OF THE FINITE   */
+  /* VOLUME SOLVER MUST BE USED. IN ORDER TO ACCOMPLISH THIS THE WAY OF        */
+  /* CALLING THESE ROUTINES MUST LIKELY BE CHANGED.                            */
+  /*****************************************************************************/
+
+  /* Easier storage of the specific heat ratio. */
+  const su2double gamma = config->GetGamma();
+  const su2double gm1   = gamma - 1.0;
+
+  /* Make a distinction between two and three space dimensions. */
+  switch( nDim ) {
+
+    case 2: {
+
+      /* Two dimensional simulation. Loop over the number of points. */
+      for(unsigned long i=0; i<nPoints; ++i) {
+        
+        /* Easier storage of the left and right solution, the face normals and
+           the flux vector for this point. */
+        const su2double *UL   = solL + i*nVar;
+        const su2double *UR   = solR + i*nVar;
+        const su2double *norm = normalsFace + i*(nDim+1);
+              su2double *flux = fluxes + i*nVar;
+
+        const su2double nx = norm[0], ny = norm[1], area = norm[2];
+
+        /*--- compute the primitive variables of the left and right state. ---*/
+        su2double tmp       = 1.0/UL[0];
+        const su2double vxL = tmp*UL[1];
+        const su2double vyL = tmp*UL[2];
+        const su2double pL  = gm1*(UL[3] - 0.5*(vxL*UL[1] + vyL*UL[2]));
+
+        tmp                 = 1.0/UR[0];
+        const su2double vxR = tmp*UR[1];
+        const su2double vyR = tmp*UR[2];
+        const su2double pR  = gm1*(UR[3] - 0.5*(vxR*UR[1] + vyR*UR[2]));
+
+        /*--- Compute the difference of the conservative mean flow variables. ---*/
+        const su2double dr  = UR[0] - UL[0];
+        const su2double dru = UR[1] - UL[1];
+        const su2double drv = UR[2] - UL[2];
+        const su2double drE = UR[3] - UL[3];
+
+        /*--- Compute the Roe average state. ---*/
+        const su2double zL = sqrt(UL[0]);
+        const su2double zR = sqrt(UR[0]);
+        tmp                = 1.0/(zL + zR);
+
+        const su2double rHL = UL[3] + pL;
+        const su2double rHR = UR[3] + pR;
+
+        const su2double uAvg = tmp*(zL*vxL + zR*vxR);
+        const su2double vAvg = tmp*(zL*vyL + zR*vyR);
+        const su2double HAvg = tmp*(rHL/zL + rHR/zR);
+
+        /*--- Compute from the Roe average state some variables, which occur
+              quite often in the matrix vector product to be computed. ---*/
+        const su2double alphaAvg = 0.5*(uAvg*uAvg + vAvg*vAvg);
+        tmp                      = gm1*(HAvg - alphaAvg);
+        const su2double a2Avg    = fabs(tmp);
+        const su2double aAvg     = sqrt(a2Avg);
+        const su2double vnAvg    = uAvg*nx + vAvg*ny;
+        const su2double ovaAvg   = 1.0/aAvg;
+        const su2double ova2Avg  = 1.0/a2Avg;
+
+        /*--- Compute the coefficient eta for the entropy correction. At the moment a
+              1D entropy correction is used, which removes expansion shocks. ---*/
+        const su2double aL  = sqrt(gamma*pL/UL[0]);
+        const su2double aR  = sqrt(gamma*pR/UR[0]);
+        const su2double eta = 0.5*(fabs((vxL - vxR)*nx + (vyL - vyR)*ny)
+                            +      fabs(aL - aR));        
+
+        /*--- Compute the absolute values of the three eigenvalues, apply the
+              entropy correction and multiply by the area to obtain the correct
+              values for the dissipation term. ---*/
+        su2double lam1 = fabs(vnAvg + aAvg);
+        su2double lam2 = fabs(vnAvg - aAvg);
+        su2double lam3 = fabs(vnAvg);
+
+        tmp = 2.0*eta;
+        if(lam1 < tmp) lam1 = eta + 0.25*lam1*lam1/eta;
+        if(lam2 < tmp) lam2 = eta + 0.25*lam2*lam2/eta;
+        if(lam3 < tmp) lam3 = eta + 0.25*lam3*lam3/eta;
+
+        lam1 *= area;
+        lam2 *= area;
+        lam3 *= area;
+
+        /* Hack to get a kind of Lax-Friedrichs flux. */
+        //lam1 = std::max(lam1, lam2);
+        //lam3 = lam2 = lam1;
+        /* End hack. */
+
+        /*--- Some abbreviations, which occur quite often in the dissipation terms. ---*/
+        const su2double abv1 = 0.5*(lam1 + lam2);
+        const su2double abv2 = 0.5*(lam1 - lam2);
+        const su2double abv3 = abv1 - lam3;
+
+        const su2double abv4 = gm1*(alphaAvg*dr - uAvg*dru - vAvg*drv + drE);
+        const su2double abv5 = nx*dru + ny*drv - vnAvg*dr;
+        const su2double abv6 = abv3*abv4*ova2Avg + abv2*abv5*ovaAvg;
+        const su2double abv7 = abv2*abv4*ovaAvg  + abv3*abv5;
+
+        /*--- Compute the Roe flux vector, which is 0.5*(FL + FR - |A|(UR-UL)). ---*/
+        const su2double vnL  = area*(vxL*nx + vyL*ny);
+        const su2double vnR  = area*(vxR*nx + vyR*ny);
+        const su2double rvnL = UL[0]*vnL;
+        const su2double rvnR = UR[0]*vnR;
+        const su2double pa   = area*(pL + pR);
+
+        flux[0] = 0.5*(rvnL + rvnR - (lam3*dr + abv6));
+        flux[1] = 0.5*(rvnL*vxL + rvnR*vxR + pa*nx - (lam3*dru + uAvg*abv6 + nx*abv7));
+        flux[2] = 0.5*(rvnL*vyL + rvnR*vyR + pa*ny - (lam3*drv + vAvg*abv6 + ny*abv7));
+        flux[3] = 0.5*( vnL*rHL +  vnR*rHR - (lam3*drE + HAvg*abv6 + vnAvg*abv7));
+      }
+
+      break;
+    }
+
+    case 3: {
+
+      /* Three dimensional simulation. Loop over the number of points. */
+      for(unsigned long i=0; i<nPoints; ++i) {
+
+        /* Easier storage of the left and right solution, the face normals and
+           the flux vector for this point. */
+        const su2double *UL   = solL + i*nVar;
+        const su2double *UR   = solR + i*nVar;
+        const su2double *norm = normalsFace + i*(nDim+1);
+              su2double *flux = fluxes + i*nVar;
+
+        const su2double nx = norm[0], ny = norm[1], nz = norm[2], area = norm[3];
+
+        /*--- Compute the primitive variables of the left and right state. ---*/
+        su2double tmp       = 1.0/UL[0];
+        const su2double vxL = tmp*UL[1];
+        const su2double vyL = tmp*UL[2];
+        const su2double vzL = tmp*UL[3];
+        const su2double pL  = gm1*(UL[4] - 0.5*(vxL*UL[1] + vyL*UL[2] + vzL*UL[3]));
+
+        tmp                 = 1.0/UR[0];
+        const su2double vxR = tmp*UR[1];
+        const su2double vyR = tmp*UR[2];
+        const su2double vzR = tmp*UR[3];
+        const su2double pR  = gm1*(UR[4] - 0.5*(vxR*UR[1] + vyR*UR[2] + vzR*UR[3]));
+
+        /*--- Compute the difference of the conservative mean flow variables. ---*/
+        const su2double dr  = UR[0] - UL[0];
+        const su2double dru = UR[1] - UL[1];
+        const su2double drv = UR[2] - UL[2];
+        const su2double drw = UR[3] - UL[3];
+        const su2double drE = UR[4] - UL[4];
+
+        /*--- Compute the Roe average state. ---*/
+        const su2double zL = sqrt(UL[0]);
+        const su2double zR = sqrt(UR[0]);
+        tmp                = 1.0/(zL + zR);
+
+        const su2double rHL = UL[4] + pL;
+        const su2double rHR = UR[4] + pR;
+
+        const su2double uAvg = tmp*(zL*vxL + zR*vxR);
+        const su2double vAvg = tmp*(zL*vyL + zR*vyR);
+        const su2double wAvg = tmp*(zL*vzL + zR*vzR);
+        const su2double HAvg = tmp*(rHL/zL + rHR/zR);
+
+        /*--- Compute from the Roe average state some variables, which occur
+              quite often in the matrix vector product to be computed. ---*/
+        const su2double alphaAvg = 0.5*(uAvg*uAvg + vAvg*vAvg + wAvg*wAvg);
+        tmp                      = gm1*(HAvg - alphaAvg);
+        const su2double a2Avg    = fabs(tmp);
+        const su2double aAvg     = sqrt(a2Avg);
+        const su2double vnAvg    = uAvg*nx + vAvg*ny + wAvg*nz;
+        const su2double ovaAvg   = 1.0/aAvg;
+        const su2double ova2Avg  = 1.0/a2Avg;
+
+        /*--- Compute the coefficient eta for the entropy correction. At the moment a
+              1D entropy correction is used, which removes expansion shocks. ---*/
+        const su2double aL  = sqrt(gamma*pL/UL[0]);
+        const su2double aR  = sqrt(gamma*pR/UR[0]);
+        const su2double eta = 0.5*(fabs((vxL-vxR)*nx + (vyL-vyR)*ny + (vzL-vzR)*nz)
+                            +      fabs(aL-aR));
+
+        /*--- Compute the absolute values of the three eigenvalues, apply the
+              entropy correction and multiply by the area to obtain the correct
+              values for the dissipation term. ---*/
+        su2double lam1 = fabs(vnAvg + aAvg);
+        su2double lam2 = fabs(vnAvg - aAvg);
+        su2double lam3 = fabs(vnAvg);
+
+        tmp = 2.0*eta;
+        if(lam1 < tmp) lam1 = eta + 0.25*lam1*lam1/eta;
+        if(lam2 < tmp) lam2 = eta + 0.25*lam2*lam2/eta;
+        if(lam3 < tmp) lam3 = eta + 0.25*lam3*lam3/eta;
+
+        lam1 *= area;
+        lam2 *= area;
+        lam3 *= area;
+
+        /* Hack to get a kind of Lax-Friedrichs flux. */
+        //lam1 = std::max(lam1, lam2);
+        //lam3 = lam2 = lam1;
+        /* End hack. */
+
+        // Some abbreviations, which occur quite often in the dissipation terms.
+        const su2double abv1 = 0.5*(lam1 + lam2);
+        const su2double abv2 = 0.5*(lam1 - lam2);
+        const su2double abv3 = abv1 - lam3;
+
+        const su2double abv4 = gm1*(alphaAvg*dr - uAvg*dru - vAvg*drv -wAvg*drw + drE);
+        const su2double abv5 = nx*dru + ny*drv + nz*drw - vnAvg*dr;
+        const su2double abv6 = abv3*abv4*ova2Avg + abv2*abv5*ovaAvg;
+        const su2double abv7 = abv2*abv4*ovaAvg  + abv3*abv5;
+
+        // Compute the Roe flux vector, which is 0.5*(FL + FR - |A|(UR-UL)).
+        const su2double vnL  = area*(vxL*nx + vyL*ny + vzL*nz);
+        const su2double vnR  = area*(vxR*nx + vyR*ny + vzR*nz);
+        const su2double rvnL = UL[0]*vnL;
+        const su2double rvnR = UR[0]*vnR;
+        const su2double pa   = area*(pL + pR);
+
+        flux[0] = 0.5*(rvnL + rvnR - (lam3*dr + abv6));
+        flux[1] = 0.5*(rvnL*vxL + rvnR*vxR + pa*nx - (lam3*dru + uAvg*abv6 + nx*abv7));
+        flux[2] = 0.5*(rvnL*vyL + rvnR*vyR + pa*ny - (lam3*drv + vAvg*abv6 + ny*abv7));
+        flux[3] = 0.5*(rvnL*vzL + rvnR*vzR + pa*nz - (lam3*drw + wAvg*abv6 + nz*abv7));
+        flux[4] = 0.5*( vnL*rHL +  vnR*rHR - (lam3*drE + HAvg*abv6 + vnAvg*abv7));
+      }
+
+      break;
+    }
+  }
+}
+
+void CFEM_DG_EulerSolver::MatrixProduct(const int M,        const int N,        const int K,
+                                        const su2double *A, const su2double *B, su2double *C) {
+#ifdef HAVE_LIBXSMM
+
+  /* The gemm function of libxsmm is used to carry out the multiplication. */
+  libxsmm_gemm(NULL, NULL, M, N, K, NULL, A, NULL, B, NULL, NULL, C, NULL);
+
+#elif defined (HAVE_CBLAS) || defined(HAVE_MKL)
+
+  /* The standard blas routine dgemm is used for the multiplication. */
+  cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K,
+              1.0, A, K, B, N, 0.0, C, N);
+#else
+
+  /* Standard internal implementation of the matrix matrix multiplication. */
+  for(unsigned int i=0; i<M; ++i) {
+    const unsigned int jj = i*K;
+    const unsigned int kk = i*N;
+    for(unsigned int j=0; j<N; ++j) {
+      const unsigned int ii = kk + j;
+      C[ii] = 0.0;
+      for(unsigned int k=0; k<K; ++k)
+        C[ii] += A[jj+k]*B[k*nVar+j];
+    }
+  }
+
+#endif
+}
 
 CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
   

@@ -5088,11 +5088,20 @@ protected:
                                                                              the DG solver. */
 
   unsigned short nIntegrationMax; /*!< \brief Maximum number of integration points used. */
+  unsigned short nDOFsMax;        /*!< \brief Maximum number of DOFs present. */
 
   vector<su2double> VecSolDOFs;   /*!< \brief Vector, which stores the solution variables in all the DOFs. */
   vector<su2double> VecDeltaTime; /*!< \brief Vector, which stores the time steps of the owned volume elements. */
-  vector<su2double> VecResDOFs;   /*!< \brief Vector, which stores the residuals in the owned DOFs. */
 
+  vector<su2double> VecResDOFs;    /*!< \brief Vector, which stores the residuals in the owned DOFs. */
+  vector<su2double> VecResFaces;   /*!< \brief Vector, which stores the residuals of the DOFs that
+                                               come from the faces, both boundary and internal. */
+  vector<unsigned long> nEntriesResFaces; /*!< \brief Number of entries for the owned DOFs in the
+                                                      residual of the faces. Cumulative storage. */
+  vector<unsigned long> entriesResFaces;  /*!< \brief The corresponding entries in the residual of the faces. */
+
+  vector<unsigned long> startLocResFacesMarkers; /*!< \brief The starting location in the residual of the
+                                                             faces for the boundary markers. */
 private:
 
 #ifdef HAVE_MPI
@@ -5634,6 +5643,43 @@ public:
    */
   void Complete_MPI_Communication(void);
 
+protected:
+
+  /*!
+   * \brief Function, which computes the inviscid fluxes in face points.
+   * \param[in]  config      - Definition of the particular problem.
+   * \param[in]  nPoints     - Number of points for which the flux must be computed.
+   * \param[in]  normalsFace - The normals in the points.
+   * \param[in]  solL        - Solution in the left state of the points.
+   * \param[in]  solR        - Solution in the right state of the points.
+   * \param[out] fluxes      - Inviscid fluxes in the points.
+   */
+  void ComputeInviscidFluxesFace(CConfig             *config,
+                                 const unsigned long nPoints,
+                                 const su2double     *normalsFace,
+                                 const su2double     *solL,
+                                 const su2double     *solR,
+                                 su2double           *fluxes);
+  /*!
+   * \brief Function, which computes the left state of a boundary face.
+   * \param[in]  surfElem - Surface boundary element for which the left state must be computed.
+   * \param[out] solFace  - Temporary storage for the solution in the DOFs.
+   * \param[out] solIntL  - Left states in the integration points of the face.
+   */
+  void LeftStatesIntegrationPointsBoundaryFace(const CSurfaceElementFEM *surfElem,
+                                               su2double *solFace, su2double *solIntL);
+
+  /*!
+   * \brief Function, which carries out a matrix product.
+   * \param[in]  M  - Number of rows of A and C.
+   * \param[in]  N  - Number of columns of B and C.
+   * \param[in]  K  - Number of columns of A and number of rows of B.
+   * \param[in]  A  - Input matrix in the multiplication.
+   * \param[in]  B  - Input matrix in the multiplication.
+   * \param[out] C  - Result of the matrix product A*B.
+   */
+   void MatrixProduct(const int M,        const int N,        const int K,
+                      const su2double *A, const su2double *B, su2double *C);
 private:
   /*!
    * \brief Function, which sets up the persistent communication of the flow

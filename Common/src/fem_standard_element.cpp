@@ -3280,6 +3280,28 @@ FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(unsigned short val_VT
   CheckSumLagrangianBasisFunctions(nIntegration, nDOFsFaceSide0, lagBasisFaceIntegrationSide0);
   CheckSumLagrangianBasisFunctions(nIntegration, nDOFsFaceSide1, lagBasisFaceIntegrationSide1);
 
+  /*--- Create the transpose versions of lagBasisFaceIntegrationSide0 and
+        lagBasisFaceIntegrationSide1. These are needed for an efficient computation
+        of the residual of the faces. ---*/
+  lagBasisFaceIntegrationTransposeSide0.resize(nIntegration*nDOFsFaceSide0);
+  lagBasisFaceIntegrationTransposeSide1.resize(nIntegration*nDOFsFaceSide1);
+
+  unsigned int ii = 0;
+  for(unsigned short j=0; j<nDOFsFaceSide0; ++j) {
+    for(unsigned short i=0; i<nIntegration; ++i, ++ii) {
+      const unsigned int ind = i*nDOFsFaceSide0 + j;
+      lagBasisFaceIntegrationTransposeSide0[ii] = lagBasisFaceIntegrationSide0[ind];
+    }
+  }
+
+  ii = 0;
+  for(unsigned short j=0; j<nDOFsFaceSide1; ++j) {
+    for(unsigned short i=0; i<nIntegration; ++i, ++ii) {
+      const unsigned int ind = i*nDOFsFaceSide1 + j;
+      lagBasisFaceIntegrationTransposeSide1[ii] = lagBasisFaceIntegrationSide1[ind];
+    }
+  }
+
   /*--- Check the sum of the derivatives of the Lagrangian basis functions. ---*/
   if( !drLagBasisFaceIntegrationSide0.empty() )
     CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsFaceSide0,
@@ -3350,7 +3372,7 @@ FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(unsigned short val_VT
   matDerBasisElemIntegrationSide1 = new su2double[sizeMatSide1];
 #endif
 
-  unsigned int ii = 0;
+  ii = 0;
   for(unsigned long i=0; i<drLagBasisElemIntegrationSide0.size(); ++i, ++ii)
     matDerBasisElemIntegrationSide0[ii] = drLagBasisElemIntegrationSide0[i];
 
@@ -3431,6 +3453,9 @@ void FEMStandardInternalFaceClass::Copy(const FEMStandardInternalFaceClass &othe
 
   lagBasisFaceIntegrationSide0 = other.lagBasisFaceIntegrationSide0;
   lagBasisFaceIntegrationSide1 = other.lagBasisFaceIntegrationSide1;
+
+  lagBasisFaceIntegrationTransposeSide0 = other.lagBasisFaceIntegrationTransposeSide0;
+  lagBasisFaceIntegrationTransposeSide1 = other.lagBasisFaceIntegrationTransposeSide1;
 
   drLagBasisFaceIntegrationSide0 = other.drLagBasisFaceIntegrationSide0;
   drLagBasisFaceIntegrationSide1 = other.drLagBasisFaceIntegrationSide1;
@@ -3516,6 +3541,18 @@ FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(unsigned short val_VT
   /*--- Check the sum of the Lagrangian basis functions. ---*/
   CheckSumLagrangianBasisFunctions(nIntegration, nDOFsFace, lagBasisFaceIntegration);
 
+  /*--- Create the transpose version of lagBasisFaceIntegration. This is needed
+        for an efficient computation of the residual of the faces. ---*/
+  lagBasisFaceIntegrationTranspose.resize(nIntegration*nDOFsFace);
+
+  unsigned int ii = 0;
+  for(unsigned short j=0; j<nDOFsFace; ++j) {
+    for(unsigned short i=0; i<nIntegration; ++i, ++ii) {
+      const unsigned int ind = i*nDOFsFace + j;
+      lagBasisFaceIntegrationTranspose[ii] = lagBasisFaceIntegration[ind];
+    }
+  }
+
   /*--- Check the sum of the derivatives of the Lagrangian basis functions. ---*/
   if( !drLagBasisFaceIntegration.empty() )
     CheckSumDerivativesLagrangianBasisFunctions(nIntegration, nDOFsFace,
@@ -3556,7 +3593,7 @@ FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(unsigned short val_VT
   matDerBasisElemIntegration = new su2double[sizeMat];
 #endif
 
-  unsigned int ii = 0;
+  ii = 0;
   for(unsigned long i=0; i<drLagBasisElemIntegration.size(); ++i, ++ii)
     matDerBasisElemIntegration[ii] = drLagBasisElemIntegration[i];
 
@@ -3607,9 +3644,10 @@ void FEMStandardBoundaryFaceClass::Copy(const FEMStandardBoundaryFaceClass &othe
   rDOFsFace = other.rDOFsFace;
   sDOFsFace = other.sDOFsFace;
 
-  lagBasisFaceIntegration   = other.lagBasisFaceIntegration;
-  drLagBasisFaceIntegration = other.drLagBasisFaceIntegration;
-  dsLagBasisFaceIntegration = other.dsLagBasisFaceIntegration;
+  lagBasisFaceIntegration          = other.lagBasisFaceIntegration;
+  lagBasisFaceIntegrationTranspose = other.lagBasisFaceIntegrationTranspose;
+  drLagBasisFaceIntegration        = other.drLagBasisFaceIntegration;
+  dsLagBasisFaceIntegration        = other.dsLagBasisFaceIntegration;
 
   drLagBasisElemIntegration = other.drLagBasisElemIntegration;
   dsLagBasisElemIntegration = other.dsLagBasisElemIntegration;
