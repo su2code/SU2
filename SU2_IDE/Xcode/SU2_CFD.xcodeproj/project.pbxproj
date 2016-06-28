@@ -322,6 +322,15 @@
 		E9D9CE991C6563B3004119E9 /* serial_regression_AD.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = serial_regression_AD.py; sourceTree = "<group>"; };
 		E9F512C61CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_elasticity_linear.cpp; path = ../../SU2_CFD/src/numerics_direct_elasticity_linear.cpp; sourceTree = "<group>"; };
 		E9F512C71CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_elasticity_nonlinear.cpp; path = ../../SU2_CFD/src/numerics_direct_elasticity_nonlinear.cpp; sourceTree = "<group>"; };
+		E9F5F1B41CFF9CA200522F68 /* def_brick_hex.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_brick_hex.cfg; sourceTree = "<group>"; };
+		E9F5F1B71CFF9CA200522F68 /* def_brick_hex_rans.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_brick_hex_rans.cfg; sourceTree = "<group>"; };
+		E9F5F1BA1CFF9CA200522F68 /* def_brick_prism.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_brick_prism.cfg; sourceTree = "<group>"; };
+		E9F5F1BD1CFF9CA200522F68 /* def_brick_prism_rans.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_brick_prism_rans.cfg; sourceTree = "<group>"; };
+		E9F5F1C01CFF9CA200522F68 /* def_brick_pyra.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_brick_pyra.cfg; sourceTree = "<group>"; };
+		E9F5F1C31CFF9CA200522F68 /* def_brick_tets.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_brick_tets.cfg; sourceTree = "<group>"; };
+		E9F5F1C61CFF9CA200522F68 /* def_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_NACA0012.cfg; sourceTree = "<group>"; };
+		E9F5F1CE1CFF9CA200522F68 /* def_NACA4412.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_NACA4412.cfg; sourceTree = "<group>"; };
+		E9F5F1D11CFF9CA200522F68 /* def_RAE2822.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_RAE2822.cfg; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -595,6 +604,7 @@
 				E91CAC731B8C110E00EE3FCC /* cont_adj_navierstokes */,
 				E91CAC7A1B8C110E00EE3FCC /* cont_adj_rans */,
 				E91CAC811B8C110E00EE3FCC /* control_surface */,
+				E9F5F1B21CFF9CA200522F68 /* deformation */,
 				E91CAC841B8C110E00EE3FCC /* designspace */,
 				E91CAC8A1B8C110E00EE3FCC /* euler */,
 				E91CAC991B8C110E00EE3FCC /* fea_fsi */,
@@ -1354,6 +1364,94 @@
 			name = MultiZone;
 			sourceTree = "<group>";
 		};
+		E9F5F1B21CFF9CA200522F68 /* deformation */ = {
+			isa = PBXGroup;
+			children = (
+				E9F5F1B31CFF9CA200522F68 /* brick_hex */,
+				E9F5F1B61CFF9CA200522F68 /* brick_hex_rans */,
+				E9F5F1B91CFF9CA200522F68 /* brick_prism */,
+				E9F5F1BC1CFF9CA200522F68 /* brick_prism_rans */,
+				E9F5F1BF1CFF9CA200522F68 /* brick_pyra */,
+				E9F5F1C21CFF9CA200522F68 /* brick_tets */,
+				E9F5F1C51CFF9CA200522F68 /* naca0012 */,
+				E9F5F1CD1CFF9CA200522F68 /* naca4412 */,
+				E9F5F1D01CFF9CA200522F68 /* rae2822 */,
+			);
+			path = deformation;
+			sourceTree = "<group>";
+		};
+		E9F5F1B31CFF9CA200522F68 /* brick_hex */ = {
+			isa = PBXGroup;
+			children = (
+				E9F5F1B41CFF9CA200522F68 /* def_brick_hex.cfg */,
+			);
+			path = brick_hex;
+			sourceTree = "<group>";
+		};
+		E9F5F1B61CFF9CA200522F68 /* brick_hex_rans */ = {
+			isa = PBXGroup;
+			children = (
+				E9F5F1B71CFF9CA200522F68 /* def_brick_hex_rans.cfg */,
+			);
+			path = brick_hex_rans;
+			sourceTree = "<group>";
+		};
+		E9F5F1B91CFF9CA200522F68 /* brick_prism */ = {
+			isa = PBXGroup;
+			children = (
+				E9F5F1BA1CFF9CA200522F68 /* def_brick_prism.cfg */,
+			);
+			path = brick_prism;
+			sourceTree = "<group>";
+		};
+		E9F5F1BC1CFF9CA200522F68 /* brick_prism_rans */ = {
+			isa = PBXGroup;
+			children = (
+				E9F5F1BD1CFF9CA200522F68 /* def_brick_prism_rans.cfg */,
+			);
+			path = brick_prism_rans;
+			sourceTree = "<group>";
+		};
+		E9F5F1BF1CFF9CA200522F68 /* brick_pyra */ = {
+			isa = PBXGroup;
+			children = (
+				E9F5F1C01CFF9CA200522F68 /* def_brick_pyra.cfg */,
+			);
+			path = brick_pyra;
+			sourceTree = "<group>";
+		};
+		E9F5F1C21CFF9CA200522F68 /* brick_tets */ = {
+			isa = PBXGroup;
+			children = (
+				E9F5F1C31CFF9CA200522F68 /* def_brick_tets.cfg */,
+			);
+			path = brick_tets;
+			sourceTree = "<group>";
+		};
+		E9F5F1C51CFF9CA200522F68 /* naca0012 */ = {
+			isa = PBXGroup;
+			children = (
+				E9F5F1C61CFF9CA200522F68 /* def_NACA0012.cfg */,
+			);
+			path = naca0012;
+			sourceTree = "<group>";
+		};
+		E9F5F1CD1CFF9CA200522F68 /* naca4412 */ = {
+			isa = PBXGroup;
+			children = (
+				E9F5F1CE1CFF9CA200522F68 /* def_NACA4412.cfg */,
+			);
+			path = naca4412;
+			sourceTree = "<group>";
+		};
+		E9F5F1D01CFF9CA200522F68 /* rae2822 */ = {
+			isa = PBXGroup;
+			children = (
+				E9F5F1D11CFF9CA200522F68 /* def_RAE2822.cfg */,
+			);
+			path = rae2822;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -1506,7 +1604,7 @@
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4.1.2;
+				CURRENT_PROJECT_VERSION = 4.2.0;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
@@ -1561,7 +1659,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CURRENT_PROJECT_VERSION = 4.1.2;
+				CURRENT_PROJECT_VERSION = 4.2.0;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
 				GCC_OPTIMIZATION_LEVEL = 3;
