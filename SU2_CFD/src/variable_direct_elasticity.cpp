@@ -2,7 +2,7 @@
  * \file variable_direct_elasticity.cpp
  * \brief Definition of the variables for FEM elastic structural problems.
  * \author R. Sanchez
- * \version 4.1.2 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -52,11 +52,13 @@ CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
 	Solution_Vel			= NULL;		// Velocity at the node at time t+dt
 	Solution_Vel_time_n 	= NULL;		// Velocity at the node at time t
 
-	Solution_Accel			= NULL;		// Acceleration at the node at time t+dt
+	Solution_Accel			    = NULL;		// Acceleration at the node at time t+dt
 	Solution_Accel_time_n 	= NULL;		// Acceleration at the node at time t
 
-	Solution_Pred			= NULL;		// Predictor of the solution at the current subiteration
-	Solution_Pred_Old		= NULL;		// Predictor of the solution at the previous subiteration
+	Solution_Pred			      = NULL;		// Predictor of the solution at the current subiteration
+	Solution_Pred_Old		    = NULL;		// Predictor of the solution at the previous subiteration
+
+	Prestretch              = NULL;   // Prestretch geometry
 
 	Reference_Geometry		= NULL;		// Reference geometry for optimization purposes
 	Solution_Adj 			= NULL;		// Adjoint solution for structural problems (temporary)
@@ -71,6 +73,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
 	bool incremental_load = config->GetIncrementalLoad();
 	bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);	// Generalized alpha method requires residual at previous time step.
+	bool prestretch_fem = config->GetPrestretch();    // Structure is prestretched
 
 	bool refgeom = config->GetRefGeom();				// Reference geometry needs to be stored
 //	bool structural_adj = config->GetStructural_Adj();	// A structural adjoint simulation is to be run (temporary)
@@ -160,6 +163,10 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 		Solution_Adj = NULL;
 		Gradient_Adj = NULL;
 //	}
+
+  if (prestretch_fem)  Prestretch = new su2double [nVar];
+  else            Prestretch = NULL;
+
 }
 
 CFEM_ElasVariable::~CFEM_ElasVariable(void) {
@@ -187,5 +194,7 @@ CFEM_ElasVariable::~CFEM_ElasVariable(void) {
 	if (Reference_Geometry 		!= NULL) delete [] Reference_Geometry;
 	if (Solution_Adj 			!= NULL) delete [] Solution_Adj;
 	if (Gradient_Adj 			!= NULL) delete [] Gradient_Adj;
+
+	if (Prestretch            != NULL) delete [] Prestretch;
 
 }
