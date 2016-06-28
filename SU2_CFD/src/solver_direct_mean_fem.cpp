@@ -159,10 +159,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   
   SetNondimensionalization(geometry, config, iMesh);
   
-  /*--- Initialize the solution and right hand side vectors for storing
-   the residuals and updating the solution (always needed even for
-   explicit schemes). ---*/
-  
   //LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   //LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   
@@ -342,7 +338,6 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
         const unsigned short ind       = surfElem[i].indStandardElement;
         const unsigned short nDOFsFace = standardBoundaryFacesSol[ind].GetNDOFsFace();
 
-        sizeVecResFaces += nDOFsFace;
         for(unsigned short j=0; j<nDOFsFace; ++j) {
           unsigned long jj    = counterEntries[surfElem[i].DOFsSolFace[j]]++;
           entriesResFaces[jj] = sizeVecResFaces++;
@@ -1616,18 +1611,202 @@ void CFEM_DG_EulerSolver::Internal_Residual(CGeometry *geometry, CSolver **solve
 
 void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                                   CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-  /*--- Compute finite element convective residual and store here. ---*/
-  
-  if (rank == MASTER_NODE) cout << " Computing external contributions to residual." << endl;
 
-  if ((config->GetRiemann_Solver_FEM() == ROE) && (rank == MASTER_NODE))
-    cout << " Using a Roe Riemann solver for the DG method." << endl;
+  /*--- Allocate the memory for some temporary storage needed to compute the
+        residual efficiently. Note that when the MKL library is used
+        a special allocation is used to optimize performance. ---*/
+  su2double *solIntL, *solIntR, *fluxes;
+
+#ifdef HAVE_MKL
+  solIntL = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  solIntR = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  fluxes  = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
+#else
+  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
+  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
+  vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
+  solIntL = helpSolIntL.data();
+  solIntR = helpSolIntR.data();
+  fluxes  = helpFluxes.data();
+#endif
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Part 1: Compute the contribution to the contour integral in the    ---*/
+  /*---         FEM formulation from the matching internal faces.          ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Set the pointer solFace to fluxes. This is just for readability, as the
+     same memory can be used for the storage of the solution of the DOFs of
+     the face and the fluxes. */
+  su2double *solFace = fluxes;
+
+  /*--- Loop over the internal matching faces. ---*/
+  unsigned long indResFaces = 0;
+  for(unsigned long l=0; l<nMatchingInternalFaces; ++l) {
+  
+    /*------------------------------------------------------------------------*/
+    /*--- Step 1: Interpolate the left and right states in the integration ---*/
+    /*---         points of the face.                                      ---*/
+    /*------------------------------------------------------------------------*/
+
+    /* Get the required information from the corresponding standard face. */
+    const unsigned short ind        = matchingInternalFaces[l].indStandardElement;
+    const unsigned short nInt       = standardMatchingFacesSol[ind].GetNIntegration();
+    const unsigned short nDOFsFace0 = standardMatchingFacesSol[ind].GetNDOFsFaceSide0();
+    const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
+
+    const su2double *basisFace0 = standardMatchingFacesSol[ind].GetBasisFaceIntegrationSide0();
+    const su2double *basisFace1 = standardMatchingFacesSol[ind].GetBasisFaceIntegrationSide1();
+    const su2double *weights    = standardMatchingFacesSol[ind].GetWeightsIntegration();
+
+    /* Compute the left states in the integration points of the face, i.e. side 0. */
+    const unsigned long *DOFs = matchingInternalFaces[l].DOFsSolFaceSide0;
+    for(unsigned short i=0; i<nDOFsFace0; ++i) {
+      const su2double *solDOF = VecSolDOFs.data() + nVar*DOFs[i];
+      su2double       *sol    = solFace + nVar*i;
+      for(unsigned short j=0; j<nVar; ++j)
+        sol[j] = solDOF[j];
+    }
+
+    /* Call the general function to carry out the matrix product. */
+    MatrixProduct(nInt, nVar, nDOFsFace0, basisFace0, solFace, solIntL);
+
+    /* Compute the right states in the integration points of the face, i.e. side 1. */
+    DOFs = matchingInternalFaces[l].DOFsSolFaceSide1;
+    for(unsigned short i=0; i<nDOFsFace1; ++i) {
+      const su2double *solDOF = VecSolDOFs.data() + nVar*DOFs[i];
+      su2double       *sol    = solFace + nVar*i;
+      for(unsigned short j=0; j<nVar; ++j)
+        sol[j] = solDOF[j];
+    }
+
+    /* Call the general function to carry out the matrix product. */
+    MatrixProduct(nInt, nVar, nDOFsFace1, basisFace1, solFace, solIntR);
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 2: Compute the fluxes in the integration points using the   ---*/
+    /*---         approximate Riemann solver.                              ---*/
+    /*------------------------------------------------------------------------*/
+
+    /* General function to compute the fluxes in the integration points. */
+    ComputeInviscidFluxesFace(config, nInt, matchingInternalFaces[l].metricNormalsFace,
+                              solIntL, solIntR, fluxes);
+
+    /* Multiply the fluxes with the integration weight of the corresponding
+       integration point. */
+    for(unsigned short i=0; i<nInt; ++i) {
+      su2double *flux = fluxes + i*nVar;
+
+      for(unsigned short j=0; j<nVar; ++j)
+        flux[j] *= weights[i];
+    }
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 3: Compute the contribution to the residuals from the       ---*/
+    /*---         integration over this internal matching face.            ---*/
+    /*------------------------------------------------------------------------*/
+
+    /* Easier storage of the position in the residual array for side 0 of
+       this face and update the corresponding counter. */
+    su2double *resFace0 = VecResFaces.data() + indResFaces*nVar;
+    indResFaces        += nDOFsFace0;
+
+    /* Get the correct form of the basis functions needed for the matrix
+       multiplication to compute the residual. */
+    const su2double *basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide0();
+
+    /* Call the general function to carry out the matrix product. */
+    MatrixProduct(nDOFsFace0, nVar, nInt, basisFaceTrans, fluxes, resFace0);
+
+    /* Check if the element to the right is an owned element. Only then
+       the residual needs to be computed. */
+    if(matchingInternalFaces[l].elemID1 < nVolElemOwned) {
+
+      /* Easier storage of the position in the residual array for side 1 of
+         this face and update the corresponding counter. */
+      su2double *resFace1 = VecResFaces.data() + indResFaces*nVar;
+      indResFaces        += nDOFsFace1;
+
+      /* Check if the number of DOFs on side 1 is equal to the number of DOFs
+         of side 0. In that case the residual for side 1 is obtained by simply
+         negating the data from side 0. */
+      if(nDOFsFace1 == nDOFsFace0) {
+        for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
+          resFace1[i] = -resFace0[i];
+      }
+      else {
+
+        /*--- The number of DOFs and hence the polynomial degree of side 1 is
+              different from side. Carry out the matrix multiplication to obtain
+              the residual. Afterwards the residual is negated, because the
+              normal is pointing into the adjacent element. ---*/
+        basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide1();
+        MatrixProduct(nDOFsFace1, nVar, nInt, basisFaceTrans, fluxes, resFace1);
+
+        for(unsigned short i=0; i<(nVar*nDOFsFace1); ++i)
+          resFace1[i] = -resFace1[i];
+      }
+    }
+  }
+  
+  /*--------------------------------------------------------------------------*/
+  /*--- Part 2: Accumulate the residuals for the owned DOFs and multiply   ---*/
+  /*---         by the inverse of either the mass matrix or the lumped     ---*/
+  /*---         mass matrix. The accumulation of the residuals is carried  ---*/
+  /*---         inside the loop over the owned volume elements, such that  ---*/
+  /*---         an OpenMP parallelization of this loop can be done.        ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Loop over the owned volume elements. */
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /* Easier storage of the residuals for this volume element. */
+    su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+
+    /*--- Loop over the DOFs of the element and accumulate the residuals. ---*/
+    for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
+
+      su2double *resDOF      = res + nVar*i;
+      const unsigned long ii = volElem[l].offsetDOFsSolLocal + i;
+      for(unsigned long j=nEntriesResFaces[ii]; j<nEntriesResFaces[ii+1]; ++j) {
+        const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
+        for(unsigned short k=0; k<nVar; ++k)
+          resDOF[k] += resFace[k];
+      }
+    }
+
+    /* Check whether a multiplication must be carried out with the inverse of
+       the lumped mass matrix or the full mass matrix. Note that it is crucial
+       that the test is performed with the pointer lumpedMassMatrix and not
+       with massMatrix. The reason is that for implicit time stepping schemes
+       both arrays are in use. */
+    if( volElem[l].lumpedMassMatrix ) {
+
+      /* Multiply the residual with the inverse of the lumped mass matrix. */
+      for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
+
+        su2double *resDOF = res + nVar*i;
+        su2double lMInv   = 1.0/volElem[l].lumpedMassMatrix[i];
+        for(unsigned short k=0; k<nVar; ++k) resDOF[k] *= lMInv;
+      }
+    }
+    else {
+
+      /* Multiply the residual with the inverse of the mass matrix.
+         Use the array fluxes as temporary storage. */
+      memcpy(fluxes, res, nVar*volElem[l].nDOFsSol*sizeof(su2double));
+      MatrixProduct(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
+                    volElem[l].massMatrix, fluxes, res);
+    }
+  }
+
+  /*--- If the MKL is used the temporary storage must be released again. ---*/
+#ifdef HAVE_MKL
+  mkl_free(solIntL);
+  mkl_free(solIntR);
+  mkl_free(fluxes);
+#endif
+
 }
 
 void CFEM_DG_EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
@@ -2216,13 +2395,13 @@ void CFEM_DG_EulerSolver::MatrixProduct(const int M,        const int N,        
 #else
 
   /* Standard internal implementation of the matrix matrix multiplication. */
-  for(unsigned int i=0; i<M; ++i) {
-    const unsigned int jj = i*K;
-    const unsigned int kk = i*N;
-    for(unsigned int j=0; j<N; ++j) {
-      const unsigned int ii = kk + j;
+  for(int i=0; i<M; ++i) {
+    const int jj = i*K;
+    const int kk = i*N;
+    for(int j=0; j<N; ++j) {
+      const int ii = kk + j;
       C[ii] = 0.0;
-      for(unsigned int k=0; k<K; ++k)
+      for(int k=0; k<K; ++k)
         C[ii] += A[jj+k]*B[k*nVar+j];
     }
   }

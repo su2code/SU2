@@ -43,7 +43,7 @@ inline CPointCompare::CPointCompare(const CPointCompare &other) { Copy(other); }
 
 inline CPointCompare& CPointCompare::operator=(const CPointCompare &other) { Copy(other); return (*this); }
 
-inline CVolumeElementFEM::CVolumeElementFEM(void) { }
+inline CVolumeElementFEM::CVolumeElementFEM(void) {metricTerms = massMatrix = lumpedMassMatrix = NULL;}
 
 inline CVolumeElementFEM::~CVolumeElementFEM(void) { }
 

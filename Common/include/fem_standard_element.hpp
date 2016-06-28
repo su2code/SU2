@@ -1199,6 +1199,34 @@ public:
   su2double *GetMatDerBasisElemIntegrationSide1(void);
 
   /*!
+  * \brief Function, which makes available the face basis functions of side 0
+           in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  const su2double *GetBasisFaceIntegrationSide0(void) const;
+
+  /*!
+  * \brief Function, which makes available the face basis functions of side 1
+           in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  const su2double *GetBasisFaceIntegrationSide1(void) const;
+
+  /*!
+  * \brief Function, which makes available transpose matrix of the face basis
+           functions of side 0 in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  const su2double *GetBasisFaceIntegrationTransposeSide0(void) const;
+
+  /*!
+  * \brief Function, which makes available transpose matrix of the face basis
+           functions of side 1 in the integration points.
+  * \return  The pointer to data, which stores this information.
+  */
+  const su2double *GetBasisFaceIntegrationTransposeSide1(void) const;
+
+  /*!
   * \brief Function, which makes available the r-derivatives of the face basis
            functions of side 0 in the integration points.
   * \return  The pointer to data, which stores this information.
