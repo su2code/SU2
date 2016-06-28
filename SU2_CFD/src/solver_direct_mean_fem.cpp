@@ -370,7 +370,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     restart_file.open(filename.data(), ios::in);
     if (restart_file.fail()) {
       if (rank == MASTER_NODE)
-        cout << "There is no flow restart file!! " << filename.data() << "."<< endl;
+        cout << "There is no flow restart file " << filename.data() << "!!!"<< endl;
       exit(EXIT_FAILURE);
     }
 
