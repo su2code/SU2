@@ -161,7 +161,7 @@ public:
   su2double *lumpedMassMatrix;       /*!< \brief Pointer to the lumped mass matrix for this element. */
 
   /*!
-   * \brief Constructor of the class. Nothing to be done
+   * \brief Constructor of the class. Initialize the pointers to NULL.
    */
   CVolumeElementFEM(void);
 

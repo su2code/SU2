@@ -968,7 +968,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ***geometry,
   
   for (iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
     
-    /*--- Send-Receive boundary conditions, and preprocessing ---*/
+    /*--- Preprocessing ---*/
     
     solver_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, iRKStep, RunTime_EqSystem, false);
     
@@ -980,7 +980,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ***geometry,
     
     Time_Integration(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iRKStep, RunTime_EqSystem, Iteration);
     
-    /*--- Send-Receive boundary conditions, and postprocessing ---*/
+    /*--- Postprocessing ---*/
     
     solver_container[iZone][iMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh);
     

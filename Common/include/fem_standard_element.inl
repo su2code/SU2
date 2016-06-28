@@ -97,6 +97,14 @@ inline su2double* FEMStandardInternalFaceClass::GetMatDerBasisElemIntegrationSid
 
 inline su2double* FEMStandardInternalFaceClass::GetMatDerBasisElemIntegrationSide1(void) {return matDerBasisElemIntegrationSide1;}
 
+inline const su2double* FEMStandardInternalFaceClass::GetBasisFaceIntegrationSide0(void) const {return lagBasisFaceIntegrationSide0.data();}
+
+inline const su2double* FEMStandardInternalFaceClass::GetBasisFaceIntegrationSide1(void) const {return lagBasisFaceIntegrationSide1.data();}
+
+inline const su2double* FEMStandardInternalFaceClass::GetBasisFaceIntegrationTransposeSide0(void) const {return lagBasisFaceIntegrationTransposeSide0.data();}
+
+inline const su2double* FEMStandardInternalFaceClass::GetBasisFaceIntegrationTransposeSide1(void) const {return lagBasisFaceIntegrationTransposeSide1.data();}
+
 inline su2double* FEMStandardInternalFaceClass::GetDrBasisFaceIntegrationSide0(void) {return drLagBasisFaceIntegrationSide0.data();}
 
 inline su2double* FEMStandardInternalFaceClass::GetDrBasisFaceIntegrationSide1(void) {return drLagBasisFaceIntegrationSide1.data();}
