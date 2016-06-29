@@ -123,7 +123,9 @@ private:
 	su2double SharpEdgesCoeff;				/*!< \brief Coefficient to identify the limit of a sharp edge. */
   unsigned short SystemMeasurements; /*!< \brief System of measurements. */
   unsigned short Kind_Regime;  /*!< \brief Kind of adjoint function. */
-  unsigned short Kind_ObjFunc;  /*!< \brief Kind of objective function. */
+  unsigned short *Kind_ObjFunc;  /*!< \brief Kind of objective function. */
+  su2double *Weight_ObjFunc;    /*!< \brief Weight applied to objective function. */
+  bool ComboObjective;        /*!< \brief boolean to determine whether to internally combine a list of objectives or treat only the first */
   unsigned short Kind_SensSmooth; /*!< \brief Kind of sensitivity smoothing technique. */
   unsigned short Continuous_Eqns; /*!< \brief Which equations to treat continuously (Hybrid adjoint)*/
   unsigned short Discrete_Eqns; /*!< \brief Which equations to treat discretely (Hybrid adjoint). */
@@ -295,7 +297,8 @@ private:
   Max_DeltaTime,  		/*!< \brief Max delta time. */
 	Unst_CFL;		/*!< \brief Unsteady CFL number. */
 	bool AddIndNeighbor;			/*!< \brief Include indirect neighbor in the agglomeration process. */
-	unsigned short nDV;		/*!< \brief Number of design variables. */
+	unsigned short nDV,		/*!< \brief Number of design variables. */
+	nObj, nObjW;              /*! \brief Number of objective functions. */
   unsigned short* nDV_Value;		/*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
   unsigned short nFFDBox;		/*!< \brief Number of ffd boxes. */
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
@@ -2160,6 +2163,12 @@ public:
 	unsigned short GetnMarker_Moving(void);
 
 	/*!
+   * \brief Get the total number of objectives in kind_objective list
+   * \return Total number of objectives in kind_objective list
+   */
+	unsigned short GetnObj(void);
+
+	/*!
 	 * \brief Stores the number of marker in the simulation.
 	 * \param[in] val_nmarker - Number of markers of the problem.
 	 */
@@ -3531,12 +3540,45 @@ public:
 
 	/*!
 	 * \author H. Kline
+   * \brief Get the kind of objective function. There are several options: Drag coefficient,
+   *        Lift coefficient, efficiency, etc.
+   * \note The objective function will determine the boundary condition of the adjoint problem.
+   * \return Kind of objective function.
+   */
+  unsigned short GetKind_ObjFunc(unsigned short val_obj);
+
+  /*!
+   * \author H. Kline
+   * \brief Get the weight of objective function. There are several options: Drag coefficient,
+   *        Lift coefficient, efficiency, etc.
+   * \note The objective function will determine the boundary condition of the adjoint problem.
+   * \return Weight of objective function.
+   */
+  su2double GetWeight_ObjFunc(unsigned short val_obj);
+
+  /*!
+   * \author H. Kline
+   * \brief Set the weight of objective function. There are several options: Drag coefficient,
+   *        Lift coefficient, efficiency, etc.
+   * \note The objective function will determine the boundary condition of the adjoint problem.
+   * \return Weight of objective function.
+   */
+  void SetWeight_ObjFunc(unsigned short val_obj, su2double val);
+
+  /*!
+  * \author H. Kline
 	 * \brief Get the coefficients of the objective defined by the chain rule with primitive variables.
    * \note This objective is only applicable to gradient calculations. Objective value must be
    * calculated using the area averaged outlet values of density, velocity, and pressure.
    * Gradients are w.r.t density, velocity[3], and pressure. when 2D gradient w.r.t. 3rd component of velocity set to 0.
 	 */
 	su2double GetCoeff_ObjChainRule(unsigned short iVar);
+
+	/*!
+	 * \author H. Kline
+	 * \brief Get the flag indicating whether to comput a combined objective.
+	 */
+	bool GetComboObj(void);
 
 	/*!
 	 * \brief Get the kind of sensitivity smoothing technique.
