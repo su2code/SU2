@@ -35,6 +35,8 @@ inline FEMStandardElementBaseClass::FEMStandardElementBaseClass(){}
 
 inline FEMStandardElementBaseClass::~FEMStandardElementBaseClass(){}
 
+inline unsigned short FEMStandardElementBaseClass::GetVTK_Type(void) const {return VTK_Type;}
+
 inline const su2double* FEMStandardElementBaseClass::GetWeightsIntegration(void) const {return wIntegration.data();}
 
 inline unsigned short FEMStandardElementBaseClass::GetNIntegration(void) const {return nIntegration;}

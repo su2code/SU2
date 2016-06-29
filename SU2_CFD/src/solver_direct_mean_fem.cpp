@@ -158,9 +158,18 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
         specified reference values. ---*/
   
   SetNondimensionalization(geometry, config, iMesh);
-  
-  //LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-  //LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+  /*--- Define some auxiliary vectors related to the residual ---*/
+
+  Residual_RMS = new su2double[nVar];     for(unsigned short iVar=0; iVar<nVar; ++iVar) Residual_RMS[iVar] = 0.0;
+  Residual_Max = new su2double[nVar];     for(unsigned short iVar=0; iVar<nVar; ++iVar) Residual_Max[iVar] = 0.0;
+  Point_Max    = new unsigned long[nVar]; for(unsigned short iVar=0; iVar<nVar; ++iVar) Point_Max[iVar]    = 0;
+
+  Point_Max_Coord = new su2double*[nVar];
+  for (unsigned short iVar=0; iVar<nVar; ++iVar) {
+    Point_Max_Coord[iVar] = new su2double[nDim];
+    for(unsigned short iDim=0; iDim<nDim; ++iDim) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
   
   /*--- Non-dimensional coefficients ---*/
   
@@ -237,6 +246,14 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i) nDOFsLocTot += volElem[i].nDOFsSol;
 
   VecSolDOFs.resize(nVar*nDOFsLocTot);
+
+  /*--- Determine the global number of DOFs. ---*/
+
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&nDOFsLocOwned, &nDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  nDOFsGlobal = nDOFsLocOwned;
+#endif
 
   /*--- Allocate the memory to store the time steps, residuals, etc. ---*/
 
@@ -1428,6 +1445,9 @@ void CFEM_DG_EulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_c
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
 
+  /* Initialize the minimum and maximum time step. */
+  Min_Delta_Time = 1.e25; Max_Delta_Time = 0.0;
+
   /* Easier storage of the CFL number. */
   const su2double CFL = config->GetCFL(iMesh);
 
@@ -1462,8 +1482,12 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
         charVel2Max = max(charVel2Max, charVel2);
       }
 
-      /* Compute the time step for element. */
+      /* Compute the time step for the element and update the minimum and
+         maximum value. */
       VecDeltaTime[i] = CFL*volElem[i].lenScale/charVel2Max;
+
+      Min_Delta_Time = min(Min_Delta_Time, VecDeltaTime[i]);
+      Max_Delta_Time = max(Max_Delta_Time, VecDeltaTime[i]);
     }
   }
   else {
@@ -1490,6 +1514,15 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
 #endif
 
   }
+
+  /*--- Compute the max and the min dt (in parallel) ---*/
+#ifdef HAVE_MPI
+  su2double rbuf_time = Min_Delta_Time;
+  SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+
+  rbuf_time = Max_Delta_Time;
+  SU2_MPI::Allreduce(&rbuf_time, &Max_Delta_Time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#endif
 }
 
 void CFEM_DG_EulerSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -1821,47 +1854,82 @@ void CFEM_DG_EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) 
 }
 
 void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
-                                            CConfig *config, unsigned short iRKStep) {
-  su2double *Residual, *Res_TruncError, Vol, Delta, Res;
-  unsigned short iVar;
-  unsigned long iPoint;
+                                               CConfig *config, unsigned short iRKStep) {
   
   su2double RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
-  bool adjoint = config->GetContinuous_Adjoint();
   
-  for (iVar = 0; iVar < nVar; iVar++) {
+  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
   
-  /*--- Update the solution ---*/
-  
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = geometry->node[iPoint]->GetVolume();
-    Delta = node[iPoint]->GetDelta_Time() / Vol;
-    
-    Res_TruncError = node[iPoint]->GetResTruncError();
-    Residual = LinSysRes.GetBlock(iPoint);
-    
-    if (!adjoint) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res = Residual[iVar] + Res_TruncError[iVar];
-        node[iPoint]->AddSolution(iVar, -Res*Delta*RK_AlphaCoeff);
-        AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+  /*--- Update the solution by looping over the owned volume elements. ---*/
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /* Store the coordinate of the first vertex of this element to give an
+       indication for the location of the maximum residual. */
+    const unsigned long ind = volElem[l].nodeIDsGrid[0];
+    const su2double *coor   = meshPoints[ind].coor;
+
+    /* Set the pointers for the residual and solution for this element. */
+    const su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+    su2double *solDOFs   = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+
+    /* Loop over the DOFs for this element and update the solution and the L2 norm. */
+    const su2double tmp = RK_AlphaCoeff*VecDeltaTime[l];
+
+    unsigned int i = 0;
+    for(unsigned short j=0; i<volElem[l].nDOFsSol; ++j) {
+      const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
+      for(unsigned short iVar=0; iVar<nVar; ++iVar, ++i) {
+        solDOFs[i] -= tmp*res[i];
+
+        AddRes_RMS(iVar, res[i]*res[i]);
+        AddRes_Max(iVar, fabs(res[i]), globalIndex, coor); 
       }
     }
-    
   }
   
-  /*--- MPI solution ---*/
-  
-  Set_MPI_Solution(geometry, config);
-  
-  /*--- Compute the root mean square residual ---*/
-  
-  SetResidual_RMS(geometry, config);
-  
+  /*--- Compute the root mean square residual. Note that the SetResidual_RMS
+        function cannot be used, because that is for the FV solver.    ---*/
+
+#ifdef HAVE_MPI
+  /*--- Parallel mode. The local L2 norms must be added to obtain the
+        global value. Also check for divergence. ---*/
+  int nProc, rank;
+  MPI_Comm_size(MPI_COMM_WORLD, &nProc);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  vector<su2double> rbuf(nVar);
+  SU2_MPI::Allreduce(Residual_RMS, rbuf.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+
+    if (rbuf[iVar] != rbuf[iVar]) {
+      if (rank == MASTER_NODE)
+        cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+      MPI_Abort(MPI_COMM_WORLD,1);
+    }
+
+    SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
+  }
+
+  /*--- Communicate the information about the maximum residual. ---*/
+
+#else
+  /*--- Sequential mode. Check for a divergence of the solver and compute
+        the L2-norm of the residuals. ---*/
+  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+
+    if(GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
+      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+      exit(EXIT_FAILURE);
+    }
+
+    SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/nDOFsGlobal)));
+  }
+
+#endif
 }
 
 void CFEM_DG_EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
@@ -1936,7 +2004,7 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_co
       /* If the normal velocity must be mirrored instead of set to zero,
          the normal component that must be subtracted must be doubled. If the
          normal velocity must be set to zero, simply comment this line. */
-      rVn *= 2.0;
+        rVn *= 2.0;
 
       /* Set the right state. The initial value of the total energy is the
          energy of the left state. */
