@@ -2,7 +2,7 @@
  * \file solution_direct_poisson.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -115,11 +115,8 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver()
 
 CPoissonSolver::~CPoissonSolver(void) {
   
-	unsigned short iVar, iDim;
+	unsigned short iVar;
   
-	delete [] Residual;
-	delete [] Residual_Max;
-	delete [] Solution;
 	delete [] Source_Vector;
   
 	if (nDim == 2) {
@@ -138,14 +135,6 @@ CPoissonSolver::~CPoissonSolver(void) {
 	delete [] StiffMatrix_Elem;
 	delete [] StiffMatrix_Node;
   
-	/*--- Computation of gradients by least-squares ---*/
-	for (iDim = 0; iDim < this->nDim; iDim++)
-		delete [] Smatrix[iDim];
-	delete [] Smatrix;
-  
-	for (iVar = 0; iVar < nVar; iVar++)
-		delete [] cvector[iVar];
-	delete [] cvector;
 }
 
 void CPoissonSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,

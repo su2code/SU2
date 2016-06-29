@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -310,7 +310,7 @@ int rank = 0;
 //    }
 //  }
 	
-	return i;
+	return (unsigned long) i;
   
 }
 
@@ -465,7 +465,7 @@ int rank = 0;
 //  }
 	
   (*residual) = beta;
-	return i;
+	return (unsigned long) i;
   
 }
 
@@ -601,7 +601,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 //  }
 	
   (*residual) = norm_r;
-	return i;
+	return (unsigned long) i;
 }
 
 unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {

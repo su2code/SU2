@@ -2,7 +2,7 @@
  * \file solution_direct_wave.cpp
  * \brief Main subrotuines for solving the wave equation.
  * \author T. Economon, F. Palacios
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -149,10 +149,6 @@ CWaveSolver::CWaveSolver(CGeometry *geometry,
 CWaveSolver::~CWaveSolver(void) {
   
 	unsigned short iVar;
-  
-	delete [] Residual;
-	delete [] Residual_Max;
-	delete [] Solution;
   
 	for (iVar = 0; iVar < nDim+1; iVar++)
 		delete [] StiffMatrix_Elem[iVar];
