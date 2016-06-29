@@ -1217,7 +1217,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 	unsigned long iVertexTarget, iVertexDonor;
 
 
-	su2double *Coord_i, *Coord_j, dist, mindist, maxdist;
+	su2double *Coord_i, *Coord_j, dist, mindist, maxdist, *Normal;
 
 	int rank = MASTER_NODE;
 	int nProcessor = SINGLE_NODE;
@@ -1227,6 +1227,8 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 	int target_forward_point, target_backward_point, donor_forward_point, donor_backward_point;
 	int donor_iPoint, target_iPoint;
 	int donor_OldiPoint, target_OldiPoint;
+	
+	int ii, jj;
 
 	unsigned long nDonorPoints, iDonor;
 	unsigned long *Donor_Vect, *tmp_Donor_Vect;
@@ -1234,6 +1236,12 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 	su2double Intersection, length, dTMP;
 	su2double *target_iMidEdge_point, *target_jMidEdge_point, *donor_iMidEdge_point, *donor_jMidEdge_point, *Direction;
 	su2double *Coeff_Vect, *tmp_Coeff_Vect;
+	
+	int nAlreadyVisited, nToVisit, StartVisited, vPoint;
+					
+	int *alreadyVisitedDonor, *ToVisit, *tmpVect;
+					
+	int iEdgeVisited, EgdeIndex, nEdgeVisited, iNodeVisited;
 
 
 	#ifdef HAVE_MPI
@@ -1255,6 +1263,8 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 	
 	tmp_Donor_Vect = NULL;
 	tmp_Coeff_Vect = NULL;
+	
+	Normal = new su2double[nDim];
 	
 	Coord_i = new su2double[nDim];
 	Coord_j = new su2double[nDim];
@@ -1323,162 +1333,95 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 		Collect_VertexInfo(false, markDonor, markTarget, nVertexDonor,nDim);
 
 
-		/*--- Starts with supermesh reconstruction ---*/
+		if(nDim == 2){
+			/*--- Starts with supermesh reconstruction ---*/
 
-		target_StartIndex = target_geometry->vertex[markTarget][0]->GetNode();
+			target_StartIndex = target_geometry->vertex[markTarget][0]->GetNode();
+					
+			for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
+
+				nDonorPoints = 0;
 				
-		for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
-
-			nDonorPoints = 0;
-			
-			/*--- Stores coordinates of the target node ---*/
-			
-			target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
-			
-			for (iDim = 0; iDim < nDim; iDim++)
-				Coord_i[iDim] = target_geometry->node[target_iPoint]->GetCoord(iDim);
-			
-			/*--- Brute force to find the closest donor_node ---*/
-			
-			mindist = 1E6;
-			
-			for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
+				/*--- Stores coordinates of the target node ---*/
 				
-				donor_iPoint = donor_geometry->vertex[markDonor][jVertex]->GetNode();
+				target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
+				
+				for (iDim = 0; iDim < nDim; iDim++)
+					Coord_i[iDim] = target_geometry->node[target_iPoint]->GetCoord(iDim);
+				
+				/*--- Brute force to find the closest donor_node ---*/
+				
+				mindist = 1E6;
+				
+				for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
+					
+					donor_iPoint = donor_geometry->vertex[markDonor][jVertex]->GetNode();
 
-				for (iDim = 0; iDim < nDim; iDim++) 
-					Coord_j[iDim] = donor_geometry->node[donor_iPoint]->GetCoord(iDim);
-	
-				dist = PointsDistance(Coord_i, Coord_j);
+					for (iDim = 0; iDim < nDim; iDim++) 
+						Coord_j[iDim] = donor_geometry->node[donor_iPoint]->GetCoord(iDim);
+		
+					dist = PointsDistance(Coord_i, Coord_j);
 
-				if (dist < mindist) {
-					mindist = dist;  
-					donor_StartIndex = donor_iPoint;
+					if (dist < mindist) {
+						mindist = dist;  
+						donor_StartIndex = donor_iPoint;
+					}
+
+					if (dist == 0.0){
+						donor_StartIndex = donor_iPoint;
+						break;
+					}
 				}
-
-				if (dist == 0.0) 
-					break;
-			}
-			
-			/*--- Contruct information regarding the target cell ---*/
-			
-			donor_iPoint    = donor_StartIndex;
-			donor_OldiPoint = -1;
-			
-			target_forward_point  = FindNextNode_2D(target_geometry,                    -1, target_iPoint, markTarget);
-			target_backward_point = FindNextNode_2D(target_geometry,  target_forward_point, target_iPoint, markTarget);
-			
-			dTMP = 0;
-			for(iDim = 0; iDim < nDim; iDim++){
-				target_iMidEdge_point[iDim] = ( target_geometry->node[target_forward_point ]->GetCoord(iDim) + target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
-				target_jMidEdge_point[iDim] = ( target_geometry->node[target_backward_point]->GetCoord(iDim) + target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
 				
-				Direction[iDim] = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
-				dTMP += Direction[iDim] * Direction[iDim];
-			}
-			
-			dTMP = sqrt(dTMP);
-			for(iDim = 0; iDim < nDim; iDim++)
-				Direction[iDim] /= dTMP;
+				/*--- Contruct information regarding the target cell ---*/
 				
-			length = PointsDistance(target_iMidEdge_point, target_jMidEdge_point);
-
-			check = false;
-
-
-			/*--- Proceeds along the forward direction (depending on which connected boundary node is found first) ---*/
-			
-			while( !check ){
+				donor_iPoint    = donor_StartIndex;
+				donor_OldiPoint = -1;
 				
-				/*--- Proceeds until the value of the intersection area is null ---*/
+				target_forward_point  = FindNextNode_2D(target_geometry,                    -1, target_iPoint, markTarget);
+				target_backward_point = FindNextNode_2D(target_geometry,  target_forward_point, target_iPoint, markTarget);
 				
-				donor_forward_point  = FindNextNode_2D(donor_geometry,      donor_OldiPoint, donor_iPoint, markDonor);
-				donor_backward_point = FindNextNode_2D(donor_geometry,  donor_forward_point, donor_iPoint, markDonor);
-				
+				dTMP = 0;
 				for(iDim = 0; iDim < nDim; iDim++){
-					donor_iMidEdge_point[iDim] = ( donor_geometry->node[donor_forward_point ]->GetCoord(iDim) + donor_geometry->node[ donor_iPoint ]->GetCoord(iDim) ) / 2;
-					donor_jMidEdge_point[iDim] = ( donor_geometry->node[donor_backward_point]->GetCoord(iDim) + donor_geometry->node[ donor_iPoint ]->GetCoord(iDim) ) / 2;
-				}
-							
-				Intersection = Compute_Intersection_2D(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
-		
-				if ( Intersection == 0.0 ){
-					check = true;
-					continue;
-				}
-				
-				/*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
+					target_iMidEdge_point[iDim] = ( target_geometry->node[target_forward_point ]->GetCoord(iDim) + target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
+					target_jMidEdge_point[iDim] = ( target_geometry->node[target_backward_point]->GetCoord(iDim) + target_geometry->node[ target_iPoint ]->GetCoord(iDim) ) / 2;
 					
-				tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
-				tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
-				
-				for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
-					tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
-					tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
+					Direction[iDim] = target_jMidEdge_point[iDim] - target_iMidEdge_point[iDim];
+					dTMP += Direction[iDim] * Direction[iDim];
 				}
 				
-				if (Donor_Vect != NULL)
-					delete [] Donor_Vect;
+				dTMP = sqrt(dTMP);
+				for(iDim = 0; iDim < nDim; iDim++)
+					Direction[iDim] /= dTMP;
 					
-				if (Coeff_Vect != NULL)
-					delete [] Coeff_Vect;
-				
-				Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
-				Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
-				
-				for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
-					Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
-					Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
-				}
+				length = PointsDistance(target_iMidEdge_point, target_jMidEdge_point);
 
-				Coeff_Vect[ nDonorPoints ] = Intersection / length;					
-				Donor_Vect[ nDonorPoints ] = donor_iPoint;
+				check = false;
 
-				if (tmp_Donor_Vect != NULL)
-					delete [] tmp_Donor_Vect;
-		
-				if (tmp_Coeff_Vect != NULL)
-					delete [] tmp_Coeff_Vect;
 
+				/*--- Proceeds along the forward direction (depending on which connected boundary node is found first) ---*/
 				
-				donor_OldiPoint = donor_iPoint;
-				donor_iPoint = donor_forward_point;
+				while( !check ){
 					
-				nDonorPoints++;
-			}
-		
-		
-			donor_iPoint    = donor_StartIndex;
-			donor_OldiPoint = FindNextNode_2D(donor_geometry, -1, donor_iPoint, markDonor);
-			
-			donor_iPoint = FindNextNode_2D(donor_geometry, donor_OldiPoint, donor_iPoint, markDonor);
-			donor_OldiPoint = donor_StartIndex;
-			
-			check = false;
-			
-			/*--- Proceeds along the backward direction (depending on which connected boundary node is found first) ---*/
-			
-			while( !check ){
-				
 					/*--- Proceeds until the value of the intersection area is null ---*/
 					
-					donor_forward_point  = FindNextNode_2D(donor_geometry,     donor_OldiPoint, donor_iPoint, markDonor);
-					donor_backward_point = FindNextNode_2D(donor_geometry, donor_forward_point, donor_iPoint, markDonor);
+					donor_forward_point  = FindNextNode_2D(donor_geometry,      donor_OldiPoint, donor_iPoint, markDonor);
+					donor_backward_point = FindNextNode_2D(donor_geometry,  donor_forward_point, donor_iPoint, markDonor);
 					
 					for(iDim = 0; iDim < nDim; iDim++){
 						donor_iMidEdge_point[iDim] = ( donor_geometry->node[donor_forward_point ]->GetCoord(iDim) + donor_geometry->node[ donor_iPoint ]->GetCoord(iDim) ) / 2;
 						donor_jMidEdge_point[iDim] = ( donor_geometry->node[donor_backward_point]->GetCoord(iDim) + donor_geometry->node[ donor_iPoint ]->GetCoord(iDim) ) / 2;
-					}		
-					
+					}
+								
 					Intersection = Compute_Intersection_2D(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
-
+			
 					if ( Intersection == 0.0 ){
 						check = true;
 						continue;
 					}
 					
 					/*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
-					
+						
 					tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
 					tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
 					
@@ -1500,39 +1443,448 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 						Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
 						Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
 					}
-						
+
+					Coeff_Vect[ nDonorPoints ] = Intersection / length;					
 					Donor_Vect[ nDonorPoints ] = donor_iPoint;
-					Coeff_Vect[ nDonorPoints ] = Intersection / length;
-						
+
 					if (tmp_Donor_Vect != NULL)
 						delete [] tmp_Donor_Vect;
-					
+			
 					if (tmp_Coeff_Vect != NULL)
 						delete [] tmp_Coeff_Vect;
-						
-						
+
+					
 					donor_OldiPoint = donor_iPoint;
 					donor_iPoint = donor_forward_point;
 						
 					nDonorPoints++;
-			}
+				}
 			
-			/*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
 			
-			target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nDonorPoints);
+				donor_iPoint    = donor_StartIndex;
+				donor_OldiPoint = FindNextNode_2D(donor_geometry, -1, donor_iPoint, markDonor);
+				
+				donor_iPoint = FindNextNode_2D(donor_geometry, donor_OldiPoint, donor_iPoint, markDonor);
+				donor_OldiPoint = donor_StartIndex;
+				
+				check = false;
+				
+				/*--- Proceeds along the backward direction (depending on which connected boundary node is found first) ---*/
+				
+				while( !check ){
+					
+						/*--- Proceeds until the value of the intersection area is null ---*/
+						
+						donor_forward_point  = FindNextNode_2D(donor_geometry,     donor_OldiPoint, donor_iPoint, markDonor);
+						donor_backward_point = FindNextNode_2D(donor_geometry, donor_forward_point, donor_iPoint, markDonor);
+						
+						for(iDim = 0; iDim < nDim; iDim++){
+							donor_iMidEdge_point[iDim] = ( donor_geometry->node[donor_forward_point ]->GetCoord(iDim) + donor_geometry->node[ donor_iPoint ]->GetCoord(iDim) ) / 2;
+							donor_jMidEdge_point[iDim] = ( donor_geometry->node[donor_backward_point]->GetCoord(iDim) + donor_geometry->node[ donor_iPoint ]->GetCoord(iDim) ) / 2;
+						}		
+						
+						Intersection = Compute_Intersection_2D(target_iMidEdge_point, target_jMidEdge_point, donor_iMidEdge_point, donor_jMidEdge_point, Direction);
 
-			target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
+						if ( Intersection == 0.0 ){
+							check = true;
+							continue;
+						}
+						
+						/*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
+						
+						tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
+						tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
+						
+						for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
+							tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
+							tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
+						}
+						
+						if (Donor_Vect != NULL)
+							delete [] Donor_Vect;
+							
+						if (Coeff_Vect != NULL)
+							delete [] Coeff_Vect;
+						
+						Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
+						Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
+						
+						for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
+							Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
+							Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
+						}
+							
+						Donor_Vect[ nDonorPoints ] = donor_iPoint;
+						Coeff_Vect[ nDonorPoints ] = Intersection / length;
+							
+						if (tmp_Donor_Vect != NULL)
+							delete [] tmp_Donor_Vect;
+						
+						if (tmp_Coeff_Vect != NULL)
+							delete [] tmp_Coeff_Vect;
+							
+							
+						donor_OldiPoint = donor_iPoint;
+						donor_iPoint = donor_forward_point;
+							
+						nDonorPoints++;
+				}
+				
+				/*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
+				
+				target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nDonorPoints);
 
-			for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){			  
-				target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]);
-				target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, donor_geometry->node[ Donor_Vect[iDonor] ]->GetGlobalIndex() );
-				target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, 0);//storeProc[iDonor]);
+				target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
 
-				//cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;
+				for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){			  
+					target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]);
+					target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, donor_geometry->node[ Donor_Vect[iDonor] ]->GetGlobalIndex() );
+					target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, 0);//storeProc[iDonor]);
+
+					//cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;
+				}
+			
 			}
-		
+
 		}
+		else{
+			
+			
+			su2double **target_element, **donor_element;
+			int nEdges_target, nNode_target;
+			int nEdges_donor,  nNode_donor;
+			
+			
+			
+			su2double Area, Area_old, tmp_Area, target_area;
+			
+			
+					
+			for (iVertex = 0; iVertex < nVertexTarget; iVertex++) {
+				//cout << "iVertex  " << iVertex << endl;
+				nDonorPoints = 0;
+				
+				/*--- Stores coordinates of the target node ---*/
+				
+				target_iPoint = target_geometry->vertex[markTarget][iVertex]->GetNode();
+				
+				target_geometry->vertex[markTarget][iVertex]->GetNormal(Normal);
+				
+				Area = 0.0;
+				for (iDim = 0; iDim < nDim; iDim++) 
+					Area += Normal[iDim]*Normal[iDim];
+				Area = sqrt(Area);
+				
+				target_area = Area;
+				
+				//cout << "Area target " << Area << endl;
 
+				for (iDim = 0; iDim < nDim; iDim++)
+					Normal[iDim] /= Area;
+
+				for (iDim = 0; iDim < nDim; iDim++)
+					Coord_i[iDim] = target_geometry->node[target_iPoint]->GetCoord(iDim);
+					
+				/*--- Build local surface dual mesh for target element---*/
+				
+				nEdges_target = target_geometry->node[target_iPoint]->GetnPoint();
+				
+				nNode_target = nEdges_target*2 + 1;
+
+				target_element = new su2double*[nNode_target];
+				for (ii = 0; ii < nNode_target; ii++)
+					target_element[ii] = new su2double[nDim];
+					
+					
+				nNode_target = Build_3D_surface_element(target_geometry, target_iPoint, markTarget, target_element);
+
+				/*--- Brute force to find the closest donor_node ---*/
+			
+				mindist = 1E6;
+				
+				for (jVertex = 0; jVertex < nVertexDonor; jVertex++) {
+					
+					donor_iPoint = donor_geometry->vertex[markDonor][jVertex]->GetNode();
+
+					for (iDim = 0; iDim < nDim; iDim++) 
+						Coord_j[iDim] = donor_geometry->node[donor_iPoint]->GetCoord(iDim);
+		
+					dist = PointsDistance(Coord_i, Coord_j);
+
+					if (dist < mindist) {
+						mindist = dist;  
+						donor_StartIndex = donor_iPoint;
+					}
+
+					if (dist == 0.0){
+						donor_StartIndex = donor_iPoint;
+						break;
+					}
+				}
+				
+				donor_iPoint = donor_StartIndex;
+				
+				nEdges_donor = donor_geometry->node[donor_iPoint]->GetnPoint();
+				
+				donor_element = new su2double*[ nEdges_donor*2 + 1 ];
+				for (ii = 0; ii < nEdges_donor*2 + 1; ii++)
+					donor_element[ii] = new su2double[nDim];				
+					
+				nNode_donor = Build_3D_surface_element(donor_geometry, donor_iPoint, markDonor, donor_element);
+
+				Area = 0;
+				for (ii = 1; ii < nNode_target; ii++){
+					for (jj = 1; jj < nNode_donor; jj++){
+						Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii+1], donor_element[0], donor_element[jj], donor_element[jj+1], Normal);
+						//cout << Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii+1], donor_element[0], donor_element[jj], donor_element[jj+1], Normal) << endl;
+					}
+				}
+				
+				for (ii = 0; ii < nEdges_donor*2 + 1; ii++)
+							delete [] donor_element[ii];
+				delete [] donor_element;
+				
+				nDonorPoints = 1;
+				
+				/*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
+						
+				Coeff_Vect = new     su2double[ nDonorPoints ];
+				Donor_Vect = new unsigned long[ nDonorPoints ];
+				
+				Coeff_Vect[0] = Area;
+				Donor_Vect[0] = donor_iPoint;
+				
+				//cout << "Area zero " << scientific << Area << "  " << Area - target_area << endl;
+				
+				nAlreadyVisited = 0;
+				
+				if( Area/target_area < 1 ){
+					
+					alreadyVisitedDonor = new int[1];
+					
+					alreadyVisitedDonor[0] = donor_iPoint;
+					nAlreadyVisited = 1;
+					StartVisited = 0;
+					
+					Area_old = -1;
+					
+					while( Area != Area_old ){
+						/*
+							for( jj = 0; jj < nAlreadyVisited; jj++ )
+								cout << alreadyVisitedDonor[jj] << endl;
+						*/	
+						
+							Area_old = Area;
+							
+							ToVisit = NULL;
+							nToVisit = 0;
+							
+							for( iNodeVisited = StartVisited; iNodeVisited < nAlreadyVisited; iNodeVisited++ ){
+							//for( iNodeVisited = 0; iNodeVisited < nAlreadyVisited; iNodeVisited++ ){
+							
+								vPoint = alreadyVisitedDonor[ iNodeVisited ];
+								
+								//cout << "init " << vPoint << endl;
+								
+								nEdgeVisited = donor_geometry->node[ vPoint ]->GetnPoint();
+							
+								for (iEdgeVisited = 0; iEdgeVisited < nEdgeVisited; iEdgeVisited++){
+
+									EgdeIndex = donor_geometry->node[ vPoint ]->GetEdge( iEdgeVisited );
+										
+									if( vPoint == donor_geometry->edge[ EgdeIndex ]->GetNode(0) )
+										donor_iPoint = donor_geometry->edge[ EgdeIndex ]->GetNode(1);
+									else
+										donor_iPoint = donor_geometry->edge[ EgdeIndex ]->GetNode(0);
+
+									if ( donor_geometry->node[donor_iPoint]->GetVertex(markDonor) != -1 ){
+											
+										check = 0;
+										
+										for( jj = 0; jj < nAlreadyVisited; jj++ ){
+											if( donor_iPoint == alreadyVisitedDonor[jj] ){
+													check = 1; break;
+											}
+										}
+										
+										if( check == 0 ){
+											for( jj = 0; jj < nToVisit; jj++ )
+												if( donor_iPoint == ToVisit[jj] ){
+														check = 1; break;
+												}		
+										}
+										
+										if( check == 0 ){ // Add node to visit and visit it
+											
+											//cout << "check " << vPoint << endl;
+											
+											tmpVect = new int[ nToVisit ];
+											
+											for( jj = 0; jj < nToVisit; jj++ )
+												tmpVect[jj] = ToVisit[jj];
+												
+											if( ToVisit != NULL )
+												delete [] ToVisit;
+												
+											ToVisit = new int[nToVisit + 1];
+											
+											for( jj = 0; jj < nToVisit; jj++ )
+												ToVisit[jj] = tmpVect[jj];
+															
+											delete [] tmpVect;				
+											
+											ToVisit[nToVisit] = donor_iPoint;
+											
+											nToVisit++;	
+											
+											// Find partial coefficient
+
+											nEdges_donor = donor_geometry->node[donor_iPoint]->GetnPoint();
+											
+											donor_element = new su2double*[ nEdges_donor*2 + 1 ];
+											for (ii = 0; ii < nEdges_donor*2 + 1; ii++)
+												donor_element[ii] = new su2double[nDim];				
+												
+											nNode_donor = Build_3D_surface_element(donor_geometry, donor_iPoint, markDonor, donor_element);
+
+											tmp_Area = 0;
+											for (ii = 1; ii < nNode_target; ii++){
+												for (jj = 1; jj < nNode_donor; jj++){
+													tmp_Area += Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii+1], donor_element[0], donor_element[jj], donor_element[jj+1], Normal);
+													//cout << Compute_Triangle_Intersection(target_element[0], target_element[ii], target_element[ii+1], donor_element[0], donor_element[jj], donor_element[jj+1], Normal) << endl;
+												}
+											}
+											
+											for (ii = 0; ii < nEdges_donor*2 + 1; ii++)
+														delete [] donor_element[ii];
+											delete [] donor_element;
+											
+											
+											/*--- In case the element intersect the target cell update the auxiliary communication data structure ---*/
+						
+											tmp_Coeff_Vect = new     su2double[ nDonorPoints ];
+											tmp_Donor_Vect = new unsigned long[ nDonorPoints ];
+											
+											for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
+												tmp_Donor_Vect[iDonor] = Donor_Vect[iDonor];
+												tmp_Coeff_Vect[iDonor] = Coeff_Vect[iDonor];
+											}
+											
+											if (Donor_Vect != NULL)
+												delete [] Donor_Vect;
+												
+											if (Coeff_Vect != NULL)
+												delete [] Coeff_Vect;
+											
+											Coeff_Vect = new     su2double[ nDonorPoints + 1 ];
+											Donor_Vect = new unsigned long[ nDonorPoints + 1 ];
+											
+											for( iDonor = 0; iDonor < nDonorPoints; iDonor++){
+												Donor_Vect[iDonor] = tmp_Donor_Vect[iDonor];
+												Coeff_Vect[iDonor] = tmp_Coeff_Vect[iDonor];
+											}
+
+											Coeff_Vect[ nDonorPoints ] = tmp_Area;					
+											Donor_Vect[ nDonorPoints ] = donor_iPoint;
+
+											if (tmp_Donor_Vect != NULL)
+												delete [] tmp_Donor_Vect;
+									
+											if (tmp_Coeff_Vect != NULL)
+												delete [] tmp_Coeff_Vect;
+												
+											nDonorPoints++;
+											
+											Area += tmp_Area;
+						
+										}
+										
+									}
+										
+								}	
+							}
+							
+							StartVisited = nAlreadyVisited;
+							
+							tmpVect = new int[ nAlreadyVisited ];
+											
+							for( jj = 0; jj < nAlreadyVisited; jj++ )
+								tmpVect[jj] = alreadyVisitedDonor[jj];
+								
+							if( alreadyVisitedDonor != NULL )
+								delete [] alreadyVisitedDonor;
+								
+							alreadyVisitedDonor = new int[ nAlreadyVisited + nToVisit ];
+							
+							for( jj = 0; jj < nAlreadyVisited; jj++ )
+								alreadyVisitedDonor[jj] = tmpVect[jj];
+								
+							for( jj = 0; jj < nToVisit; jj++ )
+								alreadyVisitedDonor[ nAlreadyVisited + jj ] = ToVisit[jj];
+											
+							delete [] tmpVect;				
+							
+							nAlreadyVisited += nToVisit;							
+							/*
+							if( Area/target_area > 1 ){
+								cout << "Area " << scientific << Area << "  " << Area - target_area << "  " << Area/target_area << "  " << (Area - target_area)/target_area  << endl;
+								getchar();
+							}
+							*/
+							/*
+							cout << "Visited  " << nAlreadyVisited << endl;
+							cout << "Area " << scientific << Area << "  " << Area - target_area << endl;
+							getchar();
+							*/
+					}
+				
+				
+					delete [] alreadyVisitedDonor;
+					delete [] ToVisit;
+					
+				}
+				/*
+				cout << "Visited  " << nAlreadyVisited << endl;
+				cout << "Area " << scientific << Area << "  " << Area - target_area << endl;
+				cout << endl;
+				*/
+			/*
+				if( Area/target_area < 1 ){
+					cout << "Area " << scientific << Area << "  " << Area - target_area << endl;
+					getchar();
+				}
+			*/
+				
+				
+				/*--- Set the communication data structure and copy data from the auxiliary vectors ---*/
+				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nDonorPoints);
+	
+				target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
+
+				for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){			  
+					target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor] / Area);
+					target_geometry->vertex[markTarget][iVertex]->SetInterpDonorPoint( iDonor, donor_geometry->node[ Donor_Vect[iDonor] ]->GetGlobalIndex() );
+					target_geometry->vertex[markTarget][iVertex]->SetInterpDonorProcessor(iDonor, 0);//storeProc[iDonor]);
+
+					//cout <<rank << " Global Point " << Global_Point<<" iDonor " << iDonor <<" coeff " << coeff <<" gp " << pGlobalPoint << endl;				 
+				}
+
+				
+				
+				
+				
+				
+				
+				
+				for (ii = 0; ii < nEdges_target*2 + 1; ii++)
+							delete [] target_element[ii];
+				delete [] target_element;
+			}
+		}
+		
+		
+		
 		delete [] Buffer_Send_Coord;
 		delete [] Buffer_Send_GlobalPoint;
 
@@ -1541,11 +1893,13 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
 		delete [] Buffer_Send_nVertex_Donor;
 		delete [] Buffer_Receive_nVertex_Donor;
-
 	}
 
 
+	//Compute_Triangle_Intersection(Coord_i, Coord_i, Coord_i, Coord_i, Coord_i, Coord_i, Coord_i);
 
+	delete [] Normal;
+	
 	delete [] Coord_i;
 	delete [] Coord_j;
 	
@@ -1570,6 +1924,103 @@ su2double CSlidingmesh::PointsDistance(su2double *point_i, su2double *point_j){
 		m += (point_j[iDim] - point_i[iDim])*(point_j[iDim] - point_i[iDim]);
 	
 	return sqrt(m);
+}
+
+int CSlidingmesh::Build_3D_surface_element(CGeometry *geometry, unsigned long centralNode, unsigned long markID, su2double** element){
+	
+	int nEdges, iEdge, jEdge, kEdge, nNode, iNode, iEdgeIndex, jEdgeIndex, kEdgeIndex, iPoint, jPoint, kPoint, i, OldiPoint, StartIndex;
+	
+	unsigned short nDim = 3, iDim;
+	
+	nEdges = geometry->node[centralNode]->GetnPoint();
+	
+	for (iDim = 0; iDim < nDim; iDim++)
+		element[0][iDim] = geometry->node[centralNode]->GetCoord(iDim);
+				
+	iNode = 1;
+				
+	for (jEdge = 0; jEdge < nEdges; jEdge++){
+
+		iEdgeIndex = geometry->node[centralNode]->GetEdge(jEdge);
+			
+		if( centralNode == geometry->edge[iEdgeIndex]->GetNode(0) )
+			iPoint = geometry->edge[iEdgeIndex]->GetNode(1);
+		else
+			iPoint = geometry->edge[iEdgeIndex]->GetNode(0);
+
+		if ( geometry->node[iPoint]->GetVertex(markID) != -1 )
+			break;
+	}
+				
+	for (iDim = 0; iDim < nDim; iDim++) 
+			element[iNode][iDim] = ( element[0][iDim] + geometry->node[iPoint]->GetCoord(iDim) )/2;
+			
+	StartIndex = iPoint;
+	
+	OldiPoint = -1;
+				
+	while( iNode != nNode-1 ){	
+						
+		for (jEdge = 0; jEdge < nEdges; jEdge++){
+			
+			jEdgeIndex = geometry->node[centralNode]->GetEdge(jEdge);
+			
+			
+			if( jEdgeIndex != iEdgeIndex ){
+			
+				if( centralNode == geometry->edge[jEdgeIndex]->GetNode(0))
+					jPoint = geometry->edge[jEdgeIndex]->GetNode(1);
+				else
+					jPoint = geometry->edge[jEdgeIndex]->GetNode(0);
+					
+		
+				if ( geometry->node[jPoint]->GetVertex(markID) != -1 && jPoint != OldiPoint ){
+					
+					for ( kEdge = 0; kEdge < geometry->node[iPoint]->GetnPoint(); kEdge++ ){
+										
+						kEdgeIndex = geometry->node[iPoint]->GetEdge(kEdge);
+						
+						if( iPoint == geometry->edge[kEdgeIndex]->GetNode(0) )
+							kPoint = geometry->edge[kEdgeIndex]->GetNode(1);
+						else
+							kPoint = geometry->edge[kEdgeIndex]->GetNode(0);
+						
+						if( kPoint == jPoint ){
+							
+							iNode++;
+							
+							for (iDim = 0; iDim < nDim; iDim++) 
+								element[iNode][iDim] = ( element[0][iDim] + geometry->node[iPoint]->GetCoord(iDim) + geometry->node[jPoint]->GetCoord(iDim))/3;
+							
+							iNode++;
+
+							for (iDim = 0; iDim < nDim; iDim++) 
+								element[iNode][iDim] = ( element[0][iDim] + geometry->node[jPoint]->GetCoord(iDim) )/2;
+
+							OldiPoint = iPoint;	
+							iPoint = jPoint;
+							iEdgeIndex = jEdgeIndex;
+						
+							break;
+						}
+					}
+				}				
+				
+			}
+			
+			if(iPoint == jPoint)
+				break;
+		}
+		
+		if(iPoint == StartIndex)
+			break;
+	}
+	
+	for (iDim = 0; iDim < nDim; iDim++)
+		element[iNode+1][iDim] = element[1][iDim];
+		
+				
+	return iNode;
 }
 
 su2double CSlidingmesh::Compute_Intersection_2D(su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* Direction){
@@ -1691,20 +2142,32 @@ su2double CSlidingmesh::Compute_Triangle_Intersection(su2double* A1, su2double* 
 		b3[iDim] = 0;
 	}
 	
+	
 	m1 = 0;
-	m2 = 0;
 	for(iDim = 0; iDim < nDim; iDim++){
-		I[iDim] = A2[iDim] - A1[iDim];
 		K[iDim] = Direction[iDim];
-		
-		m1 += I[iDim] * I[iDim];
-		m2 += K[iDim] * K[iDim];
+
+		m1 += K[iDim] * K[iDim];
 	}
 	
+	for(iDim = 0; iDim < nDim; iDim++)
+		K[iDim] /= sqrt(m1);
+		
+	m2 = 0;
+	for(iDim = 0; iDim < nDim; iDim++)
+		m2 += (A2[iDim] - A1[iDim]) * K[iDim];
+
+	m1 = 0;
 	for(iDim = 0; iDim < nDim; iDim++){
-		I[iDim] /= m1;
-		K[iDim] /= m2;
+		
+		I[iDim] = (A2[iDim] - A1[iDim]) - m2 * K[iDim];
+		
+		m1 += I[iDim] * I[iDim];
 	}
+	
+	for(iDim = 0; iDim < nDim; iDim++)
+		I[iDim] /= sqrt(m1);
+
 	
 	// Cross product to find Y, works both for 2D and 3D because versor where initially set to zero.
 	J[0] =   I[1]*(-K[2]) - (-K[1])*I[2];
@@ -1734,253 +2197,225 @@ su2double CSlidingmesh::Compute_Triangle_Intersection(su2double* A1, su2double* 
 		b3[1] += (B3[iDim] - A1[iDim]) * J[iDim];
 		b3[2] += (B3[iDim] - A1[iDim]) * K[iDim];		
 	}
-
-	/* --- Find a B point inside triangle A --- */
+	/*
+	for(iDim = 0; iDim < nDim; iDim++)
+		cout << a1[iDim] << "  ";
+	cout << endl;
 	
-	if      ( CheckPointInsideTriangle(B1, A1, A2, A3) ) // B1 inside A
-		ComputeIntersectionArea( B1, B2, B3, A1, A2, A3 );
-	else if ( CheckPointInsideTriangle(B2, A1, A2, A3) ) // B2 inside A
-		ComputeIntersectionArea( B2, B3, B1, A1, A2, A3 );
-	else if ( CheckPointInsideTriangle(B3, A1, A2, A3) ) // B3 inside A
-		ComputeIntersectionArea( B3, B1, B2, A1, A2, A3 );
-	else if ( CheckPointInsideTriangle(A1, B1, B2, B3) ) // A1 inside B
-		ComputeIntersectionArea( A1, A2, A3, B1, B2, B3 );
-	else if ( CheckPointInsideTriangle(A2, B1, B2, B3) ) // A2 inside B
-		ComputeIntersectionArea( A2, A3, A1, B1, B2, B3 );
-	else if ( CheckPointInsideTriangle(A3, B1, B2, B3) ) // A3 inside B
-		ComputeIntersectionArea( A3, A1, A2, B1, B2, B3 );
-	else{
-		// Throw error
-		cout << "Oooops, something went wrong in interpolation_structure.cpp \"Compute_Triangle_Intersection\"" << endl;
-		getchar();
-	}
-
-
+	for(iDim = 0; iDim < nDim; iDim++)
+		cout << a2[iDim] << "  ";
+	cout << endl;
+	
+	for(iDim = 0; iDim < nDim; iDim++)
+		cout << a3[iDim] << "  ";
+	cout << endl;
+	
+	for(iDim = 0; iDim < nDim; iDim++)
+		cout << b1[iDim] << "  ";
+	cout << endl;
+	
+	for(iDim = 0; iDim < nDim; iDim++)
+		cout << b2[iDim] << "  ";
+	cout << endl;
+	
+	for(iDim = 0; iDim < nDim; iDim++)
+		cout << b3[iDim] << "  ";
+	cout << endl;
+	*/
+	/* --- Find a B point inside triangle A --- */
+	/*
+	a1[0] = 0;
+	a1[1] = 0;
+	a1[2] = 0;
+	
+	a2[0] = 1;
+	a2[1] = 0;
+	a2[2] = 0;
+	
+	a3[0] = 0;
+	a3[1] = 1;
+	a3[2] = 0;
+	
+	b1[0] = 0.5;
+	b1[1] = 0;
+	b1[2] = 0;
+	
+	b2[0] = 1.5;
+	b2[1] = 0;
+	b2[2] = 0;
+	
+	b3[0] = 0.5;
+	b3[1] = 1;
+	b3[2] = 0;
+	
+	cout << "Area  " << ComputeIntersectionArea( a1, a2, a3, b1, b2, b3 ) << endl;
+	getchar();
+	*/
 	/* --- Compute intersection area --- */
 	
-	return 0.0;
+	return ComputeIntersectionArea( a1, a2, a3, b1, b2, b3 );
 }
 
 su2double CSlidingmesh::ComputeIntersectionArea( su2double* P1, su2double* P2, su2double* P3, su2double* Q1, su2double* Q2, su2double* Q3 ){
+	
+	bool check;
+	
+	unsigned short iDim, iPoints, nPoints, i, j, k, count;
+	unsigned short nDim, IntersectionCounter, min_theta_index;
 
-	// This function works for 2 co-planar triangle, it requires them to be represented on a local 2-dimensional reference frame
-	// P1 MUST be inside triangle Q
+	su2double points[16][2], IntersectionPoint[2], theta[6];
+	su2double TriangleP[4][2], TriangleQ[4][2];
+	su2double Area, det, dot1, dot2, ref_cross, com_cross, dtmp, min_theta;
 	
-	unsigned short iDim, iPoints, nPoints, i;
-	unsigned short nDim = 2, IntersectionCounter;
-
-	su2double points[6][2], IntersectionPoint[2];
-	su2double TriangleQ[4][2];
-	su2double Area, det, dot;
+	nDim  = 2;
+	check = 1;
+	nPoints = 0;
 	
-	// store P1 (because that is indide triangle Q for sure) and prepare auxiliary data structure
-	
-	nPoints = 1;
 	for(iDim = 0; iDim < nDim; iDim++){
-		points[nPoints][iDim] = P1[iDim];
+		TriangleP[0][iDim] = P1[iDim] - P1[iDim];
+		TriangleP[1][iDim] = P2[iDim] - P1[iDim];
+		TriangleP[2][iDim] = P3[iDim] - P1[iDim];
+		TriangleP[3][iDim] = P1[iDim] - P1[iDim];
 		
-		TriangleQ[0][iDim] = Q1[iDim];
-		TriangleQ[1][iDim] = Q2[iDim];
-		TriangleQ[2][iDim] = Q3[iDim];
-		TriangleQ[3][iDim] = Q1[iDim];
+		TriangleQ[0][iDim] = Q1[iDim] - P1[iDim];
+		TriangleQ[1][iDim] = Q2[iDim] - P1[iDim];
+		TriangleQ[2][iDim] = Q3[iDim] - P1[iDim];
+		TriangleQ[3][iDim] = Q1[iDim] - P1[iDim];
 	}
+	
+	
+	for( j = 0; j < 3; j++){
+		if( CheckPointInsideTriangle(TriangleP[j], TriangleQ[0], TriangleQ[1], TriangleQ[2]) ){
 
-	// compute P1P2 intersection point
-	
-	for( i = 0; i < 3; i++){
-	
-		det = (P1[0] - P2[0]) * ( TriangleQ[i][1] - TriangleQ[i+1][1] ) - (P1[1] - P2[1]) * (TriangleQ[i][0] - TriangleQ[i+1][0]);
-		dot = 0;
-		
-		if ( det != 0.0 ){
-			ComputeLineIntersectionPoint( P1, P2, TriangleQ[i], TriangleQ[i+1], IntersectionPoint );
-			
-			dot = 0;
+			// Then P1 is also inside triangle Q, so store it
 			for(iDim = 0; iDim < nDim; iDim++)
-					dot += ( P1[iDim] - IntersectionPoint[iDim] ) * ( P2[iDim] - IntersectionPoint[iDim] );
-		}
-		
-		if(dot < 0) // It found the only one intersection
-			break;
-	}
+				points[nPoints][iDim] = TriangleP[j][iDim];
 
-	if ( i == 3 ){ // no intersections	
+			nPoints++;		
+		}
+	}
+	
+	for( j = 0; j < 3; j++){	
+		if( CheckPointInsideTriangle(TriangleQ[j], TriangleP[0], TriangleP[1], TriangleP[2]) ){
+
+			// Then Q1 is also inside triangle P, so store it
+			for(iDim = 0; iDim < nDim; iDim++)
+				points[nPoints][iDim] = TriangleQ[j][iDim];
+
+			nPoints++;		
+		}
+	}
 		
-		// Then P2 is also inside triangle Q, so store it
-		nPoints++;
-		for(iDim = 0; iDim < nDim; iDim++)
-			points[nPoints][iDim] = P2[iDim];
-			
-		// compute P2P3 intersection point
 		
+	// Compute all edge intersections
+
+	for( j = 0; j < 3; j++){
+
 		for( i = 0; i < 3; i++){
 	
-			det = (P2[0] - P3[0]) * ( TriangleQ[i][1] - TriangleQ[i+1][1] ) - (P2[1] - P3[1]) * (TriangleQ[i][0] - TriangleQ[i+1][0]);
-			dot = 0;
-			
-			if ( det != 0.0 ){
-				ComputeLineIntersectionPoint( P2, P3, TriangleQ[i], TriangleQ[i], IntersectionPoint );
-				
-				dot = 0;
-				for(iDim = 0; iDim < nDim; iDim++)
-						dot += ( P2[iDim] - IntersectionPoint[iDim] ) * ( P3[iDim] - IntersectionPoint[iDim] );
-			}
-			
-			if(dot < 0) // It found the only one intersection
-				break;
-		}
-		
-		if ( i == 3 ){ // no intersections	
-			// Then P3 is also inside triangle Q, so store it
-			nPoints++;
-			for(iDim = 0; iDim < nDim; iDim++)
-				points[nPoints][iDim] = P3[iDim];
-		}
-		else{
-			// Store P2P3 Intersection point
-			nPoints++;
-			for(iDim = 0; iDim < nDim; iDim++)
-				points[nPoints][iDim] = IntersectionPoint[iDim];
-				
-			// compute P3P1 intersection point
-			
-			for( i = 0; i < 3; i++){
-	
-				det = (P3[0] - P1[0]) * ( TriangleQ[i][1] - TriangleQ[i+1][1] ) - (P3[1] - P1[1]) * (TriangleQ[i][0] - TriangleQ[i+1][0]);
-				dot = 0;
+				det = (TriangleP[j][0] - TriangleP[j+1][0]) * ( TriangleQ[i][1] - TriangleQ[i+1][1] ) - (TriangleP[j][1] - TriangleP[j+1][1]) * (TriangleQ[i][0] - TriangleQ[i+1][0]);
 				
 				if ( det != 0.0 ){
-					ComputeLineIntersectionPoint( P3, P1, TriangleQ[i], TriangleQ[i], IntersectionPoint );
+					ComputeLineIntersectionPoint( TriangleP[j], TriangleP[j+1], TriangleQ[i], TriangleQ[i+1], IntersectionPoint );
 					
-					dot = 0;
-					for(iDim = 0; iDim < nDim; iDim++)
-							dot += ( P3[iDim] - IntersectionPoint[iDim] ) * ( P1[iDim] - IntersectionPoint[iDim] );
-				}
-				
-				if(dot < 0) // It found the only one intersection
-					break;
-			}
-			
-			// Store P3P1 Intersection point
-			nPoints++;
-			for(iDim = 0; iDim < nDim; iDim++)
-				points[nPoints][iDim] = IntersectionPoint[iDim];
-			
-		}
+					dot1 = 0;
+					dot2 = 0;
+					for(iDim = 0; iDim < nDim; iDim++){
+							dot1 += ( TriangleP[j][iDim] - IntersectionPoint[iDim] ) * ( TriangleP[j+1][iDim] - IntersectionPoint[iDim] );
+							dot2 += ( TriangleQ[i][iDim] - IntersectionPoint[iDim] ) * ( TriangleQ[i+1][iDim] - IntersectionPoint[iDim] );
+					}
+					
+					if( dot1 <= 0 && dot2 <= 0 ){ // It found one intersection
 
-	}
-	else{
-		
-		// Store P1P2 Intersection point
-		nPoints++;
-		for(iDim = 0; iDim < nDim; iDim++)
-			points[nPoints][iDim] = IntersectionPoint[iDim];
-		
-		// compute P2P3 intersection point, they can be 0, 1, 2
-		
-		IntersectionCounter = 0;
-		
-		for( i = 0; i < 3; i++){
-	
-				det = (P2[0] - P3[0]) * ( TriangleQ[i][1] - TriangleQ[i+1][1] ) - (P2[1] - P3[1]) * (TriangleQ[i][0] - TriangleQ[i+1][0]);
-				dot = 0;
-				
-				if ( det != 0.0 ){
-					ComputeLineIntersectionPoint( P2, P3, TriangleQ[i], TriangleQ[i], IntersectionPoint );
-					
-					dot = 0;
-					for(iDim = 0; iDim < nDim; iDim++)
-							dot += ( P2[iDim] - IntersectionPoint[iDim] ) * ( P3[iDim] - IntersectionPoint[iDim] );
-				}
-				
-				if(dot < 0){ // It found the one intersection
-					IntersectionCounter++;
-					if( IntersectionCounter == 0 ){
 						// Store temporarily the intersection point
-						nPoints++;
+
 						for(iDim = 0; iDim < nDim; iDim++)
 							points[nPoints][iDim] = IntersectionPoint[iDim];
-					}
-					else{
-						if( PointsDistance(P2, IntersectionPoint) < PointsDistance(P2, points[nPoints]) ){
-							// Need to change points order
-							for(iDim = 0; iDim < nDim; iDim++)
-								points[nPoints + 1][iDim] = points[nPoints][iDim];
-											
-							for(iDim = 0; iDim < nDim; iDim++)
-								points[nPoints][iDim] = IntersectionPoint[iDim];
-							nPoints++;
-						}
-						else{
-							nPoints++;
-							for(iDim = 0; iDim < nDim; iDim++)
-								points[nPoints][iDim] = IntersectionPoint[iDim];
-						}
-
 							
-						
-					}
+						nPoints++;
+					}	
 				}
-		}
-		
-		if ( IntersectionCounter == 0 ){ ////////////////////////////////////////////////// errore , puo essere che nessun punto si acontenuto e viceversa, stella israele. modificare riordinando i punti all'inizio
 			
 		}
-		else if ( IntersectionCounter == 1 ){
-			// Then P2 is also inside triangle Q, so store it
-			nPoints++;
-			for(iDim = 0; iDim < nDim; iDim++)
-				points[nPoints][iDim] = P3[iDim];
-		}
-		else if ( IntersectionCounter == 2 ){
-			// Then P3 is outside triangle Q so compute intersection P3P1
+	}
+		
+	// Remove double points, if any
 
-			for( i = 0; i < 3; i++){
-	
-				det = (P3[0] - P1[0]) * ( TriangleQ[i][1] - TriangleQ[i+1][1] ) - (P3[1] - P1[1]) * (TriangleQ[i][0] - TriangleQ[i+1][0]);
-				dot = 0;
-				
-				if ( det != 0.0 ){
-					ComputeLineIntersectionPoint( P3, P1, TriangleQ[i], TriangleQ[i], IntersectionPoint );
-					
-					dot = 0;
-					for(iDim = 0; iDim < nDim; iDim++)
-							dot += ( P3[iDim] - IntersectionPoint[iDim] ) * ( P1[iDim] - IntersectionPoint[iDim] );
+	for( i = 0; i < nPoints; i++){
+			for( j = i+1; j < nPoints; j++){
+				if(points[j][0] == points[i][0] && points[j][1] == points[i][1]){
+						for( k = j; k < nPoints-1; k++){
+							points[k][0] = points[k+1][0];
+							points[k][1] = points[k+1][1];
+						}
+						nPoints--;
+						j--;
 				}
-				
-				if(dot < 0) // It found the only one intersection
-					break;
 			}
-			
-			// Store P3P1 Intersection point
-			nPoints++;
-			for(iDim = 0; iDim < nDim; iDim++)
-				points[nPoints][iDim] = IntersectionPoint[iDim];
+	}		
+	
+	// Re-order nodes	
 
-		}
+	for( i = 1; i < nPoints; i++){ // Change again reference frame
 		
+		for(iDim = 0; iDim < nDim; iDim++)
+			points[i][iDim] -= points[0][iDim];
+		
+		
+		// Compute polar azimuth for each node but the first
+		
+		if (i != 0)
+			theta[i] = atan2(points[i][1], points[i][0]);
+
 	}
 	
+	for(iDim = 0; iDim < nDim; iDim++)
+			points[0][iDim] = 0;
 	
+	for( i = 1; i < nPoints; i++){
+		
+		min_theta = theta[i];
+		min_theta_index = 0;
+		
+		for( j = i + 1; j < nPoints; j++){ 
+			
+			if( theta[j] < min_theta ){
+				min_theta = theta[j];
+				min_theta_index = j;
+			}
+		}
+		
+		if( min_theta_index != 0 ){
+			dtmp = theta[i];
+			theta[i] = theta[min_theta_index];
+			theta[min_theta_index] = dtmp;
+			
+			dtmp = points[i][0];
+			points[i][0] = points[min_theta_index][0];
+			points[min_theta_index][0] = dtmp;
+			
+			dtmp = points[i][1];
+			points[i][1] = points[min_theta_index][1];
+			points[min_theta_index][1] = dtmp;
+		}
+	}
+
+	// compute area using cross product rule, points position are referred to the 2-dimensional, local, reference frame centered in points[0]
 	
-		// se non ci sono intersezioni allora store P2
-				// compute P2P3 intersection point
-				// se non ci sono intersezioni
-					// Store P3
-				// altrimenti 	
-					//Store intersection point P2P3
-					// compute P3P1 intersection point
-					// Store intersection points P3P1
-		// altrimenti 
-			// store intersezione
-			// Compute intersezione P2P3 (saranno 2, 1 o 0)
-			// se 0
-				// store Q point, c'e da capire quale, probabilmente quello che appartiene dall-edge Q intersecato ma fuori (rispetto al centroide di P) dall'edge intersecato P
-			// se 1
-				// store intersection & P3
-			// se 2
-				// store intersections a partire da quella piu vicina a P2
-				// compute intersection P3P1 & store it	
+	Area = 0;
+	
+	if (nPoints > 2){
+		for( i = 1; i < nPoints-1; i++ ){
+			
+			// AxBy
+			Area += ( points[i][0] - points[0][0] ) * ( points[i+1][1] - points[0][1] );
+			
+			// AyBx
+			Area -= ( points[i][1] - points[0][1] ) * ( points[i+1][0] - points[0][0] );		
+		}
+	}
+	
+	return fabs(Area)/2;
 }
 
 void CSlidingmesh::ComputeLineIntersectionPoint( su2double* A1, su2double* A2, su2double* B1, su2double* B2, su2double* IntersectionPoint ){
@@ -2005,13 +2440,14 @@ void CSlidingmesh::ComputeLineIntersectionPoint( su2double* A1, su2double* A2, s
 bool CSlidingmesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2double* T2, su2double* T3){
 
 	unsigned short iDim;
-	unsigned short nDim = donor_geometry->GetnDim();
+	unsigned short nDim;
 	unsigned short check;
 	
-	su2double vect1[3], vect2[3], r[3];
+	su2double vect1[2], vect2[2], r[2];
 	su2double dot;
 	
 	check = 0;
+	nDim  = 2;
 	
 	/* --- Check first edge --- */
 	
@@ -2020,7 +2456,7 @@ bool CSlidingmesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2
 		vect1[iDim] = T3[iDim] - T1[iDim];
 		vect2[iDim] = T2[iDim] - T1[iDim];
 		
-		r[iDim] = T1[iDim] - Point[iDim];
+		r[iDim] = Point[iDim] - T1[iDim];
 		
 		dot += vect2[iDim] * vect2[iDim];
 	}
@@ -2042,7 +2478,7 @@ bool CSlidingmesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2
 		
 	if (dot >= 0)
 		check++;
-		
+
 	/* --- Check second edge --- */
 		
 	dot = 0;
@@ -2050,7 +2486,7 @@ bool CSlidingmesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2
 		vect1[iDim] = T1[iDim] - T2[iDim];
 		vect2[iDim] = T3[iDim] - T2[iDim];
 		
-		r[iDim] = T2[iDim] - Point[iDim];
+		r[iDim] = Point[iDim] - T2[iDim];
 		
 		dot += vect2[iDim] * vect2[iDim];
 	}
@@ -2072,7 +2508,7 @@ bool CSlidingmesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2
 		
 	if (dot >= 0)
 		check++;
-		
+
 	/* --- Check third edge --- */
 	
 	dot = 0;
@@ -2080,7 +2516,7 @@ bool CSlidingmesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2
 		vect1[iDim] = T2[iDim] - T3[iDim];
 		vect2[iDim] = T1[iDim] - T3[iDim];
 		
-		r[iDim] = T3[iDim] - Point[iDim];
+		r[iDim] = Point[iDim] - T3[iDim];
 		
 		dot += vect2[iDim] * vect2[iDim];
 	}
@@ -2102,9 +2538,8 @@ bool CSlidingmesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2
 		
 	if (dot >= 0)
 		check++;
-		
-		
-	return check == 3;
+
+	return (check == 3);
 		
 }
 

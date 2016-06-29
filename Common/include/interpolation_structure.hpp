@@ -281,6 +281,16 @@ public:
   void Set_TransferCoeff(CConfig **config);
   
   /*!
+   * \brief For 3-Dimensional grids, build the dual surface element
+   * \param[in] geometry - geometry where the node cell belongs
+   * \param[in] centralNode - label of the vertex around which the dual surface element is built
+   * \param[in] markID   - node centered cell index
+   * \param[in] element  - double array where element node coordinates will be stored
+   * \param[in] output   - number of nodes in the element
+   */  
+  int Build_3D_surface_element(CGeometry *geometry, unsigned long centralNode, unsigned long markID, su2double** element);
+  
+  /*!
    * \brief compute distance between 2 points
    * \param[in] point_i
    * \param[in] point_i
