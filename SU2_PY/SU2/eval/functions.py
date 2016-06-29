@@ -3,7 +3,7 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.2.0 "Cardinal"
+#  \version 4.1.1 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -77,11 +77,12 @@ def function( func_name, config, state=None ):
     # initialize
     state = su2io.State(state)
     
+    multi_objective = (type(func_name)==list)
     # redundancy check
-    if not state['FUNCTIONS'].has_key(func_name):
-        
+    if multi_objective or not state['FUNCTIONS'].has_key(func_name):
+
         # Aerodynamics
-        if func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:
+        if multi_objective or func_name == 'ALL' or func_name in su2io.optnames_aero + su2io.grad_names_directdiff:
             aerodynamics( config, state )
             
         # Stability
@@ -100,8 +101,20 @@ def function( func_name, config, state=None ):
     # prepare output
     if func_name == 'ALL':
         func_out = state['FUNCTIONS']
+            # If combine_objective is true, use the 'combo' output. 
+    elif ((config.COMBINE_OBJECTIVE=="YES") and (type(func_name)==list)):
+        objectives=config.OPT_OBJECTIVE
+        func_out = 0.0
+        for func in func_name:
+            sign = su2io.get_objectiveSign(func)
+            func_out+=state['FUNCTIONS'][func]*objectives[func]['SCALE']*sign
+        state['FUNCTIONS']['COMBO'] = func_out
+    elif multi_objective:
+        for func in func_name:
+            func_out = state['FUNCTIONS'][func]
     else:
         func_out = state['FUNCTIONS'][func_name]
+        
     
     return copy.deepcopy(func_out)
 
@@ -249,7 +262,7 @@ def aerodynamics( config, state=None ):
         if state['FUNCTIONS'].has_key(key):
             funcs[key] = state['FUNCTIONS'][key]
             
-    if config.OBJECTIVE_FUNCTION == 'OUTFLOW_GENERALIZED':    
+    if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION:    
         import downstream_function
         state['FUNCTIONS']['OUTFLOW_GENERALIZED']=downstream_function.downstream_function(config,state)
 
