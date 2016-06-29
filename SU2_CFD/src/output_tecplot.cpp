@@ -2,7 +2,7 @@
  * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -79,6 +79,10 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     else filename = config->GetStructure_FileName().c_str();
   }
   
+  if (config->GetKind_SU2() == SU2_DOT){
+    if (surf_sol) filename = config->GetSurfSens_FileName();
+    else filename = config->GetVolSens_FileName();
+  }
   strcpy (cstr, filename.c_str());
   
   /*--- Special cases where a number needs to be appended to the file name. ---*/
@@ -124,7 +128,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   
   /*--- Write the list of the fields in the restart file.
    Without including the PointID---*/
-  if (config->GetKind_SU2() == SU2_SOL) {
+  if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
     
     /*--- If SU2_SOL called this routine, we already have a set of output
      variables with the appropriate string tags stored in the config class. ---*/
@@ -175,15 +179,16 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
       }
       
       if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-        Tecplot_File << ",\"Pressure\",\"Temperature\",\"Pressure_Coefficient\",\"Mach\"";
+        Tecplot_File << ",\"Pressure\",\"Temperature\",\"C<sub>p</sub>\",\"Mach\"";
       }
       
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-        Tecplot_File << ",\"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Flux\", \"Y_Plus\"";
+        if (nDim == 2) Tecplot_File << ", \"<greek>m</greek>\", \"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"h\", \"y<sup>+</sup>\"";
+        else Tecplot_File << ", \"<greek>m</greek>\", \"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"C<sub>f</sub>_z\", \"h\", \"y<sup>+</sup>\"";
       }
       
       if (Kind_Solver == RANS) {
-        Tecplot_File << ", \"Eddy_Viscosity\"";
+        Tecplot_File << ", \"<greek>m</greek><sub>t</sub>\"";
       }
       
       if (config->GetWrt_SharpEdges()) {
@@ -302,7 +307,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
       if (LocalIndex[iPoint+1] != 0) {
         
         /*--- Write the node coordinates ---*/
-        if (config->GetKind_SU2() != SU2_SOL) {
+        if ((config->GetKind_SU2() != SU2_SOL) && (config->GetKind_SU2() != SU2_DOT)) {
           for (iDim = 0; iDim < nDim; iDim++)
           Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
         }
@@ -318,7 +323,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     } else {
       
       /*--- Write the node coordinates ---*/
-      if (config->GetKind_SU2() != SU2_SOL) {
+      if ((config->GetKind_SU2() != SU2_SOL) && (config->GetKind_SU2() != SU2_DOT)) {
         for (iDim = 0; iDim < nDim; iDim++)
         Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
       }
@@ -412,7 +417,10 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   
   Tecplot_File.close();
   
-  if (surf_sol) delete [] LocalIndex;
+  if (surf_sol){
+    delete [] LocalIndex;
+    delete[] SurfacePoint;
+  }
   
 }
 
@@ -489,10 +497,11 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
       }
       
       if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-        Tecplot_File << ",\"Pressure\",\"Temperature\",\"Pressure_Coefficient\",\"Mach\"";
+        Tecplot_File << ", \"Pressure\",\"Temperature\",\"C<sub>p</sub>\",\"Mach\"";
         if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-          Tecplot_File << ",\"Laminar_Viscosity\", \"Skin_Friction_Coefficient\", \"Heat_Flux\", \"Y_Plus\"";
-          if (Kind_Solver == RANS) { Tecplot_File << ", \"Eddy_Viscosity\""; }
+          if (geometry->GetnDim() == 2) Tecplot_File << ", \"<greek>m</greek>\", \"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"h\", \"y<sup>+</sup>\"";
+          else Tecplot_File << ", \"<greek>m</greek>\", \"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"C<sub>f</sub>_z\", \"h\", \"y<sup>+</sup>\"";
+          if (Kind_Solver == RANS) { Tecplot_File << ", \"<greek>m</greek><sub>t</sub>\""; }
         }
         if (config->GetWrt_SharpEdges()) { Tecplot_File << ", \"Sharp_Edge_Dist\""; }
       }
@@ -2621,8 +2630,14 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
     }
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      variables << "Laminar_Viscosity Skin_Friction_Coefficient Heat_Flux Y_Plus ";
-      *NVar += 4;
+      if (nDim == 2) {
+        variables << "Laminar_Viscosity Skin_Friction_Coefficient_x Skin_Friction_Coefficient_y Heat_Flux Y_Plus ";
+        *NVar += 5;
+      }
+      else {
+        variables << "Laminar_Viscosity Skin_Friction_Coefficient_x Skin_Friction_Coefficient_y Skin_Friction_Coefficient_z Heat_Flux Y_Plus ";
+        *NVar += 6;
+      }
     }
     
     if (Kind_Solver == RANS) {
