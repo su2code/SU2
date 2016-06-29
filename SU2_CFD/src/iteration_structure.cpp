@@ -1467,7 +1467,7 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
 
   if (CurrentRecording != FLOW_VARIABLES || unsteady){
     
-    if ((rank == MASTER_NODE)){
+    if (rank == MASTER_NODE){
       cout << "Direct iteration to store computational graph." << endl;
       cout << "Compute residuals to check the convergence of the direct problem." << endl;
     }
