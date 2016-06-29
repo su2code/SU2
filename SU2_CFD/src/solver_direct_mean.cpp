@@ -12261,9 +12261,12 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   CSkinFriction = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CSkinFriction[iMarker] = new su2double [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      CSkinFriction[iMarker][iVertex] = 0.0;
+    CSkinFriction[iMarker] = new su2double*[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      CSkinFriction[iMarker][iDim] = new su2double[geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        CSkinFriction[iMarker][iDim][iVertex] = 0.0;
+      }
     }
   }
   
@@ -12801,6 +12804,9 @@ CNSSolver::~CNSSolver(void) {
   
   if (CSkinFriction != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        delete CSkinFriction[iMarker][iDim];
+      }
       delete CSkinFriction[iMarker];
     }
     delete [] CSkinFriction;
@@ -13417,8 +13423,13 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         /*--- Compute wall shear stress (using the stress tensor) ---*/
         
         TauNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
-        for (iDim = 0; iDim < nDim; iDim++) TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-        WallShearStress = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallShearStress += TauTangent[iDim]*TauTangent[iDim];
+        
+        WallShearStress = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+          CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
+          WallShearStress += TauTangent[iDim] * TauTangent[iDim];
+        }
         WallShearStress = sqrt(WallShearStress);
         
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
