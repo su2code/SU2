@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * Many of the classes in this file are templated, and therefore must
  * be declared and defined here; to keep all elements together, there
@@ -909,11 +909,11 @@ enum ENUM_OBJECTIVE {
   MAX_THICK_SEC2 = 24,          /*!< \brief Maximum thickness in section 2. */
   MAX_THICK_SEC3 = 25,          /*!< \brief Maximum thickness in section 3. */
   MAX_THICK_SEC4 = 26,          /*!< \brief Maximum thickness in section 4. */
-  MAX_THICK_SEC5 = 27,          /*!< \brief Maximum thickness in section 5. */
+  MAX_THICK_SEC5 = 27,           /*!< \brief Maximum thickness in section 5. */
   AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
-  AVG_OUTLET_PRESSURE = 29,     /*!< \brief Static Pressure objective function definition. */
-  MASS_FLOW_RATE = 30,          /*!< \brief Mass Flow Rate objective function definition. */
-  OUTFLOW_GENERALIZED=31        /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
+  AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
+  MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
+  OUTFLOW_GENERALIZED=31          /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>

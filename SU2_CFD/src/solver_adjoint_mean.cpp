@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -64,6 +64,16 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool axisymmetric = config->GetAxisymmetric();
   
+  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
+  su2double RefDensity  = config->GetDensity_FreeStreamND();
+  su2double Gas_Constant    = config->GetGas_ConstantND();
+  su2double Mach_Motion     = config->GetMach_Motion();
+  su2double RefVel2, Mach2Vel, obj_weight, factor;
+  su2double *Velocity_Inf;
+  string Marker_Tag, Monitoring_Tag;
+  unsigned short iMarker_Monitoring, jMarker, ObjFunc;
+  bool grid_movement  = config->GetGrid_Movement();
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -331,7 +341,9 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Define solver parameters needed for execution of destructor ---*/
   if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED) space_centered = true;
   else space_centered = false;
+
   
+
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
@@ -1339,8 +1351,19 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
     for (AngleInt = 0; AngleInt < 180; AngleInt++)
       IndexNF_inv[AngleInt] = -1;
     
-    for (iIndex = 0; iIndex < IndexNF.size(); iIndex++)
-      IndexNF_inv[IndexNF[iIndex]] = iIndex;
+	if (IndexNF.size() <= 180) {
+		for (iIndex = 0; iIndex < IndexNF.size(); iIndex++)
+			IndexNF_inv[IndexNF[iIndex]] = iIndex;
+	}
+	else {
+		#ifndef HAVE_MPI
+				exit(EXIT_FAILURE);
+		#else
+				MPI_Barrier(MPI_COMM_WORLD);
+				MPI_Abort(MPI_COMM_WORLD, 1);
+				MPI_Finalize();
+		#endif
+	}
     
   }
   
@@ -2445,10 +2468,10 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 
     if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
         (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-        (ObjFunc == MASS_FLOW_RATE) || (ObjFunc == OUTFLOW_GENERALIZED) )
+        (ObjFunc == MASS_FLOW_RATE) || (ObjFunc == OUTFLOW_GENERALIZED))
       factor = 1.0;
 
-   if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE)  ) factor = 1.0/Area_Monitored;
+   if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ) factor = 1.0/Area_Monitored;
   }
   
   /*--- Initialize sensitivities to zero ---*/
@@ -2568,11 +2591,6 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           
           CSensitivity[iMarker][iVertex] = (d_press + grad_v + v_gradconspsi) * Area * scale * factor;
           
-          /*--- Change the sign of the sensitivity if the normal has been flipped --*/
-          
-          if (geometry->node[iPoint]->GetFlip_Orientation())
-            CSensitivity[iMarker][iVertex] = -CSensitivity[iMarker][iVertex];
-
           /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
           
           if (config->GetSens_Remove_Sharp()) {
@@ -4835,6 +4853,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         Psi_outlet[0]+=obj_weight*(density_gradient*2.0/Vn_Exit-velocity_gradient/Density/Vn_Exit);
         for (iDim=0; iDim<nDim; iDim++){
           Psi_outlet[iDim+1]+=obj_weight*(config->GetCoeff_ObjChainRule(iDim+1)/Density/Vn_Exit-UnitNormal[iDim]*density_gradient/Vn_Exit/Vn_Exit);
+              //config->GetCoeff_ObjChainRule(iDim+1)
 
         }
         break;
@@ -5309,10 +5328,20 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned long iPoint, index, iVertex;
   string text_line, mesh_filename;
   unsigned short iDim, iVar, iMarker, nLineLets;
-  ifstream restart_file, gradient_file;
+  ifstream restart_file;
   string filename, AdjExt;
 
+  su2double RefAreaCoeff    = config->GetRefAreaCoeff();
+  su2double RefDensity  = config->GetDensity_FreeStreamND();
+  su2double Gas_Constant    = config->GetGas_ConstantND();
+  su2double Mach_Motion     = config->GetMach_Motion();
   su2double dull_val, Area=0.0, *Normal = NULL, myArea_Monitored;
+  su2double RefVel2, Mach2Vel, obj_weight, factor;
+  su2double *Velocity_Inf;
+
+  string Marker_Tag, Monitoring_Tag;
+  unsigned short iMarker_Monitoring, jMarker, ObjFunc;
+  bool grid_movement  = config->GetGrid_Movement();
   bool restart = config->GetRestart();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -6003,10 +6032,10 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     /*-- For multi-objective problems these scaling factors are applied before solution ---*/
     if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
         (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-        (ObjFunc == MASS_FLOW_RATE)||  (ObjFunc == OUTFLOW_GENERALIZED))
+        (ObjFunc == MASS_FLOW_RATE) || (ObjFunc == OUTFLOW_GENERALIZED))
       factor = 1.0;
 
-    if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE)  ) factor = 1.0/Area_Monitored;
+    if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ) factor = 1.0/Area_Monitored;
   }
 
 
@@ -6252,11 +6281,6 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           
           CSensitivity[iMarker][iVertex] = (sigma_partial - temp_sens) * Area * scale * factor;
             
-          /*--- Change the sign of the sensitivity if the normal has been flipped --*/
-
-          if (geometry->node[iPoint]->GetFlip_Orientation())
-            CSensitivity[iMarker][iVertex] = -CSensitivity[iMarker][iVertex];
-          
           /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
           
           if (config->GetSens_Remove_Sharp()) {
@@ -6544,12 +6568,13 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   delete [] tang_deriv_psi5;
   delete [] tang_deriv_T;
   for (iDim = 0; iDim < nDim; iDim++)
-    delete Sigma[iDim];
+    delete [] Sigma[iDim];
   delete [] Sigma;
   delete [] normal_grad_gridvel;
   delete [] normal_grad_v_ux;
   for (iDim = 0; iDim < nDim; iDim++)
-    delete Sigma_Psi5v[iDim];
+    delete [] Sigma_Psi5v[iDim];
+  delete [] Sigma_Psi5v;
   for (iDim = 0; iDim < nDim; iDim++)
     delete tau[iDim];
   delete [] tau;
@@ -6992,8 +7017,6 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   string Monitoring_Tag;
   unsigned short jMarker, iMarker_Monitoring=0;
   su2double obj_weight = 1.0;
-  su2double beta = 1.0;
-
   
   /*--- Identify marker monitoring index ---*/
   for (jMarker = 0; jMarker < config->GetnMarker_Monitoring(); jMarker++){

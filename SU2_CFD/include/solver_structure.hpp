@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -65,7 +65,7 @@ using namespace std;
  * \brief Main class for defining the PDE solution, it requires
  * a child class for each particular solver (Euler, Navier-Stokes, etc.)
  * \author F. Palacios
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class CSolver {
 protected:
@@ -828,15 +828,15 @@ public:
 	virtual void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                           CConfig *config, unsigned short val_marker);
     
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
+    /*!
+     * \brief A virtual member.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
    * \param[in] visc_numerics - Description of the numerical method.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 */
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] val_marker - Surface marker where the boundary condition is applied.
+     */
 	virtual void BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
   
@@ -2103,8 +2103,8 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the skin friction coefficient.
 	 */
-	virtual su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex);
-    
+  virtual su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -2694,6 +2694,13 @@ public:
 	 */
 	virtual su2double GetFSI_ConvValue(unsigned short val_index);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Set_Prestretch(CGeometry *geometry, CConfig *config);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2844,13 +2851,19 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetFreeStream_Solution(CConfig *config);
 };
 
 /*!
  * \class CBaselineSolver
  * \brief Main class for defining a baseline solution from a restart file (for output).
  * \author F. Palacios, T. Economon.
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class CBaselineSolver : public CSolver {
 public:
@@ -2859,7 +2872,16 @@ public:
 	 * \brief Constructor of the class.
 	 */
 	CBaselineSolver(void);
-    
+
+	/*!
+	 * \overload
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+   * \param[in] nVar - Number of variables.
+   * \param[in] field_names - Vector of variable names.
+	 */
+   CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names);
+
 	/*!
 	 * \overload
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2904,7 +2926,7 @@ public:
  * \brief Main class for defining the Euler's flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class CEulerSolver : public CSolver {
 protected:
@@ -3037,7 +3059,8 @@ protected:
 	su2double *PrimVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
 	*PrimVar_j;			/*!< \brief Auxiliary vector for storing the solution at point j. */
 	su2double **LowMach_Precontioner; /*!< \brief Auxiliary vector for storing the inverse of Roe-turkel preconditioner. */
-	unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
+	unsigned long nMarker,				/*!< \brief Total number of markers using the grid information. */
+  *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
 	bool space_centered,  /*!< \brief True if space centered scheeme used. */
 	euler_implicit,			/*!< \brief True if euler implicit scheme used. */
 	least_squares;        /*!< \brief True if computing gradients by least squares. */
@@ -3059,6 +3082,7 @@ protected:
 	su2double Old_Func,	/*!< \brief Old value of the objective function (the function which is monitored). */
 	New_Func;			/*!< \brief Current value of the objective function (the function which is monitored). */
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
+  unsigned long AoA_Counter;
 
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   su2double **AveragedVelocity,
@@ -3560,7 +3584,7 @@ public:
 	 */
 	void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                   CConfig *config, unsigned short val_marker);
-    
+
 	/*!
 	 * \brief Impose a supersonic inlet boundary condition.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -4250,12 +4274,12 @@ public:
 	 */
 	su2double GetTotal_CNearFieldOF(void);
 
-	/*!
-	 * \author H. Kline
-	 * \brief Add to the value of the total 'combo' objective.
-	 * \param[in] val_obj - Value of the contribution to the 'combo' objective.
-	 */
-	void AddTotal_ComboObj(su2double val_obj);
+  /*!
+   * \author H. Kline
+   * \brief Add to the value of the total 'combo' objective.
+   * \param[in] val_obj - Value of the contribution to the 'combo' objective.
+   */
+  void AddTotal_ComboObj(su2double val_obj);
 
 	/*!
 	 * \brief Set the value of the Equivalent Area coefficient.
@@ -4293,12 +4317,12 @@ public:
 	 */
 	su2double GetTotal_CLift(void);
     
-	/*!
-	 * \author H. Kline
-	 * \brief Provide the total "combo" objective (weighted sum of other values).
-	 * \return Value of the "combo" objective values.
-	 */
-	su2double GetTotal_ComboObj(void);
+  /*!
+   * \author H. Kline
+   * \brief Provide the total "combo" objective (weighted sum of other values).
+   * \return Value of the "combo" objective values.
+   */
+  su2double GetTotal_ComboObj(void);
 
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
@@ -4656,6 +4680,12 @@ public:
    * \param[in] Value of freestream temperature.
    */
   void SetTemperature_Inf(su2double t_inf);
+
+  /*!
+   * \brief Set the solution using the Freestream values.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetFreeStream_Solution(CConfig *config);
 };
 
 /*!
@@ -4663,7 +4693,7 @@ public:
  * \brief Main class for defining the Navier-Stokes flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class CNSSolver : public CEulerSolver {
 private:
@@ -4696,7 +4726,7 @@ private:
 	*CQ_Visc,		/*!< \brief Torque coefficient (viscous contribution) for each boundary. */
   *Heat_Visc,		/*!< \brief Heat load (viscous contribution) for each boundary. */
   *MaxHeatFlux_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
-	**CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
+  ***CSkinFriction;	/*!< \brief Skin friction coefficient for each boundary and vertex. */
 	su2double *ForceViscous,	/*!< \brief Viscous force for each boundary. */
 	*MomentViscous;			/*!< \brief Inviscid moment for each boundary. */
 	su2double AllBound_CDrag_Visc, /*!< \brief Drag coefficient (viscous contribution) for all the boundaries. */
@@ -4872,8 +4902,8 @@ public:
 	 * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
 	 * \return Value of the skin friction coefficient.
 	 */
-	su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex);
-    
+  su2double GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
+  
 	/*!
 	 * \brief Get the skin friction coefficient.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -4937,7 +4967,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class CTurbSolver : public CSolver {
 protected:
@@ -5059,6 +5089,15 @@ public:
 	void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
   
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+
 };
 
 /*!
@@ -5066,7 +5105,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Bueno.
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 
 class CTurbSASolver: public CTurbSolver {
@@ -5253,17 +5292,13 @@ public:
 	 */
 	void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                CConfig *config);
-  
-  /*!
-	 * \brief Load a solution from a restart file.
-	 * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_iter - Current external iteration number.
-	 */
-	void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
 
-    
+  /*!
+   * \brief Set the solution using the Freestream values.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetFreeStream_Solution(CConfig *config);
+
 };
 
 /*!
@@ -5271,7 +5306,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Aranake.
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 
 class CTransLMSolver: public CTurbSolver {
@@ -5447,7 +5482,7 @@ public:
  * \brief Main class for defining the turbulence model solver.
  * \ingroup Turbulence_Model
  * \author A. Campos, F. Palacios, T. Economon
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 
 class CTurbSSTSolver: public CTurbSolver {
@@ -5585,6 +5620,12 @@ public:
 	 * \return A pointer to an array containing a set of constants
 	 */
 	su2double* GetConstants();
+
+  /*!
+   * \brief Set the solution using the Freestream values.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetFreeStream_Solution(CConfig *config);
     
 };
 
@@ -5593,7 +5634,7 @@ public:
  * \brief Main class for defining the Euler's adjoint flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class CAdjEulerSolver : public CSolver {
 protected:
@@ -6085,7 +6126,7 @@ public:
  * \brief Main class for defining the Navier-Stokes' adjoint flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author F. Palacios
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class CAdjNSSolver : public CAdjEulerSolver {
 public:
@@ -6194,7 +6235,7 @@ public:
  * \brief Main class for defining the adjoint turbulence model solver.
  * \ingroup Turbulence_Model
  * \author F. Palacios, A. Bueno.
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class CAdjTurbSolver : public CSolver {
 private:
@@ -6340,7 +6381,7 @@ public:
 /*! \class CPoissonSolver
  *  \brief Main class for defining the poisson potential solver.
  *  \author F. Palacios
- *  \version 4.1.1 "Cardinal"
+ *  \version 4.2.0 "Cardinal"
  *  \date May 3, 2010.
  */
 class CPoissonSolver : public CSolver {
@@ -6472,7 +6513,7 @@ public:
 /*! \class CWaveSolver
  *  \brief Main class for defining the wave solver.
  *  \author F. Palacios
- *  \version 4.1.1 "Cardinal"
+ *  \version 4.2.0 "Cardinal"
  *  \date May 3, 2010.
  */
 class CWaveSolver : public CSolver {
@@ -6631,7 +6672,7 @@ public:
 /*! \class CHeatSolver
  *  \brief Main class for defining the heat solver.
  *  \author F. Palacios
- *  \version 4.1.1 "Cardinal"
+ *  \version 4.2.0 "Cardinal"
  *  \date May 3, 2010.
  */
 class CHeatSolver : public CSolver {
@@ -6829,7 +6870,7 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CFEM_ElasticitySolver(void);
+	virtual ~CFEM_ElasticitySolver(void);
 
     /*!
 	 * \brief Impose the send-receive boundary condition.
@@ -7255,6 +7296,13 @@ public:
 	 */
 	void SetLoad_Increment(su2double val_loadIncrement);
 
+  /*!
+   * \brief Set a reference geometry for prestretched conditions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_Prestretch(CGeometry *geometry, CConfig *config);
+
 
 };
 
@@ -7263,7 +7311,7 @@ public:
  * \brief Main class for defining the level set solver.
  * \ingroup LevelSet_Model
  * \author F. Palacios
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class CAdjLevelSetSolver : public CSolver {
 protected:
@@ -7449,7 +7497,7 @@ public:
  * \brief Main class for defining the template model solver.
  * \ingroup Template_Flow_Equation
  * \author F. Palacios
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class CTemplateSolver : public CSolver {
 private:
@@ -7657,7 +7705,7 @@ public:
  * \brief Main class for defining the discrete adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring
- * \version 4.1.1 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class CDiscAdjSolver : public CSolver {
 private:
@@ -7702,6 +7750,11 @@ public:
    * \param[in] Kind_Solver - The kind of direct solver.
    */
   CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver* solver, unsigned short Kind_Solver, unsigned short iMesh);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjSolver(void);
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
@@ -7834,5 +7887,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Update the dual-time derivatives.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iMesh - Index of the mesh in multigrid computations.
+	 * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+	* \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+	* \param[in] Output - boolean to determine whether to print output.
+	 */
+  void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
 };
 #include "solver_structure.inl"
