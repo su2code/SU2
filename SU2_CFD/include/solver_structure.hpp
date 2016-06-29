@@ -336,7 +336,7 @@ public:
    * \param[in] val_point - Value of the point index for the max residual.
    * \param[in] val_coord - Location (x, y, z) of the max residual point.
 	 */
-	void AddRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point, su2double* val_coord);
+	void AddRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point, const su2double* val_coord);
     
 	/*!
 	 * \brief Get the maximal residual, this is useful for the convergence history.
@@ -5062,6 +5062,7 @@ protected:
 
   unsigned long nDOFsLocTot;    /*!< \brief Total number of local DOFs, including halos. */
   unsigned long nDOFsLocOwned;  /*!< \brief Number of owned local DOFs. */
+  unsigned long nDOFsGlobal;    /*!< \brief Number of global DOFs. */
 
   unsigned long nVolElemTot;    /*!< \brief Total number of local volume elements, including halos. */
   unsigned long nVolElemOwned;  /*!< \brief Number of owned local volume elements. */

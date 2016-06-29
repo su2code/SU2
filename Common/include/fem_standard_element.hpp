@@ -90,6 +90,12 @@ protected:
 
 public:
   /*!
+  * \brief Function, which makes available the type of the element.
+  * \return  The type of the element using the VTK convention.
+  */
+  unsigned short GetVTK_Type(void) const;
+
+  /*!
   * \brief Function, which makes available the weights in the integration points.
   * \return  The const pointer to data, which stores the weights in the integration points.
   */

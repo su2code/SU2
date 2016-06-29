@@ -675,7 +675,7 @@ inline su2double CSolver::GetRes_RMS(unsigned short val_var) { return Residual_R
 
 inline void CSolver::SetRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point) { Residual_Max[val_var] = val_residual; Point_Max[val_var] = val_point; }
 
-inline void CSolver::AddRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point, su2double* val_coord) {
+inline void CSolver::AddRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point, const su2double* val_coord) {
   if (val_residual > Residual_Max[val_var]) {
   Residual_Max[val_var] = val_residual;
   Point_Max[val_var] = val_point;
