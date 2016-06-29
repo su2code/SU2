@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean.cpp
  * \brief Main subrotuines for solving adjoint problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.1.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -30,6 +30,7 @@
  */
 
 #include "../include/solver_structure.hpp"
+
 
 CAdjEulerSolver::CAdjEulerSolver(void) : CSolver() {
   
@@ -218,7 +219,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++)
       CSensitivity[iMarker][iVertex] = 0.0;
   }
-  
+
   /*--- Adjoint flow at the inifinity, initialization stuff ---*/
   PsiRho_Inf = 0.0; PsiE_Inf   = 0.0;
   Phi_Inf    = new su2double [nDim];
@@ -333,23 +334,34 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==OUTFLOW_GENERALIZED || config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
-    config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
-    for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
-      if (config->GetMarker_All_Monitoring(iMarker) == YES){
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (geometry->node[iPoint]->GetDomain()) {
-            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Area += Normal[iDim]*Normal[iDim];
-            myArea_Monitored += sqrt (Area);
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    if (config->GetKind_ObjFunc(iMarker_Monitoring)==OUTFLOW_GENERALIZED ||
+        config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_TOTAL_PRESSURE ||
+        config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_OUTLET_PRESSURE){
+
+      Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+      /*-- Find the marker index ---*/
+      iMarker = 0;
+      for (jMarker= 0; jMarker < config->GetnMarker_All(); jMarker++) {
+        Marker_Tag = config->GetMarker_All_TagBound(jMarker);
+        if (Marker_Tag == Monitoring_Tag){
+          iMarker = jMarker;
+          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            if (geometry->node[iPoint]->GetDomain()) {
+              Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+              Area = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++)
+                Area += Normal[iDim]*Normal[iDim];
+              myArea_Monitored += sqrt (Area);
+            }
           }
+          break;
         }
       }
     }
   }
+
 #ifdef HAVE_MPI
   Area_Monitored = 0.0;
   SU2_MPI::Allreduce(&myArea_Monitored, &Area_Monitored, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -357,9 +369,39 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Area_Monitored = myArea_Monitored;
 #endif
 
+  if (config->GetnObj()>1){
+    if (grid_movement) {
+      Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+      RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+    }
+    else {
+      Velocity_Inf = config->GetVelocity_FreeStreamND();
+      RefVel2 = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+    }
+
+    /*--- Objective scaling: a factor must be applied to certain objectives ---*/
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+        obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
+
+        factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+
+        ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
+        if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
+            (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
+            (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+
+       if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
+           (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+
+       obj_weight = obj_weight*factor;
+       config->SetWeight_ObjFunc(iMarker_Monitoring, obj_weight);
+    }
+  }
+
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
-  
 }
 
 CAdjEulerSolver::~CAdjEulerSolver(void) {
@@ -1061,8 +1103,11 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   
   su2double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, CD, CL, Cp, CpTarget,
   CT, CQ, x_origin, y_origin, z_origin, WDrag, Area, invCD, CLCD2, invCQ, CTRCQ2;
-  unsigned short iMarker;
+  unsigned short iMarker,jMarker,iMarker_Monitoring, iDim;
   unsigned long iVertex, iPoint;
+  string Marker_Tag, Monitoring_Tag;
+  su2double obj_weight=1.0;
+  su2double *ForceProj_Vector2;
   
   int rank = MASTER_NODE;
 
@@ -1089,12 +1134,33 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   x_origin = RefOriginMoment[0]; y_origin = RefOriginMoment[1]; z_origin = RefOriginMoment[2];
   
   /*--- Evaluate the boundary condition coefficients. ---*/
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++)
+  /*--- Since there may be more than one objective per marker, first we have to set all
+   * Force projection vectors to 0.
+   */
+  for (iMarker = 0; iMarker<nMarker; iMarker++){
+    if ((iMarker<nMarker) && (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+           (config->GetMarker_All_Monitoring(iMarker) == YES))
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        for (iDim=0; iDim<nDim; iDim++)
+          ForceProj_Vector[iDim]=0.0;
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        node[iPoint]->SetForceProj_Vector(ForceProj_Vector);
+      }
+  }
+
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
+    obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
+    /*--- Find the matching iMarker ---*/
+    Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+    for (jMarker=0; jMarker<nMarker; jMarker++){
+      Marker_Tag = config->GetMarker_All_TagBound(jMarker);
+      if (Monitoring_Tag==Marker_Tag)
+        iMarker = jMarker;
+    }
+
     
     if ((config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
-        (config->GetMarker_All_Monitoring(iMarker) == YES))
-      
+        (config->GetMarker_All_Monitoring(iMarker) == YES)){
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1104,92 +1170,94 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
         if (nDim == 3) z = geometry->node[iPoint]->GetCoord(2);
         
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        switch (config->GetKind_ObjFunc()) {
+        ForceProj_Vector2 = node[iPoint]->GetForceProj_Vector();
+        for (iDim=0; iDim<nDim;iDim++)
+          ForceProj_Vector[iDim]=ForceProj_Vector2[iDim];
+
+        switch (config->GetKind_ObjFunc(iMarker_Monitoring)) {
           case DRAG_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = cos(Alpha); ForceProj_Vector[1] = sin(Alpha); }
-            if (nDim == 3) { ForceProj_Vector[0] = cos(Alpha)*cos(Beta); ForceProj_Vector[1] = sin(Beta); ForceProj_Vector[2] = sin(Alpha)*cos(Beta); }
+            if (nDim == 2) { ForceProj_Vector[0] += obj_weight*cos(Alpha); ForceProj_Vector[1] += obj_weight*sin(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] += obj_weight*cos(Alpha)*cos(Beta); ForceProj_Vector[1] += obj_weight*sin(Beta); ForceProj_Vector[2] += obj_weight*sin(Alpha)*cos(Beta); }
             break;
           case LIFT_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = -sin(Alpha); ForceProj_Vector[1] = cos(Alpha); }
-            if (nDim == 3) { ForceProj_Vector[0] = -sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = cos(Alpha); }
+            if (nDim == 2) { ForceProj_Vector[0] += -obj_weight*sin(Alpha); ForceProj_Vector[1] += obj_weight*cos(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] += -obj_weight*sin(Alpha); ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] += obj_weight*cos(Alpha); }
             break;
           case SIDEFORCE_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = -sin(Beta) * cos(Alpha); ForceProj_Vector[1] = cos(Beta); ForceProj_Vector[2] = -sin(Beta) * sin(Alpha); }
+            if (nDim == 3) { ForceProj_Vector[0] += -obj_weight*sin(Beta) * cos(Alpha); ForceProj_Vector[1] += obj_weight*cos(Beta); ForceProj_Vector[2] += -obj_weight*sin(Beta) * sin(Alpha); }
             break;
           case INVERSE_DESIGN_PRESSURE :
             Cp = solver_container[FLOW_SOL]->GetCPressure(iMarker, iVertex);
             CpTarget = solver_container[FLOW_SOL]->GetCPressureTarget(iMarker, iVertex);
             Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1]);
             if (nDim == 3) Area = sqrt(Normal[0]*Normal[0] + Normal[1]*Normal[1] + Normal[2]*Normal[2]);
-            ForceProj_Vector[0] = -2.0*(Cp-CpTarget)*Normal[0]/Area; ForceProj_Vector[1] = -2.0*(Cp-CpTarget)*Normal[1]/Area;
-            if (nDim == 3) ForceProj_Vector[2] = -2.0*(Cp-CpTarget)*Normal[2]/Area;
+            ForceProj_Vector[0] += -obj_weight*2.0*(Cp-CpTarget)*Normal[0]/Area; ForceProj_Vector[1] += -obj_weight*2.0*(Cp-CpTarget)*Normal[1]/Area;
+            if (nDim == 3) ForceProj_Vector[2] += -obj_weight*2.0*(Cp-CpTarget)*Normal[2]/Area;
             break;
           case MOMENT_X_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = -(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] = (y - y_origin)/RefLengthMoment; }
+            if (nDim == 3) {  ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += -obj_weight*(z - z_origin)/RefLengthMoment; ForceProj_Vector[2] += obj_weight*(y - y_origin)/RefLengthMoment; }
             break;
           case MOMENT_Y_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) { cout << "This functional is not possible in 2D!!" << endl; exit(EXIT_FAILURE); }
-            if (nDim == 3) { ForceProj_Vector[0] = (z - z_origin)/RefLengthMoment; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = -(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] += obj_weight*(z - z_origin)/RefLengthMoment; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += -obj_weight*(x - x_origin)/RefLengthMoment;}
             break;
           case MOMENT_Z_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = -(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = (x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = -(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = (x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            if (nDim == 2) { ForceProj_Vector[0] += -obj_weight*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += obj_weight*(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] += -obj_weight*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += obj_weight*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] += 0; }
             break;
           case EFFICIENCY :
-            if (nDim == 2) { ForceProj_Vector[0] = -(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] = (invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
-            if (nDim == 3) { ForceProj_Vector[0] = -(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta)); ForceProj_Vector[1] = -CLCD2*sin(Beta); ForceProj_Vector[2] = (invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
+            if (nDim == 2) { ForceProj_Vector[0] += -obj_weight*(invCD*sin(Alpha)+CLCD2*cos(Alpha)); ForceProj_Vector[1] += obj_weight*(invCD*cos(Alpha)-CLCD2*sin(Alpha)); }
+            if (nDim == 3) { ForceProj_Vector[0] += -obj_weight*(invCD*sin(Alpha)+CLCD2*cos(Alpha)*cos(Beta)); ForceProj_Vector[1] += -obj_weight*CLCD2*sin(Beta); ForceProj_Vector[2] += obj_weight*(invCD*cos(Alpha)-CLCD2*sin(Alpha)*cos(Beta)); }
             break;
           case EQUIVALENT_AREA :
-            WDrag = config->GetWeightCd();
+            WDrag = obj_weight*config->GetWeightCd();
             if (nDim == 2) { ForceProj_Vector[0] = cos(Alpha)*WDrag; ForceProj_Vector[1] = sin(Alpha)*WDrag; }
             if (nDim == 3) { ForceProj_Vector[0] = cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = sin(Beta)*WDrag; ForceProj_Vector[2] = sin(Alpha)*cos(Beta)*WDrag; }
             break;
           case NEARFIELD_PRESSURE :
-            WDrag = config->GetWeightCd();
+            WDrag = obj_weight*config->GetWeightCd();
             if (nDim == 2) { ForceProj_Vector[0] = cos(Alpha)*WDrag; ForceProj_Vector[1] = sin(Alpha)*WDrag; }
             if (nDim == 3) { ForceProj_Vector[0] = cos(Alpha)*cos(Beta)*WDrag; ForceProj_Vector[1] = sin(Beta)*WDrag; ForceProj_Vector[2] = sin(Alpha)*cos(Beta)*WDrag; }
             break;
           case FORCE_X_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = 1.0; ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 1.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
+            if (nDim == 2) { ForceProj_Vector[0] += obj_weight*1.0; ForceProj_Vector[1] += 0.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += obj_weight*1.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += 0.0; }
             break;
           case FORCE_Y_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 1.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 1.0; ForceProj_Vector[2] = 0.0; }
+            if (nDim == 2) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += obj_weight*1.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += obj_weight*1.0; ForceProj_Vector[2] += 0.0; }
             break;
           case FORCE_Z_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += obj_weight*1.0; }
             break;
           case THRUST_COEFFICIENT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 1.0; }
+            if (nDim == 3) { ForceProj_Vector[0] += 0.0; ForceProj_Vector[1] += 0.0; ForceProj_Vector[2] += obj_weight*1.0; }
             break;
           case TORQUE_COEFFICIENT :
-            if (nDim == 2) { ForceProj_Vector[0] = (y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -(x - x_origin)/RefLengthMoment; }
-            if (nDim == 3) { ForceProj_Vector[0] = (y - y_origin)/RefLengthMoment; ForceProj_Vector[1] = -(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] = 0; }
+            if (nDim == 2) {  ForceProj_Vector[0] += obj_weight*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += -obj_weight*(x - x_origin)/RefLengthMoment; }
+            if (nDim == 3) { ForceProj_Vector[0] += obj_weight*(y - y_origin)/RefLengthMoment; ForceProj_Vector[1] += -obj_weight*(x - x_origin)/RefLengthMoment; ForceProj_Vector[2] += 0; }
             break;
           case FIGURE_OF_MERIT :
             if ((nDim == 2) && (rank == MASTER_NODE)) {cout << "This functional is not possible in 2D!!" << endl;
               exit(EXIT_FAILURE);
             }
             if (nDim == 3) {
-              ForceProj_Vector[0] = -invCQ;
-              ForceProj_Vector[1] = -CTRCQ2*(z - z_origin);
-              ForceProj_Vector[2] =  CTRCQ2*(y - y_origin);
+              ForceProj_Vector[0] += -obj_weight*invCQ;
+              ForceProj_Vector[1] += -obj_weight*CTRCQ2*(z - z_origin);
+              ForceProj_Vector[2] +=  obj_weight*CTRCQ2*(y - y_origin);
             }
             break;
           default :
-            if (nDim == 2) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; }
-            if (nDim == 3) { ForceProj_Vector[0] = 0.0; ForceProj_Vector[1] = 0.0; ForceProj_Vector[2] = 0.0; }
             break;
         }
         
@@ -1198,7 +1266,8 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
         node[iPoint]->SetForceProj_Vector(ForceProj_Vector);
         
       }
-  
+    }
+  }
   delete [] ForceProj_Vector;
   
 }
@@ -1270,19 +1339,8 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
     for (AngleInt = 0; AngleInt < 180; AngleInt++)
       IndexNF_inv[AngleInt] = -1;
     
-	if (IndexNF.size() <= 180) {
-		for (iIndex = 0; iIndex < IndexNF.size(); iIndex++)
-			IndexNF_inv[IndexNF[iIndex]] = iIndex;
-	}
-	else {
-		#ifndef HAVE_MPI
-				exit(EXIT_FAILURE);
-		#else
-				MPI_Barrier(MPI_COMM_WORLD);
-				MPI_Abort(MPI_COMM_WORLD, 1);
-				MPI_Finalize();
-		#endif
-	}
+    for (iIndex = 0; iIndex < IndexNF.size(); iIndex++)
+      IndexNF_inv[IndexNF[iIndex]] = iIndex;
     
   }
   
@@ -1708,7 +1766,7 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement  = config->GetGrid_Movement();
-  
+
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge, normal, and neighbors---*/
@@ -1719,11 +1777,11 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
     
     /*--- Adjoint variables w/o reconstruction ---*/
-    
+
     numerics->SetAdjointVar(node[iPoint]->GetSolution(), node[jPoint]->GetSolution());
     
     /*--- Conservative variables w/o reconstruction ---*/
-    
+
     numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(),
                               solver_container[FLOW_SOL]->node[jPoint]->GetSolution());
     
@@ -1754,12 +1812,12 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     }
     
     /*--- Compute residuals ---*/
-    
+
     numerics->ComputeResidual(Res_Conv_i, Res_Visc_i, Res_Conv_j, Res_Visc_j,
                               Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
     
     /*--- Update convective and artificial dissipation residuals ---*/
-    
+
     LinSysRes.SubtractBlock(iPoint, Res_Conv_i);
     LinSysRes.SubtractBlock(jPoint, Res_Conv_j);
     LinSysRes.SubtractBlock(iPoint, Res_Visc_i);
@@ -2381,14 +2439,17 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   
   RefDensity  = config->GetDensity_FreeStreamND();
 
-  factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
-  
-  if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
-      (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-      (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+  factor = 1.0;
+  if (config->GetnObj()==1){
+    factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
 
- if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-     (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+    if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
+        (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
+        (ObjFunc == MASS_FLOW_RATE) || (ObjFunc == OUTFLOW_GENERALIZED) )
+      factor = 1.0;
+
+   if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE)  ) factor = 1.0/Area_Monitored;
+  }
   
   /*--- Initialize sensitivities to zero ---*/
   
@@ -2507,6 +2568,11 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           
           CSensitivity[iMarker][iVertex] = (d_press + grad_v + v_gradconspsi) * Area * scale * factor;
           
+          /*--- Change the sign of the sensitivity if the normal has been flipped --*/
+          
+          if (geometry->node[iPoint]->GetFlip_Orientation())
+            CSensitivity[iMarker][iVertex] = -CSensitivity[iMarker][iVertex];
+
           /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
           
           if (config->GetSens_Remove_Sharp()) {
@@ -2557,7 +2623,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             }
 
             SoundSpeed = solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
-            if (Vn<SoundSpeed){
+            if (Vn<SoundSpeed and Vn>0){
               /* Characteristic-based
               Sens_BPress[iMarker]+=Psi[nDim+1]*(SoundSpeed-Vn)/Gamma_Minus_One;
               if (config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE)
@@ -2567,6 +2633,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
               }
                */
               /*Pressure based*/
+              /*TODO: MDO compatible*/
               Sens_BPress[iMarker]+=Psi[nDim+1]*(SoundSpeed*SoundSpeed-Vn*Vn)/(Vn*Gamma_Minus_One);
               if (config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE)
                 Sens_BPress[iMarker]+=1;
@@ -4484,7 +4551,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   su2double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
   su2double a1=0.0, a2=0.0; /*Placeholder terms to simplify expressions/ repeated terms*/
   /*Gradient terms for the generalized boundary */
-  su2double density_gradient, pressure_gradient, velocity_gradient;
+  su2double density_gradient=0.0, pressure_gradient=0.0, velocity_gradient=0.0;
 
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -4496,10 +4563,22 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   su2double epsilon          = config->GetFreeSurface_Thickness();
   su2double RatioDensity     = config->GetRatioDensity();
   su2double Froude           = config->GetFroude();
+  su2double obj_weight = 1.0;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  string Monitoring_Tag;
+  unsigned short jMarker=0, iMarker_Monitoring=0;
 
   Psi_domain = new su2double [nVar]; Psi_outlet = new su2double [nVar];
   Normal = new su2double[nDim];
+
+  /*--- Identify marker monitoring index ---*/
+  for (jMarker = 0; jMarker < config->GetnMarker_Monitoring(); jMarker++){
+    Monitoring_Tag = config->GetMarker_Monitoring(jMarker);
+    if (Monitoring_Tag==Marker_Tag)
+      iMarker_Monitoring = jMarker;
+  }
+
+  obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
 
   /*--- Loop over all the vertices ---*/
 
@@ -4527,6 +4606,8 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Set the normal point ---*/
 
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+      conv_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
 
       /*--- Allocate the value at the outlet ---*/
 
@@ -4582,13 +4663,13 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           /* Repeated term */
           a1 = Gamma_Minus_One/(Vn_rel*Vn_rel-SoundSpeed*SoundSpeed);
 
-          switch (config->GetKind_ObjFunc()){
+          switch (config->GetKind_ObjFunc(iMarker_Monitoring)){
           case OUTFLOW_GENERALIZED:
             velocity_gradient = 0.0;
             for (iDim=0; iDim<nDim; iDim++) velocity_gradient += UnitNormal[iDim]*config->GetCoeff_ObjChainRule(iDim+1);
             density_gradient = config->GetCoeff_ObjChainRule(0);
             pressure_gradient = config->GetCoeff_ObjChainRule(4);
-            Psi_outlet[nDim+1]=a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
+            Psi_outlet[nDim+1]+=obj_weight*(a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density));
             break;
           case AVG_TOTAL_PRESSURE:
             /*--- Total Pressure term. NOTE: this is AREA averaged
@@ -4604,12 +4685,12 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
             for (iDim=0; iDim<nDim; iDim++)
               velocity_gradient+=a2*Gamma_Minus_One*Density/(Gamma*Pressure)*Velocity[iDim]*UnitNormal[iDim];
             pressure_gradient = a2*(-Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*pow(Pressure,2.0)))+pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),(Gamma/Gamma_Minus_One));
-            Psi_outlet[nDim+1]+=a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
+            Psi_outlet[nDim+1]+=obj_weight*a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
             break;
           case AVG_OUTLET_PRESSURE:
             /*Area averaged static pressure*/
             /*--- Note: further terms are NOT added later for this case, only energy term is modified ---*/
-            Psi_outlet[nDim+1]+=a1*Vn_Exit;
+            Psi_outlet[nDim+1]+=obj_weight*(a1*Vn_Exit);
             break;
           default:
             break;
@@ -4720,9 +4801,9 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Add terms for objective functions where additions are needed outside the energy term
        *     Terms which are added to the energy term are taken care of in the supersonic section above ---*/
-      switch (config->GetKind_ObjFunc()){
+      switch (config->GetKind_ObjFunc(iMarker_Monitoring)){
       case MASS_FLOW_RATE:
-        Psi_outlet[0]+=1;
+        Psi_outlet[0]+=obj_weight;
         break;
       case OUTFLOW_GENERALIZED:
         density_gradient = config->GetCoeff_ObjChainRule(0);
@@ -4751,11 +4832,10 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         }
          */
         /*Pressure-fixed version*/
-        if (Vn_Exit != 0.0){
-          Psi_outlet[0]+=density_gradient*2.0/Vn_Exit-velocity_gradient/Density/Vn_Exit;
-          for (iDim=0; iDim<nDim; iDim++){
-            Psi_outlet[iDim+1]+=config->GetCoeff_ObjChainRule(iDim+1)/Density/Vn_Exit-UnitNormal[iDim]*density_gradient/Vn_Exit/Vn_Exit;
-          }
+        Psi_outlet[0]+=obj_weight*(density_gradient*2.0/Vn_Exit-velocity_gradient/Density/Vn_Exit);
+        for (iDim=0; iDim<nDim; iDim++){
+          Psi_outlet[iDim+1]+=obj_weight*(config->GetCoeff_ObjChainRule(iDim+1)/Density/Vn_Exit-UnitNormal[iDim]*density_gradient/Vn_Exit/Vn_Exit);
+
         }
         break;
       case AVG_TOTAL_PRESSURE:
@@ -4774,10 +4854,10 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           a2 = Pressure*(Gamma/Gamma_Minus_One)*pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),1.0/(Gamma_Minus_One));
           density_gradient = a2*(Gamma_Minus_One*Velocity2/(2.0*Gamma*Pressure));
           velocity_gradient=a2*Gamma_Minus_One*Density/(Gamma*Pressure); // re-using variable as the constant multiplying V[i] for dj/dvi
-          Psi_outlet[0]+=density_gradient*2.0/Vn_Exit;
+          Psi_outlet[0]+=obj_weight*(density_gradient*2.0/Vn_Exit);
           for (iDim=0; iDim<nDim; iDim++){
-            Psi_outlet[0]-=velocity_gradient*Velocity[iDim]*Velocity[iDim]/(Density*Vn_Exit);
-            Psi_outlet[iDim+1] += velocity_gradient*Velocity[iDim]/(Density*Vn_Exit) - UnitNormal[iDim]*density_gradient/(Vn_Exit*Vn_Exit);
+            Psi_outlet[0]-=obj_weight*(velocity_gradient*Velocity[iDim]*Velocity[iDim]/(Density*Vn_Exit));
+            Psi_outlet[iDim+1] += obj_weight*(velocity_gradient*Velocity[iDim]/(Density*Vn_Exit) - UnitNormal[iDim]*density_gradient/(Vn_Exit*Vn_Exit));
           }
         }
         break;
@@ -5229,8 +5309,9 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned long iPoint, index, iVertex;
   string text_line, mesh_filename;
   unsigned short iDim, iVar, iMarker, nLineLets;
-  ifstream restart_file;
+  ifstream restart_file, gradient_file;
   string filename, AdjExt;
+
   su2double dull_val, Area=0.0, *Normal = NULL, myArea_Monitored;
   bool restart = config->GetRestart();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -5471,30 +5552,73 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
-  myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==OUTFLOW_GENERALIZED || config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
-    config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
-    for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
-      if (config->GetMarker_All_Monitoring(iMarker) == YES){
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (geometry->node[iPoint]->GetDomain()) {
-            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            Area = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Area += Normal[iDim]*Normal[iDim];
-            myArea_Monitored += sqrt (Area);
-          }
-        }
-      }
-    }
-  }
-#ifdef HAVE_MPI
-  Area_Monitored = 0.0;
-  SU2_MPI::Allreduce(&myArea_Monitored, &Area_Monitored, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-  Area_Monitored = myArea_Monitored;
-#endif
+   myArea_Monitored = 0.0;
+   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+     if (config->GetKind_ObjFunc(iMarker_Monitoring)==OUTFLOW_GENERALIZED ||
+         config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_TOTAL_PRESSURE ||
+         config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_OUTLET_PRESSURE){
+
+       Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+       /*-- Find the marker index ---*/
+       iMarker = 0;
+       for (jMarker= 0; jMarker < config->GetnMarker_All(); jMarker++) {
+         Marker_Tag = config->GetMarker_All_TagBound(jMarker);
+         if (Marker_Tag == Monitoring_Tag){
+           iMarker = jMarker;
+           for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+             iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+             if (geometry->node[iPoint]->GetDomain()) {
+               Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+               Area = 0.0;
+               for (iDim = 0; iDim < nDim; iDim++)
+                 Area += Normal[iDim]*Normal[iDim];
+               myArea_Monitored += sqrt (Area);
+             }
+           }
+           break;
+         }
+       }
+     }
+   }
+
+
+ #ifdef HAVE_MPI
+   Area_Monitored = 0.0;
+   SU2_MPI::Allreduce(&myArea_Monitored, &Area_Monitored, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+ #else
+   Area_Monitored = myArea_Monitored;
+ #endif
+
+   if (config->GetnObj()>1){
+     if (grid_movement) {
+       Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+       RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+     }
+     else {
+       Velocity_Inf = config->GetVelocity_FreeStreamND();
+       RefVel2 = 0.0;
+       for (iDim = 0; iDim < nDim; iDim++)
+         RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+     }
+
+     /*--- Objective scaling: a factor must be applied to certain objectives ---*/
+     for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+         obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
+
+         factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+
+         ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
+         if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
+             (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
+             (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+
+        if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
+            (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+
+        obj_weight = obj_weight*factor;
+        config->SetWeight_ObjFunc(iMarker_Monitoring, obj_weight);
+     }
+   }
 
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
@@ -5873,14 +5997,17 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   
   RefDensity  = config->GetDensity_FreeStreamND();
   
-  factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
-  
-  if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
-      (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-      (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+  factor = 1.0;
+  if (config->GetnObj()==1){
+    factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+    /*-- For multi-objective problems these scaling factors are applied before solution ---*/
+    if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
+        (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
+        (ObjFunc == MASS_FLOW_RATE)||  (ObjFunc == OUTFLOW_GENERALIZED))
+      factor = 1.0;
 
- if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
-     (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+    if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE)  ) factor = 1.0/Area_Monitored;
+  }
 
 
   /*--- Compute gradient of the grid velocity, if applicable ---*/
@@ -6125,6 +6252,11 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           
           CSensitivity[iMarker][iVertex] = (sigma_partial - temp_sens) * Area * scale * factor;
             
+          /*--- Change the sign of the sensitivity if the normal has been flipped --*/
+
+          if (geometry->node[iPoint]->GetFlip_Orientation())
+            CSensitivity[iMarker][iVertex] = -CSensitivity[iMarker][iVertex];
+          
           /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
           
           if (config->GetSens_Remove_Sharp()) {
@@ -6405,25 +6537,24 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   SU2_MPI::Allreduce(&MyTotal_Sens_Temp, &Total_Sens_Temp, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   
 #endif
-  
+
   delete [] USens;
   delete [] UnitNormal;
   delete [] normal_grad_vel;
   delete [] tang_deriv_psi5;
   delete [] tang_deriv_T;
   for (iDim = 0; iDim < nDim; iDim++)
-    delete [] Sigma[iDim];
+    delete Sigma[iDim];
   delete [] Sigma;
   delete [] normal_grad_gridvel;
   delete [] normal_grad_v_ux;
   for (iDim = 0; iDim < nDim; iDim++)
-    delete [] Sigma_Psi5v[iDim];
-  delete [] Sigma_Psi5v;
+    delete Sigma_Psi5v[iDim];
   for (iDim = 0; iDim < nDim; iDim++)
     delete tau[iDim];
   delete [] tau;
   delete [] Velocity;
-  
+
 }
 
 void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
@@ -6844,9 +6975,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = config->GetGrid_Movement();
-  bool heat_flux_obj  = ((config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
-                         (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX) ||
-                         (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX));
+  bool heat_flux_obj;
   
   su2double Prandtl_Lam  = config->GetPrandtl_Lam();
   su2double Prandtl_Turb = config->GetPrandtl_Turb();
@@ -6858,7 +6987,26 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   su2double mu2;
   su2double gpsiAv2;
   su2double gpsi5n;
+
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  string Monitoring_Tag;
+  unsigned short jMarker, iMarker_Monitoring=0;
+  su2double obj_weight = 1.0;
+  su2double beta = 1.0;
+
   
+  /*--- Identify marker monitoring index ---*/
+  for (jMarker = 0; jMarker < config->GetnMarker_Monitoring(); jMarker++){
+    Monitoring_Tag = config->GetMarker_Monitoring(jMarker);
+    if (Monitoring_Tag==Marker_Tag)
+      iMarker_Monitoring = jMarker;
+  }
+  /*-- Get objective weight --*/
+  obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
+  heat_flux_obj  = ((config->GetKind_ObjFunc(iMarker_Monitoring) == TOTAL_HEATFLUX) ||
+                           (config->GetKind_ObjFunc(iMarker_Monitoring) == MAXIMUM_HEATFLUX) ||
+                           (config->GetKind_ObjFunc(iMarker_Monitoring) == INVERSE_DESIGN_HEATFLUX));
+
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -6941,7 +7089,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         Xi = pow(Xi, 1.0/pnorm-1.0)/pnorm;
 
         /*--- Boundary condition value ---*/
-        q = Xi * pnorm * pow(kGTdotn, pnorm-1.0)*Area;
+        q = Xi * pnorm * pow(kGTdotn, pnorm-1.0)*Area*obj_weight;
       }
       
       /*--- Strong BC enforcement of the energy equation ---*/
