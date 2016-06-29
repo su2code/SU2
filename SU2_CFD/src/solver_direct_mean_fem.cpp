@@ -1879,7 +1879,7 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
     const su2double tmp = RK_AlphaCoeff*VecDeltaTime[l];
 
     unsigned int i = 0;
-    for(unsigned short j=0; i<volElem[l].nDOFsSol; ++j) {
+    for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
       const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
       for(unsigned short iVar=0; iVar<nVar; ++iVar, ++i) {
         solDOFs[i] -= tmp*res[i];
@@ -1889,7 +1889,7 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
       }
     }
   }
-  
+
   /*--- Compute the root mean square residual. Note that the SetResidual_RMS
         function cannot be used, because that is for the FV solver.    ---*/
 
