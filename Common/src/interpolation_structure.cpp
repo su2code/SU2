@@ -130,7 +130,8 @@ void CInterpolator::Determine_ArraySize(bool faces, int markDonor, int markTarge
                 /*--- Local index of the node on face --*/
                 inode = donor_geometry->elem[donor_elem]->GetFaces(iFace, iDonor);
                 jPoint = donor_geometry->elem[donor_elem]->GetNode(inode);
-                face_on_marker = (face_on_marker and (donor_geometry->node[jPoint]->GetVertex(markDonor) != -1));
+
+                face_on_marker = (face_on_marker && (donor_geometry->node[jPoint]->GetVertex(markDonor) !=-1));
               }
               if ( face_on_marker ){
                 nLocalFace_Donor++;
@@ -148,7 +149,8 @@ void CInterpolator::Determine_ArraySize(bool faces, int markDonor, int markTarge
             for (iDonor = 0; iDonor < nNodes; iDonor++){
               inode = donor_geometry->node[iPointDonor]->GetEdge(iFace);
               jPoint = donor_geometry->edge[inode]->GetNode(iDonor);
-              face_on_marker = (face_on_marker and (donor_geometry->node[jPoint]->GetVertex(markDonor) != -1));
+
+              face_on_marker = (face_on_marker && (donor_geometry->node[jPoint]->GetVertex(markDonor) !=-1));
             }
             if (face_on_marker){
               nLocalFace_Donor++;
@@ -570,7 +572,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
               for (iDonor = 0; iDonor < nNodes; iDonor++){
                 inode = donor_geometry->elem[temp_donor]->GetFaces(iFace, iDonor);
                 dPoint = donor_geometry->elem[temp_donor]->GetNode(inode);
-                face_on_marker = (face_on_marker and (donor_geometry->node[dPoint]->GetVertex(markDonor) !=-1));
+                face_on_marker = (face_on_marker && (donor_geometry->node[dPoint]->GetVertex(markDonor) !=-1));
               }
 
               if (face_on_marker ){
@@ -601,7 +603,8 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
             for (iDonor=0; iDonor < nNodes; iDonor++){
               inode = donor_geometry->node[iPointDonor]->GetEdge(jElem);
               dPoint = donor_geometry->edge[inode]->GetNode(iDonor);
-              face_on_marker = (face_on_marker and (donor_geometry->node[dPoint]->GetVertex(markDonor) != -1));
+
+              face_on_marker = (face_on_marker && (donor_geometry->node[dPoint]->GetVertex(markDonor) !=-1));
             }
             if (face_on_marker ){
               for (iDonor=0; iDonor < nNodes; iDonor++){
@@ -786,8 +789,11 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
   su2double *A2    = NULL;
   su2double *x2    = new su2double[nDim+1];
   
+  bool *test  = new bool[nDim+1];
+  bool *testi = new bool[nDim+1];
+  
   su2double eps = 1E-10;
-  bool test[nDim+1], testi[nDim+1];
+  
   short n = nDim+1;
 
   if (nDonor>2){
@@ -826,7 +832,7 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
             testi[k]=true;
         }
         // If any of testi (k<iDim) are false, row iDim is degenerate
-        test[iDim]=(test[iDim] and testi[k]);
+        test[iDim]=(test[iDim] && testi[k]);
       }
       if (!test[iDim]) n--;
     }
@@ -956,6 +962,9 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
   delete [] A;
   if (A2 != NULL) delete [] A2;
   delete [] x2;
+  
+  delete [] test;
+  delete [] testi;
 
 }
 
