@@ -19,7 +19,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_DOT
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 4.1.2 "Cardinal"
+# \version 4.2.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -87,6 +87,28 @@ target_triplet = @target@
 bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 @BUILD_NORMAL_TRUE@am__append_1 = ../bin/SU2_DOT
 @BUILD_REVERSE_TRUE@am__append_2 = ../bin/SU2_DOT_AD
+@BUILD_NORMAL_TRUE@am__append_3 = \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD-solver_structure.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD-output_structure.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD-output_cgns.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD-output_tecplot.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD-output_fieldview.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD-output_su2.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD-output_paraview.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD-variable_structure.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../Common/lib/libSU2.a
+
+@BUILD_REVERSE_TRUE@am__append_4 = \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-solver_structure.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_structure.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_cgns.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_tecplot.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_fieldview.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_su2.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD_AD-variable_structure.$(OBJEXT) \
+@BUILD_REVERSE_TRUE@   ../../Common/lib/libSU2_AD.a
+
 subdir = SU2_DOT/obj
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/depcomp
@@ -110,9 +132,8 @@ am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 = ../src/___bin_SU2_DOT-SU2_DOT.$(OBJEXT)
 @BUILD_NORMAL_TRUE@am____bin_SU2_DOT_OBJECTS = $(am__objects_1)
 ___bin_SU2_DOT_OBJECTS = $(am____bin_SU2_DOT_OBJECTS)
-am__DEPENDENCIES_1 =
+am__DEPENDENCIES_1 = $(am__append_3) $(am__append_4)
 @BUILD_NORMAL_TRUE@___bin_SU2_DOT_DEPENDENCIES =  \
-@BUILD_NORMAL_TRUE@	../../Common/lib/libSU2.a \
 @BUILD_NORMAL_TRUE@	$(am__DEPENDENCIES_1)
 ___bin_SU2_DOT_LINK = $(CXXLD) $(___bin_SU2_DOT_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -122,7 +143,6 @@ am__objects_2 = ../src/___bin_SU2_DOT_AD-SU2_DOT.$(OBJEXT)
 @BUILD_REVERSE_TRUE@am____bin_SU2_DOT_AD_OBJECTS = $(am__objects_2)
 ___bin_SU2_DOT_AD_OBJECTS = $(am____bin_SU2_DOT_AD_OBJECTS)
 @BUILD_REVERSE_TRUE@___bin_SU2_DOT_AD_DEPENDENCIES =  \
-@BUILD_REVERSE_TRUE@	../../Common/lib/libSU2_AD.a \
 @BUILD_REVERSE_TRUE@	$(am__DEPENDENCIES_1)
 ___bin_SU2_DOT_AD_LINK = $(CXXLD) $(___bin_SU2_DOT_AD_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -319,6 +339,9 @@ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 su2_dot_sources = ../include/SU2_DOT.hpp \
 		../src/SU2_DOT.cpp
 
+su2_dot_ldadd = $(am__append_3) $(am__append_4) @su2_externals_LIBS@ \
+	@CGNS_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ @HDF5_LD@ @SZIP_LD@ \
+	@ZLIB_LD@ $(am__empty)
 
 # always link to built dependencies from ./externals
 
@@ -341,15 +364,13 @@ su2_dot_sources = ../include/SU2_DOT.hpp \
 su2_dot_cxx_flags = @su2_externals_INCLUDES@ @CGNS_CXX@ \
 	@MUTATIONPP_CXX@ @JSONCPP_CXX@ @HDF5_CXX@ @SZIP_CXX@ \
 	@ZLIB_CXX@ $(am__empty)
-su2_dot_ldadd = @su2_externals_LIBS@ @CGNS_LD@ @MUTATIONPP_LD@ \
-	@JSONCPP_LD@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ $(am__empty)
 # endif
 @BUILD_NORMAL_TRUE@___bin_SU2_DOT_SOURCES = ${su2_dot_sources}
 @BUILD_NORMAL_TRUE@___bin_SU2_DOT_CXXFLAGS = ${su2_dot_cxx_flags}
-@BUILD_NORMAL_TRUE@___bin_SU2_DOT_LDADD = ../../Common/lib/libSU2.a ${su2_dot_ldadd}
+@BUILD_NORMAL_TRUE@___bin_SU2_DOT_LDADD = ${su2_dot_ldadd}
 @BUILD_REVERSE_TRUE@___bin_SU2_DOT_AD_SOURCES = ${su2_dot_sources}
 @BUILD_REVERSE_TRUE@___bin_SU2_DOT_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_dot_cxx_flags} 
-@BUILD_REVERSE_TRUE@___bin_SU2_DOT_AD_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_AD.a ${su2_dot_ldadd}
+@BUILD_REVERSE_TRUE@___bin_SU2_DOT_AD_LDADD = @REVERSE_LIBS@ ${su2_dot_ldadd}
 all: all-am
 
 .SUFFIXES:
