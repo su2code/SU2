@@ -2,7 +2,7 @@
  * \file variable_structure.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 4.1.2 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

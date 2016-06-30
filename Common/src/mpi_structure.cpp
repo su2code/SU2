@@ -2,7 +2,7 @@
  * \file mpi_structure.cpp
  * \brief Main subroutines for the mpi structures.
  * \author T. Albring
- * \version 4.1.2 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -45,7 +45,7 @@ void CAuxMPIWrapper::Isend(void *buf, int count, MPI_Datatype datatype,
     MPI_Isend(buf,count,datatype,dest,tag,comm,request);
   } else {
 
-    unsigned long iVal;
+    int iVal;
 
     /*--- Create request object for Complex communication ---*/
 
@@ -93,7 +93,6 @@ void CAuxMPIWrapper::Irecv(void *buf, int count, MPI_Datatype datatype,
   if (datatype != MPI_DOUBLE) {
     MPI_Irecv(buf,count,datatype,source,tag,comm,request);
   } else {
-    unsigned long iVal;
 
     /*--- Create request object for Complex communication ---*/
 
@@ -152,7 +151,7 @@ void CAuxMPIWrapper::FinalizeCommunication(
   su2double *Buffer     = info.su2doubleBuffer;
   MPI_Status status;
   MPI_Request *RequestAux = info.RequestAux;
-  unsigned long iVal, count = info.count;
+  int iVal, count = info.count;
 
   /*--- Wait for aux. request ---*/
 
@@ -190,7 +189,7 @@ void CAuxMPIWrapper::Waitall(int nrequests, MPI_Request *request,
 
   /*--- Wait for aux. requests and finish communication ---*/
 
-  for (unsigned int iVal = 0; iVal < nrequests; iVal++) {
+  for (int iVal = 0; iVal < nrequests; iVal++) {
     if((CommInfoIterator = CommInfoMap.find(&request[iVal])) != CommInfoMap.end()) {
       FinalizeCommunication(CommInfoIterator);
     }
@@ -221,7 +220,7 @@ void CAuxMPIWrapper::Send(void *buf, int count, MPI_Datatype datatype,
     double *ValueBuffer    = new double[count];
     su2double *SendBuffer  = static_cast<su2double*>(buf);
 
-    unsigned long iVal;
+    int iVal;
 
     for (iVal = 0; iVal < count; iVal++) {
       ValueBuffer[iVal] = SU2_TYPE::GetValue(SendBuffer[iVal]);
@@ -245,7 +244,7 @@ void CAuxMPIWrapper::Recv(void *buf, int count, MPI_Datatype datatype,
     double *ValueBuffer    = new double[count];
     su2double *RecvBuffer  = static_cast<su2double*>(buf);
 
-    unsigned long iVal;
+    int iVal;
 
     MPI_Recv(ValueBuffer,count,datatype,dest,tag,comm,status);
     MPI_Recv(AuxBuffer,count,datatype,dest,tag+100,comm,status);
@@ -270,7 +269,7 @@ void CAuxMPIWrapper::Bsend(void *buf, int count, MPI_Datatype datatype,
     double *ValueBuffer    = new double[count];
     su2double *SendBuffer  = static_cast<su2double*>(buf);
 
-    unsigned long iVal;
+    int iVal;
 
     for (iVal = 0; iVal < count; iVal++) {
       ValueBuffer[iVal] = SU2_TYPE::GetValue(SendBuffer[iVal]);
@@ -295,10 +294,10 @@ void CAuxMPIWrapper::Reduce(void *sendbuf, void *recvbuf, int count,
     su2double* SendBuffer = static_cast< su2double*>(sendbuf);
     su2double* RecvBuffer = static_cast< su2double*>(recvbuf);
 
-    double  *SendAuxBuffer, *SendValueBuffer,
-            *RecvAuxBuffer, *RecvValueBuffer;
+    double  *SendAuxBuffer = NULL, *SendValueBuffer = NULL,
+            *RecvAuxBuffer = NULL, *RecvValueBuffer = NULL;
 
-    unsigned long iVal = 0;
+    int iVal = 0;
 
     if (op == MPI_SUM) {
       SendAuxBuffer = new double[count];
@@ -381,13 +380,13 @@ void CAuxMPIWrapper::Gather(void *sendbuf, int sendcnt,
     double* SendValueBuffer = new double[sendcnt];
     double* SendAuxBuffer   = new double[sendcnt];
 
-    unsigned long iVal;
+    int iVal;
 
     int rank, size;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
 
-    double *RecvValueBuffer, *RecvAuxBuffer;
+    double *RecvValueBuffer = NULL, *RecvAuxBuffer = NULL;
 
     if (rank == root) {
       RecvValueBuffer = new double[recvcnt*size];
@@ -431,13 +430,13 @@ void CAuxMPIWrapper::Scatter(void *sendbuf, int sendcnt,
     double* SendValueBuffer = NULL;
     double* SendAuxBuffer   = NULL;
 
-    unsigned long iVal;
+    int iVal;
 
     int rank, size;
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &size);
 
-    double *RecvValueBuffer, *RecvAuxBuffer;
+    double *RecvValueBuffer = NULL, *RecvAuxBuffer = NULL;
 
     RecvValueBuffer = new double[recvcnt*size];
     RecvAuxBuffer   = new double[recvcnt*size];
@@ -446,8 +445,8 @@ void CAuxMPIWrapper::Scatter(void *sendbuf, int sendcnt,
     su2double *RecvBuffer =  static_cast< su2double* >(recvbuf);
 
     if (rank == root){
-      double* SendValueBuffer = new double[sendcnt];
-      double* SendAuxuffer    = new double[sendcnt];
+      SendValueBuffer = new double[sendcnt];
+      SendAuxBuffer    = new double[sendcnt];
 
       for (iVal = 0; iVal < sendcnt; iVal++) {
         SendValueBuffer[iVal] = SU2_TYPE::GetValue(SendBuffer[iVal]);
@@ -484,7 +483,7 @@ void CAuxMPIWrapper::Bcast(void *buf, int count, MPI_Datatype datatype,
     double *AuxBuffer = new double[count];
     double *ValueBuffer = new double[count];
 
-    unsigned long iVal = 0;
+    int iVal = 0;
 
     su2double *Buffer = static_cast< su2double* >(buf);
 

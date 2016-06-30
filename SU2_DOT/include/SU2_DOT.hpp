@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines of the code SU2_DOT.
  *        The subroutines and functions are in the <i>SU2_DOT.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.2 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -42,6 +42,7 @@
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
+#include "../../SU2_CFD/include/output_structure.hpp"
 
 using namespace std;
 

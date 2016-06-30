@@ -2,7 +2,7 @@
  * \file grid_movement_structure.inl
  * \brief In-Line subroutines of the <i>grid_movement_structure.hpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.1.2 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -215,3 +215,10 @@ inline su2double CVolumetricMovement::Determinant_3x3(su2double A00, su2double A
 inline void CVolumetricMovement::Set_nIterMesh(unsigned long val_nIterMesh) { nIterMesh = val_nIterMesh; }
 
 inline unsigned long CVolumetricMovement::Get_nIterMesh() { return nIterMesh; }
+
+inline bool CSurfaceMovement::CheckFFDBoxDefinition(CConfig *config, unsigned short iDV){
+  for (unsigned short iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++){
+    if (FFDBox[iFFDBox]->GetTag() == config->GetFFDTag(iDV)){ return true;}
+  }
+  return false;
+}
