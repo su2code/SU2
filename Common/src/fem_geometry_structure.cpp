@@ -2088,9 +2088,14 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
      functor SortFacesClass is used for comparison. */
   sort(localFaces.begin(), localFaces.end(), SortFacesClass(nVolElemTot));
 
-  /*--- In order to reduce the number of standard elements for the matching
-        faces, it is made sure that the VTK type of the element on side 0
-        must be less than or equal to the VTK type of the element on side 1.
+  /*--- Carry out a possible swap of side 0 and side 1 of the faces. This is
+        done for the following reasons (in order of importance).
+        1: The element on side 0 must always be an owned element.
+        2: The VTK type of the element on side 0 must be less than or equal
+           to the VTK type of the element on side 1. This is done to reduce
+           the number of standard elements for the matching faces.
+        3: For the same VTK types the element on side 0 must be the smallest.
+
         Furthermore, make sure that for boundary faces and non-matching faces
         the corresponding element is always on side 0. ---*/
   for(unsigned long i=0; i<localFaces.size(); ++i) {
@@ -2100,9 +2105,16 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
     if(localFaces[i].elemID0 < nVolElemTot &&
        localFaces[i].elemID1 < nVolElemTot) {
 
-      /* This is an internal matching face. Check the VTK types of the
-         adjacent elements. */
-      if(localFaces[i].elemType0 == localFaces[i].elemType1) {
+      /* This is an internal matching face. First check if one of the adjacent
+         elements is not an owned element. */
+      if(localFaces[i].elemID0 >= nVolElemOwned ||
+         localFaces[i].elemID1 >= nVolElemOwned) {
+
+        /* One of the element is not owned. Make sure that the owned element
+           is on side 0. */
+        swapElements = localFaces[i].elemID0 > localFaces[i].elemID1;
+      }
+      else if(localFaces[i].elemType0 == localFaces[i].elemType1) {
 
         /* The same element type on both sides. Make sure that the element
            with the smallest ID is stored on side 0 of the face. */
