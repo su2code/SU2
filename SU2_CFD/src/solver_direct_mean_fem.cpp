@@ -1471,20 +1471,23 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
           Velocity2 += vel*vel;
         }
 
-        su2double StaticEnergy = solDOF[nDim+1]*DensityInv - 0.5*Velocity2;
+        const su2double StaticEnergy = solDOF[nDim+1]*DensityInv - 0.5*Velocity2;
         FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
-        su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
+        const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
+        const su2double SoundSpeed  = sqrt(fabs(SoundSpeed2));
 
         su2double charVel2 = 0.0;
-        for(unsigned short iDim=0; iDim<nDim; ++iDim)
-          charVel2 += velAbs[iDim]*velAbs[iDim] + SoundSpeed2;
+        for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+          const su2double rad = velAbs[iDim] + SoundSpeed;
+          charVel2 += rad*rad;
+        }
 
         charVel2Max = max(charVel2Max, charVel2);
       }
 
       /* Compute the time step for the element and update the minimum and
          maximum value. */
-      VecDeltaTime[i] = CFL*volElem[i].lenScale/charVel2Max;
+      VecDeltaTime[i] = CFL*volElem[i].lenScale/sqrt(charVel2Max);
 
       Min_Delta_Time = min(Min_Delta_Time, VecDeltaTime[i]);
       Max_Delta_Time = max(Max_Delta_Time, VecDeltaTime[i]);
