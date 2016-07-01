@@ -9280,11 +9280,11 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 #endif
 
   /*--- Intialization of the vector for the interested boudary ---*/
-  if(allocate){
-  	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+		for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+			if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+				if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+					if(allocate){
 						AverageTurboNormal[iMarker] 			= new su2double *[nSpanWiseSections + 1];
 						AverageNormal[iMarker]			 			= new su2double *[nSpanWiseSections + 1];
 						AverageGridVel[iMarker] 					= new su2double *[nSpanWiseSections + 1];
@@ -9294,19 +9294,22 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 							AverageTurboNormal[iMarker][iSpan] 					= new su2double [nDim];
 							AverageNormal[iMarker][iSpan]			 					= new su2double [nDim];
 							AverageGridVel[iMarker][iSpan] 	  					= new su2double [nDim];
-							AverageTangGridVel[iMarker][iSpan]					= 0.0;
-							SpanArea[iMarker][iSpan]										= 0.0;
-							for(iDim=0; iDim < nDim; iDim++){
-								AverageTurboNormal[iMarker][iSpan][iDim]	  = 0.0;
-								AverageNormal[iMarker][iSpan][iDim]	  			= 0.0;
-								AverageGridVel[iMarker][iSpan][iDim]				= 0.0;
-							}
+						}
+					}
+					for (iSpan= 0; iSpan < nSpanWiseSections + 1; iSpan++){
+						AverageTangGridVel[iMarker][iSpan]					= 0.0;
+						SpanArea[iMarker][iSpan]										= 0.0;
+						for(iDim=0; iDim < nDim; iDim++){
+							AverageTurboNormal[iMarker][iSpan][iDim]	  = 0.0;
+							AverageNormal[iMarker][iSpan][iDim]	  			= 0.0;
+							AverageGridVel[iMarker][iSpan][iDim]				= 0.0;
 						}
 					}
 				}
 			}
-  	}
-  }
+		}
+	}
+
 
 
   /*--- start computing the average quantities span wise --- */
