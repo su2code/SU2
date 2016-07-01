@@ -3993,7 +3993,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
   char mass_flow_rate[] = ",\"MassFlowRate\"";
   char d_flow_coeff[] = ",\"D(CLift)\",\"D(CDrag)\",\"D(CSideForce)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"D(CFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\"";
-  char d_turbo_coeff[] = ",\"D(TotalPressureLoss_0)\",\"D(FlowAngleOut_0)\"";
+  char d_turbo_coeff[] = ",\"D(TotalPressureLoss_0)\",\"D(FlowAngleOut_0)\",\"D(TotalEfficency)\",\"D(TotalStaticEfficiency)\", \"D(EntropyGen)\"";
   
   /* Find the markers being monitored and create a header for them */
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
@@ -4290,7 +4290,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
     
     /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
-    su2double D_Total_CLift = 0.0, D_Total_CDrag = 0.0, D_Total_CSideForce = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_TotalPressure_Loss = 0.0, D_FlowAngle_Out = 0.0;
+    su2double D_Total_CLift = 0.0, D_Total_CDrag = 0.0, D_Total_CSideForce = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_TotalPressure_Loss = 0.0, D_FlowAngle_Out = 0.0, D_TotalStaticEfficiency = 0.0, D_TotalTotalEfficiency = 0.0, D_EntropyGen = 0.0;
     
     /*--- Residual arrays ---*/
     su2double *residual_flow         = NULL,
@@ -4561,6 +4561,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 							D_FlowAngle_Out      = 180.0/PI_NUMBER*SU2_TYPE::GetDerivative(FlowAngleOut[iMarker_Monitoring]);
 						}
         	}
+                if (direct_diff != NO_DERIVATIVE){
+		  D_TotalStaticEfficiency = SU2_TYPE::GetDerivative(TotalStaticEfficiency[2]);
+		  D_TotalTotalEfficiency = SU2_TYPE::GetDerivative(TotalTotalEfficiency[2]);
+                  D_EntropyGen           = SU2_TYPE::GetDerivative(EntropyGen[nTurboPerf-1]);
+                }
         }
         
         
@@ -4784,7 +4789,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               				 D_Total_CLift, D_Total_CDrag, D_Total_CSideForce, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
                        D_Total_CFz, D_Total_CEff);
             } else if (direct_diff != NO_DERIVATIVE && turbo){
-              SPRINTF (d_direct_coeff, ", %12.10f, %12.10f", D_TotalPressure_Loss, D_FlowAngle_Out);
+              SPRINTF (d_direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", D_TotalPressure_Loss, D_FlowAngle_Out, D_TotalTotalEfficiency, D_TotalStaticEfficiency, D_EntropyGen);
             }
             if (isothermal)
               SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy,
@@ -5680,7 +5685,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 							cout.width(15); cout << TotalStaticEfficiency[nTurboPerf - 1]*100.0;
 							cout.width(15); cout << EntropyGen[nTurboPerf -1]*100.0;
               if (direct_diff){
-                cout.width(15); cout << SU2_TYPE::GetDerivative(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalStaticEfficiency(2));
+                cout.width(15); cout << D_EntropyGen;
               }
           	}
 						cout.unsetf(ios_base::floatfield);
