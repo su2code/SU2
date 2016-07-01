@@ -1431,7 +1431,7 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
       solver_container[iZone][MESH_0][TURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
   }
-  else if (kind_recording == GEOMETRY){
+  if (kind_recording == GEOMETRY){
 
     /*--- Register node coordinates as input ---*/
 
