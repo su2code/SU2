@@ -350,7 +350,7 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
 		ObjFunc_Value = direct_solver->GetTotalStaticEfficiency(2);
 		break;
 	case ENTROPY_GENERATION:
-		ObjFunc_Value = direct_solver->GetEntropyGen(0);
+		ObjFunc_Value = direct_solver->GetEntropyGen(config->GetnMarker_TurboPerformance() - 1);
 		break;
 	case EULERIAN_WORK:
 		ObjFunc_Value = direct_solver->GetEulerianWork(0);
