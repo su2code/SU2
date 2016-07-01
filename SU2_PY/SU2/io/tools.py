@@ -983,11 +983,11 @@ def expand_zones(name, config):
     if config.NZONES > 1:
         if not isinstance(name, list):
             name_pat = add_suffix(name,'%d')
-            names = [name_pat%i for i in range(config.NZONES)]
+            names = [name_pat%i for i in range(int(config.NZONES))]
         else:
             for n in range(len(name)):
                 name_pat[i] = add_suffix(name, '%d')
-                names[i]    = [name_pat%i for i in range(config.NZONES)]
+                names[i]    = [name_pat%i for i in range(int(config.NZONES))]
     else:
         if not isinstance(name, list):
             names = [name]
