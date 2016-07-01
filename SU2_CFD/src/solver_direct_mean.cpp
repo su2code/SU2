@@ -4895,15 +4895,12 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
           avgGridVel2In= 0.0;
           avgVel2In= 0.0;
           for (iDim = 0; iDim < nDim; iDim++){
-//            if(AverageTurboVelocity[iMarker][nSpanWiseSections][1] >= 0.0){
-              avgVelRel2In +=( AverageVelocity[iMarker][nSpanWiseSections][iDim] - geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim])*( AverageVelocity[iMarker][nSpanWiseSections][iDim] - geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim]);
-//            }
-//            else{
-//              avgVelRel2In +=( AverageVelocity[iMarker][nSpanWiseSections][iDim] + geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim])*( AverageVelocity[iMarker][nSpanWiseSections][iDim] + geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim]);
-//            }
+            avgVelRel2In += AverageTurboVelocity[iMarker][nSpanWiseSections][iDim]*AverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
             avgGridVel2In += geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim]*geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim];
-            avgVel2In += AverageVelocity[iMarker][nSpanWiseSections][iDim]*AverageVelocity[iMarker][nSpanWiseSections][iDim];
+            avgVel2In += (AverageVelocity[iMarker][nSpanWiseSections][iDim])*(AverageVelocity[iMarker][nSpanWiseSections][iDim]);
           }
+          avgVelRel2In -=AverageTurboVelocity[iMarker][nSpanWiseSections][1]*AverageTurboVelocity[iMarker][nSpanWiseSections][1];
+          avgVelRel2In +=(AverageTurboVelocity[iMarker][nSpanWiseSections][1] - geometry->GetAverageTangGridVel(iMarker,nSpanWiseSections))*(AverageTurboVelocity[iMarker][nSpanWiseSections][1] - geometry->GetAverageTangGridVel(iMarker,nSpanWiseSections));
 
           avgTotalRothalpyIn 			= AverageEnthalpy[iMarker][nSpanWiseSections] + 0.5*avgVelRel2In - 0.5*avgGridVel2In;
           avgTotalEnthalpyIn 			= AverageEnthalpy[iMarker][nSpanWiseSections] + 0.5*avgVel2In;
@@ -4991,16 +4988,15 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
           avgVelRel2Out = 0.0;
           avgGridVel2Out = 0.0;
           avgVel2Out = 0.0;
+
           for (iDim = 0; iDim < nDim; iDim++){
-            if(AverageTurboVelocity[iMarker][nSpanWiseSections][1]  >= 0.0){
-              avgVelRel2Out +=( AverageVelocity[iMarker][nSpanWiseSections][iDim] + geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim])*( AverageVelocity[iMarker][nSpanWiseSections][iDim] + geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim]);
-            }
-            else{
-              avgVelRel2Out +=( AverageVelocity[iMarker][nSpanWiseSections][iDim] - geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim])*( AverageVelocity[iMarker][nSpanWiseSections][iDim] - geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim]);
-            }
+            avgVelRel2Out += AverageTurboVelocity[iMarker][nSpanWiseSections][iDim]*AverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
             avgGridVel2Out += geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim]*geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim];
-            avgVel2Out += AverageVelocity[iMarker][nSpanWiseSections][iDim]*AverageVelocity[iMarker][nSpanWiseSections][iDim];
+            avgVel2Out += (AverageVelocity[iMarker][nSpanWiseSections][iDim])*(AverageVelocity[iMarker][nSpanWiseSections][iDim]);
           }
+          avgVelRel2Out -=AverageTurboVelocity[iMarker][nSpanWiseSections][1]*AverageTurboVelocity[iMarker][nSpanWiseSections][1];
+          avgVelRel2Out +=(AverageTurboVelocity[iMarker][nSpanWiseSections][1] - geometry->GetAverageTangGridVel(iMarker,nSpanWiseSections))*(AverageTurboVelocity[iMarker][nSpanWiseSections][1] - geometry->GetAverageTangGridVel(iMarker,nSpanWiseSections));
+
           avgTotalRothalpyOut       = AverageEnthalpy[iMarker][nSpanWiseSections] + 0.5*avgVelRel2Out - 0.5*avgGridVel2Out;
           avgTotalEnthalpyOut       = AverageEnthalpy[iMarker][nSpanWiseSections] + 0.5*avgVel2Out;
           avgEntropyOut             = AverageEntropy[iMarker][nSpanWiseSections];
@@ -10153,7 +10149,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
     }
 
-
     /*--- Loop over all the vertices on this boundary marker ---*/
 
     for (iVertex = 0; iVertex < geometry->nVertexSpan[val_marker][iSpan]; iVertex++) {
@@ -10291,7 +10286,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
           delta_c[3] = relfacAvg*c_avg[3] + relfacFou*dcjs[3];
           delta_c[4] = cj[4];
         }
-
         break;
 
 
@@ -10369,6 +10363,15 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         break;
 
       }
+
+
+//      for(iDim = 0;iDim<nVar; iDim++){
+//      	cout << "charactersitic jump "<< delta_c[iDim] << endl;
+//      }
+//
+//
+//    	cout << endl;
+
 
       /*--- Compute primitive jump from characteristic variables  ---*/
       for (iVar = 0; iVar < nVar; iVar++)
