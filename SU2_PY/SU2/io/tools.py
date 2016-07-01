@@ -980,7 +980,7 @@ def expand_time(name,config):
     return names
 
 def expand_zones(name, config):
-    if config.NZONES > 1:
+    if int(config.NZONES) > 1:
         if not isinstance(name, list):
             name_pat = add_suffix(name,'%d')
             names = [name_pat%i for i in range(int(config.NZONES))]
@@ -1046,6 +1046,7 @@ def restart2solution(config,state={}):
     if config.MATH_PROBLEM == 'DIRECT':
         restart  = config.RESTART_FLOW_FILENAME
         solution = config.SOLUTION_FLOW_FILENAME
+        
         # expand zones
         restarts  = expand_zones(restart,config)
         solutions = expand_zones(solution,config)
