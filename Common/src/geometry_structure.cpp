@@ -9405,7 +9405,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 //								cout << "AverageGridVel in dim  " << iDim << " is "<< AverageGridVel[iMarker][iSpan][iDim] <<endl;
 							}
 							switch (config->GetKind_TurboMachinery()){
-							case CENTRIFUGAL:
+							case CENTRIFUGAL:case CENTRIPETAL:
 								if (marker_flag == INFLOW ){
 									AverageTangGridVel[iMarker][iSpan]= -(AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
 //									cout <<" Tang grid velocity inflow " << AverageTangGridVel[iMarker][iSpan] << endl;
@@ -9415,16 +9415,16 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 //									cout <<" Tang grid velocity outflow " << AverageTangGridVel[iMarker][iSpan] << endl;
 								}
 								break;
-							case CENTRIPETAL:
-								if (marker_flag == INFLOW ){
-									AverageTangGridVel[iMarker][iSpan]= (AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
-//									cout <<" Tang grid velocity inflow " << AverageTangGridVel[iMarker][iSpan] << endl;
-								}
-								else{
-									AverageTangGridVel[iMarker][iSpan]= -AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
-//									cout <<" Tang grid velocity outflow " << AverageTangGridVel[iMarker][iSpan] << endl;
-								}
-								break;
+//							case CENTRIPETAL:
+//								if (marker_flag == INFLOW ){
+//									AverageTangGridVel[iMarker][iSpan]= (AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
+////									cout <<" Tang grid velocity inflow " << AverageTangGridVel[iMarker][iSpan] << endl;
+//								}
+//								else{
+//									AverageTangGridVel[iMarker][iSpan]= -AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
+////									cout <<" Tang grid velocity outflow " << AverageTangGridVel[iMarker][iSpan] << endl;
+//								}
+//								break;
 							case AXIAL:
 								if (nDim == 2){
 									if (marker_flag == INFLOW ){
@@ -9461,7 +9461,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 							AverageGridVel[iMarker][nSpanWiseSections][iDim]				+= AverageGridVel[iMarker][iSpan][iDim]/nSpanWiseSections;
 
 						}
-						cout <<" Tang grid velocity 1D " << AverageTangGridVel[iMarker][nSpanWiseSections] << endl;
+//						cout <<" Tang grid velocity 1D " << AverageTangGridVel[iMarker][nSpanWiseSections] << endl;
 					}
 				}
 			}
