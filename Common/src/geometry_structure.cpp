@@ -1456,8 +1456,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   starting_node = NULL;
   ending_node   = NULL;
   npoint_procs  = NULL;
-  
-  overhead = 4;
 
   /*--- Local variables and counters for the following communications. ---*/
   
@@ -4071,8 +4069,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       for (iMarker = 0; iMarker < nMarker; iMarker++)
         nElem_Bound[iMarker] = nVertexDomain[iMarker];
       
-      bound = new CPrimalGrid**[nMarker+(overhead*size)];
-      for (iMarker = 0; iMarker < nMarker+(overhead*size); iMarker++)
+      bound = new CPrimalGrid**[nMarker+(OVERHEAD*size)];
+      for (iMarker = 0; iMarker < nMarker+(OVERHEAD*size); iMarker++)
         bound[iMarker] = NULL;
     
       for (iMarker = 0; iMarker < nMarker; iMarker++)

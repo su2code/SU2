@@ -2648,7 +2648,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   
   /*--- Add the possible send/receive domains ---*/
 
-  nMarker_Max = nMarker_CfgFile + 2*size;
+  nMarker_Max = nMarker_CfgFile + OVERHEAD*size;
   
   /*--- Basic dimensionalization of the markers (worst scenario) ---*/
 
