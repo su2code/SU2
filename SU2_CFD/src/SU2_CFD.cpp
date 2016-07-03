@@ -553,13 +553,13 @@ int main(int argc, char *argv[]) {
   
   /*--- Grid movement and surface movement class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
-    delete [] surface_movement[iZone];
+    delete surface_movement[iZone];
   }
   delete [] surface_movement;
     if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
   
   for (iZone = 0; iZone < nZone; iZone++) {
-    delete [] grid_movement[iZone];
+    delete grid_movement[iZone];
   }
   delete [] grid_movement;
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
