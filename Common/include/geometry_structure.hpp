@@ -117,6 +117,7 @@ public:
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
 	unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
 	unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
+  unsigned long overhead; /*!< \brief Overhead space above nMarker when allocating space for boundary elems (periodic). */
 	vector<unsigned long> PeriodicPoint[MAX_NUMBER_PERIODIC][2];			/*!< \brief PeriodicPoint[Periodic bc] and return the point that 
 																			 must be sent [0], and the image point in the periodic bc[1]. */
 	vector<unsigned long> PeriodicElem[MAX_NUMBER_PERIODIC];				/*!< \brief PeriodicElem[Periodic bc] and return the elements that 

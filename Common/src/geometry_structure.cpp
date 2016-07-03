@@ -107,8 +107,9 @@ CGeometry::~CGeometry(void) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (bound[iMarker][iElem_Bound] != NULL) delete bound[iMarker][iElem_Bound];
       }
+      if (bound[iMarker] != NULL) delete [] bound[iMarker];
     }
-    delete[] bound;
+    delete [] bound;
   }
   
   if (face != NULL) {
@@ -1456,6 +1457,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   ending_node   = NULL;
   npoint_procs  = NULL;
   
+  overhead = 4;
+
   /*--- Local variables and counters for the following communications. ---*/
   
   unsigned long iter,  iPoint, jPoint, iElem, iVertex;
@@ -1472,7 +1475,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long iVertexDomain, iBoundLine, iBoundTriangle, iBoundQuadrilateral;
   
   unsigned long iNode, iDim, iMarker, jMarker, nMarkerDomain = 0, iMarkerDomain;
-  unsigned long nDomain = 0, iDomain, jDomain, nPeriodic = 0, iPeriodic, overhead = 4, Buffer_Send_nMarkerDomain = 0, Buffer_Send_nDim = 0, Buffer_Send_nZone = 0, Buffer_Send_nPeriodic = 0;
+  unsigned long nDomain = 0, iDomain, jDomain, nPeriodic = 0, iPeriodic, Buffer_Send_nMarkerDomain = 0, Buffer_Send_nDim = 0, Buffer_Send_nZone = 0, Buffer_Send_nPeriodic = 0;
   
   bool *MarkerIn = NULL, **VertexIn = NULL, *ElemIn = NULL;
   long vnodes_local[8];
@@ -4068,7 +4071,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       for (iMarker = 0; iMarker < nMarker; iMarker++)
         nElem_Bound[iMarker] = nVertexDomain[iMarker];
       
-      bound = new CPrimalGrid**[nMarker+(overhead*nDomain)];
+      bound = new CPrimalGrid**[nMarker+(overhead*size)];
+      for (iMarker = 0; iMarker < nMarker+(overhead*size); iMarker++)
+        bound[iMarker] = NULL;
+    
       for (iMarker = 0; iMarker < nMarker; iMarker++)
         bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
       
@@ -4667,9 +4673,9 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   
   /*--- Deallocate the bound variables ---*/
   
-  for (iMarker = 0; iMarker < nMarker; iMarker++)
-    delete [] bound[iMarker];
-  delete [] bound;
+  for (iMarker = 0; iMarker < nMarker+(overhead*size); iMarker++)
+    if (bound[iMarker] != NULL) delete [] bound[iMarker];
+  if (bound != NULL) delete [] bound;
   
   /*--- Allocate the new bound variables, and set the number of markers ---*/
   
@@ -4757,6 +4763,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
     
   }
   
+  delete [] nElem_Bound_Copy;
   delete [] Marker_All_SendRecv_Copy;
   
 }
