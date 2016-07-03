@@ -34,19 +34,25 @@
 CEulerVariable::CEulerVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
+  
 	TS_Source = NULL;
 	Primitive = NULL;
 	Secondary = NULL;
-	Gradient_Primitive = NULL;
+	
+  Gradient_Primitive = NULL;
 	Gradient_Secondary = NULL;
+  
 	Limiter_Primitive = NULL;
 	Limiter_Secondary = NULL;
-  WindGust = NULL;
+  
+  WindGust    = NULL;
   WindGustDer = NULL;
-  nSecondaryVarGrad=0;
-  nPrimVarGrad=0;
-  nSecondaryVar=0;
-  nPrimVar=0;
+
+  nPrimVar     = 0;
+  nPrimVarGrad = 0;
+
+  nSecondaryVar     = 0;
+  nSecondaryVarGrad = 0;
   
 }
 
@@ -65,16 +71,24 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   
   /*--- Array initialization ---*/
   
-	TS_Source = NULL;
-	Primitive = NULL;
-	Gradient_Primitive = NULL;
-	Limiter_Primitive = NULL;
-  WindGust = NULL;
+  TS_Source = NULL;
+  Primitive = NULL;
+  Secondary = NULL;
+  
+  Gradient_Primitive = NULL;
+  Gradient_Secondary = NULL;
+  
+  Limiter_Primitive = NULL;
+  Limiter_Secondary = NULL;
+  
+  WindGust    = NULL;
   WindGustDer = NULL;
-  nSecondaryVarGrad=0;
-  nPrimVarGrad=0;
-  nSecondaryVar=0;
-  nPrimVar=0;
+  
+  nPrimVar     = 0;
+  nPrimVarGrad = 0;
+  
+  nSecondaryVar     = 0;
+  nSecondaryVarGrad = 0;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   
@@ -242,16 +256,25 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   bool windgust = config->GetWind_Gust();
   
   /*--- Array initialization ---*/
-	TS_Source = NULL;
-	Primitive = NULL;
-	Gradient_Primitive = NULL;
+  
+  TS_Source = NULL;
+  Primitive = NULL;
+  Secondary = NULL;
+  
+  Gradient_Primitive = NULL;
+  Gradient_Secondary = NULL;
+  
   Limiter_Primitive = NULL;
-  WindGust = NULL;
+  Limiter_Secondary = NULL;
+  
+  WindGust    = NULL;
   WindGustDer = NULL;
-  nSecondaryVarGrad=0;
-  nPrimVarGrad=0;
-  nSecondaryVar=0;
-  nPrimVar=0;
+  
+  nPrimVar     = 0;
+  nPrimVarGrad = 0;
+  
+  nSecondaryVar     = 0;
+  nSecondaryVarGrad = 0;
   
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
