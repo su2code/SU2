@@ -93,7 +93,7 @@ CGeometry::CGeometry(void) {
 
 CGeometry::~CGeometry(void) {
   
-  unsigned long iElem, iElem_Bound, iEdge, iFace, iPoint;// iVertex;
+  unsigned long iElem, iElem_Bound, iEdge, iFace, iPoint, iVertex;
   unsigned short iMarker;
   
   if (elem != NULL) {
@@ -130,17 +130,17 @@ CGeometry::~CGeometry(void) {
       if (edge[iEdge] != NULL) delete edge[iEdge];
     delete[] edge;
   }
-/*
+
   if (vertex != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        if (vertex[iMarker][iVertex] != NULL) delete [] vertex[iMarker][iVertex];
+        if (vertex[iMarker][iVertex] != NULL) delete vertex[iMarker][iVertex];
       }
-      delete[] vertex[iMarker];
+      if (vertex[iMarker] != NULL) delete [] vertex[iMarker];
     }
-    delete[] vertex;
+    delete [] vertex;
   }
-*/  
+  
   if (newBound != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
@@ -4671,12 +4671,15 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
     delete [] DomainReceiveMarkers[iDomain];
   delete[] DomainReceiveMarkers;
   
-  /*--- Deallocate the bound variables ---*/
+   /*--- Deallocate the bound variables ---*/
   
-  for (iMarker = 0; iMarker < nMarker+(overhead*size); iMarker++)
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+   for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++)
+     if (bound[iMarker][iElem_Bound] != NULL) delete bound[iMarker][iElem_Bound];
     if (bound[iMarker] != NULL) delete [] bound[iMarker];
+  }
   if (bound != NULL) delete [] bound;
-  
+ 
   /*--- Allocate the new bound variables, and set the number of markers ---*/
   
   bound = bound_Copy;
