@@ -77,7 +77,8 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   LowMach_Precontioner = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
-  
+  Smatrix = NULL; cvector = NULL;
+ 
   Secondary=NULL; Secondary_i=NULL; Secondary_j=NULL;
 
   /*--- Fixed CL mode initialization (cauchy criteria) ---*/
@@ -88,8 +89,56 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   New_Func = 0;
   Cauchy_Counter = 0;
   Cauchy_Serie = NULL;
-  FluidModel=NULL;
   
+  FluidModel = NULL;
+
+  AveragedVelocity = NULL;
+  AveragedNormal   = NULL;
+  AveragedGridVel  = NULL;
+  AveragedFlux     = NULL;
+  TotalFlux        = NULL;
+
+  AveragedNormalVelocity     = NULL;
+  AveragedTangVelocity       = NULL;
+  ExtAveragedNormalVelocity  = NULL;
+  ExtAveragedTangVelocity    = NULL;
+  MassFlow                   = NULL;
+  FlowAngle                  = NULL;
+  AveragedEnthalpy           = NULL;
+  AveragedPressure           = NULL;
+  AveragedTotPressure        = NULL;
+  AveragedTotTemperature     = NULL;
+  ExtAveragedTotPressure     = NULL;
+  ExtAveragedTotTemperature  = NULL;
+  AveragedDensity            = NULL;
+  ExtAveragedPressure        = NULL;
+  ExtAveragedDensity         = NULL;
+  AveragedSoundSpeed         = NULL;
+  AveragedEntropy            = NULL;
+  AveragedTangGridVelocity   = NULL;
+  AveragedMach               = NULL;
+  AveragedNormalMach         = NULL;
+  AveragedTangMach           = NULL;
+
+  TotalStaticEfficiency = NULL;
+  TotalTotalEfficiency  = NULL;
+  KineticEnergyLoss     = NULL;
+  TotalPressureLoss     = NULL;
+  MassFlowIn            = NULL;
+  MassFlowOut           = NULL; 
+  FlowAngleIn           = NULL;
+  FlowAngleOut          = NULL;
+  EulerianWork          = NULL;
+  TotalEnthalpyIn       = NULL;
+  PressureRatio         = NULL;
+  PressureOut           = NULL;
+  EnthalpyOut           = NULL;
+  MachIn                = NULL;
+  MachOut               = NULL;
+  NormalMachIn          = NULL;
+  NormalMachOut         = NULL;
+  VelocityOutIs         = NULL;
+ 
 }
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -165,6 +214,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   LowMach_Precontioner = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
+  Smatrix = NULL; cvector = NULL;
 
   Secondary=NULL; Secondary_i=NULL; Secondary_j=NULL;
 
@@ -176,8 +226,60 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   New_Func = 0;
   Cauchy_Counter = 0;
   Cauchy_Serie = NULL;
-  FluidModel=NULL;
   
+  /*--- Fluid model pointer initialization ---*/
+
+  FluidModel = NULL;
+
+  /*--- Turbo array initialization ---*/
+
+  AveragedVelocity = NULL;
+  AveragedNormal   = NULL;
+  AveragedGridVel  = NULL;
+  AveragedFlux     = NULL;
+  TotalFlux        = NULL;
+
+  AveragedNormalVelocity     = NULL;
+  AveragedTangVelocity       = NULL;
+  ExtAveragedNormalVelocity  = NULL;
+  ExtAveragedTangVelocity    = NULL;
+  MassFlow                   = NULL;
+  FlowAngle                  = NULL;
+  AveragedEnthalpy           = NULL;
+  AveragedPressure           = NULL;
+  AveragedTotPressure        = NULL;
+  AveragedTotTemperature     = NULL;
+  ExtAveragedTotPressure     = NULL;
+  ExtAveragedTotTemperature  = NULL;
+  AveragedDensity            = NULL;
+  ExtAveragedPressure        = NULL;
+  ExtAveragedDensity         = NULL;
+  AveragedSoundSpeed         = NULL;
+  AveragedEntropy            = NULL;
+  AveragedTangGridVelocity   = NULL;
+  AveragedMach               = NULL;
+  AveragedNormalMach         = NULL;
+  AveragedTangMach           = NULL;
+
+  TotalStaticEfficiency = NULL;
+  TotalTotalEfficiency  = NULL;
+  KineticEnergyLoss     = NULL;
+  TotalPressureLoss     = NULL;
+  MassFlowIn            = NULL; 
+  MassFlowOut           = NULL;
+  FlowAngleIn           = NULL;
+  FlowAngleOut          = NULL;
+  EulerianWork          = NULL;
+  TotalEnthalpyIn       = NULL;
+  PressureRatio         = NULL;
+  PressureOut           = NULL;
+  EnthalpyOut           = NULL;
+  MachIn                = NULL;
+  MachOut               = NULL;
+  NormalMachIn          = NULL;
+  NormalMachOut         = NULL;
+  VelocityOutIs         = NULL;
+
   /*--- Set the gamma value ---*/
   
   Gamma = config->GetGamma();
@@ -201,7 +303,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
-  
+ 
+  /*--- Store the number of vertices on each marker for deallocation later ---*/
+
+  nVertex = new unsigned long[nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) 
+    nVertex[iMarker] = geometry->nVertex[iMarker];
+ 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
@@ -472,97 +580,96 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     Bleed_Area[iMarker]          = 0.0;
   }
   
-  /*--- Initializate quantities for the mixing process ---*/
+  /*--- Initialize quantities for the mixing process ---*/
   
   AveragedVelocity = new su2double* [nMarker];
-  AveragedNormal = new su2double* [nMarker];
-  AveragedGridVel = new su2double* [nMarker];
-  AveragedFlux = new su2double* [nMarker];
-  TotalFlux = new su2double* [nMarker];
+  AveragedNormal   = new su2double* [nMarker];
+  AveragedGridVel  = new su2double* [nMarker];
+  AveragedFlux     = new su2double* [nMarker];
+  TotalFlux        = new su2double* [nMarker];
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     AveragedVelocity[iMarker] = new su2double [nDim];
-    AveragedNormal[iMarker] = new su2double [nDim];
-    AveragedGridVel[iMarker] = new su2double [nDim];
+    AveragedNormal[iMarker]   = new su2double [nDim];
+    AveragedGridVel[iMarker]  = new su2double [nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
       AveragedVelocity[iMarker][iDim] = 0.0;
-      AveragedNormal[iMarker][iDim] = 0.0;
+      AveragedNormal[iMarker][iDim]   = 0.0;
       AveragedGridVel [iMarker][iDim] = 0.0;
     }
   }
   
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     AveragedFlux[iMarker] = new su2double [nVar];
-    TotalFlux[iMarker] = new su2double [nVar];
+    TotalFlux[iMarker]    = new su2double [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
       AveragedFlux[iMarker][iVar] = 0.0;
-      TotalFlux[iMarker][iVar] = 0.0;
+      TotalFlux[iMarker][iVar]    = 0.0;
     }
   }
   
-  AveragedNormalVelocity = new su2double[nMarker];
-  AveragedTangVelocity = new su2double[nMarker];
-  ExtAveragedNormalVelocity = new su2double[nMarker];
-  ExtAveragedTangVelocity = new su2double[nMarker];
-  MassFlow= new su2double[nMarker];
-  FlowAngle= new su2double[nMarker];
-  AveragedEnthalpy  = new su2double[nMarker];
-  AveragedPressure  = new su2double[nMarker];
-  AveragedTotPressure  = new su2double[nMarker];
-  AveragedTotTemperature  = new su2double[nMarker];
-  ExtAveragedTotPressure  = new su2double[nMarker];
+  AveragedNormalVelocity     = new su2double[nMarker];
+  AveragedTangVelocity       = new su2double[nMarker];
+  ExtAveragedNormalVelocity  = new su2double[nMarker];
+  ExtAveragedTangVelocity    = new su2double[nMarker];
+  MassFlow                   = new su2double[nMarker];
+  FlowAngle                  = new su2double[nMarker];
+  AveragedEnthalpy           = new su2double[nMarker];
+  AveragedPressure           = new su2double[nMarker];
+  AveragedTotPressure        = new su2double[nMarker];
+  AveragedTotTemperature     = new su2double[nMarker];
+  ExtAveragedTotPressure     = new su2double[nMarker];
   ExtAveragedTotTemperature  = new su2double[nMarker];
-  AveragedDensity   = new su2double[nMarker];
-  ExtAveragedPressure  = new su2double[nMarker];
-  ExtAveragedDensity   = new su2double[nMarker];
-  AveragedSoundSpeed= new su2double[nMarker];
-  AveragedEntropy   = new su2double[nMarker];
-  AveragedTangGridVelocity = new su2double[nMarker];
-  AveragedMach = new su2double[nMarker];
-  AveragedNormalMach = new su2double[nMarker];
-  AveragedTangMach = new su2double[nMarker];
-  
+  AveragedDensity            = new su2double[nMarker];
+  ExtAveragedPressure        = new su2double[nMarker];
+  ExtAveragedDensity         = new su2double[nMarker];
+  AveragedSoundSpeed         = new su2double[nMarker];
+  AveragedEntropy            = new su2double[nMarker];
+  AveragedTangGridVelocity   = new su2double[nMarker];
+  AveragedMach               = new su2double[nMarker];
+  AveragedNormalMach         = new su2double[nMarker];
+  AveragedTangMach           = new su2double[nMarker];
   
   /*--- Initializate quantities for turboperformace ---*/
   
   TotalStaticEfficiency = new su2double[nMarkerTurboPerf];
-  TotalTotalEfficiency = new su2double[nMarkerTurboPerf];
-  KineticEnergyLoss= new su2double[nMarkerTurboPerf];
-  TotalPressureLoss= new su2double[nMarkerTurboPerf];
-  MassFlowIn= new su2double[nMarkerTurboPerf];
-  MassFlowOut= new su2double[nMarkerTurboPerf];
-  FlowAngleIn= new su2double[nMarkerTurboPerf];
-  FlowAngleOut= new su2double[nMarkerTurboPerf];
-  EulerianWork= new su2double[nMarkerTurboPerf];
-  TotalEnthalpyIn= new su2double[nMarkerTurboPerf];
-  PressureRatio= new su2double[nMarkerTurboPerf];
-  PressureOut= new su2double[nMarkerTurboPerf];
-  EnthalpyOut= new su2double[nMarkerTurboPerf];
-  MachIn= new su2double[nMarkerTurboPerf];
-  MachOut= new su2double[nMarkerTurboPerf];
-  NormalMachIn= new su2double[nMarkerTurboPerf];
-  NormalMachOut= new su2double[nMarkerTurboPerf];
-  VelocityOutIs= new su2double[nMarkerTurboPerf];
+  TotalTotalEfficiency  = new su2double[nMarkerTurboPerf];
+  KineticEnergyLoss     = new su2double[nMarkerTurboPerf];
+  TotalPressureLoss     = new su2double[nMarkerTurboPerf];
+  MassFlowIn            = new su2double[nMarkerTurboPerf];
+  MassFlowOut           = new su2double[nMarkerTurboPerf];
+  FlowAngleIn           = new su2double[nMarkerTurboPerf];
+  FlowAngleOut          = new su2double[nMarkerTurboPerf];
+  EulerianWork          = new su2double[nMarkerTurboPerf];
+  TotalEnthalpyIn       = new su2double[nMarkerTurboPerf];
+  PressureRatio         = new su2double[nMarkerTurboPerf];
+  PressureOut           = new su2double[nMarkerTurboPerf];
+  EnthalpyOut           = new su2double[nMarkerTurboPerf];
+  MachIn                = new su2double[nMarkerTurboPerf];
+  MachOut               = new su2double[nMarkerTurboPerf];
+  NormalMachIn          = new su2double[nMarkerTurboPerf];
+  NormalMachOut         = new su2double[nMarkerTurboPerf];
+  VelocityOutIs         = new su2double[nMarkerTurboPerf];
   
   for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
-    TotalStaticEfficiency[iMarker]= 0.0;
-    TotalTotalEfficiency[iMarker]= 0.0;
-    KineticEnergyLoss[iMarker]= 0.0;
-    TotalPressureLoss[iMarker]= 0.0;
-    MassFlowIn[iMarker]= 0.0;
-    MassFlowOut[iMarker]= 0.0;
-    FlowAngleIn[iMarker]= 0.0;
-    FlowAngleOut[iMarker]= 0.0;
-    EulerianWork[iMarker]= 0.0;
-    TotalEnthalpyIn[iMarker]= 0.0;
-    PressureRatio[iMarker]= 0.0;
-    PressureOut[iMarker]= 0.0;
-    EnthalpyOut[iMarker]= 0.0;
-    MachIn[iMarker]= 0.0;
-    MachOut[iMarker]= 0.0;
-    NormalMachIn[iMarker]= 0.0;
-    NormalMachOut[iMarker]= 0.0;
-    VelocityOutIs[iMarker]= 0.0;
+    TotalStaticEfficiency[iMarker] = 0.0;
+    TotalTotalEfficiency[iMarker]  = 0.0;
+    KineticEnergyLoss[iMarker]     = 0.0;
+    TotalPressureLoss[iMarker]     = 0.0;
+    MassFlowIn[iMarker]            = 0.0;
+    MassFlowOut[iMarker]           = 0.0;
+    FlowAngleIn[iMarker]           = 0.0;
+    FlowAngleOut[iMarker]          = 0.0;
+    EulerianWork[iMarker]          = 0.0;
+    TotalEnthalpyIn[iMarker]       = 0.0;
+    PressureRatio[iMarker]         = 0.0;
+    PressureOut[iMarker]           = 0.0;
+    EnthalpyOut[iMarker]           = 0.0;
+    MachIn[iMarker]                = 0.0;
+    MachOut[iMarker]               = 0.0;
+    NormalMachIn[iMarker]          = 0.0;
+    NormalMachOut[iMarker]         = 0.0;
+    VelocityOutIs[iMarker]         = 0.0;
   }
   
   
@@ -790,8 +897,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 }
 
 CEulerSolver::~CEulerSolver(void) {
+
   unsigned short iVar, iMarker;
+  unsigned long iVertex;
+
   /*--- Array deallocation ---*/
+
   if (CDrag_Inv != NULL)         delete [] CDrag_Inv;
   if (CLift_Inv != NULL)         delete [] CLift_Inv;
   if (CSideForce_Inv != NULL)    delete [] CSideForce_Inv;
@@ -835,21 +946,22 @@ CEulerSolver::~CEulerSolver(void) {
   if (Inflow_Pressure != NULL)  delete [] Inflow_Pressure;
   if (Inflow_Mach != NULL)      delete [] Inflow_Mach;
   if (Inflow_Area != NULL)      delete [] Inflow_Area;
-  if (Bleed_Pressure != NULL)  delete [] Bleed_Pressure;
 
+  if (Bleed_Pressure != NULL)  delete [] Bleed_Pressure;
   if (Bleed_Temperature != NULL)      delete [] Bleed_Temperature;
+  if (Bleed_MassFlow != NULL)      delete [] Bleed_MassFlow;
   if (Exhaust_Pressure != NULL)  delete [] Exhaust_Pressure;
   if (Exhaust_Temperature != NULL)      delete [] Exhaust_Temperature;
   if (Bleed_Area != NULL)      delete [] Bleed_Area;
 
-  //if (iPoint_UndLapl != NULL)       delete [] iPoint_UndLapl;
-  //if (jPoint_UndLapl != NULL)       delete [] jPoint_UndLapl;
+  if (iPoint_UndLapl != NULL)       delete [] iPoint_UndLapl;
+  if (jPoint_UndLapl != NULL)       delete [] jPoint_UndLapl;
 
   if (Primitive != NULL)        delete [] Primitive;
   if (Primitive_i != NULL)      delete [] Primitive_i;
   if (Primitive_j != NULL)      delete [] Primitive_j;
 
-  //if (Secondary != NULL)        delete [] Secondary;
+  if (Secondary != NULL)        delete [] Secondary;
   if (Secondary_i != NULL)      delete [] Secondary_i;
   if (Secondary_j != NULL)      delete [] Secondary_j;
 
@@ -860,31 +972,28 @@ CEulerSolver::~CEulerSolver(void) {
   }
   
   if (CPressure != NULL) {
-    /* This causes failure in AD dealloc
+    // This causes failure in AD dealloc
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete CPressure[iMarker];
-    */
+      delete [] CPressure[iMarker];
     delete [] CPressure;
   }
   
   if (CPressureTarget != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete CPressureTarget[iMarker];
+      delete [] CPressureTarget[iMarker];
     delete [] CPressureTarget;
   }
-  /*
+  
   if (CharacPrimVar != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (nVertex!=NULL){
-      for (iVertex=0; iVertex<nVertex[iMarker]; iVertex++)
+      for (iVertex = 0; iVertex<nVertex[iMarker]; iVertex++)
         delete [] CharacPrimVar[iMarker][iVertex];
-      }
       delete [] CharacPrimVar[iMarker];
     }
     delete [] CharacPrimVar;
   }
-  */
-  //if (nVertex!=NULL)  delete [] nVertex;
+  
+  if (nVertex!=NULL)  delete [] nVertex;
 
   if (HeatFlux != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -906,11 +1015,64 @@ CEulerSolver::~CEulerSolver(void) {
     }
     delete [] YPlus;
   }
-  /*
-  if (Cauchy_Serie != NULL)
-    delete [] Cauchy_Serie;
-  */
-  //if (FluidModel!=NULL) delete FluidModel;
+  
+  if (Cauchy_Serie != NULL)  delete [] Cauchy_Serie;
+  
+  if (FluidModel != NULL) delete FluidModel;
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (AveragedVelocity[iMarker] != NULL) delete [] AveragedVelocity[iMarker];
+    if (AveragedNormal[iMarker]   != NULL) delete [] AveragedNormal[iMarker];
+    if (AveragedGridVel[iMarker]  != NULL) delete [] AveragedGridVel[iMarker];
+    if (AveragedFlux[iMarker]     != NULL) delete [] AveragedFlux[iMarker];
+    if (TotalFlux[iMarker]        != NULL) delete [] TotalFlux[iMarker];
+  }
+  if (AveragedVelocity != NULL) delete [] AveragedVelocity;
+  if (AveragedNormal   != NULL) delete [] AveragedNormal;
+  if (AveragedGridVel  != NULL) delete [] AveragedGridVel;
+  if (AveragedFlux     != NULL) delete [] AveragedFlux;
+  if (TotalFlux        != NULL) delete [] TotalFlux;
+
+  if (AveragedNormalVelocity    != NULL) delete [] AveragedNormalVelocity;
+  if (AveragedTangVelocity      != NULL) delete [] AveragedTangVelocity;
+  if (ExtAveragedNormalVelocity != NULL) delete [] ExtAveragedNormalVelocity;
+  if (ExtAveragedTangVelocity   != NULL) delete [] ExtAveragedTangVelocity;
+  if (MassFlow                  != NULL) delete [] MassFlow;
+  if (FlowAngle                 != NULL) delete [] FlowAngle;
+  if (AveragedEnthalpy          != NULL) delete [] AveragedEnthalpy;
+  if (AveragedPressure          != NULL) delete [] AveragedPressure;
+  if (AveragedTotPressure       != NULL) delete [] AveragedTotPressure;
+  if (AveragedTotTemperature    != NULL) delete [] AveragedTotTemperature;
+  if (ExtAveragedTotPressure    != NULL) delete [] ExtAveragedTotPressure;
+  if (ExtAveragedTotTemperature != NULL) delete [] ExtAveragedTotTemperature;
+  if (AveragedDensity           != NULL) delete [] AveragedDensity;
+  if (ExtAveragedPressure       != NULL) delete [] ExtAveragedPressure;
+  if (ExtAveragedDensity        != NULL) delete [] ExtAveragedDensity;
+  if (AveragedSoundSpeed        != NULL) delete [] AveragedSoundSpeed;
+  if (AveragedEntropy           != NULL) delete [] AveragedEntropy;
+  if (AveragedTangGridVelocity  != NULL) delete [] AveragedTangGridVelocity;
+  if (AveragedMach              != NULL) delete [] AveragedMach;
+  if (AveragedNormalMach        != NULL) delete [] AveragedNormalMach;
+  if (AveragedTangMach          != NULL) delete [] AveragedTangMach;
+
+  if (TotalStaticEfficiency != NULL) delete [] TotalStaticEfficiency;
+  if (TotalTotalEfficiency  != NULL) delete [] TotalTotalEfficiency;
+  if (KineticEnergyLoss     != NULL) delete [] KineticEnergyLoss;
+  if (TotalPressureLoss     != NULL) delete [] TotalPressureLoss;
+  if (MassFlowIn            != NULL) delete [] MassFlowIn;
+  if (MassFlowOut           != NULL) delete [] MassFlowOut;
+  if (FlowAngleIn           != NULL) delete [] FlowAngleIn;
+  if (FlowAngleOut          != NULL) delete [] FlowAngleOut;
+  if (EulerianWork          != NULL) delete [] EulerianWork;
+  if (TotalEnthalpyIn       != NULL) delete [] TotalEnthalpyIn;
+  if (PressureRatio         != NULL) delete [] PressureRatio;
+  if (PressureOut           != NULL) delete [] PressureOut;
+  if (EnthalpyOut           != NULL) delete [] EnthalpyOut;
+  if (MachIn                != NULL) delete [] MachIn;
+  if (MachOut               != NULL) delete [] MachOut;
+  if (NormalMachIn          != NULL) delete [] NormalMachIn;
+  if (NormalMachOut         != NULL) delete [] NormalMachOut;
+  if (VelocityOutIs         != NULL) delete [] VelocityOutIs;
 
 }
 
@@ -2464,7 +2626,11 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
   
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
+ 
+  /*--- Delete the original (dimensional) FluidModel object before replacing. ---*/
   
+  delete FluidModel;
+ 
   switch (config->GetKind_FluidModel()) {
       
     case STANDARD_AIR:
@@ -12072,7 +12238,13 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
-  
+ 
+  /*--- Store the number of vertices on each marker for deallocation later ---*/
+
+  nVertex = new unsigned long[nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++)
+    nVertex[iMarker] = geometry->nVertex[iMarker];
+ 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   

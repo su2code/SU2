@@ -55,42 +55,45 @@
 
 CGeometry::CGeometry(void) {
   
-  nEdge = 0;
-  nPoint = 0;
-  nElem = 0;
+  nEdge      = 0;
+  nPoint     = 0;
+  nPointNode = 0;
+  nElem      = 0;
   
-  nElem_Bound = NULL;
-  Tag_to_Marker = NULL;
-  elem = NULL;
-  face = NULL;
-  bound = NULL;
-  node = NULL;
-  edge = NULL;
-  vertex = NULL;
-  nVertex = NULL;
-  newBound = NULL;
-  nNewElem_Bound = NULL;
+  nElem_Bound         = NULL;
+  Tag_to_Marker       = NULL;
+  elem                = NULL;
+  face                = NULL;
+  bound               = NULL;
+  node                = NULL;
+  edge                = NULL;
+  vertex              = NULL;
+  nVertex             = NULL;
+  newBound            = NULL;
+  nNewElem_Bound      = NULL;
   Marker_All_SendRecv = NULL;
   
   PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
   PeriodicElem[MAX_NUMBER_PERIODIC].clear();
-  XCoordList.clear();
 
+  XCoordList.clear();
   Xcoord_plane.clear();
   Ycoord_plane.clear();
   Zcoord_plane.clear();
   FaceArea_plane.clear();
   Plane_points.clear();
-  /*--- parmetis variables---*/
-  starting_node=NULL;
-  ending_node=NULL;
-  npoint_procs=NULL;
+  
+  /*--- Arrays for defining the linear partitioning ---*/
+  
+  starting_node = NULL;
+  ending_node   = NULL;
+  npoint_procs  = NULL;
   
 }
 
 CGeometry::~CGeometry(void) {
   
-  unsigned long iElem, iElem_Bound, iFace, iPoint;
+  unsigned long iElem, iElem_Bound, iEdge, iFace, iPoint, iVertex;
   unsigned short iMarker;
   
   if (elem != NULL) {
@@ -115,18 +118,18 @@ CGeometry::~CGeometry(void) {
   }
   
   if (node != NULL) {
-    for (iPoint = 0; iPoint < nPoint; iPoint ++)
+    for (iPoint = 0; iPoint < nPointNode; iPoint ++)
       if (node[iPoint] != NULL) delete node[iPoint];
     delete[] node;
   }
   
-  /*
+  
   if (edge != NULL) {
     for (iEdge = 0; iEdge < nEdge; iEdge ++)
       if (edge[iEdge] != NULL) delete edge[iEdge];
     delete[] edge;
   }
-
+/*
   if (vertex != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
@@ -136,7 +139,7 @@ CGeometry::~CGeometry(void) {
     }
     delete[] vertex;
   }
-  
+*/  
   if (newBound != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
@@ -146,13 +149,12 @@ CGeometry::~CGeometry(void) {
     }
     delete[] newBound;
   }
-  */
-  if (nElem_Bound != NULL) delete[] nElem_Bound;
-  if (nVertex != NULL) delete[] nVertex;
-  if (nNewElem_Bound != NULL) delete[] nNewElem_Bound;
-  if (Marker_All_SendRecv != NULL) delete[] Marker_All_SendRecv;
-  if (Tag_to_Marker != NULL) delete[] Tag_to_Marker;
   
+  if (nElem_Bound         != NULL) delete [] nElem_Bound;
+  if (nVertex             != NULL) delete [] nVertex;
+  if (nNewElem_Bound      != NULL) delete [] nNewElem_Bound;
+  if (Marker_All_SendRecv != NULL) delete [] Marker_All_SendRecv;
+  if (Tag_to_Marker       != NULL) delete [] Tag_to_Marker;
   
   if (starting_node != NULL) delete [] starting_node;
   if (ending_node   != NULL) delete [] ending_node;
@@ -2473,6 +2475,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   nPoint = nPointTotal_r_tot;
   nPointDomain = nPointDomainTotal_r_tot;
+  nPointNode = nPoint;
   node = new CPoint*[nPoint];
   Local_to_Global_Point = new long[nPoint];
   
@@ -3064,6 +3067,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       delete[] Buffer_Receive_Hexahedron;
       delete[] Buffer_Receive_Prism;
       delete[] Buffer_Receive_Pyramid;
+      delete[] Buffer_Receive_GlobElem;
       
       delete[] Buffer_Receive_Triangle_presence[iDomain];
       delete[] Buffer_Receive_Quadrilateral_presence[iDomain];
@@ -3206,7 +3210,14 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   delete [] Buffer_Send_ReceivedDomain_Periodic;
   delete [] Buffer_Send_ReceivedDomain_PeriodicTrans;
   delete [] Buffer_Send_ReceivedDomain_PeriodicDonor;
-  
+ 
+  delete [] Buffer_Receive_Triangle_presence;
+  delete [] Buffer_Receive_Quadrilateral_presence;
+  delete [] Buffer_Receive_Tetrahedron_presence;
+  delete [] Buffer_Receive_Hexahedron_presence;
+  delete [] Buffer_Receive_Prism_presence;
+  delete [] Buffer_Receive_Pyramid_presence;
+ 
   delete [] Local_to_global_Triangle;
   delete [] Local_to_global_Quadrilateral;
   delete [] Local_to_global_Tetrahedron;
@@ -4943,6 +4954,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
        and if so, then store it on the local processor. We only create enough
        space in the node container for the local nodes at this point. ---*/
       
+      nPointNode = nPoint; 
       node = new CPoint*[nPoint];
       iPoint = 0; node_count = 0;
       while (node_count < Global_nPoint) {
@@ -7261,6 +7273,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   }
   
   iPoint = 0;
+  nPointNode = nPoint;
   node = new CPoint*[nPoint];
   GlobalIndex = starting_node[rank];
   for (int k = 0; k < nzones; k++ ) {
@@ -12471,7 +12484,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   /*--- Create the coarse grid structure using as baseline the fine grid ---*/
   
   CMultiGridQueue MGQueue_InnerCV(fine_grid->GetnPoint());
-  
+ 
+  nPointNode = fine_grid->GetnPoint(); 
   node = new CPoint*[fine_grid->GetnPoint()];
   for (iPoint = 0; iPoint < fine_grid->GetnPoint(); iPoint ++) {
     
@@ -14101,6 +14115,8 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
   nElem = geometry->GetnElem() + nElem_new;
   
   /*--- Add the old points ---*/
+
+  nPointNode = geometry->GetnPoint() + nPoint_new;
   node = new CPoint*[geometry->GetnPoint() + nPoint_new];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
     if (geometry->GetnDim() == 2)
