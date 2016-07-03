@@ -93,7 +93,7 @@ CGeometry::CGeometry(void) {
 
 CGeometry::~CGeometry(void) {
   
-  unsigned long iElem, iElem_Bound, iEdge, iFace, iPoint, iVertex;
+  unsigned long iElem, iElem_Bound, iEdge, iFace, iPoint;// iVertex;
   unsigned short iMarker;
   
   if (elem != NULL) {
@@ -2730,12 +2730,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Allocate memory for the element recv ---*/
       
-      Buffer_Receive_Triangle_presence[iDomain]    = new unsigned long[nElemTriangle_r[iDomain]];
-      Buffer_Receive_Quadrilateral_presence[iDomain]   = new unsigned long[nElemQuadrilateral_r[iDomain]];
-      Buffer_Receive_Tetrahedron_presence[iDomain] = new unsigned long[nElemTetrahedron_r[iDomain]];
-      Buffer_Receive_Hexahedron_presence[iDomain]  = new unsigned long[nElemHexahedron_r[iDomain]];
-      Buffer_Receive_Prism_presence[iDomain]       = new unsigned long[nElemPrism_r[iDomain]];
-      Buffer_Receive_Pyramid_presence[iDomain]     = new unsigned long[nElemPyramid_r[iDomain]];
+      Buffer_Receive_Triangle_presence[iDomain]      = new unsigned long[nElemTriangle_r[iDomain]];
+      Buffer_Receive_Quadrilateral_presence[iDomain] = new unsigned long[nElemQuadrilateral_r[iDomain]];
+      Buffer_Receive_Tetrahedron_presence[iDomain]   = new unsigned long[nElemTetrahedron_r[iDomain]];
+      Buffer_Receive_Hexahedron_presence[iDomain]    = new unsigned long[nElemHexahedron_r[iDomain]];
+      Buffer_Receive_Prism_presence[iDomain]         = new unsigned long[nElemPrism_r[iDomain]];
+      Buffer_Receive_Pyramid_presence[iDomain]       = new unsigned long[nElemPyramid_r[iDomain]];
       
       /*--- Recv the element data ---*/
       
@@ -3210,14 +3210,16 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   delete [] Buffer_Send_ReceivedDomain_Periodic;
   delete [] Buffer_Send_ReceivedDomain_PeriodicTrans;
   delete [] Buffer_Send_ReceivedDomain_PeriodicDonor;
- 
+  
+#ifdef HAVE_MPI
   delete [] Buffer_Receive_Triangle_presence;
   delete [] Buffer_Receive_Quadrilateral_presence;
   delete [] Buffer_Receive_Tetrahedron_presence;
   delete [] Buffer_Receive_Hexahedron_presence;
   delete [] Buffer_Receive_Prism_presence;
   delete [] Buffer_Receive_Pyramid_presence;
- 
+#endif
+  
   delete [] Local_to_global_Triangle;
   delete [] Local_to_global_Quadrilateral;
   delete [] Local_to_global_Tetrahedron;
