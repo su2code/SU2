@@ -4474,7 +4474,9 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
 }
 
 CConfig::~CConfig(void) {
-  
+ 
+  unsigned short iMarker_PerBound;
+ 
   if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
   if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
   if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
@@ -4607,12 +4609,22 @@ CConfig::~CConfig(void) {
   if (Load_Sine_Amplitude != NULL)    delete[] Load_Sine_Amplitude;
   if (Load_Sine_Frequency != NULL)    delete[] Load_Sine_Frequency;
   if (FlowLoad_Value != NULL)    delete[] FlowLoad_Value;
-  if (Periodic_RotCenter != NULL)    delete[] Periodic_RotCenter;
-  if (Periodic_RotAngles != NULL)    delete[] Periodic_RotAngles;
-  if (Periodic_Translation != NULL)    delete[] Periodic_Translation;
-  if (Periodic_Center != NULL)    delete[] Periodic_Center;
-  if (Periodic_Rotation != NULL)    delete[] Periodic_Rotation;
-  if (Periodic_Translate != NULL)    delete[] Periodic_Translate;
+
+  for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++) {
+    if (Periodic_RotCenter   != NULL) delete [] Periodic_RotCenter[iMarker_PerBound];
+    if (Periodic_RotAngles   != NULL) delete [] Periodic_RotAngles[iMarker_PerBound];
+    if (Periodic_Translation != NULL) delete [] Periodic_Translation[iMarker_PerBound];
+    if (Periodic_Center      != NULL) delete [] Periodic_Center[iMarker_PerBound];
+    if (Periodic_Rotation    != NULL) delete [] Periodic_Rotation[iMarker_PerBound];
+    if (Periodic_Translate   != NULL) delete [] Periodic_Translate[iMarker_PerBound];
+    
+  }
+  if (Periodic_RotCenter   != NULL) delete[] Periodic_RotCenter;
+  if (Periodic_RotAngles   != NULL) delete[] Periodic_RotAngles;
+  if (Periodic_Translation != NULL) delete[] Periodic_Translation;
+  if (Periodic_Center      != NULL) delete[] Periodic_Center;
+  if (Periodic_Rotation    != NULL) delete[] Periodic_Rotation;
+  if (Periodic_Translate   != NULL) delete[] Periodic_Translate;
 
   if (ParamDV!=NULL)                  delete[] ParamDV;
   if (MG_CorrecSmooth != NULL)        delete[] MG_CorrecSmooth;
