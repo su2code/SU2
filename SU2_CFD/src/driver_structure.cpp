@@ -203,6 +203,14 @@ void CDriver::Postprocessing(CIteration **iteration_container,
   delete[] integration_container;
   delete[] solver_container;
 
+   /*--- CInterpolate and CTransfer class deallocation ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete [] interpolator_container[iZone];
+    delete [] transfer_container[iZone];
+  }
+  delete [] interpolator_container;
+  delete [] transfer_container;
+
 }
 
 void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
@@ -378,7 +386,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
 
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
 and potential are incompatible, they use the same position in sol container ---*/
-  for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+  for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
 
     /*--- DeAllocate solution for a template problem ---*/
     if (template_solver) {
@@ -419,9 +427,9 @@ and potential are incompatible, they use the same position in sol container ---*
       delete solver_container[iMGlevel][FEA_SOL];
     }
 
-
-    //delete[] solver_container[iMGlevel];
+    delete solver_container[iMGlevel];
   }
+
 }
 
 void CDriver::Integration_Preprocessing(CIntegration **integration_container,

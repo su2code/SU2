@@ -157,7 +157,7 @@ CSolver::~CSolver(void) {
   }
 
   if (cvector != NULL) {
-    for (iVar = 0; iVar < nVar; iVar++)
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       delete cvector[iVar];
     delete [] cvector;
   }

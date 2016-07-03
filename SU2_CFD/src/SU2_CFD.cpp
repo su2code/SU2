@@ -48,9 +48,10 @@ int main(int argc, char *argv[]) {
   /*--- MPI initialization, and buffer setting ---*/
   
 #ifdef HAVE_MPI
-  int *bptr, bl;
+  int  buffsize;
+  char *buffptr;
   SU2_MPI::Init(&argc, &argv);
-  MPI_Buffer_attach( malloc(BUFSIZE), BUFSIZE );
+  MPI_Buffer_attach(malloc(BUFSIZE), BUFSIZE);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -379,7 +380,8 @@ int main(int argc, char *argv[]) {
     strcpy(runtime_file_name, "runtime.dat");
     runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
     runtime->SetExtIter(ExtIter);
-    
+   delete runtime;
+ 
 	/*--- Update the convergence history file (serial and parallel computations). ---*/
 
 	if (!fsi){
@@ -514,7 +516,7 @@ int main(int argc, char *argv[]) {
   
   /*--- Deallocations: further work is needed,
    * these routines can be used to check for memory leaks---*/
-  /*
+  
   if (rank == MASTER_NODE)
       cout << endl <<"------------------------ Driver Postprocessing ------------------------" << endl;
 
@@ -523,14 +525,14 @@ int main(int argc, char *argv[]) {
       transfer_container, config_container, nZone);
 
   delete driver;
-  */
+  
 
   /*--- Geometry class deallocation ---*/
   if (rank == MASTER_NODE)
         cout << endl <<"------------------------ Geometry Postprocessing ------------------------" << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     if (geometry_container[iZone]!=NULL){
-      for (unsigned short iMGlevel = 1; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++){
+      for (unsigned short iMGlevel = 0; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++){
         if (geometry_container[iZone][iMGlevel]!=NULL) delete geometry_container[iZone][iMGlevel];
       }
       delete [] geometry_container[iZone];
@@ -587,7 +589,8 @@ int main(int argc, char *argv[]) {
 
 #ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
-  MPI_Buffer_detach(&bptr, &bl);
+  MPI_Buffer_detach(&buffptr, &buffsize);
+  free(buffptr);
   MPI_Finalize();
 #endif
 
