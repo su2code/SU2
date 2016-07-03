@@ -300,6 +300,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     nSecondaryVar = 2; nSecondaryVarGrad = 2;
   }
   
+  /*--- Initialize nVarGrad for deallocation ---*/
+  
+  nVarGrad = nPrimVarGrad;
+  
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
@@ -12234,6 +12238,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
     nSecondaryVar = 8; nSecondaryVarGrad = 2;
   }
+  
+  /*--- Initialize nVarGrad for deallocation ---*/
+  
+  nVarGrad = nPrimVarGrad;
   
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();

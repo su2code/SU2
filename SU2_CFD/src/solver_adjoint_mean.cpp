@@ -97,6 +97,10 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   if (incompressible) { nVar = nDim + 1; }
   if (freesurface) { nVar = nDim + 2; }
   
+  /*--- Initialize nVarGrad for deallocation ---*/
+  
+  nVarGrad = nVar;
+  
   node = new CVariable*[nPoint];
   
   /*--- Define some auxiliary vectors related to the residual ---*/
@@ -5262,6 +5266,10 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   if (compressible) { nVar = nDim + 2; }
   if (incompressible) { nVar = nDim + 1; }
   if (freesurface) { nVar = nDim + 1; }
+  
+  /*--- Initialize nVarGrad for deallocation ---*/
+  
+  nVarGrad = nVar;
   
   node = new CVariable*[nPoint];
   
