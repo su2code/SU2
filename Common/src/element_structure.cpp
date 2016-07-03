@@ -102,26 +102,121 @@ CElement::CElement(unsigned short val_nDim, CConfig *config) {
 }
 
 CElement::~CElement(void) {
-
-	if (CurrentCoord       	!= NULL) delete [] CurrentCoord;
-	if (RefCoord           	!= NULL) delete [] RefCoord;
-	if (GaussWeight       	!= NULL) delete [] GaussWeight;
-	if (GaussCoord         	!= NULL) delete [] GaussCoord;
-
-	if (GaussWeightP       	!= NULL) delete [] GaussWeightP;
-	if (GaussCoordP        	!= NULL) delete [] GaussCoordP;
-
-	if (GaussPoint      	!= NULL) delete [] GaussPoint;
-	if (GaussPointP        	!= NULL) delete [] GaussPointP;
-
-	if (Mab            		!= NULL) delete [] Mab;
-	if (Kab            		!= NULL) delete [] Kab;
-	if (Ks_ab           	!= NULL) delete [] Ks_ab;
-	if (Kk_ab           	!= NULL) delete [] Kk_ab;
-	if (Kt_a            	!= NULL) delete [] Kt_a;
-
-	if (FDL_a            	!= NULL) delete [] FDL_a;
-
+  
+  unsigned short iNode, iGauss, jNode;
+  
+  if (GaussPoint != NULL) {
+    for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
+      delete GaussPoint[iGauss];
+    }
+    delete [] GaussPoint;
+  }
+  
+  if (NodalExtrap != NULL) {
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      delete [] NodalExtrap[iNode];
+    }
+    delete [] NodalExtrap;
+  }
+  
+  if (NodalStress != NULL) {
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      delete [] NodalStress[iNode];
+    }
+    delete [] NodalStress;
+  }
+  
+  if (CurrentCoord != NULL) {
+    for (iNode = 0; iNode < nNodes; iNode++){
+      delete [] CurrentCoord [iNode];
+    }
+    delete [] CurrentCoord;
+  }
+  
+  if (RefCoord != NULL) {
+    for (iNode = 0; iNode < nNodes; iNode++){
+      delete [] RefCoord [iNode];
+    }
+    delete [] RefCoord;
+  }
+  
+  if (GaussWeight != NULL) {
+    delete [] GaussWeight;
+  }
+  
+  if (GaussCoord != NULL) {
+    for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+      delete [] GaussCoord[iGauss];
+    }
+    delete [] GaussCoord;
+  }
+  
+  if (Mab != NULL) {
+    for (iNode = 0; iNode < nNodes; iNode++){
+      delete [] Mab[iNode];
+    }
+    delete [] Mab;
+  }
+  
+  if (Kab != NULL) {
+    for (iNode = 0; iNode < nNodes; iNode++){
+      for (jNode = 0; jNode < nNodes; jNode++){
+        delete [] Kab [iNode][jNode];
+      }
+      delete [] Kab[iNode];
+    }
+    delete [] Kab;
+  }
+  
+  if (Ks_ab != NULL) {
+    for (iNode = 0; iNode < nNodes; iNode++){
+      delete [] Ks_ab[iNode];
+    }
+    delete [] Ks_ab;
+  }
+  
+  if (Kt_a != NULL) {
+    for (iNode = 0; iNode < nNodes; iNode++){
+      delete [] Kt_a[iNode];
+    }
+    delete [] Kt_a;
+  }
+  
+  if (FDL_a != NULL) {
+    for (iNode = 0; iNode < nNodes; iNode++){
+      delete [] FDL_a[iNode];
+    }
+    delete [] FDL_a;
+  }
+  
+  if (GaussPointP != NULL) {
+    for (iGauss = 0; iGauss < nGaussPointsP; iGauss++) {
+      delete GaussPointP[iGauss];
+    }
+    delete [] GaussPointP;
+  }
+  
+  if (GaussWeightP != NULL) {
+    delete [] GaussWeightP;
+  }
+  
+  if (GaussCoordP != NULL)  {
+    for (iGauss = 0; iGauss < nGaussPointsP; iGauss++){
+      delete [] GaussCoordP[iGauss];
+    }
+    delete [] GaussCoordP;
+  }
+  
+  if (Kk_ab != NULL) {
+    for (iNode = 0; iNode < nNodes; iNode++){
+      for (jNode = 0; jNode < nNodes; jNode++){
+        delete [] Kk_ab [iNode][jNode];
+      }
+      delete [] Kk_ab [iNode];
+    }
+    delete [] Kk_ab;
+  }
+  
 }
 
 void CElement::Add_Kab(su2double **val_Kab, unsigned short nodeA, unsigned short nodeB){
