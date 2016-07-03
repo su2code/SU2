@@ -511,25 +511,28 @@ int main(int argc, char *argv[]) {
     /*--- Close the convergence history file. ---*/
     
     ConvHist_file.close();
-    cout << "History file, closed." << endl;
+    cout << "History file closed." << endl;
   }
   
   /*--- Deallocations: further work is needed,
    * these routines can be used to check for memory leaks---*/
   
   if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Driver Postprocessing -------------------------" << endl;
+    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
+  
+  //if (rank == MASTER_NODE)
+  //  cout << endl <<"------------------------- Driver Postprocessing -------------------------" << endl;
   
   driver->Postprocessing(iteration_container, solver_container, geometry_container,
                          integration_container, numerics_container, interpolator_container,
                          transfer_container, config_container, nZone);
   
   delete driver;
-  
+  if (rank == MASTER_NODE) cout << "Deleted CDriver class." << endl;
   
   /*--- Geometry class deallocation ---*/
-  if (rank == MASTER_NODE)
-    cout << endl <<"------------------------ Geometry Postprocessing ------------------------" << endl;
+  //if (rank == MASTER_NODE)
+  //  cout << endl <<"------------------------ Geometry Postprocessing ------------------------" << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     if (geometry_container[iZone]!=NULL){
       for (unsigned short iMGlevel = 0; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++){
@@ -539,20 +542,31 @@ int main(int argc, char *argv[]) {
     }
   }
   delete [] geometry_container;
+  if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
   
   /*--- Free-form deformation class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
     delete FFDBox[iZone];
   }
   delete [] FFDBox;
+  if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
   
   /*--- Grid movement and surface movement class deallocation ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete [] surface_movement[iZone];
+  }
   delete [] surface_movement;
+    if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete [] grid_movement[iZone];
+  }
   delete [] grid_movement;
+  if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
   
   /*Deallocate config container*/
-  if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Config Postprocessing -------------------------" << endl;
+  //if (rank == MASTER_NODE)
+  //  cout << endl <<"------------------------- Config Postprocessing -------------------------" << endl;
   if (config_container!=NULL){
     for (iZone = 0; iZone < nZone; iZone++) {
       if (config_container[iZone]!=NULL){
@@ -561,9 +575,15 @@ int main(int argc, char *argv[]) {
     }
     delete [] config_container;
   }
+  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
   
   /*--- Deallocate output container ---*/
-  if (output!=NULL) delete output;
+  
+  if (output != NULL) delete output;
+  if (rank == MASTER_NODE) cout << "Deleted COuput class." << endl;
+  
+  if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
+
   
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
@@ -578,7 +598,7 @@ int main(int argc, char *argv[]) {
   
   UsedTime = StopTime-StartTime;
   if (rank == MASTER_NODE) {
-    cout << "\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
+    cout << "\nCompleted execution in " << fixed << UsedTime << " seconds on "<< size;
     if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
   }
   
