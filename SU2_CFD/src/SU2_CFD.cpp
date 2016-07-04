@@ -254,8 +254,8 @@ int main(int argc, char *argv[]) {
       geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone],config_container[iZone]);
 
       if (config_container[iZone]->GetBoolTurbomachinery()){
-        geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], INFLOW, false);
-        geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], OUTFLOW, false);
+        geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, INFLOW, false);
+        geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, OUTFLOW, false);
       }
 
       /*--- Set the derivative of the wall-distance with respect to the surface nodes ---*/

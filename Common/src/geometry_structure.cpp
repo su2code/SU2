@@ -8545,7 +8545,7 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
   }
 }
 
-void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_flag, bool allocate) {
+void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
 	unsigned long  iPoint, jPoint, iVertex, jVertex, kVertex, iSpanVertex, jSpanVertex, kSpanVertex, **ordered, **disordered, **oldVertex3D, oldVertex;
 	unsigned long nVert, nVertMax;
 	unsigned short iMarker, iMarkerTP, iSpan,iSize, jSpan, iDim, nSpanWiseSections;
@@ -8573,7 +8573,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
   unsigned long My_nVert;
 
 #endif
-
+  string multizone_filename;
 	nSpanWiseSections = config->Get_nSpanWiseSections();
 
 	x_loc    				= new su2double*[nSpanWiseSections];
@@ -9169,13 +9169,26 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short marker_fl
 	if (rank == MASTER_NODE){
 		//			VICENTE here in this if underneath you have to implemented the writing of the file using the vector x_loc, y_loc, z_loc, globIdx_loc
 		//      instead of the video print
-	  ofstream myfile;
-	  if (marker_flag == INFLOW){
-	    myfile.open ("spanwise_division_inflow.dat", ios::out | ios::trunc);
-	  }
-	  else{
-	    myfile.open ("spanwise_division_outflow.dat", ios::out | ios::trunc);
-	  }
+		if (marker_flag == INFLOW){
+			multizone_filename = "spanwise_division_inflow.dat";
+		}
+		else{
+			multizone_filename = "spanwise_division_outflow.dat";
+		}
+    char buffer[50];
+
+    if (GetnZone() > 1){
+        unsigned short lastindex = multizone_filename.find_last_of(".");
+        multizone_filename = multizone_filename.substr(0, lastindex);
+        SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
+        multizone_filename.append(string(buffer));
+    }
+
+
+
+		ofstream myfile;
+	  myfile.open (multizone_filename.data(), ios::out | ios::trunc);
+
 	  myfile << "TITLE = \"Global index visualization file\"" << endl;
 	  myfile << "VARIABLES =" << endl;
 	  if (config->GetKind_TurboMachinery()== AXIAL && (nDim == 3)){
