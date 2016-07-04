@@ -971,12 +971,11 @@ CEulerSolver::~CEulerSolver(void) {
 
   if (LowMach_Precontioner != NULL) {
     for (iVar = 0; iVar < nVar; iVar ++)
-      delete LowMach_Precontioner[iVar];
+      delete [] LowMach_Precontioner[iVar];
     delete [] LowMach_Precontioner;
   }
   
   if (CPressure != NULL) {
-    // This causes failure in AD dealloc
     for (iMarker = 0; iMarker < nMarker; iMarker++)
       delete [] CPressure[iMarker];
     delete [] CPressure;
@@ -1001,21 +1000,21 @@ CEulerSolver::~CEulerSolver(void) {
 
   if (HeatFlux != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete HeatFlux[iMarker];
+      delete [] HeatFlux[iMarker];
     }
     delete [] HeatFlux;
   }
   
   if (HeatFluxTarget != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete HeatFluxTarget[iMarker];
+      delete [] HeatFluxTarget[iMarker];
     }
     delete [] HeatFluxTarget;
   }
   
   if (YPlus != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete YPlus[iMarker];
+      delete [] YPlus[iMarker];
     }
     delete [] YPlus;
   }
@@ -12967,9 +12966,9 @@ CNSSolver::~CNSSolver(void) {
   if (CSkinFriction != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        delete CSkinFriction[iMarker][iDim];
+        delete [] CSkinFriction[iMarker][iDim];
       }
-      delete CSkinFriction[iMarker];
+      delete [] CSkinFriction[iMarker];
     }
     delete [] CSkinFriction;
   }

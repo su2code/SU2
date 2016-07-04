@@ -95,8 +95,9 @@ CSolver::~CSolver(void) {
   if (Point_Max != NULL) delete [] Point_Max;
 
   if (Point_Max_Coord != NULL) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      delete Point_Max_Coord[iVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      delete [] Point_Max_Coord[iVar];
+    }
     delete [] Point_Max_Coord;
   }
 
@@ -116,53 +117,51 @@ CSolver::~CSolver(void) {
 
   if (Jacobian_i != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_i[iVar];
+      delete [] Jacobian_i[iVar];
     delete [] Jacobian_i;
   }
 
   if (Jacobian_j != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_j[iVar];
+      delete [] Jacobian_j[iVar];
     delete [] Jacobian_j;
   }
 
   if (Jacobian_ii != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_ii[iVar];
+      delete [] Jacobian_ii[iVar];
     delete [] Jacobian_ii;
   }
 
   if (Jacobian_ij != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_ij[iVar];
+      delete [] Jacobian_ij[iVar];
     delete [] Jacobian_ij;
   }
 
   if (Jacobian_ji != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_ji[iVar];
+      delete [] Jacobian_ji[iVar];
     delete [] Jacobian_ji;
   }
 
   if (Jacobian_jj != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_jj[iVar];
+      delete [] Jacobian_jj[iVar];
     delete [] Jacobian_jj;
   }
 
   if (Smatrix != NULL) {
     for (iDim = 0; iDim < nDim; iDim++)
-      delete Smatrix[iDim];
+      delete [] Smatrix[iDim];
     delete [] Smatrix;
   }
 
   if (cvector != NULL) {
     for (iVar = 0; iVar < nVarGrad; iVar++)
-      delete cvector[iVar];
+      delete [] cvector[iVar];
     delete [] cvector;
   }
-
-
 
 }
 
