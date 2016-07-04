@@ -8768,6 +8768,17 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 								if (radius < min) min = radius;
 								if (radius > max) max = radius;
 								break;
+							case CENTRIPETAL_AXIAL:
+								if (marker_flag == OUTFLOW){
+									radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+									if (radius < min) min = radius;
+									if (radius > max) max = radius;
+								}
+								else{
+									if (coord[2] < min) min = coord[2];
+									if (coord[2] > max) max = coord[2];
+								}
+								break;
 							}
 						}
 					}
@@ -8822,6 +8833,25 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 										}
 									}
 									break;
+								case CENTRIPETAL_AXIAL:
+									if (marker_flag == OUTFLOW){
+										radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+										for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+											if (dist > (abs(radius - span[iSpan]))){
+												dist= abs(radius-span[iSpan]);
+												jSpan=iSpan;
+											}
+										}
+									}
+									else{
+										for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+												if (dist > (abs(coord[2]-span[iSpan]))){
+													dist= abs(coord[2]-span[iSpan]);
+													jSpan=iSpan;
+												}
+											}
+									}
+									break;
 								}
 
 								nVertexSpan[iMarker][jSpan]++;
@@ -8870,6 +8900,24 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 										if (dist > (abs(radius - span[iSpan]))){
 											dist= abs(radius-span[iSpan]);
 											jSpan=iSpan;
+										}
+									}
+									break;
+								case CENTRIPETAL_AXIAL:
+									if(marker_flag == OUTFLOW){
+										radius = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+										for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+											if (dist > (abs(radius - span[iSpan]))){
+												dist= abs(radius-span[iSpan]);
+												jSpan=iSpan;
+											}
+										}
+									}else{
+										for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+											if (dist > (abs(coord[2]-span[iSpan]))){
+												dist= abs(coord[2]-span[iSpan]);
+												jSpan=iSpan;
+											}
 										}
 									}
 									break;
@@ -8960,6 +9008,19 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 									}
 									break;
 								case AXIAL:
+									Normal2 = 0.0;
+									for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
+									if (marker_flag == INFLOW){
+										TurboNormal[0] = coord[0]/sqrt(Normal2);
+										TurboNormal[1] = coord[1]/sqrt(Normal2);
+										TurboNormal[2] = 0.0;
+									}else{
+										TurboNormal[0] = coord[0]/sqrt(Normal2);
+										TurboNormal[1] = coord[1]/sqrt(Normal2);
+										TurboNormal[2] = 0.0;
+									}
+									break;
+								case CENTRIPETAL_AXIAL:
 									Normal2 = 0.0;
 									for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
 									if (marker_flag == INFLOW){
@@ -9431,32 +9492,24 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 //									cout <<" Tang grid velocity outflow " << AverageTangGridVel[iMarker][iSpan] << endl;
 								}
 								break;
-//							case CENTRIPETAL:
-//								if (marker_flag == INFLOW ){
-//									AverageTangGridVel[iMarker][iSpan]= (AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
-////									cout <<" Tang grid velocity inflow " << AverageTangGridVel[iMarker][iSpan] << endl;
-//								}
-//								else{
-//									AverageTangGridVel[iMarker][iSpan]= -AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
-////									cout <<" Tang grid velocity outflow " << AverageTangGridVel[iMarker][iSpan] << endl;
-//								}
-//								break;
 							case AXIAL:
-								if (nDim == 2){
-									if (marker_flag == INFLOW ){
-										AverageTangGridVel[iMarker][iSpan]= -(AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
-//										cout <<" Tang grid velocity inflow " << AverageTangGridVel[iMarker][iSpan] << endl;
-									}
-									else{
-										AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
-//										cout <<" Tang grid velocity outflow " << AverageTangGridVel[iMarker][iSpan] << endl;
-									}
+								if ( nDim == 3){
+									AverageTangGridVel[iMarker][iSpan]= AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0];
 								}
 								else{
-									cout << "Tang grid velocity AXIAL 3D NOT IMPLEMENTED YET"<<endl;
+									cout << "Tang grid velocity AXIAL 2D NOT IMPLEMENTED YET"<<endl;
 									exit(EXIT_FAILURE);
 								}
 								break;
+							case CENTRIPETAL_AXIAL:
+								if (marker_flag == OUTFLOW){
+									AverageTangGridVel[iMarker][iSpan]= (AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
+								}
+								else{
+									AverageTangGridVel[iMarker][iSpan]= -(AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);
+								}
+								break;
+
 							default:
 								cout << "Tang grid velocity NOT IMPLEMENTED YET for this configuration"<<endl;
 								exit(EXIT_FAILURE);
