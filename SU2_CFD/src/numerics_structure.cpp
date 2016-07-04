@@ -48,21 +48,37 @@ CNumerics::CNumerics(void) {
 
   Enthalpy_formation = NULL;
   Theta_v = NULL;
-  var = NULL;
-
-  Ys          = NULL;
-  dFdYj       = NULL;
-  dFdYi       = NULL;
-  sumdFdYih   = NULL;
-  sumdFdYjh   = NULL;
-  sumdFdYieve = NULL;
-  sumdFdYjeve = NULL;
+//  var = NULL;
+//
+//  Ys          = NULL;
+//  dFdYj       = NULL;
+//  dFdYi       = NULL;
+//  sumdFdYih   = NULL;
+//  sumdFdYjh   = NULL;
+//  sumdFdYieve = NULL;
+//  sumdFdYjeve = NULL;
 }
 
 CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
                      CConfig *config) {
   
   unsigned short iVar, iDim, jDim;
+  
+  Normal = NULL;
+  UnitNormal = NULL;
+  U_n = NULL;
+  U_nM1 = NULL;
+  U_nP1  = NULL;
+  Proj_Flux_Tensor  = NULL;
+  Flux_Tensor = NULL;
+  tau  = NULL;
+  delta  = NULL;
+  
+  Diffusion_Coeff_i = NULL;
+  Diffusion_Coeff_j = NULL;
+  
+  Enthalpy_formation = NULL;
+  Theta_v = NULL;
   
 	nDim = val_nDim;
 	nVar = val_nVar;
@@ -108,15 +124,15 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   
   Enthalpy_formation = NULL;
   Theta_v = NULL;
-  var = NULL;
-
-  Ys          = NULL;
-  dFdYj       = NULL;
-  dFdYi       = NULL;
-  sumdFdYih   = NULL;
-  sumdFdYjh   = NULL;
-  sumdFdYieve = NULL;
-  sumdFdYjeve = NULL;
+//  var = NULL;
+//
+//  Ys          = NULL;
+//  dFdYj       = NULL;
+//  dFdYi       = NULL;
+//  sumdFdYih   = NULL;
+//  sumdFdYjh   = NULL;
+//  sumdFdYieve = NULL;
+//  sumdFdYjeve = NULL;
     
   Vector = new su2double[nDim];
   
@@ -126,7 +142,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 }
 
 CNumerics::~CNumerics(void) {
-  if (Normal!=NULL) delete [] Normal;
+  //if (Normal!=NULL) delete [] Normal;
   if (UnitNormal!=NULL) delete [] UnitNormal;
 
   if (U_n!=NULL) delete [] U_n;
@@ -137,30 +153,30 @@ CNumerics::~CNumerics(void) {
   if (Proj_Flux_Tensor!=NULL) delete [] Proj_Flux_Tensor;
 
   if (Flux_Tensor!=NULL){
-    for (unsigned short iVar = 0; iVar < nDim+3; iVar++) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       delete [] Flux_Tensor[iVar];
     }
     delete [] Flux_Tensor;
   }
 
-  if (tau!=NULL && delta != NULL){
+  if (delta != NULL){
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      delete [] tau[iDim];
+      //delete [] tau[iDim];
       delete [] delta[iDim];
     }
-    delete [] tau;
+    //delete [] tau;
     delete [] delta;
   }
 
-	if (Ys != NULL) delete [] Ys;
-  if (sumdFdYih != NULL) delete [] sumdFdYih;
-  if (sumdFdYjh != NULL) delete [] sumdFdYjh;
-  if (sumdFdYieve != NULL) delete [] sumdFdYieve;
-  if (sumdFdYjeve != NULL) delete [] sumdFdYjeve;
+//	if (Ys != NULL) delete [] Ys;
+//  if (sumdFdYih != NULL) delete [] sumdFdYih;
+//  if (sumdFdYjh != NULL) delete [] sumdFdYjh;
+//  if (sumdFdYieve != NULL) delete [] sumdFdYieve;
+//  if (sumdFdYjeve != NULL) delete [] sumdFdYjeve;
   if (Diffusion_Coeff_i != NULL) delete [] Diffusion_Coeff_i;
   if (Diffusion_Coeff_j != NULL) delete [] Diffusion_Coeff_j;
   if (Vector != NULL) delete [] Vector;
-  if (var != NULL) delete [] var;
+//  if (var != NULL) delete [] var;
 
 	if(Enthalpy_formation != NULL) delete [] Enthalpy_formation;
 	if(Theta_v != NULL) delete [] Theta_v;

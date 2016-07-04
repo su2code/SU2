@@ -132,8 +132,7 @@ CDriver::CDriver(CIteration **iteration_container,
     cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
   
   
-  if (((nZone > 1) && (nZone < 3)) && (fsi)) {
-    
+  
     for (iZone = 0; iZone < nZone; iZone++){
       transfer_container[iZone] = new CTransfer*[nZone];
       interpolator_container[iZone] = new CInterpolator*[nZone];
@@ -142,10 +141,11 @@ CDriver::CDriver(CIteration **iteration_container,
         interpolator_container[iZone][jZone] = NULL;
       }
     }
-    
+  
+  if (((nZone > 1) && (nZone < 3)) && (fsi)) {
+
     Interface_Preprocessing(transfer_container, interpolator_container, geometry_container,
                             config_container, solver_container, nZone, nDim);
-    
   }
   
 }
@@ -161,56 +161,65 @@ void CDriver::Postprocessing(CIteration **iteration_container,
                              unsigned short val_nZone){
   
   
-  unsigned short iZone;
+  unsigned short iZone, jZone;
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-//  for (iZone = 0; iZone < nZone; iZone++) {
-//     Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone],
-//     geometry_container[iZone], config_container[iZone]);
-//    delete[] numerics_container[iZone];
-//  }
-//  delete[] numerics_container;
-//  if (rank == MASTER_NODE) cout << "Deleted CNumerics container." << endl;
+  for (iZone = 0; iZone < nZone; iZone++) {
+     Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone],
+     geometry_container[iZone], config_container[iZone]);
+    delete [] numerics_container[iZone];
+  }
+  delete [] numerics_container;
+  if (rank == MASTER_NODE) cout << "Deleted CNumerics container." << endl;
   
   for (iZone = 0; iZone < nZone; iZone++) {
     Integration_Postprocessing(integration_container[iZone],
                                geometry_container[iZone],
                                config_container[iZone]);
-    delete[] integration_container[iZone];
+    delete [] integration_container[iZone];
   }
-  delete[] integration_container;
+  delete [] integration_container;
   if (rank == MASTER_NODE) cout << "Deleted CIntegration container." << endl;
   
   for (iZone = 0; iZone < nZone; iZone++) {
     Solver_Postprocessing(solver_container[iZone],
                           geometry_container[iZone],
                           config_container[iZone]);
-    delete[] solver_container[iZone];
+    delete [] solver_container[iZone];
   }
-  delete[] solver_container;
+  delete [] solver_container;
   if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
   
-//  // Implement Iteration Postprocessing
-//  
-//   Iteration_Postprocessing(iteration_container, config_container, iZone);
-//   
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete iteration_container[iZone];
+  }
+  delete [] iteration_container;
+  if (rank == MASTER_NODE) cout << "Deleted CIteration container." << endl;
   
-//  for (iZone = 0; iZone < nZone; iZone++) {
-//    delete [] interpolator_container[iZone];
-//  }
-//  delete [] interpolator_container;
-//  if (rank == MASTER_NODE) cout << "Deleted CInterpolator container." << endl;
-//  
-//  for (iZone = 0; iZone < nZone; iZone++) {
-//    delete [] transfer_container[iZone];
-//  }
-//  delete [] transfer_container;
-//  if (rank == MASTER_NODE) cout << "Deleted CTransfer container." << endl;
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (jZone = 0; jZone < nZone; jZone++) {
+      if (interpolator_container[iZone][jZone] != NULL)
+        delete interpolator_container[iZone][jZone];
+    }
+    delete [] interpolator_container[iZone];
+  }
+  delete [] interpolator_container;
+  if (rank == MASTER_NODE) cout << "Deleted CInterpolator container." << endl;
   
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (jZone = 0; jZone < nZone; jZone++) {
+      if (transfer_container[iZone][jZone] != NULL)
+        delete transfer_container[iZone][jZone];
+    }
+    delete [] transfer_container[iZone];
+  }
+  delete [] transfer_container;
+  if (rank == MASTER_NODE) cout << "Deleted CTransfer container." << endl;
+
 }
 
 void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
@@ -1637,10 +1646,9 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   if (fem) {
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    delete numerics_container[MESH_0][FEA_SOL][VISC_TERM];
+    delete numerics_container[MESH_0][FEA_SOL][FEA_TERM];
     
   }
-  
   
   /*--- Definition of the Class for the numerical method: numerics_container[MESH_LEVEL][EQUATION][EQ_TERM] ---*/
   for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
