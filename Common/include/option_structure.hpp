@@ -854,13 +854,15 @@ static const map<string, MIXINGPROCESS_TYPE> MixingProcess_Map = CCreateMap<stri
 enum TURBOMACHINERY_TYPE {
   AXIAL       = 1,		/*!< \brief axial turbomachinery. */
   CENTRIFUGAL = 2,    /*!< \brief centrifugal turbomachinery. */
-  CENTRIPETAL = 3		 /*!< \brief centripetal turbomachinery. */
+  CENTRIPETAL = 3,		 /*!< \brief centripetal turbomachinery. */
+	CENTRIPETAL_AXIAL = 4		 /*!< \brief mixed flow turbine. */
 };
 
 static const map<string, TURBOMACHINERY_TYPE> TurboMachinery_Map = CCreateMap<string, TURBOMACHINERY_TYPE>
 ("AXIAL", AXIAL)
 ("CENTRIFUGAL", CENTRIFUGAL)
-("CENTRIPETAL",  CENTRIPETAL);
+("CENTRIPETAL",  CENTRIPETAL)
+("CENTRIPETAL_AXIAL",  CENTRIPETAL_AXIAL);
 
 ///*!
 // * \brief types of Turbomachinery performance indicators.

@@ -180,8 +180,8 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     
     /*--- Create turbovertex structure ---*/
     if (config[iZone]->GetBoolTurbomachinery()){
-    	geometry[iZone][MESH_0]->SetTurboVertex(config[iZone], INFLOW, true);
-			geometry[iZone][MESH_0]->SetTurboVertex(config[iZone], OUTFLOW, true);
+    	geometry[iZone][MESH_0]->SetTurboVertex(config[iZone], iZone, INFLOW, true);
+			geometry[iZone][MESH_0]->SetTurboVertex(config[iZone], iZone, OUTFLOW, true);
     }
 	}
   
