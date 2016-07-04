@@ -84,7 +84,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   
   unsigned long iPoint;
   unsigned short iVar, jVar, iDim, jDim;
-  unsigned short iTerm;
+  unsigned short iTerm, iKind;
   
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
@@ -111,13 +111,18 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   nPoint        = geometry->GetnPoint();
   nPointDomain  = geometry->GetnPointDomain();
   
-  
   /*--- Here is where we assign the kind of each element ---*/
   
   /*--- First level: different possible terms of the equations ---*/
   element_container = new CElement** [MAX_TERMS];
   for (iTerm = 0; iTerm < MAX_TERMS; iTerm++)
     element_container[iTerm] = new CElement* [MAX_FE_KINDS];
+  
+  for (iTerm = 0; iTerm < MAX_TERMS; iTerm++) {
+    for (iKind = 0; iKind < MAX_FE_KINDS; iKind++) {
+      element_container[iTerm][iKind] = NULL;
+    }
+  }
   
   if (nDim == 2){
     if (incompressible){
@@ -171,18 +176,15 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   
   Solution   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
   
+  Solution_Interm = NULL;
   if (gen_alpha) {
     Solution_Interm = new su2double[nVar];
     for (iVar = 0; iVar < nVar; iVar++) Solution_Interm[iVar] = 0.0;
-  }
-  else{
-    Solution_Interm = NULL;
   }
   
   nodeReactions = new su2double[nVar];  for (iVar = 0; iVar < nVar; iVar++) nodeReactions[iVar]   = 0.0;
   
   /*--- The length of the solution vector depends on whether the problem is static or dynamic ---*/
-  
   
   unsigned short nSolVar;
   unsigned long index;
@@ -343,7 +345,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   }
   
   /*--- Term ij of the Mass Matrix (only if dynamic analysis) ---*/
-  
+  MassMatrix_ij = NULL;
   if (dynamic){
     MassMatrix_ij = new su2double*[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -353,11 +355,9 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
       }
     }
   }
-  else {
-    MassMatrix_ij = NULL;
-  }
   
-  
+  Jacobian_c_ij = NULL;
+  Jacobian_s_ij = NULL;
   if (nonlinear_analysis){
     
     /*--- Term ij of the Jacobian (constitutive contribution) ---*/
@@ -381,13 +381,9 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     }
     
   }
-  else{
-    Jacobian_c_ij = NULL;
-    Jacobian_s_ij = NULL;
-  }
   
   /*--- Term ij of the Jacobian (incompressibility term) ---*/
-  
+  Jacobian_k_ij = NULL;
   if (incompressible){
     Jacobian_k_ij = new su2double*[nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -397,9 +393,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
       }
     }
   }
-  else {
-    Jacobian_k_ij = NULL;
-  }
   
   /*--- Stress contribution to the node i ---*/
   Res_Stress_i = new su2double[nVar];
@@ -408,27 +401,21 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   Res_Ext_Surf = new su2double[nVar];
   
   /*--- Contribution of the body forces to the residual (auxiliary vector) ---*/
+  Res_Dead_Load = NULL;
   if (body_forces){
     Res_Dead_Load = new su2double[nVar];
   }
-  else {
-    Res_Dead_Load = NULL;
-  }
   
   /*--- Contribution of the fluid tractions to the residual (auxiliary vector) ---*/
+  Res_FSI_Cont = NULL;
   if (fsi){
     Res_FSI_Cont = new su2double[nVar];
   }
-  else {
-    Res_FSI_Cont = NULL;
-  }
   
   /*--- Time integration contribution to the residual ---*/
+  Res_Time_Cont = NULL;
   if (dynamic) {
     Res_Time_Cont = new su2double [nVar];
-  }
-  else {
-    Res_Time_Cont = NULL;
   }
   
   /*--- Matrices to impose clamped boundary conditions ---*/
@@ -460,7 +447,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     TimeRes_Aux.Initialize(nPoint, nPointDomain, nVar, 0.0);
     TimeRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   }
-  
   
   /*--- Initialization of linear solver structures ---*/
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
@@ -497,9 +483,14 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
   
   unsigned short iVar, jVar;
   
-  for (iVar = 0; iVar < MAX_TERMS; iVar++){
-    for (jVar = 0; jVar < MAX_FE_KINDS; iVar++)
-      if (element_container[iVar][jVar] != NULL) delete [] element_container[iVar][jVar];
+  if (element_container != NULL) {
+    for (iVar = 0; iVar < MAX_TERMS; iVar++){
+      for (jVar = 0; jVar < MAX_FE_KINDS; jVar++) {
+        if (element_container[iVar][jVar] != NULL) delete element_container[iVar][jVar];
+      }
+      delete [] element_container[iVar];
+    }
+    delete [] element_container;
   }
   
   for (iVar = 0; iVar < nVar; iVar++){
@@ -510,8 +501,7 @@ CFEM_ElasticitySolver::~CFEM_ElasticitySolver(void) {
     delete [] mId_Aux[iVar];
     delete [] stressTensor[iVar];
   }
-  
-  if (element_container != NULL) delete [] element_container;
+ 
   if (Jacobian_s_ij != NULL) delete [] Jacobian_s_ij;
   if (Jacobian_c_ij != NULL) delete [] Jacobian_c_ij;
   if (Jacobian_k_ij != NULL) delete [] Jacobian_k_ij;
@@ -1789,10 +1779,9 @@ void CFEM_ElasticitySolver::Compute_NodalStress(CGeometry *geometry, CSolver **s
                     myfile << "X" << iDim + 1 << ": " << val_Coord << " \t " ;
                   }
                   
-                  /*--- Retrieve the time contribution ---*/
-                  Res_Time_Cont = TimeRes.GetBlock(iPoint);
-                  
                   for (iVar = 0; iVar < nVar; iVar++){
+                    /*--- Retrieve the time contribution ---*/
+                    Res_Time_Cont[iVar] = TimeRes.GetBlock(iPoint, iVar);
                     /*--- Retrieve reaction ---*/
                     val_Reaction = LinSysReact.GetBlock(iPoint, iVar) + Res_Time_Cont[iVar];
                     myfile << "F" << iVar + 1 << ": " << val_Reaction << " \t " ;
@@ -2639,7 +2628,10 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
         }
       }
       else {
-        Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
+        for (iVar = 0; iVar < nVar; iVar++){
+          Res_Ext_Surf[iVar] = node[iPoint]->Get_SurfaceLoad_Res(iVar);
+        }
+        //Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
       }
       
       LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
@@ -2653,7 +2645,10 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
           }
         }
         else{
-          Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
+          for (iVar = 0; iVar < nVar; iVar++){
+            Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
+          }
+          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
         }
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
@@ -2720,19 +2715,25 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
     MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
     /*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
       /*--- Dynamic contribution ---*/
-      Res_Time_Cont = TimeRes.GetBlock(iPoint);
+      for (iVar = 0; iVar < nVar; iVar++){
+        Res_Time_Cont[iVar] = TimeRes.GetBlock(iPoint, iVar);
+      }
+      //Res_Time_Cont = TimeRes.GetBlock(iPoint);
       LinSysRes.AddBlock(iPoint, Res_Time_Cont);
       
       /*--- External surface load contribution ---*/
       if (incremental_load){
         for (iVar = 0; iVar < nVar; iVar++){
           Res_Ext_Surf[iVar] = loadIncrement * node[iPoint]->Get_SurfaceLoad_Res(iVar);
-          
         }
       }
       else {
-        Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
+        for (iVar = 0; iVar < nVar; iVar++){
+          Res_Ext_Surf[iVar] = node[iPoint]->Get_SurfaceLoad_Res(iVar);
+        }
+        //Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
       }
       LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
       
@@ -2746,7 +2747,10 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
           }
         }
         else{
-          Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
+          for (iVar = 0; iVar < nVar; iVar++){
+            Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
+          }
+          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
         }
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
@@ -2944,7 +2948,10 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSol
         }
       }
       else {
-        Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
+        for (iVar = 0; iVar < nVar; iVar++){
+          Res_Ext_Surf[iVar] = node[iPoint]->Get_SurfaceLoad_Res(iVar);
+        }
+        //Res_Ext_Surf = node[iPoint]->Get_SurfaceLoad_Res();
       }
       
       LinSysRes.AddBlock(iPoint, Res_Ext_Surf);
@@ -2958,7 +2965,10 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSol
           }
         }
         else{
-          Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
+          for (iVar = 0; iVar < nVar; iVar++){
+            Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
+          }
+          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
         }
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
@@ -3025,7 +3035,10 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSol
     /*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       /*--- Dynamic contribution ---*/
-      Res_Time_Cont = TimeRes.GetBlock(iPoint);
+      //Res_Time_Cont = TimeRes.GetBlock(iPoint);
+      for (iVar = 0; iVar < nVar; iVar++){
+        Res_Time_Cont[iVar] = TimeRes.GetBlock(iPoint, iVar);
+      }
       LinSysRes.AddBlock(iPoint, Res_Time_Cont);
       /*--- External surface load contribution ---*/
       if (incremental_load){
@@ -3052,7 +3065,10 @@ void CFEM_ElasticitySolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSol
           }
         }
         else{
-          Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
+          for (iVar = 0; iVar < nVar; iVar++){
+            Res_Dead_Load[iVar] = node[iPoint]->Get_BodyForces_Res(iVar);
+          }
+          //Res_Dead_Load = node[iPoint]->Get_BodyForces_Res();
         }
         
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
