@@ -31,8 +31,18 @@
 
 #pragma once
 
-inline su2double CNumerics::Determinant_3x3(su2double A00, su2double A01, su2double A02, su2double A10, su2double A11, su2double A12, su2double A20, su2double A21, su2double A22) {
+inline su2double CNumerics::Determinant_3x3(su2double A00,
+                                            su2double A01,
+                                            su2double A02,
+                                            su2double A10,
+                                            su2double A11,
+                                            su2double A12,
+                                            su2double A20,
+                                            su2double A21,
+                                            su2double A22) {
+  
 	return A00*(A11*A22-A12*A21) - A01*(A10*A22-A12*A20) + A02*(A10*A21-A11*A20);
+  
 }
 
 inline void CNumerics::Compute_Mass_Matrix(CElement *element_container, CConfig *config){ }
@@ -120,32 +130,6 @@ inline void CNumerics::GetKeqConstants(su2double *A, unsigned short val_reaction
 
 inline su2double CNumerics::GetPrecond_Beta() { return 0; }
 
-inline void CNumerics::SetRhosIndex(unsigned short val_Index) { RHOS_INDEX = val_Index; }
-
-inline void CNumerics::SetRhoIndex(unsigned short val_Index) { RHO_INDEX = val_Index; }
-
-inline void CNumerics::SetPIndex(unsigned short val_Index) { P_INDEX = val_Index; }
-
-inline void CNumerics::SetTIndex(unsigned short val_Index) { T_INDEX = val_Index; }
-  
-inline void CNumerics::SetTveIndex(unsigned short val_Index) { TVE_INDEX = val_Index; }
-
-inline void CNumerics::SetVelIndex(unsigned short val_Index) { VEL_INDEX = val_Index; }
-  
-inline void CNumerics::SetHIndex(unsigned short val_Index) { H_INDEX = val_Index; }
-  
-inline void CNumerics::SetAIndex(unsigned short val_Index) { A_INDEX = val_Index; }
-  
-inline void CNumerics::SetRhoCvtrIndex(unsigned short val_Index) { RHOCVTR_INDEX = val_Index; }
-
-inline void CNumerics::SetRhoCvveIndex(unsigned short val_Index) { RHOCVVE_INDEX = val_Index; }
-
-inline void CNumerics::SetdPdU(su2double *val_dPdU_i, su2double *val_dPdU_j) { dPdU_i = val_dPdU_i; dPdU_j = val_dPdU_j; }
-
-inline void CNumerics::SetdTdU(su2double *val_dTdU_i, su2double *val_dTdU_j) { dTdU_i = val_dTdU_i; dTdU_j = val_dTdU_j; }
-
-inline void CNumerics::SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j) { dTvedU_i = val_dTvedU_i; dTvedU_j = val_dTvedU_j; }
-	
 inline void CNumerics::SetUndivided_Laplacian(su2double *val_und_lapl_i, su2double *val_und_lapl_j) {
 	Und_Lapl_i = val_und_lapl_i; 
 	Und_Lapl_j = val_und_lapl_j; 
