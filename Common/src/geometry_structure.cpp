@@ -1306,7 +1306,6 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
 CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
 
-  Global_to_Local_Point  = NULL;
   Local_to_Global_Point  = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
@@ -1318,7 +1317,6 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
 
 CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
   
-  Global_to_Local_Point = NULL;
   Local_to_Global_Point = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
@@ -1448,7 +1446,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   /*--- Initialize several class data members for later. ---*/
   
-  Global_to_Local_Point  = NULL;
   Local_to_Global_Point  = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
@@ -4299,7 +4296,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 
 CPhysicalGeometry::~CPhysicalGeometry(void) {
   
-  if (Global_to_Local_Point  != NULL) delete [] Global_to_Local_Point;
   if (Local_to_Global_Point  != NULL) delete [] Local_to_Global_Point;
   if (Global_to_Local_Marker != NULL) delete [] Global_to_Local_Marker;
   if (Local_to_Global_Marker != NULL) delete [] Local_to_Global_Marker;
@@ -4393,22 +4389,24 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     if (Local_to_Global_Point[iPoint] > (long)Max_GlobalPoint)
       Max_GlobalPoint = Local_to_Global_Point[iPoint];
   }
-  Global_to_Local_Point =  new long[Max_GlobalPoint+1]; // +1 to include the bigger point.
-  
-  /*--- Initialization of the array with -1 this is important for the FFD ---*/
-  for (iPoint = 0; iPoint < Max_GlobalPoint+1; iPoint++)
-    Global_to_Local_Point[iPoint] = -1;
   
   /*--- Set the value of some of the points ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
   
+  map<long, long>::const_iterator MI;
+
   /*--- Add the new MPI send receive boundaries, reset the transformation, and save the local value ---*/
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
     if (SendDomainLocal[iDomain].size() != 0) {
       nVertexDomain[nMarker] = SendDomainLocal[iDomain].size();
       for (iVertex = 0; iVertex < nVertexDomain[nMarker]; iVertex++) {
-        SendDomainLocal[iDomain][iVertex] = Global_to_Local_Point[SendDomainLocal[iDomain][iVertex]];
+        
+        MI = Global_to_Local_Point.find(SendDomainLocal[iDomain][iVertex]);
+        if (MI != Global_to_Local_Point.end()) iPoint = Global_to_Local_Point[SendDomainLocal[iDomain][iVertex]];
+        else iPoint = -1;
+          
+        SendDomainLocal[iDomain][iVertex] = iPoint;
         SendTransfLocal[iDomain].push_back(0);
       }
       nElem_Bound[nMarker] = nVertexDomain[nMarker];
@@ -4422,7 +4420,12 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     if (ReceivedDomainLocal[iDomain].size() != 0) {
       nVertexDomain[nMarker] = ReceivedDomainLocal[iDomain].size();
       for (iVertex = 0; iVertex < nVertexDomain[nMarker]; iVertex++) {
-        ReceivedDomainLocal[iDomain][iVertex] = Global_to_Local_Point[ReceivedDomainLocal[iDomain][iVertex]];
+        
+        MI = Global_to_Local_Point.find(ReceivedDomainLocal[iDomain][iVertex]);
+        if (MI != Global_to_Local_Point.end()) iPoint = Global_to_Local_Point[ReceivedDomainLocal[iDomain][iVertex]];
+        else iPoint = -1;
+        
+        ReceivedDomainLocal[iDomain][iVertex] = iPoint;
         ReceivedTransfLocal[iDomain].push_back(0);
       }
       nElem_Bound[nMarker] = nVertexDomain[nMarker];

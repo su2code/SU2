@@ -919,7 +919,7 @@ public:
  */
 class CPhysicalGeometry : public CGeometry {
 
-  long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
+  map<long,long> Global_to_Local_Point; /*!< \brief Global-local indexation for the points. */
   long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
   unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
   unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
