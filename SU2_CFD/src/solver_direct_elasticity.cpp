@@ -124,19 +124,21 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   nFEA_Terms = 1;
   if (de_effects) nFEA_Terms++;
 
+  cout << "0" << endl;
+
   /*--- Here is where we assign the kind of each element ---*/
+  
+  /*--- First level: different possible terms of the equations ---*/
+  element_container = new CElement** [MAX_TERMS];
+  for (iTerm = 0; iTerm < MAX_TERMS; iTerm++)
+    element_container[iTerm] = new CElement* [MAX_FE_KINDS];
   
   for (iTerm = 0; iTerm < MAX_TERMS; iTerm++) {
     for (iKind = 0; iKind < MAX_FE_KINDS; iKind++) {
       element_container[iTerm][iKind] = NULL;
     }
   }
-
-  /*--- First level: different possible terms of the equations ---*/
-  element_container = new CElement** [MAX_TERMS];
-  for (iTerm = 0; iTerm < MAX_TERMS; iTerm++)
-    element_container[iTerm] = new CElement* [MAX_FE_KINDS];
-
+  
   if (nDim == 2){
     if (incompressible){
       element_container[FEA_TERM][EL_TRIA] = new CTRIA1(nDim, config);
