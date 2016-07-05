@@ -631,7 +631,8 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   
   if (config->GetKind_Linear_Solver() == BCGSTAB ||
       config->GetKind_Linear_Solver() == FGMRES ||
-      config->GetKind_Linear_Solver() == RESTARTED_FGMRES) {
+      config->GetKind_Linear_Solver() == RESTARTED_FGMRES ||
+      config->GetKind_Linear_Solver() == CONJUGATE_GRADIENT) {
     
     mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
     CPreconditioner* precond = NULL;
