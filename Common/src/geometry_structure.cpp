@@ -8686,7 +8686,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 								turbovertex[iMarker][0][jVertex]->SetArea(Area);
 								turbovertex[iMarker][0][jVertex]->SetNormal(NormalArea);
 								coord = node[jPoint]->GetCoord();
-								switch (config->GetKind_TurboMachinery()){
+								switch (config->GetKind_TurboMachinery(val_iZone)){
 									case CENTRIFUGAL:
 										Normal2 = 0.0;
 										for(iDim = 0; iDim < nDim; iDim++) Normal2 +=coord[iDim]*coord[iDim];
@@ -8758,7 +8758,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
 							iPoint = vertex[iMarker][iVertex]->GetNode();
 							coord = node[iPoint]->GetCoord();
-							switch (config->GetKind_TurboMachinery()){
+							switch (config->GetKind_TurboMachinery(val_iZone)){
 							case CENTRIFUGAL: case CENTRIPETAL:
 								if (coord[2] < min) min = coord[2];
 								if (coord[2] > max) max = coord[2];
@@ -8815,7 +8815,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 							/*--- only physical point are counted ---*/
 							if(node[iPoint]->GetDomain()){
 								coord = node[iPoint]->GetCoord();
-								switch (config->GetKind_TurboMachinery()){
+								switch (config->GetKind_TurboMachinery(val_iZone)){
 								case CENTRIFUGAL: case CENTRIPETAL:
 									for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 										if (dist > (abs(coord[2]-span[iSpan]))){
@@ -8885,7 +8885,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 							/*--- only physical point are stored ---*/
 							if(node[iPoint]->GetDomain()){
 								coord = node[iPoint]->GetCoord();
-								switch (config->GetKind_TurboMachinery()){
+								switch (config->GetKind_TurboMachinery(val_iZone)){
 								case CENTRIFUGAL: case CENTRIPETAL:
 									for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 										if (dist > (abs(coord[2]-span[iSpan]))){
@@ -8980,7 +8980,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 								turbovertex[iMarker][iSpan][iSpanVertex]->SetOldVertex(oldVertex3D[iSpan][kSpanVertex]);
 								checkAssign[iSpan][kSpanVertex] = true;
 								coord = node[ordered[iSpan][iSpanVertex]]->GetCoord();
-								switch (config->GetKind_TurboMachinery()){
+								switch (config->GetKind_TurboMachinery(val_iZone)){
 								case CENTRIFUGAL:
 								  Normal2 = 0.0;
 								  for(iDim = 0; iDim < 2; iDim++) Normal2 +=coord[iDim]*coord[iDim];
@@ -9252,7 +9252,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 	  myfile << "TITLE = \"Global index visualization file\"" << endl;
 	  myfile << "VARIABLES =" << endl;
-	  if (config->GetKind_TurboMachinery()== AXIAL && (nDim == 3)){
+	  if (config->GetKind_TurboMachinery(val_iZone)== AXIAL && (nDim == 3)){
 	  	myfile << "\"iSpan\" " << "\"x_coord\" " << "\"y_coord\" " <<  "\"z_coord\" "<< "\"radius\" " << "\"global_index\" " <<endl;
 			for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 				for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
@@ -9330,7 +9330,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 	delete [] nTotVertex_gb;
 }
 
-void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_flag, bool allocate) {
+void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
 
 	unsigned short iMarker, iMarkerTP, iSpan, iDim;
 	unsigned long iVertex, iPoint;
@@ -9481,7 +9481,7 @@ void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short marker_
 								AverageGridVel[iMarker][iSpan][iDim] =TotalGridVel[iDim]/nTotVertexSpan[iMarker][iSpan];
 //								cout << "AverageGridVel in dim  " << iDim << " is "<< AverageGridVel[iMarker][iSpan][iDim] <<endl;
 							}
-							switch (config->GetKind_TurboMachinery()){
+							switch (config->GetKind_TurboMachinery(val_iZone)){
 							case CENTRIFUGAL:case CENTRIPETAL:
 								if (marker_flag == INFLOW ){
 									AverageTangGridVel[iMarker][iSpan]= -(AverageTurboNormal[iMarker][iSpan][0]*AverageGridVel[iMarker][iSpan][1]-AverageTurboNormal[iMarker][iSpan][1]*AverageGridVel[iMarker][iSpan][0]);

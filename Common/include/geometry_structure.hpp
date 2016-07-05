@@ -420,7 +420,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetAvgTurboValue(CConfig *config, unsigned short marker_flag, bool allocate);
+	virtual void SetAvgTurboValue(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
 
 	/*! 
 	 * \brief A virtual member.
@@ -1179,7 +1179,7 @@ public:
 	 * \brief Set turbo boundary vertex.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetAvgTurboValue(CConfig *config, unsigned short marker_flag, bool allocate);
+	void SetAvgTurboValue(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
 
 	/*! 
 	 * \brief Set the center of gravity of the face, elements and edges.

@@ -4810,7 +4810,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
       massFlowOut, tangMachOut, normalMachOut, avgTotTempIn, avgTotPresIn, P_Total, T_Total, *FlowDir, alphaIn_BC, gammaIn_BC, entropyIn_BC, totalEnthalpyIn_BC, densityIn_Mix,
       pressureIn_Mix, normalVelocityIn_Mix, tangVelocityIn_Mix, densityOut_Mix, pressureOut_Mix, normalVelocityOut_Mix, tangVelocityOut_Mix, absFlowAngleIn,
       absFlowAngleOut, pressureOut_BC;
-  su2double pitch;
+  su2double nBlades;
   unsigned short iDim, i, n1, n2, n1t,n2t;
 
   int rank = MASTER_NODE;
@@ -4819,7 +4819,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
   string Marker_Tag;
 
   unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
-
+  unsigned short iZone             = config->GetiZone();
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -4883,11 +4883,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
     for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
       if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
         Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
-//        pitch = 0.0;
-        pitch = config->GetPeriodicRotAngles(iMarkerTP -1);
-        // to avoid nan with 2D axial case.
-        if(pitch <= EPS) pitch=2*PI_NUMBER;
-        /*--- compute or retrieve inlet information ---*/
+        nBlades = config->GetnBlades(iZone);
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW){
           markerTP = iMarkerTP;
           //					cout << markerTP -1 << " "<< config->GetMarker_All_TagBound(iMarker)<<endl;
@@ -4908,7 +4904,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
           FluidModel->SetTDState_hs(avgTotalRothalpyIn, avgEntropyIn);
           avgTotalRelPressureIn   = FluidModel->GetPressure();
           flowAngleIn							= SpanFlowAngle[iMarker][nSpanWiseSections];
-          massFlowIn							= SpanMassFlow[iMarker][nSpanWiseSections]*2*PI_NUMBER/abs(pitch);
+          massFlowIn							= SpanMassFlow[iMarker][nSpanWiseSections]*nBlades;
           tangMachIn							= AverageTurboMach[iMarker][nSpanWiseSections][1];
           normalMachIn						= AverageTurboMach[iMarker][nSpanWiseSections][0];
           avgTotTempIn						= AverageTotTemperature[iMarker][nSpanWiseSections];
@@ -5005,7 +5001,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
           avgTotalRelPressureOut    =  FluidModel->GetPressure();
           avgPressureOut						= AveragePressure[iMarker][nSpanWiseSections];
           flowAngleOut							= SpanFlowAngle[iMarker][nSpanWiseSections];
-          massFlowOut							  = SpanMassFlow[iMarker][nSpanWiseSections]*2*PI_NUMBER/abs(pitch);
+          massFlowOut							  = SpanMassFlow[iMarker][nSpanWiseSections]*nBlades;
           tangMachOut								= AverageTurboMach[iMarker][nSpanWiseSections][1];
           normalMachOut						  = AverageTurboMach[iMarker][nSpanWiseSections][0];
           densityOut_Mix					  = AverageDensity[iMarker][nSpanWiseSections];
@@ -5269,7 +5265,7 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
       EntropyGen[nBladesRow + iStage]            = ((abs(EntropyIn[iStage*2 + 1])*EntropyGen[iStage*2 + 1] + EntropyIn[iStage*2 + 1]) - EntropyIn[iStage*2])/abs(EntropyIn[iStage*2]);
       PressureRatio[nBladesRow + iStage]         = (PressureRatio[iStage*2]*PressureOut[iStage*2]/PressureOut[iStage*2 + 1]);
       MassFlowIn[nBladesRow + iStage]         	 = MassFlowIn[iStage*2];
-      MassFlowOut[nBladesRow + iStage]         	 = MassFlowIn[iStage*2 + 1];
+      MassFlowOut[nBladesRow + iStage]         	 = MassFlowOut[iStage*2 + 1];
 
     }
 
@@ -5287,7 +5283,7 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
     EntropyGen[nBladesRow + iStage]            = ((abs(EntropyIn[nBladesRow-1])*EntropyGen[nBladesRow-1] + EntropyIn[nBladesRow-1]) - EntropyIn[0])/abs(EntropyIn[0]);
     PressureRatio[nBladesRow + nStages]        = PressureRatio[0]*PressureOut[0]/PressureOut[nBladesRow-1];
     MassFlowIn[nBladesRow + nStages]         	 = MassFlowIn[0];
-    MassFlowOut[nBladesRow + nStages]          = MassFlowIn[nBladesRow-1];
+    MassFlowOut[nBladesRow + nStages]          = MassFlowOut[nBladesRow-1];
   }
 }
 
@@ -8320,6 +8316,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
 
+  unsigned short  iZone     = config->GetiZone();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement        = config->GetGrid_Movement();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
@@ -8441,7 +8438,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 				Velocity2_e = Velocity2_i;
 				for (iDim = 0; iDim < nDim; iDim++)
 					turboVelocity[iDim] = sqrt(Velocity2_e)*Flow_Dir[iDim];
-				ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery());
+				ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
 				StaticEnthalpy_e = Enthalpy_e - 0.5 * Velocity2_e;
 				FluidModel->SetTDState_hs(StaticEnthalpy_e, Entropy_e);
 				Density_e = FluidModel->GetDensity();
@@ -8531,7 +8528,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 					turboVelocity[iDim] = sqrt(Velocity2_e)*FlowDirMix[iDim];
 //					cout <<"turbovelocity" << turboVelocity[iDim] << endl;
 				}
-				ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery());
+				ComputeBackVelocity(turboVelocity,turboNormal, Velocity_e, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
 //				cout << T_Total << endl;
 //				for (iDim = 0; iDim < nDim; iDim++){
 //					cout <<"Velocity_e" << Velocity_e[iDim] << endl;
@@ -8892,6 +8889,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
   string Marker_Tag, Monitoring_Tag;
   su2double val_init_pressure;
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  unsigned short  iZone     = config->GetiZone();
   bool grid_movement        = config->GetGrid_Movement();
   su2double TotalDensity, TotalPressure, *TotalVelocity, *AverageTurboNormal, *AverageNormal, AverageTangGridVelocity, avgVel2,
   avgTotalEnthaply, *TotalFluxes, RelTangVelocity;
@@ -8974,7 +8972,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
                 VelSq += Velocity[iDim]*Velocity[iDim];
               }
 
-              ComputeTurboVelocity(Velocity, TurboNormal , TurboVelocity, marker_flag, config->GetKind_TurboMachinery());
+              ComputeTurboVelocity(Velocity, TurboNormal , TurboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
 
               /*--- Compute the integral fluxes for the boundary of interest ---*/
 
@@ -9215,7 +9213,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
                  AverageTurboVelocity[iMarker][iSpan][0]= ( AverageFlux[iMarker][iSpan][1] - AveragePressure[iMarker][iSpan]) / AverageFlux[iMarker][iSpan][0];
                  for (iDim = 2; iDim < nDim +1;iDim++)
                    AverageTurboVelocity[iMarker][iSpan][iDim-1]= AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
-               ComputeBackVelocity(AverageTurboVelocity[iMarker][iSpan], AverageTurboNormal , AverageVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery());
+               ComputeBackVelocity(AverageTurboVelocity[iMarker][iSpan], AverageTurboNormal , AverageVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
 
                }
 
@@ -9234,7 +9232,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
             AverageSoundSpeed[iMarker][iSpan]					= FluidModel->GetSoundSpeed();
             AverageEntropy[iMarker][iSpan] 						= FluidModel->GetEntropy();
 
-            ComputeTurboVelocity(AverageVelocity[iMarker][iSpan], AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery());
+            ComputeTurboVelocity(AverageVelocity[iMarker][iSpan], AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
             SpanMassFlow[iMarker][iSpan]							= AverageDensity[iMarker][iSpan]*AverageTurboVelocity[iMarker][iSpan][0]*TotalArea;
 //            cout << SpanMassFlow[iMarker][iSpan] << endl;
 //            cout << TotalFluxes[0] << endl;
@@ -9308,6 +9306,7 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
       Area, TotalArea, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, *UnitNormal, *TurboNormal;
   string Marker_Tag, Monitoring_Tag;
   su2double val_init_pressure;
+  unsigned short  iZone     = config->GetiZone();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool grid_movement        = config->GetGrid_Movement();
   su2double TotalDensity, TotalPressure, *TotalVelocity, *AverageTurboNormal, *AverageNormal, AverageTangGridVelocity, avgVel2,
@@ -9389,7 +9388,7 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
                 VelSq += Velocity[iDim]*Velocity[iDim];
               }
 
-              ComputeTurboVelocity(Velocity, TurboNormal , TurboVelocity, marker_flag, config->GetKind_TurboMachinery());
+              ComputeTurboVelocity(Velocity, TurboNormal , TurboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
 
 
               /*--- Compute the integral fluxes for the boundary of interest ---*/
@@ -9632,7 +9631,7 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
                AverageTurboVelocity[iMarker][nSpanWiseSections][0]= ( AverageFlux[iMarker][nSpanWiseSections][1] - AveragePressure[iMarker][nSpanWiseSections]) / AverageFlux[iMarker][nSpanWiseSections][0];
                for (iDim = 2; iDim < nDim +1;iDim++)
                  AverageTurboVelocity[iMarker][nSpanWiseSections][iDim-1]= AverageFlux[iMarker][nSpanWiseSections][iDim] / AverageFlux[iMarker][nSpanWiseSections][0];
-             ComputeBackVelocity(AverageTurboVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery());
+             ComputeBackVelocity(AverageTurboVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
 
              }
 
@@ -9651,7 +9650,7 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
           AverageSoundSpeed[iMarker][nSpanWiseSections]					= FluidModel->GetSoundSpeed();
           AverageEntropy[iMarker][nSpanWiseSections] 						= FluidModel->GetEntropy();
 
-          ComputeTurboVelocity(AverageVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageTurboVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery());
+          ComputeTurboVelocity(AverageVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageTurboVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
           SpanMassFlow[iMarker][nSpanWiseSections]							= AverageDensity[iMarker][nSpanWiseSections]*AverageTurboVelocity[iMarker][nSpanWiseSections][0]*TotalArea;
           SpanFlowAngle[iMarker][nSpanWiseSections]							= atan2(AverageTurboVelocity[iMarker][nSpanWiseSections][1],AverageTurboVelocity[iMarker][nSpanWiseSections][0]);
 
@@ -9822,6 +9821,7 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
   su2double *deltaprim, *cj, jk_nVert;
   unsigned short iMarker, iSpan, iMarkerTP, iDim;
   unsigned long iVertex, iPoint, kend, k;
+  unsigned short  iZone     = config->GetiZone();
   unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
   int j;
   int rank = MASTER_NODE;
@@ -9867,7 +9867,7 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
                 {
                   Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
                 }
-                ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag, config->GetKind_TurboMachinery());
+                ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, marker_flag, config->GetKind_TurboMachinery(iZone));
                 //TODO Vicente Extended to 3D
                 if(nDim ==2){
                   deltaprim[0] = Density_i - AverageDensity[iMarker][iSpan];
@@ -9986,7 +9986,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   su2double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **DubDu, *dw, *u_b;
   su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
-
+  unsigned short  iZone     = config->GetiZone();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement        = config->GetGrid_Movement();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
@@ -10204,7 +10204,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       for (iDim = 0; iDim < nDim; iDim++)
         ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
 
-      ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery());
+      ComputeTurboVelocity(Velocity_i, turboNormal, turboVelocity, config->GetMarker_All_TurbomachineryFlag(val_marker),config->GetKind_TurboMachinery(iZone));
       if (nDim == 2){
         deltaprim[0] = Density_i - AverageDensity[val_marker][iSpan];
         deltaprim[1] = turboVelocity[0] - AverageTurboVelocity[val_marker][iSpan][0];
@@ -10414,7 +10414,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         turboVelocity[2] = AverageTurboVelocity[val_marker][iSpan][2] + deltaprim[3];
         Pressure_b = AveragePressure[val_marker][iSpan] + deltaprim[4];
       }
-      ComputeBackVelocity(turboVelocity, turboNormal, Velocity_b, config->GetMarker_All_TurbomachineryFlag(val_marker), config->GetKind_TurboMachinery());
+      ComputeBackVelocity(turboVelocity, turboNormal, Velocity_b, config->GetMarker_All_TurbomachineryFlag(val_marker), config->GetKind_TurboMachinery(iZone));
       Velocity2_b = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         Velocity2_b+= Velocity_b[iDim]*Velocity_b[iDim];

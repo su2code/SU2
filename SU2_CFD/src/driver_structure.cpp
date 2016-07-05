@@ -1916,8 +1916,8 @@ void CSingleZoneDriver::SetGeoTurboAvgValues(CGeometry ***geometry_container, CC
 	if ((config_container[iZone]->GetGrid_Movement())){
 					geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone);
 	}
-	geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],INFLOW, allocate);
-	geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],OUTFLOW, allocate);
+	geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, allocate);
+	geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, allocate);
 
 }
 
