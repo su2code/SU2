@@ -665,6 +665,9 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
       case FGMRES:
         IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
         break;
+      case CONJUGATE_GRADIENT:
+        IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
+        break;
       case RESTARTED_FGMRES:
         IterLinSol = 0;
         while (IterLinSol < config->GetLinear_Solver_Iter()) {
