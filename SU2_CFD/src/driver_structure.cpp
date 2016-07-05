@@ -214,7 +214,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   poisson, wave, heat,
   fem, adj_fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
-  template_solver, disc_adj;
+  template_solver, disc_adj, disc_adj_fem;
   
   /*--- Initialize some useful booleans ---*/
   
@@ -223,7 +223,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   spalart_allmaras = false;  menter_sst      = false;
   poisson          = false;  neg_spalart_allmaras = false;
   wave             = false;	 disc_adj         = false;
-  fem 			   = false;  adj_fem		  = false;
+  fem              = false;  adj_fem		     = false;  disc_adj_fem        = false;
   heat             = false;
   transition       = false;
   template_solver  = false;
@@ -246,6 +246,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
+    case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -339,7 +340,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
-  template_solver, disc_adj;
+  template_solver, disc_adj, disc_adj_fem;
 
   /*--- Initialize some useful booleans ---*/
 
@@ -348,7 +349,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   spalart_allmaras = false;  menter_sst      = false;
   poisson          = false;  neg_spalart_allmaras = false;
   wave             = false;  disc_adj        = false;
-  fem = false;
+  fem              = false;  disc_adj_fem    = false;
   heat             = false;
   transition       = false;
   template_solver  = false;
@@ -370,6 +371,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
   case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
   case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
+  case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
 
   /*--- Assign turbulence model booleans --- */
@@ -436,7 +438,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   euler, adj_euler,
   ns, adj_ns,
   turbulent, adj_turb,
-  poisson, wave, fem, adj_fem, heat, template_solver, transition, disc_adj;
+  poisson, wave, fem, adj_fem, disc_adj_fem, heat, template_solver, transition, disc_adj;
   
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -445,7 +447,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   poisson          = false; disc_adj         = false;
   wave             = false;
   heat             = false;
-  fem 			   = false; adj_fem          = false;
+  fem 			       = false; adj_fem          = false; disc_adj_fem          = false;
   transition       = false;
   template_solver  = false;
   
@@ -466,7 +468,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; break;
-      
+    case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
   
   /*--- Allocate solution for a template problem ---*/
@@ -497,7 +499,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   euler, adj_euler,
   ns, adj_ns,
   turbulent, adj_turb,
-  poisson, wave, fem, heat, template_solver, transition, disc_adj;
+  poisson, wave, fem, disc_adj_fem, heat, template_solver, transition, disc_adj;
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -506,7 +508,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   poisson          = false; disc_adj         = false;
   wave             = false;
   heat             = false;
-  fem = false;
+  fem              = false; disc_adj_fem     = false;
   transition       = false;
   template_solver  = false;
 
@@ -526,7 +528,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; adj_turb=true; break;
-
+    case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
 
   /*--- DeAllocate solution for a template problem ---*/
@@ -604,7 +606,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
-    case FEM_ELASTICITY: fem = true; break;
+    case FEM_ELASTICITY: case DISC_ADJ_FEM: fem = true; break;
     case ADJ_ELASTICITY: fem = true; adj_fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
@@ -1398,7 +1400,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
-    case FEM_ELASTICITY: fem = true; break;
+    case FEM_ELASTICITY: case DISC_ADJ_FEM: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
@@ -1797,6 +1799,12 @@ void CDriver::Iteration_Preprocessing(CIteration **iteration_container, CConfig 
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint Euler/Navier-Stokes/RANS flow iteration." << endl;
       iteration_container[iZone] = new CDiscAdjMeanFlowIteration(config[iZone]);
+      break;
+
+    case DISC_ADJ_FEM:
+      if (rank == MASTER_NODE)
+        cout << ": discrete adjoint FEM structural iteration." << endl;
+      iteration_container[iZone] = new CDiscAdjFEMIteration(config[iZone]);
       break;
   }
   
