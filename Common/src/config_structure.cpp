@@ -5167,7 +5167,6 @@ su2double* CConfig::GetPeriodicRotAngles(string val_marker) {
   return Periodic_RotAngles[iMarker_PerBound];
 }
 
-
 su2double* CConfig::GetPeriodicTranslation(string val_marker) {
   unsigned short iMarker_PerBound;
   for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)

@@ -9252,7 +9252,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 	  myfile << "TITLE = \"Global index visualization file\"" << endl;
 	  myfile << "VARIABLES =" << endl;
-	  if (config->GetKind_TurboMachinery(val_iZone)== AXIAL && (nDim == 3)){
+	  if ((config->GetKind_TurboMachinery(val_iZone)== AXIAL && (nDim == 3)) || (config->GetKind_TurboMachinery(val_iZone)== CENTRIPETAL_AXIAL && (marker_flag == OUTFLOW))){
 	  	myfile << "\"iSpan\" " << "\"x_coord\" " << "\"y_coord\" " <<  "\"z_coord\" "<< "\"radius\" " << "\"global_index\" " <<endl;
 			for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 				for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
