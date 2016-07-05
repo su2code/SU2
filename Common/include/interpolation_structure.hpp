@@ -358,15 +358,6 @@ public:
    * \param[in] T3 - third  point of triangle T
    */
   bool CheckPointInsideTriangle(su2double* Point, su2double* T1, su2double* T2, su2double* T3);
-  
-  /*!
-   * \brief Check if a point is inside a node centered cell
-   * \param[in] geometry - geometry where the node cell belongs
-   * \param[in] VertexID - node centered cell index
-   * \param[in] markID   - node centered cell index
-   */
-  bool CheckPointOwner(CGeometry *geometry, su2double *QueryPoint, unsigned long VertexID, unsigned long markID);
-
 };
 
 
