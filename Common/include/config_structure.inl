@@ -724,11 +724,13 @@ inline unsigned short CConfig::GetKind_Inlet(void) { return Kind_Inlet; }
 
 inline unsigned short CConfig::GetKind_MixingProcess(void) { return Kind_MixingProcess; }
 
-inline unsigned short CConfig::GetKind_TurboMachinery(void) { return Kind_TurboMachinery; }
+inline unsigned short CConfig::GetKind_TurboMachinery(unsigned short val_iZone) { return Kind_TurboMachinery[val_iZone]; }
 
 inline bool CConfig::GetBoolMixingPlaneInterface(void) { return (nMarker_MixingPlaneInterface !=0);}
 
 inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachinery !=0);}
+
+inline su2double CConfig::GetnBlades(unsigned short val_iZone) { return nBlades[val_iZone];}
 
 inline bool CConfig::GetBoolNRBC(void) { return (nMarker_NRBC!=0);}
 

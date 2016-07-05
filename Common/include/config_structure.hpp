@@ -67,7 +67,7 @@ private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
-  unsigned short Kind_TurboMachinery;  /*!< \brief Kind of turbomachynery architecture.*/
+  unsigned short *Kind_TurboMachinery;  /*!< \brief Kind of turbomachynery architecture.*/
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
@@ -304,6 +304,7 @@ private:
   unsigned short* nDV_Value;		/*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
   unsigned short nFFDBox;		/*!< \brief Number of ffd boxes. */
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
+  unsigned short nTurboMachineryKind; 	/*!< \brief Number turbomachinery types specified. */
 	unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
 	su2double **ParamDV;				/*!< \brief Parameters of the design variable. */
   su2double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
@@ -495,6 +496,7 @@ private:
   *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
 	su2double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
+	su2double *nBlades;						/*!< \brief number of blades for turbomachinery computation. */
 	unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
 	unsigned short Axis_Orientation;	/*!< \brief Axis orientation. */
 	unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
@@ -3501,7 +3503,7 @@ public:
 	 * \brief Get the kind of turbomachinery architecture.
 	 * \return Kind of turbomachinery architecture.
 	 */
-	unsigned short GetKind_TurboMachinery(void);
+	unsigned short GetKind_TurboMachinery(unsigned short val_iZone);
 	/*!
      * \brief Verify if there is mixing plane interface specified from config file.
 	 * \return boolean.
@@ -3520,6 +3522,11 @@ public:
 	 */
 	bool GetBoolTurbomachinery(void);
 
+	/*!
+	 * \brief number Turbomachinery blades computed using the pitch information.
+	 * \return nBlades.
+	 */
+	su2double GetnBlades(unsigned short val_iZone);
   /*!
    * \brief Verify if there is any Non Reflecting Boundary Condition option specified from config file.
    * \return boolean.
@@ -4663,11 +4670,6 @@ public:
 	 * \brief Angles of rotation for a rotational periodic boundary.
 	 */
 	su2double *GetPeriodicRotAngles(string val_marker);
-
-	/*!
-	 * \brief Angles of rotation for a rotational periodic boundary.
-	 */
-	su2double GetPeriodicRotAngles(unsigned short val_iZone);
 
 	/*!
 	 * \brief Translation vector for a rotational periodic boundary.

@@ -622,7 +622,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addNRBCOption("MARKER_NRBC", nMarker_NRBC, Marker_NRBC, Kind_Data_NRBC, NRBC_Map, NRBC_Var1, NRBC_Var2, NRBC_FlowDir, RelaxFactorAverage, RelaxFactorFourier);
   /*!\brief MIXING_PROCESS_TYPE \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries.
     \n OPTIONS: see \link MixingProcess_Map \endlink \n DEFAULT: AREA_AVERAGE \ingroup Config*/
-  addEnumOption("MIXING_PROCESS_TYPE", Kind_MixingProcess, MixingProcess_Map, AREA_AVERAGE);
+  addEnumOption("MIXING_PROCESS_KIND", Kind_MixingProcess, MixingProcess_Map, AREA_AVERAGE);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
   addStringListOption("MARKER_MIXINGPLANE_INTERFACE", nMarker_MixingPlaneInterface, Marker_MixingPlaneInterface);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
@@ -631,7 +631,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedShortOption("NUM_SPANWISE_SECTIONS", nSpanWiseSections, 1);
   /*!\brief TURBOMACHINERY_TYPE \n DESCRIPTION: types of turbomachynery architecture.
       \n OPTIONS: see \link TurboMachinery_Map \endlink \n Default: AXIAL */
-  addEnumOption("TURBOMACHINERY_TYPE", Kind_TurboMachinery, TurboMachinery_Map, AXIAL);
+  addEnumListOption("TURBOMACHINERY_KIND",nTurboMachineryKind, Kind_TurboMachinery, TurboMachinery_Map);
   /*!\brief MARKER_SUPERSONIC_INLET  \n DESCRIPTION: Supersonic inlet boundary marker(s)
    * \n   Format: (inlet marker, temperature, static pressure, velocity_x,   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
   addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
@@ -3134,7 +3134,29 @@ void CConfig::SetMarkers(unsigned short val_software) {
     	}
     }
   }
-
+  if(GetBoolTurbomachinery()){
+		unsigned short count = 0;
+		nBlades = new su2double[nZone];
+		su2double pitch;
+		for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+			unsigned short iMarker_PerBound;
+			for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
+				if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_PerBound[iMarker_PerBound]){
+					if (count == 0){
+						pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
+						nBlades[count]= 2*PI_NUMBER/pitch;
+//						cout << nBlades[count] <<" in zone "<<  count<<endl;
+						count++;
+					}
+					if((pitch != abs(Periodic_RotAngles[iMarker_PerBound][2])) && (count < nZone)){
+						pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
+						nBlades[count]= 2*PI_NUMBER/pitch;
+//						cout << nBlades[count] <<" in zone "<<  count<<endl;
+						count++;
+					}
+				}
+		}
+  }
   /*--- Identification of MixingPlane interface markers ---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
@@ -5145,15 +5167,6 @@ su2double* CConfig::GetPeriodicRotAngles(string val_marker) {
   return Periodic_RotAngles[iMarker_PerBound];
 }
 
-su2double CConfig::GetPeriodicRotAngles(unsigned short val_iZone) {
-	if (Kind_TurboMachinery == CENTRIFUGAL ||Kind_TurboMachinery == CENTRIPETAL){
-		return Periodic_RotAngles[val_iZone][2];
-	}
-	else{
-		return Periodic_RotAngles[val_iZone][0];
-	}
-
-}
 
 su2double* CConfig::GetPeriodicTranslation(string val_marker) {
   unsigned short iMarker_PerBound;
