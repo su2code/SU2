@@ -404,10 +404,13 @@ void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CG
 													CConfig *target_config, unsigned long Marker_Target,
 													unsigned long Vertex_Target, unsigned long Point_Target){
 
-	unsigned short iVar;
+	unsigned short iVar, iDonorVertex;
 	/*--- Set the Sliding solution with the value of the Target Variable ---*/
 	
-	for (iVar = 0; iVar < nVar; iVar++)
-		target_solution->SetSlidingState(Marker_Target, Vertex_Target, iVar, Target_Variable[iVar]);
+	iDonorVertex = target_solution->GetnSlidingStates(Marker_Target, Vertex_Target);
+	
+	for (iVar = 0; iVar < nVar+1; iVar++)
+		target_solution->SetSlidingState(Marker_Target, Vertex_Target, iVar, iDonorVertex, Target_Variable[iVar]);
 
+	target_solution->SetnSlidingStates( Marker_Target, Vertex_Target, iDonorVertex + 1 );
 }

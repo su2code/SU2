@@ -47,8 +47,12 @@ CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig
   
   Physical_Constants = new su2double[val_nConst];
   Donor_Variable     = new su2double[val_nVar];
-  Target_Variable    = new su2double[val_nVar];
   
+  if( config->GetFSI_Simulation() )
+	Target_Variable = new su2double[val_nVar];
+  else
+	Target_Variable = new su2double[val_nVar+1];
+	
   nVar = val_nVar;
   
   for (iVar = 0; iVar < nVar; iVar++){
@@ -998,9 +1002,17 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
           
           nDonorPoints = target_geometry->vertex[Marker_Target][iVertex]->GetnDonorPoints();
           
-          /*--- As we will be adding data, we need to set the variable to 0 ---*/
-          for (iVar = 0; iVar < nVar; iVar++) Target_Variable[iVar] = 0.0;
-          
+          if(!fsi){
+				target_solution->SetnSlidingStates(Marker_Target, iVertex, nDonorPoints);
+				target_solution->SetSlidingStateStructure(Marker_Target, iVertex);
+				target_solution->SetnSlidingStates(Marker_Target, iVertex, 0);
+		  }
+		  else{
+				/*--- As we will be adding data, we need to set the variable to 0 ---*/
+				for (iVar = 0; iVar < nVar; iVar++) 
+					Target_Variable[iVar] = 0.0;
+		  }
+		  
           /*--- For the number of donor points ---*/
           for (iDonorPoint = 0; iDonorPoint < nDonorPoints; iDonorPoint++){
             
@@ -1017,16 +1029,22 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
             Point_Target_Check = Buffer_Bcast_Indices[indexPoint_iVertex];
 
             if (Point_Target_Check < 0 && fsi) {
-              cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
-              exit(EXIT_FAILURE);
+				for (iVar = 0; iVar < nVar; iVar++)
+					Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
+				cout << "WARNING: A nonphysical point is being considered for traction transfer." << endl;
+				exit(EXIT_FAILURE);
             }
-
-            for (iVar = 0; iVar < nVar; iVar++)
-              Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
-              
+			else{
+				for (iVar = 0; iVar < nVar; iVar++)
+					Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
+					
+				Target_Variable[nVar] = donorCoeff;
+				
+				SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);	
+			}
           }
 
-          if (Point_Target_Check >= 0)
+          if (Point_Target_Check >= 0 && fsi)
 			SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
         }
         

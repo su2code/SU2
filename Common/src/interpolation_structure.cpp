@@ -1845,7 +1845,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 
 				target_geometry->vertex[markTarget][iVertex]->SetnDonorPoints(nDonorPoints);
 
-				target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo();
+				target_geometry->vertex[markTarget][iVertex]->Allocate_DonorInfo(); // Memory leak?
 
 				for ( iDonor = 0; iDonor < nDonorPoints; iDonor++ ){			  
 					target_geometry->vertex[markTarget][iVertex]->SetDonorCoeff(iDonor, Coeff_Vect[iDonor]/Area);
