@@ -1633,14 +1633,14 @@ void CFEM_ElasticitySolver_Adj::Stiffness_Sensitivity(CGeometry *geometry, CSolv
 CDiscAdjFEASolver::CDiscAdjFEASolver(void) : CSolver (){
 
   nMarker = 0;
+  nMarker_nL = 0;
   KindDirect_Solver = 0;
 
   direct_solver = NULL;
-  Sens_Mach     = NULL;
-  Sens_AoA      = NULL;
-  Sens_Geo      = NULL;
-  Sens_Press    = NULL;
-  Sens_Temp     = NULL;
+  normalLoads   = NULL;
+  Sens_E        = NULL;
+  Sens_Nu       = NULL;
+  Sens_nL       = NULL;
   CSensitivity  = NULL;
 
 }
@@ -1648,14 +1648,14 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(void) : CSolver (){
 CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config)  : CSolver(){
 
   nMarker = 0;
+  nMarker_nL = 0;
   KindDirect_Solver = 0;
 
   direct_solver = NULL;
-  Sens_Mach     = NULL;
-  Sens_AoA      = NULL;
-  Sens_Geo      = NULL;
-  Sens_Press    = NULL;
-  Sens_Temp     = NULL;
+  normalLoads   = NULL;
+  Sens_E        = NULL;
+  Sens_Nu       = NULL;
+  Sens_nL       = NULL;
   CSensitivity  = NULL;
 
 }
@@ -1688,6 +1688,29 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
+
+  /*-- Store number of markers with a normal load boundary condition ---*/
+
+  normalLoads = NULL;
+
+//  nMarker_nL = 0;
+//  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+//    switch (config->GetMarker_All_KindBC(iMarker)) {
+//      case LOAD_BOUNDARY:
+//        nMarker_nL += 1;
+//        break;
+//    }
+//  }
+//
+//  normalLoads = new su2double[nMarker_nL];
+//  /*--- Store the value of the normal loads ---*/
+//  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+//    switch (config->GetMarker_All_KindBC(iMarker)) {
+//      case LOAD_BOUNDARY:
+//        normalLoads[iMarker] = config->GetLoad_Value(config->GetMarker_All_TagBound(iMarker));
+//        break;
+//    }
+//  }
 
   /*--- Allocate the node variables ---*/
 
@@ -1722,21 +1745,17 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
       CSensitivity[iMarker]        = new su2double [geometry->nVertex[iMarker]];
   }
 
-  Sens_Geo  = new su2double[nMarker];
-  Sens_Mach = new su2double[nMarker];
-  Sens_AoA  = new su2double[nMarker];
-  Sens_Press = new su2double[nMarker];
-  Sens_Temp  = new su2double[nMarker];
+  Sens_E  = new su2double[nMarker];
+  Sens_Nu = new su2double[nMarker];
+  Sens_nL  = new su2double[nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      Sens_Geo[iMarker]  = 0.0;
-      Sens_Mach[iMarker] = 0.0;
-      Sens_AoA[iMarker]  = 0.0;
-      Sens_Press[iMarker] = 0.0;
-      Sens_Temp[iMarker]  = 0.0;
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++){
-          CSensitivity[iMarker][iVertex] = 0.0;
-      }
+    Sens_E[iMarker]  = 0.0;
+    Sens_Nu[iMarker] = 0.0;
+    Sens_nL[iMarker]  = 0.0;
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++){
+        CSensitivity[iMarker][iVertex] = 0.0;
+    }
   }
 
 
@@ -1754,7 +1773,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   else {
 
     /*--- Restart the solution from file information ---*/
-    mesh_filename = config->GetSolution_AdjFileName();
+    mesh_filename = config->GetSolution_AdjFEMFileName();
     filename = config->GetObjFunc_Extension(mesh_filename);
 
     restart_file.open(filename.data(), ios::in);
@@ -1838,15 +1857,11 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
 CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
 
-  nMarker = 0;
-  KindDirect_Solver = 0;
-
   delete [] direct_solver;
-  delete [] Sens_Mach;
-  delete [] Sens_AoA;
-  delete [] Sens_Geo;
-  delete [] Sens_Press;
-  delete [] Sens_Temp;
+  delete [] normalLoads;
+  delete [] Sens_E;
+  delete [] Sens_Nu;
+  delete [] Sens_nL;
   delete [] CSensitivity;
 
 }
@@ -1854,7 +1869,7 @@ CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
 void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned short kind_recording){
 
 
-  bool dynamic (config->GetDynamic_Analysis() == DYNAMIC);
+//  bool dynamic (config->GetDynamic_Analysis() == DYNAMIC);
 
   unsigned long iPoint;
   unsigned short iVar;
@@ -1865,23 +1880,23 @@ void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config, unsig
     direct_solver->node[iPoint]->SetSolution(node[iPoint]->GetSolution_Direct());
   }
 
-  if (dynamic){
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      for (iVar = 0; iVar < nVar; iVar++){
-        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_time_n()[iVar]);
-      }
-    }
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      for (iVar = 0; iVar < nVar; iVar++){
-        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_Vel_time_n()[iVar]);
-      }
-    }
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      for (iVar = 0; iVar < nVar; iVar++){
-        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_Accel_time_n()[iVar]);
-      }
-    }
-  }
+//  if (dynamic){
+//    for (iPoint = 0; iPoint < nPoint; iPoint++){
+//      for (iVar = 0; iVar < nVar; iVar++){
+//        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_time_n()[iVar]);
+//      }
+//    }
+//    for (iPoint = 0; iPoint < nPoint; iPoint++){
+//      for (iVar = 0; iVar < nVar; iVar++){
+//        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_Vel_time_n()[iVar]);
+//      }
+//    }
+//    for (iPoint = 0; iPoint < nPoint; iPoint++){
+//      for (iVar = 0; iVar < nVar; iVar++){
+//        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_Accel_time_n()[iVar]);
+//      }
+//    }
+//  }
 
   /*--- Set the Jacobian to zero since this is not done inside the meanflow iteration
    * when running the discrete adjoint solver. ---*/
@@ -1895,9 +1910,10 @@ void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config, unsig
 }
 
 void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
+
   unsigned long iPoint, nPoint = geometry->GetnPoint();
 
-  bool dynamic (config->GetDynamic_Analysis() == DYNAMIC);
+//  bool dynamic (config->GetDynamic_Analysis() == DYNAMIC);
   bool input = true;
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
@@ -1905,11 +1921,11 @@ void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     direct_solver->node[iPoint]->RegisterSolution(input);
   }
-  if (dynamic){
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->node[iPoint]->RegisterSolution_time_n();
-    }
-  }
+//  if (dynamic){
+//    for (iPoint = 0; iPoint < nPoint; iPoint++){
+//      direct_solver->node[iPoint]->RegisterSolution_time_n();
+//    }
+//  }
 
 }
 
@@ -1917,43 +1933,20 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
 
   /*--- Register farfield values as input ---*/
 
-  if((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FEA_SYS)){
+  if (KindDirect_Solver == RUNTIME_FEA_SYS) {
 
-    su2double Velocity_Ref = config->GetVelocity_Ref();
-    Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
-    Beta                   = config->GetAoS()*PI_NUMBER/180.0;
-    Mach                   = config->GetMach();
-    Pressure               = config->GetPressure_FreeStreamND();
-    Temperature            = config->GetTemperature_FreeStreamND();
+    E                      = config->GetElasticyMod();
+    Nu                     = config->GetPoissonRatio();
 
     su2double SoundSpeed = 0.0;
 
-    if (nDim == 2) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*Mach); }
-    if (nDim == 3) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*cos(Beta)*Mach); }
-
     if (!reset){
-      AD::RegisterInput(Mach);
-      AD::RegisterInput(Alpha);
-      AD::RegisterInput(Temperature);
-      AD::RegisterInput(Pressure);
+      AD::RegisterInput(E);
+      AD::RegisterInput(Nu);
+//      for (unsigned long iMarker = 0; iMarker < nMarker_nL; iMarker++){
+//        AD::RegisterInput(normalLoads[iMarker]);
+//      }
     }
-
-    /*--- Recompute the free stream velocity ---*/
-
-    if (nDim == 2) {
-      config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*Mach*SoundSpeed/Velocity_Ref;
-      config->GetVelocity_FreeStreamND()[1] = sin(Alpha)*Mach*SoundSpeed/Velocity_Ref;
-    }
-    if (nDim == 3) {
-      config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
-      config->GetVelocity_FreeStreamND()[1] = sin(Beta)*Mach*SoundSpeed/Velocity_Ref;
-      config->GetVelocity_FreeStreamND()[2] = sin(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
-    }
-
-    config->SetTemperature_FreeStreamND(Temperature);
-    direct_solver->SetTemperature_Inf(Temperature);
-    config->SetPressure_FreeStreamND(Pressure);
-    direct_solver->SetPressure_Inf(Pressure);
 
   }
 
@@ -1988,39 +1981,9 @@ void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
   /*--- Here we can add new (scalar) objective functions ---*/
 
   switch (config->GetKind_ObjFunc()){
-  case DRAG_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CDrag();
+  case REFERENCE_GEOMETRY:
+      ObjFunc_Value = direct_solver->GetTotal_OFRefGeom();
       break;
-  case LIFT_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CLift();
-      break;
-  case SIDEFORCE_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CSideForce();
-      break;
-  case EFFICIENCY:
-      ObjFunc_Value = direct_solver->GetTotal_CEff();
-      break;
-  case MOMENT_X_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMx();
-      break;
-  case MOMENT_Y_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMy();
-      break;
-  case MOMENT_Z_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMz();
-      break;
-  case EQUIVALENT_AREA:
-      ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
-      break;
-  case AVG_TOTAL_PRESSURE:
-    ObjFunc_Value = direct_solver->GetOneD_TotalPress();
-    break;
-  case AVG_OUTLET_PRESSURE:
-    ObjFunc_Value = direct_solver->GetOneD_FluxAvgPress();
-    break;
-  case MASS_FLOW_RATE:
-    ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
-    break;
  /*--- Template for new objective functions where TemplateObjFunction()
   *  is the routine that returns the obj. function value. The computation
   * must be done while the tape is active, i.e. between AD::StartRecording() and
@@ -2041,12 +2004,12 @@ void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
 void CDiscAdjFEASolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
   int rank = MASTER_NODE;
 
-  bool time_stepping = config->GetUnsteady_Simulation() != STEADY;
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
   unsigned long ExtIter = config->GetExtIter();
   su2double seeding = 1.0;
 
-  if (time_stepping){
+  if (dynamic){
     if (ExtIter < IterAvg_Obj){
       seeding = 1.0/((su2double)IterAvg_Obj);
     }
@@ -2068,10 +2031,7 @@ void CDiscAdjFEASolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
 
 void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
 
-  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-
-  bool time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -2099,30 +2059,18 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     node[iPoint]->SetSolution(Solution);
   }
 
-  if (time_n_needed){
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-      /*--- Extract the adjoint solution at time n ---*/
-
-      direct_solver->node[iPoint]->GetAdjointSolution_time_n(Solution);
-
-      /*--- Store the adjoint solution at time n ---*/
-
-      node[iPoint]->Set_Solution_time_n(Solution);
-    }
-  }
-  if (time_n1_needed){
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-      /*--- Extract the adjoint solution at time n-1 ---*/
-
-      direct_solver->node[iPoint]->GetAdjointSolution_time_n1(Solution);
-
-      /*--- Store the adjoint solution at time n-1 ---*/
-
-      node[iPoint]->Set_Solution_time_n1(Solution);
-    }
-  }
+//  if (dynamic){
+//    for (iPoint = 0; iPoint < nPoint; iPoint++){
+//
+//      /*--- Extract the adjoint solution at time n ---*/
+//
+//      direct_solver->node[iPoint]->GetAdjointSolution_time_n(Solution);
+//
+//      /*--- Store the adjoint solution at time n ---*/
+//
+//      node[iPoint]->Set_Solution_time_n(Solution);
+//    }
+//  }
 
   /*--- Set the residuals ---*/
 
@@ -2139,26 +2087,21 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 }
 
 void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
-  su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
+
+  su2double Local_Sens_E, Local_Sens_Nu;
 
   /*--- Extract the adjoint values of the farfield values ---*/
 
-  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS)){
-    Local_Sens_Mach  = SU2_TYPE::GetDerivative(Mach);
-    Local_Sens_AoA   = SU2_TYPE::GetDerivative(Alpha);
-    Local_Sens_Temp  = SU2_TYPE::GetDerivative(Temperature);
-    Local_Sens_Press = SU2_TYPE::GetDerivative(Pressure);
+  if (KindDirect_Solver == RUNTIME_FEA_SYS){
+    Local_Sens_E  = SU2_TYPE::GetDerivative(E);
+    Local_Sens_Nu   = SU2_TYPE::GetDerivative(Nu);
 
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&Local_Sens_Mach,  &Total_Sens_Mach,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_Sens_AoA,   &Total_Sens_AoA,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_Sens_Temp,  &Total_Sens_Temp,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_E,  &Total_Sens_E,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_Nu, &Total_Sens_Nu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
-    Total_Sens_Mach  = Local_Sens_Mach;
-    Total_Sens_AoA   = Local_Sens_AoA;
-    Total_Sens_Temp  = Local_Sens_Temp;
-    Total_Sens_Press = Local_Sens_Press;
+    Total_Sens_E    = Local_Sens_E;
+    Total_Sens_Nu   = Local_Sens_Nu;
 #endif
   }
 
@@ -2168,8 +2111,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
 
 void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 
-  bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
-      config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -2178,7 +2120,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
     for (iVar = 0; iVar < nVar; iVar++){
       Solution[iVar] = node[iPoint]->GetSolution(iVar);
     }
-    if (dual_time){
+    if (dynamic){
       for (iVar = 0; iVar < nVar; iVar++){
         Solution[iVar] += node[iPoint]->GetDual_Time_Derivative(iVar);
       }
@@ -2193,7 +2135,7 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config){
   unsigned short iDim;
   su2double *Coord, Sensitivity, eps;
 
-  bool time_stepping = (config->GetUnsteady_Simulation() != STEADY);
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     Coord = geometry->node[iPoint]->GetCoord();
@@ -2213,7 +2155,7 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config){
         if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
           Sensitivity = 0.0;
       }
-      if (!time_stepping){
+      if (!config){
         node[iPoint]->SetSensitivity(iDim, Sensitivity);
       } else {
         node[iPoint]->SetSensitivity(iDim, node[iPoint]->GetSensitivity(iDim) + Sensitivity);

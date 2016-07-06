@@ -152,9 +152,8 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 		if (body_forces) Residual_Ext_Body[iVar] = 0.0;
 	}
 
+	Reference_Geometry = NULL;
 	if (refgeom)	Reference_Geometry = new su2double [nVar];
-	else 			Reference_Geometry = NULL;
-
 //	if (structural_adj) 	{
 //		Solution_Adj = new su2double[nVar];
 //		Gradient_Adj = new su2double[nVar];

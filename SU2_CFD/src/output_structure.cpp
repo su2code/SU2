@@ -2007,6 +2007,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     case ADJ_RANS : FirstIndex = ADJFLOW_SOL; if (config->GetFrozen_Visc()) SecondIndex = NONE; else SecondIndex = ADJTURB_SOL; ThirdIndex = NONE; break;
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: FirstIndex = ADJFLOW_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     case DISC_ADJ_RANS: FirstIndex = ADJFLOW_SOL; SecondIndex = ADJTURB_SOL; ThirdIndex = NONE; break;
+    case DISC_ADJ_FEM: FirstIndex = ADJFEA_SOL; SecondIndex = NONE; ThirdIndex = NONE; break;
     default: SecondIndex = NONE; ThirdIndex = NONE; break;
   }
   
@@ -2106,6 +2107,10 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       iVar_SensDim = nVar_Total; nVar_Total += nDim;
     }
     
+//    if ((Kind_Solver == DISC_ADJ_FEM)){
+//      nVar_Total += 2;
+//    }
+
     if (config->GetExtraOutput()) {
       if (Kind_Solver == RANS) {
         iVar_Extra  = nVar_Total; nVar_Extra  = solver[TURB_SOL]->GetnOutputVariables(); nVar_Total += nVar_Extra;
@@ -3356,6 +3361,64 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
     }
     
+//    if ((Kind_Solver == DISC_ADJ_FEM)) {
+//      /*--- Loop over this partition to collect the current variable ---*/
+//
+//      jPoint = 0;
+//      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+//
+//        /*--- Check for halos & write only if requested ---*/
+//
+//        if (!Local_Halo[iPoint] || Wrt_Halo) {
+//
+//          /*--- Load buffers with the skin friction, heat transfer, y+ variables. ---*/
+//
+//          Buffer_Send_Var[jPoint] = solver[ADJFEA_SOL]->node[iPoint]->GetSensitivity(0);
+//          Buffer_Send_Res[jPoint] = solver[ADJFEA_SOL]->node[iPoint]->GetSensitivity(1);
+//          if (nDim == 3)
+//            Buffer_Send_Vol[jPoint] = solver[ADJFEA_SOL]->node[iPoint]->GetSensitivity(2);
+//          jPoint++;
+//        }
+//      }
+//
+//      /*--- Gather the data on the master node. ---*/
+//
+//#ifdef HAVE_MPI
+//      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//      if (nDim == 3)
+//        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+//#else
+//      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+//      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+//      if (nDim == 3)
+//        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
+//#endif
+//
+//      /*--- The master node unpacks and sorts this variable by global index ---*/
+//
+//      if (rank == MASTER_NODE) {
+//        jPoint = 0; iVar = iVar_SensDim;
+//        for (iProcessor = 0; iProcessor < size; iProcessor++) {
+//          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+//
+//            /*--- Get global index, then loop over each variable and store ---*/
+//
+//            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+//            Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+//            Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+//            if (nDim == 3)
+//              Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
+//            jPoint++;
+//          }
+//
+//          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+//
+//          jPoint = (iProcessor+1)*nBuffer_Scalar;
+//        }
+//      }
+//    }
+
     if (config->GetExtraOutput()) {
       
       for (jVar = 0; jVar < nVar_Extra; jVar++) {
@@ -3679,16 +3742,19 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fem = ((config->GetKind_Solver() == FEM_ELASTICITY)||
 		  	  (config->GetKind_Solver() == ADJ_ELASTICITY));
+  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
   ofstream restart_file;
   string filename;
   
   /*--- Retrieve filename from config ---*/
   
-  if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
+  if (((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) && ((config->GetKind_Solver() != DISC_ADJ_FEM)))  {
     filename = config->GetRestart_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
     filename = config->GetRestart_FEMFileName();
+  } else if (disc_adj_fem){
+    filename = config->GetRestart_AdjFEMFileName();
   } else {
     filename = config->GetRestart_FlowFileName();
   }
@@ -3724,7 +3790,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   }
   
   for (iVar = 0; iVar < nVar_Consv; iVar++) {
-	if (( Kind_Solver == FEM_ELASTICITY ) || ( Kind_Solver == ADJ_ELASTICITY))
+	if (( Kind_Solver == FEM_ELASTICITY ) || ( Kind_Solver == ADJ_ELASTICITY) || ( Kind_Solver == DISC_ADJ_FEM))
       restart_file << "\t\"Displacement_" << iVar+1<<"\"";
     else
       restart_file << "\t\"Conservative_" << iVar+1<<"\"";
@@ -4208,7 +4274,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
     
     bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||            // FEM structural solver.
-            (config[val_iZone]->GetKind_Solver() == ADJ_ELASTICITY));
+            (config[val_iZone]->GetKind_Solver() == ADJ_ELASTICITY) ||
+            (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
     bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);	// Linear analysis.
     bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);	// Nonlinear analysis.
     
@@ -4308,6 +4375,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (fem) {
       if (linear_analysis) nVar_FEM = nDim;
       if (nonlinear_analysis) nVar_FEM = 3;
+
+      if (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM) nVar_FEM = nDim;
+
     }
     
     /*--- Adjoint problem variables ---*/
@@ -4328,7 +4398,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     residual_levelset   = new su2double[nVar_LevelSet];
     residual_wave       = new su2double[nVar_Wave];
     residual_heat       = new su2double[nVar_Heat];
-    residual_fem 		= new su2double[nVar_FEM];
+    residual_fem 		    = new su2double[nVar_FEM];
     
     residual_adjflow      = new su2double[nVar_AdjFlow];
     residual_adjturbulent = new su2double[nVar_AdjTurb];
@@ -4654,6 +4724,21 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
         break;
 
+      case DISC_ADJ_FEM:
+
+        /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
+
+        Total_CFEM = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetTotal_CFEA();
+
+        /*--- Residuals: ---*/
+        /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
+        /*--- Nonlinear analysis: UTOL, RTOL and DTOL (defined in the Postprocessing function) ---*/
+         for (iVar = 0; iVar < nVar_FEM; iVar++) {
+           residual_fem[iVar] = solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetRes_RMS(iVar);
+         }
+
+        break;
+
 
     }
     
@@ -4904,6 +4989,18 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
             break;
 
+          case DISC_ADJ_FEM:
+
+            SPRINTF (direct_coeff, ", %12.10f", Total_CFEM);
+            if (nDim == 2) {
+              SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), dummy, dummy, dummy);
+            }
+            else {
+              SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[2]), dummy, dummy);
+            }
+
+            break;
+
         }
       }
       
@@ -5079,6 +5176,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 cout << endl << "-------------------------------------------------------------------------" << endl;
                 break;
                 
+              case DISC_ADJ_FEM:
+                cout << endl;
+                cout << "------------------------ Discrete Adjoint Summary -----------------------" << endl;
+                cout << "I need to edit this! ";
+                cout << endl << "-------------------------------------------------------------------------" << endl;
+                break;
+
             }
           }
           else {
@@ -5605,6 +5709,26 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           cout.precision(4);
           cout.setf(ios::scientific, ios::floatfield);
           cout.width(14); cout << Total_CFEM;
+          cout << endl;
+          break;
+
+        case DISC_ADJ_FEM:
+
+          cout.precision(6);
+          cout.setf(ios::fixed, ios::floatfield);
+
+          cout.width(15); cout << log10(residual_fem[0]);
+          cout.width(15); cout << log10(residual_fem[1]);
+          if (nDim == 3) { cout.width(15); cout << log10(residual_fem[2]); }
+
+          cout.precision(4);
+          cout.setf(ios::scientific, ios::floatfield);
+          cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetTotal_Sens_E();
+
+          cout.precision(4);
+          cout.setf(ios::scientific, ios::floatfield);
+          cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetTotal_Sens_Nu();
+
           cout << endl;
           break;
 

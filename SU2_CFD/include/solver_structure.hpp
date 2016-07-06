@@ -1882,6 +1882,12 @@ public:
 	 * \return Value of the Near-Field Pressure coefficient (inviscid + viscous contribution).
 	 */
 	virtual su2double GetTotal_CNearFieldOF(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the objective function for a reference geometry.
+   */
+  virtual su2double GetTotal_OFRefGeom(void);
     
 	/*!
 	 * \brief A virtual member.
@@ -1912,6 +1918,12 @@ public:
 	 * \param[in] val_cfea - Value of the FEA coefficient.
 	 */
 	virtual void SetTotal_CFEA(su2double val_cfea);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_ofrefgeom - Value of the objective function for a reference geometry.
+   */
+  virtual void SetTotal_OFRefGeom(su2double val_ofrefgeom);
     
 	/*!
 	 * \brief A virtual member.
@@ -2284,7 +2296,31 @@ public:
 	 * \return Value of the turbulent kinetic energy.
 	 */
 	virtual su2double GetTke_Inf(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the sensitivity coefficient for the Young Modulus E
+   */
+  virtual su2double GetTotal_Sens_E(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the Mach sensitivity for the Poisson's ratio Nu
+   */
+  virtual su2double GetTotal_Sens_Nu(void);
   
+  /*!
+   * \brief A virtual member.
+   * \return Value of the Young modulus from the adjoint solver
+   */
+  virtual su2double GetVal_Young(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the Poisson's ratio from the adjoint solver
+   */
+  virtual su2double GetVal_Poisson(void);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -2525,6 +2561,14 @@ public:
 	virtual void Update_StructSolution(CGeometry **fea_geometry,
             						  CConfig *fea_config,
             						  CSolver ***fea_solution);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+	virtual void Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -6833,7 +6877,6 @@ class CFEM_ElasticitySolver : public CSolver {
 private:
 
 	su2double  Total_CFEA;				/*!< \brief Total FEA coefficient for all the boundaries. */
-									/*!< We maintain the name to avoid defining a new function... */
 
 	unsigned long nElement;
 	unsigned short nMarker;
@@ -6891,6 +6934,7 @@ private:
 	CSysVector LinSysSol_Adj;		/*!< \brief Vector to store the solution of the adjoint problem */
 	CSysVector LinSysRes_Adj;		/*!< \brief Vector to store the residual of the adjoint problem */
 
+  su2double  Total_OFRefGeom;        /*!< \brief Total FEA coefficient for all the boundaries. */
 
 public:
 
@@ -7237,11 +7281,23 @@ public:
 	 */
 	su2double GetTotal_CFEA(void);
 
+  /*!
+   * \brief Retrieve the value of the objective function for a reference geometry
+   * \param[out] OFRefGeom - value of the objective function.
+   */
+  su2double GetTotal_OFRefGeom(void);
+
 	/*!
 	 * \brief Set the value of the FEA coefficient.
 	 * \param[in] val_cfea - Value of the FEA coefficient.
 	 */
 	void SetTotal_CFEA(su2double val_cfea);
+
+  /*!
+   * \brief Set the value of the objective function for a reference geometry.
+   * \param[in] val_ofrefgeom - Value of the objective function for a reference geometry.
+   */
+  void SetTotal_OFRefGeom(su2double val_ofrefgeom);
 
 	/*!
 	 * \brief Set the the tractions in the in the FEA solver (matching mesh).
@@ -7300,6 +7356,14 @@ public:
 	void Update_StructSolution(CGeometry **fea_geometry,
             				  CConfig *fea_config,
             				  CSolver ***fea_solution);
+
+  /*!
+   * \brief Compute the objective function for a reference geometry
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
 	/*!
 	 * \brief Get the value of the FSI convergence.
@@ -7380,7 +7444,6 @@ public:
    * \param[in] iVar - Variable j of the Mass Matrix submatrix.
    */
   su2double Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar);
-
 
 };
 
@@ -8243,21 +8306,18 @@ class CDiscAdjFEASolver : public CSolver {
 private:
   unsigned short KindDirect_Solver;
   CSolver *direct_solver;
-  su2double *Sens_Mach, /*!< \brief Mach sensitivity coefficient for each boundary. */
-  *Sens_AoA,      /*!< \brief Angle of attack sensitivity coefficient for each boundary. */
-  *Sens_Geo,      /*!< \brief Shape sensitivity coefficient for each boundary. */
-  *Sens_Press,      /*!< \brief Pressure sensitivity coefficient for each boundary. */
-  *Sens_Temp,     /*!< \brief Temperature sensitivity coefficient for each boundary. */
-  **CSensitivity; /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
-  su2double Total_Sens_Mach;  /*!< \brief Total mach sensitivity coefficient for all the boundaries. */
-  su2double Total_Sens_AoA;   /*!< \brief Total angle of attack sensitivity coefficient for all the boundaries. */
-  su2double Total_Sens_Geo;   /*!< \brief Total shape sensitivity coefficient for all the boundaries. */
-  su2double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
-  su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
-  su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to outlet pressure. */
-  su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
-  su2double Mach, Alpha, Beta, Pressure, Temperature;
+  su2double *Sens_E,            /*!< \brief Young modulus sensitivity coefficient for each boundary. */
+  *Sens_Nu,                     /*!< \brief Poisson's ratio sensitivity coefficient for each boundary. */
+  *Sens_nL,                     /*!< \brief Normal pressure sensitivity coefficient for each boundary. */
+  **CSensitivity;               /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
+  su2double Total_Sens_E;       /*!< \brief Total Young modulus sensitivity coefficient for all the boundaries. */
+  su2double Total_Sens_Nu;      /*!< \brief Total Poisson's ratio sensitivity coefficient for all the boundaries. */
+  su2double Total_Sens_nL;      /*!< \brief Total normal pressure sensitivity coefficient for all the boundaries. */
+  su2double ObjFunc_Value;      /*!< \brief Value of the objective function. */
+  su2double E, Nu;              /*!< \brief Value of the extra variables we want to obtain the adjoint for. */
+  su2double *normalLoads;       /*!< \brief Values of the normal loads for each marker iMarker_nL. */
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
+  unsigned long nMarker_nL;     /*!< \brief Total number of markers that have a normal load applied. */
 
 public:
 
@@ -8349,33 +8409,32 @@ public:
   void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
 
 
-//  /*!
-//   * \brief Provide the total shape sensitivity coefficient.
-//   * \return Value of the geometrical sensitivity coefficient
-//   *         (inviscid + viscous contribution).
-//   */
-//  su2double GetTotal_Sens_Geo(void);
-//
-//  /*!
-//   * \brief Set the total Mach number sensitivity coefficient.
-//   * \return Value of the Mach sensitivity coefficient
-//   *         (inviscid + viscous contribution).
-//   */
-//  su2double GetTotal_Sens_Mach(void);
-//
-//  /*!
-//   * \brief Set the total angle of attack sensitivity coefficient.
-//   * \return Value of the angle of attack sensitivity coefficient
-//   *         (inviscid + viscous contribution).
-//   */
-//  su2double GetTotal_Sens_AoA(void);
-//
-//  /*!
-//   * \brief Set the total farfield pressure sensitivity coefficient.
-//   * \return Value of the farfield pressure sensitivity coefficient
-//   *         (inviscid + viscous contribution).
-//   */
-//  su2double GetTotal_Sens_Press(void);
+  /*!
+   * \brief Provide the total shape sensitivity coefficient.
+   * \return Value of the geometrical sensitivity coefficient
+   *         (inviscid + viscous contribution).
+   */
+  su2double GetTotal_Sens_E(void);
+
+  /*!
+   * \brief Set the total Mach number sensitivity coefficient.
+   * \return Value of the Mach sensitivity coefficient
+   *         (inviscid + viscous contribution).
+   */
+  su2double GetTotal_Sens_Nu(void);
+
+  /*!
+   * \brief Get the value of the Young modulus from the adjoint solver
+   * \return Value of the Young modulus from the adjoint solver
+   */
+  su2double GetVal_Young(void);
+
+  /*!
+   * \brief Get the value of the Poisson's ratio from the adjoint solver
+   * \return Value of the Poisson's ratio from the adjoint solver
+   */
+  su2double GetVal_Poisson(void);
+
 //
 //  /*!
 //   * \brief Set the total farfield temperature sensitivity coefficient.

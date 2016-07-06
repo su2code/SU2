@@ -329,6 +329,10 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       if (turbulent)
         solver_container[iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
     }
+
+    if (disc_adj_fem) {
+      solver_container[iMGlevel][ADJFEA_SOL] = new CDiscAdjFEASolver(geometry[iMGlevel], config, solver_container[iMGlevel][FLOW_SOL], RUNTIME_FEA_SYS, iMGlevel);
+    }
   }
 }
 
@@ -425,8 +429,9 @@ and potential are incompatible, they use the same position in sol container ---*
     if (fem) {
       delete solver_container[iMGlevel][FEA_SOL];
     }
-
-
+    if (disc_adj_fem) {
+      delete solver_container[iMGlevel][ADJFEA_SOL];
+    }
     //delete[] solver_container[iMGlevel];
   }
 }
@@ -491,6 +496,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   if (adj_fem) integration_container[ADJFEA_SOL] = new CStructuralIntegration(config);
   
   if (disc_adj) integration_container[ADJFLOW_SOL] = new CIntegration(config);
+  if (disc_adj_fem) integration_container[ADJFEA_SOL] = new CIntegration(config);
   
 }
 
@@ -542,6 +548,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   if (wave) delete integration_container[WAVE_SOL];
   if (heat) delete integration_container[HEAT_SOL];
   if (fem) delete integration_container[FEA_SOL];
+  if (disc_adj_fem) delete integration_container[ADJFEA_SOL];
 
   /*--- DeAllocate solution for adjoint problem ---*/
   if (adj_euler || adj_ns || disc_adj) delete integration_container[ADJFLOW_SOL];
@@ -1804,7 +1811,7 @@ void CDriver::Iteration_Preprocessing(CIteration **iteration_container, CConfig 
     case DISC_ADJ_FEM:
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint FEM structural iteration." << endl;
-      iteration_container[iZone] = new CDiscAdjFEMIteration(config[iZone]);
+      iteration_container[iZone] = new CDiscAdjFEAIteration(config[iZone]);
       break;
   }
   

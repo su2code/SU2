@@ -96,6 +96,8 @@ inline void CSolver::SetAitken_Relaxation(CGeometry **fea_geometry, CConfig *fea
 
 inline void CSolver::Update_StructSolution(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
 
+inline void CSolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
 inline void CSolver::SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity) { }
 
 inline void CSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) { }
@@ -286,6 +288,8 @@ inline su2double CSolver::GetTotal_CFEA() { return 0; }
 
 inline su2double CSolver::GetTotal_CNearFieldOF() { return 0; }
 
+inline su2double CSolver::GetTotal_OFRefGeom() { return 0; }
+
 inline void CSolver::SetTotal_CEquivArea(su2double val_cequivarea) { }
 
 inline void CSolver::SetTotal_CpDiff(su2double val_pressure) { }
@@ -293,6 +297,8 @@ inline void CSolver::SetTotal_CpDiff(su2double val_pressure) { }
 inline void CSolver::SetTotal_HeatFluxDiff(su2double val_heat) { }
 
 inline void CSolver::SetTotal_CFEA(su2double val_cfea) { }
+
+inline void CSolver::SetTotal_OFRefGeom(su2double val_ofrefgeom) { }
 
 inline su2double CSolver::GetWAitken_Dyn(void) { return 0; }
 
@@ -389,6 +395,14 @@ inline su2double CSolver::GetPressure_Inf(void) { return 0; }
 inline su2double CSolver::GetViscosity_Inf(void) { return 0; }
 
 inline su2double CSolver::GetTke_Inf(void) { return 0; }
+
+inline su2double CSolver::GetTotal_Sens_E(void) { return 0.0; }
+
+inline su2double CSolver::GetTotal_Sens_Nu(void) { return 0.0; }
+
+inline su2double CSolver::GetVal_Young(void) { return 0.0; }
+
+inline su2double CSolver::GetVal_Poisson(void) { return 0.0; }
 
 inline su2double* CSolver::GetConstants() {return NULL;}
 
@@ -1132,6 +1146,8 @@ inline su2double CFEM_ElasticitySolver::GetTotal_CFEA() { return Total_CFEA; }
 
 inline void CFEM_ElasticitySolver::SetTotal_CFEA(su2double cfea) { Total_CFEA = cfea; }
 
+inline void CFEM_ElasticitySolver::SetTotal_OFRefGeom(su2double val_ofrefgeom) { Total_OFRefGeom = val_ofrefgeom; }
+
 inline su2double CFEM_ElasticitySolver::GetWAitken_Dyn(void) { return WAitken_Dyn; }
 
 inline su2double CFEM_ElasticitySolver::GetWAitken_Dyn_tn1(void) { return WAitken_Dyn_tn1; }
@@ -1145,6 +1161,8 @@ inline void CFEM_ElasticitySolver::SetLoad_Increment(su2double val_loadIncrement
 inline void CFEM_ElasticitySolver::SetFSI_ConvValue(unsigned short val_index, su2double val_criteria) { FSI_Conv[val_index] = val_criteria; }
 
 inline su2double CFEM_ElasticitySolver::GetFSI_ConvValue(unsigned short val_index){ return FSI_Conv[val_index]; }
+
+inline su2double CFEM_ElasticitySolver::GetTotal_OFRefGeom(void){ return Total_OFRefGeom; }
 
 inline void CFEM_ElasticitySolver_Adj::Set_DV_Val(su2double val_EField, unsigned short i_DV){ DV_Val[i_DV] = val_EField;}
 
@@ -1185,6 +1203,14 @@ inline su2double CDiscAdjSolver::GetTotal_Sens_Temp() { return Total_Sens_Temp; 
 inline su2double CDiscAdjSolver::GetTotal_Sens_BPress() { return Total_Sens_BPress; }
 
 inline su2double CDiscAdjSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
+
+inline su2double CDiscAdjFEASolver::GetTotal_Sens_E(void) { return Total_Sens_E; }
+
+inline su2double CDiscAdjFEASolver::GetTotal_Sens_Nu(void) { return Total_Sens_Nu; }
+
+inline su2double CDiscAdjFEASolver::GetVal_Young(void) { return E; }
+
+inline su2double CDiscAdjFEASolver::GetVal_Poisson(void) { return Nu; }
 
 inline unsigned long CSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {return 0;}
 

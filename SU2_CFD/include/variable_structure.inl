@@ -1037,6 +1037,8 @@ inline void CFEM_ElasVariable::SetReference_Geometry(unsigned short iVar, su2dou
 
 inline su2double *CFEM_ElasVariable::GetReference_Geometry(void){ return Reference_Geometry; }
 
+inline su2double CFEM_ElasVariable::GetReference_Geometry(unsigned short iVar){ return Reference_Geometry[iVar]; }
+
 inline void CFEM_ElasVariable_Adj::SetReference_Geometry(unsigned short iVar, su2double ref_geometry){ Reference_Geometry[iVar] = ref_geometry;}
 
 inline su2double *CFEM_ElasVariable_Adj::GetReference_Geometry(void){ return Reference_Geometry; }

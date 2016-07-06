@@ -101,6 +101,9 @@ void CSysSolve_b::Solve_b(AD::CheckpointHandler* data){
     case BCGSTAB:
       solver->BCGSTAB_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol , MaxIter, &Residual, false);
       break;
+    case CONJUGATE_GRADIENT:
+      solver->CG_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol , MaxIter, false);
+      break;
   }
 
 
