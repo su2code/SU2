@@ -49,19 +49,21 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   bool disc_adj = config->GetDiscrete_Adjoint();
   bool fem = ((config->GetKind_Solver() == FEM_ELASTICITY)||
 		       (config->GetKind_Solver() == ADJ_ELASTICITY));
+  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
+
 
 	char cstr[200], buffer[50];
   string filename, fieldname;
     
 	/*--- Write file name with extension ---*/
   if (surf_sol) {
-    if (adjoint || disc_adj)
+    if ((adjoint || disc_adj) && (!disc_adj_fem))
       filename = config->GetSurfAdjCoeff_FileName();
     else
       filename = config->GetSurfFlowCoeff_FileName();
   }
   else {
-    if (adjoint || disc_adj)
+    if ((adjoint || disc_adj) && (!disc_adj_fem))
       filename = config->GetAdj_FileName();
     else
       filename = config->GetFlow_FileName();
@@ -71,8 +73,15 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 		if (surf_sol)
 			filename = config->GetSurfStructure_FileName().c_str();
 		else
-			filename = config->GetStructure_FileName().c_str();
+		  filename = config->GetStructure_FileName().c_str();
 	}
+
+  if (Kind_Solver == DISC_ADJ_FEM) {
+    if (surf_sol)
+      filename = config->GetSurfStructure_FileName().c_str();
+    else
+      filename = config->GetStructure_FileName().c_str();
+  }
   
 	if (Kind_Solver == WAVE_EQUATION)
 		filename = config->GetWave_FileName().c_str();

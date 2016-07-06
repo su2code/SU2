@@ -905,11 +905,17 @@ inline string CConfig::GetSolution_AdjFileName(void) { return Solution_AdjFileNa
 
 inline string CConfig::GetSolution_FEMFileName(void) { return Solution_FEMFileName; }
 
+inline string CConfig::GetSolution_AdjFEMFileName(void) { return Solution_AdjFEMFileName; }
+
 inline string CConfig::GetFlow_FileName(void) { return Flow_FileName; }
 
 inline string CConfig::GetStructure_FileName(void) { return Structure_FileName; }
 
 inline string CConfig::GetSurfStructure_FileName(void) { return SurfStructure_FileName; }
+
+inline string CConfig::GetAdjStructure_FileName(void) { return Structure_FileName; }
+
+inline string CConfig::GetAdjSurfStructure_FileName(void) { return SurfStructure_FileName; }
 
 inline string CConfig::GetSurfWave_FileName(void) { return SurfWave_FileName; }
 
@@ -930,6 +936,8 @@ inline string CConfig::GetRestart_HeatFileName(void) { return Restart_HeatFileNa
 inline string CConfig::GetRestart_AdjFileName(void) { return Restart_AdjFileName; }
 
 inline string CConfig::GetRestart_FEMFileName(void) { return Restart_FEMFileName; }
+
+inline string CConfig::GetRestart_AdjFEMFileName(void) { return Restart_AdjFEMFileName; }
 
 inline string CConfig::GetAdj_FileName(void) { return Adj_FileName; }
 

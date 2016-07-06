@@ -940,7 +940,7 @@ enum ENUM_OBJECTIVE {
   AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
   MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
   OUTFLOW_GENERALIZED=31,          /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
-  REFERENCE_GEOMETRY=50          /*!<\brief Objective function defined via chain rule on primitive variable gradients. */
+  REFERENCE_GEOMETRY=50          /*!<\brief Objective function defined as a function of a reference geometry. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>

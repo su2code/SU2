@@ -1180,12 +1180,12 @@ public:
 };
 
 /*!
- * \class CDiscAdjFEMIteration
+ * \class CDiscAdjFEAIteration
  * \brief Class for driving an iteration of the discrete adjoint FEM system.
  * \author R. Sanchez
  * \version 4.2.0 "Cardinal"
  */
-class CDiscAdjFEMIteration : public CIteration {
+class CDiscAdjFEAIteration : public CIteration {
 
 private:
 
@@ -1210,12 +1210,12 @@ public:
    * \brief Constructor of the class.
    * \param[in] config - Definition of the particular problem.
    */
-  CDiscAdjFEMIteration(CConfig *config);
+  CDiscAdjFEAIteration(CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjFEMIteration(void);
+  ~CDiscAdjFEAIteration(void);
 
   /*!
    * \brief Preprocessing to prepare for an iteration of the physics.

@@ -510,10 +510,13 @@ private:
 	Solution_FlowFileName,			/*!< \brief Flow solution input file. */
 	Solution_LinFileName,			/*!< \brief Linearized flow solution input file. */
 	Solution_AdjFileName,			/*!< \brief Adjoint solution input file for drag functional. */
-	Solution_FEMFileName,			/*!< \brief Adjoint solution input file for drag functional. */
+	Solution_FEMFileName,			/*!< \brief Solution input file for structural problem. */
+  Solution_AdjFEMFileName,     /*!< \brief Adjoint solution input file for structural problem. */
 	Flow_FileName,					/*!< \brief Flow variables output file. */
 	Structure_FileName,					/*!< \brief Structure variables output file. */
 	SurfStructure_FileName,					/*!< \brief Surface structure variables output file. */
+  AdjStructure_FileName,         /*!< \brief Structure variables output file. */
+  AdjSurfStructure_FileName,         /*!< \brief Surface structure variables output file. */
   SurfWave_FileName,					/*!< \brief Surface structure variables output file. */
 	SurfHeat_FileName,					/*!< \brief Surface structure variables output file. */
 	Wave_FileName,					/*!< \brief Wave variables output file. */
@@ -528,6 +531,7 @@ private:
 	Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
 	Restart_AdjFileName,			/*!< \brief Restart file for adjoint variables, drag functional. */
 	Restart_FEMFileName,			/*!< \brief Restart file for FEM elasticity. */
+  Restart_AdjFEMFileName,      /*!< \brief Restart file for FEM elasticity. */
 	Adj_FileName,					/*!< \brief Output file with the adjoint variables. */
 	ObjFunc_Grad_FileName,			/*!< \brief Gradient of the objective function. */
 	ObjFunc_Value_FileName,			/*!< \brief Objective function. */
@@ -3864,6 +3868,12 @@ public:
 	 */
 	string GetSolution_FEMFileName(void);
 
+  /*!
+   * \brief Get the name of the file with the solution of the adjoint structural problem.
+   * \return Name of the file with the solution of the structural problem.
+   */
+  string GetSolution_AdjFEMFileName(void);
+
 	/*!
 	 * \brief Get the name of the file with the residual of the problem.
 	 * \return Name of the file with the residual of the problem.
@@ -3917,6 +3927,18 @@ public:
 	 * \return Name of the file with the structure variables.
 	 */
 	string GetSurfStructure_FileName(void);
+
+  /*!
+   * \brief Get the name of the file with the adjoint structure variables.
+   * \return Name of the file with the adjoint structure variables.
+   */
+  string GetAdjStructure_FileName(void);
+
+  /*!
+   * \brief Get the name of the file with the adjoint structure variables.
+   * \return Name of the file with the adjoint structure variables.
+   */
+  string GetAdjSurfStructure_FileName(void);
 
   /*!
 	 * \brief Get the name of the file with the structure variables.
@@ -3979,10 +4001,16 @@ public:
 	string GetRestart_AdjFileName(void);
 
 	/*!
-	 * \brief Get the name of the restart file for the flow variables.
-	 * \return Name of the restart file for the flow variables.
+	 * \brief Get the name of the restart file for the structural variables.
+	 * \return Name of the restart file for the structural variables.
 	 */
 	string GetRestart_FEMFileName(void);
+
+  /*!
+   * \brief Get the name of the restart file for the structural adjoint variables.
+   * \return Name of the restart file for the structural adjoint variables.
+   */
+  string GetRestart_AdjFEMFileName(void);
 
 	/*!
 	 * \brief Get the name of the file with the adjoint variables.

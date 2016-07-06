@@ -2757,9 +2757,14 @@ public:
      void SetReference_Geometry(unsigned short iVar, su2double ref_geometry);
 
  	/*!
- 	 * \brief A virtual member.
+ 	 * \brief Get the pointer to the reference geometry
  	 */
      su2double *GetReference_Geometry(void);
+
+   /*!
+    * \brief Get the value of the reference geometry for the coordinate iVar
+    */
+    su2double GetReference_Geometry(unsigned short iVar);
 
 
 };

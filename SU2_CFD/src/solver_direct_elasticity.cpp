@@ -124,8 +124,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   nFEA_Terms = 1;
   if (de_effects) nFEA_Terms++;
 
-  cout << "0" << endl;
-
   /*--- Here is where we assign the kind of each element ---*/
   
   /*--- First level: different possible terms of the equations ---*/
@@ -351,7 +349,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
   bool reference_geometry = config->GetRefGeom();
   if (reference_geometry) Set_ReferenceGeometry(geometry, config);
-
 
   bool prestretch_fem = config->GetPrestretch();
   if (prestretch_fem) Set_Prestretch(geometry, config);
@@ -634,6 +631,10 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
     n_DV = 0;
     DV_Val = NULL;
   }
+
+  /*--- Initialize the value of the total objective function ---*/
+   Total_OFRefGeom = 0.0;
+
 
   /*--- Perform the MPI communication of the solution ---*/
 
@@ -4479,6 +4480,43 @@ void CFEM_ElasticitySolver::Update_StructSolution(CGeometry **fea_geometry,
   /*--- Perform the MPI communication of the solution, displacements only ---*/
 
   Set_MPI_Solution_DispOnly(fea_geometry[MESH_0], fea_config);
+
+}
+
+
+void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_container, CConfig *config){
+
+  unsigned short iVar;
+  unsigned long iPoint;
+  su2double reference_geometry = 0.0, current_solution = 0.0;
+  su2double *solDisp = NULL, *solVel = NULL, predicted_solution[3] = {0.0, 0.0, 0.0};
+
+  bool predicted_de = config->GetDE_Predicted();
+
+  su2double objective_function = 0.0;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    for (iVar = 0; iVar < nVar; iVar++){
+
+      /*--- Retrieve the value of the reference geometry ---*/
+      reference_geometry = node[iPoint]->GetReference_Geometry(iVar);
+
+      /*--- Retrieve the value of the current solution ---*/
+      current_solution = node[iPoint]->GetSolution(iVar);
+
+      /*--- The objective function is the sum of the difference between solution and difference, squared ---*/
+      objective_function += (current_solution - reference_geometry)*(current_solution - reference_geometry);
+
+    }
+
+  }
+
+  // TODO: Need to do an MPI reduction to have the sum in all processors HERE
+
+  Total_OFRefGeom = objective_function;
+
+  cout << "Objective function with our new function is... " << Total_OFRefGeom << endl;
 
 }
 

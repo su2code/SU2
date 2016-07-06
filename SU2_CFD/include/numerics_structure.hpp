@@ -1492,6 +1492,13 @@ public:
   virtual void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
 
   /*!
+   * \brief A virtual member to set the material properties
+   * \param[in] val_E - Value of the Young Modulus.
+   * \param[in] val_Nu - Value of the Poisson's ratio.
+   */
+  virtual void SetMaterial_Properties(su2double val_E, su2double val_Nu);
+
+  /*!
    * \brief A virtual member to compute the mass matrix
    * \param[in] element_container - Element structure for the particular element integrated.
    */
@@ -3996,6 +4003,8 @@ public:
 	 */
 	virtual ~CFEM_Elasticity(void);
 
+  void SetMaterial_Properties(su2double val_E, su2double val_Nu);
+
 	void Compute_Mass_Matrix(CElement *element_container, CConfig *config);
 
 	void Compute_Dead_Load(CElement *element_container, CConfig *config);
@@ -4170,6 +4179,8 @@ public:
   void Set_ElectricField(unsigned short i_DV, su2double val_EField);
 
   void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
+
+  void SetMaterial_Properties(su2double val_E, su2double val_Nu);
 
 	su2double deltaij(unsigned short iVar, unsigned short jVar);
 
