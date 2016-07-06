@@ -86,6 +86,8 @@ lib_sources = \
   ../include/datatype_structure.hpp \
   ../include/datatype_structure.inl \
   ../include/interpolation_structure.hpp \
+  ../include/gauss_jacobi_quadrature.hpp \
+  ../include/gauss_jacobi_quadrature.inl \
   ../include/gauss_structure.hpp \
   ../include/gauss_structure.inl \
   ../include/element_structure.hpp \
@@ -107,6 +109,7 @@ lib_sources = \
   ../src/mpi_structure.cpp \
   ../src/linear_solvers_structure_b.cpp \
   ../src/ad_structure.cpp \
+  ../src/gauss_jacobi_quadrature.cpp \
   ../src/gauss_structure.cpp \
   ../src/element_structure.cpp \
   ../src/element_linear.cpp \

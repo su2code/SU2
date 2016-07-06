@@ -143,6 +143,8 @@ am__libSU2_a_SOURCES_DIST =  \
 	../include/mpi_structure.inl ../include/datatype_structure.hpp \
 	../include/datatype_structure.inl \
 	../include/interpolation_structure.hpp \
+	../include/gauss_jacobi_quadrature.hpp \
+	../include/gauss_jacobi_quadrature.inl \
 	../include/gauss_structure.hpp ../include/gauss_structure.inl \
 	../include/element_structure.hpp \
 	../include/element_structure.inl ../src/config_structure.cpp \
@@ -157,8 +159,9 @@ am__libSU2_a_SOURCES_DIST =  \
 	../src/primal_grid_structure.cpp ../src/vector_structure.cpp \
 	../src/matrix_structure.cpp ../src/mpi_structure.cpp \
 	../src/linear_solvers_structure_b.cpp ../src/ad_structure.cpp \
-	../src/gauss_structure.cpp ../src/element_structure.cpp \
-	../src/element_linear.cpp ../src/interpolation_structure.cpp
+	../src/gauss_jacobi_quadrature.cpp ../src/gauss_structure.cpp \
+	../src/element_structure.cpp ../src/element_linear.cpp \
+	../src/interpolation_structure.cpp
 am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 = ../src/libSU2_a-config_structure.$(OBJEXT) \
 	../src/libSU2_a-dual_grid_structure.$(OBJEXT) \
@@ -177,6 +180,7 @@ am__objects_1 = ../src/libSU2_a-config_structure.$(OBJEXT) \
 	../src/libSU2_a-mpi_structure.$(OBJEXT) \
 	../src/libSU2_a-linear_solvers_structure_b.$(OBJEXT) \
 	../src/libSU2_a-ad_structure.$(OBJEXT) \
+	../src/libSU2_a-gauss_jacobi_quadrature.$(OBJEXT) \
 	../src/libSU2_a-gauss_structure.$(OBJEXT) \
 	../src/libSU2_a-element_structure.$(OBJEXT) \
 	../src/libSU2_a-element_linear.$(OBJEXT) \
@@ -218,6 +222,8 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../include/mpi_structure.inl ../include/datatype_structure.hpp \
 	../include/datatype_structure.inl \
 	../include/interpolation_structure.hpp \
+	../include/gauss_jacobi_quadrature.hpp \
+	../include/gauss_jacobi_quadrature.inl \
 	../include/gauss_structure.hpp ../include/gauss_structure.inl \
 	../include/element_structure.hpp \
 	../include/element_structure.inl ../src/config_structure.cpp \
@@ -232,8 +238,9 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../src/primal_grid_structure.cpp ../src/vector_structure.cpp \
 	../src/matrix_structure.cpp ../src/mpi_structure.cpp \
 	../src/linear_solvers_structure_b.cpp ../src/ad_structure.cpp \
-	../src/gauss_structure.cpp ../src/element_structure.cpp \
-	../src/element_linear.cpp ../src/interpolation_structure.cpp
+	../src/gauss_jacobi_quadrature.cpp ../src/gauss_structure.cpp \
+	../src/element_structure.cpp ../src/element_linear.cpp \
+	../src/interpolation_structure.cpp
 am__objects_2 = ../src/libSU2_AD_a-config_structure.$(OBJEXT) \
 	../src/libSU2_AD_a-dual_grid_structure.$(OBJEXT) \
 	../src/libSU2_AD_a-fem_geometry_structure.$(OBJEXT) \
@@ -251,6 +258,7 @@ am__objects_2 = ../src/libSU2_AD_a-config_structure.$(OBJEXT) \
 	../src/libSU2_AD_a-mpi_structure.$(OBJEXT) \
 	../src/libSU2_AD_a-linear_solvers_structure_b.$(OBJEXT) \
 	../src/libSU2_AD_a-ad_structure.$(OBJEXT) \
+	../src/libSU2_AD_a-gauss_jacobi_quadrature.$(OBJEXT) \
 	../src/libSU2_AD_a-gauss_structure.$(OBJEXT) \
 	../src/libSU2_AD_a-element_structure.$(OBJEXT) \
 	../src/libSU2_AD_a-element_linear.$(OBJEXT) \
@@ -293,6 +301,8 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../include/mpi_structure.inl ../include/datatype_structure.hpp \
 	../include/datatype_structure.inl \
 	../include/interpolation_structure.hpp \
+	../include/gauss_jacobi_quadrature.hpp \
+	../include/gauss_jacobi_quadrature.inl \
 	../include/gauss_structure.hpp ../include/gauss_structure.inl \
 	../include/element_structure.hpp \
 	../include/element_structure.inl ../src/config_structure.cpp \
@@ -307,8 +317,9 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../src/primal_grid_structure.cpp ../src/vector_structure.cpp \
 	../src/matrix_structure.cpp ../src/mpi_structure.cpp \
 	../src/linear_solvers_structure_b.cpp ../src/ad_structure.cpp \
-	../src/gauss_structure.cpp ../src/element_structure.cpp \
-	../src/element_linear.cpp ../src/interpolation_structure.cpp
+	../src/gauss_jacobi_quadrature.cpp ../src/gauss_structure.cpp \
+	../src/element_structure.cpp ../src/element_linear.cpp \
+	../src/interpolation_structure.cpp
 am__objects_3 = ../src/libSU2_DIRECTDIFF_a-config_structure.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-dual_grid_structure.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-fem_geometry_structure.$(OBJEXT) \
@@ -326,6 +337,7 @@ am__objects_3 = ../src/libSU2_DIRECTDIFF_a-config_structure.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-mpi_structure.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-linear_solvers_structure_b.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-ad_structure.$(OBJEXT) \
+	../src/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-gauss_structure.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-element_structure.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-element_linear.$(OBJEXT) \
@@ -570,6 +582,8 @@ lib_sources = \
   ../include/datatype_structure.hpp \
   ../include/datatype_structure.inl \
   ../include/interpolation_structure.hpp \
+  ../include/gauss_jacobi_quadrature.hpp \
+  ../include/gauss_jacobi_quadrature.inl \
   ../include/gauss_structure.hpp \
   ../include/gauss_structure.inl \
   ../include/element_structure.hpp \
@@ -591,6 +605,7 @@ lib_sources = \
   ../src/mpi_structure.cpp \
   ../src/linear_solvers_structure_b.cpp \
   ../src/ad_structure.cpp \
+  ../src/gauss_jacobi_quadrature.cpp \
   ../src/gauss_structure.cpp \
   ../src/element_structure.cpp \
   ../src/element_linear.cpp \
@@ -714,6 +729,8 @@ clean-noinstLIBRARIES:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-ad_structure.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2_a-gauss_jacobi_quadrature.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-gauss_structure.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-element_structure.$(OBJEXT): ../src/$(am__dirstamp) \
@@ -760,6 +777,8 @@ libSU2.a: $(libSU2_a_OBJECTS) $(libSU2_a_DEPENDENCIES) $(EXTRA_libSU2_a_DEPENDEN
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_AD_a-ad_structure.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2_AD_a-gauss_jacobi_quadrature.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_AD_a-gauss_structure.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_AD_a-element_structure.$(OBJEXT):  \
@@ -806,6 +825,8 @@ libSU2_AD.a: $(libSU2_AD_a_OBJECTS) $(libSU2_AD_a_DEPENDENCIES) $(EXTRA_libSU2_A
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_DIRECTDIFF_a-ad_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_DIRECTDIFF_a-gauss_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_DIRECTDIFF_a-element_structure.$(OBJEXT):  \
@@ -835,6 +856,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-fem_integration_rules.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-fem_standard_element.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-fem_wall_distance.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-gauss_jacobi_quadrature.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-gauss_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-gelite.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-geometry_structure.Po@am__quote@
@@ -856,6 +878,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-fem_integration_rules.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-fem_standard_element.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-fem_wall_distance.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gelite.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-geometry_structure.Po@am__quote@
@@ -877,6 +900,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-fem_integration_rules.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-fem_standard_element.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-fem_wall_distance.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-gauss_jacobi_quadrature.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-gauss_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-gelite.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-geometry_structure.Po@am__quote@
@@ -1143,6 +1167,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/ad_structure.cpp' object='../src/libSU2_a-ad_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-ad_structure.obj `if test -f '../src/ad_structure.cpp'; then $(CYGPATH_W) '../src/ad_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/ad_structure.cpp'; fi`
+
+../src/libSU2_a-gauss_jacobi_quadrature.o: ../src/gauss_jacobi_quadrature.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-gauss_jacobi_quadrature.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-gauss_jacobi_quadrature.Tpo -c -o ../src/libSU2_a-gauss_jacobi_quadrature.o `test -f '../src/gauss_jacobi_quadrature.cpp' || echo '$(srcdir)/'`../src/gauss_jacobi_quadrature.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-gauss_jacobi_quadrature.Tpo ../src/$(DEPDIR)/libSU2_a-gauss_jacobi_quadrature.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gauss_jacobi_quadrature.cpp' object='../src/libSU2_a-gauss_jacobi_quadrature.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-gauss_jacobi_quadrature.o `test -f '../src/gauss_jacobi_quadrature.cpp' || echo '$(srcdir)/'`../src/gauss_jacobi_quadrature.cpp
+
+../src/libSU2_a-gauss_jacobi_quadrature.obj: ../src/gauss_jacobi_quadrature.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-gauss_jacobi_quadrature.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-gauss_jacobi_quadrature.Tpo -c -o ../src/libSU2_a-gauss_jacobi_quadrature.obj `if test -f '../src/gauss_jacobi_quadrature.cpp'; then $(CYGPATH_W) '../src/gauss_jacobi_quadrature.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gauss_jacobi_quadrature.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-gauss_jacobi_quadrature.Tpo ../src/$(DEPDIR)/libSU2_a-gauss_jacobi_quadrature.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gauss_jacobi_quadrature.cpp' object='../src/libSU2_a-gauss_jacobi_quadrature.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-gauss_jacobi_quadrature.obj `if test -f '../src/gauss_jacobi_quadrature.cpp'; then $(CYGPATH_W) '../src/gauss_jacobi_quadrature.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gauss_jacobi_quadrature.cpp'; fi`
 
 ../src/libSU2_a-gauss_structure.o: ../src/gauss_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-gauss_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-gauss_structure.Tpo -c -o ../src/libSU2_a-gauss_structure.o `test -f '../src/gauss_structure.cpp' || echo '$(srcdir)/'`../src/gauss_structure.cpp
@@ -1438,6 +1476,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-ad_structure.obj `if test -f '../src/ad_structure.cpp'; then $(CYGPATH_W) '../src/ad_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/ad_structure.cpp'; fi`
 
+../src/libSU2_AD_a-gauss_jacobi_quadrature.o: ../src/gauss_jacobi_quadrature.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-gauss_jacobi_quadrature.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-gauss_jacobi_quadrature.Tpo -c -o ../src/libSU2_AD_a-gauss_jacobi_quadrature.o `test -f '../src/gauss_jacobi_quadrature.cpp' || echo '$(srcdir)/'`../src/gauss_jacobi_quadrature.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-gauss_jacobi_quadrature.Tpo ../src/$(DEPDIR)/libSU2_AD_a-gauss_jacobi_quadrature.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gauss_jacobi_quadrature.cpp' object='../src/libSU2_AD_a-gauss_jacobi_quadrature.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-gauss_jacobi_quadrature.o `test -f '../src/gauss_jacobi_quadrature.cpp' || echo '$(srcdir)/'`../src/gauss_jacobi_quadrature.cpp
+
+../src/libSU2_AD_a-gauss_jacobi_quadrature.obj: ../src/gauss_jacobi_quadrature.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-gauss_jacobi_quadrature.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-gauss_jacobi_quadrature.Tpo -c -o ../src/libSU2_AD_a-gauss_jacobi_quadrature.obj `if test -f '../src/gauss_jacobi_quadrature.cpp'; then $(CYGPATH_W) '../src/gauss_jacobi_quadrature.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gauss_jacobi_quadrature.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-gauss_jacobi_quadrature.Tpo ../src/$(DEPDIR)/libSU2_AD_a-gauss_jacobi_quadrature.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gauss_jacobi_quadrature.cpp' object='../src/libSU2_AD_a-gauss_jacobi_quadrature.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-gauss_jacobi_quadrature.obj `if test -f '../src/gauss_jacobi_quadrature.cpp'; then $(CYGPATH_W) '../src/gauss_jacobi_quadrature.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gauss_jacobi_quadrature.cpp'; fi`
+
 ../src/libSU2_AD_a-gauss_structure.o: ../src/gauss_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-gauss_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-gauss_structure.Tpo -c -o ../src/libSU2_AD_a-gauss_structure.o `test -f '../src/gauss_structure.cpp' || echo '$(srcdir)/'`../src/gauss_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-gauss_structure.Tpo ../src/$(DEPDIR)/libSU2_AD_a-gauss_structure.Po
@@ -1731,6 +1783,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/ad_structure.cpp' object='../src/libSU2_DIRECTDIFF_a-ad_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-ad_structure.obj `if test -f '../src/ad_structure.cpp'; then $(CYGPATH_W) '../src/ad_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/ad_structure.cpp'; fi`
+
+../src/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.o: ../src/gauss_jacobi_quadrature.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.o `test -f '../src/gauss_jacobi_quadrature.cpp' || echo '$(srcdir)/'`../src/gauss_jacobi_quadrature.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gauss_jacobi_quadrature.cpp' object='../src/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.o `test -f '../src/gauss_jacobi_quadrature.cpp' || echo '$(srcdir)/'`../src/gauss_jacobi_quadrature.cpp
+
+../src/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.obj: ../src/gauss_jacobi_quadrature.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.obj `if test -f '../src/gauss_jacobi_quadrature.cpp'; then $(CYGPATH_W) '../src/gauss_jacobi_quadrature.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gauss_jacobi_quadrature.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/gauss_jacobi_quadrature.cpp' object='../src/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-gauss_jacobi_quadrature.obj `if test -f '../src/gauss_jacobi_quadrature.cpp'; then $(CYGPATH_W) '../src/gauss_jacobi_quadrature.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/gauss_jacobi_quadrature.cpp'; fi`
 
 ../src/libSU2_DIRECTDIFF_a-gauss_structure.o: ../src/gauss_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-gauss_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-gauss_structure.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-gauss_structure.o `test -f '../src/gauss_structure.cpp' || echo '$(srcdir)/'`../src/gauss_structure.cpp

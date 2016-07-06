@@ -30,6 +30,7 @@
  */
 
 #include "../include/fem_standard_element.hpp"
+#include "../include/gauss_jacobi_quadrature.hpp"
 
 #ifdef HAVE_MKL
 #include "mkl.h"
@@ -986,105 +987,10 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesHexahedro
 void FEMStandardElementBaseClass::GaussLegendrePoints1D(vector<su2double> &GLPoints,
                                                         vector<su2double> &GLWeights) {
 
-  /*--- Determine the number of integration points. Check if the number makes sense. ---*/
-  unsigned short nIntPoints = GLPoints.size();
-  if(nIntPoints < 1 || nIntPoints > 100) {
-    cout << "Invalid number of Gauss Legendre integration points" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  /*--- The distribution of points is symmetric. Hence only half
-        the number of integration points need to be computed.    ---*/
-  unsigned short nn = nIntPoints/2;
-
-  if(2*nn < nIntPoints) GLPoints[nn] = 0.0;
-
-  /*--- The remaing points must be computed. These are the roots of P_n(x),
-        P_n is the classis Legendre polynomial of order n.
-        Loop over roots to be computed.                       ---*/
-  unsigned short ii = nIntPoints -1;
-  for(unsigned short i=0; i<nn; ++i, --ii) {
-
-    /*--- Initial guess of this root and determine the Legendre
-          Polynomials P_n and P_{n-1} and the value f = P_n.   ---*/
-    su2double x = (1.0 - (nIntPoints-1)/(8.0*nIntPoints*nIntPoints*nIntPoints))
-                * cos((4*i+3)*PI_NUMBER/(4.0*nIntPoints+2.0));
-
-    su2double Pnm1, Pn;
-    Legendre(x, nIntPoints, Pnm1, Pn);
-    su2double f = Pn;
-
-    /*--- Solve the root using Halley's method.
-          Loop until machine precision has been reached. ---*/
-    for(;;) {
-
-      /*--- Determine the value of the first and second derivative of f. ---*/
-      su2double df  = nIntPoints*(Pnm1 - x*Pn)/(1.0-x*x);
-      su2double d2f = (2.0*x*df - nIntPoints*(nIntPoints+1)*Pn)/(1.0-x*x);
-
-      /*--- Compute the new value of the root. ---*/
-      x = x - 2.0*f*df/(2.0*df*df - f*d2f);
-
-      /*--- Determine the new value of the Legendre polynomials and
-            compute the new value of f. Store the old value.        ---*/
-      su2double fOld = f;
-      Legendre(x, nIntPoints, Pnm1, Pn);
-      f = Pn;
-
-      /*--- Convergence criterion. ---*/
-      if(fabs(fOld) <= fabs(f)) break;
-    }
-
-    /*--- Store the symmetric equivalent as well. ---*/
-    GLPoints[ii] =  x;
-    GLPoints[i]  = -x;
-  }
-
-  /*--- Compute the integration weights of the points.
-        Make sure the sum is exactly 2.               ---*/
-  su2double f = 0.0;
-  for(unsigned short i=0; i<nIntPoints; ++i) {
-    su2double Pnm1, Pn;
-    Legendre(GLPoints[i], nIntPoints, Pnm1, Pn);
-    GLWeights[i] = 2.0*(1.0-GLPoints[i]*GLPoints[i])/(nIntPoints*nIntPoints*Pnm1*Pnm1);
-    f           += GLWeights[i];
-  }
-
-  if(fabs(f-2.0) > 1.e-6) {
-    cout << "Something wrong in computing the Gauss Legendre weights" << endl;
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
-
-  f = 2.0/f;
-  for(unsigned short i=0; i<nIntPoints; ++i)
-    GLWeights[i] *= f;
-}
-
-void FEMStandardElementBaseClass::Legendre(su2double      x,
-                                           unsigned short n,
-                                           su2double      &Pnm1,
-                                           su2double      &Pn) {
-
-  /*--- Initialization of the polynomials Pnm1 and Pn. ---*/
-  Pnm1 = 1.0;
-  Pn   = x;
-
-  /*--- Recursive definition of Pn and Pnm1. ---*/
-  for(unsigned i=2; i<=n; ++i) {
-    su2double tmp = Pnm1;
-    Pnm1          = Pn;
-    Pn            = ((2*i-1)*x*Pn - (i-1)*tmp)/i;
-  }
+  /*--- Gauss Legendre quadrature is a special case of Gauss Jacobi integration.
+        Determine the integration points for this case. ----*/
+  CGaussJacobiQuadrature GaussJacobi;
+  GaussJacobi.GetQuadraturePoints(0.0, 0.0, -1.0, 1.0, GLPoints, GLWeights);
 }
 
 void FEMStandardElementBaseClass::MatMulRowMajor(const unsigned short nDOFs,

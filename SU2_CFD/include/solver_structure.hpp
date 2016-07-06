@@ -452,7 +452,7 @@ public:
 	 * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
-	void Set_OldSolution(CGeometry *geometry);
+	virtual void Set_OldSolution(CGeometry *geometry);
 
 	/*!
 	 * \brief Load the geometries at the previous time states n and nM1.
@@ -5091,8 +5091,9 @@ protected:
   unsigned short nIntegrationMax; /*!< \brief Maximum number of integration points used. */
   unsigned short nDOFsMax;        /*!< \brief Maximum number of DOFs present. */
 
-  vector<su2double> VecSolDOFs;   /*!< \brief Vector, which stores the solution variables in all the DOFs. */
-  vector<su2double> VecDeltaTime; /*!< \brief Vector, which stores the time steps of the owned volume elements. */
+  vector<su2double> VecSolDOFs;    /*!< \brief Vector, which stores the solution variables in all the DOFs. */
+  vector<su2double> VecSolDOFsOld; /*!< \brief Vector, which stores the old solution variables in the owned DOFs. */
+  vector<su2double> VecDeltaTime;  /*!< \brief Vector, which stores the time steps of the owned volume elements. */
 
   vector<su2double> VecResDOFs;    /*!< \brief Vector, which stores the residuals in the owned DOFs. */
   vector<su2double> VecResFaces;   /*!< \brief Vector, which stores the residuals of the DOFs that
@@ -5219,6 +5220,12 @@ public:
    */
   void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container,
                            CConfig *config, unsigned long ExtIter);
+
+  /*!
+   * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void Set_OldSolution(CGeometry *geometry);
   
   /*!
    * \brief Compute the time step for solving the Euler equations.
