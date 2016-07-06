@@ -949,37 +949,58 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     
   }
   
-  /*--- Solver definition for the Potential, Euler, Navier-Stokes problems ---*/
+  /*--- Riemann solver definition for the Potential, Euler, Navier-Stokes problems ---*/
   if ((fem_euler) || (fem_ns)) {
     
-    /*--- Definition of the convective scheme for each equation and mesh level ---*/
-    switch (config->GetKind_ConvNumScheme_FEM_Flow()) {
-      case NO_CONVECTIVE :
-        cout << "No convective scheme." << endl; exit(EXIT_FAILURE);
+    switch (config->GetRiemann_Solver_FEM()) {
+      case NO_UPWIND : cout << "Riemann solver disabled." << endl; break;
+      case ROE:
+          for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+            numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
+            numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
+          }
         break;
         
-      case FINITE_ELEMENT :
-        /*--- Compressible flow ---*/
-        switch (config->GetKind_FEM_Flow()) {
-          case NO_FEM : cout << "No finite element scheme." << endl; break;
-          case DG : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CDiscGalerkin_Flow(nDim, nVar_Flow, config); break;
-          default : cout << "Finite element scheme not implemented." << endl; exit(EXIT_FAILURE); break;
+      case AUSM:
+        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+          numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwAUSM_Flow(nDim, nVar_Flow, config);
+          numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwAUSM_Flow(nDim, nVar_Flow, config);
         }
-        
-        for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CDiscGalerkin_Flow(nDim, nVar_Flow, config);
-        
-        /*--- Definition of the boundary condition method ---*/
-        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config);
-        
         break;
         
-      default :
-        cout << "Convective scheme not implemented (finite element euler and ns)." << endl; exit(EXIT_FAILURE);
+      case TURKEL:
+        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+          numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwTurkel_Flow(nDim, nVar_Flow, config);
+          numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwTurkel_Flow(nDim, nVar_Flow, config);
+        }
         break;
+        
+      case HLLC:
+          for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+            numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
+            numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
+          }
+        break;
+        
+      case MSW:
+        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+          numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwMSW_Flow(nDim, nVar_Flow, config);
+          numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwMSW_Flow(nDim, nVar_Flow, config);
+        }
+        break;
+        
+      case CUSP:
+        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+          numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwCUSP_Flow(nDim, nVar_Flow, config);
+          numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwCUSP_Flow(nDim, nVar_Flow, config);
+        }
+        break;
+        
+      default : cout << "Riemann solver not implemented." << endl; exit(EXIT_FAILURE); break;
     }
     
+    /*--- Note: if we don't end up using the other numerics classes for DG, we should remove them. ---*/
+     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     
     numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CFEMVisc_Flow(nDim, nVar_Flow, config);

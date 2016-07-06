@@ -5660,7 +5660,8 @@ protected:
                                  const su2double     *normalsFace,
                                  const su2double     *solL,
                                  const su2double     *solR,
-                                 su2double           *fluxes);
+                                 su2double           *fluxes,
+                                 CNumerics           *numerics);
   /*!
    * \brief Function, which computes the left state of a boundary face.
    * \param[in]  surfElem - Surface boundary element for which the left state must be computed.
