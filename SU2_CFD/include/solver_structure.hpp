@@ -1220,7 +1220,14 @@ public:
 	 * \param[in] val_vertex - vertex index
 	 * \param[in] val_state  - requested state component
 	 */
-	virtual su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state);
+	virtual su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index);
+	
+	/*!
+	 * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
+	 * \param[in] val_marker   - marker index
+	 * \param[in] val_vertex   - vertex index
+	 */
+	virtual void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex);
 	
 	/*!
 	 * \brief Set the outer state for fluid interface nodes.
@@ -1229,7 +1236,22 @@ public:
 	 * \param[in] val_state  - requested state component
 	 * \param[in] component  - set value
 	 */
-    virtual void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component);
+    virtual void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component);
+
+	/*!
+	 * \brief Get the number of outer states for fluid interface nodes.
+	 * \param[in] val_marker - marker index
+	 * \param[in] val_vertex - vertex index
+	 */
+	virtual int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
+	
+	/*!
+	 * \brief Set the number of outer states for fluid interface nodes.
+	 * \param[in] val_marker - marker index
+	 * \param[in] val_vertex - vertex index
+	 * \param[in] value      - number of outer states
+	 */
+    virtual void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value);
 
 	/*!
 	 * \brief A virtual member.
@@ -3136,7 +3158,8 @@ protected:
 
 /* Sliding meshes variables */
 
-			su2double ***SlidingState;
+			su2double ****SlidingState;
+			int **SlidingStateNodes;
 	
 
 
@@ -4063,7 +4086,7 @@ public:
 	 * \param[in] val_vertex - vertex index
 	 * \param[in] val_state  - requested state component
 	 */
-	su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state);
+	su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index);
 	
     /*!
 	 * \brief Provide the non dimensional lift coefficient.
@@ -4634,7 +4657,7 @@ public:
 	 */
 	void SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config,
                               CGeometry **fea_geometry, CSolver ***fea_solution);
-
+	
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] flow_geometry - Geometrical definition of the problem.
@@ -4644,15 +4667,38 @@ public:
 	 */
 	void SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config,
                               CGeometry **fea_geometry, CSolver ***fea_solution);
-                              
+                    
+    /*!
+	 * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
+	 * \param[in] val_marker   - marker index
+	 * \param[in] val_vertex   - vertex index
+	 */
+	void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex);
+	          
      /*!
 	 * \brief Set the outer state for fluid interface nodes.
+	 * \param[in] val_marker   - marker index
+	 * \param[in] val_vertex   - vertex index
+	 * \param[in] val_state    - requested state component
+	 * \param[in] donor_index  - index of the donor node to set
+	 * \param[in] component    - set value
+	 */
+    void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component);
+    
+     /*!
+	 * \brief Set the number of outer state for fluid interface nodes.
 	 * \param[in] val_marker - marker index
 	 * \param[in] val_vertex - vertex index
-	 * \param[in] val_state  - requested state component
-	 * \param[in] component  - set value
+	 * \param[in] value - number of outer states
 	 */
-    void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, su2double component);
+    void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value);
+    
+      /*!
+	 * \brief Get the number of outer state for fluid interface nodes.
+	 * \param[in] val_marker - marker index
+	 * \param[in] val_vertex - vertex index
+	 */
+    int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
     
 	/*!
 	 * \brief Load a solution from a restart file.

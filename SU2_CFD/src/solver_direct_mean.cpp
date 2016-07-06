@@ -78,19 +78,20 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
   
-  Secondary=NULL; Secondary_i=NULL; Secondary_j=NULL;
+  Secondary = NULL; Secondary_i = NULL; Secondary_j = NULL;
 
   /*--- Fixed CL mode initialization (cauchy criteria) ---*/
   
-  Cauchy_Value = 0;
-  Cauchy_Func = 0;
-  Old_Func = 0;
-  New_Func = 0;
+  Cauchy_Value   = 0;
+  Cauchy_Func    = 0;
+  Old_Func       = 0;
+  New_Func       = 0;
   Cauchy_Counter = 0;
   Cauchy_Serie = NULL;
-  FluidModel=NULL;
+  FluidModel   =NULL;
   
-  SlidingState = NULL;
+  SlidingState     = NULL;
+  SlidingStateNodes = NULL;
 }
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -475,20 +476,29 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Initializate quantities for SlidingMesh Interface ---*/
   
-  SlidingState = new su2double** [nMarker];
+  SlidingState       = new su2double*** [nMarker];
+  SlidingStateNodes  = new int*         [nMarker];
   
   for (iMarker = 0; iMarker < nMarker; iMarker++){
 	  
 		if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
 			
-			SlidingState[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+			SlidingState[iMarker]       = new su2double**[geometry->nVertex[iMarker]];
+			SlidingStateNodes[iMarker]  = new int        [geometry->nVertex[iMarker]];
 			
-			for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++)
-					SlidingState[iMarker][iPoint] = new su2double[nPrimVar];
+			for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++){
+				SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
+				
+				SlidingStateNodes[iMarker][iPoint] = 0;
+				for (iVar = 0; iVar < nPrimVar+1; iVar++)
+					SlidingState[iMarker][iPoint][iVar] = NULL;
+			}
 
 		}
-		else
-			SlidingState[iMarker] =NULL;
+		else{
+			SlidingState[iMarker]      = NULL;
+			SlidingStateNodes[iMarker] = NULL;
+		}
   }
 
   
@@ -811,7 +821,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 }
 
 CEulerSolver::~CEulerSolver(void) {
-  unsigned short iVar, iMarker;
+  unsigned short iVar, iMarker, iPoint;
   /*--- Array deallocation ---*/
   if (CDrag_Inv != NULL)         delete [] CDrag_Inv;
   if (CLift_Inv != NULL)         delete [] CLift_Inv;
@@ -932,6 +942,29 @@ CEulerSolver::~CEulerSolver(void) {
     delete [] Cauchy_Serie;
   */
   //if (FluidModel!=NULL) delete FluidModel;
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+	  
+		if (SlidingStateNodes[iMarker] != NULL)
+			delete [] SlidingStateNodes[iMarker];
+			
+		if (SlidingState[iMarker] != NULL){
+			
+			iPoint = 0;
+				
+			while( SlidingState[iMarker][iPoint] != NULL ){
+				for (iVar = 0; iVar < nVar; iVar ++)
+					if( SlidingState[iMarker][iPoint][iVar] != NULL )
+						delete [] SlidingState[iMarker][iPoint][iVar];
+						
+				delete [] SlidingState[iMarker][iPoint];
+				
+				iPoint++;
+			}
+			
+			delete [] SlidingState[iMarker];
+		}
+  }
 
 }
 
@@ -10162,17 +10195,18 @@ void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
 void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                          CConfig *config) {
   
-  unsigned long iVertex, iPoint;
-  unsigned short iDim, iVar, iMarker;
+  unsigned long iVertex, jVertex, iPoint;
+  unsigned short iDim, iVar, iMarker, nDonorVertex;
   
   bool implicit 	 = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   
-  su2double Density, sq_vel, StaticEnergy;
+  su2double Density, sq_vel, StaticEnergy, coeff;
   
   su2double *Normal = new su2double[nDim];
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
+  su2double *tmp_residual = new su2double[nPrimVar];
   
 	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -10183,35 +10217,50 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
 				if (geometry->node[iPoint]->GetDomain()) {
 
-					for (iVar = 0; iVar < nPrimVar; iVar++) {
-						PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
-						PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
-					}
+					nDonorVertex = GetnSlidingStates(iMarker, iVertex );
+					
+					for (iVar = 0; iVar < nPrimVar; iVar++)
+							Residual[iVar] = 0;
+					
+					for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
 
-					/*--- Set primitive variables ---*/
-
-					numerics->SetPrimitive(PrimVar_i, PrimVar_j);
-
-					/*--- Set the normal vector ---*/
-
-					geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-					for (iDim = 0; iDim < nDim; iDim++) 
-						Normal[iDim] = -Normal[iDim];
+						for (iVar = 0; iVar < nPrimVar; iVar++) {
+							PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+							PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar, jVertex);
+						}
 						
-					numerics->SetNormal(Normal);
+						coeff = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
 
-					if (grid_movement)
-						numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+						/*--- Set primitive variables ---*/
 
-					/*--- Compute the convective residual using an upwind scheme ---*/
+						numerics->SetPrimitive(PrimVar_i, PrimVar_j);
 
-					numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+						/*--- Set the normal vector ---*/
 
-					/*--- Add Residuals and Jacobians ---*/
+						geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+						for (iDim = 0; iDim < nDim; iDim++) 
+							Normal[iDim] = -Normal[iDim];
+							
+						numerics->SetNormal(Normal);
 
+						if (grid_movement)
+							numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+
+						/*--- Compute the convective residual using an upwind scheme ---*/
+						
+						numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
+
+						/*--- Add Residuals and Jacobians ---*/
+						
+						for (iVar = 0; iVar < nPrimVar; iVar++)
+							Residual[iVar] += coeff*tmp_residual[iVar];
+					}
+					
+						
 					LinSysRes.AddBlock(iPoint, Residual);
 					if (implicit) 
 						Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+					
 				}
 			}
 		}
@@ -10222,6 +10271,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 	delete [] Normal;
 	delete [] PrimVar_i;
 	delete [] PrimVar_j;
+	delete [] tmp_residual;
 }
 
 void CEulerSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
