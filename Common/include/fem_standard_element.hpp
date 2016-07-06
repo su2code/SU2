@@ -605,19 +605,6 @@ private:
   void IntegrationPointsHexahedron(void);
 
   /*!
-  * \brief Function, which computes the value of the Legendre polynomials
-           Pn and Pnm1 for given x (-1 <= x <= 1) and n.
-  * \param[in]  x    - x-coordinate for which the Legendre polynomial must be computed.
-  * \param[in]  n    - order of the Legendre polynomial.
-  * \param[out] Pnm1 - Legendre polynomials of order n-1, which must be computed.
-  * \param[out] Pn   - Legendre polynomials of order n, which must be computed.
-  */
-  void Legendre(su2double      x,
-                unsigned short n,
-                su2double      &Pnm1,
-                su2double      &Pn);
-
-  /*!
   * \brief Function, which carries out a matrix matrix multiplication to obtain
            data in points and stores the result row major order.
   * \param[in]  nDOFs   - Dimension of the matrices. This typically corresponds

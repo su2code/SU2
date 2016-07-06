@@ -246,6 +246,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   for(unsigned long i=nVolElemOwned; i<nVolElemTot; ++i) nDOFsLocTot += volElem[i].nDOFsSol;
 
   VecSolDOFs.resize(nVar*nDOFsLocTot);
+  VecSolDOFsOld.resize(nVar*nDOFsLocOwned);
 
   /*--- Determine the global number of DOFs. ---*/
 
@@ -1442,6 +1443,11 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
 void CFEM_DG_EulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                       unsigned short iMesh) { }
 
+void CFEM_DG_EulerSolver::Set_OldSolution(CGeometry *geometry) {
+
+  memcpy(VecSolDOFsOld.data(), VecSolDOFs.data(), VecSolDOFsOld.size()*sizeof(su2double));
+}
+
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
 
@@ -1875,8 +1881,10 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
     const su2double *coor   = meshPoints[ind].coor;
 
     /* Set the pointers for the residual and solution for this element. */
-    const su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
-    su2double *solDOFs   = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+    const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
+    const su2double *res        = VecResDOFs.data()    + offset;
+    const su2double *solDOFSOld = VecSolDOFsOld.data() + offset;
+    su2double *solDOFs          = VecSolDOFs.data()    + offset;
 
     /* Loop over the DOFs for this element and update the solution and the L2 norm. */
     const su2double tmp = RK_AlphaCoeff*VecDeltaTime[l];
@@ -1885,7 +1893,7 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
     for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
       const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
       for(unsigned short iVar=0; iVar<nVar; ++iVar, ++i) {
-        solDOFs[i] -= tmp*res[i];
+        solDOFs[i] = solDOFSOld[i] - tmp*res[i];
 
         AddRes_RMS(iVar, res[i]*res[i]);
         AddRes_Max(iVar, fabs(res[i]), globalIndex, coor); 

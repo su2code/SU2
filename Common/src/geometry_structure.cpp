@@ -12313,15 +12313,8 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
           From this ratio, determine whether or not the element is considered to
           have a constant Jacobian and the total number of volume integration
           points necessary. Note that in order to determine this value the degree
-          of the solution must be taken and not the degree of the grid.
-          Furthermore, for a pyramid always a non-constant Jacobian is used such
-          that a higher accuracy integration rule is used. This may be needed,
-          because the integration rule for a pyramid is not a tensor product rule
-          as is the case for other non-simplices. Tensor product rules are more
-          accurate for incomplete polynomials, which appear in the basis functions
-          of non-simplex elements. ---*/
+          of the solution must be taken and not the degree of the grid. ---*/
     bool constJacobian = (jacMax/jacMin) <= 1.000001;
-    if(elem[i]->GetVTK_Type() == PYRAMID) constJacobian = false;
     elem[i]->SetJacobianConsideredConstant(constJacobian);
 
     unsigned short nPolySol = elem[i]->GetNPolySol();

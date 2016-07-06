@@ -1012,10 +1012,12 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
   
   solver_container[MainSolver]->Initiate_MPI_Communication();
 
-  /*--- Compute time step, if needed. ---*/
+  /*--- Compute time step and set the old solution, if needed. ---*/
 
-  if (iRKStep == 0)
+  if (iRKStep == 0) {
+    solver_container[MainSolver]->Set_OldSolution(geometry);
     solver_container[MainSolver]->SetTime_Step(geometry, solver_container, config, iMesh, Iteration);
+  }
   
   /*--- Compute the internal portion of the residual (excluding halos) ---*/
   
