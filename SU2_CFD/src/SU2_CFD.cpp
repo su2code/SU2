@@ -507,16 +507,16 @@ int main(int argc, char *argv[]) {
 
       if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
           
-      /*--- Execute the routine for writing restart, volume solution,
-        surface solution, and surface comma-separated value files. ---*/
-          
-      output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
-          
-      /*--- Output a file with the forces breakdown. ---*/
-          
-      output->SetForces_Breakdown(geometry_container, solver_container,
-                                  config_container, integration_container, ZONE_0);
-          
+//      /*--- Execute the routine for writing restart, volume solution,
+//        surface solution, and surface comma-separated value files. ---*/
+//          
+//      output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
+//          
+//      /*--- Output a file with the forces breakdown. ---*/
+//          
+//      output->SetForces_Breakdown(geometry_container, solver_container,
+//                                  config_container, integration_container, ZONE_0);
+      
       /*--- Compute the forces at different sections. ---*/
           
       if (config_container[ZONE_0]->GetPlot_Section_Forces()) {

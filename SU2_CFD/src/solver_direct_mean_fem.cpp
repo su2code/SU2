@@ -1732,7 +1732,7 @@ void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solve
 
     /* General function to compute the fluxes in the integration points. */
     ComputeInviscidFluxesFace(config, nInt, matchingInternalFaces[l].metricNormalsFace,
-                              solIntL, solIntR, fluxes);
+                              solIntL, solIntR, fluxes, numerics);
 
     /* Multiply the fluxes with the integration weight of the corresponding
        integration point. */
@@ -2045,7 +2045,7 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_co
 
     /* General function to compute the fluxes in the integration points. */
     ComputeInviscidFluxesFace(config, nInt, surfElem[l].metricNormalsFace,
-                              solIntL, solIntR, fluxes);
+                              solIntL, solIntR, fluxes, numerics);
 
     /* Multiply the fluxes with the integration weight of the corresponding
        integration point. */
@@ -2148,7 +2148,7 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_con
 
     /* General function to compute the fluxes in the integration points. */
     ComputeInviscidFluxesFace(config, nInt, surfElem[l].metricNormalsFace,
-                              solIntL, solIntR, fluxes);
+                              solIntL, solIntR, fluxes, conv_numerics);
 
     /* Multiply the fluxes with the integration weight of the corresponding
        integration point. */
@@ -2222,67 +2222,85 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
                                                     const su2double     *normalsFace,
                                                     const su2double     *solL,
                                                     const su2double     *solR,
-                                                    su2double           *fluxes) {
-
+                                                    su2double           *fluxes,
+                                                    CNumerics           *numerics) {
+  
   /*****************************************************************************/
   /* THIS IS A TEMPORARY IMPLEMENTATION, WHICH USES ROE'S APPROXIMATE RIEMANN  */
   /* SOLVER. FOR THE ACTUAL IMPLEMENTATION THE RIEMANN SOLVERS OF THE FINITE   */
   /* VOLUME SOLVER MUST BE USED. IN ORDER TO ACCOMPLISH THIS THE WAY OF        */
   /* CALLING THESE ROUTINES MUST LIKELY BE CHANGED.                            */
   /*****************************************************************************/
-
+  
   /* Easier storage of the specific heat ratio. */
   const su2double gamma = config->GetGamma();
   const su2double gm1   = gamma - 1.0;
-
+  
+  /*--- Data for loading into the CNumerics Riemann solvers.
+   This is temporary and not efficient.. just replicating exactly
+   the arrays we typically have in order to avoid bugs. We can
+   probably be more clever with pointers, etc. ---*/
+  
+  su2double *Normal = new su2double[nDim];
+  su2double *Prim_L = new su2double[nDim+5];
+  su2double *Prim_R = new su2double[nDim+5];
+  su2double *Fluxes = new su2double[nVar];
+  
+  Jacobian_i = new su2double*[nVar];
+  Jacobian_j = new su2double*[nVar];
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar] = new su2double[nVar];
+    Jacobian_j[iVar] = new su2double[nVar];
+  }
+  
   /* Make a distinction between two and three space dimensions. */
   switch( nDim ) {
-
+      
     case 2: {
-
+      
       /* Two dimensional simulation. Loop over the number of points. */
       for(unsigned long i=0; i<nPoints; ++i) {
         
         /* Easier storage of the left and right solution, the face normals and
-           the flux vector for this point. */
+         the flux vector for this point. */
         const su2double *UL   = solL + i*nVar;
         const su2double *UR   = solR + i*nVar;
         const su2double *norm = normalsFace + i*(nDim+1);
-              su2double *flux = fluxes + i*nVar;
-
+        su2double *flux = fluxes + i*nVar;
+        
         const su2double nx = norm[0], ny = norm[1], area = norm[2];
-
+        
         /*--- compute the primitive variables of the left and right state. ---*/
         su2double tmp       = 1.0/UL[0];
         const su2double vxL = tmp*UL[1];
         const su2double vyL = tmp*UL[2];
         const su2double pL  = gm1*(UL[3] - 0.5*(vxL*UL[1] + vyL*UL[2]));
-
+        
         tmp                 = 1.0/UR[0];
         const su2double vxR = tmp*UR[1];
         const su2double vyR = tmp*UR[2];
         const su2double pR  = gm1*(UR[3] - 0.5*(vxR*UR[1] + vyR*UR[2]));
-
+        
         /*--- Compute the difference of the conservative mean flow variables. ---*/
         const su2double dr  = UR[0] - UL[0];
         const su2double dru = UR[1] - UL[1];
         const su2double drv = UR[2] - UL[2];
         const su2double drE = UR[3] - UL[3];
-
+        
         /*--- Compute the Roe average state. ---*/
         const su2double zL = sqrt(UL[0]);
         const su2double zR = sqrt(UR[0]);
         tmp                = 1.0/(zL + zR);
-
+        
         const su2double rHL = UL[3] + pL;
         const su2double rHR = UR[3] + pR;
-
+        
         const su2double uAvg = tmp*(zL*vxL + zR*vxR);
         const su2double vAvg = tmp*(zL*vyL + zR*vyR);
         const su2double HAvg = tmp*(rHL/zL + rHR/zR);
-
+        
         /*--- Compute from the Roe average state some variables, which occur
-              quite often in the matrix vector product to be computed. ---*/
+         quite often in the matrix vector product to be computed. ---*/
         const su2double alphaAvg = 0.5*(uAvg*uAvg + vAvg*vAvg);
         tmp                      = gm1*(HAvg - alphaAvg);
         const su2double a2Avg    = fabs(tmp);
@@ -2290,110 +2308,115 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
         const su2double vnAvg    = uAvg*nx + vAvg*ny;
         const su2double ovaAvg   = 1.0/aAvg;
         const su2double ova2Avg  = 1.0/a2Avg;
-
+        
         /*--- Compute the coefficient eta for the entropy correction. At the moment a
-              1D entropy correction is used, which removes expansion shocks. ---*/
+         1D entropy correction is used, which removes expansion shocks. ---*/
         const su2double aL  = sqrt(gamma*pL/UL[0]);
         const su2double aR  = sqrt(gamma*pR/UR[0]);
         const su2double eta = 0.5*(fabs((vxL - vxR)*nx + (vyL - vyR)*ny)
-                            +      fabs(aL - aR));        
-
+                                   +      fabs(aL - aR));
+        
         /*--- Compute the absolute values of the three eigenvalues, apply the
-              entropy correction and multiply by the area to obtain the correct
-              values for the dissipation term. ---*/
+         entropy correction and multiply by the area to obtain the correct
+         values for the dissipation term. ---*/
         su2double lam1 = fabs(vnAvg + aAvg);
         su2double lam2 = fabs(vnAvg - aAvg);
         su2double lam3 = fabs(vnAvg);
-
+        
         tmp = 2.0*eta;
         if(lam1 < tmp) lam1 = eta + 0.25*lam1*lam1/eta;
         if(lam2 < tmp) lam2 = eta + 0.25*lam2*lam2/eta;
         if(lam3 < tmp) lam3 = eta + 0.25*lam3*lam3/eta;
-
+        
         lam1 *= area;
         lam2 *= area;
         lam3 *= area;
-
+        
         /* Hack to get a kind of Lax-Friedrichs flux. */
         //lam1 = std::max(lam1, lam2);
         //lam3 = lam2 = lam1;
         /* End hack. */
-
+        
         /*--- Some abbreviations, which occur quite often in the dissipation terms. ---*/
         const su2double abv1 = 0.5*(lam1 + lam2);
         const su2double abv2 = 0.5*(lam1 - lam2);
         const su2double abv3 = abv1 - lam3;
-
+        
         const su2double abv4 = gm1*(alphaAvg*dr - uAvg*dru - vAvg*drv + drE);
         const su2double abv5 = nx*dru + ny*drv - vnAvg*dr;
         const su2double abv6 = abv3*abv4*ova2Avg + abv2*abv5*ovaAvg;
         const su2double abv7 = abv2*abv4*ovaAvg  + abv3*abv5;
-
+        
         /*--- Compute the Roe flux vector, which is 0.5*(FL + FR - |A|(UR-UL)). ---*/
         const su2double vnL  = area*(vxL*nx + vyL*ny);
         const su2double vnR  = area*(vxR*nx + vyR*ny);
         const su2double rvnL = UL[0]*vnL;
         const su2double rvnR = UR[0]*vnR;
         const su2double pa   = area*(pL + pR);
-
+        
         flux[0] = 0.5*(rvnL + rvnR - (lam3*dr + abv6));
         flux[1] = 0.5*(rvnL*vxL + rvnR*vxR + pa*nx - (lam3*dru + uAvg*abv6 + nx*abv7));
         flux[2] = 0.5*(rvnL*vyL + rvnR*vyR + pa*ny - (lam3*drv + vAvg*abv6 + ny*abv7));
         flux[3] = 0.5*( vnL*rHL +  vnR*rHR - (lam3*drE + HAvg*abv6 + vnAvg*abv7));
+        
+        //        if (i == 0) {
+        //          cout << " Original  Roe: (" << flux[0] << ", " << flux[1] << ", " << flux[2] << ", " << flux[3] << ")." << endl;
+        //        }
+        
       }
-
+      
       break;
     }
-
+      
     case 3: {
-
+      
       /* Three dimensional simulation. Loop over the number of points. */
       for(unsigned long i=0; i<nPoints; ++i) {
-
+        
         /* Easier storage of the left and right solution, the face normals and
-           the flux vector for this point. */
+         the flux vector for this point. */
         const su2double *UL   = solL + i*nVar;
         const su2double *UR   = solR + i*nVar;
         const su2double *norm = normalsFace + i*(nDim+1);
-              su2double *flux = fluxes + i*nVar;
-
+        su2double *flux = fluxes + i*nVar;
+        
         const su2double nx = norm[0], ny = norm[1], nz = norm[2], area = norm[3];
-
+        
         /*--- Compute the primitive variables of the left and right state. ---*/
         su2double tmp       = 1.0/UL[0];
         const su2double vxL = tmp*UL[1];
         const su2double vyL = tmp*UL[2];
         const su2double vzL = tmp*UL[3];
         const su2double pL  = gm1*(UL[4] - 0.5*(vxL*UL[1] + vyL*UL[2] + vzL*UL[3]));
-
+        
         tmp                 = 1.0/UR[0];
         const su2double vxR = tmp*UR[1];
         const su2double vyR = tmp*UR[2];
         const su2double vzR = tmp*UR[3];
         const su2double pR  = gm1*(UR[4] - 0.5*(vxR*UR[1] + vyR*UR[2] + vzR*UR[3]));
-
+        
         /*--- Compute the difference of the conservative mean flow variables. ---*/
         const su2double dr  = UR[0] - UL[0];
         const su2double dru = UR[1] - UL[1];
         const su2double drv = UR[2] - UL[2];
         const su2double drw = UR[3] - UL[3];
         const su2double drE = UR[4] - UL[4];
-
+        
         /*--- Compute the Roe average state. ---*/
         const su2double zL = sqrt(UL[0]);
         const su2double zR = sqrt(UR[0]);
         tmp                = 1.0/(zL + zR);
-
+        
         const su2double rHL = UL[4] + pL;
         const su2double rHR = UR[4] + pR;
-
+        
         const su2double uAvg = tmp*(zL*vxL + zR*vxR);
         const su2double vAvg = tmp*(zL*vyL + zR*vyR);
         const su2double wAvg = tmp*(zL*vzL + zR*vzR);
         const su2double HAvg = tmp*(rHL/zL + rHR/zR);
-
+        
         /*--- Compute from the Roe average state some variables, which occur
-              quite often in the matrix vector product to be computed. ---*/
+         quite often in the matrix vector product to be computed. ---*/
         const su2double alphaAvg = 0.5*(uAvg*uAvg + vAvg*vAvg + wAvg*wAvg);
         tmp                      = gm1*(HAvg - alphaAvg);
         const su2double a2Avg    = fabs(tmp);
@@ -2401,62 +2424,147 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
         const su2double vnAvg    = uAvg*nx + vAvg*ny + wAvg*nz;
         const su2double ovaAvg   = 1.0/aAvg;
         const su2double ova2Avg  = 1.0/a2Avg;
-
+        
         /*--- Compute the coefficient eta for the entropy correction. At the moment a
-              1D entropy correction is used, which removes expansion shocks. ---*/
+         1D entropy correction is used, which removes expansion shocks. ---*/
         const su2double aL  = sqrt(gamma*pL/UL[0]);
         const su2double aR  = sqrt(gamma*pR/UR[0]);
         const su2double eta = 0.5*(fabs((vxL-vxR)*nx + (vyL-vyR)*ny + (vzL-vzR)*nz)
-                            +      fabs(aL-aR));
-
+                                   +      fabs(aL-aR));
+        
         /*--- Compute the absolute values of the three eigenvalues, apply the
-              entropy correction and multiply by the area to obtain the correct
-              values for the dissipation term. ---*/
+         entropy correction and multiply by the area to obtain the correct
+         values for the dissipation term. ---*/
         su2double lam1 = fabs(vnAvg + aAvg);
         su2double lam2 = fabs(vnAvg - aAvg);
         su2double lam3 = fabs(vnAvg);
-
+        
         tmp = 2.0*eta;
         if(lam1 < tmp) lam1 = eta + 0.25*lam1*lam1/eta;
         if(lam2 < tmp) lam2 = eta + 0.25*lam2*lam2/eta;
         if(lam3 < tmp) lam3 = eta + 0.25*lam3*lam3/eta;
-
+        
         lam1 *= area;
         lam2 *= area;
         lam3 *= area;
-
+        
         /* Hack to get a kind of Lax-Friedrichs flux. */
         //lam1 = std::max(lam1, lam2);
         //lam3 = lam2 = lam1;
         /* End hack. */
-
+        
         // Some abbreviations, which occur quite often in the dissipation terms.
         const su2double abv1 = 0.5*(lam1 + lam2);
         const su2double abv2 = 0.5*(lam1 - lam2);
         const su2double abv3 = abv1 - lam3;
-
+        
         const su2double abv4 = gm1*(alphaAvg*dr - uAvg*dru - vAvg*drv -wAvg*drw + drE);
         const su2double abv5 = nx*dru + ny*drv + nz*drw - vnAvg*dr;
         const su2double abv6 = abv3*abv4*ova2Avg + abv2*abv5*ovaAvg;
         const su2double abv7 = abv2*abv4*ovaAvg  + abv3*abv5;
-
+        
         // Compute the Roe flux vector, which is 0.5*(FL + FR - |A|(UR-UL)).
         const su2double vnL  = area*(vxL*nx + vyL*ny + vzL*nz);
         const su2double vnR  = area*(vxR*nx + vyR*ny + vzR*nz);
         const su2double rvnL = UL[0]*vnL;
         const su2double rvnR = UR[0]*vnR;
         const su2double pa   = area*(pL + pR);
-
+        
         flux[0] = 0.5*(rvnL + rvnR - (lam3*dr + abv6));
         flux[1] = 0.5*(rvnL*vxL + rvnR*vxR + pa*nx - (lam3*dru + uAvg*abv6 + nx*abv7));
         flux[2] = 0.5*(rvnL*vyL + rvnR*vyR + pa*ny - (lam3*drv + vAvg*abv6 + ny*abv7));
         flux[3] = 0.5*(rvnL*vzL + rvnR*vzR + pa*nz - (lam3*drw + wAvg*abv6 + nz*abv7));
         flux[4] = 0.5*( vnL*rHL +  vnR*rHR - (lam3*drE + HAvg*abv6 + vnAvg*abv7));
+        
+        //        if (i == 0) {
+        //          cout << " Original  Roe: (" << flux[0] << ", " << flux[1] << ", " << flux[2] << ", " << flux[3] << ", " << flux[4] << ")." << endl;
+        //        }
+        
       }
-
+      
       break;
     }
+      
   }
+  
+  /*****************************************************************************/
+  /* New implementation using the CNumerics class right alongside the original */
+  /* implementation until we activate it.                                      */
+  /*****************************************************************************/
+  
+  /*--- Loop over the number of points. ---*/
+  
+  for(unsigned long i=0; i<nPoints; ++i) {
+    
+    /* Easier storage of the left and right solution, the face normals and
+     the flux vector for this point. */
+    const su2double *UL   = solL + i*nVar;
+    const su2double *UR   = solR + i*nVar;
+    const su2double *norm = normalsFace + i*(nDim+1);
+    
+    /*--- Store and load the normal into numerics. ---*/
+    
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Normal[iDim] = norm[iDim]*norm[nDim];
+    numerics->SetNormal(Normal);
+    
+    /*--- Prepare the primitive states for the numerics class. Note 
+     that for the FV solver, we have the following primitive
+     variable ordering: Compressible flow, primitive variables nDim+5,
+     (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
+    
+    /*--- Left primitive state ---*/
+    
+    Prim_L[0] = 0.0;                                        // Temperature (unused)
+    Prim_L[nDim+1] = gm1*UL[nVar-1];
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Prim_L[iDim+1]  = UL[iDim+1]/UL[0];                   // Velocities
+      Prim_L[nDim+1] -= gm1*0.5*Prim_L[iDim+1]*UL[iDim+1];  // Pressure
+    }
+    Prim_L[nDim+2] = UL[0];                                 // Density
+    Prim_L[nDim+3] = (UL[nVar-1] + Prim_L[nDim+1]) / UL[0]; // Enthalpy
+    
+    /*--- Right primitive state ---*/
+    
+    Prim_R[0] = 0.0;                                        // Temperature (unused)
+    Prim_R[nDim+1] = gm1*UR[nVar-1];
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Prim_R[iDim+1]  = UR[iDim+1]/UR[0];                   // Velocities
+      Prim_R[nDim+1] -= gm1*0.5*Prim_R[iDim+1]*UR[iDim+1];  // Pressure
+    }
+    Prim_R[nDim+2] = UR[0];                                 // Density
+    Prim_R[nDim+3] = (UR[nVar-1] + Prim_R[nDim+1]) / UR[0]; // Enthalpy
+    
+    /*--- Load the primitive states into the numerics class. ---*/
+    
+    numerics->SetPrimitive(Prim_L, Prim_R);
+    
+    /*--- Now simply call the ComputeResidual() function to calculate
+     the flux using the chosen approximate Riemann solver. Note that
+     the Jacobian arrays here are just dummies for now (no implicit). ---*/
+    
+    numerics->ComputeResidual(Fluxes, Jacobian_i, Jacobian_j, config);
+    
+    //    if (i == 0) {
+    //      cout << " CNumerics Roe: (" << Fluxes[0];
+    //      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    //        cout << ", " << Fluxes[iDim+1];
+    //      cout << ", " << Fluxes[nVar-1] << ")." << endl;
+    //    }
+    
+  }
+  
+  delete [] Normal;
+  delete [] Prim_L;
+  delete [] Prim_R;
+  delete [] Fluxes;
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    delete [] Jacobian_i[iVar];
+    delete [] Jacobian_j[iVar];
+  }
+  delete [] Jacobian_i;
+  delete [] Jacobian_j;
+  
 }
 
 void CFEM_DG_EulerSolver::MatrixProduct(const int M,        const int N,        const int K,
