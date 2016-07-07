@@ -1643,6 +1643,9 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(void) : CSolver (){
   Sens_nL       = NULL;
   CSensitivity  = NULL;
 
+  Solution_Vel  = NULL;
+  Solution_Accel= NULL;
+
 }
 
 CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config)  : CSolver(){
@@ -1658,6 +1661,9 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config)  : CS
   Sens_nL       = NULL;
   CSensitivity  = NULL;
 
+  Solution_Vel  = NULL;
+  Solution_Accel= NULL;
+
 }
 
 CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CSolver(){
@@ -1671,6 +1677,9 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   ifstream restart_file;
   string filename, AdjExt;
   su2double dull_val;
+
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
@@ -1692,6 +1701,8 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   /*-- Store number of markers with a normal load boundary condition ---*/
 
   normalLoads = NULL;
+
+  nMarker_nL = 0;
 
 //  nMarker_nL = 0;
 //  for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -1733,9 +1744,22 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   /*--- Define some auxiliary vectors related to the solution ---*/
 
-  Solution   = new su2double[nVar];
+  Solution        = new su2double[nVar];
 
-  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 1e-16;
+  for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]          = 1e-16;
+
+  Solution_Vel    = NULL;
+  Solution_Accel  = NULL;
+
+  if (dynamic){
+
+    Solution_Vel    = new su2double[nVar];
+    Solution_Accel  = new su2double[nVar];
+
+    for (iVar = 0; iVar < nVar; iVar++) Solution_Vel[iVar]      = 1e-16;
+    for (iVar = 0; iVar < nVar; iVar++) Solution_Accel[iVar]    = 1e-16;
+
+  }
 
   /*--- Sensitivity definition and coefficient in all the markers ---*/
 
@@ -1767,7 +1791,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
     /*--- Restart the solution from zero ---*/
     for (iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint] = new CDiscAdjVariable(Solution, nDim, nVar, config);
+      node[iPoint] = new CDiscAdjFEAVariable(Solution, nDim, nVar, config);
 
   }
   else {
@@ -1829,7 +1853,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
         point_line >> index;
         for (iVar = 0; iVar < skipVars; iVar++){ point_line >> dull_val;}
         for (iVar = 0; iVar < nVar; iVar++){ point_line >> Solution[iVar];}
-        node[iPoint_Local] = new CDiscAdjVariable(Solution, nDim, nVar, config);
+        node[iPoint_Local] = new CDiscAdjFEAVariable(Solution, nDim, nVar, config);
       }
       iPoint_Global++;
     }
@@ -1838,7 +1862,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
      at any halo/periodic nodes. The initial solution can be arbitrary,
      because a send/recv is performed immediately in the solver. ---*/
     for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-      node[iPoint] = new CDiscAdjVariable(Solution, nDim, nVar, config);
+      node[iPoint] = new CDiscAdjFEAVariable(Solution, nDim, nVar, config);
     }
 
     /*--- Close the restart file ---*/
@@ -1853,6 +1877,17 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     node[iPoint]->SetSolution_Direct(direct_solver->node[iPoint]->GetSolution());
   }
+
+  if (dynamic){
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      node[iPoint]->SetSolution_Accel_Direct(direct_solver->node[iPoint]->GetSolution_Accel());
+    }
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      node[iPoint]->SetSolution_Vel_Direct(direct_solver->node[iPoint]->GetSolution_Vel());
+    }
+  }
+
 }
 
 CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
@@ -1864,12 +1899,15 @@ CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
   delete [] Sens_nL;
   delete [] CSensitivity;
 
+  if (Solution_Vel   != NULL) delete [] Solution_Vel;
+  if (Solution_Accel != NULL) delete [] Solution_Accel;
+
 }
 
 void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned short kind_recording){
 
 
-//  bool dynamic (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic (config->GetDynamic_Analysis() == DYNAMIC);
 
   unsigned long iPoint;
   unsigned short iVar;
@@ -1880,23 +1918,36 @@ void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config, unsig
     direct_solver->node[iPoint]->SetSolution(node[iPoint]->GetSolution_Direct());
   }
 
-//  if (dynamic){
-//    for (iPoint = 0; iPoint < nPoint; iPoint++){
-//      for (iVar = 0; iVar < nVar; iVar++){
-//        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_time_n()[iVar]);
-//      }
-//    }
-//    for (iPoint = 0; iPoint < nPoint; iPoint++){
-//      for (iVar = 0; iVar < nVar; iVar++){
-//        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_Vel_time_n()[iVar]);
-//      }
-//    }
-//    for (iPoint = 0; iPoint < nPoint; iPoint++){
-//      for (iVar = 0; iVar < nVar; iVar++){
-//        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_Accel_time_n()[iVar]);
-//      }
-//    }
-//  }
+  if (dynamic){
+    /*--- Reset the solution to the initial (converged) solution ---*/
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      direct_solver->node[iPoint]->SetSolution_Accel(node[iPoint]->GetSolution_Accel_Direct());
+    }
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      direct_solver->node[iPoint]->SetSolution_Vel(node[iPoint]->GetSolution_Vel_Direct());
+    }
+
+    /*--- Reset the input for time n ---*/
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      for (iVar = 0; iVar < nVar; iVar++){
+        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_time_n()[iVar]);
+      }
+    }
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      for (iVar = 0; iVar < nVar; iVar++){
+        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_Accel_time_n()[iVar]);
+      }
+    }
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      for (iVar = 0; iVar < nVar; iVar++){
+        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_Vel_time_n()[iVar]);
+      }
+    }
+
+  }
 
   /*--- Set the Jacobian to zero since this is not done inside the meanflow iteration
    * when running the discrete adjoint solver. ---*/
@@ -1913,7 +1964,7 @@ void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint, nPoint = geometry->GetnPoint();
 
-//  bool dynamic (config->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic (config->GetDynamic_Analysis() == DYNAMIC);
   bool input = true;
 
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
@@ -1921,11 +1972,26 @@ void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     direct_solver->node[iPoint]->RegisterSolution(input);
   }
-//  if (dynamic){
-//    for (iPoint = 0; iPoint < nPoint; iPoint++){
-//      direct_solver->node[iPoint]->RegisterSolution_time_n();
-//    }
-//  }
+
+  if (dynamic){
+    /*--- Register acceleration (u'') and velocity (u') at time step n ---*/
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      direct_solver->node[iPoint]->RegisterSolution_Accel(input);
+    }
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      direct_solver->node[iPoint]->RegisterSolution_Vel(input);
+    }
+    /*--- Register acceleration (u'') and velocity (u') at time step n-1 ---*/
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      direct_solver->node[iPoint]->RegisterSolution_time_n();
+    }
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      direct_solver->node[iPoint]->RegisterSolution_Accel_time_n();
+    }
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      direct_solver->node[iPoint]->RegisterSolution_Vel_time_n();
+    }
+  }
 
 }
 
@@ -1935,17 +2001,20 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
 
   if (KindDirect_Solver == RUNTIME_FEA_SYS) {
 
-    E                      = config->GetElasticyMod();
-    Nu                     = config->GetPoissonRatio();
+    bool pseudo_static = config->GetPseudoStatic();
 
-    su2double SoundSpeed = 0.0;
+    E           = config->GetElasticyMod();
+    Nu          = config->GetPoissonRatio();
+
+    Rho         = config->GetMaterialDensity();     // For inertial effects
+    Rho_DL      = config->GetMaterialDensity();     // For dead loads
+    if (pseudo_static) Rho = 0.0;                   // Pseudo-static: no inertial effects considered
 
     if (!reset){
       AD::RegisterInput(E);
       AD::RegisterInput(Nu);
-//      for (unsigned long iMarker = 0; iMarker < nMarker_nL; iMarker++){
-//        AD::RegisterInput(normalLoads[iMarker]);
-//      }
+      AD::RegisterInput(Rho);
+      AD::RegisterInput(Rho_DL);
     }
 
   }
@@ -1960,6 +2029,8 @@ void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint, nPoint = geometry->GetnPoint();
 
+  bool dynamic (config->GetDynamic_Analysis() == DYNAMIC);
+
   /*--- Register variables as output of the solver iteration ---*/
 
   bool input = false;
@@ -1969,6 +2040,17 @@ void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     direct_solver->node[iPoint]->RegisterSolution(input);
   }
+  if (dynamic){
+    /*--- Register acceleration (u'') and velocity (u') at time step n ---*/
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      direct_solver->node[iPoint]->RegisterSolution_Accel(input);
+    }
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      direct_solver->node[iPoint]->RegisterSolution_Vel(input);
+    }
+  }
+
+
 }
 
 void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
@@ -2059,18 +2141,83 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     node[iPoint]->SetSolution(Solution);
   }
 
-//  if (dynamic){
-//    for (iPoint = 0; iPoint < nPoint; iPoint++){
-//
-//      /*--- Extract the adjoint solution at time n ---*/
-//
-//      direct_solver->node[iPoint]->GetAdjointSolution_time_n(Solution);
-//
-//      /*--- Store the adjoint solution at time n ---*/
-//
-//      node[iPoint]->Set_Solution_time_n(Solution);
-//    }
-//  }
+  /*--- Solution for acceleration (u'') and velocity (u') at time n ---*/
+
+  if (dynamic){
+
+    /*--- FIRST: The acceleration solution ---*/
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+      /*--- Set the old acceleration solution ---*/
+
+      node[iPoint]->Set_OldSolution_Accel();
+
+      /*--- Extract the adjoint acceleration solution u'' ---*/
+
+      direct_solver->node[iPoint]->GetAdjointSolution_Accel(Solution_Accel);
+
+      /*--- Store the adjoint acceleration solution u'' ---*/
+
+      node[iPoint]->SetSolution_Accel(Solution_Accel);
+
+    }
+
+    /*--- NEXT: The velocity solution ---*/
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+      /*--- Set the old velocity solution ---*/
+
+      node[iPoint]->Set_OldSolution_Vel();
+
+      /*--- Extract the adjoint velocity solution u'' ---*/
+
+      direct_solver->node[iPoint]->GetAdjointSolution_Vel(Solution_Vel);
+
+      /*--- Store the adjoint velocity solution u'' ---*/
+
+      node[iPoint]->SetSolution_Vel(Solution_Vel);
+
+    }
+
+    /*--- NOW: The solution at time n ---*/
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+      /*--- Extract the adjoint solution at time n ---*/
+
+      direct_solver->node[iPoint]->GetAdjointSolution_time_n(Solution);
+
+      /*--- Store the adjoint solution at time n ---*/
+
+      node[iPoint]->Set_Solution_time_n(Solution);
+    }
+
+    /*--- The acceleration solution at time n... ---*/
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+      /*--- Extract the adjoint acceleration solution u'' at time n ---*/
+
+      direct_solver->node[iPoint]->GetAdjointSolution_Accel_time_n(Solution_Accel);
+
+      /*--- Store the adjoint acceleration solution u'' at time n---*/
+
+      node[iPoint]->SetSolution_Accel_time_n(Solution_Accel);
+
+    }
+
+    /*--- ... and the velocity solution at time n ---*/
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+      /*--- Extract the adjoint velocity solution u' at time n ---*/
+
+      direct_solver->node[iPoint]->GetAdjointSolution_Vel_time_n(Solution_Vel);
+
+      /*--- Store the adjoint velocity solution u' at time n ---*/
+
+      node[iPoint]->SetSolution_Vel_time_n(Solution_Vel);
+
+    }
+
+  }
 
   /*--- Set the residuals ---*/
 
@@ -2131,38 +2278,38 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 
 void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint;
-  unsigned short iDim;
-  su2double *Coord, Sensitivity, eps;
-
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    Coord = geometry->node[iPoint]->GetCoord();
-
-    for (iDim = 0; iDim < nDim; iDim++){
-
-      Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
-
-      /*--- Set the index manually to zero. ---*/
-
-     AD::ResetInput(Coord[iDim]);
-
-      /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
-
-      if (config->GetSens_Remove_Sharp()) {
-        eps = config->GetLimiterCoeff()*config->GetRefElemLength();
-        if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
-          Sensitivity = 0.0;
-      }
-      if (!config){
-        node[iPoint]->SetSensitivity(iDim, Sensitivity);
-      } else {
-        node[iPoint]->SetSensitivity(iDim, node[iPoint]->GetSensitivity(iDim) + Sensitivity);
-      }
-    }
-  }
-  SetSurface_Sensitivity(geometry, config);
+//  unsigned long iPoint;
+//  unsigned short iDim;
+//  su2double *Coord, Sensitivity, eps;
+//
+//  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+//
+//  for (iPoint = 0; iPoint < nPoint; iPoint++){
+//    Coord = geometry->node[iPoint]->GetCoord();
+//
+//    for (iDim = 0; iDim < nDim; iDim++){
+//
+//      Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
+//
+//      /*--- Set the index manually to zero. ---*/
+//
+//     AD::ResetInput(Coord[iDim]);
+//
+//      /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
+//
+//      if (config->GetSens_Remove_Sharp()) {
+//        eps = config->GetLimiterCoeff()*config->GetRefElemLength();
+//        if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
+//          Sensitivity = 0.0;
+//      }
+//      if (!config){
+//        node[iPoint]->SetSensitivity(iDim, Sensitivity);
+//      } else {
+//        node[iPoint]->SetSensitivity(iDim, node[iPoint]->GetSensitivity(iDim) + Sensitivity);
+//      }
+//    }
+//  }
+//  SetSurface_Sensitivity(geometry, config);
 }
 
 void CDiscAdjFEASolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config){

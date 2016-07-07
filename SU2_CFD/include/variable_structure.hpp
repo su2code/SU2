@@ -1809,6 +1809,29 @@ public:
 	 */
 	virtual su2double *GetSolution_Direct(void);
 
+  /*!
+   * \brief A virtual member. Set the direct velocity solution for the adjoint solver.
+   * \param[in] val_solution_direct - Value of the direct velocity solution.
+   */
+  virtual void SetSolution_Vel_Direct(su2double *sol);
+
+  /*!
+   * \brief A virtual member. Set the direct acceleration solution for the adjoint solver.
+   * \param[in] val_solution_direct - Value of the direct acceleration solution.
+   */
+  virtual void SetSolution_Accel_Direct(su2double *sol);
+
+  /*!
+   * \brief A virtual member. Get the direct velocity solution for the adjoint solver.
+   * \return Pointer to the direct velocity solution vector.
+   */
+  virtual su2double* GetSolution_Vel_Direct();
+
+  /*!
+   * \brief A virtual member. Get the direct acceleraction solution for the adjoint solver.
+   * \return Pointer to the direct acceleraction solution vector.
+   */
+  virtual su2double* GetSolution_Accel_Direct();
 
 	/*!
 	 * STRUCTURAL ANALYSIS: NEW VARIABLES
@@ -1987,6 +2010,15 @@ public:
 	 */
 	virtual su2double *GetSolution_Accel_time_n(void);
 
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Set_OldSolution_Vel(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Set_OldSolution_Accel(void);
 
 	/*!
 	 * \brief  A virtual member. Set the value of the solution predictor.
@@ -2076,7 +2108,67 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */
-    virtual su2double GetReference_Geometry(unsigned short iVar);
+   virtual su2double GetReference_Geometry(unsigned short iVar);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void RegisterSolution_Vel(bool input);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void RegisterSolution_Vel_time_n();
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void RegisterSolution_Accel(bool input);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void RegisterSolution_Accel_time_n();
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetAdjointSolution_Vel(su2double *adj_sol);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void GetAdjointSolution_Vel(su2double *adj_sol);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetAdjointSolution_Vel_time_n(su2double *adj_sol);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void GetAdjointSolution_Vel_time_n(su2double *adj_sol);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetAdjointSolution_Accel(su2double *adj_sol);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void GetAdjointSolution_Accel(su2double *adj_sol);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetAdjointSolution_Accel_time_n(su2double *adj_sol);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void GetAdjointSolution_Accel_time_n(su2double *adj_sol);
 
   /*!
    * \brief Register the variables in the solution array as input/output variable.
@@ -2660,7 +2752,6 @@ public:
 	 */
 	su2double *GetSolution_Accel_time_n(void);
 
-
 	/*!
 	 * \brief Set the value of the solution predictor.
 	 */
@@ -2765,6 +2856,76 @@ public:
     * \brief Get the value of the reference geometry for the coordinate iVar
     */
     su2double GetReference_Geometry(unsigned short iVar);
+
+    /*!
+     * \brief Register the variables in the velocity array as input/output variable.
+     * \param[in] input - input or output variables.
+     */
+    void RegisterSolution_Vel(bool input);
+
+    /*!
+     * \brief Register the variables in the velocity time_n array as input/output variable.
+     */
+    void RegisterSolution_Vel_time_n();
+
+    /*!
+     * \brief Register the variables in the acceleration array as input/output variable.
+     * \param[in] input - input or output variables.
+     */
+    void RegisterSolution_Accel(bool input);
+
+    /*!
+     * \brief Register the variables in the acceleration time_n array as input/output variable.
+     */
+    void RegisterSolution_Accel_time_n();
+
+    /*!
+     * \brief Set the velocity adjoint values of the solution.
+     * \param[in] adj_sol - The adjoint values of the solution.
+     */
+    void SetAdjointSolution_Vel(su2double *adj_sol);
+
+    /*!
+     * \brief Get the velocity adjoint values of the solution.
+     * \param[in] adj_sol - The adjoint values of the solution.
+     */
+    void GetAdjointSolution_Vel(su2double *adj_sol);
+
+    /*!
+     * \brief Set the velocity adjoint values of the solution at time n.
+     * \param[in] adj_sol - The adjoint values of the solution.
+     */
+    void SetAdjointSolution_Vel_time_n(su2double *adj_sol);
+
+    /*!
+     * \brief Get the velocity adjoint values of the solution at time n.
+     * \param[in] adj_sol - The adjoint values of the solution.
+     */
+    void GetAdjointSolution_Vel_time_n(su2double *adj_sol);
+
+    /*!
+     * \brief Set the acceleration adjoint values of the solution.
+     * \param[in] adj_sol - The adjoint values of the solution.
+     */
+    void SetAdjointSolution_Accel(su2double *adj_sol);
+
+    /*!
+     * \brief Get the acceleration adjoint values of the solution.
+     * \param[in] adj_sol - The adjoint values of the solution.
+     */
+    void GetAdjointSolution_Accel(su2double *adj_sol);
+
+    /*!
+     * \brief Set the acceleration adjoint values of the solution at time n.
+     * \param[in] adj_sol - The adjoint values of the solution.
+     */
+    void SetAdjointSolution_Accel_time_n(su2double *adj_sol);
+
+    /*!
+     * \brief Get the acceleration adjoint values of the solution at time n.
+     * \param[in] adj_sol - The adjoint values of the solution.
+     */
+    void GetAdjointSolution_Accel_time_n(su2double *adj_sol);
 
 
 };
@@ -4210,6 +4371,126 @@ public:
     void SetSolution_Direct(su2double *sol);
 
     su2double* GetSolution_Direct();
+};
+
+/*!
+ * \class CDiscAdjFEAVariable
+ * \brief Main class for defining the variables of the adjoint solver.
+ * \ingroup Discrete_Adjoint
+ * \author T. Albring, R. Sanchez.
+ * \version 4.2.0 "Cardinal"
+ */
+class CDiscAdjFEAVariable : public CVariable {
+private:
+    su2double* Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
+    su2double* Solution_Direct;
+    su2double* DualTime_Derivative;
+    su2double* DualTime_Derivative_n;
+
+    su2double* Solution_Vel;
+    su2double* Solution_Accel;
+
+    su2double* Solution_Vel_time_n;
+    su2double* Solution_Accel_time_n;
+
+    su2double* Solution_Old_Vel;
+    su2double* Solution_Old_Accel;
+
+    su2double* Solution_Direct_Vel;
+    su2double* Solution_Direct_Accel;
+
+
+public:
+    /*!
+     * \brief Constructor of the class.
+     */
+    CDiscAdjFEAVariable(void);
+
+    /*!
+     * \brief Destructor of the class.
+     */
+    ~CDiscAdjFEAVariable(void);
+
+    /*!
+     * \overload
+     * \param[in] val_solution - Pointer to the adjoint value (initialization value).
+     * \param[in] val_ndim - Number of dimensions of the problem.
+     * \param[in] val_nvar - Number of variables of the problem.
+     * \param[in] config - Definition of the particular problem.
+     */
+    CDiscAdjFEAVariable(su2double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+
+    /*!
+     * \brief Set the sensitivity at the node
+     * \param[in] iDim - spacial component
+     * \param[in] val - value of the Sensitivity
+     */
+    void SetSensitivity(unsigned short iDim, su2double val);
+
+    /*!
+     * \brief Get the Sensitivity at the node
+     * \param[in] iDim - spacial component
+     * \return value of the Sensitivity
+     */
+    su2double GetSensitivity(unsigned short iDim);
+
+    void SetDual_Time_Derivative(unsigned short iVar, su2double der);
+
+    void SetDual_Time_Derivative_n(unsigned short iVar, su2double der);
+
+    su2double GetDual_Time_Derivative(unsigned short iVar);
+
+    su2double GetDual_Time_Derivative_n(unsigned short iVar);
+
+    void SetSolution_Direct(su2double *sol);
+
+    void SetSolution_Vel_Direct(su2double *sol);
+
+    void SetSolution_Accel_Direct(su2double *sol);
+
+    su2double* GetSolution_Direct();
+
+    su2double* GetSolution_Vel_Direct();
+
+    su2double* GetSolution_Accel_Direct();
+
+    /*!
+     * \brief Set the value of the acceleration (Structural Analysis - adjoint).
+     * \param[in] val_solution - Solution of the problem (acceleration).
+     */
+    void SetSolution_Accel(su2double *val_solution_accel);
+
+    /*!
+     * \brief Set the value of the velocity (Structural Analysis - adjoint).
+     * \param[in] val_solution - Solution of the problem (velocity).
+     */
+    void SetSolution_Vel(su2double *val_solution_vel);
+
+    /*!
+     * \brief Set the value of the adjoint acceleration (Structural Analysis) at time n.
+     * \param[in] val_solution_old - Pointer to the residual vector.
+     */
+    void SetSolution_Accel_time_n(su2double *val_solution_accel_time_n);
+
+    /*!
+     * \brief Set the value of the adjoint velocity (Structural Analysis) at time n.
+     * \param[in] val_solution_old - Pointer to the residual vector.
+     */
+    void SetSolution_Vel_time_n(su2double *val_solution_vel_time_n);
+
+    /*!
+     * \brief Set the value of the old acceleration (Structural Analysis - adjoint).
+     * \param[in] val_solution - Old solution of the problem (acceleration).
+     */
+    void Set_OldSolution_Accel(void);
+
+    /*!
+     * \brief Set the value of the old velocity (Structural Analysis - adjoint).
+     * \param[in] val_solution - Old solution of the problem (velocity).
+     */
+    void Set_OldSolution_Vel(void);
+
+
 };
 
 

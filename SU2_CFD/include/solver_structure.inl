@@ -404,6 +404,10 @@ inline su2double CSolver::GetVal_Young(void) { return 0.0; }
 
 inline su2double CSolver::GetVal_Poisson(void) { return 0.0; }
 
+inline su2double CSolver::GetVal_Rho(void) { return 0.0; }
+
+inline su2double CSolver::GetVal_Rho_DL(void) { return 0.0; }
+
 inline su2double* CSolver::GetConstants() {return NULL;}
 
 inline su2double CSolver::GetOneD_TotalPress(void) {return 0;}
@@ -1211,6 +1215,10 @@ inline su2double CDiscAdjFEASolver::GetTotal_Sens_Nu(void) { return Total_Sens_N
 inline su2double CDiscAdjFEASolver::GetVal_Young(void) { return E; }
 
 inline su2double CDiscAdjFEASolver::GetVal_Poisson(void) { return Nu; }
+
+inline su2double CDiscAdjFEASolver::GetVal_Rho(void) { return Rho; }
+
+inline su2double CDiscAdjFEASolver::GetVal_Rho_DL(void) { return Rho_DL; }
 
 inline unsigned long CSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {return 0;}
 
