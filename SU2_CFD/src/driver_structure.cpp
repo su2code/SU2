@@ -175,6 +175,7 @@ void CDriver::Postprocessing(CIteration **iteration_container,
     Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone],
                                    geometry_container[iZone], config_container[iZone]);
     */
+
     if (rank == MASTER_NODE)
           cout << endl <<"----------------- Integration Postprocessing ----------------" << endl;
 
@@ -1425,9 +1426,9 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : case DISC_ADJ_EULER: euler = true; break;
-    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: ns = true; break;
-    case RANS : case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case EULER : case FEM_EULER: case DISC_ADJ_EULER: euler = true; break;
+    case NAVIER_STOKES: case FEM_NAVIER_STOKES: case FEM_LES: case DISC_ADJ_NAVIER_STOKES: ns = true; break;
+    case RANS : case FEM_RANS: case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;

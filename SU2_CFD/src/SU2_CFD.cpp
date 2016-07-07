@@ -555,7 +555,7 @@ int main(int argc, char *argv[]) {
   
   /*--- Deallocations: further work is needed,
    * these routines can be used to check for memory leaks---*/
-  /*
+
   if (rank == MASTER_NODE)
       cout << endl <<"------------------------ Driver Postprocessing ------------------------" << endl;
 
@@ -564,7 +564,6 @@ int main(int argc, char *argv[]) {
       transfer_container, config_container, nZone);
 
   delete driver;
-  */
 
   /*--- Geometry class deallocation ---*/
   if (rank == MASTER_NODE)
@@ -625,7 +624,7 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_LIBXSMM
   libxsmm_finalize();
 #endif
-  
+
   /*--- Exit the solver cleanly ---*/
   
   if (rank == MASTER_NODE)
