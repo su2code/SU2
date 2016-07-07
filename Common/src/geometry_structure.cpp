@@ -9252,7 +9252,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 	  myfile << "TITLE = \"Global index visualization file\"" << endl;
 	  myfile << "VARIABLES =" << endl;
-	  if ((config->GetKind_TurboMachinery(val_iZone)== AXIAL && (nDim == 3)) || (config->GetKind_TurboMachinery(val_iZone)== CENTRIPETAL_AXIAL && (marker_flag == OUTFLOW))){
+//	  if ((config->GetKind_TurboMachinery(val_iZone)== AXIAL && (nDim == 3)) || (config->GetKind_TurboMachinery(val_iZone)== CENTRIPETAL_AXIAL && (marker_flag == OUTFLOW))){
 	  	myfile << "\"iSpan\" " << "\"x_coord\" " << "\"y_coord\" " <<  "\"z_coord\" "<< "\"radius\" " << "\"global_index\" " <<endl;
 			for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
 				for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
@@ -9263,18 +9263,18 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 //			cout <<endl;
 				myfile << endl;
 			}
-	  }
-	  else{
-			myfile << "\"iSpan\" " << "\"x_coord\" " << "\"y_coord\" " <<  "\"z_coord\" " << "\"global_index\" " <<endl;
-			for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-				for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
-		//				cout << "iSpan " << iSpan << " y_coord " <<  y_loc[iSpan][iSpanVertex] << " global_index " << globIdx_loc[iSpan][iSpanVertex]<<endl;
-					myfile << iSpan  << "\t" <<  x_loc[iSpan][iSpanVertex] << "\t"   <<  y_loc[iSpan][iSpanVertex] << "\t"  <<  z_loc[iSpan][iSpanVertex] << "\t"  << globIdx_loc[iSpan][iSpanVertex]<<endl;
-				}
-//			cout <<endl;
-				myfile << endl;
-			}
-		}
+//	  }
+//	  else{
+//			myfile << "\"iSpan\" " << "\"x_coord\" " << "\"y_coord\" " <<  "\"z_coord\" " << "\"global_index\" " <<endl;
+//			for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+//				for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
+//		//				cout << "iSpan " << iSpan << " y_coord " <<  y_loc[iSpan][iSpanVertex] << " global_index " << globIdx_loc[iSpan][iSpanVertex]<<endl;
+//					myfile << iSpan  << "\t" <<  x_loc[iSpan][iSpanVertex] << "\t"   <<  y_loc[iSpan][iSpanVertex] << "\t"  <<  z_loc[iSpan][iSpanVertex] << "\t"  << globIdx_loc[iSpan][iSpanVertex]<<endl;
+//				}
+////			cout <<endl;
+//				myfile << endl;
+//			}
+//		}
 	  myfile.close();
 	}
 
