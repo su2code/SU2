@@ -4605,9 +4605,6 @@ CConfig::~CConfig(void) {
   if (Marker_Plotting != NULL)        delete[] Marker_Plotting;
   if (Marker_FSIinterface != NULL)        delete[] Marker_FSIinterface;
   if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
-  if (EA_IntLimit != NULL)    delete[] EA_IntLimit;
-  if (Hold_GridFixed_Coord != NULL)    delete[] Hold_GridFixed_Coord ;
-  if (Subsonic_Engine_Box != NULL)    delete[] Subsonic_Engine_Box ;
   if (DV_Value != NULL)    delete[] DV_Value;
   if (Design_Variable != NULL)    delete[] Design_Variable;
   if (Dirichlet_Value != NULL)    delete[] Dirichlet_Value;
@@ -4659,11 +4656,7 @@ CConfig::~CConfig(void) {
 
   if (ParamDV!=NULL)                  delete[] ParamDV;
   if (MG_CorrecSmooth != NULL)        delete[] MG_CorrecSmooth;
-  if (Section_Location != NULL)       delete[] Section_Location;
-  if (Kappa_Flow != NULL )            delete[] Kappa_Flow;
-  if (Kappa_AdjFlow != NULL)          delete[] Kappa_AdjFlow;
   if (PlaneTag != NULL)               delete[] PlaneTag;
-  if (CFL_AdaptParam != NULL)         delete[] CFL_AdaptParam;
   if (CFL!=NULL)                      delete[] CFL;
   
   /*--- String markers ---*/
