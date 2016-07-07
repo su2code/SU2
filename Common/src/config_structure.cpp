@@ -2632,7 +2632,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SpatialOrder_AdjFlow = SECOND_ORDER;
   
   delete [] tmp_smooth;
-  
+ 
+  /*--- Make sure that implicit time integration is disable
+        for the FEM fluid solver (numerics). ---*/
+  if ((Kind_Solver == FEM_EULER) ||
+      (Kind_Solver == FEM_NAVIER_STOKES) || 
+      (Kind_Solver == FEM_RANS)) {
+     Kind_TimeIntScheme_Flow = Kind_TimeIntScheme_FEM_Flow;
+  }
+ 
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {
