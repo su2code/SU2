@@ -53,7 +53,9 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
 
   nSecondaryVar     = 0;
   nSecondaryVarGrad = 0;
-  
+ 
+  Undivided_Laplacian = NULL;
+ 
 }
 
 CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, unsigned short val_nDim,
@@ -89,6 +91,8 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   
   nSecondaryVar     = 0;
   nSecondaryVarGrad = 0;
+
+  Undivided_Laplacian = NULL;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   
@@ -275,7 +279,9 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   
   nSecondaryVar     = 0;
   nSecondaryVarGrad = 0;
-  
+ 
+  Undivided_Laplacian = NULL;
+ 
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
   if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
@@ -394,8 +400,8 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
 
 CEulerVariable::~CEulerVariable(void) {
 	unsigned short iVar;
-  
-	if (TS_Source         != NULL) delete [] TS_Source;
+
+  if (TS_Source         != NULL) delete [] TS_Source;
   if (Primitive         != NULL) delete [] Primitive;
   if (Secondary         != NULL) delete [] Secondary;
   if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;
@@ -413,6 +419,8 @@ CEulerVariable::~CEulerVariable(void) {
       if (Gradient_Secondary!=NULL) delete [] Gradient_Secondary[iVar];
     delete [] Gradient_Secondary;
   }
+
+  if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
   
 }
 
