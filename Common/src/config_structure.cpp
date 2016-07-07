@@ -4477,6 +4477,12 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
 CConfig::~CConfig(void) {
  
   unsigned short iMarker_PerBound;
+
+  /*--- Delete all of the option objects in the global option map ---*/
+    
+  for(map<string, COptionBase*>::iterator itr = option_map.begin(); itr != option_map.end(); itr++) {
+    delete itr->second;
+  }
  
   if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
   if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
