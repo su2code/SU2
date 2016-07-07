@@ -115,7 +115,8 @@ class CLookUpTable : public CFluidModel {
 
 protected:
 	CThermoList **ThermoTables;
-	su2double Interpolation_Coeff[3][3]; /*!< \brief Fluid derivative DktDT_rho. */
+	su2double Interpolation_Coeff[4][4]; /*!< \brief Fluid derivative DktDT_rho. */
+	su2double Interpolation_Matrix[4][4]; /*!< \brief Fluid derivative DktDT_rho. */
 	long iIndex, jIndex;
 	int Table_Pressure_Stations, Table_Density_Stations; /*!< \brief The pressure and density dimensions of the table */
 	KD_node *HS_tree; //KD tree for HS thermoPair
@@ -232,9 +233,9 @@ public:
 
 	void Interp2D_SingleSkewCoeff(std::string grid_var);
 	su2double Interp2D_Inv_Dist(int N, std::string interpolant_var, su2double* dist);
+	void Gaussian_Inverse(int nDim);
 	void Interp2D_ArbitrarySkewCoeff(su2double x, su2double y, std::string grid_var);
-	su2double Interp2D_lin(su2double x, su2double y, std::string interpolant_var);
-	su2double Extrap2D_lin(su2double x, su2double y, std::string interpolant_var);
+	su2double Interp2D_lin(std::string interpolant_var);
 	void TableLoadCFX(string filename);
 	void LUTprint(void);
 	void TableDump(char* filename);
