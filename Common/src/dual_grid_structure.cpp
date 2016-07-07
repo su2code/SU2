@@ -613,7 +613,16 @@ void CVertex::AddNormal(su2double *val_face_normal) {
 }
 
 void CVertex::Allocate_DonorInfo(void){
+  if( Donor_Points != NULL )
+	delete [] Donor_Points;
   Donor_Points = new unsigned long[nDonor_Points];
+  
+  if( Donor_Proc != NULL )
+	delete [] Donor_Proc;
   Donor_Proc = new unsigned long[nDonor_Points];
+  
+  if( Donor_Coeff != NULL )
+	delete [] Donor_Coeff;
   Donor_Coeff = new su2double[nDonor_Points];
 }
+
