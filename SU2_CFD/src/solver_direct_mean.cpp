@@ -10220,7 +10220,7 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 					nDonorVertex = GetnSlidingStates(iMarker, iVertex );
 					
 					for (iVar = 0; iVar < nPrimVar; iVar++)
-							Residual[iVar] = 0;
+							Residual[iVar] = 0.0;
 					
 					for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
 
