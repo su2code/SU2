@@ -146,7 +146,7 @@ void CLookUpTable::free_KD_tree(KD_node* root) {
 struct KD_node* CLookUpTable::KD_Tree(su2double* x_values, su2double* y_values,
 		int* Flattened_Point_Index, int dim, int depth) {
 
-	struct KD_node *kdn = new KD_node;	//(KD_node*) malloc(sizeof(KD_node));;
+	struct KD_node *kdn = new KD_node;
 	kdn->x_values = x_values;
 	kdn->y_values = y_values;
 	kdn->Flattened_Point_Index = Flattened_Point_Index;
@@ -157,13 +157,13 @@ struct KD_node* CLookUpTable::KD_Tree(su2double* x_values, su2double* y_values,
 		int itemp = 0;
 		int swaps = 0; //for bubblesort
 		bool sorted = false;
-
+		int bubbles_sorted = 0;
 		if (depth % 2 == 0) {
 			//bubble sort by xvalues
 			while (not sorted) {
 				swaps = 0;
 
-				for (int i = 0; i < dim - 1; i++) {
+				for (int i = 0; i < dim - 1-bubbles_sorted; i++) {
 					if (x_values[i] > x_values[i + 1]) {
 						temp = x_values[i];
 						x_values[i] = x_values[i + 1];
@@ -180,15 +180,17 @@ struct KD_node* CLookUpTable::KD_Tree(su2double* x_values, su2double* y_values,
 						swaps++;
 					}
 				}
+				bubbles_sorted++;
 				if (swaps == 0)
 					sorted = true;
 			}
 		} else if (depth % 2 == 1) {
 			//bubble sort by yvalues
+			int bubbles_sorted = 0;
 			while (not sorted) {
 				swaps = 0;
 
-				for (int i = 0; i < dim - 1; i++) {
+				for (int i = 0; i < dim - 1-bubbles_sorted; i++) {
 					if (y_values[i] > y_values[i + 1]) {
 						temp = y_values[i];
 						y_values[i] = y_values[i + 1];
@@ -205,6 +207,7 @@ struct KD_node* CLookUpTable::KD_Tree(su2double* x_values, su2double* y_values,
 						swaps++;
 					}
 				}
+				bubbles_sorted++;
 				if (swaps == 0)
 					sorted = true;
 			}
@@ -641,13 +644,14 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 	}
 
 	iIndex = HS_tree->Flattened_Point_Index[HS_tree->Branch_Dimension / 2]
-			/ Table_Pressure_Stations;
+																					/ Table_Pressure_Stations;
 	jIndex = HS_tree->Flattened_Point_Index[HS_tree->Branch_Dimension / 2]
-			% Table_Pressure_Stations;
-	int N = 10;
+																					% Table_Pressure_Stations;
+	int N = 4;
 	Nearest_Neighbour_iIndex = new int[N];
 	Nearest_Neighbour_jIndex = new int[N];
 	su2double *best_dist = new su2double[N];
+	su2double b_dist =1E10;
 	for (int i = 0; i < N; i++) {
 		Nearest_Neighbour_iIndex[i] = -1;
 		Nearest_Neighbour_jIndex[i] = -1;
@@ -658,26 +662,125 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 	}
 
 	//Search the HS_tree
-	NN_N_KD_Tree(N, h, s, HS_tree, best_dist);
+	NN_N_KD_Tree(1,h, s, HS_tree, best_dist);
+
+	if (Nearest_Neighbour_iIndex[0]==(Table_Density_Stations-1))
+	{
+		Nearest_Neighbour_iIndex[0]--;
+	}
+	if (Nearest_Neighbour_jIndex[0]==(Table_Pressure_Stations-1))
+	{
+		Nearest_Neighbour_jIndex[0]--;
+	}
+
+	//Set the nearest neigbors to the adjacent i and j vertexes
+	iIndex = Nearest_Neighbour_iIndex[0];
+	jIndex = Nearest_Neighbour_jIndex[0];
+
+	Nearest_Neighbour_iIndex[1] = iIndex + 1;
+	Nearest_Neighbour_iIndex[2] = iIndex;
+	Nearest_Neighbour_iIndex[3] = iIndex + 1;
+	Nearest_Neighbour_jIndex[1] = jIndex;
+	Nearest_Neighbour_jIndex[2] = jIndex + 1;
+	Nearest_Neighbour_jIndex[3] = jIndex + 1;
+
+	//Select correct element based on first
+	su2double dx,dy,x00, y00, dx10, dx01, dx11, dy10, dy01, dy11;
+	bool BOTTOM, TOP, LEFT, RIGHT, found=false;
+
+
+	cout<<"Found "<<found<<endl;
+	cout<<"i , j "<<iIndex<<", "<<jIndex<<endl;
+	cout<<"Best dist ";
+	cout<<endl;
+	Nearest_Neighbour_iIndex[0] = iIndex;
+	Nearest_Neighbour_jIndex[0] = jIndex;
+	Nearest_Neighbour_iIndex[1] = iIndex + 1;
+	Nearest_Neighbour_iIndex[2] = iIndex;
+	Nearest_Neighbour_iIndex[3] = iIndex + 1;
+	Nearest_Neighbour_jIndex[1] = jIndex;
+	Nearest_Neighbour_jIndex[2] = jIndex + 1;
+	Nearest_Neighbour_jIndex[3] = jIndex + 1;
+
+	x00  = ThermoTables[Nearest_Neighbour_iIndex[0]][Nearest_Neighbour_jIndex[0]].Enthalpy     ;
+	y00  = ThermoTables[Nearest_Neighbour_iIndex[0]][Nearest_Neighbour_jIndex[0]].Entropy      ;
+	dx   = h - x00;
+	dy   = s - y00;
+	dx01 = ThermoTables[Nearest_Neighbour_iIndex[2]][Nearest_Neighbour_jIndex[2]].Enthalpy -x00;
+	dy01 = ThermoTables[Nearest_Neighbour_iIndex[2]][Nearest_Neighbour_jIndex[2]].Entropy  -y00;
+	dx10 = ThermoTables[Nearest_Neighbour_iIndex[1]][Nearest_Neighbour_jIndex[1]].Enthalpy -x00;
+	dy10 = ThermoTables[Nearest_Neighbour_iIndex[1]][Nearest_Neighbour_jIndex[1]].Entropy  -y00;
+	dx11 = ThermoTables[Nearest_Neighbour_iIndex[3]][Nearest_Neighbour_jIndex[3]].Enthalpy -x00;
+	dy11 = ThermoTables[Nearest_Neighbour_iIndex[3]][Nearest_Neighbour_jIndex[3]].Entropy  -y00;
+
+	BOTTOM = (dy * dx10) < (dx * dy10);
+	TOP = ((dy - dy01) * (dx11 - dx01)) > ((dy11 - dy01) * (dx - dx01));
+	RIGHT = ((dx - dx10) * (dy11 - dy10)) > ((dx11 - dx10) * (dy - dy10));
+	LEFT = (dx * dy01) < (dx01 * dy);
+	//Check BOTTOM quad boundary
+	if(BOTTOM and !TOP)
+	{
+		if (jIndex!=0) jIndex--;
+	}
+	//Check RIGHT quad boundary
+	else if(RIGHT and !LEFT)
+	{
+		if (iIndex!=(Table_Density_Stations-1)) iIndex++;
+	}
+	//Check TOP quad boundary
+	else if(TOP and !BOTTOM)
+	{
+		if (jIndex!=(Table_Pressure_Stations-1)) jIndex++;
+	}
+	//Check LEFT quad boundary
+	else if(LEFT and !RIGHT)
+	{
+		if (iIndex!=0) iIndex--;
+	}
+
+
+	//Determine interpolation coefficients
+	su2double x = h;
+	su2double y = s;
+	Interp2D_ArbitrarySkewCoeff(x, y, "HS");
+
 
 	Entropy = s;
 	//Enthalpy = h;
-	StaticEnergy = Interp2D_Inv_Dist(N, "StaticEnergy", best_dist);
-	Density = Interp2D_Inv_Dist(N, "Density", best_dist);
-	Pressure = Interp2D_Inv_Dist(N, "Pressure", best_dist);
-	SoundSpeed2 = Interp2D_Inv_Dist(N, "SoundSpeed2", best_dist);
-	Temperature = Interp2D_Inv_Dist(N, "Temperature", best_dist);
-	dPdrho_e = Interp2D_Inv_Dist(N, "dPdrho_e", best_dist);
-	dPde_rho = Interp2D_Inv_Dist(N, "dPde_rho", best_dist);
-	dTdrho_e = Interp2D_Inv_Dist(N, "dTdrho_e", best_dist);
-	dTde_rho = Interp2D_Inv_Dist(N, "dTde_rho", best_dist);
-	Cp = Interp2D_Inv_Dist(N, "Cp", best_dist);
-	Mu = Interp2D_Inv_Dist(N, "Mu", best_dist);
-	dmudrho_T = Interp2D_Inv_Dist(N, "dmudrho_T", best_dist);
-	dmudT_rho = Interp2D_Inv_Dist(N, "dmudT_rho", best_dist);
-	Kt = Interp2D_Inv_Dist(N, "Kt", best_dist);
-	dktdrho_T = Interp2D_Inv_Dist(N, "dktdrho_T", best_dist);
-	dktdT_rho = Interp2D_Inv_Dist(N, "dktdT_rho", best_dist);
+
+	StaticEnergy = Interp2D_lin("StaticEnergy");
+	Pressure = Interp2D_lin("Pressure");
+	Density = Interp2D_lin("Density");
+	SoundSpeed2 = Interp2D_lin("SoundSpeed2");
+	Temperature = Interp2D_lin("Temperature");
+	dPdrho_e = Interp2D_lin("dPdrho_e");
+	dPde_rho = Interp2D_lin("dPde_rho");
+	dTdrho_e = Interp2D_lin("dTdrho_e");
+	dTde_rho = Interp2D_lin("dTde_rho");
+	Cp = Interp2D_lin("Cp");
+	Mu = Interp2D_lin("Mu");
+	dmudrho_T = Interp2D_lin("dmudrho_T");
+	dmudT_rho = Interp2D_lin("dmudT_rho");
+	Kt = Interp2D_lin("Kt");
+	dktdrho_T = Interp2D_lin("dktdrho_T");
+	dktdT_rho = Interp2D_lin("dktdT_rho");
+
+	//	StaticEnergy = Interp2D_Inv_Dist(N, "StaticEnergy", best_dist);
+	//	Density = Interp2D_Inv_Dist(N, "Density", best_dist);
+	//	Pressure = Interp2D_Inv_Dist(N, "Pressure", best_dist);
+	//	SoundSpeed2 = Interp2D_Inv_Dist(N, "SoundSpeed2", best_dist);
+	//	Temperature = Interp2D_Inv_Dist(N, "Temperature", best_dist);
+	//	dPdrho_e = Interp2D_Inv_Dist(N, "dPdrho_e", best_dist);
+	//	dPde_rho = Interp2D_Inv_Dist(N, "dPde_rho", best_dist);
+	//	dTdrho_e = Interp2D_Inv_Dist(N, "dTdrho_e", best_dist);
+	//	dTde_rho = Interp2D_Inv_Dist(N, "dTde_rho", best_dist);
+	//	Cp = Interp2D_Inv_Dist(N, "Cp", best_dist);
+	//	Mu = Interp2D_Inv_Dist(N, "Mu", best_dist);
+	//	dmudrho_T = Interp2D_Inv_Dist(N, "dmudrho_T", best_dist);
+	//	dmudT_rho = Interp2D_Inv_Dist(N, "dmudT_rho", best_dist);
+	//	Kt = Interp2D_Inv_Dist(N, "Kt", best_dist);
+	//	dktdrho_T = Interp2D_Inv_Dist(N, "dktdrho_T", best_dist);
+	//	dktdT_rho = Interp2D_Inv_Dist(N, "dktdT_rho", best_dist);
 
 	if ((Density > Density_Table_Limits[1])
 			or (Density < Density_Table_Limits[0])) {
@@ -2151,6 +2254,7 @@ void CLookUpTable::TableLoadCFX(string filename) {
 									var_steps = ((set_x * set_y) - (j * set_x + i)); //bug fixed: detect end of table
 								for (int z = 0; z < var_steps; z++) {
 									in >> inp[z];
+									inp[z] = inp[z] + 273.150; //convert celsius to Kelvin
 								}
 							}
 							ThermoTables[i][j].Temperature = inp[(j * set_x + i) % 10];
