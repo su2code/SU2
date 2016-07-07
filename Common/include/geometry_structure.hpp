@@ -124,7 +124,8 @@ public:
 	su2double *** AverageGridVel; /*! <\brief Average boundary grid velocity at each span wise section for each marker.*/
 	su2double ** AverageTangGridVel; /*! <\brief Average tangential rotational speed at each span wise section for each marker.*/
 	su2double ** SpanArea; /*! <\brief Area at each span wise section for each marker.*/
-  unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
+  su2double ** TurboRadius; /*! <\brief Radius at each span wise section for each marker.*/
+	unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
 	vector<unsigned long> PeriodicPoint[MAX_NUMBER_PERIODIC][2];			/*!< \brief PeriodicPoint[Periodic bc] and return the point that 
 																			 must be sent [0], and the image point in the periodic bc[1]. */
 	vector<unsigned long> PeriodicElem[MAX_NUMBER_PERIODIC];				/*!< \brief PeriodicElem[Periodic bc] and return the elements that 
@@ -990,6 +991,13 @@ public:
 	 * \param[in] val_marker - marker value.
 	 * \param[in] val_span - span value.
 	 */
+	virtual su2double GetTurboRadius(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief A virtual member.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
 	virtual su2double GetAverageTangGridVel(unsigned short val_marker, unsigned short val_span);
 
   /*!
@@ -1583,6 +1591,13 @@ public:
 	 * \param[in] val_span - span value.
 	 */
 	su2double GetSpanArea(unsigned short val_marker, unsigned short val_span);
+
+  /*!
+	 * \brief A value of the total area for each span.
+	 * \param[in] val_marker - marker value.
+	 * \param[in] val_span - span value.
+	 */
+	su2double GetTurboRadius(unsigned short val_marker, unsigned short val_span);
 
 	/*!
 	 * \brief A value of the average tangential rotational velocity for each span.

@@ -521,6 +521,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   SpanFlowAngle														= new su2double* [nMarker];
   AverageEnthalpy  									= new su2double* [nMarker];
   AveragePressure  									= new su2double* [nMarker];
+  RadialEquilibriumPressure         = new su2double* [nMarker];
   AverageTotPressure  								= new su2double* [nMarker];
   AverageTotTemperature  						= new su2double* [nMarker];
   ExtAverageTotPressure  						= new su2double* [nMarker];
@@ -537,6 +538,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     SpanFlowAngle[iMarker]													= new su2double [nSpanWiseSections + 1];
     AverageEnthalpy[iMarker]  									= new su2double [nSpanWiseSections + 1];
     AveragePressure[iMarker]  									= new su2double [nSpanWiseSections + 1];
+    RadialEquilibriumPressure[iMarker]  				= new su2double [nSpanWiseSections + 1];
     AverageTotPressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
     AverageTotTemperature[iMarker]  						= new su2double [nSpanWiseSections + 1];
     ExtAverageTotPressure[iMarker]  						= new su2double [nSpanWiseSections + 1];
@@ -553,6 +555,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
       SpanFlowAngle[iMarker][iSpan]														= 0.0;
       AverageEnthalpy[iMarker][iSpan]  												= 0.0;
       AveragePressure[iMarker][iSpan]  												= 0.0;
+      RadialEquilibriumPressure[iMarker][iSpan]  							= 0.0;
       AverageTotPressure[iMarker][iSpan]  										= 0.0;
       AverageTotTemperature[iMarker][iSpan]  									= 0.0;
       ExtAverageTotPressure[iMarker][iSpan]  									= 0.0;
@@ -8606,6 +8609,23 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 				Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
 				break;
 
+
+			case RADIAL_EQUILIBRIUM:
+
+				/*--- Retrieve the staic pressure for this boundary. ---*/
+				Pressure_e = RadialEquilibriumPressure[val_marker][iSpan];
+				Density_e = Density_i;
+
+				/* --- Compute the boundary state u_e --- */
+				FluidModel->SetTDState_Prho(Pressure_e, Density_e);
+				Velocity2_e = 0.0;
+				for (iDim = 0; iDim < nDim; iDim++) {
+					Velocity_e[iDim] = Velocity_i[iDim];
+					Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
+				}
+				Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
+				break;
+
 			default:
 				cout << "Warning! Invalid Riemann input!" << endl;
 				exit(EXIT_FAILURE);
@@ -8884,7 +8904,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
   unsigned short iDim, iVar, iMarker, iMarkerTP, iSpan;
   unsigned short mixing_process = config->GetKind_MixingProcess();
   su2double Pressure = 0.0, Density = 0.0, Enthalpy = 0.0,  *Velocity = NULL, *TurboVelocity,
-      Area, TotalArea, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, *UnitNormal, *TurboNormal,
+      Area, TotalArea, Radius1, Radius2, Vt2, TotalAreaPressure, TotalAreaDensity, *TotalAreaVelocity, *UnitNormal, *TurboNormal,
       MassFlow, TotalMassFlow, TotalMassPressure, TotalMassDensity, *TotalMassVelocity;
   string Marker_Tag, Monitoring_Tag;
   su2double val_init_pressure;
@@ -9096,6 +9116,8 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
             AverageNormal 			= geometry->GetAverageNormal(iMarker,iSpan);
             nVert								= geometry->GetnTotVertexSpan(iMarker,iSpan);
 
+
+
             // cout << "Mass flow" << TotalMassFlow << "Total area" << TotalArea << endl;
             /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
             switch(mixing_process){
@@ -9282,6 +9304,59 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
       }
     }
   }
+
+
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+		for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+			if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+				if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+					Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
+					if(config->GetBoolNRBC() || config->GetBoolRiemann()){
+						if(config->GetBoolRiemann()){
+							if(config->GetKind_Data_Riemann(Marker_Tag) == RADIAL_EQUILIBRIUM){
+								RadialEquilibriumPressure[iMarker][nSpanWiseSections/2] = config->GetRiemann_Var1(Marker_Tag)/config->GetPressure_Ref();
+								for (iSpan= nSpanWiseSections/2; iSpan < nSpanWiseSections-1; iSpan++){
+									Radius2      = geometry->GetTurboRadius(iMarker,iSpan+1);
+									Radius1			= geometry->GetTurboRadius(iMarker,iSpan);
+									Vt2 					= AverageTurboVelocity[iMarker][iSpan +1][1]*AverageTurboVelocity[iMarker][iSpan +1][1];
+									RadialEquilibriumPressure[iMarker][iSpan +1] =  RadialEquilibriumPressure[iMarker][iSpan] + AverageDensity[iMarker][iSpan +1]*Vt2/Radius2*(Radius2 - Radius1);
+								}
+								for (iSpan= nSpanWiseSections/2; iSpan > 0; iSpan--){
+									Radius2      = geometry->GetTurboRadius(iMarker,iSpan);
+									Radius1			= geometry->GetTurboRadius(iMarker,iSpan-1);
+									Vt2 					= AverageTurboVelocity[iMarker][iSpan - 1][1]*AverageTurboVelocity[iMarker][iSpan - 1][1];
+									RadialEquilibriumPressure[iMarker][iSpan - 1] =  RadialEquilibriumPressure[iMarker][iSpan] - AverageDensity[iMarker][iSpan -1]*Vt2/Radius2*(Radius2 - Radius1);
+								}
+//								for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
+//									cout << RadialEquilibriumPressure[iMarker][iSpan]<< " at  radius " <<geometry->GetTurboRadius(iMarker,iSpan) << endl;
+//								}
+							}
+						}
+						else{
+							if(config->GetKind_Data_NRBC(Marker_Tag) == RADIAL_EQUILIBRIUM){
+								RadialEquilibriumPressure[iMarker][nSpanWiseSections/2] = config->GetNRBC_Var1(Marker_Tag)/config->GetPressure_Ref();
+								for (iSpan= nSpanWiseSections/2; iSpan < nSpanWiseSections-1; iSpan++){
+									Radius2      = geometry->GetTurboRadius(iMarker,iSpan+1);
+									Radius1			= geometry->GetTurboRadius(iMarker,iSpan);
+									Vt2 					= AverageTurboVelocity[iMarker][iSpan +1][1]*AverageTurboVelocity[iMarker][iSpan +1][1];
+									RadialEquilibriumPressure[iMarker][iSpan +1] =  RadialEquilibriumPressure[iMarker][iSpan] + AverageDensity[iMarker][iSpan +1]*Vt2/Radius2*(Radius2 - Radius1);
+								}
+								for (iSpan= nSpanWiseSections/2; iSpan > 0; iSpan--){
+									Radius2      = geometry->GetTurboRadius(iMarker,iSpan);
+									Radius1			= geometry->GetTurboRadius(iMarker,iSpan-1);
+									Vt2 					= AverageTurboVelocity[iMarker][iSpan - 1][1]*AverageTurboVelocity[iMarker][iSpan - 1][1];
+									RadialEquilibriumPressure[iMarker][iSpan - 1] =  RadialEquilibriumPressure[iMarker][iSpan] - AverageDensity[iMarker][iSpan -1]*Vt2/Radius2*(Radius2 - Radius1);
+								}
+//								for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){
+//									cout << RadialEquilibriumPressure[iMarker][iSpan]<< " at  radius " <<geometry->GetTurboRadius(iMarker,iSpan) << endl;
+//								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
   /*--- Free locally allocated memory ---*/
   delete [] Velocity;
@@ -10146,6 +10221,14 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         c_avg[4] = -2.0*(AveragePressure[val_marker][iSpan]-Pressure_e);
       }
       break;
+
+    case RADIAL_EQUILIBRIUM:
+			Pressure_e = RadialEquilibriumPressure[val_marker][iSpan];
+
+			/* --- Compute avg characteristic jump  --- */
+			c_avg[4] = -2.0*(AveragePressure[val_marker][iSpan]-Pressure_e);
+
+			break;
 
     }
 
@@ -14510,6 +14593,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   SpanFlowAngle														= new su2double* [nMarker];
   AverageEnthalpy  									= new su2double* [nMarker];
   AveragePressure  									= new su2double* [nMarker];
+  RadialEquilibriumPressure         = new su2double* [nMarker];
   AverageTotPressure  								= new su2double* [nMarker];
   AverageTotTemperature  						= new su2double* [nMarker];
   ExtAverageTotPressure  						= new su2double* [nMarker];
@@ -14522,38 +14606,41 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   AverageMach 												= new su2double* [nMarker];
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    SpanMassFlow[iMarker]														= new su2double [nSpanWiseSections + 1];
-    SpanFlowAngle[iMarker]													= new su2double [nSpanWiseSections + 1];
-    AverageEnthalpy[iMarker]  									= new su2double [nSpanWiseSections + 1];
-    AveragePressure[iMarker]  									= new su2double [nSpanWiseSections + 1];
-    AverageTotPressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
-    AverageTotTemperature[iMarker]  						= new su2double [nSpanWiseSections + 1];
-    ExtAverageTotPressure[iMarker]  						= new su2double [nSpanWiseSections + 1];
-    ExtAverageTotTemperature[iMarker]  				= new su2double [nSpanWiseSections + 1];
-    ExtAveragePressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
-    AverageDensity[iMarker]   									= new su2double [nSpanWiseSections + 1];
-    ExtAverageDensity[iMarker]   							= new su2double [nSpanWiseSections + 1];
-    AverageSoundSpeed[iMarker]									= new su2double [nSpanWiseSections + 1];
-    AverageEntropy[iMarker]   									= new su2double [nSpanWiseSections + 1];
-    AverageMach[iMarker] 											= new su2double [nSpanWiseSections + 1];
+  	SpanMassFlow[iMarker]														= new su2double [nSpanWiseSections + 1];
+  	SpanFlowAngle[iMarker]													= new su2double [nSpanWiseSections + 1];
+  	AverageEnthalpy[iMarker]  									= new su2double [nSpanWiseSections + 1];
+  	AveragePressure[iMarker]  									= new su2double [nSpanWiseSections + 1];
+  	RadialEquilibriumPressure[iMarker]  				= new su2double [nSpanWiseSections + 1];
+  	AverageTotPressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
+  	AverageTotTemperature[iMarker]  						= new su2double [nSpanWiseSections + 1];
+  	ExtAverageTotPressure[iMarker]  						= new su2double [nSpanWiseSections + 1];
+  	ExtAverageTotTemperature[iMarker]  				= new su2double [nSpanWiseSections + 1];
+  	ExtAveragePressure[iMarker]  							= new su2double [nSpanWiseSections + 1];
+  	AverageDensity[iMarker]   									= new su2double [nSpanWiseSections + 1];
+  	ExtAverageDensity[iMarker]   							= new su2double [nSpanWiseSections + 1];
+  	AverageSoundSpeed[iMarker]									= new su2double [nSpanWiseSections + 1];
+  	AverageEntropy[iMarker]   									= new su2double [nSpanWiseSections + 1];
+  	AverageMach[iMarker] 											= new su2double [nSpanWiseSections + 1];
 
-    for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++) {
-      SpanMassFlow[iMarker][iSpan]														= 0.0;
-      SpanFlowAngle[iMarker][iSpan]														= 0.0;
-      AverageEnthalpy[iMarker][iSpan]  												= 0.0;
-      AveragePressure[iMarker][iSpan]  												= 0.0;
-      AverageTotPressure[iMarker][iSpan]  										= 0.0;
-      AverageTotTemperature[iMarker][iSpan]  									= 0.0;
-      ExtAverageTotPressure[iMarker][iSpan]  									= 0.0;
-      ExtAverageTotTemperature[iMarker][iSpan]  							= 0.0;
-      ExtAveragePressure[iMarker][iSpan]  										= 0.0;
-      AverageDensity[iMarker][iSpan]   												= 0.0;
-      ExtAverageDensity[iMarker][iSpan]   										= 0.0;
-      AverageSoundSpeed[iMarker][iSpan]												= 0.0;
-      AverageEntropy[iMarker][iSpan]   												= 0.0;
-      AverageMach[iMarker][iSpan] 														= 0.0;
-    }
+  	for(iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++) {
+  		SpanMassFlow[iMarker][iSpan]														= 0.0;
+  		SpanFlowAngle[iMarker][iSpan]														= 0.0;
+  		AverageEnthalpy[iMarker][iSpan]  												= 0.0;
+  		AveragePressure[iMarker][iSpan]  												= 0.0;
+  		RadialEquilibriumPressure[iMarker][iSpan]  							= 0.0;
+  		AverageTotPressure[iMarker][iSpan]  										= 0.0;
+  		AverageTotTemperature[iMarker][iSpan]  									= 0.0;
+  		ExtAverageTotPressure[iMarker][iSpan]  									= 0.0;
+  		ExtAverageTotTemperature[iMarker][iSpan]  							= 0.0;
+  		ExtAveragePressure[iMarker][iSpan]  										= 0.0;
+  		AverageDensity[iMarker][iSpan]   												= 0.0;
+  		ExtAverageDensity[iMarker][iSpan]   										= 0.0;
+  		AverageSoundSpeed[iMarker][iSpan]												= 0.0;
+  		AverageEntropy[iMarker][iSpan]   												= 0.0;
+  		AverageMach[iMarker][iSpan] 														= 0.0;
+  	}
   }
+
 
   /*--- Initializate quantities for turboperformace ---*/
 
