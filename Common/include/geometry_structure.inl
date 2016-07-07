@@ -185,6 +185,8 @@ inline su2double* CGeometry::GetAverageNormal(unsigned short val_marker, unsigne
 
 inline su2double CGeometry::GetSpanArea(unsigned short val_marker, unsigned short val_span){return 0.0;}
 
+inline su2double CGeometry::GetTurboRadius(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
 inline unsigned long CGeometry::GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span){return 0;}
 
 inline void CGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) { }
@@ -329,5 +331,7 @@ inline su2double CPhysicalGeometry::GetAverageTangGridVel(unsigned short val_mar
 inline su2double* CPhysicalGeometry::GetAverageNormal(unsigned short val_marker, unsigned short val_span){return AverageNormal[val_marker][val_span];}
 
 inline su2double CPhysicalGeometry::GetSpanArea(unsigned short val_marker, unsigned short val_span){return SpanArea[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetTurboRadius(unsigned short val_marker, unsigned short val_span){return TurboRadius[val_marker][val_span];}
 
 inline unsigned long CPhysicalGeometry::GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span){return nTotVertexSpan[val_marker][val_span];}

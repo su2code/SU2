@@ -3390,6 +3390,7 @@ protected:
 		  **AverageMach,
 		  **AverageEnthalpy,
 		  **AveragePressure,
+			**RadialEquilibriumPressure,
 		  **AverageTotTemperature,
 		  **AverageTotPressure,
 		  **ExtAveragePressure,
