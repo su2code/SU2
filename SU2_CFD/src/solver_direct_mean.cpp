@@ -10372,7 +10372,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         break;
 
 
-      case STATIC_PRESSURE:case MIXING_OUT:
+      case STATIC_PRESSURE:case MIXING_OUT:case RADIAL_EQUILIBRIUM:
 
         /* --- implementation of NRBC ---*/
         if (AvgMach >= 1.000){
