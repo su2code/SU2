@@ -4567,6 +4567,12 @@ CConfig::~CConfig(void) {
   if (Motion_Origin_Z != NULL)    delete [] Motion_Origin_Z;
   if (MoveMotion_Origin != NULL)    delete [] MoveMotion_Origin;
 
+  /*--- translation: ---*/
+
+  if (Translation_Rate_X != NULL) delete [] Translation_Rate_X;
+  if (Translation_Rate_Y != NULL) delete [] Translation_Rate_Y;
+  if (Translation_Rate_Z != NULL) delete [] Translation_Rate_Z;
+
   /*--- rotation: ---*/
   
   if (Rotation_Rate_X != NULL)    delete [] Rotation_Rate_X;

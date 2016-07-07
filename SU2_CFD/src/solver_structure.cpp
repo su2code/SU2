@@ -32,6 +32,10 @@
 #include "../include/solver_structure.hpp"
 
 CSolver::CSolver(void) {
+
+  /*--- Initialization of the number of linear iterations. This is to avoid
+        a warning from Valgrind when no linear iteations are used. ---*/
+  IterLinSolver = 0;
   
   /*--- Array initialization ---*/
   OutputHeadingNames = NULL;
