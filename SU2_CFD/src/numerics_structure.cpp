@@ -48,15 +48,10 @@ CNumerics::CNumerics(void) {
 
   Enthalpy_formation = NULL;
   Theta_v = NULL;
-//  var = NULL;
-//
-//  Ys          = NULL;
-//  dFdYj       = NULL;
-//  dFdYi       = NULL;
-//  sumdFdYih   = NULL;
-//  sumdFdYjh   = NULL;
-//  sumdFdYieve = NULL;
-//  sumdFdYjeve = NULL;
+
+  l = NULL;
+  m = NULL;
+
 }
 
 CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
@@ -119,21 +114,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 	turb_ke_i = 0.0;
 	turb_ke_j = 0.0;
   
-  Diffusion_Coeff_i = NULL;
-  Diffusion_Coeff_j = NULL;
-  
-  Enthalpy_formation = NULL;
-  Theta_v = NULL;
-//  var = NULL;
-//
-//  Ys          = NULL;
-//  dFdYj       = NULL;
-//  dFdYi       = NULL;
-//  sumdFdYih   = NULL;
-//  sumdFdYjh   = NULL;
-//  sumdFdYieve = NULL;
-//  sumdFdYjeve = NULL;
-    
   Vector = new su2double[nDim];
   
   l = new su2double [nDim];
@@ -168,18 +148,15 @@ CNumerics::~CNumerics(void) {
     delete [] delta;
   }
 
-//	if (Ys != NULL) delete [] Ys;
-//  if (sumdFdYih != NULL) delete [] sumdFdYih;
-//  if (sumdFdYjh != NULL) delete [] sumdFdYjh;
-//  if (sumdFdYieve != NULL) delete [] sumdFdYieve;
-//  if (sumdFdYjeve != NULL) delete [] sumdFdYjeve;
   if (Diffusion_Coeff_i != NULL) delete [] Diffusion_Coeff_i;
   if (Diffusion_Coeff_j != NULL) delete [] Diffusion_Coeff_j;
   if (Vector != NULL) delete [] Vector;
-//  if (var != NULL) delete [] var;
 
 	if(Enthalpy_formation != NULL) delete [] Enthalpy_formation;
 	if(Theta_v != NULL) delete [] Theta_v;
+
+  if (l != NULL) delete [] l;
+  if (m != NULL) delete [] m;
 
 }
 
