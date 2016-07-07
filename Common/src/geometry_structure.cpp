@@ -30,7 +30,7 @@
  */
 
 #include "../include/geometry_structure.hpp"
-#include "../include/su2_adt.hpp"
+#include "../include/adt_structure.hpp"
 
 /*--- Epsilon definition ---*/
 

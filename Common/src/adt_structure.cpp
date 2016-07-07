@@ -1,5 +1,5 @@
 /*!
- * \file su2_adt.cpp
+ * \file adt_structure.cpp
  * \brief Main subroutines for for carrying out geometrical searches using an
  *        alternating digital tree (ADT).
  * \author E. van der Weide
@@ -30,7 +30,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/su2_adt.hpp"
+#include "../include/adt_structure.hpp"
 
 #include <iomanip>
 
@@ -137,7 +137,7 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
             in such a way that isotropy is reached as quickly as possible.
             Hence the split direction is the direction of the largest dimension
             of the leaf. ---*/
-      unsigned short splitDir;
+      unsigned short splitDir= 0;
       su2double distMax = -1.0;
       for(unsigned short l=0; l<nDim; ++l) {
         const su2double dist = leaves[mm].xMax[l] - leaves[mm].xMin[l];

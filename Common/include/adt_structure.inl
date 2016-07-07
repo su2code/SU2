@@ -1,6 +1,6 @@
 /*!
- * \file su2_adt.inl
- * \brief In-Line subroutines of the <i>su2_adt.hpp</i> file.
+ * \file adt_structure.inl
+ * \brief In-Line subroutines of the <i>adt_structure.hpp</i> file.
  * \author E. van der Weide
  * \version 4.1.3 "Cardinal"
  *

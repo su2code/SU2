@@ -1,8 +1,8 @@
 /*!
- * \file su2_adt.hpp
+ * \file adt_structure.hpp
  * \brief Headers of the subroutines for carrying out geometrical searches using an
  *        alternating digital tree (ADT).
- *        The subroutines and functions are in the <i>su2_adt.cpp</i> file.
+ *        The subroutines and functions are in the <i>adt_structure.cpp</i> file.
  * \author E. van der Weide
  * \version 4.1.3 "Cardinal"
  *
@@ -259,4 +259,4 @@ private:
   su2_adtPointsOnlyClass& operator=(const su2_adtPointsOnlyClass &);
 };
 
-#include "su2_adt.inl"
+#include "adt_structure.inl"
