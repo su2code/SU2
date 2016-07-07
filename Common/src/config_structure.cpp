@@ -176,6 +176,8 @@ void CConfig::SetPointersNull(void) {
   RK_Alpha_Step=NULL;
   MG_PreSmooth = MG_PostSmooth = NULL;
 
+  Int_Coeffs = NULL;
+
   /*--- Moving mesh pointers ---*/
 
   Kind_GridMovement = NULL;
@@ -4726,6 +4728,9 @@ CConfig::~CConfig(void) {
   if (Marker_Neumann != NULL )            delete[] Marker_Neumann;
   if (Marker_HeatFlux != NULL )               delete[] Marker_HeatFlux;
 
+
+  /*--- Misc. ---*/
+  if( Int_Coeffs ) delete[] Int_Coeffs;
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {

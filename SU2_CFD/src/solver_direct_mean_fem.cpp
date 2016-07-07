@@ -74,6 +74,8 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 #endif
   
   /*--- Array initialization ---*/
+
+  FluidModel = NULL;
   
   CDrag_Inv = NULL; CLift_Inv = NULL; CSideForce_Inv = NULL; CEff_Inv = NULL;
   CMx_Inv = NULL;   CMy_Inv = NULL;   CMz_Inv = NULL;
@@ -533,6 +535,8 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 }
 
 CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver(void) {
+
+  if( FluidModel) delete FluidModel;
 
   /*--- Array deallocation ---*/
   if (CDrag_Inv != NULL)         delete [] CDrag_Inv;
