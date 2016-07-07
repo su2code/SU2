@@ -712,7 +712,16 @@ private:
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
-
+  su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
+  *default_eng_box,           /*!< \brief Default engine box array for the COption class. */
+  *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
+  *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
+  *default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
+  *default_obj_coeff,         /*!< \brief Default objective array for the COption class. */
+  *default_geo_loc,           /*!< \brief Default SU2_GEO section locations array for the COption class. */
+  *default_ea_lim,            /*!< \brief Default equivalent area limit array for the COption class. */
+  *default_grid_fix,          /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
+  *default_inc_crit;          /*!< \brief Default incremental criteria array for the COption class. */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map

@@ -192,6 +192,19 @@ void CConfig::SetPointersNull(void) {
   Periodic_Translate=NULL;    Periodic_Rotation=NULL;    Periodic_Center=NULL;
   Periodic_Translation=NULL;   Periodic_RotAngles=NULL;   Periodic_RotCenter=NULL;
 
+  /*--- Initialize some default arrays to NULL. ---*/
+  
+  default_vel_inf       = NULL;
+  default_eng_box       = NULL;
+  default_cfl_adapt     = NULL;
+  default_ad_coeff_flow = NULL;
+  default_ad_coeff_adj  = NULL;
+  default_obj_coeff     = NULL;
+  default_geo_loc       = NULL;
+  default_ea_lim        = NULL;
+  default_grid_fix      = NULL;
+  default_inc_crit      = NULL;
+  
   /*--- Variable initialization ---*/
   
   ExtIter = 0;
@@ -209,22 +222,27 @@ void CConfig::SetRunTime_Options(void) {
 
 void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
   
-  su2double default_vec_3d[3];
-  su2double default_vec_4d[4];
-  su2double default_vec_5d[5];
-  su2double default_vec_2d[2];
-  su2double default_vec_6d[6];
-  
   nZone = val_nZone;
   iZone = val_iZone;
 
+  /*--- Allocate some default arrays needed for lists of doubles. ---*/
+  
+  default_vel_inf       = new su2double[3];
+  default_eng_box       = new su2double[6];
+  default_cfl_adapt     = new su2double[4];
+  default_ad_coeff_flow = new su2double[3];
+  default_ad_coeff_adj  = new su2double[3];
+  default_obj_coeff     = new su2double[5];
+  default_geo_loc       = new su2double[2];
+  default_ea_lim        = new su2double[3];
+  default_grid_fix      = new su2double[6];
+  default_inc_crit      = new su2double[3];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
   // the best you can to follow the established format. It's very hard to parse c++ code
   // and none of us that write the parsers want to write a full c++ interpreter. Please
   // play nice with the existing format so that you don't break the existing scripts.
-
 
   /* BEGIN_CONFIG_OPTIONS */
 
@@ -338,9 +356,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 288.15);
   /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
-  default_vec_3d[0] = 1.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
+  default_vel_inf[0] = 1.0; default_vel_inf[1] = 0.0; default_vel_inf[2] = 0.0;
   /*!\brief FREESTREAM_VELOCITY\n DESCRIPTION: Free-stream velocity (m/s) */
-  addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vec_3d);
+  addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vel_inf);
   /* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
   addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
   /* DESCRIPTION:  */
@@ -490,10 +508,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBleedOption("MARKER_ENGINE_BLEED", nMarker_EngineBleed, Marker_EngineBleed, Bleed_MassFlow_Target, Bleed_Temperature_Target);
   /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
   addBoolOption("SUBSONIC_ENGINE", Engine_Intake, false);
-  default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
-  default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
+  default_eng_box[0] = -1E15; default_eng_box[1] = -1E15; default_eng_box[2] = -1E15;
+  default_eng_box[3] =  1E15; default_eng_box[4] =  1E15; default_eng_box[5] =  1E15;
   /* DESCRIPTION: Coordinates of the box to impose a subsonic nacellle (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
-  addDoubleArrayOption("SUBSONIC_ENGINE_BOX", 6, Subsonic_Engine_Box, default_vec_6d);
+  addDoubleArrayOption("SUBSONIC_ENGINE_BOX", 6, Subsonic_Engine_Box, default_eng_box);
   /* DESCRIPTION: Engine exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
   addExhaustOption("MARKER_ENGINE_EXHAUST", nMarker_EngineExhaust, Marker_EngineExhaust, Exhaust_Temperature_Target, Exhaust_Pressure_Target);
@@ -535,8 +553,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max) )
    * Factor down generally >1.0, factor up generally < 1.0 to cause the CFL to increase when residual is decreasing,
    * and decrease when the residual is increasing or stalled. \ingroup Config*/
-  default_vec_4d[0] = 0.0; default_vec_4d[1] = 0.0; default_vec_4d[2] = 1.0; default_vec_4d[3] = 100.0;
-  addDoubleArrayOption("CFL_ADAPT_PARAM", 4, CFL_AdaptParam, default_vec_4d);
+  default_cfl_adapt[0] = 0.0; default_cfl_adapt[1] = 0.0; default_cfl_adapt[2] = 1.0; default_cfl_adapt[3] = 100.0;
+  addDoubleArrayOption("CFL_ADAPT_PARAM", 4, CFL_AdaptParam, default_cfl_adapt);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
@@ -710,9 +728,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
-  default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
+  default_ad_coeff_flow[0] = 0.15; default_ad_coeff_flow[1] = 0.5; default_ad_coeff_flow[2] = 0.02;
   /*!\brief AD_COEFF_FLOW \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients \ingroup Config*/
-  addDoubleArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_ad_coeff_flow);
 
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
@@ -724,11 +742,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SLOPE_LIMITER_ADJFLOW
      * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, VENKATAKRISHNAN);
-  default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
+  default_ad_coeff_adj[0] = 0.15; default_ad_coeff_adj[1] = 0.5; default_ad_coeff_adj[2] = 0.02;
   /*!\brief AD_COEFF_ADJFLOW
    *  \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients for the adjoint solver.
    *  \n FORMAT and default values: AD_COEFF_ADJFLOW = (0.15, 0.5, 0.02) \ingroup Config*/
-  addDoubleArrayOption("AD_COEFF_ADJFLOW", 3, Kappa_AdjFlow, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_ADJFLOW", 3, Kappa_AdjFlow, default_ad_coeff_adj);
 
   /*!\brief SPATIAL_ORDER_TURB
    *  \n DESCRIPTION: Spatial numerical order integration.\n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: FIRST_ORDER \ingroup Config*/
@@ -775,17 +793,17 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
   addEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, DRAG_COEFFICIENT);
 
-  default_vec_5d[0]=0.0; default_vec_5d[1]=0.0; default_vec_5d[2]=0.0;
-  default_vec_5d[3]=0.0;  default_vec_5d[4]=0.0;
+  default_obj_coeff[0]=0.0; default_obj_coeff[1]=0.0; default_obj_coeff[2]=0.0;
+  default_obj_coeff[3]=0.0;  default_obj_coeff[4]=0.0;
   /*!\brief OBJ_CHAIN_RULE_COEFF
   * \n DESCRIPTION: Coefficients defining the objective function gradient using the chain rule
   * with area-averaged outlet primitive variables. This is used with the genereralized outflow
   * objective.  \ingroup Config   */
-  addDoubleArrayOption("OBJ_CHAIN_RULE_COEFF",5,Obj_ChainRuleCoeff,default_vec_5d);
+  addDoubleArrayOption("OBJ_CHAIN_RULE_COEFF",5,Obj_ChainRuleCoeff,default_obj_coeff);
 
-  default_vec_2d[0] = 0.0; default_vec_2d[1] = 1.0;
+  default_geo_loc[0] = 0.0; default_geo_loc[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
-  addDoubleArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_vec_2d);
+  addDoubleArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_geo_loc);
   /* DESCRIPTION: Identify the axis of the section */
   addEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, Y_AXIS);
   /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
@@ -1053,9 +1071,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Evaluate equivalent area on the Near-Field  */
   addBoolOption("EQUIV_AREA", EquivArea, false);
-  default_vec_3d[0] = 0.0; default_vec_3d[1] = 1.0; default_vec_3d[2] = 1.0;
+  default_ea_lim[0] = 0.0; default_ea_lim[1] = 1.0; default_ea_lim[2] = 1.0;
   /* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
-  addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
+  addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_ea_lim);
   /* DESCRIPTION: Equivalent area scaling factor */
   addDoubleOption("EA_SCALE_FACTOR", EA_ScaleFactor, 1.0);
 
@@ -1113,10 +1131,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
 	/* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
-	default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
-	default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
+	default_grid_fix[0] = -1E15; default_grid_fix[1] = -1E15; default_grid_fix[2] = -1E15;
+	default_grid_fix[3] =  1E15; default_grid_fix[4] =  1E15; default_grid_fix[5] =  1E15;
 	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
-	addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
+	addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_grid_fix);
 	/* DESCRIPTION: Visualize the deformation */
   addBoolOption("VISUALIZE_DEFORMATION", Visualize_Deformation, false);
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
@@ -1212,9 +1230,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Maximum number of increments of the  */
   addUnsignedLongOption("NUMBER_INCREMENTS", IncLoad_Nincrements, 10);
 
-  default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
+  default_inc_crit[0] = 0.0; default_inc_crit[1] = 0.0; default_inc_crit[2] = 0.0;
   /* DESCRIPTION: Definition of the  UTOL RTOL ETOL*/
-  addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, IncLoad_Criteria, default_vec_3d);
+  addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, IncLoad_Criteria, default_inc_crit);
 
   /* DESCRIPTION: Time while the structure is static */
   addDoubleOption("STATIC_TIME", Static_Time, 0.0);
@@ -4677,6 +4695,19 @@ CConfig::~CConfig(void) {
   if (Marker_HeatFlux != NULL )               delete[] Marker_HeatFlux;
 
   if (Int_Coeffs != NULL) delete [] Int_Coeffs;
+  
+  /*--- Initialize some default arrays to NULL. ---*/
+  
+  if (default_vel_inf       != NULL) delete [] default_vel_inf;
+  if (default_eng_box       != NULL) delete [] default_eng_box;
+  if (default_cfl_adapt     != NULL) delete [] default_cfl_adapt;
+  if (default_ad_coeff_flow != NULL) delete [] default_ad_coeff_flow;
+  if (default_ad_coeff_adj  != NULL) delete [] default_ad_coeff_adj;
+  if (default_obj_coeff     != NULL) delete [] default_obj_coeff;
+  if (default_geo_loc       != NULL) delete [] default_geo_loc;
+  if (default_ea_lim        != NULL) delete [] default_ea_lim;
+  if (default_grid_fix      != NULL) delete [] default_grid_fix;
+  if (default_inc_crit      != NULL) delete [] default_inc_crit;
   
 }
 
