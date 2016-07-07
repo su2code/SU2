@@ -684,15 +684,12 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 	Nearest_Neighbour_jIndex[2] = jIndex + 1;
 	Nearest_Neighbour_jIndex[3] = jIndex + 1;
 
+
 	//Select correct element based on first
 	su2double dx,dy,x00, y00, dx10, dx01, dx11, dy10, dy01, dy11;
 	bool BOTTOM, TOP, LEFT, RIGHT, found=false;
-
-
-	cout<<"Found "<<found<<endl;
-	cout<<"i , j "<<iIndex<<", "<<jIndex<<endl;
-	cout<<"Best dist ";
-	cout<<endl;
+	for (int k=0;k<16 and not found;k++)
+	{
 	Nearest_Neighbour_iIndex[0] = iIndex;
 	Nearest_Neighbour_jIndex[0] = jIndex;
 	Nearest_Neighbour_iIndex[1] = iIndex + 1;
@@ -737,8 +734,8 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 	{
 		if (iIndex!=0) iIndex--;
 	}
-
-
+	else {found=true;}
+	}
 	//Determine interpolation coefficients
 	su2double x = h;
 	su2double y = s;
@@ -746,7 +743,7 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 
 
 	Entropy = s;
-	//Enthalpy = h;
+//	Enthalpy = h;
 
 	StaticEnergy = Interp2D_lin("StaticEnergy");
 	Pressure = Interp2D_lin("Pressure");
