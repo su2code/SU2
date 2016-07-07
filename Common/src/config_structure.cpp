@@ -174,6 +174,7 @@ void CConfig::SetPointersNull(void) {
   Hold_GridFixed_Coord=NULL;
   EA_IntLimit=NULL;
   RK_Alpha_Step=NULL;
+  Int_Coeffs = NULL;
 
   /*--- Moving mesh pointers ---*/
 
@@ -4500,6 +4501,12 @@ CConfig::~CConfig(void) {
   if (Motion_Origin_Z != NULL)    delete [] Motion_Origin_Z;
   if (MoveMotion_Origin != NULL)    delete [] MoveMotion_Origin;
 
+  /*--- translation: ---*/
+  
+  if (Translation_Rate_X != NULL)    delete [] Translation_Rate_X;
+  if (Translation_Rate_Y != NULL)    delete [] Translation_Rate_Y;
+  if (Translation_Rate_Z != NULL)    delete [] Translation_Rate_Z;
+
   /*--- rotation: ---*/
   
   if (Rotation_Rate_X != NULL)    delete [] Rotation_Rate_X;
@@ -4663,6 +4670,8 @@ CConfig::~CConfig(void) {
   if (Marker_Neumann != NULL )            delete[] Marker_Neumann;
   if (Marker_HeatFlux != NULL )               delete[] Marker_HeatFlux;
 
+  if (Int_Coeffs != NULL) delete [] Int_Coeffs;
+  
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {

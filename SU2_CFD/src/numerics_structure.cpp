@@ -33,14 +33,18 @@
 
 CNumerics::CNumerics(void) {
 
-  Normal = NULL;
-  UnitNormal = NULL;
-  U_n = NULL;
+  Normal      = NULL;
+  UnitNormal  = NULL;
+  UnitNormald = NULL;
+  
+  U_n   = NULL;
   U_nM1 = NULL;
-  U_nP1  = NULL;
+  U_nP1 = NULL;
+ 
   Proj_Flux_Tensor  = NULL;
-  Flux_Tensor = NULL;
-  tau  = NULL;
+  Flux_Tensor       = NULL;
+ 
+  tau    = NULL;
   delta  = NULL;
 
   Diffusion_Coeff_i = NULL;
@@ -59,22 +63,29 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   
   unsigned short iVar, iDim, jDim;
   
-  Normal = NULL;
-  UnitNormal = NULL;
-  U_n = NULL;
-  U_nM1 = NULL;
-  U_nP1  = NULL;
-  Proj_Flux_Tensor  = NULL;
-  Flux_Tensor = NULL;
-  tau  = NULL;
-  delta  = NULL;
+  Normal      = NULL;
+  UnitNormal  = NULL;
+  UnitNormald = NULL;
   
+  U_n   = NULL;
+  U_nM1 = NULL;
+  U_nP1 = NULL;
+  
+  Proj_Flux_Tensor  = NULL;
+  Flux_Tensor       = NULL;
+  
+  tau    = NULL;
+  delta  = NULL;
+
   Diffusion_Coeff_i = NULL;
   Diffusion_Coeff_j = NULL;
-  
+
   Enthalpy_formation = NULL;
   Theta_v = NULL;
-  
+
+  l = NULL;
+  m = NULL;
+ 
 	nDim = val_nDim;
 	nVar = val_nVar;
 	Gamma = config->GetGamma();
@@ -86,15 +97,17 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 	UnitNormal = new su2double [nDim];
 	UnitNormald = new su2double [nDim];
 
-	Normal = new su2double [nDim];
 	Flux_Tensor = new su2double* [nVar];
 	for (iVar = 0; iVar < (nVar); iVar++)
 		Flux_Tensor[iVar] = new su2double [nDim];
 
 	tau = new su2double* [nDim];
-	delta = new su2double* [nDim];
 	for (iDim = 0; iDim < nDim; iDim++) {
 		tau[iDim] = new su2double [nDim];
+	}
+
+	delta = new su2double* [nDim];
+	for (iDim = 0; iDim < nDim; iDim++) {
 		delta[iDim] = new su2double [nDim];
 	}
 
@@ -105,7 +118,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 		}
 	}
 
-	U_n = new su2double [nVar];
+	U_n   = new su2double [nVar];
 	U_nM1 = new su2double [nVar];
 	U_nP1 = new su2double [nVar];
 
@@ -122,8 +135,9 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 }
 
 CNumerics::~CNumerics(void) {
-  //if (Normal!=NULL) delete [] Normal;
+
   if (UnitNormal!=NULL) delete [] UnitNormal;
+  if (UnitNormald!=NULL) delete [] UnitNormald;
 
   if (U_n!=NULL) delete [] U_n;
   if (U_nM1!=NULL) delete [] U_nM1;
@@ -139,12 +153,17 @@ CNumerics::~CNumerics(void) {
     delete [] Flux_Tensor;
   }
 
+  if (tau != NULL){
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      delete [] tau[iDim];
+    }
+    delete [] tau;
+  }
+
   if (delta != NULL){
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      //delete [] tau[iDim];
       delete [] delta[iDim];
     }
-    //delete [] tau;
     delete [] delta;
   }
 
