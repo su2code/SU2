@@ -519,6 +519,14 @@ inline su2double* CVariable::GetSolution_Direct() { return NULL; }
 
 inline void CVariable::SetSolution_Direct(su2double *val_solution_direct) { }
 
+inline su2double* CVariable::GetSolution_Vel_Direct() { return NULL; }
+
+inline void CVariable::SetSolution_Vel_Direct(su2double *val_solution_direct) { }
+
+inline su2double* CVariable::GetSolution_Accel_Direct() { return NULL; }
+
+inline void CVariable::SetSolution_Accel_Direct(su2double *val_solution_direct) { }
+
 inline void CVariable::SetTimeSpectral_Source(unsigned short val_var, su2double val_source) { }
 
 inline su2double CVariable::GetTimeSpectral_Source(unsigned short val_var) { return 0; }
@@ -540,6 +548,10 @@ inline void CVariable::SetSolution_Vel_time_n(su2double *val_solution_vel_time_n
 inline void CVariable::SetSolution_Vel_time_n(void) { }
 
 inline void CVariable::SetSolution_Vel_time_n(unsigned short val_var, su2double val_solution_vel_time_n) { }
+
+inline void CVariable::Set_OldSolution_Accel(void) { }
+
+inline void CVariable::Set_OldSolution_Vel(void) { }
 
 inline su2double CVariable::GetSolution_Adj(unsigned short val_var) {return 0; }
 
@@ -610,6 +622,30 @@ inline void CVariable::SetPrestretch(unsigned short iVar, su2double val_prestret
 inline su2double *CVariable::GetPrestretch(void){ return NULL; }
 
 inline su2double CVariable::GetPrestretch(unsigned short iVar){ return 0.0; }
+
+inline void CVariable::RegisterSolution_Vel(bool input) { }
+
+inline void CVariable::RegisterSolution_Vel_time_n() { }
+
+inline void CVariable::RegisterSolution_Accel(bool input) { }
+
+inline void CVariable::RegisterSolution_Accel_time_n() { }
+
+inline void CVariable::SetAdjointSolution_Vel(su2double *adj_sol) { }
+
+inline void CVariable::GetAdjointSolution_Vel(su2double *adj_sol) { }
+
+inline void CVariable::SetAdjointSolution_Vel_time_n(su2double *adj_sol) { }
+
+inline void CVariable::GetAdjointSolution_Vel_time_n(su2double *adj_sol) { }
+
+inline void CVariable::SetAdjointSolution_Accel(su2double *adj_sol) { }
+
+inline void CVariable::GetAdjointSolution_Accel(su2double *adj_sol) { }
+
+inline void CVariable::SetAdjointSolution_Accel_time_n(su2double *adj_sol) { }
+
+inline void CVariable::GetAdjointSolution_Accel_time_n(su2double *adj_sol) { }
 
 inline su2double CEulerVariable::GetDensity(void) { return Solution[0]; }
 
@@ -1039,6 +1075,34 @@ inline su2double *CFEM_ElasVariable::GetReference_Geometry(void){ return Referen
 
 inline su2double CFEM_ElasVariable::GetReference_Geometry(unsigned short iVar){ return Reference_Geometry[iVar]; }
 
+inline void CFEM_ElasVariable::RegisterSolution_Vel(bool input) {
+	  if (input) {
+	    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+	      AD::RegisterInput(Solution_Vel[iVar]);
+	  }
+	  else { for (unsigned short iVar = 0; iVar < nVar; iVar++)
+	      AD::RegisterOutput(Solution_Vel[iVar]);}
+}
+
+inline void CFEM_ElasVariable::RegisterSolution_Vel_time_n() {
+	  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+	    AD::RegisterInput(Solution_Vel_time_n[iVar]);
+}
+
+inline void CFEM_ElasVariable::RegisterSolution_Accel(bool input) {
+	  if (input) {
+	    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+	      AD::RegisterInput(Solution_Accel[iVar]);
+	  }
+	  else { for (unsigned short iVar = 0; iVar < nVar; iVar++)
+	      AD::RegisterOutput(Solution_Accel[iVar]);}
+}
+
+inline void CFEM_ElasVariable::RegisterSolution_Accel_time_n() {
+	  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+	    AD::RegisterInput(Solution_Accel_time_n[iVar]);
+}
+
 inline void CFEM_ElasVariable_Adj::SetReference_Geometry(unsigned short iVar, su2double ref_geometry){ Reference_Geometry[iVar] = ref_geometry;}
 
 inline su2double *CFEM_ElasVariable_Adj::GetReference_Geometry(void){ return Reference_Geometry; }
@@ -1182,3 +1246,88 @@ inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct)
     Solution_Direct[iVar] = val_solution_direct[iVar];
   }
 }
+
+inline void CDiscAdjFEAVariable::SetSolution_Accel(su2double *val_solution_accel) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Solution_Accel[iVar] = val_solution_accel[iVar];
+}
+
+inline void CDiscAdjFEAVariable::SetSolution_Vel(su2double *val_solution_vel) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Solution_Vel[iVar] = val_solution_vel[iVar];
+}
+
+inline void CDiscAdjFEAVariable::Set_OldSolution_Accel(void) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)  Solution_Old_Accel[iVar] = Solution_Accel[iVar];
+ }
+
+inline void CDiscAdjFEAVariable::Set_OldSolution_Vel(void) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)  Solution_Old_Vel[iVar] = Solution_Vel[iVar];
+}
+
+inline void CDiscAdjFEAVariable::SetSolution_Accel_time_n(su2double *val_solution_accel_time_n) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Solution_Accel_time_n[iVar] = val_solution_accel_time_n[iVar];
+}
+
+inline void CDiscAdjFEAVariable::SetSolution_Vel_time_n(su2double *val_solution_vel_time_n) {
+	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Solution_Vel_time_n[iVar] = val_solution_vel_time_n[iVar];
+}
+
+inline su2double* CDiscAdjFEAVariable::GetSolution_Vel_Direct() { return Solution_Direct_Vel; }
+
+inline void CDiscAdjFEAVariable::SetSolution_Vel_Direct(su2double *val_solution_direct) {
+	  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+	    Solution_Direct_Vel[iVar] = val_solution_direct[iVar];
+	  }
+ }
+
+inline su2double* CDiscAdjFEAVariable::GetSolution_Accel_Direct() { return Solution_Direct_Accel; }
+
+inline void CDiscAdjFEAVariable::SetSolution_Accel_Direct(su2double *val_solution_direct) {
+	  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+	    Solution_Direct_Accel[iVar] = val_solution_direct[iVar];
+	  }
+}
+
+inline void CFEM_ElasVariable::SetAdjointSolution_Vel(su2double *adj_sol) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        SU2_TYPE::SetDerivative(Solution_Vel[iVar], SU2_TYPE::GetValue(adj_sol[iVar]));
+}
+
+inline void CFEM_ElasVariable::GetAdjointSolution_Vel(su2double *adj_sol) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++){
+        adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Vel[iVar]);
+    }
+}
+
+inline void CFEM_ElasVariable::SetAdjointSolution_Vel_time_n(su2double *adj_sol) {
+	  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+	      SU2_TYPE::SetDerivative(Solution_Vel_time_n[iVar], SU2_TYPE::GetValue(adj_sol[iVar]));
+}
+
+inline void CFEM_ElasVariable::GetAdjointSolution_Vel_time_n(su2double *adj_sol) {
+	  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+	      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Vel_time_n[iVar]);
+	  }
+}
+
+inline void CFEM_ElasVariable::SetAdjointSolution_Accel(su2double *adj_sol) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+        SU2_TYPE::SetDerivative(Solution_Accel[iVar], SU2_TYPE::GetValue(adj_sol[iVar]));
+}
+
+inline void CFEM_ElasVariable::GetAdjointSolution_Accel(su2double *adj_sol) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++){
+        adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Accel[iVar]);
+    }
+}
+
+inline void CFEM_ElasVariable::SetAdjointSolution_Accel_time_n(su2double *adj_sol) {
+	  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+	      SU2_TYPE::SetDerivative(Solution_Accel_time_n[iVar], SU2_TYPE::GetValue(adj_sol[iVar]));
+}
+
+inline void CFEM_ElasVariable::GetAdjointSolution_Accel_time_n(su2double *adj_sol) {
+	  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+	      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Accel_time_n[iVar]);
+	  }
+}
+

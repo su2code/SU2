@@ -68,3 +68,117 @@ CFEM_ElasVariable_Adj::~CFEM_ElasVariable_Adj(void) {
 	if (Gradient_Adj 			!= NULL) delete [] Gradient_Adj;
 
 }
+
+
+CDiscAdjFEAVariable::CDiscAdjFEAVariable() : CVariable(){
+
+  Sensitivity           = NULL;
+  Solution_Direct       = NULL;
+  DualTime_Derivative   = NULL;
+  DualTime_Derivative_n = NULL;
+
+  Solution_Direct_Vel   = NULL;
+  Solution_Direct_Accel = NULL;
+
+  Solution_Vel   = NULL;
+  Solution_Accel = NULL;
+
+  Solution_Old_Vel      = NULL;
+  Solution_Old_Accel    = NULL;
+
+  Solution_Vel_time_n   = NULL;
+  Solution_Accel_time_n = NULL;
+
+}
+
+CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short val_ndim,
+                               unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config){
+
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+
+  DualTime_Derivative   = NULL;
+  DualTime_Derivative_n = NULL;
+
+  Solution_Direct_Vel   = NULL;
+  Solution_Direct_Accel = NULL;
+
+  Solution_Vel          = NULL;
+  Solution_Accel        = NULL;
+
+  Solution_Old_Vel      = NULL;
+  Solution_Old_Accel    = NULL;
+
+  Solution_Vel_time_n   = NULL;
+  Solution_Accel_time_n = NULL;
+  if (dynamic){
+    DualTime_Derivative     = new su2double[nVar];
+    DualTime_Derivative_n   = new su2double[nVar];
+
+    Solution_Direct_Vel     = new su2double[nVar];
+    Solution_Direct_Accel   = new su2double[nVar];
+
+    Solution_Vel            = new su2double[nVar];
+    Solution_Accel          = new su2double[nVar];
+
+    Solution_Old_Vel        = new su2double[nVar];
+    Solution_Old_Accel      = new su2double[nVar];
+
+    Solution_Vel_time_n     = new su2double[nVar];
+    Solution_Accel_time_n   = new su2double[nVar];
+  }
+
+  Solution_Direct = new su2double[nVar];
+
+  Sensitivity = new su2double[nDim];
+
+  unsigned short iVar,iDim;
+
+  for (iDim = 0; iDim < nDim; iDim++){
+    Sensitivity[iDim] = 0.0;
+  }
+
+  for (iVar = 0; iVar < nVar; iVar++){
+    Solution[iVar] = val_solution[iVar];
+  }
+
+
+  if (dynamic){
+    for (iVar = 0; iVar < nVar; iVar++){
+      Solution_time_n[iVar]         = 0.0;
+      Solution_time_n1[iVar]        = 0.0;
+      DualTime_Derivative[iVar]     = 0.0;
+      DualTime_Derivative_n[iVar]   = 0.0;
+      Solution_Direct_Vel[iVar]     = 0.0;
+      Solution_Direct_Accel[iVar]   = 0.0;
+
+      Solution_Vel[iVar]            = 0.0;
+      Solution_Accel[iVar]          = 0.0;
+
+      Solution_Vel_time_n[iVar]     = 0.0;
+      Solution_Accel_time_n[iVar]   = 0.0;
+
+      Solution_Old_Vel[iVar]        = 0.0;
+      Solution_Old_Accel[iVar]      = 0.0;
+
+    }
+  }
+}
+
+
+CDiscAdjFEAVariable::~CDiscAdjFEAVariable(){
+
+  if (Sensitivity           != NULL) delete [] Sensitivity;
+  if (Solution_Direct       != NULL) delete [] Solution_Direct;
+  if (DualTime_Derivative   != NULL) delete [] DualTime_Derivative;
+  if (DualTime_Derivative_n != NULL) delete [] DualTime_Derivative_n;
+
+  if (Solution_Direct_Vel   != NULL) delete [] Solution_Direct_Vel;
+  if (Solution_Direct_Accel != NULL) delete [] Solution_Direct_Accel;
+
+  if (Solution_Vel          != NULL) delete [] Solution_Vel;
+  if (Solution_Accel        != NULL) delete [] Solution_Accel;
+  if (Solution_Old_Vel      != NULL) delete [] Solution_Old_Vel;
+  if (Solution_Old_Accel    != NULL) delete [] Solution_Old_Accel;
+
+}
+

@@ -78,9 +78,9 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 
   if (Kind_Solver == DISC_ADJ_FEM) {
     if (surf_sol)
-      filename = config->GetSurfStructure_FileName().c_str();
+      filename = config->GetAdjSurfStructure_FileName().c_str();
     else
-      filename = config->GetStructure_FileName().c_str();
+      filename = config->GetAdjStructure_FileName().c_str();
   }
   
 	if (Kind_Solver == WAVE_EQUATION)
@@ -389,7 +389,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
 
-    	if ((Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == ADJ_ELASTICITY))
+    	if ((Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == ADJ_ELASTICITY) || (Kind_Solver == DISC_ADJ_FEM))
     		Paraview_File << "\nSCALARS Displacement_" << iVar+1 << " float 1\n";
     	else
     		Paraview_File << "\nSCALARS Conservative_" << iVar+1 << " float 1\n";

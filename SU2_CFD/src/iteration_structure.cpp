@@ -2331,43 +2331,51 @@ void CDiscAdjFEAIteration::Preprocess(COutput *output,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-//  /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
-//
-//  if (dynamic) {
-//
-//    Direct_Iter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 2;
-//
-//    /*--- For dual-time stepping we want to load the already converged solution at timestep n ---*/
-//
-////    if (dynamic){
-////      Direct_Iter += 1;
-////    }
-////
-////    if (dynamic){
-////
-////      /*--- Load solution at timestep n-1 ---*/
-////
-////      LoadDynamic_Solution(geometry_container, solver_container,config_container, val_iZone, Direct_Iter-1);
-////
-////      /*--- Push solution back to correct array ---*/
-////
-////      for(iPoint=0; iPoint<geometry_container[val_iZone][iMesh]->GetnPoint();iPoint++){
-////        solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->Set_Solution_time_n();
-////      }
-////
-////    }
-//
-//    /*--- Load solution timestep n ---*/
-//
-//    LoadDynamic_Solution(geometry_container, solver_container,config_container, val_iZone, Direct_Iter);
-//
-//
-//    /*--- Store FEA solution also in the adjoint solver in order to be able to reset it later ---*/
-//
-//    for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++){
-//      solver_container[val_iZone][MESH_0][ADJFEA_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->GetSolution());
-//    }
-//  }
+  /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
+
+  if (dynamic) {
+
+    Direct_Iter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 1;
+
+    /*--- For dual-time stepping we want to load the already converged solution at timestep n ---*/
+
+    if (dynamic){
+
+      /*--- Load solution at timestep n-1 ---*/
+
+      LoadDynamic_Solution(geometry_container, solver_container,config_container, val_iZone, Direct_Iter-1);
+
+      /*--- Push solution back to correct array ---*/
+
+      for(iPoint=0; iPoint<geometry_container[val_iZone][iMesh]->GetnPoint();iPoint++){
+        solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->Set_Solution_time_n();
+      }
+
+      /*--- Push solution back to correct array ---*/
+
+      for(iPoint=0; iPoint<geometry_container[val_iZone][iMesh]->GetnPoint();iPoint++){
+        solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Accel_time_n();
+      }
+
+      /*--- Push solution back to correct array ---*/
+
+      for(iPoint=0; iPoint<geometry_container[val_iZone][iMesh]->GetnPoint();iPoint++){
+        solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Vel_time_n();
+      }
+
+    }
+
+    /*--- Load solution timestep n ---*/
+
+    LoadDynamic_Solution(geometry_container, solver_container,config_container, val_iZone, Direct_Iter);
+
+
+    /*--- Store FEA solution also in the adjoint solver in order to be able to reset it later ---*/
+
+    for (iPoint = 0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint(); iPoint++){
+      solver_container[val_iZone][MESH_0][ADJFEA_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->GetSolution());
+    }
+  }
 
   solver_container[val_iZone][MESH_0][ADJFEA_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJFEA_SYS, false);
 
@@ -2434,13 +2442,11 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
 
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
   unsigned long IntIter = 0, nIntIter = 1;
-//  bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
 
   config_container[val_iZone]->SetIntIter(IntIter);
 
-//  if(dynamic)
-   nIntIter = config_container[val_iZone]->GetDyn_nIntIter();
-
+  nIntIter = config_container[val_iZone]->GetDyn_nIntIter();
 
   for(IntIter = 0; IntIter < nIntIter; IntIter++){
 
@@ -2485,9 +2491,9 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
   }
 
 
-//  if (dynamic){
-//    integration_container[val_iZone][ADJFEA_SOL]->SetConvergence(false);
-//  }
+  if (dynamic){
+    integration_container[val_iZone][ADJFEA_SOL]->SetConvergence(false);
+  }
 
   /*--- Mesh sensitivities ---*/
 
@@ -2530,13 +2536,13 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
 
   unsigned long IntIter = config_container[ZONE_0]->GetIntIter();
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter(), DirectExtIter;
-//  bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
+  bool dynamic = (config_container[val_iZone]->GetDynamic_Analysis() == DYNAMIC);
   unsigned short iMesh;
 
   DirectExtIter = 0;
-//  if (dynamic){
-//    DirectExtIter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 1;
-//  }
+  if (dynamic){
+    DirectExtIter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 1;
+  }
 
   /*--- Reset the tape ---*/
 
@@ -2555,6 +2561,10 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
     /*--- Add dependencies for E and Nu ---*/
 
     numerics_container[val_iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Properties(solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(), solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson());
+
+    /*--- Add dependencies for Rho and Rho_DL ---*/
+
+    numerics_container[val_iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Density(solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(), solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL());
 
     /*--- Run one iteration while tape is passive - this clears all indices ---*/
 
@@ -2586,9 +2596,9 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
 
   /*--- Set the correct direct iteration number ---*/
 
-//  if (dynamic){
-//    config_container[val_iZone]->SetExtIter(DirectExtIter);
-//  }
+  if (dynamic){
+    config_container[val_iZone]->SetExtIter(DirectExtIter);
+  }
 
   /*--- Run the direct iteration ---*/
 

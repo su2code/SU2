@@ -1143,6 +1143,164 @@ void CFEM_ElasticitySolver::Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConf
 
 }
 
+void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter) {
+
+  unsigned long iPoint;
+  unsigned short iVar, jVar, iDim, jDim;
+  unsigned short iTerm, iKind;
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = geometry->GetnZone();
+
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS); // Nonlinear analysis.
+  bool fsi = config->GetFSI_Simulation();                       // FSI simulation
+  bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);  // Generalized alpha method requires residual at previous time step.
+
+  bool de_effects = config->GetDE_Effects();                      // Test whether we consider dielectric elastomers
+
+  bool body_forces = config->GetDeadLoad(); // Body forces (dead loads).
+  bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- The length of the solution vector depends on whether the problem is static or dynamic ---*/
+  unsigned short nSolVar;
+  unsigned long index;
+  string text_line, filename;
+  ifstream restart_file;
+  su2double dull_val;
+  long Dyn_RestartIter;
+
+
+  /*--- Restart the solution from file information ---*/
+
+  filename = config->GetSolution_FEMFileName();
+
+  /*--- If multizone, append zone name ---*/
+  if (nZone > 1)
+    filename = config->GetMultizone_FileName(filename, iZone);
+
+  if (dynamic) {
+
+    Dyn_RestartIter = val_iter - 1;
+
+    filename = config->GetUnsteady_FileName(filename, (int)val_iter);
+  }
+
+  restart_file.open(filename.data(), ios::in);
+
+  /*--- In case there is no file ---*/
+
+  if (restart_file.fail()) {
+    if (rank == MASTER_NODE)
+      cout << "There is no FEM restart file!!" << endl;
+    exit(EXIT_FAILURE);
+  }
+
+  /*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+
+  long *Global2Local = new long[geometry[MESH_0]->GetGlobal_nPointDomain()];
+
+  /*--- First, set all indices to a negative value by default ---*/
+
+  for (iPoint = 0; iPoint < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint++)
+    Global2Local[iPoint] = -1;
+
+  /*--- Now fill array with the transform values only for local points ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+    Global2Local[geometry[MESH_0]->node[iPoint]->GetGlobalIndex()] = iPoint;
+
+  /*--- Read all lines in the restart file ---*/
+
+  long iPoint_Local;
+  unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- The first line is the header ---*/
+
+  getline (restart_file, text_line);
+
+  while (getline (restart_file, text_line)) {
+    istringstream point_line(text_line);
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on a different processor, the value of iPoint_Local will be -1.
+     Otherwise, the local index for this node on the current processor
+     will be returned and used to instantiate the vars. ---*/
+
+    iPoint_Local = Global2Local[iPoint_Global];
+
+    if (iPoint_Local >= 0) {
+      if (dynamic){
+        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2] >> SolRest[3] >> SolRest[4] >> SolRest[5];
+        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2] >> SolRest[3] >> SolRest[4] >> SolRest[5] >> SolRest[6] >> SolRest[7] >> SolRest[8];
+      }
+      else {
+        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> SolRest[0] >> SolRest[1];
+        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2];
+      }
+
+//      node[iPoint_Local] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
+
+      for (iVar = 0; iVar < nVar; iVar++) node[iPoint_Local]->SetSolution(iVar, SolRest[iVar]);
+      if (dynamic){
+        for (iVar = 0; iVar < nVar; iVar++) node[iPoint_Local]->SetSolution_Vel(iVar, SolRest[iVar+nVar]);
+        for (iVar = 0; iVar < nVar; iVar++) node[iPoint_Local]->SetSolution_Accel(iVar, SolRest[iVar+2*nVar]);
+      }
+
+      iPoint_Global_Local++;
+    }
+    iPoint_Global++;
+  }
+
+  /*--- Detect a wrong solution file ---*/
+
+  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+#ifndef HAVE_MPI
+  rbuf_NotMatching = sbuf_NotMatching;
+#else
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+
+  if (rbuf_NotMatching != 0) {
+    if (rank == MASTER_NODE) {
+      cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
+      cout << "It could be empty lines at the end of the file." << endl << endl;
+    }
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
+  /*--- Instantiate the variable class with an arbitrary solution
+   at any halo/periodic nodes. The initial solution can be arbitrary,
+   because a send/recv is performed immediately in the solver (Set_MPI_Solution()). ---*/
+
+  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    node[iPoint] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
+  }
+
+  /*--- Close the restart file ---*/
+
+  restart_file.close();
+
+  /*--- Free memory needed for the transformation ---*/
+
+  delete [] Global2Local;
+
+
+}
+
 
 void CFEM_ElasticitySolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
 
@@ -1386,6 +1544,7 @@ void CFEM_ElasticitySolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *
   delete [] Global2Local;
 
 }
+
 
 
 void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output) {

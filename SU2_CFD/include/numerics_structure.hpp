@@ -1499,6 +1499,14 @@ public:
   virtual void SetMaterial_Properties(su2double val_E, su2double val_Nu);
 
   /*!
+   * \brief A virtual member to set the material properties
+   * \param[in] pseudo_static - Controls whether we consider inertial effects or not
+   * \param[in] val_Rho - Value of the density (inertial effects).
+   * \param[in] val_Rho_DL - Value of the density (dead load effects).
+   */
+  virtual void SetMaterial_Density(su2double val_Rho, su2double val_Rho_DL);
+
+  /*!
    * \brief A virtual member to compute the mass matrix
    * \param[in] element_container - Element structure for the particular element integrated.
    */
@@ -4005,6 +4013,8 @@ public:
 
   void SetMaterial_Properties(su2double val_E, su2double val_Nu);
 
+  void SetMaterial_Density(su2double val_Rho, su2double val_Rho_DL);
+
 	void Compute_Mass_Matrix(CElement *element_container, CConfig *config);
 
 	void Compute_Dead_Load(CElement *element_container, CConfig *config);
@@ -4181,6 +4191,8 @@ public:
   void Set_YoungModulus(unsigned short i_DV, su2double val_Young);
 
   void SetMaterial_Properties(su2double val_E, su2double val_Nu);
+
+  void SetMaterial_Density(su2double val_Rho, su2double val_Rho_DL);
 
 	su2double deltaij(unsigned short iVar, unsigned short jVar);
 

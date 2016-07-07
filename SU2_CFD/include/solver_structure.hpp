@@ -2321,6 +2321,18 @@ public:
    */
   virtual su2double GetVal_Poisson(void);
 
+  /*!
+   * \brief A virtual member.
+   * \return Value of the density for inertial effects, from the adjoint solver
+   */
+  virtual su2double GetVal_Rho(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the density for dead loads, from the adjoint solver
+   */
+  virtual su2double GetVal_Rho_DL(void);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -7445,6 +7457,15 @@ public:
    */
   su2double Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar);
 
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   */
+  void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter);
+
 };
 
 /*! \class CFEM_ElasticitySolver_Adj
@@ -8310,11 +8331,17 @@ private:
   *Sens_Nu,                     /*!< \brief Poisson's ratio sensitivity coefficient for each boundary. */
   *Sens_nL,                     /*!< \brief Normal pressure sensitivity coefficient for each boundary. */
   **CSensitivity;               /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
+
+  su2double *Solution_Vel,      /*!< \brief Velocity componenent of the solution. */
+  *Solution_Accel;              /*!< \brief Acceleration componenent of the solution. */
+
   su2double Total_Sens_E;       /*!< \brief Total Young modulus sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_Nu;      /*!< \brief Total Poisson's ratio sensitivity coefficient for all the boundaries. */
+  su2double Total_Sens_Rho;     /*!< \brief Total density sensitivity coefficient for all the boundaries. */
+  su2double Total_Sens_Rho_DL;  /*!< \brief Total density sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_nL;      /*!< \brief Total normal pressure sensitivity coefficient for all the boundaries. */
   su2double ObjFunc_Value;      /*!< \brief Value of the objective function. */
-  su2double E, Nu;              /*!< \brief Value of the extra variables we want to obtain the adjoint for. */
+  su2double E, Nu, Rho, Rho_DL; /*!< \brief Value of the extra variables we want to obtain the adjoint for. */
   su2double *normalLoads;       /*!< \brief Values of the normal loads for each marker iMarker_nL. */
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   unsigned long nMarker_nL;     /*!< \brief Total number of markers that have a normal load applied. */
@@ -8434,6 +8461,18 @@ public:
    * \return Value of the Poisson's ratio from the adjoint solver
    */
   su2double GetVal_Poisson(void);
+
+  /*!
+   * \brief Get the value of the density from the adjoint solver, for inertial effects
+   * \return Value of the density from the adjoint solver
+   */
+  su2double GetVal_Rho(void);
+
+  /*!
+   * \brief Get the value of the density from the adjoint solver, for dead loads
+   * \return Value of the density for dead loads, from the adjoint solver
+   */
+  su2double GetVal_Rho_DL(void);
 
 //
 //  /*!
