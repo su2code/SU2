@@ -209,7 +209,10 @@ void CConfig::SetPointersNull(void) {
   ActDisk_Origin= NULL;
   CoordFFDBox= NULL;
   DegreeFFDBox= NULL;
-  
+  FFDTag = NULL;
+  nDV_Value = NULL;
+  TagFFDBox = NULL;
+ 
   /*--- Variable initialization ---*/
   
   ExtIter = 0;
@@ -4735,7 +4738,6 @@ CConfig::~CConfig(void) {
   if (Periodic_Rotation    != NULL) delete[] Periodic_Rotation;
   if (Periodic_Translate   != NULL) delete[] Periodic_Translate;
   
-  if (ParamDV!=NULL)                  delete[] ParamDV;
   if (MG_CorrecSmooth != NULL)        delete[] MG_CorrecSmooth;
   if (PlaneTag != NULL)               delete[] PlaneTag;
   if (CFL!=NULL)                      delete[] CFL;
@@ -4782,7 +4784,11 @@ CConfig::~CConfig(void) {
   if (default_ea_lim        != NULL) delete [] default_ea_lim;
   if (default_grid_fix      != NULL) delete [] default_grid_fix;
   if (default_inc_crit      != NULL) delete [] default_inc_crit;
-  
+ 
+  if (FFDTag != NULL) delete [] FFDTag;
+  if (nDV_Value != NULL) delete [] nDV_Value;
+  if (TagFFDBox != NULL) delete [] TagFFDBox;
+ 
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
