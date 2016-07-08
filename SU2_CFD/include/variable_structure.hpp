@@ -288,6 +288,12 @@ public:
 	 */	
 	su2double *GetSolution_time_n1(void);
 
+  /*!
+   * \brief Get the fem solution at time n.
+   * \return Pointer to the solution (at time n) vector.
+   */
+  virtual su2double *Get_femSolution_time_n(void);
+
 	/*!
 	 * \brief Set the value of the old residual.
 	 * \param[in] val_residual_old - Pointer to the residual vector.
@@ -2110,6 +2116,11 @@ public:
 	 */
    virtual su2double GetReference_Geometry(unsigned short iVar);
 
+   /*!
+    * \brief A virtual member.
+    */
+   virtual void Register_femSolution_time_n();
+
   /*!
    * \brief A virtual member.
    */
@@ -2668,6 +2679,18 @@ public:
 	 */
 	su2double GetSolution_time_n(unsigned short val_var);
 
+  /*!
+   * \brief Get the fem solution at time n.
+   * \return Pointer to the solution (at time n) vector.
+   */
+  su2double *Get_femSolution_time_n(void);
+
+  /*!
+   * \brief Get the solution at time n.
+   * \return Pointer to the solution (at time n) vector.
+   */
+  su2double *GetSolution_time_n(void);
+
 	/*!
 	 * \brief Get the velocity (Structural Analysis).
 	 * \param[in] val_var - Index of the variable.
@@ -2856,6 +2879,12 @@ public:
     * \brief Get the value of the reference geometry for the coordinate iVar
     */
     su2double GetReference_Geometry(unsigned short iVar);
+
+    /*!
+     * \brief Register the variables in the solution time_n array as input/output variable.
+     * \param[in] input - input or output variables.
+     */
+    void Register_femSolution_time_n();
 
     /*!
      * \brief Register the variables in the velocity array as input/output variable.
@@ -4421,6 +4450,17 @@ public:
     CDiscAdjFEAVariable(su2double *val_solution, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
 
     /*!
+     * \overload
+     * \param[in] val_solution       - Pointer to the adjoint value (initialization value).
+     * \param[in] val_solution_accel - Pointer to the adjoint value (initialization value).
+     * \param[in] val_solution_vel   - Pointer to the adjoint value (initialization value).
+     * \param[in] val_ndim - Number of dimensions of the problem.
+     * \param[in] val_nvar - Number of variables of the problem.
+     * \param[in] config - Definition of the particular problem.
+     */
+    CDiscAdjFEAVariable(su2double *val_solution, su2double *val_solution_accel, su2double *val_solution_vel, unsigned short val_ndim, unsigned short val_nvar, CConfig *config);
+
+    /*!
      * \brief Set the sensitivity at the node
      * \param[in] iDim - spacial component
      * \param[in] val - value of the Sensitivity
@@ -4453,6 +4493,12 @@ public:
     su2double* GetSolution_Vel_Direct();
 
     su2double* GetSolution_Accel_Direct();
+
+    /*!
+     * \brief Set the value of the old solution.
+     * \param[in] val_solution_old - Pointer to the residual vector.
+     */
+    void SetSolution_time_n(void);
 
     /*!
      * \brief Set the value of the acceleration (Structural Analysis - adjoint).

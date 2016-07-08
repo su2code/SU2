@@ -635,7 +635,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   /*--- Initialize the value of the total objective function ---*/
    Total_OFRefGeom = 0.0;
 
-
   /*--- Perform the MPI communication of the solution ---*/
 
   Set_MPI_Solution(geometry, config);
@@ -1149,7 +1148,7 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
   unsigned short iVar, jVar, iDim, jDim;
   unsigned short iTerm, iKind;
   unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
+  unsigned short nZone = geometry[MESH_0]->GetnZone();
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS); // Nonlinear analysis.
@@ -1184,10 +1183,7 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
     filename = config->GetMultizone_FileName(filename, iZone);
 
   if (dynamic) {
-
-    Dyn_RestartIter = val_iter - 1;
-
-    filename = config->GetUnsteady_FileName(filename, (int)val_iter);
+    filename = config->GetUnsteady_FileName(filename, val_iter);
   }
 
   restart_file.open(filename.data(), ios::in);
@@ -1218,7 +1214,7 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
   /*--- Read all lines in the restart file ---*/
 
   long iPoint_Local;
-  unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
+  unsigned long iPoint_Global_Local = 0, iPoint_Global = 0;
   unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- The first line is the header ---*/
@@ -1286,9 +1282,9 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
    at any halo/periodic nodes. The initial solution can be arbitrary,
    because a send/recv is performed immediately in the solver (Set_MPI_Solution()). ---*/
 
-  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-    node[iPoint] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
-  }
+//  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+//    node[iPoint] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
+//  }
 
   /*--- Close the restart file ---*/
 
@@ -1560,6 +1556,8 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
   bool restart = config->GetRestart();                        // Restart analysis
   bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter()); // Initial calculation for restart
 
+  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);     // Discrete adjoint FEM solver
+
   bool incremental_load = config->GetIncrementalLoad();               // If an incremental load is applied
 
   bool body_forces = config->GetDeadLoad();                     // Body forces (dead loads).
@@ -1582,7 +1580,8 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
    * We don't need first_iter, because there is only one iteration per time step in linear analysis.
    */
   if ((initial_calc && linear_analysis)||
-      (restart && initial_calc_restart && linear_analysis)){
+      (restart && initial_calc_restart && linear_analysis) ||
+      (dynamic && disc_adj_fem)){
     Jacobian.SetValZero();
   }
 
@@ -1595,7 +1594,8 @@ void CFEM_ElasticitySolver::Preprocessing(CGeometry *geometry, CSolver **solver_
    * We need first_iter, because in nonlinear problems there are more than one subiterations in the first time step.
    */
   if ((dynamic && initial_calc && first_iter) ||
-      (dynamic && restart && initial_calc_restart && first_iter)) {
+      (dynamic && restart && initial_calc_restart && first_iter) ||
+      (dynamic && disc_adj_fem)) {
     MassMatrix.SetValZero();
     Compute_IntegrationConstants(config);
     Compute_MassMatrix(geometry, solver_container, numerics, config);
@@ -2559,6 +2559,7 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
 
   bool first_iter = (config->GetIntIter() == 0);
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);   // Nonlinear analysis.
+  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
 
   su2double solNorm = 0.0, solNorm_recv = 0.0;
 
@@ -2567,86 +2568,141 @@ void CFEM_ElasticitySolver::Postprocessing(CGeometry *geometry, CSolver **solver
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  if (nonlinear_analysis){
+  if (disc_adj_fem){
 
-    /*--- If the problem is nonlinear, we have 3 convergence criteria ---*/
+    if (nonlinear_analysis){
 
-    /*--- UTOL = norm(Delta_U(k)) / norm(U(k)) --------------------------*/
-    /*--- RTOL = norm(Residual(k)) / norm(Residual(0)) ------------------*/
-    /*--- ETOL = Delta_U(k) * Residual(k) / Delta_U(0) * Residual(0) ----*/
+      /*--- For nonlinear discrete adjoint, we have 3 convergence criteria ---*/
 
-    if (first_iter){
-      Conv_Ref[0] = 1.0;                      // Position for the norm of the solution
-      Conv_Ref[1] = max(LinSysRes.norm(), EPS);         // Position for the norm of the residual
-      Conv_Ref[2] = max(dotProd(LinSysSol, LinSysRes), EPS);    // Position for the energy tolerance
+      /*--- UTOL = norm(Delta_U(k)): ABSOLUTE, norm of the incremental displacements ------------*/
+      /*--- RTOL = norm(Residual(k): ABSOLUTE, norm of the residual (T-F) -----------------------*/
+      /*--- ETOL = Delta_U(k) * Residual(k): ABSOLUTE, norm of the product disp * res -----------*/
 
-      /*--- Make sure the computation runs at least 2 iterations ---*/
-      Conv_Check[0] = 1.0;
-      Conv_Check[1] = 1.0;
-      Conv_Check[2] = 1.0;
+      Conv_Check[0] = LinSysSol.norm();               // Norm of the delta-solution vector
+      Conv_Check[1] = LinSysRes.norm();               // Norm of the residual
+      Conv_Check[2] = dotProd(LinSysSol, LinSysRes);  // Position for the energy tolerance
+
+      /*--- MPI solution ---*/
+
+      Set_MPI_Solution(geometry, config);
+
     }
     else {
-      /*--- Compute the norm of the solution vector Uk ---*/
-      for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-        for (iVar = 0; iVar < nVar; iVar++){
-          solNorm += node[iPoint]->GetSolution(iVar) * node[iPoint]->GetSolution(iVar);
+      /*--- If the problem is linear, the only check we do is the RMS of the displacements ---*/
+      /*---  Compute the residual Ax-f ---*/
+
+      Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
+
+      /*--- Set maximum residual to zero ---*/
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        SetRes_RMS(iVar, 0.0);
+        SetRes_Max(iVar, 0.0, 0);
+      }
+
+      /*--- Compute the residual ---*/
+
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          total_index = iPoint*nVar+iVar;
+          AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
+          AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
         }
       }
 
-      // We need to communicate the norm of the solution and compute the RMS throughout the different processors
+      /*--- MPI solution ---*/
+
+      Set_MPI_Solution(geometry, config);
+
+      /*--- Compute the root mean square residual ---*/
+
+      SetResidual_RMS(geometry, config);
+
+    }
+
+  }
+  else {
+    if (nonlinear_analysis){
+
+      /*--- If the problem is nonlinear, we have 3 convergence criteria ---*/
+
+      /*--- UTOL = norm(Delta_U(k)) / norm(U(k)) --------------------------*/
+      /*--- RTOL = norm(Residual(k)) / norm(Residual(0)) ------------------*/
+      /*--- ETOL = Delta_U(k) * Residual(k) / Delta_U(0) * Residual(0) ----*/
+
+      if (first_iter){
+        Conv_Ref[0] = 1.0;                                        // Position for the norm of the solution
+        Conv_Ref[1] = max(LinSysRes.norm(), EPS);                 // Position for the norm of the residual
+        Conv_Ref[2] = max(dotProd(LinSysSol, LinSysRes), EPS);    // Position for the energy tolerance
+
+        /*--- Make sure the computation runs at least 2 iterations ---*/
+        Conv_Check[0] = 1.0;
+        Conv_Check[1] = 1.0;
+        Conv_Check[2] = 1.0;
+      }
+      else {
+        /*--- Compute the norm of the solution vector Uk ---*/
+        for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+          for (iVar = 0; iVar < nVar; iVar++){
+            solNorm += node[iPoint]->GetSolution(iVar) * node[iPoint]->GetSolution(iVar);
+          }
+        }
+
+        // We need to communicate the norm of the solution and compute the RMS throughout the different processors
 
 #ifdef HAVE_MPI
-      /*--- We sum the squares of the norms across the different processors ---*/
-      SU2_MPI::Allreduce(&solNorm, &solNorm_recv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        /*--- We sum the squares of the norms across the different processors ---*/
+        SU2_MPI::Allreduce(&solNorm, &solNorm_recv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
-      solNorm_recv         = solNorm;
+        solNorm_recv         = solNorm;
 #endif
 
-      Conv_Ref[0] = max(sqrt(solNorm_recv), EPS);           // Norm of the solution vector
+        Conv_Ref[0] = max(sqrt(solNorm_recv), EPS);           // Norm of the solution vector
 
-      Conv_Check[0] = LinSysSol.norm() / Conv_Ref[0];         // Norm of the delta-solution vector
-      Conv_Check[1] = LinSysRes.norm() / Conv_Ref[1];         // Norm of the residual
-      Conv_Check[2] = dotProd(LinSysSol, LinSysRes) / Conv_Ref[2];  // Position for the energy tolerance
+        Conv_Check[0] = LinSysSol.norm() / Conv_Ref[0];         // Norm of the delta-solution vector
+        Conv_Check[1] = LinSysRes.norm() / Conv_Ref[1];         // Norm of the residual
+        Conv_Check[2] = dotProd(LinSysSol, LinSysRes) / Conv_Ref[2];  // Position for the energy tolerance
 
-    }
-
-    /*--- MPI solution ---*/
-
-    Set_MPI_Solution(geometry, config);
-
-  } else{
-
-    /*--- If the problem is linear, the only check we do is the RMS of the displacements ---*/
-
-    /*---  Compute the residual Ax-f ---*/
-
-    Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
-
-    /*--- Set maximum residual to zero ---*/
-
-    for (iVar = 0; iVar < nVar; iVar++) {
-      SetRes_RMS(iVar, 0.0);
-      SetRes_Max(iVar, 0.0, 0);
-    }
-
-    /*--- Compute the residual ---*/
-
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar+iVar;
-        AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
-        AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
       }
+
+      /*--- MPI solution ---*/
+
+      Set_MPI_Solution(geometry, config);
+
+    } else{
+
+      /*--- If the problem is linear, the only check we do is the RMS of the displacements ---*/
+
+      /*---  Compute the residual Ax-f ---*/
+
+      Jacobian.ComputeResidual(LinSysSol, LinSysRes, LinSysAux);
+
+      /*--- Set maximum residual to zero ---*/
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+        SetRes_RMS(iVar, 0.0);
+        SetRes_Max(iVar, 0.0, 0);
+      }
+
+      /*--- Compute the residual ---*/
+
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          total_index = iPoint*nVar+iVar;
+          AddRes_RMS(iVar, LinSysAux[total_index]*LinSysAux[total_index]);
+          AddRes_Max(iVar, fabs(LinSysAux[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+        }
+      }
+
+      /*--- MPI solution ---*/
+
+      Set_MPI_Solution(geometry, config);
+
+      /*--- Compute the root mean square residual ---*/
+
+      SetResidual_RMS(geometry, config);
     }
 
-
-    /*--- MPI solution ---*/
-
-    Set_MPI_Solution(geometry, config);
-
-    /*--- Compute the root mean square residual ---*/
-
-    SetResidual_RMS(geometry, config);
   }
 
 }
@@ -4673,7 +4729,7 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
 
   // TODO: Need to do an MPI reduction to have the sum in all processors HERE
 
-  Total_OFRefGeom = objective_function;
+  Total_OFRefGeom += objective_function;
 
   cout << "Objective function with our new function is... " << Total_OFRefGeom << endl;
 
