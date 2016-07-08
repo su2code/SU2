@@ -4612,9 +4612,6 @@ CConfig::~CConfig(void) {
   if (Inlet_Ttotal != NULL)    delete[]  Inlet_Ttotal;
   if (Inlet_Ptotal != NULL)    delete[]  Inlet_Ptotal;
   
-  for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
-    if (Inlet_FlowDir[iMarker_Inlet] != NULL) delete[] Inlet_FlowDir[iMarker_Inlet];
-  }
   if (Inlet_FlowDir != NULL) delete [] Inlet_FlowDir;
 
   if (Inlet_Temperature != NULL)    delete[] Inlet_Temperature;
