@@ -149,9 +149,10 @@ void CConfig::SetPointersNull(void) {
   Bleed_MassFlow_Target = NULL;   Bleed_MassFlow = NULL;            Exhaust_Pressure = NULL; Exhaust_Temperature = NULL;
   Bleed_Pressure = NULL;          Outlet_Pressure = NULL;           Isothermal_Temperature = NULL;
   Heat_Flux = NULL;               Displ_Value = NULL;               Load_Value = NULL;
-  FlowLoad_Value = NULL;          Periodic_RotCenter = NULL;        Periodic_RotAngles = NULL;
-  Periodic_Translation = NULL;    Periodic_Center = NULL;           Periodic_Rotation = NULL;
-  Periodic_Translate = NULL;
+  FlowLoad_Value = NULL;
+  
+  Periodic_Translate=NULL;    Periodic_Rotation=NULL;    Periodic_Center=NULL;
+  Periodic_Translation=NULL;   Periodic_RotAngles=NULL;   Periodic_RotCenter=NULL;
 
   Load_Dir = NULL;	          Load_Dir_Value = NULL;          Load_Dir_Multiplier = NULL;
   Load_Sine_Dir = NULL;	      Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
@@ -189,8 +190,6 @@ void CConfig::SetPointersNull(void) {
   Plunging_Ampl_X = NULL;     Plunging_Ampl_Y = NULL;     Plunging_Ampl_Z = NULL;
   RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
   MoveMotion_Origin = NULL;
-  Periodic_Translate=NULL;    Periodic_Rotation=NULL;    Periodic_Center=NULL;
-  Periodic_Translation=NULL;   Periodic_RotAngles=NULL;   Periodic_RotCenter=NULL;
 
   /*--- Initialize some default arrays to NULL. ---*/
   
@@ -4642,18 +4641,22 @@ CConfig::~CConfig(void) {
     if (Periodic_RotCenter   != NULL) delete [] Periodic_RotCenter[iMarker_PerBound];
     if (Periodic_RotAngles   != NULL) delete [] Periodic_RotAngles[iMarker_PerBound];
     if (Periodic_Translation != NULL) delete [] Periodic_Translation[iMarker_PerBound];
-    if (Periodic_Center      != NULL) delete [] Periodic_Center[iMarker_PerBound];
-    if (Periodic_Rotation    != NULL) delete [] Periodic_Rotation[iMarker_PerBound];
-    if (Periodic_Translate   != NULL) delete [] Periodic_Translate[iMarker_PerBound];
     
   }
   if (Periodic_RotCenter   != NULL) delete[] Periodic_RotCenter;
   if (Periodic_RotAngles   != NULL) delete[] Periodic_RotAngles;
   if (Periodic_Translation != NULL) delete[] Periodic_Translation;
+
+
+  for (unsigned long iPeriodic = 0; iPeriodic < nPeriodic_Index; iPeriodic++) {
+    if (Periodic_Center      != NULL)    delete [] Periodic_Center[iPeriodic];
+    if (Periodic_Rotation      != NULL)  delete [] Periodic_Rotation[iPeriodic];
+    if (Periodic_Translate      != NULL) delete [] Periodic_Translate[iPeriodic];
+  }
   if (Periodic_Center      != NULL) delete[] Periodic_Center;
   if (Periodic_Rotation    != NULL) delete[] Periodic_Rotation;
   if (Periodic_Translate   != NULL) delete[] Periodic_Translate;
-
+  
   if (ParamDV!=NULL)                  delete[] ParamDV;
   if (MG_CorrecSmooth != NULL)        delete[] MG_CorrecSmooth;
   if (PlaneTag != NULL)               delete[] PlaneTag;
@@ -5073,7 +5076,13 @@ void CConfig::SetnPeriodicIndex(unsigned short val_index) {
   Periodic_Center    = new su2double*[nPeriodic_Index];
   Periodic_Rotation  = new su2double*[nPeriodic_Index];
   Periodic_Translate = new su2double*[nPeriodic_Index];
-
+  
+  for (unsigned long i = 0; i < nPeriodic_Index; i++) {
+    Periodic_Center[i]    = new su2double[3];
+    Periodic_Rotation[i]  = new su2double[3];
+    Periodic_Translate[i] = new su2double[3];
+  }
+  
 }
 
 unsigned short CConfig::GetMarker_Moving(string val_marker) {
