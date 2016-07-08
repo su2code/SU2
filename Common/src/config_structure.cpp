@@ -213,6 +213,16 @@ void CConfig::SetPointersNull(void) {
   nDV_Value = NULL;
   TagFFDBox = NULL;
  
+  Kind_Data_Riemann = NULL;
+  Riemann_Var1 = NULL;
+  Riemann_Var2 = NULL;
+  Kind_Data_NRBC = NULL;
+  NRBC_Var1 = NULL;
+  NRBC_Var2 = NULL;
+  Marker_TurboBoundIn = NULL;
+  Marker_TurboBoundOut = NULL;
+  Kind_TurboPerformance = NULL;
+  
   /*--- Variable initialization ---*/
   
   ExtIter = 0;
@@ -4788,6 +4798,16 @@ CConfig::~CConfig(void) {
   if (FFDTag != NULL) delete [] FFDTag;
   if (nDV_Value != NULL) delete [] nDV_Value;
   if (TagFFDBox != NULL) delete [] TagFFDBox;
+  
+  if (Kind_Data_Riemann != NULL) delete [] Kind_Data_Riemann;
+  if (Riemann_Var1 != NULL) delete [] Riemann_Var1;
+  if (Riemann_Var2 != NULL) delete [] Riemann_Var2;
+  if (Kind_Data_NRBC != NULL) delete [] Kind_Data_NRBC;
+  if (NRBC_Var1 != NULL) delete [] NRBC_Var1;
+  if (NRBC_Var2 != NULL) delete [] NRBC_Var2;
+  if (Marker_TurboBoundIn != NULL) delete [] Marker_TurboBoundIn;
+  if (Marker_TurboBoundOut != NULL) delete [] Marker_TurboBoundOut;
+  if (Kind_TurboPerformance != NULL) delete [] Kind_TurboPerformance;
  
 }
 
