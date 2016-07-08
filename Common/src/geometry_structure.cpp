@@ -3742,9 +3742,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         
         for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
           
-          su2double* center = new su2double[3];       // Do not deallocate the memory
-          su2double* rotation  = new su2double[3];    // Do not deallocate the memory
-          su2double* translate = new su2double[3];    // Do not deallocate the memory
+          su2double* center    = new su2double[3];
+          su2double* rotation  = new su2double[3];
+          su2double* translate = new su2double[3];
           
           for (iDim = 0; iDim < 3; iDim++) {
             center[iDim] = Buffer_Receive_Center[iDim+iPeriodic*3];
@@ -3754,6 +3754,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
           config->SetPeriodicCenter(iPeriodic, center);
           config->SetPeriodicRotation(iPeriodic, rotation);
           config->SetPeriodicTranslate(iPeriodic, translate);
+        
+          delete [] center; delete [] rotation; delete [] translate;
+          
         }
         
       }
@@ -5835,6 +5838,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           tran >> translate[0]; tran >> translate[1]; tran >> translate[2];
           config->SetPeriodicTranslate(iPeriodic, translate);
           
+          delete [] center; delete [] rotation; delete [] translate;
         }
       }
     }
@@ -5850,9 +5854,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       for (unsigned short iDim = 0; iDim < 3; iDim++) {
         center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
       }
-      config->SetPeriodicCenter(iPeriodic, center);
-      config->SetPeriodicRotation(iPeriodic, rotation);
+      config->SetPeriodicCenter(iPeriodic,    center);
+      config->SetPeriodicRotation(iPeriodic,  rotation);
       config->SetPeriodicTranslate(iPeriodic, translate);
+      delete [] center; delete [] rotation; delete [] translate;
     }
   }
   
@@ -7455,6 +7460,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
     config->SetPeriodicCenter(iPeriodic, center);
     config->SetPeriodicRotation(iPeriodic, rotation);
     config->SetPeriodicTranslate(iPeriodic, translate);
+    delete [] center; delete [] rotation; delete [] translate;
     
   }
   
