@@ -1205,6 +1205,8 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   bool *Write_Elem = NULL, notPeriodic, notHalo, addedPeriodic, isPeriodic;
 
   unsigned short kind_SU2 = config->GetKind_SU2();
+
+  int *Conn_Elem = NULL;
   
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -1216,9 +1218,9 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   
   
   /*--- Store the local number of this element type and the number of nodes
-   per this element type. In serial, this will be the total number of this
-   element type in the entire mesh. In parallel, it is the number on only
-   the current partition. ---*/
+    per this element type. In serial, this will be the total number of this
+    element type in the entire mesh. In parallel, it is the number on only
+    the current partition. ---*/
   
   switch (Elem_Type) {
     case TRIANGLE:
@@ -1251,7 +1253,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   }
   
   /*--- Find the max number of this element type among all
-   partitions and set up buffers. ---*/
+     partitions and set up buffers. ---*/
   
   Buffer_Send_nElem[0] = nLocalElem;
   if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[size];
@@ -1279,36 +1281,13 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   if (rank == MASTER_NODE) {
     Buffer_Recv_Elem = new unsigned long[size*nBuffer_Scalar];
     Buffer_Recv_Halo = new unsigned short[size*MaxLocalElem];
-    switch (Elem_Type) {
-      case TRIANGLE:
-        Conn_Tria = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
-        break;
-      case QUADRILATERAL:
-        Conn_Quad = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
-        break;
-      case TETRAHEDRON:
-        Conn_Tetr = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
-        break;
-      case HEXAHEDRON:
-        Conn_Hexa = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
-        break;
-      case PRISM:
-        Conn_Pris = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
-        break;
-      case PYRAMID:
-        Conn_Pyra = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
-        break;
-      default:
-        cout << "Error: Unrecognized element type \n";
-        exit(EXIT_FAILURE); break;
-    }
-    
+    if (MaxLocalElem > 0) Conn_Elem = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
   }
   
   /*--- Force the removal of all added periodic elements (use global index).
-   First, we isolate and create a list of all added periodic points, excluding
-   those that we part of the original domain (we want these to be in the
-   output files). ---*/
+    First, we isolate and create a list of all added periodic points, excluding
+    those that we part of the original domain (we want these to be in the
+    output files). ---*/
   
   vector<unsigned long> Added_Periodic;
   Added_Periodic.clear();
@@ -1331,9 +1310,9 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   }
   
   /*--- Now we communicate this information to all processors, so that they
-   can force the removal of these particular nodes by flagging them as halo
-   points. In general, this should be a small percentage of the total mesh,
-   so the communication/storage costs here shouldn't be prohibitive. ---*/
+    can force the removal of these particular nodes by flagging them as halo
+    points. In general, this should be a small percentage of the total mesh,
+    so the communication/storage costs here shouldn't be prohibitive. ---*/
   
   /*--- First communicate the number of points that each rank has found ---*/
   unsigned long nAddedPeriodic = 0, maxAddedPeriodic = 0;
@@ -1362,7 +1341,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   }
   
   /*--- Gather the element connectivity information. All processors will now
-   have a copy of the global index values for all added periodic points. ---*/
+     have a copy of the global index values for all added periodic points. ---*/
   
 #ifdef HAVE_MPI
   SU2_MPI::Allgather(Buffer_Send_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
@@ -1373,11 +1352,11 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
 #endif
   
   /*--- Search all send/recv boundaries on this partition for halo cells. In
-   particular, consider only the recv conditions (these are the true halo
-   nodes). Check the ranks of the processors that are communicating and
-   choose to keep only the halo cells from the higher rank processor. Here,
-   we are also choosing to keep periodic nodes that were part of the original
-   domain. We will check the communicated list of added periodic points. ---*/
+     particular, consider only the recv conditions (these are the true halo
+    nodes). Check the ranks of the processors that are communicating and
+       choose to keep only the halo cells from the higher rank processor. Here,
+     we are also choosing to keep periodic nodes that were part of the original
+     domain. We will check the communicated list of added periodic points. ---*/
   
   int *Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
@@ -1397,7 +1376,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
                    (SendRecv < 0) && (rank > RecvFrom));
         
         /*--- We want to keep the periodic nodes that were part of the original domain.
-         *    For SU2_DEF we want to keep all periodic nodes. ---*/
+ *          *    For SU2_DEF we want to keep all periodic nodes. ---*/
 
         if (kind_SU2 == SU2_DEF){
           isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0));
@@ -1409,7 +1388,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         notPeriodic = (isPeriodic && (SendRecv < 0));
         
         /*--- Lastly, check that this isn't an added periodic point that
-         we will forcibly remove. Use the communicated list of these points. ---*/
+ *          we will forcibly remove. Use the communicated list of these points. ---*/
         addedPeriodic = false; kPoint = 0;
         for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (jPoint = 0; jPoint < Buffer_Recv_nAddedPeriodic[iProcessor]; jPoint++) {
@@ -1429,15 +1408,15 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   }
   
   /*--- Loop over all elements in this partition and load the
-   elements of the current type into the buffer to be sent to
-   the master node. ---*/
+ *    elements of the current type into the buffer to be sent to
+ *       the master node. ---*/
   
   jNode = 0; jElem = 0;
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     if (geometry->elem[iElem]->GetVTK_Type() == Elem_Type) {
       
       /*--- Loop over all nodes in this element and load the
-       connectivity into the send buffer. ---*/
+ *        connectivity into the send buffer. ---*/
       
       Buffer_Send_Halo[jElem] = false;
       for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
@@ -1448,15 +1427,15 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
         Buffer_Send_Elem[jNode] = geometry->node[iPoint]->GetGlobalIndex();
         
         /*--- Check if this is a halo node. If so, flag this element
-         as a halo cell. We will use this later to sort and remove
-         any duplicates from the connectivity list. ---*/
+ *          as a halo cell. We will use this later to sort and remove
+ *                   any duplicates from the connectivity list. ---*/
         
         if (Local_Halo[iPoint]) {
           Buffer_Send_Halo[jElem] = true;
         }
         
         /*--- Increment jNode as the counter. We need this because iElem
-         may include other elements that we skip over during this loop. ---*/
+ *          may include other elements that we skip over during this loop. ---*/
         
         jNode++;
       }
@@ -1479,8 +1458,8 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   if (rank == MASTER_NODE) {
     
     /*---  We need to remove any duplicate elements (halo cells) that
-     exist on multiple partitions. Start by initializing all elements
-     to the "write" state by using a boolean array. ---*/
+ *      exist on multiple partitions. Start by initializing all elements
+ *           to the "write" state by using a boolean array. ---*/
     
     Write_Elem = new bool[size*MaxLocalElem];
     for (iElem = 0; iElem < size*MaxLocalElem; iElem++) {
@@ -1492,7 +1471,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
     if (!Wrt_Halo) {
       
       /*--- Loop for flagging duplicate elements so that they are not
-       included in the final connectivity list. ---*/
+ *        included in the final connectivity list. ---*/
       
       kElem = 0;
       for (iProcessor = 0; iProcessor < size; iProcessor++) {
@@ -1520,33 +1499,11 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
           nElem_Total++;
           
           /*--- Get global index, then loop over each variable and store.
-           Note that we are adding one to the index value because CGNS/Tecplot
-           use 1-based indexing.---*/
+ *            Note that we are adding one to the index value because CGNS/Tecplot
+ *                       use 1-based indexing.---*/
           
           for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-            switch (Elem_Type) {
-              case TRIANGLE:
-                Conn_Tria[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
-                break;
-              case QUADRILATERAL:
-                Conn_Quad[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
-                break;
-              case TETRAHEDRON:
-                Conn_Tetr[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
-                break;
-              case HEXAHEDRON:
-                Conn_Hexa[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
-                break;
-              case PRISM:
-                Conn_Pris[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
-                break;
-              case PYRAMID:
-                Conn_Pyra[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
-                break;
-              default:
-                cout << "Error: Unrecognized element type \n";
-                exit(EXIT_FAILURE); break;
-            }
+            Conn_Elem[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
             kNode++;
           }
         }
@@ -1572,27 +1529,33 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   }
   
   /*--- Store the particular global element count in the class data,
-   and set the class data pointer to the connectivity array. ---*/
+ *    and set the class data pointer to the connectivity array. ---*/
   
   if (rank == MASTER_NODE) {
     switch (Elem_Type) {
       case TRIANGLE:
         nGlobal_Tria = nElem_Total;
+        if (nGlobal_Tria > 0) Conn_Tria = Conn_Elem;
         break;
       case QUADRILATERAL:
         nGlobal_Quad = nElem_Total;
+        if (nGlobal_Quad > 0) Conn_Quad = Conn_Elem;
         break;
       case TETRAHEDRON:
         nGlobal_Tetr = nElem_Total;
+        if (nGlobal_Tetr > 0) Conn_Tetr = Conn_Elem;
         break;
       case HEXAHEDRON:
         nGlobal_Hexa = nElem_Total;
+        if (nGlobal_Hexa > 0) Conn_Hexa = Conn_Elem;
         break;
       case PRISM:
         nGlobal_Pris = nElem_Total;
+        if (nGlobal_Pris > 0) Conn_Pris = Conn_Elem;
         break;
       case PYRAMID:
         nGlobal_Pyra = nElem_Total;
+        if (nGlobal_Pyra > 0) Conn_Pyra = Conn_Elem;
         break;
       default:
         cout << "Error: Unrecognized element type \n";
@@ -1626,6 +1589,9 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   bool Wrt_Halo = config->GetWrt_Halo();
   bool *Write_Elem = NULL, notPeriodic, notHalo, addedPeriodic;
   
+  
+  int *Conn_Elem = NULL;
+  
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   
@@ -1635,9 +1601,9 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
 #endif
   
   /*--- Store the local number of this element type and the number of nodes
-   per this element type. In serial, this will be the total number of this
-   element type in the entire mesh. In parallel, it is the number on only
-   the current partition. ---*/
+ *    per this element type. In serial, this will be the total number of this
+ *       element type in the entire mesh. In parallel, it is the number on only
+ *          the current partition. ---*/
   
   nLocalElem = 0;
   
@@ -1667,7 +1633,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   }
   
   /*--- Find the max number of this element type among all
-   partitions and set up buffers. ---*/
+ *    partitions and set up buffers. ---*/
   
   Buffer_Send_nElem[0] = nLocalElem;
   if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[size];
@@ -1695,26 +1661,13 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   if (rank == MASTER_NODE) {
     Buffer_Recv_Elem = new unsigned long[size*nBuffer_Scalar];
     Buffer_Recv_Halo = new unsigned short[size*MaxLocalElem];
-    switch (Elem_Type) {
-      case LINE:
-        Conn_Line = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
-        break;
-      case TRIANGLE:
-        Conn_BoundTria = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
-        break;
-      case QUADRILATERAL:
-        Conn_BoundQuad = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
-        break;
-      default:
-        cout << "Error: Unrecognized element type \n";
-        exit(EXIT_FAILURE); break;
-    }
+    if (MaxLocalElem > 0) Conn_Elem = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
   }
   
   /*--- Force the removal of all added periodic elements (use global index).
-   First, we isolate and create a list of all added periodic points, excluding
-   those that we part of the original domain (we want these to be in the
-   output files). ---*/
+ *    First, we isolate and create a list of all added periodic points, excluding
+ *       those that we part of the original domain (we want these to be in the
+ *          output files). ---*/
   
   vector<unsigned long> Added_Periodic;
   Added_Periodic.clear();
@@ -1733,9 +1686,9 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   }
   
   /*--- Now we communicate this information to all processors, so that they
-   can force the removal of these particular nodes by flagging them as halo
-   points. In general, this should be a small percentage of the total mesh,
-   so the communication/storage costs here shouldn't be prohibitive. ---*/
+ *    can force the removal of these particular nodes by flagging them as halo
+ *       points. In general, this should be a small percentage of the total mesh,
+ *          so the communication/storage costs here shouldn't be prohibitive. ---*/
   
   /*--- First communicate the number of points that each rank has found ---*/
   unsigned long nAddedPeriodic = 0, maxAddedPeriodic = 0;
@@ -1764,7 +1717,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   }
   
   /*--- Gather the element connectivity information. All processors will now
-   have a copy of the global index values for all added periodic points. ---*/
+ *    have a copy of the global index values for all added periodic points. ---*/
   
 #ifdef HAVE_MPI
   SU2_MPI::Allgather(Buffer_Send_AddedPeriodic, maxAddedPeriodic, MPI_UNSIGNED_LONG,
@@ -1775,11 +1728,11 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
 #endif
   
   /*--- Search all send/recv boundaries on this partition for halo cells. In
-   particular, consider only the recv conditions (these are the true halo
-   nodes). Check the ranks of the processors that are communicating and
-   choose to keep only the halo cells from the higher rank processor. Here,
-   we are also choosing to keep periodic nodes that were part of the original
-   domain. We will check the communicated list of added periodic points. ---*/
+ *    particular, consider only the recv conditions (these are the true halo
+ *       nodes). Check the ranks of the processors that are communicating and
+ *          choose to keep only the halo cells from the higher rank processor. Here,
+ *             we are also choosing to keep periodic nodes that were part of the original
+ *                domain. We will check the communicated list of added periodic points. ---*/
   
   int *Local_Halo = new int[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
@@ -1804,7 +1757,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
                        (SendRecv < 0));
         
         /*--- Lastly, check that this isn't an added periodic point that
-         we will forcibly remove. Use the communicated list of these points. ---*/
+ *          we will forcibly remove. Use the communicated list of these points. ---*/
         addedPeriodic = false; kPoint = 0;
         for (iProcessor = 0; iProcessor < size; iProcessor++) {
           for (jPoint = 0; jPoint < Buffer_Recv_nAddedPeriodic[iProcessor]; jPoint++) {
@@ -1824,8 +1777,8 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   }
   
   /*--- Loop over all elements in this partition and load the
-   elements of the current type into the buffer to be sent to
-   the master node. ---*/
+ *    elements of the current type into the buffer to be sent to
+ *       the master node. ---*/
   jNode = 0; jElem = 0;
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
     if (config->GetMarker_All_Plotting(iMarker) == YES)
@@ -1834,7 +1787,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
         if (geometry->bound[iMarker][iElem]->GetVTK_Type() == Elem_Type) {
           
           /*--- Loop over all nodes in this element and load the
-           connectivity into the send buffer. ---*/
+ *            connectivity into the send buffer. ---*/
           
           Buffer_Send_Halo[jElem] = false;
           for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
@@ -1845,14 +1798,14 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
             Buffer_Send_Elem[jNode] = geometry->node[iPoint]->GetGlobalIndex();
             
             /*--- Check if this is a halo node. If so, flag this element
-             as a halo cell. We will use this later to sort and remove
-             any duplicates from the connectivity list. ---*/
+ *              as a halo cell. We will use this later to sort and remove
+ *                           any duplicates from the connectivity list. ---*/
             
             if (Local_Halo[iPoint])
               Buffer_Send_Halo[jElem] = true;
             
             /*--- Increment jNode as the counter. We need this because iElem
-             may include other elements that we skip over during this loop. ---*/
+ *              may include other elements that we skip over during this loop. ---*/
             
             jNode++;
           }
@@ -1875,8 +1828,8 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   if (rank == MASTER_NODE) {
     
     /*---  We need to remove any duplicate elements (halo cells) that
-     exist on multiple partitions. Start by initializing all elements
-     to the "write" state by using a boolean array. ---*/
+ *      exist on multiple partitions. Start by initializing all elements
+ *           to the "write" state by using a boolean array. ---*/
     
     Write_Elem = new bool[size*MaxLocalElem];
     for (iElem = 0; iElem < size*MaxLocalElem; iElem++) {
@@ -1888,7 +1841,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
     if (!Wrt_Halo) {
       
       /*--- Loop for flagging duplicate elements so that they are not
-       included in the final connectivity list. ---*/
+ *        included in the final connectivity list. ---*/
       
       kElem = 0;
       for (iProcessor = 0; iProcessor < size; iProcessor++) {
@@ -1916,24 +1869,11 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
           nElem_Total++;
           
           /*--- Get global index, then loop over each variable and store.
-           Note that we are adding one to the index value because CGNS/Tecplot
-           use 1-based indexing.---*/
+ *            Note that we are adding one to the index value because CGNS/Tecplot
+ *                       use 1-based indexing.---*/
           
           for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-            switch (Elem_Type) {
-              case LINE:
-                Conn_Line[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
-                break;
-              case TRIANGLE:
-                Conn_BoundTria[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
-                break;
-              case QUADRILATERAL:
-                Conn_BoundQuad[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
-                break;
-              default:
-                cout << "Error: Unrecognized element type \n";
-                exit(EXIT_FAILURE); break;
-            }
+            Conn_Elem[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
             kNode++;
           }
         }
@@ -1959,18 +1899,21 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   }
   
   /*--- Store the particular global element count in the class data,
-   and set the class data pointer to the connectivity array. ---*/
+ *    and set the class data pointer to the connectivity array. ---*/
   
   if (rank == MASTER_NODE) {
     switch (Elem_Type) {
       case LINE:
         nGlobal_Line = nElem_Total;
+        if (nGlobal_Line > 0) Conn_Line = Conn_Elem;
         break;
       case TRIANGLE:
         nGlobal_BoundTria = nElem_Total;
+        if (nGlobal_BoundTria > 0) Conn_BoundTria = Conn_Elem;
         break;
       case QUADRILATERAL:
         nGlobal_BoundQuad = nElem_Total;
+        if (nGlobal_BoundQuad > 0) Conn_BoundQuad = Conn_Elem;
         break;
       default:
         cout << "Error: Unrecognized element type \n";
@@ -3951,23 +3894,23 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
   /*--- The master node alone owns all data found in this routine. ---*/
   if (rank == MASTER_NODE) {
     
     /*--- Deallocate memory for connectivity data ---*/
     if (surf_sol) {
-      if (nGlobal_Line > 0) delete [] Conn_Line;
-      if (nGlobal_BoundTria > 0) delete [] Conn_BoundTria;
-      if (nGlobal_BoundQuad > 0) delete [] Conn_BoundQuad;
+      if (nGlobal_Line > 0      && Conn_Line      != NULL) delete [] Conn_Line;
+      if (nGlobal_BoundTria > 0 && Conn_BoundTria != NULL) delete [] Conn_BoundTria;
+      if (nGlobal_BoundQuad > 0 && Conn_BoundQuad != NULL) delete [] Conn_BoundQuad;
     }
     else {
-      if (nGlobal_Tria > 0) delete [] Conn_Tria;
-      if (nGlobal_Quad > 0) delete [] Conn_Quad;
-      if (nGlobal_Tetr > 0) delete [] Conn_Tetr;
-      if (nGlobal_Hexa > 0) delete [] Conn_Hexa;
-      if (nGlobal_Pris > 0) delete [] Conn_Pris;
-      if (nGlobal_Pyra > 0) delete [] Conn_Pyra;
+      if (nGlobal_Tria > 0 && Conn_Tria != NULL) delete [] Conn_Tria;
+      if (Conn_Quad != NULL) delete [] Conn_Quad;
+      if (Conn_Tetr != NULL) delete [] Conn_Tetr;
+      if (Conn_Hexa != NULL) delete [] Conn_Hexa;
+      if (Conn_Pris != NULL) delete [] Conn_Pris;
+      if (Conn_Pyra != NULL) delete [] Conn_Pyra;
     }
     
   }
