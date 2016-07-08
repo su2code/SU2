@@ -4493,7 +4493,7 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
 
 CConfig::~CConfig(void) {
  
-  unsigned short iMarker_PerBound;
+  unsigned short iMarker_PerBound, iMarker_Inlet;
 
   /*--- Delete all of the option objects in the global option map ---*/
     
@@ -4611,7 +4611,12 @@ CConfig::~CConfig(void) {
   if (Exhaust_Pressure_Target != NULL)    delete[]  Exhaust_Pressure_Target;
   if (Inlet_Ttotal != NULL)    delete[]  Inlet_Ttotal;
   if (Inlet_Ptotal != NULL)    delete[]  Inlet_Ptotal;
-  if (Inlet_FlowDir != NULL)    delete[] Inlet_FlowDir;
+  
+  for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
+    if (Inlet_FlowDir[iMarker_Inlet] != NULL) delete[] Inlet_FlowDir[iMarker_Inlet];
+  }
+  if (Inlet_FlowDir != NULL) delete [] Inlet_FlowDir;
+
   if (Inlet_Temperature != NULL)    delete[] Inlet_Temperature;
   if (Inlet_Pressure != NULL)    delete[] Inlet_Pressure;
   if (Inlet_Velocity != NULL)    delete[] Inlet_Velocity ;
