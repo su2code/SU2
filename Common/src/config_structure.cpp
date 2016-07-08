@@ -222,6 +222,7 @@ void CConfig::SetPointersNull(void) {
   Marker_TurboBoundIn = NULL;
   Marker_TurboBoundOut = NULL;
   Kind_TurboPerformance = NULL;
+  Marker_NRBC = NULL;
   
   /*--- Variable initialization ---*/
   
@@ -4634,7 +4635,6 @@ CConfig::~CConfig(void) {
   if (Marker_Plotting != NULL)        delete[] Marker_Plotting;
   if (Marker_FSIinterface != NULL)        delete[] Marker_FSIinterface;
   if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
-  
   if (DV_Value != NULL) {
     for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];
     delete [] DV_Value;
@@ -4808,6 +4808,8 @@ CConfig::~CConfig(void) {
   if (Marker_TurboBoundIn != NULL) delete [] Marker_TurboBoundIn;
   if (Marker_TurboBoundOut != NULL) delete [] Marker_TurboBoundOut;
   if (Kind_TurboPerformance != NULL) delete [] Kind_TurboPerformance;
+  if (Marker_Riemann != NULL) delete [] Marker_Riemann;
+  if (Marker_NRBC != NULL) delete [] Marker_NRBC;
  
 }
 
