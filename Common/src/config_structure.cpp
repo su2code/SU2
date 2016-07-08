@@ -204,6 +204,12 @@ void CConfig::SetPointersNull(void) {
   default_grid_fix      = NULL;
   default_inc_crit      = NULL;
   
+  Riemann_FlowDir= NULL;
+  NRBC_FlowDir = NULL;
+  ActDisk_Origin= NULL;
+  CoordFFDBox= NULL;
+  DegreeFFDBox= NULL;
+  
   /*--- Variable initialization ---*/
   
   ExtIter = 0;
@@ -4493,7 +4499,7 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
 
 CConfig::~CConfig(void) {
  
-  unsigned short iMarker_PerBound, iMarker_Inlet;
+  unsigned long iDV, iMarker, iPeriodic, iFFD;
 
   /*--- Delete all of the option objects in the global option map ---*/
     
@@ -4501,100 +4507,111 @@ CConfig::~CConfig(void) {
     delete itr->second;
   }
  
-  if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
-  if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
-  if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
-  /*--- Free memory for Aeroelastic problems. ---*/
+  if (RK_Alpha_Step !=NULL) delete [] RK_Alpha_Step;
+  if (MG_PreSmooth  !=NULL) delete [] MG_PreSmooth;
+  if (MG_PostSmooth !=NULL) delete [] MG_PostSmooth;
   
+  /*--- Free memory for Aeroelastic problems. ---*/
 
   if (Grid_Movement && Aeroelastic_Simulation) {
-    if (Aeroelastic_pitch!=NULL) delete[] Aeroelastic_pitch;
-    if (Aeroelastic_plunge!=NULL) delete[] Aeroelastic_plunge;
+    if (Aeroelastic_pitch  !=NULL) delete[] Aeroelastic_pitch;
+    if (Aeroelastic_plunge !=NULL) delete[] Aeroelastic_plunge;
   }
-
 
   /*--- Free memory for unspecified grid motion parameters ---*/
 
- if (Kind_GridMovement != NULL)    delete [] Kind_GridMovement;
+ if (Kind_GridMovement != NULL) delete [] Kind_GridMovement;
 
   /*--- motion origin: ---*/
   
-  if (Motion_Origin_X != NULL)    delete [] Motion_Origin_X;
-  if (Motion_Origin_Y != NULL)    delete [] Motion_Origin_Y;
-  if (Motion_Origin_Z != NULL)    delete [] Motion_Origin_Z;
-  if (MoveMotion_Origin != NULL)    delete [] MoveMotion_Origin;
+  if (Motion_Origin_X   != NULL) delete [] Motion_Origin_X;
+  if (Motion_Origin_Y   != NULL) delete [] Motion_Origin_Y;
+  if (Motion_Origin_Z   != NULL) delete [] Motion_Origin_Z;
+  if (MoveMotion_Origin != NULL) delete [] MoveMotion_Origin;
 
   /*--- translation: ---*/
   
-  if (Translation_Rate_X != NULL)    delete [] Translation_Rate_X;
-  if (Translation_Rate_Y != NULL)    delete [] Translation_Rate_Y;
-  if (Translation_Rate_Z != NULL)    delete [] Translation_Rate_Z;
+  if (Translation_Rate_X != NULL) delete [] Translation_Rate_X;
+  if (Translation_Rate_Y != NULL) delete [] Translation_Rate_Y;
+  if (Translation_Rate_Z != NULL) delete [] Translation_Rate_Z;
 
   /*--- rotation: ---*/
   
-  if (Rotation_Rate_X != NULL)    delete [] Rotation_Rate_X;
-  if (Rotation_Rate_Y != NULL)    delete [] Rotation_Rate_Y;
-  if (Rotation_Rate_Z != NULL)    delete [] Rotation_Rate_Z;
+  if (Rotation_Rate_X != NULL) delete [] Rotation_Rate_X;
+  if (Rotation_Rate_Y != NULL) delete [] Rotation_Rate_Y;
+  if (Rotation_Rate_Z != NULL) delete [] Rotation_Rate_Z;
 
   /*--- pitching: ---*/
   
-  if (Pitching_Omega_X != NULL)    delete [] Pitching_Omega_X;
-  if (Pitching_Omega_Y != NULL)    delete [] Pitching_Omega_Y;
-  if (Pitching_Omega_Z != NULL)    delete [] Pitching_Omega_Z;
+  if (Pitching_Omega_X != NULL) delete [] Pitching_Omega_X;
+  if (Pitching_Omega_Y != NULL) delete [] Pitching_Omega_Y;
+  if (Pitching_Omega_Z != NULL) delete [] Pitching_Omega_Z;
 
   /*--- pitching amplitude: ---*/
   
-  if (Pitching_Ampl_X != NULL)    delete [] Pitching_Ampl_X;
-  if (Pitching_Ampl_Y != NULL)    delete [] Pitching_Ampl_Y;
-  if (Pitching_Ampl_Z != NULL)    delete [] Pitching_Ampl_Z;
+  if (Pitching_Ampl_X != NULL) delete [] Pitching_Ampl_X;
+  if (Pitching_Ampl_Y != NULL) delete [] Pitching_Ampl_Y;
+  if (Pitching_Ampl_Z != NULL) delete [] Pitching_Ampl_Z;
 
   /*--- pitching phase: ---*/
   
-  if (Pitching_Phase_X != NULL)    delete [] Pitching_Phase_X;
-  if (Pitching_Phase_Y != NULL)    delete [] Pitching_Phase_Y;
-  if (Pitching_Phase_Z != NULL)    delete [] Pitching_Phase_Z;
+  if (Pitching_Phase_X != NULL) delete [] Pitching_Phase_X;
+  if (Pitching_Phase_Y != NULL) delete [] Pitching_Phase_Y;
+  if (Pitching_Phase_Z != NULL) delete [] Pitching_Phase_Z;
 
   /*--- plunging: ---*/
   
-  if (Plunging_Omega_X != NULL)    delete [] Plunging_Omega_X;
-  if (Plunging_Omega_Y != NULL)    delete [] Plunging_Omega_Y;
-  if (Plunging_Omega_Z != NULL)    delete [] Plunging_Omega_Z;
+  if (Plunging_Omega_X != NULL) delete [] Plunging_Omega_X;
+  if (Plunging_Omega_Y != NULL) delete [] Plunging_Omega_Y;
+  if (Plunging_Omega_Z != NULL) delete [] Plunging_Omega_Z;
 
   /*--- plunging amplitude: ---*/
   
-  if (Plunging_Ampl_X != NULL)    delete [] Plunging_Ampl_X;
-  if (Plunging_Ampl_Y != NULL)    delete [] Plunging_Ampl_Y;
-  if (Plunging_Ampl_Z != NULL)    delete [] Plunging_Ampl_Z;
+  if (Plunging_Ampl_X != NULL) delete [] Plunging_Ampl_X;
+  if (Plunging_Ampl_Y != NULL) delete [] Plunging_Ampl_Y;
+  if (Plunging_Ampl_Z != NULL) delete [] Plunging_Ampl_Z;
 
-  if (RefOriginMoment != NULL)    delete [] RefOriginMoment;
-  if (RefOriginMoment_X != NULL)    delete [] RefOriginMoment_X;
-  if (RefOriginMoment_Y != NULL)    delete [] RefOriginMoment_Y;
-  if (RefOriginMoment_Z != NULL)    delete [] RefOriginMoment_Z;
+  /*--- reference origin for moments ---*/
+  
+  if (RefOriginMoment   != NULL) delete [] RefOriginMoment;
+  if (RefOriginMoment_X != NULL) delete [] RefOriginMoment_X;
+  if (RefOriginMoment_Y != NULL) delete [] RefOriginMoment_Y;
+  if (RefOriginMoment_Z != NULL) delete [] RefOriginMoment_Z;
 
   /*--- Marker pointers ---*/
   
-  if (Marker_CfgFile_Out_1D != NULL)   delete[] Marker_CfgFile_Out_1D;
-  if (Marker_All_Out_1D != NULL)      delete[] Marker_All_Out_1D;
-  if (Marker_CfgFile_GeoEval != NULL)  delete[] Marker_CfgFile_GeoEval;
-  if (Marker_All_GeoEval != NULL)     delete[] Marker_All_GeoEval;
-  if (Marker_CfgFile_TagBound != NULL)      delete[] Marker_CfgFile_TagBound;
-  if (Marker_All_TagBound != NULL)         delete[] Marker_All_TagBound;
+  if (Marker_CfgFile_Out_1D != NULL) delete[] Marker_CfgFile_Out_1D;
+  if (Marker_All_Out_1D     != NULL) delete[] Marker_All_Out_1D;
+  
+  if (Marker_CfgFile_GeoEval != NULL) delete[] Marker_CfgFile_GeoEval;
+  if (Marker_All_GeoEval     != NULL) delete[] Marker_All_GeoEval;
+  
+  if (Marker_CfgFile_TagBound != NULL) delete[] Marker_CfgFile_TagBound;
+  if (Marker_All_TagBound     != NULL) delete[] Marker_All_TagBound;
+  
   if (Marker_CfgFile_KindBC != NULL) delete[] Marker_CfgFile_KindBC;
-  if (Marker_All_KindBC != NULL)    delete[] Marker_All_KindBC;
-  if (Marker_CfgFile_Monitoring != NULL)    delete[] Marker_CfgFile_Monitoring;
-  if (Marker_All_Monitoring != NULL)   delete[] Marker_All_Monitoring;
+  if (Marker_All_KindBC     != NULL) delete[] Marker_All_KindBC;
+  
+  if (Marker_CfgFile_Monitoring != NULL) delete[] Marker_CfgFile_Monitoring;
+  if (Marker_All_Monitoring     != NULL) delete[] Marker_All_Monitoring;
+  
   if (Marker_CfgFile_Designing != NULL) delete[] Marker_CfgFile_Designing;
-  if (Marker_All_Designing != NULL)    delete[] Marker_All_Designing;
-  if (Marker_CfgFile_Plotting != NULL)  delete[] Marker_CfgFile_Plotting;
-  if (Marker_CfgFile_FSIinterface != NULL)  delete[] Marker_CfgFile_FSIinterface;
-  if (Marker_All_Plotting != NULL)     delete[] Marker_All_Plotting;
-  if (Marker_All_FSIinterface != NULL)     delete[] Marker_All_FSIinterface;
-  if (Marker_CfgFile_DV!=NULL)        delete[] Marker_CfgFile_DV;
-  if (Marker_All_DV!=NULL)           delete[] Marker_All_DV;
-  if (Marker_CfgFile_Moving != NULL)   delete[] Marker_CfgFile_Moving;
-  if (Marker_All_Moving != NULL)      delete[] Marker_All_Moving;
+  if (Marker_All_Designing     != NULL) delete[] Marker_All_Designing;
+  
+  if (Marker_CfgFile_Plotting != NULL) delete[] Marker_CfgFile_Plotting;
+  if (Marker_All_Plotting     != NULL) delete[] Marker_All_Plotting;
+
+  if (Marker_CfgFile_FSIinterface != NULL) delete[] Marker_CfgFile_FSIinterface;
+  if (Marker_All_FSIinterface     != NULL) delete[] Marker_All_FSIinterface;
+  
+  if (Marker_CfgFile_DV !=NULL) delete[] Marker_CfgFile_DV;
+  if (Marker_All_DV     !=NULL) delete[] Marker_All_DV;
+  
+  if (Marker_CfgFile_Moving != NULL) delete[] Marker_CfgFile_Moving;
+  if (Marker_All_Moving     != NULL) delete[] Marker_All_Moving;
+  
   if (Marker_CfgFile_PerBound != NULL) delete[] Marker_CfgFile_PerBound;
-  if (Marker_All_PerBound != NULL)    delete[] Marker_All_PerBound;
+  if (Marker_All_PerBound     != NULL) delete[] Marker_All_PerBound;
 
   if (Marker_DV!=NULL)               delete[] Marker_DV;
   if (Marker_Moving != NULL)           delete[] Marker_Moving;
@@ -4604,19 +4621,78 @@ CConfig::~CConfig(void) {
   if (Marker_Plotting != NULL)        delete[] Marker_Plotting;
   if (Marker_FSIinterface != NULL)        delete[] Marker_FSIinterface;
   if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
-  if (DV_Value != NULL)    delete[] DV_Value;
+  
+  if (DV_Value != NULL) {
+    for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];
+    delete [] DV_Value;
+  }
+  
+  if (ParamDV != NULL) {
+    for (iDV = 0; iDV < nDV; iDV++) delete[] ParamDV[iDV];
+    delete [] ParamDV;
+  }
+  
+  if (CoordFFDBox != NULL) {
+    for (iFFD = 0; iFFD < nFFDBox; iFFD++) delete[] CoordFFDBox[iFFD];
+    delete [] CoordFFDBox;
+  }
+  
+  if (DegreeFFDBox != NULL) {
+    for (iFFD = 0; iFFD < nFFDBox; iFFD++) delete[] DegreeFFDBox[iFFD];
+    delete [] DegreeFFDBox;
+  }
+  
   if (Design_Variable != NULL)    delete[] Design_Variable;
   if (Dirichlet_Value != NULL)    delete[] Dirichlet_Value;
   if (Exhaust_Temperature_Target != NULL)    delete[]  Exhaust_Temperature_Target;
   if (Exhaust_Pressure_Target != NULL)    delete[]  Exhaust_Pressure_Target;
-  if (Inlet_Ttotal != NULL)    delete[]  Inlet_Ttotal;
-  if (Inlet_Ptotal != NULL)    delete[]  Inlet_Ptotal;
   
-  if (Inlet_FlowDir != NULL) delete [] Inlet_FlowDir;
-
+  if (Inlet_Ttotal != NULL) delete[]  Inlet_Ttotal;
+  if (Inlet_Ptotal != NULL) delete[]  Inlet_Ptotal;
+  if (Inlet_FlowDir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Inlet; iMarker++)
+      delete [] Inlet_FlowDir[iMarker];
+    delete [] Inlet_FlowDir;
+  }
+  
+  if (Inlet_Velocity != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Supersonic_Inlet; iMarker++)
+      delete [] Inlet_Velocity[iMarker];
+    delete [] Inlet_Velocity;
+  }
+  
+  if (Riemann_FlowDir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++)
+      delete [] Riemann_FlowDir[iMarker];
+    delete [] Riemann_FlowDir;
+  }
+  
+  if (NRBC_FlowDir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_NRBC; iMarker++)
+      delete [] NRBC_FlowDir[iMarker];
+    delete [] NRBC_FlowDir;
+  }
+  
+  if (Load_Sine_Dir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Load_Sine; iMarker++)
+      delete [] Load_Sine_Dir[iMarker];
+    delete [] Load_Sine_Dir;
+  }
+  
+  if (Load_Dir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Load_Dir; iMarker++)
+      delete [] Load_Dir[iMarker];
+    delete [] Load_Dir;
+  }
+  
+  if (ActDisk_Origin != NULL) {
+    for (iMarker = 0; iMarker < nMarker_ActDisk_Inlet; iMarker++)
+      delete [] ActDisk_Origin[iMarker];
+    delete [] ActDisk_Origin;
+  }
+  
   if (Inlet_Temperature != NULL)    delete[] Inlet_Temperature;
   if (Inlet_Pressure != NULL)    delete[] Inlet_Pressure;
-  if (Inlet_Velocity != NULL)    delete[] Inlet_Velocity ;
   if (Inflow_Mach_Target != NULL)    delete[] Inflow_Mach_Target;
   if (Inflow_Mach != NULL)    delete[]  Inflow_Mach;
   if (Inflow_Pressure != NULL)    delete[] Inflow_Pressure;
@@ -4639,21 +4715,21 @@ CConfig::~CConfig(void) {
   if (Load_Sine_Frequency != NULL)    delete[] Load_Sine_Frequency;
   if (FlowLoad_Value != NULL)    delete[] FlowLoad_Value;
 
-  for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++) {
-    if (Periodic_RotCenter   != NULL) delete [] Periodic_RotCenter[iMarker_PerBound];
-    if (Periodic_RotAngles   != NULL) delete [] Periodic_RotAngles[iMarker_PerBound];
-    if (Periodic_Translation != NULL) delete [] Periodic_Translation[iMarker_PerBound];
-    
+  /*--- related to periodic boundary conditions ---*/
+  
+  for (iMarker = 0; iMarker < nMarker_PerBound; iMarker++) {
+    if (Periodic_RotCenter   != NULL) delete [] Periodic_RotCenter[iMarker];
+    if (Periodic_RotAngles   != NULL) delete [] Periodic_RotAngles[iMarker];
+    if (Periodic_Translation != NULL) delete [] Periodic_Translation[iMarker];
   }
   if (Periodic_RotCenter   != NULL) delete[] Periodic_RotCenter;
   if (Periodic_RotAngles   != NULL) delete[] Periodic_RotAngles;
   if (Periodic_Translation != NULL) delete[] Periodic_Translation;
 
-
-  for (unsigned long iPeriodic = 0; iPeriodic < nPeriodic_Index; iPeriodic++) {
-    if (Periodic_Center      != NULL)    delete [] Periodic_Center[iPeriodic];
-    if (Periodic_Rotation      != NULL)  delete [] Periodic_Rotation[iPeriodic];
-    if (Periodic_Translate      != NULL) delete [] Periodic_Translate[iPeriodic];
+  for (iPeriodic = 0; iPeriodic < nPeriodic_Index; iPeriodic++) {
+    if (Periodic_Center    != NULL) delete [] Periodic_Center[iPeriodic];
+    if (Periodic_Rotation  != NULL) delete [] Periodic_Rotation[iPeriodic];
+    if (Periodic_Translate != NULL) delete [] Periodic_Translate[iPeriodic];
   }
   if (Periodic_Center      != NULL) delete[] Periodic_Center;
   if (Periodic_Rotation    != NULL) delete[] Periodic_Rotation;
@@ -4694,7 +4770,7 @@ CConfig::~CConfig(void) {
 
   if (Int_Coeffs != NULL) delete [] Int_Coeffs;
   
-  /*--- Initialize some default arrays to NULL. ---*/
+  /*--- Delete some arrays needed just for initializing options. ---*/
   
   if (default_vel_inf       != NULL) delete [] default_vel_inf;
   if (default_eng_box       != NULL) delete [] default_eng_box;
