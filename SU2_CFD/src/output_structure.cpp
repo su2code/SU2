@@ -1205,8 +1205,6 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   bool *Write_Elem = NULL, notPeriodic, notHalo, addedPeriodic, isPeriodic;
 
   unsigned short kind_SU2 = config->GetKind_SU2();
-
-  int *Conn_Elem = NULL;
   
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -1281,7 +1279,30 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   if (rank == MASTER_NODE) {
     Buffer_Recv_Elem = new unsigned long[size*nBuffer_Scalar];
     Buffer_Recv_Halo = new unsigned short[size*MaxLocalElem];
-    Conn_Elem = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
+    switch (Elem_Type) {
+      case TRIANGLE:
+        Conn_Tria = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
+        break;
+      case QUADRILATERAL:
+        Conn_Quad = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
+        break;
+      case TETRAHEDRON:
+        Conn_Tetr = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
+        break;
+      case HEXAHEDRON:
+        Conn_Hexa = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
+        break;
+      case PRISM:
+        Conn_Pris = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
+        break;
+      case PYRAMID:
+        Conn_Pyra = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
+        break;
+      default:
+        cout << "Error: Unrecognized element type \n";
+        exit(EXIT_FAILURE); break;
+    }
+    
   }
   
   /*--- Force the removal of all added periodic elements (use global index).
@@ -1503,7 +1524,29 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
            use 1-based indexing.---*/
           
           for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-            Conn_Elem[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
+            switch (Elem_Type) {
+              case TRIANGLE:
+                Conn_Tria[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
+                break;
+              case QUADRILATERAL:
+                Conn_Quad[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
+                break;
+              case TETRAHEDRON:
+                Conn_Tetr[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
+                break;
+              case HEXAHEDRON:
+                Conn_Hexa[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
+                break;
+              case PRISM:
+                Conn_Pris[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
+                break;
+              case PYRAMID:
+                Conn_Pyra[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
+                break;
+              default:
+                cout << "Error: Unrecognized element type \n";
+                exit(EXIT_FAILURE); break;
+            }
             kNode++;
           }
         }
@@ -1535,27 +1578,21 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
     switch (Elem_Type) {
       case TRIANGLE:
         nGlobal_Tria = nElem_Total;
-        if (nGlobal_Tria > 0) Conn_Tria = Conn_Elem;
         break;
       case QUADRILATERAL:
         nGlobal_Quad = nElem_Total;
-        if (nGlobal_Quad > 0) Conn_Quad = Conn_Elem;
         break;
       case TETRAHEDRON:
         nGlobal_Tetr = nElem_Total;
-        if (nGlobal_Tetr > 0) Conn_Tetr = Conn_Elem;
         break;
       case HEXAHEDRON:
         nGlobal_Hexa = nElem_Total;
-        if (nGlobal_Hexa > 0) Conn_Hexa = Conn_Elem;
         break;
       case PRISM:
         nGlobal_Pris = nElem_Total;
-        if (nGlobal_Pris > 0) Conn_Pris = Conn_Elem;
         break;
       case PYRAMID:
         nGlobal_Pyra = nElem_Total;
-        if (nGlobal_Pyra > 0) Conn_Pyra = Conn_Elem;
         break;
       default:
         cout << "Error: Unrecognized element type \n";
@@ -1588,9 +1625,6 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   
   bool Wrt_Halo = config->GetWrt_Halo();
   bool *Write_Elem = NULL, notPeriodic, notHalo, addedPeriodic;
-  
-  
-  int *Conn_Elem = NULL;
   
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -1661,7 +1695,20 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   if (rank == MASTER_NODE) {
     Buffer_Recv_Elem = new unsigned long[size*nBuffer_Scalar];
     Buffer_Recv_Halo = new unsigned short[size*MaxLocalElem];
-    Conn_Elem = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
+    switch (Elem_Type) {
+      case LINE:
+        Conn_Line = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
+        break;
+      case TRIANGLE:
+        Conn_BoundTria = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
+        break;
+      case QUADRILATERAL:
+        Conn_BoundQuad = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
+        break;
+      default:
+        cout << "Error: Unrecognized element type \n";
+        exit(EXIT_FAILURE); break;
+    }
   }
   
   /*--- Force the removal of all added periodic elements (use global index).
@@ -1873,7 +1920,20 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
            use 1-based indexing.---*/
           
           for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
-            Conn_Elem[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
+            switch (Elem_Type) {
+              case LINE:
+                Conn_Line[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
+                break;
+              case TRIANGLE:
+                Conn_BoundTria[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
+                break;
+              case QUADRILATERAL:
+                Conn_BoundQuad[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
+                break;
+              default:
+                cout << "Error: Unrecognized element type \n";
+                exit(EXIT_FAILURE); break;
+            }
             kNode++;
           }
         }
@@ -1905,15 +1965,12 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
     switch (Elem_Type) {
       case LINE:
         nGlobal_Line = nElem_Total;
-        if (nGlobal_Line > 0) Conn_Line = Conn_Elem;
         break;
       case TRIANGLE:
         nGlobal_BoundTria = nElem_Total;
-        if (nGlobal_BoundTria > 0) Conn_BoundTria = Conn_Elem;
         break;
       case QUADRILATERAL:
         nGlobal_BoundQuad = nElem_Total;
-        if (nGlobal_BoundQuad > 0) Conn_BoundQuad = Conn_Elem;
         break;
       default:
         cout << "Error: Unrecognized element type \n";
