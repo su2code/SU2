@@ -1682,10 +1682,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Don't do any deformation if there is no Design variable information ---*/
   
-  if (Design_Variable == NULL) {
-    Design_Variable = new unsigned short [1];
-    nDV = 1; Design_Variable[0] = NONE;
-  }
+//  if (Design_Variable == NULL) {
+//    Design_Variable = new unsigned short [1];
+//    nDV = 1; Design_Variable[0] = NONE;
+//  }
   
   /*--- Identification of free-surface problem, this problems are always 
    unsteady and incompressible. ---*/
