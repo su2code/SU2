@@ -412,6 +412,8 @@ int main(int argc, char *argv[]) {
       case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
         StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
+      case DISC_ADJ_FEM:
+        StopCalc = integration_container[ZONE_0][ADJFEA_SOL]->GetConvergence(); break;
     }
     
 		/*--- Solution output. Determine whether a solution needs to be written
