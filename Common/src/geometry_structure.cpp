@@ -5883,7 +5883,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   unsigned short nMarker_Max = config->GetnMarker_Max();
   unsigned long iPoint = 0, iProcessor = 0, ielem = 0, GlobalIndex = 0;
   unsigned long globalOffset = 0;
-  int rank = MASTER_NODE, size = SINGLE_NODE;
   nZone = val_nZone;
   
   /*--- Local variables needed when calling the CGNS mid-level API. ---*/
@@ -5918,19 +5917,17 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   int** dataSize = NULL;
   bool** isInternal = NULL;
   char*** sectionNames = NULL;
-//  int indexElem = 0;
-//  int indexElemMaster = 0;
   
   /*--- Initialize counters for local/global points & elements ---*/
   
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
   unsigned long Local_nElem;
   unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
   unsigned long Local_nElemHex, Local_nElemPrism, Local_nElemPyramid;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  
   MPI_Request *send_req, *recv_req;
   MPI_Status  status;
   int ind;
@@ -6081,7 +6078,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
     /*--- Loop over all zones in this base. Again, indexing starts at 1. ---*/
     
     for (int j = 1; j <= nzones; j++) {
-      
+     
+      connElems[j-1] = NULL;
+ 
       /*--- Read the basic information for this zone, including
        the name and the number of vertices, cells, and
        boundary cells which are stored in the cgsize variable. ---*/
@@ -6276,7 +6275,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
        as any boundaries which were labeled before export. ---*/
       
       for (int s = 1; s <= nsections; s++) {
-        
+      
+        connElems[j-1][s-1] = NULL; 
         /*--- Read the connectivity details for this section.
          Store the total number of elements in this section
          to be used later for memory allocation. ---*/
@@ -6636,7 +6636,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             for (int jj = 0; jj < elemIndex[j-1][s-1]; jj++) {
               connElems[j-1][s-1][jj] = new cgsize_t[nElems[j-1][s-1]];
             }
-            //indexElemMaster = elemIndex[j-1][s-1];
             
             /*--- Retrieve the connectivity information and store. ---*/
             
@@ -6677,7 +6676,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           
           connElemTemp = new cgsize_t[nElems[j-1][s-1]*connSize];
           
-          /*--- Copy these values into the larger array for
+           /*--- Copy these values into the larger array for
            storage until writing the SU2 file. ---*/
 
           int counterTemp = 0, counterCGNS = 0;
@@ -6925,7 +6924,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               connElems[j-1][s-1][jj][ii] = (cgsize_t)connRecv[ii*connSize+jj];
             }
           }
-          //indexElem = connSize;
           
           /*--- Store the total number of elements I now have for
            the current section after completing the communications. ---*/
@@ -7470,49 +7468,56 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   delete[] cells;
   delete[] boundVerts;
   
-//  for ( int kk = 0; kk < nzones; kk++) {
-//    for (int ii = 0; ii < nsections; ii++) {
-//      if (isInternal[kk][ii]) {
-//        for (int jj = 0; jj < indexElem; jj++) {
-//          delete [] connElems[kk][ii][jj];
-//        }
-//        delete connElems[kk][ii];
-//      } else if (!isInternal[kk][ii] && rank == MASTER_NODE) {
-//        for (int jj = 0; jj < indexElemMaster; jj++) {
-//          delete [] connElems[kk][ii][jj];
-//        }
-//        delete connElems[kk][ii];
-//      }
-//    }
-//    delete connElems[kk];
-//  }
-//  delete[] connElems;
+  for ( int kk = 0; kk < nzones; kk++) {
+    for (int ii = 0; ii < nsections; ii++) {
+      if (isInternal[kk][ii]) {
+        for (int jj = 0; jj < connSize; jj++) {
+          if (connElems[kk][ii][jj] != NULL) delete [] connElems[kk][ii][jj];
+        }
+        if (connElems[kk][ii] != NULL) delete []  connElems[kk][ii];
+      } else if (!isInternal[kk][ii] && rank == MASTER_NODE) {
+        for (int jj = 0; jj < elemIndex[kk][ii]; jj++) {
+          if (connElems[kk][ii][jj] != NULL) delete [] connElems[kk][ii][jj];
+        }
+        if (connElems[kk][ii] != NULL) delete [] connElems[kk][ii];
+      }
+    }
+    if (connElems[kk] != NULL) delete [] connElems[kk];
+  }
+  if (connElems != NULL) delete[] connElems;
   
   for ( int j = 0; j < nzones; j++) {
-    delete[] coordArray[j];
-    delete[] elemTypeVTK[j];
-    delete[] elemIndex[j];
-    delete[] nElems[j];
-    delete[] dataSize[j];
-    delete[] isInternal[j];
+    delete [] coordArray[j];
+    delete [] elemTypeVTK[j];
+    delete [] elemIndex[j];
+    delete [] nElems[j];
+    delete [] dataSize[j];
+    delete [] isInternal[j];
+    delete [] elemBegin[j];
+    delete [] elemEnd[j];
+    for (int ii = 0; ii < nsections; ii++) {
+      delete[] sectionNames[j][ii];
+    }
     delete[] sectionNames[j];
   }
   
-  delete[] coordArray;
-  delete[] elemTypeVTK;
-  delete[] elemIndex;
-  delete[] nElems;
-  delete[] dataSize;
-  delete[] isInternal;
-  delete[] sectionNames;
+  delete [] coordArray;
+  delete [] elemTypeVTK;
+  delete [] elemIndex;
+  delete [] nElems;
+  delete [] dataSize;
+  delete [] isInternal;
+  delete [] sectionNames;
+  delete [] elemBegin;
+  delete [] elemEnd;
   
   for ( int j = 0; j < nzones; j++) {
     for ( int i = 0; i < ncoords; i++ ) {
-      delete[] gridCoords[j][i];
+      delete [] gridCoords[j][i];
     }
-    delete[] gridCoords[j];
+    delete [] gridCoords[j];
   }
-  delete[] gridCoords;
+  delete [] gridCoords;
   
   delete [] nPoint_Linear;
   delete [] nElem_Linear;
@@ -7520,6 +7525,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   delete [] elemB;
   delete [] elemE;
   
+  delete [] cgsize;
+
 #else
   cout << "SU2 built without CGNS support!!" << endl;
   cout << "To use CGNS, remove the -DNO_CGNS directive ";
