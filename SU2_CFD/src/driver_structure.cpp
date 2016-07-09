@@ -436,7 +436,7 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
       delete solver_container[iMGlevel][FEA_SOL];
     }
     
-    delete solver_container[iMGlevel];
+    delete [] solver_container[iMGlevel];
   }
   
 }
@@ -1653,7 +1653,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   /*--- Definition of the Class for the numerical method: numerics_container[MESH_LEVEL][EQUATION][EQ_TERM] ---*/
   for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     for (iSol = 0; iSol < MAX_SOLS; iSol++){
-      delete numerics_container[iMGlevel][iSol];
+      delete [] numerics_container[iMGlevel][iSol];
     }
     delete[] numerics_container[iMGlevel];
   }
