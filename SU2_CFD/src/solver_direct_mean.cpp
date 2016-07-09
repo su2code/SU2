@@ -10203,7 +10203,12 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         deltaprim[4] = ExtAveragePressure[val_marker][iSpan] - AveragePressure[val_marker][iSpan];
       }
 
-
+      if((config->GetKind_TurboMachinery(config->GetiZone()) == AXIAL) && (nDim ==2) && (MIXING_IN)){
+      	deltaprim[2] -= config->GetNRBC_Var1(Marker_Tag)/config->GetVelocity_Ref();
+      }
+      if((config->GetKind_TurboMachinery(config->GetiZone()) == AXIAL) && (nDim ==2) && (MIXING_OUT)){
+      	deltaprim[2] += config->GetNRBC_Var1(Marker_Tag)/config->GetVelocity_Ref();
+      }
       /* --- Compute average jump of charachteristic variable at the mixing-plane interface--- */
       conv_numerics->GetCharJump(AverageSoundSpeed[val_marker][iSpan], AverageDensity[val_marker][iSpan], deltaprim, c_avg);
       break;
