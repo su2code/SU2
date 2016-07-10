@@ -117,24 +117,28 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       case NRBC_BOUNDARY:
       	if (MainSolver == FLOW_SOL)
       		solver_container[MainSolver]->BC_NonReflecting(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-      	else if (MainSolver == TURB_SOL && config->GetKind_Data_NRBC(config->GetMarker_All_TagBound(iMarker)) == TOTAL_CONDITIONS_PT)
+      	else if (MainSolver == TURB_SOL && config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW)
       		solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-      	else if (MainSolver == TURB_SOL && config->GetKind_Data_NRBC(config->GetMarker_All_TagBound(iMarker)) == STATIC_PRESSURE)
+      	else if (MainSolver == TURB_SOL && config->GetMarker_All_TurbomachineryFlag(iMarker) == OUTFLOW)
       		solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	break;
       case RIEMANN_BOUNDARY:
-      	if (MainSolver == FLOW_SOL){
-      		if (config->GetBoolTurbomachinery()){
+      	if (config->GetBoolTurbomachinery()){
+      		if (MainSolver == FLOW_SOL)
       			solver_container[MainSolver]->BC_TurboRiemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-      		}
-      		else{
-      			solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-      		}
+        	else if (MainSolver == TURB_SOL && config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW)
+        		solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+        	else if (MainSolver == TURB_SOL && config->GetMarker_All_TurbomachineryFlag(iMarker) == OUTFLOW)
+        		solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	}
-				else if (MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker)) == TOTAL_CONDITIONS_PT)
-      		solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
-      	else if (MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker)) == STATIC_PRESSURE)
-      		solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+				else{
+					if (MainSolver == FLOW_SOL)
+						solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+					else if (MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker)) == TOTAL_CONDITIONS_PT)
+						solver_container[MainSolver]->BC_Inlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+					else if (MainSolver == TURB_SOL && config->GetKind_Data_Riemann(config->GetMarker_All_TagBound(iMarker)) == STATIC_PRESSURE)
+						solver_container[MainSolver]->BC_Outlet(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+      	}
       	break;
       case FAR_FIELD:
         solver_container[MainSolver]->BC_Far_Field(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
