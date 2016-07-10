@@ -5263,8 +5263,8 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
       EnthalpyOutIs[nBladesRow + iStage] 				 = FluidModel->GetStaticEnergy() + PressureOut[iStage*2 +1]/FluidModel->GetDensity();
       FluidModel->SetTDState_Prho(PressureOut[iStage*2 +1], DensityOut[iStage*2 +1]);
       vel2out = 0.0;
-      for (iDim = 0; iDim<nDim;iDim++) vel2out += MachOut[iStage*2 +1][iDim]*MachOut[iStage*2 +1][iDim];
-      vel2out /= FluidModel->GetSoundSpeed2();
+      for (iDim = 0; iDim<nDim; iDim++) vel2out += MachOut[iStage*2 +1][iDim]*MachOut[iStage*2 +1][iDim];
+      vel2out *= FluidModel->GetSoundSpeed2();
       TotalEnthalpyOutIs[nBladesRow + iStage] 	 = EnthalpyOutIs[nBladesRow + iStage] + 0.5*vel2out;
 
       TotalTotalEfficiency[nBladesRow + iStage]  = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 1])/(TotalEnthalpyIn[iStage*2] - TotalEnthalpyOutIs[nBladesRow + iStage]);
@@ -5282,7 +5282,7 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
     FluidModel->SetTDState_Prho(PressureOut[nBladesRow-1], DensityOut[nBladesRow-1]);
     vel2out = 0.0;
     for (iDim = 0; iDim<nDim;iDim++) vel2out += MachOut[nBladesRow-1][iDim]*MachOut[nBladesRow-1][iDim];
-    vel2out /= FluidModel->GetSoundSpeed2();
+    vel2out *= FluidModel->GetSoundSpeed2();
     TotalEnthalpyOutIs[nBladesRow + nStages] 	 = EnthalpyOutIs[nBladesRow + nStages] + 0.5*vel2out;
 
     TotalTotalEfficiency[nBladesRow + nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - TotalEnthalpyOutIs[nBladesRow + nStages]);
