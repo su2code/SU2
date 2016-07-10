@@ -5351,7 +5351,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               	}
               	else{
               		/* --- multi-zone output ---*/
-              		cout << "     Res[Rho]" << "     Res[RhoE]"  << " TSEfficiency(%)" << " Entropy Gen.(%)" << endl;
+              		cout << "     Res[Rho]" << "     Res[RhoE]"  << " TTEfficiency(%)" << " Entropy Gen.(%)" << endl;
               	}
             	}
               else cout << "     Res[Rho]" << "     Res[RhoE]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
@@ -5411,7 +5411,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             	}
             	else{
 								/*--- multi zone output ---*/
-								cout << " TSEfficiency(%)" << " Entropy Gen.(%)" << endl;
+								cout << " TTEfficiency(%)" << " Entropy Gen.(%)" << endl;
 
             	}
             }
@@ -5612,7 +5612,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           	}
           	else{
 							/*--- multizone output---*/
-							cout.width(15); cout << TotalStaticEfficiency[nTurboPerf -1]*100.0;
+							cout.width(15); cout << TotalTotalEfficiency[nTurboPerf -1]*100.0;
 							cout.width(15); cout << EntropyGen[nTurboPerf -1]*100.0;
 
           	}
