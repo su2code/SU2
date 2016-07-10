@@ -3145,12 +3145,19 @@ void CConfig::SetMarkers(unsigned short val_software) {
 					if (count == 0){
 						pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
 						nBlades[count]= 2*PI_NUMBER/pitch;
+						if (pitch <= EPS){
+							nBlades[count]= 1.0;
+						}
+
 //						cout << nBlades[count] <<" in zone "<<  count<<endl;
 						count++;
 					}
 					if((pitch != abs(Periodic_RotAngles[iMarker_PerBound][2])) && (count < nZone)){
 						pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
 						nBlades[count]= 2*PI_NUMBER/pitch;
+						if (pitch <= EPS){
+							nBlades[count]= 1.0;
+						}
 //						cout << nBlades[count] <<" in zone "<<  count<<endl;
 						count++;
 					}

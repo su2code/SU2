@@ -4917,6 +4917,8 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
           normalVelocityIn_Mix	  = AverageTurboVelocity[iMarker][nSpanWiseSections][0];
           tangVelocityIn_Mix		  = AverageTurboVelocity[iMarker][nSpanWiseSections][1];
           absFlowAngleIn          = atan(AverageTurboVelocity[iMarker][nSpanWiseSections][1]/AverageTurboVelocity[iMarker][nSpanWiseSections][0]);
+          if (config->GetKind_TurboMachinery(iZone) == AXIAL && nDim ==2)
+          	massFlowIn							= SpanMassFlow[iMarker][nSpanWiseSections]*nBlades/geometry->GetSpanArea(iMarker, nSpanWiseSections);
 
           //TODO(turbo) better location has to be found for this computation, perhaps in the outputstructure file.
           if(config->GetBoolNRBC() || config->GetBoolRiemann()){
@@ -5012,6 +5014,8 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
           normalVelocityOut_Mix	  = AverageTurboVelocity[iMarker][nSpanWiseSections][0];
           tangVelocityOut_Mix		  = AverageTurboVelocity[iMarker][nSpanWiseSections][1];
           absFlowAngleOut          = atan(AverageTurboVelocity[iMarker][nSpanWiseSections][1]/AverageTurboVelocity[iMarker][nSpanWiseSections][0]);
+          if (config->GetKind_TurboMachinery(iZone) == AXIAL && nDim ==2)
+            massFlowOut							= SpanMassFlow[iMarker][nSpanWiseSections]*nBlades/geometry->GetSpanArea(iMarker, nSpanWiseSections);
 
 
           if(config->GetBoolNRBC() || config->GetBoolRiemann()){
