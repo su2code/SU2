@@ -5682,7 +5682,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           	}
           	else{
 						/*--- multi zone output ---*/
-							cout.width(15); cout << TotalStaticEfficiency[nTurboPerf - 1]*100.0;
+							cout.width(15); cout << TotalTotalEfficiency[nTurboPerf - 1]*100.0;
 							cout.width(15); cout << EntropyGen[nTurboPerf -1]*100.0;
               if (direct_diff){
                 cout.width(15); cout << D_EntropyGen;
