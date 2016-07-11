@@ -9230,8 +9230,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 #endif
 
 	if (rank == MASTER_NODE){
-		//			VICENTE here in this if underneath you have to implemented the writing of the file using the vector x_loc, y_loc, z_loc, globIdx_loc
-		//      instead of the video print
 		if (marker_flag == INFLOW){
 			multizone_filename = "spanwise_division_inflow.dat";
 		}
@@ -9247,38 +9245,32 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
         multizone_filename.append(string(buffer));
     }
 
+    // File to print the vector x_loc, y_loc, z_loc, globIdx_loc to check vertex ordering
+    ofstream myfile;
+    myfile.open (multizone_filename.data(), ios::out | ios::trunc);
+    myfile.setf(ios::uppercase | ios::scientific);
+    myfile.precision(8);
 
-
-		ofstream myfile;
-	  myfile.open (multizone_filename.data(), ios::out | ios::trunc);
-
-	  myfile << "TITLE = \"Global index visualization file\"" << endl;
-	  myfile << "VARIABLES =" << endl;
-//	  if ((config->GetKind_TurboMachinery(val_iZone)== AXIAL && (nDim == 3)) || (config->GetKind_TurboMachinery(val_iZone)== CENTRIPETAL_AXIAL && (marker_flag == OUTFLOW))){
-	  	myfile << "\"iSpan\" " << "\"x_coord\" " << "\"y_coord\" " <<  "\"z_coord\" "<< "\"radius\" " << "\"global_index\" " <<endl;
-			for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-				for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
-		//				cout << "iSpan " << iSpan << " y_coord " <<  y_loc[iSpan][iSpanVertex] << " global_index " << globIdx_loc[iSpan][iSpanVertex]<<endl;
-					radius = sqrt(x_loc[iSpan][iSpanVertex]*x_loc[iSpan][iSpanVertex] + y_loc[iSpan][iSpanVertex]*y_loc[iSpan][iSpanVertex]);
-					myfile << iSpan  << "\t" <<  x_loc[iSpan][iSpanVertex] << "\t"   <<  y_loc[iSpan][iSpanVertex] << "\t"  <<  z_loc[iSpan][iSpanVertex] << "\t"  << radius << "\t"  << globIdx_loc[iSpan][iSpanVertex]<<endl;
-				}
-//			cout <<endl;
-				myfile << endl;
-			}
-//	  }
-//	  else{
-//			myfile << "\"iSpan\" " << "\"x_coord\" " << "\"y_coord\" " <<  "\"z_coord\" " << "\"global_index\" " <<endl;
-//			for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-//				for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
-//		//				cout << "iSpan " << iSpan << " y_coord " <<  y_loc[iSpan][iSpanVertex] << " global_index " << globIdx_loc[iSpan][iSpanVertex]<<endl;
-//					myfile << iSpan  << "\t" <<  x_loc[iSpan][iSpanVertex] << "\t"   <<  y_loc[iSpan][iSpanVertex] << "\t"  <<  z_loc[iSpan][iSpanVertex] << "\t"  << globIdx_loc[iSpan][iSpanVertex]<<endl;
-//				}
-////			cout <<endl;
-//				myfile << endl;
-//			}
-//		}
-	  myfile.close();
-	}
+    myfile << "TITLE = \"Global index visualization file\"" << endl;
+    myfile << "VARIABLES =" << endl;
+    myfile.width(10); myfile << "\"iSpan\"";
+    myfile.width(20); myfile << "\"x_coord\"" ;
+    myfile.width(20); myfile << "\"y_coord\"" ;
+    myfile.width(20); myfile << "\"z_coord\"" ;
+    myfile.width(20); myfile << "\"radius\"" ;
+    myfile.width(20); myfile << "\"global_index\"" <<endl;
+    for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+      for(iSpanVertex = 0; iSpanVertex < nTotVertex_gb[iSpan]; iSpanVertex++){
+        radius = sqrt(x_loc[iSpan][iSpanVertex]*x_loc[iSpan][iSpanVertex] + y_loc[iSpan][iSpanVertex]*y_loc[iSpan][iSpanVertex]);
+        myfile.width(10); myfile << iSpan;
+        myfile.width(20); myfile << x_loc[iSpan][iSpanVertex];
+        myfile.width(20); myfile << y_loc[iSpan][iSpanVertex];
+        myfile.width(20); myfile << z_loc[iSpan][iSpanVertex];
+        myfile.width(20); myfile << radius;
+        myfile.width(20); myfile << globIdx_loc[iSpan][iSpanVertex]<<endl;
+      }
+      myfile << endl;
+    }
 
 //			FINAL TEST
 ////
