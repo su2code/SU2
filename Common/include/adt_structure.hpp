@@ -4,7 +4,7 @@
  *        alternating digital tree (ADT).
  *        The subroutines and functions are in the <i>adt_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -49,7 +49,7 @@ using namespace std;
  * \class su2_adtComparePointClass
  * \brief  Functor, used for the sorting of the points when building an ADT.
  * \author E. van der Weide
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class su2_adtComparePointClass {
 private:
@@ -90,7 +90,7 @@ private:
  * \class su2_adtNodeClass
  * \brief  Class for storing the information needed in a node of an ADT.
  * \author E. van der Weide
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class su2_adtNodeClass {
 public:
@@ -140,7 +140,7 @@ private:
  * \class su2_adtBaseClass
  * \brief  Base class for storing an ADT in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class su2_adtBaseClass {
 protected:
@@ -199,7 +199,7 @@ private:
  * \class su2_adtPointsOnlyClass
  * \brief  Class for storing an ADT of only points in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class su2_adtPointsOnlyClass : public su2_adtBaseClass {
 private:

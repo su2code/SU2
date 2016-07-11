@@ -3,7 +3,7 @@
  * \brief Main subroutines for for carrying out geometrical searches using an
  *        alternating digital tree (ADT).
  * \author E. van der Weide
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
