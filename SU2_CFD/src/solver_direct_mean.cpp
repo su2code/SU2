@@ -8394,9 +8394,6 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 				Velocity_i[iDim] = node[iPoint]->GetVelocity(iDim);
 				Velocity2_i += Velocity_i[iDim]*Velocity_i[iDim];
 			}
-			//      cout << Velocity_i[0] <<" " << Velocity_i[1]<<endl;
-			//			cout<< " "<<endl;
-			//			getchar();
 
 			Density_i = node[iPoint]->GetDensity();
 
@@ -8514,8 +8511,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 				/*--- Retrieve the specified total conditions for this boundary. ---*/
 				P_Total = ExtAverageTotPressure[val_marker][iSpan];
 				T_Total = ExtAverageTotTemperature[val_marker][iSpan];
-//				cout << P_Total << endl;
-//				cout << T_Total << endl;
+
 				FlowDirMixMag = 0;
 				for (iDim = 0; iDim < nDim; iDim++)
 					FlowDirMixMag += ExtAverageTurboVelocity[val_marker][iSpan][iDim]*ExtAverageTurboVelocity[val_marker][iSpan][iDim];
@@ -8584,7 +8580,6 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
 				/*--- Retrieve the staic pressure for this boundary. ---*/
 				Pressure_e = ExtAveragePressure[val_marker][iSpan];
-//				cout << Pressure_e << endl;
 				Density_e = Density_i;
 
 				/* --- Compute the boundary state u_e --- */
@@ -10212,17 +10207,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       if((config->GetKind_TurboMachinery(config->GetiZone()) == AXIAL) && (nDim ==2) && (config->GetKind_Data_NRBC(Marker_Tag) == MIXING_IN)){
       	deltaprim[2] -= config->GetNRBC_Var1(Marker_Tag)/config->GetVelocity_Ref();
       }
-//      if (config->GetKind_Data_NRBC(Marker_Tag) == MIXING_IN){
-//      	cout << Marker_Tag<< " :"<<endl;
-////      }else{
-////      	cout << "outflow :"<<endl;
-////      }
-//
-//				cout <<  ExtAveragePressure[val_marker][iSpan] << " in i zone " << config->GetiZone()<< endl;
-//				cout <<  ExtAverageDensity[val_marker][iSpan] << " in i zone " << config->GetiZone()<< endl;
-//				cout <<  ExtAverageTurboVelocity[val_marker][iSpan][0] << " in i zone " << config->GetiZone()<< endl;
-//				cout <<  ExtAverageTurboVelocity[val_marker][iSpan][1] << " in i zone " << config->GetiZone()<< endl;
-//				cout<<endl;
 
       /* --- Compute average jump of charachteristic variable at the mixing-plane interface--- */
       conv_numerics->GetCharJump(AverageSoundSpeed[val_marker][iSpan], AverageDensity[val_marker][iSpan], deltaprim, c_avg);

@@ -2031,17 +2031,6 @@ void CMultiZoneDriver::SetMixingPlane(CGeometry ***geometry_container,
 			}
 		}
 	}
-//	for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
-//		if(donorZone < nZone -1)
-//			transfer_container[donorZone][donorZone +1]->Allgather_InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[donorZone +1][MESH_0][FLOW_SOL],
-//					geometry_container[donorZone][MESH_0],geometry_container[donorZone +1][MESH_0],
-//					config_container[donorZone], config_container[donorZone +1], iMarkerInt);
-//		if(donorZone != 0){
-//			transfer_container[donorZone][donorZone -1]->Allgather_InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[donorZone -1][MESH_0][FLOW_SOL],
-//					geometry_container[donorZone][MESH_0],geometry_container[donorZone -1][MESH_0],
-//					config_container[donorZone], config_container[donorZone -1], iMarkerInt);
-//		}
-//	}
 }
 void CMultiZoneDriver::SetTurboPerformance(CGeometry ***geometry_container,
                                       CSolver ****solver_container,
