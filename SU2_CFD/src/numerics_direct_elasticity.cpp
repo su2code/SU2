@@ -39,10 +39,15 @@ CFEM_Elasticity::CFEM_Elasticity(unsigned short val_nDim, unsigned short val_nVa
 	bool pseudo_static = config->GetPseudoStatic();
 
 	E = config->GetElasticyMod();
-  if (config->GetDirectDiff()) SU2_TYPE::SetDerivative(E,1.0);
 	Nu = config->GetPoissonRatio();
 	Rho_s = config->GetMaterialDensity();       // For inertial effects
 	Rho_s_DL = config->GetMaterialDensity();    // For dead loads
+
+	if (config->GetDirectDiff() == D_YOUNG)   SU2_TYPE::SetDerivative(E,1.0);
+	if (config->GetDirectDiff() == D_POISSON) SU2_TYPE::SetDerivative(Nu,1.0);
+  if (config->GetDirectDiff() == D_RHO)     SU2_TYPE::SetDerivative(Rho_s,1.0);
+  if (config->GetDirectDiff() == D_RHO_DL)  SU2_TYPE::SetDerivative(Rho_s_DL,1.0);
+
 	if (pseudo_static) Rho_s = 0.0;             // Pseudo-static: no inertial effects considered
 	Mu = E / (2.0*(1.0 + Nu));
 	Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));

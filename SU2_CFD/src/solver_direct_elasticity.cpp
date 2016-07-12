@@ -4740,10 +4740,7 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
       /*--- Retrieve the value of the current solution ---*/
       current_solution = node[iPoint]->GetSolution(iVar);
 
-//      accel_check = node[iPoint]->GetSolution_Accel(iVar);
-
       /*--- The objective function is the sum of the difference between solution and difference, squared ---*/
-//      objective_function += (current_solution - reference_geometry)*(current_solution - reference_geometry) + accel_check;
       objective_function += (current_solution - reference_geometry)*(current_solution - reference_geometry);
     }
 
@@ -4752,12 +4749,37 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
   // TODO: Need to do an MPI reduction to have the sum in all processors HERE
 
   Total_OFRefGeom = objective_function;
-  su2double a = 0.0;
-  if (config->GetDirectDiff()) a = SU2_TYPE::GetDerivative(Total_OFRefGeom);
 
-  Total_ForwardGradient += a;
+  bool direct_diff = ((config->GetDirectDiff() == D_YOUNG) ||
+                      (config->GetDirectDiff() == D_POISSON) ||
+                      (config->GetDirectDiff() == D_RHO) ||
+                      (config->GetDirectDiff() == D_RHO_DL));
 
-  cout << "Objective function with our new function is... " << Total_OFRefGeom << ". Local derivative " << a << ". Global derivative " << Total_ForwardGradient << endl;
+  if (direct_diff){
+
+    su2double local_forward_gradient = 0.0;
+    local_forward_gradient = SU2_TYPE::GetDerivative(Total_OFRefGeom);
+    Total_ForwardGradient += local_forward_gradient;
+
+    if (config->GetDirectDiff() == D_YOUNG)   cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Young Modulus: " << Total_ForwardGradient << "." << endl;
+    if (config->GetDirectDiff() == D_POISSON) cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Poisson's ratio: " << Total_ForwardGradient << "." << endl;
+    if (config->GetDirectDiff() == D_RHO)     cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the structural density: " << Total_ForwardGradient << "." << endl;
+    if (config->GetDirectDiff() == D_RHO_DL)  cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the dead weight: " << Total_ForwardGradient << "." << endl;
+
+  }
+  else{
+
+    cout << "Objective function: " << Total_OFRefGeom << "." << endl;
+
+  }
+
+
+
+
+
+
+
+
 
 }
 
