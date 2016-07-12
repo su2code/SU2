@@ -418,6 +418,33 @@ protected:
                                                        vector<su2double>       &drLagBasisPoints,
                                                        vector<su2double>       &dsLagBasisPoints,
                                                        vector<su2double>       &dtLagBasisPoints);
+
+  /*!
+  * \brief Function, which computes the local connectivity of linear subelements of
+           a line, which can be used for plotting.
+  * \param[in]  nPoly    - Polynomial degree of the line.
+  * \param[out] subConn  - The local subconnectivity of a line element.
+  */
+  void SubConnForPlottingLine(const unsigned short   nPoly,
+                              vector<unsigned short> &subConn);
+
+  /*!
+  * \brief Function, which computes the local connectivity of linear subelements of
+           a quadrilateral, which can be used for plotting.
+  * \param[in]  nPoly    - Polynomial degree of the quadrilateral.
+  * \param[out] subConn  - The local subconnectivity of a triangle element.
+  */
+  void SubConnForPlottingQuadrilateral(const unsigned short   nPoly,
+                                       vector<unsigned short> &subConn);
+
+  /*!
+  * \brief Function, which computes the local connectivity of linear subelements of
+           a triangle, which can be used for plotting.
+  * \param[in]  nPoly    - Polynomial degree of the triangle.
+  * \param[out] subConn  - The local subconnectivity of a triangle element.
+  */
+  void SubConnForPlottingTriangle(const unsigned short   nPoly,
+                                  vector<unsigned short> &subConn);
 private:
   /*!
   * \brief Function, which determines the 1D Gauss Legendre integration points and weights.
@@ -927,11 +954,11 @@ private:
   * \param[in]     vert2    - Corner vertex 2 of the desired sequence.
   * \param[in]     vert3    - Corner vertex 3 of the desired sequence.
   */
-  void ChangeDirectionQuadConn(std::vector<unsigned short> &connQuad,
-                               unsigned short              vert0,
-                               unsigned short              vert1,
-                               unsigned short              vert2,
-                               unsigned short              vert3);
+  void ChangeDirectionQuadConn(vector<unsigned short> &connQuad,
+                               unsigned short         vert0,
+                               unsigned short         vert1,
+                               unsigned short         vert2,
+                               unsigned short         vert3);
 
   /*!
   * \brief Function, which changes the given triangular connectivity, such that the direction coincides
@@ -941,10 +968,10 @@ private:
   * \param[in]     vert1        - Corner vertex 1 of the desired sequence.
   * \param[in]     vert2        - Corner vertex 2 of the desired sequence.
   */
-  void ChangeDirectionTriangleConn(std::vector<unsigned short> &connTriangle,
-                                   unsigned short              vert0,
-                                   unsigned short              vert1,
-                                   unsigned short              vert2);
+  void ChangeDirectionTriangleConn(vector<unsigned short> &connTriangle,
+                                   unsigned short         vert0,
+                                   unsigned short         vert1,
+                                   unsigned short         vert2);
 
   /*!
   * \brief Function, which copies the data of the given object into the current object.
@@ -1347,6 +1374,9 @@ private:
   su2double *matDerBasisElemIntegration;       /*!< \brief Matrix of drLagBasisElemIntegration, dsLagBasisElemIntegration
                                                            and dtLagBasisElemIntegration combined for efficiency
                                                            when using BLAS routines. */
+
+  vector<unsigned short> subConnForPlotting; /*!< \brief Local subconnectivity of the high order element.
+                                                         Used for plotting. */
 public:
   /*!
   * \brief Standard Constructor. Initialize some pointers to NULL.
@@ -1459,6 +1489,27 @@ public:
   * \return  The number of DOFs of the face.
   */
   unsigned short GetNDOFsFace(void) const;
+
+  /*!
+  * \brief Function, which makes available the number of linear subfaces used
+           for plotting, among others.
+  * \return  The number of linear subfaces of the face.
+  */
+  unsigned short GetNSubFaces(void) const;
+
+  /*!
+  * \brief Function, which makes available the number of DOFs of a linear subface, used
+           for plotting, among others, plotting.
+  * \return  The number of DOFs of a linear subfaces of the face.
+  */
+  unsigned short GetNDOFsPerSubFace(void) const;
+
+  /*!
+  * \brief Function, which makes available the the connectivity of the linear subfaces
+           as a const pointer.
+  * \return  The pointer to the local connectivity of the linear subfaces.
+  */
+  const unsigned short *GetSubFaceConn(void) const;
 
   /*!
   * \brief Function, which checks if the function arguments correspond to this standard face.

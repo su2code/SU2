@@ -148,3 +148,7 @@ inline const su2double* FEMStandardBoundaryFaceClass::GetDsBasisFaceIntegration(
 inline unsigned short FEMStandardBoundaryFaceClass::GetNDOFsElem(void) const {return nDOFsElem;}
 
 inline unsigned short FEMStandardBoundaryFaceClass::GetNDOFsFace(void) const {return nDOFsFace;}
+
+inline unsigned short FEMStandardBoundaryFaceClass::GetNSubFaces(void) const {return subConnForPlotting.size()/GetNDOFsPerSubFace();}
+
+inline const unsigned short* FEMStandardBoundaryFaceClass::GetSubFaceConn(void) const {return subConnForPlotting.data();}

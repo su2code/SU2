@@ -160,6 +160,8 @@ public:
   su2double *massMatrix;             /*!< \brief Pointer to the mass matrix (or the inverse) for this element. */
   su2double *lumpedMassMatrix;       /*!< \brief Pointer to the lumped mass matrix for this element. */
 
+  su2double *wallDistance;           /*!< \brief Pointer to the wall distance to the viscous walls for
+                                                 the integration points of this element. */
   /*!
    * \brief Constructor of the class. Initialize the pointers to NULL.
    */
@@ -272,8 +274,12 @@ public:
   su2double *metricElemSide1;       /*!< \brief Pointer to the location of the metric terms of the
                                                 adjacent element on side 1 in the integration
                                                 points of the face. Needed for the SIP term. */
+
+  su2double *wallDistance;           /*!< \brief Pointer to the wall distance to the viscous walls for
+                                                 the integration points of this face. */
+
   /*!
-   * \brief Constructor of the class. Nothing to be done.
+   * \brief Constructor of the class. Initialize some pointers to NULL.
    */
   CInternalFaceElementFEM(void);
 
@@ -321,9 +327,11 @@ public:
   su2double *metricElem;            /*!< \brief Pointer to the location of the metric terms of the
                                                 adjacent element in the integration points of the face.
                                                 Needed for the SIP term. */
+  su2double *wallDistance;          /*!< \brief Pointer to wall distances of the integration points
+                                                of the face. */
 
   /*!
-   * \brief Constructor of the class. Initialize some variables to avoid a valgrid warning.
+   * \brief Constructor of the class. Initialize some variables.
    */
   CSurfaceElementFEM(void);
 
@@ -388,7 +396,8 @@ public:
   vector<unsigned long> VecDOFsGridElement; /*!< \brief Storage for the grid DOFs of the adjacent elements. */
   vector<unsigned long> VecDOFsSolElement;  /*!< \brief Storage for the solution DOFs of the adjacent elements. */
 
-  vector <su2double> VecMetricTermsBoundaryFaces; /*!< \brief Storage for the metric terms of the boundary faces. */
+  vector<su2double> VecMetricTermsBoundaryFaces;  /*!< \brief Storage for the metric terms of the boundary faces. */
+  vector<su2double> VecWallDistanceBoundaryFaces; /*!< \brief Storage for the wall distances of the boundary faces. */
 
   /*!
    * \brief Constructor of the class. Nothing to be done.
@@ -438,6 +447,7 @@ protected:
 
   vector<su2double> VecMetricTermsElements;  /*!< \brief Storage for the metric terms of the volume elements. */
   vector<su2double> VecMassMatricesElements; /*!< \brief Storage for the mass matrices of the volume elements. */
+  vector<su2double> VecWallDistanceElements; /*!< \brief Storage for the wall distances of the volume elements. */
 
   vector<FEMStandardBoundaryFaceClass> standardBoundaryFacesSol;  /*!< \brief Vector that contains the standard boundary
                                                                               faces used for the solution of the DG solver. */
@@ -670,7 +680,8 @@ private:
   vector<unsigned long> VecDOFsSolElementSide0;  /*!< \brief Storage for the solution DOFs of the elements adjacent to side 0. */
   vector<unsigned long> VecDOFsSolElementSide1;  /*!< \brief Storage for the solution DOFs of the elements adjacent to side 1. */
 
-  vector<su2double> VecMetricTermsInternalMatchingFaces; /*!< \brief Storage for the metric terms of the interal matching faces. */
+  vector<su2double> VecMetricTermsInternalMatchingFaces;  /*!< \brief Storage for the metric terms of the internal matching faces. */
+  vector<su2double> VecWallDistanceInternalMatchingFaces; /*!< \brief Storage for the wall distances of the internal matching faces. */
 
   vector<CInternalFaceElementFEM> matchingFaces; /*!< \brief Vector of the local matching internal faces. */
 

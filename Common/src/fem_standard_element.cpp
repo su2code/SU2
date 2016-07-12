@@ -980,6 +980,86 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesHexahedro
   MatMulRowMajor(nDOFs, nPoints, VDt, VInv, dtLagBasisPoints);
 }
 
+void FEMStandardElementBaseClass::SubConnForPlottingLine(
+                                         const unsigned short   nPoly,
+                                         vector<unsigned short> &subConn) {
+
+  /*--- Determine the local subconnectivity of the line element used for plotting
+        purposes. This is rather trivial, because the line element is subdivided
+        into nPoly linear line elements.                    ---*/
+  unsigned short nnPoly = max(nPoly,(unsigned short) 1);
+  for(unsigned short i=0; i<nnPoly; ++i) {
+    subConn.push_back(i);
+    subConn.push_back(i+1);
+  }
+}
+
+void FEMStandardElementBaseClass::SubConnForPlottingQuadrilateral(
+                                         const unsigned short   nPoly,
+                                         vector<unsigned short> &subConn) {
+
+  /*--- Determine the local subconnectivity of the quadrilateral element used for
+        plotting purposes. Note that the connectivity of the linear subelements
+        obey the VTK connectivity rule of a quadrilateral, which is different
+        from the connectivity for the high order quadrilateral. ---*/
+  unsigned short nnPoly = max(nPoly,(unsigned short) 1);
+  for(unsigned short j=0; j<nnPoly; ++j) {
+    unsigned short jj = j*(nnPoly+1);
+    for(unsigned short i=0; i<nnPoly; ++i) {
+      const unsigned short n0 = jj + i;        subConn.push_back(n0);
+      const unsigned short n1 = n0 + 1;        subConn.push_back(n1);
+      const unsigned short n2 = n1 + nPoly+1;  subConn.push_back(n2);
+      const unsigned short n3 = n2 - 1;        subConn.push_back(n3);
+    }
+  }
+}
+
+void FEMStandardElementBaseClass::SubConnForPlottingTriangle(
+                                         const unsigned short   nPoly,
+                                         vector<unsigned short> &subConn) {
+
+  /*--- Determine the local subconnectivity of the triangular element used for
+        plotting purposes. ---*/
+  unsigned short jj = 0;
+
+  /*--- Loop over subedges of the left boundary of the standard triangle. ---*/
+  for(unsigned short j=0; j<nPoly; ++j) {
+
+    /*--- Check if the "down" elements must be written. ---*/
+    if( j ) {
+
+      unsigned short kk = jj - (nPoly + 1 - j); // Offset of the relevant DOF on the previous row.
+
+      for(unsigned short i=0; i<(nPoly-j); ++i) {
+        unsigned short n0 = jj + i;
+        unsigned short n1 = kk + i;
+        unsigned short n2 = n0 + 1;
+
+        subConn.push_back(n0);
+        subConn.push_back(n1);
+        subConn.push_back(n2);
+      }
+    }
+
+    /*--- The "upp" elements must always be written.
+          Determine the offset of the DOF on the next row. ---*/
+    unsigned short kk = jj + (nPoly + 1 - j);
+
+    for(unsigned short i=0; i<(nPoly-j); ++i) {
+      unsigned short n0 = jj + i;
+      unsigned short n1 = n0 + 1;
+      unsigned short n2 = kk + i;
+
+      subConn.push_back(n0);
+      subConn.push_back(n1);
+      subConn.push_back(n2);
+    }
+
+    /*--- Set jj to kk for the next edge. ---*/
+    jj = kk;
+  }
+}
+
 /*----------------------------------------------------------------------------------*/
 /*          Private member functions of FEMStandardElementBaseClass.                */
 /*----------------------------------------------------------------------------------*/
@@ -2015,14 +2095,8 @@ void FEMStandardElementClass::DataStandardLine(void) {
   connFace0.reserve(1); connFace0.push_back(0);
   connFace1.reserve(1); connFace1.push_back(nPoly);
 
-  /*--- Determine the local subconnectivity of the line element used for plotting
-        purposes. This is rather trivial, because the line element is subdivided
-        into nPoly linear line elements.                    ---*/
-  unsigned short nnPoly = max(nPoly,(unsigned short) 1);
-  for(unsigned short i=0; i<nnPoly; ++i) {
-    subConn1ForPlotting.push_back(i);
-    subConn1ForPlotting.push_back(i+1);
-  }
+  /*--- Determine the local subconnectivity used for plotting purposes. ---*/
+  SubConnForPlottingLine(nPoly, subConn1ForPlotting);
 }
 
 void FEMStandardElementClass::DataStandardTriangle(void) {
@@ -2046,44 +2120,7 @@ void FEMStandardElementClass::DataStandardTriangle(void) {
 
   /*--- Determine the local subconnectivity of the triangular element used for
         plotting purposes. ---*/
-  unsigned short jj = 0;
-
-  /*--- Loop over subedges of the left boundary of the standard triangle. ---*/
-  for(unsigned short j=0; j<nPoly; ++j) {
-
-    /*--- Check if the "down" elements must be written. ---*/
-    if( j ) {
-
-      unsigned short kk = jj - (nPoly + 1 - j); // Offset of the relevant DOF on the previous row.
-
-      for(unsigned short i=0; i<(nPoly-j); ++i) {
-        unsigned short n0 = jj + i;
-        unsigned short n1 = kk + i;
-        unsigned short n2 = n0 + 1;
-
-        subConn1ForPlotting.push_back(n0);
-        subConn1ForPlotting.push_back(n1);
-        subConn1ForPlotting.push_back(n2);
-      }
-    }
-
-    /*--- The "upp" elements must always be written.
-          Determine the offset of the DOF on the next row. ---*/
-    unsigned short kk = jj + (nPoly + 1 - j);
-
-    for(unsigned short i=0; i<(nPoly-j); ++i) {
-      unsigned short n0 = jj + i;
-      unsigned short n1 = n0 + 1;
-      unsigned short n2 = kk + i;
-
-      subConn1ForPlotting.push_back(n0);
-      subConn1ForPlotting.push_back(n1);
-      subConn1ForPlotting.push_back(n2);
-    }
-
-    /*--- Set jj to kk for the next edge. ---*/
-    jj = kk;
-  }
+  SubConnForPlottingTriangle(nPoly, subConn1ForPlotting);
 }
 
 void FEMStandardElementClass::DataStandardQuadrilateral(void) {
@@ -2111,19 +2148,8 @@ void FEMStandardElementClass::DataStandardQuadrilateral(void) {
   for(signed short i=n3; i>=n0; i-=(nPoly+1)) connFace3.push_back(i);
 
   /*--- Determine the local subconnectivity of the quadrilateral element used for
-        plotting purposes. Note that the connectivity of the linear subelements
-        obey the VTK connectivity rule of a quadrilateral, which is different
-        from the connectivity for the high order quadrilateral. ---*/
-  unsigned short nnPoly = max(nPoly,(unsigned short) 1);
-  for(unsigned short j=0; j<nnPoly; ++j) {
-    unsigned short jj = j*(nnPoly+1);
-    for(unsigned short i=0; i<nnPoly; ++i) {
-      n0 = jj + i;        subConn1ForPlotting.push_back(n0);
-      n1 = n0 + 1;        subConn1ForPlotting.push_back(n1);
-      n2 = n1 + nPoly+1;  subConn1ForPlotting.push_back(n2);
-      n3 = n2 - 1;        subConn1ForPlotting.push_back(n3);
-    }
-  }
+        plotting purposes. ---*/
+  SubConnForPlottingQuadrilateral(nPoly, subConn1ForPlotting);
 }
 
 void FEMStandardElementClass::DataStandardTetrahedron(void) {
@@ -2816,11 +2842,11 @@ void FEMStandardElementClass::SubConnHexahedron(void) {
   }
 }
 
-void FEMStandardElementClass::ChangeDirectionQuadConn(std::vector<unsigned short> &connQuad,
-                                                      unsigned short              vert0,
-                                                      unsigned short              vert1,
-                                                      unsigned short              vert2,
-                                                      unsigned short              vert3) {
+void FEMStandardElementClass::ChangeDirectionQuadConn(vector<unsigned short> &connQuad,
+                                                      unsigned short         vert0,
+                                                      unsigned short         vert1,
+                                                      unsigned short         vert2,
+                                                      unsigned short         vert3) {
 
   /*--- Determine the indices of the 4 corner vertices of the quad. ---*/
   unsigned short ind0 = 0;
@@ -2984,10 +3010,10 @@ void FEMStandardElementClass::ChangeDirectionQuadConn(std::vector<unsigned short
   }
 }
 
-void FEMStandardElementClass::ChangeDirectionTriangleConn(std::vector<unsigned short> &connTriangle,
-                                                          unsigned short              vert0,
-                                                          unsigned short              vert1,
-                                                          unsigned short              vert2) {
+void FEMStandardElementClass::ChangeDirectionTriangleConn(vector<unsigned short> &connTriangle,
+                                                          unsigned short         vert0,
+                                                          unsigned short         vert1,
+                                                          unsigned short         vert2) {
 
   /*--- Determine the indices of the 3 corner vertices of the triangle. ---*/
   unsigned short ind0 = 0;
@@ -3417,12 +3443,14 @@ FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(unsigned short val_VT
   swapFaceInElement = val_swapFaceInElement;
 
   /*--- Determine the Lagrangian basis functions in the integration
-        points of the face. ---*/
+        points of the face and the subconnectivity of the linear elements
+        used for plotting. ---*/
   switch( VTK_Type ) {
     case LINE:
       LagrangianBasisFunctionAndDerivativesLine(nPolyElem, rIntegration, nDOFsFace,
                                                 rDOFsFace, lagBasisFaceIntegration,
                                                 drLagBasisFaceIntegration);
+      SubConnForPlottingLine(nPolyElem, subConnForPlotting);
       break;
 
     case TRIANGLE:
@@ -3432,6 +3460,7 @@ FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(unsigned short val_VT
                                                     lagBasisFaceIntegration,
                                                     drLagBasisFaceIntegration,
                                                     dsLagBasisFaceIntegration);
+      SubConnForPlottingTriangle(nPolyElem, subConnForPlotting);
       break;
 
     case QUADRILATERAL:
@@ -3441,6 +3470,7 @@ FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(unsigned short val_VT
                                                          lagBasisFaceIntegration,
                                                          drLagBasisFaceIntegration,
                                                          dsLagBasisFaceIntegration);
+      SubConnForPlottingQuadrilateral(nPolyElem, subConnForPlotting);
       break;
   }
 
@@ -3519,6 +3549,31 @@ FEMStandardBoundaryFaceClass::~FEMStandardBoundaryFaceClass() {
 #endif
 }
 
+unsigned short FEMStandardBoundaryFaceClass::GetNDOFsPerSubFace(void) const {
+
+  /*--- Distinguish between the possible element types for a boundary surface
+        and set the number nDOFs for a subface accordingly. ---*/
+  unsigned short nDOFsSubface;
+  switch( VTK_Type ) {
+    case LINE:          nDOFsSubface = 2; break;
+    case TRIANGLE:      nDOFsSubface = 3; break;
+    case QUADRILATERAL: nDOFsSubface = 4; break;
+    default:
+      cout << "In FEMStandardBoundaryFaceClass::GetNDOFsPerSubFace." << endl;
+      cout << "Impossible FEM surface element type, " << VTK_Type
+           << ", encountered." << endl;
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+  }
+
+  /* Return the number of DOFs for a subface. */
+  return nDOFsSubface;
+}
+
 bool FEMStandardBoundaryFaceClass::SameStandardBoundaryFace(unsigned short val_VTK_TypeFace,
                                                             bool           val_constJac,
                                                             unsigned short val_VTK_TypeElem,
@@ -3570,4 +3625,6 @@ void FEMStandardBoundaryFaceClass::Copy(const FEMStandardBoundaryFaceClass &othe
 
   for(unsigned long i=0; i<sizeMat; ++i)
     matDerBasisElemIntegration[i] = other.matDerBasisElemIntegration[i];
+
+  subConnForPlotting = other.subConnForPlotting;
 }
