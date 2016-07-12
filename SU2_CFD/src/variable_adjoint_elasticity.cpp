@@ -74,8 +74,13 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable() : CVariable(){
 
   Sensitivity           = NULL;
   Solution_Direct       = NULL;
-  DualTime_Derivative   = NULL;
-  DualTime_Derivative_n = NULL;
+
+  Dynamic_Derivative          = NULL;
+  Dynamic_Derivative_n        = NULL;
+  Dynamic_Derivative_Vel      = NULL;
+  Dynamic_Derivative_Vel_n    = NULL;
+  Dynamic_Derivative_Accel    = NULL;
+  Dynamic_Derivative_Accel_n  = NULL;
 
   Solution_Direct_Vel   = NULL;
   Solution_Direct_Accel = NULL;
@@ -97,8 +102,12 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
 
-  DualTime_Derivative   = NULL;
-  DualTime_Derivative_n = NULL;
+  Dynamic_Derivative          = NULL;
+  Dynamic_Derivative_n        = NULL;
+  Dynamic_Derivative_Vel      = NULL;
+  Dynamic_Derivative_Vel_n    = NULL;
+  Dynamic_Derivative_Accel    = NULL;
+  Dynamic_Derivative_Accel_n  = NULL;
 
   Solution_Direct_Vel   = NULL;
   Solution_Direct_Accel = NULL;
@@ -173,21 +182,25 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, su2double* val
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
 
-  DualTime_Derivative     = new su2double[nVar];
-  DualTime_Derivative_n   = new su2double[nVar];
+  Dynamic_Derivative          = new su2double[nVar];
+  Dynamic_Derivative_n        = new su2double[nVar];
+  Dynamic_Derivative_Vel      = new su2double[nVar];
+  Dynamic_Derivative_Vel_n    = new su2double[nVar];
+  Dynamic_Derivative_Accel    = new su2double[nVar];
+  Dynamic_Derivative_Accel_n  = new su2double[nVar];
 
-  Solution_Direct_Vel     = new su2double[nVar];
-  Solution_Direct_Accel   = new su2double[nVar];
+  Solution_Direct_Vel         = new su2double[nVar];
+  Solution_Direct_Accel       = new su2double[nVar];
 
-  Solution_Vel            = new su2double[nVar];
-  Solution_Accel          = new su2double[nVar];
+  Solution_Vel                = new su2double[nVar];
+  Solution_Accel              = new su2double[nVar];
 
-  Solution_Old_Vel        = new su2double[nVar];
-  Solution_Old_Accel      = new su2double[nVar];
+  Solution_Old_Vel            = new su2double[nVar];
+  Solution_Old_Accel          = new su2double[nVar];
 
-  Solution_time_n         = new su2double[nVar];
-  Solution_Vel_time_n     = new su2double[nVar];
-  Solution_Accel_time_n   = new su2double[nVar];
+  Solution_time_n             = new su2double[nVar];
+  Solution_Vel_time_n         = new su2double[nVar];
+  Solution_Accel_time_n       = new su2double[nVar];
 
   Solution_Direct = new su2double[nVar];
 
@@ -216,8 +229,12 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, su2double* val
   for (iVar = 0; iVar < nVar; iVar++){
     Solution_time_n[iVar]         = 0.0;
 
-    DualTime_Derivative[iVar]     = 0.0;
-    DualTime_Derivative_n[iVar]   = 0.0;
+    Dynamic_Derivative[iVar]      = 0.0;
+    Dynamic_Derivative_n[iVar]    = 0.0;
+    Dynamic_Derivative_Vel[iVar]    = 0.0;
+    Dynamic_Derivative_Vel_n[iVar]    = 0.0;
+    Dynamic_Derivative_Accel[iVar]    = 0.0;
+    Dynamic_Derivative_Accel_n[iVar]  = 0.0;
 
     Solution_Direct_Vel[iVar]     = 0.0;
     Solution_Direct_Accel[iVar]   = 0.0;
@@ -238,8 +255,12 @@ CDiscAdjFEAVariable::~CDiscAdjFEAVariable(){
   if (Sensitivity           != NULL) delete [] Sensitivity;
   if (Solution_Direct       != NULL) delete [] Solution_Direct;
 
-  if (DualTime_Derivative   != NULL) delete [] DualTime_Derivative;
-  if (DualTime_Derivative_n != NULL) delete [] DualTime_Derivative_n;
+  if (Dynamic_Derivative         != NULL) delete [] Dynamic_Derivative;
+  if (Dynamic_Derivative_n       != NULL) delete [] Dynamic_Derivative_n;
+  if (Dynamic_Derivative_Vel     != NULL) delete [] Dynamic_Derivative_Vel;
+  if (Dynamic_Derivative_Vel_n   != NULL) delete [] Dynamic_Derivative_Vel_n;
+  if (Dynamic_Derivative_Accel   != NULL) delete [] Dynamic_Derivative_Accel;
+  if (Dynamic_Derivative_Accel_n != NULL) delete [] Dynamic_Derivative_Accel_n;
 
   if (Solution_Direct_Vel   != NULL) delete [] Solution_Direct_Vel;
   if (Solution_Direct_Accel != NULL) delete [] Solution_Direct_Accel;

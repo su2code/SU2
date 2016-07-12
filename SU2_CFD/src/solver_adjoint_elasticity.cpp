@@ -1672,6 +1672,8 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   bool restart = config->GetRestart();
 
+  restart = false;
+
   unsigned long iVertex, iPoint, index;
   string text_line, mesh_filename;
   ifstream restart_file;
@@ -1909,6 +1911,13 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
     }
   }
 
+  /*--- Initialize the values of the total sensitivities ---*/
+
+  Total_Sens_E        = 0.0;
+  Total_Sens_Nu       = 0.0;
+  Total_Sens_Rho      = 0.0;
+  Total_Sens_Rho_DL   = 0.0;
+
 }
 
 CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
@@ -2140,6 +2149,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
   unsigned long iPoint;
   su2double residual;
 
+//  cout << "--------------------- Extract ADJOINT SOLUTION ---------------------------" << endl;
+
   /*--- Set Residuals to zero ---*/
 
   for (iVar = 0; iVar < nVar; iVar++){
@@ -2156,6 +2167,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     /*--- Extract the adjoint solution ---*/
 
     direct_solver->node[iPoint]->GetAdjointSolution(Solution);
+
+ //   if (iPoint == 25) cout << "Solution: " << Solution[0] << ", " << Solution[1] << endl;
 
     /*--- Store the adjoint solution ---*/
 
@@ -2177,6 +2190,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       direct_solver->node[iPoint]->GetAdjointSolution_Accel(Solution_Accel);
 
+//      if (iPoint == 25) cout << "Solution_Accel: " << Solution_Accel[0] << ", " << Solution_Accel[1] << endl;
+
       /*--- Store the adjoint acceleration solution u'' ---*/
 
       node[iPoint]->SetSolution_Accel(Solution_Accel);
@@ -2194,6 +2209,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       direct_solver->node[iPoint]->GetAdjointSolution_Vel(Solution_Vel);
 
+//     if (iPoint == 25) cout << "Solution_Vel: " << Solution_Vel[0] << ", " << Solution_Vel[1] << endl;
+
       /*--- Store the adjoint velocity solution u'' ---*/
 
       node[iPoint]->SetSolution_Vel(Solution_Vel);
@@ -2207,6 +2224,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       direct_solver->node[iPoint]->GetAdjointSolution_time_n(Solution);
 
+//      if (iPoint == 25) cout << "Solution time n: " << Solution[0] << ", " << Solution[1] << endl;
+
       /*--- Store the adjoint solution at time n ---*/
 
       node[iPoint]->SetSolution_time_n(Solution);
@@ -2218,6 +2237,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
       /*--- Extract the adjoint acceleration solution u'' at time n ---*/
 
       direct_solver->node[iPoint]->GetAdjointSolution_Accel_time_n(Solution_Accel);
+
+//     if (iPoint == 25) cout << "Solution_Accel time n: " << Solution_Accel[0] << ", " << Solution_Accel[1] << endl;
 
       /*--- Store the adjoint acceleration solution u'' at time n---*/
 
@@ -2231,6 +2252,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
       /*--- Extract the adjoint velocity solution u' at time n ---*/
 
       direct_solver->node[iPoint]->GetAdjointSolution_Vel_time_n(Solution_Vel);
+
+//      if (iPoint == 25) cout << "Solution_Vel time n: " << Solution_Vel[0] << ", " << Solution_Vel[1] << endl;
 
       /*--- Store the adjoint velocity solution u' at time n ---*/
 
@@ -2250,12 +2273,18 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
           AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
       if (dynamic){
-//        for (iVar = 0; iVar < nVar; iVar++){
-//            residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->GetSolution_Old(iVar);
-//
-//            AddRes_RMS(iVar,residual*residual);
-//            AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-//        }
+        for (iVar = 0; iVar < nVar; iVar++){
+            residual = node[iPoint]->GetSolution_Accel(iVar) - node[iPoint]->GetSolution_Old_Accel(iVar);
+
+            AddRes_RMS(iVar,residual*residual);
+            AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+        }
+        for (iVar = 0; iVar < nVar; iVar++){
+            residual = node[iPoint]->GetSolution_Vel(iVar) - node[iPoint]->GetSolution_Old_Vel(iVar);
+
+            AddRes_RMS(iVar,residual*residual);
+            AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+        }
       }
   }
 
@@ -2275,16 +2304,17 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
     Local_Sens_Rho_DL   = SU2_TYPE::GetDerivative(Rho_DL);
 
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&Local_Sens_E,  &Total_Sens_E,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_Sens_Nu, &Total_Sens_Nu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_Sens_Rho,  &Total_Sens_Rho,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_Sens_Rho_DL, &Total_Sens_Rho_DL, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_E,  &Global_Sens_E,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_Nu, &Global_Sens_Nu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_Rho,  &Global_Sens_Rho,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_Rho_DL, &Global_Sens_Rho_DL, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 #else
-    Total_Sens_E        = Local_Sens_E;
-    Total_Sens_Nu       = Local_Sens_Nu;
-    Total_Sens_Rho      = Local_Sens_Rho;
-    Total_Sens_Rho_DL   = Local_Sens_Rho_DL;
+    Global_Sens_E        = Local_Sens_E;
+    Global_Sens_Nu       = Local_Sens_Nu;
+    Global_Sens_Rho      = Local_Sens_Rho;
+    Global_Sens_Rho_DL   = Local_Sens_Rho_DL;
 #endif
+
   }
 
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
@@ -2298,20 +2328,34 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
   unsigned short iVar;
   unsigned long iPoint;
 
+//  cout << "--------------------- Set ADJOINT OUTPUT ---------------------------" << endl;
+
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
       Solution[iVar] = node[iPoint]->GetSolution(iVar);
     }
+//    if (iPoint == 25) cout << "Solution: " << Solution[0] << ", " << Solution[1] << endl;
     if (dynamic){
       for (iVar = 0; iVar < nVar; iVar++){
         Solution_Accel[iVar] = node[iPoint]->GetSolution_Accel(iVar);
       }
+//      if (iPoint == 25) cout << "Solution_Accel: " << Solution_Accel[0] << ", " << Solution_Accel[1] << endl;
       for (iVar = 0; iVar < nVar; iVar++){
-        Solution_Vel[iVar] = node[iPoint]->GetSolution_Accel(iVar);
+        Solution_Vel[iVar] = node[iPoint]->GetSolution_Vel(iVar);
       }
+//      if (iPoint == 25) cout << "Solution_Vel: " << Solution_Vel[0] << ", " << Solution_Vel[1] << endl;
       for (iVar = 0; iVar < nVar; iVar++){
-        Solution[iVar] += node[iPoint]->GetDual_Time_Derivative(iVar);
+        Solution[iVar] += node[iPoint]->GetDynamic_Derivative_n(iVar);
       }
+//      if (iPoint == 25) cout << "Solution Updated: " << Solution[0] << ", " << Solution[1] << endl;
+      for (iVar = 0; iVar < nVar; iVar++){
+        Solution_Accel[iVar] += node[iPoint]->GetDynamic_Derivative_Accel_n(iVar);
+      }
+//      if (iPoint == 25) cout << "Solution_Accel Updated: " << Solution_Accel[0] << ", " << Solution_Accel[1] << endl;
+      for (iVar = 0; iVar < nVar; iVar++){
+        Solution_Vel[iVar] += node[iPoint]->GetDynamic_Derivative_Vel_n(iVar);
+      }
+//      if (iPoint == 25) cout << "Solution_Vel Updated: " << Solution_Vel[0] << ", " << Solution_Vel[1] << endl;
     }
     direct_solver->node[iPoint]->SetAdjointSolution(Solution);
     if (dynamic){
@@ -2322,7 +2366,37 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
   }
 }
 
+void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output){
+
+  bool dynamic = (config_container->GetDynamic_Analysis() == DYNAMIC);
+  su2double *solution_n, *solution_vel_n, *solution_accel_n;
+  unsigned long iPoint;
+  unsigned short iVar;
+
+  if (dynamic){
+      for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++){
+          for (iVar=0; iVar < nVar; iVar++){
+              node[iPoint]->SetDynamic_Derivative_n(iVar, node[iPoint]->GetSolution_time_n(iVar));
+          }
+          for (iVar=0; iVar < nVar; iVar++){
+              node[iPoint]->SetDynamic_Derivative_Accel_n(iVar, node[iPoint]->GetSolution_Accel_time_n(iVar));
+          }
+          for (iVar=0; iVar < nVar; iVar++){
+              node[iPoint]->SetDynamic_Derivative_Vel_n(iVar, node[iPoint]->GetSolution_Vel_time_n(iVar));
+          }
+        }
+    }
+
+}
+
+
 void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config){
+
+  Total_Sens_E        += Global_Sens_E;
+  Total_Sens_Nu       += Global_Sens_Nu;
+  Total_Sens_Rho      += Global_Sens_Rho;
+  Total_Sens_Rho_DL   += Global_Sens_Rho_DL;
+
 
 //  unsigned long iPoint;
 //  unsigned short iDim;
@@ -2412,28 +2486,7 @@ void CDiscAdjFEASolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *con
 //#endif
 }
 
-void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output){
-//  bool dual_time_1st = (config_container->GetUnsteady_Simulation() == DT_STEPPING_1ST);
-//  bool dual_time_2nd = (config_container->GetUnsteady_Simulation() == DT_STEPPING_2ND);
-//  bool dual_time = (dual_time_1st || dual_time_2nd);
-//  su2double *solution_n, *solution_n1;
-//  unsigned long iPoint;
-//  unsigned short iVar;
-//  if (dual_time){
-//      for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++){
-//          solution_n = node[iPoint]->GetSolution_time_n();
-//          solution_n1 = node[iPoint]->GetSolution_time_n1();
-//
-//          for (iVar=0; iVar < nVar; iVar++){
-//              node[iPoint]->SetDual_Time_Derivative(iVar, solution_n[iVar]+node[iPoint]->GetDual_Time_Derivative_n(iVar));
-//              node[iPoint]->SetDual_Time_Derivative_n(iVar, solution_n1[iVar]);
-//
-//            }
-//
-//        }
-//
-//    }
-}
+
 
 
 

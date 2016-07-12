@@ -2254,6 +2254,39 @@ public:
   virtual su2double GetDual_Time_Derivative(unsigned short iVar);
 
   virtual su2double GetDual_Time_Derivative_n(unsigned short iVar);
+
+
+
+  virtual void SetDynamic_Derivative(unsigned short iVar, su2double der);
+
+  virtual void SetDynamic_Derivative_n(unsigned short iVar, su2double der);
+
+  virtual su2double GetDynamic_Derivative(unsigned short iVar);
+
+  virtual su2double GetDynamic_Derivative_n(unsigned short iVar);
+
+  virtual void SetDynamic_Derivative_Vel(unsigned short iVar, su2double der);
+
+  virtual void SetDynamic_Derivative_Vel_n(unsigned short iVar, su2double der);
+
+  virtual su2double GetDynamic_Derivative_Vel(unsigned short iVar);
+
+  virtual su2double GetDynamic_Derivative_Vel_n(unsigned short iVar);
+
+  virtual void SetDynamic_Derivative_Accel(unsigned short iVar, su2double der);
+
+  virtual void SetDynamic_Derivative_Accel_n(unsigned short iVar, su2double der);
+
+  virtual su2double GetDynamic_Derivative_Accel(unsigned short iVar);
+
+  virtual su2double GetDynamic_Derivative_Accel_n(unsigned short iVar);
+
+  virtual su2double GetSolution_Old_Vel(unsigned short iVar);
+
+  virtual su2double GetSolution_Old_Accel(unsigned short iVar);
+
+
+
 };
 
 /*!
@@ -4413,8 +4446,13 @@ class CDiscAdjFEAVariable : public CVariable {
 private:
     su2double* Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
     su2double* Solution_Direct;
-    su2double* DualTime_Derivative;
-    su2double* DualTime_Derivative_n;
+
+    su2double* Dynamic_Derivative;
+    su2double* Dynamic_Derivative_n;
+    su2double* Dynamic_Derivative_Vel;
+    su2double* Dynamic_Derivative_Vel_n;
+    su2double* Dynamic_Derivative_Accel;
+    su2double* Dynamic_Derivative_Accel_n;
 
     su2double* Solution_Vel;
     su2double* Solution_Accel;
@@ -4474,13 +4512,29 @@ public:
      */
     su2double GetSensitivity(unsigned short iDim);
 
-    void SetDual_Time_Derivative(unsigned short iVar, su2double der);
+    void SetDynamic_Derivative(unsigned short iVar, su2double der);
 
-    void SetDual_Time_Derivative_n(unsigned short iVar, su2double der);
+    void SetDynamic_Derivative_n(unsigned short iVar, su2double der);
 
-    su2double GetDual_Time_Derivative(unsigned short iVar);
+    su2double GetDynamic_Derivative(unsigned short iVar);
 
-    su2double GetDual_Time_Derivative_n(unsigned short iVar);
+    su2double GetDynamic_Derivative_n(unsigned short iVar);
+
+    void SetDynamic_Derivative_Vel(unsigned short iVar, su2double der);
+
+    void SetDynamic_Derivative_Vel_n(unsigned short iVar, su2double der);
+
+    su2double GetDynamic_Derivative_Vel(unsigned short iVar);
+
+    su2double GetDynamic_Derivative_Vel_n(unsigned short iVar);
+
+    void SetDynamic_Derivative_Accel(unsigned short iVar, su2double der);
+
+    void SetDynamic_Derivative_Accel_n(unsigned short iVar, su2double der);
+
+    su2double GetDynamic_Derivative_Accel(unsigned short iVar);
+
+    su2double GetDynamic_Derivative_Accel_n(unsigned short iVar);
 
     void SetSolution_Direct(su2double *sol);
 
@@ -4493,6 +4547,45 @@ public:
     su2double* GetSolution_Vel_Direct();
 
     su2double* GetSolution_Accel_Direct();
+
+    su2double GetSolution_Old_Vel(unsigned short iVar);
+
+    su2double GetSolution_Old_Accel(unsigned short iVar);
+
+    /*!
+      * \brief Get the acceleration (Structural Analysis).
+      * \param[in] val_var - Index of the variable.
+      * \return Value of the solution for the index <i>val_var</i>.
+      */
+     su2double GetSolution_Accel(unsigned short val_var);
+
+     /*!
+      * \brief Get the acceleration of the nodes (Structural Analysis) at time n.
+      * \param[in] val_var - Index of the variable.
+      * \return Pointer to the old solution vector.
+      */
+     su2double GetSolution_Accel_time_n(unsigned short val_var);
+
+     /*!
+      * \brief Get the velocity (Structural Analysis).
+      * \param[in] val_var - Index of the variable.
+      * \return Value of the solution for the index <i>val_var</i>.
+      */
+     su2double GetSolution_Vel(unsigned short val_var);
+
+     /*!
+      * \brief Get the velocity of the nodes (Structural Analysis) at time n.
+      * \param[in] val_var - Index of the variable.
+      * \return Pointer to the old solution vector.
+      */
+     su2double GetSolution_Vel_time_n(unsigned short val_var);
+
+       /*!
+      * \brief Get the solution at time n.
+      * \param[in] val_var - Index of the variable.
+      * \return Value of the solution for the index <i>val_var</i>.
+      */
+     su2double GetSolution_time_n(unsigned short val_var);
 
     /*!
      * \brief Set the value of the old solution.

@@ -635,6 +635,10 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
   /*--- Initialize the value of the total objective function ---*/
    Total_OFRefGeom = 0.0;
 
+   /*--- Initialize the value of the total gradient for the forward mode ---*/
+   Total_ForwardGradient = 0.0;
+
+
   /*--- Perform the MPI communication of the solution ---*/
 
   Set_MPI_Solution(geometry, config);
@@ -3369,6 +3373,10 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
   bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Geometrically non-linear problems
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);          // Dynamic simulations.
 
+  su2double updateAccel[2] = {0.0,0.0};
+  su2double updatedAccel[2] = {0.0,0.0};
+
+
   /*--- Update solution ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -3400,7 +3408,18 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver 
                                 node[iPoint]->GetSolution_time_n(iVar)) -
         a_dt[2]* node[iPoint]->GetSolution_Vel_time_n(iVar) -
         a_dt[3]* node[iPoint]->GetSolution_Accel_time_n(iVar);
+
+        updateAccel[iVar] = a_dt[0]*LinSysSol[iPoint*nVar+iVar];
+        updatedAccel[iVar] = node[iPoint]->GetSolution_Accel(iVar) + updateAccel[iVar];
       }
+
+//      cout << " ----------------------------------------------------------- "   << iPoint << endl;
+//      cout << " Point: "   << iPoint << endl;
+//      cout << " updatedAccel "   << updatedAccel[0]  << " , " << updatedAccel[1] << endl;
+//      cout << " updatedAccel Grad " << updatedAccel[0].getGradientData()      << " , " << updatedAccel[1].getGradientData() << endl;
+//      cout << " Solution_Accel " << Solution[0]      << " , " << Solution[1] << endl;
+//      cout << " Solution_Accel Grad" << Solution[0].getGradientData()      << " , " << Solution[1].getGradientData() << endl;
+
 
       /*--- Set the acceleration in the node structure ---*/
 
@@ -4704,6 +4723,7 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
   unsigned short iVar;
   unsigned long iPoint;
   su2double reference_geometry = 0.0, current_solution = 0.0;
+  su2double accel_check = 0.0;
   su2double *solDisp = NULL, *solVel = NULL, predicted_solution[3] = {0.0, 0.0, 0.0};
 
   bool predicted_de = config->GetDE_Predicted();
@@ -4720,18 +4740,24 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
       /*--- Retrieve the value of the current solution ---*/
       current_solution = node[iPoint]->GetSolution(iVar);
 
-      /*--- The objective function is the sum of the difference between solution and difference, squared ---*/
-      objective_function += (current_solution - reference_geometry)*(current_solution - reference_geometry);
+//      accel_check = node[iPoint]->GetSolution_Accel(iVar);
 
+      /*--- The objective function is the sum of the difference between solution and difference, squared ---*/
+//      objective_function += (current_solution - reference_geometry)*(current_solution - reference_geometry) + accel_check;
+      objective_function += (current_solution - reference_geometry)*(current_solution - reference_geometry);
     }
 
   }
 
   // TODO: Need to do an MPI reduction to have the sum in all processors HERE
 
-  Total_OFRefGeom += objective_function;
+  Total_OFRefGeom = objective_function;
+  su2double a = 0.0;
+  if (config->GetDirectDiff()) a = SU2_TYPE::GetDerivative(Total_OFRefGeom);
 
-  cout << "Objective function with our new function is... " << Total_OFRefGeom << endl;
+  Total_ForwardGradient += a;
+
+  cout << "Objective function with our new function is... " << Total_OFRefGeom << ". Local derivative " << a << ". Global derivative " << Total_ForwardGradient << endl;
 
 }
 

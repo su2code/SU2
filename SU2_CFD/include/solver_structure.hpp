@@ -6946,7 +6946,8 @@ private:
 	CSysVector LinSysSol_Adj;		/*!< \brief Vector to store the solution of the adjoint problem */
 	CSysVector LinSysRes_Adj;		/*!< \brief Vector to store the residual of the adjoint problem */
 
-  su2double  Total_OFRefGeom;        /*!< \brief Total FEA coefficient for all the boundaries. */
+  su2double Total_OFRefGeom;        /*!< \brief Total FEA coefficient for all the boundaries. */
+  su2double Total_ForwardGradient;  /*!< \brief Vector of the total forward gradient. */
 
 public:
 
@@ -8340,6 +8341,13 @@ private:
   su2double Total_Sens_Rho;     /*!< \brief Total density sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_Rho_DL;  /*!< \brief Total density sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_nL;      /*!< \brief Total normal pressure sensitivity coefficient for all the boundaries. */
+
+  /*!< \brief Global sensitivities. */
+  su2double Global_Sens_E,
+  Global_Sens_Nu,
+  Global_Sens_Rho,
+  Global_Sens_Rho_DL;
+
   su2double ObjFunc_Value;      /*!< \brief Value of the objective function. */
   su2double E, Nu, Rho, Rho_DL; /*!< \brief Value of the extra variables we want to obtain the adjoint for. */
   su2double *normalLoads;       /*!< \brief Values of the normal loads for each marker iMarker_nL. */

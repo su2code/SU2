@@ -2431,7 +2431,8 @@ void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry ***geometry_container,
                                                CSolver ****solver_container,
                                                CConfig **config_container,
                                                unsigned short val_iZone, int val_DirectIter) {
-  unsigned short iMesh;
+  unsigned short iMesh, iVar;
+  unsigned long iPoint;
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -2447,6 +2448,14 @@ void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry ***geometry_container,
     /*--- If there is no solution file we set the freestream condition ---*/
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
       cout << " Setting static conditions at direct iteration " << val_DirectIter << "." << endl;
+    /*--- Push solution back to correct array ---*/
+    for(iPoint=0; iPoint < geometry_container[val_iZone][MESH_0]->GetnPoint();iPoint++){
+      for (iVar = 0; iVar < solver_container[val_iZone][MESH_0][FEA_SOL]->GetnVar(); iVar++){
+        solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->SetSolution(iVar, 0.0);
+        solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Accel(iVar, 0.0);
+        solver_container[val_iZone][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Vel(iVar, 0.0);
+      }
+    }
   }
 }
 
@@ -2517,8 +2526,8 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
     integration_container[val_iZone][ADJFEA_SOL]->SetConvergence(false);
   }
 
-  /*--- Mesh sensitivities ---*/
-
+  /*--- Global sensitivities ---*/
+  solver_container[val_iZone][MESH_0][ADJFEA_SOL]->SetSensitivity(geometry_container[val_iZone][MESH_0],config_container[val_iZone]);
 
 //  if (((ExtIter+1 >= config_container[val_iZone]->GetnExtIter()) || (integration_container[val_iZone][ADJFEA_SOL]->GetConvergence()) ||
 //      ((ExtIter % config_container[val_iZone]->GetWrt_Sol_Freq() == 0))) || (dynamic)){
@@ -2593,6 +2602,9 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
     fem_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
                                 config_container,surface_movement,grid_movement,FFDBox,val_iZone);
 
+//    fem_iteration->Update(output,integration_container,geometry_container,solver_container,numerics_container,
+//                                config_container,surface_movement,grid_movement,FFDBox,val_iZone);
+
   }
 
   /*--- Prepare for recording ---*/
@@ -2630,6 +2642,9 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
 
   fem_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
                               config_container,surface_movement,grid_movement,FFDBox, val_iZone);
+
+//  fem_iteration->Update(output,integration_container,geometry_container,solver_container,numerics_container,
+//                              config_container,surface_movement,grid_movement,FFDBox,val_iZone);
 
   config_container[val_iZone]->SetExtIter(ExtIter);
 
