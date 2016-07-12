@@ -8584,6 +8584,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
 				/*--- Retrieve the staic pressure for this boundary. ---*/
 				Pressure_e = ExtAveragePressure[val_marker][iSpan];
+//				cout << Pressure_e << endl;
 				Density_e = Density_i;
 
 				/* --- Compute the boundary state u_e --- */
@@ -9274,7 +9275,8 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
             FluidModel->SetTDState_hs(avgTotalEnthaply,AverageEntropy[iMarker][iSpan]);
             AverageTotTemperature[iMarker][iSpan] 		= FluidModel->GetTemperature();
             AverageTotPressure[iMarker][iSpan] 				= FluidModel->GetPressure();
-
+//            cout << AverageTotTemperature[iMarker][iSpan] << "  in zone " << config->GetiZone()<< endl;
+//            cout << AverageTotPressure[iMarker][iSpan] << "  in zone " << config->GetiZone()<< endl;
             if(grid_movement){
               AverageTangGridVelocity = geometry->GetAverageTangGridVel(iMarker,iSpan);
 							RelTangVelocity = (AverageTurboVelocity[iMarker][iSpan][1] - AverageTangGridVelocity);
@@ -10210,6 +10212,18 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       if((config->GetKind_TurboMachinery(config->GetiZone()) == AXIAL) && (nDim ==2) && (config->GetKind_Data_NRBC(Marker_Tag) == MIXING_IN)){
       	deltaprim[2] -= config->GetNRBC_Var1(Marker_Tag)/config->GetVelocity_Ref();
       }
+//      if (config->GetKind_Data_NRBC(Marker_Tag) == MIXING_IN){
+//      	cout << Marker_Tag<< " :"<<endl;
+////      }else{
+////      	cout << "outflow :"<<endl;
+////      }
+//
+//				cout <<  ExtAveragePressure[val_marker][iSpan] << " in i zone " << config->GetiZone()<< endl;
+//				cout <<  ExtAverageDensity[val_marker][iSpan] << " in i zone " << config->GetiZone()<< endl;
+//				cout <<  ExtAverageTurboVelocity[val_marker][iSpan][0] << " in i zone " << config->GetiZone()<< endl;
+//				cout <<  ExtAverageTurboVelocity[val_marker][iSpan][1] << " in i zone " << config->GetiZone()<< endl;
+//				cout<<endl;
+
       /* --- Compute average jump of charachteristic variable at the mixing-plane interface--- */
       conv_numerics->GetCharJump(AverageSoundSpeed[val_marker][iSpan], AverageDensity[val_marker][iSpan], deltaprim, c_avg);
       break;

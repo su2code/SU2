@@ -133,7 +133,7 @@ CDriver::CDriver(CIteration **iteration_container,
 		cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
 
 
-	if (((nZone > 1) && (nZone < 3)) && (fsi || mixingplane)) {
+	if ((nZone > 1) && (fsi || mixingplane)) {
 
 		for (iZone = 0; iZone < nZone; iZone++){
 			transfer_container[iZone] = new CTransfer*[nZone];
@@ -2018,15 +2018,30 @@ void CMultiZoneDriver::SetMixingPlane(CGeometry ***geometry_container,
                                       CTransfer ***transfer_container,
                                       unsigned short donorZone){
 
-  unsigned short targetZone;
+  unsigned short targetZone, nMarkerInt, iMarkerInt ;
+	nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
+
   /* --- transfer the average value from the donorZone to the targetZone*/
-  for (targetZone = 0; targetZone < nZone; targetZone++) {
-    if (targetZone != donorZone){
-      transfer_container[donorZone][targetZone]->Allgather_InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
-                                                                  geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-                                                                  config_container[donorZone], config_container[targetZone]);
-    }
-  }
+	for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+		for (targetZone = 0; targetZone < nZone; targetZone++) {
+			if (targetZone != donorZone){
+				transfer_container[donorZone][targetZone]->Allgather_InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+						geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+						config_container[donorZone], config_container[targetZone], iMarkerInt );
+			}
+		}
+	}
+//	for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+//		if(donorZone < nZone -1)
+//			transfer_container[donorZone][donorZone +1]->Allgather_InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[donorZone +1][MESH_0][FLOW_SOL],
+//					geometry_container[donorZone][MESH_0],geometry_container[donorZone +1][MESH_0],
+//					config_container[donorZone], config_container[donorZone +1], iMarkerInt);
+//		if(donorZone != 0){
+//			transfer_container[donorZone][donorZone -1]->Allgather_InterfaceAverage(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[donorZone -1][MESH_0][FLOW_SOL],
+//					geometry_container[donorZone][MESH_0],geometry_container[donorZone -1][MESH_0],
+//					config_container[donorZone], config_container[donorZone -1], iMarkerInt);
+//		}
+//	}
 }
 void CMultiZoneDriver::SetTurboPerformance(CGeometry ***geometry_container,
                                       CSolver ****solver_container,
