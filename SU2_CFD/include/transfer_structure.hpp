@@ -189,7 +189,7 @@ public:
 	 */
 	void Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *target_solution,
 			   	   	   	   	   	  CGeometry *donor_geometry, CGeometry *target_geometry,
-			   	   	   	   	   	  CConfig *donor_config, CConfig *target_config);
+			   	   	   	   	   	  CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt);
 
 	/*!
 	 * \brief Interpolate data and scatter it into different processors, for matching meshes.

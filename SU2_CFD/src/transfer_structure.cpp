@@ -1275,9 +1275,9 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
 
 void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *target_solution,
 																 CGeometry *donor_geometry, CGeometry *target_geometry,
-																 CConfig *donor_config, CConfig *target_config){
-	unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
-	unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+																 CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt){
+	unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
+	unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
 	unsigned short iSpan, nSpanDonor, nSpanTarget;
 	int Marker_Donor = -1, Marker_Target = -1;
 	su2double *avgPressureDonor = NULL, *avgDensityDonor = NULL, *avgNormalVelDonor = NULL,
@@ -1292,12 +1292,12 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     su2double *BuffAvgPressureDonor = NULL, *BuffAvgDensityDonor = NULL, *BuffAvgNormalVelDonor = NULL, *BuffAvg3DVelDonor = NULL,
     		      *BuffAvgTangVelDonor = NULL, *BuffAvgTotPressureDonor = NULL, *BuffAvgTotTemperatureDonor = NULL;
-    int nSpanSize;
+    int nSpanSize, *BuffMarkerDonor;
 #endif
 
 	/*--- Number of markers on the Mixing-Plane interface ---*/
 
-	nMarkerInt     = (donor_config->GetnMarker_MixingPlaneInterface())/2;
+//	nMarkerInt     = (donor_config->GetnMarker_MixingPlaneInterface())/2;
 	nMarkerTarget  = target_geometry->GetnMarker();
 	nMarkerDonor   = donor_geometry->GetnMarker();
 	nSpanDonor     = donor_config->Get_nSpanWiseSections();
@@ -1344,7 +1344,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 	/*--- Outer loop over the markers on the Mixing-Plane interface: compute one by one ---*/
 	/*--- The tags are always an integer greater than 1: loop from 1 to nMarkerMixingPlane ---*/
 
-	for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+//	for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
 
 		Marker_Donor = -1;
 		Marker_Target = -1;
@@ -1362,6 +1362,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 				/*--- Now we are going to store the average values that belong to Marker_Donor on each processor ---*/
 				/*--- Store the identifier for the structural marker ---*/
 				Marker_Donor = iMarkerDonor;
+//				cout << " donor is "<< donor_config->GetMarker_All_TagBound(Marker_Donor)<<" in imarker interface "<< iMarkerInt <<endl;
 				/*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
 				break;
 			}
@@ -1397,6 +1398,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 		BuffAvgNormalVelDonor  		 = new su2double[nSpanSize];
 		BuffAvgTangVelDonor        = new su2double[nSpanSize];
 		BuffAvg3DVelDonor          = new su2double[nSpanSize];
+		BuffMarkerDonor						 = new int[size];
 
 		for (iSpan=0;iSpan<nSpanSize;iSpan++){
 			BuffAvgDensityDonor[iSpan]        = -1.0;
@@ -1406,7 +1408,10 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 			BuffAvgNormalVelDonor[iSpan]      = -1.0;
 			BuffAvgTangVelDonor[iSpan]        = -1.0;
 			BuffAvg3DVelDonor[iSpan]          = -1.0;
+		}
 
+		for (iSize=0; iSize<size;iSize++){
+			BuffMarkerDonor[iSize]							= -1;
 		}
 
 		SU2_MPI::Allgather(avgDensityDonor, nSpanDonor , MPI_DOUBLE, BuffAvgDensityDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
@@ -1416,6 +1421,8 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 		SU2_MPI::Allgather(avgNormalVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvgNormalVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
 		SU2_MPI::Allgather(avgTangVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvgTangVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
 		SU2_MPI::Allgather(avg3DVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvg3DVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+		SU2_MPI::Allgather(&Marker_Donor, 1 , MPI_INT, BuffMarkerDonor, 1, MPI_INT, MPI_COMM_WORLD);
+
 
 
 		for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
@@ -1428,6 +1435,9 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 			avg3DVelDonor[iSpan]          = -1.0;
 		}
 
+		Marker_Donor= -1;
+
+
 		for (iSize=0; iSize<size;iSize++){
 			if(BuffAvgDensityDonor[nSpanDonor*iSize] > 0.0){
 				for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
@@ -1439,7 +1449,8 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 					avgTangVelDonor[iSpan]        = BuffAvgTangVelDonor[nSpanDonor*iSize + iSpan];
 					avg3DVelDonor[iSpan]          = BuffAvg3DVelDonor[nSpanDonor*iSize + iSpan];
 				}
-			break;
+				Marker_Donor = BuffMarkerDonor[iSize];
+				break;
 			}
 		}
 		delete [] BuffAvgDensityDonor;
@@ -1449,6 +1460,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 		delete [] BuffAvgNormalVelDonor;
 		delete [] BuffAvgTangVelDonor;
 		delete [] BuffAvg3DVelDonor;
+		delete [] BuffMarkerDonor;
 
 #endif
 
@@ -1462,6 +1474,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 				// here i should then store it in the target zone
 
 				Marker_Target = iMarkerTarget;
+//				cout << " target is "<< target_config->GetMarker_All_TagBound(Marker_Target) <<" in imarker interface "<< iMarkerInt <<endl;
 				/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
 				break;
 			}
@@ -1471,7 +1484,7 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 			}
 		}
 
-		if (Marker_Target != -1){
+		if (Marker_Target != -1 && Marker_Donor != -1){
 			/*--- here the interpolation span-wise should be implemented ---*/
 			for(iSpan = 0; iSpan < nSpanDonor ; iSpan++){
 				avgDensityTarget[iSpan]        = avgDensityDonor[iSpan];
@@ -1498,8 +1511,8 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 			}
 		}
 
-	}
-
+//	}
+//	cout << " i am out" << endl;
 	delete [] avgDensityDonor;
 	delete [] avgPressureDonor;
 	delete [] avgTotPressureDonor;
