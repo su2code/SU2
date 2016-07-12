@@ -274,6 +274,11 @@ void CSurfaceElementFEM::Copy(const CSurfaceElementFEM &other) {
   volElemID          = other.volElemID;
   boundElemIDGlobal  = other.boundElemIDGlobal;
   nodeIDsGrid        = other.nodeIDsGrid;
+
+  metricNormalsFace   = other.metricNormalsFace;
+  metricCoorDerivFace = other.metricCoorDerivFace;
+  metricElem          = other.metricElem;
+  wallDistance        = other.wallDistance;
 }
 
 CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
