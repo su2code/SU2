@@ -227,12 +227,27 @@ void Driver_Preprocessing(CDriver **driver,
 
   } else if ((val_nZone == 2) && fsi) {
 
-	    /*--- FSI problem: instantiate the FSI driver class. ---*/
+    bool stat_fsi = ((config_container[ZONE_0]->GetDynamic_Analysis() == STATIC) && (config_container[ZONE_0]->GetUnsteady_Simulation() == STEADY));
 
-	 if (rank == MASTER_NODE) cout << "Instantiating a Fluid-Structure Interaction driver for the problem. " << endl;
-	 *driver = new CFSIDriver(iteration_container, solver_container, geometry_container,
-	            			  integration_container, numerics_container, interpolator_container,
-	                          transfer_container, config_container, val_nZone, val_nDim);
+    if (stat_fsi){
+
+      /*--- FSI problem: instantiate the FSI driver class. ---*/
+
+      if (rank == MASTER_NODE) cout << "Instantiating a static Fluid-Structure Interaction driver for the problem. " << endl;
+      *driver = new CFSIStatDriver(iteration_container, solver_container, geometry_container,
+          integration_container, numerics_container, interpolator_container,
+          transfer_container, config_container, val_nZone, val_nDim);
+
+    }
+    else{
+
+      /*--- FSI problem: instantiate the FSI driver class. ---*/
+
+      if (rank == MASTER_NODE) cout << "Instantiating a Fluid-Structure Interaction driver for the problem. " << endl;
+      *driver = new CFSIDriver(iteration_container, solver_container, geometry_container,
+          integration_container, numerics_container, interpolator_container,
+          transfer_container, config_container, val_nZone, val_nDim);
+    }
 
   } else {
     

@@ -3380,6 +3380,33 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 
       break;
 
+    case FLUID_STRUCTURE_STATIC:
+
+      if (rank == MASTER_NODE)
+        cout << endl << "Deforming the grid for static Fluid-Structure Interaction applications." << endl;
+
+      /*--- Deform the volume grid around the new boundary locations ---*/
+
+      if (rank == MASTER_NODE)
+        cout << "Deforming the volume grid." << endl;
+        grid_movement->SetVolume_Deformation(geometry_container[MESH_0], config_container, true);
+
+      if (rank == MASTER_NODE)
+        cout << "There is no grid velocity." << endl;
+
+//      for (iPoint = 0; iPoint < geometry_container[MESH_0]->GetnPoint(); iPoint++) {
+//        for (unsigned short iDim = 0; iDim < geometry_container[MESH_0]->GetnDim(); iDim++){
+//          geometry_container[MESH_0]->node[iPoint]->SetGridVel(iDim, 0.0);
+//        }
+//      }
+
+      /*--- Update the multigrid structure after moving the finest grid,
+       including computing the grid velocities on the coarser levels. ---*/
+
+      //grid_movement->UpdateMultiGrid(geometry_container, config_container);
+
+      break;
+
     case NO_MOVEMENT: case GUST: default:
       
       /*--- There is no mesh motion specified for this zone. ---*/

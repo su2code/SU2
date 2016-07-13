@@ -2355,8 +2355,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Fluid-Structure Interaction problems ---*/
 
   if (FSI_Problem) {
-	  Kind_GridMovement[val_izone] = FLUID_STRUCTURE;
-	  Grid_Movement = true;
+    if ((Dynamic_Analysis == STATIC) && (Unsteady_Simulation == STEADY)) {
+      Kind_GridMovement[val_izone] = FLUID_STRUCTURE_STATIC;
+      Grid_Movement = false;
+    }
+    else{
+      Kind_GridMovement[val_izone] = FLUID_STRUCTURE;
+      Grid_Movement = true;
+    }
   }
   
   if (MGCycle == FULLMG_CYCLE) FinestMesh = nMGLevels;

@@ -632,3 +632,135 @@ public:
 			 CTransfer ***transfer_container, unsigned short zoneFlow, unsigned short zoneStruct);
 
 };
+
+/*!
+ * \class CFSIDriver
+ * \brief Overload: class for driving a steady-state BGS iteration for a fluid-structure interaction problem in multiple zones.
+ * \author R. Sanchez.
+ * \version 4.2.0 "Cardinal"
+ */
+class CFSIStatDriver : public CFSIDriver {
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] iteration_container - Container vector with all the iteration methods.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - Total number of zones.
+   */
+  CFSIStatDriver(CIteration **iteration_container,
+             CSolver ****solver_container,
+             CGeometry ***geometry_container,
+             CIntegration ***integration_container,
+             CNumerics *****numerics_container,
+             CInterpolator ***interpolator_container,
+             CTransfer ***transfer_container,
+             CConfig **config,
+             unsigned short val_nZone,
+             unsigned short val_nDim);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CFSIStatDriver(void);
+
+  /*!
+   * \brief Run a Block Gauss-Seidel iteration of the FSI problem.
+   * \param[in] iteration_container - Container vector with all the iteration methods.
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] surface_movement - Surface movement classes of the problem.
+   * \param[in] grid_movement - Volume grid movement classes of the problem.
+   * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   */
+
+  void Run(CIteration **iteration_container,
+           COutput *output,
+           CIntegration ***integration_container,
+           CGeometry ***geometry_container,
+           CSolver ****solver_container,
+           CNumerics *****numerics_container,
+           CConfig **config_container,
+           CSurfaceMovement **surface_movement,
+           CVolumetricMovement **grid_movement,
+           CFreeFormDefBox*** FFDBox,
+           CInterpolator ***interpolator_container,
+           CTransfer ***transfer_container);
+
+//  /*!
+//   * \brief Predict the structural displacements to pass them into the fluid solver on a BGS implementation.
+//   * \param[in] donorZone - zone in which the displacements will be predicted.
+//   * \param[in] targetZone - zone which receives the predicted displacements.
+//   */
+//  void Predict_Displacements(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+//         CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+//       CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+//       unsigned short donorZone, unsigned short targetZone);
+//
+//  /*!
+//   * \brief Predict the fluid tractions to pass them into the structural solver on a BGS implementation.
+//   * \param[in] donorZone - zone in which the tractions will be predicted.
+//   * \param[in] targetZone - zone which receives the predicted traction.
+//   */
+//  void Predict_Tractions(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+//         CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+//       CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+//       unsigned short donorZone, unsigned short targetZone);
+//
+//  /*!
+//   * \brief Transfer the displacements computed on the structural solver into the fluid solver.
+//   * \param[in] donorZone - zone in which the displacements will be transferred.
+//   * \param[in] targetZone - zone which receives the tractions transferred.
+//   */
+//  void Transfer_Displacements(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+//         CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+//       CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+//       CTransfer ***transfer_container, unsigned short donorZone, unsigned short targetZone);
+//
+//  /*!
+//   * \brief Transfer the tractions computed on the fluid solver into the structural solver.
+//   * \param[in] donorZone - zone from which the tractions will be transferred.
+//   * \param[in] targetZone - zone which receives the tractions transferred.
+//   */
+//  void Transfer_Tractions(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+//         CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+//       CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+//       CTransfer ***transfer_container, unsigned short donorZone, unsigned short targetZone);
+//
+//  /*!
+//   * \brief Apply a relaxation method into the computed displacements.
+//   * \param[in] donorZone - origin of the information.
+//   * \param[in] targetZone - destination of the information.
+//   * \param[in] iFSIIter - Fluid-Structure Interaction subiteration.
+//   */
+//  void Relaxation_Displacements(COutput *output, CGeometry ***geometry_container, CSolver ****solver_container,
+//      CConfig **config_container, unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter);
+//
+//  /*!
+//   * \brief Apply a relaxation method into the computed tractions.
+//   * \param[in] donorZone - origin of the information.
+//   * \param[in] targetZone - destination of the information.
+//   * \param[in] iFSIIter - Fluid-Structure Interaction subiteration.
+//   */
+//  void Relaxation_Tractions(COutput *output, CGeometry ***geometry_container, CSolver ****solver_container,
+//      CConfig **config_container, unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter);
+//
+//  /*!
+//   * \brief Enforce the coupling condition at the end of the time step
+//   * \param[in] zoneFlow - zone of the flow equations.
+//   * \param[in] zoneStruct - zone of the structural equations.
+//   */
+//  void Update(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+//         CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
+//       CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+//       CTransfer ***transfer_container, unsigned short zoneFlow, unsigned short zoneStruct);
+
+};
