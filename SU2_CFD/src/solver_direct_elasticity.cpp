@@ -3243,6 +3243,19 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolv
 
         LinSysRes.AddBlock(iPoint, Res_Dead_Load);
       }
+
+      /*---  Add the contribution to the residual due to flow loads (FSI contribution) ---*/
+      if (fsi) {
+        if (incremental_load){
+          for (iVar = 0; iVar < nVar; iVar++){
+            Res_FSI_Cont[iVar] = loadIncrement * node[iPoint]->Get_FlowTraction(iVar);
+          }
+        }
+        else {
+          Res_FSI_Cont = node[iPoint]->Get_FlowTraction();
+        }
+        LinSysRes.AddBlock(iPoint, Res_FSI_Cont);
+      }
     }
 
   }
@@ -3456,6 +3469,7 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSol
   unsigned short iVar;
   unsigned long iPoint;
   su2double *valSolutionPred;
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
 
   /*--- Update solution and set it to be the solution after applying relaxation---*/
 
@@ -3466,42 +3480,45 @@ void CFEM_ElasticitySolver::ImplicitNewmark_Relaxation(CGeometry *geometry, CSol
     node[iPoint]->SetSolution(valSolutionPred);
   }
 
-  /*--- Compute velocities and accelerations ---*/
+  if (dynamic){
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    /*--- Compute velocities and accelerations ---*/
 
-    for (iVar = 0; iVar < nVar; iVar++) {
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      /*--- Acceleration component of the solution ---*/
-      /*--- U''(t+dt) = a0*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
 
-      Solution[iVar]=a_dt[0]*(node[iPoint]->GetSolution(iVar) -
-                              node[iPoint]->GetSolution_time_n(iVar)) -
-      a_dt[2]* node[iPoint]->GetSolution_Vel_time_n(iVar) -
-      a_dt[3]* node[iPoint]->GetSolution_Accel_time_n(iVar);
+        /*--- Acceleration component of the solution ---*/
+        /*--- U''(t+dt) = a0*(U(t+dt)-U(t))+a2*(U'(t))+a3*(U''(t)) ---*/
+
+        Solution[iVar]=a_dt[0]*(node[iPoint]->GetSolution(iVar) -
+            node[iPoint]->GetSolution_time_n(iVar)) -
+            a_dt[2]* node[iPoint]->GetSolution_Vel_time_n(iVar) -
+            a_dt[3]* node[iPoint]->GetSolution_Accel_time_n(iVar);
+      }
+
+      /*--- Set the acceleration in the node structure ---*/
+
+      node[iPoint]->SetSolution_Accel(Solution);
+
+      for (iVar = 0; iVar < nVar; iVar++) {
+
+        /*--- Velocity component of the solution ---*/
+        /*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
+
+        Solution[iVar]=node[iPoint]->GetSolution_Vel_time_n(iVar)+
+            a_dt[6]* node[iPoint]->GetSolution_Accel_time_n(iVar) +
+            a_dt[7]* node[iPoint]->GetSolution_Accel(iVar);
+
+      }
+
+      /*--- Set the velocity in the node structure ---*/
+
+      node[iPoint]->SetSolution_Vel(Solution);
+
     }
-
-    /*--- Set the acceleration in the node structure ---*/
-
-    node[iPoint]->SetSolution_Accel(Solution);
-
-    for (iVar = 0; iVar < nVar; iVar++) {
-
-      /*--- Velocity component of the solution ---*/
-      /*--- U'(t+dt) = U'(t)+ a6*(U''(t)) + a7*(U''(t+dt)) ---*/
-
-      Solution[iVar]=node[iPoint]->GetSolution_Vel_time_n(iVar)+
-      a_dt[6]* node[iPoint]->GetSolution_Accel_time_n(iVar) +
-      a_dt[7]* node[iPoint]->GetSolution_Accel(iVar);
-
-    }
-
-    /*--- Set the velocity in the node structure ---*/
-
-    node[iPoint]->SetSolution_Vel(Solution);
 
   }
-
 
   /*--- Perform the MPI communication of the solution ---*/
 

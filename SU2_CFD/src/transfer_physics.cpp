@@ -109,6 +109,11 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 	}
 	else{ Physical_Constants[1] = 1.0; }
 
+	/*--- For static FSI, we cannot apply the ramp like this ---*/
+	if ((flow_config->GetUnsteady_Simulation() == STEADY) && (struct_config->GetDynamic_Analysis() == STATIC)){
+	  Physical_Constants[1] = 1.0;
+	}
+
 }
 
 void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry, CConfig *flow_config,
