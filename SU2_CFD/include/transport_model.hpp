@@ -46,6 +46,7 @@
 #include "math.h"
 
 #include "../../Common/include/datatype_structure.hpp"
+#include "../../Common/include/config_structure.hpp"
 
 using namespace std;
 
@@ -174,6 +175,56 @@ public:
   
 };
 
+/*!
+ * \class CLookUpTable_Viscosity
+ * \brief Enables reading viscosity from a look up table
+ * Viscosity alues are return based on an input of Rho and T
+ * \author M.Kosec, A. Rubino, S.Vitale
+ */
+class CLookUpTable_Viscosity : public CViscosityModel {
+protected:
+su2double   	 Kt,			/*!< \brief Thermal conductivity. */
+			 dktdrho_T, 	/*!< \brief DktDrho_T. */
+			 dktdT_rho; 	/*!< \brief DktDT_rho. */
+public:
+
+		/*!
+		 * \brief Constructor of the class.
+		 */
+		CLookUpTable_Viscosity(CConfig *config);
+
+		/*!
+		 * \brief Destructor of the class.
+		 */
+		virtual ~CLookUpTable_Viscosity(void);
+
+		/*!
+		 * \brief return viscosity value.
+		 */
+		su2double GetConductivity(void);
+
+		/*!
+		 * \brief return viscosity partial derivative value.
+		 */
+		su2double Getdktdrho_T(void);
+
+		/*!
+		 * \brief return viscosity partial derivative value.
+		 */
+		su2double GetdktdT_rho(void);
+
+		/*!
+		 * \brief Set Thermal conductivity.
+		 */
+		virtual	 void SetConductivity(su2double T, su2double rho, su2double mu, su2double cp);
+
+		/*!
+		 * \brief Set Thermal conductivity derivatives.
+		 */
+		virtual	 void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
+
+};
+
 
 /*!
  * \class CThermalConductivityModel
@@ -255,6 +306,7 @@ public:
 };
 
 
+
 /*!
  * \class CConstantPrandtl
  * \brief this class defines a non-constant thermal conductivity using a constant Prandtl's number
@@ -281,6 +333,47 @@ public:
 		 * \brief Constructor of the class.
 		 */
 	    CConstantPrandtl(su2double pr_const);
+
+		/*!
+		 * \brief Set Thermal conductivity.
+		 * \brief par1 -> Cp.
+		 * \brief par2 -> Mu.
+		 */
+		void SetConductivity(su2double T, su2double rho, su2double mu, su2double cp);
+
+		/*!
+		 * \brief Set Thermal conductivity derivatives.
+		 */
+		void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
+
+};
+
+/*!
+ * \class CLookUpTable_Conductivity
+ * \brief Enables reading viscosity from a look up table
+ * Viscosity alues are return based on an input of Rho and T
+ * \author M.Kosec, A. Rubino, S.Vitale
+ */
+class CLookUpTable_Conductivity : public CConductivityModel {
+protected:
+
+
+public:
+
+		/*!
+		 * \brief Constructor of the class.
+		 */
+		 CLookUpTable_Conductivity(void);
+
+		/*!
+		 * \brief Destructor of the class.
+		 */
+		virtual ~CLookUpTable_Conductivity(void);
+
+		/*!
+		 * \brief Constructor of the class.
+		 */
+		CLookUpTable_Conductivity(CConfig *config);
 
 		/*!
 		 * \brief Set Thermal conductivity.
