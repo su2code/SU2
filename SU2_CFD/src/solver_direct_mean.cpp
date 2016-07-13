@@ -2239,7 +2239,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         break;
 
       case LUT:
-        FluidModel = new CLookUpTable(config);
+        FluidModel = new CLookUpTable(config, true);
         if (free_stream_temp) {
           FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
           Density_FreeStream = FluidModel->GetDensity();
@@ -2503,7 +2503,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       break;
 
     case LUT:
-      FluidModel = new CLookUpTable(config);
+      FluidModel = new CLookUpTable(config, false);
       FluidModel->SetTDState_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
   }
@@ -2611,7 +2611,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
           break;
           
         case LUT:
-            cout << "Fluid Model: Peng-Robinson "<< endl;
+            cout << "Fluid Model: Structured P-rho LUT "<< endl;
             cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
             cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
             cout << "Specific Heat Ratio: "<< Gamma << endl;

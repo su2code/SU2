@@ -119,6 +119,11 @@ class CLookUpTable: public CFluidModel {
 
 protected:
 	CThermoList **ThermoTables;/*!< \brief The 2D array used to hold the values of thermodynamic properties from the LUT*/
+	CThermoList *SaturationTables;/*!< \brief The 1D array array of thermo porperties nn the saturation line, for q=1*/
+	su2double Pressure_Reference_Value;
+	su2double Density_Reference_Value;
+	su2double Temperature_Reference_Value;
+	su2double Velocity_Reference_Value;
 
 	su2double Interpolation_Matrix[4][4]; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
 	su2double Interpolation_Coeff[4][4]; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
@@ -160,7 +165,7 @@ public:
 	 * \brief Constructor the LUT by reading it in from a file.
 	 * \param[in] Filename - The name of the (.rgp) file from which to load the table
 	 */
-	CLookUpTable(CConfig *config);
+	CLookUpTable(CConfig *config, bool dimensional);
 
 	/*!
 	 * \brief Destructor of the class, primarily handling the dealloc of the KD_trees and LUT itself.
@@ -275,6 +280,7 @@ public:
 
 	void Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x, su2double y,
 			std::string grid_var);
+	void Interpolate_2D_Bilinear_Read_Coordinates(su2double *coords,std::string grid_var);
 
 	/*!
 	 * \brief Use the interpolation coefficients to interpolate a given thermodynamic variable property. (Must calculate the interpolation coefficients first)
@@ -294,11 +300,22 @@ public:
 			su2double* dist);
 
 	/*!
+	 * \brief Alter the loaded table such that that the two phase region is replaced.
+	 * Instead of the physically accurate values, the new values for the P-rho combination
+	 * are to be extrapolated from the superheated vapor region. The saturation values
+	 * are extracted from the CFX table.
+	 * \param[in] filename - the name of the CFX file containing the table
+	 * \param[in] is_two_phase - (NOT IMPLEMENTED) keep both the vapor and 2phase tables,
+	 */
+	void Remove_Two_Phase_Region_CFX_Table(bool is_not_two_phase);
+
+	/*!
 	 * \brief Load the LUT table from a CFX file format. X axis must be Density, and Y axis pressure. Equal spacing not required.
 	 * \param[in] filename - the name of the CFX file containing the table
 	 */
 
-	void LookUpTable_Load_CFX(std::string filename);
+	void LookUpTable_Load_CFX(std::string filename,
+			bool read_saturation_properties);
 
 	/*!
 	 * \brief Print the table to a text file (for external inspection)
