@@ -7271,9 +7271,71 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
     invP_Tensor[iVar] = new su2double[nVar];
   }
   
+  string text_line;
+  ifstream input_file;
+  string input_filename = "test.csv";
 
+  input_file.open(input_filename.data(), ios::in);
+  if (input_file.fail()) {
+  	//    if (rank == MASTER_NODE)
+  	cout << "There is no input file!! " << input_filename.data() << "."<< endl;
+  	exit(EXIT_FAILURE);
+  }
 
-  /*--- Loop over all the vertices on this boundary marker ---*/
+  /*--- Read all lines in the file ---*/
+//  long iPoint_file = 0;
+//  su2double *var1, *var2, *var3, *d2var2;
+//  su2double dvar2_1, dvar2_n;
+//  unsigned long points_number = 0;
+//  unsigned long InputDim;
+//  var1   = new su2double[InputDim];
+//  var2   = new su2double[InputDim];
+//  var3   = new su2double[InputDim];
+//  d2var2 = new su2double[InputDim];
+//  /*--- Read head of the file for allocation ---*/
+//  getline (input_file, text_line);
+//  istringstream point_line(text_line);
+//  point_line >> InputDim;
+//  while (getline (input_file, text_line)) {
+//  	istringstream point_line(text_line);
+//  	point_line >> var1[points_number] >> var2[points_number] >> var3[points_number] ;
+//  	points_number++;
+//  }
+//  input_file.close();
+//
+//  // pointers to be deleted
+//	dvar2_1 = (var2[1]-var2[0])/(var1[1]-var1[0]);
+//  dvar2_n = (var2[InputDim-1]-var2[InputDim])/(var1[InputDim-1]-var1[InputDim]);
+//  geometry->SetSpline(var1, var2, InputDim, dvar2_1, dvar2_n, d2var2);
+//  /*--- Loop over all the vertices on this boundary marker ---*/
+
+  long iPoint_file = 0;
+   vector<su2double> InputVar1, InputVar2, InputVar3, d2Var2;
+   su2double Var1In, Var2In, Var3In;
+   su2double dVar2_1, dVar2_N;
+   su2double NewVar2;
+   unsigned long InputDim;
+   /*--- Read head of the file for allocation ---*/
+   getline (input_file, text_line);
+   istringstream point_line(text_line);
+   point_line >> InputDim;
+   while (getline (input_file, text_line)) {
+   	istringstream point_line(text_line);
+   	point_line >> Var1In >> Var2In >> Var3In;
+   	InputVar1.push_back(Var1In);
+   	InputVar2.push_back(Var2In);
+   	InputVar3.push_back(Var3In);
+   }
+   input_file.close();
+
+   dVar2_1 = (InputVar2[1]-InputVar2[0])/(InputVar1[1]-InputVar1[0]);
+   dVar2_N = (InputVar2[InputDim-1]-InputVar2[InputDim])/(InputVar1[InputDim-1]-InputVar1[InputDim]);
+   d2Var2.resize(InputDim);
+
+   geometry->SetSpline(InputVar1, InputVar2, InputDim, dVar2_1, dVar2_N, d2Var2);
+   /*--- Loop over all the vertices on this boundary marker ---*/
+//   NewVar2 = geometry->GetSpline(InputVar1, InputVar2, d2var2, InputDim, 1.5);
+
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     V_boundary= GetCharacPrimVar(val_marker, iVertex);
@@ -7331,6 +7393,15 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       
       /*--- Build the external state u_e from boundary data and internal node ---*/
       
+
+      /*--- HARDCODED FOR TEST ONLY!! ---*/
+      su2double cf_Ptot[12] =  {   -6.73663689e+17,   1.12411856e+18,  -4.83226269e+17,
+                                    9.88201983e+16,  -1.13992280e+16,   7.85444629e+14,
+                                   -3.22937326e+13,   7.48549094e+11,  -8.34675811e+09,
+                                    2.48684750e+07,   8.09013446e+04,   1.86888784e+04};
+      /*--------------------------------*/
+
+
       switch(config->GetKind_Data_Riemann(Marker_Tag))
       {
         case TOTAL_CONDITIONS_PT:
@@ -7503,31 +7574,45 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           }
           Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
           break;
-          
+
         case UNSTEADY_TOTAL_CONDITIONS_PT:
-          su2double xCoord, yCoord, y_0, y_perio, Physical_dt, Physical_t, Total_t, t_perio, Period, Boundary_Vel;
+        	su2double xCoord, yCoord, y_0, y_perio, Physical_dt, Physical_t, Total_t, t_perio, Period, Boundary_Vel;
+        	if (spectral_method) {
+        		/*--- time interval using nTimeInstances ---*/
+        		Physical_dt = (su2double)config->GetSpectralMethod_Period()/(su2double)(config->GetnTimeInstances());
+        		Physical_t  = config->GetiZone()*Physical_dt;
+        	}
+        	else {
+        		Physical_dt = (su2double)config->GetDelta_UnstTime();
+        		Physical_t  = (config->GetExtIter())*Physical_dt;
+        	}
+        	if (config->GetUnsteady_Simulation() == 0) Physical_t = 0;
 
-           if (spectral_method) {
-           	/*--- time interval using nTimeInstances ---*/
-          	 Physical_dt = (su2double)config->GetSpectralMethod_Period()/(su2double)(config->GetnTimeInstances());
-          	 Physical_t  = config->GetiZone()*Physical_dt;
-           }
-           else {
-          	 Physical_dt = (su2double)config->GetDelta_UnstTime();
-          	 Physical_t  = (config->GetExtIter()+1)*Physical_dt;
-           }
+//        	xCoord = geometry->node[iPoint]->GetCoord(nDim-2);
+        	yCoord = geometry->node[iPoint]->GetCoord(nDim-1);
+          yCoord *= 100.;
 
-           if (config->GetUnsteady_Simulation() == 0) Physical_t = 0;
+        	/*--- HARDCODED FOR TEST ONLY!! ---*/
+        	Period = 0.0048429906542056074;
+        	Boundary_Vel = 21.4;
+        	y_0 = -0.02755;
 
-          /*--- Retrieve the specified total conditions for this boundary. ---*/
+        	t_perio = fmod(Physical_t, Period);
+        	y_perio = fmod(Boundary_Vel*t_perio + (yCoord - y_0), 0.105);
+
+
+        	/*--- Retrieve the specified total conditions for this boundary. ---*/
           if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
           else P_Total  = config->GetRiemann_Var1(Marker_Tag);
           T_Total  = config->GetRiemann_Var2(Marker_Tag);
           Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
 
           /*--- HARDCODED FOR TEST ONLY!! ---*/
-          P_Total = config->GetRiemann_Var1(Marker_Tag)*(1+0.2*sin(1280.57300546326810101144*Physical_t));
-
+//          P_Total = config->GetRiemann_Var1(Marker_Tag)*(1+0.2*sin(1280.57300546326810101144*Physical_t));
+          P_Total = geometry->GetSpline(InputVar1, InputVar2, d2Var2, InputDim, y_perio);
+//          for (iPol = 0; iPol < 11; iPol++) {
+//          	P_Total += cf_Ptot[iPol]*pow(y_perio, 11-iPol);
+//          }
           /*--- Non-dim. the inputs if necessary. ---*/
           P_Total /= config->GetPressure_Ref();
           T_Total /= config->GetTemperature_Ref();
