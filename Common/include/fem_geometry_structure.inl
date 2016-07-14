@@ -43,7 +43,8 @@ inline CPointCompare::CPointCompare(const CPointCompare &other) { Copy(other); }
 
 inline CPointCompare& CPointCompare::operator=(const CPointCompare &other) { Copy(other); return (*this); }
 
-inline CVolumeElementFEM::CVolumeElementFEM(void) {metricTerms = massMatrix = lumpedMassMatrix = wallDistance = NULL;}
+inline CVolumeElementFEM::CVolumeElementFEM(void) {metricTerms = massMatrix = lumpedMassMatrix =
+                                                   coorIntegrationPoints = wallDistance = NULL;}
 
 inline CVolumeElementFEM::~CVolumeElementFEM(void) { }
 
@@ -56,13 +57,14 @@ inline CPointFEM::CPointFEM(const CPointFEM &other) { Copy(other); }
 inline CPointFEM& CPointFEM::operator=(const CPointFEM &other) { Copy(other); return (*this); }
 
 inline CInternalFaceElementFEM::CInternalFaceElementFEM(void) {metricNormalsFace = metricCoorDerivFace0 = metricCoorDerivFace1 =
-                                                               metricElemSide0   = metricElemSide1      = wallDistance = NULL;}
+                                                               metricElemSide0 = metricElemSide1 = wallDistance =
+                                                               coorIntegrationPoints =  NULL;}
 
 inline CInternalFaceElementFEM::~CInternalFaceElementFEM(void) { }
 
 inline CSurfaceElementFEM::CSurfaceElementFEM(void) {indStandardElement = -1;
-                                                     metricNormalsFace = metricCoorDerivFace =
-                                                     metricElem        = wallDistance = NULL;}
+                                                     metricNormalsFace = metricCoorDerivFace   =
+                                                     metricElem        = coorIntegrationPoints = wallDistance = NULL;}
 
 inline CSurfaceElementFEM::~CSurfaceElementFEM(void) { }
 

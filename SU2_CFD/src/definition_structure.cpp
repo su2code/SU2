@@ -423,6 +423,10 @@ void Geometrical_Preprocessing_DGFEM(CGeometry ***geometry, CConfig **config, un
     /*--- Compute a length scale of the volume elements. ---*/
     if (rank == MASTER_NODE) cout << "Computing length scale volume elements." << endl;
     DGMesh->LengthScaleVolumeElements();
+
+    /*--- Compute the coordinates of the integration points. ---*/
+    if (rank == MASTER_NODE) cout << "Computing coordinates of the integration points." << endl;
+    DGMesh->CoordinatesIntegrationPoints();
   }
 
   /*--- Loop to create the coarser grid levels. ---*/
