@@ -9271,6 +9271,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
       }
       myfile << endl;
     }
+  }
 
 //			FINAL TEST
 ////
