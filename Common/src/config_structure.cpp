@@ -458,6 +458,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_RIEMANN \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector.
    * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
+  /*!\brief MARKER_NONUNIFORM \n DESCRIPTION: NonUniform boundary marker(s) with the following formats, a unit vector.
+   * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
+  addNonUniformOption("MARKER_NONUNIFORM", nMarker_NonUniform, Marker_NonUniform, Kind_Data_NonUniform, NonUniform_Map, NonUniform_Var1, NonUniform_Var2, NonUniform_FlowDir);
   /*!\brief MARKER_NRBC \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. \ingroup Config*/
   addNRBCOption("MARKER_NRBC", nMarker_NRBC, Marker_NRBC, Kind_Data_NRBC, NRBC_Map, NRBC_Var1, NRBC_Var2, NRBC_FlowDir);
   /*!\brief MIXING_PROCESS_TYPE \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries.
@@ -2627,7 +2630,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_Pressure, iMarker_PerBound,
   iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
-  iMarker_Inlet, iMarker_Riemann, iMarker_NRBC, iMarker_Outlet, iMarker_Isothermal,
+  iMarker_Inlet, iMarker_Riemann, iMarker_NRBC, iMarker_NonUniform, iMarker_Outlet, iMarker_Isothermal,
   iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
@@ -2647,7 +2650,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound +
   nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
-  nMarker_NRBC + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
+  nMarker_NRBC + nMarker_NonUniform + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
@@ -2793,6 +2796,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
   for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Riemann[iMarker_Riemann];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = RIEMANN_BOUNDARY;
+    iMarker_CfgFile++;
+  }
+
+  for (iMarker_NonUniform = 0; iMarker_NonUniform < nMarker_NonUniform; iMarker_NonUniform++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_NonUniform[iMarker_NonUniform];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = NONUNIFORM_BOUNDARY;
     iMarker_CfgFile++;
   }
 
@@ -2982,7 +2991,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
-  iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann,
+  iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann, iMarker_NonUniform,
   iMarker_NRBC, iMarker_MixBound, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
@@ -4061,6 +4070,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
   
+  if (nMarker_NonUniform != 0) {
+      cout << "NonUniform boundary marker(s): ";
+      for (iMarker_NonUniform = 0; iMarker_NonUniform < nMarker_NonUniform; iMarker_NonUniform++) {
+        cout << Marker_NonUniform[iMarker_NonUniform];
+        if (iMarker_NonUniform < nMarker_NonUniform-1) cout << ", ";
+        else cout <<"."<< endl;
+    }
+  }
+
   if (nMarker_NRBC != 0) {
       cout << "NRBC boundary marker(s): ";
       for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++) {
@@ -5149,6 +5167,35 @@ unsigned short CConfig::GetKind_Data_Riemann(string val_marker) {
   for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++)
     if (Marker_Riemann[iMarker_Riemann] == val_marker) break;
   return Kind_Data_Riemann[iMarker_Riemann];
+}
+
+
+su2double CConfig::GetNonUniform_Var1(string val_marker) {
+  unsigned short iMarker_NonUniform;
+  for (iMarker_NonUniform = 0; iMarker_NonUniform < nMarker_NonUniform; iMarker_NonUniform++)
+    if (Marker_NonUniform[iMarker_NonUniform] == val_marker) break;
+  return NonUniform_Var1[iMarker_NonUniform];
+}
+
+su2double CConfig::GetNonUniform_Var2(string val_marker) {
+  unsigned short iMarker_NonUniform;
+  for (iMarker_NonUniform = 0; iMarker_NonUniform < nMarker_NonUniform; iMarker_NonUniform++)
+    if (Marker_NonUniform[iMarker_NonUniform] == val_marker) break;
+  return NonUniform_Var2[iMarker_NonUniform];
+}
+
+su2double* CConfig::GetNonUniform_FlowDir(string val_marker) {
+  unsigned short iMarker_NonUniform;
+  for (iMarker_NonUniform = 0; iMarker_NonUniform < nMarker_NonUniform; iMarker_NonUniform++)
+    if (Marker_NonUniform[iMarker_NonUniform] == val_marker) break;
+  return NonUniform_FlowDir[iMarker_NonUniform];
+}
+
+unsigned short CConfig::GetKind_Data_NonUniform(string val_marker) {
+  unsigned short iMarker_NonUniform;
+  for (iMarker_NonUniform = 0; iMarker_NonUniform < nMarker_NonUniform; iMarker_NonUniform++)
+    if (Marker_NonUniform[iMarker_NonUniform] == val_marker) break;
+  return Kind_Data_NonUniform[iMarker_NonUniform];
 }
 
 

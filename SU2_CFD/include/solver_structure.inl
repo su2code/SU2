@@ -539,7 +539,10 @@ inline void CSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_containe
 inline void CSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 										 CConfig *config, unsigned short val_marker) { }
 
-inline void CSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
+inline void CSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+										 CConfig *config, unsigned short val_marker) { }
+
+inline void CSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
 										 CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,

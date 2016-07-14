@@ -162,6 +162,7 @@ private:
 	nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
 	nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
+	nMarker_NonUniform,					/*!< \brief Number of NonUniform flow markers. */
 	nMarker_NRBC,					/*!< \brief Number of NRBC flow markers. */
 	nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
   nMarker_Supersonic_Outlet,					/*!< \brief Number of supersonic outlet flow markers. */
@@ -202,6 +203,7 @@ private:
 	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
 	*Marker_Riemann,					/*!< \brief Riemann markers. */
+	*Marker_NonUniform,					/*!< \brief Riemann markers. */
 	*Marker_NRBC,					/*!< \brief NRBC markers. */
 	*Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
   *Marker_Supersonic_Outlet,					/*!< \brief Supersonic outlet flow markers. */
@@ -226,6 +228,8 @@ private:
 	su2double *Inlet_Ttotal;    /*!< \brief Specified total temperatures for inlet boundaries. */
 	su2double *Riemann_Var1, *Riemann_Var2;    /*!< \brief Specified values for Riemann boundary. */
 	su2double **Riemann_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
+	su2double *NonUniform_Var1, *NonUniform_Var2;    /*!< \brief Specified values for Riemann boundary. */
+	su2double **NonUniform_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
 	su2double *NRBC_Var1, *NRBC_Var2;    /*!< \brief Specified values for NRBC boundary. */
 	su2double **NRBC_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for NRBC boundaries. */
 	su2double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
@@ -387,7 +391,7 @@ private:
   Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
-	Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
+	Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NonUniform, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
 	su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
 	su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
 	unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
@@ -916,8 +920,8 @@ private:
     COptionBase* val = new COptionInlet(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal, FlowDir);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-  template <class Tenum>
   
+  template <class Tenum>
   void addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                                  su2double* & var1, su2double* & var2, su2double** & FlowDir) {
     assert(option_map.find(name) == option_map.end());
@@ -925,6 +929,16 @@ private:
     COptionBase* val = new COptionRiemann<Tenum>(name, nMarker_Riemann, Marker_Riemann, option_field, enum_map, var1, var2, FlowDir);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
+
+  template <class Tenum>
+  void addNonUniformOption(const string name, unsigned short & nMarker_NonUniform, string * & Marker_NonUniform, unsigned short* & option_field, const map<string, Tenum> & enum_map,
+                                 su2double* & var1, su2double* & var2, su2double** & FlowDir) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionNonUniform<Tenum>(name, nMarker_NonUniform, Marker_NonUniform, option_field, enum_map, var1, var2, FlowDir);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+
   template <class Tenum>
   void addNRBCOption(const string name, unsigned short & nMarker_NRBC, string * & Marker_NRBC, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                                  su2double* & var1, su2double* & var2, su2double** & FlowDir) {
@@ -4790,6 +4804,35 @@ public:
 	 * \return Kind data
 	 */
 	unsigned short GetKind_Data_Riemann(string val_marker);
+
+	/*!
+	 * \brief Get the var 1 at NonUniform boundary.
+	 * \param[in] val_marker - Index corresponding to the NonUniform boundary.
+	 * \return The var1
+	 */
+	su2double GetNonUniform_Var1(string val_marker);
+
+	/*!
+	 * \brief Get the var 2 at NonUniform boundary.
+	 * \param[in] val_marker - Index corresponding to the NonUniform boundary.
+	 * \return The var2
+	 */
+
+	su2double GetNonUniform_Var2(string val_marker);
+
+	/*!
+	 * \brief Get the Flowdir at NonUniform boundary.
+	 * \param[in] val_marker - Index corresponding to the NonUniform boundary.
+	 * \return The Flowdir
+	 */
+	su2double* GetNonUniform_FlowDir(string val_marker);
+
+	/*!
+	 * \brief Get Kind Data of NonUniform boundary.
+	 * \param[in] val_marker - Index corresponding to the NonUniform boundary.
+	 * \return Kind data
+	 */
+	unsigned short GetKind_Data_NonUniform(string val_marker);
 
 	/*!
 	 * \brief Get the var 1 at NRBC boundary.

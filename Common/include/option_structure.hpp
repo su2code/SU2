@@ -758,6 +758,7 @@ enum BC_TYPE {
   LOAD_DIR_BOUNDARY = 35,		/*!< \brief Boundary Load definition. */
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
   NRBC_BOUNDARY= 37,   /*!< \brief NRBC Boundary definition. */
+  NONUNIFORM_BOUNDARY= 38,   /*!< \brief NonUniform Boundary definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 
@@ -800,8 +801,7 @@ enum RIEMANN_TYPE {
   STATIC_SUPERSONIC_INFLOW_PT = 5, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
   STATIC_SUPERSONIC_INFLOW_PD = 6, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
   MIXING_IN = 7, /*!< \brief User does not specify anything information are retrieved from the other domain */
-  MIXING_OUT = 8, /*!< \brief User does not specify anything information are retrieved from the other domain */
-	UNSTEADY_TOTAL_CONDITIONS_PT = 9 /*!< \brief User does not specify anything information are retrieved from the other domain */
+  MIXING_OUT = 8 /*!< \brief User does not specify anything information are retrieved from the other domain */
 };
 
 static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>
@@ -812,8 +812,7 @@ static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_
 ("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
 ("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD)
 ("MIXING_IN", MIXING_IN)
-("MIXING_OUT", MIXING_OUT)
-("UNSTEADY_TOTAL_CONDITIONS_PT",UNSTEADY_TOTAL_CONDITIONS_PT);
+("MIXING_OUT", MIXING_OUT);
 
 
 static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYPE>
@@ -824,9 +823,18 @@ static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYP
 ("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
 ("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD)
 ("MIXING_IN", MIXING_IN)
-("MIXING_OUT", MIXING_OUT)
-("UNSTEADY_TOTAL_CONDITIONS_PT",UNSTEADY_TOTAL_CONDITIONS_PT);
+("MIXING_OUT", MIXING_OUT);
 
+
+static const map<string, RIEMANN_TYPE> NonUniform_Map = CCreateMap<string, RIEMANN_TYPE>
+("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
+("DENSITY_VELOCITY", DENSITY_VELOCITY)
+("STATIC_PRESSURE", STATIC_PRESSURE)
+("TOTAL_SUPERSONIC_INFLOW", TOTAL_SUPERSONIC_INFLOW)
+("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
+("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD)
+("MIXING_IN", MIXING_IN)
+("MIXING_OUT", MIXING_OUT);
 /*!
  * \brief types of mixing process for averaging quantities at the boundaries.
  */
@@ -2603,6 +2611,18 @@ public:
 			  	  const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir): COptionRiemann<Tenum>(option_field_name, nMarker_NRBC,  Marker_NRBC, option_field,
 			  	   m, var1, var2,FlowDir){}
 	  ~COptionNRBC() {};
+
+};
+
+
+template <class Tenum>
+class COptionNonUniform : public COptionRiemann<Tenum> {
+
+public:
+	  COptionNonUniform(string option_field_name, unsigned short & nMarker_NonUniform, string* & Marker_NonUniform, unsigned short* & option_field,
+			  	  const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir): COptionRiemann<Tenum>(option_field_name, nMarker_NonUniform,  Marker_NonUniform, option_field,
+			  	   m, var1, var2,FlowDir){}
+	  ~COptionNonUniform() {};
 
 };
 //template <class Tenum>
