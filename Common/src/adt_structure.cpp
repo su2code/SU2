@@ -47,7 +47,7 @@ su2_BBoxTargetClass::su2_BBoxTargetClass(const unsigned long val_BBoxID,
   guaranteedMinDist2 = val_guarDist2;
 }
 
-bool su2_BBoxTargetClass::operator <(const su2_BBoxTargetClass &other) {
+bool su2_BBoxTargetClass::operator <(const su2_BBoxTargetClass &other) const {
 
   /* Make sure that the bounding boxes with the smallest possible distances
      are stored first. */
