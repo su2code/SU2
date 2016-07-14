@@ -2277,6 +2277,111 @@ void CDiscAdjMeanFlowIteration::InitializeAdjoint(CSolver ****solver_container, 
                                                                     config_container[iZone]);
   }
 }
+
+void CDiscAdjMeanFlowIteration::Iterate_FSI(COutput *output,
+                                        CIntegration ***integration_container,
+                                        CGeometry ***geometry_container,
+                                        CSolver ****solver_container,
+                                        CNumerics *****numerics_container,
+                                        CConfig **config_container,
+                                        CSurfaceMovement **surface_movement,
+                                        CVolumetricMovement **volume_grid_movement,
+                                        CFreeFormDefBox*** FFDBox,
+                                        unsigned short ZONE_FLOW,
+                                        unsigned short ZONE_STRUCT) {
+
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  unsigned long IntIter=0, nIntIter = 1;
+  bool dual_time_1st = (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST);
+  bool dual_time_2nd = (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool dual_time = (dual_time_1st || dual_time_2nd);
+
+
+  config_container[ZONE_FLOW]->SetIntIter(IntIter);
+
+  if(dual_time)
+    nIntIter = config_container[ZONE_FLOW]->GetUnst_nIntIter();
+
+
+  for(IntIter=0; IntIter< nIntIter; IntIter++){
+
+    /*--- Set the internal iteration ---*/
+
+    config_container[ZONE_FLOW]->SetIntIter(IntIter);
+
+    /*--- Set the adjoint values of the flow and objective function ---*/
+
+    InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_FLOW);
+
+    /*--- Run the adjoint computation ---*/
+
+    AD::ComputeAdjoint();
+
+    /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
+
+    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry_container[ZONE_FLOW][MESH_0],
+                                                                              config_container[ZONE_FLOW]);
+
+    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry_container[ZONE_FLOW][MESH_0],
+                                                                               config_container[ZONE_FLOW]);
+
+    if (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_RANS) {
+      solver_container[ZONE_FLOW][MESH_0][ADJTURB_SOL]->ExtractAdjoint_Solution(geometry_container[ZONE_FLOW][MESH_0],
+                                                                                config_container[ZONE_FLOW]);
+    }
+
+    /*--- Clear all adjoints to re-use the stored computational graph in the next iteration ---*/
+
+    AD::ClearAdjoints();
+
+    /*--- Set the convergence criteria (only residual possible) ---*/
+
+    integration_container[ZONE_FLOW][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[ZONE_FLOW][MESH_0],config_container[ZONE_FLOW],
+                                                                          IntIter,log10(solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
+
+    if(integration_container[ZONE_FLOW][ADJFLOW_SOL]->GetConvergence()){
+      break;
+    }
+
+    /*--- Write the convergence history (only screen output) ---*/
+
+    if(dual_time && (IntIter != nIntIter-1))
+      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_FLOW);
+
+  }
+
+
+  if (dual_time){
+    integration_container[ZONE_FLOW][ADJFLOW_SOL]->SetConvergence(false);
+  }
+
+
+  if (((ExtIter+1 >= config_container[ZONE_FLOW]->GetnExtIter()) || (integration_container[ZONE_FLOW][ADJFLOW_SOL]->GetConvergence()) ||
+      ((ExtIter % config_container[ZONE_FLOW]->GetWrt_Sol_Freq() == 0))) || (dual_time)){
+
+    /*--- Record one mean flow iteration with geometry variables as input ---*/
+
+    SetRecording(output, integration_container, geometry_container, solver_container, numerics_container,
+                 config_container, surface_movement, volume_grid_movement, FFDBox, ZONE_FLOW, GEOMETRY_VARIABLES);
+
+    /*--- Set the adjoint values of the flow and objective function ---*/
+
+    InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_FLOW);
+
+    /*--- Run the adjoint computation ---*/
+
+    AD::ComputeAdjoint();
+
+    /*--- Extract the sensitivities (adjoint of node coordinates) ---*/
+
+    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[ZONE_FLOW][MESH_0],config_container[ZONE_FLOW]);
+
+  }
+
+}
+
+
+
 void CDiscAdjMeanFlowIteration::Update(COutput *output,
                                        CIntegration ***integration_container,
                                        CGeometry ***geometry_container,
@@ -2733,6 +2838,79 @@ void CDiscAdjFEAIteration::InitializeAdjoint(CSolver ****solver_container, CGeom
                                                                   config_container[iZone]);
 
 }
+void CDiscAdjFEAIteration::Iterate_FSI(COutput *output,
+                                        CIntegration ***integration_container,
+                                        CGeometry ***geometry_container,
+                                        CSolver ****solver_container,
+                                        CNumerics *****numerics_container,
+                                        CConfig **config_container,
+                                        CSurfaceMovement **surface_movement,
+                                        CVolumetricMovement **volume_grid_movement,
+                                        CFreeFormDefBox*** FFDBox,
+                                        unsigned short ZONE_STRUCT,
+                                        unsigned short ZONE_FLOW) {
+
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  unsigned long IntIter = 0, nIntIter = 1;
+  bool dynamic = (config_container[ZONE_STRUCT]->GetDynamic_Analysis() == DYNAMIC);
+
+  config_container[ZONE_STRUCT]->SetIntIter(IntIter);
+
+  nIntIter = config_container[ZONE_STRUCT]->GetDyn_nIntIter();
+
+  for(IntIter = 0; IntIter < nIntIter; IntIter++){
+
+    /*--- Set the internal iteration ---*/
+
+    config_container[ZONE_STRUCT]->SetIntIter(IntIter);
+
+    /*--- Set the adjoint values of the flow and objective function ---*/
+
+    InitializeAdjoint(solver_container, geometry_container, config_container, ZONE_STRUCT);
+
+    /*--- Run the adjoint computation ---*/
+
+    AD::ComputeAdjoint();
+
+    /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
+
+    solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Solution(geometry_container[ZONE_STRUCT][MESH_0],
+                                                                              config_container[ZONE_STRUCT]);
+
+    solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Variables(geometry_container[ZONE_STRUCT][MESH_0],
+                                                                               config_container[ZONE_STRUCT]);
+
+    /*--- Clear all adjoints to re-use the stored computational graph in the next iteration ---*/
+
+    AD::ClearAdjoints();
+
+    /*--- Set the convergence criteria (only residual possible) ---*/
+
+    integration_container[ZONE_STRUCT][ADJFEA_SOL]->Convergence_Monitoring(geometry_container[ZONE_STRUCT][MESH_0],config_container[ZONE_STRUCT],
+                                                                          IntIter,log10(solver_container[ZONE_STRUCT][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
+
+    if(integration_container[ZONE_STRUCT][ADJFEA_SOL]->GetConvergence()){
+      break;
+    }
+
+    /*--- Write the convergence history (only screen output) ---*/
+
+   if(IntIter != nIntIter-1)
+      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUCT);
+
+  }
+
+
+  if (dynamic){
+    integration_container[ZONE_STRUCT][ADJFEA_SOL]->SetConvergence(false);
+  }
+
+  /*--- Global sensitivities ---*/
+  solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->SetSensitivity(geometry_container[ZONE_STRUCT][MESH_0],config_container[ZONE_STRUCT]);
+
+
+}
+
 void CDiscAdjFEAIteration::Update(COutput *output,
                                        CIntegration ***integration_container,
                                        CGeometry ***geometry_container,
