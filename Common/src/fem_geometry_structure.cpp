@@ -275,10 +275,11 @@ void CSurfaceElementFEM::Copy(const CSurfaceElementFEM &other) {
   boundElemIDGlobal  = other.boundElemIDGlobal;
   nodeIDsGrid        = other.nodeIDsGrid;
 
-  metricNormalsFace   = other.metricNormalsFace;
-  metricCoorDerivFace = other.metricCoorDerivFace;
-  metricElem          = other.metricElem;
-  wallDistance        = other.wallDistance;
+  metricNormalsFace     = other.metricNormalsFace;
+  metricCoorDerivFace   = other.metricCoorDerivFace;
+  metricElem            = other.metricElem;
+  coorIntegrationPoints = other.coorIntegrationPoints;
+  wallDistance          = other.wallDistance;
 }
 
 CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
@@ -1899,6 +1900,165 @@ void CMeshFEM::SetPositive_ZArea(CConfig *config) {
 
 CMeshFEM_DG::CMeshFEM_DG(CGeometry *geometry, CConfig *config)
   : CMeshFEM(geometry, config) {
+}
+
+void CMeshFEM_DG::CoordinatesIntegrationPoints(void) {
+
+  /*--------------------------------------------------------------------*/
+  /*--- Step 1: The integration points of the owned volume elements. ---*/
+  /*--------------------------------------------------------------------*/
+
+  /* Loop over the locally owned volume elements and determine the
+     total number of integration points in these elements. */
+  unsigned long nIntPoints = 0;
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+    const unsigned short ind = volElem[l].indStandardElement;
+    nIntPoints += standardElementsGrid[ind].GetNIntegration();
+  }
+
+  /* Allocate the memory for the large vector to store the coordinates
+     of the integration points of the volume elements. */
+  VecCoorIntegrationPointsElements.resize(nDim*nIntPoints);
+
+  /*--- Loop over the owned elements to compute the coordinates
+        in the integration points. ---*/
+  nIntPoints = 0;
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /* Get the required data from the corresponding standard element. */
+    const unsigned short ind  = volElem[l].indStandardElement;
+    const unsigned short nInt = standardElementsGrid[ind].GetNIntegration();
+    const su2double      *lag = standardElementsGrid[ind].GetBasisFunctionsIntegration();
+
+    /* Set the pointer for the coordinates of the integration points for
+       this element and update the counter nIntPoints. */
+    volElem[l].coorIntegrationPoints = VecCoorIntegrationPointsElements.data() + nIntPoints;
+    nIntPoints += nDim*nInt;
+
+    /* Store the grid DOFs of this element a bit easier. */
+    const unsigned short nDOFs = volElem[l].nDOFsGrid;
+    const unsigned long  *DOFs = volElem[l].nodeIDsGrid.data();
+
+    /*--- Loop over the integration points of this element and compute
+          the coordinates of the integration points. */
+    for(unsigned short i=0; i<nInt; ++i) {
+
+      su2double *coor = volElem[l].coorIntegrationPoints + i*nDim;
+      const unsigned short jj = i*nDOFs;
+      for(unsigned short j=0; j<nDim; ++j) {
+        coor[j] = 0.0;
+        for(unsigned short k=0; k<nDOFs; ++k)
+          coor[j] += lag[jj+k]*meshPoints[DOFs[k]].coor[j];
+      }
+    }
+  }
+
+  /*----------------------------------------------------------------------*/
+  /*--- Step 2: The integration points of the internal matching faces. ---*/
+  /*----------------------------------------------------------------------*/
+
+  /* Loop over the locally owned internal matching faces and determine the
+     total number of integration points in these faces. */
+  nIntPoints = 0;
+  for(unsigned long l=0; l<matchingFaces.size(); ++l) {
+    const unsigned short ind = matchingFaces[l].indStandardElement;
+    nIntPoints += standardMatchingFacesGrid[ind].GetNIntegration();
+  }
+
+  /* Allocate the memory for the large vector to store the coordinates
+     of the integration points of the matching faces. */
+  VecCoorIntegrationPointsMatchingFaces.resize(nDim*nIntPoints);
+
+  /*--- Loop over the internal matching faces to compute the coordinates
+        in the integration points. ---*/
+  nIntPoints = 0;
+  for(unsigned long l=0; l<matchingFaces.size(); ++l) {
+
+    /* Get the required data from the corresponding standard element. */
+    const unsigned short ind   = matchingFaces[l].indStandardElement;
+    const unsigned short nInt  = standardMatchingFacesGrid[ind].GetNIntegration();
+    const unsigned short nDOFs = standardMatchingFacesGrid[ind].GetNDOFsFaceSide0();
+    const su2double      *lag  = standardMatchingFacesGrid[ind].GetBasisFaceIntegrationSide0();
+
+    /* Set the pointer for the coordinates of the integration points for
+       this face and update the counter nIntPoints. */
+    matchingFaces[l].coorIntegrationPoints = VecCoorIntegrationPointsMatchingFaces.data()
+                                           + nIntPoints;
+    nIntPoints += nDim*nInt;
+
+    /* Store the grid DOFs of this face a bit easier. */
+    const unsigned long *DOFs = matchingFaces[l].DOFsGridFaceSide0;
+
+    /*--- Loop over the integration points of this face and compute
+          the coordinates of the integration points. */
+    for(unsigned short i=0; i<nInt; ++i) {
+
+      su2double *coor = matchingFaces[l].coorIntegrationPoints + i*nDim;
+      const unsigned short jj = i*nDOFs;
+      for(unsigned short j=0; j<nDim; ++j) {
+        coor[j] = 0.0;
+        for(unsigned short k=0; k<nDOFs; ++k)
+          coor[j] += lag[jj+k]*meshPoints[DOFs[k]].coor[j];
+      }
+    }
+  }
+
+  /*-------------------------------------------------------------*/
+  /*--- Step 3: The integration points of the boundary faces. ---*/
+  /*-------------------------------------------------------------*/
+
+  /*--- Loop over the boundary markers. Make sure to exclude the periodic
+        boundaries, because these are not physical. ---*/
+  for(unsigned short iMarker=0; iMarker<boundaries.size(); ++iMarker) {
+    if( !boundaries[iMarker].periodicBoundary ) {
+
+      /* Determine the number of integration points for this boundary. */
+      nIntPoints = 0;
+      vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+      for(unsigned long l=0; l<surfElem.size(); ++l) {
+        const unsigned short ind = surfElem[l].indStandardElement;
+        nIntPoints += standardBoundaryFacesGrid[ind].GetNIntegration();
+      }
+
+      /* Allocate the memory for the large vector to store the coordinates
+         of the integration points of the boundary faces. */
+      boundaries[iMarker].VecCoorIntegrationPointsBoundaryFaces.resize(nDim*nIntPoints);
+
+      /* Loop over the boundary faces and determine the coordinates
+         in the integration points. */
+      nIntPoints = 0;
+      for(unsigned long l=0; l<surfElem.size(); ++l) {
+
+        /* Get the required data from the corresponding standard element. */
+        const unsigned short ind   = surfElem[l].indStandardElement;
+        const unsigned short nInt  = standardBoundaryFacesGrid[ind].GetNIntegration();
+        const unsigned short nDOFs = surfElem[l].nDOFsGrid;
+        const su2double      *lag  = standardBoundaryFacesGrid[ind].GetBasisFaceIntegration();
+
+        /* Set the pointer for the coordinates of the integration points for
+           this face and update the counter nIntPoints. */
+        surfElem[l].coorIntegrationPoints = boundaries[iMarker].VecCoorIntegrationPointsBoundaryFaces.data()
+                                          + nIntPoints;
+        nIntPoints += nDim*nInt;
+
+        /* Store the grid DOFs of this face a bit easier. */
+        const unsigned long *DOFs = surfElem[l].DOFsGridFace;
+
+        /*--- Loop over the integration points of this face and compute
+              the coordinates of the integration points. */
+        for(unsigned short i=0; i<nInt; ++i) {
+
+          su2double *coor = surfElem[l].coorIntegrationPoints + i*nDim;
+          const unsigned short jj = i*nDOFs;
+          for(unsigned short j=0; j<nDim; ++j) {
+            coor[j] = 0.0;
+            for(unsigned short k=0; k<nDOFs; ++k)
+              coor[j] += lag[jj+k]*meshPoints[DOFs[k]].coor[j];
+          }
+        }
+      }
+    }
+  }
 }
 
 void CMeshFEM_DG::CreateFaces(CConfig *config) {

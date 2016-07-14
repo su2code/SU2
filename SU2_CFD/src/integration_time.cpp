@@ -988,8 +988,8 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ***geometry,
   
   /*--- Calculate the inviscid and viscous forces ---*/
   
-  //solver_container[iZone][FinestMesh][SolContainer_Position]->Inviscid_Forces(geometry[FinestMesh], config);
-  //solver_container[iZone][FinestMesh][SolContainer_Position]->Viscous_Forces(geometry[FinestMesh], config);
+  solver_container[iZone][FinestMesh][SolContainer_Position]->Inviscid_Forces(geometry[iZone][iMesh], config[iZone]);
+  solver_container[iZone][FinestMesh][SolContainer_Position]->Viscous_Forces(geometry[iZone][iMesh], config[iZone]);
   
   /*--- Convergence strategy ---*/
   

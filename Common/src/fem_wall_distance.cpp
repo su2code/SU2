@@ -32,13 +32,6 @@
 #include "../include/fem_geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
 
-/* MKL or BLAS files, if supported. */
-#ifdef HAVE_MKL
-#include "mkl.h"
-#elif HAVE_CBLAS
-#include "cblas.h"
-#endif
-
 void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
 
   /*--------------------------------------------------------------------------*/
@@ -140,9 +133,8 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
   vector<su2double>().swap(surfaceCoor);
 
   /*--------------------------------------------------------------------------*/
-  /*--- Step 3: Determine the coordinates of the integration points of     ---*/
-  /*---         locally owned volume elements and determine the wall       ---*/
-  /*---         distance for these integration points.                     ---*/
+  /*--- Step 3: Determine the wall distance of the integration points of   ---*/
+  /*---         locally owned volume elements.                             ---*/
   /*--------------------------------------------------------------------------*/
 
   /* Loop over the locally owned volume elements and determine the
@@ -164,7 +156,6 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
     /* Get the required data from the corresponding standard element. */
     const unsigned short ind  = volElem[l].indStandardElement;
     const unsigned short nInt = standardElementsGrid[ind].GetNIntegration();
-    const su2double      *lag = standardElementsGrid[ind].GetBasisFunctionsIntegration();
 
     /* Set the pointer for the wall distance for this element. */
     volElem[l].wallDistance = VecWallDistanceElements.data() + nIntPoints;
@@ -179,25 +170,12 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
     }
     else {
 
-      /* The tree is not empty, hence the distance must be computed.
-         Store the grid DOFs of this element a bit easier. */
-      const unsigned short nDOFs = volElem[l].nDOFsGrid;
-      const unsigned long  *DOFs = volElem[l].nodeIDsGrid.data();
-
-      /* Loop over the integration points of this element. */
+      /*--- The tree is not empty. Loop over the integration points
+            and determine the wall distance. */
       for(unsigned short i=0; i<nInt; ++i) {
 
-        /* Determine the coordinates of this integration point. */
-        const unsigned short jj = i*nDOFs;
-        const unsigned short kk = i*nDim;
-        su2double coor[3];
-        for(unsigned short j=0; j<nDim; ++j) {
-          coor[j] = 0.0;
-          for(unsigned short k=0; k<nDOFs; ++k)
-            coor[j] += lag[jj+k]*meshPoints[DOFs[k]].coor[j];
-        }
-
-        /* Compute the wall distance. */
+        const su2double *coor = volElem[l].coorIntegrationPoints + i*nDim;
+ 
         unsigned short markerID;
         unsigned long  elemID;
         int            rankID;
@@ -210,9 +188,8 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
   }
 
   /*--------------------------------------------------------------------------*/
-  /*--- Step 4: Determine the coordinates of the integration points of     ---*/
-  /*---         locally owned internal matching faces and determine the    ---*/
-  /*---         wall distance for these integration points.                ---*/
+  /*--- Step 4: Determine the wall distance of the integration points of   ---*/
+  /*---         the internal matching faces.                               ---*/
   /*--------------------------------------------------------------------------*/
 
   /* Loop over the locally owned internal matching faces and determine the
@@ -234,8 +211,6 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
     /* Get the required data from the corresponding standard element. */
     const unsigned short ind   = matchingFaces[l].indStandardElement;
     const unsigned short nInt  = standardMatchingFacesGrid[ind].GetNIntegration();
-    const unsigned short nDOFs = standardMatchingFacesGrid[ind].GetNDOFsFaceSide0();
-    const su2double      *lag  = standardMatchingFacesGrid[ind].GetBasisFaceIntegrationSide0();
 
     /* Set the pointer for the wall distance for this matching face. */
     matchingFaces[l].wallDistance = VecWallDistanceInternalMatchingFaces.data() + nIntPoints;
@@ -250,24 +225,12 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
     }
     else {
 
-      /* The tree is not empty, hence the distance must be computed.
-         Store the grid DOFs of this face a bit easier. */
-      const unsigned long *DOFs = matchingFaces[l].DOFsGridFaceSide0;
-
-      /* Loop over the integration points of this face. */
+      /*--- The tree is not empty. Loop over the integration points
+            and determine the wall distance. */
       for(unsigned short i=0; i<nInt; ++i) {
 
-        /* Determine the coordinates of this integration point. */
-        const unsigned short jj = i*nDOFs;
-        const unsigned short kk = i*nDim;
-        su2double coor[3];
-        for(unsigned short j=0; j<nDim; ++j) {
-          coor[j] = 0.0;
-          for(unsigned short k=0; k<nDOFs; ++k)
-            coor[j] += lag[jj+k]*meshPoints[DOFs[k]].coor[j];
-        }
+        const su2double *coor = matchingFaces[l].coorIntegrationPoints + i*nDim;
 
-        /* Compute the wall distance. */
         unsigned short markerID;
         unsigned long  elemID;
         int            rankID;
@@ -280,9 +243,8 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
   }
 
   /*--------------------------------------------------------------------------*/
-  /*--- Step 5: Determine the coordinates of the integration points of     ---*/
-  /*---         locally owned boundary faces and determine the wall        ---*/
-  /*---         distance for these integration points.                     ---*/
+  /*--- Step 5: Determine the wall distance of the integration points of   ---*/
+  /*---         locally owned boundary faces.                              ---*/
   /*--------------------------------------------------------------------------*/
 
   /*--- Loop over the boundary markers. Make sure to exclude the periodic
@@ -313,8 +275,6 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
         /* Get the required data from the corresponding standard element. */
         const unsigned short ind   = surfElem[l].indStandardElement;
         const unsigned short nInt  = standardBoundaryFacesGrid[ind].GetNIntegration();
-        const unsigned short nDOFs = surfElem[l].nDOFsGrid;
-        const su2double      *lag  = standardBoundaryFacesGrid[ind].GetBasisFaceIntegration();
 
         /* Set the pointer for the wall distance for this boundary face. */
         surfElem[l].wallDistance = boundaries[iMarker].VecWallDistanceBoundaryFaces.data() + nIntPoints;
@@ -330,25 +290,13 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
         }
         else {
 
-          /* Not a viscous wall boundary, while viscous walls are present. 
-             The distance must be computed. Store the DOFs of the face a bit
-             easier. */
-          const unsigned long *DOFs = surfElem[l].DOFsGridFace;
-
-          /* Loop over the integration points of this face. */
+          /*--- Not a viscous wall boundary, while viscous walls are present. 
+                The distance must be computed. Loop over the integration points
+                and do so. ---*/
           for(unsigned short i=0; i<nInt; ++i) {
 
-            /* Determine the coordinates of this integration point. */
-            const unsigned short jj = i*nDOFs;
-            const unsigned short kk = i*nDim;
-            su2double coor[3];
-            for(unsigned short j=0; j<nDim; ++j) {
-              coor[j] = 0.0;
-              for(unsigned short k=0; k<nDOFs; ++k)
-                coor[j] += lag[jj+k]*meshPoints[DOFs[k]].coor[j];
-            }
+            const su2double *coor = surfElem[l].coorIntegrationPoints + i*nDim;
 
-            /* Compute the wall distance. */
             unsigned short markerID;
             unsigned long  elemID;
             int            rankID;
