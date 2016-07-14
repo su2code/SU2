@@ -277,11 +277,9 @@ public:
 	 * \param[in] grid_var - the pair of thermodynamic variables which define the grid i.e. the interpolation quad. (e.g. RHOE for rhoe)
 	 */
 
-	bool Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x, su2double y,
+	void Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x, su2double y,
 			std::string grid_var);
 
-	void Interpolate_2D_Bilinear_Read_Coordinates(su2double *coords,
-			std::string grid_var);
 
 	/*!
 	 * \brief Use the interpolation coefficients to interpolate a given thermodynamic variable property. (Must calculate the interpolation coefficients first)
