@@ -483,10 +483,10 @@ void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 		dTde_rho = Interpolate_2D_Bilinear("dTde_rho");
 		Cp = Interpolate_2D_Bilinear("Cp");
 	} else {
-		//StaticEnergy = ThermoTables[iIndex][jIndex].StaticEnergy;
+		StaticEnergy = ThermoTables[iIndex][jIndex].StaticEnergy;
 		Pressure = ThermoTables[iIndex][jIndex].Pressure;
 		Entropy = ThermoTables[iIndex][jIndex].Entropy;
-		//Density = ThermoTables[iIndex][jIndex].Density;
+		Density = ThermoTables[iIndex][jIndex].Density;
 		SoundSpeed2 = ThermoTables[iIndex][jIndex].SoundSpeed2;
 		Temperature = ThermoTables[iIndex][jIndex].Temperature;
 		dPdrho_e = ThermoTables[iIndex][jIndex].dPdrho_e;
@@ -599,11 +599,11 @@ void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
 
 	else {
 		StaticEnergy = ThermoTables[iIndex][jIndex].StaticEnergy;
-		//Pressure = ThermoTables[iIndex][jIndex].Pressure;
+		Pressure = ThermoTables[iIndex][jIndex].Pressure;
 		Entropy = ThermoTables[iIndex][jIndex].Entropy;
 		Density = ThermoTables[iIndex][jIndex].Density;
 		SoundSpeed2 = ThermoTables[iIndex][jIndex].SoundSpeed2;
-		//Temperature = ThermoTables[iIndex][jIndex].Temperature;
+		Temperature = ThermoTables[iIndex][jIndex].Temperature;
 		dPdrho_e = ThermoTables[iIndex][jIndex].dPdrho_e;
 		dPde_rho = ThermoTables[iIndex][jIndex].dPde_rho;
 		dTdrho_e = ThermoTables[iIndex][jIndex].dTdrho_e;
@@ -708,9 +708,9 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 		Cp = Interpolate_2D_Bilinear("Cp");
 	} else {
 		StaticEnergy = ThermoTables[iIndex][jIndex].StaticEnergy;
-		//Pressure = ThermoTables[iIndex][jIndex].Pressure;
+		Pressure = ThermoTables[iIndex][jIndex].Pressure;
 		Entropy = ThermoTables[iIndex][jIndex].Entropy;
-		//Density = ThermoTables[iIndex][jIndex].Density;
+		Density = ThermoTables[iIndex][jIndex].Density;
 		SoundSpeed2 = ThermoTables[iIndex][jIndex].SoundSpeed2;
 		Temperature = ThermoTables[iIndex][jIndex].Temperature;
 		dPdrho_e = ThermoTables[iIndex][jIndex].dPdrho_e;
@@ -1084,8 +1084,8 @@ void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 
 	} else {
 		StaticEnergy = ThermoTables[iIndex][jIndex].StaticEnergy;
-		//Pressure = ThermoTables[iIndex][jIndex].Pressure;
-		//Entropy = ThermoTables[iIndex][jIndex].Entropy;
+		Pressure = ThermoTables[iIndex][jIndex].Pressure;
+		Entropy = ThermoTables[iIndex][jIndex].Entropy;
 		Density = ThermoTables[iIndex][jIndex].Density;
 		SoundSpeed2 = ThermoTables[iIndex][jIndex].SoundSpeed2;
 		Temperature = ThermoTables[iIndex][jIndex].Temperature;
@@ -1202,9 +1202,9 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 		StaticEnergy = ThermoTables[iIndex][jIndex].StaticEnergy;
 		Pressure = ThermoTables[iIndex][jIndex].Pressure;
 		Entropy = ThermoTables[iIndex][jIndex].Entropy;
-		//Density = ThermoTables[iIndex][jIndex].Density;
+		Density = ThermoTables[iIndex][jIndex].Density;
 		SoundSpeed2 = ThermoTables[iIndex][jIndex].SoundSpeed2;
-		//Temperature = ThermoTables[iIndex][jIndex].Temperature;
+		Temperature = ThermoTables[iIndex][jIndex].Temperature;
 		dPdrho_e = ThermoTables[iIndex][jIndex].dPdrho_e;
 		dPde_rho = ThermoTables[iIndex][jIndex].dPde_rho;
 		dTdrho_e = ThermoTables[iIndex][jIndex].dTdrho_e;
