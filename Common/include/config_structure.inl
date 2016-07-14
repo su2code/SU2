@@ -215,6 +215,16 @@ inline su2double CConfig::GetTemperature_Ref(void) { return Temperature_Ref; }
 
 inline su2double CConfig::GetDensity_Ref(void) { return Density_Ref; }
 
+inline void CConfig::SetBoolDimensionalLUTViscosity(bool bool_dim) { BoolDimensionalLUTViscosity = bool_dim; }
+
+inline bool CConfig::GetBoolDimensionalLUTViscosity(void) { return BoolDimensionalLUTViscosity; }
+
+inline su2double CConfig::GetCfgPressure_Ref(void) { return CfgPressure_Ref; }
+
+inline su2double CConfig::GetCfgTemperature_Ref(void) { return CfgTemperature_Ref; }
+
+inline su2double CConfig::GetCfgDensity_Ref(void) { return CfgDensity_Ref; }
+
 inline su2double CConfig::GetVelocity_Ref(void) { return Velocity_Ref; }
 
 inline su2double CConfig::GetEnergy_Ref(void) { return Energy_Ref; }
@@ -764,6 +774,8 @@ inline unsigned short CConfig::GetKind_SensSmooth(void) {return Kind_SensSmooth;
 inline unsigned short CConfig::GetUnsteady_Simulation(void) { return Unsteady_Simulation; }
 
 inline bool CConfig::GetRestart(void) {	return Restart; }
+
+inline bool CConfig::GetRestart_WithConservative(void) {	return Restart_WithConservative; }
 
 inline bool CConfig::GetRestart_Flow(void) { return Restart_Flow; }
 

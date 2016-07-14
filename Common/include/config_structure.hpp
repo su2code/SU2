@@ -450,6 +450,7 @@ private:
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
 	bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
 	bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
+	Restart_WithConservative,/*!< \brief Restart solution using conservative variables or with primitive*/
 	Restart_Flow;	/*!< \brief Restart flow solution for adjoint and linearized problems. */
 	unsigned short nMarker_Monitoring,	/*!< \brief Number of markers to monitor. */
 	nMarker_Designing,					/*!< \brief Number of markers for the objective function. */
@@ -585,6 +586,9 @@ private:
 	Pressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization.  */
 	Temperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization.*/
 	Density_Ref,      /*!< \brief Reference density for non-dimensionalization.*/
+	CfgPressure_Ref,     /*!< \brief Reference pressure for non-dimensionalization.  */
+	CfgTemperature_Ref,  /*!< \brief Reference temperature for non-dimensionalization.*/
+	CfgDensity_Ref,      /*!< \brief Reference density for non-dimensionalization.*/
 	Velocity_Ref,     /*!< \brief Reference velocity for non-dimensionalization.*/
 	Time_Ref,         /*!< \brief Reference time for non-dimensionalization. */
 	Viscosity_Ref,    /*!< \brief Reference viscosity for non-dimensionalization. */
@@ -713,7 +717,7 @@ private:
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
-
+  bool BoolDimensionalLUTViscosity; /*!< \brief bool for dimensional LUT viscosity */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map
@@ -1382,6 +1386,29 @@ public:
 	 * \return Reference density for non-dimensionalization.
 	 */
 	su2double GetDensity_Ref(void);
+
+
+	void SetBoolDimensionalLUTViscosity(bool bool_dim);
+
+	bool GetBoolDimensionalLUTViscosity(void);
+
+	/*!
+	 * \brief Get the value of the reference temperature for non-dimensionalization.
+	 * \return Reference temperature for non-dimensionalization specified by the user in the cfg file.
+	 */
+	su2double GetCfgTemperature_Ref(void);
+
+	/*!
+	 * \brief Get the value of the reference density for non-dimensionalization.
+	 * \return Reference density for non-dimensionalization specified by the user in the cfg file.
+	 */
+	su2double GetCfgDensity_Ref(void);
+
+	/*!
+	 * \brief Get the value of the reference density for non-dimensionalization.
+	 * \return Reference density for non-dimensionalization specified by the user in the cfg file.
+	 */
+	su2double GetCfgPressure_Ref(void);
 
 	/*!
 	 * \brief Get the value of the reference velocity for non-dimensionalization.
@@ -3709,6 +3736,12 @@ public:
 	 * \return Restart information, if <code>TRUE</code> then the code will use the solution as restart.
 	 */
 	bool GetRestart(void);
+
+	/*!
+	 * \brief Provides the restart information.
+	 * \return if <code>TRUE</code> then the code will use conservative variables for restart the solution otherwise with primitive.
+	 */
+	bool GetRestart_WithConservative(void);
 
 	/*!
 	 * \brief Provides the number of varaibles.

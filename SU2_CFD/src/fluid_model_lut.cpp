@@ -88,11 +88,13 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 		Temperature_Reference_Value = 1;
 		Density_Reference_Value = 1;
 		Velocity_Reference_Value = 1;
+		Energy_Reference_Value = 1;
 	} else {
 		Pressure_Reference_Value = config->GetPressure_Ref();
 		Temperature_Reference_Value = config->GetTemperature_Ref();
 		Density_Reference_Value = config->GetDensity_Ref();
 		Velocity_Reference_Value = config->GetVelocity_Ref();
+		Energy_Reference_Value   = config->GetEnergy_Ref();
 	}
 
 	LookUpTable_Load_CFX(config->GetLUTFileName(), true);

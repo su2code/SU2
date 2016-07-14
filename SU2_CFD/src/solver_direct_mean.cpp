@@ -665,20 +665,34 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
        node coordinates, and then the conservative variables. ---*/
       
       if (iPoint_Local >= 0) {
-        if (compressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-        }
-        if (incompressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        }
-        if (freesurface) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-        }
-        node[iPoint_Local] = new CEulerVariable(Solution, nDim, nVar, config);
-        iPoint_Global_Local++;
+      	if (compressible) {
+      		if(config->GetRestart_WithConservative()){
+      			if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+      			if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+      		}
+      		else{
+      			if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> dull_val >> Temperature;
+      			if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4] >> dull_val >> Temperature;
+      			Density = Solution[0];
+      			FluidModel->SetTDState_rhoT(Density, Temperature);
+      			StaticEnergy= FluidModel->GetStaticEnergy();
+      			Velocity2 = 0.0;
+      			for (iDim = 0; iDim < nDim; iDim++)
+      				Velocity2 += (Solution[iDim+1]/Solution[0])*(Solution[iDim+1]/Solution[0]);
+
+      			Solution[nVar-1]= Density*(StaticEnergy + 0.5*Velocity2);
+      		}
+      	}
+      	if (incompressible) {
+      		if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+      		if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+      	}
+      	if (freesurface) {
+      		if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+      		if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+      	}
+      	node[iPoint_Local] = new CEulerVariable(Solution, nDim, nVar, config);
+      	iPoint_Global_Local++;
       }
       iPoint_Global++;
     }
@@ -2324,7 +2338,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       /*--- Thermodynamics quantities based initialization ---*/
       
       else {
-        
+        config->SetBoolDimensionalLUTViscosity(true);
         FluidModel->SetLaminarViscosityModel(config);
         Viscosity_FreeStream = FluidModel->GetLaminarViscosity();
         config->SetViscosity_FreeStream(Viscosity_FreeStream);
@@ -2332,6 +2346,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         
       }
       
+      config->SetBoolDimensionalLUTViscosity(false);
+
       /*--- Turbulence kinetic energy ---*/
       
       Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
@@ -2373,12 +2389,18 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
       Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
     }
+    else if (config->GetRef_NonDim() == USER){
+    	Pressure_Ref      = config->GetCfgPressure_Ref(); // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
+    	Density_Ref       = config->GetCfgDensity_Ref();        // Density_FreeStream = 1.0
+    	Temperature_Ref   = config->GetCfgTemperature_Ref();    // T
+    }
     config->SetPressure_Ref(Pressure_Ref);
     config->SetDensity_Ref(Density_Ref);
     config->SetTemperature_Ref(Temperature_Ref);
     
     Length_Ref        = 1.0;                                                         config->SetLength_Ref(Length_Ref);
     Velocity_Ref      = sqrt(config->GetPressure_Ref()/config->GetDensity_Ref());    config->SetVelocity_Ref(Velocity_Ref);
+    Energy_Ref        = Velocity_Ref*Velocity_Ref;                   								 config->SetEnergy_Ref(Energy_Ref);
     Time_Ref          = Length_Ref/Velocity_Ref;                                     config->SetTime_Ref(Time_Ref);
     Omega_Ref         = Velocity_Ref/Length_Ref;                                     config->SetOmega_Ref(Omega_Ref);
     Force_Ref         = Velocity_Ref*Velocity_Ref/Length_Ref;                        config->SetForce_Ref(Force_Ref);
@@ -2531,7 +2553,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
   
-  Energy_Ref = Energy_FreeStream/Energy_FreeStreamND; config->SetEnergy_Ref(Energy_Ref);
+//  Energy_Ref = Energy_FreeStream/Energy_FreeStreamND; config->SetEnergy_Ref(Energy_Ref);
   
   Total_UnstTimeND = config->GetTotal_UnstTime() / Time_Ref;    config->SetTotal_UnstTimeND(Total_UnstTimeND);
   Delta_UnstTimeND = config->GetDelta_UnstTime() / Time_Ref;    config->SetDelta_UnstTimeND(Delta_UnstTimeND);
@@ -12679,20 +12701,44 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
        node coordinates, and then the conservative variables. ---*/
       
       if (iPoint_Local >= 0) {
-        if (compressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-        }
-        if (incompressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        }
-        if (freesurface) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-        }
-        node[iPoint_Local] = new CNSVariable(Solution, nDim, nVar, config);
-        iPoint_Global_Local++;
+      	if (compressible) {
+      		if(config->GetRestart_WithConservative()){
+      			if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+      			if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+      		}
+      		else{
+      			if(config->GetKind_Solver() == NAVIER_STOKES){
+      				if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> dull_val >> Temperature;
+      				if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4] >> dull_val >> Temperature;
+      			}
+      			if(config->GetKind_Solver() == RANS && config->GetKind_Turb_Model() == SA){
+      				if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> dull_val >> dull_val >>Temperature;
+      				if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4] >> dull_val >> dull_val >> Temperature;
+      			}
+      			if(config->GetKind_Solver() == RANS && config->GetKind_Turb_Model() == SST){
+      				if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> dull_val >> dull_val >> dull_val >>Temperature;
+      				if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4] >> dull_val >> dull_val >> dull_val >> Temperature;
+      			}
+      			Density = Solution[0];
+      			FluidModel->SetTDState_rhoT(Density, Temperature);
+      			StaticEnergy= FluidModel->GetStaticEnergy();
+      			Velocity2 = 0.0;
+      			for (iDim = 0; iDim < nDim; iDim++)
+      				Velocity2 += (Solution[iDim+1]/Solution[0])*(Solution[iDim+1]/Solution[0]);
+
+      			Solution[nVar-1]= Density*(StaticEnergy + 0.5*Velocity2);
+      		}
+      	}
+      	if (incompressible) {
+      		if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+      		if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+      	}
+      	if (freesurface) {
+      		if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+      		if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+      	}
+      	node[iPoint_Local] = new CNSVariable(Solution, nDim, nVar, config);
+      	iPoint_Global_Local++;
       }
       iPoint_Global++;
     }

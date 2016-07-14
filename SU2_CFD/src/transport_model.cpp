@@ -114,20 +114,15 @@ CViscosityList::~CViscosityList() {
 
 }
 
-CLookUpTable_Viscosity::CLookUpTable_Viscosity(CConfig *config,
-		bool dimensional) : CViscosityModel() {
+CLookUpTable_Viscosity::CLookUpTable_Viscosity(CConfig *config, bool dimensional) : CViscosityModel() {
 	ViscosityTables = NULL;
 	if (dimensional) {
-		Pressure_Reference_Value = 1;
 		Temperature_Reference_Value = 1;
 		Density_Reference_Value = 1;
-		Velocity_Reference_Value = 1;
 		Viscosity_Reference_Value = 1;
 	} else {
-		Pressure_Reference_Value = config->GetPressure_Ref();
 		Temperature_Reference_Value = config->GetTemperature_Ref();
 		Density_Reference_Value = config->GetDensity_Ref();
-		Velocity_Reference_Value = config->GetVelocity_Ref();
 		Viscosity_Reference_Value = config->GetViscosity_Ref();
 	}
 
@@ -965,21 +960,14 @@ CConductivityList::~CConductivityList() {
 
 }
 
-CLookUpTable_Conductivity::CLookUpTable_Conductivity(CConfig *config,
-		bool dimensional) :
+CLookUpTable_Conductivity::CLookUpTable_Conductivity(CConfig *config) :
 		CConductivityModel() {
 	ConductivityTables = NULL;
-	if (dimensional) {
-		Pressure_Reference_Value = 1;
-		Temperature_Reference_Value = 1;
-		Density_Reference_Value = 1;
-		Velocity_Reference_Value = 1;
-	} else {
-		Pressure_Reference_Value = config->GetPressure_Ref();
-		Temperature_Reference_Value = config->GetTemperature_Ref();
-		Density_Reference_Value = config->GetDensity_Ref();
-		Velocity_Reference_Value = config->GetVelocity_Ref();
-	}
+
+	Temperature_Reference_Value = config->GetTemperature_Ref();
+	Density_Reference_Value = config->GetDensity_Ref();
+	Conductivity_Reference_Value = config->GetConductivity_Ref();
+
 
 	LookUpTable_Load_CFX(config->GetLUTFileName(), true);
 	Remove_Two_Phase_Region_CFX_Table(true);
@@ -1628,6 +1616,7 @@ void CLookUpTable_Conductivity::LookUpTable_Load_CFX(string filename,
 									var_steps = ((set_x * set_y) - (j * set_x + i));
 								for (int z = 0; z < var_steps; z++) {
 									in >> inp[z];
+									 inp[z] /=Conductivity_Reference_Value;
 								}
 							}
 							ConductivityTables[i][j].Kt = inp[(j * set_x + i) % 10];

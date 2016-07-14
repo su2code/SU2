@@ -124,6 +124,7 @@ protected:
 	su2double Density_Reference_Value;
 	su2double Temperature_Reference_Value;
 	su2double Velocity_Reference_Value;
+	su2double Energy_Reference_Value;
 
 	su2double Interpolation_Matrix[4][4]; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
 	su2double Interpolation_Coeff[4][4]; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */

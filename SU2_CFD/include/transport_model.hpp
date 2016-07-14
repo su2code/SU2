@@ -211,10 +211,8 @@ protected:
 	dktdT_rho; /*!< \brief DktDT_rho. */
 	CViscosityList **ViscosityTables;/*!< \brief The 2D array used to hold the values of thermodynamic properties from the LUT*/
 	CViscosityList *SaturationTables;/*!< \brief The 1D array array of Viscosity porperties on the saturation line, for q=1*/
-	su2double Pressure_Reference_Value;
 	su2double Density_Reference_Value;
 	su2double Temperature_Reference_Value;
-	su2double Velocity_Reference_Value;
 	su2double Viscosity_Reference_Value;
 
 	su2double Interpolation_Matrix[4][4]; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
@@ -474,10 +472,9 @@ protected:
 
 		CConductivityList **ConductivityTables;/*!< \brief The 2D array used to hold the values of thermodynamic properties from the LUT*/
 		CConductivityList *SaturationTables;/*!< \brief The 1D array array of thermo porperties nn the saturation line, for q=1*/
-		su2double Pressure_Reference_Value;
 		su2double Density_Reference_Value;
 		su2double Temperature_Reference_Value;
-		su2double Velocity_Reference_Value;
+		su2double Conductivity_Reference_Value;
 
 
 		su2double Interpolation_Matrix[4][4]; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
@@ -510,7 +507,7 @@ public:
 	/*!
 	 * \brief Constructor of the class.
 	 */
-	CLookUpTable_Conductivity(CConfig *config, bool dimensional);
+	CLookUpTable_Conductivity(CConfig *config);
 
 	/*!
 	 * \brief Set Thermal conductivity.
