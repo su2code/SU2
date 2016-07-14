@@ -3099,7 +3099,8 @@ protected:
 			*NormalMachIn,
 			*NormalMachOut,
 			*VelocityOutIs;
-
+       vector<su2double> NonUniformBC_InputVar1, NonUniformBC_InputVar2, NonUniformBC_InputVar3, NonUniformBC_d2Var2;
+       unsigned long InputDim;
 
 
 public:
@@ -3533,6 +3534,12 @@ public:
 	void BC_NonUniform(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
+	/*!
+	 * \brief Set Non Uniform Boundary Condition.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	void SetBC_NonUniform(CGeometry *geometry, CConfig *config);
 	/*!
 	 * \author: G.Gori, S.Vitale, M.Pini, A.Guardone, P.Colonna
 	 *

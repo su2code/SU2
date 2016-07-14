@@ -509,6 +509,7 @@ private:
 	string Mesh_FileName,			/*!< \brief Mesh input file. */
 	Mesh_Out_FileName,				/*!< \brief Mesh output file. */
 	Solution_FlowFileName,			/*!< \brief Flow solution input file. */
+	NonUniformBC_FileName,			/*!< \brief Non Uniform BC solution input file. */
 	Solution_LinFileName,			/*!< \brief Linearized flow solution input file. */
 	Solution_AdjFileName,			/*!< \brief Adjoint solution input file for drag functional. */
 	Solution_FEMFileName,			/*!< \brief Adjoint solution input file for drag functional. */
@@ -3471,6 +3472,11 @@ public:
 	 */
 	bool GetBoolTurboPerf(void);
     /*!
+     * \brief Verify if there is NonUniform Boundary Condition option specified from config file.
+	 * \return boolean.
+	 */
+	bool GetBoolNonUniformBC(void);
+    /*!
 	 * \brief number Turbomachinery performance option specified from config file.
 	 * \return number of bound.
 	 */
@@ -3782,6 +3788,12 @@ public:
 	 * \return Name of the file with the residual of the problem.
 	 */
 	string GetResidual_FileName(void);
+
+	/*!
+	 * \brief Get the name of the file with the non-uniform boundary condition.
+	 * \return Name of the file with the non-uniform boundary condition.
+	 */
+	string GetNonUniformBC_FileName(void);
 
 	/*!
 	 * \brief Get the format of the input/output grid.

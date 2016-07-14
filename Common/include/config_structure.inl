@@ -730,6 +730,8 @@ inline bool CConfig::GetBoolMixingPlane(void) { return (nMarker_MixBound !=0);}
 
 inline bool CConfig::GetBoolTurboPerf(void) { return (nMarker_TurboPerf !=0);}
 
+inline bool CConfig::GetBoolNonUniformBC(void) { return (nMarker_NonUniform !=0);}
+
 inline string CConfig::GetMarker_MixingPlane_Bound(unsigned short index) {return Marker_MixBound[index];}
 
 inline string CConfig::GetMarker_MixingPlane_Donor(unsigned short index) {return Marker_MixDonor[index];}
@@ -881,6 +883,8 @@ inline string CConfig::GetConv_FileName_FSI(void) { return Conv_FileName_FSI; }
 inline string CConfig::GetBreakdown_FileName(void) { return Breakdown_FileName; }
 
 inline string CConfig::GetSolution_FlowFileName(void) { return Solution_FlowFileName; }
+
+inline string CConfig::GetNonUniformBC_FileName(void) { return NonUniformBC_FileName; }
 
 inline string CConfig::GetSolution_AdjFileName(void) { return Solution_AdjFileName; }
 

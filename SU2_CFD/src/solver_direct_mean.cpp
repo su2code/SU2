@@ -565,7 +565,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     VelocityOutIs[iMarker]= 0.0;
   }
   
-  
+if (config->GetBoolNonUniformBC())
+  SetBC_NonUniform(geometry, config);
+
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
   
   if (config->GetFixed_CL_Mode())
@@ -7833,6 +7835,46 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
 }
 
+
+void CEulerSolver::SetBC_NonUniform(CGeometry *geometry, CConfig *config){
+
+  /*--- Initialize for NonUniform Boundary ---*/
+
+  string text_line;
+  ifstream input_file;
+  string input_filename = config->GetNonUniformBC_FileName();
+
+  input_file.open(input_filename.data(), ios::in);
+  if (input_file.fail()) {
+  	//    if (rank == MASTER_NODE)
+  	cout << "There is no input file!! " << input_filename.data() << "."<< endl;
+  	exit(EXIT_FAILURE);
+  }
+
+//  long iPoint_file = 0;
+  su2double Var1In, Var2In, Var3In;
+  su2double dVar2_1, dVar2_N;
+  su2double NewVar2;
+  /*--- Read head of the file for allocation ---*/
+  getline (input_file, text_line);
+  istringstream point_line(text_line);
+  point_line >> InputDim;
+  while (getline (input_file, text_line)) {
+  	istringstream point_line(text_line);
+  	point_line >> Var1In >> Var2In >> Var3In;
+  	NonUniformBC_InputVar1.push_back(Var1In);
+  	NonUniformBC_InputVar2.push_back(Var2In);
+  	NonUniformBC_InputVar3.push_back(Var3In);
+  }
+  input_file.close();
+
+  dVar2_1 = (NonUniformBC_InputVar2[1]-NonUniformBC_InputVar2[0])/(NonUniformBC_InputVar1[1]-NonUniformBC_InputVar1[0]);
+  dVar2_N = (NonUniformBC_InputVar2[InputDim-1]-NonUniformBC_InputVar2[InputDim])/(NonUniformBC_InputVar1[InputDim-1]-NonUniformBC_InputVar1[InputDim]);
+  NonUniformBC_d2Var2.resize(InputDim);
+
+  geometry->SetSpline(NonUniformBC_InputVar1, NonUniformBC_InputVar2, InputDim, dVar2_1, dVar2_N, NonUniformBC_d2Var2);
+}
+
 void CEulerSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container,
                               CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim, iVar, jVar, kVar, iPol;
@@ -7874,47 +7916,12 @@ void CEulerSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container
   invP_Tensor = new su2double*[nVar];
   for (iVar = 0; iVar < nVar; iVar++)
   {
-    P_Tensor[iVar] = new su2double[nVar];
-    invP_Tensor[iVar] = new su2double[nVar];
+  	P_Tensor[iVar] = new su2double[nVar];
+  	invP_Tensor[iVar] = new su2double[nVar];
   }
 
-  string text_line;
-  ifstream input_file;
-  string input_filename = "test.csv";
 
-  input_file.open(input_filename.data(), ios::in);
-  if (input_file.fail()) {
-  	//    if (rank == MASTER_NODE)
-  	cout << "There is no input file!! " << input_filename.data() << "."<< endl;
-  	exit(EXIT_FAILURE);
-  }
-
-  long iPoint_file = 0;
-   vector<su2double> InputVar1, InputVar2, InputVar3, d2Var2;
-   su2double Var1In, Var2In, Var3In;
-   su2double dVar2_1, dVar2_N;
-   su2double NewVar2;
-   unsigned long InputDim;
-   /*--- Read head of the file for allocation ---*/
-   getline (input_file, text_line);
-   istringstream point_line(text_line);
-   point_line >> InputDim;
-   while (getline (input_file, text_line)) {
-   	istringstream point_line(text_line);
-   	point_line >> Var1In >> Var2In >> Var3In;
-   	InputVar1.push_back(Var1In);
-   	InputVar2.push_back(Var2In);
-   	InputVar3.push_back(Var3In);
-   }
-   input_file.close();
-
-   dVar2_1 = (InputVar2[1]-InputVar2[0])/(InputVar1[1]-InputVar1[0]);
-   dVar2_N = (InputVar2[InputDim-1]-InputVar2[InputDim])/(InputVar1[InputDim-1]-InputVar1[InputDim]);
-   d2Var2.resize(InputDim);
-
-   geometry->SetSpline(InputVar1, InputVar2, InputDim, dVar2_1, dVar2_N, d2Var2);
    /*--- Loop over all the vertices on this boundary marker ---*/
-//   NewVar2 = geometry->GetSpline(InputVar1, InputVar2, d2var2, InputDim, 1.5);
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -8006,7 +8013,7 @@ void CEulerSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container
           T_Total  = config->GetNonUniform_Var2(Marker_Tag);
           Flow_Dir = config->GetNonUniform_FlowDir(Marker_Tag);
 
-          P_Total = geometry->GetSpline(InputVar1, InputVar2, d2Var2, InputDim, y_perio);
+          P_Total = geometry->GetSpline(NonUniformBC_InputVar1, NonUniformBC_InputVar2, NonUniformBC_d2Var2, InputDim, y_perio);
           /*--- Non-dim. the inputs if necessary. ---*/
           P_Total /= config->GetPressure_Ref();
           T_Total /= config->GetTemperature_Ref();
@@ -13056,10 +13063,13 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     NormalMachOut[iMarker]= 0.0;
     VelocityOutIs[iMarker]= 0.0;
   }
-  
-  
+
+
+  if (config->GetBoolNonUniformBC())
+  	SetBC_NonUniform(geometry, config);
+
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
-  
+
   if (config->GetFixed_CL_Mode())
     
     Cauchy_Serie = new su2double [config->GetCauchy_Elems()+1];

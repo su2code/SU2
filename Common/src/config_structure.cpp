@@ -461,6 +461,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_NONUNIFORM \n DESCRIPTION: NonUniform boundary marker(s) with the following formats, a unit vector.
    * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
   addNonUniformOption("MARKER_NONUNIFORM", nMarker_NonUniform, Marker_NonUniform, Kind_Data_NonUniform, NonUniform_Map, NonUniform_Var1, NonUniform_Var2, NonUniform_FlowDir);
+  /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart flow input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n DEFAULT: solution_flow.dat \ingroup Config */
+  addStringOption("NONUNIFORM_BC_FILENAME", NonUniformBC_FileName, string("nonuniform_boundary.dat"));
   /*!\brief MARKER_NRBC \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. \ingroup Config*/
   addNRBCOption("MARKER_NRBC", nMarker_NRBC, Marker_NRBC, Kind_Data_NRBC, NRBC_Map, NRBC_Var1, NRBC_Var2, NRBC_FlowDir);
   /*!\brief MIXING_PROCESS_TYPE \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries.
