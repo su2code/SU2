@@ -2149,8 +2149,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
   unsigned long iPoint;
   su2double residual;
 
-//  cout << "--------------------- Extract ADJOINT SOLUTION ---------------------------" << endl;
-
   /*--- Set Residuals to zero ---*/
 
   for (iVar = 0; iVar < nVar; iVar++){
@@ -2167,8 +2165,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     /*--- Extract the adjoint solution ---*/
 
     direct_solver->node[iPoint]->GetAdjointSolution(Solution);
-
- //   if (iPoint == 25) cout << "Solution: " << Solution[0] << ", " << Solution[1] << endl;
 
     /*--- Store the adjoint solution ---*/
 
@@ -2190,8 +2186,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       direct_solver->node[iPoint]->GetAdjointSolution_Accel(Solution_Accel);
 
-//      if (iPoint == 25) cout << "Solution_Accel: " << Solution_Accel[0] << ", " << Solution_Accel[1] << endl;
-
       /*--- Store the adjoint acceleration solution u'' ---*/
 
       node[iPoint]->SetSolution_Accel(Solution_Accel);
@@ -2209,8 +2203,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       direct_solver->node[iPoint]->GetAdjointSolution_Vel(Solution_Vel);
 
-//     if (iPoint == 25) cout << "Solution_Vel: " << Solution_Vel[0] << ", " << Solution_Vel[1] << endl;
-
       /*--- Store the adjoint velocity solution u'' ---*/
 
       node[iPoint]->SetSolution_Vel(Solution_Vel);
@@ -2224,8 +2216,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
       direct_solver->node[iPoint]->GetAdjointSolution_time_n(Solution);
 
-//      if (iPoint == 25) cout << "Solution time n: " << Solution[0] << ", " << Solution[1] << endl;
-
       /*--- Store the adjoint solution at time n ---*/
 
       node[iPoint]->SetSolution_time_n(Solution);
@@ -2237,8 +2227,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
       /*--- Extract the adjoint acceleration solution u'' at time n ---*/
 
       direct_solver->node[iPoint]->GetAdjointSolution_Accel_time_n(Solution_Accel);
-
-//     if (iPoint == 25) cout << "Solution_Accel time n: " << Solution_Accel[0] << ", " << Solution_Accel[1] << endl;
 
       /*--- Store the adjoint acceleration solution u'' at time n---*/
 
@@ -2252,8 +2240,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
       /*--- Extract the adjoint velocity solution u' at time n ---*/
 
       direct_solver->node[iPoint]->GetAdjointSolution_Vel_time_n(Solution_Vel);
-
-//      if (iPoint == 25) cout << "Solution_Vel time n: " << Solution_Vel[0] << ", " << Solution_Vel[1] << endl;
 
       /*--- Store the adjoint velocity solution u' at time n ---*/
 
@@ -2328,34 +2314,26 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
   unsigned short iVar;
   unsigned long iPoint;
 
-//  cout << "--------------------- Set ADJOINT OUTPUT ---------------------------" << endl;
-
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
       Solution[iVar] = node[iPoint]->GetSolution(iVar);
     }
-//    if (iPoint == 25) cout << "Solution: " << Solution[0] << ", " << Solution[1] << endl;
     if (dynamic){
       for (iVar = 0; iVar < nVar; iVar++){
         Solution_Accel[iVar] = node[iPoint]->GetSolution_Accel(iVar);
       }
-//      if (iPoint == 25) cout << "Solution_Accel: " << Solution_Accel[0] << ", " << Solution_Accel[1] << endl;
       for (iVar = 0; iVar < nVar; iVar++){
         Solution_Vel[iVar] = node[iPoint]->GetSolution_Vel(iVar);
       }
-//      if (iPoint == 25) cout << "Solution_Vel: " << Solution_Vel[0] << ", " << Solution_Vel[1] << endl;
       for (iVar = 0; iVar < nVar; iVar++){
         Solution[iVar] += node[iPoint]->GetDynamic_Derivative_n(iVar);
       }
-//      if (iPoint == 25) cout << "Solution Updated: " << Solution[0] << ", " << Solution[1] << endl;
       for (iVar = 0; iVar < nVar; iVar++){
         Solution_Accel[iVar] += node[iPoint]->GetDynamic_Derivative_Accel_n(iVar);
       }
-//      if (iPoint == 25) cout << "Solution_Accel Updated: " << Solution_Accel[0] << ", " << Solution_Accel[1] << endl;
       for (iVar = 0; iVar < nVar; iVar++){
         Solution_Vel[iVar] += node[iPoint]->GetDynamic_Derivative_Vel_n(iVar);
       }
-//      if (iPoint == 25) cout << "Solution_Vel Updated: " << Solution_Vel[0] << ", " << Solution_Vel[1] << endl;
     }
     direct_solver->node[iPoint]->SetAdjointSolution(Solution);
     if (dynamic){
