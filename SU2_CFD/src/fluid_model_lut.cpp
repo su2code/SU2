@@ -81,7 +81,7 @@ CThermoList::~CThermoList() {
 //}
 
 CLookUpTable::CLookUpTable() :
-				CFluidModel() {
+								CFluidModel() {
 
 	ThermoTables = NULL;
 	for (int i = 0; i < 3; i++) {
@@ -97,7 +97,7 @@ CLookUpTable::CLookUpTable() :
 }
 
 CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
-				CFluidModel() {
+								CFluidModel() {
 	ThermoTables = NULL;
 	if (dimensional) {
 		Pressure_Reference_Value = 1;
@@ -634,7 +634,6 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 	if ((rho > Density_Table_Limits[1]) or (rho < Density_Table_Limits[0])) {
 		cerr << "PRHO Input Density out of bounds\n";
 	}
-	cout << "Prho" << endl;
 	// Linear interpolation requires 4 neighbors to be selected from the LUT
 	Nearest_Neighbour_iIndex = new int[4];
 	Nearest_Neighbour_jIndex = new int[4];
@@ -697,7 +696,6 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 	//Determine interpolation coefficients
 
 	Interpolate_2D_Bicubic_Arbitrary_Skew_Coeff(x, y, "PRHO");
-	cout << "Coefficients done" << endl;
 	//Interpolate the fluid properties
 	Pressure = P;
 	Density = rho;
@@ -1935,33 +1933,33 @@ void CLookUpTable::Interpolate_2D_Bicubic_Arbitrary_Skew_Coeff(su2double x,
 		}
 	}
 	//Difference and noramlize the values
-	for (int i = 0; i < 4; i++) {
-		for (int j = 0; j < 4; j++) {
-			x_coords[i * 4 + j] = (x_coords[i * 4 + j] - x_coords[0])
-							/ (x - x_coords[0]);
-			y_coords[i * 4 + j] = (y_coords[i * 4 + j] - y_coords[0])
-							/ (y - y_coords[0]);
-		}
-	}
+	//	for (int i = 0; i < 4; i++) {
+	//		for (int j = 0; j < 4; j++) {
+	//			x_coords[i * 4 + j] = (x_coords[i * 4 + j] - x_coords[0]);
+	//							/// (x - x_coords[0]);
+	//			y_coords[i * 4 + j] = (y_coords[i * 4 + j] - y_coords[0]);
+	//							/// (y - y_coords[0]);
+	//		}
+	//	}
 
 	//Setup the LHM matrix for the interpolation (Vandermonde), generated with Python.
 	for (int i = 0; i < 16; i++) {
 		Interpolation_Matrix[i][0] = 1;
-		Interpolation_Matrix[i][1] = x_coords[i];
-		Interpolation_Matrix[i][2] = pow(x_coords[i], 2);
-		Interpolation_Matrix[i][3] = pow(x_coords[i], 3);
-		Interpolation_Matrix[i][4] = y_coords[i];
-		Interpolation_Matrix[i][5] = x_coords[i] * y_coords[i];
-		Interpolation_Matrix[i][6] = pow(x_coords[i], 2) * y_coords[i];
-		Interpolation_Matrix[i][7] = pow(x_coords[i], 3) * y_coords[i];
-		Interpolation_Matrix[i][8] = pow(y_coords[i], 2);
-		Interpolation_Matrix[i][9] = x_coords[i] * pow(y_coords[i], 2);
-		Interpolation_Matrix[i][10] = pow(x_coords[i], 2) * pow(y_coords[i], 2);
-		Interpolation_Matrix[i][11] = pow(x_coords[i], 3) * pow(y_coords[i], 2);
-		Interpolation_Matrix[i][12] = pow(y_coords[i], 3);
-		Interpolation_Matrix[i][13] = x_coords[i] * pow(y_coords[i], 3);
-		Interpolation_Matrix[i][14] = pow(x_coords[i], 2) * pow(y_coords[i], 3);
-		Interpolation_Matrix[i][15] = pow(x_coords[i], 3) * pow(y_coords[i], 3);
+		Interpolation_Matrix[i][1] = (x_coords[i]/x_coords[0]);
+		Interpolation_Matrix[i][2] = pow((x_coords[i]/x_coords[0]), 2);
+		Interpolation_Matrix[i][3] = pow((x_coords[i]/x_coords[0]), 3);
+		Interpolation_Matrix[i][4] = (y_coords[i]/y_coords[0]);
+		Interpolation_Matrix[i][5] = (x_coords[i]/x_coords[0]) * (y_coords[i]/y_coords[0]);
+		Interpolation_Matrix[i][6] = pow((x_coords[i]/x_coords[0]), 2) * (y_coords[i]/y_coords[0]);
+		Interpolation_Matrix[i][7] = pow((x_coords[i]/x_coords[0]), 3) * (y_coords[i]/y_coords[0]);
+		Interpolation_Matrix[i][8] = pow((y_coords[i]/y_coords[0]), 2);
+		Interpolation_Matrix[i][9] = (x_coords[i]/x_coords[0]) * pow((y_coords[i]/y_coords[0]), 2);
+		Interpolation_Matrix[i][10] = pow((x_coords[i]/x_coords[0]), 2) * pow((y_coords[i]/y_coords[0]), 2);
+		Interpolation_Matrix[i][11] = pow((x_coords[i]/x_coords[0]), 3) * pow((y_coords[i]/y_coords[0]), 2);
+		Interpolation_Matrix[i][12] = pow((y_coords[i]/y_coords[0]), 3);
+		Interpolation_Matrix[i][13] = (x_coords[i]/x_coords[0]) * pow((y_coords[i]/y_coords[0]), 3);
+		Interpolation_Matrix[i][14] = pow((x_coords[i]/x_coords[0]), 2) * pow((y_coords[i]/y_coords[0]), 3);
+		Interpolation_Matrix[i][15] = pow((x_coords[i]/x_coords[0]), 3) * pow((y_coords[i]/y_coords[0]), 3);
 	}
 
 	//Invert the Interpolation matrix using Gaussian elimination with pivoting
@@ -1979,15 +1977,25 @@ void CLookUpTable::Interpolate_2D_Bicubic_Arbitrary_Skew_Coeff(su2double x,
 
 	//The transpose allows the same coefficients to be used
 	// for all Thermo variables (need only 16 coefficients)
-
 	for (int i = 0; i < 16; i++) {
-		d = 0;
-		for (int j = 0; j < 16; j++) {
-			d = d + Interpolation_Coeff[i][j];
-		}
+		d = Interpolation_Coeff[i][0];
+		d = d + Interpolation_Coeff[i][1]* (x/x_coords[0]);
+		d = d + Interpolation_Coeff[i][2]* pow((x/x_coords[0]), 2);
+		d = d + Interpolation_Coeff[i][3]* pow((x/x_coords[0]), 3);
+		d = d + Interpolation_Coeff[i][4]* (y/y_coords[0]);
+		d = d + Interpolation_Coeff[i][5]* (x/x_coords[0]) * (y/y_coords[0]);
+		d = d + Interpolation_Coeff[i][6]* pow((x/x_coords[0]), 2) * (y/y_coords[0]);
+		d = d + Interpolation_Coeff[i][7]* pow((x/x_coords[0]), 3) * (y/y_coords[0]);
+		d = d + Interpolation_Coeff[i][8]* pow((y/y_coords[0]), 2);
+		d = d + Interpolation_Coeff[i][9]* (x/x_coords[0]) * pow((y/y_coords[0]), 2);
+		d = d + Interpolation_Coeff[i][10]* pow((x/x_coords[0]), 2) * pow((y/y_coords[0]), 2);
+		d = d + Interpolation_Coeff[i][11]* pow((x/x_coords[0]), 3) * pow((y/y_coords[0]), 2);
+		d = d + Interpolation_Coeff[i][12]* pow((y/y_coords[0]), 3);
+		d = d + Interpolation_Coeff[i][13]* (x/x_coords[0]) * pow((y/y_coords[0]), 3);
+		d = d + Interpolation_Coeff[i][14]* pow((x/x_coords[0]), 2) * pow((y/y_coords[0]), 3);
+		d = d + Interpolation_Coeff[i][15]* pow((x/x_coords[0]), 3) * pow((y/y_coords[0]), 3);
 		Interpolation_Coeff[i][0] = d;
 	}
-
 	return;
 }
 
@@ -2749,7 +2757,7 @@ void CLookUpTable::LookUpTable_Load_CFX(string filename,
 								for (int z = 0; z < var_steps; z++) {
 									in >> inp[z];
 									inp[z] = inp[z] * pow(Velocity_Reference_Value, 2)
-													/ Pressure_Reference_Value;
+																	/ Pressure_Reference_Value;
 								}
 							}
 							ThermoTables[i][j].dPde_rho = inp[(j * set_x + i) % 10];
@@ -2782,7 +2790,7 @@ void CLookUpTable::LookUpTable_Load_CFX(string filename,
 								for (int z = 0; z < var_steps; z++) {
 									in >> inp[z];
 									inp[z] = inp[z] * pow(Velocity_Reference_Value, 2)
-													/ Pressure_Reference_Value;
+																	/ Pressure_Reference_Value;
 								}
 							}
 							SaturationTables[j].dPde_rho = inp[j % 10];
@@ -2874,7 +2882,7 @@ void CLookUpTable::LookUpTable_Load_CFX(string filename,
 								for (int z = 0; z < var_steps; z++) {
 									in >> inp[z];
 									inp[z] = inp[z] * pow(Velocity_Reference_Value, 2)
-													/ Temperature_Reference_Value;
+																	/ Temperature_Reference_Value;
 								}
 							}
 							ThermoTables[i][j].dTde_rho = inp[(j * set_x + i) % 10];
@@ -2906,7 +2914,7 @@ void CLookUpTable::LookUpTable_Load_CFX(string filename,
 								for (int z = 0; z < var_steps; z++) {
 									in >> inp[z];
 									inp[z] = inp[z] * pow(Velocity_Reference_Value, 2)
-													/ Temperature_Reference_Value;
+																	/ Temperature_Reference_Value;
 								}
 							}
 							SaturationTables[j].dTde_rho = inp[j % 10];
