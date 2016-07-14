@@ -80,22 +80,6 @@ CThermoList::~CThermoList() {
 //	cout<<"dktdT_rho   :"<<dktdT_rho<<endl;
 //}
 
-CLookUpTable::CLookUpTable() :
-								CFluidModel() {
-
-	ThermoTables = NULL;
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 3; j++) {
-			Interpolation_Coeff[i][j] = 0.0;
-		}
-	}
-	HS_tree = NULL;
-	iIndex = -1;
-	jIndex = -1;
-	Table_Pressure_Stations = 0;
-	Table_Density_Stations = 0;
-}
-
 CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 								CFluidModel() {
 	ThermoTables = NULL;
@@ -105,10 +89,10 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 		Density_Reference_Value = 1;
 		Velocity_Reference_Value = 1;
 	} else {
-		Pressure_Reference_Value = config->GetPressure_Ref();
-		Temperature_Reference_Value = config->GetTemperature_Ref();
-		Density_Reference_Value = config->GetDensity_Ref();
-		Velocity_Reference_Value = config->GetVelocity_Ref();
+		Pressure_Reference_Value =1;//  config->GetPressure_Ref();
+		Temperature_Reference_Value = 1;//config->GetTemperature_Ref();
+		Density_Reference_Value = 1;//config->GetDensity_Ref();
+		Velocity_Reference_Value = 1;//config->GetVelocity_Ref();
 	}
 
 	LookUpTable_Load_CFX(config->GetLUTFileName(), true);
@@ -153,7 +137,7 @@ CLookUpTable::~CLookUpTable(void) {
 	for (int i = 0; i < Table_Density_Stations; i++) {
 		delete[] ThermoTables[i];
 	}
-	delete ThermoTables;
+	delete [] ThermoTables;
 	// Recursively delete all KD_node structs in the KD tree
 	free_KD_tree(HS_tree);
 }
@@ -484,27 +468,27 @@ void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 	Nearest_Neighbour_jIndex[2] = jIndex + 1;
 	Nearest_Neighbour_jIndex[3] = jIndex + 1;
 	//Determine the interpolation coefficients
-	Interpolate_2D_Bicubic_Arbitrary_Skew_Coeff(x, y, "RHOE");
+	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(x, y, "RHOE");
 
 	//Interpolate the fluid properties
 	StaticEnergy = e;
 	Density = rho;
-	Entropy = Interpolate_2D_Bicubic("Entropy");
-	Pressure = Interpolate_2D_Bicubic("Pressure");
-	//Enthalpy = Interpolate_2D_Bicubic("Enthalpy");
-	SoundSpeed2 = Interpolate_2D_Bicubic("SoundSpeed2");
-	Temperature = Interpolate_2D_Bicubic("Temperature");
-	dPdrho_e = Interpolate_2D_Bicubic("dPdrho_e");
-	dPde_rho = Interpolate_2D_Bicubic("dPde_rho");
-	dTdrho_e = Interpolate_2D_Bicubic("dTdrho_e");
-	dTde_rho = Interpolate_2D_Bicubic("dTde_rho");
-	Cp = Interpolate_2D_Bicubic("Cp");
-	Mu = Interpolate_2D_Bicubic("Mu");
-	dmudrho_T = Interpolate_2D_Bicubic("dmudrho_T");
-	dmudT_rho = Interpolate_2D_Bicubic("dmudT_rho");
-	Kt = Interpolate_2D_Bicubic("Kt");
-	dktdrho_T = Interpolate_2D_Bicubic("dktdrho_T");
-	dktdT_rho = Interpolate_2D_Bicubic("dktdT_rho");
+	Entropy = Interpolate_2D_Bilinear("Entropy");
+	Pressure = Interpolate_2D_Bilinear("Pressure");
+	//Enthalpy = Interpolate_2D_Bilinear("Enthalpy");
+	SoundSpeed2 = Interpolate_2D_Bilinear("SoundSpeed2");
+	Temperature = Interpolate_2D_Bilinear("Temperature");
+	dPdrho_e = Interpolate_2D_Bilinear("dPdrho_e");
+	dPde_rho = Interpolate_2D_Bilinear("dPde_rho");
+	dTdrho_e = Interpolate_2D_Bilinear("dTdrho_e");
+	dTde_rho = Interpolate_2D_Bilinear("dTde_rho");
+	Cp = Interpolate_2D_Bilinear("Cp");
+	Mu = Interpolate_2D_Bilinear("Mu");
+	dmudrho_T = Interpolate_2D_Bilinear("dmudrho_T");
+	dmudT_rho = Interpolate_2D_Bilinear("dmudT_rho");
+	Kt = Interpolate_2D_Bilinear("Kt");
+	dktdrho_T = Interpolate_2D_Bilinear("dktdrho_T");
+	dktdT_rho = Interpolate_2D_Bilinear("dktdT_rho");
 
 	//Check that the interpolated density and pressure are within LUT limits
 	if ((Density > Density_Table_Limits[1])
@@ -554,7 +538,7 @@ void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
 		}
 	}
 
-	//Determine the I index (for T)
+
 	while (UpperI - LowerI > 1) {
 		middleI = (UpperI + LowerI) / 2;
 		//Use interpolated T as the running variable for the search (RunVal)
@@ -591,27 +575,27 @@ void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
 	Nearest_Neighbour_jIndex[2] = jIndex + 1;
 	Nearest_Neighbour_jIndex[3] = jIndex + 1;
 	//Determine interpolation coefficients
-	Interpolate_2D_Bicubic_Arbitrary_Skew_Coeff(x, y, "PT");
+	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(x, y, "PT");
 
 	//Interpolate the fluid properties
 	Temperature = T;
 	Pressure = P;
-	StaticEnergy = Interpolate_2D_Bicubic("StaticEnergy");
-	//Enthalpy = Interpolate_2D_Bicubic("Enthalpy");
-	Entropy = Interpolate_2D_Bicubic("Entropy");
-	Density = Interpolate_2D_Bicubic("Density");
-	SoundSpeed2 = Interpolate_2D_Bicubic("SoundSpeed2");
-	dPdrho_e = Interpolate_2D_Bicubic("dPdrho_e");
-	dPde_rho = Interpolate_2D_Bicubic("dPde_rho");
-	dTdrho_e = Interpolate_2D_Bicubic("dTdrho_e");
-	dTde_rho = Interpolate_2D_Bicubic("dTde_rho");
-	Cp = Interpolate_2D_Bicubic("Cp");
-	Mu = Interpolate_2D_Bicubic("Mu");
-	dmudrho_T = Interpolate_2D_Bicubic("dmudrho_T");
-	dmudT_rho = Interpolate_2D_Bicubic("dmudT_rho");
-	Kt = Interpolate_2D_Bicubic("Kt");
-	dktdrho_T = Interpolate_2D_Bicubic("dktdrho_T");
-	dktdT_rho = Interpolate_2D_Bicubic("dktdT_rho");
+	StaticEnergy = Interpolate_2D_Bilinear("StaticEnergy");
+	//Enthalpy = Interpolate_2D_Bilinear("Enthalpy");
+	Entropy = Interpolate_2D_Bilinear("Entropy");
+	Density = Interpolate_2D_Bilinear("Density");
+	SoundSpeed2 = Interpolate_2D_Bilinear("SoundSpeed2");
+	dPdrho_e = Interpolate_2D_Bilinear("dPdrho_e");
+	dPde_rho = Interpolate_2D_Bilinear("dPde_rho");
+	dTdrho_e = Interpolate_2D_Bilinear("dTdrho_e");
+	dTde_rho = Interpolate_2D_Bilinear("dTde_rho");
+	Cp = Interpolate_2D_Bilinear("Cp");
+	Mu = Interpolate_2D_Bilinear("Mu");
+	dmudrho_T = Interpolate_2D_Bilinear("dmudrho_T");
+	dmudT_rho = Interpolate_2D_Bilinear("dmudT_rho");
+	Kt = Interpolate_2D_Bilinear("Kt");
+	dktdrho_T = Interpolate_2D_Bilinear("dktdrho_T");
+	dktdT_rho = Interpolate_2D_Bilinear("dktdT_rho");
 
 	//Check that the interpolated density and pressure are within LUT limits
 	if ((Density > Density_Table_Limits[1])
@@ -695,26 +679,26 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 	Nearest_Neighbour_jIndex[3] = jIndex + 1;
 	//Determine interpolation coefficients
 
-	Interpolate_2D_Bicubic_Arbitrary_Skew_Coeff(x, y, "PRHO");
+	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(x, y, "PRHO");
 	//Interpolate the fluid properties
 	Pressure = P;
 	Density = rho;
-	StaticEnergy = Interpolate_2D_Bicubic("StaticEnergy");
-	//Enthalpy = Interpolate_2D_Bicubic("Enthalpy");
-	Entropy = Interpolate_2D_Bicubic("Entropy");
-	SoundSpeed2 = Interpolate_2D_Bicubic("SoundSpeed2");
-	Temperature = Interpolate_2D_Bicubic("Temperature");
-	dPdrho_e = Interpolate_2D_Bicubic("dPdrho_e");
-	dPde_rho = Interpolate_2D_Bicubic("dPde_rho");
-	dTdrho_e = Interpolate_2D_Bicubic("dTdrho_e");
-	dTde_rho = Interpolate_2D_Bicubic("dTde_rho");
-	Cp = Interpolate_2D_Bicubic("Cp");
-	Mu = Interpolate_2D_Bicubic("Mu");
-	dmudrho_T = Interpolate_2D_Bicubic("dmudrho_T");
-	dmudT_rho = Interpolate_2D_Bicubic("dmudT_rho");
-	Kt = Interpolate_2D_Bicubic("Kt");
-	dktdrho_T = Interpolate_2D_Bicubic("dktdrho_T");
-	dktdT_rho = Interpolate_2D_Bicubic("dktdT_rho");
+	StaticEnergy = Interpolate_2D_Bilinear("StaticEnergy");
+	//Enthalpy = Interpolate_2D_Bilinear("Enthalpy");
+	Entropy = Interpolate_2D_Bilinear("Entropy");
+	SoundSpeed2 = Interpolate_2D_Bilinear("SoundSpeed2");
+	Temperature = Interpolate_2D_Bilinear("Temperature");
+	dPdrho_e = Interpolate_2D_Bilinear("dPdrho_e");
+	dPde_rho = Interpolate_2D_Bilinear("dPde_rho");
+	dTdrho_e = Interpolate_2D_Bilinear("dTdrho_e");
+	dTde_rho = Interpolate_2D_Bilinear("dTde_rho");
+	Cp = Interpolate_2D_Bilinear("Cp");
+	Mu = Interpolate_2D_Bilinear("Mu");
+	dmudrho_T = Interpolate_2D_Bilinear("dmudrho_T");
+	dmudT_rho = Interpolate_2D_Bilinear("dmudT_rho");
+	Kt = Interpolate_2D_Bilinear("Kt");
+	dktdrho_T = Interpolate_2D_Bilinear("dktdrho_T");
+	dktdT_rho = Interpolate_2D_Bilinear("dktdT_rho");
 
 	//Check that the interpolated density and pressure are within LUT limits
 	if ((Density > Density_Table_Limits[1])
@@ -798,11 +782,11 @@ void CLookUpTable::SetEnergy_Prho(su2double P, su2double rho) {
 	Nearest_Neighbour_jIndex[2] = jIndex + 1;
 	Nearest_Neighbour_jIndex[3] = jIndex + 1;
 	//Determine interpolation coefficients
-	Interpolate_2D_Bicubic_Arbitrary_Skew_Coeff(x, y, "PRHO");
+	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(x, y, "PRHO");
 
 	Pressure = P;
 	Density = rho;
-	StaticEnergy = Interpolate_2D_Bicubic("StaticEnergy");
+	StaticEnergy = Interpolate_2D_Bilinear("StaticEnergy");
 
 	//Check that the interpolated density and pressure are within LUT limits
 	if ((Density > Density_Table_Limits[1])
@@ -940,27 +924,27 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 	//Determine interpolation coefficients
 	su2double x = h;
 	su2double y = s;
-	Interpolate_2D_Bicubic_Arbitrary_Skew_Coeff(x, y, "HS");
+	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(x, y, "HS");
 
 	//Interpolate the fluid properties
 	Entropy = s;
 	//Enthalpy = h;
-	StaticEnergy = Interpolate_2D_Bicubic("StaticEnergy");
-	Pressure = Interpolate_2D_Bicubic("Pressure");
-	Density = Interpolate_2D_Bicubic("Density");
-	SoundSpeed2 = Interpolate_2D_Bicubic("SoundSpeed2");
-	Temperature = Interpolate_2D_Bicubic("Temperature");
-	dPdrho_e = Interpolate_2D_Bicubic("dPdrho_e");
-	dPde_rho = Interpolate_2D_Bicubic("dPde_rho");
-	dTdrho_e = Interpolate_2D_Bicubic("dTdrho_e");
-	dTde_rho = Interpolate_2D_Bicubic("dTde_rho");
-	Cp = Interpolate_2D_Bicubic("Cp");
-	Mu = Interpolate_2D_Bicubic("Mu");
-	dmudrho_T = Interpolate_2D_Bicubic("dmudrho_T");
-	dmudT_rho = Interpolate_2D_Bicubic("dmudT_rho");
-	Kt = Interpolate_2D_Bicubic("Kt");
-	dktdrho_T = Interpolate_2D_Bicubic("dktdrho_T");
-	dktdT_rho = Interpolate_2D_Bicubic("dktdT_rho");
+	StaticEnergy = Interpolate_2D_Bilinear("StaticEnergy");
+	Pressure = Interpolate_2D_Bilinear("Pressure");
+	Density = Interpolate_2D_Bilinear("Density");
+	SoundSpeed2 = Interpolate_2D_Bilinear("SoundSpeed2");
+	Temperature = Interpolate_2D_Bilinear("Temperature");
+	dPdrho_e = Interpolate_2D_Bilinear("dPdrho_e");
+	dPde_rho = Interpolate_2D_Bilinear("dPde_rho");
+	dTdrho_e = Interpolate_2D_Bilinear("dTdrho_e");
+	dTde_rho = Interpolate_2D_Bilinear("dTde_rho");
+	Cp = Interpolate_2D_Bilinear("Cp");
+	Mu = Interpolate_2D_Bilinear("Mu");
+	dmudrho_T = Interpolate_2D_Bilinear("dmudrho_T");
+	dmudT_rho = Interpolate_2D_Bilinear("dmudT_rho");
+	Kt = Interpolate_2D_Bilinear("Kt");
+	dktdrho_T = Interpolate_2D_Bilinear("dktdrho_T");
+	dktdT_rho = Interpolate_2D_Bilinear("dktdT_rho");
 
 	//Check that the interpolated density and pressure are within LUT limits
 	if ((Density > Density_Table_Limits[1])
@@ -1052,27 +1036,27 @@ void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 	Nearest_Neighbour_jIndex[2] = jIndex + 1;
 	Nearest_Neighbour_jIndex[3] = jIndex + 1;
 	//Determine interpolation coefficients
-	Interpolate_2D_Bicubic_Arbitrary_Skew_Coeff(x, y, "PS");
+	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(x, y, "PS");
 
 	//Interpolate the fluid properties
 	Entropy = s;
 	Pressure = P;
-	StaticEnergy = Interpolate_2D_Bicubic("StaticEnergy");
-	//Enthalpy = Interpolate_2D_Bicubic("Enthalpy");
-	Density = Interpolate_2D_Bicubic("Density");
-	SoundSpeed2 = Interpolate_2D_Bicubic("SoundSpeed2");
-	Temperature = Interpolate_2D_Bicubic("Temperature");
-	dPdrho_e = Interpolate_2D_Bicubic("dPdrho_e");
-	dPde_rho = Interpolate_2D_Bicubic("dPde_rho");
-	dTdrho_e = Interpolate_2D_Bicubic("dTdrho_e");
-	dTde_rho = Interpolate_2D_Bicubic("dTde_rho");
-	Cp = Interpolate_2D_Bicubic("Cp");
-	Mu = Interpolate_2D_Bicubic("Mu");
-	dmudrho_T = Interpolate_2D_Bicubic("dmudrho_T");
-	dmudT_rho = Interpolate_2D_Bicubic("dmudT_rho");
-	Kt = Interpolate_2D_Bicubic("Kt");
-	dktdrho_T = Interpolate_2D_Bicubic("dktdrho_T");
-	dktdT_rho = Interpolate_2D_Bicubic("dktdT_rho");
+	StaticEnergy = Interpolate_2D_Bilinear("StaticEnergy");
+	//Enthalpy = Interpolate_2D_Bilinear("Enthalpy");
+	Density = Interpolate_2D_Bilinear("Density");
+	SoundSpeed2 = Interpolate_2D_Bilinear("SoundSpeed2");
+	Temperature = Interpolate_2D_Bilinear("Temperature");
+	dPdrho_e = Interpolate_2D_Bilinear("dPdrho_e");
+	dPde_rho = Interpolate_2D_Bilinear("dPde_rho");
+	dTdrho_e = Interpolate_2D_Bilinear("dTdrho_e");
+	dTde_rho = Interpolate_2D_Bilinear("dTde_rho");
+	Cp = Interpolate_2D_Bilinear("Cp");
+	Mu = Interpolate_2D_Bilinear("Mu");
+	dmudrho_T = Interpolate_2D_Bilinear("dmudrho_T");
+	dmudT_rho = Interpolate_2D_Bilinear("dmudT_rho");
+	Kt = Interpolate_2D_Bilinear("Kt");
+	dktdrho_T = Interpolate_2D_Bilinear("dktdrho_T");
+	dktdT_rho = Interpolate_2D_Bilinear("dktdT_rho");
 
 	//Check that the interpolated density and pressure are within LUT limits
 	if ((Density > Density_Table_Limits[1])
@@ -1161,27 +1145,27 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 	Nearest_Neighbour_jIndex[2] = jIndex + 1;
 	Nearest_Neighbour_jIndex[3] = jIndex + 1;
 	//Determine interpolation coefficients
-	Interpolate_2D_Bicubic_Arbitrary_Skew_Coeff(x, y, "RHOT");
+	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(x, y, "RHOT");
 
 	//Interpolate the fluid properties
 	Temperature = T;
 	Density = rho;
-	StaticEnergy = Interpolate_2D_Bicubic("StaticEnergy");
-	//Enthalpy = Interpolate_2D_Bicubic("Enthalpy");
-	Entropy = Interpolate_2D_Bicubic("Entropy");
-	Pressure = Interpolate_2D_Bicubic("Pressure");
-	SoundSpeed2 = Interpolate_2D_Bicubic("SoundSpeed2");
-	dPdrho_e = Interpolate_2D_Bicubic("dPdrho_e");
-	dPde_rho = Interpolate_2D_Bicubic("dPde_rho");
-	dTdrho_e = Interpolate_2D_Bicubic("dTdrho_e");
-	dTde_rho = Interpolate_2D_Bicubic("dTde_rho");
-	Cp = Interpolate_2D_Bicubic("Cp");
-	Mu = Interpolate_2D_Bicubic("Mu");
-	dmudrho_T = Interpolate_2D_Bicubic("dmudrho_T");
-	dmudT_rho = Interpolate_2D_Bicubic("dmudT_rho");
-	Kt = Interpolate_2D_Bicubic("Kt");
-	dktdrho_T = Interpolate_2D_Bicubic("dktdrho_T");
-	dktdT_rho = Interpolate_2D_Bicubic("dktdT_rho");
+	StaticEnergy = Interpolate_2D_Bilinear("StaticEnergy");
+	//Enthalpy = Interpolate_2D_Bilinear("Enthalpy");
+	Entropy = Interpolate_2D_Bilinear("Entropy");
+	Pressure = Interpolate_2D_Bilinear("Pressure");
+	SoundSpeed2 = Interpolate_2D_Bilinear("SoundSpeed2");
+	dPdrho_e = Interpolate_2D_Bilinear("dPdrho_e");
+	dPde_rho = Interpolate_2D_Bilinear("dPde_rho");
+	dTdrho_e = Interpolate_2D_Bilinear("dTdrho_e");
+	dTde_rho = Interpolate_2D_Bilinear("dTde_rho");
+	Cp = Interpolate_2D_Bilinear("Cp");
+	Mu = Interpolate_2D_Bilinear("Mu");
+	dmudrho_T = Interpolate_2D_Bilinear("dmudrho_T");
+	dmudT_rho = Interpolate_2D_Bilinear("dmudT_rho");
+	Kt = Interpolate_2D_Bilinear("Kt");
+	dktdrho_T = Interpolate_2D_Bilinear("dktdrho_T");
+	dktdT_rho = Interpolate_2D_Bilinear("dktdT_rho");
 
 	//Check that the interpolated density and pressure are within LUT limits
 	if ((Density > Density_Table_Limits[1])
@@ -1196,123 +1180,6 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 	delete[] Nearest_Neighbour_jIndex;
 }
 
-su2double CLookUpTable::Interp2D_Inv_Dist(int N, std::string interpolant_var,
-		su2double* dist) {
-	su2double interp_result = 0;
-	//The function values to interpolate from
-	su2double *Interpolation_RHS = new su2double[N];
-	//For each thermopair combination the values are filled differently
-	if (interpolant_var == "StaticEnergy") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].StaticEnergy;
-		}
-
-	} else if (interpolant_var == "Entropy") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].Entropy;
-		}
-	} else if (interpolant_var == "Density") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].Density;
-		}
-	} else if (interpolant_var == "Pressure") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].Pressure;
-		}
-	} else if (interpolant_var == "SoundSpeed2") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].SoundSpeed2;
-		}
-	} else if (interpolant_var == "Temperature") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].Temperature;
-		}
-	} else if (interpolant_var == "dPdrho_e") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].dPdrho_e;
-		}
-
-	} else if (interpolant_var == "dPde_rho") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].dPde_rho;
-		}
-	} else if (interpolant_var == "dTdrho_e") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].dTdrho_e;
-		}
-	} else if (interpolant_var == "dTde_rho") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].dTde_rho;
-		}
-	} else if (interpolant_var == "Cp") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].Cp;
-		}
-	} else if (interpolant_var == "Mu") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].Mu;
-		}
-
-	} else if (interpolant_var == "dmudrho_T") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].dmudrho_T;
-		}
-
-	} else if (interpolant_var == "dmudT_rho") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].dmudT_rho;
-		}
-
-	} else if (interpolant_var == "Kt") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].Kt;
-		}
-
-	} else if (interpolant_var == "dktdrho_T") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].dktdrho_T;
-		}
-
-	} else if (interpolant_var == "dktdT_rho") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].dktdT_rho;
-		}
-	} else if (interpolant_var == "Enthalpy") {
-		for (int i = 0; i < N; i++) {
-			Interpolation_RHS[i] =
-					ThermoTables[Nearest_Neighbour_iIndex[i]][Nearest_Neighbour_jIndex[i]].Enthalpy;
-		}
-
-	}
-
-	//Sum of the weights times scores. and weights alone
-	su2double dist_sum = 0;
-	for (int i = 0; i < N; i++) {
-		interp_result += (1 / dist[i]) * Interpolation_RHS[i];
-		dist_sum += 1 / dist[i];
-	}
-
-	interp_result = interp_result / dist_sum;
-	delete[] Interpolation_RHS;
-	return interp_result;
-}
 inline void CLookUpTable::Gaussian_Inverse(int nDim) {
 	//A temporary matrix to hold the inverse, dynamically allocated
 	su2double **temp = new su2double*[nDim];
@@ -1886,191 +1753,6 @@ su2double CLookUpTable::Interpolate_2D_Bilinear(string interpolant_var) {
 	return result;
 }
 
-void CLookUpTable::Interpolate_2D_Bicubic_Arbitrary_Skew_Coeff(su2double x,
-		su2double y, std::string grid_var) {
-	su2double x_coords[16];
-	su2double y_coords[16];
-
-	//Load in the coordinates of the qudrilateral
-	int i_quad, j_quad;
-	i_quad = Nearest_Neighbour_iIndex[0];
-	j_quad = Nearest_Neighbour_jIndex[0];
-	if (i_quad == Table_Density_Stations - 3) {
-		i_quad = i_quad - 1;
-	}
-	if (i_quad == Table_Density_Stations - 2) {
-		i_quad = i_quad - 2;
-	}
-	if (j_quad == Table_Pressure_Stations - 3) {
-		j_quad = j_quad - 1;
-	}
-	if (j_quad == Table_Pressure_Stations - 2) {
-		j_quad = j_quad - 2;
-	}
-	for (int i = 0; i < 4; i++) {
-		for (int j = 0; j < 4; j++) {
-
-			//Load in the coordinates of the qudrilateral
-			if (grid_var == "RHOE") {
-				x_coords[i * 4 + j] = ThermoTables[i + i_quad][j + j_quad].Density;
-				y_coords[i * 4 + j] = ThermoTables[i + i_quad][j + j_quad].StaticEnergy;
-			} else if (grid_var == "PT") {
-				x_coords[i * 4 + j] = ThermoTables[i + i_quad][j + j_quad].Temperature;
-				y_coords[i * 4 + j] = ThermoTables[i + i_quad][j + j_quad].Pressure;
-			} else if (grid_var == "PRHO") {
-				y_coords[i * 4 + j] = ThermoTables[i + i_quad][j + j_quad].Pressure;
-				x_coords[i * 4 + j] = ThermoTables[i + i_quad][j + j_quad].Density;
-			} else if (grid_var == "RHOT") {
-				y_coords[i * 4 + j] = ThermoTables[i + i_quad][j + j_quad].Temperature;
-				x_coords[i * 4 + j] = ThermoTables[i + i_quad][j + j_quad].Density;
-			} else if (grid_var == "PS") {
-				y_coords[i * 4 + j] = ThermoTables[i + i_quad][j + j_quad].Pressure;
-				x_coords[i * 4 + j] = ThermoTables[i + i_quad][j + j_quad].Entropy;
-			} else if (grid_var == "HS") {
-				y_coords[i * 4 + j] = ThermoTables[i + i_quad][j + j_quad].Enthalpy;
-				x_coords[i * 4 + j] = ThermoTables[i + i_quad][j + j_quad].Entropy;
-			}
-		}
-	}
-	//Difference and noramlize the values
-	//	for (int i = 0; i < 4; i++) {
-	//		for (int j = 0; j < 4; j++) {
-	//			x_coords[i * 4 + j] = (x_coords[i * 4 + j] - x_coords[0]);
-	//							/// (x - x_coords[0]);
-	//			y_coords[i * 4 + j] = (y_coords[i * 4 + j] - y_coords[0]);
-	//							/// (y - y_coords[0]);
-	//		}
-	//	}
-
-	//Setup the LHM matrix for the interpolation (Vandermonde), generated with Python.
-	for (int i = 0; i < 16; i++) {
-		Interpolation_Matrix[i][0] = 1;
-		Interpolation_Matrix[i][1] = (x_coords[i]/x_coords[0]);
-		Interpolation_Matrix[i][2] = pow((x_coords[i]/x_coords[0]), 2);
-		Interpolation_Matrix[i][3] = pow((x_coords[i]/x_coords[0]), 3);
-		Interpolation_Matrix[i][4] = (y_coords[i]/y_coords[0]);
-		Interpolation_Matrix[i][5] = (x_coords[i]/x_coords[0]) * (y_coords[i]/y_coords[0]);
-		Interpolation_Matrix[i][6] = pow((x_coords[i]/x_coords[0]), 2) * (y_coords[i]/y_coords[0]);
-		Interpolation_Matrix[i][7] = pow((x_coords[i]/x_coords[0]), 3) * (y_coords[i]/y_coords[0]);
-		Interpolation_Matrix[i][8] = pow((y_coords[i]/y_coords[0]), 2);
-		Interpolation_Matrix[i][9] = (x_coords[i]/x_coords[0]) * pow((y_coords[i]/y_coords[0]), 2);
-		Interpolation_Matrix[i][10] = pow((x_coords[i]/x_coords[0]), 2) * pow((y_coords[i]/y_coords[0]), 2);
-		Interpolation_Matrix[i][11] = pow((x_coords[i]/x_coords[0]), 3) * pow((y_coords[i]/y_coords[0]), 2);
-		Interpolation_Matrix[i][12] = pow((y_coords[i]/y_coords[0]), 3);
-		Interpolation_Matrix[i][13] = (x_coords[i]/x_coords[0]) * pow((y_coords[i]/y_coords[0]), 3);
-		Interpolation_Matrix[i][14] = pow((x_coords[i]/x_coords[0]), 2) * pow((y_coords[i]/y_coords[0]), 3);
-		Interpolation_Matrix[i][15] = pow((x_coords[i]/x_coords[0]), 3) * pow((y_coords[i]/y_coords[0]), 3);
-	}
-
-	//Invert the Interpolation matrix using Gaussian elimination with pivoting
-	Gaussian_Inverse(16);
-	su2double d;
-
-	//Transpose the inverse
-	for (int i = 0; i < 15; i++) {
-		for (int j = i + 1; j < 16; j++) {
-			d = Interpolation_Coeff[i][j];
-			Interpolation_Coeff[i][j] = Interpolation_Coeff[j][i];
-			Interpolation_Coeff[j][i] = d;
-		}
-	}
-
-	//The transpose allows the same coefficients to be used
-	// for all Thermo variables (need only 16 coefficients)
-	for (int i = 0; i < 16; i++) {
-		d = Interpolation_Coeff[i][0];
-		d = d + Interpolation_Coeff[i][1]* (x/x_coords[0]);
-		d = d + Interpolation_Coeff[i][2]* pow((x/x_coords[0]), 2);
-		d = d + Interpolation_Coeff[i][3]* pow((x/x_coords[0]), 3);
-		d = d + Interpolation_Coeff[i][4]* (y/y_coords[0]);
-		d = d + Interpolation_Coeff[i][5]* (x/x_coords[0]) * (y/y_coords[0]);
-		d = d + Interpolation_Coeff[i][6]* pow((x/x_coords[0]), 2) * (y/y_coords[0]);
-		d = d + Interpolation_Coeff[i][7]* pow((x/x_coords[0]), 3) * (y/y_coords[0]);
-		d = d + Interpolation_Coeff[i][8]* pow((y/y_coords[0]), 2);
-		d = d + Interpolation_Coeff[i][9]* (x/x_coords[0]) * pow((y/y_coords[0]), 2);
-		d = d + Interpolation_Coeff[i][10]* pow((x/x_coords[0]), 2) * pow((y/y_coords[0]), 2);
-		d = d + Interpolation_Coeff[i][11]* pow((x/x_coords[0]), 3) * pow((y/y_coords[0]), 2);
-		d = d + Interpolation_Coeff[i][12]* pow((y/y_coords[0]), 3);
-		d = d + Interpolation_Coeff[i][13]* (x/x_coords[0]) * pow((y/y_coords[0]), 3);
-		d = d + Interpolation_Coeff[i][14]* pow((x/x_coords[0]), 2) * pow((y/y_coords[0]), 3);
-		d = d + Interpolation_Coeff[i][15]* pow((x/x_coords[0]), 3) * pow((y/y_coords[0]), 3);
-		Interpolation_Coeff[i][0] = d;
-	}
-	return;
-}
-
-su2double CLookUpTable::Interpolate_2D_Bicubic(string interpolant_var) {
-	su2double func_value[16];
-	//Load in the coordinates of the qudrilateral
-	int i_quad, j_quad;
-	i_quad = Nearest_Neighbour_iIndex[0];
-	j_quad = Nearest_Neighbour_jIndex[0];
-	if (i_quad == Table_Density_Stations - 3) {
-		i_quad = i_quad - 1;
-		;
-	}
-	if (i_quad == Table_Density_Stations - 2) {
-		i_quad = i_quad - 2;
-	}
-	if (j_quad == Table_Pressure_Stations - 3) {
-		j_quad = j_quad - 1;
-	}
-	if (j_quad == Table_Pressure_Stations - 2) {
-		j_quad = j_quad - 2;
-	}
-	for (int i = 0; i < 4; i++) {
-		for (int j = 0; j < 4; j++) {
-			if (interpolant_var == "StaticEnergy") {
-				func_value[i * 4 + j] =
-						ThermoTables[i_quad + i][j_quad + j].StaticEnergy;
-			} else if (interpolant_var == "Entropy") {
-				func_value[i * 4 + j] = ThermoTables[i_quad + i][j_quad + j].Entropy;
-			} else if (interpolant_var == "Density") {
-				func_value[i * 4 + j] = ThermoTables[i_quad + i][j_quad + j].Density;
-			} else if (interpolant_var == "Pressure") {
-				func_value[i * 4 + j] = ThermoTables[i_quad + i][j_quad + j].Pressure;
-			} else if (interpolant_var == "SoundSpeed2") {
-				func_value[i * 4 + j] =
-						ThermoTables[i_quad + i][j_quad + j].SoundSpeed2;
-			} else if (interpolant_var == "Temperature") {
-				func_value[i * 4 + j] =
-						ThermoTables[i_quad + i][j_quad + j].Temperature;
-			} else if (interpolant_var == "dPdrho_e") {
-				func_value[i * 4 + j] = ThermoTables[i_quad + i][j_quad + j].dPdrho_e;
-			} else if (interpolant_var == "dPde_rho") {
-				func_value[i * 4 + j] = ThermoTables[i_quad + i][j_quad + j].dPde_rho;
-			} else if (interpolant_var == "dTdrho_e") {
-				func_value[i * 4 + j] = ThermoTables[i_quad + i][j_quad + j].dTdrho_e;
-			} else if (interpolant_var == "dTde_rho") {
-				func_value[i * 4 + j] = ThermoTables[i_quad + i][j_quad + j].dTde_rho;
-			} else if (interpolant_var == "Cp") {
-				func_value[i * 4 + j] = ThermoTables[i_quad + i][j_quad + j].Cp;
-			} else if (interpolant_var == "Mu") {
-				func_value[i * 4 + j] = ThermoTables[i_quad + i][j_quad + j].dPde_rho;
-			} else if (interpolant_var == "dmudrho_T") {
-				func_value[i * 4 + j] = ThermoTables[i_quad + i][j_quad + j].dmudrho_T;
-			} else if (interpolant_var == "dmudT_rho") {
-				func_value[i * 4 + j] = ThermoTables[i_quad + i][j_quad + j].dmudT_rho;
-			} else if (interpolant_var == "Kt") {
-				func_value[i * 4 + j] = ThermoTables[i_quad + i][j_quad + j].Kt;
-			} else if (interpolant_var == "dktdrho_T") {
-				func_value[i * 4 + j] = ThermoTables[i_quad + i][j_quad + j].dktdrho_T;
-			} else if (interpolant_var == "dktdT_rho") {
-				func_value[i * 4 + j] = ThermoTables[i_quad + i][j_quad + j].dktdT_rho;
-			} else if (interpolant_var == "Enthalpy") {
-				func_value[i * 4 + j] = ThermoTables[i_quad + i][j_quad + j].Enthalpy;
-			}
-		}
-	}
-	//The Interpolation_Coeff values depend on location alone
-	//and are the same regardless of function values
-	su2double result = 0;
-	for (int i = 0; i < 16; i++) {
-		result = result + Interpolation_Coeff[i][0] * func_value[i];
-	}
-	return result;
-}
-
 void CLookUpTable::RecordState(char* file) {
 	//Record the state of the fluid model to a file for
 	//verificaiton purposes
@@ -2550,65 +2232,6 @@ void CLookUpTable::LookUpTable_Load_CFX(string filename,
 								}
 							}
 							SaturationTables[j].Entropy = inp[j % 10];
-						}
-					}
-				}
-				//MU TABLE
-				if (var == 8) {
-					for (int k = 0; k < ceil(float(set_x) / 10.0); k++)
-						getline(table, line); //skip density (already imported)
-					for (int k = 0; k < ceil(float(set_y) / 10.0); k++)
-						getline(table, line); //skip pressure (already imported)
-
-					Mu_Table_Limits[0] = 10E20; //lower limit
-					Mu_Table_Limits[1] = 0; //upper limit
-
-					su2double inp[10];
-
-					for (int j = 0; j < set_y; j++) {
-						for (int i = 0; i < set_x; i++) {
-							if ((j * set_x + i) % 10 == 0) {
-								getline(table, line);
-								istringstream in(line);
-								var_steps = 10;
-								if (((set_x * set_y) - (j * set_x + i)) < 10)
-									var_steps = ((set_x * set_y) - (j * set_x + i));
-								for (int z = 0; z < var_steps; z++) {
-									in >> inp[z];
-								}
-							}
-							ThermoTables[i][j].Mu = inp[(j * set_x + i) % 10];
-							if (inp[(j * set_x + i) % 10] > Mu_Table_Limits[1]) {
-								Mu_Table_Limits[1] = inp[(j * set_x + i) % 10];
-							}
-							if (inp[(j * set_x + i) % 10] < Mu_Table_Limits[0]) {
-								Mu_Table_Limits[0] = inp[(j * set_x + i) % 10];
-							}
-						}
-					}
-					//Also load the saturation properties if desired.
-					if (read_saturation_properties) {
-						//First skip the saturation temperature values
-						for (int j = 0; j < set_y; j++) {
-							if ((j) % 10 == 0) {
-								getline(table, line);
-								istringstream in(line);
-							}
-						}
-						//Now load the saturation property
-						su2double inp[10];
-						for (int j = 0; j < set_y; j++) {
-							if ((j) % 10 == 0) {
-								getline(table, line);
-								istringstream in(line);
-								var_steps = 10;
-								if ((set_y - j) < 10)
-									var_steps = (set_y - j);
-								for (int z = 0; z < var_steps; z++) {
-									in >> inp[z];
-								}
-							}
-							SaturationTables[j].Mu = inp[j % 10];
 						}
 					}
 				}

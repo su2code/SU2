@@ -125,8 +125,8 @@ protected:
 	su2double Temperature_Reference_Value;
 	su2double Velocity_Reference_Value;
 
-	su2double Interpolation_Matrix[16][16]; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
-	su2double Interpolation_Coeff[16][16]; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
+	su2double Interpolation_Matrix[4][4]; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
+	su2double Interpolation_Coeff[4][4]; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
 	short iIndex, jIndex; /*!< \brief The i,j indexes (rho, P) of the position of the table search. Can be used as a restart for next search.*/
 	int Table_Pressure_Stations;/*!< \brief The pressure dimensions of the table */
 	int Table_Density_Stations; /*!< \brief The density dimensions of the table */
@@ -277,12 +277,9 @@ public:
 	 * \param[in] grid_var - the pair of thermodynamic variables which define the grid i.e. the interpolation quad. (e.g. RHOE for rhoe)
 	 */
 
-	void Interpolate_2D_Bicubic_Arbitrary_Skew_Coeff(su2double x, su2double y,
-			std::string grid_var);
 	void Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x, su2double y,
 			std::string grid_var);
-	void Interpolate_2D_Bicubic_Read_Coordinates(su2double *x_coords,
-			su2double *y_coords, std::string grid_var);
+
 	void Interpolate_2D_Bilinear_Read_Coordinates(su2double *coords,
 			std::string grid_var);
 
@@ -299,10 +296,6 @@ public:
 	 * \param[in] N - the number of points involved in the interpolation, typically neighbors found using KD_tree
 	 * \param[in] interpolant_var - the distance between the sample points and the desired points. May be raised to desired power.
 	 */
-	su2double Interpolate_2D_Bicubic(string interpolant_var);
-
-	su2double Interp2D_Inv_Dist(int N, std::string interpolant_var,
-			su2double* dist);
 
 	/*!
 	 * \brief Alter the loaded table such that that the two phase region is replaced.

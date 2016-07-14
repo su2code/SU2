@@ -50,6 +50,30 @@
 
 using namespace std;
 
+/*!
+ * \class CViscosityList
+ * \brief holds the viscosity properties associated with a particular table index
+ * \author: M. Kosec, A.Rubino, S.Vitale
+ * \version 4.1.2 "Cardinal"
+ */
+class CViscosityList {
+public:
+	su2double Density, /*!< \brief Density. */
+	Temperature, /*!< \brief Temperature. */
+	Mu, /*!< \brief Laminar Viscosity. */
+	dmudrho_T, /*!< \brief Fluid derivative DmuDrho_T */
+	dmudT_rho; /*!< \brief Fluid derivative DmuDT_rho. */
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CViscosityList(void);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CViscosityList(void);
+};
 
 /*!
  * \class CViscosityModel
@@ -60,48 +84,47 @@ using namespace std;
  */
 class CViscosityModel {
 protected:
-su2double   	 Mu,			/*!< \brief Dynamic viscosity. */
-			 dmudrho_T, 	/*!< \brief DmuDrho_T. */
-			 dmudT_rho; 	/*!< \brief DmuDT_rho. */
+	su2double Mu, /*!< \brief Dynamic viscosity. */
+	dmudrho_T, /*!< \brief DmuDrho_T. */
+	dmudT_rho; /*!< \brief DmuDT_rho. */
 public:
 
-		/*!
-		 * \brief Constructor of the class.
-		 */
-		CViscosityModel(void);
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CViscosityModel(void);
 
-		/*!
-		 * \brief Destructor of the class.
-		 */
-		virtual ~CViscosityModel(void);
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CViscosityModel(void);
 
-		/*!
-		 * \brief return viscosity value.
-		 */
-		su2double GetViscosity(void);
+	/*!
+	 * \brief return viscosity value.
+	 */
+	su2double GetViscosity(void);
 
-		/*!
-		 * \brief return viscosity partial derivative value.
-		 */
-		su2double Getdmudrho_T(void);
+	/*!
+	 * \brief return viscosity partial derivative value.
+	 */
+	su2double Getdmudrho_T(void);
 
-		/*!
-		 * \brief return viscosity partial derivative value.
-		 */
-		su2double GetdmudT_rho(void);
+	/*!
+	 * \brief return viscosity partial derivative value.
+	 */
+	su2double GetdmudT_rho(void);
 
-		/*!
-		 * \brief Set Viscosity.
-		 */
-		virtual	 void SetViscosity(su2double T, su2double rho);
+	/*!
+	 * \brief Set Viscosity.
+	 */
+	virtual void SetViscosity(su2double T, su2double rho);
 
-		/*!
-		 * \brief Set Viscosity Derivatives.
-		 */
-		virtual	 void SetDerViscosity(su2double T, su2double rho);
+	/*!
+	 * \brief Set Viscosity Derivatives.
+	 */
+	virtual void SetDerViscosity(su2double T, su2double rho);
 
 };
-
 
 /*!
  * \class CConstantViscosity
@@ -110,28 +133,26 @@ public:
  * \author S.Vitale, M.Pini
  * \version 1.0
  */
-class CConstantViscosity : public CViscosityModel {
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   */
-  CConstantViscosity(void);
-  
-  /*!
-   * \brief Constructor of the class.
-   */
-  CConstantViscosity(su2double mu_const);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  virtual ~CConstantViscosity(void);
-  
-  
-};
+class CConstantViscosity: public CViscosityModel {
 
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CConstantViscosity(void);
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CConstantViscosity(su2double mu_const);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CConstantViscosity(void);
+
+};
 
 /*!
  * \class CSutherland
@@ -140,39 +161,39 @@ public:
  * \author S.Vitale, M.Pini
  * \version 1.0
  */
-class CSutherland : public CViscosityModel {
+class CSutherland: public CViscosityModel {
 protected:
-  su2double   	 Mu_ref,		/*!< \brief Internal Energy. */
-  T_ref, 		/*!< \brief DpDd_e. */
-  S; 			/*!< \brief DpDe_d. */
-  
+	su2double Mu_ref, /*!< \brief Internal Energy. */
+	T_ref, /*!< \brief DpDd_e. */
+	S; /*!< \brief DpDe_d. */
+
 public:
-  
-  /*!
-   * \brief Constructor of the class.
-   */
-  CSutherland(void);
-  
-  /*!
-   * \brief Constructor of the class.
-   */
-  CSutherland(su2double mu_ref, su2double t_ref, su2double s);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  virtual ~CSutherland(void);
-  
-  /*!
-   * \brief Set Viscosity.
-   */
-  void SetViscosity(su2double T, su2double rho);
-  
-  /*!
-   * \brief Set Viscosity Derivatives.
-   */
-  void SetDerViscosity(su2double T, su2double rho);
-  
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CSutherland(void);
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CSutherland(su2double mu_ref, su2double t_ref, su2double s);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CSutherland(void);
+
+	/*!
+	 * \brief Set Viscosity.
+	 */
+	void SetViscosity(su2double T, su2double rho);
+
+	/*!
+	 * \brief Set Viscosity Derivatives.
+	 */
+	void SetDerViscosity(su2double T, su2double rho);
+
 };
 
 /*!
@@ -181,50 +202,139 @@ public:
  * Viscosity alues are return based on an input of Rho and T
  * \author M.Kosec, A. Rubino, S.Vitale
  */
-class CLookUpTable_Viscosity : public CViscosityModel {
+class CLookUpTable_Viscosity: public CViscosityModel {
 protected:
-su2double   	 Kt,			/*!< \brief Thermal conductivity. */
-			 dktdrho_T, 	/*!< \brief DktDrho_T. */
-			 dktdT_rho; 	/*!< \brief DktDT_rho. */
+	su2double Kt, /*!< \brief Thermal conductivity. */
+	dktdrho_T, /*!< \brief DktDrho_T. */
+	Density,
+	Temperature,
+	dktdT_rho; /*!< \brief DktDT_rho. */
+	CViscosityList **ViscosityTables;/*!< \brief The 2D array used to hold the values of thermodynamic properties from the LUT*/
+	CViscosityList *SaturationTables;/*!< \brief The 1D array array of Viscosity porperties on the saturation line, for q=1*/
+	su2double Pressure_Reference_Value;
+	su2double Density_Reference_Value;
+	su2double Temperature_Reference_Value;
+	su2double Velocity_Reference_Value;
+	su2double Viscosity_Reference_Value;
+
+	su2double Interpolation_Matrix[4][4]; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
+	su2double Interpolation_Coeff[4][4]; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
+	short iIndex, jIndex; /*!< \brief The i,j indexes (rho, P) of the position of the table search. Can be used as a restart for next search.*/
+	int Table_Pressure_Stations;/*!< \brief The pressure dimensions of the table */
+	int Table_Density_Stations; /*!< \brief The density dimensions of the table */
+	su2double Density_Table_Limits[2];/*!< \brief The [min,max] values of the Density values in the LUT */
+	su2double Pressure_Table_Limits[2];/*!< \brief The [min,max] values of the Pressure values in the LUT */
+	su2double Temperature_Table_Limits[2];/*!< \brief The [min,max] values of the Temperature values in the LUT */
+	su2double Mu_Table_Limits[2];/*!< \brief The [min,max] values of the dPde_rho  values in the LUT */
+	su2double dmudrho_T_Table_Limits[2];/*!< \brief (UNUSED) The [min,max] values of the dmudrho_T  values in the LUT */
+	su2double dmudT_rho_Table_Limits[2];/*!< \brief (UNUSED) The [min,max] values of the dmudT_rho  values in the LUT */
+	//Nearest neighbour's i and j indexes
+	int *Nearest_Neighbour_iIndex;/*!< \brief An array which holds the i (rho) indexes of the points used in the interpolation (usually Neighbours)*/
+	int *Nearest_Neighbour_jIndex;/*!< \brief An array which holds the j (P) indexes of the points used in the interpolation (usually Neighbours)*/
+
 public:
 
-		/*!
-		 * \brief Constructor of the class.
-		 */
-		CLookUpTable_Viscosity(CConfig *config);
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CLookUpTable_Viscosity(CConfig *config, bool dimensional);
 
-		/*!
-		 * \brief Destructor of the class.
-		 */
-		virtual ~CLookUpTable_Viscosity(void);
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CLookUpTable_Viscosity(void);
 
-		/*!
-		 * \brief return viscosity value.
-		 */
-		su2double GetConductivity(void);
+	/*!
+	 * \brief Set Viscosity.
+	 */
 
-		/*!
-		 * \brief return viscosity partial derivative value.
-		 */
-		su2double Getdktdrho_T(void);
+	void SetViscosity(su2double T, su2double rho);
 
-		/*!
-		 * \brief return viscosity partial derivative value.
-		 */
-		su2double GetdktdT_rho(void);
+	/*!
+	 * \brief Set Viscosity Derivatives.
+	 */
+	void SetDerViscosity(su2double T, su2double rho);
 
-		/*!
-		 * \brief Set Thermal conductivity.
-		 */
-		virtual	 void SetConductivity(su2double T, su2double rho, su2double mu, su2double cp);
+	void Gaussian_Inverse(int nDim);
 
-		/*!
-		 * \brief Set Thermal conductivity derivatives.
-		 */
-		virtual	 void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
+	/*!
+	 * \brief Calculate the bilinear interpolation coefficients for a quad with arbitrary skew.
+	 *  The entails building the Vandermonde matrix, inverting it, transposing it, and dot product with the search values of x, and y.
+	 *  This formulation with the transpose means that the coefficients depend only on the x,y cooridinate of the search and
+	 *  not on the thermodynamic variable being interpolated. Thus, the same coefficients can be used across
+	 *  the interpolation of all desired thermodynamic properties.
+	 * \param[in] x - the x value used to set the thermodynamic state. (e.g. rho in rhoe)
+	 * \param[in] x - the y value used to set the thermodynamic state. (e.g. rho in e)
+	 * \param[in] grid_var - the pair of thermodynamic variables which define the grid i.e. the interpolation quad. (e.g. RHOE for rhoe)
+	 */
+
+	void Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x, su2double y,
+			std::string grid_var);
+
+	/*!
+	 * \brief Use the interpolation coefficients to interpolate a given thermodynamic variable property. (Must calculate the interpolation coefficients first)
+	 * \param[in] interpolant_var - the name of the variable to be interpolated e.g Density
+	 */
+
+	su2double Interpolate_2D_Bilinear(std::string interpolant_var);
+
+	/*!
+	 * \brief Use the inverse distances in a Shephard's interpolation.
+	 * This was initially used for the HS tree but did not produce satisfactory accuracy
+	 * \param[in] N - the number of points involved in the interpolation, typically neighbors found using KD_tree
+	 * \param[in] interpolant_var - the distance between the sample points and the desired points. May be raised to desired power.
+	 */
+
+	/*!
+	 * \brief Alter the loaded table such that that the two phase region is replaced.
+	 * Instead of the physically accurate values, the new values for the P-rho combination
+	 * are to be extrapolated from the superheated vapor region. The saturation values
+	 * are extracted from the CFX table.
+	 * \param[in] filename - the name of the CFX file containing the table
+	 * \param[in] is_two_phase - (NOT IMPLEMENTED) keep both the vapor and 2phase tables,
+	 */
+	void Remove_Two_Phase_Region_CFX_Table(bool is_not_two_phase);
+
+	/*!
+	 * \brief Load the LUT table from a CFX file format. X axis must be Density, and Y axis pressure. Equal spacing not required.
+	 * \param[in] filename - the name of the CFX file containing the table
+	 */
+
+	void LookUpTable_Load_CFX(std::string filename,
+			bool read_saturation_properties);
+
+	/*!
+	 * \brief Print the table to a text file (for external inspection)
+	 * This was used during the verification to print the table in a simpler format
+	 * \param[in] filename - the name of the file where the LUT should be stored
+	 */
 
 };
 
+/*!
+ * \class CConductivityList
+ * \brief holds the conductivity properties associated with a particular table index
+ * \author: M. Kosec, A.Rubino, S.Vitale
+ * \version 4.1.2 "Cardinal"
+ */
+class CConductivityList {
+public:
+	su2double Density, /*!< \brief Density. */
+	Temperature, /*!< \brief Temperature. */
+	Kt, /*!< \brief Thermal Conductivity. */
+	dktdrho_T, /*!< \brief Fluid derivative DktDrho_T.  */
+	dktdT_rho; /*!< \brief Fluid derivative DktDT_rho. */
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CConductivityList(void);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CConductivityList(void);
+};
 
 /*!
  * \class CThermalConductivityModel
@@ -235,48 +345,49 @@ public:
  */
 class CConductivityModel {
 protected:
-su2double   	 Kt,			/*!< \brief Thermal conductivity. */
-			 dktdrho_T, 	/*!< \brief DktDrho_T. */
-			 dktdT_rho; 	/*!< \brief DktDT_rho. */
+	su2double Kt, /*!< \brief Thermal conductivity. */
+	dktdrho_T, /*!< \brief DktDrho_T. */
+	dktdT_rho; /*!< \brief DktDT_rho. */
 public:
 
-		/*!
-		 * \brief Constructor of the class.
-		 */
-		CConductivityModel(void);
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CConductivityModel(void);
 
-		/*!
-		 * \brief Destructor of the class.
-		 */
-		virtual ~CConductivityModel(void);
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CConductivityModel(void);
 
-		/*!
-		 * \brief return viscosity value.
-		 */
-		su2double GetConductivity(void);
+	/*!
+	 * \brief return viscosity value.
+	 */
+	su2double GetConductivity(void);
 
-		/*!
-		 * \brief return viscosity partial derivative value.
-		 */
-		su2double Getdktdrho_T(void);
+	/*!
+	 * \brief return viscosity partial derivative value.
+	 */
+	su2double Getdktdrho_T(void);
 
-		/*!
-		 * \brief return viscosity partial derivative value.
-		 */
-		su2double GetdktdT_rho(void);
+	/*!
+	 * \brief return viscosity partial derivative value.
+	 */
+	su2double GetdktdT_rho(void);
 
-		/*!
-		 * \brief Set Thermal conductivity.
-		 */
-		virtual	 void SetConductivity(su2double T, su2double rho, su2double mu, su2double cp);
+	/*!
+	 * \brief Set Thermal conductivity.
+	 */
+	virtual void SetConductivity(su2double T, su2double rho, su2double mu,
+			su2double cp);
 
-		/*!
-		 * \brief Set Thermal conductivity derivatives.
-		 */
-		virtual	 void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
+	/*!
+	 * \brief Set Thermal conductivity derivatives.
+	 */
+	virtual void SetDerConductivity(su2double T, su2double rho,
+			su2double dmudrho_T, su2double dmudT_rho, su2double cp);
 
 };
-
 
 /*!
  * \class CConstantPrandtl
@@ -284,28 +395,26 @@ public:
  * \author S.Vitale, M.Pini
  * \version 1.0
  */
-class CConstantConductivity : public CConductivityModel {
+class CConstantConductivity: public CConductivityModel {
 
 public:
 
-		/*!
-		 * \brief Constructor of the class.
-		 */
-	    CConstantConductivity(void);
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CConstantConductivity(void);
 
-		/*!
-		 * \brief Constructor of the class.
-		 */
-	    CConstantConductivity(su2double kt_const);
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CConstantConductivity(su2double kt_const);
 
-		/*!
-		 * \brief Destructor of the class.
-		 */
-		virtual ~CConstantConductivity(void);
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CConstantConductivity(void);
 
 };
-
-
 
 /*!
  * \class CConstantPrandtl
@@ -313,38 +422,39 @@ public:
  * \author S.Vitale, M.Pini
  * \version 1.0
  */
-class CConstantPrandtl : public CConductivityModel {
+class CConstantPrandtl: public CConductivityModel {
 protected:
-	su2double   	 Pr_const;		/*!< \brief Prandtl's number. */
+	su2double Pr_const; /*!< \brief Prandtl's number. */
 
 public:
 
-		/*!
-		 * \brief Constructor of the class.
-		 */
-	    CConstantPrandtl(void);
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CConstantPrandtl(void);
 
-		/*!
-		 * \brief Destructor of the class.
-		 */
-		virtual ~CConstantPrandtl(void);
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CConstantPrandtl(void);
 
-		/*!
-		 * \brief Constructor of the class.
-		 */
-	    CConstantPrandtl(su2double pr_const);
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CConstantPrandtl(su2double pr_const);
 
-		/*!
-		 * \brief Set Thermal conductivity.
-		 * \brief par1 -> Cp.
-		 * \brief par2 -> Mu.
-		 */
-		void SetConductivity(su2double T, su2double rho, su2double mu, su2double cp);
+	/*!
+	 * \brief Set Thermal conductivity.
+	 * \brief par1 -> Cp.
+	 * \brief par2 -> Mu.
+	 */
+	void SetConductivity(su2double T, su2double rho, su2double mu, su2double cp);
 
-		/*!
-		 * \brief Set Thermal conductivity derivatives.
-		 */
-		void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
+	/*!
+	 * \brief Set Thermal conductivity derivatives.
+	 */
+	void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T,
+			su2double dmudT_rho, su2double cp);
 
 };
 
@@ -354,40 +464,120 @@ public:
  * Viscosity alues are return based on an input of Rho and T
  * \author M.Kosec, A. Rubino, S.Vitale
  */
-class CLookUpTable_Conductivity : public CConductivityModel {
+class CLookUpTable_Conductivity: public CConductivityModel {
 protected:
+	su2double Kt, /*!< \brief Thermal conductivity. */
+		dktdrho_T, /*!< \brief DktDrho_T. */
+		Density,
+		Temperature,
+		dktdT_rho; /*!< \brief DktDT_rho. */
 
+		CConductivityList **ConductivityTables;/*!< \brief The 2D array used to hold the values of thermodynamic properties from the LUT*/
+		CConductivityList *SaturationTables;/*!< \brief The 1D array array of thermo porperties nn the saturation line, for q=1*/
+		su2double Pressure_Reference_Value;
+		su2double Density_Reference_Value;
+		su2double Temperature_Reference_Value;
+		su2double Velocity_Reference_Value;
+
+
+		su2double Interpolation_Matrix[4][4]; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
+		su2double Interpolation_Coeff[4][4]; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
+		short iIndex, jIndex; /*!< \brief The i,j indexes (rho, P) of the position of the table search. Can be used as a restart for next search.*/
+		int Table_Pressure_Stations;/*!< \brief The pressure dimensions of the table */
+		int Table_Density_Stations; /*!< \brief The density dimensions of the table */
+
+		su2double Density_Table_Limits[2];/*!< \brief The [min,max] values of the Density values in the LUT */
+		su2double Temperature_Table_Limits[2];/*!< \brief The [min,max] values of the Temperature values in the LUT */
+		su2double Kt_Table_Limits[2];/*!< \brief The [min,max] values of the Kt values in the LUT */
+		su2double dktdrho_T_Table_Limits[2];/*!< \brief (UNUSED) The [min,max] values of the dktdrho_T values in the LUT */
+		su2double dktdT_rho_Table_Limits[2];/*!< \brief (UNUSED) The [min,max] values of the dktdT_rho values in the LUT */
+		//Nearest neighbour's i and j indexes
+		int *Nearest_Neighbour_iIndex;/*!< \brief An array which holds the i (rho) indexes of the points used in the interpolation (usually Neighbours)*/
+		int *Nearest_Neighbour_jIndex;/*!< \brief An array which holds the j (P) indexes of the points used in the interpolation (usually Neighbours)*/
 
 public:
 
-		/*!
-		 * \brief Constructor of the class.
-		 */
-		 CLookUpTable_Conductivity(void);
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CLookUpTable_Conductivity(void);
 
-		/*!
-		 * \brief Destructor of the class.
-		 */
-		virtual ~CLookUpTable_Conductivity(void);
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CLookUpTable_Conductivity(void);
 
-		/*!
-		 * \brief Constructor of the class.
-		 */
-		CLookUpTable_Conductivity(CConfig *config);
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CLookUpTable_Conductivity(CConfig *config, bool dimensional);
 
-		/*!
-		 * \brief Set Thermal conductivity.
-		 * \brief par1 -> Cp.
-		 * \brief par2 -> Mu.
-		 */
-		void SetConductivity(su2double T, su2double rho, su2double mu, su2double cp);
+	/*!
+	 * \brief Set Thermal conductivity.
+	 * \brief par1 -> Cp.
+	 * \brief par2 -> Mu.
+	 */
+	void SetConductivity(su2double T, su2double rho);
 
-		/*!
-		 * \brief Set Thermal conductivity derivatives.
-		 */
-		void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
+	/*!
+	 * \brief Set Thermal conductivity derivatives.
+	 */
+	void SetDerConductivity(su2double T, su2double rho);
+	/*!
+	 * \brief Calculate the inverse of a square matrix (e.g. the Vandermonde matrix) with pivoting Gaussian elimination
+	 * \param[in] nDim - the dimension of the square block to invert
+	 */
+
+	void Gaussian_Inverse(int nDim);
+
+	/*!
+	 * \brief Calculate the bilinear interpolation coefficients for a quad with arbitrary skew.
+	 *  The entails building the Vandermonde matrix, inverting it, transposing it, and dot product with the search values of x, and y.
+	 *  This formulation with the transpose means that the coefficients depend only on the x,y cooridinate of the search and
+	 *  not on the thermodynamic variable being interpolated. Thus, the same coefficients can be used across
+	 *  the interpolation of all desired thermodynamic properties.
+	 * \param[in] x - the x value used to set the thermodynamic state. (e.g. rho in rhoe)
+	 * \param[in] x - the y value used to set the thermodynamic state. (e.g. rho in e)
+	 * \param[in] grid_var - the pair of thermodynamic variables which define the grid i.e. the interpolation quad. (e.g. RHOE for rhoe)
+	 */
+
+	void Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x, su2double y,
+			std::string grid_var);
+
+
+	/*!
+	 * \brief Use the interpolation coefficients to interpolate a given thermodynamic variable property. (Must calculate the interpolation coefficients first)
+	 * \param[in] interpolant_var - the name of the variable to be interpolated e.g Density
+	 */
+
+	su2double Interpolate_2D_Bilinear(std::string interpolant_var);
+
+	/*!
+	 * \brief Use the inverse distances in a Shephard's interpolation.
+	 * This was initially used for the HS tree but did not produce satisfactory accuracy
+	 * \param[in] N - the number of points involved in the interpolation, typically neighbors found using KD_tree
+	 * \param[in] interpolant_var - the distance between the sample points and the desired points. May be raised to desired power.
+	 */
+
+	/*!
+	 * \brief Alter the loaded table such that that the two phase region is replaced.
+	 * Instead of the physically accurate values, the new values for the P-rho combination
+	 * are to be extrapolated from the superheated vapor region. The saturation values
+	 * are extracted from the CFX table.
+	 * \param[in] filename - the name of the CFX file containing the table
+	 * \param[in] is_two_phase - (NOT IMPLEMENTED) keep both the vapor and 2phase tables,
+	 */
+	void Remove_Two_Phase_Region_CFX_Table(bool is_not_two_phase);
+
+	/*!
+	 * \brief Load the LUT table from a CFX file format. X axis must be Density, and Y axis pressure. Equal spacing not required.
+	 * \param[in] filename - the name of the CFX file containing the table
+	 */
+
+	void LookUpTable_Load_CFX(std::string filename,
+			bool read_saturation_properties);
+
 
 };
-
 
 #include "transport_model.inl"
