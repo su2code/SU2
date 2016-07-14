@@ -139,7 +139,7 @@ public:
    * \brief Less than operator. Needed for the sorting of the candidates.
    * \param[in] other  Object to which the current object must be compared.
    */
-  bool operator <(const su2_BBoxTargetClass &other);
+  bool operator <(const su2_BBoxTargetClass &other) const;
 
 private:
 
