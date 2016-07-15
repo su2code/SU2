@@ -861,6 +861,10 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig 
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
   
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
+
+  /*--- Delete the original (dimensional) FluidModel object before replacing. ---*/
+
+  delete FluidModel;
   
   switch (config->GetKind_FluidModel()) {
       
@@ -2600,6 +2604,9 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
   }
   delete [] Jacobian_i;
   delete [] Jacobian_j;
+
+  Jacobian_i = NULL;
+  Jacobian_j = NULL;
 }
 
 void CFEM_DG_EulerSolver::MatrixProduct(const int M,        const int N,        const int K,
