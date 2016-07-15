@@ -380,20 +380,24 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   /*--- Assign booleans ---*/
 
   switch (config->GetKind_Solver()) {
-  case TEMPLATE_SOLVER: template_solver = true; break;
-  case EULER : euler = true; break;
-  case NAVIER_STOKES: ns = true; break;
-  case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
-  case POISSON_EQUATION: poisson = true; break;
-  case WAVE_EQUATION: wave = true; break;
-  case HEAT_EQUATION: heat = true; break;
-  case FEM_ELASTICITY: fem = true; break;
-  case ADJ_EULER : euler = true; adj_euler = true; break;
-  case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-  case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
-  case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
-  case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
-  case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
+    case TEMPLATE_SOLVER: template_solver = true; break;
+    case EULER :
+    case FEM_EULER : euler = true; break;
+    case NAVIER_STOKES:
+    case FEM_NAVIER_STOKES:
+    case FEM_LES: ns = true; break;
+    case RANS :
+    case FEM_RANS: ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case POISSON_EQUATION: poisson = true; break;
+    case WAVE_EQUATION: wave = true; break;
+    case HEAT_EQUATION: heat = true; break;
+    case FEM_ELASTICITY: fem = true; break;
+    case ADJ_EULER : euler = true; adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
   }
 
   /*--- Assign turbulence model booleans --- */
@@ -534,6 +538,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   euler, adj_euler,
   ns, adj_ns,
   turbulent, adj_turb,
+  fem_euler, fem_ns, fem_turbulent, fem_les,
   poisson, wave, fem, heat, template_solver, transition, disc_adj;
 
   /*--- Initialize some useful booleans ---*/
@@ -541,6 +546,10 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   ns               = false; adj_ns           = false;
   turbulent        = false; adj_turb         = false;
   poisson          = false; disc_adj         = false;
+  fem_euler        = false;
+  fem_ns           = false;
+  fem_turbulent    = false;
+  fem_les          = false;
   wave             = false;
   heat             = false;
   fem = false;
@@ -553,6 +562,10 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
     case EULER : euler = true; break;
     case NAVIER_STOKES: ns = true; break;
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case FEM_EULER : fem_euler = true; break;
+    case FEM_NAVIER_STOKES: fem_ns = true; break;
+    case FEM_RANS : fem_ns = true; fem_turbulent = true; break;
+    case FEM_LES :  fem_ns = true; fem_les = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -582,7 +595,9 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   if (adj_euler || adj_ns || disc_adj) delete integration_container[ADJFLOW_SOL];
   if (adj_turb) delete integration_container[ADJTURB_SOL];
 
-
+  /*--- DeAllocate integration container for finite element flow solver. ---*/
+  if (fem_euler || fem_ns) delete integration_container[FLOW_SOL];
+  //if (fem_turbulent)     delete integration_container[FEM_TURB_SOL];
 }
 
 void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
@@ -1401,6 +1416,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   bool
   euler, adj_euler,
   ns, adj_ns,
+  fem_euler, fem_ns, fem_turbulent, fem_les,
   turbulent, adj_turb,
   spalart_allmaras, neg_spalart_allmaras, menter_sst,
   poisson,
@@ -1415,10 +1431,11 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
 
   /*--- Initialize some useful booleans ---*/
-  euler            = false;   ns               = false;   turbulent        = false;
+  euler            = false; ns     = false; turbulent     = false;
+  fem_euler        = false; fem_ns = false; fem_turbulent = false; fem_les = false;
   poisson          = false;
-  adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
-  wave             = false;   heat             = false;   fem        = false;
+  adj_euler        = false; adj_ns           = false;   adj_turb         = false;
+  wave             = false; heat             = false;   fem        = false;
   spalart_allmaras = false; neg_spalart_allmaras = false; menter_sst       = false;
   transition       = false;
   template_solver  = false;
@@ -1426,9 +1443,13 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : case FEM_EULER: case DISC_ADJ_EULER: euler = true; break;
-    case NAVIER_STOKES: case FEM_NAVIER_STOKES: case FEM_LES: case DISC_ADJ_NAVIER_STOKES: ns = true; break;
-    case RANS : case FEM_RANS: case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case EULER : case DISC_ADJ_EULER: euler = true; break;
+    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: ns = true; break;
+    case RANS : case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case FEM_EULER : fem_euler = true; break;
+    case FEM_NAVIER_STOKES: fem_ns = true; break;
+    case FEM_RANS : fem_ns = true; fem_turbulent = true; break;
+    case FEM_LES :  fem_ns = true; fem_les = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -1558,6 +1579,36 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
 
   }
 
+  /*--- DG-FEM solver definition for Euler, Navier-Stokes problems ---*/
+
+  if ((fem_euler) || (fem_ns)) {
+
+    /*--- Definition of the convective scheme for each equation and mesh level ---*/
+    switch (config->GetRiemann_Solver_FEM()) {
+      case ROE: case AUSM: case TURKEL: case HLLC: case MSW:
+
+        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+          delete numerics_container[iMGlevel][FLOW_SOL][CONV_TERM];
+          delete numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
+        }
+        break;
+    }
+
+    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+    delete numerics_container[MESH_0][FLOW_SOL][VISC_TERM];
+    for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+      delete numerics_container[iMGlevel][FLOW_SOL][VISC_TERM];
+
+    /*--- Definition of the boundary condition method ---*/
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+      delete numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM];
+
+    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      delete numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM];
+      delete numerics_container[iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM];
+    }
+  }
 
   /*--- Solver definition for the turbulent model problem ---*/
 

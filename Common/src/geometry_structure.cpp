@@ -361,9 +361,10 @@ void MatchingFaceClass::Copy(const MatchingFaceClass &other) {
 
 CGeometry::CGeometry(void) {
   
-  nEdge = 0;
-  nPoint = 0;
-  nElem = 0;
+  nEdge      = 0;
+  nPoint     = 0;
+  nPointNode = 0;
+  nElem      = 0;
   
   nElem_Bound = NULL;
   Tag_to_Marker = NULL;
@@ -420,7 +421,7 @@ CGeometry::~CGeometry(void) {
   }
   
   if (node != NULL) {
-    for (iPoint = 0; iPoint < nPoint; iPoint ++)
+    for (iPoint = 0; iPoint < nPointNode; iPoint ++)
       if (node[iPoint] != NULL) delete node[iPoint];
     delete[] node;
   }
@@ -8040,7 +8041,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
   /*--- Allocate the memory for the coordinates to be stored on this rank. ---*/
 
-  nPoint = nodeIDsElemLoc.size();
+  nPoint     = nodeIDsElemLoc.size();
+  nPointNode = nPoint;
   node = new CPoint*[nPoint];
 
   /*--- Open the grid file again and go to the position where
