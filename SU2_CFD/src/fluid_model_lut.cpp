@@ -96,9 +96,25 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 		Velocity_Reference_Value = config->GetVelocity_Ref();
 		Energy_Reference_Value = config->GetEnergy_Ref();
 	}
+	skewed_linear_table = false;
+	//Detect cfx filetype
+	if ((config->GetLUTFileName()).find(".rgp") != string::npos) {
+		cout << "CFX type LUT found" << endl;
+		LookUpTable_Load_CFX(config->GetLUTFileName(), true);
+	}
+	//Detect dat file type
+	else if ((config->GetLUTFileName()).find(".dat") != string::npos) {
+		cout << "DAT type LUT found" << endl;
+		LookUpTable_Load_DAT(config->GetLUTFileName(), true);
+	} else {
+		cout << "No recognized LUT format found, exiting!" << endl;
+		exit(EXIT_FAILURE);
+	}
+	if (ThermoTables[0][0].Pressure
+			!= ThermoTables[0][Table_Pressure_Stations - 1].Pressure) {
+		skewed_linear_table = true;
+	}
 
-	LookUpTable_Load_CFX(config->GetLUTFileName(), true);
-	Remove_Two_Phase_Region_CFX_Table(true);
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 3; j++) {
 			Interpolation_Coeff[i][j] = -1.0;
@@ -386,6 +402,32 @@ void CLookUpTable::N_Nearest_Neighbours_KD_Tree(int N, su2double thermo1,
 	}
 }
 
+void CLookUpTable::Get_Equispaced_Rho_Index(su2double rho) {
+
+	//Determine the I index: rho IS equispaced
+	iIndex = floor(
+			(Table_Density_Stations - 2) * (rho - Density_Table_Limits[0])
+					/ (Density_Table_Limits[1] - Density_Table_Limits[0]));
+
+	if (iIndex > (Table_Density_Stations - 2)) {
+		iIndex = Table_Density_Stations - 2;
+	} else if (iIndex < 0) {
+		iIndex = 0;
+	}
+}
+void CLookUpTable::Get_Equispaced_P_Index(su2double P) {
+	//Determine the J index: P IS equispaced
+	jIndex = floor((Table_Pressure_Stations - 1) * (P - Pressure_Table_Limits[0])
+			/ (Pressure_Table_Limits[1] - Pressure_Table_Limits[0])
+	);
+
+	if (jIndex > (Table_Pressure_Stations - 2)) {
+		jIndex = Table_Pressure_Stations - 2;
+	} else if (jIndex < 0) {
+		jIndex = 0;
+	}
+}
+
 void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 	// Check if inputs are in total range (necessary but not sufficient condition)
 	if ((rho > Density_Table_Limits[1]) or (rho < Density_Table_Limits[0])) {
@@ -399,7 +441,7 @@ void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 	Nearest_Neighbour_iIndex = new int[4];
 	Nearest_Neighbour_jIndex = new int[4];
 	su2double RunVal;
-	unsigned int LowerI, UpperI, LowerJ, UpperJ, middleI, middleJ;
+	int LowerI, UpperI, LowerJ, UpperJ, middleI, middleJ;
 	su2double grad, x00, y00, y10, x10;
 
 	// Starting values for the search
@@ -408,21 +450,9 @@ void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 	UpperI = Table_Density_Stations - 1;
 	LowerI = 0;
 
-	// Bilinear search for the I index (density), not assuming rho is equispaced
-	while (UpperI - LowerI > 1) {
-		middleI = (UpperI + LowerI) / 2;/*!< \brief Splitting index for the search */
-		x00 = ThermoTables[middleI][LowerJ].Density;
-		grad = ThermoTables[middleI + 1][LowerJ].Density - x00; /*!< \brief Density gradient with increasing i */
-		if (x00 * grad > rho * grad) {
-			UpperI = middleI;
-		} else if (x00 < rho) {
-			LowerI = middleI;
-		} else if (x00 == rho) {
-			LowerI = middleI;
-			UpperI = LowerI + 1;
-			break;
-		}
-	}
+	Get_Equispaced_Rho_Index(rho);
+	LowerI = iIndex;
+	UpperI = iIndex + 1;
 
 	while (UpperJ - LowerJ > 1) {
 		middleJ = (UpperJ + LowerJ) / 2; /*!< \brief Splitting index for the search */
@@ -509,7 +539,7 @@ void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
 	// Linear interpolation requires 4 neighbors to be selected from the LUT
 	Nearest_Neighbour_iIndex = new int[4];
 	Nearest_Neighbour_jIndex = new int[4];
-	unsigned int LowerI, UpperI, LowerJ, UpperJ, middleI, middleJ;
+	int LowerI, UpperI, LowerJ, UpperJ, middleI, middleJ;
 
 	UpperJ = Table_Pressure_Stations - 1;
 	LowerJ = 0;
@@ -608,7 +638,7 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 	// Linear interpolation requires 4 neighbors to be selected from the LUT
 	Nearest_Neighbour_iIndex = new int[4];
 	Nearest_Neighbour_jIndex = new int[4];
-	unsigned int LowerI, UpperI, LowerJ, UpperJ, middleI, middleJ;
+	int LowerI, UpperI, LowerJ, UpperJ, middleI, middleJ;
 
 	UpperJ = Table_Pressure_Stations - 1;
 	LowerJ = 0;
@@ -705,7 +735,7 @@ void CLookUpTable::SetEnergy_Prho(su2double P, su2double rho) {
 	// Linear interpolation requires 4 neighbors to be selected from the LUT
 	Nearest_Neighbour_iIndex = new int[4];
 	Nearest_Neighbour_jIndex = new int[4];
-	unsigned int LowerI, UpperI, LowerJ, UpperJ, middleI, middleJ;
+	int LowerI, UpperI, LowerJ, UpperJ, middleI, middleJ;
 	su2double grad, x00, y00;
 
 	UpperJ = Table_Pressure_Stations - 1;
@@ -713,21 +743,18 @@ void CLookUpTable::SetEnergy_Prho(su2double P, su2double rho) {
 	UpperI = Table_Density_Stations - 1;
 	LowerI = 0;
 
-	//Binary search for I index, not assuming it is equispaced.
-	while (UpperI - LowerI > 1) {
-		middleI = (UpperI + LowerI) / 2;
-		x00 = ThermoTables[middleI][LowerJ].Density;
-		grad = ThermoTables[middleI + 1][LowerJ].Density - x00;
-		if (x00 * grad > rho * grad) {
-			UpperI = middleI;
-		} else if (x00 < rho) {
-			LowerI = middleI;
-		} else if (x00 == rho) {
-			LowerI = middleI;
-			UpperI = LowerI + 1;
-			break;
-		}
+	//Determine the I index: rho IS equispaced
+	LowerI = (Table_Density_Stations - 1)
+			* floor(
+					(rho - Density_Table_Limits[0])
+							/ (Density_Table_Limits[1] - Density_Table_Limits[0]));
+
+	if (LowerI > (Table_Density_Stations - 2)) {
+		LowerI = Table_Density_Stations - 2;
+	} else if (LowerI < 0) {
+		LowerI = 0;
 	}
+	UpperI = LowerI + 1;
 
 	//Determine the J index with pure binary search
 	while (UpperJ - LowerJ > 1) {
@@ -944,7 +971,7 @@ void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 		cerr << "PS Input Entropy  out of bounds\n";
 	}
 
-	unsigned int LowerI, UpperI, LowerJ, UpperJ, middleI, middleJ;
+	int LowerI, UpperI, LowerJ, UpperJ, middleI, middleJ;
 	// Linear interpolation requires 4 neighbors to be selected from the LUT
 	Nearest_Neighbour_iIndex = new int[4];
 	Nearest_Neighbour_jIndex = new int[4];
@@ -1048,7 +1075,7 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 		cerr << "RHOT Input Temperature out of bounds\n";
 	}
 
-	unsigned int LowerI, UpperI, LowerJ, UpperJ, middleI, middleJ;
+	int LowerI, UpperI, LowerJ, UpperJ, middleI, middleJ;
 	// Linear interpolation requires 4 neighbors to be selected from the LUT
 	Nearest_Neighbour_iIndex = new int[4];
 	Nearest_Neighbour_jIndex = new int[4];
@@ -1056,25 +1083,18 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 	LowerJ = 0;
 	su2double grad, x00, y00, y10, x10, RunVal;
 
-	//Determine the I index: rho is not equispaced
-	UpperI = Table_Density_Stations - 1;
-	LowerI = 0;
+	//Determine the I index: rho IS equispaced
+	LowerI = (Table_Density_Stations - 1)
+			* floor(
+					(rho - Density_Table_Limits[0])
+							/ (Density_Table_Limits[1] - Density_Table_Limits[0]));
 
-	while (UpperI - LowerI > 1) {
-		middleI = (UpperI + LowerI) / 2;
-		//Check current value
-		x00 = ThermoTables[middleI][LowerJ].Density;
-		grad = ThermoTables[middleI + 1][LowerJ].Density - x00;
-		if (x00 * grad > rho * grad) {
-			UpperI = middleI;
-		} else if (x00 < rho) {
-			LowerI = middleI;
-		} else if (x00 == rho) {
-			LowerI = middleI;
-			UpperI = LowerI + 1;
-			break;
-		}
+	if (LowerI > (Table_Density_Stations - 2)) {
+		LowerI = Table_Density_Stations - 2;
+	} else if (LowerI < 0) {
+		LowerI = 0;
 	}
+	UpperI = LowerI + 1;
 
 	//Determine the J index (for T)
 	while (UpperJ - LowerJ > 1) {
@@ -1733,52 +1753,6 @@ void CLookUpTable::LookUpTable_Print_To_File(char* filename) {
 	//		}
 	//	}
 	//
-}
-
-void CLookUpTable::Remove_Two_Phase_Region_CFX_Table(bool is_not_two_phase) {
-	int** Indexes_of_two_phase = new int*[Table_Density_Stations];
-
-	for (int i = 0; i < Table_Density_Stations; i++) {
-		Indexes_of_two_phase[i] = new int[Table_Pressure_Stations];
-	}
-	for (int i = 0; i < Table_Density_Stations; i++) {
-		for (int j = 0; j < Table_Pressure_Stations; j++) {
-			Indexes_of_two_phase[i][j] = 0;
-		}
-	}
-	//	//Edge detection going down
-	//	for (int j = 0; j < Table_Pressure_Stations; j++) {
-	//		for (int i = 0; i < Table_Density_Stations - 1; i++) {
-	//			if (abs(
-	//					ThermoTables[i + 1][j].Enthalpy - ThermoTables[i][j].Enthalpy)
-	//					> 0.1 * ThermoTables[i + 1][j].Enthalpy) {
-	//				Indexes_of_two_phase[i+1][j] = -10;
-	//			}
-	//		}
-	//	}
-	//	//Edge detection going up
-	//	for (int j = 0; j < Table_Pressure_Stations; j++) {
-	//		for (int i = Table_Density_Stations - 1; i > 0; i--) {
-	//			if ((ThermoTables[i][j].Enthalpy - ThermoTables[i - 1][j].Enthalpy)
-	//					> 1.1 * ThermoTables[i - 1][j].Enthalpy) {
-	//				Indexes_of_two_phase[i][j] = -10;
-	//			}
-	//		}
-	//	}
-	//	for (int i =0;i<Table_Density_Stations; i++) {
-	//			for (int j = 0; j < Table_Pressure_Stations; j++) {
-	//				cout<<Indexes_of_two_phase[i][j]<<", ";
-	//		}
-	//		cout<<endl;
-	//	}
-	//
-
-	delete[] SaturationTables;
-
-	for (int i = 0; i < Table_Density_Stations; i++) {
-		delete[] Indexes_of_two_phase[i];
-	}
-	delete[] Indexes_of_two_phase;
 }
 
 void CLookUpTable::LookUpTable_Load_CFX(string filename,
@@ -2527,5 +2501,10 @@ void CLookUpTable::LookUpTable_Load_CFX(string filename,
 	Table_Density_Stations = set_x;
 	Table_Pressure_Stations = set_y;
 	table.close();
+}
+
+void CLookUpTable::LookUpTable_Load_DAT(std::string filename,
+		bool read_saturation_properties) {
+
 }
 

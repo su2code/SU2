@@ -118,6 +118,7 @@ public:
 class CLookUpTable: public CFluidModel {
 
 protected:
+	bool skewed_linear_table;/*!< \brief Boolean to check for the type P-rho sample domain*/
 	CThermoList **ThermoTables;/*!< \brief The 2D array used to hold the values of thermodynamic properties from the LUT*/
 	CThermoList *SaturationTables;/*!< \brief The 1D array array of thermo porperties nn the saturation line, for q=1*/
 	su2double Pressure_Reference_Value;
@@ -128,7 +129,7 @@ protected:
 
 	su2double Interpolation_Matrix[4][4]; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
 	su2double Interpolation_Coeff[4][4]; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
-	short iIndex, jIndex; /*!< \brief The i,j indexes (rho, P) of the position of the table search. Can be used as a restart for next search.*/
+	int iIndex, jIndex; /*!< \brief The i,j indexes (rho, P) of the position of the table search. Can be used as a restart for next search.*/
 	int Table_Pressure_Stations;/*!< \brief The pressure dimensions of the table */
 	int Table_Density_Stations; /*!< \brief The density dimensions of the table */
 	KD_node *HS_tree; /*!< \brief The pointer to the root of the KD tree for the HS thermo-pair.*/
@@ -204,6 +205,7 @@ public:
 	 * \param[in] root    - pointer of the KD_tree branch from which to start the search (recursively, typically root e.g this->HS_tree)
 	 * \param[in] best    - a shared dynamic array of the N best distances encountered in the search.
 	 */
+
 	void N_Nearest_Neighbours_KD_Tree(int N, su2double thermo1, su2double thermo2,
 			KD_node *root, su2double* best_dist);
 
@@ -212,6 +214,8 @@ public:
 	 * \param[in] rho - input Density (must be within LUT limits)
 	 * \param[in] e   - input StaticEnergy (must be within LUT limits)
 	 */
+	void Get_Equispaced_Rho_Index(su2double rho);
+	void Get_Equispaced_P_Index(su2double P);
 	void SetTDState_rhoe(su2double rho, su2double e);
 
 	/*!
@@ -290,29 +294,14 @@ public:
 	su2double Interpolate_2D_Bilinear(std::string interpolant_var);
 
 	/*!
-	 * \brief Use the inverse distances in a Shephard's interpolation.
-	 * This was initially used for the HS tree but did not produce satisfactory accuracy
-	 * \param[in] N - the number of points involved in the interpolation, typically neighbors found using KD_tree
-	 * \param[in] interpolant_var - the distance between the sample points and the desired points. May be raised to desired power.
-	 */
-
-	/*!
-	 * \brief Alter the loaded table such that that the two phase region is replaced.
-	 * Instead of the physically accurate values, the new values for the P-rho combination
-	 * are to be extrapolated from the superheated vapor region. The saturation values
-	 * are extracted from the CFX table.
-	 * \param[in] filename - the name of the CFX file containing the table
-	 * \param[in] is_two_phase - (NOT IMPLEMENTED) keep both the vapor and 2phase tables,
-	 */
-	void Remove_Two_Phase_Region_CFX_Table(bool is_not_two_phase);
-
-	/*!
 	 * \brief Load the LUT table from a CFX file format. X axis must be Density, and Y axis pressure. Equal spacing not required.
 	 * \param[in] filename - the name of the CFX file containing the table
 	 */
 
 	void LookUpTable_Load_CFX(std::string filename,
 			bool read_saturation_properties);
+	void LookUpTable_Load_DAT(std::string filename,
+				bool read_saturation_properties);
 
 	/*!
 	 * \brief Print the table to a text file (for external inspection)
