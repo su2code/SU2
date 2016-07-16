@@ -190,8 +190,10 @@ public:
 	 * \param[in] rho - input Density (must be within LUT limits)
 	 * \param[in] e   - input StaticEnergy (must be within LUT limits)
 	 */
-	void Get_NonEquispaced_Rho_Index(su2double rho);
-	void Get_NonEquispaced_P_Index(su2double P);
+	void Search_NonEquispaced_Rho_Index(su2double rho);
+	void Search_NonEquispaced_P_Index(su2double P);
+	void Search_i_for_X_given_j(su2double x, su2double y, su2double **ThermoTables_X, su2double **ThermoTables_Y );
+	void Search_j_for_Y_given_i(su2double x, su2double y, su2double **ThermoTables_X, su2double **ThermoTables_Y );
 	void Zig_Zag_Search(su2double x, su2double y, su2double **ThermoTables_X, su2double **ThermoTables_Y);
 	void SetTDState_rhoe(su2double rho, su2double e);
 
@@ -275,8 +277,12 @@ public:
 	 * \param[in] filename - the name of the CFX file containing the table
 	 */
 
+	void LookUpTable_Malloc();
 	void LookUpTable_Load_CFX(std::string filename);
+	void CFX_Import_Table_By_Number(ifstream *tab, su2double **ThermoTables_X, bool skip_prho);
 	void LookUpTable_Load_DAT(std::string filename);
+	void Find_Table_Limits();
+	void NonDimensionalise_Table_Values();
 
 	/*!
 	 * \brief Print the table to a text file (for external inspection)
@@ -295,4 +301,5 @@ public:
 	void RecordState(char* file);
 
 };
+
 

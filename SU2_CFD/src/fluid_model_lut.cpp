@@ -383,7 +383,7 @@ void CLookUpTable::N_Nearest_Neighbours_KD_Tree(int N, su2double thermo1,
 	}
 }
 
-void CLookUpTable::Get_NonEquispaced_Rho_Index(su2double rho) {
+void CLookUpTable::Search_NonEquispaced_Rho_Index(su2double rho) {
 	{
 		su2double grad, x00, y00;
 		//  Determine the I index with binary search (rho is not assumed equispaced)
@@ -403,7 +403,7 @@ void CLookUpTable::Get_NonEquispaced_Rho_Index(su2double rho) {
 		}
 	}
 }
-void CLookUpTable::Get_NonEquispaced_P_Index(su2double P) {
+void CLookUpTable::Search_NonEquispaced_P_Index(su2double P) {
 	su2double grad, x00, y00, y01, x01, RunVal;
 	//Determine the J index using a binary search, and not assuming P is equispaced
 	while (UpperJ - LowerJ > 1) {
@@ -422,54 +422,103 @@ void CLookUpTable::Get_NonEquispaced_P_Index(su2double P) {
 	}
 }
 
-void CLookUpTable::Zig_Zag_Search(su2double x, su2double y, su2double **ThermoTables_X, su2double **ThermoTables_Y)
-{
+void CLookUpTable::Zig_Zag_Search(su2double x, su2double y,
+		su2double **ThermoTables_X, su2double **ThermoTables_Y) {
 	su2double dx, dy, x00, y00, dx10, dx01, dx11, dy10, dy01, dy11;
-		bool BOTTOM, TOP, LEFT, RIGHT, found = false; //check if bellow BOTTOM, above, TOP, left of LEFT, and right of RIGHT
-		for (int k = 0; k < 20 and not found; k++) //20 is arbitrary and used primarily to avoid a while loop which could get stuck
-				{
-			UpperI = LowerI + 1;
-			UpperJ = LowerJ + 1;
-			x00 = ThermoTables_X[LowerI][LowerJ];
-			y00 = ThermoTables_Y[LowerI][LowerJ];
-			dx = x - x00;
-			dy = y - y00;
-			dx01 = ThermoTables_X[LowerI][UpperJ] - x00;
-			dy01 = ThermoTables_Y[LowerI][UpperJ] - y00;
-			dx10 = ThermoTables_X[UpperI][LowerJ] - x00;
-			dy10 = ThermoTables_Y[UpperI][LowerJ] - y00;
-			dx11 = ThermoTables_X[UpperI][UpperJ] - x00;
-			dy11 = ThermoTables_Y[UpperI][UpperJ] - y00;
+	bool BOTTOM, TOP, LEFT, RIGHT, found = false; //check if bellow BOTTOM, above, TOP, left of LEFT, and right of RIGHT
+	for (int k = 0; k < 20 and not found; k++) //20 is arbitrary and used primarily to avoid a while loop which could get stuck
+			{
+		UpperI = LowerI + 1;
+		UpperJ = LowerJ + 1;
+		x00 = ThermoTables_X[LowerI][LowerJ];
+		y00 = ThermoTables_Y[LowerI][LowerJ];
+		dx = x - x00;
+		dy = y - y00;
+		dx01 = ThermoTables_X[LowerI][UpperJ] - x00;
+		dy01 = ThermoTables_Y[LowerI][UpperJ] - y00;
+		dx10 = ThermoTables_X[UpperI][LowerJ] - x00;
+		dy10 = ThermoTables_Y[UpperI][LowerJ] - y00;
+		dx11 = ThermoTables_X[UpperI][UpperJ] - x00;
+		dy11 = ThermoTables_Y[UpperI][UpperJ] - y00;
 
-			BOTTOM = (dy * dx10) < (dx * dy10);
-			TOP = ((dy - dy01) * (dx11 - dx01)) > ((dy11 - dy01) * (dx - dx01));
-			RIGHT = ((dx - dx10) * (dy11 - dy10)) > ((dx11 - dx10) * (dy - dy10));
-			LEFT = (dx * dy01) < (dx01 * dy);
-			//Check BOTTOM quad boundary
-			if (BOTTOM and !TOP) {
-				if (LowerJ != 0)
-					LowerJ--;
-			}
-			//Check RIGHT quad boundary
-			else if (RIGHT and !LEFT) {
-				if (LowerI != (Table_Density_Stations - 2))
-					LowerI++;
-			}
-			//Check TOP quad boundary
-			else if (TOP and !BOTTOM) {
-				if (LowerJ != (Table_Pressure_Stations - 2))
-					LowerJ++;
-			}
-			//Check LEFT quad boundary
-			else if (LEFT and !RIGHT) {
-				if (LowerI != 0)
-					LowerI--;
-			} else {
-				found = true;
-			}
+		BOTTOM = (dy * dx10) < (dx * dy10);
+		TOP = ((dy - dy01) * (dx11 - dx01)) > ((dy11 - dy01) * (dx - dx01));
+		RIGHT = ((dx - dx10) * (dy11 - dy10)) > ((dx11 - dx10) * (dy - dy10));
+		LEFT = (dx * dy01) < (dx01 * dy);
+		//Check BOTTOM quad boundary
+		if (BOTTOM and !TOP) {
+			if (LowerJ != 0)
+				LowerJ--;
 		}
+		//Check RIGHT quad boundary
+		else if (RIGHT and !LEFT) {
+			if (LowerI != (Table_Density_Stations - 2))
+				LowerI++;
+		}
+		//Check TOP quad boundary
+		else if (TOP and !BOTTOM) {
+			if (LowerJ != (Table_Pressure_Stations - 2))
+				LowerJ++;
+		}
+		//Check LEFT quad boundary
+		else if (LEFT and !RIGHT) {
+			if (LowerI != 0)
+				LowerI--;
+		} else {
+			found = true;
+		}
+	}
+}
 
+void CLookUpTable::Search_i_for_X_given_j(su2double x, su2double y,
+		su2double **ThermoTables_X, su2double **ThermoTables_Y) {
+	su2double grad, x00, y00, y01, x01, RunVal;
+	while (UpperI - LowerI > 1) {
+		middleI = (UpperI + LowerI) / 2;
+		//Use interpolated T as the running variable for the search (RunVal)
+		y00 = ThermoTables_Y[middleI][LowerJ];
+		y01 = ThermoTables_Y[middleI][UpperJ];
+		x00 = ThermoTables_X[middleI][LowerJ];
+		x01 = ThermoTables_X[middleI][UpperJ];
+		grad = ThermoTables_X[UpperI][LowerJ] - x00;
+		RunVal = x00 + (x01 - x00) / (y01 - y00) * (y - y00);
+		if (RunVal * grad > x * grad) {
+			UpperI = middleI;
+		} else if (RunVal * grad < x * grad) {
+			LowerI = middleI;
+		} else if (RunVal == x) {
+			LowerI = middleI;
+			UpperI = LowerI + 1;
+			break;
+		}
+	}
+}
 
+void CLookUpTable::Search_j_for_Y_given_i(su2double x, su2double y,
+		su2double **ThermoTables_X, su2double **ThermoTables_Y) {
+	su2double RunVal;
+	su2double grad, x00, y00, y10, x10;
+	while (UpperJ - LowerJ > 1) {
+		middleJ = (UpperJ + LowerJ) / 2; /*!< \brief Splitting index for the search */
+
+		// The variable names is composed of a (i,j) pair
+		y00 = ThermoTables_Y[LowerI][middleJ];
+		y10 = ThermoTables_Y[UpperI][middleJ];
+		x00 = ThermoTables_X[LowerI][middleJ];
+		x10 = ThermoTables_X[UpperI][middleJ];
+		//The search variable in j should be interpolated in i as well
+		RunVal = y00 + (y10 - y00) / (x10 - x00) * (x - x00);
+		grad = ThermoTables_Y[LowerI][middleJ + 1] - y00;
+		if (RunVal * grad > y * grad) {
+			UpperJ = middleJ;
+		} else if (RunVal * grad < y * grad) {
+			LowerJ = middleJ;
+		} else if (RunVal == y) {
+			LowerJ = middleJ;
+			UpperJ = LowerJ + 1;
+			break;
+		}
+	}
 }
 
 void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
@@ -482,8 +531,6 @@ void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 		cerr << "RHOE Input StaticEnergy out of bounds\n";
 	}
 
-	su2double RunVal;
-	su2double grad, x00, y00, y10, x10;
 	// Starting values for the search
 	UpperJ = Table_Pressure_Stations - 1;
 	LowerJ = 0;
@@ -491,48 +538,22 @@ void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 	LowerI = 0;
 
 	if (not skewed_linear_table) {
-		Get_NonEquispaced_Rho_Index(rho);
+		//Fix the i index first
+		Search_NonEquispaced_Rho_Index(rho);
+		//Having found the i index, search in j
+		Search_j_for_Y_given_i(rho, e, ThermoTables_Density,
+				ThermoTables_StaticEnergy);
 
-		while (UpperJ - LowerJ > 1) {
-			middleJ = (UpperJ + LowerJ) / 2; /*!< \brief Splitting index for the search */
-			/*
-			 * The variable names is composed of a (i,j) pair, which is used to denote which on is
-			 * incremented.
-			 */
-			y00 = ThermoTables_StaticEnergy[LowerI][middleJ];
-			y10 = ThermoTables_StaticEnergy[UpperI][middleJ];
-			x00 = ThermoTables_Density[LowerI][middleJ];
-			x10 = ThermoTables_Density[UpperI][middleJ];
-			/*
-			 * As StaticEnergy also depends on the i_index (not just search j),
-			 * the StaticEnergy should be interpolated between y00 and y10 to determine
-			 * whether to search the upper range of jIndexes or lower.
-			 */
-			RunVal = y00 + (y10 - y00) / (x10 - x00) * (rho - x00);
-			grad = ThermoTables_StaticEnergy[LowerI][middleJ + 1] - y00;
-			if (RunVal * grad > e * grad) {
-				UpperJ = middleJ;
-			} else if (RunVal * grad < e * grad) {
-				LowerJ = middleJ;
-			} else if (RunVal == e) {
-				LowerJ = middleJ;
-				UpperJ = LowerJ + 1;
-				break;
-			}
-		}
 	}
 
-	/*
-	 *Now use the quadrilateral which contains the point to interpolate
-	 */
+	//Now use the quadrilateral which contains the point to interpolate
 	//Determine the interpolation coefficients
 	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(rho, e, ThermoTables_Density,
 			ThermoTables_StaticEnergy, "RHOE");
 
+	//Interpolate the fluid properties
 	StaticEnergy = e;
 	Density = rho;
-
-	//Interpolate the fluid properties
 	Entropy = Interpolate_2D_Bilinear(ThermoTables_Entropy);
 	Pressure = Interpolate_2D_Bilinear(ThermoTables_Pressure);
 	//Enthalpy = Interpolate_2D_Bilinear(ThermoTables_Enthalpy);
@@ -562,33 +583,17 @@ void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
 	UpperI = Table_Density_Stations - 1;
 	LowerI = 0;
 	if (not skewed_linear_table) {
-		Get_NonEquispaced_P_Index(P);
-
-		su2double grad, x00, y00, y01, x01, RunVal;
-		while (UpperI - LowerI > 1) {
-			middleI = (UpperI + LowerI) / 2;
-			//Use interpolated T as the running variable for the search (RunVal)
-			y00 = ThermoTables_Pressure[middleI][LowerJ];
-			y01 = ThermoTables_Pressure[middleI][UpperJ];
-			x00 = ThermoTables_Temperature[middleI][LowerJ];
-			x01 = ThermoTables_Temperature[middleI][UpperJ];
-			grad = ThermoTables_Temperature[UpperI][LowerJ] - x00;
-			RunVal = x00 + (x01 - x00) / (y01 - y00) * (P - y00);
-			if (RunVal * grad > T * grad) {
-				UpperI = middleI;
-			} else if (RunVal * grad < T * grad) {
-				LowerI = middleI;
-			} else if (RunVal == T) {
-				LowerI = middleI;
-				UpperI = LowerI + 1;
-				break;
-			}
-		}
+		//Determine the j index first
+		Search_NonEquispaced_P_Index(P);
+		//Having fixes the j index, find the i index
+		Search_i_for_X_given_j(T, P, ThermoTables_Temperature,
+				ThermoTables_Pressure);
 	}
 
 	//Determine interpolation coefficients
 	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(T, P, ThermoTables_Temperature,
 			ThermoTables_Pressure, "PT");
+
 	//Interpolate the fluid properties
 	Pressure = P;
 	Temperature = T;
@@ -622,8 +627,8 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 	LowerI = 0;
 
 	if (not skewed_linear_table) {
-		Get_NonEquispaced_Rho_Index(rho);
-		Get_NonEquispaced_P_Index(P);
+		Search_NonEquispaced_Rho_Index(rho);
+		Search_NonEquispaced_P_Index(P);
 	}
 
 	//Determine interpolation coefficients
@@ -662,13 +667,13 @@ void CLookUpTable::SetEnergy_Prho(su2double P, su2double rho) {
 	LowerI = 0;
 
 	if (not skewed_linear_table) {
-		Get_NonEquispaced_Rho_Index(rho);
-		Get_NonEquispaced_P_Index(P);
+		Search_NonEquispaced_Rho_Index(rho);
+		Search_NonEquispaced_P_Index(P);
 	}
 
 	//Determine interpolation coefficients
 	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(rho, P, ThermoTables_Density,
-	ThermoTables_Pressure, "PRHO");
+			ThermoTables_Pressure, "PRHO");
 	StaticEnergy = Interpolate_2D_Bilinear(ThermoTables_StaticEnergy);
 	Pressure = P;
 	Density = rho;
@@ -721,11 +726,9 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 	LowerI = Nearest_Neighbour_iIndex[0];
 	LowerJ = Nearest_Neighbour_jIndex[0];
 
-
 	//Using the closest element found in the KD_tree as a starting point, now find the closest
 	//quadrilateral containing the point using a simple zigzag search method
 	Zig_Zag_Search(h, s, ThermoTables_Enthalpy, ThermoTables_Entropy);
-
 
 	//Determine interpolation coefficients
 	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(h, s, ThermoTables_Enthalpy,
@@ -767,39 +770,19 @@ void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 	LowerI = 0;
 
 	if (not skewed_linear_table) {
-		Get_NonEquispaced_P_Index(P);
-
-		su2double grad, x00, y00, y01, x01, RunVal;
-		//Determine the I index (for s)
-		while (UpperI - LowerI > 1) {
-			middleI = (UpperI + LowerI) / 2;
-			//Check current value
-			y00 = ThermoTables_Pressure[middleI][LowerJ];
-			y01 = ThermoTables_Pressure[middleI][UpperJ];
-			x00 = ThermoTables_Entropy[middleI][LowerJ];
-			x01 = ThermoTables_Entropy[middleI][UpperJ];
-			grad = ThermoTables_Entropy[UpperI][LowerJ] - x00;
-			RunVal = x00 + (x01 - x00) / (y01 - y00) * (P - y00);
-			grad = ThermoTables_Entropy[middleI + 1][LowerJ] - x00;
-			if (RunVal * grad > s * grad) {
-				UpperI = middleI;
-			} else if (RunVal * grad < s * grad) {
-				LowerI = middleI;
-			} else if (RunVal == s) {
-				LowerI = middleI;
-				UpperI = LowerI + 1;
-				break;
-			}
-		}
+		//First fix the j index
+		Search_NonEquispaced_P_Index(P);
+		//Then find the i index, given a fixed j
+		Search_i_for_X_given_j(s, P, ThermoTables_Entropy, ThermoTables_Pressure);
 	}
 
 	//Determine interpolation coefficients
-	Entropy = s;
-	Pressure = P;
 	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(s, P, ThermoTables_Entropy,
 			ThermoTables_Pressure, "PS");
 
 	//Interpolate the fluid properties
+	Entropy = s;
+	Pressure = P;
 	StaticEnergy = Interpolate_2D_Bilinear(ThermoTables_StaticEnergy);
 	//Enthalpy = Interpolate_2D_Bilinear(ThermoTables_Enthalpy);
 	Density = Interpolate_2D_Bilinear(ThermoTables_Density);
@@ -832,36 +815,18 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 	LowerI = 0;
 
 	if (not skewed_linear_table) {
-		Get_NonEquispaced_Rho_Index(rho);
-
-		su2double grad, x00, y00, y10, x10, RunVal;
-		//Determine the J index (for T)
-		while (UpperJ - LowerJ > 1) {
-			middleJ = (UpperJ + LowerJ) / 2;
-			//Check current value
-			y00 = ThermoTables_Temperature[LowerI][middleJ];
-			y10 = ThermoTables_Temperature[UpperI][middleJ];
-			x00 = ThermoTables_Density[LowerI][middleJ];
-			x10 = ThermoTables_Density[UpperI][middleJ];
-			RunVal = y00 + (y10 - y00) / (x10 - x00) * (rho - x00);
-			grad = ThermoTables_Temperature[LowerI][UpperJ] - y00;
-			if (RunVal * grad > T * grad) {
-				UpperJ = middleJ;
-			} else if (RunVal * grad < T * grad) {
-				LowerJ = middleJ;
-			} else if (RunVal == T) {
-				LowerJ = middleJ;
-				UpperJ = LowerJ + 1;
-				break;
-			}
-		}
+		Search_NonEquispaced_Rho_Index(rho);
+		Search_j_for_Y_given_i(rho, T, ThermoTables_Density,
+				ThermoTables_Temperature);
 	}
 
-	Temperature = T;
-	Density = rho;
+	//Determine the interpolation coefficients
 	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(rho, T, ThermoTables_Density,
 			ThermoTables_Temperature, "RHOT");
+
 	//Interpolate the fluid properties
+	Temperature = T;
+	Density = rho;
 	StaticEnergy = Interpolate_2D_Bilinear(ThermoTables_StaticEnergy);
 	//Enthalpy = Interpolate_2D_Bilinear(ThermoTables_Enthalpy");
 	Entropy = Interpolate_2D_Bilinear(ThermoTables_Entropy);
@@ -877,17 +842,16 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 	Check_Interpolated_PRHO_Limits("RHOT");
 }
 
-void CLookUpTable::Check_Interpolated_PRHO_Limits(string interpolation_case)
-{
+void CLookUpTable::Check_Interpolated_PRHO_Limits(string interpolation_case) {
 	//Check that the interpolated density and pressure are within LUT limits
 	if ((Density > Density_Table_Limits[1])
-				or (Density < Density_Table_Limits[0])) {
-			cerr << interpolation_case << " Interpolated Density out of bounds\n";
-		}
-		if ((Pressure > Pressure_Table_Limits[1])
-				or (Pressure < Pressure_Table_Limits[0])) {
-			cerr << interpolation_case << " Interpolated Pressure out of bounds\n";
-		}
+			or (Density < Density_Table_Limits[0])) {
+		cerr << interpolation_case << " Interpolated Density out of bounds\n";
+	}
+	if ((Pressure > Pressure_Table_Limits[1])
+			or (Pressure < Pressure_Table_Limits[0])) {
+		cerr << interpolation_case << " Interpolated Pressure out of bounds\n";
+	}
 }
 
 inline void CLookUpTable::Gaussian_Inverse(int nDim) {
@@ -1104,7 +1068,7 @@ void CLookUpTable::Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x,
 	return;
 }
 
-su2double CLookUpTable::Interpolate_2D_Bilinear(su2double ** ThermoTables_Z) {
+su2double CLookUpTable::Interpolate_2D_Bilinear(su2double * *ThermoTables_Z) {
 	//The function values at the 4 corners of the quad
 	su2double func_value_at_i0j0, func_value_at_i1j0, func_value_at_i0j1,
 			func_value_at_i1j1;
@@ -1186,8 +1150,6 @@ void CLookUpTable::LookUpTable_Load_CFX(string filename) {
 	//and the StaticEnergy have been added to the format as they are needed
 	//directly in the table.
 	int N_PARAM = 0;
-	int set_x = 0;
-	int set_y = 0;
 	int var_steps = 0;
 	int var_scanned = 0;
 
@@ -1217,499 +1179,149 @@ void CLookUpTable::LookUpTable_Load_CFX(string filename) {
 				var_scanned = var;
 				getline(table, line);
 				istringstream in(line);
+
+				//Note down the dimensions of the table
 				int x, y;
 				in >> x >> y;
 				//Create the actual LUT of CThermoLists which is used in the FluidModel
 				if (var == 1) {
-					ThermoTables_StaticEnergy = new su2double*[x];
-					ThermoTables_Entropy = new su2double*[x];
-					ThermoTables_Enthalpy = new su2double*[x];
-					ThermoTables_Density = new su2double*[x];
-					ThermoTables_Pressure = new su2double*[x];
-					ThermoTables_SoundSpeed2 = new su2double*[x];
-					ThermoTables_Temperature = new su2double*[x];
-					ThermoTables_dPdrho_e = new su2double*[x];
-					ThermoTables_dPde_rho = new su2double*[x];
-					ThermoTables_dTdrho_e = new su2double*[x];
-					ThermoTables_dTde_rho = new su2double*[x];
-					ThermoTables_Cp = new su2double*[x];
-					ThermoTables_Mu = new su2double*[x];
-					ThermoTables_dmudrho_T = new su2double*[x];
-					ThermoTables_dmudT_rho = new su2double*[x];
-					ThermoTables_Kt = new su2double*[x];
-					ThermoTables_dktdrho_T = new su2double*[x];
-					ThermoTables_dktdT_rho = new su2double*[x];
-
-					for (int i = 0; i < x; i++) {
-						ThermoTables_StaticEnergy[i] = new su2double[y];
-						ThermoTables_Entropy[i] = new su2double[y];
-						ThermoTables_Enthalpy[i] = new su2double[y];
-						ThermoTables_Density[i] = new su2double[y];
-						ThermoTables_Pressure[i] = new su2double[y];
-						ThermoTables_SoundSpeed2[i] = new su2double[y];
-						ThermoTables_Temperature[i] = new su2double[y];
-						ThermoTables_dPdrho_e[i] = new su2double[y];
-						ThermoTables_dPde_rho[i] = new su2double[y];
-						ThermoTables_dTdrho_e[i] = new su2double[y];
-						ThermoTables_dTde_rho[i] = new su2double[y];
-						ThermoTables_Cp[i] = new su2double[y];
-						ThermoTables_Mu[i] = new su2double[y];
-						ThermoTables_dmudrho_T[i] = new su2double[y];
-						ThermoTables_dmudT_rho[i] = new su2double[y];
-						ThermoTables_Kt[i] = new su2double[y];
-						ThermoTables_dktdrho_T[i] = new su2double[y];
-						ThermoTables_dktdT_rho[i] = new su2double[y];
-					}
-
-					//Note down the dimensions of the table
-					set_x = x;
-					set_y = y;
-
+					Table_Density_Stations = x;
+					Table_Pressure_Stations = y;
+					//Allocate the memory for the table
+					LookUpTable_Malloc();
 					//The first axis is known to be the density values of the table
-					//The table limits are stored for later checks of values becoming inconsistent
-					Density_Table_Limits[0] = 10E15;
-					Density_Table_Limits[1] = 0;
 					var_steps = 10;
-					su2double* vD = new su2double[set_x];
+					su2double* vD = new su2double[Table_Density_Stations];
 
 					//Go through all lines which are known to contain density
 					//values (10 on each line)
-					for (int k = 0; k < ceil(float(set_x) / 10.0); k++) {
+					for (int k = 0; k < ceil(float(Table_Density_Stations) / 10.0); k++) {
 						getline(table, line);
 						istringstream inD(line);
-						if ((set_x - k * 10) < 10) {
-							var_steps = (set_x - k * 10);
+						if ((Table_Density_Stations - k * 10) < 10) {
+							var_steps = (Table_Density_Stations - k * 10);
 						}
 						for (int i = 0; i < var_steps; i++) {
 							inD >> vD[10 * k + i];
-
-							vD[10 * k + i] /= Density_Reference_Value;
-
-							if (vD[10 * k + i] > Density_Table_Limits[1]) {
-								Density_Table_Limits[1] = vD[10 * k + i];
-							}
-							if (vD[10 * k + i] < Density_Table_Limits[0]) {
-								Density_Table_Limits[0] = vD[10 * k + i];
-							}
 						}
 					}
-					for (int i = 0; i < set_x; i++) {
-						for (int j = 0; j < set_y; j++) {
+					//Fill the loaded values into the LUT
+					for (int i = 0; i < Table_Density_Stations; i++) {
+						for (int j = 0; j < Table_Pressure_Stations; j++) {
 							ThermoTables_Density[i][j] = vD[i];
 						}
 					}
 					delete[] vD;
-
 					//Fill in the pressures in the same way as the densities
-					su2double* vP = new su2double[set_y];
+					su2double* vP = new su2double[Table_Pressure_Stations];
 					var_steps = 10;
-					Pressure_Table_Limits[0] = 10E15;	//lower limit
-					Pressure_Table_Limits[1] = 0;	//upper limit
+
 					//Each line contains at most 10 pressure values
-					for (int k = 0; k < ceil(float(set_y) / 10.0); k++) {
+					for (int k = 0; k < ceil(float(Table_Pressure_Stations) / 10.0);
+							k++) {
 
 						getline(table, line);
 						istringstream inP(line);
 						//Check if line contains less than 10 values
-						if ((set_y - k * 10) < 10) {
-							var_steps = (set_y - k * 10);
+						if ((Table_Pressure_Stations - k * 10) < 10) {
+							var_steps = (Table_Pressure_Stations - k * 10);
 						}
 						for (int j = 0; j < var_steps; j++) {
 							inP >> vP[10 * k + j];
-
-							vP[10 * k + j] /= Pressure_Reference_Value;
-
-							if (vP[10 * k + j] > Pressure_Table_Limits[1]) {
-								Pressure_Table_Limits[1] = vP[10 * k + j];
-							}
-							if (vP[10 * k + j] < Pressure_Table_Limits[0]) {
-								Pressure_Table_Limits[0] = vP[10 * k + j];
-							}
 						}
 					}
-					for (int i = 0; i < set_x; i++) {
-						for (int j = 0; j < set_y; j++) {
+					//Save the pressure values into the LUT
+					for (int i = 0; i < Table_Density_Stations; i++) {
+						for (int j = 0; j < Table_Pressure_Stations; j++) {
 							ThermoTables_Pressure[i][j] = vP[j];
 						}
 					}
 					delete[] vP;
+					//Finally load the Enthalpy values that var 1 is associated with
+					//ENTHALPY TABLE
+					CFX_Import_Table_By_Number(&table, ThermoTables_Enthalpy, false);
 				}
 				// Check that all encountered tables adhere to the same x,y dimensions
 				// otherwise throw an error
-				else if (x != set_x && y != set_y) {
+				else if (x != Table_Density_Stations && y != Table_Pressure_Stations) {
 					cerr
 							<< "The encountered dimensions of the CFX table are not the same throughout. They should be; for this to work.\n";
 
 				}
 				//Go through each one of the variables of interest
-				//ENTHALPY TABLE
-				if (var == 1) {
-					//The pressure and density lines have already been skipped for Var 1
-					Enthalpy_Table_Limits[0] = 10E20;					//lower limit
-					Enthalpy_Table_Limits[1] = 0;					//upper limit
-
-					su2double inp[10];
-
-					for (int j = 0; j < set_y; j++) {
-						for (int i = 0; i < set_x; i++) {
-							if ((j * set_x + i) % 10 == 0) {
-								getline(table, line);
-								istringstream in(line);
-								var_steps = 10;
-								if (((set_x * set_y) - (j * set_x + i)) < 10)
-									var_steps = ((set_x * set_y) - (j * set_x + i));
-								for (int z = 0; z < var_steps; z++) {
-									in >> inp[z];
-									inp[z] /= Energy_Reference_Value;
-								}
-							}
-							ThermoTables_Enthalpy[i][j] = inp[(j * set_x + i) % 10];
-							if (inp[(j * set_x + i) % 10] > Enthalpy_Table_Limits[1]) {
-								Enthalpy_Table_Limits[1] = inp[(j * set_x + i) % 10];
-							}
-							if (inp[(j * set_x + i) % 10] < Enthalpy_Table_Limits[0]) {
-								Enthalpy_Table_Limits[0] = inp[(j * set_x + i) % 10];
-							}
-						}
-					}
-				}
-
 				//SOUNDS SPEED (SQUARED) TABLE
 				if (var == 2) {
-					for (int k = 0; k < ceil(float(set_x) / 10.0); k++)
-						getline(table, line); //skip density (already imported)
-					for (int k = 0; k < ceil(float(set_y) / 10.0); k++)
-						getline(table, line); //skip pressure (already imported)
-
-					SoundSpeed2_Table_Limits[0] = 10E20; //lower limit
-					SoundSpeed2_Table_Limits[1] = 0; //upper limit
-
-					su2double inp[10];
-
-					for (int j = 0; j < set_y; j++) {
-						for (int i = 0; i < set_x; i++) {
-							if ((j * set_x + i) % 10 == 0) {
-								getline(table, line);
-								istringstream in(line);
-								var_steps = 10;
-								if (((set_x * set_y) - (j * set_x + i)) < 10)
-									var_steps = ((set_x * set_y) - (j * set_x + i));
-								for (int z = 0; z < var_steps; z++) {
-									in >> inp[z];
-									inp[z] = pow(inp[z], 2);
-									inp[z] /= pow(Velocity_Reference_Value, 2);
-								}
-							}
-							ThermoTables_SoundSpeed2[i][j] = inp[(j * set_x + i) % 10];
-							if (inp[(j * set_x + i) % 10] > SoundSpeed2_Table_Limits[1]) {
-								SoundSpeed2_Table_Limits[1] = inp[(j * set_x + i) % 10];
-							}
-							if (inp[(j * set_x + i) % 10] < SoundSpeed2_Table_Limits[0]) {
-								SoundSpeed2_Table_Limits[0] = inp[(j * set_x + i) % 10];
-							}
-						}
-					}
+					CFX_Import_Table_By_Number(&table, ThermoTables_SoundSpeed2, true);
 				}
 				//CP TABLE
 				if (var == 5) {
-					for (int k = 0; k < ceil(float(set_x) / 10.0); k++)
-						getline(table, line); //skip density (already imported)
-					for (int k = 0; k < ceil(float(set_y) / 10.0); k++)
-						getline(table, line); //skip pressure (already imported)
-
-					Cp_Table_Limits[0] = 10E20; //lower limit
-					Cp_Table_Limits[1] = 0; //upper limit
-
-					su2double inp[10];
-
-					for (int j = 0; j < set_y; j++) {
-						for (int i = 0; i < set_x; i++) {
-							if ((j * set_x + i) % 10 == 0) {
-								getline(table, line);
-								istringstream in(line);
-								var_steps = 10;
-								if (((set_x * set_y) - (j * set_x + i)) < 10)
-									var_steps = ((set_x * set_y) - (j * set_x + i));
-								for (int z = 0; z < var_steps; z++) {
-									in >> inp[z];
-									inp[z] *= (Temperature_Reference_Value
-											/ Energy_Reference_Value);
-								}
-							}
-							ThermoTables_Cp[i][j] = inp[(j * set_x + i) % 10];
-							if (inp[(j * set_x + i) % 10] > Cp_Table_Limits[1]) {
-								Cp_Table_Limits[1] = inp[(j * set_x + i) % 10];
-							}
-							if (inp[(j * set_x + i) % 10] < Cp_Table_Limits[0]) {
-								Cp_Table_Limits[0] = inp[(j * set_x + i) % 10];
-							}
-						}
-					}
-
+					CFX_Import_Table_By_Number(&table, ThermoTables_Cp, true);
 				}
 				//ENTROPY TABLE
 				if (var == 7) {
-					for (int k = 0; k < ceil(float(set_x) / 10.0); k++)
-						getline(table, line); //skip density (already imported)
-					for (int k = 0; k < ceil(float(set_y) / 10.0); k++)
-						getline(table, line); //skip pressure (already imported)
-
-					Entropy_Table_Limits[0] = 10E20; //lower limit
-					Entropy_Table_Limits[1] = 0; //upper limit
-
-					su2double inp[10];
-
-					for (int j = 0; j < set_y; j++) {
-						for (int i = 0; i < set_x; i++) {
-							if ((j * set_x + i) % 10 == 0) {
-								getline(table, line);
-								istringstream in(line);
-								var_steps = 10;
-								if (((set_x * set_y) - (j * set_x + i)) < 10)
-									var_steps = ((set_x * set_y) - (j * set_x + i));
-								for (int z = 0; z < var_steps; z++) {
-									in >> inp[z];
-									inp[z] *= (Temperature_Reference_Value
-											/ Energy_Reference_Value);
-								}
-							}
-							ThermoTables_Entropy[i][j] = inp[(j * set_x + i) % 10];
-							if (inp[(j * set_x + i) % 10] > Entropy_Table_Limits[1]) {
-								Entropy_Table_Limits[1] = inp[(j * set_x + i) % 10];
-							}
-							if (inp[(j * set_x + i) % 10] < Entropy_Table_Limits[0]) {
-								Entropy_Table_Limits[0] = inp[(j * set_x + i) % 10];
-							}
-						}
-					}
-
+					CFX_Import_Table_By_Number(&table, ThermoTables_Entropy, true);
 				}
 				//dPdrho_e TABLE
 				if (var == 10) {
-					for (int k = 0; k < ceil(float(set_x) / 10.0); k++)
-						getline(table, line); //skip density (already imported)
-					for (int k = 0; k < ceil(float(set_y) / 10.0); k++)
-						getline(table, line); //skip pressure (already imported)
-
-					dPdrho_e_Table_Limits[0] = 10E20; //lower limit
-					dPdrho_e_Table_Limits[1] = 0; //upper limit
-
-					su2double inp[10];
-
-					for (int j = 0; j < set_y; j++) {
-						for (int i = 0; i < set_x; i++) {
-							if ((j * set_x + i) % 10 == 0) {
-								getline(table, line);
-								istringstream in(line);
-								var_steps = 10;
-								if (((set_x * set_y) - (j * set_x + i)) < 10)
-									var_steps = ((set_x * set_y) - (j * set_x + i));
-								for (int z = 0; z < var_steps; z++) {
-									in >> inp[z];
-									inp[z] *=
-											(Density_Reference_Value / Pressure_Reference_Value);
-								}
-							}
-							ThermoTables_dPdrho_e[i][j] = inp[(j * set_x + i) % 10];
-							if (inp[(j * set_x + i) % 10] > dPdrho_e_Table_Limits[1]) {
-								dPdrho_e_Table_Limits[1] = inp[(j * set_x + i) % 10];
-							}
-							if (inp[(j * set_x + i) % 10] < dPdrho_e_Table_Limits[0]) {
-								dPdrho_e_Table_Limits[0] = inp[(j * set_x + i) % 10];
-							}
-						}
-					}
-
+					CFX_Import_Table_By_Number(&table, ThermoTables_dPdrho_e, true);
 				}
 				//dPde_rho TABLE
 				if (var == 11) {
-					for (int k = 0; k < ceil(float(set_x) / 10.0); k++)
-						getline(table, line); //skip density (already imported)
-					for (int k = 0; k < ceil(float(set_y) / 10.0); k++)
-						getline(table, line); //skip pressure (already imported)
-
-					dPde_rho_Table_Limits[0] = 10E20; //lower limit
-					dPde_rho_Table_Limits[1] = 0; //upper limit
-
-					su2double inp[10];
-
-					for (int j = 0; j < set_y; j++) {
-						for (int i = 0; i < set_x; i++) {
-							if ((j * set_x + i) % 10 == 0) {
-								getline(table, line);
-								istringstream in(line);
-								var_steps = 10;
-								if (((set_x * set_y) - (j * set_x + i)) < 10)
-									var_steps = ((set_x * set_y) - (j * set_x + i));
-								for (int z = 0; z < var_steps; z++) {
-									in >> inp[z];
-									inp[z] * (Energy_Reference_Value / Pressure_Reference_Value);
-								}
-							}
-							ThermoTables_dPde_rho[i][j] = inp[(j * set_x + i) % 10];
-							if (inp[(j * set_x + i) % 10] > dPde_rho_Table_Limits[1]) {
-								dPde_rho_Table_Limits[1] = inp[(j * set_x + i) % 10];
-							}
-							if (inp[(j * set_x + i) % 10] < dPde_rho_Table_Limits[0]) {
-								dPde_rho_Table_Limits[0] = inp[(j * set_x + i) % 10];
-							}
-						}
-					}
-
+					CFX_Import_Table_By_Number(&table, ThermoTables_dPde_rho, true);
 				}
 				//dTdrho_e TABLE
 				if (var == 12) {
-					for (int k = 0; k < ceil(float(set_x) / 10.0); k++)
-						getline(table, line); //skip density (already imported)
-					for (int k = 0; k < ceil(float(set_y) / 10.0); k++)
-						getline(table, line); //skip pressure (already imported)
-
-					dTdrho_e_Table_Limits[0] = 10E20; //lower limit
-					dTdrho_e_Table_Limits[1] = 0; //upper limit
-
-					su2double inp[10];
-
-					for (int j = 0; j < set_y; j++) {
-						for (int i = 0; i < set_x; i++) {
-							if ((j * set_x + i) % 10 == 0) {
-								getline(table, line);
-								istringstream in(line);
-								var_steps = 10;
-								if (((set_x * set_y) - (j * set_x + i)) < 10)
-									var_steps = ((set_x * set_y) - (j * set_x + i));
-								for (int z = 0; z < var_steps; z++) {
-									in >> inp[z];
-									inp[z] *= (Density_Reference_Value
-											/ Temperature_Reference_Value);
-								}
-							}
-							ThermoTables_dTdrho_e[i][j] = inp[(j * set_x + i) % 10];
-							if (inp[(j * set_x + i) % 10] > dTdrho_e_Table_Limits[1]) {
-								dTdrho_e_Table_Limits[1] = inp[(j * set_x + i) % 10];
-							}
-							if (inp[(j * set_x + i) % 10] < dTdrho_e_Table_Limits[0]) {
-								dTdrho_e_Table_Limits[0] = inp[(j * set_x + i) % 10];
-							}
-						}
-					}
-
+					CFX_Import_Table_By_Number(&table, ThermoTables_dTdrho_e, true);
 				}
 				//dTde_rho TABLE
 				if (var == 13) {
-					for (int k = 0; k < ceil(float(set_x) / 10.0); k++)
-						getline(table, line); //skip density (already imported)
-					for (int k = 0; k < ceil(float(set_y) / 10.0); k++)
-						getline(table, line); //skip pressure (already imported)
-
-					dTde_rho_Table_Limits[0] = 10E20; //lower limit
-					dTde_rho_Table_Limits[1] = 0; //upper limit
-
-					su2double inp[10];
-
-					for (int j = 0; j < set_y; j++) {
-						for (int i = 0; i < set_x; i++) {
-							if ((j * set_x + i) % 10 == 0) {
-								getline(table, line);
-								istringstream in(line);
-								var_steps = 10;
-								if (((set_x * set_y) - (j * set_x + i)) < 10)
-									var_steps = ((set_x * set_y) - (j * set_x + i));
-								for (int z = 0; z < var_steps; z++) {
-									in >> inp[z];
-									inp[z] *= (Energy_Reference_Value
-											/ Temperature_Reference_Value);
-								}
-							}
-							ThermoTables_dTde_rho[i][j] = inp[(j * set_x + i) % 10];
-							if (inp[(j * set_x + i) % 10] > dTde_rho_Table_Limits[1]) {
-								dTde_rho_Table_Limits[1] = inp[(j * set_x + i) % 10];
-							}
-							if (inp[(j * set_x + i) % 10] < dTde_rho_Table_Limits[0]) {
-								dTde_rho_Table_Limits[0] = inp[(j * set_x + i) % 10];
-							}
-						}
-					}
-
+					CFX_Import_Table_By_Number(&table, ThermoTables_dTde_rho, true);
 				}
 				//TEMPERATURE TABLE
 				if (var == 15) {
-					for (int k = 0; k < ceil(float(set_x) / 10.0); k++)
-						getline(table, line); //skip density (already imported)
-					for (int k = 0; k < ceil(float(set_y) / 10.0); k++)
-						getline(table, line); //skip pressure (already imported)
-
-					Temperature_Table_Limits[0] = 10E20; //lower limit
-					Temperature_Table_Limits[1] = 0; //upper limit
-
-					su2double inp[10];
-
-					for (int j = 0; j < set_y; j++) {
-						for (int i = 0; i < set_x; i++) {
-							if ((j * set_x + i) % 10 == 0) {
-								getline(table, line);
-								istringstream in(line);
-								var_steps = 10;
-								if (((set_x * set_y) - (j * set_x + i)) < 10)
-									var_steps = ((set_x * set_y) - (j * set_x + i));
-								for (int z = 0; z < var_steps; z++) {
-									in >> inp[z];
-									inp[z] /= Temperature_Reference_Value;
-								}
-							}
-							ThermoTables_Temperature[i][j] = inp[(j * set_x + i) % 10];
-							if (inp[(j * set_x + i) % 10] > Temperature_Table_Limits[1]) {
-								Temperature_Table_Limits[1] = inp[(j * set_x + i) % 10];
-							}
-							if (inp[(j * set_x + i) % 10] < Temperature_Table_Limits[0]) {
-								Temperature_Table_Limits[0] = inp[(j * set_x + i) % 10];
-							}
-						}
-					}
-
+					CFX_Import_Table_By_Number(&table, ThermoTables_Temperature, true);
 				}
 				//STATIC ENERGY TABLE
 				if (var == 16) {
-					for (int k = 0; k < ceil(float(set_x) / 10.0); k++)
-						getline(table, line); //skip density (already imported)
-					for (int k = 0; k < ceil(float(set_y) / 10.0); k++)
-						getline(table, line); //skip pressure (already imported)
-
-					StaticEnergy_Table_Limits[0] = 10E20; //lower limit
-					StaticEnergy_Table_Limits[1] = 0; //upper limit
-
-					su2double inp[10];
-					//Gp through all lines of data
-					for (int j = 0; j < set_y; j++) {
-						for (int i = 0; i < set_x; i++) {
-							if ((j * set_x + i) % 10 == 0) {
-								getline(table, line);
-								istringstream in(line);
-								var_steps = 10;
-								if (((set_x * set_y) - (j * set_x + i)) < 10)
-									var_steps = ((set_x * set_y) - (j * set_x + i));
-								for (int z = 0; z < var_steps; z++) {
-									in >> inp[z];
-									inp[z] /= Energy_Reference_Value;
-								}
-							}
-							ThermoTables_StaticEnergy[i][j] = inp[(j * set_x + i) % 10];
-							if (inp[(j * set_x + i) % 10] > StaticEnergy_Table_Limits[1]) {
-								StaticEnergy_Table_Limits[1] = inp[(j * set_x + i) % 10];
-							}
-							if (inp[(j * set_x + i) % 10] < StaticEnergy_Table_Limits[0]) {
-								StaticEnergy_Table_Limits[0] = inp[(j * set_x + i) % 10];
-							}
-						}
-
-					}
+					CFX_Import_Table_By_Number(&table, ThermoTables_StaticEnergy, true);
 				}
 			}
 		}
-
 	}
-	Table_Density_Stations = set_x;
-	Table_Pressure_Stations = set_y;
 	table.close();
+	//Non dimensionalise the table, and find the value limits
+	NonDimensionalise_Table_Values();
+	Find_Table_Limits();
+}
+
+void CLookUpTable::CFX_Import_Table_By_Number(ifstream *tab,
+		su2double **ThermoTables_X, bool skip_prho) {
+	su2double inp[10];
+	int var_steps = 10;
+	string line;
+	if (skip_prho) {
+		for (int k = 0; k < ceil(float(Table_Density_Stations) / 10.0); k++)
+			getline(*tab, line); //skip density (already imported)
+		for (int k = 0; k < ceil(float(Table_Pressure_Stations) / 10.0); k++)
+			getline(*tab, line); //skip pressure (already imported)
+	}
+	for (int j = 0; j < Table_Pressure_Stations; j++) {
+		for (int i = 0; i < Table_Density_Stations; i++) {
+			if ((j * Table_Density_Stations + i) % 10 == 0) {
+				getline(*tab, line);
+				istringstream in(line);
+				var_steps = 10;
+				if (((Table_Density_Stations * Table_Pressure_Stations)
+						- (j * Table_Density_Stations + i)) < 10)
+					var_steps = ((Table_Density_Stations * Table_Pressure_Stations)
+							- (j * Table_Density_Stations + i));
+				for (int z = 0; z < var_steps; z++) {
+					in >> inp[z];
+				}
+			}
+			ThermoTables_X[i][j] = inp[(j * Table_Density_Stations + i) % 10];
+		}
+	}
 }
 
 void CLookUpTable::LookUpTable_Load_DAT(std::string filename) {
@@ -1721,75 +1333,14 @@ void CLookUpTable::LookUpTable_Load_DAT(std::string filename) {
 		cout << "The LUT file appears to be missing!! " << filename << endl;
 		exit(EXIT_FAILURE);
 	}
-	Density_Table_Limits[0] = HUGE_VAL;
-	Density_Table_Limits[1] = -HUGE_VAL;
-	Pressure_Table_Limits[0] = HUGE_VAL;	//lower limit
-	Pressure_Table_Limits[1] = -HUGE_VAL;	//upper limit
-	Enthalpy_Table_Limits[0] = HUGE_VAL;					//lower limit
-	Enthalpy_Table_Limits[1] = -HUGE_VAL;					//upper limit
-	SoundSpeed2_Table_Limits[0] = HUGE_VAL; //lower limit
-	SoundSpeed2_Table_Limits[1] = -HUGE_VAL; //upper limit
-	Cp_Table_Limits[0] = HUGE_VAL; //lower limit
-	Cp_Table_Limits[1] = -HUGE_VAL; //upper limit
-	Entropy_Table_Limits[0] = HUGE_VAL; //lower limit
-	Entropy_Table_Limits[1] = -HUGE_VAL; //upper limit
-	dPdrho_e_Table_Limits[0] = HUGE_VAL; //lower limit
-	dPdrho_e_Table_Limits[1] = -HUGE_VAL; //upper limit
-	dPde_rho_Table_Limits[0] = HUGE_VAL; //lower limit
-	dPde_rho_Table_Limits[1] = -HUGE_VAL; //upper limit
-	dTdrho_e_Table_Limits[0] = HUGE_VAL; //lower limit
-	dTdrho_e_Table_Limits[1] = -HUGE_VAL; //upper limit
-	dTde_rho_Table_Limits[0] = HUGE_VAL; //lower limit
-	dTde_rho_Table_Limits[1] = -HUGE_VAL; //upper limit
-	Temperature_Table_Limits[0] = HUGE_VAL; //lower limit
-	Temperature_Table_Limits[1] = -HUGE_VAL; //upper limit
-	StaticEnergy_Table_Limits[0] = HUGE_VAL; //lower limit
-	StaticEnergy_Table_Limits[1] = -HUGE_VAL; //upper limit
-
 	//Go through all lines in the table file.
-	getline(table, line); //Skip the name header
-	getline(table, line); //Line with the table dimensions
+	getline(table, line);	//Skip the name header
+	getline(table, line);	//Line with the table dimensions
 	istringstream in(line);
 	in >> Table_Density_Stations >> Table_Pressure_Stations;
+	//Allocate the memory for the table
+	LookUpTable_Malloc();
 
-	ThermoTables_StaticEnergy = new su2double*[Table_Density_Stations];
-	ThermoTables_Entropy = new su2double*[Table_Density_Stations];
-	ThermoTables_Enthalpy = new su2double*[Table_Density_Stations];
-	ThermoTables_Density = new su2double*[Table_Density_Stations];
-	ThermoTables_Pressure = new su2double*[Table_Density_Stations];
-	ThermoTables_SoundSpeed2 = new su2double*[Table_Density_Stations];
-	ThermoTables_Temperature = new su2double*[Table_Density_Stations];
-	ThermoTables_dPdrho_e = new su2double*[Table_Density_Stations];
-	ThermoTables_dPde_rho = new su2double*[Table_Density_Stations];
-	ThermoTables_dTdrho_e = new su2double*[Table_Density_Stations];
-	ThermoTables_dTde_rho = new su2double*[Table_Density_Stations];
-	ThermoTables_Cp = new su2double*[Table_Density_Stations];
-	ThermoTables_Mu = new su2double*[Table_Density_Stations];
-	ThermoTables_dmudrho_T = new su2double*[Table_Density_Stations];
-	ThermoTables_dmudT_rho = new su2double*[Table_Density_Stations];
-	ThermoTables_Kt = new su2double*[Table_Density_Stations];
-	ThermoTables_dktdrho_T = new su2double*[Table_Density_Stations];
-	ThermoTables_dktdT_rho = new su2double*[Table_Density_Stations];
-	for (int i = 0; i < Table_Density_Stations; i++) {
-		ThermoTables_StaticEnergy[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_Entropy[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_Enthalpy[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_Density[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_Pressure[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_SoundSpeed2[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_Temperature[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_dPdrho_e[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_dPde_rho[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_dTdrho_e[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_dTde_rho[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_Cp[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_Mu[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_dmudrho_T[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_dmudT_rho[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_Kt[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_dktdrho_T[i] = new su2double[Table_Pressure_Stations];
-		ThermoTables_dktdT_rho[i] = new su2double[Table_Pressure_Stations];
-	}
 	for (int i = 0; i < Table_Density_Stations; i++) {
 		for (int j = 0; j < Table_Pressure_Stations; j++) {
 			getline(table, line);
@@ -1808,31 +1359,43 @@ void CLookUpTable::LookUpTable_Load_DAT(std::string filename) {
 			in >> ThermoTables_Temperature[i][j];
 			in >> ThermoTables_StaticEnergy[i][j];
 			in >> ThermoTables_Enthalpy[i][j];
+		}
+	}
 
-			//Non dimensionalisation
-			ThermoTables_Density[i][j] /= Density_Reference_Value;
-			ThermoTables_Pressure[i][j] /= Pressure_Reference_Value;
-			ThermoTables_SoundSpeed2[i][j] = pow(ThermoTables_SoundSpeed2[i][j], 2);
-			ThermoTables_SoundSpeed2[i][j] /= pow(Velocity_Reference_Value, 2);
-			ThermoTables_Cp[i][j] *= (Temperature_Reference_Value
-					/ Energy_Reference_Value);
-			ThermoTables_Entropy[i][j] *= (Temperature_Reference_Value
-					/ Energy_Reference_Value);
-			ThermoTables_dPdrho_e[i][j] *= (Density_Reference_Value
-					/ Temperature_Reference_Value);
-			ThermoTables_dPde_rho[i][j] *= (Energy_Reference_Value
-					/ Pressure_Reference_Value);
-			ThermoTables_dTdrho_e[i][j] *= (Density_Reference_Value
-					/ Temperature_Reference_Value);
-			ThermoTables_dTde_rho[i][j] *= (Energy_Reference_Value
-					/ Temperature_Reference_Value);
-			ThermoTables_Temperature[i][j] /= Temperature_Reference_Value;
-			ThermoTables_StaticEnergy[i][j] /= Energy_Reference_Value;
-			ThermoTables_Enthalpy[i][j] /= Energy_Reference_Value;
+	table.close();
+	//NonDimensionalise and find limits
+	NonDimensionalise_Table_Values();
+	Find_Table_Limits();
+}
 
-			//The first axis is known to be the density values of the table
+void CLookUpTable::Find_Table_Limits() {
+	Density_Table_Limits[0] = HUGE_VAL;
+	Density_Table_Limits[1] = -HUGE_VAL;
+	Pressure_Table_Limits[0] = HUGE_VAL;	//lower limit
+	Pressure_Table_Limits[1] = -HUGE_VAL;	//upper limit
+	Enthalpy_Table_Limits[0] = HUGE_VAL;	//lower limit
+	Enthalpy_Table_Limits[1] = -HUGE_VAL;	//upper limit
+	SoundSpeed2_Table_Limits[0] = HUGE_VAL;	//lower limit
+	SoundSpeed2_Table_Limits[1] = -HUGE_VAL;	//upper limit
+	Cp_Table_Limits[0] = HUGE_VAL;	//lower limit
+	Cp_Table_Limits[1] = -HUGE_VAL;	//upper limit
+	Entropy_Table_Limits[0] = HUGE_VAL;	//lower limit
+	Entropy_Table_Limits[1] = -HUGE_VAL;	//upper limit
+	dPdrho_e_Table_Limits[0] = HUGE_VAL;	//lower limit
+	dPdrho_e_Table_Limits[1] = -HUGE_VAL;	//upper limit
+	dPde_rho_Table_Limits[0] = HUGE_VAL;	//lower limit
+	dPde_rho_Table_Limits[1] = -HUGE_VAL;	//upper limit
+	dTdrho_e_Table_Limits[0] = HUGE_VAL;	//lower limit
+	dTdrho_e_Table_Limits[1] = -HUGE_VAL;	//upper limit
+	dTde_rho_Table_Limits[0] = HUGE_VAL;	//lower limit
+	dTde_rho_Table_Limits[1] = -HUGE_VAL;	//upper limit
+	Temperature_Table_Limits[0] = HUGE_VAL;	//lower limit
+	Temperature_Table_Limits[1] = -HUGE_VAL;	//upper limit
+	StaticEnergy_Table_Limits[0] = HUGE_VAL;	//lower limit
+	StaticEnergy_Table_Limits[1] = -HUGE_VAL;	//upper limit
+	for (int i = 0; i < Table_Density_Stations; i++) {
+		for (int j = 0; j < Table_Pressure_Stations; j++) {
 			//The table limits are stored for later checks of values becoming inconsistent
-
 			if (ThermoTables_Density[i][j] > Density_Table_Limits[1]) {
 				Density_Table_Limits[1] = ThermoTables_Density[i][j];
 			}
@@ -1908,6 +1471,72 @@ void CLookUpTable::LookUpTable_Load_DAT(std::string filename) {
 			}
 		}
 	}
-	table.close();
+}
+void CLookUpTable::NonDimensionalise_Table_Values() {
+	for (int i = 0; i < Table_Density_Stations; i++) {
+		for (int j = 0; j < Table_Pressure_Stations; j++) {
+			ThermoTables_Density[i][j] /= Density_Reference_Value;
+			ThermoTables_Pressure[i][j] /= Pressure_Reference_Value;
+			ThermoTables_SoundSpeed2[i][j] = pow(ThermoTables_SoundSpeed2[i][j], 2);
+			ThermoTables_SoundSpeed2[i][j] /= pow(Velocity_Reference_Value, 2);
+			ThermoTables_Cp[i][j] *= (Temperature_Reference_Value
+					/ Energy_Reference_Value);
+			ThermoTables_Entropy[i][j] *= (Temperature_Reference_Value
+					/ Energy_Reference_Value);
+			ThermoTables_dPdrho_e[i][j] *= (Density_Reference_Value
+					/ Temperature_Reference_Value);
+			ThermoTables_dPde_rho[i][j] *= (Energy_Reference_Value
+					/ Pressure_Reference_Value);
+			ThermoTables_dTdrho_e[i][j] *= (Density_Reference_Value
+					/ Temperature_Reference_Value);
+			ThermoTables_dTde_rho[i][j] *= (Energy_Reference_Value
+					/ Temperature_Reference_Value);
+			ThermoTables_Temperature[i][j] /= Temperature_Reference_Value;
+			ThermoTables_StaticEnergy[i][j] /= Energy_Reference_Value;
+			ThermoTables_Enthalpy[i][j] /= Energy_Reference_Value;
+		}
+	}
+}
+
+void CLookUpTable::LookUpTable_Malloc() {
+	ThermoTables_StaticEnergy = new su2double*[Table_Density_Stations];
+	ThermoTables_Entropy = new su2double*[Table_Density_Stations];
+	ThermoTables_Enthalpy = new su2double*[Table_Density_Stations];
+	ThermoTables_Density = new su2double*[Table_Density_Stations];
+	ThermoTables_Pressure = new su2double*[Table_Density_Stations];
+	ThermoTables_SoundSpeed2 = new su2double*[Table_Density_Stations];
+	ThermoTables_Temperature = new su2double*[Table_Density_Stations];
+	ThermoTables_dPdrho_e = new su2double*[Table_Density_Stations];
+	ThermoTables_dPde_rho = new su2double*[Table_Density_Stations];
+	ThermoTables_dTdrho_e = new su2double*[Table_Density_Stations];
+	ThermoTables_dTde_rho = new su2double*[Table_Density_Stations];
+	ThermoTables_Cp = new su2double*[Table_Density_Stations];
+	ThermoTables_Mu = new su2double*[Table_Density_Stations];
+	ThermoTables_dmudrho_T = new su2double*[Table_Density_Stations];
+	ThermoTables_dmudT_rho = new su2double*[Table_Density_Stations];
+	ThermoTables_Kt = new su2double*[Table_Density_Stations];
+	ThermoTables_dktdrho_T = new su2double*[Table_Density_Stations];
+	ThermoTables_dktdT_rho = new su2double*[Table_Density_Stations];
+	for (int i = 0; i < Table_Density_Stations; i++) {
+		ThermoTables_StaticEnergy[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_Entropy[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_Enthalpy[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_Density[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_Pressure[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_SoundSpeed2[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_Temperature[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_dPdrho_e[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_dPde_rho[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_dTdrho_e[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_dTde_rho[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_Cp[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_Mu[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_dmudrho_T[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_dmudT_rho[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_Kt[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_dktdrho_T[i] = new su2double[Table_Pressure_Stations];
+		ThermoTables_dktdT_rho[i] = new su2double[Table_Pressure_Stations];
+	}
+
 }
 
