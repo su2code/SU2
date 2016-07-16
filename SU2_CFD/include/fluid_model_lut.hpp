@@ -66,48 +66,6 @@ struct KD_node {
 	KD_node* lower; /*!< \brief The tree-branch on the next level of the tree containing lower 50 percentile. Based on x_values for branches of even depth and y_values for odd. */
 };
 
-/*!
- * \class CThermoList
- * \brief holds the thermodynamic variables associated with a particular table index
- * \author: M. Kosec, A.Rubino, S.Vitale
- * \version 4.1.2 "Cardinal"
- */
-class CThermoList {
-public:
-	su2double StaticEnergy, /*!< \brief Internal Energy. */
-	Entropy, /*!< \brief Entropy. */
-	Enthalpy, /*!< \brief Enthalpy required as separate variable for use in HS tree. */
-	Density, /*!< \brief Density. */
-	Pressure, /*!< \brief Pressure. */
-	SoundSpeed2, /*!< \brief The speed of sound squared. */
-	Temperature, /*!< \brief Temperature. */
-	dPdrho_e, /*!< \brief Fluid derivative DpDd_e. */
-	dPde_rho, /*!< \brief Fluid derivative DpDe_d. */
-	dTdrho_e, /*!< \brief Fluid derivative DTDd_e. */
-	dTde_rho, /*!< \brief Fluid derivative DTDe_d. */
-	Cp, /*!< \brief Specific Heat Capacity at constant pressure. */
-	Mu, /*!< \brief Laminar Viscosity. */
-	dmudrho_T, /*!< \brief Fluid derivative DmuDrho_T */
-	dmudT_rho, /*!< \brief Fluid derivative DmuDT_rho. */
-	Kt, /*!< \brief Thermal Conductivity. */
-	dktdrho_T, /*!< \brief Fluid derivative DktDrho_T.  */
-	dktdT_rho; /*!< \brief Fluid derivative DktDT_rho. */
-
-	/*!
-	 * \brief Constructor of the class.
-	 */
-	CThermoList(void);
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	virtual ~CThermoList(void);
-	/*!
-	 * \brief Print the thermodynamic variables contained in the instance (e.g. to read-out verification data)
-	 */
-	void CThermoList_Print(void);
-
-};
 
 /*!
  * \class CLookUpTable
@@ -147,8 +105,7 @@ protected:
 
 	su2double Interpolation_Matrix[4][4]; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
 	su2double Interpolation_Coeff[4][4]; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
-	int iIndex, jIndex; /*!< \brief The i,j indexes (rho, P) of the position of the table search. Can be used as a restart for next search.*/
-	int LowerI, UpperI, middleI, LowerJ, UpperJ, middleJ;
+	int LowerI, UpperI, middleI, LowerJ, UpperJ, middleJ;/*!< \brief The i,j indexes (rho, P) of the position of the table search. Can be used as a restart for next search.*/
 	int Table_Pressure_Stations;/*!< \brief The pressure dimensions of the table */
 	int Table_Density_Stations; /*!< \brief The density dimensions of the table */
 	KD_node *HS_tree; /*!< \brief The pointer to the root of the KD tree for the HS thermo-pair.*/
@@ -235,6 +192,7 @@ public:
 	 */
 	void Get_NonEquispaced_Rho_Index(su2double rho);
 	void Get_NonEquispaced_P_Index(su2double P);
+	void Zig_Zag_Search(su2double x, su2double y, su2double **ThermoTables_X, su2double **ThermoTables_Y);
 	void SetTDState_rhoe(su2double rho, su2double e);
 
 	/*!
@@ -310,6 +268,7 @@ public:
 	 */
 
 	su2double Interpolate_2D_Bilinear(su2double ** ThermoTables_Z);
+	void Check_Interpolated_PRHO_Limits(std::string interpolation_case);
 
 	/*!
 	 * \brief Load the LUT table from a CFX file format. X axis must be Density, and Y axis pressure. Equal spacing not required.

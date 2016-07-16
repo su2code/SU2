@@ -71,10 +71,6 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 		}
 	}
 
-	// Initialize to a negative value to indicate the index is new (no restart)
-	iIndex = -1;
-	jIndex = -1;
-
 	// Give the user some information on the size of the table
 	cout << "Table_Pressure_Stations  : " << Table_Pressure_Stations << endl;
 	cout << "Table_Density_Stations: " << Table_Density_Stations << endl;
@@ -426,6 +422,56 @@ void CLookUpTable::Get_NonEquispaced_P_Index(su2double P) {
 	}
 }
 
+void CLookUpTable::Zig_Zag_Search(su2double x, su2double y, su2double **ThermoTables_X, su2double **ThermoTables_Y)
+{
+	su2double dx, dy, x00, y00, dx10, dx01, dx11, dy10, dy01, dy11;
+		bool BOTTOM, TOP, LEFT, RIGHT, found = false; //check if bellow BOTTOM, above, TOP, left of LEFT, and right of RIGHT
+		for (int k = 0; k < 20 and not found; k++) //20 is arbitrary and used primarily to avoid a while loop which could get stuck
+				{
+			UpperI = LowerI + 1;
+			UpperJ = LowerJ + 1;
+			x00 = ThermoTables_X[LowerI][LowerJ];
+			y00 = ThermoTables_Y[LowerI][LowerJ];
+			dx = x - x00;
+			dy = y - y00;
+			dx01 = ThermoTables_X[LowerI][UpperJ] - x00;
+			dy01 = ThermoTables_Y[LowerI][UpperJ] - y00;
+			dx10 = ThermoTables_X[UpperI][LowerJ] - x00;
+			dy10 = ThermoTables_Y[UpperI][LowerJ] - y00;
+			dx11 = ThermoTables_X[UpperI][UpperJ] - x00;
+			dy11 = ThermoTables_Y[UpperI][UpperJ] - y00;
+
+			BOTTOM = (dy * dx10) < (dx * dy10);
+			TOP = ((dy - dy01) * (dx11 - dx01)) > ((dy11 - dy01) * (dx - dx01));
+			RIGHT = ((dx - dx10) * (dy11 - dy10)) > ((dx11 - dx10) * (dy - dy10));
+			LEFT = (dx * dy01) < (dx01 * dy);
+			//Check BOTTOM quad boundary
+			if (BOTTOM and !TOP) {
+				if (LowerJ != 0)
+					LowerJ--;
+			}
+			//Check RIGHT quad boundary
+			else if (RIGHT and !LEFT) {
+				if (LowerI != (Table_Density_Stations - 2))
+					LowerI++;
+			}
+			//Check TOP quad boundary
+			else if (TOP and !BOTTOM) {
+				if (LowerJ != (Table_Pressure_Stations - 2))
+					LowerJ++;
+			}
+			//Check LEFT quad boundary
+			else if (LEFT and !RIGHT) {
+				if (LowerI != 0)
+					LowerI--;
+			} else {
+				found = true;
+			}
+		}
+
+
+}
+
 void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 	// Check if inputs are in total range (necessary but not sufficient condition)
 	if ((rho > Density_Table_Limits[1]) or (rho < Density_Table_Limits[0])) {
@@ -435,13 +481,9 @@ void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 			or (e < StaticEnergy_Table_Limits[0])) {
 		cerr << "RHOE Input StaticEnergy out of bounds\n";
 	}
-	// Linear interpolation requires 4 neighbors to be selected from the LUT
-	Nearest_Neighbour_iIndex = new int[4];
-	Nearest_Neighbour_jIndex = new int[4];
+
 	su2double RunVal;
-
 	su2double grad, x00, y00, y10, x10;
-
 	// Starting values for the search
 	UpperJ = Table_Pressure_Stations - 1;
 	LowerJ = 0;
@@ -480,26 +522,16 @@ void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 		}
 	}
 
-	iIndex = LowerI;
-	jIndex = LowerJ;
 	/*
 	 *Now use the quadrilateral which contains the point to interpolate
 	 */
-
-	//Set the nearest neigbours to the adjacent i and j vertexes
-	Nearest_Neighbour_iIndex[0] = iIndex;
-	Nearest_Neighbour_iIndex[1] = iIndex + 1;
-	Nearest_Neighbour_iIndex[2] = iIndex;
-	Nearest_Neighbour_iIndex[3] = iIndex + 1;
-	Nearest_Neighbour_jIndex[0] = jIndex;
-	Nearest_Neighbour_jIndex[1] = jIndex;
-	Nearest_Neighbour_jIndex[2] = jIndex + 1;
-	Nearest_Neighbour_jIndex[3] = jIndex + 1;
-	StaticEnergy = e;
-	Density = rho;
 	//Determine the interpolation coefficients
 	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(rho, e, ThermoTables_Density,
 			ThermoTables_StaticEnergy, "RHOE");
+
+	StaticEnergy = e;
+	Density = rho;
+
 	//Interpolate the fluid properties
 	Entropy = Interpolate_2D_Bilinear(ThermoTables_Entropy);
 	Pressure = Interpolate_2D_Bilinear(ThermoTables_Pressure);
@@ -513,16 +545,7 @@ void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 	Cp = Interpolate_2D_Bilinear(ThermoTables_Cp);
 
 	//Check that the interpolated density and pressure are within LUT limits
-	if ((Density > Density_Table_Limits[1])
-			or (Density < Density_Table_Limits[0])) {
-		cerr << "RHOE Interpolated Density out of bounds\n";
-	}
-	if ((Pressure > Pressure_Table_Limits[1])
-			or (Pressure < Pressure_Table_Limits[0])) {
-		cerr << "RHOE Interpolated Pressure out of bounds\n";
-	}
-	delete[] Nearest_Neighbour_iIndex;
-	delete[] Nearest_Neighbour_jIndex;
+	Check_Interpolated_PRHO_Limits("RHOE");
 }
 
 void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
@@ -533,9 +556,6 @@ void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
 	if ((T > Temperature_Table_Limits[1]) or (T < Temperature_Table_Limits[0])) {
 		cerr << "PT Input Temperature out of bounds\n";
 	}
-	// Linear interpolation requires 4 neighbors to be selected from the LUT
-	Nearest_Neighbour_iIndex = new int[4];
-	Nearest_Neighbour_jIndex = new int[4];
 
 	UpperJ = Table_Pressure_Stations - 1;
 	LowerJ = 0;
@@ -566,22 +586,12 @@ void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
 		}
 	}
 
-	iIndex = LowerI;
-	jIndex = LowerJ;
-
-	//Set the nearest neigbours to the adjacent i and j vertexes
-	Nearest_Neighbour_iIndex[0] = iIndex;
-	Nearest_Neighbour_iIndex[1] = iIndex + 1;
-	Nearest_Neighbour_iIndex[2] = iIndex;
-	Nearest_Neighbour_iIndex[3] = iIndex + 1;
-	Nearest_Neighbour_jIndex[0] = jIndex;
-	Nearest_Neighbour_jIndex[1] = jIndex;
-	Nearest_Neighbour_jIndex[2] = jIndex + 1;
-	Nearest_Neighbour_jIndex[3] = jIndex + 1;
 	//Determine interpolation coefficients
 	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(T, P, ThermoTables_Temperature,
 			ThermoTables_Pressure, "PT");
 	//Interpolate the fluid properties
+	Pressure = P;
+	Temperature = T;
 	StaticEnergy = Interpolate_2D_Bilinear(ThermoTables_StaticEnergy);
 	//Enthalpy = Interpolate_2D_Bilinear(ThermoTables_Enthalpy);
 	Entropy = Interpolate_2D_Bilinear(ThermoTables_Entropy);
@@ -594,16 +604,7 @@ void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
 	Cp = Interpolate_2D_Bilinear(ThermoTables_Cp);
 
 	//Check that the interpolated density and pressure are within LUT limits
-	if ((Density > Density_Table_Limits[1])
-			or (Density < Density_Table_Limits[0])) {
-		cerr << "PT Interpolated Density out of bounds\n";
-	}
-	if ((Pressure > Pressure_Table_Limits[1])
-			or (Pressure < Pressure_Table_Limits[0])) {
-		cerr << "PT Interpolated Pressure out of bounds\n";
-	}
-	delete[] Nearest_Neighbour_iIndex;
-	delete[] Nearest_Neighbour_jIndex;
+	Check_Interpolated_PRHO_Limits("PT");
 }
 
 void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
@@ -614,9 +615,6 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 	if ((rho > Density_Table_Limits[1]) or (rho < Density_Table_Limits[0])) {
 		cerr << "PRHO Input Density out of bounds\n";
 	}
-	// Linear interpolation requires 4 neighbors to be selected from the LUT
-	Nearest_Neighbour_iIndex = new int[4];
-	Nearest_Neighbour_jIndex = new int[4];
 
 	UpperJ = Table_Pressure_Stations - 1;
 	LowerJ = 0;
@@ -628,26 +626,12 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 		Get_NonEquispaced_P_Index(P);
 	}
 
-	iIndex = LowerI;
-	jIndex = LowerJ;
-
-	//Set the nearest neigbours to the adjacent i and j vertexes
-	//for the bilinear interpolation
-	su2double x, y;
-	x = rho;
-	y = P;
-	Nearest_Neighbour_iIndex[0] = iIndex;
-	Nearest_Neighbour_iIndex[1] = iIndex + 1;
-	Nearest_Neighbour_iIndex[2] = iIndex;
-	Nearest_Neighbour_iIndex[3] = iIndex + 1;
-	Nearest_Neighbour_jIndex[0] = jIndex;
-	Nearest_Neighbour_jIndex[1] = jIndex;
-	Nearest_Neighbour_jIndex[2] = jIndex + 1;
-	Nearest_Neighbour_jIndex[3] = jIndex + 1;
 	//Determine interpolation coefficients
 	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(rho, P, ThermoTables_Density,
 			ThermoTables_Pressure, "PRHO");
 	//Interpolate the fluid properties
+	Pressure = P;
+	Density = rho;
 	StaticEnergy = Interpolate_2D_Bilinear(ThermoTables_StaticEnergy);
 	//Enthalpy = Interpolate_2D_Bilinear(ThermoTables_Enthalpy);
 	Entropy = Interpolate_2D_Bilinear(ThermoTables_Entropy);
@@ -660,17 +644,7 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 	Cp = Interpolate_2D_Bilinear(ThermoTables_Cp);
 
 	//Check that the interpolated density and pressure are within LUT limits
-	if ((Density > Density_Table_Limits[1])
-			or (Density < Density_Table_Limits[0])) {
-		cerr << "PRHO Interpolated Density out of bounds\n";
-	}
-	if ((Pressure > Pressure_Table_Limits[1])
-			or (Pressure < Pressure_Table_Limits[0])) {
-		cerr << "PRHO Interpolated Pressure out of bounds\n";
-	}
-	delete[] Nearest_Neighbour_iIndex;
-	delete[] Nearest_Neighbour_jIndex;
-
+	Check_Interpolated_PRHO_Limits("PRHO");
 }
 
 void CLookUpTable::SetEnergy_Prho(su2double P, su2double rho) {
@@ -681,11 +655,6 @@ void CLookUpTable::SetEnergy_Prho(su2double P, su2double rho) {
 	if ((rho > Density_Table_Limits[1]) or (rho < Density_Table_Limits[0])) {
 		cerr << "PRHO Input Density out of bounds\n";
 	}
-	// Linear interpolation requires 4 neighbors to be selected from the LUT
-	Nearest_Neighbour_iIndex = new int[4];
-	Nearest_Neighbour_jIndex = new int[4];
-
-	su2double grad, x00, y00;
 
 	UpperJ = Table_Pressure_Stations - 1;
 	LowerJ = 0;
@@ -697,38 +666,14 @@ void CLookUpTable::SetEnergy_Prho(su2double P, su2double rho) {
 		Get_NonEquispaced_P_Index(P);
 	}
 
-	iIndex = LowerI;
-	jIndex = LowerJ;
-
-	//Set the nearest neigbours to the adjacent i and j vertexes
-	Nearest_Neighbour_iIndex[0] = iIndex;
-	Nearest_Neighbour_iIndex[1] = iIndex + 1;
-	Nearest_Neighbour_iIndex[2] = iIndex;
-	Nearest_Neighbour_iIndex[3] = iIndex + 1;
-	Nearest_Neighbour_jIndex[0] = jIndex;
-	Nearest_Neighbour_jIndex[1] = jIndex;
-	Nearest_Neighbour_jIndex[2] = jIndex + 1;
-	Nearest_Neighbour_jIndex[3] = jIndex + 1;
 	//Determine interpolation coefficients
 	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(rho, P, ThermoTables_Density,
-			ThermoTables_Pressure, "PRHO");
+	ThermoTables_Pressure, "PRHO");
 	StaticEnergy = Interpolate_2D_Bilinear(ThermoTables_StaticEnergy);
-
 	Pressure = P;
 	Density = rho;
 
-	//Check that the interpolated density and pressure are within LUT limits
-	if ((Density > Density_Table_Limits[1])
-			or (Density < Density_Table_Limits[0])) {
-		cerr << "PRHO Interpolated Density out of bounds\n";
-	}
-	if ((Pressure > Pressure_Table_Limits[1])
-			or (Pressure < Pressure_Table_Limits[0])) {
-		cerr << "PRHO Interpolated Pressure out of bounds\n";
-	}
-	delete[] Nearest_Neighbour_iIndex;
-	delete[] Nearest_Neighbour_jIndex;
-
+	Check_Interpolated_PRHO_Limits("PRHO (energy)");
 }
 
 void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
@@ -740,13 +685,13 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 		cerr << "HS Input Entropy out of bounds\n";
 	}
 
-	iIndex = HS_tree->Flattened_Point_Index[HS_tree->Branch_Dimension / 2]
+	LowerI = HS_tree->Flattened_Point_Index[HS_tree->Branch_Dimension / 2]
 			/ Table_Pressure_Stations;
-	jIndex = HS_tree->Flattened_Point_Index[HS_tree->Branch_Dimension / 2]
+	LowerJ = HS_tree->Flattened_Point_Index[HS_tree->Branch_Dimension / 2]
 			% Table_Pressure_Stations;
-	int N = 4;
-	// Linear interpolation requires 4 neighbors to be selected from the LUT
-	// More points may be used for the inverse distance interpolation
+
+	//Simply find the closest point with the KD_tree and use it for the intrpolaiton
+	int N = 1;
 	Nearest_Neighbour_iIndex = new int[N];
 	Nearest_Neighbour_jIndex = new int[N];
 	su2double *best_dist = new su2double[N];
@@ -758,7 +703,7 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 	//Preset the distance variables to something large, so they can be subsituted
 	//by any point in the table.
 	for (int i = 0; i < N; i++) {
-		best_dist[i] = 1E10;
+		best_dist[i] = HUGE_VAL;
 	}
 
 	//Search the HS_tree for the thermo-pair values
@@ -773,83 +718,15 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 	}
 
 	//Set the nearest neigbors to the adjacent i and j vertexes
-	iIndex = Nearest_Neighbour_iIndex[0];
-	jIndex = Nearest_Neighbour_jIndex[0];
+	LowerI = Nearest_Neighbour_iIndex[0];
+	LowerJ = Nearest_Neighbour_jIndex[0];
 
-	Nearest_Neighbour_iIndex[1] = iIndex + 1;
-	Nearest_Neighbour_iIndex[2] = iIndex;
-	Nearest_Neighbour_iIndex[3] = iIndex + 1;
-	Nearest_Neighbour_jIndex[1] = jIndex;
-	Nearest_Neighbour_jIndex[2] = jIndex + 1;
-	Nearest_Neighbour_jIndex[3] = jIndex + 1;
 
 	//Using the closest element found in the KD_tree as a starting point, now find the closest
 	//quadrilateral containing the point using a simple zigzag search method
-	su2double dx, dy, x00, y00, dx10, dx01, dx11, dy10, dy01, dy11;
-	bool BOTTOM, TOP, LEFT, RIGHT, found = false; //check if bellow BOTTOM, above, TOP, left of LEFT, and right of RIGHT
-	for (int k = 0; k < 20 and not found; k++) //20 is arbitrary and used primarily to avoid a while loop which could get stuck
-			{
-		Nearest_Neighbour_iIndex[0] = iIndex;
-		Nearest_Neighbour_jIndex[0] = jIndex;
-		Nearest_Neighbour_iIndex[1] = iIndex + 1;
-		Nearest_Neighbour_iIndex[2] = iIndex;
-		Nearest_Neighbour_iIndex[3] = iIndex + 1;
-		Nearest_Neighbour_jIndex[1] = jIndex;
-		Nearest_Neighbour_jIndex[2] = jIndex + 1;
-		Nearest_Neighbour_jIndex[3] = jIndex + 1;
+	Zig_Zag_Search(h, s, ThermoTables_Enthalpy, ThermoTables_Entropy);
 
-		x00 =
-				ThermoTables_Enthalpy[Nearest_Neighbour_iIndex[0]][Nearest_Neighbour_jIndex[0]];
-		y00 =
-				ThermoTables_Entropy[Nearest_Neighbour_iIndex[0]][Nearest_Neighbour_jIndex[0]];
-		dx = h - x00;
-		dy = s - y00;
-		dx01 =
-				ThermoTables_Enthalpy[Nearest_Neighbour_iIndex[2]][Nearest_Neighbour_jIndex[2]]
-						- x00;
-		dy01 =
-				ThermoTables_Entropy[Nearest_Neighbour_iIndex[2]][Nearest_Neighbour_jIndex[2]]
-						- y00;
-		dx10 =
-				ThermoTables_Enthalpy[Nearest_Neighbour_iIndex[1]][Nearest_Neighbour_jIndex[1]]
-						- x00;
-		dy10 =
-				ThermoTables_Entropy[Nearest_Neighbour_iIndex[1]][Nearest_Neighbour_jIndex[1]]
-						- y00;
-		dx11 =
-				ThermoTables_Enthalpy[Nearest_Neighbour_iIndex[3]][Nearest_Neighbour_jIndex[3]]
-						- x00;
-		dy11 =
-				ThermoTables_Entropy[Nearest_Neighbour_iIndex[3]][Nearest_Neighbour_jIndex[3]]
-						- y00;
 
-		BOTTOM = (dy * dx10) < (dx * dy10);
-		TOP = ((dy - dy01) * (dx11 - dx01)) > ((dy11 - dy01) * (dx - dx01));
-		RIGHT = ((dx - dx10) * (dy11 - dy10)) > ((dx11 - dx10) * (dy - dy10));
-		LEFT = (dx * dy01) < (dx01 * dy);
-		//Check BOTTOM quad boundary
-		if (BOTTOM and !TOP) {
-			if (jIndex != 0)
-				jIndex--;
-		}
-		//Check RIGHT quad boundary
-		else if (RIGHT and !LEFT) {
-			if (iIndex != (Table_Density_Stations - 2))
-				iIndex++;
-		}
-		//Check TOP quad boundary
-		else if (TOP and !BOTTOM) {
-			if (jIndex != (Table_Pressure_Stations - 2))
-				jIndex++;
-		}
-		//Check LEFT quad boundary
-		else if (LEFT and !RIGHT) {
-			if (iIndex != 0)
-				iIndex--;
-		} else {
-			found = true;
-		}
-	}
 	//Determine interpolation coefficients
 	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(h, s, ThermoTables_Enthalpy,
 			ThermoTables_Entropy, "HS");
@@ -868,15 +745,7 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 	dTde_rho = Interpolate_2D_Bilinear(ThermoTables_dTde_rho);
 	Cp = Interpolate_2D_Bilinear(ThermoTables_Cp);
 
-	//Check that the interpolated density and pressure are within LUT limits
-	if ((Density > Density_Table_Limits[1])
-			or (Density < Density_Table_Limits[0])) {
-		cerr << "HS Interpolated Density out of bounds\n";
-	}
-	if ((Pressure > Pressure_Table_Limits[1])
-			or (Pressure < Pressure_Table_Limits[0])) {
-		cerr << "HS Interpolated Pressure out of bounds\n";
-	}
+	Check_Interpolated_PRHO_Limits("HS");
 	delete[] best_dist;
 	delete[] Nearest_Neighbour_iIndex;
 	delete[] Nearest_Neighbour_jIndex;
@@ -891,10 +760,6 @@ void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 	if ((s > Entropy_Table_Limits[1]) or (s < Entropy_Table_Limits[0])) {
 		cerr << "PS Input Entropy  out of bounds\n";
 	}
-
-	// Linear interpolation requires 4 neighbors to be selected from the LUT
-	Nearest_Neighbour_iIndex = new int[4];
-	Nearest_Neighbour_jIndex = new int[4];
 
 	UpperJ = Table_Pressure_Stations - 1;
 	LowerJ = 0;
@@ -928,25 +793,10 @@ void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 		}
 	}
 
-	iIndex = LowerI;
-	jIndex = LowerJ;
-
-	su2double x, y;
-	y = P;
-	x = s;
-	//Set the nearest neigbours to the adjacent i and j vertexes
-	Nearest_Neighbour_iIndex[0] = iIndex;
-	Nearest_Neighbour_iIndex[1] = iIndex + 1;
-	Nearest_Neighbour_iIndex[2] = iIndex;
-	Nearest_Neighbour_iIndex[3] = iIndex + 1;
-	Nearest_Neighbour_jIndex[0] = jIndex;
-	Nearest_Neighbour_jIndex[1] = jIndex;
-	Nearest_Neighbour_jIndex[2] = jIndex + 1;
-	Nearest_Neighbour_jIndex[3] = jIndex + 1;
 	//Determine interpolation coefficients
 	Entropy = s;
 	Pressure = P;
-	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(x, y, ThermoTables_Entropy,
+	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(s, P, ThermoTables_Entropy,
 			ThermoTables_Pressure, "PS");
 
 	//Interpolate the fluid properties
@@ -962,16 +812,7 @@ void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 	Cp = Interpolate_2D_Bilinear(ThermoTables_Cp);
 
 	//Check that the interpolated density and pressure are within LUT limits
-	if ((Density > Density_Table_Limits[1])
-			or (Density < Density_Table_Limits[0])) {
-		cerr << "PS Interpolated Density out of bounds\n";
-	}
-	if ((Pressure > Pressure_Table_Limits[1])
-			or (Pressure < Pressure_Table_Limits[0])) {
-		cerr << "PS Interpolated Pressure out of bounds\n";
-	}
-	delete[] Nearest_Neighbour_iIndex;
-	delete[] Nearest_Neighbour_jIndex;
+	Check_Interpolated_PRHO_Limits("PS");
 }
 
 void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
@@ -984,8 +825,6 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 	}
 
 	// Linear interpolation requires 4 neighbors to be selected from the LUT
-	Nearest_Neighbour_iIndex = new int[4];
-	Nearest_Neighbour_jIndex = new int[4];
 
 	UpperJ = Table_Pressure_Stations - 1;
 	LowerJ = 0;
@@ -1018,25 +857,9 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 		}
 	}
 
-	iIndex = LowerI;
-	jIndex = LowerJ;
-
-	su2double x, y;
-	x = rho;
-	y = T;
-	//Set the nearest neigbours to the adjacent i and j vertexes
-	Nearest_Neighbour_iIndex[0] = iIndex;
-	Nearest_Neighbour_iIndex[1] = iIndex + 1;
-	Nearest_Neighbour_iIndex[2] = iIndex;
-	Nearest_Neighbour_iIndex[3] = iIndex + 1;
-	Nearest_Neighbour_jIndex[0] = jIndex;
-	Nearest_Neighbour_jIndex[1] = jIndex;
-	Nearest_Neighbour_jIndex[2] = jIndex + 1;
-	Nearest_Neighbour_jIndex[3] = jIndex + 1;
-	//Determine interpolation coefficients
 	Temperature = T;
 	Density = rho;
-	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(x, y, ThermoTables_Density,
+	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(rho, T, ThermoTables_Density,
 			ThermoTables_Temperature, "RHOT");
 	//Interpolate the fluid properties
 	StaticEnergy = Interpolate_2D_Bilinear(ThermoTables_StaticEnergy);
@@ -1051,16 +874,20 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 	Cp = Interpolate_2D_Bilinear(ThermoTables_Cp);
 
 	//Check that the interpolated density and pressure are within LUT limits
+	Check_Interpolated_PRHO_Limits("RHOT");
+}
+
+void CLookUpTable::Check_Interpolated_PRHO_Limits(string interpolation_case)
+{
+	//Check that the interpolated density and pressure are within LUT limits
 	if ((Density > Density_Table_Limits[1])
-			or (Density < Density_Table_Limits[0])) {
-		cerr << "RHOT Interpolated Density out of bounds\n";
-	}
-	if ((Pressure > Pressure_Table_Limits[1])
-			or (Pressure < Pressure_Table_Limits[0])) {
-		cerr << "RHOT Interpolated Pressure out of bounds\n";
-	}
-	delete[] Nearest_Neighbour_iIndex;
-	delete[] Nearest_Neighbour_jIndex;
+				or (Density < Density_Table_Limits[0])) {
+			cerr << interpolation_case << " Interpolated Density out of bounds\n";
+		}
+		if ((Pressure > Pressure_Table_Limits[1])
+				or (Pressure < Pressure_Table_Limits[0])) {
+			cerr << interpolation_case << " Interpolated Pressure out of bounds\n";
+		}
 }
 
 inline void CLookUpTable::Gaussian_Inverse(int nDim) {
@@ -1145,31 +972,15 @@ void CLookUpTable::Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x,
 		std::string grid_var) {
 	//The x,y coordinates of the quadrilateral
 	su2double x00, y00, x10, x01, x11, y10, y01, y11;
-	su2double coords[8];
 
-	x00 =
-			ThermoTables_X[Nearest_Neighbour_iIndex[0]][Nearest_Neighbour_jIndex[0]];
-
-	y00 =
-			ThermoTables_Y[Nearest_Neighbour_iIndex[0]][Nearest_Neighbour_jIndex[0]];
-
-	x01 =
-			ThermoTables_X[Nearest_Neighbour_iIndex[2]][Nearest_Neighbour_jIndex[2]];
-
-	y01 =
-			ThermoTables_Y[Nearest_Neighbour_iIndex[2]][Nearest_Neighbour_jIndex[2]];
-
-	x10 =
-			ThermoTables_X[Nearest_Neighbour_iIndex[1]][Nearest_Neighbour_jIndex[1]];
-
-	y10 =
-			ThermoTables_Y[Nearest_Neighbour_iIndex[1]][Nearest_Neighbour_jIndex[1]];
-
-	x11 =
-			ThermoTables_X[Nearest_Neighbour_iIndex[3]][Nearest_Neighbour_jIndex[3]];
-
-	y11 =
-			ThermoTables_Y[Nearest_Neighbour_iIndex[3]][Nearest_Neighbour_jIndex[3]];
+	x00 = ThermoTables_X[LowerI][LowerJ];
+	y00 = ThermoTables_Y[LowerI][LowerJ];
+	x01 = ThermoTables_X[LowerI][UpperJ];
+	y01 = ThermoTables_Y[LowerI][UpperJ];
+	x10 = ThermoTables_X[UpperI][LowerJ];
+	y10 = ThermoTables_Y[UpperI][LowerJ];
+	x11 = ThermoTables_X[UpperI][UpperJ];
+	y11 = ThermoTables_Y[UpperI][UpperJ];
 
 	//Check if x, y is indeed in the quad
 	//The (true and not false) type of logic is needed as the both monotonically
@@ -1298,14 +1109,10 @@ su2double CLookUpTable::Interpolate_2D_Bilinear(su2double ** ThermoTables_Z) {
 	su2double func_value_at_i0j0, func_value_at_i1j0, func_value_at_i0j1,
 			func_value_at_i1j1;
 
-	func_value_at_i0j0 =
-			ThermoTables_Z[Nearest_Neighbour_iIndex[0]][Nearest_Neighbour_jIndex[0]];
-	func_value_at_i1j0 =
-			ThermoTables_Z[Nearest_Neighbour_iIndex[1]][Nearest_Neighbour_jIndex[1]];
-	func_value_at_i0j1 =
-			ThermoTables_Z[Nearest_Neighbour_iIndex[2]][Nearest_Neighbour_jIndex[2]];
-	func_value_at_i1j1 =
-			ThermoTables_Z[Nearest_Neighbour_iIndex[3]][Nearest_Neighbour_jIndex[3]];
+	func_value_at_i0j0 = ThermoTables_Z[LowerI][LowerJ];
+	func_value_at_i1j0 = ThermoTables_Z[UpperI][LowerJ];
+	func_value_at_i0j1 = ThermoTables_Z[LowerI][UpperJ];
+	func_value_at_i1j1 = ThermoTables_Z[UpperI][UpperJ];
 	//The Interpolation_Coeff values depend on location alone
 	//and are the same regardless of function values
 	su2double result = 0;
