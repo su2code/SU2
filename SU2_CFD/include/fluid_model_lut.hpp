@@ -119,13 +119,31 @@ class CLookUpTable: public CFluidModel {
 
 protected:
 	bool skewed_linear_table;/*!< \brief Boolean to check for the type P-rho sample domain*/
-	CThermoList **ThermoTables;/*!< \brief The 2D array used to hold the values of thermodynamic properties from the LUT*/
-	CThermoList *SaturationTables;/*!< \brief The 1D array array of thermo porperties nn the saturation line, for q=1*/
 	su2double Pressure_Reference_Value;
 	su2double Density_Reference_Value;
 	su2double Temperature_Reference_Value;
 	su2double Velocity_Reference_Value;
 	su2double Energy_Reference_Value;
+
+	su2double
+	**ThermoTables_StaticEnergy, /*!< \brief Internal Energy look up table values. */
+	**ThermoTables_Entropy, /*!< \brief Entropy look up table values. */
+	**ThermoTables_Enthalpy, /*!< \brief Enthalpy required as separate variable for use in HS tree look up table values. */
+	**ThermoTables_Density, /*!< \brief Density look up table values. */
+	**ThermoTables_Pressure, /*!< \brief Pressure look up table values. */
+	**ThermoTables_SoundSpeed2, /*!< \brief The speed of sound squared look up table values. */
+	**ThermoTables_Temperature, /*!< \brief Temperature look up table values. */
+	**ThermoTables_dPdrho_e, /*!< \brief Fluid derivative DpDd_e look up table values. */
+	**ThermoTables_dPde_rho, /*!< \brief Fluid derivative DpDe_d look up table values. */
+	**ThermoTables_dTdrho_e, /*!< \brief Fluid derivative DTDd_e look up table values. */
+	**ThermoTables_dTde_rho, /*!< \brief Fluid derivative DTDe_d look up table values. */
+	**ThermoTables_Cp, /*!< \brief Specific Heat Capacity at constant pressure look up table values. */
+	**ThermoTables_Mu, /*!< \brief Laminar Viscosity look up table values. */
+	**ThermoTables_dmudrho_T, /*!< \brief Fluid derivative DmuDrho_T look up table values. */
+	**ThermoTables_dmudT_rho, /*!< \brief Fluid derivative DmuDT_rho look up table values. */
+	**ThermoTables_Kt, /*!< \brief Thermal Conductivity look up table values. */
+	**ThermoTables_dktdrho_T, /*!< \brief Fluid derivative DktDrho_T look up table values. */
+	**ThermoTables_dktdT_rho; /*!< \brief Fluid derivative DktDT_rho look up table values. */
 
 	su2double Interpolation_Matrix[4][4]; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
 	su2double Interpolation_Coeff[4][4]; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
@@ -283,8 +301,7 @@ public:
 	 * \param[in] grid_var - the pair of thermodynamic variables which define the grid i.e. the interpolation quad. (e.g. RHOE for rhoe)
 	 */
 
-	void Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x, su2double y,
-			std::string grid_var);
+	void Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x, su2double y, su2double **ThermoTables_X, su2double **ThermoTables_Y, std::string grid_var);
 
 
 	/*!
@@ -292,15 +309,14 @@ public:
 	 * \param[in] interpolant_var - the name of the variable to be interpolated e.g Density
 	 */
 
-	su2double Interpolate_2D_Bilinear(std::string interpolant_var);
+	su2double Interpolate_2D_Bilinear(su2double ** ThermoTables_Z);
 
 	/*!
 	 * \brief Load the LUT table from a CFX file format. X axis must be Density, and Y axis pressure. Equal spacing not required.
 	 * \param[in] filename - the name of the CFX file containing the table
 	 */
 
-	void LookUpTable_Load_CFX(std::string filename,
-			bool read_saturation_properties);
+	void LookUpTable_Load_CFX(std::string filename);
 	void LookUpTable_Load_DAT(std::string filename);
 
 	/*!
