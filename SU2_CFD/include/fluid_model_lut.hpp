@@ -130,6 +130,7 @@ protected:
 	su2double Interpolation_Matrix[4][4]; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
 	su2double Interpolation_Coeff[4][4]; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
 	int iIndex, jIndex; /*!< \brief The i,j indexes (rho, P) of the position of the table search. Can be used as a restart for next search.*/
+	int LowerI, UpperI, middleI, LowerJ, UpperJ, middleJ;
 	int Table_Pressure_Stations;/*!< \brief The pressure dimensions of the table */
 	int Table_Density_Stations; /*!< \brief The density dimensions of the table */
 	KD_node *HS_tree; /*!< \brief The pointer to the root of the KD tree for the HS thermo-pair.*/
@@ -214,8 +215,8 @@ public:
 	 * \param[in] rho - input Density (must be within LUT limits)
 	 * \param[in] e   - input StaticEnergy (must be within LUT limits)
 	 */
-	void Get_Equispaced_Rho_Index(su2double rho);
-	void Get_Equispaced_P_Index(su2double P);
+	void Get_NonEquispaced_Rho_Index(su2double rho);
+	void Get_NonEquispaced_P_Index(su2double P);
 	void SetTDState_rhoe(su2double rho, su2double e);
 
 	/*!
@@ -300,8 +301,7 @@ public:
 
 	void LookUpTable_Load_CFX(std::string filename,
 			bool read_saturation_properties);
-	void LookUpTable_Load_DAT(std::string filename,
-				bool read_saturation_properties);
+	void LookUpTable_Load_DAT(std::string filename);
 
 	/*!
 	 * \brief Print the table to a text file (for external inspection)
