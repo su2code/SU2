@@ -115,7 +115,7 @@ def shape_optimization( filename                ,
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
-    config.NZONES      = nzones
+    config.NZONES      = int( nzones )
     if quiet: config.CONSOLE = 'CONCISE'
     config.GRADIENT_METHOD = gradient
     
