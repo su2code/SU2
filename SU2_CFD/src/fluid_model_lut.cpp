@@ -32,7 +32,7 @@
 #include "../include/fluid_model_lut.hpp"
 
 CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
-		CFluidModel() {
+CFluidModel() {
 	if (dimensional) {
 		Pressure_Reference_Value = 1;
 		Temperature_Reference_Value = 1;
@@ -61,7 +61,7 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 		exit(EXIT_FAILURE);
 	}
 	if (ThermoTables_Pressure[0][0]
-			!= ThermoTables_Pressure[Table_Density_Stations - 1][0]) {
+															 != ThermoTables_Pressure[Table_Density_Stations - 1][0]) {
 		skewed_linear_table = true;
 	}
 
@@ -78,9 +78,9 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 	// Building an KD_tree for the HS thermopair
 	cout << "Building HS_tree" << endl;
 	su2double* xtemp = new su2double[Table_Density_Stations
-			* Table_Pressure_Stations];
+																	 * Table_Pressure_Stations];
 	su2double* ytemp = new su2double[Table_Density_Stations
-			* Table_Pressure_Stations];
+																	 * Table_Pressure_Stations];
 	int* itemp = new int[Table_Density_Stations * Table_Pressure_Stations];
 	// Deep copy the x,y, and index values for the KD_tree
 	for (int i = 0; i < Table_Density_Stations; i++) {
@@ -302,10 +302,10 @@ void CLookUpTable::N_Nearest_Neighbours_KD_Tree(int N, su2double thermo1,
 			best_dist[i] = dist;
 			Nearest_Neighbour_iIndex[i] =
 					root->Flattened_Point_Index[root->Branch_Dimension / 2]
-							/ Table_Pressure_Stations;
+																			/ Table_Pressure_Stations;
 			Nearest_Neighbour_jIndex[i] =
 					root->Flattened_Point_Index[root->Branch_Dimension / 2]
-							% Table_Pressure_Stations;
+																			% Table_Pressure_Stations;
 			i = N + 1;
 		}
 		i++;
@@ -427,7 +427,7 @@ void CLookUpTable::Zig_Zag_Search(su2double x, su2double y,
 	su2double dx, dy, x00, y00, dx10, dx01, dx11, dy10, dy01, dy11;
 	bool BOTTOM, TOP, LEFT, RIGHT, found = false; //check if bellow BOTTOM, above, TOP, left of LEFT, and right of RIGHT
 	for (int k = 0; k < 20 and not found; k++) //20 is arbitrary and used primarily to avoid a while loop which could get stuck
-			{
+	{
 		UpperI = LowerI + 1;
 		UpperJ = LowerJ + 1;
 		x00 = ThermoTables_X[LowerI][LowerJ];
@@ -521,6 +521,73 @@ void CLookUpTable::Search_j_for_Y_given_i(su2double x, su2double y,
 	}
 }
 
+void CLookUpTable::Search_Linear_Skewed_Table(su2double x, su2double P,
+		su2double **ThermoTables_X) {
+	su2double RunVal, rho;
+	su2double grad, x00, y00, y10, x10;
+	while (UpperJ - LowerJ > 1) {
+		middleJ = (UpperJ + LowerJ) / 2; /*!< \brief Splitting index for the search */
+
+		// The variable names is composed of a (i,j) pair
+		y00 = ThermoTables_Pressure[0][middleJ];
+		y10 = ThermoTables_Pressure[Table_Density_Stations-1][middleJ];
+		x00 = ThermoTables_Density[0][middleJ];
+		x10 = ThermoTables_Density[Table_Density_Stations-1][middleJ];
+		//Using the input pressure and a given middleJ value,
+		//the corresponding density and iIndex may be determined
+		rho = (P-y00)*(x10-x00)/(y10-y00) + x00;
+		//If density is greater than the limits of the table,
+		//then search the upper part, if it is lower than the limits,
+		//search the lower part of the table
+		if (rho>Density_Table_Limits[1])
+		{
+			if (y10>y00)
+			{
+			LowerJ = middleJ;
+			}
+			else if (y10<y00)
+			{
+			UpperJ = middleJ;
+			}
+		}
+		else if (rho<Density_Table_Limits[0])
+		{
+			if (y10>y00)
+			{
+			UpperJ = middleJ;
+			}
+			else if (y10<y00)
+			{
+			LowerJ = middleJ;
+			}
+		} else {
+			//If the density is within limits, calculate the iIndex that
+			//it corresponds to
+			UpperI = Table_Density_Stations - 1;
+			LowerI = 0;
+			Search_NonEquispaced_Rho_Index(rho);
+			//Now an i,j index pair has been found, and can be used to
+			//guide the recursion further
+			y00 = ThermoTables_X[LowerI][middleJ];
+			y10 = ThermoTables_X[UpperI][middleJ];
+			x00 = ThermoTables_Density[LowerI][middleJ];
+			x10 = ThermoTables_Density[UpperI][middleJ];
+
+			RunVal = y00 + (y10 - y00) / (x10 - x00) * (rho - x00);
+			grad = ThermoTables_X[LowerI][middleJ + 1] - y00;
+			if (RunVal * grad > x * grad) {
+				UpperJ = middleJ;
+			} else if (RunVal * grad < x * grad) {
+				LowerJ = middleJ;
+			} else if (RunVal == x) {
+				LowerJ = middleJ;
+				UpperJ = LowerJ + 1;
+				break;
+			}
+		}
+	}
+}
+
 void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 	// Check if inputs are in total range (necessary but not sufficient condition)
 	if ((rho > Density_Table_Limits[1]) or (rho < Density_Table_Limits[0])) {
@@ -537,14 +604,12 @@ void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 	UpperI = Table_Density_Stations - 1;
 	LowerI = 0;
 
-	if (not skewed_linear_table) {
-		//Fix the i index first
-		Search_NonEquispaced_Rho_Index(rho);
-		//Having found the i index, search in j
-		Search_j_for_Y_given_i(rho, e, ThermoTables_Density,
-				ThermoTables_StaticEnergy);
-
-	}
+	//Searches involving density are independent of the skewness of the table
+	//Fix the i index first
+	Search_NonEquispaced_Rho_Index(rho);
+	//Having found the i index, search in j
+	Search_j_for_Y_given_i(rho, e, ThermoTables_Density,
+			ThermoTables_StaticEnergy);
 
 	//Now use the quadrilateral which contains the point to interpolate
 	//Determine the interpolation coefficients
@@ -588,6 +653,10 @@ void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
 		//Having fixes the j index, find the i index
 		Search_i_for_X_given_j(T, P, ThermoTables_Temperature,
 				ThermoTables_Pressure);
+	} else if (skewed_linear_table) {
+		Search_Linear_Skewed_Table(T, P, ThermoTables_Temperature);
+		//Finish of the search to check that the correct quad has indeed been selected
+		Zig_Zag_Search(T, P, ThermoTables_Temperature, ThermoTables_Pressure);
 	}
 
 	//Determine interpolation coefficients
@@ -630,6 +699,12 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 		Search_NonEquispaced_Rho_Index(rho);
 		Search_NonEquispaced_P_Index(P);
 	}
+	else if (skewed_linear_table) {
+		Search_NonEquispaced_Rho_Index(rho);
+		Search_j_for_Y_given_i(rho, P, ThermoTables_Density,
+				ThermoTables_Pressure);
+	}
+
 
 	//Determine interpolation coefficients
 	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(rho, P, ThermoTables_Density,
@@ -669,6 +744,10 @@ void CLookUpTable::SetEnergy_Prho(su2double P, su2double rho) {
 	if (not skewed_linear_table) {
 		Search_NonEquispaced_Rho_Index(rho);
 		Search_NonEquispaced_P_Index(P);
+	}	else if (skewed_linear_table) {
+		Search_NonEquispaced_Rho_Index(rho);
+		Search_j_for_Y_given_i(rho, P, ThermoTables_Density,
+				ThermoTables_Pressure);
 	}
 
 	//Determine interpolation coefficients
@@ -691,9 +770,9 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 	}
 
 	LowerI = HS_tree->Flattened_Point_Index[HS_tree->Branch_Dimension / 2]
-			/ Table_Pressure_Stations;
+																					/ Table_Pressure_Stations;
 	LowerJ = HS_tree->Flattened_Point_Index[HS_tree->Branch_Dimension / 2]
-			% Table_Pressure_Stations;
+																					% Table_Pressure_Stations;
 
 	//Simply find the closest point with the KD_tree and use it for the intrpolaiton
 	int N = 1;
@@ -774,6 +853,11 @@ void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 		Search_NonEquispaced_P_Index(P);
 		//Then find the i index, given a fixed j
 		Search_i_for_X_given_j(s, P, ThermoTables_Entropy, ThermoTables_Pressure);
+	}
+	else if (skewed_linear_table) {
+		Search_Linear_Skewed_Table(s, P, ThermoTables_Entropy);
+		//Finish of the search to check that the correct quad has indeed been selected
+		Zig_Zag_Search(s, P, ThermoTables_Entropy, ThermoTables_Pressure);
 	}
 
 	//Determine interpolation coefficients
@@ -971,11 +1055,11 @@ void CLookUpTable::Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x,
 		if (Nearest_Neighbour_jIndex[0] == 0) {
 			cerr << grid_var << ' ' << Nearest_Neighbour_iIndex[0] << ", "
 					<< Nearest_Neighbour_jIndex[0]
-					<< " interpolation point lies below the LUT\n";
+																			<< " interpolation point lies below the LUT\n";
 		} else {
 			cerr << grid_var << ' ' << Nearest_Neighbour_iIndex[0] << ", "
 					<< Nearest_Neighbour_jIndex[0]
-					<< " interpolation point lies below bottom boundary of selected quad\n";
+																			<< " interpolation point lies below bottom boundary of selected quad\n";
 		}
 	}
 	//Check RIGHT quad boundary
@@ -985,11 +1069,11 @@ void CLookUpTable::Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x,
 		if (Nearest_Neighbour_iIndex[0] == (Table_Density_Stations - 2)) {
 			cerr << grid_var << ' ' << Nearest_Neighbour_iIndex[0] << ", "
 					<< Nearest_Neighbour_jIndex[0]
-					<< " interpolation point lies right of the LUT\n";
+																			<< " interpolation point lies right of the LUT\n";
 		} else {
 			cerr << grid_var << ' ' << Nearest_Neighbour_iIndex[0] << ", "
 					<< Nearest_Neighbour_jIndex[0]
-					<< " interpolation point lies to the right of the boundary of selected quad\n";
+																			<< " interpolation point lies to the right of the boundary of selected quad\n";
 		}
 	}
 	//Check TOP quad boundary
@@ -998,12 +1082,12 @@ void CLookUpTable::Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x,
 		//Check if the point is also outside the LUT
 		if (Nearest_Neighbour_jIndex[0] == (Table_Pressure_Stations - 2)) {
 			cerr << grid_var << ' ' << Nearest_Neighbour_iIndex[0] << ", "
-			//	<< Nearest_Neighbour_jIndex[0]
+					//	<< Nearest_Neighbour_jIndex[0]
 					<< " interpolation point lies above the LUT\n";
 		} else {
 			cerr << grid_var << ' ' << Nearest_Neighbour_iIndex[0] << ", "
 					<< Nearest_Neighbour_jIndex[0]
-					<< +" interpolation point lies above the boundary of selected quad\n";
+																			<< +" interpolation point lies above the boundary of selected quad\n";
 		}
 	}
 	//Check LEFT quad boundary
@@ -1013,11 +1097,11 @@ void CLookUpTable::Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x,
 		if (Nearest_Neighbour_iIndex[0] == 0) {
 			cerr << grid_var << ' ' << Nearest_Neighbour_iIndex[0] << ", "
 					<< Nearest_Neighbour_jIndex[0]
-					<< " interpolation point lies left of the LUT\n";
+																			<< " interpolation point lies left of the LUT\n";
 		} else {
 			cerr << grid_var << ' ' << Nearest_Neighbour_iIndex[0] << ", "
 					<< Nearest_Neighbour_jIndex[0]
-					<< +" interpolation point lies to the left of the boundary of selected quad\n";
+																			<< +" interpolation point lies to the left of the boundary of selected quad\n";
 		}
 	}
 
@@ -1071,7 +1155,7 @@ void CLookUpTable::Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x,
 su2double CLookUpTable::Interpolate_2D_Bilinear(su2double * *ThermoTables_Z) {
 	//The function values at the 4 corners of the quad
 	su2double func_value_at_i0j0, func_value_at_i1j0, func_value_at_i0j1,
-			func_value_at_i1j1;
+	func_value_at_i1j1;
 
 	func_value_at_i0j0 = ThermoTables_Z[LowerI][LowerJ];
 	func_value_at_i1j0 = ThermoTables_Z[UpperI][LowerJ];
@@ -1245,7 +1329,8 @@ void CLookUpTable::LookUpTable_Load_CFX(string filename) {
 				// otherwise throw an error
 				else if (x != Table_Density_Stations && y != Table_Pressure_Stations) {
 					cerr
-							<< "The encountered dimensions of the CFX table are not the same throughout. They should be; for this to work.\n";
+					<< "The encountered dimensions of the CFX table are not the same throughout. "
+					"They should be; for this to work.\n";
 
 				}
 				//Go through each one of the variables of interest
