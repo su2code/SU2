@@ -2,7 +2,7 @@
  * \file output_tecplot.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.1.2 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -79,6 +79,10 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     else filename = config->GetStructure_FileName().c_str();
   }
   
+  if (config->GetKind_SU2() == SU2_DOT){
+    if (surf_sol) filename = config->GetSurfSens_FileName();
+    else filename = config->GetVolSens_FileName();
+  }
   strcpy (cstr, filename.c_str());
   
   /*--- Special cases where a number needs to be appended to the file name. ---*/
@@ -124,7 +128,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   
   /*--- Write the list of the fields in the restart file.
    Without including the PointID---*/
-  if (config->GetKind_SU2() == SU2_SOL) {
+  if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
     
     /*--- If SU2_SOL called this routine, we already have a set of output
      variables with the appropriate string tags stored in the config class. ---*/
@@ -303,7 +307,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
       if (LocalIndex[iPoint+1] != 0) {
         
         /*--- Write the node coordinates ---*/
-        if (config->GetKind_SU2() != SU2_SOL) {
+        if ((config->GetKind_SU2() != SU2_SOL) && (config->GetKind_SU2() != SU2_DOT)) {
           for (iDim = 0; iDim < nDim; iDim++)
           Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
         }
@@ -319,7 +323,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     } else {
       
       /*--- Write the node coordinates ---*/
-      if (config->GetKind_SU2() != SU2_SOL) {
+      if ((config->GetKind_SU2() != SU2_SOL) && (config->GetKind_SU2() != SU2_DOT)) {
         for (iDim = 0; iDim < nDim; iDim++)
         Tecplot_File << scientific << Coords[iDim][iPoint] << "\t";
       }

@@ -2,7 +2,7 @@
  * \file variable_structure.inl
  * \brief In-Line subroutines of the <i>variable_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.2 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -589,6 +589,12 @@ inline su2double CVariable::GetSolution_Pred_Old(unsigned short val_var){ return
 
 inline su2double *CVariable::GetSolution_Pred_Old(void){ return NULL; }
 
+inline void CVariable::SetPrestretch(unsigned short iVar, su2double val_prestretch){  }
+
+inline su2double *CVariable::GetPrestretch(void){ return NULL; }
+
+inline su2double CVariable::GetPrestretch(unsigned short iVar){ return 0.0; }
+
 inline su2double CEulerVariable::GetDensity(void) { return Solution[0]; }
 
 inline su2double CEulerVariable::GetDensityInc(void) { return Primitive[nDim+1]; }
@@ -1000,6 +1006,12 @@ inline su2double CFEM_ElasVariable::GetSolution_Pred_Old(unsigned short val_var)
 inline void CFEM_ElasVariable::SetVonMises_Stress(su2double val_stress) { VonMises_Stress = val_stress; }
 
 inline su2double CFEM_ElasVariable::GetVonMises_Stress(void) { return VonMises_Stress; }
+
+inline void CFEM_ElasVariable::SetPrestretch(unsigned short iVar, su2double val_prestretch){ Prestretch[iVar] = val_prestretch;}
+
+inline su2double *CFEM_ElasVariable::GetPrestretch(void){ return Prestretch; }
+
+inline su2double CFEM_ElasVariable::GetPrestretch(unsigned short iVar){ return Prestretch[iVar]; }
 
 inline void CFEABoundVariable::SetTraction(unsigned short iVar, unsigned short jVar, su2double val_traction) { Traction[iVar][jVar] = val_traction; }
 
