@@ -801,7 +801,7 @@ enum RIEMANN_TYPE {
   STATIC_SUPERSONIC_INFLOW_PT = 5, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
   STATIC_SUPERSONIC_INFLOW_PD = 6, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
   MIXING_IN = 7, /*!< \brief User does not specify anything information are retrieved from the other domain */
-  MIXING_OUT = 8 /*!< \brief User does not specify anything information are retrieved from the other domain */
+  MIXING_OUT = 8, /*!< \brief User does not specify anything information are retrieved from the other domain */
 };
 
 static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>
@@ -814,7 +814,6 @@ static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_
 ("MIXING_IN", MIXING_IN)
 ("MIXING_OUT", MIXING_OUT);
 
-
 static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYPE>
 ("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
 ("DENSITY_VELOCITY", DENSITY_VELOCITY)
@@ -825,16 +824,11 @@ static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYP
 ("MIXING_IN", MIXING_IN)
 ("MIXING_OUT", MIXING_OUT);
 
-
 static const map<string, RIEMANN_TYPE> NonUniform_Map = CCreateMap<string, RIEMANN_TYPE>
 ("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
-("DENSITY_VELOCITY", DENSITY_VELOCITY)
-("STATIC_PRESSURE", STATIC_PRESSURE)
-("TOTAL_SUPERSONIC_INFLOW", TOTAL_SUPERSONIC_INFLOW)
-("STATIC_SUPERSONIC_INFLOW_PT", STATIC_SUPERSONIC_INFLOW_PT)
-("STATIC_SUPERSONIC_INFLOW_PD", STATIC_SUPERSONIC_INFLOW_PD)
-("MIXING_IN", MIXING_IN)
-("MIXING_OUT", MIXING_OUT);
+("STATIC_PRESSURE", STATIC_PRESSURE);
+
+
 /*!
  * \brief types of mixing process for averaging quantities at the boundaries.
  */

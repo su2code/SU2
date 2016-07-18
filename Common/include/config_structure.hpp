@@ -933,7 +933,7 @@ private:
 
   template <class Tenum>
   void addNonUniformOption(const string name, unsigned short & nMarker_NonUniform, string * & Marker_NonUniform, unsigned short* & option_field, const map<string, Tenum> & enum_map,
-                                 su2double* & var1, su2double* & var2, su2double** & FlowDir) {
+  		  su2double* & var1, su2double* & var2, su2double** & FlowDir) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionNonUniform<Tenum>(name, nMarker_NonUniform, Marker_NonUniform, option_field, enum_map, var1, var2, FlowDir);
@@ -3790,8 +3790,8 @@ public:
 	string GetResidual_FileName(void);
 
 	/*!
-	 * \brief Get the name of the file with the non-uniform boundary condition.
-	 * \return Name of the file with the non-uniform boundary condition.
+	 * \brief Get the name of the file with the solution of the flow problem.
+	 * \return Name of the file with the solution of the flow problem.
 	 */
 	string GetNonUniformBC_FileName(void);
 

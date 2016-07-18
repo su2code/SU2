@@ -3099,8 +3099,9 @@ protected:
 			*NormalMachIn,
 			*NormalMachOut,
 			*VelocityOutIs;
-       vector<su2double> NonUniformBC_InputVar1, NonUniformBC_InputVar2, NonUniformBC_InputVar3, NonUniformBC_d2Var2;
-       unsigned long InputDim;
+       vector<su2double> NonUniformBC_InputVar1, NonUniformBC_InputVar2, NonUniformBC_InputVar3;
+       vector<su2double> NonUniformBC_d2Var2, NonUniformBC_d2Var3;
+       unsigned long NonUniformBC_InputDim;
 
 
 public:
