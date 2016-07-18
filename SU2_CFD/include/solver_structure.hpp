@@ -1162,6 +1162,13 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] inMarkerTP - bound marker.
+	 * \return Value of the inlet entropy.
+	 */
+	virtual su2double GetEntropyOut(unsigned short inMarkerTP);
+
+	/*!
+	 * \brief A virtual member.
+	 * \param[in] inMarkerTP - bound marker.
 	 * \return Value of the inlet entropy from BC.
 	 */
 	virtual su2double GetEntropyIn_BC(unsigned short inMarkerTP);
@@ -1411,6 +1418,13 @@ public:
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
 	virtual void SetEntropyIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Provide the inlet entropy for convergence monitoring.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	virtual void SetEntropyOut(su2double value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief A virtual member.
@@ -3415,6 +3429,7 @@ protected:
 			*TotalEnthalpyIn,
 			*TotalEnthalpyIn_BC,
 			*EntropyIn,
+			*EntropyOut,
 			*EntropyIn_BC,
 			*PressureRatio,
 			*TotalPresureIn,
@@ -4248,6 +4263,13 @@ public:
 	su2double GetEntropyIn(unsigned short inMarkerTP);
 
 	/*!
+	 * \brief Provide the inlet entropy for convergence monitoring.
+	 * \param[in] val_marker - bound marker.
+	 * \return Value of the inlet entropy.
+	 */
+	su2double GetEntropyOut(unsigned short inMarkerTP);
+
+	/*!
 	 * \brief Provide the inlet entropy from BC for convergence monitoring.
 	 * \param[in] val_marker - bound marker.
 	 * \return Value of the inlet entropy from BC.
@@ -4498,6 +4520,13 @@ public:
 	 * \param[in] inMarkerTP - turboperformance marker.
 	 */
 	void SetEntropyIn(su2double value, unsigned short inMarkerTP);
+
+	/*!
+	 * \brief Set the inlet entropy for convergence monitoring.
+	 * \param[in] value      - turboperformance value to set.
+	 * \param[in] inMarkerTP - turboperformance marker.
+	 */
+	void SetEntropyOut(su2double value, unsigned short inMarkerTP);
 
 	/*!
 	 * \brief Set the inlet entropy from BC for convergence monitoring.
