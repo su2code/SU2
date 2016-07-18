@@ -3378,6 +3378,8 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
   bool JPlane_Intersect_A = false, JPlane_Intersect_B = false;
   bool KPlane_Intersect_A = false, KPlane_Intersect_B = false;
 
+  bool found_Marker = false;
+
   /*--- Only the markers in the moving list ---*/
   
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
@@ -3386,6 +3388,17 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_GEO)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (config->GetDirectDiff() == D_DESIGN))) {
+	found_Marker = false;
+        for (unsigned long iSurfacePoints = 0; iSurfacePoints < FFDBox->GetnSurfacePoint(); iSurfacePoints++) {
+          
+          if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_All_TagBound(FFDBox->Get_MarkerIndex(iSurfacePoints))){
+            found_Marker = true;
+            cout << config->GetMarker_All_TagBound(iMarker) << " " << iFFDBox << endl;
+            break; 
+          }
+        }
+        if (found_Marker == true){
+
       for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
         for (iNode = 0; iNode < geometry->bound[iMarker][iElem]->GetnNodes(); iNode++) {
           iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
@@ -3447,6 +3460,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
                 }
               }
             }
+          }
           }
         }
       }
