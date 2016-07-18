@@ -337,7 +337,7 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
     break;
   // only valid for stator-rotor single stage
   case TOTAL_EFFICIENCY:
-		ObjFunc_Value = direct_solver->GetTotalTotalEfficiency(2);
+		ObjFunc_Value = direct_solver->GetTotalTotalEfficiency(config->GetnMarker_TurboPerformance() - 1);
 		break;
 	case TOTAL_PRESSURE_LOSS:
 		ObjFunc_Value = direct_solver->GetTotalPressureLoss(0);
@@ -347,19 +347,19 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
 		break;
 	// only valid for stator-rotor single stage
 	case TOTAL_STATIC_EFFICIENCY:
-		ObjFunc_Value = direct_solver->GetTotalStaticEfficiency(2);
+		ObjFunc_Value = direct_solver->GetTotalStaticEfficiency(config->GetnMarker_TurboPerformance() - 1);
 		break;
 	case ENTROPY_GENERATION:
-		ObjFunc_Value = direct_solver->GetEntropyGen(config->GetnMarker_TurboPerformance() - 1);
+		ObjFunc_Value = direct_solver->GetEntropyGen(config->GetnMarker_TurboPerformance() -1);
 		break;
 	case EULERIAN_WORK:
 		ObjFunc_Value = direct_solver->GetEulerianWork(0);
 		break;
 	case FLOW_ANGLE_IN:
-		ObjFunc_Value = 180.0/PI_NUMBER*direct_solver->GetFlowAngleIn(0);
+		ObjFunc_Value = 180.0/PI_NUMBER*direct_solver->GetFlowAngleIn(1);
 		break;
 	case FLOW_ANGLE_OUT:
-		ObjFunc_Value = 180.0/PI_NUMBER*direct_solver->GetFlowAngleOut(0);
+		ObjFunc_Value = 180.0/PI_NUMBER*direct_solver->GetFlowAngleOut(1);
 		break;
 	case MASS_FLOW_IN:
 		ObjFunc_Value = direct_solver->GetMassFlowIn(0);
