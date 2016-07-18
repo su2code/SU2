@@ -95,6 +95,8 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable() : CVariable(){
   Solution_Vel_time_n   = NULL;
   Solution_Accel_time_n = NULL;
 
+  Cross_Term_Derivative = NULL;
+
 }
 
 CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short val_ndim,
@@ -121,22 +123,6 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short
   Solution_time_n   = NULL;
   Solution_Vel_time_n   = NULL;
   Solution_Accel_time_n = NULL;
-//  if (dynamic){
-//    DualTime_Derivative     = new su2double[nVar];
-//    DualTime_Derivative_n   = new su2double[nVar];
-//
-//    Solution_Direct_Vel     = new su2double[nVar];
-//    Solution_Direct_Accel   = new su2double[nVar];
-//
-//    Solution_Vel            = new su2double[nVar];
-//    Solution_Accel          = new su2double[nVar];
-//
-//    Solution_Old_Vel        = new su2double[nVar];
-//    Solution_Old_Accel      = new su2double[nVar];
-//
-//    Solution_Vel_time_n     = new su2double[nVar];
-//    Solution_Accel_time_n   = new su2double[nVar];
-//  }
 
   Solution_Direct = new su2double[nVar];
 
@@ -152,28 +138,13 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short
     Solution[iVar] = val_solution[iVar];
   }
 
-
-//  if (dynamic){
-//    for (iVar = 0; iVar < nVar; iVar++){
-//      Solution_time_n[iVar]         = 0.0;
-//
-//      DualTime_Derivative[iVar]     = 0.0;
-//      DualTime_Derivative_n[iVar]   = 0.0;
-//
-//      Solution_Direct_Vel[iVar]     = 0.0;
-//      Solution_Direct_Accel[iVar]   = 0.0;
-//
-//      Solution_Vel[iVar]            = 0.0;
-//      Solution_Accel[iVar]          = 0.0;
-//
-//      Solution_Vel_time_n[iVar]     = 0.0;
-//      Solution_Accel_time_n[iVar]   = 0.0;
-//
-//      Solution_Old_Vel[iVar]        = 0.0;
-//      Solution_Old_Accel[iVar]      = 0.0;
-//
-//    }
-//  }
+  Cross_Term_Derivative = NULL;
+  if (config->GetFSI_Simulation()){
+    Cross_Term_Derivative = new su2double[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Cross_Term_Derivative[iVar] = 0.0;
+    }
+  }
 
 }
 
@@ -247,6 +218,14 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, su2double* val
 
   }
 
+  Cross_Term_Derivative = NULL;
+  if (config->GetFSI_Simulation()){
+    Cross_Term_Derivative = new su2double[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Cross_Term_Derivative[iVar] = 0.0;
+    }
+  }
+
 }
 
 
@@ -274,6 +253,8 @@ CDiscAdjFEAVariable::~CDiscAdjFEAVariable(){
 
   if (Solution_Old_Vel      != NULL) delete [] Solution_Old_Vel;
   if (Solution_Old_Accel    != NULL) delete [] Solution_Old_Accel;
+
+  if (Cross_Term_Derivative    != NULL) delete [] Cross_Term_Derivative;
 
 }
 

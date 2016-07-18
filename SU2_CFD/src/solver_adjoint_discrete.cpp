@@ -439,6 +439,34 @@ void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
   }
 }
 
+void CDiscAdjSolver::SetZeroAdj_ObjFunc(CGeometry *geometry, CConfig *config){
+  int rank = MASTER_NODE;
+
+  bool time_stepping = config->GetUnsteady_Simulation() != STEADY;
+  unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
+  unsigned long ExtIter = config->GetExtIter();
+  su2double seeding = 0.0;
+
+//  if (time_stepping){
+//    if (ExtIter < IterAvg_Obj){
+//      seeding = 1.0/((su2double)IterAvg_Obj);
+//    }
+//    else{
+//      seeding = 0.0;
+//    }
+//  }
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if (rank == MASTER_NODE){
+    SU2_TYPE::SetDerivative(ObjFunc_Value, SU2_TYPE::GetValue(seeding));
+  } else {
+    SU2_TYPE::SetDerivative(ObjFunc_Value, 0.0);
+  }
+}
+
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){
 
   bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -671,4 +699,24 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
         }
 
     }
+}
+
+
+void CDiscAdjSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *config){
+
+  unsigned short iVar;
+  unsigned long iPoint;
+  su2double residual;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    /*--- Extract the adjoint solution ---*/
+
+    direct_solver->node[iPoint]->GetAdjointSolution(Solution);
+
+    for (iVar = 0; iVar < nVar; iVar++) node[iPoint]->SetCross_Term_Derivative(iVar, Solution[iVar]);
+
+  }
+
+
 }

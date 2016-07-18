@@ -2278,6 +2278,23 @@ void CDiscAdjMeanFlowIteration::InitializeAdjoint(CSolver ****solver_container, 
   }
 }
 
+void CDiscAdjMeanFlowIteration::InitializeAdjoint_CrossTerm(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
+
+  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
+
+  solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+  /*--- Initialize the adjoints the conservative variables ---*/
+
+  solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
+                                                                  config_container[iZone]);
+
+  if (turbulent){
+    solver_container[iZone][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
+                                                                    config_container[iZone]);
+  }
+}
+
 void CDiscAdjMeanFlowIteration::Iterate_FSI(COutput *output,
                                         CIntegration ***integration_container,
                                         CGeometry ***geometry_container,
@@ -2547,8 +2564,7 @@ void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry ***geometry_container,
   if (val_DirectIter >= 0){
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
       cout << " Loading FEA solution from direct iteration " << val_DirectIter  << "." << endl;
-    solver_container[val_iZone][MESH_0][FEA_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter);
-//    solver_container[val_iZone][MESH_0][FEA_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0],solver_container[val_iZone][MESH_0], config_container[val_iZone], MESH_0, val_DirectIter, RUNTIME_FEA_SYS, false);
+      solver_container[val_iZone][MESH_0][FEA_SOL]->LoadRestart(geometry_container[val_iZone], solver_container[val_iZone], config_container[val_iZone], val_DirectIter);
   } else {
     /*--- If there is no solution file we set the freestream condition ---*/
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
@@ -2692,30 +2708,18 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
 
     /*--- Clear indices of coupling variables ---*/
 
-    SetDependencies(solver_container, geometry_container, config_container, val_iZone, ALL_VARIABLES);
-
-    /*--- Add dependencies for E and Nu ---*/
-
-    numerics_container[val_iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Properties(solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(), solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson());
-
-    /*--- Add dependencies for Rho and Rho_DL ---*/
-
-    numerics_container[val_iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Density(solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(), solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL());
+    SetDependencies(solver_container, geometry_container, numerics_container, config_container, val_iZone, ALL_VARIABLES);
 
     /*--- Run one iteration while tape is passive - this clears all indices ---*/
 
     fem_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
                                 config_container,surface_movement,grid_movement,FFDBox,val_iZone);
 
-//    fem_iteration->Update(output,integration_container,geometry_container,solver_container,numerics_container,
-//                                config_container,surface_movement,grid_movement,FFDBox,val_iZone);
-
   }
 
   /*--- Prepare for recording ---*/
 
   solver_container[val_iZone][MESH_0][ADJFEA_SOL]->SetRecording(geometry_container[val_iZone][MESH_0], config_container[val_iZone], kind_recording);
-
 
   /*--- Start the recording of all operations ---*/
 
@@ -2725,17 +2729,9 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
 
   RegisterInput(solver_container, geometry_container, config_container, val_iZone, kind_recording);
 
-  /*--- Add dependencies for E and Nu ---*/
-
-  numerics_container[val_iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Properties(solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(), solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson());
-
-  /*--- Add dependencies for Rho and Rho_DL ---*/
-
-  numerics_container[val_iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Density(solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(), solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL());
-
   /*--- Compute coupling or update the geometry ---*/
 
-  SetDependencies(solver_container, geometry_container, config_container, val_iZone, kind_recording);
+  SetDependencies(solver_container, geometry_container, numerics_container, config_container, val_iZone, kind_recording);
 
   /*--- Set the correct direct iteration number ---*/
 
@@ -2748,19 +2744,9 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
   fem_iteration->Iterate(output,integration_container,geometry_container,solver_container,numerics_container,
                               config_container,surface_movement,grid_movement,FFDBox, val_iZone);
 
-//  fem_iteration->Update(output,integration_container,geometry_container,solver_container,numerics_container,
-//                              config_container,surface_movement,grid_movement,FFDBox,val_iZone);
-
   config_container[val_iZone]->SetExtIter(ExtIter);
 
-  /*--- Register flow variables and objective function as output ---*/
-
-  /*--- For flux-avg or area-avg objective functions the 1D values must be calculated first ---*/
-//  if (config_container[val_iZone]->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE ||
-//      config_container[val_iZone]->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
-//      config_container[val_iZone]->GetKind_ObjFunc()==MASS_FLOW_RATE)
-//    output->OneDimensionalOutput(solver_container[val_iZone][MESH_0][FLOW_SOL],
-//                                 geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
+  /*--- Register structural variables and objective function as output ---*/
 
   RegisterOutput(solver_container, geometry_container, config_container, val_iZone);
 
@@ -2784,33 +2770,35 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver ****solver_container, CGeometry
 
   if (kind_recording == FEM_VARIABLES){
 
-    /*--- Register flow and turbulent variables as input ---*/
+    /*--- Register structural variables as input ---*/
 
     solver_container[iZone][MESH_0][ADJFEA_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
 
     solver_container[iZone][MESH_0][ADJFEA_SOL]->RegisterVariables(geometry_container[iZone][MESH_0], config_container[iZone]);
 
   }
-//  if (kind_recording == GEOMETRY_VARIABLES){
-//
-//    /*--- Register node coordinates as input ---*/
-//
-//    geometry_container[iZone][MESH_0]->RegisterCoordinates(config_container[iZone]);
-//
-//  }
 
 }
 
-void CDiscAdjFEAIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
+void CDiscAdjFEAIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CNumerics *****numerics_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
 
 
-//  if ((kind_recording == GEOMETRY_VARIABLES) || (kind_recording == ALL_VARIABLES)){
-//
-//    /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
-//
-//    geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone], config_container[iZone]);
-//
+//  /*--- If we are recording a FEM problem, we need to set the dependencies with E, Nu, Rho and Rho_DL ---*/
+//  if (kind_recording == FEM_VARIABLES){
+
+    /*--- Add dependencies for E and Nu ---*/
+
+    numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Properties(solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(), solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson());
+
+    /*--- Add dependencies for Rho and Rho_DL ---*/
+
+    numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Density(solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(), solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL());
+
 //  }
+//  /*--- If we are recording the crossed flow terms of a fluid problem, we need to set the dependencies with E, Nu, Rho and Rho_DL ---*/
+
+
+
 
 }
 
@@ -2838,6 +2826,21 @@ void CDiscAdjFEAIteration::InitializeAdjoint(CSolver ****solver_container, CGeom
                                                                   config_container[iZone]);
 
 }
+
+
+void CDiscAdjFEAIteration::InitializeAdjoint_CrossTerm(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone){
+
+  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
+
+  solver_container[iZone][MESH_0][ADJFEA_SOL]->SetAdj_ObjFunc(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+  /*--- Initialize the adjoints the conservative variables ---*/
+
+  solver_container[iZone][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry_container[iZone][MESH_0],
+                                                                  config_container[iZone]);
+
+}
+
 void CDiscAdjFEAIteration::Iterate_FSI(COutput *output,
                                         CIntegration ***integration_container,
                                         CGeometry ***geometry_container,
@@ -3581,7 +3584,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
       /*--- Update the multigrid structure after moving the finest grid,
        including computing the grid velocities on the coarser levels. ---*/
 
-      //grid_movement->UpdateMultiGrid(geometry_container, config_container);
+      grid_movement->UpdateMultiGrid(geometry_container, config_container);
 
       break;
 

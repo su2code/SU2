@@ -1186,6 +1186,8 @@ inline void CSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){}
 
+inline void CSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *config){}
+
 inline void CSolver::RegisterObj_Func(CConfig *config){}
 
 inline void CSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config){}
@@ -1193,6 +1195,8 @@ inline void CSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 inline void CSolver::SetSensitivity(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){}
+
+inline void CSolver::SetZeroAdj_ObjFunc(CGeometry *geometry, CConfig *config){}
 
 inline su2double CDiscAdjSolver::GetTotal_Sens_Geo() { return Total_Sens_Geo; }
 

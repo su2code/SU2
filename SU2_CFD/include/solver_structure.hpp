@@ -2764,6 +2764,14 @@ public:
   virtual void ExtractAdjoint_Solution(CGeometry *geometry,  CConfig *config);
 
   /*!
+  * \brief A virtual member.
+  * \param[in] geometry - The geometrical definition of the problem.
+  * \param[in] solver_container - The solver container holding all solutions.
+  * \param[in] config - The particular config.
+  */
+ virtual void ExtractAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config);
+
+  /*!
   * \brief A virtual member
   * \param[in] geometry - The geometrical definition of the problem.
   */
@@ -2784,6 +2792,8 @@ public:
   virtual void SetSensitivity(CGeometry *geometry, CConfig *config);
 
   virtual void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
+
+  virtual void SetZeroAdj_ObjFunc(CGeometry *geometry, CConfig* config);
 
 	/*!
 	 * \brief A virtual member.
@@ -8206,6 +8216,14 @@ public:
   void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config);
 
   /*!
+  * \brief Sets the adjoint values of the flow variables due to cross term contributions
+  * \param[in] geometry - The geometrical definition of the problem.
+  * \param[in] solver_container - The solver container holding all solutions.
+  * \param[in] config - The particular config.
+  */
+ void ExtractAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config);
+
+  /*!
   * \brief Register the objective function as output.
   * \param[in] geometry - The geometrical definition of the problem.
   */
@@ -8232,6 +8250,12 @@ public:
    */
   void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
 
+  /*!
+   * \brief Set the objective function.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetZeroAdj_ObjFunc(CGeometry *geometry, CConfig* config);
 
   /*!
    * \brief Provide the total shape sensitivity coefficient.
@@ -8417,6 +8441,14 @@ public:
   void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config);
 
   /*!
+  * \brief Sets the adjoint values of the structural variables due to cross term contributions
+  * \param[in] geometry - The geometrical definition of the problem.
+  * \param[in] solver_container - The solver container holding all solutions.
+  * \param[in] config - The particular config.
+  */
+ void ExtractAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config);
+
+  /*!
   * \brief Register the objective function as output.
   * \param[in] geometry - The geometrical definition of the problem.
   */
@@ -8443,6 +8475,12 @@ public:
    */
   void SetAdj_ObjFunc(CGeometry *geometry, CConfig* config);
 
+  /*!
+   * \brief Set the objective function to 0 contribution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetZeroAdj_ObjFunc(CGeometry *geometry, CConfig* config);
 
   /*!
    * \brief Provide the total shape sensitivity coefficient.
