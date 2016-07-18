@@ -11699,7 +11699,8 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
 
   MPI_Aint base;
   MPI_Get_address(&thisMatchingFace, &base);
-  for(unsigned short i=0; i<7; ++i) disp[i] = MPI_Aint_diff(disp[i], base);
+  // for(unsigned short i=0; i<7; ++i) disp[i] = MPI_Aint_diff(disp[i], base);
+  for(unsigned short i=0; i<7; ++i) disp[i] = disp[i] - base;
 
   MPI_Datatype MPI_MATCHINGFACE_TYPE_HELP;
   MPI_Type_create_struct(7, blockLen, disp, type, &MPI_MATCHINGFACE_TYPE_HELP);

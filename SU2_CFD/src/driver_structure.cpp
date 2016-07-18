@@ -211,7 +211,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   
   unsigned short iMGlevel;
   bool euler, ns, turbulent,
-  fem_euler, fem_ns, fem_turbulent, fem_les, fem_transition,
+  fem_euler, fem_ns, fem_turbulent, fem_transition,
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
@@ -220,7 +220,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   /*--- Initialize some useful booleans ---*/
   
   euler            = false;  ns              = false;  turbulent     = false;
-  fem_euler        = false;  fem_ns          = false;  fem_turbulent = false; fem_les = false;
+  fem_euler        = false;  fem_ns          = false;  fem_turbulent = false;
   adj_euler        = false;  adj_ns          = false;  adj_turb      = false;
   spalart_allmaras = false;  menter_sst      = false;
   poisson          = false;  neg_spalart_allmaras = false;
@@ -241,7 +241,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     case FEM_EULER : fem_euler = true; break;
     case FEM_NAVIER_STOKES: fem_ns = true; break;
     case FEM_RANS : fem_ns = true; fem_turbulent = true; if(config->GetKind_Trans_Model() == LM) fem_transition = true; break;
-    case FEM_LES : fem_ns = true;  fem_les = true; break;
+    case FEM_LES : fem_ns = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -312,7 +312,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       if( fem_dg_flow )
         solver_container[iMGlevel][FLOW_SOL] = new CFEM_DG_EulerSolver(geometry[iMGlevel], config, iMGlevel);
     }
-    if (fem_ns || fem_les) {
+    if (fem_ns) {
       if( fem_dg_flow )
         solver_container[iMGlevel][FLOW_SOL] = new CFEM_DG_NSSolver(geometry[iMGlevel], config, iMGlevel);
     }
@@ -464,7 +464,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   euler, adj_euler,
   ns, adj_ns,
   turbulent, adj_turb,
-  fem_euler, fem_ns, fem_turbulent, fem_les,
+  fem_euler, fem_ns, fem_turbulent,
   poisson, wave, fem, heat, template_solver, transition, disc_adj;
   
   /*--- Initialize some useful booleans ---*/
@@ -475,7 +475,6 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
   fem_euler        = false;
   fem_ns           = false;
   fem_turbulent    = false;
-  fem_les          = false;
   wave             = false;
   heat             = false;
   fem = false;
@@ -491,7 +490,7 @@ void CDriver::Integration_Preprocessing(CIntegration **integration_container,
     case FEM_EULER : fem_euler = true; break;
     case FEM_NAVIER_STOKES: fem_ns = true; break;
     case FEM_RANS : fem_ns = true; fem_turbulent = true; break;
-    case FEM_LES :  fem_ns = true; fem_les = true; break;
+    case FEM_LES :  fem_ns = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -538,7 +537,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   euler, adj_euler,
   ns, adj_ns,
   turbulent, adj_turb,
-  fem_euler, fem_ns, fem_turbulent, fem_les,
+  fem_euler, fem_ns, fem_turbulent,
   poisson, wave, fem, heat, template_solver, transition, disc_adj;
 
   /*--- Initialize some useful booleans ---*/
@@ -549,7 +548,6 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   fem_euler        = false;
   fem_ns           = false;
   fem_turbulent    = false;
-  fem_les          = false;
   wave             = false;
   heat             = false;
   fem = false;
@@ -565,7 +563,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
     case FEM_EULER : fem_euler = true; break;
     case FEM_NAVIER_STOKES: fem_ns = true; break;
     case FEM_RANS : fem_ns = true; fem_turbulent = true; break;
-    case FEM_LES :  fem_ns = true; fem_les = true; break;
+    case FEM_LES :  fem_ns = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -613,7 +611,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   nVar_Adj_Flow         = 0,
   nVar_Adj_Turb         = 0,
   nVar_Poisson          = 0,
-  nVar_FEM				= 0,
+  nVar_FEM              = 0,
   nVar_Wave             = 0,
   nVar_Heat             = 0;
   
@@ -623,7 +621,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   euler, adj_euler,
   ns, adj_ns,
   turbulent, adj_turb,
-  fem_euler, fem_ns, fem_turbulent, fem_les,
+  fem_euler, fem_ns, fem_turbulent,
   spalart_allmaras, neg_spalart_allmaras, menter_sst,
   poisson,
   wave,
@@ -639,7 +637,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
   
   /*--- Initialize some useful booleans ---*/
   euler            = false; ns     = false; turbulent     = false;
-  fem_euler        = false; fem_ns = false; fem_turbulent = false; fem_les = false;
+  fem_euler        = false; fem_ns = false; fem_turbulent = false;
   poisson          = false;
   adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
   wave             = false;   heat             = false;   fem				= false;
@@ -656,7 +654,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     case FEM_EULER : fem_euler = true; break;
     case FEM_NAVIER_STOKES: fem_ns = true; break;
     case FEM_RANS : fem_ns = true; fem_turbulent = true; break;
-    case FEM_LES :  fem_ns = true; fem_les = true; break;
+    case FEM_LES :  fem_ns = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -1416,7 +1414,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   bool
   euler, adj_euler,
   ns, adj_ns,
-  fem_euler, fem_ns, fem_turbulent, fem_les,
+  fem_euler, fem_ns, fem_turbulent,
   turbulent, adj_turb,
   spalart_allmaras, neg_spalart_allmaras, menter_sst,
   poisson,
@@ -1432,7 +1430,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; ns     = false; turbulent     = false;
-  fem_euler        = false; fem_ns = false; fem_turbulent = false; fem_les = false;
+  fem_euler        = false; fem_ns = false; fem_turbulent = false;
   poisson          = false;
   adj_euler        = false; adj_ns           = false;   adj_turb         = false;
   wave             = false; heat             = false;   fem        = false;
@@ -1449,7 +1447,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     case FEM_EULER : fem_euler = true; break;
     case FEM_NAVIER_STOKES: fem_ns = true; break;
     case FEM_RANS : fem_ns = true; fem_turbulent = true; break;
-    case FEM_LES :  fem_ns = true; fem_les = true; break;
+    case FEM_LES :  fem_ns = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
@@ -1461,7 +1459,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
 
   /*--- Assign turbulence model booleans --- */
 
-  if (turbulent)
+  if (turbulent || fem_turbulent)
     switch (config->GetKind_Turb_Model()) {
       case SA:     spalart_allmaras = true;     break;
       case SA_NEG: neg_spalart_allmaras = true; break;

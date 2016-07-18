@@ -2490,7 +2490,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Viscous = (( Kind_Solver == NAVIER_STOKES          ) ||
              ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
              ( Kind_Solver == RANS                   ) ||
-             ( Kind_Solver == ADJ_RANS               ) );
+             ( Kind_Solver == ADJ_RANS               ) ||
+             ( Kind_Solver == FEM_NAVIER_STOKES      ) ||
+             ( Kind_Solver == FEM_RANS               ) ||
+             ( Kind_Solver == FEM_LES                ));
   
   
   /*--- Re-scale the length based parameters. The US system uses feet,
