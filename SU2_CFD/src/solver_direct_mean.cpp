@@ -5244,7 +5244,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 void CEulerSolver::TurboPerformance2nd(CConfig *config){
 
   unsigned short nBladesRow, nStages;
-  unsigned short iStage, iDim;
+  unsigned short iStage, iDim, iBlade;
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 #ifdef HAVE_MPI
@@ -5272,11 +5272,10 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
 
       TotalTotalEfficiency[nBladesRow + iStage]  = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 1])/(TotalEnthalpyIn[iStage*2] - TotalEnthalpyOutIs[nBladesRow + iStage]);
       TotalStaticEfficiency[nBladesRow + iStage] = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 1])/(TotalEnthalpyIn[iStage*2] - EnthalpyOutIs[nBladesRow + iStage]);
-      EntropyGen[nBladesRow + iStage]            = (EntropyOut[iStage*2 + 1] - EntropyIn[iStage*2])/abs(EntropyIn[iStage*2] + 1.0);
       PressureRatio[nBladesRow + iStage]         = (PressureRatio[iStage*2]*PressureOut[iStage*2]/PressureOut[iStage*2 + 1]);
       MassFlowIn[nBladesRow + iStage]         	 = MassFlowIn[iStage*2];
       MassFlowOut[nBladesRow + iStage]         	 = MassFlowOut[iStage*2 + 1];
-
+      EntropyGen[nBladesRow + iStage]            = EntropyGen[iStage*2 + 1] + EntropyGen[iStage*2];
     }
 
     /*---Comnpute performance for full machine---*/
@@ -5290,13 +5289,16 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
 
     TotalTotalEfficiency[nBladesRow + nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - TotalEnthalpyOutIs[nBladesRow + nStages]);
     TotalStaticEfficiency[nBladesRow +nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - EnthalpyOutIs[nBladesRow + nStages]);
-    EntropyGen[nBladesRow + iStage]            = (EntropyOut[nBladesRow-1] - EntropyIn[0])/abs(EntropyIn[0]+1.0);
     PressureRatio[nBladesRow + nStages]        = PressureRatio[0]*PressureOut[0]/PressureOut[nBladesRow-1];
     MassFlowIn[nBladesRow + nStages]         	 = MassFlowIn[0];
     MassFlowOut[nBladesRow + nStages]          = MassFlowOut[nBladesRow-1];
   }
-}
 
+  EntropyGen[nBladesRow + nStages]            = 0.0;
+  for(iBlade = 0; iBlade < nBladesRow; iStage++ ){
+  	EntropyGen[nBladesRow + nStages] += EntropyGen[iBlade];
+  }
+}
 void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
     CConfig *config, unsigned short iRKStep) {
   su2double *Residual, *Res_TruncError, Vol, Delta, Res;
