@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.1.2 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -57,7 +57,7 @@ using namespace std;
  * \brief Class for writing the flow, adjoint and linearized solver 
  *        solution (including the history solution, and parallel stuff).
  * \author F. Palacios, T. Economon, M. Colonno.
- * \version 4.1.2 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  */
 class COutput {
 
@@ -497,4 +497,13 @@ public:
    */
   void SetCFL_Number(CSolver ****solver_container, CConfig **config, unsigned short val_iZone);
   
+  /*!
+   * \brief Write the sensitivity (including mesh sensitivity) computed with the discrete adjoint method
+   *  on the surface and in the volume to a file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - Number of Zones.
+   */
+  void SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone);
+
 };
