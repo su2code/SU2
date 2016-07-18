@@ -508,12 +508,12 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
 #ifdef HAVE_MPI
-    su2double nBadDOFsLoc = nBadDOFs;
+    unsigned long nBadDOFsLoc = nBadDOFs;
     SU2_MPI::Reduce(&nBadDOFsLoc, &nBadDOFs, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
     if((rank == MASTER_NODE) && (nBadDOFs != 0))
-      cout << "Warning. The original solution contains "<< nBadDOFs << " DOFs that are not physical." << endl;
+      cout << "Warning. The initial solution contains "<< nBadDOFs << " DOFs that are not physical." << endl;
   }
 
   /*--- Set up the persistent communication for the conservative variables. ---*/
@@ -613,7 +613,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig 
   bool unsteady           = (config->GetUnsteady_Simulation() != NO);
   bool viscous            = config->GetViscous();
   bool grid_movement      = config->GetGrid_Movement();
-  bool turbulent          = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
+  bool turbulent          = (config->GetKind_Solver() == FEM_RANS) || (config->GetKind_Solver() == FEM_LES);
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
   bool standard_air       = (config->GetKind_FluidModel() == STANDARD_AIR);
@@ -1543,7 +1543,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
 }
 
 void CFEM_DG_EulerSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                              CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+                                            CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 
   /*--- Allocate the memory for some temporary storage needed to compute the
         internal residual efficiently. Note that when the MKL library is used
@@ -1578,9 +1578,7 @@ void CFEM_DG_EulerSolver::Internal_Residual(CGeometry *geometry, CSolver **solve
 
     /*------------------------------------------------------------------------*/
     /*--- Step 1: Interpolate the solution to the integration points of    ---*/
-    /*---         the elements. This is a matrix matrix multiplication,    ---*/
-    /*---         which can be carried out with either LIBXSMM, BLAS or    ---*/
-    /*---         a standard internal implementation.                      ---*/ 
+    /*---         the element.                                             ---*/
     /*------------------------------------------------------------------------*/
 
     /* Easier storage of the solution variables for this element. */
@@ -2529,7 +2527,7 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
                                                     const su2double     *solR,
                                                     su2double           *fluxes,
                                                     CNumerics           *numerics) {
-  
+
   /* Easier storage of the specific heat ratio. */
   const su2double gm1   = Gamma - 1.0;
   
@@ -2541,12 +2539,12 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
   su2double Prim_L[8];
   su2double Prim_R[8];
   
-  Jacobian_i = new su2double*[nVar];
-  Jacobian_j = new su2double*[nVar];
-  for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
-    Jacobian_i[iVar] = new su2double[nVar];
-    Jacobian_j[iVar] = new su2double[nVar];
-  }
+//Jacobian_i = new su2double*[nVar];
+//Jacobian_j = new su2double*[nVar];
+//for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
+//  Jacobian_i[iVar] = new su2double[nVar];
+//  Jacobian_j[iVar] = new su2double[nVar];
+//}
   
   /*--- Loop over the number of points. ---*/
   
@@ -2598,19 +2596,20 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
     numerics->ComputeResidual(flux, Jacobian_i, Jacobian_j, config);
   }
   
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    delete [] Jacobian_i[iVar];
-    delete [] Jacobian_j[iVar];
-  }
-  delete [] Jacobian_i;
-  delete [] Jacobian_j;
-
-  Jacobian_i = NULL;
-  Jacobian_j = NULL;
+//for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+//  delete [] Jacobian_i[iVar];
+//  delete [] Jacobian_j[iVar];
+//}
+//delete [] Jacobian_i;
+//delete [] Jacobian_j;
+//
+//Jacobian_i = NULL;
+//Jacobian_j = NULL;
 }
 
 void CFEM_DG_EulerSolver::MatrixProduct(const int M,        const int N,        const int K,
                                         const su2double *A, const su2double *B, su2double *C) {
+
 #ifdef HAVE_LIBXSMM
 
   /* The gemm function of libxsmm is used to carry out the multiplication. */
@@ -2761,60 +2760,9 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
 
 void CFEM_DG_NSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   
-  unsigned long iPoint, ErrorCounter = 0;
-  su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
-  
-#ifdef HAVE_MPI
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
-  bool limiter_visc = config->GetViscous_Limiter_Flow();
-  
-  /*--- Set the primitive variables ---*/
-  
-  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
-  
-  
-  /*--- Evaluate the vorticity and strain rate magnitude ---*/
-  
-  StrainMag_Max = 0.0, Omega_Max = 0.0;
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    
-    solver_container[FLOW_SOL]->node[iPoint]->SetVorticity(limiter_visc);
-    solver_container[FLOW_SOL]->node[iPoint]->SetStrainMag(limiter_visc);
-    
-    StrainMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
-    Vorticity = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity();
-    Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
-    
-    StrainMag_Max = max(StrainMag_Max, StrainMag);
-    Omega_Max = max(Omega_Max, Omega);
-    
-  }
-  
   /*--- Collect the number of non-physical points for this iteration. ---*/
-  
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
-    
-#ifdef HAVE_MPI
-    unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-    su2double MyOmega_Max = Omega_Max; Omega_Max = 0.0;
-    su2double MyStrainMag_Max = StrainMag_Max; StrainMag_Max = 0.0;
-    
-    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-#endif
-    
-    if (iMesh == MESH_0) {
-      config->SetNonphysical_Points(ErrorCounter);
-      solver_container[FLOW_SOL]->SetStrainMag_Max(StrainMag_Max);
-      solver_container[FLOW_SOL]->SetOmega_Max(Omega_Max);
-    }
-    
-  }
-  
+  CFEM_DG_EulerSolver::Preprocessing(geometry, solver_container, config, iMesh,
+                                     iRKStep, RunTime_EqSystem, Output);
 }
 
 void CFEM_DG_NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
@@ -2828,32 +2776,217 @@ void CFEM_DG_NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 }
 
 void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) {
-  
-}
 
-void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                                                  CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
-  
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
-  /*--- Compute finite element convective residual and store here. ---*/
-  
-  if (rank == MASTER_NODE) cout << " Computing internal contributions to residual." << endl;
-  
-  // numerics holds the CDiscGalerkin class for compute residual here
-  
-  if ((config->GetRiemann_Solver_FEM() == ROE) && (rank == MASTER_NODE))
-    cout << " Using a Roe Riemann solver for the DG method." << endl;
-  
-  su2double quad_fact_straight = config->GetQuadrature_Factor_Straight();
-  if (rank == MASTER_NODE) cout << " Quad factor straight: " << quad_fact_straight << endl;
-  
-  su2double quad_fact_curved = config->GetQuadrature_Factor_Curved();
-  if (rank == MASTER_NODE) cout << " Quad factor curved: " << quad_fact_curved << endl;
-  
+
+  if (rank == MASTER_NODE) cout << " Computing viscous time step." << endl;
+
+}
+
+void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                                         CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+
+  /* Constant factor present in the heat flux vector. */
+  const su2double factHeatFlux = Gamma/config->GetPrandtl_Lam();
+
+  /*--- Allocate the memory for some temporary storage needed to compute the
+        internal residual efficiently. Note that when the MKL library is used
+        a special allocation is used to optimize performance. ---*/
+  su2double *solAndGradInt, *fluxes;
+
+#ifdef HAVE_MKL
+  solAndGradInt = (su2double *) mkl_malloc(nIntegrationMax*nVar*(nDim+1)*sizeof(su2double), 64);
+  fluxes        = (su2double *) mkl_malloc(nIntegrationMax*nVar*nDim    *sizeof(su2double), 64);
+#else
+  vector<su2double> helpSolInt(nIntegrationMax*nVar*(nDim+1));
+  vector<su2double> helpFluxes(nIntegrationMax*nVar*nDim);
+  solAndGradInt = helpSolInt.data();
+  fluxes        = helpFluxes.data();
+#endif
+
+  /* Store the number of metric points per integration point, which depends
+     on the number of dimensions. */
+  const unsigned short nMetricPerPoint = nDim*nDim + 1;
+
+  /*--- Loop over the owned volume elements to compute the contribution of the
+        volume integral in the DG FEM formulation to the residual.       ---*/
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /* Get the data from the corresponding standard element. */
+    const unsigned short ind             = volElem[l].indStandardElement;
+    const unsigned short nInt            = standardElementsSol[ind].GetNIntegration();
+    const unsigned short nDOFs           = volElem[l].nDOFsSol;
+    const su2double *matBasisInt         = standardElementsSol[ind].GetMatBasisFunctionsIntegration();
+    const su2double *matDerBasisIntTrans = standardElementsSol[ind].GetDerMatBasisFunctionsIntTrans();
+    const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 1: Determine the solution variables and their gradients     ---*/
+    /*---         w.r.t. the parametric coordinates in the integration     ---*/
+    /*---         points of the element.                                   ---*/
+    /*------------------------------------------------------------------------*/
+
+    /* Easier storage of the solution variables for this element. */
+    su2double *solDOFs = VecSolDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+
+    /* Call the general function to carry out the matrix product. */
+    MatrixProduct(nInt*(nDim+1), nVar, nDOFs, matBasisInt, solDOFs, solAndGradInt);
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 2: Compute the total fluxes (inviscid fluxes minus the      ---*/
+    /*---         viscous fluxes), multiplied by minus the integration     ---*/
+    /*---         weight, in the integration points.                       ---*/
+    /*------------------------------------------------------------------------*/
+
+    /* Determine the offset between the solution variables and the r-derivatives,
+       which is also the offset between the r- and s-derivatives and the offset
+       between s- and t-derivatives. */
+    const unsigned short offMetric = nVar*nInt;
+
+    /* Loop over the integration points, ll is the counter for the fluxes
+       in the integration points. */
+    unsigned short ll = 0;
+    for(unsigned short i=0; i<nInt; ++i) {
+
+      /* Easier storage of the metric terms in this integration point. First
+         compute the inverse of the Jacobian, the Jacobian is the first entry
+         in the metric terms, and afterwards update the metric terms by 1. */
+      const su2double *metricTerms = volElem[l].metricTerms + i*nMetricPerPoint;
+      const su2double Jac          = metricTerms[0];
+      const su2double JacInv       = 1.0/Jac;
+      metricTerms                 += 1;
+
+      /* Easier storage of the location where the solution data of this
+         integration point starts. */
+      const su2double *sol = solAndGradInt + nVar*i;
+
+      /*--- Compute the Cartesian gradients of the independent solution
+            variables from the gradients in parametric coordinates and the
+            metric terms in this integration point. Note that at the end a
+            multiplication with JacInv takes places, because the metric terms
+            are scaled by the Jacobian. ---*/
+      su2double solGradCart[5][3];
+      for(unsigned short k=0; k<nDim; ++k) {
+        for(unsigned short j=0; j<nVar; ++j) {
+          solGradCart[j][k] = 0.0;
+          for(unsigned short l=0; l<nDim; ++l)
+            solGradCart[j][k] += sol[j+(l+1)*offMetric]*metricTerms[k+l*nDim];
+          solGradCart[j][k] *= JacInv;
+        }
+      }
+
+      /*--- Compute the velocities and static energy in this integration point. ---*/
+      const su2double DensityInv = 1.0/sol[0];
+      su2double vel[3], Velocity2 = 0.0;
+      for(unsigned short j=0; j<nDim; ++j) {
+        vel[j]     = sol[j+1]*DensityInv;
+        Velocity2 += vel[j]*vel[j];
+      }
+
+      const su2double TotalEnergy  = sol[nDim+1]*DensityInv;
+      const su2double StaticEnergy = TotalEnergy - 0.5*Velocity2;
+
+      /*--- Compute the Cartesian gradients of the velocities and static energy
+            in this integration point and also the divergence of the velocity. ---*/
+      su2double velGrad[3][3], StaticEnergyGrad[3], divVel = 0.0;
+      for(unsigned short k=0; k<nDim; ++k) {
+        StaticEnergyGrad[k] = DensityInv*(solGradCart[nDim+1][k]
+                            -             TotalEnergy*solGradCart[0][k]);
+        for(unsigned short j=0; j<nDim; ++j) {
+          velGrad[j][k]        = DensityInv*(solGradCart[j+1][k]
+                               -      vel[j]*solGradCart[0][k]);
+          StaticEnergyGrad[k] -= vel[j]*velGrad[j][k];
+        }
+        divVel += velGrad[k][k];
+      }
+
+      /*--- Compute the pressure and the laminar viscosity. ---*/
+      FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+      const su2double Pressure  = FluidModel->GetPressure();
+      const su2double Viscosity = FluidModel->GetLaminarViscosity();
+
+      /*--- Set the value of the second viscosity and compute the divergence
+            term in the viscous normal stresses. ---*/
+      const su2double lambda     = -2.0*Viscosity/3.0;
+      const su2double lamDivTerm =  lambda*divVel;
+
+      /*--- Compute the viscous stress tensor. ---*/
+      su2double tauVis[3][3];
+      for(unsigned short k=0; k<nDim; ++k) {
+        tauVis[k][k] = 2.0*Viscosity*velGrad[k][k] + lamDivTerm;    // Normal stress
+        for(unsigned short j=(k+1); j<nDim; ++j) {
+          tauVis[j][k] = Viscosity*(velGrad[j][k] + velGrad[j][k]); // Shear stress
+          tauVis[k][j] = tauVis[j][k];
+        }
+      }
+
+      /*--- Compute the Cartesian flux vectors in this integration point. This
+            is the sum of the inviscid flux and the negative of the viscous
+            flux. ---*/
+      su2double fluxCart[5][3];
+      const su2double rH = sol[nDim+1] + Pressure;
+      for(unsigned short k=0; k<nDim; ++k) {
+
+        /* Density flux vector. */
+        fluxCart[0][k] = sol[k+1];
+
+        /* Momentum flux vector. */
+        for(unsigned short j=0; j<nDim; ++j)
+          fluxCart[j+1][k] = sol[j+1]*vel[k] - tauVis[j][k];
+        fluxCart[k+1][k]  += Pressure;
+
+        /* Energy flux vector. */
+        fluxCart[nDim+1][k] = rH*vel[k]                                   // Inviscid part
+                            - Viscosity*factHeatFlux*StaticEnergyGrad[k]; // Heat flux part
+        for(unsigned short j=0; j<nDim; ++j)
+          fluxCart[nDim+1][k] -= tauVis[j][k]*vel[j];    // Work of the viscous forces part
+      }
+
+      /*--- Loop over the number of dimensions to compute the fluxes in the
+            direction of the parametric coordinates. ---*/
+      for(unsigned short k=0; k<nDim; ++k) {
+
+        /* Pointer to the metric terms for this direction. */
+        const su2double *metric = metricTerms + k*nDim;
+
+        /*--- Loop over the number of variables in the flux vector.
+              Note that also the counter ll must be updated here. ---*/
+        for(unsigned short j=0; j<nVar; ++j, ++ll) {
+
+          /* Carry out the dot product of the Cartesian fluxes and the
+             metric terms to obtain the correct flux vector in this
+             parametric direction. */
+          fluxes[ll] = 0.0;
+          for(unsigned short iDim=0; iDim<nDim; ++iDim)
+            fluxes[ll] += fluxCart[j][iDim]*metric[iDim];
+
+          /* Multiply the flux by minus the integration weight to obtain the
+             correct expression in the weak formulation. */
+          fluxes[ll] *= -weights[i];
+        }
+      }
+    }
+
+    /*------------------------------------------------------------------------*/
+    /*--- Step 3: Compute the contribution to the residuals from the       ---*/
+    /*---         integration over the volume element.                     ---*/
+    /*------------------------------------------------------------------------*/
+
+    /* Easier storage of the residuals for this volume element. */
+    su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+
+    /* Call the general function to carry out the matrix product. */
+    MatrixProduct(nDOFs, nVar, nInt*nDim, matDerBasisIntTrans, fluxes, res);
+  }
+
+  /*--- If the MKL is used the temporary storage must be released again. ---*/
+#ifdef HAVE_MKL
+  mkl_free(solAndGradInt);
+  mkl_free(fluxes);
+#endif
 }
 
 void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
