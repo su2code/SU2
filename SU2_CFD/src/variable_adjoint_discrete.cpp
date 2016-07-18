@@ -68,6 +68,18 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
       DualTime_Derivative_n[iVar] = 0.0;
     }
   }
+
+  Geometry_Direct       = NULL;
+  Cross_Term_Derivative = NULL;
+  if (config->GetFSI_Simulation()){
+    Geometry_Direct       = new su2double[nVar];
+    Cross_Term_Derivative = new su2double[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Geometry_Direct[iVar]       = 0.0;
+      Cross_Term_Derivative[iVar] = 0.0;
+    }
+  }
+
 }
 
 

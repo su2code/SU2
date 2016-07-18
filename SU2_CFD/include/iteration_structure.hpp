@@ -165,6 +165,40 @@ public:
                       CFreeFormDefBox*** FFDBox,
                       unsigned short val_iZone);
 
+  virtual void InitializeAdjoint(CSolver ****solver_container,
+                                 CGeometry ***geometry_container,
+                                 CConfig **config_container,
+                                 unsigned short iZone){}
+
+  virtual void InitializeAdjoint_CrossTerm(CSolver ****solver_container,
+                                 CGeometry ***geometry_container,
+                                 CConfig **config_container,
+                                 unsigned short iZone){}
+
+  virtual void RegisterInput(CSolver ****solver_container,
+                             CGeometry*** geometry_container,
+                             CConfig** config_container,
+                             unsigned short iZone,
+                             unsigned short kind_recording){}
+
+  virtual void SetDependencies(CSolver ****solver_container,
+                               CGeometry ***geometry_container,
+                               CConfig **config_container,
+                               unsigned short iZone,
+                               unsigned short kind_recording){}
+
+  virtual void SetDependencies(CSolver ****solver_container,
+                               CGeometry ***geometry_container,
+                               CNumerics *****numerics_container,
+                               CConfig **config_container,
+                               unsigned short iZone,
+                               unsigned short kind_recording){}
+
+  virtual void RegisterOutput(CSolver ****solver_container,
+                              CGeometry*** geometry_container,
+                              CConfig** config_container,
+                              unsigned short iZone){}
+
 };
 
 
@@ -990,14 +1024,17 @@ private:
   bool turbulent;       /*!< \brief Stores the turbulent flag. */
 
   enum RECORDING{
-    NONE = 0,      /*!< \brief Indicates that nothing is recorded. */
-    FLOW_VARIABLES = 1, /*!< \brief Indicates that the current recording
-                                    can be used to compute the gradients with respect
-                                    to the conservative flow variables. */
-    GEOMETRY_VARIABLES = 2, /*!< \brief Indicates that the current recording
-                                       can be used to compute the gradients with respect
-                                       to the geometry variables. */
-    ALL_VARIABLES = 3,
+    NONE = 0,               /*!< \brief Indicates that nothing is recorded. */
+    FLOW_VARIABLES = 1,     /*!< \brief Indicates that the current recording can
+                                        be used to compute the gradients with
+                                        respect to the conservative flow variables. */
+    GEOMETRY_VARIABLES = 2, /*!< \brief Indicates that the current recording can
+                                        be used to compute the gradients with respect
+                                        to the mesh geometry variables. */
+    FEM_VARIABLES = 3,      /*!< \brief Indicates that the current recording can
+                                        be used to compute the gradients with respect
+                                        to the structural displacements. */
+    ALL_VARIABLES = 4,
   };
 
 
@@ -1124,6 +1161,15 @@ public:
 
 
   /*!
+   * \brief Initializes the adjoints of the output variables of the meanflow iteration - without the contribution of the objective function
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   */
+  void InitializeAdjoint_CrossTerm(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone);
+
+  /*!
    * \brief Record a single iteration of the direct mean flow system.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration_container - Container vector with all the integration methods.
@@ -1221,14 +1267,17 @@ private:
   unsigned short CurrentRecording;        /*!< \brief Stores the current status of the recording. */
 
   enum RECORDING{
-    NONE = 0,      /*!< \brief Indicates that nothing is recorded. */
-    FEM_VARIABLES = 1, /*!< \brief Indicates that the current recording
-                                    can be used to compute the gradients with respect
-                                    to the conservative flow variables. */
-    GEOMETRY_VARIABLES = 2, /*!< \brief Indicates that the current recording
-                                       can be used to compute the gradients with respect
-                                       to the geometry variables. */
-    ALL_VARIABLES = 3,
+    NONE = 0,               /*!< \brief Indicates that nothing is recorded. */
+    FLOW_VARIABLES = 1,     /*!< \brief Indicates that the current recording can
+                                        be used to compute the gradients with
+                                        respect to the conservative flow variables. */
+    GEOMETRY_VARIABLES = 2, /*!< \brief Indicates that the current recording can
+                                        be used to compute the gradients with respect
+                                        to the mesh geometry variables. */
+    FEM_VARIABLES = 3,      /*!< \brief Indicates that the current recording can
+                                        be used to compute the gradients with respect
+                                        to the structural displacements. */
+    ALL_VARIABLES = 4,
   };
 
 
@@ -1353,6 +1402,14 @@ public:
    */
   void InitializeAdjoint(CSolver ****solver_container, CGeometry*** geometry_container, CConfig** config_container, unsigned short iZone);
 
+  /*!
+   * \brief Initializes the adjoints of the output variables of the FEM iteration - without the contribution of the objective function
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   */
+  void InitializeAdjoint_CrossTerm(CSolver ****solver_container, CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone);
 
   /*!
    * \brief Record a single iteration of the direct FEM system.
@@ -1381,8 +1438,7 @@ public:
                       unsigned short kind_recording);
 
   /*!
-   * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions
-   * (e.g. turbulent variables, normals, volumes).
+   * \brief Compute necessary variables that depend on the variables in the numerics (E, Nu...)
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry_container - Geometrical definition of the problem.
    * \param[in] config_container - Definition of the particular problem.
@@ -1391,6 +1447,7 @@ public:
    */
   void SetDependencies(CSolver ****solver_container,
                        CGeometry ***geometry_container,
+                       CNumerics *****numerics_container,
                        CConfig **config_container,
                        unsigned short iZone,
                        unsigned short kind_recording);

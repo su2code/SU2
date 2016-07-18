@@ -2347,7 +2347,6 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output){
 
   bool dynamic = (config_container->GetDynamic_Analysis() == DYNAMIC);
-  su2double *solution_n, *solution_vel_n, *solution_accel_n;
   unsigned long iPoint;
   unsigned short iVar;
 
@@ -2365,6 +2364,41 @@ void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
         }
     }
 
+}
+
+void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *config){
+
+  unsigned short iVar;
+  unsigned long iPoint;
+  su2double residual;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    /*--- Extract the adjoint solution ---*/
+
+    direct_solver->node[iPoint]->GetAdjointSolution(Solution);
+
+    for (iVar = 0; iVar < nVar; iVar++) node[iPoint]->SetCross_Term_Derivative(iVar, Solution[iVar]);
+
+  }
+
+}
+
+void CDiscAdjFEASolver::SetZeroAdj_ObjFunc(CGeometry *geometry, CConfig *config){
+
+  int rank = MASTER_NODE;
+
+  su2double seeding = 0.0;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if (rank == MASTER_NODE){
+    SU2_TYPE::SetDerivative(ObjFunc_Value, SU2_TYPE::GetValue(seeding));
+  } else {
+    SU2_TYPE::SetDerivative(ObjFunc_Value, 0.0);
+  }
 }
 
 

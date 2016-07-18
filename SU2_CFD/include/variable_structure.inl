@@ -145,6 +145,8 @@ inline su2double CVariable::GetSolution(unsigned short val_var) { return Solutio
 
 inline su2double CVariable::GetSolution_Old(unsigned short val_var) { return Solution_Old[val_var]; }
 
+inline su2double CVariable::GetSolution_Old_Adj(unsigned short val_var) { return Solution_Adj_Old[val_var]; }
+
 inline su2double *CVariable::GetResidual_Sum(void) { return Residual_Sum; }
 
 inline su2double *CVariable::GetResidual_Old(void) { return Residual_Old; }
@@ -520,6 +522,14 @@ inline void CVariable::SetmuT(su2double val_muT) { }
 inline su2double* CVariable::GetSolution_Direct() { return NULL; }
 
 inline void CVariable::SetSolution_Direct(su2double *val_solution_direct) { }
+
+inline su2double* CVariable::GetGeometry_Direct() { return NULL; }
+
+inline void CVariable::SetGeometry_Direct(su2double *val_geometry_direct) { }
+
+inline su2double CVariable::GetCross_Term_Derivative(unsigned short iVar) { return 0.0; }
+
+inline void CVariable::SetCross_Term_Derivative(unsigned short iVar, su2double der) { }
 
 inline su2double* CVariable::GetSolution_Vel_Direct() { return NULL; }
 
@@ -1258,6 +1268,14 @@ inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct)
   }
 }
 
+inline su2double* CDiscAdjVariable::GetGeometry_Direct() { return Geometry_Direct; }
+
+inline void CDiscAdjVariable::SetGeometry_Direct(su2double *val_geometry_direct) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+    Geometry_Direct[iVar] = val_geometry_direct[iVar];
+  }
+}
+
 inline void CVariable::SetDynamic_Derivative(unsigned short iVar, su2double der) { }
 
 inline void CVariable::SetDynamic_Derivative_n(unsigned short iVar, su2double der) { }
@@ -1420,4 +1438,12 @@ inline void CFEM_ElasVariable::GetAdjointSolution_Accel_time_n(su2double *adj_so
 	      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_Accel_time_n[iVar]);
 	  }
 }
+
+inline su2double CDiscAdjVariable::GetCross_Term_Derivative(unsigned short iVar) { return Cross_Term_Derivative[iVar]; }
+
+inline void CDiscAdjVariable::SetCross_Term_Derivative(unsigned short iVar, su2double der) { Cross_Term_Derivative[iVar] = der; }
+
+inline su2double CDiscAdjFEAVariable::GetCross_Term_Derivative(unsigned short iVar) { return Cross_Term_Derivative[iVar]; }
+
+inline void CDiscAdjFEAVariable::SetCross_Term_Derivative(unsigned short iVar, su2double der) { Cross_Term_Derivative[iVar] = der; }
 

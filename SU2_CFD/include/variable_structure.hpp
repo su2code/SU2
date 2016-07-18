@@ -85,6 +85,8 @@ protected:
   unsigned short nSecondaryVar, nSecondaryVarGrad;		/*!< \brief Number of variables of the problem,
                                              note that this variable cannnot be static, it is possible to
                                              have different number of nVar in the same problem. */
+  su2double *Solution_Adj_Old;    /*!< \brief Solution of the problem. */
+
   
 public:
 
@@ -159,6 +161,13 @@ public:
 	 */
 	su2double GetSolution_Old(unsigned short val_var);
 
+  /*!
+   * \brief Get the old solution of the discrete adjoint problem (for multiphysics subiterations=
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the old solution vector.
+   */
+  su2double GetSolution_Old_Adj(unsigned short val_var);
+
 	/*!
 	 * \brief Set the value of the old solution.
 	 * \param[in] val_solution_old - Pointer to the residual vector.
@@ -181,6 +190,11 @@ public:
 	 * \brief Set variables to the value of the old variables.
 	 */
 	void Set_Solution(void);	
+
+  /*!
+   * \brief Set old discrete adjoint variables to the current value of the adjoint variables.
+   */
+  void Set_OldSolution_Adj(void);
 
 	/*!
 	 * \brief Set the variable solution at time n.
@@ -1814,6 +1828,29 @@ public:
 	 * \return Pointer to the direct solution vector.
 	 */
 	virtual su2double *GetSolution_Direct(void);
+
+  /*!
+   * \brief A virtual member. Set the restart geometry (coordinate of the converged solution)
+   * \param[in] val_coordinate_direct - Value of the restart coordinate.
+   */
+  virtual void SetGeometry_Direct(su2double *val_coordinate_direct);
+
+  /*!
+   * \brief A virtual member. Get the restart geometry (coordinate of the converged solution).
+   * \return Pointer to the restart coordinate vector.
+   */
+  virtual su2double *GetGeometry_Direct(void);
+
+  /*!
+   * \brief  A virtual member. Set the contribution of crossed terms into the derivative.
+   */
+  virtual void SetCross_Term_Derivative(unsigned short iVar, su2double der);
+
+  /*!
+   * \brief  A virtual member. Get the contribution of crossed terms into the derivative.
+   * \return The contribution of crossed terms into the derivative.
+   */
+  virtual su2double GetCross_Term_Derivative(unsigned short iVar);
 
   /*!
    * \brief A virtual member. Set the direct velocity solution for the adjoint solver.
@@ -4385,8 +4422,11 @@ class CDiscAdjVariable : public CVariable {
 private:
     su2double* Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
     su2double* Solution_Direct;
+    su2double* Geometry_Direct;
     su2double* DualTime_Derivative;
     su2double* DualTime_Derivative_n;
+
+    su2double* Cross_Term_Derivative;
 
 public:
     /*!
@@ -4433,6 +4473,30 @@ public:
     void SetSolution_Direct(su2double *sol);
 
     su2double* GetSolution_Direct();
+
+    /*!
+     * \brief Set the restart geometry (coordinate of the converged solution)
+     * \param[in] val_coordinate_direct - Value of the restart coordinate.
+     */
+    void SetGeometry_Direct(su2double *val_coordinate_direct);
+
+    /*!
+     * \brief Get the restart geometry (coordinate of the converged solution).
+     * \return Pointer to the restart coordinate vector.
+     */
+    su2double *GetGeometry_Direct(void);
+
+    /*!
+     * \brief Set the contribution of crossed terms into the derivative.
+     */
+    void SetCross_Term_Derivative(unsigned short iVar, su2double der);
+
+    /*!
+     * \brief Get the contribution of crossed terms into the derivative.
+     */
+    su2double GetCross_Term_Derivative(unsigned short iVar);
+
+
 };
 
 /*!
@@ -4466,6 +4530,7 @@ private:
     su2double* Solution_Direct_Vel;
     su2double* Solution_Direct_Accel;
 
+    su2double* Cross_Term_Derivative;
 
 public:
     /*!
@@ -4629,6 +4694,15 @@ public:
      */
     void Set_OldSolution_Vel(void);
 
+    /*!
+     * \brief Set the contribution of crossed terms into the derivative.
+     */
+    void SetCross_Term_Derivative(unsigned short iVar, su2double der);
+
+    /*!
+     * \brief Get the contribution of crossed terms into the derivative.
+     */
+    su2double GetCross_Term_Derivative(unsigned short iVar);
 
 };
 

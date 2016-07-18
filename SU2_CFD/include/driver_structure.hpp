@@ -709,7 +709,7 @@ class CDiscAdjFSIDriver : public CDriver {
   unsigned short RecordingState;
   unsigned short CurrentRecording;   /*!< \brief Stores the current status of the recording. */
 
-  enum RECORDING_FSI{
+  enum RECORDING{
     NONE = 0,               /*!< \brief Indicates that nothing is recorded. */
     FLOW_VARIABLES = 1,     /*!< \brief Indicates that the current recording can
                                         be used to compute the gradients with
@@ -721,6 +721,12 @@ class CDiscAdjFSIDriver : public CDriver {
                                         be used to compute the gradients with respect
                                         to the structural displacements. */
     ALL_VARIABLES = 4,
+    FLOW_CROSS_TERM = 5,    /*!< \brief Indicates that the current recording can
+                                        be used to compute the gradients of the structural problem
+                                        with respect to the flow variables. */
+    FEM_CROSS_TERM = 6      /*!< \brief Indicates that the current recording can
+                                        be used to compute the gradients of the mesh problem
+                                        with respect to the structural displacements. */
   };
 
 public:
@@ -779,11 +785,22 @@ public:
            CTransfer ***transfer_container);
 
   /*!
-   * \brief Run a structural iteration: compute the fluid pressure and viscous stresses, transfer tractions, run the iteration, and set the solution_Pred container
+   * \brief Run a structural adjoint iteration: record, run the direct iteration
    * \param[in] structuralZone - zone of the structural solver.
    * \param[in] fluidZone - zone of the fluid solver.
    */
   void Structural_Iteration(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
+      CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
+      CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
+      CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+      unsigned short structuralZone, unsigned short fluidZone);
+
+  /*!
+   * \brief Run a direct structural iteration: compute the fluid pressure and viscous stresses, transfer tractions, run the iteration, and set the solution_Pred container
+   * \param[in] structuralZone - zone of the structural solver.
+   * \param[in] fluidZone - zone of the fluid solver.
+   */
+  void Structural_Iteration_Direct(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
       CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
       CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
       CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
@@ -806,6 +823,17 @@ public:
    * \param[in] structuralZone - zone of the structural solver.
    */
   void Flow_Iteration(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
+      CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
+      CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
+      CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+      unsigned short fluidZone, unsigned short structuralZone);
+
+  /*!
+   * \brief Run a direct flow iteration: preeprocess and iterate the flow domain.
+   * \param[in] fluidZone - zone of the fluid solver.
+   * \param[in] structuralZone - zone of the structural solver.
+   */
+  void Flow_Iteration_Direct(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
       CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
       CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
       CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
