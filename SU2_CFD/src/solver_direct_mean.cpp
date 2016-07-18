@@ -5202,7 +5202,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
     TotalRothalpyOut[markerTP -1]   	= avgTotalRothalpyOut;
     TotalEnthalpyOutIs[markerTP -1]		=	avgTotalEnthalpyOutIs;
     EntropyIn[markerTP -1]				 		= avgEntropyIn;
-    EntropyOut[markerTP -1]				 		= avgEntropyIn;
+    EntropyOut[markerTP -1]				 		= avgEntropyOut;
     EntropyGen[markerTP -1]           = (avgEntropyOut - avgEntropyIn)/abs(avgEntropyIn + 1.0);
     AbsFlowAngleIn[markerTP -1]       = absFlowAngleIn;
     AbsFlowAngleOut[markerTP -1]      = absFlowAngleOut;
@@ -5272,7 +5272,7 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
 
       TotalTotalEfficiency[nBladesRow + iStage]  = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 1])/(TotalEnthalpyIn[iStage*2] - TotalEnthalpyOutIs[nBladesRow + iStage]);
       TotalStaticEfficiency[nBladesRow + iStage] = (TotalEnthalpyIn[iStage*2] - TotalEnthalpyOut[iStage*2 + 1])/(TotalEnthalpyIn[iStage*2] - EnthalpyOutIs[nBladesRow + iStage]);
-      EntropyGen[nBladesRow + iStage]            = ((abs(EntropyIn[iStage*2 + 1] + 1.0)*EntropyGen[iStage*2 + 1] + EntropyIn[iStage*2 + 1]) - EntropyIn[iStage*2])/abs(EntropyIn[iStage*2] + 1.0);
+      EntropyGen[nBladesRow + iStage]            = (EntropyOut[iStage*2 + 1] - EntropyIn[iStage*2])/abs(EntropyIn[iStage*2] + 1.0);
       PressureRatio[nBladesRow + iStage]         = (PressureRatio[iStage*2]*PressureOut[iStage*2]/PressureOut[iStage*2 + 1]);
       MassFlowIn[nBladesRow + iStage]         	 = MassFlowIn[iStage*2];
       MassFlowOut[nBladesRow + iStage]         	 = MassFlowOut[iStage*2 + 1];
@@ -5290,7 +5290,7 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
 
     TotalTotalEfficiency[nBladesRow + nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - TotalEnthalpyOutIs[nBladesRow + nStages]);
     TotalStaticEfficiency[nBladesRow +nStages] = (TotalEnthalpyIn[0] - TotalEnthalpyOut[nBladesRow-1])/(TotalEnthalpyIn[0] - EnthalpyOutIs[nBladesRow + nStages]);
-    EntropyGen[nBladesRow + iStage]            = ((abs(EntropyIn[nBladesRow-1]+1.0)*EntropyGen[nBladesRow-1] + EntropyIn[nBladesRow-1]) - EntropyIn[0])/abs(EntropyIn[0]+1.0);
+    EntropyGen[nBladesRow + iStage]            = (EntropyOut[nBladesRow-1] - EntropyIn[0])/abs(EntropyIn[0]+1.0);
     PressureRatio[nBladesRow + nStages]        = PressureRatio[0]*PressureOut[0]/PressureOut[nBladesRow-1];
     MassFlowIn[nBladesRow + nStages]         	 = MassFlowIn[0];
     MassFlowOut[nBladesRow + nStages]          = MassFlowOut[nBladesRow-1];
