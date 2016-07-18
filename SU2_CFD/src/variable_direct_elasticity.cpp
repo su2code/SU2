@@ -2,7 +2,7 @@
  * \file variable_direct_elasticity.cpp
  * \brief Definition of the variables for FEM elastic structural problems.
  * \author R. Sanchez
- * \version 4.1.2 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -52,11 +52,13 @@ CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
 	Solution_Vel			= NULL;		// Velocity at the node at time t+dt
 	Solution_Vel_time_n 	= NULL;		// Velocity at the node at time t
 
-	Solution_Accel			= NULL;		// Acceleration at the node at time t+dt
+	Solution_Accel			    = NULL;		// Acceleration at the node at time t+dt
 	Solution_Accel_time_n 	= NULL;		// Acceleration at the node at time t
 
-	Solution_Pred			= NULL;		// Predictor of the solution at the current subiteration
-	Solution_Pred_Old		= NULL;		// Predictor of the solution at the previous subiteration
+	Solution_Pred			      = NULL;		// Predictor of the solution at the current subiteration
+	Solution_Pred_Old		    = NULL;		// Predictor of the solution at the previous subiteration
+
+	Prestretch              = NULL;   // Prestretch geometry
 
 }
 
@@ -67,6 +69,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 	bool body_forces = config->GetDeadLoad();	// Body forces (dead loads).
 	bool incremental_load = config->GetIncrementalLoad();
 	bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);	// Generalized alpha method requires residual at previous time step.
+	bool prestretch_fem = config->GetPrestretch();    // Structure is prestretched
 
 	VonMises_Stress = 0.0;
 
@@ -142,6 +145,10 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 		if (body_forces) Residual_Ext_Body[iVar] = 0.0;
 	}
 
+  if (prestretch_fem)  Prestretch = new su2double [nVar];
+  else            Prestretch = NULL;
+
+
 }
 
 CFEM_ElasVariable::~CFEM_ElasVariable(void) {
@@ -165,5 +172,7 @@ CFEM_ElasVariable::~CFEM_ElasVariable(void) {
 
 	if (Solution_Pred 			!= NULL) delete [] Solution_Pred;
 	if (Solution_Pred_Old 		!= NULL) delete [] Solution_Pred_Old;
+
+	if (Prestretch            != NULL) delete [] Prestretch;
 
 }

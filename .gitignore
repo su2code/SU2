@@ -42,6 +42,10 @@ externals/autotools/share
 *.err
 
 # configuration sets
-REVERSE/
-NORMAL/
-DIRECTDIFF/
+SU2_AD/
+SU2_BASE/
+SU2_DIRECTDIFF/
+
+# ignore the bin/ directory
+bin/
+
