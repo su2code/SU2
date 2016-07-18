@@ -5295,7 +5295,7 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
   }
 
   EntropyGen[nBladesRow + nStages]            = 0.0;
-  for(iBlade = 0; iBlade < nBladesRow; iStage++ ){
+  for(iBlade = 0; iBlade < nBladesRow; iBlade++ ){
   	EntropyGen[nBladesRow + nStages] += EntropyGen[iBlade];
   }
 }
