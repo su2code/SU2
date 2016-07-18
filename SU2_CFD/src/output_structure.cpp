@@ -4268,6 +4268,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   *TotalTemperatureIn		= NULL,
   *FlowAngleIn_BC				= NULL,
 	*EntropyIn  					= NULL,
+	*EntropyOut  					= NULL,
   *EntropyIn_BC					= NULL,
   *TotalEnthalpyIn_BC   = NULL,
 	*DensityIn						= NULL,
@@ -4403,6 +4404,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     TotalTemperatureIn		= new su2double[nTurboPerf];
     FlowAngleIn_BC				= new su2double[nTurboPerf];
     EntropyIn   					= new su2double[nTurboPerf];
+    EntropyOut   					= new su2double[nTurboPerf];
     EntropyIn_BC					= new su2double[nTurboPerf];
     TotalEnthalpyIn_BC    = new su2double[nTurboPerf];
 		DensityIn							= new su2double[nTurboPerf];
@@ -4536,6 +4538,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 				    TotalTemperatureIn[iMarker_Monitoring]		= solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalTemperatureIn(iMarker_Monitoring);
 				    FlowAngleIn_BC[iMarker_Monitoring]				= solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetFlowAngleIn_BC(iMarker_Monitoring);
 				    EntropyIn[iMarker_Monitoring]             = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetEntropyIn(iMarker_Monitoring);
+				    EntropyOut[iMarker_Monitoring]             = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetEntropyOut(iMarker_Monitoring);
 				    EntropyIn_BC[iMarker_Monitoring]					= solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetEntropyIn_BC(iMarker_Monitoring);
 				    TotalEnthalpyIn_BC[iMarker_Monitoring]		= solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalEnthalpyIn_BC(iMarker_Monitoring);
 				    DensityIn[iMarker_Monitoring]							= solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetDensityIn(iMarker_Monitoring);
@@ -5156,9 +5159,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 										cout.width(25); cout << PressureRatio[iMarker_Monitoring];
 										cout << endl;
 										cout << endl;
-										cout << "     Inlet Entropy" << "            Outlet Enthalpy" << "             Outlet Is. Enthalpy" <<  endl;
+										cout << "     Inlet Entropy" << "            Outlet Entropy" << "             Outlet Is. Enthalpy" <<  endl;
 										cout.width(25); cout << EntropyIn[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
-										cout.width(25); cout << EnthalpyOut[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref();
+										cout.width(25); cout << EntropyOut[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
 										cout.width(25); cout << EnthalpyOutIs[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref();
 										cout << endl;
 										cout << endl;
@@ -5215,6 +5218,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 											cout.width(25); cout << TurboVelocityOut[iMarker_Monitoring][1]*config[ZONE_0]->GetVelocity_Ref();
 											cout.width(25); cout << TurboVelocityIn[iMarker_Monitoring + 1][1]*config[ZONE_0]->GetVelocity_Ref();
 											cout.width(25); cout << abs((TurboVelocityIn[iMarker_Monitoring + 1][1] - TurboVelocityOut[iMarker_Monitoring][1])/TurboVelocityIn[iMarker_Monitoring+1][1])*100.0;
+											cout << endl;
+											cout << endl;
+											cout << "     Outlet Entropy " << "         Inlet Entropy" << "              err(%)" <<  endl;
+											cout.width(25); cout << EntropyOut[iMarker_Monitoring]*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
+											cout.width(25); cout << EntropyIn[iMarker_Monitoring + 1]*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
+											cout.width(25); cout << abs((EntropyIn[iMarker_Monitoring + 1] - EntropyOut[iMarker_Monitoring])/EntropyIn[iMarker_Monitoring + 1])*100.0;
 											cout << endl;
 											cout << endl << "-------------------------------------------------------------------------" << endl;
 											cout << endl;

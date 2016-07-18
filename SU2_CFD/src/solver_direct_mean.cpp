@@ -584,6 +584,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   TotalEnthalpyIn								= new su2double[nMarkerTurboPerf];
   TotalEnthalpyIn_BC 						= new su2double[nMarkerTurboPerf];
   EntropyIn 										= new su2double[nMarkerTurboPerf];
+  EntropyOut 										= new su2double[nMarkerTurboPerf];
   EntropyIn_BC 									= new su2double[nMarkerTurboPerf];
   PressureRatio									= new su2double[nMarkerTurboPerf];
   TotalPresureIn								= new su2double[nMarkerTurboPerf];
@@ -634,7 +635,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     EulerianWork[iMarker]										= 0.0;
     TotalEnthalpyIn[iMarker]								= 0.0;
     TotalEnthalpyIn_BC[iMarker]							= 0.0;
-    EntropyIn [iMarker]											= 0.0;
+    EntropyIn[iMarker]											= 0.0;
+    EntropyOut[iMarker]											= 0.0;
     EntropyIn_BC [iMarker]									= 0.0;
     PressureRatio[iMarker]									= 0.0;
     PressureOut[iMarker]										= 0.0;
@@ -5200,6 +5202,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
     TotalRothalpyOut[markerTP -1]   	= avgTotalRothalpyOut;
     TotalEnthalpyOutIs[markerTP -1]		=	avgTotalEnthalpyOutIs;
     EntropyIn[markerTP -1]				 		= avgEntropyIn;
+    EntropyOut[markerTP -1]				 		= avgEntropyIn;
     EntropyGen[markerTP -1]           = (avgEntropyOut - avgEntropyIn)/abs(avgEntropyIn + 1.0);
     AbsFlowAngleIn[markerTP -1]       = absFlowAngleIn;
     AbsFlowAngleOut[markerTP -1]      = absFlowAngleOut;
@@ -14661,6 +14664,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   TotalEnthalpyIn								= new su2double[nMarkerTurboPerf];
   TotalEnthalpyIn_BC 						= new su2double[nMarkerTurboPerf];
   EntropyIn 										= new su2double[nMarkerTurboPerf];
+  EntropyOut 										= new su2double[nMarkerTurboPerf];
   EntropyIn_BC 									= new su2double[nMarkerTurboPerf];
   PressureRatio									= new su2double[nMarkerTurboPerf];
   TotalPresureIn								= new su2double[nMarkerTurboPerf];
@@ -14712,6 +14716,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     TotalEnthalpyIn[iMarker]								= 0.0;
     TotalEnthalpyIn_BC[iMarker]							= 0.0;
     EntropyIn [iMarker]											= 0.0;
+    EntropyOut [iMarker]										= 0.0;
     EntropyIn_BC [iMarker]									= 0.0;
     PressureRatio[iMarker]									= 0.0;
     PressureOut[iMarker]										= 0.0;
