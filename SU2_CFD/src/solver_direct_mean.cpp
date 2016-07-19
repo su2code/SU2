@@ -5378,7 +5378,7 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
       avgPressureOut, avgTotalRelPressureIn, avgTotalRelPressureOut, avgEntropyIn, avgEntropyOut, flowAngleIn, massFlowIn, tangMachIn, normalMachIn,   flowAngleOut,
       massFlowOut, tangMachOut, normalMachOut, avgTotTempIn, avgTotPresIn, P_Total, T_Total, *FlowDir, alphaIn_BC, gammaIn_BC, entropyIn_BC, totalEnthalpyIn_BC, densityIn_Mix,
       pressureIn_Mix, normalVelocityIn_Mix, tangVelocityIn_Mix, densityOut_Mix, pressureOut_Mix, normalVelocityOut_Mix, tangVelocityOut_Mix, absFlowAngleIn,
-      absFlowAngleOut, pressureOut_BC;
+      absFlowAngleOut, pressureOut_BC, relVelocityIn_Mix, relVelocityOut_Mix, relMachIn_Mix, relMachOut_Mix;
   su2double nBlades;
   unsigned short iSpan, iDim, i, n1, n2, n1t,n2t;
 
@@ -5452,6 +5452,10 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
           absFlowAngleOut        = -1.0;
           pressureOut_BC         = -1.0;
           avgVel2Out             = -1.0;
+          relVelocityIn_Mix      = -1.0;
+          relVelocityOut_Mix     = -1.0;
+          relMachIn_Mix          = -1.0;
+          relMachOut_Mix         = -1.0;
           markerTP               = -1;
 
 
@@ -5489,6 +5493,10 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
                   pressureIn_Mix          = AveragePressure[iMarker][iSpan  ];
                   normalVelocityIn_Mix    = AverageTurboVelocity[iMarker][iSpan  ][0];
                   tangVelocityIn_Mix      = AverageTurboVelocity[iMarker][iSpan  ][1];
+                  if (nDim>3){
+                    relMachIn_Mix         = AverageTurboMach[iMarker][iSpan  ][2];
+                    relVelocityIn_Mix       = AverageTurboVelocity[iMarker][iSpan  ][2];
+                  }
                   absFlowAngleIn          = atan(AverageTurboVelocity[iMarker][iSpan  ][1]/AverageTurboVelocity[iMarker][iSpan  ][0]);
 
                   //TODO(turbo) better location has to be found for this computation, perhaps in the outputstructure file.
@@ -5584,6 +5592,10 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
                   pressureOut_Mix         = AveragePressure[iMarker][iSpan  ];
                   normalVelocityOut_Mix   = AverageTurboVelocity[iMarker][iSpan  ][0];
                   tangVelocityOut_Mix     = AverageTurboVelocity[iMarker][iSpan  ][1];
+                  if (nDim>3){
+                    relMachOut_Mix           = AverageTurboMach[iMarker][iSpan  ][2];
+                    relVelocityOut_Mix       = AverageTurboVelocity[iMarker][iSpan  ][2];
+                  }
                   absFlowAngleOut          = atan(AverageTurboVelocity[iMarker][iSpan  ][1]/AverageTurboVelocity[iMarker][iSpan  ][0]);
 
 
@@ -5839,10 +5851,8 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
     myfile << "TITLE = \"Spanwise values visualization file\"" << endl;
     myfile << "VARIABLES =" << endl;
 
-    myfile.width(15); myfile << "\"iSpan\"";
-    //myfile.width(15); myfile << "\"iMarker\"";
     myfile.width(15); myfile << "\"iMarkerTP\"";
-
+    myfile.width(15); myfile << "\"iSpan\"";
     myfile.width(22); myfile <<"\"TotalPressureLoss\"";
     myfile.width(22); myfile <<"\"KineticEnergyLoss\"";
     myfile.width(22); myfile <<"\"EulerianWork\"";
@@ -5881,12 +5891,13 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
     myfile << endl;
     //     myfile.width(20); myfile << "\"Mach2\"" ;
     //     myfile.width(20); myfile << "\"Mach3\"" <<endl;
-    for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
-      //for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
-      for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+    for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+
+      for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
+        //for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+        myfile.width(15); myfile << iMarkerTP;
         myfile.width(15); myfile << iSpan;
         //myfile.width(15); myfile << iMarker;
-        myfile.width(15); myfile << iMarkerTP;
         myfile.width(22); myfile << TotalPressureLossSpw   [iMarkerTP-1][iSpan]        ;
         myfile.width(22); myfile << KineticEnergyLossSpw   [iMarkerTP-1][iSpan]        ;
         myfile.width(22); myfile << EulerianWorkSpw        [iMarkerTP-1][iSpan]        ;
