@@ -457,6 +457,8 @@ inline unsigned long CConfig::GetWrt_Con_Freq(void) { return Wrt_Con_Freq; }
 
 inline unsigned long CConfig::GetWrt_Con_Freq_DualTime(void) { return Wrt_Con_Freq_DualTime; }
 
+inline bool CConfig::GetLUT_Debug_Mode(void) { return LUT_Debug_Mode; }
+
 inline bool CConfig::GetWrt_Unsteady(void) { return Wrt_Unsteady; }
 
 inline bool CConfig::GetLowFidelitySim(void) { return LowFidelitySim; }

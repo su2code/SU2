@@ -78,6 +78,7 @@ class CLookUpTable: public CFluidModel {
 protected:
 	int rank;
 	bool skewed_linear_table;/*!< \brief Boolean to check for the type P-rho sample domain*/
+	bool LUT_Debug_Mode;/*!< \brief If true, master node prints errors of points outside LUT*/
 	su2double Pressure_Reference_Value;
 	su2double Density_Reference_Value;
 	su2double Temperature_Reference_Value;

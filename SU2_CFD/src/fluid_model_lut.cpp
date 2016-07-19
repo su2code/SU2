@@ -33,7 +33,7 @@
 
 CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 		CFluidModel() {
-
+	LUT_Debug_Mode = config->GetLUT_Debug_Mode();
 	rank = MASTER_NODE;
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -595,7 +595,7 @@ void CLookUpTable::Search_Linear_Skewed_Table(su2double x, su2double P,
 
 void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 	// Check if inputs are in total range (necessary but not sufficient condition)
-	if (rank == MASTER_NODE) {
+	if (rank == MASTER_NODE and LUT_Debug_Mode) {
 		if ((rho > Density_Table_Limits[1]) or (rho < Density_Table_Limits[0])) {
 			cerr << "RHOE Input Density out of bounds\n";
 		}
@@ -694,7 +694,7 @@ void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
 
 void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 	// Check if inputs are in total range (necessary and sufficient condition)
-	if (rank == MASTER_NODE) {
+	if (rank == MASTER_NODE and LUT_Debug_Mode) {
 		if ((P > Pressure_Table_Limits[1]) or (P < Pressure_Table_Limits[0])) {
 			cerr << "PRHO Input Pressure out of bounds\n";
 		}
@@ -739,7 +739,7 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 
 void CLookUpTable::SetEnergy_Prho(su2double P, su2double rho) {
 	// Check if inputs are in total range (necessary and sufficient condition)
-	if (rank == MASTER_NODE) {
+	if (rank == MASTER_NODE and LUT_Debug_Mode) {
 		if ((P > Pressure_Table_Limits[1]) or (P < Pressure_Table_Limits[0])) {
 			cerr << "PRHO Input Pressure out of bounds\n";
 		}
@@ -773,7 +773,7 @@ void CLookUpTable::SetEnergy_Prho(su2double P, su2double rho) {
 
 void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 	// Check if inputs are in total range (necessary and sufficient condition)
-	if (rank == MASTER_NODE) {
+	if (rank == MASTER_NODE and LUT_Debug_Mode) {
 		if ((h > Enthalpy_Table_Limits[1]) or (h < Enthalpy_Table_Limits[0])) {
 			cerr << "HS Input Enthalpy out of bounds\n";
 		}
@@ -849,7 +849,7 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 
 void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 	// Check if inputs are in total range (necessary and sufficient condition)
-	if (rank == MASTER_NODE) {
+	if (rank == MASTER_NODE and LUT_Debug_Mode) {
 		if ((P > Pressure_Table_Limits[1]) or (P < Pressure_Table_Limits[0])) {
 			cerr << "PS Input Pressure out of bounds\n";
 		}
@@ -898,7 +898,7 @@ void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 
 void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 	// Check if inputs are in total range (necessary and sufficient condition)
-	if (rank == MASTER_NODE) {
+	if (rank == MASTER_NODE and LUT_Debug_Mode) {
 		if ((rho > Density_Table_Limits[1]) or (rho < Density_Table_Limits[0])) {
 			cerr << "RHOT Input Density out of bounds\n";
 		}
@@ -944,7 +944,7 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 
 void CLookUpTable::Check_Interpolated_PRHO_Limits(string interpolation_case) {
 	//Check that the interpolated density and pressure are within LUT limits
-	if (rank == MASTER_NODE) {
+	if (rank == MASTER_NODE and LUT_Debug_Mode) {
 		if ((Density > Density_Table_Limits[1])
 				or (Density < Density_Table_Limits[0])) {
 			cerr << interpolation_case << " Interpolated Density out of bounds\n";
@@ -1061,7 +1061,7 @@ void CLookUpTable::Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x,
 	dy01 = y01 - y00;
 	dx11 = x11 - x00;
 	dy11 = y11 - y00;
-	if (rank == MASTER_NODE) {
+	if (rank == MASTER_NODE and LUT_Debug_Mode) {
 		BOTTOM = (dy * dx10) < (dx * dy10);
 		TOP = ((dy - dy01) * (dx11 - dx01)) > ((dy11 - dy01) * (dx - dx01));
 		RIGHT = ((dx - dx10) * (dy11 - dy10)) > ((dx11 - dx10) * (dy - dy10));

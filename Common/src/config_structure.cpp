@@ -235,6 +235,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Debug mode */
   addBoolOption("DEBUG_MODE",DebugMode, false);
+  addBoolOption("LUT_DEBUG_MODE", LUT_Debug_Mode, true);
   
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
