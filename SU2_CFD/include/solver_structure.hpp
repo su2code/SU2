@@ -3454,6 +3454,40 @@ protected:
 			*AbsFlowAngleOut,
 			*PressureOut_BC;
 
+  su2double **TotalPressureLossSpw,
+  **KineticEnergyLossSpw,
+  **EulerianWorkSpw,
+  **TotalEnthalpyInSpw,
+  **TotalEnthalpyOutSpw,
+  **TotalRothalpyInSpw,
+  **TotalRothalpyOutSpw,
+  **TotalEnthalpyOutIsSpw,
+  **EntropyInSpw,
+  **EntropyGenSpw,
+  **AbsFlowAngleInSpw,
+  **AbsFlowAngleOutSpw,
+  **FlowAngleInSpw,
+  **FlowAngleOutSpw,
+  **MassFlowInSpw,
+  **MassFlowOutSpw,
+  **EnthalpyOutSpw,
+  **EnthalpyOutIsSpw,
+  **VelocityOutIsSpw,
+  **TotalPresureInSpw,
+  **TotalTemperatureInSpw,
+  **FlowAngleIn_BCSpw,
+  **EntropyIn_BCSpw,
+  **TotalEnthalpyIn_BCSpw,
+  **DensityInSpw,
+  **PressureInSpw,
+  **DensityOutSpw,
+  **PressureOutSpw,
+  **PressureOut_BCSpw,
+  ***MachInSpw,
+  ***MachOutSpw,
+  ***TurboVelocityInSpw,
+  ***TurboVelocityOutSpw;
+
   complex<su2double> ***CkInflow,
 										 ***CkOutflow1,
 										 ***CkOutflow2;
@@ -4720,6 +4754,14 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
 	void TurboPerformance(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Compute single blade turbomachinery performance quantities (spanwise values).
+   * \param[in] config - contains config file information.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry);
+
 
 	/*!
 	 * \brief Compute multi-stage turbomachinery performance quantities.
