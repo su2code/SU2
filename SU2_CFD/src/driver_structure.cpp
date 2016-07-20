@@ -3731,8 +3731,92 @@ void CDiscAdjFSIDriver::SetRecording(CIteration **iteration_container,
   else if (kind_recording == FEM_CROSS_TERM){
 
     /*-----------------------------------------------------------------------------------------*/
-    /*-------- WE RECORD HERE THE STRUCTURAL ADJOINT WITH RESPECT TO THE FLOW VARIABLES--------*/
+    /*-------- WE RECORD HERE THE MESH ADJOINT WITH RESPECT TO THE STRUCTURAL VARIABLES--------*/
     /*-----------------------------------------------------------------------------------------*/
+
+    if (dynamic){
+      DirectExtIter = SU2_TYPE::Int(config_container[ZONE_STRUCT]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 1;
+    }
+
+    /*--- Reset the tape ---*/
+
+    AD::Reset();
+
+    /*--- We only need to reset the indices if the current recording is different from the recording we want to have ---*/
+
+    if (CurrentRecording != kind_recording && (CurrentRecording != NONE) ){
+
+      /*--- Structural solution---*/
+      solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->SetRecording(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT], kind_recording);
+
+      /*--- Fluid solution ---*/
+      for (iMesh = 0; iMesh <= config_container[ZONE_FLOW]->GetnMGLevels(); iMesh++){
+        solver_container[ZONE_FLOW][iMesh][ADJFLOW_SOL]->SetMesh_Recording(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], kind_recording);
+      }
+
+      /*--- Add dependencies for E, Nu, Rho, and Rho_DL variables ---*/
+
+      iteration_container[ZONE_STRUCT]->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_STRUCT, kind_recording);
+
+      /*--- Run one iteration while tape is passive - this clears all indices ---*/
+
+      Mesh_Deformation_Direct(iteration_container, transfer_container, output, integration_container, geometry_container, solver_container,
+                              numerics_container, config_container, interpolator_container, surface_movement, grid_movement, FFDBox,
+                              ZONE_STRUCT, ZONE_FLOW);
+
+    }
+
+    /*--- Prepare for recording ---*/
+
+    /*--- This sets the values of the displacements back to the restarted, converged solution ---*/
+    solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->SetRecording(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT], kind_recording);
+    /*--- This sets the values of the conservative variables of the flow back to the restarted, converged solution ---*/
+    for (iMesh = 0; iMesh <= config_container[ZONE_FLOW]->GetnMGLevels(); iMesh++){
+      solver_container[ZONE_FLOW][iMesh][ADJFLOW_SOL]->SetMesh_Recording(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], kind_recording);
+    }
+
+    /*--- Start the recording of all operations ---*/
+
+    AD::StartRecording();
+
+    /*--- Register FEA variables ---*/
+
+    iteration_container[ZONE_STRUCT]->RegisterInput(solver_container, geometry_container, config_container, ZONE_STRUCT, kind_recording);
+
+    /*--- Compute dependencies for E, Nu, Rho, and Rho_DL variables ---*/
+
+    iteration_container[ZONE_STRUCT]->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_STRUCT, kind_recording);
+
+    /*--- Set the correct direct iteration number ---*/
+
+    if (dynamic){
+      config_container[ZONE_STRUCT]->SetExtIter(DirectExtIter);
+    }
+
+    /*--- Run the direct iteration ---*/
+
+    Mesh_Deformation_Direct(iteration_container, transfer_container, output, integration_container, geometry_container, solver_container,
+                            numerics_container, config_container, interpolator_container, surface_movement, grid_movement, FFDBox,
+                            ZONE_STRUCT, ZONE_FLOW);
+
+    config_container[ZONE_STRUCT]->SetExtIter(ExtIter);
+
+    /*--- Register displacements and objective function as output ---*/
+
+    iteration_container[ZONE_FLOW]->Register_MeshOutput(solver_container, geometry_container, config_container, ZONE_STRUCT);
+
+    /*--- Stop the recording ---*/
+
+    AD::StopRecording();
+
+    /*--- Set the recording status ---*/
+
+    CurrentRecording = kind_recording;
+
+    /* --- Reset the number of the internal iterations---*/
+
+    config_container[ZONE_STRUCT]->SetIntIter(IntIter);
+
 
   }
   else {
@@ -3998,6 +4082,31 @@ void CDiscAdjFSIDriver::Relaxation_Displacements(COutput *output, CGeometry ***g
 
 
 void CDiscAdjFSIDriver::Mesh_Deformation_Iteration(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
+    CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
+    CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
+    CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement,  CFreeFormDefBox*** FFDBox,
+    unsigned short ZONE_STRUCT, unsigned short ZONE_FLOW){
+
+  unsigned long IntIter = 0;
+  unsigned long ExtIter = config_container[ZONE_FLOW]->GetExtIter();
+
+
+  /*------------------- Transfer Displacements ----------------------*/
+
+  Transfer_Displacements(output, integration_container, geometry_container,
+                         solver_container, numerics_container, config_container,
+                         surface_movement, grid_movement, FFDBox, transfer_container,
+                         ZONE_STRUCT, ZONE_FLOW);
+
+  /*------------------- Set the Grid movement -----------------------*/
+
+  SetGrid_Movement(geometry_container[ZONE_FLOW], surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW], FFDBox[ZONE_FLOW],
+                   solver_container[ZONE_FLOW], config_container[ZONE_FLOW], ZONE_FLOW, IntIter, ExtIter);
+
+
+}
+
+void CDiscAdjFSIDriver::Mesh_Deformation_Direct(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
     CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
     CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
     CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement,  CFreeFormDefBox*** FFDBox,

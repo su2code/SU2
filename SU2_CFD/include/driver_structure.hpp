@@ -819,6 +819,18 @@ public:
 
   /*!
    * \brief Run the mesh deformation: transfer the solution_Pred displacements and run the mesh iteration.
+   * \param[in] structuralZone - zone of the structural solver.
+   * \param[in] fluidZone - zone of the fluid solver.
+   */
+  void Mesh_Deformation_Direct(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
+      CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
+      CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
+      CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+      unsigned short structuralZone, unsigned short fluidZone);
+
+
+  /*!
+   * \brief Run the mesh deformation: transfer the solution_Pred displacements and run the mesh iteration.
    * \param[in] fluidZone - zone of the fluid solver.
    * \param[in] structuralZone - zone of the structural solver.
    */
