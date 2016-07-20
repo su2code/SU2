@@ -631,7 +631,8 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   
   if (config->GetKind_Linear_Solver() == BCGSTAB ||
       config->GetKind_Linear_Solver() == FGMRES ||
-      config->GetKind_Linear_Solver() == RESTARTED_FGMRES) {
+      config->GetKind_Linear_Solver() == RESTARTED_FGMRES ||
+      config->GetKind_Linear_Solver() == CONJUGATE_GRADIENT) {
     
     mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
     CPreconditioner* precond = NULL;
@@ -664,6 +665,9 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
         break;
       case FGMRES:
         IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
+        break;
+      case CONJUGATE_GRADIENT:
+        IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, false);
         break;
       case RESTARTED_FGMRES:
         IterLinSol = 0;

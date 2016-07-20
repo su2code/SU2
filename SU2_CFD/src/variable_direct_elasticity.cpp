@@ -128,6 +128,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 		Solution_Pred 			=  NULL;
 		Solution_Pred_Old 		=  NULL;
 	}
+  FlowTraction_n = NULL;
 
 	/*--- If we are going to use incremental analysis, we need a way to store the old solution ---*/
 	if (incremental_load && nonlinear_analysis){
@@ -135,16 +136,19 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 	}
 
 	/*--- If we are going to use a generalized alpha integration method, we need a way to store the old residuals ---*/
+  Residual_Ext_Surf_n = NULL;
+  FlowTraction_n = NULL;
 	if (gen_alpha){
 		Residual_Ext_Surf_n		= new su2double [nVar];
 
 		if (fsi_analysis) FlowTraction_n = new su2double [nVar];
-		else FlowTraction_n = NULL;
 
 	}
 
 //	if (nonlinear_analysis) Residual_Int = new su2double [nVar];	else Residual_Int = NULL;
-	if (body_forces) Residual_Ext_Body = new su2double [nVar];	else Residual_Ext_Body = NULL;
+  Residual_Ext_Body = NULL;
+	if (body_forces) Residual_Ext_Body = new su2double [nVar];
+
 	Residual_Ext_Surf = new su2double [nVar];
 
 	for (iVar = 0; iVar < nVar; iVar++){
@@ -152,8 +156,8 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 		if (body_forces) Residual_Ext_Body[iVar] = 0.0;
 	}
 
+	Reference_Geometry = NULL;
 	if (refgeom)	Reference_Geometry = new su2double [nVar];
-	else 			Reference_Geometry = NULL;
 
 //	if (structural_adj) 	{
 //		Solution_Adj = new su2double[nVar];
@@ -164,8 +168,8 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 		Gradient_Adj = NULL;
 //	}
 
+  Prestretch = NULL;
   if (prestretch_fem)  Prestretch = new su2double [nVar];
-  else            Prestretch = NULL;
 
 }
 
