@@ -140,30 +140,6 @@ CTRIA1::CTRIA1(unsigned short val_nDim, CConfig *config)
 
 CTRIA1::~CTRIA1(void) {
 
-	unsigned short iVar, jVar;
-
-	for (iVar = 0; iVar < nGaussPoints; iVar++){
-		delete [] GaussCoord[iVar];
-		delete [] GaussPoint[iVar];
-	}
-
-	for (iVar = 0; iVar < nNodes; iVar++){
-		for (jVar = 0; jVar < nNodes; jVar++){
-			delete [] Kab[iVar][jVar];
-		}
-		delete [] CurrentCoord[iVar];
-		delete [] RefCoord[iVar];
-		delete [] Mab[iVar];
-		delete [] Kab[iVar];
-		delete [] Ks_ab[iVar];
-		delete [] Kt_a[iVar];
-		if (FDL_a != NULL) delete [] FDL_a[iVar];
-		delete [] NodalExtrap[iVar];
-	}
-
-	delete [] NodalExtrap;
-
-
 }
 
 void CTRIA1::ComputeGrad_Linear(void){
@@ -429,30 +405,6 @@ CQUAD4::CQUAD4(unsigned short val_nDim, CConfig *config)
 }
 
 CQUAD4::~CQUAD4(void) {
-
-	unsigned short iVar, jVar;
-
-	for (iVar = 0; iVar < nGaussPoints; iVar++){
-		delete [] GaussCoord[iVar];
-		delete [] GaussPoint[iVar];
-	}
-
-	for (iVar = 0; iVar < nNodes; iVar++){
-		for (jVar = 0; jVar < nNodes; jVar++){
-			delete [] Kab[iVar][jVar];
-		}
-		delete [] CurrentCoord[iVar];
-		delete [] RefCoord[iVar];
-		delete [] Mab[iVar];
-		delete [] Kab[iVar];
-		delete [] Ks_ab[iVar];
-		delete [] Kt_a[iVar];
-		if (FDL_a != NULL) delete [] FDL_a[iVar];
-		delete [] NodalExtrap[iVar];
-	}
-
-	delete [] NodalExtrap;
-
 
 }
 
@@ -1026,21 +978,6 @@ CQUAD4P1::CQUAD4P1(unsigned short val_nDim, CConfig *config)
 
 CQUAD4P1::~CQUAD4P1(void) {
 
-	unsigned short iVar, jVar;
-
-	for (iVar = 0; iVar < nGaussPoints; iVar++){
-		delete [] GaussCoordP[iVar];
-		delete [] GaussPointP[iVar];
-	}
-
-	for (iVar = 0; iVar < nNodes; iVar++){
-		for (jVar = 0; jVar < nNodes; jVar++){
-			delete [] Kk_ab[iVar][jVar];
-		}
-		delete [] Kk_ab[iVar];
-	}
-
-
 }
 
 
@@ -1234,30 +1171,6 @@ CTETRA1::CTETRA1(unsigned short val_nDim, CConfig *config)
 }
 
 CTETRA1::~CTETRA1(void) {
-
-	unsigned short iVar, jVar;
-
-	for (iVar = 0; iVar < nGaussPoints; iVar++){
-		delete [] GaussCoord[iVar];
-		delete [] GaussPoint[iVar];
-	}
-
-	for (iVar = 0; iVar < nNodes; iVar++){
-		for (jVar = 0; jVar < nNodes; jVar++){
-			delete [] Kab[iVar][jVar];
-		}
-		delete [] CurrentCoord[iVar];
-		delete [] RefCoord[iVar];
-		delete [] Mab[iVar];
-		delete [] Kab[iVar];
-		delete [] Ks_ab[iVar];
-		delete [] Kt_a[iVar];
-		if (FDL_a != NULL) delete [] FDL_a[iVar];
-		delete [] NodalExtrap[iVar];
-	}
-
-	delete [] NodalExtrap;
-
 
 }
 
@@ -1562,31 +1475,6 @@ CHEXA8::CHEXA8(unsigned short val_nDim, CConfig *config)
 
 CHEXA8::~CHEXA8(void) {
 
-	unsigned short iVar, jVar;
-
-	for (iVar = 0; iVar < nGaussPoints; iVar++){
-		delete [] GaussCoord[iVar];
-		delete [] GaussPoint[iVar];
-	}
-
-	for (iVar = 0; iVar < nNodes; iVar++){
-		for (jVar = 0; jVar < nNodes; jVar++){
-			delete [] Kab[iVar][jVar];
-		}
-		delete [] CurrentCoord[iVar];
-		delete [] RefCoord[iVar];
-		delete [] Mab[iVar];
-		delete [] Kab[iVar];
-		delete [] Ks_ab[iVar];
-		delete [] Kt_a[iVar];
-		if (FDL_a != NULL) delete [] FDL_a[iVar];
-		delete [] NodalExtrap[iVar];
-	}
-
-	delete [] NodalExtrap;
-
-
-
 }
 
 void CHEXA8::ComputeGrad_Linear(void){
@@ -1853,21 +1741,6 @@ CHEXA8P1::CHEXA8P1(unsigned short val_nDim, CConfig *config)
 
 CHEXA8P1::~CHEXA8P1(void) {
 
-	unsigned short iVar, jVar;
-
-	for (iVar = 0; iVar < nGaussPoints; iVar++){
-		delete [] GaussCoordP[iVar];
-		delete [] GaussPointP[iVar];
-	}
-
-	for (iVar = 0; iVar < nNodes; iVar++){
-		for (jVar = 0; jVar < nNodes; jVar++){
-			delete [] Kk_ab[iVar][jVar];
-		}
-		delete [] Kk_ab[iVar];
-	}
-
-
 }
 
 void CHEXA8P1::ComputeGrad_Pressure(void){
@@ -2044,18 +1917,6 @@ CBOUND2D::CBOUND2D(unsigned short val_nDim, CConfig *config)
 }
 
 CBOUND2D::~CBOUND2D(void) {
-
-  unsigned short iVar;
-
-  for (iVar = 0; iVar < nGaussPoints; iVar++){
-    delete [] GaussCoord[iVar];
-    delete [] GaussPoint[iVar];
-  }
-
-  for (iVar = 0; iVar < nNodes; iVar++){
-    delete [] CurrentCoord[iVar];
-    delete [] RefCoord[iVar];
-  }
 
 }
 
