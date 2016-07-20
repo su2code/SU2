@@ -3025,6 +3025,8 @@ void CFSIStatDriver::Run(CIteration **iteration_container,
   unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
   unsigned short iZone;
 
+  int rank = MASTER_NODE;
+
   unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
   unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
   unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
@@ -3037,7 +3039,6 @@ void CFSIStatDriver::Run(CIteration **iteration_container,
   unsigned long iExtIter_FLOW = 0;
 
 #ifdef HAVE_MPI
-  int rank = MASTER_NODE;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
@@ -3267,6 +3268,8 @@ void CDiscAdjFSIDriver::Run(CIteration **iteration_container,
   unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
   unsigned short iZone;
 
+  int rank = MASTER_NODE;
+
   unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
   unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
   unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
@@ -3279,7 +3282,6 @@ void CDiscAdjFSIDriver::Run(CIteration **iteration_container,
   unsigned long iExtIter_FLOW = 0;
 
 #ifdef HAVE_MPI
-  int rank = MASTER_NODE;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
@@ -4032,8 +4034,9 @@ void CDiscAdjFSIDriver::Flow_Iteration(CIteration **iteration_container, CTransf
   unsigned long IntIter = 0;
   unsigned long ExtIter = config_container[ZONE_FLOW]->GetExtIter();
 
+  int rank = MASTER_NODE;
+
 #ifdef HAVE_MPI
-  int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
@@ -4079,8 +4082,9 @@ void CDiscAdjFSIDriver::Flow_Iteration_Direct(CIteration **iteration_container, 
   unsigned long IntIter = 0;
   unsigned long ExtIter = config_container[ZONE_FLOW]->GetExtIter();
 
+  int rank = MASTER_NODE;
+
 #ifdef HAVE_MPI
-  int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
