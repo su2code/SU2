@@ -7964,6 +7964,7 @@ void CEulerSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container
 //      for testing scaling effects -- TO BE REMOVED
       yCoord *= 100.;
       yPitch = fabs(y_max - y_min);
+      yPitch *=  100;
 
       /*--- Build the external state u_e from boundary data and internal node ---*/
       switch(config->GetKind_Data_NonUniform(Marker_Tag))
