@@ -192,9 +192,6 @@ protected:
 	su2double Pressure, Density, Temperature;
 
 	su2double
-	**ThermoTables_StaticEnergy, /*!< \brief Internal Energy look up table values. */
-	**ThermoTables_Entropy, /*!< \brief Entropy look up table values. */
-	**ThermoTables_Enthalpy, /*!< \brief Enthalpy required as separate variable for use in HS tree look up table values. */
 	**ThermoTables_Density, /*!< \brief Density look up table values. */
 	**ThermoTables_Pressure, /*!< \brief Pressure look up table values. */
 	**ThermoTables_Temperature, /*!< \brief Temperature look up table values. */
@@ -337,6 +334,7 @@ public:
 	virtual void SetDerConductivity(su2double T, su2double rho,
 			su2double dmudrho_T, su2double dmudT_rho, su2double cp);
 
+
 };
 
 /*!
@@ -421,9 +419,10 @@ protected:
 	bool skewed_linear_table;/*!< \brief Boolean to check for the type P-rho sample domain*/
 	bool LUT_Debug_Mode;/*!< \brief If true, master node prints errors of points outside LUT*/
 	su2double Density_Reference_Value;
+	su2double Pressure_Reference_Value;
 	su2double Temperature_Reference_Value;
-	su2double Energy_Reference_Value;
 	su2double	Conductivity_Reference_Value;
+	su2double Density, Temperature, Pressure;
 
 	su2double
 	**ThermoTables_Density, /*!< \brief Density look up table values. */
@@ -465,12 +464,13 @@ public:
 	 * \brief par1 -> Cp.
 	 * \brief par2 -> Mu.
 	 */
-	void SetConductivity(su2double T, su2double rho);
+	//WARNING only T and RHO are relevant inputs: mu and cp are UNUSED
+	void SetConductivity(su2double T, su2double rho, su2double mu,
+			su2double cp);
 
-	/*!
-	 * \brief Set Thermal conductivity derivatives.
-	 */
-	void SetDerConductivity(su2double T, su2double rho);
+	//WARNING only T and RHO are relevant inputs: mu and cp are UNUSED
+	void SetDerConductivity(su2double T, su2double rho, su2double mu,
+			su2double cp);
 	/*!
 	 * \brief Calculate the inverse of a square matrix (e.g. the Vandermonde matrix) with pivoting Gaussian elimination
 	 * \param[in] nDim - the dimension of the square block to invert

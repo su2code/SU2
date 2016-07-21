@@ -45,38 +45,49 @@ inline su2double CFluidModel::GetdTdrho_e () { return dTdrho_e; }
 inline su2double CFluidModel::GetdTde_rho () { return dTde_rho; }
 
 inline su2double CFluidModel::GetLaminarViscosity () {
-        LaminarViscosity->SetViscosity(Temperature, Density);
-        Mu = LaminarViscosity->GetViscosity();
-        LaminarViscosity->SetDerViscosity(Temperature, Density);
-        dmudrho_T= LaminarViscosity->Getdmudrho_T(); 
-        dmudT_rho= LaminarViscosity->GetdmudT_rho();  
-        return Mu;
+	LaminarViscosity->SetViscosity(Temperature, Density);
+	Mu = LaminarViscosity->GetViscosity();
+	LaminarViscosity->SetDerViscosity(Temperature, Density);
+	dmudrho_T= LaminarViscosity->Getdmudrho_T();
+	dmudT_rho= LaminarViscosity->GetdmudT_rho();
+	return Mu;
 }
 
 inline su2double CFluidModel::Getdmudrho_T () {
-        return LaminarViscosity->Getdmudrho_T();
+	return LaminarViscosity->Getdmudrho_T();
 }
 
 inline su2double CFluidModel::GetdmudT_rho () {
-        return LaminarViscosity->GetdmudT_rho();
+	return LaminarViscosity->GetdmudT_rho();
 }
 
 inline su2double CFluidModel::GetThermalConductivity () {
-        ThermalConductivity->SetConductivity(Temperature, Density, Mu, Cp);
-        Kt = ThermalConductivity->GetConductivity();
-        ThermalConductivity->SetDerConductivity(Temperature, Density, dmudrho_T, dmudT_rho, Cp);
-        dktdrho_T= ThermalConductivity->Getdktdrho_T(); 
-        dktdT_rho= ThermalConductivity->GetdktdT_rho();
-        return Kt;
+//	switch (config->GetKind_ConductivityModel()){
+//	case LUT_CONDUCTIVITY:
+//		ThermalConductivity->SetConductivity(Temperature, Density);
+//		Kt = ThermalConductivity->GetConductivity();
+//		//(UNUSED)ThermalConductivity->SetDerConductivity(Temperature, Density);
+//		//(UNUSED)dktdrho_T= ThermalConductivity->Getdktdrho_T();
+//		//(UNUSED)dktdT_rho= ThermalConductivity->GetdktdT_rho();
+//		break;`
+//	default:
+		ThermalConductivity->SetConductivity(Temperature, Density, Mu, Cp);
+		Kt = ThermalConductivity->GetConductivity();
+		ThermalConductivity->SetDerConductivity(Temperature, Density, dmudrho_T, dmudT_rho, Cp);
+		dktdrho_T= ThermalConductivity->Getdktdrho_T();
+		dktdT_rho= ThermalConductivity->GetdktdT_rho();
+//		break;
+//	}
+	return Kt;
 }
 
 
 inline su2double CFluidModel::Getdktdrho_T () {
-        return dktdrho_T;
+	return dktdrho_T;
 }
 
 inline su2double CFluidModel::GetdktdT_rho () {
-        return dktdT_rho;
+	return dktdT_rho;
 }
 
 inline void CFluidModel::SetTDState_rhoe (su2double rho, su2double e ) { }
