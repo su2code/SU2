@@ -77,6 +77,7 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
   unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
   unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
   int Marker_Donor = -1, Marker_Target = -1;
+  int Target_check, Donor_check;
   
   unsigned long iVertex;							// Variables for iteration over vertices and nodes
   
@@ -175,10 +176,56 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
       }
     }
     
-    /*
-    if(Marker_Target == -1 || Marker_Donor == -1)
+	#ifdef HAVE_MPI
+
+	int *Buffer_Recv_mark, iRank;
+	
+	Donor_check  = -1;
+	Target_check = -1;
+
+	if (rank == MASTER_NODE) 
+		Buffer_Recv_mark = new int[nProcessor];
+		
+    /*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it  ---*/
+	
+	SU2_MPI::Gather(&Marker_Donor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+			
+	if (rank == MASTER_NODE){
+		for (iRank = 0; iRank < nProcessor; iRank++){
+			if( Buffer_Recv_mark[iRank] != -1 ){
+				Donor_check = Buffer_Recv_mark[iRank];
+				break;
+			}		
+		}
+	}
+	
+	SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	
+	SU2_MPI::Gather(&Marker_Target, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+			
+	if (rank == MASTER_NODE){
+		for (iRank = 0; iRank < nProcessor; iRank++){
+			if( Buffer_Recv_mark[iRank] != -1 ){
+				Target_check = Buffer_Recv_mark[iRank];
+				break;
+			}	
+		}
+	}
+
+	SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	if (rank == MASTER_NODE) 
+		delete [] Buffer_Recv_mark;
+		
+	#else
+	Donor_check  = markDonor;
+	Target_check = markTarget;	
+	#endif
+
+    if(Target_check == -1 || Donor_check == -1){
 		continue;
-    */
+	}
     
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
     Buffer_Send_nVertexTarget[0] = nLocalVertexTarget;							   // Retrieve total number of vertices on Target marker
@@ -383,6 +430,9 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     
     long indexPoint_iVertex, Point_Target_Check;
     
+    if(Marker_Target == -1 || Marker_Donor == -1)
+		continue;
+    
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0){
       
@@ -442,6 +492,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
   unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
   unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
   int Marker_Donor = -1, Marker_Target = -1;
+  int Target_check, Donor_check;
   
   unsigned long iVertex;								// Variables for iteration over vertices and nodes
   
@@ -546,10 +597,58 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
         Marker_Target = -1;
       }
     }
-/*    
-    if(Marker_Target == -1 || Marker_Donor == -1)
+ 
+	#ifdef HAVE_MPI
+
+	int *Buffer_Recv_mark, iRank;
+	
+	Donor_check  = -1;
+	Target_check = -1;
+
+	if (rank == MASTER_NODE) 
+		Buffer_Recv_mark = new int[nProcessor];
+		
+    /*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it  ---*/
+	
+	SU2_MPI::Gather(&Marker_Donor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+			
+	if (rank == MASTER_NODE){
+		for (iRank = 0; iRank < nProcessor; iRank++){
+			if( Buffer_Recv_mark[iRank] != -1 ){
+				Donor_check = Buffer_Recv_mark[iRank];
+				break;
+			}		
+		}
+	}
+	
+	SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	
+	SU2_MPI::Gather(&Marker_Target, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+			
+	if (rank == MASTER_NODE){
+		for (iRank = 0; iRank < nProcessor; iRank++){
+			if( Buffer_Recv_mark[iRank] != -1 ){
+				Target_check = Buffer_Recv_mark[iRank];
+				break;
+			}	
+		}
+	}
+
+	SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	if (rank == MASTER_NODE) 
+		delete [] Buffer_Recv_mark;
+		
+	#else
+	Donor_check  = markDonor;
+	Target_check = markTarget;	
+	#endif
+
+    if(Target_check == -1 || Donor_check == -1){
 		continue;
-  */  
+	}
+
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
     
@@ -676,10 +775,7 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 #endif
     
     long indexPoint_iVertex, Point_Target_Check;
-    
-    if(Marker_Target == -1)// || Marker_Donor == -1)
-		continue;
-		
+
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0){
       
@@ -742,6 +838,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
   unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
   unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
   int Marker_Donor = -1, Marker_Target = -1;
+  int Target_check, Donor_check;
   
   unsigned long iVertex;							// Variables for iteration over vertices and nodes
   
@@ -846,10 +943,58 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
         Marker_Target = -1;
       }
     }
-    /*
-    if(Marker_Target == -1 || Marker_Donor == -1)
+    
+	#ifdef HAVE_MPI
+
+	int *Buffer_Recv_mark, iRank;
+	
+	Donor_check  = -1;
+	Target_check = -1;
+
+	if (rank == MASTER_NODE) 
+		Buffer_Recv_mark = new int[nProcessor];
+		
+    /*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it  ---*/
+	
+	SU2_MPI::Gather(&Marker_Donor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+			
+	if (rank == MASTER_NODE){
+		for (iRank = 0; iRank < nProcessor; iRank++){
+			if( Buffer_Recv_mark[iRank] != -1 ){
+				Donor_check = Buffer_Recv_mark[iRank];
+				break;
+			}		
+		}
+	}
+	
+	SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	
+	SU2_MPI::Gather(&Marker_Target, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+			
+	if (rank == MASTER_NODE){
+		for (iRank = 0; iRank < nProcessor; iRank++){
+			if( Buffer_Recv_mark[iRank] != -1 ){
+				Target_check = Buffer_Recv_mark[iRank];
+				break;
+			}	
+		}
+	}
+
+	SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	if (rank == MASTER_NODE) 
+		delete [] Buffer_Recv_mark;
+		
+	#else
+	Donor_check  = markDonor;
+	Target_check = markTarget;	
+	#endif
+
+    if(Target_check == -1 || Donor_check == -1){
 		continue;
-        */
+	}
+	
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
     
@@ -979,10 +1124,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     long indexPoint_iVertex, Point_Target_Check;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
-    
-    if(Marker_Target == -1 || Marker_Donor == -1)
-		continue;
-        
+
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0){
       
@@ -1058,6 +1200,7 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
   unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
   unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
   int Marker_Donor = -1, Marker_Target = -1;
+  int Target_check, Donor_check;
   
   unsigned long iVertex;								// Variables for iteration over vertices and nodes
   unsigned short iVar;
@@ -1157,10 +1300,58 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
       }
     }
     
-    /*
-    if(Marker_Target == -1 || Marker_Donor == -1)
+    
+	#ifdef HAVE_MPI
+
+	int *Buffer_Recv_mark, iRank;
+	
+	Donor_check  = -1;
+	Target_check = -1;
+
+	if (rank == MASTER_NODE) 
+		Buffer_Recv_mark = new int[nProcessor];
+		
+    /*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it  ---*/
+	
+	SU2_MPI::Gather(&Marker_Donor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+			
+	if (rank == MASTER_NODE){
+		for (iRank = 0; iRank < nProcessor; iRank++){
+			if( Buffer_Recv_mark[iRank] != -1 ){
+				Donor_check = Buffer_Recv_mark[iRank];
+				break;
+			}		
+		}
+	}
+	
+	SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	
+	SU2_MPI::Gather(&Marker_Target, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+			
+	if (rank == MASTER_NODE){
+		for (iRank = 0; iRank < nProcessor; iRank++){
+			if( Buffer_Recv_mark[iRank] != -1 ){
+				Target_check = Buffer_Recv_mark[iRank];
+				break;
+			}	
+		}
+	}
+
+	SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	if (rank == MASTER_NODE) 
+		delete [] Buffer_Recv_mark;
+		
+	#else
+	Donor_check  = markDonor;
+	Target_check = markTarget;	
+	#endif
+
+    if(Target_check == -1 || Donor_check == -1){
 		continue;
-    */
+	}
+	
     
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;	  // Retrieve total number of vertices on Donor marker
     Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
@@ -1242,6 +1433,9 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
     long indexPoint_iVertex, Point_Target_Check;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
+    
+    if(Marker_Target == -1 || Marker_Donor == -1)
+		continue;
     
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0){

@@ -1934,26 +1934,33 @@ void CSingleZoneDriver::Run(CIteration **iteration_container,
                             CInterpolator ***interpolator_container,
                             CTransfer ***transfer_container) {
 
-  /*--- Run an iteration of the physics within this single zone.
-   We assume that the zone of interest is in the ZONE_0 container position. ---*/
+  unsigned short iZone;
   
-  iteration_container[ZONE_0]->Preprocess(output, integration_container, geometry_container,
-                                          solver_container, numerics_container, config_container,
-                                          surface_movement, grid_movement, FFDBox, ZONE_0);
+  /*--- Run a single iteration of a fem problem by looping over all
+   zones and executing the iterations. Note that data transers between zones
+   and other intermediate procedures may be required. ---*/
   
-  iteration_container[ZONE_0]->Iterate(output, integration_container, geometry_container,
+  for (iZone = 0; iZone < nZone; iZone++) {
+    
+    iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
+                                           solver_container, numerics_container, config_container,
+                                           surface_movement, grid_movement, FFDBox, iZone);
+    
+    iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
+                                        solver_container, numerics_container, config_container,
+                                        surface_movement, grid_movement, FFDBox, iZone);
+    
+    iteration_container[iZone]->Update(output, integration_container, geometry_container,
                                        solver_container, numerics_container, config_container,
-                                       surface_movement, grid_movement, FFDBox, ZONE_0);
-  
-  iteration_container[ZONE_0]->Update(output, integration_container, geometry_container,
-                                      solver_container, numerics_container, config_container,
-                                      surface_movement, grid_movement, FFDBox, ZONE_0);
-  
-  iteration_container[ZONE_0]->Monitor();     /*--- Does nothing for now. ---*/
-  
-  iteration_container[ZONE_0]->Output();      /*--- Does nothing for now. ---*/
-  
-  iteration_container[ZONE_0]->Postprocess(); /*--- Does nothing for now. ---*/
+                                       surface_movement, grid_movement, FFDBox, iZone);
+    
+    iteration_container[iZone]->Monitor();     /*--- Does nothing for now. ---*/
+    
+    iteration_container[iZone]->Output();      /*--- Does nothing for now. ---*/
+    
+    iteration_container[iZone]->Postprocess(); /*--- Does nothing for now. ---*/
+    
+  }
   
 }
 
