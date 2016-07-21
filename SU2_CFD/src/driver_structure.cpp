@@ -1899,7 +1899,7 @@ for (targetZone = 0; targetZone < nZone; targetZone++){
 CDriver::~CDriver(void) {}
 
 
-CSingleZoneDriver::CSingleZoneDriver(CIteration **iteration_container,
+CStructuralDriver::CStructuralDriver(CIteration **iteration_container,
                                      CSolver ****solver_container,
                                      CGeometry ***geometry_container,
                                      CIntegration ***integration_container,
@@ -1919,9 +1919,9 @@ CSingleZoneDriver::CSingleZoneDriver(CIteration **iteration_container,
                                                                          val_nZone,
                                                                          val_nDim) { }
 
-CSingleZoneDriver::~CSingleZoneDriver(void) { }
+CStructuralDriver::~CStructuralDriver(void) { }
 
-void CSingleZoneDriver::Run(CIteration **iteration_container,
+void CStructuralDriver::Run(CIteration **iteration_container,
                             COutput *output,
                             CIntegration ***integration_container,
                             CGeometry ***geometry_container,
@@ -1965,7 +1965,7 @@ void CSingleZoneDriver::Run(CIteration **iteration_container,
 }
 
 
-CMultiZoneDriver::CMultiZoneDriver(CIteration **iteration_container,
+CFluidDriver::CFluidDriver(CIteration **iteration_container,
                                    CSolver ****solver_container,
                                    CGeometry ***geometry_container,
                                    CIntegration ***integration_container,
@@ -1986,9 +1986,9 @@ CMultiZoneDriver::CMultiZoneDriver(CIteration **iteration_container,
                                                                        val_nDim) { }
 
 
-CMultiZoneDriver::~CMultiZoneDriver(void) { }
+CFluidDriver::~CFluidDriver(void) { }
 
-void CMultiZoneDriver::Run(CIteration **iteration_container,
+void CFluidDriver::Run(CIteration **iteration_container,
                            COutput *output,
                            CIntegration ***integration_container,
                            CGeometry ***geometry_container,
@@ -2080,7 +2080,7 @@ void CMultiZoneDriver::Run(CIteration **iteration_container,
 	}
 }
 
-void CMultiZoneDriver::Transfer_Data(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
+void CFluidDriver::Transfer_Data(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
 		     CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
 			 CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
 			 CTransfer ***transfer_container, unsigned short donorZone, unsigned short targetZone){

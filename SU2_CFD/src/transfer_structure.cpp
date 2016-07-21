@@ -219,8 +219,8 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
 		delete [] Buffer_Recv_mark;
 		
 	#else
-	Donor_check  = markDonor;
-	Target_check = markTarget;	
+	Donor_check  = Marker_Donor;
+	Target_check = Marker_Target;	
 	#endif
 
     if(Target_check == -1 || Donor_check == -1){
@@ -641,8 +641,8 @@ void CTransfer::Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolve
 		delete [] Buffer_Recv_mark;
 		
 	#else
-	Donor_check  = markDonor;
-	Target_check = markTarget;	
+	Donor_check  = Marker_Donor;
+	Target_check = Marker_Target;
 	#endif
 
     if(Target_check == -1 || Donor_check == -1){
@@ -987,8 +987,8 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
 		delete [] Buffer_Recv_mark;
 		
 	#else
-	Donor_check  = markDonor;
-	Target_check = markTarget;	
+	Donor_check  = Marker_Donor;
+	Target_check = Marker_Target;	
 	#endif
 
     if(Target_check == -1 || Donor_check == -1){
@@ -1344,8 +1344,8 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
 		delete [] Buffer_Recv_mark;
 		
 	#else
-	Donor_check  = markDonor;
-	Target_check = markTarget;	
+	Donor_check  = Marker_Donor;
+	Target_check = Marker_Target;	
 	#endif
 
     if(Target_check == -1 || Donor_check == -1){

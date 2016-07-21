@@ -276,12 +276,12 @@ public:
 
 };
 /*!
- * \class CSingleZoneDriver
- * \brief Class for driving an iteration of the physics within a single zone.
+ * \class CStructuralDriver
+ * \brief Class for driving a structural iteration of the physics within multiple zones.
  * \author T. Economon
  * \version 4.2.0 "Cardinal"
  */
-class CSingleZoneDriver : public CDriver {
+class CStructuralDriver : public CDriver {
 public:
 	
 	/*! 
@@ -294,7 +294,7 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] val_nZone - Total number of zones.
 	 */
-  CSingleZoneDriver(CIteration **iteration_container,
+  CStructuralDriver(CIteration **iteration_container,
                     CSolver ****solver_container,
                     CGeometry ***geometry_container,
                     CIntegration ***integration_container,
@@ -308,10 +308,10 @@ public:
 	/*!
 	 * \brief Destructor of the class.
 	 */
-	~CSingleZoneDriver(void);
+	~CStructuralDriver(void);
 	
 	/*! 
-	 * \brief Run a single iteration of the physics within a single zone.
+	 * \brief Run a single iteration of the physics within multiple zones.
 	 * \param[in] iteration_container - Container vector with all the iteration methods.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration_container - Container vector with all the integration methods.
@@ -342,12 +342,12 @@ public:
 
 
 /*!
- * \class CMultiZoneDriver
- * \brief Class for driving an iteration of the physics within multiple zones.
- * \author T. Economon
+ * \class CFluidDriver
+ * \brief Class for driving an iteration of the physics within single or multiple zones.
+ * \author Giulio Gori, Politecnico di Milano
  * \version 4.2.0 "Cardinal"
  */
-class CMultiZoneDriver : public CDriver {
+class CFluidDriver : public CDriver {
 public:
   
   /*!
@@ -360,7 +360,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_nZone - Total number of zones.
    */
-  CMultiZoneDriver(CIteration **iteration_container,
+  CFluidDriver(CIteration **iteration_container,
                    CSolver ****solver_container,
                    CGeometry ***geometry_container,
                    CIntegration ***integration_container,
@@ -374,7 +374,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CMultiZoneDriver(void);
+  ~CFluidDriver(void);
   
   /*!
    * \brief Run a single iteration of the physics within multiple zones.
