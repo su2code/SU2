@@ -1842,6 +1842,36 @@ public:
   virtual su2double *GetGeometry_Direct(void);
 
   /*!
+   * \brief A virtual member. Get the restart geometry (coordinate of the converged solution).
+   * \return Coordinate of the direct solver restart for .
+   */
+  virtual su2double GetGeometry_Direct(unsigned short val_dim);
+
+  /*!
+   * \brief A virtual member. Get the geometry solution.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the solution for the index <i>val_var</i>.
+   */
+  virtual su2double GetSolution_Geometry(unsigned short val_var);
+
+  /*!
+   * \brief A virtual member. Set the value of the mesh solution (adjoint).
+   * \param[in] val_solution - Solution of the problem (acceleration).
+   */
+  virtual void SetSolution_Geometry(su2double *val_solution_geometry);
+
+  /*!
+   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
+   */
+  virtual void Set_OldSolution_Geometry(void);
+
+  /*!
+   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
+   * \param[out] val_solution - old adjoint solution for coordinate iDim
+   */
+  virtual su2double Get_OldSolution_Geometry(unsigned short iDim);
+
+  /*!
    * \brief  A virtual member. Set the contribution of crossed terms into the derivative.
    */
   virtual void SetCross_Term_Derivative(unsigned short iVar, su2double der);
@@ -4422,11 +4452,15 @@ class CDiscAdjVariable : public CVariable {
 private:
     su2double* Sensitivity; /* Vector holding the derivative of target functional with respect to the coordinates at this node*/
     su2double* Solution_Direct;
-    su2double* Geometry_Direct;
+
     su2double* DualTime_Derivative;
     su2double* DualTime_Derivative_n;
 
     su2double* Cross_Term_Derivative;
+
+    su2double* Solution_Geometry;
+    su2double* Solution_Geometry_Old;
+    su2double* Geometry_Direct;
 
 public:
     /*!
@@ -4485,6 +4519,37 @@ public:
      * \return Pointer to the restart coordinate vector.
      */
     su2double *GetGeometry_Direct(void);
+
+    /*!
+     * \brief Get the restart geometry (coordinate of the converged solution).
+     * \return Coordinate val_dim of the geometry_direct vector.
+     */
+    su2double GetGeometry_Direct(unsigned short val_dim);
+
+    /*!
+     * \brief Get the geometry solution.
+     * \param[in] val_var - Index of the variable.
+     * \return Value of the solution for the index <i>val_var</i>.
+     */
+    su2double GetSolution_Geometry(unsigned short val_var);
+
+    /*!
+     * \brief Set the value of the mesh solution (adjoint).
+     * \param[in] val_solution - Solution of the problem (acceleration).
+     */
+    void SetSolution_Geometry(su2double *val_solution_geometry);
+
+    /*!
+     * \brief Set the value of the mesh solution (adjoint).
+     * \param[in] val_solution - Solution of the problem (acceleration).
+     */
+    void Set_OldSolution_Geometry(void);
+
+    /*!
+     * \brief Get the value of the old geometry solution (adjoint).
+     * \param[out] val_solution - old adjoint solution for coordinate iDim
+     */
+    su2double Get_OldSolution_Geometry(unsigned short iDim);
 
     /*!
      * \brief Set the contribution of crossed terms into the derivative.

@@ -40,6 +40,8 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
       || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 
+  bool fsi = config->GetFSI_Simulation();
+
   if (dual_time){
     DualTime_Derivative = new su2double[nVar];
     DualTime_Derivative_n = new su2double[nVar];
@@ -70,19 +72,34 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   }
 
   Geometry_Direct       = NULL;
+  Solution_Geometry     = NULL;
+  Solution_Geometry_Old = NULL;
   Cross_Term_Derivative = NULL;
-  if (config->GetFSI_Simulation()){
-    Geometry_Direct       = new su2double[nVar];
+  if (fsi){
+    Solution_Geometry     = new su2double[nDim];
+    Geometry_Direct       = new su2double[nDim];
+    Solution_Geometry_Old = new su2double[nDim];
     Cross_Term_Derivative = new su2double[nVar];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Geometry_Direct[iDim]       = 0.0;
+      Solution_Geometry[iDim]     = 1e-16;
+      Solution_Geometry_Old[iDim] = 0.0;
+    }
     for (iVar = 0; iVar < nVar; iVar++) {
-      Geometry_Direct[iVar]       = 0.0;
       Cross_Term_Derivative[iVar] = 0.0;
     }
   }
+
+
 
 }
 
 
 CDiscAdjVariable::~CDiscAdjVariable(){
+
+  if (Geometry_Direct       != NULL) delete [] Geometry_Direct;
+  if (Solution_Geometry     != NULL) delete [] Solution_Geometry;
+  if (Solution_Geometry_Old != NULL) delete [] Solution_Geometry_Old;
+  if (Cross_Term_Derivative != NULL) delete [] Cross_Term_Derivative;
 
 }

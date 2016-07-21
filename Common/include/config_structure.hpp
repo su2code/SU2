@@ -332,6 +332,8 @@ private:
 	Kind_AdjTurb_Linear_Prec,		/*!< \brief Preconditioner of the turbulent adjoint linear solver. */
   Kind_DiscAdj_Linear_Solver, /*!< \brief Linear solver for the discrete adjoint system. */
   Kind_DiscAdj_Linear_Prec,  /*!< \brief Preconditioner of the discrete adjoint linear solver. */
+  Kind_DiscAdj_Linear_Solver_FSI_Struc, /*!< \brief Linear solver for the discrete adjoint system in the structural side of FSI problems. */
+  Kind_DiscAdj_Linear_Prec_FSI_Struc,   /*!< \brief Preconditioner of the discrete adjoint linear solver in the structural side of FSI problems. */
 	Kind_SlopeLimit,				/*!< \brief Global slope limiter. */
 	Kind_SlopeLimit_Flow,		/*!< \brief Slope limiter for flow equations.*/
 	Kind_SlopeLimit_Turb,		/*!< \brief Slope limiter for the turbulence equation.*/
