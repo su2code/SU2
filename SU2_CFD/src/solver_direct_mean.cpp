@@ -5276,6 +5276,8 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
       MassFlowIn[nBladesRow + iStage]         	 = MassFlowIn[iStage*2];
       MassFlowOut[nBladesRow + iStage]         	 = MassFlowOut[iStage*2 + 1];
       EntropyGen[nBladesRow + iStage]            = EntropyGen[iStage*2 + 1] + EntropyGen[iStage*2];
+      TotalPressureLoss[nBladesRow + iStage]     = TotalPressureLoss[iStage*2 + 1] + TotalPressureLoss[iStage*2];
+      KineticEnergyLoss[nBladesRow + iStage]     = KineticEnergyLoss[iStage*2 + 1] + KineticEnergyLoss[iStage*2];
     }
 
     /*---Comnpute performance for full machine---*/
@@ -5295,8 +5297,13 @@ void CEulerSolver::TurboPerformance2nd(CConfig *config){
   }
 
   EntropyGen[nBladesRow + nStages]            = 0.0;
+  TotalPressureLoss[nBladesRow + nStages] 		= 0.0;
+  KineticEnergyLoss[nBladesRow + nStages] 		= 0.0;
+
   for(iBlade = 0; iBlade < nBladesRow; iBlade++ ){
   	EntropyGen[nBladesRow + nStages] += EntropyGen[iBlade];
+  	TotalPressureLoss[nBladesRow + nStages] += TotalPressureLoss[iBlade];
+  	KineticEnergyLoss[nBladesRow + nStages] += KineticEnergyLoss[iBlade];
   }
 }
 void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
