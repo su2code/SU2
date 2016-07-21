@@ -279,7 +279,9 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
   unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
   unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+  
   int markDonor = -1, markTarget = -1;
+  int Target_check, Donor_check;
 
   unsigned long nVertexDonor = 0, nVertexTarget= 0;
   unsigned long Point_Target = 0;
@@ -290,6 +292,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
   unsigned short int iDonor = 0;
   unsigned long Global_Point_Donor;
+  
 
   /*--- Number of markers on the FSI interface ---*/
   nMarkerInt     = (int) (config[donorZone]->GetMarker_n_FSIinterface() /2);
@@ -349,14 +352,64 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 		  }
 	  }
 
-	if(markTarget == -1 || markDonor == -1)
-		continue;
+	#ifdef HAVE_MPI
 
+	int *Buffer_Recv_mark, iRank;
+	
+	Donor_check  = -1;
+	Target_check = -1;
+
+	if (rank == MASTER_NODE) 
+		Buffer_Recv_mark = new int[nProcessor];
+		
+	/*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it ---*/
+	
+	SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	if (rank == MASTER_NODE){
+		for (iRank = 0; iRank < nProcessor; iRank++){
+			if( Buffer_Recv_mark[iRank] != -1 ){
+				Donor_check = Buffer_Recv_mark[iRank];
+				break;
+			}
+			
+		}
+	}
+	
+	SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	
+	SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	if (rank == MASTER_NODE){
+		for (iRank = 0; iRank < nProcessor; iRank++){
+			if( Buffer_Recv_mark[iRank] != -1 ){
+				Target_check = Buffer_Recv_mark[iRank];
+				break;
+			}
+			
+		}
+	}
+
+	SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	if (rank == MASTER_NODE) 
+		delete [] Buffer_Recv_mark;
+		
+	#else
+	Donor_check  = markDonor;
+	Target_check = markTarget;	
+	#endif
+	
+	if(Target_check == -1 || Donor_check == -1){
+		continue;
+	}
+	
 	Buffer_Send_nVertex_Donor = new unsigned long [1];
     Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
 
 	  /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
-	  Determine_ArraySize(false, markDonor,markTarget,nVertexDonor,nDim);
+	  Determine_ArraySize(false, markDonor, markTarget, nVertexDonor, nDim);
 
     Buffer_Send_Coord = new su2double [MaxLocalVertex_Donor*nDim];
     Buffer_Send_GlobalPoint = new unsigned long [MaxLocalVertex_Donor];
@@ -365,8 +418,9 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
     Buffer_Receive_GlobalPoint = new unsigned long [nProcessor*MaxLocalVertex_Donor];
 
 	  /*-- Colllect coordinates, global points, and normal vectors ---*/
-	  Collect_VertexInfo(false, markDonor,markTarget,nVertexDonor,nDim);
-
+	  Collect_VertexInfo(false, markDonor, markTarget, nVertexDonor, nDim);
+	  
+		
 	  /*--- Compute the closest point to a Near-Field boundary point ---*/
 	  maxdist = 0.0;
 	  for (iVertexTarget = 0; iVertexTarget < nVertexTarget; iVertexTarget++) {
@@ -448,6 +502,7 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
   unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;
 
   int markDonor=0, markTarget=0;
+  int Target_check, Donor_check;
 
   long donor_elem=0, temp_donor=0;
   unsigned int nNodes=0;
@@ -535,9 +590,60 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
         nVertexTarget = 0;
       }
     }
+    
+	#ifdef HAVE_MPI
 
-	if(markTarget == -1 || markDonor == -1)
+	int *Buffer_Recv_mark, iRank;
+	
+	Donor_check  = -1;
+	Target_check = -1;
+
+	if (rank == MASTER_NODE) 
+		Buffer_Recv_mark = new int[nProcessor];
+		
+	/*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it ---*/
+	
+	SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	if (rank == MASTER_NODE){
+		for (iRank = 0; iRank < nProcessor; iRank++){
+			if( Buffer_Recv_mark[iRank] != -1 ){
+				Donor_check = Buffer_Recv_mark[iRank];
+				break;
+			}
+			
+		}
+	}
+	
+	SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	
+	SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	if (rank == MASTER_NODE){
+		for (iRank = 0; iRank < nProcessor; iRank++){
+			if( Buffer_Recv_mark[iRank] != -1 ){
+				Target_check = Buffer_Recv_mark[iRank];
+				break;
+			}
+			
+		}
+	}
+
+	SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	if (rank == MASTER_NODE) 
+		delete [] Buffer_Recv_mark;
+		
+	#else
+	Donor_check  = markDonor;
+	Target_check = markTarget;	
+	#endif
+	
+	if(Target_check == -1 || Donor_check == -1){
 		continue;
+	}
+	
 
     Buffer_Send_nVertex_Donor = new unsigned long [1];
     Buffer_Send_nFace_Donor= new unsigned long [1];
@@ -1019,6 +1125,7 @@ void CMirror::Set_TransferCoeff(CConfig **config){
   unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;
 
   int markDonor=0, markTarget=0;
+  int Target_check, Donor_check;
 
   unsigned int nNodes=0, iNodes=0;
   unsigned long nVertexDonor = 0, nVertexTarget= 0;
@@ -1088,6 +1195,59 @@ void CMirror::Set_TransferCoeff(CConfig **config){
         nVertexTarget = 0;
       }
     }
+    
+	#ifdef HAVE_MPI
+
+	int *Buffer_Recv_mark, iRank;
+	
+	Donor_check  = -1;
+	Target_check = -1;
+
+	if (rank == MASTER_NODE) 
+		Buffer_Recv_mark = new int[nProcessor];
+		
+	/*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it ---*/
+	
+	SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	if (rank == MASTER_NODE){
+		for (iRank = 0; iRank < nProcessor; iRank++){
+			if( Buffer_Recv_mark[iRank] != -1 ){
+				Donor_check = Buffer_Recv_mark[iRank];
+				break;
+			}
+			
+		}
+	}
+	
+	SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	
+	SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	if (rank == MASTER_NODE){
+		for (iRank = 0; iRank < nProcessor; iRank++){
+			if( Buffer_Recv_mark[iRank] != -1 ){
+				Target_check = Buffer_Recv_mark[iRank];
+				break;
+			}
+			
+		}
+	}
+
+	SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+	
+	if (rank == MASTER_NODE) 
+		delete [] Buffer_Recv_mark;
+		
+	#else
+	Donor_check  = markDonor;
+	Target_check = markTarget;	
+	#endif
+	
+	if(Target_check == -1 || Donor_check == -1){
+		continue;
+	}	
 
     /*-- Collect the number of donor nodes: re-use 'Face' containers --*/
     nLocalFace_Donor=0;
