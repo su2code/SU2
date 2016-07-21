@@ -2755,6 +2755,13 @@ public:
    */
   virtual void SetAdjoint_Output(CGeometry *geometry, CConfig *config);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - The geometrical definition of the problem.
+   * \param[in] config - The particular config.
+   */
+  virtual void SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config);
+
    /*!
    * \brief A virtual member.
    * \param[in] geometry - The geometrical definition of the problem.
@@ -2762,6 +2769,14 @@ public:
    * \param[in] config - The particular config.
    */
   virtual void ExtractAdjoint_Solution(CGeometry *geometry,  CConfig *config);
+
+  /*!
+  * \brief A virtual member.
+  * \param[in] geometry - The geometrical definition of the problem.
+  * \param[in] solver_container - The solver container holding all solutions.
+  * \param[in] config - The particular config.
+  */
+ virtual void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config);
 
   /*!
   * \brief A virtual member.
@@ -2958,6 +2973,13 @@ public:
    * \param[in] kind_recording - Kind of AD recording.
    */
   virtual void SetRecording(CGeometry *geometry, CConfig *config, unsigned short kind_recording);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] kind_recording - Kind of AD recording.
+   */
+  virtual void SetMesh_Recording(CGeometry **geometry, CVolumetricMovement *grid_movement,
+                                   CConfig *config, unsigned short kind_recording);
 
   /*!
    * \brief A virtual member.
@@ -8153,6 +8175,8 @@ private:
   su2double Mach, Alpha, Beta, Pressure, Temperature;
   unsigned long nMarker;				/*!< \brief Total number of markers using the grid information. */
 
+  su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
+
 public:
 
   /*!
@@ -8208,12 +8232,28 @@ public:
   void SetAdjoint_Output(CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief Sets the adjoint values of the output of the mesh deformation iteration
+   *        before evaluation of the tape.
+   * \param[in] geometry - The geometrical definition of the problem.
+   * \param[in] config - The particular config.
+   */
+  void SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config);
+
+  /*!
   * \brief Sets the adjoint values of the input variables of the flow (+turb.) iteration
   *        after tape has been evaluated.
   * \param[in] geometry - The geometrical definition of the problem.
   * \param[in] config - The particular config.
   */
   void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config);
+
+  /*!
+  * \brief A virtual member.
+  * \param[in] geometry - The geometrical definition of the problem.
+  * \param[in] solver_container - The solver container holding all solutions.
+  * \param[in] config - The particular config.
+  */
+  void ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config);
 
   /*!
   * \brief Sets the adjoint values of the flow variables due to cross term contributions
@@ -8313,6 +8353,13 @@ public:
    * \param[in] kind_recording - Kind of AD recording.
    */
   void SetRecording(CGeometry *geometry, CConfig *config, unsigned short kind_recording);
+
+  /*!
+   * \brief Prepare the solver for a new recording.
+   * \param[in] kind_recording - Kind of AD recording.
+   */
+  void SetMesh_Recording(CGeometry **geometry, CVolumetricMovement *grid_movement,
+                          CConfig *config, unsigned short kind_recording);
 
   /*!
    * \brief A virtual member.

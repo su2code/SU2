@@ -2528,7 +2528,7 @@ void CDiscAdjFEAIteration::Preprocess(COutput *output,
              << ", ETOL-A: " << log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_FEM(2)) << "." << endl;
       }
       else{
-        if (geometry_container[val_iZone][MESH_0]->GetnPoint() == 2){
+        if (geometry_container[val_iZone][MESH_0]->GetnDim() == 2){
           cout << "log10[RMS Ux]: "   << log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_RMS(0))
                << ", log10[RMS Uy]: " << log10(solver_container[val_iZone][MESH_0][FEA_SOL]->GetRes_RMS(1)) << "." << endl;
 

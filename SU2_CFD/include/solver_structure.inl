@@ -1184,7 +1184,11 @@ inline void CSolver::RegisterOutput(CGeometry *geometry_container, CConfig *conf
 
 inline void CSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){}
 
+inline void CSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config){}
+
 inline void CSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config){}
+
+inline void CSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *config){}
 
@@ -1227,6 +1231,8 @@ inline su2double CDiscAdjFEASolver::GetVal_Rho_DL(void) { return Rho_DL; }
 inline unsigned long CSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {return 0;}
 
 inline void CSolver::SetRecording(CGeometry *geometry, CConfig *config, unsigned short kind_recording){}
+
+inline void CSolver::SetMesh_Recording(CGeometry **geometry, CVolumetricMovement *grid_movement, CConfig *config, unsigned short kind_recording){}
 
 inline void CSolver::SetPressure_Inf(su2double p_inf){}
 

@@ -882,6 +882,17 @@ void CGeometry::RegisterCoordinates(CConfig *config){
   }
 }
 
+void CGeometry::RegisterOutput_Coordinates(CConfig *config){
+  unsigned short iDim;
+  unsigned long iPoint;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iDim = 0; iDim < nDim; iDim++){
+      AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+    }
+  }
+}
+
 void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config){
 
     unsigned short iMesh;

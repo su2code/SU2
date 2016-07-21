@@ -199,6 +199,18 @@ public:
                               CConfig** config_container,
                               unsigned short iZone){}
 
+  virtual void LoadUnsteady_Solution(CGeometry ***geometry_container,
+                                         CSolver ****solver_container,
+                                         CConfig **config_container,
+                                         unsigned short val_iZone,
+                                         int val_DirectIter){}
+
+  virtual void LoadDynamic_Solution(CGeometry ***geometry_container,
+                                        CSolver ****solver_container,
+                                        CConfig **config_container,
+                                        unsigned short val_iZone,
+                                        int val_DirectIter){}
+
 };
 
 

@@ -525,7 +525,17 @@ inline void CVariable::SetSolution_Direct(su2double *val_solution_direct) { }
 
 inline su2double* CVariable::GetGeometry_Direct() { return NULL; }
 
+inline su2double CVariable::GetGeometry_Direct(unsigned short val_dim) { return 0.0; }
+
 inline void CVariable::SetGeometry_Direct(su2double *val_geometry_direct) { }
+
+inline su2double CVariable::GetSolution_Geometry(unsigned short val_var) { return 0.0;}
+
+inline void CVariable::SetSolution_Geometry(su2double *val_solution_geometry) { }
+
+inline void CVariable::Set_OldSolution_Geometry(void) { }
+
+inline su2double CVariable::Get_OldSolution_Geometry(unsigned short iDim) { return 0.0;}
 
 inline su2double CVariable::GetCross_Term_Derivative(unsigned short iVar) { return 0.0; }
 
@@ -1270,11 +1280,29 @@ inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct)
 
 inline su2double* CDiscAdjVariable::GetGeometry_Direct() { return Geometry_Direct; }
 
+inline su2double CDiscAdjVariable::GetGeometry_Direct(unsigned short val_dim) { return Geometry_Direct[val_dim]; }
+
 inline void CDiscAdjVariable::SetGeometry_Direct(su2double *val_geometry_direct) {
-  for (unsigned short iVar = 0; iVar < nVar; iVar++){
-    Geometry_Direct[iVar] = val_geometry_direct[iVar];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    Geometry_Direct[iDim] = val_geometry_direct[iDim];
   }
 }
+
+inline su2double CDiscAdjVariable::GetSolution_Geometry(unsigned short val_var) { return Solution_Geometry[val_var];}
+
+inline void CDiscAdjVariable::SetSolution_Geometry(su2double *val_solution_geometry) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    Solution_Geometry[iDim] = val_solution_geometry[iDim];
+  }
+}
+
+inline void CDiscAdjVariable::Set_OldSolution_Geometry(void) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    Solution_Geometry_Old[iDim] = Solution_Geometry[iDim];
+  }
+}
+
+inline su2double CDiscAdjVariable::Get_OldSolution_Geometry(unsigned short iDim) { return Solution_Geometry_Old[iDim];}
 
 inline void CVariable::SetDynamic_Derivative(unsigned short iVar, su2double der) { }
 

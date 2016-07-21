@@ -632,6 +632,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("DISCADJ_LIN_SOLVER", Kind_DiscAdj_Linear_Solver, Linear_Solver_Map, FGMRES);
   /* DESCRIPTION: Preconditioner for the discrete adjoint Krylov linear solvers */
   addEnumOption("DISCADJ_LIN_PREC", Kind_DiscAdj_Linear_Prec, Linear_Solver_Prec_Map, ILU);
+  /* DESCRIPTION: Linear solver for the discete adjoint systems */
+  addEnumOption("FSI_DISCADJ_LIN_SOLVER_STRUC", Kind_DiscAdj_Linear_Solver_FSI_Struc, Linear_Solver_Map, CONJUGATE_GRADIENT);
+  /* DESCRIPTION: Preconditioner for the discrete adjoint Krylov linear solvers */
+  addEnumOption("FSI_DISCADJ_LIN_PREC_STRUC", Kind_DiscAdj_Linear_Prec_FSI_Struc, Linear_Solver_Prec_Map, JACOBI);
   
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
@@ -1697,7 +1701,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	  	  	  	  	  	  	Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
 	  	  	  	  	  	  	Kind_Linear_Solver_Prec = Kind_Linear_Solver_Prec_FSI_Struc;
 	  	  	  	  	  	  	Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
-	  	  	  	  	  	  	Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;}
+	  	  	  	  	  	  	Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;
+	  	  	  	  	  	  	// Discrete adjoint linear solver
+	  	  	  	  	  	  	Kind_DiscAdj_Linear_Solver = Kind_DiscAdj_Linear_Solver_FSI_Struc;
+	  	  	  	  	  	  	Kind_DiscAdj_Linear_Prec = Kind_DiscAdj_Linear_Prec_FSI_Struc;}
   }
   else{ FSI_Problem = false; }
 
