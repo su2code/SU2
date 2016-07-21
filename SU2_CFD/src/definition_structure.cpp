@@ -212,7 +212,7 @@ void Driver_Preprocessing(CDriver **driver,
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     if (rank == MASTER_NODE) cout << "Instantiating a single zone driver for the problem. " << endl;
     
-    *driver = new CSingleZoneDriver(iteration_container, solver_container, geometry_container,
+    *driver = new CStructuralDriver(iteration_container, solver_container, geometry_container,
                                     integration_container, numerics_container, interpolator_container,
                                     transfer_container, config_container, val_nZone, val_nDim);
     
@@ -240,7 +240,7 @@ void Driver_Preprocessing(CDriver **driver,
      or a specialized driver class for a particular multi-physics problem. ---*/
     
     if (rank == MASTER_NODE) cout << "Instantiating a multi-zone driver for the problem. " << endl;
-    *driver = new CMultiZoneDriver(iteration_container, solver_container, geometry_container,
+    *driver = new CFluidDriver(iteration_container, solver_container, geometry_container,
             					   integration_container, numerics_container, interpolator_container,
                                    transfer_container, config_container, val_nZone, val_nDim);
     
