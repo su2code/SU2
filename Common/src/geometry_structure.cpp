@@ -30,6 +30,7 @@
  */
 
 #include "../include/geometry_structure.hpp"
+#include "../include/adt_structure.hpp"
 
 /*--- Epsilon definition ---*/
 
@@ -7861,204 +7862,71 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 }
 
 void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
-  
-  su2double *coord, dist;
-  passivedouble dist2, diff;
-  unsigned short iDim, iMarker;
-  unsigned long iPoint, iVertex, nVertex_SolidWall, iVertex_nearestWall = 0;
 
-
-#ifndef HAVE_MPI
-  
   /*--- Compute the total number of nodes on no-slip boundaries ---*/
   
-  nVertex_SolidWall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              )
+  unsigned long nVertex_SolidWall = 0;
+  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
       nVertex_SolidWall += GetnVertex(iMarker);
-  
-  /*--- Allocate an array to hold boundary node coordinates ---*/
-  
-  su2double **Coord_bound;
-  Coord_bound = new su2double* [nVertex_SolidWall];
-  for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++)
-    Coord_bound[iVertex] = new su2double [nDim];
-  
-  /*--- Retrieve and store the coordinates of the no-slip boundary nodes ---*/
-  
-  nVertex_SolidWall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              )
-      for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Coord_bound[nVertex_SolidWall][iDim] = node[iPoint]->GetCoord(iDim);
-        nVertex_SolidWall++;
-      }
+    }
   }
+  
+  /*--- Allocate the vectors to hold boundary node coordinates
+        and its local ID. ---*/
+
+  vector<su2double>     Coord_bound(nDim*nVertex_SolidWall);
+  vector<unsigned long> PointIDs(nVertex_SolidWall);
+
+  /*--- Retrieve and store the coordinates of the no-slip boundary nodes
+        and their local point IDs. ---*/
+
+  unsigned long ii = 0, jj = 0;
+  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+      for(unsigned long iVertex=0; iVertex<GetnVertex(iMarker); ++iVertex) {
+        unsigned long iPoint = vertex[iMarker][iVertex]->GetNode();
+        PointIDs[jj++] = iPoint;
+        for(unsigned short iDim=0; iDim<nDim; ++iDim)
+          Coord_bound[ii++] = node[iPoint]->GetCoord(iDim);
+      }
+    }
+  }
+
+  /*--- Build the ADT of the boundary nodes. ---*/
+
+  su2_adtPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(), PointIDs.data());
   
   /*--- Loop over all interior mesh nodes and compute the distances to each
-   of the no-slip boundary nodes. Store the minimum distance to the wall for
-   each interior mesh node. ---*/
-  
-  su2double dist1 = 0.0;
-  if (nVertex_SolidWall != 0) {
-    for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
-      coord = node[iPoint]->GetCoord();
-      dist1 = 1E20;
-      for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
-        dist2 = 0.0;
+        of the no-slip boundary nodes. Store the minimum distance to the wall
+        for each interior mesh node. ---*/
 
-        /*--- The wall distance computation is done using the plain su2double datatype to just
-         *  determine the index of the closest vertex. Otherwise we are storing a lot of
-         *  unnecessary derivative information when using AD.---*/
+  if( WallADT.IsEmpty() ) {
 
-        for (iDim = 0; iDim < nDim; iDim++){
-          diff = (SU2_TYPE::GetValue(coord[iDim])
-                  -SU2_TYPE::GetValue(Coord_bound[iVertex][iDim]));
-          dist2 += diff*diff;
-        }
-        if (dist2 < dist1) {
-          iVertex_nearestWall = iVertex;
-          dist1 = dist2;
-        }
-      }
-      dist = 0.0;
+    /*--- No solid wall boundary nodes in the entire mesh.
+          Set the wall distance to zero for all nodes. ---*/
 
-      /*--- Now we do the computation of the wall distance again using the general datatype.---*/
-
-      for (iDim = 0; iDim < nDim; iDim++){
-        dist += (coord[iDim] - Coord_bound[iVertex_nearestWall][iDim])*
-            (coord[iDim] - Coord_bound[iVertex_nearestWall][iDim]);
-      }
-      node[iPoint]->SetWall_Distance(sqrt(dist));
-    }
-  }
-  else {
-    for (iPoint = 0; iPoint < GetnPoint(); iPoint++)
+    for(unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint)
       node[iPoint]->SetWall_Distance(0.0);
   }
-  
-  /*--- Deallocate the vector of boundary coordinates. ---*/
-  
-  for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++)
-    delete[] Coord_bound[iVertex];
-  delete[] Coord_bound;
-  
-  
-#else
-  
-  /*--- Variables and buffers needed for MPI ---*/
-  
-  int iProcessor, nProcessor;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  unsigned long nLocalVertex_NS = 0, nGlobalVertex_NS = 0, MaxLocalVertex_NS = 0;
-  unsigned long *Buffer_Send_nVertex    = new unsigned long [1];
-  unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
-  
-  /*--- Count the total number of nodes on no-slip boundaries within the
-   local partition. ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              )
-      nLocalVertex_NS += GetnVertex(iMarker);
-  
-  /*--- Communicate to all processors the total number of no-slip boundary
-   nodes, the maximum number of no-slip boundary nodes on any single single
-   partition, and the number of no-slip nodes on each partition. ---*/
-  
-  Buffer_Send_nVertex[0] = nLocalVertex_NS;
-  SU2_MPI::Allreduce(&nLocalVertex_NS, &nGlobalVertex_NS,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalVertex_NS, &MaxLocalVertex_NS, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  
-  /*--- Create and initialize to zero some buffers to hold the coordinates
-   of the boundary nodes that are communicated from each partition (all-to-all). ---*/
-  
-  su2double *Buffer_Send_Coord    = new su2double [MaxLocalVertex_NS*nDim];
-  su2double *Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_NS*nDim];
-  unsigned long nBuffer = MaxLocalVertex_NS*nDim;
-  
-  for (iVertex = 0; iVertex < MaxLocalVertex_NS; iVertex++)
-    for (iDim = 0; iDim < nDim; iDim++)
-      Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-  
-  /*--- Retrieve and store the coordinates of the no-slip boundary nodes on
-   the local partition and broadcast them to all partitions. ---*/
-  
-  nVertex_SolidWall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              )
-      for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Send_Coord[nVertex_SolidWall*nDim+iDim] = node[iPoint]->GetCoord(iDim);
-        nVertex_SolidWall++;
-      }
-  
-  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
-  
-  /*--- Loop over all interior mesh nodes on the local partition and compute
-   the distances to each of the no-slip boundary nodes in the entire mesh.
-   Store the minimum distance to the wall for each interior mesh node. ---*/
-  
-  nVertex_SolidWall = 0;
-  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-    nVertex_SolidWall += Buffer_Receive_nVertex[iProcessor];
-  }
-  
-  if (nVertex_SolidWall != 0) {
-    for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
-      coord = node[iPoint]->GetCoord();
-      dist = 1E20;
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-        for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-          dist2 = 0.0;
+  else {
 
-          /*--- The wall distance computation is done using the plain su2double datatype to just
-           *  determine the index of the closest vertex. Otherwise we are storing a lot of
-           *  unnecessary derivative information when using AD.---*/
+    /*--- Solid wall boundary nodes are present. Compute the wall
+          distance for all nodes. ---*/
 
-          for (iDim = 0; iDim < nDim; iDim++){
-            diff = SU2_TYPE::GetValue(coord[iDim]) -
-                SU2_TYPE::GetValue(Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
-            dist2 += diff*diff;
-          }
-          if (dist2 < dist) {
-            iVertex_nearestWall = iProcessor*MaxLocalVertex_NS+iVertex;
-            dist = dist2;
-          }
-        }
+    for(unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint) {
 
-      /*--- Now we do the computation of the wall distance again using the general datatype.---*/
+      su2double dist;
+      unsigned long pointID;
+      int rankID;
 
-      dist = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++){
-        dist += (coord[iDim] - Buffer_Receive_Coord[iVertex_nearestWall*nDim+iDim])*
-            (coord[iDim] - Buffer_Receive_Coord[iVertex_nearestWall*nDim+iDim]);
-      }
-      node[iPoint]->SetWall_Distance(sqrt(dist));
+      WallADT.DetermineNearestNode(node[iPoint]->GetCoord(), dist,
+                                   pointID, rankID);
+      node[iPoint]->SetWall_Distance(dist);
     }
   }
-  else {
-    for (iPoint = 0; iPoint < GetnPoint(); iPoint++)
-      node[iPoint]->SetWall_Distance(0.0);
-  }
-  
-  /*--- Deallocate the buffers needed for the MPI communication. ---*/
-  
-  delete[] Buffer_Send_Coord;
-  delete[] Buffer_Receive_Coord;
-  delete[] Buffer_Send_nVertex;
-  delete[] Buffer_Receive_nVertex;
-  
-#endif
-  
 }
 
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
