@@ -2390,9 +2390,9 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
     }
     else if (config->GetRef_NonDim() == USER){
-    	Pressure_Ref      = config->GetCfgPressure_Ref(); // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
-    	Density_Ref       = config->GetCfgDensity_Ref();        // Density_FreeStream = 1.0
-    	Temperature_Ref   = config->GetCfgTemperature_Ref();    // T
+    	Pressure_Ref      = config->GetCfgPressure_Ref(); // get the user-specified reference pressure from the config file
+    	Density_Ref       = config->GetCfgDensity_Ref();  // get the user-specified reference density from the config file
+    	Temperature_Ref   = config->GetCfgTemperature_Ref(); // get the user-specified reference Temperature from the config file
     }
     config->SetPressure_Ref(Pressure_Ref);
     config->SetDensity_Ref(Density_Ref);

@@ -580,9 +580,9 @@ private:
 	Pressure_Ref, /*!< \brief Reference pressure for non-dimensionalization.  */
 	Temperature_Ref, /*!< \brief Reference temperature for non-dimensionalization.*/
 	Density_Ref, /*!< \brief Reference density for non-dimensionalization.*/
-	CfgPressure_Ref, /*!< \brief Reference pressure for non-dimensionalization.  */
-	CfgTemperature_Ref, /*!< \brief Reference temperature for non-dimensionalization.*/
-	CfgDensity_Ref, /*!< \brief Reference density for non-dimensionalization.*/
+	CfgPressure_Ref, /*!< \brief Reference pressure for non-dimensionalization as specified  by user in config file.  */
+	CfgTemperature_Ref, /*!< \brief Reference temperature for non-dimensionalization as specified  by user in config file.*/
+	CfgDensity_Ref, /*!< \brief Reference density for non-dimensionalization as specified  by user in config file.*/
 	Velocity_Ref, /*!< \brief Reference velocity for non-dimensionalization.*/
 	Time_Ref, /*!< \brief Reference time for non-dimensionalization. */
 	Viscosity_Ref, /*!< \brief Reference viscosity for non-dimensionalization. */

@@ -311,7 +311,7 @@ enum ENUM_KIND_NONDIM {
   FREESTREAM_PRESS_EQ_ONE = 1, /*!< \brief Non-dimensional simulation. */
   FREESTREAM_VEL_EQ_MACH = 2, /*!< \brief Non-dimensional simulation. */
   FREESTREAM_VEL_EQ_ONE = 3, /*!< \brief Non-dimensional simulation. */
-	USER = 4									 /*!< \brief Non-dimensional simulation. */
+	USER = 4									 /*!< \brief User specified reference values for conversion to non-dimensional. */
 };
 static const map<string, ENUM_KIND_NONDIM> NonDim_Map = CCreateMap<string, ENUM_KIND_NONDIM>
 ("DIMENSIONAL", DIMENSIONAL)
