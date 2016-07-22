@@ -235,6 +235,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Debug mode */
   addBoolOption("DEBUG_MODE",DebugMode, false);
+  /* DESCRIPTION: Debug mode for the LookUpTable fluid model, i.e. enable printing of errors*/
   addBoolOption("LUT_DEBUG_MODE", LUT_Debug_Mode, true);
   
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
@@ -287,7 +288,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Critical Density, default value for MDM */
   addDoubleOption("ACENTRIC_FACTOR", Acentric_Factor, 0.035);
 
-  /* DESCRIPTION: Look Up Table filename */
+  /* DESCRIPTION: Look Up Table filename, used by both fluid and transport models.*/
   addStringOption("LUT_FILENAME", LUT_FileName, string("LUT"));
    /*--- Options related to Viscosity Model ---*/
   /*!\brief VISCOSITY_MODEL \n DESCRIPTION: model of the viscosity \n OPTIONS: See \link ViscosityModel_Map \endlink \n DEFAULT: SUTHERLAND \ingroup Config*/
@@ -394,11 +395,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("REF_VELOCITY", Velocity_Ref, -1.0);
 	/* !\brief REF_VISCOSITY  \n DESCRIPTION: Reference viscosity (incompressible only)  \ingroup Config*/
   addDoubleOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
-  /* !\brief REF_VISCOSITY  \n DESCRIPTION: Reference viscosity (incompressible only)  \ingroup Config*/
+  /* !\brief REF_VISCOSITY  \n DESCRIPTION: User specified reference pressure value  \ingroup Config*/
   addDoubleOption("REF_PRESSURE", CfgPressure_Ref, 1.0);
-  /* !\brief REF_VISCOSITY  \n DESCRIPTION: Reference viscosity (incompressible only)  \ingroup Config*/
+  /* !\brief REF_VISCOSITY  \n DESCRIPTION: User specified reference density value  \ingroup Config*/
   addDoubleOption("REF_DENSITY", CfgDensity_Ref, 1.0);
-  /* !\brief REF_VISCOSITY  \n DESCRIPTION: Reference viscosity (incompressible only)  \ingroup Config*/
+  /* !\brief REF_VISCOSITY  \n DESCRIPTION: User specified reference viscosity value  \ingroup Config*/
   addDoubleOption("REF_TEMPERATURE", CfgTemperature_Ref, 1.0);
 
   /* DESCRIPTION: Type of mesh motion */
