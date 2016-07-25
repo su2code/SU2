@@ -107,17 +107,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-<<<<<<< HEAD
-      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
-  bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool adjoint = config->GetContinuous_Adjoint();
-=======
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
->>>>>>> develop
   string filename = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
@@ -15717,11 +15710,6 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
         WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
-<<<<<<< HEAD
-
-        
-=======
->>>>>>> develop
         
         /*--- Compute y+ and non-dimensional velocity ---*/
 
