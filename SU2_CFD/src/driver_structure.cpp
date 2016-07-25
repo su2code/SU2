@@ -2066,6 +2066,9 @@ void CSpectralDriver::SetSpectralMethod(CGeometry ***geometry_container, CSolver
   
   /*--- Compute period of oscillation ---*/
   su2double period = config_container[ZONE_0]->GetSpectralMethod_Period();
+
+  /*--- Non-dimensionalize the input period, if necessary.	*/
+  period /= config_container[ZONE_0]->GetTime_Ref();
   
   /*--- allocate dynamic memory for D ---*/
   su2double **D = new su2double*[nZone];
@@ -2073,13 +2076,23 @@ void CSpectralDriver::SetSpectralMethod(CGeometry ***geometry_container, CSolver
     D[kZone] = new su2double[nZone];
   }
   
-  /*--- Build the time-spectral operator matrix ---*/
   if (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL) {
+
+  /*--- Build the Time Spectral operator matrix ---*/
     ComputeTimeSpectral_Operator(D, period, nZone);
   }
   if (config_container[ZONE_0]->GetSpectralMethod_Type() == HARMONIC_BALANCE) {
-    su2double *Omega_HB = config_container[ZONE_0]->GetOmega_HB();
-    ComputeHarmonicBalance_Operator(D, Omega_HB, period, nZone);
+  	su2double *Omega_HB = new su2double[nZone];
+  	for (jZone = 0; jZone < nZone; jZone++){
+  		Omega_HB[jZone]  = config_container[jZone]->GetOmega_HB()[jZone];
+
+  		/*--- Non-dimensionalize the input Omega Harmonic Balance, if necessary.	*/
+  		Omega_HB[jZone] /= config_container[jZone]->GetOmega_Ref();
+  	}
+
+  	/*--- Build the Harmonic Balance operator matrix ---*/
+  	ComputeHarmonicBalance_Operator(D, Omega_HB, period, nZone);
+  	delete [] Omega_HB;
   }
     
   /*--- Compute various source terms for explicit direct, implicit direct, and adjoint problems ---*/
@@ -2171,6 +2184,7 @@ void CSpectralDriver::SetSpectralMethod(CGeometry ***geometry_container, CSolver
   for (kZone = 0; kZone < nZone; kZone++) {
     delete [] D[kZone];
   }
+
   delete [] D;
   delete [] U;
   delete [] U_old;
@@ -2498,7 +2512,6 @@ void CSpectralDriver::ComputeHarmonicBalance_Operator(su2double **D, su2double *
     delete [] Einv_Re;
     delete [] Einv_Im;
     delete [] D_diag;
-    
 }
 
 void CSpectralDriver::SetTimeSpectral_Velocities(CGeometry ***geometry_container,
