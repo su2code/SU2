@@ -2135,14 +2135,28 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   /*-- Setting Spectral method period from the config file */
-    
-    if (Unsteady_Simulation == SPECTRAL_METHOD) {
-        SpectralMethod_Period = GetSpectralMethod_Period();
-        if (SpectralMethod_Period < 0)  {
-            cout << "Not a valid value for time period!!" << endl;
-            exit(EXIT_FAILURE);
-        }
-    }
+
+  if (Unsteady_Simulation == SPECTRAL_METHOD) {
+  	SpectralMethod_Period = GetSpectralMethod_Period();
+  	if (SpectralMethod_Period < 0)  {
+  		cout << "Not a valid value for time period!!" << endl;
+  		exit(EXIT_FAILURE);
+  	}
+  	/* Initialize the Harmonic balance Frequency pointer */
+  	if (SpectralMethod_Type == HARMONIC_BALANCE)
+  	{
+  		if (Omega_HB == NULL) {
+  			Omega_HB = new double[nOmega_HB];
+  			for (iZone = 0; iZone < nOmega_HB; iZone++ )
+  				Omega_HB[iZone] = 0.0;
+  		}else {
+  			if (nOmega_HB != nTimeInstances) {
+  				cout << "Length of omega_HB  must match the number TIME_INSTANCES!!" << endl;
+  				exit(EXIT_FAILURE);
+  			}
+  		}
+  	}
+  }
     
     /*--- Use the various rigid-motion input frequencies to determine the period to be used with time-spectral cases.
      There are THREE types of motion to consider, namely: rotation, pitching, and plunging.
@@ -2197,20 +2211,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }*/
   
-  /* Initialize the Harmonic balance Frequency pointer */
-  if (SpectralMethod_Type == HARMONIC_BALANCE)
-  {
-      if (Omega_HB == NULL) {
-          Omega_HB = new double[nOmega_HB];
-          for (iZone = 0; iZone < nOmega_HB; iZone++ )
-              Omega_HB[iZone] = 0.0;
-      }else {
-          if (nOmega_HB != nTimeInstances) {
-              cout << "Length of omega_HB  must match the number TIME_INSTANCES!!" << endl;
-              exit(EXIT_FAILURE);
-          }
-      }
-  }
+
   
     
   /*--- Initialize the RefOriginMoment Pointer ---*/
@@ -4603,8 +4604,7 @@ CConfig::~CConfig(void) {
 
   /*--- Free memory for Harmonic Blance Frequency  pointer ---*/
     
-  if (Omega_HB != NULL)
-    delete [] Omega_HB;
+  if (Omega_HB != NULL) delete [] Omega_HB;
     
   /*--- Marker pointers ---*/
   
