@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -107,10 +107,17 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+<<<<<<< HEAD
       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
   bool adjoint = config->GetContinuous_Adjoint();
+=======
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+	bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
+  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+>>>>>>> develop
   string filename = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
@@ -14130,6 +14137,31 @@ void CEulerSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config)
 
 }
 
+void CEulerSolver::SetFreeStream_Solution(CConfig *config){
+
+  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  unsigned long iPoint;
+  unsigned short iDim;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    if (compressible){
+      node[iPoint]->SetSolution(0, Density_Inf);
+      for (iDim = 0; iDim < nDim; iDim++){
+        node[iPoint]->SetSolution(iDim+1, Density_Inf*Velocity_Inf[iDim]);
+      }
+      node[iPoint]->SetSolution(nVar-1, Density_Inf*Energy_Inf);
+    }
+    if (incompressible){
+      node[iPoint]->SetSolution(0, Pressure_Inf);
+      for (iDim = 0; iDim < nDim; iDim++){
+        node[iPoint]->SetSolution(iDim+1, Density_Inf*Velocity_Inf[iDim]);
+      }
+    }
+  }
+}
+
 CNSSolver::CNSSolver(void) : CEulerSolver() {
 
   /*--- Basic array initialization ---*/
@@ -14169,7 +14201,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool roe_turkel = (config->GetKind_Upwind_Flow() == TURKEL);
-  bool adjoint = config->GetContinuous_Adjoint();
+  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
@@ -14389,11 +14421,11 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Skin friction in all the markers ---*/
   CSkinFriction = new su2double** [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CSkinFriction[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      CSkinFriction[iMarker][iVertex] = new su2double [nDim];
-      for (iDim = 0; iDim < nDim; iDim++) {
-        CSkinFriction[iMarker][iVertex][iDim] = 0.0;
+    CSkinFriction[iMarker] = new su2double*[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      CSkinFriction[iMarker][iDim] = new su2double[geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        CSkinFriction[iMarker][iDim][iVertex] = 0.0;
       }
     }
   }
@@ -15059,8 +15091,9 @@ CNSSolver::~CNSSolver(void) {
       for (iDim = 0; iDim < nDim; iDim++) {
         delete CSkinFriction[iMarker][iDim];
       }
-      delete [] CSkinFriction;
+      delete CSkinFriction[iMarker];
     }
+    delete [] CSkinFriction;
   }
 
 }
@@ -15677,15 +15710,18 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         WallShearStress = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-          CSkinFriction[iMarker][iVertex][iDim] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
-          WallShearStress += CSkinFriction[iMarker][iVertex][iDim]*CSkinFriction[iMarker][iVertex][iDim];
+          CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
+          WallShearStress += TauTangent[iDim] * TauTangent[iDim];
         }
         WallShearStress = sqrt(WallShearStress);
 
         for (iDim = 0; iDim < nDim; iDim++) WallDist[iDim] = (Coord[iDim] - Coord_Normal[iDim]);
         WallDistMod = 0.0; for (iDim = 0; iDim < nDim; iDim++) WallDistMod += WallDist[iDim]*WallDist[iDim]; WallDistMod = sqrt(WallDistMod);
+<<<<<<< HEAD
 
         
+=======
+>>>>>>> develop
         
         /*--- Compute y+ and non-dimensional velocity ---*/
 

@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1198,7 +1198,7 @@ su2double CVolumetricMovement::GetTetra_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   return Volume;
   
@@ -1225,7 +1225,7 @@ su2double CVolumetricMovement::GetPyram_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[2];
@@ -1242,7 +1242,7 @@ su2double CVolumetricMovement::GetPyram_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   return Volume;
 
@@ -1269,7 +1269,7 @@ su2double CVolumetricMovement::GetPrism_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
     
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[5];
@@ -1286,7 +1286,7 @@ su2double CVolumetricMovement::GetPrism_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[5];
@@ -1303,7 +1303,7 @@ su2double CVolumetricMovement::GetPrism_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   return Volume;
 
@@ -1330,7 +1330,7 @@ su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume = (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume = fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[2];
@@ -1347,7 +1347,7 @@ su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[2];
@@ -1364,7 +1364,7 @@ su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[0];
   Coord_1 = CoordCorners[5];
@@ -1381,7 +1381,7 @@ su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   Coord_0 = CoordCorners[2];
   Coord_1 = CoordCorners[7];
@@ -1398,7 +1398,7 @@ su2double CVolumetricMovement::GetHexa_Volume(su2double CoordCorners[8][3]) {
 	CrossProduct[1] = (r1[2]*r2[0] - r1[0]*r2[2])*r3[1];
 	CrossProduct[2] = (r1[0]*r2[1] - r1[1]*r2[0])*r3[2];
   
-  Volume += (CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
+  Volume += fabs(CrossProduct[0] + CrossProduct[1] + CrossProduct[2])/6.0;
   
   return Volume;
 
@@ -2816,6 +2816,17 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         
       }
       
+      /* --- Check if the FFD boxes referenced in the design variable definition can be found --- */
+
+      for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+        if (!CheckFFDBoxDefinition(config, iDV)){
+         cout << endl << "There is no FFD box with tag \"" << config->GetFFDTag(iDV)
+              << "\" defined in the mesh file." << endl;
+         cout << "Check the definition of the design variables and/or the FFD settings !!" << endl;
+         exit(EXIT_FAILURE);
+        }
+      }
+
       /*--- Output original FFD FFDBox ---*/
       
       if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
