@@ -2436,7 +2436,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     Density_Ref  = Density_FreeStream;                        config->SetDensity_Ref(Density_Ref);
     Velocity_Ref = ModVel_FreeStream;                         config->SetVelocity_Ref(Velocity_Ref);
     Pressure_Ref = Density_Ref*(Velocity_Ref*Velocity_Ref);   config->SetPressure_Ref(Pressure_Ref);
-    
+    Energy_Ref        = Velocity_Ref*Velocity_Ref;            config->SetEnergy_Ref(Energy_Ref);
+
     if (viscous) {
       Viscosity_FreeStream = config->GetViscosity_FreeStream();
       Reynolds = Density_Ref*Velocity_Ref*Length_Ref / Viscosity_FreeStream; config->SetReynolds(Reynolds);
