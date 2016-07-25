@@ -139,51 +139,8 @@ int main(int argc, char *argv[]) {
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
   
-<<<<<<< HEAD
   for (iZone = 0; iZone < nZone; iZone++){
-=======
-	if (rank == MASTER_NODE)
-		cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
-	
-  /*--- Compute elements surrounding points, points surrounding points ---*/
   
-  if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
-  geometry_container[ZONE_0]->SetPoint_Connectivity();
-  
-  /*--- Check the orientation before computing geometrical quantities ---*/
-  
-  if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." <<endl;
-  geometry_container[ZONE_0]->SetBoundVolume();
-  geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
-  geometry_container[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
-  
-  /*--- Create the edge structure ---*/
-  
-  if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
-  geometry_container[ZONE_0]->SetEdges(); geometry_container[ZONE_0]->SetVertex(config_container[ZONE_0]);
-  
-  /*--- Compute center of gravity ---*/
-  
-  if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-  geometry_container[ZONE_0]->SetCoord_CG();
-  
-  /*--- Create the dual control volume structures ---*/
-  
-  if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
-  geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
-  
-  /*--- Load the surface sensitivities from file. This is done only
-   once: if this is an unsteady problem, a time-average of the surface
-   sensitivities at each node is taken within this routine. ---*/
-  if (!config_container[ZONE_0]->GetDiscrete_Adjoint()){
-    if (rank == MASTER_NODE) cout << "Reading surface sensitivities at each node from file." << endl;
-    geometry_container[ZONE_0]->SetBoundSensitivity(config_container[ZONE_0]);
-  } else {
-    if (rank == MASTER_NODE) cout << "Reading volume sensitivities at each node from file." << endl;
-    mesh_movement = new CVolumetricMovement(geometry_container[ZONE_0], config_container[ZONE_0]);
-    geometry_container[ZONE_0]->SetSensitivity(config_container[ZONE_0]);
->>>>>>> develop
-
     if (rank == MASTER_NODE)
       cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 
