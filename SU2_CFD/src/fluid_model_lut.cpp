@@ -1119,25 +1119,47 @@ void CLookUpTable::Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x,
 	}
 
 	//Setup the LHM matrix for the interpolation (Vandermonde)
-	Interpolation_Matrix[0][0] = 1;
-	Interpolation_Matrix[0][1] = 0;
-	Interpolation_Matrix[0][2] = 0;
-	Interpolation_Matrix[0][3] = 0;
+//	Interpolation_Matrix[0][0] = 1;
+//	Interpolation_Matrix[0][1] = 0;
+//	Interpolation_Matrix[0][2] = 0;
+//	Interpolation_Matrix[0][3] = 0;
+//
+//	Interpolation_Matrix[1][0] = 1;
+//	Interpolation_Matrix[1][1] = (x10 - x00);
+//	Interpolation_Matrix[1][2] = (y10 - y00);
+//	Interpolation_Matrix[1][3] = (x10 - x00) * (y10 - y00);
+//
+//	Interpolation_Matrix[2][0] = 1;
+//	Interpolation_Matrix[2][1] = x01 - x00;
+//	Interpolation_Matrix[2][2] = y01 - y00;
+//	Interpolation_Matrix[2][3] = (x01 - x00) * (y01 - y00);
+//
+//	Interpolation_Matrix[3][0] = 1;
+//	Interpolation_Matrix[3][1] = x11 - x00;
+//	Interpolation_Matrix[3][2] = y11 - y00;
+//	Interpolation_Matrix[3][3] = (x11 - x00) * (y11 - y00);
+//
+//	Interpolation_Matrix[0][0] = 1;
+//	Interpolation_Matrix[0][1] = 0;
+//	Interpolation_Matrix[0][2] = 0;
+//	Interpolation_Matrix[0][3] = 0;
 
+//Normalization
 	Interpolation_Matrix[1][0] = 1;
-	Interpolation_Matrix[1][1] = x10 - x00;
-	Interpolation_Matrix[1][2] = y10 - y00;
-	Interpolation_Matrix[1][3] = (x10 - x00) * (y10 - y00);
+	Interpolation_Matrix[1][1] = 1;
+	Interpolation_Matrix[1][2] = (y10 - y00)/(y01 - y00);
+	Interpolation_Matrix[1][3] = (y10 - y00)/(y01 - y00);
 
 	Interpolation_Matrix[2][0] = 1;
-	Interpolation_Matrix[2][1] = x01 - x00;
-	Interpolation_Matrix[2][2] = y01 - y00;
-	Interpolation_Matrix[2][3] = (x01 - x00) * (y01 - y00);
+	Interpolation_Matrix[2][1] = (x01 - x00)/(x10 - x00);
+	Interpolation_Matrix[2][2] = 1;
+	Interpolation_Matrix[2][3] = (x01 - x00)/(x10 - x00);
 
 	Interpolation_Matrix[3][0] = 1;
-	Interpolation_Matrix[3][1] = x11 - x00;
-	Interpolation_Matrix[3][2] = y11 - y00;
-	Interpolation_Matrix[3][3] = (x11 - x00) * (y11 - y00);
+	Interpolation_Matrix[3][1] = (x11 - x00)/(x10 - x00);
+	Interpolation_Matrix[3][2] = (y11 - y00)/(y01 - y00);
+	Interpolation_Matrix[3][3] = (x11 - x00)/(x10 - x00) * (y11 - y00)/(y01 - y00);
+
 
 	//Invert the Interpolation matrix using Gaussian elimination with pivoting
 	Gaussian_Inverse(4);
@@ -1156,9 +1178,9 @@ void CLookUpTable::Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x,
 	for (int i = 0; i < 4; i++) {
 		d = 0;
 		d = d + Interpolation_Coeff[i][0] * 1;
-		d = d + Interpolation_Coeff[i][1] * (x - x00);
-		d = d + Interpolation_Coeff[i][2] * (y - y00);
-		d = d + Interpolation_Coeff[i][3] * (x - x00) * (y - y00);
+		d = d + Interpolation_Coeff[i][1] * (x - x00)/(x10 - x00);
+		d = d + Interpolation_Coeff[i][2] * (y - y00)/(y01 - y00);
+		d = d + Interpolation_Coeff[i][3] * (x - x00)/(x10 - x00) * (y - y00)/(y01 - y00);
 		Interpolation_Coeff[i][0] = d;
 	}
 
