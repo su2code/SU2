@@ -1729,13 +1729,13 @@ void CDriver::Interface_Preprocessing(CTransfer ***transfer_container, CInterpol
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
+/*
 if (config_container[ZONE_0]->GetFSI_Simulation() && nZone != 2){
 		cout << "Error, cannot run the FSI solver on more than 2 zones!" << endl;exit(EXIT_FAILURE);
 
-		/* --- Not sure about this, it also may work --- */
+		/// Not sure about this, it also may work 
 }
-
+*/
 
 /*--- Coupling between zones ---*/
 // Limit: the interface boundary must connect only 2 zones
