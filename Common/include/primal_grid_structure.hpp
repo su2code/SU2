@@ -254,6 +254,18 @@ public:
 	 * \return Local index of the nodes that are neighbor to <i>val_node</i>.
 	 */
 	virtual unsigned short GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) = 0;
+
+  /*!
+   * \brief A pure virtual member.
+   * \return Global index of the element.
+   */
+  virtual unsigned long GetGlobalIndex(void);
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_index - Global index of an element.
+   */
+  virtual void SetGlobalIndex(unsigned long val_index);
 };
 
 /*!
@@ -517,6 +529,7 @@ private:
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of Neighbor_Elements. */
+  unsigned long GlobalIndex;         /*!< \brief Global index of the element. */
   
 public:
 	
@@ -626,6 +639,18 @@ public:
 	 * \return Domain element which shares a face with the boundary element.
 	 */
 	unsigned long GetDomainElement(void);
+
+  /*!
+   * \brief A pure virtual member.
+   * \return Global index of the element.
+   */
+  unsigned long GetGlobalIndex(void);
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_index - Global index of an element.
+   */
+  void SetGlobalIndex(unsigned long val_index);
 };
 
 /*!
@@ -645,6 +670,7 @@ private:
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of neighbor elements. */
+  unsigned long GlobalIndex;         /*!< \brief Global index of the element. */
   
 public:
   
@@ -754,6 +780,18 @@ public:
 	 * \return Domain element which shares a face with the boundary element.
 	 */
 	unsigned long GetDomainElement(void);
+
+  /*!
+   * \brief A pure virtual member.
+   * \return Global index of the element.
+   */
+  unsigned long GetGlobalIndex(void);
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_index - Global index of an element.
+   */
+  void SetGlobalIndex(unsigned long val_index);
 };
 
 /*!
@@ -773,7 +811,7 @@ private:
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of neighbor elements. */
-	
+	unsigned long GlobalIndex;         /*!< \brief Global index of the element. */
 public:
   
 	/*!
@@ -869,6 +907,18 @@ public:
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
+
+  /*!
+   * \brief A pure virtual member.
+   * \return Global index of the element.
+   */
+  unsigned long GetGlobalIndex(void);
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_index - Global index of an element.
+   */
+  void SetGlobalIndex(unsigned long val_index);
 };
 
 /*!
@@ -888,7 +938,7 @@ private:
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of neighbor elements. */
-  
+	unsigned long GlobalIndex;         /*!< \brief Global index of the element. */
 public:
 	
 	/*!
@@ -991,6 +1041,18 @@ public:
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
+
+  /*!
+   * \brief A pure virtual member.
+   * \return Global index of the element.
+   */
+  unsigned long GetGlobalIndex(void);
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_index - Global index of an element.
+   */
+  void SetGlobalIndex(unsigned long val_index);
 };
 
 /*!
@@ -1010,7 +1072,7 @@ private:
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of neighbor elements. */
-	
+	unsigned long GlobalIndex;         /*!< \brief Global index of the element. */
 public:
 	
 	/*!
@@ -1109,6 +1171,18 @@ public:
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
+
+  /*!
+   * \brief A pure virtual member.
+   * \return Global index of the element.
+   */
+  unsigned long GetGlobalIndex(void);
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_index - Global index of an element.
+   */
+  void SetGlobalIndex(unsigned long val_index);
 };
 
 /*!
@@ -1128,7 +1202,7 @@ private:
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of neighbor elements. */
-	
+	unsigned long GlobalIndex;         /*!< \brief Global index of the element. */
 public:
 	
 	/*!
@@ -1226,6 +1300,18 @@ public:
 	 * \brief Change the orientation of an element.
 	 */
 	void Change_Orientation(void);
+
+  /*!
+   * \brief A pure virtual member.
+   * \return Global index of the element.
+   */
+  unsigned long GetGlobalIndex(void);
+
+  /*!
+   * \brief A pure virtual member.
+   * \param[in] val_index - Global index of an element.
+   */
+  void SetGlobalIndex(unsigned long val_index);
 };
 
 #include "primal_grid_structure.inl"

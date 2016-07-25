@@ -59,6 +59,10 @@ inline bool CPrimalGrid::GetDivide (void) { return Divide; }
 
 inline void CPrimalGrid::SetNode(unsigned short val_node, unsigned long val_point) { }
 
+inline unsigned long CPrimalGrid::GetGlobalIndex(void) { return 0;}
+
+inline void CPrimalGrid::SetGlobalIndex(unsigned long val_index) { }
+
 inline unsigned short CVertexMPI::GetnNodes(void) { return nNodes; }
 
 inline unsigned long CVertexMPI::GetNode(unsigned short val_node) { return Nodes[val_node]; }
@@ -137,6 +141,10 @@ inline void CTriangle::SetDomainElement(unsigned long val_domainelement) { Domai
 
 inline unsigned long CTriangle::GetDomainElement(void) { return DomainElement; }
 
+inline unsigned long CTriangle::GetGlobalIndex(void) { return GlobalIndex;}
+
+inline void CTriangle::SetGlobalIndex(unsigned long val_index) { GlobalIndex = val_index; }
+
 inline unsigned short CQuadrilateral::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
 
 inline unsigned short CQuadrilateral::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return Neighbor_Nodes[val_node][val_index]; }
@@ -163,6 +171,10 @@ inline void CQuadrilateral::SetDomainElement(unsigned long val_domainelement) {	
 
 inline unsigned long CQuadrilateral::GetDomainElement(void) { return DomainElement; }
 
+inline unsigned long CQuadrilateral::GetGlobalIndex(void) { return GlobalIndex;}
+
+inline void CQuadrilateral::SetGlobalIndex(unsigned long val_index) { GlobalIndex = val_index; }
+
 inline unsigned short CTetrahedron::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
 
 inline unsigned short CTetrahedron::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return Neighbor_Nodes[val_node][val_index]; }
@@ -184,6 +196,10 @@ inline unsigned short CTetrahedron::GetVTK_Type(void) { return VTK_Type; }
 inline unsigned short CTetrahedron::GetMaxNodesFace(void) { return maxNodesFace; }
 
 inline unsigned short CTetrahedron::GetnNeighbor_Elements(void) { return nNeighbor_Elements; }
+
+inline unsigned long CTetrahedron::GetGlobalIndex(void) { return GlobalIndex;}
+
+inline void CTetrahedron::SetGlobalIndex(unsigned long val_index) { GlobalIndex = val_index; }
 
 inline unsigned short CHexahedron::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
 
@@ -207,6 +223,10 @@ inline unsigned short CHexahedron::GetMaxNodesFace(void) { return maxNodesFace; 
 
 inline unsigned short CHexahedron::GetnNeighbor_Elements(void) { return nNeighbor_Elements; }
 
+inline unsigned long CHexahedron::GetGlobalIndex(void) { return GlobalIndex;}
+
+inline void CHexahedron::SetGlobalIndex(unsigned long val_index) { GlobalIndex = val_index; }
+
 inline unsigned short CPrism::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
 
 inline unsigned short CPrism::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return Neighbor_Nodes[val_node][val_index]; }
@@ -229,6 +249,10 @@ inline unsigned short CPrism::GetMaxNodesFace(void) { return maxNodesFace; }
 
 inline unsigned short CPrism::GetnNeighbor_Elements(void) { return nNeighbor_Elements; }
 
+inline unsigned long CPrism::GetGlobalIndex(void) { return GlobalIndex;}
+
+inline void CPrism::SetGlobalIndex(unsigned long val_index) { GlobalIndex = val_index; }
+
 inline unsigned short CPyramid::GetFaces(unsigned short val_face, unsigned short val_index) { return Faces[val_face][val_index]; }
 
 inline unsigned short CPyramid::GetNeighbor_Nodes(unsigned short val_node, unsigned short val_index) { return Neighbor_Nodes[val_node][val_index]; }
@@ -250,3 +274,7 @@ inline unsigned short CPyramid::GetVTK_Type(void) { return VTK_Type; }
 inline unsigned short CPyramid::GetMaxNodesFace(void) { return maxNodesFace; }
 
 inline unsigned short CPyramid::GetnNeighbor_Elements(void) { return nNeighbor_Elements; }
+
+inline unsigned long CPyramid::GetGlobalIndex(void) { return GlobalIndex;}
+
+inline void CPyramid::SetGlobalIndex(unsigned long val_index) { GlobalIndex = val_index; }

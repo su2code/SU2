@@ -5474,6 +5474,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               elem[local_element_count] = new CTriangle(vnodes_triangle[0],
                                                         vnodes_triangle[1],
                                                         vnodes_triangle[2], 2);
+              elem_line >> GlobalIndex;
+              elem[local_element_count]->SetGlobalIndex(GlobalIndex);
+
               local_element_count++;
               nelem_triangle++;
               break;
@@ -5495,6 +5498,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                                                              vnodes_quad[1],
                                                              vnodes_quad[2],
                                                              vnodes_quad[3], 2);
+              elem_line >> GlobalIndex;
+              elem[local_element_count]->SetGlobalIndex(GlobalIndex);
+
               local_element_count++;
               nelem_quad++;
               break;
@@ -5516,6 +5522,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                                                            vnodes_tetra[1],
                                                            vnodes_tetra[2],
                                                            vnodes_tetra[3]);
+              elem_line >> GlobalIndex;
+              elem[local_element_count]->SetGlobalIndex(GlobalIndex);
+
               local_element_count++;
               nelem_tetra++;
               break;
@@ -5545,6 +5554,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                                                           vnodes_hexa[5],
                                                           vnodes_hexa[6],
                                                           vnodes_hexa[7]);
+              elem_line >> GlobalIndex;
+              elem[local_element_count]->SetGlobalIndex(GlobalIndex);
+
               local_element_count++;
               nelem_hexa++;
               break;
@@ -5570,6 +5582,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                                                      vnodes_prism[3],
                                                      vnodes_prism[4],
                                                      vnodes_prism[5]);
+              elem_line >> GlobalIndex;
+              elem[local_element_count]->SetGlobalIndex(GlobalIndex);
+
               local_element_count++;
               nelem_prism++;
               break;
@@ -5593,6 +5608,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                                                        vnodes_pyramid[2],
                                                        vnodes_pyramid[3],
                                                        vnodes_pyramid[4]);
+              elem_line >> GlobalIndex;
+              elem[local_element_count]->SetGlobalIndex(GlobalIndex);
+
               local_element_count++;
               nelem_pyramid++;
               break;
