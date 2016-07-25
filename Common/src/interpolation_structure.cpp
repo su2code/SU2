@@ -258,6 +258,24 @@ void CInterpolator::Collect_VertexInfo(bool faces, int markDonor, int markTarget
 #endif
 }
 
+int CInterpolator::Find_InterfaceMarker(CConfig *config, unsigned short val_marker_interface){
+	
+	unsigned short nMarker = config->GetnMarker_All();
+	unsigned short iMarker;
+	
+	for (iMarker = 0; iMarker < nMarker; iMarker++){
+		
+		  /*--- If the tag GetMarker_All_FSIinterface(iMarker) equals the index we are looping at ---*/
+		  if (config->GetMarker_All_FSIinterface(iMarker) == val_marker_interface ){
+			  
+			  /*--- We have identified the identifier for the interface marker ---*/
+			  return iMarker;
+		  }
+	}
+	
+	return -1;
+}
+
 
 /* Nearest Neighbor Interpolator */
 CNearestNeighbor::CNearestNeighbor(void):  CInterpolator(){ }
@@ -314,43 +332,15 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
   // For the markers on the interface
   for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
 
-	  markDonor = -1;
-	  markTarget = -1;
 
-	  /*--- On the donor side ---*/
+	nVertexDonor = 0;
+	nVertexTarget= 0;
 
-	  for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
-		  /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
-		  if (config[donorZone]->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ){
-			  /*--- We have identified the identifier for the structural marker ---*/
-			  markDonor = iMarkerDonor;
-			  /*--- Store the number of local points that belong to markDonor ---*/
-			  nVertexDonor = donor_geometry->GetnVertex(iMarkerDonor);
-			  break;
-		  }
-		  else {
-			  /*--- If the tag hasn't matched any tag within the donor markers ---*/
-			  markDonor = -1;
-			  nVertexDonor = 0;
-		  }
-	  }
-
-	  /*--- On the target side ---*/
-	  for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
-		  /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-		  if (config[targetZone]->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ){
-			  /*--- We have identified the identifier for the target marker ---*/
-			  markTarget = iMarkerTarget;
-			  /*--- Store the number of local points that belong to markTarget ---*/
-			  nVertexTarget = target_geometry->GetnVertex(iMarkerTarget);
-			  break;
-		  }
-		  else {
-			  /*--- If the tag hasn't matched any tag within the Flow markers ---*/
-			  nVertexTarget = 0;
-			  markTarget = -1;
-		  }
-	  }
+	/*--- On the donor side ---*/
+	markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
+	  
+	/*--- On the target side ---*/
+	markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
 
 	#ifdef HAVE_MPI
 
@@ -401,23 +391,25 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 	Target_check = markTarget;	
 	#endif
 	
-	if(Target_check == -1 || Donor_check == -1){
+	if(Target_check == -1 || Donor_check == -1)
 		continue;
-	}
 	
-	Buffer_Send_nVertex_Donor = new unsigned long [1];
+	nVertexDonor  =  donor_geometry->GetnVertex(markDonor);
+	nVertexTarget = target_geometry->GetnVertex(markTarget);
+	
+	Buffer_Send_nVertex_Donor    = new unsigned long [1];
     Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
 
-	  /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
-	  Determine_ArraySize(false, markDonor, markTarget, nVertexDonor, nDim);
+	/* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
+	Determine_ArraySize(false, markDonor, markTarget, nVertexDonor, nDim);
 
-    Buffer_Send_Coord = new su2double [MaxLocalVertex_Donor*nDim];
+    Buffer_Send_Coord       = new su2double [MaxLocalVertex_Donor*nDim];
     Buffer_Send_GlobalPoint = new unsigned long [MaxLocalVertex_Donor];
 
-    Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_Donor*nDim];
+    Buffer_Receive_Coord       = new su2double [nProcessor*MaxLocalVertex_Donor*nDim];
     Buffer_Receive_GlobalPoint = new unsigned long [nProcessor*MaxLocalVertex_Donor];
 
-	  /*-- Colllect coordinates, global points, and normal vectors ---*/
+	  /*-- Collect coordinates, global points, and normal vectors ---*/
 	  Collect_VertexInfo(false, markDonor, markTarget, nVertexDonor, nDim);
 	  
 		
@@ -427,7 +419,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 
 		  Point_Target = target_geometry->vertex[markTarget][iVertexTarget]->GetNode();
 
-		  if (target_geometry->node[Point_Target]->GetDomain()) {
+		  if ( target_geometry->node[Point_Target]->GetDomain() ) {
 
 			  target_geometry->vertex[markTarget][iVertexTarget]->SetnDonorPoints(1);
 			  target_geometry->vertex[markTarget][iVertexTarget]->Allocate_DonorInfo();
@@ -444,7 +436,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config){
 					  /*--- Compute the dist ---*/
 					  dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
 						  Coord_j[iDim] = Buffer_Receive_Coord[ Global_Point_Donor*nDim+iDim];
-						  dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
+						  dist += pow(Coord_j[iDim] - Coord_i[iDim],2.0);
 					  }
 
 					  if (dist < mindist) {
@@ -553,43 +545,15 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
      * -Find nearest element and allocate enough space in the aero grid donor point info
      *    -set the transfer coefficient values
      */
-    nVertexDonor = 0;
-    nVertexTarget = 0;
-    markDonor = -1;
-    markTarget = -1;
 
-    /*--- ... the marker markDonor ... ---*/
-    for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
-      if (config[donorZone]->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ){
-        /*--- We have identified the identifier for the structural marker ---*/
-        markDonor = iMarkerDonor;
-        /*--- Store the number of local points that belong to markDonor ---*/
-        nVertexDonor = donor_geometry->GetnVertex(iMarkerDonor);
-        break;
-      }
-      else {
-        /*--- If the tag hasn't matched any tag within the donor markers ---*/
-        markDonor = -1;
-        nVertexDonor = 0;
-      }
-    }
+	nVertexDonor = 0;
+	nVertexTarget= 0;
 
-    /*--- On the target side ---*/
-    for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-      if (config[targetZone]->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ){
-        /*--- We have identified the identifier for the target marker ---*/
-        markTarget = iMarkerTarget;
-        nVertexTarget = target_geometry->GetnVertex(iMarkerTarget);
-        break;
-      }
-      else {
-        /*--- If the tag hasn't matched any tag within the Flow markers ---*/
-        markTarget = -1;
-        nVertexTarget = 0;
-      }
-    }
+	/*--- On the donor side ---*/
+	markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
+	  
+	/*--- On the target side ---*/
+	markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
     
 	#ifdef HAVE_MPI
 
@@ -640,54 +604,56 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config){
 	Target_check = markTarget;	
 	#endif
 	
-	if(Target_check == -1 || Donor_check == -1){
+	if(Target_check == -1 || Donor_check == -1)
 		continue;
-	}
+	
+	nVertexDonor  =  donor_geometry->GetnVertex(markDonor);
+	nVertexTarget = target_geometry->GetnVertex(markTarget);
 	
 
-    Buffer_Send_nVertex_Donor = new unsigned long [1];
-    Buffer_Send_nFace_Donor= new unsigned long [1];
-    Buffer_Send_nFaceNodes_Donor= new unsigned long [1];
+    Buffer_Send_nVertex_Donor    = new unsigned long [1];
+    Buffer_Send_nFace_Donor      = new unsigned long [1];
+    Buffer_Send_nFaceNodes_Donor = new unsigned long [1];
 
-    Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
-    Buffer_Receive_nFace_Donor = new unsigned long [nProcessor];
+    Buffer_Receive_nVertex_Donor    = new unsigned long [nProcessor];
+    Buffer_Receive_nFace_Donor      = new unsigned long [nProcessor];
     Buffer_Receive_nFaceNodes_Donor = new unsigned long [nProcessor];
 
     /* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
-    Determine_ArraySize(true, markDonor,markTarget,nVertexDonor,nDim);
+    Determine_ArraySize(true, markDonor, markTarget, nVertexDonor, nDim);
 
-    Buffer_Send_Coord = new su2double [MaxLocalVertex_Donor*nDim];
-    Buffer_Send_Normal = new su2double [MaxLocalVertex_Donor*nDim];
+    Buffer_Send_Coord       = new su2double [MaxLocalVertex_Donor*nDim];
+    Buffer_Send_Normal      = new su2double [MaxLocalVertex_Donor*nDim];
     Buffer_Send_GlobalPoint = new unsigned long [MaxLocalVertex_Donor];
 
-    Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_Donor*nDim];
-    Buffer_Receive_Normal = new su2double [nProcessor*MaxLocalVertex_Donor*nDim];
+    Buffer_Receive_Coord       = new su2double [nProcessor*MaxLocalVertex_Donor*nDim];
+    Buffer_Receive_Normal      = new su2double [nProcessor*MaxLocalVertex_Donor*nDim];
     Buffer_Receive_GlobalPoint = new unsigned long [nProcessor*MaxLocalVertex_Donor];
 
-    /*-- Colllect coordinates, global points, and normal vectors ---*/
+    /*-- Collect coordinates, global points, and normal vectors ---*/
     Collect_VertexInfo(true, markDonor,markTarget,nVertexDonor,nDim);
 
-    Buffer_Send_FaceIndex   = new unsigned long[MaxFace_Donor];
-    Buffer_Send_FaceNodes   = new unsigned long[MaxFaceNodes_Donor];
-    Buffer_Send_FaceProc    = new unsigned long[MaxFaceNodes_Donor];
+    Buffer_Send_FaceIndex    = new unsigned long[MaxFace_Donor];
+    Buffer_Send_FaceNodes    = new unsigned long[MaxFaceNodes_Donor];
+    Buffer_Send_FaceProc     = new unsigned long[MaxFaceNodes_Donor];
 
-    Buffer_Receive_FaceIndex= new unsigned long[MaxFace_Donor*nProcessor];
-    Buffer_Receive_FaceNodes= new unsigned long[MaxFaceNodes_Donor*nProcessor];
-    Buffer_Receive_FaceProc = new unsigned long[MaxFaceNodes_Donor*nProcessor];
+    Buffer_Receive_FaceIndex = new unsigned long[MaxFace_Donor*nProcessor];
+    Buffer_Receive_FaceNodes = new unsigned long[MaxFaceNodes_Donor*nProcessor];
+    Buffer_Receive_FaceProc  = new unsigned long[MaxFaceNodes_Donor*nProcessor];
 
     nLocalFace_Donor=0;
     nLocalFaceNodes_Donor=0;
 
     /*--- Collect Face info ---*/
-    for (iVertex=0; iVertex<MaxFace_Donor; iVertex++){
+    for (iVertex = 0; iVertex < MaxFace_Donor; iVertex++){
       Buffer_Send_FaceIndex[iVertex]=0;
     }
     for (iVertex=0; iVertex<MaxFaceNodes_Donor; iVertex++){
-      Buffer_Send_FaceNodes[iVertex]=0;
-      Buffer_Send_FaceProc[iVertex]=0;
+      Buffer_Send_FaceNodes[iVertex] = 0;
+      Buffer_Send_FaceProc[iVertex]  = 0;
     }
 
-    Buffer_Send_FaceIndex[0]=rank*MaxFaceNodes_Donor;
+    Buffer_Send_FaceIndex[0] = rank * MaxFaceNodes_Donor;
 
     if (nDim==2) nNodes=2;
 
@@ -1158,43 +1124,15 @@ void CMirror::Set_TransferCoeff(CConfig **config){
      * -Find nearest element and allocate enough space in the aero grid donor point info
      *    -set the transfer coefficient values
      */
-    markDonor = -1;
-    markTarget = -1;
-    nVertexDonor = 0;
-    nVertexTarget = 0;
 
-    for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerDonor) equals the index we are looping at ---*/
-      if (config[donorZone]->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ){
-        /*--- We have identified the identifier for the structural marker ---*/
-        markDonor = iMarkerDonor;
-        /*--- Store the number of local points that belong to markDonor ---*/
-        nVertexDonor = donor_geometry->GetnVertex(iMarkerDonor);
-        break;
-      }
-      else {
-        /*--- If the tag hasn't matched any tag within the donor markers ---*/
-        markDonor = -1;
-        nVertexDonor = 0;
-      }
-    }
+	nVertexDonor = 0;
+	nVertexTarget= 0;
 
-    /*--- On the target side ---*/
-    for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
-      /*--- If the tag GetMarker_All_FSIinterface(iMarkerFlow) equals the index we are looping at ---*/
-      if (config[targetZone]->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ){
-        /*--- We have identified the identifier for the target marker ---*/
-        markTarget = iMarkerTarget;
-        /*--- Store the number of local points that belong to markDonor ---*/
-        nVertexTarget = target_geometry->GetnVertex(iMarkerTarget);
-        break;
-      }
-      else {
-        /*--- If the tag hasn't matched any tag within the Flow markers ---*/
-        markTarget = -1;
-        nVertexTarget = 0;
-      }
-    }
+	/*--- On the donor side ---*/
+	markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
+	  
+	/*--- On the target side ---*/
+	markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
     
 	#ifdef HAVE_MPI
 
@@ -1245,9 +1183,11 @@ void CMirror::Set_TransferCoeff(CConfig **config){
 	Target_check = markTarget;	
 	#endif
 	
-	if(Target_check == -1 || Donor_check == -1){
-		continue;
-	}	
+	if(Target_check == -1 || Donor_check == -1)
+		continue;	
+	
+	nVertexDonor  =  donor_geometry->GetnVertex(markDonor);
+	nVertexTarget = target_geometry->GetnVertex(markTarget);
 
     /*-- Collect the number of donor nodes: re-use 'Face' containers --*/
     nLocalFace_Donor=0;
