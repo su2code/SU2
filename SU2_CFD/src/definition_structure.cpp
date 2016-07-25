@@ -238,7 +238,7 @@ void Driver_Preprocessing(CDriver **driver,
         /*--- Discrete adjoint FSI problem: instantiate the discrete adjoint FSI driver class. ---*/
 
         if (rank == MASTER_NODE) cout << "Instantiating a discrete adjoint, static Fluid-Structure Interaction driver for the problem. " << endl;
-        *driver = new CDiscAdjFSIDriver(iteration_container, solver_container, geometry_container,
+        *driver = new CDiscAdjFSIStatDriver(iteration_container, solver_container, geometry_container,
             integration_container, numerics_container, interpolator_container,
             transfer_container, config_container, val_nZone, val_nDim);
 
