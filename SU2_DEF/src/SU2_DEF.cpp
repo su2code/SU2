@@ -136,26 +136,7 @@ int main(int argc, char *argv[]) {
 #else
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
-<<<<<<< HEAD
   for (iZone = 0; iZone < nZone; iZone++) {
-=======
-  
-  /*--- Computational grid preprocesing ---*/
-  
-  if (rank == MASTER_NODE) cout << endl << "----------------------- Preprocessing computations ----------------------" << endl;
-  
-  /*--- Compute elements surrounding points, points surrounding points ---*/
-  
-  if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
-  geometry_container[ZONE_0]->SetPoint_Connectivity();
-  
-  /*--- Check the orientation before computing geometrical quantities ---*/
-  
-  if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." <<endl;
-  geometry_container[ZONE_0]->SetBoundVolume();
-  geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
-  geometry_container[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
->>>>>>> develop
 
     /*--- Computational grid preprocesing ---*/
 
@@ -169,7 +150,9 @@ int main(int argc, char *argv[]) {
     /*--- Check the orientation before computing geometrical quantities ---*/
 
     if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
+    geometry_container[iZone]->SetBoundVolume();
     geometry_container[iZone]->Check_IntElem_Orientation(config_container[iZone]);
+    geometry_container[iZone]->Check_BoundElem_Orientation(config_container[iZone]);
 
     /*--- Create the edge structure ---*/
 
