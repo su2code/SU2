@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -89,6 +89,8 @@ inline long CConfig::GetUnst_RestartIter(void) { return Unst_RestartIter; }
 
 inline long CConfig::GetUnst_AdjointIter(void) { return Unst_AdjointIter; }
 
+inline unsigned long CConfig::GetIter_Avg_Objective(void) { return Iter_Avg_Objective ; }
+
 inline long CConfig::GetDyn_RestartIter(void) { return Dyn_RestartIter; }
 
 inline string CConfig::GetPlaneTag(unsigned short index) { return PlaneTag[index]; }
@@ -137,7 +139,6 @@ inline unsigned short CConfig::GetElas2D_Formulation(void) { return Kind_2DElasF
 
 inline su2double CConfig::GetPoissonRatio(void) { return PoissonRatio; }
 
-
 inline su2double CConfig::GetMaterialDensity(void) { return MaterialDensity; }
 
 inline unsigned short CConfig::GetMaterialCompressibility(void) { return Kind_Material_Compress; }
@@ -145,6 +146,10 @@ inline unsigned short CConfig::GetMaterialCompressibility(void) { return Kind_Ma
 inline unsigned short CConfig::GetMaterialModel(void) { return Kind_Material; }
 
 inline unsigned short CConfig::GetGeometricConditions(void) { return Kind_Struct_Solver; }
+
+inline bool CConfig::GetPrestretch(void) { return Prestretch; }
+
+inline string CConfig::GetPrestretch_FEMFileName(void) { return Prestretch_FEMFileName; }
 
 inline su2double CConfig::GetRefLengthMoment(void) { return RefLengthMoment; }
 

@@ -2,7 +2,7 @@
  * \file SU2_DEF.cpp
  * \brief Main file of Mesh Deformation Code (SU2_DEF).
  * \author F. Palacios, T. Economon
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -136,7 +136,26 @@ int main(int argc, char *argv[]) {
 #else
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
+<<<<<<< HEAD
   for (iZone = 0; iZone < nZone; iZone++) {
+=======
+  
+  /*--- Computational grid preprocesing ---*/
+  
+  if (rank == MASTER_NODE) cout << endl << "----------------------- Preprocessing computations ----------------------" << endl;
+  
+  /*--- Compute elements surrounding points, points surrounding points ---*/
+  
+  if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
+  geometry_container[ZONE_0]->SetPoint_Connectivity();
+  
+  /*--- Check the orientation before computing geometrical quantities ---*/
+  
+  if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." <<endl;
+  geometry_container[ZONE_0]->SetBoundVolume();
+  geometry_container[ZONE_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
+  geometry_container[ZONE_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
+>>>>>>> develop
 
     /*--- Computational grid preprocesing ---*/
 
