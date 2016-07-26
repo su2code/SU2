@@ -1652,7 +1652,7 @@ void CLookUpTable::NonDimensionalise_Table_Values() {
 			ThermoTables_Entropy[i][j] *= (Temperature_Reference_Value
 					/ Energy_Reference_Value);
 			ThermoTables_dPdrho_e[i][j] *= (Density_Reference_Value
-					/ Temperature_Reference_Value);
+					/ Pressure_Reference_Value);
 			ThermoTables_dPde_rho[i][j] *= (Energy_Reference_Value
 					/ Pressure_Reference_Value);
 			ThermoTables_dTdrho_e[i][j] *= (Density_Reference_Value
