@@ -7877,12 +7877,16 @@ void CEulerSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container
 
   /*--- Calculation of Physical time step for unsteady simulation ---*/
   if (spectral_method) {
+
   	/*--- time interval using nTimeInstances ---*/
-  	Physical_dt = (su2double)config->GetSpectralMethod_Period()/(su2double)(config->GetnTimeInstances());
+  	Physical_dt  = (su2double)config->GetSpectralMethod_Period()/(su2double)(config->GetnTimeInstances());
+
+  	/*--- Non-dimensionalization of time step.  ---*/
+  	Physical_dt /= config->GetTime_Ref();
   	Physical_t  = config->GetiZone()*Physical_dt;
   }
   else {
-  	Physical_dt = (su2double)config->GetDelta_UnstTime();
+  	Physical_dt = (su2double)config->GetDelta_UnstTimeND();
   	Physical_t  = (config->GetExtIter())*Physical_dt;
   }
   if (config->GetUnsteady_Simulation() == 0) Physical_t = 0;
@@ -7972,8 +7976,10 @@ void CEulerSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container
         case TOTAL_CONDITIONS_PT:
 
         	/*--- HARDCODED FOR TEST ONLY!! ---*/
-        	Period = 0.0048429906542056074;
-        	Boundary_Vel = 21.4;
+        	Period  = 0.0048429906542056074;
+        	Period /= config->GetTime_Ref();
+        	Boundary_Vel  = 21.4;
+        	Boundary_Vel /= config->GetVelocity_Ref();
         	y_0 = y_min*100 + NonUniformBC_InputVar1[0];
 
         	t_perio = fmod(Physical_t, Period);
