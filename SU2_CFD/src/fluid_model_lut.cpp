@@ -86,7 +86,7 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 		// Give the user some information on the size of the table
 		cout << "Table_Pressure_Stations  : " << Table_Pressure_Stations << endl;
 		cout << "Table_Density_Stations: " << Table_Density_Stations << endl;
-		cout<<"Print LUT errors? (LUT_Debug_Mode):  "<<LUT_Debug_Mode<<endl;
+		cout << "Print LUT errors? (LUT_Debug_Mode):  " << LUT_Debug_Mode << endl;
 		// Building an KD_tree for the HS thermopair
 		cout << "Building HS_tree" << endl;
 	}
@@ -915,11 +915,9 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 	UpperI = Table_Density_Stations - 1;
 	LowerI = 0;
 
-	if (not skewed_linear_table) {
-		Search_NonEquispaced_Rho_Index(rho);
-		Search_j_for_Y_given_i(rho, T, ThermoTables_Density,
-				ThermoTables_Temperature);
-	}
+	Search_NonEquispaced_Rho_Index(rho);
+	Search_j_for_Y_given_i(rho, T, ThermoTables_Density,
+			ThermoTables_Temperature);
 
 	//Determine the interpolation coefficients
 	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(rho, T, ThermoTables_Density,
@@ -1119,52 +1117,51 @@ void CLookUpTable::Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x,
 	}
 
 	//Setup the LHM matrix for the interpolation (Vandermonde)
-//	Interpolation_Matrix[0][0] = 1;
-//	Interpolation_Matrix[0][1] = 0;
-//	Interpolation_Matrix[0][2] = 0;
-//	Interpolation_Matrix[0][3] = 0;
-//
-//	Interpolation_Matrix[1][0] = 1;
-//	Interpolation_Matrix[1][1] = (x10 - x00);
-//	Interpolation_Matrix[1][2] = (y10 - y00);
-//	Interpolation_Matrix[1][3] = (x10 - x00) * (y10 - y00);
-//
-//	Interpolation_Matrix[2][0] = 1;
-//	Interpolation_Matrix[2][1] = x01 - x00;
-//	Interpolation_Matrix[2][2] = y01 - y00;
-//	Interpolation_Matrix[2][3] = (x01 - x00) * (y01 - y00);
-//
-//	Interpolation_Matrix[3][0] = 1;
-//	Interpolation_Matrix[3][1] = x11 - x00;
-//	Interpolation_Matrix[3][2] = y11 - y00;
-//	Interpolation_Matrix[3][3] = (x11 - x00) * (y11 - y00);
-//
-//	Interpolation_Matrix[0][0] = 1;
-//	Interpolation_Matrix[0][1] = 0;
-//	Interpolation_Matrix[0][2] = 0;
-//	Interpolation_Matrix[0][3] = 0;
+	//	Interpolation_Matrix[0][0] = 1;
+	//	Interpolation_Matrix[0][1] = 0;
+	//	Interpolation_Matrix[0][2] = 0;
+	//	Interpolation_Matrix[0][3] = 0;
+	//
+	//	Interpolation_Matrix[1][0] = 1;
+	//	Interpolation_Matrix[1][1] = (x10 - x00);
+	//	Interpolation_Matrix[1][2] = (y10 - y00);
+	//	Interpolation_Matrix[1][3] = (x10 - x00) * (y10 - y00);
+	//
+	//	Interpolation_Matrix[2][0] = 1;
+	//	Interpolation_Matrix[2][1] = x01 - x00;
+	//	Interpolation_Matrix[2][2] = y01 - y00;
+	//	Interpolation_Matrix[2][3] = (x01 - x00) * (y01 - y00);
+	//
+	//	Interpolation_Matrix[3][0] = 1;
+	//	Interpolation_Matrix[3][1] = x11 - x00;
+	//	Interpolation_Matrix[3][2] = y11 - y00;
+	//	Interpolation_Matrix[3][3] = (x11 - x00) * (y11 - y00);
+	//
+	//	Interpolation_Matrix[0][0] = 1;
+	//	Interpolation_Matrix[0][1] = 0;
+	//	Interpolation_Matrix[0][2] = 0;
+	//	Interpolation_Matrix[0][3] = 0;
 
-//Normalization
+	//Normalization
 	Interpolation_Matrix[0][0] = 1;
 	Interpolation_Matrix[0][1] = 1;
 	Interpolation_Matrix[0][2] = 1;
 	Interpolation_Matrix[0][3] = 1;
 
 	Interpolation_Matrix[1][0] = 1;
-	Interpolation_Matrix[1][1] = (x10/x00);
-	Interpolation_Matrix[1][2] = (y10/y00);
-	Interpolation_Matrix[1][3] = (y10/y00)*(x10/x00);
+	Interpolation_Matrix[1][1] = (x10 / x00);
+	Interpolation_Matrix[1][2] = (y10 / y00);
+	Interpolation_Matrix[1][3] = (y10 / y00) * (x10 / x00);
 
 	Interpolation_Matrix[2][0] = 1;
-	Interpolation_Matrix[2][1] = (x01/x00);
-	Interpolation_Matrix[2][2] = (y01/y00);
-	Interpolation_Matrix[2][3] = (y01/y00)/(x01/x00);
+	Interpolation_Matrix[2][1] = (x01 / x00);
+	Interpolation_Matrix[2][2] = (y01 / y00);
+	Interpolation_Matrix[2][3] = (y01 / y00) / (x01 / x00);
 
 	Interpolation_Matrix[3][0] = 1;
-	Interpolation_Matrix[3][1] = (x11/x00);
-	Interpolation_Matrix[3][2] = (y11/y00);
-	Interpolation_Matrix[3][3] = (x11/x00)*(y11/y00);
-
+	Interpolation_Matrix[3][1] = (x11 / x00);
+	Interpolation_Matrix[3][2] = (y11 / y00);
+	Interpolation_Matrix[3][3] = (x11 / x00) * (y11 / y00);
 
 	//Invert the Interpolation matrix using Gaussian elimination with pivoting
 	Gaussian_Inverse(4);
@@ -1183,47 +1180,47 @@ void CLookUpTable::Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x,
 	for (int i = 0; i < 4; i++) {
 		d = 0;
 		d = d + Interpolation_Coeff[i][0] * 1;
-		d = d + Interpolation_Coeff[i][1] * (x/x00);
-		d = d + Interpolation_Coeff[i][2] * (y/y00);
-		d = d + Interpolation_Coeff[i][3] * (x/x00)*(y/y00);
+		d = d + Interpolation_Coeff[i][1] * (x / x00);
+		d = d + Interpolation_Coeff[i][2] * (y / y00);
+		d = d + Interpolation_Coeff[i][3] * (x / x00) * (y / y00);
 		Interpolation_Coeff[i][0] = d;
 	}
 
-//	//Fast inverse (Sympy CAS generated)
-//	su2double a,b,c,d;
-//	a  = (y10-y00)/(y01-y00);
-//	b  = (x01-x00)/(x10-x00);
-//	c  = (x11-x00)/(x10-x00);
-//	d  = (y11-y00)/(y01-y00);
-//
-//	Interpolation_Coeff[0][0]= 1;
-//	Interpolation_Coeff[0][1]= (a*b - a*c*d + a*d - a - b*d + c*d)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
-//	Interpolation_Coeff[0][2]= (a*b - a*c - b*c*d + b*c - b + c*d)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
-//	Interpolation_Coeff[0][3]= (-a*b + a*c + b*d - c - d + 1)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
-//	Interpolation_Coeff[1][0]= 0;
-//	Interpolation_Coeff[1][1]= d*(b - c)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
-//	Interpolation_Coeff[1][2]= b*c*(d - 1)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
-//	Interpolation_Coeff[1][3]= (-b*d + c)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
-//	Interpolation_Coeff[2][0]= 0;
-//	Interpolation_Coeff[2][1]= a*d*(c - 1)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
-//	Interpolation_Coeff[2][2]= c*(a - d)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
-//	Interpolation_Coeff[2][3]= (-a*c + d)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
-//	Interpolation_Coeff[3][0]= 0;
-//	Interpolation_Coeff[3][1]= -a*(b - 1)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
-//	Interpolation_Coeff[3][2]= -b*(a - 1)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
-//	Interpolation_Coeff[3][3]= (a*b - 1)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
-//
-//	//The transpose allows the same coefficients to be used
-//	// for all Thermo variables (need only 4 coefficients)
-//	su2double dt;
-//	for (int i = 0; i < 4; i++) {
-//		dt = 0;
-//		dt = dt + Interpolation_Coeff[i][0] * 1;
-//		dt = dt + Interpolation_Coeff[i][1] * (x - x00)/(x10-x00);
-//		dt = dt + Interpolation_Coeff[i][2] * (y - y00)/(y01-y00);
-//		dt = dt + Interpolation_Coeff[i][3] * (x - x00)/(x10-x00) * (y - y00)/(y01-y00);
-//		Interpolation_Coeff[i][0] = dt;
-//	}
+	//	//Fast inverse (Sympy CAS generated)
+	//	su2double a,b,c,d;
+	//	a  = (y10-y00)/(y01-y00);
+	//	b  = (x01-x00)/(x10-x00);
+	//	c  = (x11-x00)/(x10-x00);
+	//	d  = (y11-y00)/(y01-y00);
+	//
+	//	Interpolation_Coeff[0][0]= 1;
+	//	Interpolation_Coeff[0][1]= (a*b - a*c*d + a*d - a - b*d + c*d)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
+	//	Interpolation_Coeff[0][2]= (a*b - a*c - b*c*d + b*c - b + c*d)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
+	//	Interpolation_Coeff[0][3]= (-a*b + a*c + b*d - c - d + 1)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
+	//	Interpolation_Coeff[1][0]= 0;
+	//	Interpolation_Coeff[1][1]= d*(b - c)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
+	//	Interpolation_Coeff[1][2]= b*c*(d - 1)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
+	//	Interpolation_Coeff[1][3]= (-b*d + c)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
+	//	Interpolation_Coeff[2][0]= 0;
+	//	Interpolation_Coeff[2][1]= a*d*(c - 1)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
+	//	Interpolation_Coeff[2][2]= c*(a - d)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
+	//	Interpolation_Coeff[2][3]= (-a*c + d)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
+	//	Interpolation_Coeff[3][0]= 0;
+	//	Interpolation_Coeff[3][1]= -a*(b - 1)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
+	//	Interpolation_Coeff[3][2]= -b*(a - 1)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
+	//	Interpolation_Coeff[3][3]= (a*b - 1)/(a*b*c*d - a*b*c - a*b*d + a*c + b*d - c*d);
+	//
+	//	//The transpose allows the same coefficients to be used
+	//	// for all Thermo variables (need only 4 coefficients)
+	//	su2double dt;
+	//	for (int i = 0; i < 4; i++) {
+	//		dt = 0;
+	//		dt = dt + Interpolation_Coeff[i][0] * 1;
+	//		dt = dt + Interpolation_Coeff[i][1] * (x - x00)/(x10-x00);
+	//		dt = dt + Interpolation_Coeff[i][2] * (y - y00)/(y01-y00);
+	//		dt = dt + Interpolation_Coeff[i][3] * (x - x00)/(x10-x00) * (y - y00)/(y01-y00);
+	//		Interpolation_Coeff[i][0] = dt;
+	//	}
 
 	return;
 }
