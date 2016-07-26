@@ -169,6 +169,42 @@ public:
 									CConfig *target_config, unsigned long Marker_Target,
 									unsigned long Vertex_Target, unsigned long Point_Target);
 
+	/*!
+	 * \brief virtual member.
+	 * \param[in] donor_solution  - Solution from the donor mesh.
+	 * \param[in] target_solution - Solution from the target mesh.
+	 * \param[in] donorZone       - counter of the donor solution
+	 */
+	virtual void GetSetTurboPerformance(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone);
+
+
+	/*!
+	 * \brief Interpolate data and scatter it into different processors, for matching meshes.
+	 * \param[in] donor_solution - Solution from the donor mesh.
+	 * \param[in] target_solution - Solution from the target mesh.
+	 * \param[in] donor_geometry - Geometry of the donor mesh.
+	 * \param[in] target_geometry - Geometry of the target mesh.
+	 * \param[in] donor_config - Definition of the problem at the donor mesh.
+	 * \param[in] target_config - Definition of the problem at the target mesh.
+	 */
+	void Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *target_solution,
+			   	   	   	   	   	  CGeometry *donor_geometry, CGeometry *target_geometry,
+			   	   	   	   	   	  CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt);
+
+	/*!
+	 * \brief Interpolate data and scatter it into different processors, for matching meshes.
+	 * \param[in] donor_solution - Solution from the donor mesh.
+	 * \param[in] target_solution - Solution from the target mesh.
+	 * \param[in] donor_geometry - Geometry of the donor mesh.
+	 * \param[in] target_geometry - Geometry of the target mesh.
+	 * \param[in] donor_config - Definition of the problem at the donor mesh.
+	 * \param[in] target_config - Definition of the problem at the target mesh.
+	 */
+	void StoreTurboPerformance(CSolver *donor_solution, CSolver *target_solution,
+			   	   	   	   	   	  CGeometry *donor_geometry, CGeometry *target_geometry,
+			   	   	   	   	   	  CConfig *donor_config, CConfig *target_config, unsigned short donorZone);
+
+
 };
 
 /*!
@@ -447,4 +483,72 @@ public:
 
 
 };
+
+
+/*!
+ * \class CTransfer_MixingPlaneInterface
+ * \brief Transfer average variables needed for MixingPlane computation from a generic zone into another one
+ * \author S. Vitale
+ * \version 4.0.1 "Cardinal"
+ */
+
+class CTransfer_MixingPlaneInterface : public CTransfer {
+
+protected:
+
+public:
+
+	/*!
+	 * \brief Constructor of the class.
+	 */
+	CTransfer_MixingPlaneInterface(void);
+
+	/*!
+	 * \overload
+	 * \param[in] val_nVar - Number of variables that need to be transferred.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	CTransfer_MixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config);
+
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CTransfer_MixingPlaneInterface(void);
+
+	/*!
+	 * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
+	 * \param[in] donor_solution - Solution from the donor mesh.
+	 * \param[in] donor_geometry - Geometry of the donor mesh.
+	 * \param[in] donor_config - Definition of the problem at the donor mesh.
+	 * \param[in] Marker_Donor - Index of the donor marker.
+	 * \param[in] Vertex_Donor - Index of the donor vertex.
+	 * \param[in] Point_Donor - Index of the donor point.
+	 */
+	void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
+						   unsigned long Marker_Donor, unsigned long val_Span, unsigned long Point_Donor);
+
+	/*!
+	 * \brief Set the variable that has been received from the target mesh into the target mesh.
+	 * \param[in] target_solution - Solution from the target mesh.
+	 * \param[in] target_geometry - Geometry of the target mesh.
+	 * \param[in] target_config - Definition of the problem at the target mesh.
+	 * \param[in] Marker_Target - Index of the target marker.
+	 * \param[in] Vertex_Target - Index of the target vertex.
+	 * \param[in] Point_Target - Index of the target point.
+	 */
+	void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, CConfig *target_config,
+							unsigned long Marker_Target, unsigned long val_Span, unsigned long Point_Target);
+
+	/*!
+	 * \brief Store all the turboperformance in the solver in ZONE_0.
+	 * \param[in] donor_solution  - Solution from the donor mesh.
+	 * \param[in] target_solution - Solution from the target mesh.
+	 * \param[in] donorZone       - counter of the donor solution
+	 */
+	 void GetSetTurboPerformance(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone);
+
+
+
+};
+
 #include "transfer_structure.inl"

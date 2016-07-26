@@ -709,6 +709,7 @@ clean-noinstLIBRARIES:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-adt_structure.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
+
 libSU2.a: $(libSU2_a_OBJECTS) $(libSU2_a_DEPENDENCIES) $(EXTRA_libSU2_a_DEPENDENCIES) 
 	$(AM_V_at)-rm -f libSU2.a
 	$(AM_V_AR)$(libSU2_a_AR) libSU2.a $(libSU2_a_OBJECTS) $(libSU2_a_LIBADD)
@@ -745,12 +746,9 @@ libSU2.a: $(libSU2_a_OBJECTS) $(libSU2_a_DEPENDENCIES) $(EXTRA_libSU2_a_DEPENDEN
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_AD_a-interpolation_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-<<<<<<< HEAD
-
-=======
 ../src/libSU2_AD_a-adt_structure.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
->>>>>>> feature_HB
+
 libSU2_AD.a: $(libSU2_AD_a_OBJECTS) $(libSU2_AD_a_DEPENDENCIES) $(EXTRA_libSU2_AD_a_DEPENDENCIES) 
 	$(AM_V_at)-rm -f libSU2_AD.a
 	$(AM_V_AR)$(libSU2_AD_a_AR) libSU2_AD.a $(libSU2_AD_a_OBJECTS) $(libSU2_AD_a_LIBADD)
@@ -787,12 +785,9 @@ libSU2_AD.a: $(libSU2_AD_a_OBJECTS) $(libSU2_AD_a_DEPENDENCIES) $(EXTRA_libSU2_A
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_DIRECTDIFF_a-interpolation_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-<<<<<<< HEAD
-
-=======
 ../src/libSU2_DIRECTDIFF_a-adt_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
->>>>>>> feature_HB
+
 libSU2_DIRECTDIFF.a: $(libSU2_DIRECTDIFF_a_OBJECTS) $(libSU2_DIRECTDIFF_a_DEPENDENCIES) $(EXTRA_libSU2_DIRECTDIFF_a_DEPENDENCIES) 
 	$(AM_V_at)-rm -f libSU2_DIRECTDIFF.a
 	$(AM_V_AR)$(libSU2_DIRECTDIFF_a_AR) libSU2_DIRECTDIFF.a $(libSU2_DIRECTDIFF_a_OBJECTS) $(libSU2_DIRECTDIFF_a_LIBADD)
@@ -1573,14 +1568,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-interpolation_structure.obj `if test -f '../src/interpolation_structure.cpp'; then $(CYGPATH_W) '../src/interpolation_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/interpolation_structure.cpp'; fi`
 
-<<<<<<< HEAD
-ID: $(am__tagged_files)
-	$(am__define_uniq_tagged_files); mkid -fID $$unique
-tags: tags-am
-TAGS: tags
-
-tags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
-=======
 ../src/libSU2_DIRECTDIFF_a-adt_structure.o: ../src/adt_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-adt_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-adt_structure.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-adt_structure.o `test -f '../src/adt_structure.cpp' || echo '$(srcdir)/'`../src/adt_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-adt_structure.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-adt_structure.Po
@@ -1595,19 +1582,12 @@ tags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-adt_structure.obj `if test -f '../src/adt_structure.cpp'; then $(CYGPATH_W) '../src/adt_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/adt_structure.cpp'; fi`
 
-ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
-	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
-	unique=`for i in $$list; do \
-	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
-	  done | \
-	  $(AWK) '{ files[$$0] = 1; nonempty = 1; } \
-	      END { if (nonempty) { for (i in files) print i; }; }'`; \
-	mkid -fID $$unique
-tags: TAGS
+ID: $(am__tagged_files)
+	$(am__define_uniq_tagged_files); mkid -fID $$unique
+tags: tags-am
+TAGS: tags
 
-TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
-		$(TAGS_FILES) $(LISP)
->>>>>>> feature_HB
+tags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
 	set x; \
 	here=`pwd`; \
 	$(am__define_uniq_tagged_files); \

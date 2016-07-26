@@ -1388,6 +1388,9 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   }
   
   /*--- MPI solution ---*/
+
+//TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart
+  Set_MPI_Solution(geometry, config);
   Set_MPI_Solution(geometry, config);
   
 }
@@ -2727,6 +2730,9 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   }
   
   /*--- MPI solution ---*/
+
+//TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart
+  Set_MPI_Solution(geometry, config);
   Set_MPI_Solution(geometry, config);
   
 }

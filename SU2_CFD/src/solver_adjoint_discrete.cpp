@@ -217,9 +217,8 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   }
 }
 
-CDiscAdjSolver::~CDiscAdjSolver(void){ }
 
-void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned short kind_recording){
+void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 
   bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -257,34 +256,10 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned
 
   /*--- Set indices to zero ---*/
 
-  RegisterVariables(geometry, config, true);
+//  RegisterVariables(geometry, config, true);
 
 }
 
-void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
-  unsigned long iPoint, nPoint = geometry->GetnPoint();
-
-  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
-  time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND,
-  input = true;
-
-  /*--- Register solution at all necessary time instances and other variables on the tape ---*/
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->node[iPoint]->RegisterSolution(input);
-  }
-  if (time_n_needed){
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->node[iPoint]->RegisterSolution_time_n();
-    }
-  }
-  if (time_n1_needed){
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      direct_solver->node[iPoint]->RegisterSolution_time_n1();
-    }
-  }
-}
 
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
 
@@ -336,20 +311,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
      * extracted in the ExtractAdjointVariables routine. ---*/
 }
 
-void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 
-  unsigned long iPoint, nPoint = geometry->GetnPoint();
-
-  /*--- Register variables as output of the solver iteration ---*/
-
-  bool input = false;
-
-  /*--- Register output variables on the tape ---*/
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    direct_solver->node[iPoint]->RegisterSolution(input);
-  }
-}
 
 void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
 
@@ -362,29 +324,29 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
 
   switch (config->GetKind_ObjFunc()){
   case DRAG_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CDrag();
-      break;
+		ObjFunc_Value = direct_solver->GetTotal_CDrag();
+		break;
   case LIFT_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CLift();
-      break;
+     ObjFunc_Value = direct_solver->GetTotal_CLift();
+		break;
   case SIDEFORCE_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CSideForce();
-      break;
+		ObjFunc_Value = direct_solver->GetTotal_CSideForce();
+		break;
   case EFFICIENCY:
-      ObjFunc_Value = direct_solver->GetTotal_CEff();
-      break;
+		ObjFunc_Value = direct_solver->GetTotal_CEff();
+		break;
   case MOMENT_X_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMx();
-      break;
+		ObjFunc_Value = direct_solver->GetTotal_CMx();
+		break;
   case MOMENT_Y_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMy();
-      break;
+		ObjFunc_Value = direct_solver->GetTotal_CMy();
+		break;
   case MOMENT_Z_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CMz();
-      break;
+		ObjFunc_Value = direct_solver->GetTotal_CMz();
+		break;
   case EQUIVALENT_AREA:
-      ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
-      break;
+		ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
+    break;
   case AVG_TOTAL_PRESSURE:
     ObjFunc_Value = direct_solver->GetOneD_TotalPress();
     break;
@@ -394,6 +356,37 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
   case MASS_FLOW_RATE:
     ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
     break;
+//TODO (turbo) All the quantities need to be generilized for multi-stage.
+  case TOTAL_EFFICIENCY:
+		ObjFunc_Value = direct_solver->GetTotalTotalEfficiency(config->GetnMarker_TurboPerformance() - 1);
+		break;
+	case TOTAL_PRESSURE_LOSS:
+		ObjFunc_Value = direct_solver->GetTotalPressureLoss(config->GetnMarker_TurboPerformance() - 1);
+		break;
+	case KINETIC_ENERGY_LOSS:
+		ObjFunc_Value = direct_solver->GetKineticEnergyLoss(config->GetnMarker_TurboPerformance() - 1);
+		break;
+	case TOTAL_STATIC_EFFICIENCY:
+		ObjFunc_Value = direct_solver->GetTotalStaticEfficiency(config->GetnMarker_TurboPerformance() - 1);
+		break;
+	case ENTROPY_GENERATION:
+		ObjFunc_Value = direct_solver->GetEntropyGen(config->GetnMarker_TurboPerformance() -1);
+		break;
+	case EULERIAN_WORK:
+		ObjFunc_Value = direct_solver->GetEulerianWork(config->GetnMarker_TurboPerformance() -1);
+		break;
+	case FLOW_ANGLE_IN:
+		ObjFunc_Value = 180.0/PI_NUMBER*direct_solver->GetFlowAngleIn(0);
+		break;
+	case FLOW_ANGLE_OUT:
+		ObjFunc_Value = 180.0/PI_NUMBER*direct_solver->GetFlowAngleOut(0);
+		break;
+	case MASS_FLOW_IN:
+		ObjFunc_Value = direct_solver->GetMassFlowIn(config->GetnMarker_TurboPerformance() -1);
+		break;
+	case MASS_FLOW_OUT:
+		ObjFunc_Value = direct_solver->GetMassFlowOut(config->GetnMarker_TurboPerformance() -1);
+		break;
  /*--- Template for new objective functions where TemplateObjFunction()
   *  is the routine that returns the obj. function value. The computation
   * must be done while the tape is active, i.e. between AD::StartRecording() and

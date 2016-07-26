@@ -1825,6 +1825,45 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 }
 
+void CSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
+  unsigned long iPoint;
+
+  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
+  time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND,
+  input = true;
+
+  /*--- Register solution at all necessary time instances and other variables on the tape ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    node[iPoint]->RegisterSolution(input);
+  }
+  if (time_n_needed){
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      node[iPoint]->RegisterSolution_time_n();
+    }
+  }
+  if (time_n1_needed){
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      node[iPoint]->RegisterSolution_time_n1();
+    }
+  }
+}
+
+void CSolver::RegisterOutput(CGeometry *geometry, CConfig *config){
+
+  unsigned long iPoint;
+
+  /*--- Register variables as output of the solver iteration ---*/
+
+  bool input = false;
+
+  /*--- Register output variables on the tape ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    node[iPoint]->RegisterSolution(input);
+  }
+}
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
 
 CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names){

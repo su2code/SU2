@@ -31,6 +31,162 @@
 
 #include "../include/config_structure.hpp"
 
+unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config) {
+  string text_line, Marker_Tag;
+  ifstream mesh_file;
+  short nZone = 1; // Default value
+  unsigned short iLine, nLine = 10;
+  char cstr[200];
+  string::size_type position;
+
+  /*--- Search the mesh file for the 'NZONE' keyword. ---*/
+
+  switch (val_format) {
+    case SU2:
+
+      /*--- Open grid file ---*/
+
+      strcpy (cstr, val_mesh_filename.c_str());
+      mesh_file.open(cstr, ios::in);
+      if (mesh_file.fail()) {
+        cout << "cstr=" << cstr << endl;
+        cout << "There is no geometry file (GetnZone))!" << endl;
+
+#ifndef HAVE_MPI
+        exit(EXIT_FAILURE);
+#else
+        MPI_Abort(MPI_COMM_WORLD,1);
+        MPI_Finalize();
+#endif
+      }
+
+      /*--- Read the SU2 mesh file ---*/
+
+      for (iLine = 0; iLine < nLine ; iLine++) {
+
+        getline (mesh_file, text_line);
+
+        /*--- Search for the "NZONE" keyword to see if there are multiple Zones ---*/
+
+        position = text_line.find ("NZONE=",0);
+        if (position != string::npos) {
+          text_line.erase (0,6); nZone = atoi(text_line.c_str());
+        }
+      }
+
+      break;
+
+  }
+
+  /*--- For time spectral integration, nZones = nTimeInstances. ---*/
+
+  if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+    nZone = config->GetnTimeInstances();
+  }
+
+  return (unsigned short) nZone;
+}
+
+unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_format) {
+
+  string text_line, Marker_Tag;
+  ifstream mesh_file;
+  short nDim = 3;
+  unsigned short iLine, nLine = 10;
+  char cstr[200];
+  string::size_type position;
+
+  /*--- Open grid file ---*/
+
+  strcpy (cstr, val_mesh_filename.c_str());
+  mesh_file.open(cstr, ios::in);
+
+  switch (val_format) {
+    case SU2:
+
+      /*--- Read SU2 mesh file ---*/
+
+      for (iLine = 0; iLine < nLine ; iLine++) {
+
+        getline (mesh_file, text_line);
+
+        /*--- Search for the "NDIM" keyword to see if there are multiple Zones ---*/
+
+        position = text_line.find ("NDIME=",0);
+        if (position != string::npos) {
+          text_line.erase (0,6); nDim = atoi(text_line.c_str());
+        }
+      }
+      break;
+
+    case CGNS:
+
+#ifdef HAVE_CGNS
+
+      /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+
+      int fn, nbases = 0, nzones = 0, file_type;
+      int cell_dim = 0, phys_dim = 0;
+      char basename[CGNS_STRING_SIZE];
+
+      /*--- Check whether the supplied file is truly a CGNS file. ---*/
+
+      if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
+        printf( "\n\n   !!! Error !!!\n" );
+        printf( " %s is not a CGNS file.\n", val_mesh_filename.c_str());
+        printf( " Now exiting...\n\n");
+        exit(EXIT_FAILURE);
+      }
+
+      /*--- Open the CGNS file for reading. The value of fn returned
+       is the specific index number for this file and will be
+       repeatedly used in the function calls. ---*/
+
+      if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn)) cg_error_exit();
+
+      /*--- Get the number of databases. This is the highest node
+       in the CGNS heirarchy. ---*/
+
+      if (cg_nbases(fn, &nbases)) cg_error_exit();
+
+      /*--- Check if there is more than one database. Throw an
+       error if there is because this reader can currently
+       only handle one database. ---*/
+
+      if ( nbases > 1 ) {
+        printf("\n\n   !!! Error !!!\n" );
+        printf("CGNS reader currently incapable of handling more than 1 database.");
+        printf("Now exiting...\n\n");
+        exit(EXIT_FAILURE);
+      }
+
+      /*--- Read the databases. Note that the indexing starts at 1. ---*/
+
+      for ( int i = 1; i <= nbases; i++ ) {
+
+        if (cg_base_read(fn, i, basename, &cell_dim, &phys_dim)) cg_error_exit();
+
+        /*--- Get the number of zones for this base. ---*/
+
+        if (cg_nzones(fn, i, &nzones)) cg_error_exit();
+
+      }
+
+      /*--- Set the problem dimension as read from the CGNS file ---*/
+
+      nDim = cell_dim;
+
+#endif
+
+      break;
+
+  }
+
+  mesh_file.close();
+
+  return (unsigned short) nDim;
+}
+
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
 
   int rank = MASTER_NODE;
@@ -465,15 +621,20 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addNonUniformOption("MARKER_NONUNIFORM", nMarker_NonUniform, Marker_NonUniform, Kind_Data_NonUniform, NonUniform_Map, NonUniform_Var1, NonUniform_Var2, NonUniform_FlowDir);
   /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart flow input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n DEFAULT: solution_flow.dat \ingroup Config */
   addStringOption("NONUNIFORM_BC_FILENAME", NonUniformBC_FileName, string("nonuniform_boundary.dat"));
-  /*!\brief MARKER_NRBC \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. \ingroup Config*/
-  addNRBCOption("MARKER_NRBC", nMarker_NRBC, Marker_NRBC, Kind_Data_NRBC, NRBC_Map, NRBC_Var1, NRBC_Var2, NRBC_FlowDir);
+  /*!\brief MARKER_NRBC \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. */
+  addNRBCOption("MARKER_NRBC", nMarker_NRBC, Marker_NRBC, Kind_Data_NRBC, NRBC_Map, NRBC_Var1, NRBC_Var2, NRBC_FlowDir, RelaxFactorAverage, RelaxFactorFourier);
   /*!\brief MIXING_PROCESS_TYPE \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries.
     \n OPTIONS: see \link MixingProcess_Map \endlink \n DEFAULT: AREA_AVERAGE \ingroup Config*/
-  addEnumOption("MIXING_PROCESS_TYPE", Kind_MixingProcess, MixingProcess_Map, AREA_AVERAGE);
+  addEnumOption("MIXING_PROCESS_KIND", Kind_MixingProcess, MixingProcess_Map, AREA_AVERAGE);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
-  addMixingPlaneOption("MARKER_MIXINGPLANE", nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
+  addStringListOption("MARKER_MIXINGPLANE_INTERFACE", nMarker_MixingPlaneInterface, Marker_MixingPlaneInterface);
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
-  addTurboPerfOption("MARKER_TURBO_PERFORMANCE", nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut, Kind_TurboPerformance, TurboPerformance_Map);
+  addTurboPerfOption("MARKER_TURBOMACHINERY", nMarker_Turbomachinery, Marker_TurboBoundIn, Marker_TurboBoundOut);
+  /* DESCRIPTION: Integer number of spanwise sections to compute 3D BC and Performance for turbomachinery */
+  addUnsignedShortOption("NUM_SPANWISE_SECTIONS", nSpanWiseSections, 1);
+  /*!\brief TURBOMACHINERY_TYPE \n DESCRIPTION: types of turbomachynery architecture.
+      \n OPTIONS: see \link TurboMachinery_Map \endlink \n Default: AXIAL */
+  addEnumListOption("TURBOMACHINERY_KIND",nTurboMachineryKind, Kind_TurboMachinery, TurboMachinery_Map);
   /*!\brief MARKER_SUPERSONIC_INLET  \n DESCRIPTION: Supersonic inlet boundary marker(s)
    * \n   Format: (inlet marker, temperature, static pressure, velocity_x,   velocity_y, velocity_z, ... ), i.e. primitive variables specified. \ingroup Config*/
   addInletOption("MARKER_SUPERSONIC_INLET", nMarker_Supersonic_Inlet, Marker_Supersonic_Inlet,
@@ -1398,6 +1559,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Flag specifying if the mesh was decomposed */
   addPythonOption("DECOMPOSED");
 
+  /* DESCRIPTION: Number of zones of the problem */
+  addPythonOption("NZONES");
+
   /* DESCRIPTION: Activate ParMETIS mode for testing */
   addBoolOption("PARMETIS", ParMETIS, false);
   
@@ -1726,16 +1890,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Check for Convective scheme available for NICFD ---*/
   
   if (!ideal_gas) {
-    if (Kind_ConvNumScheme_Flow != SPACE_UPWIND) {
-      cout << "Only ROE Upwind and HLLC Upwind scheme can be used for Non-Ideal Compressible Fluids" << endl;
-      exit(EXIT_FAILURE);
-    }
-    else {
-      if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC) {
-        cout << "Only ROE Upwind and HLLC Upwind scheme can be used for Non-Ideal Compressible Fluids" << endl;
-        exit(EXIT_FAILURE);
-      }
-    }
+		if (Kind_Upwind_Flow != ROE && Kind_Upwind_Flow != HLLC && Kind_Centered_Flow != JST) {
+			cout << "Only ROE Upwind, HLLC Upwind scheme, and JST scheme can be used for Non-Ideal Compressible Fluids" << endl;
+			exit(EXIT_FAILURE);
+		}
+
   }
   
   /*--- Check for Boundary condition available for NICFD ---*/
@@ -1773,6 +1932,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
   
+  /*--- Force number of span-wise section to 1 if 2D case ---*/
+  if(val_nDim ==2) nSpanWiseSections=1;
+
+  /*--- Set number of TurboPerformance markers ---*/
+  if(nMarker_Turbomachinery > 0){
+  	if(nMarker_Turbomachinery > 1){
+  		nMarker_TurboPerformance = nMarker_Turbomachinery + int(nMarker_Turbomachinery/2) + 1;
+  	}else{
+  		nMarker_TurboPerformance = nMarker_Turbomachinery;
+  	}
+  } else {
+    nMarker_TurboPerformance = 0;
+  }
+
+
+
   /*--- Set grid movement kind to NO_MOVEMENT if not specified, which means
    that we also set the Grid_Movement flag to false. We initialize to the
    number of zones here, because we are guaranteed to at least have one. ---*/
@@ -2672,7 +2847,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
-  iMarker_Clamped, iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine,
+  iMarker_Clamped, iMarker_FSIinterface, iMarker_Turbomachinery, iMarker_MixingPlaneInterface, iMarker_Load_Dir, iMarker_Load_Sine,
   iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
 
   int size = SINGLE_NODE;
@@ -2704,60 +2879,72 @@ void CConfig::SetMarkers(unsigned short val_software) {
 
   /*--- Allocate the memory (markers in each domain) ---*/
   
-  Marker_All_TagBound   = new string[nMarker_All];			    // Store the tag that correspond with each marker.
-  Marker_All_SendRecv   = new short[nMarker_All];						// +#domain (send), -#domain (receive).
-  Marker_All_KindBC     = new unsigned short[nMarker_All];	// Store the kind of boundary condition.
-  Marker_All_Monitoring = new unsigned short[nMarker_All];	// Store whether the boundary should be monitored.
-  Marker_All_Designing  = new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
-  Marker_All_Plotting   = new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
-  Marker_All_FSIinterface   = new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
-  Marker_All_GeoEval    = new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
-  Marker_All_DV         = new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
-  Marker_All_Moving     = new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
-  Marker_All_PerBound   = new short[nMarker_All];						// Store whether the boundary belongs to a periodic boundary.
-  Marker_All_Out_1D     = new unsigned short[nMarker_All];  // Store whether the boundary belongs to a 1-d output boundary.
+  Marker_All_TagBound   						= new string[nMarker_All];			    // Store the tag that correspond with each marker.
+  Marker_All_SendRecv   						= new short[nMarker_All];						// +#domain (send), -#domain (receive).
+  Marker_All_KindBC     						= new unsigned short[nMarker_All];	// Store the kind of boundary condition.
+  Marker_All_Monitoring 						= new unsigned short[nMarker_All];	// Store whether the boundary should be monitored.
+  Marker_All_Designing  						= new unsigned short[nMarker_All];  // Store whether the boundary should be designed.
+  Marker_All_Plotting   						= new unsigned short[nMarker_All];	// Store whether the boundary should be plotted.
+  Marker_All_FSIinterface   				= new unsigned short[nMarker_All];	// Store whether the boundary is in the FSI interface.
+  Marker_All_Turbomachinery         = new unsigned short[nMarker_All];	// Store whether the boundary is in needed for Turbomachinery computations.
+  Marker_All_TurbomachineryFlag     = new unsigned short[nMarker_All];	// Store whether the boundary has a flag for Turbomachinery computations.
+  Marker_All_MixingPlaneInterface		= new unsigned short[nMarker_All];	// Store whether the boundary has a in the MixingPlane interface.
+  Marker_All_GeoEval    						= new unsigned short[nMarker_All];	// Store whether the boundary should be geometry evaluation.
+  Marker_All_DV         						= new unsigned short[nMarker_All];	// Store whether the boundary should be affected by design variables.
+  Marker_All_Moving     						= new unsigned short[nMarker_All];	// Store whether the boundary should be in motion.
+  Marker_All_PerBound   						= new short[nMarker_All];						// Store whether the boundary belongs to a periodic boundary.
+  Marker_All_Out_1D     						= new unsigned short[nMarker_All];  // Store whether the boundary belongs to a 1-d output boundary.
 
   for (iMarker_All = 0; iMarker_All < nMarker_All; iMarker_All++) {
-    Marker_All_TagBound[iMarker_All]   = "SEND_RECEIVE";
-    Marker_All_SendRecv[iMarker_All]   = 0;
-    Marker_All_KindBC[iMarker_All]     = 0;
-    Marker_All_Monitoring[iMarker_All] = 0;
-    Marker_All_GeoEval[iMarker_All]    = 0;
-    Marker_All_Designing[iMarker_All]  = 0;
-    Marker_All_Plotting[iMarker_All]   = 0;
-    Marker_All_FSIinterface[iMarker_All]   = 0;
-    Marker_All_DV[iMarker_All]         = 0;
-    Marker_All_Moving[iMarker_All]     = 0;
-    Marker_All_PerBound[iMarker_All]   = 0;
-    Marker_All_Out_1D[iMarker_All]     = 0;
+    Marker_All_TagBound[iMarker_All]   						= "SEND_RECEIVE";
+    Marker_All_SendRecv[iMarker_All]   						= 0;
+    Marker_All_KindBC[iMarker_All]     						= 0;
+    Marker_All_Monitoring[iMarker_All] 						= 0;
+    Marker_All_GeoEval[iMarker_All]    						= 0;
+    Marker_All_Designing[iMarker_All]  						= 0;
+    Marker_All_Plotting[iMarker_All]   						= 0;
+    Marker_All_FSIinterface[iMarker_All]   				= 0;
+    Marker_All_Turbomachinery[iMarker_All]  		  = 0;
+    Marker_All_TurbomachineryFlag[iMarker_All]    = 0;
+    Marker_All_MixingPlaneInterface[iMarker_All]    = 0;
+    Marker_All_DV[iMarker_All]         						= 0;
+    Marker_All_Moving[iMarker_All]     						= 0;
+    Marker_All_PerBound[iMarker_All]   						= 0;
+    Marker_All_Out_1D[iMarker_All]     						= 0;
   }
 
   /*--- Allocate the memory (markers in the config file) ---*/
 
-  Marker_CfgFile_TagBound     = new string[nMarker_CfgFile];
-  Marker_CfgFile_KindBC       = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Monitoring   = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Designing    = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Plotting     = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_GeoEval      = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_FSIinterface	= new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_DV           = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Moving       = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_PerBound     = new unsigned short[nMarker_CfgFile];
-  Marker_CfgFile_Out_1D       = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_TagBound   					= new string[nMarker_CfgFile];
+  Marker_CfgFile_KindBC    	 					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Monitoring 					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Designing  					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Plotting   					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_GeoEval    					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_FSIinterface					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Turbomachinery 			= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_TurbomachineryFlag	  = new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_MixingPlaneInterface	= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_DV         					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Moving     					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_PerBound   					= new unsigned short[nMarker_CfgFile];
+  Marker_CfgFile_Out_1D     					= new unsigned short[nMarker_CfgFile];
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
-    Marker_CfgFile_TagBound[iMarker_CfgFile]   = "SEND_RECEIVE";
-    Marker_CfgFile_KindBC[iMarker_CfgFile]     = 0;
-    Marker_CfgFile_Monitoring[iMarker_CfgFile] = 0;
-    Marker_CfgFile_GeoEval[iMarker_CfgFile]    = 0;
-    Marker_CfgFile_Designing[iMarker_CfgFile]  = 0;
-    Marker_CfgFile_Plotting[iMarker_CfgFile]   = 0;
-    Marker_CfgFile_FSIinterface[iMarker_CfgFile]   = 0;
-    Marker_CfgFile_DV[iMarker_CfgFile]         = 0;
-    Marker_CfgFile_Moving[iMarker_CfgFile]     = 0;
-    Marker_CfgFile_PerBound[iMarker_CfgFile]   = 0;
-    Marker_CfgFile_Out_1D[iMarker_CfgFile]     = 0;
+    Marker_CfgFile_TagBound[iMarker_CfgFile]   						= "SEND_RECEIVE";
+    Marker_CfgFile_KindBC[iMarker_CfgFile]     						= 0;
+    Marker_CfgFile_Monitoring[iMarker_CfgFile] 						= 0;
+    Marker_CfgFile_GeoEval[iMarker_CfgFile]    						= 0;
+    Marker_CfgFile_Designing[iMarker_CfgFile]  						= 0;
+    Marker_CfgFile_Plotting[iMarker_CfgFile]   						= 0;
+    Marker_CfgFile_FSIinterface[iMarker_CfgFile]   				= 0;
+    Marker_CfgFile_Turbomachinery[iMarker_CfgFile]			  = 0;
+    Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile]	  = 0;
+    Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile]  = 0;
+    Marker_CfgFile_DV[iMarker_CfgFile]         						= 0;
+    Marker_CfgFile_Moving[iMarker_CfgFile]     						= 0;
+    Marker_CfgFile_PerBound[iMarker_CfgFile]   						= 0;
+    Marker_CfgFile_Out_1D[iMarker_CfgFile]     						= 0;
   }
 
   /*--- Populate the marker information in the config file (all domains) ---*/
@@ -3001,6 +3188,66 @@ void CConfig::SetMarkers(unsigned short val_software) {
         Marker_CfgFile_FSIinterface[iMarker_CfgFile] = indexMarker;
   }
 
+  /*--- Identification of Turbomachinery markers and flag them---*/
+
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+	unsigned short indexMarker=0;
+	Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = NO;
+	Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = NO;
+    for (iMarker_Turbomachinery = 0; iMarker_Turbomachinery < nMarker_Turbomachinery; iMarker_Turbomachinery++){
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundIn[iMarker_Turbomachinery]){
+      	indexMarker=(iMarker_Turbomachinery+1);
+        Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = indexMarker;
+        Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = INFLOW;
+      }
+    	if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_TurboBoundOut[iMarker_Turbomachinery]){
+				indexMarker=(iMarker_Turbomachinery+1);
+				Marker_CfgFile_Turbomachinery[iMarker_CfgFile] = indexMarker;
+				Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile] = OUTFLOW;
+    	}
+    }
+  }
+  if(GetBoolTurbomachinery()){
+		unsigned short count = 0;
+		nBlades = new su2double[nZone];
+		su2double pitch;
+		for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+			unsigned short iMarker_PerBound;
+			for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
+				if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_PerBound[iMarker_PerBound]){
+					if (count == 0){
+						pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
+						nBlades[count]= 2*PI_NUMBER/pitch;
+						if (pitch <= EPS){
+							nBlades[count]= 1.0;
+						}
+
+//						cout << nBlades[count] <<" in zone "<<  count<<endl;
+						count++;
+					}
+					if((pitch != abs(Periodic_RotAngles[iMarker_PerBound][2])  || (pitch <= EPS) ) && (count < nZone)){
+						pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
+						nBlades[count]= 2*PI_NUMBER/pitch;
+						if (pitch <= EPS){
+							nBlades[count]= 1.0;
+						}
+//						cout << nBlades[count] <<" in zone "<<  count<<endl;
+						count++;
+					}
+				}
+		}
+  }
+  /*--- Identification of MixingPlane interface markers ---*/
+
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+  	unsigned short indexMarker=0;
+    Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = NO;
+    for (iMarker_MixingPlaneInterface = 0; iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface; iMarker_MixingPlaneInterface++)
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface])
+      	indexMarker=(int)(iMarker_MixingPlaneInterface/2+1);
+    Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile] = indexMarker;
+  }
+
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_DV[iMarker_CfgFile] = NO;
     for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++)
@@ -3029,11 +3276,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
   iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann, iMarker_NonUniform,
-  iMarker_NRBC, iMarker_MixBound, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
+  iMarker_NRBC, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iDV_Value,
-  iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
+  iMarker_FSIinterface, iMarker_MixingPlaneInterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDisk_Inlet,
   iMarker_ActDisk_Outlet;
   
@@ -4132,11 +4379,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  if (nMarker_MixBound != 0) {
+  if (nMarker_MixingPlaneInterface != 0) {
       cout << "MixingPlane boundary marker(s): ";
-      for (iMarker_MixBound = 0; iMarker_MixBound < nMarker_MixBound; iMarker_MixBound++) {
-        cout << Marker_MixBound[iMarker_MixBound];
-        if (iMarker_MixBound < nMarker_MixBound-1) cout << ", ";
+      for (iMarker_MixingPlaneInterface = 0; iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface; iMarker_MixingPlaneInterface++) {
+        cout << Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface];
+        if (iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface-1) cout << ", ";
         else cout <<"."<< endl;
     }
   }
@@ -4508,6 +4755,27 @@ unsigned short CConfig::GetMarker_CfgFile_FSIinterface(string val_marker) {
   return Marker_CfgFile_FSIinterface[iMarker_CfgFile];
 }
 
+unsigned short CConfig::GetMarker_CfgFile_Turbomachinery(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_Turbomachinery[iMarker_CfgFile];
+}
+
+unsigned short CConfig::GetMarker_CfgFile_TurbomachineryFlag(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_TurbomachineryFlag[iMarker_CfgFile];
+}
+
+unsigned short CConfig::GetMarker_CfgFile_MixingPlaneInterface(string val_marker) {
+  unsigned short iMarker_CfgFile;
+  for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
+    if (Marker_CfgFile_TagBound[iMarker_CfgFile] == val_marker) break;
+  return Marker_CfgFile_MixingPlaneInterface[iMarker_CfgFile];
+}
+
 unsigned short CConfig::GetMarker_CfgFile_Out_1D(string val_marker) {
   unsigned short iMarker_CfgFile;
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++)
@@ -4760,7 +5028,6 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone) {
         SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer));
     }
-    
     return multizone_filename;
 }
 
@@ -4799,6 +5066,16 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case AVG_OUTLET_PRESSURE:     AdjExt = "_pe";       break;
       case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
       case OUTFLOW_GENERALIZED:     AdjExt = "_chn";       break;
+      case KINETIC_ENERGY_LOSS:     AdjExt = "_ke";        break;
+      case TOTAL_PRESSURE_LOSS:     AdjExt = "_pl";        break;
+      case FLOW_ANGLE_OUT:          AdjExt = "_fao";       break;
+      case FLOW_ANGLE_IN:           AdjExt = "_fai";       break;
+      case TOTAL_EFFICIENCY:        AdjExt = "_teff";      break;
+      case TOTAL_STATIC_EFFICIENCY: AdjExt = "_tseff";     break;
+      case EULERIAN_WORK:           AdjExt = "_ew";        break;
+      case MASS_FLOW_IN:            AdjExt = "_mfi";       break;
+      case MASS_FLOW_OUT:           AdjExt = "_mfo";       break;
+      case ENTROPY_GENERATION:      AdjExt = "_entg";       break;
     }
     Filename.append(AdjExt);
 
@@ -5254,6 +5531,20 @@ su2double CConfig::GetNRBC_Var2(string val_marker) {
   for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
     if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
   return NRBC_Var2[iMarker_NRBC];
+}
+
+su2double CConfig::GetNRBC_RelaxFactorAverage(string val_marker) {
+  unsigned short iMarker_NRBC;
+  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
+    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
+  return RelaxFactorAverage[iMarker_NRBC];
+}
+
+su2double CConfig::GetNRBC_RelaxFactorFourier(string val_marker) {
+  unsigned short iMarker_NRBC;
+  for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++)
+    if (Marker_NRBC[iMarker_NRBC] == val_marker) break;
+  return RelaxFactorFourier[iMarker_NRBC];
 }
 
 su2double* CConfig::GetNRBC_FlowDir(string val_marker) {

@@ -44,10 +44,14 @@
 #include <cmath>
 #include <map>
 #include <assert.h>
-
+#ifdef HAVE_CGNS
+  #include "cgnslib.h"
+#endif
 #include "./option_structure.hpp"
 #include "./datatype_structure.hpp"
-
+#ifdef HAVE_CGNS
+  #include "cgnslib.h"
+#endif
 using namespace std;
 
 /*!
@@ -63,7 +67,7 @@ private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
-  unsigned short *Kind_TurboPerformance; /*!< \brief Kind of Turbomachinery performance calculation.*/
+  unsigned short *Kind_TurboMachinery;  /*!< \brief Kind of turbomachynery architecture.*/
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
 	su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
@@ -154,8 +158,10 @@ private:
 	nMarker_SymWall,				/*!< \brief Number of symmetry wall markers. */
   nMarker_Pressure,				/*!< \brief Number of pressure wall markers. */
 	nMarker_PerBound,				/*!< \brief Number of periodic boundary markers. */
-	nMarker_MixBound,				/*!< \brief Number of mixing boundary markers. */
-	nMarker_TurboPerf,				/*!< \brief Number of mixing boundary markers. */
+	nMarker_MixingPlaneInterface,				/*!< \brief Number of mixing plane interface boundary markers. */
+	nMarker_Turbomachinery,				/*!< \brief Number turbomachinery markers. */
+	nMarker_TurboPerformance,				/*!< \brief Number of turboperformance markers. */
+	nSpanWiseSections,			/*!< \brief Number of spanwise sections to compute 3D BC and Performance for turbomachinery   */
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
@@ -164,6 +170,7 @@ private:
 	nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
 	nMarker_NonUniform,					/*!< \brief Number of NonUniform flow markers. */
 	nMarker_NRBC,					/*!< \brief Number of NRBC flow markers. */
+	nRelaxFactor_NRBC,    /*!< \brief Number of relaxation factors for NRBC markers. */
 	nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
   nMarker_Supersonic_Outlet,					/*!< \brief Number of supersonic outlet flow markers. */
   nMarker_Outlet,					/*!< \brief Number of outlet flow markers. */
@@ -188,12 +195,11 @@ private:
 	string *Marker_Euler,			/*!< \brief Euler wall markers. */
 	*Marker_FarField,				/*!< \brief Far field markers. */
 	*Marker_Custom,
-	*Marker_SymWall,				/*!< \brief Symmetry wall markers. */
-  *Marker_Pressure,				/*!< \brief Pressure boundary markers. */
-	*Marker_PerBound,				/*!< \brief Periodic boundary markers. */
-	*Marker_PerDonor,				/*!< \brief Rotationally periodic boundary donor markers. */
-	*Marker_MixBound,				/*!< \brief MixingPlane boundary markers. */
-	*Marker_MixDonor,				/*!< \brief MixingPlane boundary donor markers. */
+	*Marker_SymWall,				            /*!< \brief Symmetry wall markers. */
+  *Marker_Pressure,				            /*!< \brief Pressure boundary markers. */
+	*Marker_PerBound,				            /*!< \brief Periodic boundary markers. */
+	*Marker_PerDonor,				            /*!< \brief Rotationally periodic boundary donor markers. */
+	*Marker_MixingPlaneInterface,				/*!< \brief MixingPlane interface boundary markers. */
 	*Marker_TurboBoundIn,				/*!< \brief Turbomachinery performance boundary markers. */
 	*Marker_TurboBoundOut,				/*!< \brief Turbomachinery performance boundary donor markers. */
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
@@ -230,7 +236,7 @@ private:
 	su2double **Riemann_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
 	su2double *NonUniform_Var1, *NonUniform_Var2;    /*!< \brief Specified values for Riemann boundary. */
 	su2double **NonUniform_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
-	su2double *NRBC_Var1, *NRBC_Var2;    /*!< \brief Specified values for NRBC boundary. */
+	su2double *NRBC_Var1, *NRBC_Var2, *RelaxFactorAverage, *RelaxFactorFourier;    /*!< \brief Specified values for NRBC boundary. */
 	su2double **NRBC_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for NRBC boundaries. */
 	su2double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
     su2double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
@@ -304,6 +310,7 @@ private:
   unsigned short* nDV_Value;		/*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
   unsigned short nFFDBox;		/*!< \brief Number of ffd boxes. */
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
+  unsigned short nTurboMachineryKind; 	/*!< \brief Number turbomachinery types specified. */
 	unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
 	su2double **ParamDV;				/*!< \brief Parameters of the design variable. */
   su2double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
@@ -474,6 +481,9 @@ private:
   *Marker_All_GeoEval,       /*!< \brief Global index for geometrical evaluation. */
   *Marker_All_Plotting,        /*!< \brief Global index for plotting using the grid information. */
   *Marker_All_FSIinterface,        /*!< \brief Global index for FSI interface markers using the grid information. */
+	*Marker_All_Turbomachinery,        /*!< \brief Global index for Turbomachinery markers using the grid information. */
+	*Marker_All_TurbomachineryFlag,        /*!< \brief Global index for Turbomachinery markers flag using the grid information. */
+	*Marker_All_MixingPlaneInterface,        /*!< \brief Global index for MixingPlane interface markers using the grid information. */
   *Marker_All_DV,          /*!< \brief Global index for design variable markers using the grid information. */
   *Marker_All_Moving,          /*!< \brief Global index for moving surfaces using the grid information. */
   *Marker_All_Designing,         /*!< \brief Global index for moving using the grid information. */
@@ -483,12 +493,16 @@ private:
   *Marker_CfgFile_GeoEval,      /*!< \brief Global index for monitoring using the config information. */
   *Marker_CfgFile_Plotting,     /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_FSIinterface,     /*!< \brief Global index for FSI interface using the config information. */
+	*Marker_CfgFile_Turbomachinery,     /*!< \brief Global index for Turbomachinery  using the config information. */
+	*Marker_CfgFile_TurbomachineryFlag,     /*!< \brief Global index for Turbomachinery flag using the config information. */
+	*Marker_CfgFile_MixingPlaneInterface,     /*!< \brief Global index for MixingPlane interface using the config information. */
   *Marker_CfgFile_Out_1D,      /*!< \brief Global index for plotting using the config information. */
   *Marker_CfgFile_Moving,       /*!< \brief Global index for moving surfaces using the config information. */
   *Marker_CfgFile_DV,       /*!< \brief Global index for design variable markers using the config information. */
   *Marker_CfgFile_PerBound;     /*!< \brief Global index for periodic boundaries using the config information. */
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
 	su2double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
+	su2double *nBlades;						/*!< \brief number of blades for turbomachinery computation. */
 	unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
 	unsigned short Axis_Orientation;	/*!< \brief Axis orientation. */
 	unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
@@ -503,6 +517,7 @@ private:
   *RefOriginMoment_Y,      /*!< \brief Y Origin for moment computation. */
   *RefOriginMoment_Z,      /*!< \brief Z Origin for moment computation. */
   *CFL_AdaptParam,      /*!< \brief Information about the CFL ramp. */
+	*RelaxFactor_NRBC,      /*!< \brief Information about the under relaxation factor for NRBC. */
   *CFL,
 	DomainVolume;		/*!< \brief Volume of the computational grid. */
   unsigned short nRefOriginMoment_X,    /*!< \brief Number of X-coordinate moment computation origins. */
@@ -948,10 +963,10 @@ private:
 
   template <class Tenum>
   void addNRBCOption(const string name, unsigned short & nMarker_NRBC, string * & Marker_NRBC, unsigned short* & option_field, const map<string, Tenum> & enum_map,
-                                 su2double* & var1, su2double* & var2, su2double** & FlowDir) {
+                                 su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relaxfactor1, su2double* & relaxfactor2) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionNRBC<Tenum>(name, nMarker_NRBC, Marker_NRBC, option_field, enum_map, var1, var2, FlowDir);
+    COptionBase* val = new COptionNRBC<Tenum>(name, nMarker_NRBC, Marker_NRBC, option_field, enum_map, var1, var2, FlowDir, relaxfactor1, relaxfactor2);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -980,19 +995,19 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addMixingPlaneOption(const string & name, unsigned short & nMarker_MixBound,
-                    string* & Marker_MixBound, string* & Marker_MixDonor){
-    assert(option_map.find(name) == option_map.end());
-    all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionMixingPlane(name, nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
-    option_map.insert(pair<string, COptionBase *>(name, val));
-  }
-  template <class Tenum>
+//  void addMixingPlaneOption(const string & name, unsigned short & nMarker_MixBound,
+//                    string* & Marker_MixBound, string* & Marker_MixDonor){
+//    assert(option_map.find(name) == option_map.end());
+//    all_options.insert(pair<string, bool>(name, true));
+//    COptionBase* val = new COptionMixingPlane(name, nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
+//    option_map.insert(pair<string, COptionBase *>(name, val));
+//  }
+
   void addTurboPerfOption(const string & name, unsigned short & nMarker_TurboPerf,
-                    string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut,  unsigned short* & Kind_TurboPerformance, const map<string, Tenum> & TurboPerformance_Map){
+                    string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut){
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionTurboPerformance<Tenum>(name, nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut, Kind_TurboPerformance, TurboPerformance_Map );
+    COptionBase* val = new COptionTurboPerformance(name, nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -1037,6 +1052,23 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CConfig(void);
+
+  /*!
+   * \brief Gets the number of zones in the mesh file.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \param[in] config - Definition of the particular problem.
+   * \return Total number of zones in the grid file.
+   */
+  static unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config);
+
+  /*!
+   * \brief Gets the number of dimensions in the mesh file
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \return Total number of domains in the grid file.
+   */
+  static unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
 
   /*!
    * \brief Initializes pointers to null
@@ -2537,6 +2569,27 @@ public:
 	void SetMarker_All_FSIinterface(unsigned short val_marker, unsigned short val_fsiinterface);
 
 	/*!
+	 * \brief Set if a marker <i>val_marker</i> is part of the Turbomachinery (read from the config file).
+	 * \param[in] val_marker - Index of the marker in which we are interested.
+	 * \param[in] val_turboperf - 0 if not part of Turbomachinery or greater than 1 if it is part.
+	 */
+	void SetMarker_All_Turbomachinery(unsigned short val_marker, unsigned short val_turbo);
+
+	/*!
+	 * \brief Set a flag to the marker <i>val_marker</i> part of the Turbomachinery (read from the config file).
+	 * \param[in] val_marker - Index of the marker in which we are interested.
+	 * \param[in] val_turboperflag - 0 if is not part of the Turbomachinery, flag INFLOW or OUTFLOW if it is part.
+	 */
+	void SetMarker_All_TurbomachineryFlag(unsigned short val_marker, unsigned short val_turboflag);
+
+	/*!
+	 * \brief Set if a marker <i>val_marker</i> is part of the MixingPlane interface (read from the config file).
+	 * \param[in] val_marker - Index of the marker in which we are interested.
+	 * \param[in] val_turboperf - 0 if not part of the MixingPlane interface or greater than 1 if it is part.
+	 */
+	void SetMarker_All_MixingPlaneInterface(unsigned short val_marker, unsigned short val_mixplan_interface);
+
+	/*!
 	 * \brief Set if a marker <i>val_marker</i> is going to be affected by design variables <i>val_moving</i>
 	 *        (read from the config file).
 	 * \param[in] val_marker - Index of the marker in which we are interested.
@@ -2618,6 +2671,26 @@ public:
 	 */
 	unsigned short GetMarker_All_FSIinterface(unsigned short val_marker);
 
+	/*!
+	 * \brief Get the MixingPlane interface information for a marker <i>val_marker</i>.
+	 * \param[in] val_marker value of the marker on the grid.
+	 * \return 0 if is not part of the MixingPlane Interface and greater than 1 if it is part.
+	 */
+	unsigned short GetMarker_All_MixingPlaneInterface(unsigned short val_marker);
+
+	/*!
+	 * \brief Get the Turbomachinery information for a marker <i>val_marker</i>.
+	 * \param[in] val_marker value of the marker on the grid.
+	 * \return 0 if is not part of the Turbomachinery and greater than 1 if it is part.
+	 */
+	unsigned short GetMarker_All_Turbomachinery(unsigned short val_marker);
+
+	/*!
+	 * \brief Get the Turbomachinery flag information for a marker <i>val_marker</i>.
+	 * \param[in] val_marker value of the marker on the grid.
+	 * \return 0 if is not part of the Turbomachinery, flag INFLOW or OUTFLOW if it is part.
+	 */
+	unsigned short GetMarker_All_TurbomachineryFlag(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the number of FSI interface markers <i>val_marker</i>.
@@ -3473,45 +3546,74 @@ public:
 	unsigned short GetKind_MixingProcess(void);
 
 	/*!
+	 * \brief Get the kind of turbomachinery architecture.
+	 * \return Kind of turbomachinery architecture.
+	 */
+	unsigned short GetKind_TurboMachinery(unsigned short val_iZone);
+	/*!
      * \brief Verify if there is mixing plane interface specified from config file.
 	 * \return boolean.
 	 */
-	bool GetBoolMixingPlane(void);
+	bool GetBoolMixingPlaneInterface(void);
 
 	/*!
 	 * \brief number mixing plane interface specified from config file.
 	 * \return number of bound.
 	 */
-    unsigned short Get_nMarkerMixingPlane(void);
+	unsigned short GetnMarker_MixingPlaneInterface(void);
 
-    /*!
-	 * \brief get bounds name of mixing plane interface.
-	 * \return name of the bound.
-	 */
-    string GetMarker_MixingPlane_Bound(unsigned short index);
-
-
-    /*!
-	 * \brief get bounds name of mixing plane interface.
-	 * \return name of the bound.
-	 */
-    string GetMarker_MixingPlane_Donor(unsigned short index);
-
-    /*!
-     * \brief Verify if there is Turbomachinery performance option specified from config file.
+	/*!
+	 * \brief Verify if there is Turbomachinery performance option specified from config file.
 	 * \return boolean.
 	 */
-	bool GetBoolTurboPerf(void);
-    /*!
-     * \brief Verify if there is NonUniform Boundary Condition option specified from config file.
-	 * \return boolean.
+	bool GetBoolTurbomachinery(void);
+
+	/*!
+	 * \brief number Turbomachinery blades computed using the pitch information.
+	 * \return nBlades.
 	 */
-	bool GetBoolNonUniformBC(void);
-    /*!
+	su2double GetnBlades(unsigned short val_iZone);
+  /*!
+   * \brief Verify if there is any Non Reflecting Boundary Condition option specified from config file.
+   * \return boolean.
+   */
+	bool GetBoolNRBC(void);
+
+  /*!
+   * \brief Verify if there is any Rieamann Boundary Condition option specified from config file.
+   * \return boolean.
+   */
+	bool GetBoolRiemann(void);
+
+	/*!
 	 * \brief number Turbomachinery performance option specified from config file.
 	 * \return number of bound.
 	 */
-	unsigned short Get_nMarkerTurboPerf(void);
+	bool GetBoolTurboPerf(void);
+
+	/*!
+   * \brief Verify if there is NonUniform Boundary Condition option specified from config file.
+	 * \return boolean.
+	 */
+	bool GetBoolNonUniformBC(void);
+
+	/*!
+	 * \brief number Turbomachinery performance option specified from config file.
+	 * \return number of bound.
+	 */
+	unsigned short GetnMarker_Turbomachinery(void);
+
+	/*!
+	 * \brief number Turbomachinery performance option specified from config file.
+	 * \return number of bound.
+	 */
+	unsigned short GetnMarker_TurboPerformance(void);
+
+  /*!
+   * \brief number span-wise sections to compute 3D BC and performance for turbomachinery.
+   * \return number of span-wise sections.
+   */
+	unsigned short Get_nSpanWiseSections(void);
 
     /*!
 	 * \brief get inlet bounds name for Turbomachinery performance calculation.
@@ -3524,12 +3626,6 @@ public:
 	 * \return name of the bound.
 	 */
 	string GetMarker_TurboPerf_BoundOut(unsigned short index);
-
-	/*!
-	 * \brief get marker kind for Turbomachinery performance calculation.
-	 * \return kind index.
-	 */
-	unsigned short GetKind_TurboPerf(unsigned short index);
 
     /*!
 	 * \brief Get the number of sections.
@@ -4478,6 +4574,23 @@ public:
 	 */
 	unsigned short GetMarker_CfgFile_FSIinterface(string val_marker);
 
+	/*!
+	 * \brief Get the TurboPerformance information from the config definition for the marker <i>val_marker</i>.
+	 * \return TurboPerformance information of the boundary in the config information for the marker <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_CfgFile_Turbomachinery(string val_marker);
+
+	/*!
+	 * \brief Get the TurboPerformance flag information from the config definition for the marker <i>val_marker</i>.
+	 * \return TurboPerformance flag information of the boundary in the config information for the marker <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_CfgFile_TurbomachineryFlag(string val_marker);
+
+	/*!
+	 * \brief Get the MixingPlane interface information from the config definition for the marker <i>val_marker</i>.
+	 * \return Plotting information of the boundary in the config information for the marker <i>val_marker</i>.
+	 */
+	unsigned short GetMarker_CfgFile_MixingPlaneInterface(string val_marker);
   /*!
    * \brief Get the 1-D output (ie, averaged pressure) information from the config definition for the marker <i>val_marker</i>.
    * \return 1D output information of the boundary in the config information for the marker <i>val_marker</i>.
@@ -4910,6 +5023,20 @@ public:
 	 * \return The Flowdir
 	 */
 	su2double* GetNRBC_FlowDir(string val_marker);
+
+	/*!
+	 * \brief Get the relax factor for the average component at NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 * \return The relax factor for the average component
+	 */
+	su2double GetNRBC_RelaxFactorAverage(string val_marker);
+
+	/*!
+	 * \brief Get the relax factor for the fourier component at NRBC boundary.
+	 * \param[in] val_marker - Index corresponding to the NRBC boundary.
+	 * \return The relax factor for the fourier component
+	 */
+	su2double GetNRBC_RelaxFactorFourier(string val_marker);
 
 	/*!
 	 * \brief Get Kind Data of NRBC boundary.

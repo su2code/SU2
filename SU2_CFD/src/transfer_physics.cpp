@@ -366,3 +366,118 @@ void CTransfer_ConservativeVars::SetTarget_Variable(CSolver *target_solution, CG
 
 }
 
+
+
+
+CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(void) : CTransfer() {
+
+}
+
+CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config){
+	unsigned short iVar;
+	nVar = val_nVar;
+
+	Donor_Variable     = new su2double[nVar + 2];
+	Target_Variable    = new su2double[nVar + 2];
+
+
+
+	for (iVar = 0; iVar < nVar + 2; iVar++){
+		Donor_Variable[iVar]  = 0.0;
+		Target_Variable[iVar] = 0.0;
+	}
+
+
+}
+
+CTransfer_MixingPlaneInterface::~CTransfer_MixingPlaneInterface(void) {
+	if (Donor_Variable       != NULL) delete [] Donor_Variable;
+	if (Target_Variable      != NULL) delete [] Target_Variable;
+}
+
+
+
+void CTransfer_MixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
+								   	     	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	CConfig *donor_config, unsigned long Marker_Donor,
+																														unsigned long iSpan, unsigned long rank) {
+
+	unsigned short nDim = nVar - 2;
+
+	Donor_Variable[0] = donor_solution->GetAverageDensity(Marker_Donor, iSpan);
+	Donor_Variable[1]	= donor_solution->GetAveragePressure(Marker_Donor, iSpan);
+	Donor_Variable[2] = donor_solution->GetAverageTotPressure(Marker_Donor, iSpan);
+ 	Donor_Variable[3] = donor_solution->GetAverageTotTemperature(Marker_Donor, iSpan);
+ 	Donor_Variable[4] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[0];
+ 	Donor_Variable[5] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[1];
+
+ 	if(nDim == 3){
+ 		Donor_Variable[6] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[2];
+ 	}
+
+}
+
+
+void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
+										  CConfig *target_config, unsigned long Marker_Target,
+										  unsigned long iSpan, unsigned long rank) {
+
+	unsigned short nDim = nVar - 2;
+
+	target_solution->SetExtAverageDensity(Marker_Target, iSpan, Target_Variable[0]);
+	target_solution->SetExtAveragePressure(Marker_Target, iSpan, Target_Variable[1]);
+	target_solution->SetExtAverageTotPressure(Marker_Target, iSpan, Target_Variable[2]);
+  target_solution->SetExtAverageTotTemperature(Marker_Target, iSpan, Target_Variable[3]);
+	target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 0, Target_Variable[4]);
+	target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 1, Target_Variable[5]);
+
+
+  if(nDim == 3){
+  	target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 2, Target_Variable[6]);
+  }
+
+
+}
+
+void CTransfer_MixingPlaneInterface::GetSetTurboPerformance(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone){
+
+	/*--- Loop over the nMarker of turboperformance and get the desired values ---*/
+//	TotalStaticEfficiency[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalStaticEfficiency(iMarker_Monitoring);
+//	TotalTotalEfficiency[iMarker_Monitoring]  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalTotalEfficiency(iMarker_Monitoring);
+	target_solution->SetKineticEnergyLoss(donor_solution->GetKineticEnergyLoss(donorZone), donorZone);
+	target_solution->SetTotalPressureLoss(donor_solution->GetTotalPressureLoss(donorZone), donorZone);
+	target_solution->SetMassFlowIn(donor_solution->GetMassFlowIn(donorZone), donorZone);
+	target_solution->SetMassFlowOut(donor_solution->GetMassFlowOut(donorZone), donorZone);
+	target_solution->SetFlowAngleIn(donor_solution->GetFlowAngleIn(donorZone), donorZone);
+	target_solution->SetFlowAngleOut(donor_solution->GetFlowAngleOut(donorZone), donorZone);
+	target_solution->SetEulerianWork(donor_solution->GetEulerianWork(donorZone), donorZone);
+	target_solution->SetTotalEnthalpyIn(donor_solution->GetTotalEnthalpyIn(donorZone), donorZone);
+	target_solution->SetPressureRatio(donor_solution->GetPressureRatio(donorZone), donorZone);
+	target_solution->SetEnthalpyOut(donor_solution->GetEnthalpyOut(donorZone), donorZone);
+	target_solution->SetMachIn(donor_solution->GetMachIn(donorZone), donorZone);
+	target_solution->SetMachOut(donor_solution->GetMachOut(donorZone), donorZone);
+	target_solution->SetVelocityOutIs(donor_solution->GetVelocityOutIs(donorZone), donorZone);
+	target_solution->SetTotalPresureIn(donor_solution->GetTotalPresureIn(donorZone), donorZone);
+	target_solution->SetTotalTemperatureIn(donor_solution->GetTotalTemperatureIn(donorZone), donorZone);
+	target_solution->SetFlowAngleIn_BC(donor_solution->GetFlowAngleIn_BC(donorZone), donorZone);
+	target_solution->SetEntropyIn(donor_solution->GetEntropyIn(donorZone), donorZone);
+	target_solution->SetEntropyOut(donor_solution->GetEntropyOut(donorZone), donorZone);
+	target_solution->SetEntropyIn_BC(donor_solution->GetEntropyIn_BC(donorZone), donorZone);
+	target_solution->SetTotalEnthalpyIn_BC(donor_solution->GetTotalEnthalpyIn_BC(donorZone), donorZone);
+	target_solution->SetDensityIn(donor_solution->GetDensityIn(donorZone), donorZone);
+	target_solution->SetPressureIn(donor_solution->GetPressureIn(donorZone), donorZone);
+	target_solution->SetTurboVelocityIn(donor_solution->GetTurboVelocityIn(donorZone), donorZone);
+	target_solution->SetDensityOut(donor_solution->GetDensityOut(donorZone), donorZone);
+	target_solution->SetPressureOut(donor_solution->GetPressureOut(donorZone), donorZone);
+	target_solution->SetTurboVelocityOut(donor_solution->GetTurboVelocityOut(donorZone), donorZone);
+	target_solution->SetEnthalpyOutIs(donor_solution->GetEnthalpyOutIs(donorZone), donorZone);
+	target_solution->SetEntropyGen(donor_solution->GetEntropyGen(donorZone), donorZone);
+	target_solution->SetAbsFlowAngleIn(donor_solution->GetAbsFlowAngleIn(donorZone), donorZone);
+	target_solution->SetTotalEnthalpyOut(donor_solution->GetTotalEnthalpyOut(donorZone), donorZone);
+	target_solution->SetTotalEnthalpyOutIs(donor_solution->GetTotalEnthalpyOutIs(donorZone), donorZone);
+	target_solution->SetTotalRothalpyIn(donor_solution->GetTotalRothalpyIn(donorZone), donorZone);
+	target_solution->SetTotalRothalpyOut(donor_solution->GetTotalRothalpyOut(donorZone), donorZone);
+	target_solution->SetAbsFlowAngleOut(donor_solution->GetAbsFlowAngleOut(donorZone), donorZone);
+	target_solution->SetPressureOut_BC(donor_solution->GetPressureOut_BC(donorZone), donorZone);
+
+}
+

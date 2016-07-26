@@ -213,61 +213,63 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     CSysSolve *system  = new CSysSolve();
     
-    switch (config->GetDeform_Linear_Solver()) {
+    if (LinSysRes.norm() != 0.0){
+      switch (config->GetDeform_Linear_Solver()) {
         
         /*--- Solve the linear system (GMRES with restart) ---*/
         
-      case RESTARTED_FGMRES:
-        
-        Tot_Iter = 0; MaxIter = RestartIter;
-        
-        system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false);
-        
-        if ((rank == MASTER_NODE) && Screen_Output) {
-          cout << "\n# FGMRES (with restart) residual history" << endl;
-          cout << "# Residual tolerance target = " << NumError << endl;
-          cout << "# Initial residual norm     = " << Residual_Init << endl;
-        }
-        
-        if (rank == MASTER_NODE) { cout << "     " << Tot_Iter << "     " << Residual_Init/Residual_Init << endl; }
-        
-        while (Tot_Iter < Smoothing_Iter) {
-          
-          if (IterLinSol + RestartIter > Smoothing_Iter)
-            MaxIter = Smoothing_Iter - IterLinSol;
-          
-          IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false);
-          Tot_Iter += IterLinSol;
-          
-          if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
-          
-          if (Residual < Residual_Init*NumError) { break; }
-          
-        }
-        
-        if ((rank == MASTER_NODE) && Screen_Output) {
-          cout << "# FGMRES (with restart) final (true) residual:" << endl;
-          cout << "# Iteration = " << Tot_Iter << ": |res|/|res0| = " << Residual/Residual_Init << ".\n" << endl;
-        }
-        
-        break;
-        
-        /*--- Solve the linear system (GMRES) ---*/
-        
-      case FGMRES:
-        
-        Tot_Iter = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
-        
-        break;
-        
-        /*--- Solve the linear system (BCGSTAB) ---*/
-        
-      case BCGSTAB:
-        
-        Tot_Iter = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
-        
-        break;
-        
+        case RESTARTED_FGMRES:
+
+          Tot_Iter = 0; MaxIter = RestartIter;
+
+          system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false);
+
+          if ((rank == MASTER_NODE) && Screen_Output) {
+            cout << "\n# FGMRES (with restart) residual history" << endl;
+            cout << "# Residual tolerance target = " << NumError << endl;
+            cout << "# Initial residual norm     = " << Residual_Init << endl;
+          }
+
+          if (rank == MASTER_NODE) { cout << "     " << Tot_Iter << "     " << Residual_Init/Residual_Init << endl; }
+
+          while (Tot_Iter < Smoothing_Iter) {
+
+            if (IterLinSol + RestartIter > Smoothing_Iter)
+              MaxIter = Smoothing_Iter - IterLinSol;
+
+            IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false);
+            Tot_Iter += IterLinSol;
+
+            if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
+
+            if (Residual < Residual_Init*NumError) { break; }
+
+          }
+
+          if ((rank == MASTER_NODE) && Screen_Output) {
+            cout << "# FGMRES (with restart) final (true) residual:" << endl;
+            cout << "# Iteration = " << Tot_Iter << ": |res|/|res0| = " << Residual/Residual_Init << ".\n" << endl;
+          }
+
+          break;
+
+          /*--- Solve the linear system (GMRES) ---*/
+
+        case FGMRES:
+
+          Tot_Iter = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+
+          break;
+
+          /*--- Solve the linear system (BCGSTAB) ---*/
+
+        case BCGSTAB:
+
+          Tot_Iter = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+
+          break;
+
+      }
     }
     
     /*--- Deallocate memory needed by the Krylov linear solver ---*/
@@ -2835,7 +2837,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 
       /*--- Output original FFD FFDBox ---*/
       
-      if (rank == MASTER_NODE) {
+      if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
         cout << "Writing a Tecplot file of the FFD boxes." << endl;
         for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
           FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, true);
@@ -2926,7 +2928,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         
         /*--- Output the deformed FFD Boxes ---*/
         
-        if (rank == MASTER_NODE) {
+        if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
           cout << "Writing a Tecplot file of the FFD boxes." << endl;
           for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
             FFDBox[iFFDBox]->SetTecplot(geometry, iFFDBox, false);
@@ -3395,6 +3397,8 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
   bool JPlane_Intersect_A = false, JPlane_Intersect_B = false;
   bool KPlane_Intersect_A = false, KPlane_Intersect_B = false;
 
+  bool found_Marker = false;
+
   /*--- Only the markers in the moving list ---*/
   
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
@@ -3403,6 +3407,17 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_GEO)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (config->GetDirectDiff() == D_DESIGN))) {
+	found_Marker = false;
+        for (unsigned long iSurfacePoints = 0; iSurfacePoints < FFDBox->GetnSurfacePoint(); iSurfacePoints++) {
+          
+          if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_All_TagBound(FFDBox->Get_MarkerIndex(iSurfacePoints))){
+            found_Marker = true;
+            cout << config->GetMarker_All_TagBound(iMarker) << " " << iFFDBox << endl;
+            break; 
+          }
+        }
+        if (found_Marker == true){
+
       for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
         for (iNode = 0; iNode < geometry->bound[iMarker][iElem]->GetnNodes(); iNode++) {
           iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
@@ -3464,6 +3479,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
                 }
               }
             }
+          }
           }
         }
       }
@@ -6722,10 +6738,10 @@ void CSurfaceMovement::MergeFFDInfo(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
+void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeometry **geometry, CConfig **config) {
   
   
-	unsigned short iOrder, jOrder, kOrder, iFFDBox, iCornerPoints, iParentFFDBox, iChildFFDBox;
+  unsigned short iOrder, jOrder, kOrder, iFFDBox, iCornerPoints, iParentFFDBox, iChildFFDBox, iZone;
 	unsigned long iSurfacePoints;
   char cstr[MAX_STRING_SIZE], mesh_file[MAX_STRING_SIZE];
   string str;
@@ -6739,19 +6755,49 @@ void CSurfaceMovement::WriteFFDInfo(CGeometry *geometry, CConfig *config) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  unsigned short nDim = geometry->GetnDim();
+  unsigned short nDim = geometry[ZONE_0]->GetnDim();
   
-  /*--- Merge the FFD info ---*/
+  for (iZone = 0; iZone < config[ZONE_0]->GetnZone(); iZone++){
+
+    /*--- Merge the parallel FFD info ---*/
   
-  MergeFFDInfo(geometry, config);
+    surface_movement[iZone]->MergeFFDInfo(geometry[iZone], config[iZone]);
+
+    if (iZone > 0){
+
+      /* --- Merge the per-zone FFD info from the other zones into ZONE_0 ---*/
+
+      for (iFFDBox = 0; iFFDBox < nFFDBox; iFFDBox++){
+
+        surface_movement[ZONE_0]->GlobalCoordX[iFFDBox].insert(surface_movement[ZONE_0]->GlobalCoordX[iFFDBox].end(),
+                                                               surface_movement[iZone]->GlobalCoordX[iFFDBox].begin(),
+                                                               surface_movement[iZone]->GlobalCoordX[iFFDBox].end());
+        surface_movement[ZONE_0]->GlobalCoordY[iFFDBox].insert(surface_movement[ZONE_0]->GlobalCoordY[iFFDBox].end(),
+                                                               surface_movement[iZone]->GlobalCoordY[iFFDBox].begin(),
+                                                               surface_movement[iZone]->GlobalCoordY[iFFDBox].end());
+        surface_movement[ZONE_0]->GlobalCoordZ[iFFDBox].insert(surface_movement[ZONE_0]->GlobalCoordZ[iFFDBox].end(),
+                                                               surface_movement[iZone]->GlobalCoordZ[iFFDBox].begin(),
+                                                               surface_movement[iZone]->GlobalCoordZ[iFFDBox].end());
+        surface_movement[ZONE_0]->GlobalTag[iFFDBox].insert(surface_movement[ZONE_0]->GlobalTag[iFFDBox].end(),
+                                                               surface_movement[iZone]->GlobalTag[iFFDBox].begin(),
+                                                               surface_movement[iZone]->GlobalTag[iFFDBox].end());
+        surface_movement[ZONE_0]->GlobalPoint[iFFDBox].insert(surface_movement[ZONE_0]->GlobalPoint[iFFDBox].end(),
+                                                               surface_movement[iZone]->GlobalPoint[iFFDBox].begin(),
+                                                               surface_movement[iZone]->GlobalPoint[iFFDBox].end());
+      }
+    }
+  }
+
+
+
   
-  /*--- Attach to the mesh file the FFD information ---*/
+  /*--- Attach to the mesh file the FFD information (all information is in ZONE_0) ---*/
   
   if (rank == MASTER_NODE) {
     
     /*--- Read the name of the output file ---*/
     
-    str = config->GetMesh_Out_FileName();
+    str = config[ZONE_0]->GetMesh_Out_FileName();
     strcpy (mesh_file, str.c_str());
     strcpy (cstr, mesh_file);
     

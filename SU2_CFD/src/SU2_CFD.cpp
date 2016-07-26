@@ -87,9 +87,11 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
   
-  nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+
+  nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   delete config;
+
   /*--- Definition and of the containers for all possible zones. ---*/
   
   iteration_container    = new CIteration*[nZone];
@@ -250,7 +252,12 @@ int main(int argc, char *argv[]) {
       /*--- Update the multi-grid structure to propagate the derivative information to the coarser levels ---*/
       
       geometry_container[iZone][MESH_0]->UpdateGeometry(geometry_container[iZone],config_container[iZone]);
-      
+
+      if (config_container[iZone]->GetBoolTurbomachinery()){
+        geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, INFLOW, false);
+        geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, OUTFLOW, false);
+      }
+
       /*--- Set the derivative of the wall-distance with respect to the surface nodes ---*/
       
       if ( (config_container[iZone]->GetKind_Solver() == RANS) ||
@@ -296,10 +303,10 @@ int main(int argc, char *argv[]) {
 		  && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
 	  	  ExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
 
-  /*--- Initiate value at each interface for the mixing plane ---*/
-  if(config_container[ZONE_0]->GetBoolMixingPlane())
-  	for (iZone = 0; iZone < nZone; iZone++)
-  	  iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+//  /*--- Initiate value at each interface for the mixing plane ---*/
+//  if(config_container[ZONE_0]->GetBoolMixingPlane())
+//  	for (iZone = 0; iZone < nZone; iZone++)
+//  	  iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
 
   /*--- Main external loop of the solver. Within this loop, each iteration ---*/
   

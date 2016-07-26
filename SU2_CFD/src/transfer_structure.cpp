@@ -1270,3 +1270,277 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
   
   
 }
+
+
+
+void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *target_solution,
+																 CGeometry *donor_geometry, CGeometry *target_geometry,
+																 CConfig *donor_config, CConfig *target_config, unsigned short iMarkerInt){
+	unsigned short  nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
+	unsigned short  iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+	unsigned short iSpan, nSpanDonor, nSpanTarget;
+	int Marker_Donor = -1, Marker_Target = -1;
+	su2double *avgPressureDonor = NULL, *avgDensityDonor = NULL, *avgNormalVelDonor = NULL,
+						*avgTangVelDonor = NULL, *avgTotPressureDonor = NULL, *avgTotTemperatureDonor = NULL, *avg3DVelDonor = NULL;
+	su2double *avgPressureTarget = NULL, *avgDensityTarget = NULL, *avgNormalVelTarget = NULL, *avg3DVelTarget = NULL,
+						*avgTangVelTarget = NULL, *avgTotPressureTarget = NULL, *avgTotTemperatureTarget = NULL;
+	int rank = MASTER_NODE;
+  int size = SINGLE_NODE, iSize;
+  unsigned short nDim = nVar - 2;
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    su2double *BuffAvgPressureDonor = NULL, *BuffAvgDensityDonor = NULL, *BuffAvgNormalVelDonor = NULL, *BuffAvg3DVelDonor = NULL,
+    		      *BuffAvgTangVelDonor = NULL, *BuffAvgTotPressureDonor = NULL, *BuffAvgTotTemperatureDonor = NULL;
+    int nSpanSize, *BuffMarkerDonor;
+#endif
+
+
+	nMarkerTarget  = target_geometry->GetnMarker();
+	nMarkerDonor   = donor_geometry->GetnMarker();
+	nSpanDonor     = donor_config->Get_nSpanWiseSections();
+	nSpanTarget		 = target_config->Get_nSpanWiseSections();
+
+	// here the number of span should be already known
+	// so perhaps when this option would be different for boundary markers then this should be done after the loop
+	avgDensityDonor   		   =  new su2double[nSpanDonor];
+	avgPressureDonor  		   =  new su2double[nSpanDonor];
+	avgTotPressureDonor      =  new su2double[nSpanDonor];
+	avgTotTemperatureDonor   =  new su2double[nSpanDonor];
+	avgNormalVelDonor 		   =  new su2double[nSpanDonor];
+	avgTangVelDonor   		   =  new su2double[nSpanDonor];
+	avg3DVelDonor						 =  new su2double[nSpanDonor];
+
+	for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
+		avgDensityDonor[iSpan]   			= -1.0;
+		avgPressureDonor[iSpan]  			= -1.0;
+		avgTotPressureDonor[iSpan]    = -1.0;
+		avgTotTemperatureDonor[iSpan] = -1.0;
+		avgNormalVelDonor[iSpan] 			= -1.0;
+		avgTangVelDonor[iSpan]   			= -1.0;
+		avg3DVelDonor[iSpan]   			  = -1.0;
+	}
+
+	avgDensityTarget   				=  new su2double[nSpanTarget];
+	avgPressureTarget  				=  new su2double[nSpanTarget];
+	avgTotPressureTarget      =  new su2double[nSpanTarget];
+	avgTotTemperatureTarget   =  new su2double[nSpanTarget];
+	avgNormalVelTarget 				=  new su2double[nSpanTarget];
+	avgTangVelTarget   				=  new su2double[nSpanTarget];
+	avg3DVelTarget						=  new su2double[nSpanTarget];
+
+	for (iSpan = 0; iSpan < nSpanTarget; iSpan++){
+		avgDensityTarget[iSpan]        = -1.0;
+		avgPressureTarget[iSpan]       = -1.0;
+		avgTotPressureTarget[iSpan]    = -1.0;
+		avgTotTemperatureTarget[iSpan] = -1.0;
+		avgNormalVelTarget[iSpan]      = -1.0;
+	  avgTangVelTarget[iSpan]        = -1.0;
+	  avg3DVelTarget[iSpan]     		 = -1.0;
+	}
+
+	/*--- Outer loop over the markers on the Mixing-Plane interface: compute one by one ---*/
+	/*--- The tags are always an integer greater than 1: loop from 1 to nMarkerMixingPlane ---*/
+
+
+
+	Marker_Donor = -1;
+	Marker_Target = -1;
+
+	/*--- The donor and target markers are tagged with the same index.
+	 *--- This is independent of the MPI domain decomposition.
+	 *--- We need to loop over all markers on both sides  ---*/
+
+	/*--- On the donor side ---*/
+
+	for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+		/*--- If the tag GetMarker_All_MixingPlaneInterface equals the index we are looping at ---*/
+		if ( donor_config->GetMarker_All_MixingPlaneInterface(iMarkerDonor) == iMarkerInt ){
+			/*--- We have identified the local index of the Donor marker ---*/
+			/*--- Now we are going to store the average values that belong to Marker_Donor on each processor ---*/
+			/*--- Store the identifier for the structural marker ---*/
+			Marker_Donor = iMarkerDonor;
+			//	cout << " donor is "<< donor_config->GetMarker_All_TagBound(Marker_Donor)<<" in imarker interface "<< iMarkerInt <<endl;
+			/*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
+			break;
+		}
+		else {
+			/*--- If the tag hasn't matched any tag within the donor markers ---*/
+			Marker_Donor = -1;
+		}
+	}
+	/*--- Here we want to make available the quantities for all the processors and collect them in a buffer
+	 * for each span of the donor the span-wise height vector also so that then we can interpolate on the target side  ---*/
+	if (Marker_Donor != -1){
+		for(iSpan = 0; iSpan < nSpanDonor ; iSpan++){
+			GetDonor_Variable(donor_solution, donor_geometry, donor_config, Marker_Donor, iSpan, rank);
+			avgDensityDonor[iSpan]  	 		= Donor_Variable[0];
+			avgPressureDonor[iSpan]  			= Donor_Variable[1];
+			avgTotPressureDonor[iSpan]    = Donor_Variable[2];
+			avgTotTemperatureDonor[iSpan] = Donor_Variable[3];
+			avgNormalVelDonor[iSpan] 			= Donor_Variable[4];
+			avgTangVelDonor[iSpan]   			= Donor_Variable[5];
+			if (nDim == 3){
+				avg3DVelDonor[iSpan]				= Donor_Variable[6];
+			}
+		}
+	}
+
+	// for the moment is not needed but then i have to share among all processor the number of span to initilize the buffer vector
+#ifdef HAVE_MPI
+	nSpanSize = size*nSpanDonor;
+	BuffAvgDensityDonor    		 = new su2double[nSpanSize];
+	BuffAvgPressureDonor   		 = new su2double[nSpanSize];
+	BuffAvgTotPressureDonor 	 = new su2double[nSpanSize];
+	BuffAvgTotTemperatureDonor = new su2double[nSpanSize];
+	BuffAvgNormalVelDonor  		 = new su2double[nSpanSize];
+	BuffAvgTangVelDonor        = new su2double[nSpanSize];
+	BuffAvg3DVelDonor          = new su2double[nSpanSize];
+	BuffMarkerDonor						 = new int[size];
+
+	for (iSpan=0;iSpan<nSpanSize;iSpan++){
+		BuffAvgDensityDonor[iSpan]        = -1.0;
+		BuffAvgPressureDonor[iSpan]       = -1.0;
+		BuffAvgTotPressureDonor[iSpan]    = -1.0;
+		BuffAvgTotTemperatureDonor[iSpan] = -1.0;
+		BuffAvgNormalVelDonor[iSpan]      = -1.0;
+		BuffAvgTangVelDonor[iSpan]        = -1.0;
+		BuffAvg3DVelDonor[iSpan]          = -1.0;
+	}
+
+	for (iSize=0; iSize<size;iSize++){
+		BuffMarkerDonor[iSize]							= -1;
+	}
+
+	SU2_MPI::Allgather(avgDensityDonor, nSpanDonor , MPI_DOUBLE, BuffAvgDensityDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+	SU2_MPI::Allgather(avgPressureDonor, nSpanDonor , MPI_DOUBLE, BuffAvgPressureDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+	SU2_MPI::Allgather(avgTotPressureDonor, nSpanDonor , MPI_DOUBLE, BuffAvgTotPressureDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+	SU2_MPI::Allgather(avgTotTemperatureDonor, nSpanDonor , MPI_DOUBLE, BuffAvgTotTemperatureDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+	SU2_MPI::Allgather(avgNormalVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvgNormalVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+	SU2_MPI::Allgather(avgTangVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvgTangVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+	SU2_MPI::Allgather(avg3DVelDonor, nSpanDonor , MPI_DOUBLE, BuffAvg3DVelDonor, nSpanDonor, MPI_DOUBLE, MPI_COMM_WORLD);
+	SU2_MPI::Allgather(&Marker_Donor, 1 , MPI_INT, BuffMarkerDonor, 1, MPI_INT, MPI_COMM_WORLD);
+
+
+
+	for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
+		avgDensityDonor[iSpan]        = -1.0;
+		avgPressureDonor[iSpan]       = -1.0;
+		avgTotPressureDonor[iSpan]    = -1.0;
+		avgTotTemperatureDonor[iSpan] = -1.0;
+		avgNormalVelDonor[iSpan]      = -1.0;
+		avgTangVelDonor[iSpan]        = -1.0;
+		avg3DVelDonor[iSpan]          = -1.0;
+	}
+
+	Marker_Donor= -1;
+
+
+	for (iSize=0; iSize<size;iSize++){
+		if(BuffAvgDensityDonor[nSpanDonor*iSize] > 0.0){
+			for (iSpan = 0; iSpan < nSpanDonor; iSpan++){
+				avgDensityDonor[iSpan]        = BuffAvgDensityDonor[nSpanDonor*iSize + iSpan];
+				avgPressureDonor[iSpan]       = BuffAvgPressureDonor[nSpanDonor*iSize + iSpan];
+				avgTotPressureDonor[iSpan]    = BuffAvgTotPressureDonor[nSpanDonor*iSize + iSpan];
+				avgTotTemperatureDonor[iSpan] = BuffAvgTotTemperatureDonor[nSpanDonor*iSize + iSpan];
+				avgNormalVelDonor[iSpan]      = BuffAvgNormalVelDonor[nSpanDonor*iSize + iSpan];
+				avgTangVelDonor[iSpan]        = BuffAvgTangVelDonor[nSpanDonor*iSize + iSpan];
+				avg3DVelDonor[iSpan]          = BuffAvg3DVelDonor[nSpanDonor*iSize + iSpan];
+			}
+			Marker_Donor = BuffMarkerDonor[iSize];
+			break;
+		}
+	}
+	delete [] BuffAvgDensityDonor;
+	delete [] BuffAvgPressureDonor;
+	delete [] BuffAvgTotPressureDonor;
+	delete [] BuffAvgTotTemperatureDonor;
+	delete [] BuffAvgNormalVelDonor;
+	delete [] BuffAvgTangVelDonor;
+	delete [] BuffAvg3DVelDonor;
+	delete [] BuffMarkerDonor;
+
+#endif
+
+/*--- On the target side we have to identify the marker as well ---*/
+
+	for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+		/*--- If the tag GetMarker_All_MixingPlaneInterface(iMarkerTarget) equals the index we are looping at ---*/
+		if ( target_config->GetMarker_All_MixingPlaneInterface(iMarkerTarget) == iMarkerInt ){
+			/*--- Store the identifier for the fluid marker ---*/
+
+			// here i should then store it in the target zone
+
+			Marker_Target = iMarkerTarget;
+			//	cout << " target is "<< target_config->GetMarker_All_TagBound(Marker_Target) <<" in imarker interface "<< iMarkerInt <<endl;
+			/*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
+			break;
+		}
+		else {
+			/*--- If the tag hasn't matched any tag within the Flow markers ---*/
+			Marker_Target = -1;
+		}
+	}
+
+	if (Marker_Target != -1 && Marker_Donor != -1){
+		/*--- here the interpolation span-wise should be implemented ---*/
+		for(iSpan = 0; iSpan < nSpanDonor ; iSpan++){
+			avgDensityTarget[iSpan]        = avgDensityDonor[iSpan];
+			avgPressureTarget[iSpan]       = avgPressureDonor[iSpan];
+			avgTotPressureTarget[iSpan]    = avgTotPressureDonor[iSpan];
+			avgTotTemperatureTarget[iSpan] = avgTotTemperatureDonor[iSpan];
+			avgNormalVelTarget[iSpan]      = avgNormalVelDonor[iSpan];
+			avgTangVelTarget[iSpan]        = avgTangVelDonor[iSpan];
+			avg3DVelTarget[iSpan]          = avg3DVelDonor[iSpan];
+		}
+		/*--- after interpolating the average value span-wise is set in the target zone ---*/
+
+		for(iSpan = 0; iSpan < nSpanTarget ; iSpan++){
+			Target_Variable[0] = avgDensityTarget[iSpan];
+			Target_Variable[1] = avgPressureTarget[iSpan];
+			Target_Variable[2] = avgTotPressureTarget[iSpan];
+			Target_Variable[3] = avgTotTemperatureTarget[iSpan];
+			Target_Variable[4] = avgNormalVelTarget[iSpan];
+			Target_Variable[5] = avgTangVelTarget[iSpan];
+			if (nDim ==3){
+				Target_Variable[6] = avg3DVelTarget[iSpan];
+			}
+			SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iSpan, rank);
+		}
+	}
+
+	delete [] avgDensityDonor;
+	delete [] avgPressureDonor;
+	delete [] avgTotPressureDonor;
+	delete [] avgTotTemperatureDonor;
+	delete [] avgNormalVelDonor;
+	delete [] avgTangVelDonor;
+	delete [] avg3DVelDonor;
+
+
+	delete [] avgDensityTarget;
+	delete [] avgPressureTarget;
+	delete [] avgTotPressureTarget;
+	delete [] avgTotTemperatureTarget;
+	delete [] avgNormalVelTarget;
+	delete [] avgTangVelTarget;
+	delete [] avg3DVelTarget;
+
+}
+
+void CTransfer::StoreTurboPerformance(CSolver *donor_solution, CSolver *target_solution,
+																 CGeometry *donor_geometry, CGeometry *target_geometry,
+																 CConfig *donor_config, CConfig *target_config, unsigned short donorZone){
+
+
+	int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+	/*--- here we made the strong assumption that the mesh zone order follow the same order of the turbomachinery markers ---*/
+
+	if(rank == MASTER_NODE){
+		GetSetTurboPerformance(donor_solution, target_solution, donorZone);
+	}
+}
+
