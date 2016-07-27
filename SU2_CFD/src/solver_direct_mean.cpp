@@ -4927,7 +4927,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
           	massFlowIn							= SpanMassFlow[iMarker][nSpanWiseSections]*nBlades/geometry->GetSpanArea(iMarker, nSpanWiseSections);
 
           //TODO(turbo) better location has to be found for this computation, perhaps in the outputstructure file.
-          if(config->GetBoolNRBC() || config->GetBoolRiemann()){
+          if(config->GetBoolNRBC() || config->GetBoolRiemann() || config->GetBoolNonUniformBC() ){
 
             if(config->GetBoolRiemann()){
               P_Total  = config->GetRiemann_Var1(Marker_Tag);
@@ -4938,7 +4938,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
               T_Total /= config->GetTemperature_Ref();
 
             }else{
-              if(config->GetKind_Data_NRBC(Marker_Tag) == TOTAL_CONDITIONS_PT){
+              if(config->GetBoolNRBC() && config->GetKind_Data_NRBC(Marker_Tag) == TOTAL_CONDITIONS_PT){
                 P_Total  = config->GetNRBC_Var1(Marker_Tag);
                 T_Total  = config->GetNRBC_Var2(Marker_Tag);
                 FlowDir = config->GetNRBC_FlowDir(Marker_Tag);
@@ -4951,6 +4951,16 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
                 P_Total  = ExtAverageTotPressure[iMarker][0];
                 T_Total  = ExtAverageTotTemperature[iMarker][0];
                 alphaIn_BC = atan(ExtAverageTurboVelocity[iMarker][0][1]/ExtAverageTurboVelocity[iMarker][0][0]);
+              }
+
+              if(config->GetKind_Data_NonUniform(Marker_Tag) == TOTAL_CONDITIONS_PT){
+              	P_Total  = config->GetNonUniform_Var1(Marker_Tag);
+              	T_Total  = config->GetNonUniform_Var2(Marker_Tag);
+              	FlowDir = config->GetNonUniform_FlowDir(Marker_Tag);
+              	alphaIn_BC = atan(FlowDir[1]/FlowDir[0]);
+              	P_Total /= config->GetPressure_Ref();
+              	T_Total /= config->GetTemperature_Ref();
+
               }
             }
 
@@ -5024,21 +5034,27 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
             massFlowOut							= SpanMassFlow[iMarker][nSpanWiseSections]*nBlades/geometry->GetSpanArea(iMarker, nSpanWiseSections);
 
 
-          if(config->GetBoolNRBC() || config->GetBoolRiemann()){
+          if(config->GetBoolNRBC() || config->GetBoolRiemann() || config->GetBoolNonUniformBC()){
 
-            if(config->GetBoolRiemann()){
-              pressureOut_BC  = config->GetRiemann_Var1(Marker_Tag);
-              pressureOut_BC /= config->GetPressure_Ref();
-            }
-            else{
-              pressureOut_BC  = config->GetNRBC_Var1(Marker_Tag);
-              pressureOut_BC /= config->GetPressure_Ref();
+          	if(config->GetBoolRiemann()){
+          		pressureOut_BC  = config->GetRiemann_Var1(Marker_Tag);
+          		pressureOut_BC /= config->GetPressure_Ref();
+          	}
+          	else{
+          		if (config->GetBoolNRBC()){
+          			pressureOut_BC  = config->GetNRBC_Var1(Marker_Tag);
+          			pressureOut_BC /= config->GetPressure_Ref();
+          		}
+          	}
 
-            }
+          	if(config->GetBoolNonUniformBC()){
+          		pressureOut_BC  = config->GetNonUniform_Var1(Marker_Tag);
+          		pressureOut_BC /= config->GetPressure_Ref();
+          	}
           }
           else{
-            cout << " OUTLET BC convergence can't be checked "<<endl;
-            pressureOut_BC = 0.0;
+          	cout << " OUTLET BC convergence can't be checked "<<endl;
+          	pressureOut_BC = 0.0;
           }
 
 
