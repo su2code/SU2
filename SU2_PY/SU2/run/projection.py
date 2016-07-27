@@ -104,10 +104,10 @@ def projection( config, state={}, step = 1e-3 ):
      
     if ('CUSTOM' in konfig.DV_KIND):
         if ('OUTFLOW_GENERALIZED' in objective):
+            weight = 1.0
             if (konfig['COMBINE_OBJECTIVE']=='YES'):
-                obj = objective.index('OUTFLOW_GENERALIZED')
+                obj = objective.split(',').index('OUTFLOW_GENERALIZED')
                 weight = float(konfig['OBJECTIVE_WEIGHT'].split(',')[obj])
-            else: weight = 1.0
             import downstream_function # Must be defined in run folder
             chaingrad = downstream_function.downstream_gradient(konfig,state,step)
             n_dv = len(raw_gradients)
