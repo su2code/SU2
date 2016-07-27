@@ -133,7 +133,7 @@ void CConfig::SetPointersNull(void) {
   Marker_Isothermal = NULL;       Marker_HeatFlux = NULL;           Marker_EngineInflow = NULL;
   Marker_EngineBleed = NULL;      Marker_Supersonic_Outlet = NULL;
   Marker_EngineExhaust = NULL;    Marker_Displacement = NULL;       Marker_Load = NULL;
-  Marker_Load_Dir = NULL;         Marker_Load_Sine = NULL;          Marker_Clamped = NULL;
+  Marker_Load_Dir = NULL;         Marker_Load_Sine = NULL;          Marker_Clamped = NULL;    Marker_Disp_Dir = NULL;
   Marker_FlowLoad = NULL;         Marker_Neumann = NULL;
   Marker_All_TagBound = NULL;     Marker_CfgFile_TagBound = NULL;   Marker_All_KindBC = NULL;
   Marker_CfgFile_KindBC = NULL;   Marker_All_SendRecv = NULL;       Marker_All_PerBound = NULL;
@@ -154,6 +154,7 @@ void CConfig::SetPointersNull(void) {
   Periodic_Translate = NULL;
 
   Load_Dir = NULL;	          Load_Dir_Value = NULL;          Load_Dir_Multiplier = NULL;
+  Disp_Dir = NULL;            Disp_Dir_Value = NULL;          Disp_Dir_Multiplier = NULL;
   Load_Sine_Dir = NULL;	      Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
   Electric_Field_Mod = NULL;  Electric_Field_Dir = NULL;      Electric_Field_Max = NULL;
   Electric_Field_Min = NULL;  Electric_Field_Del = NULL;
@@ -508,6 +509,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Load boundary marker(s)
    Format: (inlet marker, load, multiplier, dir_x, dir_y, dir_z, ... ), i.e. primitive variables specified. */
   addInletOption("MARKER_LOAD", nMarker_Load_Dir, Marker_Load_Dir, Load_Dir_Value, Load_Dir_Multiplier, Load_Dir);
+  /* DESCRIPTION: Load boundary marker(s)
+   Format: (inlet marker, load, multiplier, dir_x, dir_y, dir_z, ... ), i.e. primitive variables specified. */
+  addInletOption("MARKER_DISPLACEMENT", nMarker_Disp_Dir, Marker_Disp_Dir, Disp_Dir_Value, Disp_Dir_Multiplier, Disp_Dir);
   /* DESCRIPTION: Sine load boundary marker(s)
    Format: (inlet marker, load, multiplier, dir_x, dir_y, dir_z, ... ), i.e. primitive variables specified. */
   addInletOption("MARKER_SINE_LOAD", nMarker_Load_Sine, Marker_Load_Sine, Load_Sine_Amplitude, Load_Sine_Frequency, Load_Sine_Dir);
@@ -1266,6 +1270,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("RAMP_LOADING", Ramp_Load, false);
   /* DESCRIPTION: Time while the load is to be increased linearly */
   addDoubleOption("RAMP_TIME", Ramp_Time, 1.0);
+  /* DESCRIPTION: Transfer method used for multiphysics problems */
+  addEnumOption("DYNAMIC_LOAD_TRANSFER", Dynamic_LoadTransfer, Dyn_Transfer_Method_Map, POL_ORDER_1);
   /* DESCRIPTION: Time while the load is to be increased linearly */
   addDoubleOption("SIGMOID_TIME", Sigmoid_Time, 1.0);
   /* DESCRIPTION: Constant of steepness of the sigmoid */
@@ -2744,7 +2750,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
-  iMarker_Clamped, iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine,
+  iMarker_Clamped, iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
   iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
 
   int size = SINGLE_NODE;
@@ -2763,7 +2769,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
-  nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir +
+  nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir + nMarker_Disp_Dir +
   nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
   
   /*--- Add the possible send/receive domains ---*/
@@ -3015,6 +3021,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
+  for (iMarker_Disp_Dir = 0; iMarker_Disp_Dir < nMarker_Disp_Dir; iMarker_Disp_Dir++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Disp_Dir[iMarker_Disp_Dir];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = DISP_DIR_BOUNDARY;
+    iMarker_CfgFile++;
+  }
+
   for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_Load_Sine[iMarker_Load_Sine];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = LOAD_SINE_BOUNDARY;
@@ -3099,7 +3111,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iDV_Value,
-  iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
+  iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDisk_Inlet,
   iMarker_ActDisk_Outlet;
   
@@ -4351,6 +4363,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
+  if (nMarker_Disp_Dir != 0) {
+    cout << "Disp boundary marker(s) in cartesian coordinates: ";
+    for (iMarker_Disp_Dir = 0; iMarker_Disp_Dir < nMarker_Disp_Dir; iMarker_Disp_Dir++) {
+      cout << Marker_Disp_Dir[iMarker_Disp_Dir];
+      if (iMarker_Disp_Dir < nMarker_Disp_Dir-1) cout << ", ";
+      else cout <<"."<<endl;
+    }
+  }
+
   if (nMarker_Load_Sine != 0) {
     cout << "Sine-Wave Load boundary marker(s): ";
     for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++) {
@@ -4769,6 +4790,9 @@ CConfig::~CConfig(void) {
   if (Load_Dir != NULL)    delete[] Load_Dir;
   if (Load_Dir_Multiplier != NULL)    delete[] Load_Dir_Multiplier;
   if (Load_Dir_Value != NULL)    delete[] Load_Dir_Value;
+  if (Disp_Dir != NULL)    delete[] Disp_Dir;
+  if (Disp_Dir_Multiplier != NULL)    delete[] Disp_Dir_Multiplier;
+  if (Disp_Dir_Value != NULL)    delete[] Disp_Dir_Value;
   if (Load_Sine_Amplitude != NULL)    delete[] Load_Sine_Amplitude;
   if (Load_Sine_Frequency != NULL)    delete[] Load_Sine_Frequency;
   if (FlowLoad_Value != NULL)    delete[] FlowLoad_Value;
@@ -4811,6 +4835,7 @@ CConfig::~CConfig(void) {
   if (Marker_Displacement != NULL )       delete[] Marker_Displacement;
   if (Marker_Load != NULL )               delete[] Marker_Load;
   if (Marker_Load_Dir != NULL )               delete[] Marker_Load_Dir;
+  if (Marker_Disp_Dir != NULL )               delete[] Marker_Disp_Dir;
   if (Marker_Load_Sine != NULL )               delete[] Marker_Load_Sine;
   if (Marker_FlowLoad != NULL )           delete[] Marker_FlowLoad;
   if (Marker_Neumann != NULL )            delete[] Marker_Neumann;
@@ -5471,6 +5496,20 @@ su2double CConfig::GetLoad_Dir_Multiplier(string val_marker) {
   return Load_Dir_Multiplier[iMarker_Load_Dir];
 }
 
+su2double CConfig::GetDisp_Dir_Value(string val_marker) {
+  unsigned short iMarker_Disp_Dir;
+  for (iMarker_Disp_Dir = 0; iMarker_Disp_Dir < nMarker_Disp_Dir; iMarker_Disp_Dir++)
+    if (Marker_Disp_Dir[iMarker_Disp_Dir] == val_marker) break;
+  return Disp_Dir_Value[iMarker_Disp_Dir];
+}
+
+su2double CConfig::GetDisp_Dir_Multiplier(string val_marker) {
+  unsigned short iMarker_Disp_Dir;
+  for (iMarker_Disp_Dir = 0; iMarker_Disp_Dir < nMarker_Disp_Dir; iMarker_Disp_Dir++)
+    if (Marker_Disp_Dir[iMarker_Disp_Dir] == val_marker) break;
+  return Disp_Dir_Multiplier[iMarker_Disp_Dir];
+}
+
 su2double* CConfig::GetLoad_Dir(string val_marker) {
   unsigned short iMarker_Load_Dir;
   for (iMarker_Load_Dir = 0; iMarker_Load_Dir < nMarker_Load_Dir; iMarker_Load_Dir++)
@@ -5478,6 +5517,12 @@ su2double* CConfig::GetLoad_Dir(string val_marker) {
   return Load_Dir[iMarker_Load_Dir];
 }
 
+su2double* CConfig::GetDisp_Dir(string val_marker) {
+  unsigned short iMarker_Disp_Dir;
+  for (iMarker_Disp_Dir = 0; iMarker_Disp_Dir < nMarker_Disp_Dir; iMarker_Disp_Dir++)
+    if (Marker_Disp_Dir[iMarker_Disp_Dir] == val_marker) break;
+  return Disp_Dir[iMarker_Disp_Dir];
+}
 
 su2double CConfig::GetLoad_Sine_Amplitude(string val_marker) {
   unsigned short iMarker_Load_Sine;

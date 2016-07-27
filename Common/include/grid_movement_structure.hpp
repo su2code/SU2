@@ -48,6 +48,7 @@
 #include "matrix_structure.hpp"
 #include "vector_structure.hpp"
 #include "linear_solvers_structure.hpp"
+#include "element_structure.hpp"
 
 using namespace std;
 
@@ -1067,6 +1068,118 @@ public:
 };
 
 /*! 
+ * \class CElasticityMovement
+ * \brief Class for moving the volumetric numerical grid using the new linear elasticity solver.
+ * \author R.Sanchez, based on CVolumetricMovement developments of F. Palacios, A. Bueno, T. Economon, S. Padron
+ * \version 4.2.0 "Cardinal"
+ */
+class CElasticityMovement : public CGridMovement {
+protected:
+
+  unsigned short nDim;    /*!< \brief Number of dimensions. */
+  unsigned short nVar;    /*!< \brief Number of variables. */
+
+  unsigned long nPoint;   /*!< \brief Number of points. */
+  unsigned long nPointDomain;   /*!< \brief Number of points in the domain. */
+
+  unsigned long nIterMesh;   /*!< \brief Number of iterations in the mesh update. +*/
+
+  su2double *Residual,         /*!< \brief Auxiliary nDim vector. */
+            *Solution;         /*!< \brief Auxiliary nDim vector. */
+
+  su2double **matrixZeros;     /*!< \brief Submatrix to make zeros and impose boundary conditions. */
+  su2double **matrixId;        /*!< \brief Diagonal submatrix to impose boundary conditions. */
+  su2double **matrixAux;       /*!< \brief nDim x nDim submatrix to impose boundary conditions. */
+
+  su2double MinVolume;
+  su2double MaxVolume;
+
+  CSysMatrix StiffMatrix;      /*!< \brief Matrix to store the point-to-point stiffness. */
+  CSysVector LinSysSol;
+  CSysVector LinSysRes;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CElasticityMovement(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CElasticityMovement(void);
+
+  /*!
+   * \brief Grid deformation using the linear elasticity equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] UpdateGeo - Update geometry.
+   * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
+   */
+  void SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
+
+  /*!
+   * \brief Update the value of the coordinates after the grid movement.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void UpdateGridCoord(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Update the dual grid after the grid movement (edges and control volumes).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void UpdateDualGrid(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Update the coarse multigrid levels after the grid movement.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void UpdateMultiGrid(CGeometry **geometry, CConfig *config);
+
+  /*!
+   * \brief Check the boundary vertex that are going to be moved.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetBoundaryDisplacements(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set the boundary displacements to 0.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker -
+   */
+  void SetClamped_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Set the boundary displacements to the imposed external value.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Set the boundary displacements to the imposed external value.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Solve_System(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute the min and max volume for the stiffness matrix for grid deformation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \return Value of the length of the smallest edge of the grid.
+   */
+  void SetMesh_MinMaxVolume(CGeometry *geometry, CConfig *config);
+
+};
+
+/*!
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.

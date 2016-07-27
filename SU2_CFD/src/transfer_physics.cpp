@@ -80,6 +80,7 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 	su2double ModAmpl;
 	su2double CurrentTime = struct_config->GetCurrent_DynTime();
 	su2double Static_Time = struct_config->GetStatic_Time();
+	su2double Transfer_Time;
 
 	bool Ramp_Load = struct_config->GetRamp_Load();
 	su2double Ramp_Time = struct_config->GetRamp_Time();
@@ -89,25 +90,60 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 	su2double Sigmoid_K = struct_config->GetSigmoid_K();
 	su2double SigAux = 0.0;
 
-	if (CurrentTime <= Static_Time){ ModAmpl=0.0; }
-	else if((CurrentTime > Static_Time) &&
-			(CurrentTime <= (Static_Time + Ramp_Time)) &&
-			(Ramp_Load)){
-		ModAmpl = (CurrentTime-Static_Time) / Ramp_Time;
-		ModAmpl = max(ModAmpl,0.0);
-		ModAmpl = min(ModAmpl,1.0);
-		Physical_Constants[1] = ModAmpl;
+//	if (CurrentTime <= Static_Time){ ModAmpl=0.0; }
+//	else if((CurrentTime > Static_Time) &&
+//			(CurrentTime <= (Static_Time + Ramp_Time)) &&
+//			(Ramp_Load)){
+//		ModAmpl = (CurrentTime-Static_Time) / Ramp_Time;
+//		ModAmpl = max(ModAmpl,0.0);
+//		ModAmpl = min(ModAmpl,1.0);
+//		Physical_Constants[1] = ModAmpl;
+//	}
+//	else if((CurrentTime > Static_Time) &&
+//			(CurrentTime <= (Static_Time + Sigmoid_Time)) &&
+//			(Sigmoid_Load)){
+//		SigAux = (CurrentTime-Static_Time) / Sigmoid_Time;
+//		ModAmpl = (1 / (1+exp(-1*Sigmoid_K*(SigAux - 0.5)) ) );
+//		ModAmpl = max(ModAmpl,0.0);
+//		ModAmpl = min(ModAmpl,1.0);
+//		Physical_Constants[1] = ModAmpl;
+//	}
+//	else{ Physical_Constants[1] = 1.0; }
+
+	/*--- Polynomial functions from https://en.wikipedia.org/wiki/Smoothstep ---*/
+	if (CurrentTime < Static_Time){
+	  ModAmpl = 0.0;
 	}
-	else if((CurrentTime > Static_Time) &&
-			(CurrentTime <= (Static_Time + Sigmoid_Time)) &&
-			(Sigmoid_Load)){
-		SigAux = (CurrentTime-Static_Time) / Sigmoid_Time;
-		ModAmpl = (1 / (1+exp(-1*Sigmoid_K*(SigAux - 0.5)) ) );
-		ModAmpl = max(ModAmpl,0.0);
-		ModAmpl = min(ModAmpl,1.0);
-		Physical_Constants[1] = ModAmpl;
+	else if (Ramp_Load){
+	  Transfer_Time = (CurrentTime - Static_Time) / Ramp_Time;
+	  switch (struct_config->GetDynamic_LoadTransfer()){
+	  case INSTANTANEOUS:
+	    ModAmpl = 1.0;
+	    break;
+	  case POL_ORDER_1:
+	    ModAmpl = Transfer_Time;
+	    break;
+	  case POL_ORDER_3:
+      ModAmpl = -2.0 * pow(Transfer_Time,3.0) + 3.0 * pow(Transfer_Time,2.0);
+      break;
+    case POL_ORDER_5:
+      ModAmpl = 6.0 * pow(Transfer_Time, 5.0) - 15.0 * pow(Transfer_Time, 4.0) + 10 * pow(Transfer_Time, 3.0);
+      break;
+    case SIGMOID_10:
+      ModAmpl = (1 / (1+exp(-1.0 * 10.0 * (Transfer_Time - 0.5)) ) );
+      break;
+    case SIGMOID_20:
+      ModAmpl = (1 / (1+exp(-1.0 * 20.0 * (Transfer_Time - 0.5)) ) );
+      break;
+	  }
+    ModAmpl = max(ModAmpl,0.0);
+    ModAmpl = min(ModAmpl,1.0);
 	}
-	else{ Physical_Constants[1] = 1.0; }
+	else{
+	  ModAmpl = 1.0;
+	}
+
+  Physical_Constants[1] = ModAmpl;
 
 	/*--- For static FSI, we cannot apply the ramp like this ---*/
 	if ((flow_config->GetUnsteady_Simulation() == STEADY) && (struct_config->GetDynamic_Analysis() == STATIC)){

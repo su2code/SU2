@@ -176,6 +176,7 @@ private:
   nMarker_Displacement,					/*!< \brief Number of displacement surface markers. */
 	nMarker_Load,					/*!< \brief Number of load surface markers. */
 	nMarker_Load_Dir,					/*!< \brief Number of load surface markers defined by magnitude and direction. */
+  nMarker_Disp_Dir,         /*!< \brief Number of load surface markers defined by magnitude and direction. */
 	nMarker_Load_Sine,					/*!< \brief Number of load surface markers defined by magnitude and direction. */
 	nMarker_FlowLoad,					/*!< \brief Number of load surface markers. */
 	nMarker_Neumann,				/*!< \brief Number of Neumann flow markers. */
@@ -216,6 +217,7 @@ private:
 	*Marker_Displacement,					/*!< \brief Displacement markers. */
 	*Marker_Load,					/*!< \brief Load markers. */
 	*Marker_Load_Dir,					/*!< \brief Load markers defined in cartesian coordinates. */
+  *Marker_Disp_Dir,         /*!< \brief Load markers defined in cartesian coordinates. */
 	*Marker_Load_Sine,					/*!< \brief Sine-wave loaded markers defined in cartesian coordinates. */
 	*Marker_FlowLoad,					/*!< \brief Flow Load markers. */
 	*Marker_Neumann,					/*!< \brief Neumann flow markers. */
@@ -250,7 +252,10 @@ private:
 	su2double *Load_Value;    /*!< \brief Specified force for load boundaries. */
   su2double *Load_Dir_Value;    /*!< \brief Specified force for load boundaries defined in cartesian coordinates. */
 	su2double *Load_Dir_Multiplier;    /*!< \brief Specified multiplier for load boundaries defined in cartesian coordinates. */
+  su2double *Disp_Dir_Value;    /*!< \brief Specified force for load boundaries defined in cartesian coordinates. */
+  su2double *Disp_Dir_Multiplier;    /*!< \brief Specified multiplier for load boundaries defined in cartesian coordinates. */
 	su2double **Load_Dir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
+  su2double **Disp_Dir;  /*!< \brief Specified structural displacement direction (unit vector). */
 	su2double *Load_Sine_Amplitude;    /*!< \brief Specified amplitude for a sine-wave load. */
 	su2double *Load_Sine_Frequency;    /*!< \brief Specified multiplier for load boundaries defined in cartesian coordinates. */
 	su2double **Load_Sine_Dir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
@@ -729,6 +734,7 @@ private:
   nDV_Del_Z;                    /*!< \brief Number of delimiters for the electric field (along axis Z). */
   bool Sigmoid_Load,		/*!< \brief Apply the load using a sigmoid. */
   Ramp_Load;				/*!< \brief Apply the load with linear increases. */
+  unsigned short Dynamic_LoadTransfer;  /*!< \brief Method for dynamic load transferring. */
   bool IncrementalLoad;		/*!< \brief Apply the load in increments (for nonlinear structural analysis). */
   unsigned long IncLoad_Nincrements; /*!< \brief Number of increments. */
   su2double *IncLoad_Criteria;	/*!< \brief Criteria for the application of incremental loading. */
@@ -5124,12 +5130,34 @@ public:
 	 */
 	su2double GetLoad_Dir_Multiplier(string val_index);
 
+  /*!
+   * \brief Get the force value at a load boundary defined in cartesian coordinates.
+   * \param[in] val_index - Index corresponding to the load boundary.
+   * \return The load value.
+   */
+  su2double GetDisp_Dir_Value(string val_index);
+
+  /*!
+   * \brief Get the force multiplier at a load boundary in cartesian coordinates.
+   * \param[in] val_index - Index corresponding to the load boundary.
+   * \return The load multiplier.
+   */
+  su2double GetDisp_Dir_Multiplier(string val_index);
+
+
 	/*!
 	 * \brief Get the force direction at a loaded boundary in cartesian coordinates.
 	 * \param[in] val_index - Index corresponding to the load boundary.
 	 * \return The load direction.
 	 */
 	su2double* GetLoad_Dir(string val_index);
+
+  /*!
+   * \brief Get the force direction at a loaded boundary in cartesian coordinates.
+   * \param[in] val_index - Index corresponding to the load boundary.
+   * \return The load direction.
+   */
+  su2double* GetDisp_Dir(string val_index);
 
 	/*!
 	 * \brief Get the amplitude of the sine-wave at a load boundary defined in cartesian coordinates.
@@ -5712,6 +5740,14 @@ public:
 	 * \return 	Value of the max time while the load is linearly increased
 	 */
 	 su2double GetRamp_Time(void);
+
+	 /*!
+	  * \brief Get the kind of load transfer method we want to use for dynamic problems
+	  * \note This value is obtained from the config file, and it is constant
+	  *       during the computation.
+	  * \return Kind of transfer method for multiphysics problems
+	  */
+	 unsigned short GetDynamic_LoadTransfer(void);
 
 	/*!
 	 * \brief Get the maximum time of the sigmoid.
