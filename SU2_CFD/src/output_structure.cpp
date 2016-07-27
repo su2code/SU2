@@ -5368,10 +5368,15 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       				if(config[val_iZone]->GetKind_Data_Riemann(outMarker_Tag) == STATIC_PRESSURE) 	 outlet = true;
       				if(config[val_iZone]->GetKind_Data_Riemann(outMarker_Tag) == MIXING_OUT) 				 mixing = true;
       			}
-      			else{
+      			if (config[val_iZone]->GetBoolNRBC()){
       				if(config[val_iZone]->GetKind_Data_NRBC(inMarker_Tag) == TOTAL_CONDITIONS_PT) inlet  = true;
       				if(config[val_iZone]->GetKind_Data_NRBC(outMarker_Tag) == STATIC_PRESSURE) 	  outlet = true;
       				if(config[val_iZone]->GetKind_Data_NRBC(outMarker_Tag) == MIXING_OUT) 				mixing = true;
+      			}
+      			if (config[val_iZone]->GetBoolNonUniformBC()){
+      				if(config[val_iZone]->GetKind_Data_NonUniform(inMarker_Tag) == TOTAL_CONDITIONS_PT) inlet  = true;
+      				if(config[val_iZone]->GetKind_Data_NonUniform(outMarker_Tag) == STATIC_PRESSURE) 	  outlet = true;
+      				if(config[val_iZone]->GetKind_Data_NonUniform(outMarker_Tag) == MIXING_OUT) 				mixing = true;
       			}
       		}
       		if(inlet){
