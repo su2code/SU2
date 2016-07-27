@@ -447,6 +447,8 @@ inline unsigned long CConfig::GetWrt_Sol_Freq_DualTime(void) { return Wrt_Sol_Fr
 
 inline unsigned long CConfig::GetWrt_Con_Freq(void) { return Wrt_Con_Freq; }
 
+inline unsigned long CConfig::GetWrt_TurboSummary(void) { return Wrt_TurboSummary; }
+
 inline unsigned long CConfig::GetWrt_Con_Freq_DualTime(void) { return Wrt_Con_Freq_DualTime; }
 
 inline bool CConfig::GetWrt_Unsteady(void) { return Wrt_Unsteady; }

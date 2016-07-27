@@ -1068,6 +1068,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief WRT_CON_FREQ
    *  \n DESCRIPTION: Writing convergence history frequency  \ingroup Config*/
   addUnsignedLongOption("WRT_CON_FREQ",  Wrt_Con_Freq, 1);
+  /*!\brief WRT_TURBO_SUMMARY
+   *  \n DESCRIPTION: Writing turbomachinery summary frequency  \ingroup Config*/
+  addUnsignedLongOption("WRT_TURBO_SUMMARY",  Wrt_TurboSummary, 50);
   /*!\brief WRT_CON_FREQ_DUALTIME
    *  \n DESCRIPTION: Writing convergence history frequency for the dual time  \ingroup Config*/
   addUnsignedLongOption("WRT_CON_FREQ_DUALTIME",  Wrt_Con_Freq_DualTime, 10);

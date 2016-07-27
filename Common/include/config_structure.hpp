@@ -457,6 +457,7 @@ private:
 	unsigned long Wrt_Sol_Freq,	/*!< \brief Writing solution frequency. */
 	Wrt_Sol_Freq_DualTime,	/*!< \brief Writing solution frequency for Dual Time. */
 	Wrt_Con_Freq,				/*!< \brief Writing convergence history frequency. */
+	Wrt_TurboSummary,				/*!< \brief Writing turbomachinery summary frequency. */
 	Wrt_Con_Freq_DualTime;				/*!< \brief Writing convergence history frequency. */
 	bool Wrt_Unsteady;  /*!< \brief Write unsteady data adding header and prefix. */
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
@@ -2338,8 +2339,14 @@ public:
 	unsigned long GetWrt_Con_Freq(void);
 
 	/*!
-	 * \brief Get the frequency for writing the convergence file in Dual Time.
+	 * \brief Get the frequency for writing the convergence file.
 	 * \return It writes the convergence file with this frequency.
+	 */
+	unsigned long GetWrt_TurboSummary(void);
+
+	/*!
+	 * \brief Get the frequency for writing the turbomachinery summary.
+	 * \return It writes the turbomachinery summary
 	 */
 	unsigned long GetWrt_Con_Freq_DualTime(void);
 

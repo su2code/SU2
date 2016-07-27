@@ -5002,60 +5002,60 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 
         /*--- compute or retrieve outlet information ---*/
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == OUTFLOW){
-          avgVelRel2Out = 0.0;
-          avgGridVel2Out = 0.0;
-          avgVel2Out = 0.0;
+        	avgVelRel2Out = 0.0;
+        	avgGridVel2Out = 0.0;
+        	avgVel2Out = 0.0;
 
-          for (iDim = 0; iDim < nDim; iDim++){
-            avgVelRel2Out += AverageTurboVelocity[iMarker][nSpanWiseSections][iDim]*AverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
-            avgGridVel2Out += geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim]*geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim];
-            avgVel2Out += (AverageVelocity[iMarker][nSpanWiseSections][iDim])*(AverageVelocity[iMarker][nSpanWiseSections][iDim]);
-          }
-          avgVelRel2Out -=AverageTurboVelocity[iMarker][nSpanWiseSections][1]*AverageTurboVelocity[iMarker][nSpanWiseSections][1];
-          avgVelRel2Out +=(AverageTurboVelocity[iMarker][nSpanWiseSections][1] - geometry->GetAverageTangGridVel(iMarker,nSpanWiseSections))*(AverageTurboVelocity[iMarker][nSpanWiseSections][1] - geometry->GetAverageTangGridVel(iMarker,nSpanWiseSections));
+        	for (iDim = 0; iDim < nDim; iDim++){
+        		avgVelRel2Out += AverageTurboVelocity[iMarker][nSpanWiseSections][iDim]*AverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
+        		avgGridVel2Out += geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim]*geometry->GetAverageGridVel(iMarker, nSpanWiseSections)[iDim];
+        		avgVel2Out += (AverageVelocity[iMarker][nSpanWiseSections][iDim])*(AverageVelocity[iMarker][nSpanWiseSections][iDim]);
+        	}
+        	avgVelRel2Out -=AverageTurboVelocity[iMarker][nSpanWiseSections][1]*AverageTurboVelocity[iMarker][nSpanWiseSections][1];
+        	avgVelRel2Out +=(AverageTurboVelocity[iMarker][nSpanWiseSections][1] - geometry->GetAverageTangGridVel(iMarker,nSpanWiseSections))*(AverageTurboVelocity[iMarker][nSpanWiseSections][1] - geometry->GetAverageTangGridVel(iMarker,nSpanWiseSections));
 
-          avgTotalRothalpyOut       = AverageEnthalpy[iMarker][nSpanWiseSections] + 0.5*avgVelRel2Out - 0.5*avgGridVel2Out;
-          avgTotalEnthalpyOut       = AverageEnthalpy[iMarker][nSpanWiseSections] + 0.5*avgVel2Out;
-          avgEntropyOut             = AverageEntropy[iMarker][nSpanWiseSections];
-          avgEnthalpyOut            = AverageEnthalpy[iMarker][nSpanWiseSections];
-          FluidModel->SetTDState_hs(avgTotalRothalpyOut, avgEntropyOut);
-          avgTotalRelPressureOut    =  FluidModel->GetPressure();
-          avgPressureOut						= AveragePressure[iMarker][nSpanWiseSections];
-          flowAngleOut							= SpanFlowAngle[iMarker][nSpanWiseSections];
-          massFlowOut							  = SpanMassFlow[iMarker][nSpanWiseSections]*nBlades;
-          tangMachOut								= AverageTurboMach[iMarker][nSpanWiseSections][1];
-          normalMachOut						  = AverageTurboMach[iMarker][nSpanWiseSections][0];
-          densityOut_Mix					  = AverageDensity[iMarker][nSpanWiseSections];
-          pressureOut_Mix				  = AveragePressure[iMarker][nSpanWiseSections];
-          normalVelocityOut_Mix	  = AverageTurboVelocity[iMarker][nSpanWiseSections][0];
-          tangVelocityOut_Mix		  = AverageTurboVelocity[iMarker][nSpanWiseSections][1];
-          absFlowAngleOut          = atan(AverageTurboVelocity[iMarker][nSpanWiseSections][1]/AverageTurboVelocity[iMarker][nSpanWiseSections][0]);
-          if (config->GetKind_TurboMachinery(iZone) == AXIAL && nDim ==2)
-            massFlowOut							= SpanMassFlow[iMarker][nSpanWiseSections]*nBlades/geometry->GetSpanArea(iMarker, nSpanWiseSections);
+        	avgTotalRothalpyOut       = AverageEnthalpy[iMarker][nSpanWiseSections] + 0.5*avgVelRel2Out - 0.5*avgGridVel2Out;
+        	avgTotalEnthalpyOut       = AverageEnthalpy[iMarker][nSpanWiseSections] + 0.5*avgVel2Out;
+        	avgEntropyOut             = AverageEntropy[iMarker][nSpanWiseSections];
+        	avgEnthalpyOut            = AverageEnthalpy[iMarker][nSpanWiseSections];
+        	FluidModel->SetTDState_hs(avgTotalRothalpyOut, avgEntropyOut);
+        	avgTotalRelPressureOut    =  FluidModel->GetPressure();
+        	avgPressureOut						= AveragePressure[iMarker][nSpanWiseSections];
+        	flowAngleOut							= SpanFlowAngle[iMarker][nSpanWiseSections];
+        	massFlowOut							  = SpanMassFlow[iMarker][nSpanWiseSections]*nBlades;
+        	tangMachOut								= AverageTurboMach[iMarker][nSpanWiseSections][1];
+        	normalMachOut						  = AverageTurboMach[iMarker][nSpanWiseSections][0];
+        	densityOut_Mix					  = AverageDensity[iMarker][nSpanWiseSections];
+        	pressureOut_Mix				  = AveragePressure[iMarker][nSpanWiseSections];
+        	normalVelocityOut_Mix	  = AverageTurboVelocity[iMarker][nSpanWiseSections][0];
+        	tangVelocityOut_Mix		  = AverageTurboVelocity[iMarker][nSpanWiseSections][1];
+        	absFlowAngleOut          = atan(AverageTurboVelocity[iMarker][nSpanWiseSections][1]/AverageTurboVelocity[iMarker][nSpanWiseSections][0]);
+        	if (config->GetKind_TurboMachinery(iZone) == AXIAL && nDim ==2)
+        		massFlowOut							= SpanMassFlow[iMarker][nSpanWiseSections]*nBlades/geometry->GetSpanArea(iMarker, nSpanWiseSections);
 
 
-          if(config->GetBoolNRBC() || config->GetBoolRiemann() || config->GetBoolNonUniformBC()){
+        	if(config->GetBoolNRBC() || config->GetBoolRiemann() || config->GetBoolNonUniformBC()){
 
-          	if(config->GetBoolRiemann()){
-          		pressureOut_BC  = config->GetRiemann_Var1(Marker_Tag);
-          		pressureOut_BC /= config->GetPressure_Ref();
-          	}
-          	else{
-          		if (config->GetBoolNRBC()){
-          			pressureOut_BC  = config->GetNRBC_Var1(Marker_Tag);
-          			pressureOut_BC /= config->GetPressure_Ref();
-          		}
-          	}
+        		if(config->GetBoolRiemann()){
+        			pressureOut_BC  = config->GetRiemann_Var1(Marker_Tag);
+        			pressureOut_BC /= config->GetPressure_Ref();
+        		}
+        		else{
+        			if (config->GetBoolNRBC()){
+        				pressureOut_BC  = config->GetNRBC_Var1(Marker_Tag);
+        				pressureOut_BC /= config->GetPressure_Ref();
+        			}
+        		}
 
-          	if(config->GetBoolNonUniformBC()){
-          		pressureOut_BC  = config->GetNonUniform_Var1(Marker_Tag);
-          		pressureOut_BC /= config->GetPressure_Ref();
-          	}
-          }
-          else{
-          	cout << " OUTLET BC convergence can't be checked "<<endl;
-          	pressureOut_BC = 0.0;
-          }
+        		if(config->GetBoolNonUniformBC()){
+        			pressureOut_BC  = config->GetNonUniform_Var1(Marker_Tag);
+        			pressureOut_BC /= config->GetPressure_Ref();
+        		}
+        	}
+        	else{
+        		cout << " OUTLET BC convergence can't be checked "<<endl;
+        		pressureOut_BC = 0.0;
+        	}
 
 
 
