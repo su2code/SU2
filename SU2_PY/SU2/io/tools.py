@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.1.2 "Cardinal"
+#  \version 4.2.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -372,7 +372,7 @@ def read_aerodynamics( History_filename , special_cases=[], final_avg=0 ):
             Func_Values[this_objfun] = history_data[this_objfun] 
     
     # for unsteady cases, average time-accurate objective function values
-    if 'UNSTEADY_SIMULATION' in special_cases:
+    if 'UNSTEADY_SIMULATION' in special_cases and not final_avg:
         for key,value in Func_Values.iteritems():
             Func_Values[key] = sum(value)/len(value)
          

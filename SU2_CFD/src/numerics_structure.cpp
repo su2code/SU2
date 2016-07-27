@@ -2,7 +2,7 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author F. Palacios, T. Economon
- * \version 4.1.2 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -143,7 +143,7 @@ CNumerics::~CNumerics(void) {
     delete [] Flux_Tensor;
   }
 
-  if (tau!=NULL and delta != NULL){
+  if (tau!=NULL && delta != NULL){
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       delete [] tau[iDim];
       delete [] delta[iDim];
