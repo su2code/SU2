@@ -2356,6 +2356,13 @@ void CSpectralDriver::Run(CIteration **iteration_container,
       SetSpectralMethod(geometry_container, solver_container, config_container, nZone, (iZone+1)%nZone);
   }
   
+	/*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
+	if(ExtIter == 0){
+		if(config_container[ZONE_0]->GetBoolTurbomachinery()){
+			SetGeoTurboAvgValues(geometry_container, config_container, ZONE_0, true);
+		}
+	}
+
   /*--- Run a single iteration of a spectral method problem. Preprocess all
    all zones before beginning the iteration. ---*/
   
@@ -2961,6 +2968,16 @@ void CSpectralDriver::SetTimeSpectral_Velocities(CGeometry ***geometry_container
   }
   delete [] coords;
   
+}
+
+void CSpectralDriver::SetGeoTurboAvgValues(CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, bool allocate){
+
+	if ((config_container[iZone]->GetGrid_Movement())){
+					geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone);
+	}
+	geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, allocate);
+	geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, allocate);
+
 }
 
 CFSIDriver::CFSIDriver(CIteration **iteration_container,

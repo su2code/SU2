@@ -665,6 +665,16 @@ public:
     void SetTimeSpectral_Velocities(CGeometry ***geometry_container,
                                       CConfig **config_container, unsigned short nZone);
 
+
+    /*!
+   	 * \brief Set some average geometric quantities needed for turbomachinery computation
+   	 * \param[in] geometry_container - Geometrical definition of the problem.
+   	 * \param[in] config_container - Definition of the particular problem.
+   	 * \param[in] iZone - zone in which compute the quantities.
+   	 * \param[in] allocate - boolean to decide where allocation is needed.
+   	 */
+     void SetGeoTurboAvgValues(CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, bool allocate);
+
 };
 
 
