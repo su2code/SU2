@@ -235,23 +235,12 @@ def main():
     contadj_oneram6.tol       = 0.00001
     test_list.append(contadj_oneram6)
 
-    # Inviscid WEDGE: tests generalized adjoint, custom DV, and combined objective: sequential evaluation
+    # Inviscid WEDGE: tests generalized adjoint
     contadj_wedge             = TestCase('contadj_wedge')
     contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
     contadj_wedge.cfg_file  = "inv_wedge_ROE.cfg"
     contadj_wedge.test_iter = 10
-    contadj_wedge.test_vals = [-11.231627,     -17.016278,   -2.1650e+00,    6.9485e-01] #last 4 columns
-    contadj_wedge.su2_exec  = "SU2_CFD"
-    contadj_wedge.timeout   = 1600
-    contadj_wedge.tol       = 0.00001
-    test_list.append(contadj_wedge)
-    
-    # Inviscid WEDGE combo: tests simultaneous objectives
-    contadj_wedge             = TestCase('contadj_wedge_combo')
-    contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
-    contadj_wedge.cfg_file  = "inv_wedge_ROE_multiobj.cfg"
-    contadj_wedge.test_iter = 10
-    contadj_wedge.test_vals = [-11.136897,     -16.953015,   -2.0482e+04,    6.1235e+03] #last 4 columns
+    contadj_wedge.test_vals = [-11.217444,     -16.768974,    9.6249e+04,   -6.7951e+04] #last 4 columns
     contadj_wedge.su2_exec  = "SU2_CFD"
     contadj_wedge.timeout   = 1600
     contadj_wedge.tol       = 0.00001
@@ -466,7 +455,7 @@ def main():
     edge_VW.tol       = 0.00001
     test_list.append(edge_VW)
 
-    # Rarefaction shock wave edge_PPR                                                                                                                                                                                                
+    # Rarefaction shock wave edge_PPR               
     edge_PPR           = TestCase('edge_PPR')
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
@@ -728,6 +717,18 @@ def main():
     shape_opt_euler_py.tol       = 0.00001
     pass_list.append(shape_opt_euler_py.run_opt())
     test_list.append(shape_opt_euler_py)
+
+    # test continuous_adjoint.py, with multiple objectives
+    contadj_euler_py = TestCase('contadj_multi_py')
+    contadj_euler_py.cfg_dir = "cont_adj_euler/wedge"
+    contadj_euler_py.cfg_file  = "inv_NACA0012.cfg"
+    contadj_euler_py.test_iter = 10
+    contadj_euler_py.su2_exec  = "continuous_adjoint.py"
+    contadj_euler_py.timeout   = 1600
+    contadj_euler_py.reference_file = "of_grad_combo.dat.ref"
+    contadj_euler_py.test_file = "of_grad_combo.dat"
+    pass_list.append(contadj_multi_py.run_filediff())
+    test_list.append(contadj_multi_py)
 
     
     # Tests summary
