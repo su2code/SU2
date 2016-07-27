@@ -96,19 +96,18 @@ def continuous_adjoint( filename           ,
         state.update(info)
         SU2.io.restart2solution(config,state)
 
-    # If using chain rule update coefficients using gradients as defined in downstream_function (local file)
-    if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION:
-        import downstream_function # Must be defined in run folder
-        chaingrad = downstream_function.downstream_gradient(config,state,step)
-        # Set coefficients for gradients
-        config.OBJ_CHAIN_RULE_COEFF = str(chaingrad[0:5])
-    
     # Adjoint Solution
     objectives      = config['OBJECTIVE_FUNCTION']
     objectives = objectives.split(',')
     n_obj = len(objectives)
     marker_monitoring = config['MARKER_MONITORING']
     if (config.COMBINE_OBJECTIVE=="YES"):
+        # If using chain rule update coefficients using gradients as defined in downstream_function (local file)
+        if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION:
+            import downstream_function # Must be defined in run folder
+            chaingrad = downstream_function.downstream_gradient(config,state,step)
+            # Set coefficients for gradients
+            config.OBJ_CHAIN_RULE_COEFF = str(chaingrad[0:5])
         # Run all-at-once 
         if compute:
             info = SU2.run.adjoint(config)
@@ -121,6 +120,12 @@ def continuous_adjoint( filename           ,
                 config['MARKER_MONITORING'] = marker_monitoring[i_obj]
                 
             config['OBJECTIVE_FUNCTION'] = objective
+            # If using chain rule update coefficients using gradients as defined in downstream_function (local file)
+            if 'OUTFLOW_GENERALIZED' in config.OBJECTIVE_FUNCTION:
+                import downstream_function # Must be defined in run folder
+                chaingrad = downstream_function.downstream_gradient(config,state,step)
+                # Set coefficients for gradients
+                config.OBJ_CHAIN_RULE_COEFF = str(chaingrad[0:5])
             if compute:
                 info = SU2.run.adjoint(config)
                 state.update(info)
