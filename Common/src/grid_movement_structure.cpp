@@ -156,7 +156,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     LinSysSol.SetValZero();
     LinSysRes.SetValZero();
     StiffMatrix.SetValZero();
-    
+
     /*--- Compute the stiffness matrix entries for all nodes/elements in the
      mesh. FEA uses a finite element method discretization of the linear
      elasticity equations (transfers element stiffnesses to point-to-point). ---*/
@@ -7601,3 +7601,541 @@ su2double CFreeFormDefBox::GetDerivative5(su2double *uvw, unsigned short dim, un
   
 	return value;
 }
+
+
+
+CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) : CGridMovement() {
+
+    /*--- Initialize the number of spatial dimensions, length of the state
+     vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
+
+    unsigned short iDim, jDim;
+
+    nDim         = geometry->GetnDim();
+    nVar         = geometry->GetnDim();
+    nPoint       = geometry->GetnPoint();
+    nPointDomain = geometry->GetnPointDomain();
+
+    nIterMesh = 0;
+
+    MinVolume = 0.0;
+    MaxVolume = 0.0;
+
+    Residual = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Residual[iDim] = 0.0;
+    Solution = new su2double[nDim];   for (iDim = 0; iDim < nDim; iDim++) Solution[iDim] = 0.0;
+
+    /*--- Initialize matrix, solution, and r.h.s. structures for the linear solver. ---*/
+
+    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+    StiffMatrix.Initialize(nPoint, nPointDomain, nVar, nVar, false, geometry, config);
+
+    /*--- Matrices to impose boundary conditions ---*/
+
+    matrixZeros = new su2double *[nDim];
+    matrixId    = new su2double *[nDim];
+    matrixAux   = new su2double *[nDim];
+    for(iDim = 0; iDim < nDim; iDim++){
+      matrixZeros[iDim] = new su2double[nDim];
+      matrixId[iDim]    = new su2double[nDim];
+      matrixAux[iDim]   = new su2double[nDim];
+    }
+
+    for(iDim = 0; iDim < nDim; iDim++){
+      for (jDim = 0; jDim < nDim; jDim++){
+        matrixZeros[iDim][jDim] = 0.0;
+        matrixId[iDim][jDim]    = 0.0;
+        matrixAux[iDim][jDim]   = 0.0;
+      }
+      matrixId[iDim][iDim] = 1.0;
+    }
+
+}
+
+CElasticityMovement::~CElasticityMovement(void) {
+
+  unsigned short iDim;
+
+  delete [] Residual;
+  delete [] Solution;
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    delete [] matrixZeros[iDim];
+    delete [] matrixId[iDim];
+    delete [] matrixAux[iDim];
+  }
+  delete [] matrixZeros;
+  delete [] matrixId;
+  delete [] matrixAux;
+
+}
+
+
+void CElasticityMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative){
+
+  unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0, Nonlinear_Iter = 0;
+  su2double NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
+  bool Screen_Output;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
+
+  Smoothing_Iter = config->GetGridDef_Linear_Iter();
+  Screen_Output  = config->GetDeform_Output();
+  Tol_Factor     = config->GetDeform_Tol_Factor();
+  Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
+
+  /*--- Disable the screen output if we're running SU2_CFD ---*/
+
+  if (config->GetKind_SU2() == SU2_CFD && !Derivative) Screen_Output = false;
+
+  /*--- Loop over the total number of grid deformation iterations. The surface
+   deformation can be divided into increments to help with stability. ---*/
+
+  for (iNonlinear_Iter = 0; iNonlinear_Iter < Nonlinear_Iter; iNonlinear_Iter++) {
+
+    /*--- Initialize vector and sparse matrix ---*/
+
+    LinSysSol.SetValZero();
+    LinSysRes.SetValZero();
+    StiffMatrix.SetValZero();
+
+    /*--- Compute the minimum volume . ---*/
+
+    SetFEAMethodContributions_Elem(geometry, config);
+
+
+    /*--- Set the boundary displacements (as prescribed by the design variable
+     perturbations controlling the surface shape) as a Dirichlet BC. ---*/
+
+    SetBoundaryDisplacements(geometry, config);
+
+    /*--- Solve the linear system. ---*/
+
+    Solve_System(geometry, config);
+
+
+    /*--- Update the grid coordinates and cell volumes using the solution
+     of the linear system (usol contains the x, y, z displacements). ---*/
+
+    UpdateGridCoord(geometry, config);
+
+    if (UpdateGeo)
+      UpdateDualGrid(geometry, config);
+
+    /*--- Check for failed deformation (negative volumes). ---*/
+
+    ComputeDeforming_Element_Volume(geometry);
+
+    /*--- Set number of iterations in the mesh update. ---*/
+
+    Set_nIterMesh(Tot_Iter);
+
+    if (rank == MASTER_NODE) {
+      cout << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << Tot_Iter << ". ";
+      if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << Residual << "." << endl;
+      else cout << "Min. volume: " << MinVolume << ". Error: " << Residual << "." << endl;
+    }
+
+  }
+
+
+
+
+
+
+}
+
+
+void CElasticityMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config){
+
+  unsigned short iDim;
+  unsigned long iPoint, total_index;
+  su2double new_coord;
+
+  /*--- Update the grid coordinates using the solution of the linear system
+   after grid deformation (LinSysSol contains the x, y, z displacements). ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    for (iDim = 0; iDim < nDim; iDim++) {
+      total_index = iPoint*nDim + iDim;
+      new_coord = geometry->node[iPoint]->GetCoord(iDim)+LinSysSol[total_index];
+      if (fabs(new_coord) < EPS*EPS) new_coord = 0.0;
+      geometry->node[iPoint]->SetCoord(iDim, new_coord);
+    }
+
+  /* --- LinSysSol contains the non-transformed displacements in the periodic halo cells.
+   * Hence we still need a communication of the transformed coordinates, otherwise periodicity
+   * is not maintained. ---*/
+
+  geometry->Set_MPI_Coord(config);
+
+}
+
+
+void CElasticityMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config){
+
+  /*--- After moving all nodes, update the dual mesh. Recompute the edges and
+   dual mesh control volumes in the domain and on the boundaries. ---*/
+
+  geometry->SetCoord_CG();
+  geometry->SetControlVolume(config, UPDATE);
+  geometry->SetBoundControlVolume(config, UPDATE);
+
+}
+
+
+void CElasticityMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config){
+
+  unsigned short iMGfine, iMGlevel, nMGlevel = config->GetnMGLevels();
+
+  /*--- Update the multigrid structure after moving the finest grid,
+   including computing the grid velocities on the coarser levels. ---*/
+
+  for (iMGlevel = 1; iMGlevel <= nMGlevel; iMGlevel++) {
+    iMGfine = iMGlevel-1;
+    geometry[iMGlevel]->SetControlVolume(config, geometry[iMGfine], UPDATE);
+    geometry[iMGlevel]->SetBoundControlVolume(config, geometry[iMGfine],UPDATE);
+    geometry[iMGlevel]->SetCoord(geometry[iMGfine]);
+    if (config->GetGrid_Movement())
+      geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine], config);
+  }
+
+}
+
+void CElasticityMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config){
+
+  unsigned short iDim, nDim = geometry->GetnDim(), iMarker, axis = 0;
+  unsigned long iPoint, total_index, iVertex;
+  su2double *VarCoord, MeanCoord[3] = {0.0,0.0,0.0}, VarIncrement = 1.0;
+
+  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
+   deforming meshes (MARKER_MOVING), while SU2_DEF will use it for deforming
+   meshes after imposing design variable surface deformations (DV_MARKER). ---*/
+
+  unsigned short Kind_SU2 = config->GetKind_SU2();
+
+  /*--- If requested (no by default) impose the surface deflections in
+   increments and solve the grid deformation equations iteratively with
+   successive small deformations. ---*/
+
+//  VarIncrement = 1.0/((su2double)config->GetGridDef_Nonlinear_Iter());
+
+  /*--- First of all, move the FSI interfaces. ---*/
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_FSIinterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
+      SetMoving_Boundary(geometry, config, iMarker);
+    }
+  }
+
+  /*--- Now, set to zero displacements of all the other boundary conditions, except the symmetry
+   plane, the receive boundaries and periodic boundaries. ---*/
+
+
+  /*--- As initialization, set to zero displacements of all the surfaces except the symmetry
+   plane, the receive boundaries and periodic boundaries. ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (((config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) &&
+         (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) &&
+         (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))) {
+
+      /*--- We must note that the FSI surfaces are not clamped ---*/
+      if (config->GetMarker_All_FSIinterface(iMarker) == 0){
+        SetClamped_Boundary(geometry, config, iMarker);
+      }
+    }
+  }
+
+  /*--- All others are pending... ---*/
+
+}
+
+
+void CElasticityMovement::SetClamped_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
+
+  unsigned long iNode, iVertex;
+  unsigned long iPoint, jPoint;
+
+  su2double valJacobian_ij_00 = 0.0;
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    /*--- Get node index ---*/
+
+    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    if (geometry->node[iNode]->GetDomain()) {
+
+      if (nDim == 2) {
+        Solution[0] = 0.0;  Solution[1] = 0.0;
+        Residual[0] = 0.0;  Residual[1] = 0.0;
+      }
+      else {
+        Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
+        Residual[0] = 0.0;  Residual[1] = 0.0;  Residual[2] = 0.0;
+      }
+
+      /*--- Initialize the reaction vector ---*/
+
+      LinSysRes.SetBlock(iNode, Residual);
+      LinSysSol.SetBlock(iNode, Solution);
+
+      /*--- STRONG ENFORCEMENT OF THE CLAMPED BOUNDARY CONDITION ---*/
+
+      /*--- Delete the full row for node iNode ---*/
+      for (jPoint = 0; jPoint < nPoint; jPoint++){
+
+        /*--- Check whether the block is non-zero ---*/
+        valJacobian_ij_00 = StiffMatrix.GetBlock(iNode, jPoint,0,0);
+
+        if (valJacobian_ij_00 != 0.0 ){
+          /*--- Set the rest of the row to 0 ---*/
+          if (iNode != jPoint) {
+            StiffMatrix.SetBlock(iNode,jPoint,matrixZeros);
+          }
+          /*--- And the diagonal to 1.0 ---*/
+          else{
+            StiffMatrix.SetBlock(iNode,jPoint,matrixId);
+          }
+        }
+      }
+
+      /*--- Delete the full column for node iNode ---*/
+      for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+        /*--- Check whether the block is non-zero ---*/
+        valJacobian_ij_00 = StiffMatrix.GetBlock(iPoint, iNode,0,0);
+
+        if (valJacobian_ij_00 != 0.0 ){
+          /*--- Set the rest of the row to 0 ---*/
+          if (iNode != iPoint) {
+            StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
+          }
+        }
+      }
+    }
+  }
+
+}
+
+void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
+
+  unsigned long iElem;
+  unsigned short iDim, jDim;
+
+  su2double *VarCoord;
+
+  unsigned long iNode, iVertex;
+  unsigned long iPoint, jPoint;
+
+  su2double VarIncrement = 1.0/((su2double)config->GetGridDef_Nonlinear_Iter());
+
+  su2double valJacobian_ij_00 = 0.0;
+  su2double auxJacobian_ij[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    /*--- Get node index ---*/
+
+    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Get the displ;acement on the vertex ---*/
+
+    for (iDim = 0; iDim < nDim; iDim++)
+       VarCoord = geometry->vertex[val_marker][iVertex]->GetVarCoord();
+
+    if (geometry->node[iNode]->GetDomain()) {
+
+      if (nDim == 2) {
+        Solution[0] = VarCoord[0] * VarIncrement;  Solution[1] = VarCoord[1] * VarIncrement;
+        Residual[0] = VarCoord[0] * VarIncrement;  Residual[1] = VarCoord[1] * VarIncrement;
+      }
+      else {
+        Solution[0] = VarCoord[0] * VarIncrement;  Solution[1] = VarCoord[1] * VarIncrement;  Solution[2] = VarCoord[2] * VarIncrement;
+        Residual[0] = VarCoord[0] * VarIncrement;  Residual[1] = VarCoord[1] * VarIncrement;  Residual[2] = VarCoord[2] * VarIncrement;
+      }
+
+      /*--- Initialize the reaction vector ---*/
+
+      LinSysRes.SetBlock(iNode, Residual);
+      LinSysSol.SetBlock(iNode, Solution);
+
+      /*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
+
+      /*--- Delete the full row for node iNode ---*/
+      for (jPoint = 0; jPoint < nPoint; jPoint++){
+
+        /*--- Check whether the block is non-zero ---*/
+        valJacobian_ij_00 = StiffMatrix.GetBlock(iNode, jPoint,0,0);
+
+        if (valJacobian_ij_00 != 0.0 ){
+          /*--- Set the rest of the row to 0 ---*/
+          if (iNode != jPoint) {
+            StiffMatrix.SetBlock(iNode,jPoint,matrixZeros);
+          }
+          /*--- And the diagonal to 1.0 ---*/
+          else{
+            StiffMatrix.SetBlock(iNode,jPoint,matrixId);
+          }
+        }
+      }
+
+      /*--- Delete the columns for a particular node ---*/
+
+      for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+        /*--- Check if the term K(iPoint, iNode) is 0 ---*/
+        valJacobian_ij_00 = StiffMatrix.GetBlock(iPoint,iNode,0,0);
+
+        /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
+        if (valJacobian_ij_00 != 0.0 ){
+
+          /*--- Retrieve the Jacobian term ---*/
+          for (iDim = 0; iDim < nDim; iDim++){
+            for (jDim = 0; jDim < nDim; jDim++){
+              auxJacobian_ij[iDim][jDim] = StiffMatrix.GetBlock(iPoint,iNode,iDim,jDim);
+            }
+          }
+
+          /*--- Multiply by the imposed displacement ---*/
+          for (iDim = 0; iDim < nDim; iDim++){
+            Residual[iDim] = 0.0;
+            for (jDim = 0; jDim < nDim; jDim++){
+              Residual[iDim] += auxJacobian_ij[iDim][jDim] * VarCoord[jDim];
+            }
+          }
+
+          /*--- For the whole column, except the diagonal term ---*/
+          if (iNode != iPoint) {
+            /*--- The term is substracted from the residual (right hand side) ---*/
+            LinSysRes.SubtractBlock(iPoint, Residual);
+            /*--- The Jacobian term is now set to 0 ---*/
+            StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
+          }
+        }
+      }
+    }
+  }
+
+}
+
+void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
+
+  unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0;
+  su2double NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
+  bool Screen_Output;
+
+  /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
+
+  Smoothing_Iter = config->GetGridDef_Linear_Iter();
+  Screen_Output  = config->GetDeform_Output();
+  Tol_Factor     = config->GetDeform_Tol_Factor();
+
+  /*--- Compute the tolerance of the linear solver using MinLength ---*/
+
+  NumError = MinVolume * Tol_Factor;
+
+  /*--- Initialize the structures to solve the system ---*/
+
+  CMatrixVectorProduct* mat_vec = NULL;
+  CPreconditioner* precond = NULL;
+
+  /*--- Communicate any prescribed boundary displacements via MPI,
+   so that all nodes have the same solution and r.h.s. entries
+   across all partitions. ---*/
+
+  StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
+  StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
+
+  /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
+
+  /*--- Independently of whether we are using or not derivatives,
+   *--- as the matrix is now symmetric, the matrix-vector product
+   *--- can be done in the same way in the forward and the reverse mode
+   */
+
+  mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
+  precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+
+  CSysSolve *system  = new CSysSolve();
+
+  switch (config->GetDeform_Linear_Solver()) {
+
+      /*--- Solve the linear system (GMRES with restart) ---*/
+
+    case RESTARTED_FGMRES:
+
+      Tot_Iter = 0; MaxIter = RestartIter;
+
+      system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false);
+
+      if ((rank == MASTER_NODE) && Screen_Output) {
+        cout << "\n# FGMRES (with restart) residual history" << endl;
+        cout << "# Residual tolerance target = " << NumError << endl;
+        cout << "# Initial residual norm     = " << Residual_Init << endl;
+      }
+
+      if (rank == MASTER_NODE) { cout << "     " << Tot_Iter << "     " << Residual_Init/Residual_Init << endl; }
+
+      while (Tot_Iter < Smoothing_Iter) {
+
+        if (IterLinSol + RestartIter > Smoothing_Iter)
+          MaxIter = Smoothing_Iter - IterLinSol;
+
+        IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false);
+        Tot_Iter += IterLinSol;
+
+        if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
+
+        if (Residual < Residual_Init*NumError) { break; }
+
+      }
+
+      if ((rank == MASTER_NODE) && Screen_Output) {
+        cout << "# FGMRES (with restart) final (true) residual:" << endl;
+        cout << "# Iteration = " << Tot_Iter << ": |res|/|res0| = " << Residual/Residual_Init << ".\n" << endl;
+      }
+
+      break;
+
+      /*--- Solve the linear system (GMRES) ---*/
+
+    case FGMRES:
+
+      Tot_Iter = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+
+      break;
+
+      /*--- Solve the linear system (BCGSTAB) ---*/
+
+    case BCGSTAB:
+
+      Tot_Iter = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+
+      break;
+
+  }
+
+  /*--- Deallocate memory needed by the Krylov linear solver ---*/
+
+  delete system;
+  delete mat_vec;
+  delete precond;
+
+
+}
+
+void CElasticityMovement::SetMesh_MinMaxVolume(CGeometry *geometry, CConfig *config) {
+
+
+
+
+
+}
+
+

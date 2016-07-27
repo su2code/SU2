@@ -451,7 +451,7 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
       mZeros_Aux[iDim][jDim] = 0.0;
       mId_Aux[iDim][jDim] = 0.0;
     }
-    mId_Aux[iDim][iDim] = E;
+    mId_Aux[iDim][iDim] = 1.0;
   }
 
 
@@ -2454,7 +2454,7 @@ void CFEM_ElasticitySolver::BC_Clamped(CGeometry *geometry, CSolver **solver_con
                                        unsigned short val_marker) {
 
   unsigned long iPoint, iVertex;
-  unsigned short iVar, jVar;
+  unsigned long iVar, jVar;
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
 
@@ -2487,6 +2487,7 @@ void CFEM_ElasticitySolver::BC_Clamped(CGeometry *geometry, CSolver **solver_con
       LinSysReact.SetBlock(iPoint, Residual);
 
       LinSysRes.SetBlock(iPoint, Residual);
+      LinSysSol.SetBlock(iPoint, Solution);
 
       /*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
 
@@ -2552,6 +2553,158 @@ void CFEM_ElasticitySolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solve
     }
 
   }
+
+}
+
+void CFEM_ElasticitySolver::BC_DispDir(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                                            unsigned short val_marker) {
+
+  unsigned long iElem;
+  unsigned short iDim, jDim;
+
+  su2double DispDirVal = config->GetDisp_Dir_Value(config->GetMarker_All_TagBound(val_marker));
+  su2double DispDirMult = config->GetDisp_Dir_Multiplier(config->GetMarker_All_TagBound(val_marker));
+  su2double *Disp_Dir_Local= config->GetDisp_Dir(config->GetMarker_All_TagBound(val_marker));
+  su2double Disp_Dir_Unit[3] = {0.0, 0.0, 0.0}, Disp_Dir[3] = {0.0, 0.0, 0.0};
+  su2double Disp_Dir_Mod = 0.0;
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    Disp_Dir_Mod += Disp_Dir_Local[iDim]*Disp_Dir_Local[iDim];
+
+  Disp_Dir_Mod = sqrt(Disp_Dir_Mod);
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    Disp_Dir_Unit[iDim] = Disp_Dir_Local[iDim] / Disp_Dir_Mod;
+
+  su2double TotalDisp;
+
+  su2double CurrentTime=config->GetCurrent_DynTime();
+  su2double ModAmpl, NonModAmpl;
+
+  bool Ramp_Load = config->GetRamp_Load();
+  su2double Ramp_Time = config->GetRamp_Time();
+  su2double Transfer_Time;
+
+  if (Ramp_Load){
+    Transfer_Time = CurrentTime / Ramp_Time;
+    switch (config->GetDynamic_LoadTransfer()){
+    case INSTANTANEOUS:
+      ModAmpl = 1.0;
+      break;
+    case POL_ORDER_1:
+      ModAmpl = Transfer_Time;
+      break;
+    case POL_ORDER_3:
+      ModAmpl = -2.0 * pow(Transfer_Time,3.0) + 3.0 * pow(Transfer_Time,2.0);
+      break;
+    case POL_ORDER_5:
+      ModAmpl = 6.0 * pow(Transfer_Time, 5.0) - 15.0 * pow(Transfer_Time, 4.0) + 10 * pow(Transfer_Time, 3.0);
+      break;
+    case SIGMOID_10:
+      ModAmpl = (1 / (1+exp(-1.0 * 10.0 * (Transfer_Time - 0.5)) ) );
+      break;
+    case SIGMOID_20:
+      ModAmpl = (1 / (1+exp(-1.0 * 20.0 * (Transfer_Time - 0.5)) ) );
+      break;
+    }
+    ModAmpl = max(ModAmpl,0.0);
+    ModAmpl = min(ModAmpl,1.0);
+  }
+  else{
+    ModAmpl = 1.0;
+  }
+
+  TotalDisp = ModAmpl * DispDirVal * DispDirMult;
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    Disp_Dir[iDim] = TotalDisp * Disp_Dir_Unit[iDim];
+
+  unsigned long iNode, iVertex;
+  unsigned long iPoint, jPoint;
+
+  su2double valJacobian_ij_00 = 0.0;
+  su2double auxJacobian_ij[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    /*--- Get node index ---*/
+
+    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    if (geometry->node[iNode]->GetDomain()) {
+
+      if (nDim == 2) {
+        Solution[0] = Disp_Dir[0];  Solution[1] = Disp_Dir[1];
+        Residual[0] = Disp_Dir[0];  Residual[1] = Disp_Dir[1];
+      }
+      else {
+        Solution[0] = Disp_Dir[0];  Solution[1] = Disp_Dir[1];  Solution[2] = Disp_Dir[2];
+        Residual[0] = Disp_Dir[0];  Residual[1] = Disp_Dir[1];  Residual[2] = Disp_Dir[2];
+      }
+
+      /*--- Initialize the reaction vector ---*/
+
+      LinSysRes.SetBlock(iNode, Residual);
+      LinSysSol.SetBlock(iNode, Solution);
+
+      /*--- STRONG ENFORCEMENT OF THE DISPLACEMENT BOUNDARY CONDITION ---*/
+
+      /*--- Delete the full row for node iNode ---*/
+      for (jPoint = 0; jPoint < nPoint; jPoint++){
+
+        /*--- Check whether the block is non-zero ---*/
+        valJacobian_ij_00 = Jacobian.GetBlock(iNode, jPoint,0,0);
+
+        if (valJacobian_ij_00 != 0.0 ){
+          if (iNode != jPoint) {
+            Jacobian.SetBlock(iNode,jPoint,mZeros_Aux);
+          }
+          else{
+            Jacobian.SetBlock(iNode,jPoint,mId_Aux);
+          }
+        }
+      }
+
+      /*--- Delete the columns for a particular node ---*/
+
+      for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+        /*--- Check if the term K(iPoint, iNode) is 0 ---*/
+        valJacobian_ij_00 = Jacobian.GetBlock(iPoint,iNode,0,0);
+
+        /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
+        if (valJacobian_ij_00 != 0.0 ){
+
+          /*--- Retrieve the Jacobian term ---*/
+          for (iDim = 0; iDim < nDim; iDim++){
+            for (jDim = 0; jDim < nDim; jDim++){
+              auxJacobian_ij[iDim][jDim] = Jacobian.GetBlock(iPoint,iNode,iDim,jDim);
+            }
+          }
+
+          /*--- Multiply by the imposed displacement ---*/
+          for (iDim = 0; iDim < nDim; iDim++){
+            Residual[iDim] = 0.0;
+            for (jDim = 0; jDim < nDim; jDim++){
+              Residual[iDim] += auxJacobian_ij[iDim][jDim] * Disp_Dir[jDim];
+            }
+          }
+
+          if (iNode != iPoint) {
+            /*--- The term is substracted from the residual (right hand side) ---*/
+            LinSysRes.SubtractBlock(iPoint, Residual);
+            /*--- The Jacobian term is now set to 0 ---*/
+            Jacobian.SetBlock(iPoint,iNode,mZeros_Aux);
+          }
+
+        }
+
+      }
+
+    }
+
+  }
+
 
 }
 
@@ -2731,22 +2884,55 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
 
   bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
+  su2double Transfer_Time;
+
+//  if (Ramp_Load){
+//    ModAmpl=NormalLoad*CurrentTime/Ramp_Time;
+//    NonModAmpl=NormalLoad;
+//    TotalLoad=min(ModAmpl,NonModAmpl);
+//  }
+//  else if (Sigmoid_Load){
+//    SigAux = CurrentTime/ Sigmoid_Time;
+//    ModAmpl = (1 / (1+exp(-1*Sigmoid_K*(SigAux - 0.5)) ) );
+//    ModAmpl = max(ModAmpl,0.0);
+//    ModAmpl = min(ModAmpl,1.0);
+//    TotalLoad=ModAmpl*NormalLoad;
+//  }
+//  else{
+//    TotalLoad=NormalLoad;
+//  }
 
   if (Ramp_Load){
-    ModAmpl=NormalLoad*CurrentTime/Ramp_Time;
-    NonModAmpl=NormalLoad;
-    TotalLoad=min(ModAmpl,NonModAmpl);
-  }
-  else if (Sigmoid_Load){
-    SigAux = CurrentTime/ Sigmoid_Time;
-    ModAmpl = (1 / (1+exp(-1*Sigmoid_K*(SigAux - 0.5)) ) );
+    Transfer_Time = CurrentTime / Ramp_Time;
+    switch (config->GetDynamic_LoadTransfer()){
+    case INSTANTANEOUS:
+      ModAmpl = 1.0;
+      break;
+    case POL_ORDER_1:
+      ModAmpl = Transfer_Time;
+      break;
+    case POL_ORDER_3:
+      ModAmpl = -2.0 * pow(Transfer_Time,3.0) + 3.0 * pow(Transfer_Time,2.0);
+      break;
+    case POL_ORDER_5:
+      ModAmpl = 6.0 * pow(Transfer_Time, 5.0) - 15.0 * pow(Transfer_Time, 4.0) + 10 * pow(Transfer_Time, 3.0);
+      break;
+    case SIGMOID_10:
+      ModAmpl = (1 / (1+exp(-1.0 * 10.0 * (Transfer_Time - 0.5)) ) );
+      break;
+    case SIGMOID_20:
+      ModAmpl = (1 / (1+exp(-1.0 * 20.0 * (Transfer_Time - 0.5)) ) );
+      break;
+    }
     ModAmpl = max(ModAmpl,0.0);
     ModAmpl = min(ModAmpl,1.0);
-    TotalLoad=ModAmpl*NormalLoad;
   }
   else{
-    TotalLoad=NormalLoad;
+    ModAmpl = 1.0;
   }
+
+  TotalLoad = ModAmpl * NormalLoad;
+
 
   /*--- Do only if there is a load applied.
    *--- This reduces the computational cost for cases in which we want boundaries with no load.
@@ -3054,22 +3240,54 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
 
   bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
+  su2double Transfer_Time;
+
+//  if (Ramp_Load){
+//    ModAmpl=LoadDirVal*LoadDirMult*CurrentTime/Ramp_Time;
+//    NonModAmpl=LoadDirVal*LoadDirMult;
+//    TotalLoad=min(ModAmpl,NonModAmpl);
+//  }
+//  else if (Sigmoid_Load){
+//    SigAux = CurrentTime/ Sigmoid_Time;
+//    ModAmpl = (1 / (1+exp(-1*Sigmoid_K*(SigAux - 0.5)) ) );
+//    ModAmpl = max(ModAmpl,0.0);
+//    ModAmpl = min(ModAmpl,1.0);
+//    TotalLoad=ModAmpl*LoadDirVal*LoadDirMult;
+//  }
+//  else{
+//    TotalLoad=LoadDirVal*LoadDirMult;
+//  }
 
   if (Ramp_Load){
-    ModAmpl=LoadDirVal*LoadDirMult*CurrentTime/Ramp_Time;
-    NonModAmpl=LoadDirVal*LoadDirMult;
-    TotalLoad=min(ModAmpl,NonModAmpl);
-  }
-  else if (Sigmoid_Load){
-    SigAux = CurrentTime/ Sigmoid_Time;
-    ModAmpl = (1 / (1+exp(-1*Sigmoid_K*(SigAux - 0.5)) ) );
+    Transfer_Time = CurrentTime / Ramp_Time;
+    switch (config->GetDynamic_LoadTransfer()){
+    case INSTANTANEOUS:
+      ModAmpl = 1.0;
+      break;
+    case POL_ORDER_1:
+      ModAmpl = Transfer_Time;
+      break;
+    case POL_ORDER_3:
+      ModAmpl = -2.0 * pow(Transfer_Time,3.0) + 3.0 * pow(Transfer_Time,2.0);
+      break;
+    case POL_ORDER_5:
+      ModAmpl = 6.0 * pow(Transfer_Time, 5.0) - 15.0 * pow(Transfer_Time, 4.0) + 10 * pow(Transfer_Time, 3.0);
+      break;
+    case SIGMOID_10:
+      ModAmpl = (1 / (1+exp(-1.0 * 10.0 * (Transfer_Time - 0.5)) ) );
+      break;
+    case SIGMOID_20:
+      ModAmpl = (1 / (1+exp(-1.0 * 20.0 * (Transfer_Time - 0.5)) ) );
+      break;
+    }
     ModAmpl = max(ModAmpl,0.0);
     ModAmpl = min(ModAmpl,1.0);
-    TotalLoad=ModAmpl*LoadDirVal*LoadDirMult;
   }
   else{
-    TotalLoad=LoadDirVal*LoadDirMult;
+    ModAmpl = 1.0;
   }
+
+  TotalLoad = ModAmpl * LoadDirVal * LoadDirMult;
 
   /*--- Compute the norm of the vector that was passed in the config file ---*/
   su2double Norm = 1.0;
@@ -4789,14 +5007,6 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
     cout << "Objective function: " << Total_OFRefGeom << "." << endl;
 
   }
-
-
-
-
-
-
-
-
 
 }
 

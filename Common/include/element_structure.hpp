@@ -388,6 +388,18 @@ public:
 	 */
 	unsigned short Get_iDe(void);
 
+  /*!
+   * \brief Compute the value of the area of the element
+   * \param[out] val_Area - Area of the element
+   */
+  virtual su2double ComputeArea(void);
+
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[out] val_Volume - Volume of the element
+   */
+  virtual su2double ComputeVolume(void);
+
 	/*!
 	 * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
 	 * \param[in] val_solution - Solution of the problem.
@@ -455,6 +467,12 @@ public:
 	 */
 	void ComputeGrad_NonLinear(void);
 
+  /*!
+   * \brief Compute the value of the area of the element
+   * \param[out] val_Area - Area of the element
+   */
+  su2double ComputeArea(void);
+
 };
 
 
@@ -502,6 +520,12 @@ public:
 	 * \param[out] J_x - Jacobian of the element evaluated at the current Gauss Point respect to the current configuration
 	 */
 	void ComputeGrad_NonLinear(void);
+
+  /*!
+   * \brief Compute the value of the area of the element
+   * \param[out] val_Area - Area of the element
+   */
+  su2double ComputeArea(void);
 
 	/*!
 	 * \brief Virtual member.
@@ -650,6 +674,12 @@ public:
 	 */
 	void ComputeGrad_NonLinear(void);
 
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeVolume(void);
+
 };
 
 /*!
@@ -697,11 +727,109 @@ public:
 	 */
 	void ComputeGrad_NonLinear(void);
 
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeVolume(void);
+
 	/*!
 	 * \brief Virtual member.
 	 */
 	virtual void ComputeGrad_Pressure(void);
 
+
+};
+
+/*!
+ * \class CPYRAM5
+ * \brief Pyramid element with 5 Gauss Points
+ * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
+ * \version 4.2.0 "Cardinal"
+ */
+
+class CPYRAM5 : public CElement {
+
+protected:
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CPYRAM5(void);
+
+  /*!
+   * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CPYRAM5(unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CPYRAM5(void);
+
+  /*!
+   * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
+   * \param[in] val_solution - Solution of the problem.
+   * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
+   */
+  void ComputeGrad_Linear(void);
+
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeVolume(void);
+
+};
+
+/*!
+ * \class CPRISM6
+ * \brief Prism element with 6 Gauss Points
+ * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
+ * \version 4.2.0 "Cardinal"
+ */
+
+class CPRISM6 : public CElement {
+
+protected:
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CPRISM6(void);
+
+  /*!
+   * \overload
+   * \param[in] val_fea - Values of the fea solution (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CPRISM6(unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CPRISM6(void);
+
+  /*!
+   * \brief Set the value of the gradient of the shape functions respect to the reference configuration.
+   * \param[in] val_solution - Solution of the problem.
+   * \param[out] J_X - Jacobian of the element evaluated at the current Gauss Point respect to the reference configuration
+   */
+  void ComputeGrad_Linear(void);
+
+  /*!
+   * \brief Compute the value of the volume of the element
+   * \param[out] val_Volume - Volume of the element
+   */
+  su2double ComputeVolume(void);
 
 };
 
