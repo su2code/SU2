@@ -354,6 +354,9 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
                                                   unsigned long   &pointID,
                                                   int             &rankID) {
 
+  AD::StartPreacc();
+  AD::SetPreaccIn(coor, nDimADT);
+
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Initialize the nearest node to the central node of the     ---*/
   /*---         root leaf. Note that the distance is the distance squared  ---*/
@@ -469,4 +472,7 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
   /* At the moment the distance squared to the nearest node is stored.
      Take the sqrt to obtain the correct value. */
   dist = sqrt(dist);
+
+  AD::SetPreaccOut(dist);
+  AD::EndPreacc();
 }
