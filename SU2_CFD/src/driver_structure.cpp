@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 4.1.2 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -388,7 +388,7 @@ and potential are incompatible, they use the same position in sol container ---*
     /*--- DeAllocate solution for adjoint problem ---*/
     if (adj_euler || adj_ns || disc_adj) {
       delete solver_container[iMGlevel][ADJFLOW_SOL];
-      if ((turbulent and disc_adj) or adj_turb){
+      if ((turbulent && disc_adj) || adj_turb){
         delete solver_container[iMGlevel][ADJTURB_SOL];
       }
     }

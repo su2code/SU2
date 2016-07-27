@@ -2,7 +2,7 @@
  * \file solver_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author F. Palacios, T. Economon
- * \version 4.1.2 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1820,10 +1820,41 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 	/*--- It's necessary to communicate this information ---*/
 
 	geometry->Set_MPI_OldCoord(config);
+  
+  delete [] Coord;
 
 }
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
+
+CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names){
+
+  unsigned long iPoint;
+  unsigned short iVar;
+
+  config->fields = field_names;
+
+  Solution = new su2double[nVar];
+
+  for (iVar = 0; iVar < nVar; iVar++){
+    Solution[iVar] = 0.0;
+  }
+
+  /*--- Define geometry constants in the solver structure ---*/
+
+  nDim = geometry->GetnDim();
+
+  /*--- Allocate the node variables ---*/
+
+  node = new CVariable*[geometry->GetnPoint()];
+
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+
+    node[iPoint] = new CBaselineVariable(Solution, nVar, config);
+
+  }
+
+}
 
 CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   
@@ -1987,11 +2018,22 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 }
 
 void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR, GridVel_Index;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double rotMatrix[3][3], *transl, *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL, *Solution = NULL;
   
   Solution = new su2double[nVar];
+
+  GridVel_Index = 2*nDim;
+
+  if (config->GetKind_Turb_Model() == SA){
+    GridVel_Index += 1;
+  }else if (config->GetKind_Turb_Model() == SST){
+    GridVel_Index += 2;
+  }
+  if (config->GetKind_Regime() != INCOMPRESSIBLE){
+    GridVel_Index += 1;
+  }
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
@@ -2100,6 +2142,13 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
                               rotMatrix[0][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex]);
           Solution[nDim+2] = (rotMatrix[1][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
                               rotMatrix[1][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex]);
+
+          if (config->GetGrid_Movement()){
+            Solution[GridVel_Index + 1] = (rotMatrix[0][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                           rotMatrix[0][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex]);
+            Solution[GridVel_Index + 2] = (rotMatrix[1][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                           rotMatrix[1][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex]);
+          }
         } else {
           
           /*--- Coords ---*/
@@ -2116,15 +2165,27 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
           
           /*--- Momentum ---*/
           
-          Solution[nDim+1] = (rotMatrix[0][0]*Buffer_Receive_U[nDim+1*nVertexR+iVertex] +
-                              rotMatrix[0][1]*Buffer_Receive_U[nDim+2*nVertexR+iVertex] +
-                              rotMatrix[0][2]*Buffer_Receive_U[nDim+3*nVertexR+iVertex]);
-          Solution[nDim+2] = (rotMatrix[1][0]*Buffer_Receive_U[nDim+1*nVertexR+iVertex] +
-                              rotMatrix[1][1]*Buffer_Receive_U[nDim+2*nVertexR+iVertex] +
-                              rotMatrix[1][2]*Buffer_Receive_U[nDim+3*nVertexR+iVertex]);
-          Solution[nDim+3] = (rotMatrix[2][0]*Buffer_Receive_U[nDim+1*nVertexR+iVertex] +
-                              rotMatrix[2][1]*Buffer_Receive_U[nDim+2*nVertexR+iVertex] +
-                              rotMatrix[2][2]*Buffer_Receive_U[nDim+3*nVertexR+iVertex]);
+          Solution[nDim+1] = (rotMatrix[0][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
+                              rotMatrix[0][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex] +
+                              rotMatrix[0][2]*Buffer_Receive_U[(nDim+3)*nVertexR+iVertex]);
+          Solution[nDim+2] = (rotMatrix[1][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
+                              rotMatrix[1][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex] +
+                              rotMatrix[1][2]*Buffer_Receive_U[(nDim+3)*nVertexR+iVertex]);
+          Solution[nDim+3] = (rotMatrix[2][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
+                              rotMatrix[2][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex] +
+                              rotMatrix[2][2]*Buffer_Receive_U[(nDim+3)*nVertexR+iVertex]);
+
+          if (config->GetGrid_Movement()){
+            Solution[GridVel_Index+1] = (rotMatrix[0][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                         rotMatrix[0][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex] +
+                                         rotMatrix[0][2]*Buffer_Receive_U[(GridVel_Index+3)*nVertexR+iVertex]);
+            Solution[GridVel_Index+2] = (rotMatrix[1][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                         rotMatrix[1][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex] +
+                                         rotMatrix[1][2]*Buffer_Receive_U[(GridVel_Index+3)*nVertexR+iVertex]);
+            Solution[GridVel_Index+3] = (rotMatrix[2][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                         rotMatrix[2][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex] +
+                                         rotMatrix[2][2]*Buffer_Receive_U[(GridVel_Index+3)*nVertexR+iVertex]);
+          }
         }
         
         /*--- Copy transformed conserved variables back into buffer. ---*/
@@ -2161,12 +2222,12 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short iField;
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
-  
+  bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry[iZone]->GetnZone();
 
   /*--- Retrieve filename from config ---*/
-  if (config->GetContinuous_Adjoint()) {
+  if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
@@ -2275,12 +2336,12 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
   unsigned short iField;
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
-
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
 
   /*--- Retrieve filename from config ---*/
-  if (config->GetContinuous_Adjoint()) {
+  if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
