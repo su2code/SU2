@@ -1656,22 +1656,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         exit(EXIT_FAILURE);
       }
     }
-    /*--- Make sure that 1D outputs are written when objective function requires [TODO: does this make config options irrelevant?]---*/
-    unsigned short jMarker=0;
-    nMarker_Out_1D = 0;
-    for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++){
-      if (Kind_ObjFunc[iMarker]== AVG_OUTLET_PRESSURE || Kind_ObjFunc[iMarker] == AVG_TOTAL_PRESSURE || Kind_ObjFunc[iMarker]==OUTFLOW_GENERALIZED) {
-        Wrt_1D_Output = YES;
-        nMarker_Out_1D++;
-      }
-    }
-    Marker_Out_1D = new string[nMarker_Out_1D];
-    for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++){
-      if ( Kind_ObjFunc[iMarker]== AVG_OUTLET_PRESSURE || Kind_ObjFunc[iMarker] == AVG_TOTAL_PRESSURE || Kind_ObjFunc[iMarker]==OUTFLOW_GENERALIZED) {
-        Marker_Out_1D[jMarker] = Marker_Monitoring[iMarker];
-        jMarker++;
-      }
-    }
   }
 
   /*--- Low memory only for ASCII Tecplot ---*/
