@@ -5295,7 +5295,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           cout.width(5); cout << iExtIter;
           cout.width(11); cout << timeiter;
           
-        } else {
+        } else if (Unsteady && DualTime_Iteration) {
           cout.width(8); cout << iIntIter;
           cout.width(8); cout << iExtIter;
         }
@@ -5329,6 +5329,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0].flush();
           }
           
+	  if(DualTime_Iteration || !Unsteady){
           cout.precision(6);
           cout.setf(ios::fixed, ios::floatfield);
           cout.width(13); cout << log10(residual_flow[0]);
@@ -5377,6 +5378,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.width(15); cout << aeroelastic_pitch[0];
             cout.unsetf(ios_base::floatfield);
           }
+	  }
           cout << endl;
           
           break;
@@ -5394,6 +5396,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0].flush();
           }
           
+	  if(DualTime_Iteration || !Unsteady){
           cout.precision(6);
           cout.setf(ios::fixed, ios::floatfield);
           
@@ -5449,6 +5452,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.unsetf(ios_base::floatfield);
           }
           cout << endl;
+	  }
           
           if (freesurface) {
             if (!DualTime_Iteration) {

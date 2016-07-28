@@ -9,11 +9,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - tdavid91@hotmail.com
   
 branches:
     only:
-        - develop
+        - feature_pyWrapper
 
 env:
     global:
