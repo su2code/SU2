@@ -5077,7 +5077,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   }
   
   delete [] Marker_All_SendRecv_Copy;
-  
+  delete [] nElem_Bound_Copy;
 }
 
 void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone) {
@@ -13899,6 +13899,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
     iPoint_Global++;
   }
   restart_file.close();
+
+  delete [] Global2Local;
 }
 
 su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) {
