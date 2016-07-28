@@ -6815,7 +6815,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
         /*--- Compute the residual ---*/
         
         Pressure = node[iPoint]->GetPressureInc();
-        Density = node[iPoint]->GetPressureInc();
+        Density = node[iPoint]->GetDensityInc();
         
         Residual[0] = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
@@ -12282,11 +12282,11 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   CSkinFriction = new su2double** [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    CSkinFriction[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      CSkinFriction[iMarker][iVertex] = new su2double [nDim];
-      for (iDim = 0; iDim < nDim; iDim++) {
-        CSkinFriction[iMarker][iVertex][iDim] = 0.0;
+    CSkinFriction[iMarker] = new su2double*[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      CSkinFriction[iMarker][iDim] = new su2double[geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        CSkinFriction[iMarker][iDim][iVertex] = 0.0;
       }
     }
   }
@@ -12827,8 +12827,9 @@ CNSSolver::~CNSSolver(void) {
       for (iDim = 0; iDim < nDim; iDim++) {
         delete CSkinFriction[iMarker][iDim];
       }
-      delete [] CSkinFriction;
+      delete CSkinFriction[iMarker];
     }
+    delete [] CSkinFriction;
   }
   
 }
@@ -13446,7 +13447,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
         WallShearStress = 0.0;
         for (iDim = 0; iDim < nDim; iDim++) {
           TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
-          CSkinFriction[iMarker][iVertex][iDim] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
+          CSkinFriction[iMarker][iDim][iVertex] = TauTangent[iDim] / (0.5*RefDensity*RefVel2);
           WallShearStress += TauTangent[iDim] * TauTangent[iDim];
         }
         WallShearStress = sqrt(WallShearStress);
