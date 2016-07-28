@@ -4733,8 +4733,9 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
   }
 
   /*-------------------------------------------------------------------*/
-  /*--- Step 2: Determine the maximum value of the Jacobians of the ---*/
-  /*---         elements and from that its length scale.            ---*/
+  /*--- Step 2: Determine the minimum value of the Jacobians of the ---*/
+  /*---         elements and from that the length scale of the      ---*/
+  /*---         owned elements.                                     ---*/
   /*-------------------------------------------------------------------*/
 
   /* Determine the number of metric terms per integration point.
@@ -4757,12 +4758,88 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
     for(unsigned short k=1; k<nInt; ++k)
       minJacElem = min(minJacElem, metric[k*nMetricPerPoint]);
 
-    /* Determine the length scale of the element, for which the polynomial
-       degree must be taken into account as well. */
-    const su2double lenScaleRef = 2.0/standardElementsSol[ind].GetNPoly();
+    /* Determine the length scale of the element, for which the length
+       scale of the reference element, 2.0, must be taken into account. */
     const su2double maxJacFaces = volElem[i].lenScale;
-    volElem[i].lenScale         = lenScaleRef*minJacElem/maxJacFaces; 
+    volElem[i].lenScale         = 2.0*minJacElem/maxJacFaces; 
   }
+
+  /*-------------------------------------------------------------------*/
+  /*--- Step 3: Set the length scale for the external elements by   ---*/
+  /*---         communication.                                      ---*/
+  /*-------------------------------------------------------------------*/
+
+  /* Determine the rank inside MPI_COMM_WORLD. */
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+#ifdef HAVE_MPI
+
+  /*--- Define the buffers needed for the communication. ---*/
+  vector<MPI_Request> sendRequests(ranksComm.size());
+  vector<MPI_Request> recvRequests(ranksComm.size());
+
+  vector<vector<su2double> > sendBuf, recvBuf;
+  sendBuf.resize(ranksComm.size());
+  recvBuf.resize(ranksComm.size());
+
+  /*--- Send the data using non-blocking sends and posts the receives
+        using non-blocking receives. Exclude self communication. ---*/
+  unsigned long nCommRequests = 0;
+  for(unsigned long i=0; i<ranksComm.size(); ++i) {
+    if(ranksComm[i] != rank) {
+
+      /* Allocate the memory for communication buffers. */
+      sendBuf[i].resize(entitiesSend[i].size());
+      recvBuf[i].resize(entitiesReceive[i].size());
+
+      /* Fill the send buffer. */
+      for(unsigned long j=0; j<entitiesSend[i].size(); ++j)
+        sendBuf[i][j] = volElem[entitiesSend[i][j]].lenScale;
+
+      /* Send the data and post the nonblocking receive. */
+      SU2_MPI::Isend(sendBuf[i].data(), sendBuf[i].size(), MPI_DOUBLE,
+                     ranksComm[i], ranksComm[i]+10, MPI_COMM_WORLD,
+                     &sendRequests[nCommRequests]);
+
+      SU2_MPI::Irecv(recvBuf[i].data(), recvBuf[i].size(), MPI_DOUBLE,
+                     ranksComm[i], rank+10, MPI_COMM_WORLD,
+                     &recvRequests[nCommRequests]);
+      ++nCommRequests;
+    }
+  }
+
+#endif
+
+  /*--- Carry out the self communication, if needed. Note that this part
+        is outside the MPI part. ---*/
+  for(unsigned long i=0; i<ranksComm.size(); ++i) {
+    if(ranksComm[i] == rank) {
+      for(unsigned long j=0; j<entitiesSend[i].size(); ++j) {
+        const unsigned long v0 = entitiesSend[i][j];
+        const unsigned long v1 = entitiesReceive[i][j];
+        volElem[v1].lenScale = volElem[v0].lenScale;
+      }
+    }
+  }
+
+#ifdef HAVE_MPI
+
+  /*--- Complete the nonblocking communication. ---*/
+  SU2_MPI::Waitall(nCommRequests, sendRequests.data(), MPI_STATUSES_IGNORE);
+  SU2_MPI::Waitall(nCommRequests, recvRequests.data(), MPI_STATUSES_IGNORE);
+
+  /*--- Copy the data from the receive buffers into the volElem. ---*/
+  for(unsigned long i=0; i<ranksComm.size(); ++i) {
+    if(ranksComm[i] != rank) {
+      for(unsigned long j=0; j<entitiesReceive[i].size(); ++j)
+        volElem[entitiesReceive[i][j]].lenScale = recvBuf[i][j];
+    }
+  }
+
+#endif
 }
 
 void CMeshFEM_DG::MetricTermsSurfaceElements(void) {

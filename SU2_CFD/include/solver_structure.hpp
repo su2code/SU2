@@ -5661,6 +5661,7 @@ protected:
    * \param[in]  solL        - Solution in the left state of the points.
    * \param[in]  solR        - Solution in the right state of the points.
    * \param[out] fluxes      - Inviscid fluxes in the points.
+   * \param[in]  numerics    - Object, which contains the Riemann solver.
    */
   void ComputeInviscidFluxesFace(CConfig             *config,
                                  const unsigned long nPoints,
@@ -5669,6 +5670,23 @@ protected:
                                  const su2double     *solR,
                                  su2double           *fluxes,
                                  CNumerics           *numerics);
+  /*!
+   * \brief Function, which computes the inviscid fluxes in face points of
+            a matching internal face.
+   * \param[in]  config       - Definition of the particular problem.
+   * \param[in]  internalFace - Internal matching face for which the inviscid
+                                fluxes must be computed in the integration points.
+   * \param[out] solIntL      - Solution in the left state of the integration points.
+   * \param[out] solIntR      - Solution in the right state of the integration points.
+   * \param[out] fluxes       - Inviscid fluxes in the integration points.
+   * \param[in]  numerics     - Object, which contains the Riemann solver.
+   */
+  void InviscidFluxesInternalMatchingFace(CConfig                       *config,
+                                          const CInternalFaceElementFEM *internalFace,
+                                          su2double                     *solIntL,
+                                          su2double                     *solIntR,
+                                          su2double                     *fluxes,
+                                          CNumerics                     *numerics);
   /*!
    * \brief Function, which computes the left state of a boundary face.
    * \param[in]  surfElem - Surface boundary element for which the left state must be computed.
@@ -5943,6 +5961,65 @@ public:
    * \return Value of the Omega_Max
    */
   void SetOmega_Max(su2double val_omega_max);
+
+private:
+
+  /*!
+   * \brief Function to compute the penalty terms in the integration
+            points of a face.
+   * \param[in]  nInt                - Number of integration points of the face.
+   * \param[in]  solInt0             - Solution in the integration points of side 0.
+   * \param[in]  solInt1             - Solution in the integration points of side 1.
+   * \param[in]  viscosityInt0       - Viscosity in the integration points of side 0.
+   * \param[in]  viscosityInt1       - Viscosity in the integration points of side 1.
+   * \param[in]  ConstPenFace        - Penalty constant for this face.
+   * \param[in]  lenScale0           - Length scale of the element of side 0.
+   * \param[in]  lenScale1           - Length scale of the element of side 1.
+   * \param[in]  metricNormalsFace   - Metric terms in the integration points, which
+                                       contain the normals.
+   * \param[out] penaltyFluxes       - Penalty fluxes in the integration points.
+   */
+  void PenaltyTermsFluxFace(const unsigned short nInt,
+                            const su2double      *solInt0,
+                            const su2double      *solInt1,
+                            const su2double      *viscosityInt0,
+                            const su2double      *viscosityInt1,
+                            const su2double      ConstPenFace,
+                            const su2double      lenScale0,
+                            const su2double      lenScale1,
+                            const su2double      *metricNormalsFace,
+                            su2double            *penaltyFluxes);
+
+  /*!
+   * \brief Function to compute the viscous normal fluxes in the integration
+            points of a face.
+   * \param[in]   nInt                - Number of integration points of the face.
+   * \param[in]   nDOFsElem           - Number of DOFs of the adjacent element.
+   * \param[in]   derBasisElem        - Derivatives w.r.t. the parametric coordinates
+                                        of the basis functions of the adjacent face.
+   * \param[in]   solInt              - Solution in the integration points.
+   * \param[in]   metricCoorDerivFace - Metric terms in the integration points, which
+                                        contain the derivatives of the parametric
+                                        coordinates w.r.t. the Cartesian coordinates.
+                                        Needed to compute the Cartesian gradients.
+   * \param[in]   metricNormalsFace   - Metric terms in the integration points, which
+                                        contain the normals.
+   * \param[out]  gradSolInt          - Gradient of the solution in the integration
+                                        points.
+   * \param[out]  viscNormFluxes      - Viscous normal fluxes in the integration points.
+   * \param[out]  viscosityInt        - Viscosity in the integration points, which is
+                                        needed for other terms in the discretization.
+   */
+  void ViscousNormalFluxFace(const unsigned short nInt,
+                             const unsigned short nDOFsElem,
+                             const su2double      *derBasisElem,
+                             const su2double      *solInt,
+                             const unsigned long  *DOFsElem,
+                             const su2double      *metricCoorDerivFace,
+                             const su2double      *metricNormalsFace,
+                             su2double            *gradSolInt,
+                             su2double            *viscNormFluxes,
+                             su2double            *viscosityInt);
 };
 
 /*!

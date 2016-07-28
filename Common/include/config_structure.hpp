@@ -717,9 +717,10 @@ private:
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
-  unsigned short Riemann_Solver_FEM; /*!< \brief Riemann solver chosen for the DG method. */
-  su2double Quadrature_Factor_Straight; /*!< \brief Factor applied during quadrature of straight elements. */
-  su2double Quadrature_Factor_Curved; /*!< \brief Factor applied during quadrature of straight elements */
+  unsigned short Riemann_Solver_FEM;      /*!< \brief Riemann solver chosen for the DG method. */
+  su2double Quadrature_Factor_Straight;   /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
+  su2double Quadrature_Factor_Curved;     /*!< \brief Factor applied during quadrature of elements with a non-constant Jacobian. */
+  su2double Theta_Interior_Penalty_DGFEM; /*!< \brief Factor for the symmetrizing terms in the DG discretization of the viscous fluxes. */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map
@@ -5595,10 +5596,17 @@ public:
    */
   su2double GetQuadrature_Factor_Curved(void);
 
-	/*!
-	 * \brief Get the interpolation method used for matching between zones.
-	 */
-	inline unsigned short GetKindInterpolation(void);
+  /*!
+   * \brief Function to make available the multiplication factor theta of the
+            symmetrizing terms in the DG discretization of the viscous terms.
+   * \return The specified factor for the DG discretization.
+   */
+  su2double GetTheta_Interior_Penalty_DGFEM(void);
+
+  /*!
+   * \brief Get the interpolation method used for matching between zones.
+   */
+  inline unsigned short GetKindInterpolation(void);
 
   /*!
    * \brief Get the AD support.

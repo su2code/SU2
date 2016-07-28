@@ -1064,6 +1064,9 @@ private:
                                                 be swapped compared to the face of the corresponding
                                                 standard element on side 1 of the face. */
 
+  su2double penaltyConstantFace;      /*!< \brief The constant of the penalty parameter of the face,
+                                                  which is used in the viscous discretization. */
+
   vector<su2double> rDOFsFaceSide0;   /*!< \brief r-location of the DOFs on side 0 of the face. */
   vector<su2double> rDOFsFaceSide1;   /*!< \brief r-location of the DOFs on side 1 of the face. */
   vector<su2double> sDOFsFaceSide0;   /*!< \brief s-location of the DOFs on side 0 of the face, if needed. */
@@ -1207,16 +1210,16 @@ public:
   /*!
   * \brief Function, which makes available the matrix with the derivatives of
            the element basis functions of side 0 in the integration points.
-  * \return  The pointer to data, which stores this information.
+  * \return  The const pointer to data, which stores this information.
   */
-  su2double *GetMatDerBasisElemIntegrationSide0(void);
+  const su2double *GetMatDerBasisElemIntegrationSide0(void) const;
 
   /*!
   * \brief Function, which makes available the matrix with the derivatives of
            the element basis functions of side 1 in the integration points.
-  * \return  The pointer to data, which stores this information.
+  * \return  The const pointer to data, which stores this information.
   */
-  su2double *GetMatDerBasisElemIntegrationSide1(void);
+  const su2double *GetMatDerBasisElemIntegrationSide1(void) const;
 
   /*!
   * \brief Function, which makes available the face basis functions of side 0
@@ -1299,6 +1302,12 @@ public:
   * \return  The number of DOFs on side 1.
   */
   unsigned short GetNDOFsFaceSide1(void) const;
+
+  /*!
+  * \brief Function, which makes available the penalty constant for this standard face.
+  * \return  The penalty constant.
+  */
+  su2double GetPenaltyConstant(void) const;
 
   /*!
   * \brief Function, which checks if the function arguments correspond to this standard face.
