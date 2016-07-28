@@ -2359,7 +2359,8 @@ void CSpectralDriver::Run(CIteration **iteration_container,
 	/*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
 	if(ExtIter == 0){
 		if(config_container[ZONE_0]->GetBoolTurbomachinery()){
-			SetGeoTurboAvgValues(geometry_container, config_container, ZONE_0, true);
+			for (iZone = 0; iZone < nZone; iZone++)
+				SetGeoTurboAvgValues(geometry_container, config_container, iZone, true);
 		}
 	}
 

@@ -4764,7 +4764,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     else write_heads = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0));
     
     bool write_turbo = (((iExtIter % (config[val_iZone]->GetWrt_TurboSummary())) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter() -1)));
-    
+    if (Unsteady) write_turbo = ( iExtIter!=0 &&(iIntIter % (config[val_iZone]->GetWrt_TurboSummary())) == 0);
+
     /*--- Analogous for dynamic problems (as of now I separate the problems, it may be worthy to do all together later on ---*/
     bool write_heads_FEM;
     if (nonlinear_analysis) write_heads_FEM = (iIntIter == 0);
@@ -5351,6 +5352,359 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
 
 
+      /*--- Write the solution on the screen and history file ---*/
+      cout.precision(6);
+      cout.setf(ios::fixed, ios::floatfield);
+
+      if (!fem){
+        if (!Unsteady) {
+          cout.width(5); cout << iExtIter;
+          cout.width(11); cout << timeiter;
+
+        } else {
+          cout.width(8); cout << iIntIter;
+          cout.width(8); cout << iExtIter;
+        }
+      }
+      else if (fem){
+        if (!nonlinear_analysis) {
+          cout.width(5); cout << iExtIter;
+          cout.width(11); cout << timeiter;
+
+        } else {
+          cout.width(8); cout << iIntIter;
+          cout.width(8); cout << iExtIter;
+        }
+      }
+
+
+      switch (config[val_iZone]->GetKind_Solver()) {
+        case EULER : case NAVIER_STOKES:
+
+          if (!DualTime_Iteration) {
+            if (compressible && !turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid;
+            if (incompressible && !turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid;
+            if (turbo) ConvHist_file[0] << begin << turbo_coeff << flow_resid;
+            if (freesurface) ConvHist_file[0] << begin << direct_coeff << flow_resid << levelset_resid << end;
+            //            if (fluid_structure) ConvHist_file[0] << fea_resid;
+            if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
+            if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
+            if (output_1d) ConvHist_file[0] << oneD_outputs;
+            if (output_massflow && !output_1d) ConvHist_file[0] << massflow_outputs;
+            if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
+            ConvHist_file[0] << end;
+            ConvHist_file[0].flush();
+          }
+
+          cout.precision(6);
+          cout.setf(ios::fixed, ios::floatfield);
+          cout.width(13); cout << log10(residual_flow[0]);
+          //          if (!fluid_structure && !equiv_area) {
+          if (!equiv_area) {
+            if (compressible) {
+              if (nDim == 2 ) { cout.width(14); cout << log10(residual_flow[3]); }
+              else { cout.width(14); cout << log10(residual_flow[4]); }
+            }
+            if (incompressible) { cout.width(14); cout << log10(residual_flow[1]); }
+            if (freesurface) { cout.width(14); cout << log10(residual_levelset[0]); }
+          }
+          //          else if (fluid_structure) { cout.width(14); cout << log10(residual_fea[0]); }
+
+          if (rotating_frame && nDim == 3 && !turbo ) {
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(15); cout << Total_CT;
+            cout.width(15); cout << Total_CQ;
+            cout.unsetf(ios_base::floatfield);
+          }
+          else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); cout.width(15);
+            cout.precision(4);
+            cout.setf(ios::scientific, ios::floatfield);
+            cout << Total_CNearFieldOF; }
+          else if (freesurface) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CFreeSurface; }
+          else if (turbo) {
+          	cout.setf(ios::scientific, ios::floatfield);
+          	/*--- singlezone output---*/
+          	if (nZone < 2){
+							cout.width(15); cout << TotalPressureLoss[0]*100.0;
+							cout.width(15); cout << EntropyGen[0]*100.0;
+          	}
+          	else{
+							/*--- multizone output---*/
+							cout.width(15); cout << TotalTotalEfficiency[nTurboPerf -1]*100.0;
+							cout.width(15); cout << EntropyGen[nTurboPerf -1]*100.0;
+
+          	}
+          	cout.unsetf(ios_base::floatfield);
+          }
+          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); }
+          if (aeroelastic) {
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
+            cout.width(15); cout << aeroelastic_pitch[0];
+            cout.unsetf(ios_base::floatfield);
+          }
+          cout << endl;
+
+          break;
+
+        case RANS :
+
+          if (!DualTime_Iteration) {
+            if (!turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid << turb_resid;
+            if (turbo) ConvHist_file[0] << begin << turbo_coeff << flow_resid << turb_resid;
+            if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
+            if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
+            if (output_1d) ConvHist_file[0] << oneD_outputs;
+            if (output_massflow && !output_1d) ConvHist_file[0] << massflow_outputs;
+            if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
+            ConvHist_file[0] << end;
+            ConvHist_file[0].flush();
+          }
+
+          cout.precision(6);
+          cout.setf(ios::fixed, ios::floatfield);
+
+          if (incompressible || freesurface) cout.width(13);
+          else  cout.width(14);
+          cout << log10(residual_flow[0]);
+          //          else  cout.width(14),
+          //                 cout << log10(residual_flow[0]),
+          //                 cout.width(14);
+          //          if ( nDim==2 ) cout << log10(residual_flow[3]);
+          //          if ( nDim==3 ) cout << log10(residual_flow[4]);
+
+          switch(nVar_Turb) {
+            case 1: cout.width(14); cout << log10(residual_turbulent[0]); break;
+            case 2: cout.width(14); cout << log10(residual_turbulent[0]);
+              cout.width(15); cout << log10(residual_turbulent[1]); break;
+          }
+
+          if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
+
+          if (rotating_frame && nDim == 3 && !turbo ) {
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(15); cout << Total_CT; cout.width(15);
+            cout << Total_CQ;
+            cout.unsetf(ios_base::floatfield);
+          }
+          else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); cout.width(15);
+            cout.precision(4);
+            cout.setf(ios::scientific, ios::floatfield);
+            cout << Total_CNearFieldOF; }
+          else if (turbo) {
+          	cout.setf(ios::scientific, ios::floatfield);
+          	if (nZone < 2){
+							/*--- single zone output ---*/
+							cout.width(15); cout << TotalPressureLoss[0]*100.0;
+							cout.width(15); cout << EntropyGen[0]*100.0;
+          	}
+          	else{
+						/*--- multi zone output ---*/
+							cout.width(15); cout << TotalTotalEfficiency[nTurboPerf - 1]*100.0;
+							cout.width(15); cout << EntropyGen[nTurboPerf -1]*100.0;
+              if (direct_diff){
+                cout.width(15); cout << D_EntropyGen;
+              }
+          	}
+						cout.unsetf(ios_base::floatfield);
+          }
+          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); }
+
+          if (aeroelastic) {
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
+            cout.width(15); cout << aeroelastic_pitch[0];
+            cout.unsetf(ios_base::floatfield);
+          }
+          cout << endl;
+
+          if (freesurface) {
+            if (!DualTime_Iteration) {
+              ConvHist_file[0] << begin << direct_coeff << flow_resid << levelset_resid << end;
+              ConvHist_file[0].flush();
+            }
+
+            cout.precision(6);
+            cout.setf(ios::fixed, ios::floatfield);
+            cout.width(13); cout << log10(residual_flow[0]);
+            cout.width(14); cout << log10(residual_levelset[0]);
+            cout.width(15); cout << Total_CLift;
+            cout.width(14); cout << Total_CFreeSurface;
+
+            cout << endl;
+          }
+
+          break;
+
+        case WAVE_EQUATION:
+
+          if (!DualTime_Iteration) {
+            ConvHist_file[0] << begin << wave_coeff << wave_resid << end;
+            ConvHist_file[0].flush();
+          }
+
+          cout.precision(6);
+          cout.setf(ios::fixed, ios::floatfield);
+          cout.width(14); cout << log10(residual_wave[0]);
+          cout.width(14); cout << Total_CWave;
+          cout << endl;
+          break;
+
+        case HEAT_EQUATION:
+
+          if (!DualTime_Iteration) {
+            ConvHist_file[0] << begin << heat_coeff << heat_resid << end;
+            ConvHist_file[0].flush();
+          }
+          
+          cout.precision(6);
+          cout.setf(ios::fixed, ios::floatfield);
+          cout.width(14); cout << log10(residual_heat[0]);
+          cout.width(14); cout << Total_CHeat;
+          cout << endl;
+          break;
+          
+        case FEM_ELASTICITY:
+          
+          if (!DualTime_Iteration) {
+            ConvHist_file[0] << begin << fem_coeff << fem_resid << end;
+            ConvHist_file[0].flush();
+          }
+          
+          cout.precision(6);
+          cout.setf(ios::fixed, ios::floatfield);
+          if (linear_analysis){
+            cout.width(15); cout << log10(residual_fem[0]);
+            cout.width(15); cout << log10(residual_fem[1]);
+            if (nDim == 3) { cout.width(15); cout << log10(residual_fem[2]); }
+          }
+          else if (nonlinear_analysis){
+            cout.width(15); cout << log10(residual_fem[0]);
+            cout.width(15); cout << log10(residual_fem[1]);
+            cout.width(15); cout << log10(residual_fem[2]);
+          }
+          
+          cout.precision(4);
+          cout.setf(ios::scientific, ios::floatfield);
+          cout.width(14); cout << Total_CFEM;
+          cout << endl;
+          break;
+          
+        case ADJ_EULER :              case ADJ_NAVIER_STOKES :
+        case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:
+          
+          if (!DualTime_Iteration) {
+            ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
+            ConvHist_file[0].flush();
+          }
+          
+          cout.precision(6);
+          cout.setf(ios::fixed, ios::floatfield);
+          if (compressible) {
+            cout.width(15); cout << log10(residual_adjflow[0]);
+            cout.width(15); cout << log10(residual_adjflow[nDim+1]);
+          }
+          if (incompressible || freesurface) {
+            cout.width(17); cout << log10(residual_adjflow[0]);
+            cout.width(16); cout << log10(residual_adjflow[1]);
+          }
+          
+          if (disc_adj){
+            cout.precision(4);
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(14); cout << Total_Sens_Press;
+            cout.width(14); cout << Total_Sens_Mach;
+          }else{
+            cout.precision(4);
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(14); cout << Total_Sens_Geo;
+              cout.width(14); cout << Total_Sens_Mach;
+            }
+          cout << endl;
+          cout.unsetf(ios_base::floatfield);
+          
+          if (freesurface) {
+            if (!DualTime_Iteration) {
+              ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << adj_levelset_resid << end;
+              ConvHist_file[0].flush();
+            }
+            
+            cout.precision(6);
+            cout.setf(ios::fixed, ios::floatfield);
+            cout.width(17); cout << log10(residual_adjflow[0]);
+            cout.width(16); cout << log10(residual_adjlevelset[0]);
+            cout.precision(3);
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(12); cout << Total_Sens_Geo;
+              cout.width(12); cout << Total_Sens_Mach;
+            cout.unsetf(ios_base::floatfield);
+            cout << endl;
+          }
+          
+          break;
+          
+        case ADJ_RANS : case DISC_ADJ_RANS:
+          
+          if (!DualTime_Iteration) {
+            ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid;
+            if (!config[val_iZone]->GetFrozen_Visc())
+              ConvHist_file[0] << adj_turb_resid;
+            ConvHist_file[0] << end;
+            ConvHist_file[0].flush();
+          }
+          
+          cout.precision(6);
+          cout.setf(ios::fixed, ios::floatfield);
+          cout.width(17); cout << log10(residual_adjflow[0]);
+          if (!config[val_iZone]->GetFrozen_Visc()) {
+            cout.width(17); cout << log10(residual_adjturbulent[0]);
+          }
+          else {
+            if (compressible) {
+              if (geometry[val_iZone][FinestMesh]->GetnDim() == 2 ) { cout.width(15); cout << log10(residual_adjflow[3]); }
+              else { cout.width(15); cout << log10(residual_adjflow[4]); }
+            }
+            if (incompressible || freesurface) {
+              cout.width(15); cout << log10(residual_adjflow[1]);
+            }
+          }
+          if (disc_adj){
+            cout.precision(4);
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(14); cout << Total_Sens_Press;
+            cout.width(14); cout << Total_Sens_Mach;
+          }else{
+            cout.precision(4);
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(14); cout << Total_Sens_Geo;
+              cout.width(14); cout << Total_Sens_Mach;
+            }
+          cout << endl;
+          cout.unsetf(ios_base::floatfield);
+          if (freesurface) {
+            if (!DualTime_Iteration) {
+              ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << adj_levelset_resid;
+              ConvHist_file[0] << end;
+              ConvHist_file[0].flush();
+            }
+            
+            cout.precision(6);
+            cout.setf(ios::fixed, ios::floatfield);
+            cout.width(17); cout << log10(residual_adjflow[0]);
+            cout.width(16); cout << log10(residual_adjlevelset[0]);
+
+            cout.precision(4);
+            cout.setf(ios::scientific, ios::floatfield);
+            cout.width(12); cout << Total_Sens_Geo;
+              cout.width(14); cout << Total_Sens_Mach;
+            cout << endl;
+            cout.unsetf(ios_base::floatfield);
+          }
+          
+          break;
+          
+      }
+
       /*--- Write the turbomachinery summary---*/
       if (turbo && write_turbo){
       	cout << endl << "------------------------- Turbomachinery Summary ------------------------" << endl;
@@ -5562,358 +5916,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
       }
 
-      /*--- Write the solution on the screen and history file ---*/
-      cout.precision(6);
-      cout.setf(ios::fixed, ios::floatfield);
-      
-      if (!fem){
-        if (!Unsteady) {
-          cout.width(5); cout << iExtIter;
-          cout.width(11); cout << timeiter;
-          
-        } else {
-          cout.width(8); cout << iIntIter;
-          cout.width(8); cout << iExtIter;
-        }
-      }
-      else if (fem){
-        if (!nonlinear_analysis) {
-          cout.width(5); cout << iExtIter;
-          cout.width(11); cout << timeiter;
-          
-        } else {
-          cout.width(8); cout << iIntIter;
-          cout.width(8); cout << iExtIter;
-        }
-      }
-      
-      
-      switch (config[val_iZone]->GetKind_Solver()) {
-        case EULER : case NAVIER_STOKES:
-          
-          if (!DualTime_Iteration) {
-            if (compressible && !turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid;
-            if (incompressible && !turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid;
-            if (turbo) ConvHist_file[0] << begin << turbo_coeff << flow_resid;
-            if (freesurface) ConvHist_file[0] << begin << direct_coeff << flow_resid << levelset_resid << end;
-            //            if (fluid_structure) ConvHist_file[0] << fea_resid;
-            if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
-            if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
-            if (output_1d) ConvHist_file[0] << oneD_outputs;
-            if (output_massflow && !output_1d) ConvHist_file[0] << massflow_outputs;
-            if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
-            ConvHist_file[0] << end;
-            ConvHist_file[0].flush();
-          }
-          
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          cout.width(13); cout << log10(residual_flow[0]);
-          //          if (!fluid_structure && !equiv_area) {
-          if (!equiv_area) {
-            if (compressible) {
-              if (nDim == 2 ) { cout.width(14); cout << log10(residual_flow[3]); }
-              else { cout.width(14); cout << log10(residual_flow[4]); }
-            }
-            if (incompressible) { cout.width(14); cout << log10(residual_flow[1]); }
-            if (freesurface) { cout.width(14); cout << log10(residual_levelset[0]); }
-          }
-          //          else if (fluid_structure) { cout.width(14); cout << log10(residual_fea[0]); }
-          
-          if (rotating_frame && nDim == 3 && !turbo ) {
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(15); cout << Total_CT;
-            cout.width(15); cout << Total_CQ;
-            cout.unsetf(ios_base::floatfield);
-          }
-          else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); cout.width(15);
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout << Total_CNearFieldOF; }
-          else if (freesurface) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CFreeSurface; }
-          else if (turbo) {
-          	cout.setf(ios::scientific, ios::floatfield);
-          	/*--- singlezone output---*/
-          	if (nZone < 2){
-							cout.width(15); cout << TotalPressureLoss[0]*100.0;
-							cout.width(15); cout << EntropyGen[0]*100.0;
-          	}
-          	else{
-							/*--- multizone output---*/
-							cout.width(15); cout << TotalTotalEfficiency[nTurboPerf -1]*100.0;
-							cout.width(15); cout << EntropyGen[nTurboPerf -1]*100.0;
-
-          	}
-          	cout.unsetf(ios_base::floatfield);
-          }
-          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); }
-          if (aeroelastic) {
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
-            cout.width(15); cout << aeroelastic_pitch[0];
-            cout.unsetf(ios_base::floatfield);
-          }
-          cout << endl;
-          
-          break;
-          
-        case RANS :
-          
-          if (!DualTime_Iteration) {
-            if (!turbo) ConvHist_file[0] << begin << direct_coeff << flow_resid << turb_resid;
-            if (turbo) ConvHist_file[0] << begin << turbo_coeff << flow_resid << turb_resid;
-            if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
-            if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
-            if (output_1d) ConvHist_file[0] << oneD_outputs;
-            if (output_massflow && !output_1d) ConvHist_file[0] << massflow_outputs;
-            if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
-            ConvHist_file[0] << end;
-            ConvHist_file[0].flush();
-          }
-          
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          
-          if (incompressible || freesurface) cout.width(13);
-          else  cout.width(14);
-          cout << log10(residual_flow[0]);
-          //          else  cout.width(14),
-          //                 cout << log10(residual_flow[0]),
-          //                 cout.width(14);
-          //          if ( nDim==2 ) cout << log10(residual_flow[3]);
-          //          if ( nDim==3 ) cout << log10(residual_flow[4]);
-          
-          switch(nVar_Turb) {
-            case 1: cout.width(14); cout << log10(residual_turbulent[0]); break;
-            case 2: cout.width(14); cout << log10(residual_turbulent[0]);
-              cout.width(15); cout << log10(residual_turbulent[1]); break;
-          }
-          
-          if (transition) { cout.width(14); cout << log10(residual_transition[0]); cout.width(14); cout << log10(residual_transition[1]); }
-          
-          if (rotating_frame && nDim == 3 && !turbo ) {
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(15); cout << Total_CT; cout.width(15);
-            cout << Total_CQ;
-            cout.unsetf(ios_base::floatfield);
-          }
-          else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); cout.width(15);
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout << Total_CNearFieldOF; }
-          else if (turbo) {
-          	cout.setf(ios::scientific, ios::floatfield);
-          	if (nZone < 2){
-							/*--- single zone output ---*/
-							cout.width(15); cout << TotalPressureLoss[0]*100.0;
-							cout.width(15); cout << EntropyGen[0]*100.0;
-          	}
-          	else{
-						/*--- multi zone output ---*/
-							cout.width(15); cout << TotalTotalEfficiency[nTurboPerf - 1]*100.0;
-							cout.width(15); cout << EntropyGen[nTurboPerf -1]*100.0;
-              if (direct_diff){
-                cout.width(15); cout << D_EntropyGen;
-              }
-          	}
-						cout.unsetf(ios_base::floatfield);
-          }
-          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); }
-          
-          if (aeroelastic) {
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
-            cout.width(15); cout << aeroelastic_pitch[0];
-            cout.unsetf(ios_base::floatfield);
-          }
-          cout << endl;
-          
-          if (freesurface) {
-            if (!DualTime_Iteration) {
-              ConvHist_file[0] << begin << direct_coeff << flow_resid << levelset_resid << end;
-              ConvHist_file[0].flush();
-            }
-            
-            cout.precision(6);
-            cout.setf(ios::fixed, ios::floatfield);
-            cout.width(13); cout << log10(residual_flow[0]);
-            cout.width(14); cout << log10(residual_levelset[0]);
-            cout.width(15); cout << Total_CLift;
-            cout.width(14); cout << Total_CFreeSurface;
-            
-            cout << endl;
-          }
-          
-          break;
-          
-        case WAVE_EQUATION:
-          
-          if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << wave_coeff << wave_resid << end;
-            ConvHist_file[0].flush();
-          }
-          
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          cout.width(14); cout << log10(residual_wave[0]);
-          cout.width(14); cout << Total_CWave;
-          cout << endl;
-          break;
-          
-        case HEAT_EQUATION:
-          
-          if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << heat_coeff << heat_resid << end;
-            ConvHist_file[0].flush();
-          }
-          
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          cout.width(14); cout << log10(residual_heat[0]);
-          cout.width(14); cout << Total_CHeat;
-          cout << endl;
-          break;
-          
-        case FEM_ELASTICITY:
-          
-          if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << fem_coeff << fem_resid << end;
-            ConvHist_file[0].flush();
-          }
-          
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          if (linear_analysis){
-            cout.width(15); cout << log10(residual_fem[0]);
-            cout.width(15); cout << log10(residual_fem[1]);
-            if (nDim == 3) { cout.width(15); cout << log10(residual_fem[2]); }
-          }
-          else if (nonlinear_analysis){
-            cout.width(15); cout << log10(residual_fem[0]);
-            cout.width(15); cout << log10(residual_fem[1]);
-            cout.width(15); cout << log10(residual_fem[2]);
-          }
-          
-          cout.precision(4);
-          cout.setf(ios::scientific, ios::floatfield);
-          cout.width(14); cout << Total_CFEM;
-          cout << endl;
-          break;
-          
-        case ADJ_EULER :              case ADJ_NAVIER_STOKES :
-        case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:
-          
-          if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
-            ConvHist_file[0].flush();
-          }
-          
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          if (compressible) {
-            cout.width(15); cout << log10(residual_adjflow[0]);
-            cout.width(15); cout << log10(residual_adjflow[nDim+1]);
-          }
-          if (incompressible || freesurface) {
-            cout.width(17); cout << log10(residual_adjflow[0]);
-            cout.width(16); cout << log10(residual_adjflow[1]);
-          }
-          
-          if (disc_adj){
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(14); cout << Total_Sens_Press;
-            cout.width(14); cout << Total_Sens_Mach;
-          }else{
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(14); cout << Total_Sens_Geo;
-              cout.width(14); cout << Total_Sens_Mach;
-            }
-          cout << endl;
-          cout.unsetf(ios_base::floatfield);
-          
-          if (freesurface) {
-            if (!DualTime_Iteration) {
-              ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << adj_levelset_resid << end;
-              ConvHist_file[0].flush();
-            }
-            
-            cout.precision(6);
-            cout.setf(ios::fixed, ios::floatfield);
-            cout.width(17); cout << log10(residual_adjflow[0]);
-            cout.width(16); cout << log10(residual_adjlevelset[0]);
-            cout.precision(3);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(12); cout << Total_Sens_Geo;
-              cout.width(12); cout << Total_Sens_Mach;
-            cout.unsetf(ios_base::floatfield);
-            cout << endl;
-          }
-          
-          break;
-          
-        case ADJ_RANS : case DISC_ADJ_RANS:
-          
-          if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid;
-            if (!config[val_iZone]->GetFrozen_Visc())
-              ConvHist_file[0] << adj_turb_resid;
-            ConvHist_file[0] << end;
-            ConvHist_file[0].flush();
-          }
-          
-          cout.precision(6);
-          cout.setf(ios::fixed, ios::floatfield);
-          cout.width(17); cout << log10(residual_adjflow[0]);
-          if (!config[val_iZone]->GetFrozen_Visc()) {
-            cout.width(17); cout << log10(residual_adjturbulent[0]);
-          }
-          else {
-            if (compressible) {
-              if (geometry[val_iZone][FinestMesh]->GetnDim() == 2 ) { cout.width(15); cout << log10(residual_adjflow[3]); }
-              else { cout.width(15); cout << log10(residual_adjflow[4]); }
-            }
-            if (incompressible || freesurface) {
-              cout.width(15); cout << log10(residual_adjflow[1]);
-            }
-          }
-          if (disc_adj){
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(14); cout << Total_Sens_Press;
-            cout.width(14); cout << Total_Sens_Mach;
-          }else{
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(14); cout << Total_Sens_Geo;
-              cout.width(14); cout << Total_Sens_Mach;
-            }
-          cout << endl;
-          cout.unsetf(ios_base::floatfield);
-          if (freesurface) {
-            if (!DualTime_Iteration) {
-              ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << adj_levelset_resid;
-              ConvHist_file[0] << end;
-              ConvHist_file[0].flush();
-            }
-            
-            cout.precision(6);
-            cout.setf(ios::fixed, ios::floatfield);
-            cout.width(17); cout << log10(residual_adjflow[0]);
-            cout.width(16); cout << log10(residual_adjlevelset[0]);
-            
-            cout.precision(4);
-            cout.setf(ios::scientific, ios::floatfield);
-            cout.width(12); cout << Total_Sens_Geo;
-              cout.width(14); cout << Total_Sens_Mach;
-            cout << endl;
-            cout.unsetf(ios_base::floatfield);
-          }
-          
-          break;
-          
-      }
       cout.unsetf(ios::fixed);
 
       
