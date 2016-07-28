@@ -240,7 +240,8 @@ def main():
     contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
     contadj_wedge.cfg_file  = "inv_wedge_ROE.cfg"
     contadj_wedge.test_iter = 10
-    contadj_wedge.test_vals = [-11.217444,     -16.768974,    9.6249e+04,   -6.7951e+04] #last 4 columns
+    contadj_wedge.test_vals = [2.780403,      -3.223266,   -1.1930e+06,   -2.9093e-06] #last 4 columns
+    #contadj_wedge.test_vals = [-11.217444,     -16.768974,    9.6249e+04,   -6.7951e+04] #last 4 columns
     contadj_wedge.su2_exec  = "SU2_CFD"
     contadj_wedge.timeout   = 1600
     contadj_wedge.tol       = 0.00001
@@ -719,14 +720,14 @@ def main():
     test_list.append(shape_opt_euler_py)
 
     # test continuous_adjoint.py, with multiple objectives
-    contadj_euler_py = TestCase('contadj_multi_py')
-    contadj_euler_py.cfg_dir = "cont_adj_euler/wedge"
-    contadj_euler_py.cfg_file  = "inv_NACA0012.cfg"
-    contadj_euler_py.test_iter = 10
-    contadj_euler_py.su2_exec  = "continuous_adjoint.py"
-    contadj_euler_py.timeout   = 1600
-    contadj_euler_py.reference_file = "of_grad_combo.dat.ref"
-    contadj_euler_py.test_file = "of_grad_combo.dat"
+    contadj_multi_py            = TestCase('contadj_multi_py')
+    contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
+    contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
+    contadj_multi_py.test_iter  = 10
+    contadj_multi_py.su2_exec   = "continuous_adjoint.py"
+    contadj_multi_py.timeout    = 1600
+    contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
+    contadj_multi_py.test_file  = "of_grad_combo.dat"
     pass_list.append(contadj_multi_py.run_filediff())
     test_list.append(contadj_multi_py)
 
