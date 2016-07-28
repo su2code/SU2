@@ -242,7 +242,8 @@ def main():
     contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
     contadj_wedge.cfg_file  = "inv_wedge_ROE.cfg"
     contadj_wedge.test_iter = 10  
-    contadj_wedge.test_vals = [-11.216707,     -16.773088,    9.6249e+04,   -6.7951e+04] #last 4 columns
+    contadj_wedge.test_vals = [2.780403,      -3.223266,   -1.1930e+06,   -2.9093e-06] #last 4 columns
+    #contadj_wedge.test_vals = [-11.216707,     -16.773088,    9.6249e+04,   -6.7951e+04] #last 4 columns
     contadj_wedge.su2_exec  = "parallel_computation.py -f"
     contadj_wedge.timeout   = 1600
     contadj_wedge.tol       = 0.00001
