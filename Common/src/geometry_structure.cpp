@@ -11813,6 +11813,42 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
   restart_file.close();
 }
 
+void CPhysicalGeometry::Check_Periodicity(CConfig *config) {
+  
+  bool isPeriodic = false;
+  unsigned long iVertex;
+  unsigned short iMarker, RotationKind, nPeriodicR = 0, nPeriodicS = 0;
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  /*--- Check for the presence of any periodic BCs ---*/
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        RotationKind = vertex[iMarker][iVertex]->GetRotation_Type();
+        if (RotationKind > 0) nPeriodicS++;
+      }
+    }
+  }
+#ifndef HAVE_MPI
+  nPeriodicR = nPeriodicS;
+#else
+  SU2_MPI::Allreduce(&nPeriodicS, &nPeriodicR, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  if (nPeriodicR != 0) isPeriodic = true;
+  
+  if (isPeriodic && (config->GetnMGLevels() > 0)) {
+    if (rank == MASTER_NODE)
+      cout << "WARNING: Periodicity has been detected. Disabling multigrid. "<< endl;
+    config->SetMGLevels(0);
+  }
+  
+}
+
 su2double CPhysicalGeometry::Compute_MaxThickness(su2double *Plane_P0, su2double *Plane_Normal, unsigned short iSection, CConfig *config, vector<su2double> &Xcoord_Airfoil, vector<su2double> &Ycoord_Airfoil, vector<su2double> &Zcoord_Airfoil, bool original_surface) {
   unsigned long iVertex, jVertex, n, Trailing_Point, Leading_Point;
   su2double Normal[3], Tangent[3], BiNormal[3], auxXCoord, auxYCoord, auxZCoord, zp1, zpn, MaxThickness_Value = 0, Thickness, Length, Xcoord_Trailing, Ycoord_Trailing, Zcoord_Trailing, ValCos, ValSin, XValue, ZValue, MaxDistance, Distance, AoA;

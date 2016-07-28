@@ -300,3 +300,5 @@ inline su2double CPhysicalGeometry::GetSensitivity(unsigned long iPoint, unsigne
 inline void CGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val){}
 
 inline void CPhysicalGeometry::SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val){Sensitivity[iPoint*nDim+iDim] = val;}
+
+inline void CGeometry::Check_Periodicity(CConfig* config){}
