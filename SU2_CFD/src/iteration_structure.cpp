@@ -3570,7 +3570,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 
       if (rank == MASTER_NODE)
         cout << "Deforming the volume grid." << endl;
-        grid_movement->SetVolume_Deformation(geometry_container[MESH_0], config_container, true);
+        grid_movement->SetVolume_Deformation_Elas(geometry_container[MESH_0], config_container, true, false);
 
       if (rank == MASTER_NODE)
         cout << "There is no grid velocity." << endl;

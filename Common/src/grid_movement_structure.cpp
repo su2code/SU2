@@ -38,6 +38,12 @@ CGridMovement::CGridMovement(void) { }
 
 CGridMovement::~CGridMovement(void) { }
 
+CVolumetricMovement::CVolumetricMovement(void) : CGridMovement() {
+
+
+
+}
+
 CVolumetricMovement::CVolumetricMovement(CGeometry *geometry, CConfig *config) : CGridMovement() {
 	
 	  /*--- Initialize the number of spatial dimensions, length of the state
@@ -7604,7 +7610,7 @@ su2double CFreeFormDefBox::GetDerivative5(su2double *uvw, unsigned short dim, un
 
 
 
-CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) : CGridMovement() {
+CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) : CVolumetricMovement() {
 
     /*--- Initialize the number of spatial dimensions, length of the state
      vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
@@ -7616,7 +7622,8 @@ CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) :
     nPoint       = geometry->GetnPoint();
     nPointDomain = geometry->GetnPointDomain();
 
-    nIterMesh = 0;
+    nIterMesh   = 0;
+    valResidual = 0.0;
 
     MinVolume = 0.0;
     MaxVolume = 0.0;
@@ -7634,27 +7641,98 @@ CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) :
 
     matrixZeros = new su2double *[nDim];
     matrixId    = new su2double *[nDim];
-    matrixAux   = new su2double *[nDim];
     for(iDim = 0; iDim < nDim; iDim++){
       matrixZeros[iDim] = new su2double[nDim];
       matrixId[iDim]    = new su2double[nDim];
-      matrixAux[iDim]   = new su2double[nDim];
     }
 
     for(iDim = 0; iDim < nDim; iDim++){
       for (jDim = 0; jDim < nDim; jDim++){
         matrixZeros[iDim][jDim] = 0.0;
         matrixId[iDim][jDim]    = 0.0;
-        matrixAux[iDim][jDim]   = 0.0;
       }
       matrixId[iDim][iDim] = 1.0;
     }
+
+    /*--- Structural parameters ---*/
+
+    E      = config->GetDeform_ElasticityMod();
+    Nu     = config->GetDeform_PoissonRatio();
+
+    Mu     = E / (2.0*(1.0 + Nu));
+    Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+
+    /*--- Element container structure ---*/
+
+    if (nDim == 2){
+      element_container = new CElement* [2];
+      element_container[EL_TRIA] = new CTRIA1(nDim, config);
+      element_container[EL_QUAD] = new CQUAD4(nDim, config);
+    }
+    else if (nDim == 3){
+      element_container = new CElement* [4];
+      element_container[EL_TETRA] = new CTETRA1(nDim, config);
+      element_container[EL_HEXA] = new CHEXA8(nDim, config);
+      element_container[EL_PYRAM] = new CHEXA8(nDim, config);
+      element_container[EL_PRISM] = new CHEXA8(nDim, config);
+    }
+
+    /*--- Term ij of the Jacobian ---*/
+
+    Jacobian_ij = new su2double*[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Jacobian_ij[iDim] = new su2double [nDim];
+      for (jDim = 0; jDim < nDim; jDim++) {
+        Jacobian_ij[iDim][jDim] = 0.0;
+      }
+    }
+
+    KAux_ab = new su2double* [nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      KAux_ab[iDim] = new su2double[nDim];
+    }
+
+    unsigned short iVar;
+
+    if (nDim == 2){
+      Ba_Mat  = new su2double* [3];
+      Bb_Mat  = new su2double* [3];
+      D_Mat   = new su2double* [3];
+      GradNi_Ref_Mat = new su2double* [4];
+      for (iVar = 0; iVar < 3; iVar++) {
+        Ba_Mat[iVar]    = new su2double[nDim];
+        Bb_Mat[iVar]    = new su2double[nDim];
+        D_Mat[iVar]     = new su2double[3];
+      }
+      for (iVar = 0; iVar < 4; iVar++) {
+        GradNi_Ref_Mat[iVar]  = new su2double[nDim];
+      }
+    }
+    else if (nDim == 3){
+      Ba_Mat  = new su2double* [6];
+      Bb_Mat  = new su2double* [6];
+      D_Mat   = new su2double* [6];
+      GradNi_Ref_Mat = new su2double* [8];
+      for (iVar = 0; iVar < 6; iVar++) {
+        Ba_Mat[iVar]      = new su2double[nDim];
+        Bb_Mat[iVar]      = new su2double[nDim];
+        D_Mat[iVar]       = new su2double[6];
+      }
+      for (iVar = 0; iVar < 8; iVar++) {
+        GradNi_Ref_Mat[iVar]  = new su2double[nDim];
+      }
+    }
+
+
 
 }
 
 CElasticityMovement::~CElasticityMovement(void) {
 
-  unsigned short iDim;
+  unsigned short iDim, iVar, nElemContainer;
+
+  if (nDim == 2) nElemContainer = 2;
+  else nElemContainer = 4;
 
   delete [] Residual;
   delete [] Solution;
@@ -7662,18 +7740,54 @@ CElasticityMovement::~CElasticityMovement(void) {
   for (iDim = 0; iDim < nDim; iDim++) {
     delete [] matrixZeros[iDim];
     delete [] matrixId[iDim];
-    delete [] matrixAux[iDim];
+    delete [] Jacobian_ij[iDim];
+    delete [] KAux_ab[iDim];
   }
   delete [] matrixZeros;
   delete [] matrixId;
-  delete [] matrixAux;
+  delete [] Jacobian_ij;
+  delete [] KAux_ab;
+
+  if (nDim == 2){
+    for (iVar = 0; iVar < 3; iVar++){
+      delete [] Ba_Mat[iVar];
+      delete [] Bb_Mat[iVar];
+      delete [] D_Mat[iVar];
+    }
+    for (iVar = 0; iVar < 4; iVar++){
+      delete [] GradNi_Ref_Mat[iVar];
+    }
+  }
+  else if (nDim == 3){
+    for (iVar = 0; iVar < 6; iVar++){
+      delete [] Ba_Mat[iVar];
+      delete [] Bb_Mat[iVar];
+      delete [] D_Mat[iVar];
+    }
+    for (iVar = 0; iVar < 8; iVar++){
+      delete [] GradNi_Ref_Mat[iVar];
+    }
+  }
+
+  delete [] Ba_Mat;
+  delete [] Bb_Mat;
+  delete [] D_Mat;
+  delete [] GradNi_Ref_Mat;
+
+  if (element_container != NULL) {
+    for (iVar = 0; iVar < nElemContainer; iVar++){
+      delete [] element_container[iVar];
+    }
+    delete [] element_container;
+  }
+
 
 }
 
 
-void CElasticityMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative){
+void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative){
 
-  unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0, Nonlinear_Iter = 0;
+  unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Nonlinear_Iter = 0;
   su2double NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
 
@@ -7682,16 +7796,12 @@ void CElasticityMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
+  /*--- Retrieve number or internal iterations from config ---*/
 
-  Smoothing_Iter = config->GetGridDef_Linear_Iter();
-  Screen_Output  = config->GetDeform_Output();
-  Tol_Factor     = config->GetDeform_Tol_Factor();
   Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
 
   /*--- Disable the screen output if we're running SU2_CFD ---*/
-
-  if (config->GetKind_SU2() == SU2_CFD && !Derivative) Screen_Output = false;
+  if (config->GetKind_SU2() == SU2_CFD) Screen_Output = false;
 
   /*--- Loop over the total number of grid deformation iterations. The surface
    deformation can be divided into increments to help with stability. ---*/
@@ -7699,54 +7809,44 @@ void CElasticityMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   for (iNonlinear_Iter = 0; iNonlinear_Iter < Nonlinear_Iter; iNonlinear_Iter++) {
 
     /*--- Initialize vector and sparse matrix ---*/
-
     LinSysSol.SetValZero();
     LinSysRes.SetValZero();
     StiffMatrix.SetValZero();
 
-    /*--- Compute the minimum volume . ---*/
+    /*--- Compute the minimum and maximum area/volume for the mesh. ---*/
+    SetMinMaxVolume(geometry, config);
+    if (rank == MASTER_NODE) {
+      if (nDim == 2) cout << scientific << "Min. area: "<< MinVolume <<", max. area: " << MaxVolume <<"." << endl;
+      else           cout << scientific << "Min. volume: "<< MinVolume <<", max. volume: " << MaxVolume <<"." << endl;
+    }
 
-    SetFEAMethodContributions_Elem(geometry, config);
+    /*--- Compute the stiffness matrix. ---*/
+    SetStiffnessMatrix(geometry, config);
 
-
-    /*--- Set the boundary displacements (as prescribed by the design variable
-     perturbations controlling the surface shape) as a Dirichlet BC. ---*/
-
+    /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
     SetBoundaryDisplacements(geometry, config);
 
     /*--- Solve the linear system. ---*/
-
     Solve_System(geometry, config);
-
 
     /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
-
     UpdateGridCoord(geometry, config);
 
     if (UpdateGeo)
       UpdateDualGrid(geometry, config);
 
     /*--- Check for failed deformation (negative volumes). ---*/
-
-    ComputeDeforming_Element_Volume(geometry);
-
-    /*--- Set number of iterations in the mesh update. ---*/
-
-    Set_nIterMesh(Tot_Iter);
+    /*--- In order to do this, we recompute the minimum and maximum area/volume for the mesh. ---*/
+    SetMinMaxVolume(geometry, config);
 
     if (rank == MASTER_NODE) {
-      cout << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << Tot_Iter << ". ";
-      if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << Residual << "." << endl;
-      else cout << "Min. volume: " << MinVolume << ". Error: " << Residual << "." << endl;
+      cout << scientific << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << nIterMesh << ". ";
+      if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << valResidual << "." << endl;
+      else cout << "Min. volume: " << MinVolume << ". Error: " << valResidual << "." << endl;
     }
 
   }
-
-
-
-
-
 
 }
 
@@ -7814,16 +7914,9 @@ void CElasticityMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   su2double *VarCoord, MeanCoord[3] = {0.0,0.0,0.0}, VarIncrement = 1.0;
 
   /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
-   deforming meshes (MARKER_MOVING), while SU2_DEF will use it for deforming
-   meshes after imposing design variable surface deformations (DV_MARKER). ---*/
+   deforming meshes (MARKER_FSI_INTERFACE). ---*/
 
   unsigned short Kind_SU2 = config->GetKind_SU2();
-
-  /*--- If requested (no by default) impose the surface deflections in
-   increments and solve the grid deformation equations iteratively with
-   successive small deformations. ---*/
-
-//  VarIncrement = 1.0/((su2double)config->GetGridDef_Nonlinear_Iter());
 
   /*--- First of all, move the FSI interfaces. ---*/
 
@@ -7851,7 +7944,7 @@ void CElasticityMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
     }
   }
 
-  /*--- All others are pending... ---*/
+  /*--- All others are pending. ---*/
 
 }
 
@@ -8026,24 +8119,25 @@ void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
 
 void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
 
-  unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0;
-  su2double NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
-  bool Screen_Output;
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
   /*--- Retrieve number or iterations, tol, output, etc. from config ---*/
 
-  Smoothing_Iter = config->GetGridDef_Linear_Iter();
-  Screen_Output  = config->GetDeform_Output();
-  Tol_Factor     = config->GetDeform_Tol_Factor();
+  su2double SolverTol = config->GetDeform_Linear_Solver_Error(), System_Residual;
 
-  /*--- Compute the tolerance of the linear solver using MinLength ---*/
+  unsigned long MaxIter = config->GetDeform_Linear_Solver_Iter();
+  unsigned long IterLinSol = 0;
 
-  NumError = MinVolume * Tol_Factor;
+  bool Screen_Output= config->GetDeform_Output();
 
   /*--- Initialize the structures to solve the system ---*/
 
   CMatrixVectorProduct* mat_vec = NULL;
   CPreconditioner* precond = NULL;
+  CSysSolve *system  = new CSysSolve();
 
   /*--- Communicate any prescribed boundary displacements via MPI,
    so that all nodes have the same solution and r.h.s. entries
@@ -8052,89 +8146,458 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
   StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
   StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
 
-  /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
+  bool TapeActive = NO;
 
-  /*--- Independently of whether we are using or not derivatives,
-   *--- as the matrix is now symmetric, the matrix-vector product
-   *--- can be done in the same way in the forward and the reverse mode
-   */
+  if (config->GetDiscrete_Adjoint()){
+#ifdef CODI_REVERSE_TYPE
 
-  mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
-  precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+    /*--- Check whether the tape is active, i.e. if it is recording and store the status ---*/
 
-  CSysSolve *system  = new CSysSolve();
+    TapeActive = AD::globalTape.isActive();
 
-  switch (config->GetDeform_Linear_Solver()) {
 
-      /*--- Solve the linear system (GMRES with restart) ---*/
+    /*--- Stop the recording for the linear solver ---*/
 
-    case RESTARTED_FGMRES:
+    AD::StopRecording();
+#endif
+  }
 
-      Tot_Iter = 0; MaxIter = RestartIter;
+  /*--- Solve the linear system using a Krylov subspace method ---*/
 
-      system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false);
+  if (config->GetDeform_Linear_Solver() == BCGSTAB ||
+      config->GetDeform_Linear_Solver() == FGMRES ||
+      config->GetDeform_Linear_Solver() == RESTARTED_FGMRES ||
+      config->GetDeform_Linear_Solver() == CONJUGATE_GRADIENT) {
 
-      if ((rank == MASTER_NODE) && Screen_Output) {
-        cout << "\n# FGMRES (with restart) residual history" << endl;
-        cout << "# Residual tolerance target = " << NumError << endl;
-        cout << "# Initial residual norm     = " << Residual_Init << endl;
-      }
+    /*--- Independently of whether we are using or not derivatives,
+     *--- as the matrix is now symmetric, the matrix-vector product
+     *--- can be done in the same way in the forward and the reverse mode
+     */
 
-      if (rank == MASTER_NODE) { cout << "     " << Tot_Iter << "     " << Residual_Init/Residual_Init << endl; }
+    /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
+    mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
+    CPreconditioner* precond = NULL;
 
-      while (Tot_Iter < Smoothing_Iter) {
-
-        if (IterLinSol + RestartIter > Smoothing_Iter)
-          MaxIter = Smoothing_Iter - IterLinSol;
-
-        IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false);
-        Tot_Iter += IterLinSol;
-
-        if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
-
-        if (Residual < Residual_Init*NumError) { break; }
-
-      }
-
-      if ((rank == MASTER_NODE) && Screen_Output) {
-        cout << "# FGMRES (with restart) final (true) residual:" << endl;
-        cout << "# Iteration = " << Tot_Iter << ": |res|/|res0| = " << Residual/Residual_Init << ".\n" << endl;
-      }
-
+    switch (config->GetKind_Deform_Linear_Solver_Prec()) {
+    case JACOBI:
+      StiffMatrix.BuildJacobiPreconditioner();
+      precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
       break;
-
-      /*--- Solve the linear system (GMRES) ---*/
-
-    case FGMRES:
-
-      Tot_Iter = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
-
+    case ILU:
+      StiffMatrix.BuildILUPreconditioner();
+      precond = new CILUPreconditioner(StiffMatrix, geometry, config);
       break;
+    case LU_SGS:
+      precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
+      break;
+    case LINELET:
+      StiffMatrix.BuildJacobiPreconditioner();
+      precond = new CLineletPreconditioner(StiffMatrix, geometry, config);
+      break;
+    default:
+      StiffMatrix.BuildJacobiPreconditioner();
+      precond = new CJacobiPreconditioner(StiffMatrix, geometry, config);
+      break;
+    }
 
-      /*--- Solve the linear system (BCGSTAB) ---*/
-
+    switch (config->GetDeform_Linear_Solver()) {
     case BCGSTAB:
-
-      Tot_Iter = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
-
+      IterLinSol = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
       break;
+    case FGMRES:
+      IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
+      break;
+    case CONJUGATE_GRADIENT:
+      IterLinSol = system->CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, Screen_Output);
+      break;
+    case RESTARTED_FGMRES:
+      IterLinSol = 0;
+      while (IterLinSol < config->GetLinear_Solver_Iter()) {
+        if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
+          MaxIter = config->GetLinear_Solver_Iter() - IterLinSol;
+        IterLinSol += system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
+        if (LinSysRes.norm() < SolverTol) break;
+        SolverTol = SolverTol*(1.0/LinSysRes.norm());
+      }
+      break;
+    }
+
+    /*--- Dealocate memory of the Krylov subspace method ---*/
+
+    delete mat_vec;
+    delete precond;
 
   }
 
-  /*--- Deallocate memory needed by the Krylov linear solver ---*/
+  if(TapeActive){
+    /*--- Start recording if it was stopped for the linear solver ---*/
+
+    AD::StartRecording();
+
+    /*--- Prepare the externally differentiated linear solver ---*/
+
+    system->SetExternalSolve(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
+
+  }
 
   delete system;
-  delete mat_vec;
-  delete precond;
+
+  /*--- Set number of iterations in the mesh update. ---*/
+
+  nIterMesh = IterLinSol;
+
+  /*--- Store the value of the residual. ---*/
+
+  valResidual = System_Residual;
 
 
 }
 
-void CElasticityMovement::SetMesh_MinMaxVolume(CGeometry *geometry, CConfig *config) {
+void CElasticityMovement::SetMinMaxVolume(CGeometry *geometry, CConfig *config) {
+
+  unsigned long iElem, ElemCounter = 0;
+  unsigned short iNode, iDim, jDim, nNodes = 0;
+  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  su2double val_Coord;
+  int EL_KIND = 0;
+
+  bool RightVol = true;
+
+  su2double ElemVolume;
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  if (rank == MASTER_NODE)
+    cout << "Computing volumes of the grid elements." << endl;
+
+  MaxVolume = -1E22; MinVolume = 1E22;
+
+  /*--- Loops over all the elements ---*/
+
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_PYRAM;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
+
+    /*--- For the number of nodes, we get the coordinates from the connectivity matrix and the geometry structure ---*/
+
+    for (iNode = 0; iNode < nNodes; iNode++) {
+
+      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+      }
+
+    }
+
+    /*--- Compute the volume of the element (or the area in 2D cases ) ---*/
+
+    if (nDim == 2)  ElemVolume = element_container[EL_KIND]->ComputeArea();
+    else            ElemVolume = element_container[EL_KIND]->ComputeVolume();
+
+    RightVol = true;
+    if (ElemVolume < 0.0) RightVol = false;
+
+    MaxVolume = max(MaxVolume, ElemVolume);
+    MinVolume = min(MinVolume, ElemVolume);
+    geometry->elem[iElem]->SetVolume(ElemVolume);
+
+    if (!RightVol) ElemCounter++;
+
+  }
+
+#ifdef HAVE_MPI
+  unsigned long ElemCounter_Local = ElemCounter; ElemCounter = 0;
+  su2double MaxVolume_Local = MaxVolume; MaxVolume = 0.0;
+  su2double MinVolume_Local = MinVolume; MinVolume = 0.0;
+  SU2_MPI::Allreduce(&ElemCounter_Local, &ElemCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MaxVolume_Local, &MaxVolume, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MinVolume_Local, &MinVolume, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+#endif
+
+  /*--- Volume from  0 to 1 ---*/
+
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+    ElemVolume = geometry->elem[iElem]->GetVolume()/MaxVolume;
+    geometry->elem[iElem]->SetVolume(ElemVolume);
+  }
+
+  if ((ElemCounter != 0) && (rank == MASTER_NODE))
+    cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
+
+}
 
 
+void CElasticityMovement::SetStiffnessMatrix(CGeometry *geometry, CConfig *config){
+
+  unsigned long iElem;
+  unsigned short iNode, iDim, jDim, nNodes = 0;
+  unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
+  su2double val_Coord;
+  int EL_KIND = 0;
+
+  su2double *Kab = NULL;
+  unsigned short NelNodes, jNode;
+
+  su2double ElemVolume;
+
+  /*--- Loops over all the elements ---*/
+
+  for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
+
+    if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE)      {nNodes = 3; EL_KIND = EL_TRIA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == QUADRILATERAL) {nNodes = 4; EL_KIND = EL_QUAD;}
+    if (geometry->elem[iElem]->GetVTK_Type() == TETRAHEDRON)   {nNodes = 4; EL_KIND = EL_TETRA;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PYRAMID)       {nNodes = 5; EL_KIND = EL_PYRAM;}
+    if (geometry->elem[iElem]->GetVTK_Type() == PRISM)         {nNodes = 6; EL_KIND = EL_PRISM;}
+    if (geometry->elem[iElem]->GetVTK_Type() == HEXAHEDRON)    {nNodes = 8; EL_KIND = EL_HEXA;}
+
+    /*--- For the number of nodes, we get the coordinates from the connectivity matrix and the geometry structure ---*/
+
+    for (iNode = 0; iNode < nNodes; iNode++) {
+
+      indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+      }
+
+    }
+
+    /*--- Retrieve the volume of the element (previously computed in SetMinMaxVolume()) ---*/
+
+    ElemVolume = geometry->elem[iElem]->GetVolume();
+
+    /*--- Compute the stiffness of the element ---*/
+    Set_Element_Stiffness(ElemVolume, config);
+
+    /*--- Compute the element contribution to the stiffness matrix ---*/
+
+    Compute_Element_Contribution(element_container[EL_KIND], config);
+
+    /*--- Retrieve number of nodes ---*/
+
+    NelNodes = element_container[EL_KIND]->GetnNodes();
+
+    /*--- Assemble the stiffness matrix ---*/
+
+    for (iNode = 0; iNode < NelNodes; iNode++){
+
+      for (jNode = 0; jNode < NelNodes; jNode++){
+
+        Kab = element_container[EL_KIND]->Get_Kab(iNode, jNode);
+
+        for (iDim = 0; iDim < nDim; iDim++){
+          for (jDim = 0; jDim < nDim; jDim++){
+            Jacobian_ij[iDim][jDim] = Kab[iDim*nDim+jDim];
+          }
+        }
+
+        StiffMatrix.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
+
+      }
+
+    }
+
+  }
+
+}
 
 
+void CElasticityMovement::Set_Element_Stiffness(su2double ElemVolume, CConfig *config) {
+
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  switch (config->GetDeform_Stiffness_Type()) {
+    case INVERSE_VOLUME:
+      E = 1.0 / ElemVolume;           // Stiffness inverse of the volume of the element
+      Nu = config->GetDeform_Coeff(); // Nu is normally a very large number, for rigid-body rotations, see Dwight (2009)
+      break;
+    case WALL_DISTANCE:
+      if (rank == MASTER_NODE)
+        cout << "WALL DISTANCE METHOD NOT YET IMPLEMENTED FOR THIS APPROACH!!" << endl;
+      exit(EXIT_FAILURE);
+      break;
+    case CONSTANT_STIFFNESS:
+      E      = config->GetDeform_ElasticityMod();
+      Nu     = config->GetDeform_PoissonRatio();
+      break;
+    case PROPORTIONAL_STIFFNESS:
+      // R. Sanchez - Smaller elements will be stiffer, larger elements will be softer,
+      //              but this way we can still control the general behaviour and
+      //              avoid smaller elements to deform too much.
+      E      = config->GetDeform_ElasticityMod() / ElemVolume;
+      Nu     = config->GetDeform_PoissonRatio();
+  }
+
+  /*--- Lamé parameters ---*/
+
+  Mu     = E / (2.0*(1.0 + Nu));
+  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+
+}
+
+
+void CElasticityMovement::Compute_Element_Contribution(CElement *element, CConfig *config){
+
+  unsigned short iVar, jVar, kVar;
+  unsigned short iGauss, nGauss;
+  unsigned short iNode, jNode, nNode;
+  unsigned short iDim;
+  unsigned short bDim;
+
+  su2double Weight, Jac_X;
+
+  su2double AuxMatrix[3][6];
+
+  /*--- Initialize auxiliary matrices ---*/
+
+  if (nDim == 2) bDim = 3;
+  else bDim = 6;
+
+  for (iVar = 0; iVar < bDim; iVar++){
+    for (jVar = 0; jVar < nDim; jVar++){
+      Ba_Mat[iVar][jVar] = 0.0;
+      Bb_Mat[iVar][jVar] = 0.0;
+    }
+  }
+
+  for (iVar = 0; iVar < 3; iVar++){
+    for (jVar = 0; jVar < 6; jVar++){
+      AuxMatrix[iVar][jVar] = 0.0;
+    }
+  }
+
+  element->clearElement();      /*--- Restarts the element: avoids adding over previous results in other elements --*/
+  element->ComputeGrad_Linear();
+  nNode = element->GetnNodes();
+  nGauss = element->GetnGaussPoints();
+
+  /*--- Compute the constitutive matrix (D_Mat) for the element - it only depends on lambda and mu, constant for the element ---*/
+  Compute_Constitutive_Matrix();
+
+  for (iGauss = 0; iGauss < nGauss; iGauss++){
+
+    Weight = element->GetWeight(iGauss);
+    Jac_X = element->GetJ_X(iGauss);
+
+    /*--- Retrieve the values of the gradients of the shape functions for each node ---*/
+    /*--- This avoids repeated operations ---*/
+    for (iNode = 0; iNode < nNode; iNode++){
+      for (iDim = 0; iDim < nDim; iDim++){
+        GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
+      }
+    }
+
+    for (iNode = 0; iNode < nNode; iNode++){
+
+      if (nDim == 2){
+        Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
+        Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
+        Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
+        Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
+      }
+      else if (nDim == 3){
+        Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
+        Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
+        Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
+        Ba_Mat[3][0] = GradNi_Ref_Mat[iNode][1];
+        Ba_Mat[3][1] = GradNi_Ref_Mat[iNode][0];
+        Ba_Mat[4][0] = GradNi_Ref_Mat[iNode][2];
+        Ba_Mat[4][2] = GradNi_Ref_Mat[iNode][0];
+        Ba_Mat[5][1] = GradNi_Ref_Mat[iNode][2];
+        Ba_Mat[5][2] = GradNi_Ref_Mat[iNode][1];
+      }
+
+        /*--- Compute the BT.D Matrix ---*/
+
+      for (iVar = 0; iVar < nDim; iVar++){
+        for (jVar = 0; jVar < bDim; jVar++){
+          AuxMatrix[iVar][jVar] = 0.0;
+          for (kVar = 0; kVar < bDim; kVar++){
+            AuxMatrix[iVar][jVar] += Ba_Mat[kVar][iVar]*D_Mat[kVar][jVar];
+          }
+        }
+      }
+
+      /*--- Assumming symmetry ---*/
+      for (jNode = iNode; jNode < nNode; jNode++){
+        if (nDim == 2){
+          Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
+          Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
+          Bb_Mat[2][0] = GradNi_Ref_Mat[jNode][1];
+          Bb_Mat[2][1] = GradNi_Ref_Mat[jNode][0];
+        }
+        else if (nDim ==3){
+          Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
+          Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
+          Bb_Mat[2][2] = GradNi_Ref_Mat[jNode][2];
+          Bb_Mat[3][0] = GradNi_Ref_Mat[jNode][1];
+          Bb_Mat[3][1] = GradNi_Ref_Mat[jNode][0];
+          Bb_Mat[4][0] = GradNi_Ref_Mat[jNode][2];
+          Bb_Mat[4][2] = GradNi_Ref_Mat[jNode][0];
+          Bb_Mat[5][1] = GradNi_Ref_Mat[jNode][2];
+          Bb_Mat[5][2] = GradNi_Ref_Mat[jNode][1];
+        }
+
+        for (iVar = 0; iVar < nDim; iVar++){
+          for (jVar = 0; jVar < nDim; jVar++){
+            KAux_ab[iVar][jVar] = 0.0;
+            for (kVar = 0; kVar < bDim; kVar++){
+              KAux_ab[iVar][jVar] += Weight * AuxMatrix[iVar][kVar] * Bb_Mat[kVar][jVar] * Jac_X;
+            }
+          }
+        }
+
+        element->Add_Kab(KAux_ab,iNode, jNode);
+        /*--- Symmetric terms --*/
+        if (iNode != jNode){
+          element->Add_Kab_T(KAux_ab, jNode, iNode);
+        }
+
+      }
+
+    }
+
+  }
+
+}
+
+void CElasticityMovement::Compute_Constitutive_Matrix(void){
+
+  /*--- Compute the D Matrix (for plane strain and 3-D)---*/
+
+  if (nDim == 2){
+
+    /*--- Assuming plane strain ---*/
+    D_Mat[0][0] = Lambda + 2.0*Mu;  D_Mat[0][1] = Lambda;            D_Mat[0][2] = 0.0;
+    D_Mat[1][0] = Lambda;           D_Mat[1][1] = Lambda + 2.0*Mu;   D_Mat[1][2] = 0.0;
+    D_Mat[2][0] = 0.0;              D_Mat[2][1] = 0.0;               D_Mat[2][2] = Mu;
+
+  }
+  else if (nDim == 3){
+
+    D_Mat[0][0] = Lambda + 2.0*Mu;  D_Mat[0][1] = Lambda;           D_Mat[0][2] = Lambda;           D_Mat[0][3] = 0.0;  D_Mat[0][4] = 0.0;  D_Mat[0][5] = 0.0;
+    D_Mat[1][0] = Lambda;           D_Mat[1][1] = Lambda + 2.0*Mu;  D_Mat[1][2] = Lambda;           D_Mat[1][3] = 0.0;  D_Mat[1][4] = 0.0;  D_Mat[1][5] = 0.0;
+    D_Mat[2][0] = Lambda;           D_Mat[2][1] = Lambda;           D_Mat[2][2] = Lambda + 2.0*Mu;  D_Mat[2][3] = 0.0;  D_Mat[2][4] = 0.0;  D_Mat[2][5] = 0.0;
+    D_Mat[3][0] = 0.0;              D_Mat[3][1] = 0.0;              D_Mat[3][2] = 0.0;              D_Mat[3][3] = Mu;   D_Mat[3][4] = 0.0;  D_Mat[3][5] = 0.0;
+    D_Mat[4][0] = 0.0;              D_Mat[4][1] = 0.0;              D_Mat[4][2] = 0.0;              D_Mat[4][3] = 0.0;  D_Mat[4][4] = Mu;   D_Mat[4][5] = 0.0;
+    D_Mat[5][0] = 0.0;              D_Mat[5][1] = 0.0;              D_Mat[5][2] = 0.0;              D_Mat[5][3] = 0.0;  D_Mat[5][4] = 0.0;  D_Mat[5][5] = Mu;
+
+  }
 
 }
 

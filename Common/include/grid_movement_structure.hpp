@@ -758,6 +758,11 @@ protected:
 
 public:
 
+  /*!
+   * \brief Constructor of the class.
+   */
+  CVolumetricMovement(void);
+
 	/*! 
 	 * \brief Constructor of the class.
 	 */
@@ -1024,6 +1029,15 @@ public:
   void SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
 
   /*!
+   * \brief Grid deformation using the spring analogy method.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] UpdateGeo - Update geometry.
+   * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
+   */
+  virtual void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
+
+  /*!
    * \brief Set the derivatives of the boundary nodes.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -1073,7 +1087,7 @@ public:
  * \author R.Sanchez, based on CVolumetricMovement developments of F. Palacios, A. Bueno, T. Economon, S. Padron
  * \version 4.2.0 "Cardinal"
  */
-class CElasticityMovement : public CGridMovement {
+class CElasticityMovement : public CVolumetricMovement {
 protected:
 
   unsigned short nDim;    /*!< \brief Number of dimensions. */
@@ -1083,13 +1097,13 @@ protected:
   unsigned long nPointDomain;   /*!< \brief Number of points in the domain. */
 
   unsigned long nIterMesh;   /*!< \brief Number of iterations in the mesh update. +*/
+  su2double valResidual;
 
   su2double *Residual,         /*!< \brief Auxiliary nDim vector. */
             *Solution;         /*!< \brief Auxiliary nDim vector. */
 
   su2double **matrixZeros;     /*!< \brief Submatrix to make zeros and impose boundary conditions. */
   su2double **matrixId;        /*!< \brief Diagonal submatrix to impose boundary conditions. */
-  su2double **matrixAux;       /*!< \brief nDim x nDim submatrix to impose boundary conditions. */
 
   su2double MinVolume;
   su2double MaxVolume;
@@ -1098,7 +1112,23 @@ protected:
   CSysVector LinSysSol;
   CSysVector LinSysRes;
 
+  su2double E;                  /*!< \brief Young's modulus of elasticity. */
+  su2double Nu;                 /*!< \brief Poisson's ratio. */
+
+  su2double Mu;                 /*!< \brief Lame's coeficient. */
+  su2double Lambda;             /*!< \brief Lame's coeficient. */
+
+  su2double **Jacobian_ij;      /*!< \brief Submatrix to store the constitutive term for node ij. */
+
+  su2double **Ba_Mat,           /*!< \brief Matrix B for node a - Auxiliary. */
+            **Bb_Mat;           /*!< \brief Matrix B for node b - Auxiliary. */
+  su2double **KAux_ab;          /*!< \brief Stiffness sub-term  - Auxiliary. */
+  su2double **D_Mat;            /*!< \brief Constitutive matrix - Auxiliary. */
+  su2double **GradNi_Ref_Mat;   /*!< \brief Gradients of Ni - Auxiliary. */
+
 public:
+
+  CElement** element_container;  /*!< \brief Container which stores the element information. */
 
   /*!
    * \brief Constructor of the class.
@@ -1117,7 +1147,7 @@ public:
    * \param[in] UpdateGeo - Update geometry.
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
-  void SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
+  void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
 
   /*!
    * \brief Update the value of the coordinates after the grid movement.
@@ -1175,7 +1205,43 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \return Value of the length of the smallest edge of the grid.
    */
-  void SetMesh_MinMaxVolume(CGeometry *geometry, CConfig *config);
+  void SetMinMaxVolume(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute the min and max volume for the stiffness matrix for grid deformation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \return Value of the length of the smallest edge of the grid.
+   */
+  void SetStiffnessMatrix(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the number of iterations when moving the mesh.
+   * \param[in] val_nIterMesh - Number of iterations.
+   */
+  void Set_nIterMesh(unsigned long val_nIterMesh);
+
+  /*!
+   * \brief Retrieve the number of iterations when moving the mesh.
+   * \param[out] Number of iterations.
+   */
+  unsigned long Get_nIterMesh(void);
+
+  /*!
+   * \brief Compute the stiffness of the element and the parameters Lambda and Mu
+   */
+  void Set_Element_Stiffness(su2double ElemVolume, CConfig *config);
+
+  /*!
+   * \brief Compute the stiffness of the element and the parameters Lambda and Mu
+   */
+  void Compute_Element_Contribution(CElement *element, CConfig *config);
+
+  /*!
+   * \brief Compute the constitutive matrix in an element for mesh deformation problems
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  void Compute_Constitutive_Matrix(void);
 
 };
 
