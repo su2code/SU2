@@ -1166,6 +1166,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("QUADRATURE_FACTOR_STRAIGHT_FEM", Quadrature_Factor_Straight, 2.0);
   /* DESCRIPTION: Constant factor applied for quadrature with curved elements (3.0 by default) */
   addDoubleOption("QUADRATURE_FACTOR_CURVED_FEM", Quadrature_Factor_Curved, 3.0);
+  /* DESCRIPTION: Factor for the symmetrizing terms in the DG FEM discretization (1.0 by default) */
+  addDoubleOption("THETA_INTERIOR_PENALTY_DG_FEM", Theta_Interior_Penalty_DGFEM, 1.0);
 
   /*!\par CONFIG_CATEGORY: FEA solver \ingroup Config*/
   /*--- Options related to the FEA solver ---*/
@@ -3678,10 +3680,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case HLLC:          cout << "HLLC solver inviscid fluxes over the faces" << endl; break;
           case VAN_LEER:      cout << "Van Leer solver inviscid fluxes over the faces" << endl; break;
         }
+
+        if(Kind_Solver != FEM_EULER)
+          cout << "Theta symmetrizing terms interior penalty: " << Theta_Interior_Penalty_DGFEM << endl;
       }
 
-      cout << "Quadrature factor for straight elements: " << Quadrature_Factor_Straight << endl;
-      cout << "Quadrature factor for curved elements: "   << Quadrature_Factor_Curved << endl;
+      cout << "Quadrature factor for straight elements:   " << Quadrature_Factor_Straight << endl;
+      cout << "Quadrature factor for curved elements:     "   << Quadrature_Factor_Curved << endl;
     }
 
     cout << endl <<"---------------------- Time Numerical Integration -----------------------" << endl;

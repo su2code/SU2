@@ -95,9 +95,9 @@ inline su2double* FEMStandardInternalFaceClass::GetDtBasisElemIntegrationSide0(v
 
 inline su2double* FEMStandardInternalFaceClass::GetDtBasisElemIntegrationSide1(void) {return dtLagBasisElemIntegrationSide1.data();}
 
-inline su2double* FEMStandardInternalFaceClass::GetMatDerBasisElemIntegrationSide0(void) {return matDerBasisElemIntegrationSide0;}
+inline const su2double* FEMStandardInternalFaceClass::GetMatDerBasisElemIntegrationSide0(void) const {return matDerBasisElemIntegrationSide0;}
 
-inline su2double* FEMStandardInternalFaceClass::GetMatDerBasisElemIntegrationSide1(void) {return matDerBasisElemIntegrationSide1;}
+inline const su2double* FEMStandardInternalFaceClass::GetMatDerBasisElemIntegrationSide1(void) const {return matDerBasisElemIntegrationSide1;}
 
 inline const su2double* FEMStandardInternalFaceClass::GetBasisFaceIntegrationSide0(void) const {return lagBasisFaceIntegrationSide0.data();}
 
@@ -122,6 +122,8 @@ inline unsigned short FEMStandardInternalFaceClass::GetNDOFsElemSide1(void) cons
 inline unsigned short FEMStandardInternalFaceClass::GetNDOFsFaceSide0(void) const {return nDOFsFaceSide0;}
 
 inline unsigned short FEMStandardInternalFaceClass::GetNDOFsFaceSide1(void) const {return nDOFsFaceSide1;}
+
+inline su2double FEMStandardInternalFaceClass::GetPenaltyConstant(void) const {return penaltyConstantFace;}
 
 inline FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(){matDerBasisElemIntegration = NULL;}
 

@@ -3165,6 +3165,60 @@ FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(unsigned short val_VT
   swapFaceInElementSide0 = val_swapFaceInElementSide0;
   swapFaceInElementSide1 = val_swapFaceInElementSide1;
 
+  /*--- Determine the constant in the penalty parameter in the viscous
+        discretization. This constant depends on the element type on
+        both sides of the face as well as their polynomial degree. ---*/
+  su2double penSide0, penSide1;
+
+  switch( VTK_TypeElemSide0 ) {
+    case TRIANGLE:
+      penSide0 = (nPolyElemSide0+1)*(nPolyElemSide0+2)*0.5;
+      break;
+    case QUADRILATERAL:
+      penSide0 = (nPolyElemSide0+1)*(nPolyElemSide0+1); 
+      break;
+    case TETRAHEDRON:
+      penSide0 = (nPolyElemSide0+1)*(nPolyElemSide0+3)/3.0;
+      break;
+    case PYRAMID:
+      if(VTK_Type == TRIANGLE) penSide0 = (nPolyElemSide0+1)*(2*nPolyElemSide0+3)*1.05/3.0;
+      else                     penSide0 = (nPolyElemSide0+1)*(nPolyElemSide0+3)/3.0;
+      break;
+    case PRISM:
+      if(VTK_Type == TRIANGLE) penSide0 = (nPolyElemSide0+1)*(nPolyElemSide0+1);
+      else                     penSide0 = (nPolyElemSide0+1)*(nPolyElemSide0+2)*0.5;
+      break;
+    case HEXAHEDRON:
+      penSide0 = (nPolyElemSide0+1)*(nPolyElemSide0+1);
+      break;
+  }
+
+  switch( VTK_TypeElemSide1 ) {
+    case TRIANGLE:
+      penSide1 = (nPolyElemSide1+1)*(nPolyElemSide1+2)*0.5;
+      break;
+    case QUADRILATERAL:
+      penSide1 = (nPolyElemSide1+1)*(nPolyElemSide1+1);
+      break;
+    case TETRAHEDRON:
+      penSide1 = (nPolyElemSide1+1)*(nPolyElemSide1+3)/3.0;
+      break;
+    case PYRAMID: 
+      if(VTK_Type == TRIANGLE) penSide1 = (nPolyElemSide1+1)*(2*nPolyElemSide1+3)*1.05/3.0;
+      else                     penSide1 = (nPolyElemSide1+1)*(nPolyElemSide1+3)/3.0;
+      break;
+    case PRISM:
+      if(VTK_Type == TRIANGLE) penSide1 = (nPolyElemSide1+1)*(nPolyElemSide1+1);
+      else                     penSide1 = (nPolyElemSide1+1)*(nPolyElemSide1+2)*0.5;
+      break;
+    case HEXAHEDRON:
+      penSide1 = (nPolyElemSide1+1)*(nPolyElemSide1+1);
+      break;
+  }
+
+  /* The penalty parameter of the face is the maximum of the element parameters. */
+  penaltyConstantFace = max(penSide0, penSide1);
+
   /*--- Determine the Lagrangian basis functions and its gradients in the
         integration points for both sides of the face. ---*/
   switch( VTK_Type ) {

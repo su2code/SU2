@@ -1221,10 +1221,12 @@ inline unsigned short CConfig::GetDirectDiff(){ return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() {return DiscreteAdjoint;}
 
-inline unsigned short CConfig::GetRiemann_Solver_FEM() {return Riemann_Solver_FEM;}
+inline unsigned short CConfig::GetRiemann_Solver_FEM(void) {return Riemann_Solver_FEM;}
 
-inline su2double CConfig::GetQuadrature_Factor_Straight() {return Quadrature_Factor_Straight;}
+inline su2double CConfig::GetQuadrature_Factor_Straight(void) {return Quadrature_Factor_Straight;}
 
-inline su2double CConfig::GetQuadrature_Factor_Curved() {return Quadrature_Factor_Curved;}
+inline su2double CConfig::GetQuadrature_Factor_Curved(void) {return Quadrature_Factor_Curved;}
+
+inline su2double CConfig::GetTheta_Interior_Penalty_DGFEM(void) {return Theta_Interior_Penalty_DGFEM;}
 
 inline bool CConfig::GetAD_Mode(void) {return AD_Mode;}
