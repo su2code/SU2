@@ -324,6 +324,11 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
     geometry[iZone][MESH_0]->ComputeSurf_Curvature(config[iZone]);
     
+    /*--- Check for periodicity and disable MG if necessary. ---*/
+    
+    if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
+    geometry[iZone][MESH_0]->Check_Periodicity(config[iZone]);
+    
     if ((config[iZone]->GetnMGLevels() != 0) && (rank == MASTER_NODE))
       cout << "Setting the multigrid structure." << endl;
     

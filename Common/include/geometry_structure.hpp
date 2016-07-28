@@ -908,6 +908,13 @@ public:
    * \param val - Value of the sensitivity
    */
   virtual void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val);
+  
+  /*!
+   * \brief A virtual member.
+   * \param config - Config
+   */
+  virtual void Check_Periodicity(CConfig *config);
+  
 };
 
 /*!
@@ -1451,6 +1458,12 @@ public:
    * \param[in] val - Value of the sensitivity.
    */
   void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val);
+  
+  /*!
+   * \brief Check the mesh for periodicity and deactivate multigrid if periodicity is found.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Check_Periodicity(CConfig *config);
 
 };
 
