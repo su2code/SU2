@@ -44,7 +44,8 @@ bin_SCRIPTS = \
     set_ffd_design_var.py \
     compute_polar.py \
     discrete_adjoint.py \
-    direct_differentiation.py
+    direct_differentiation.py \
+    LaunchFSIComputation.py
 
 
 mypkgdir = $(prefix)/bin
@@ -89,6 +90,13 @@ nobase_dist_mypkg_DATA= \
     SU2/util/pyCppTap.py \
     SU2/util/switch.py \
     SU2/util/which.py \
-    SU2/util/__init__.py
+    SU2/util/__init__.py \
+    FSI/__init__.py \
+    FSI/FSIInterface.py \
+    FSI/io/__init__.py \
+    FSI/io/FSI_config.py \
+    FSI/run/__init__.py \
+    FSI/util/__init__.py \
+    FSI/util/switch.py
 
 EXTRA_DIST = $(bin_SCRIPTS)

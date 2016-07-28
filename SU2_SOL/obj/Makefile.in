@@ -104,14 +104,14 @@ am__dirstamp = $(am__leading_dot)dirstamp
 am____bin_SU2_SOL_OBJECTS = ../src/___bin_SU2_SOL-SU2_SOL.$(OBJEXT)
 ___bin_SU2_SOL_OBJECTS = $(am____bin_SU2_SOL_OBJECTS)
 ___bin_SU2_SOL_DEPENDENCIES =  \
-	../../SU2_CFD/src/___bin_SU2_CFD-solver_structure.o \
-	../../SU2_CFD/src/___bin_SU2_CFD-output_structure.o \
-	../../SU2_CFD/src/___bin_SU2_CFD-output_cgns.o \
-	../../SU2_CFD/src/___bin_SU2_CFD-output_tecplot.o \
-	../../SU2_CFD/src/___bin_SU2_CFD-output_fieldview.o \
-	../../SU2_CFD/src/___bin_SU2_CFD-output_su2.o \
-	../../SU2_CFD/src/___bin_SU2_CFD-output_paraview.o \
-	../../SU2_CFD/src/___bin_SU2_CFD-variable_structure.o \
+	../../SU2_CFD/src/libSU2Core_a-solver_structure.o \
+	../../SU2_CFD/src/libSU2Core_a-output_structure.o \
+	../../SU2_CFD/src/libSU2Core_a-output_cgns.o \
+	../../SU2_CFD/src/libSU2Core_a-output_tecplot.o \
+	../../SU2_CFD/src/libSU2Core_a-output_fieldview.o \
+	../../SU2_CFD/src/libSU2Core_a-output_su2.o \
+	../../SU2_CFD/src/libSU2Core_a-output_paraview.o \
+	../../SU2_CFD/src/libSU2Core_a-variable_structure.o \
 	../../Common/lib/libSU2.a
 ___bin_SU2_SOL_LINK = $(CXXLD) $(___bin_SU2_SOL_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
@@ -331,14 +331,14 @@ ___bin_SU2_SOL_CXXFLAGS = @su2_externals_INCLUDES@ @CGNS_CXX@ \
 	@HDF5_CXX@ @SZIP_CXX@ @ZLIB_CXX@ @MUTATIONPP_CXX@ \
 	@JSONCPP_CXX@ $(am__empty)
 ___bin_SU2_SOL_LDADD =  \
-	../../SU2_CFD/src/___bin_SU2_CFD-solver_structure.o \
-	../../SU2_CFD/src/___bin_SU2_CFD-output_structure.o \
-	../../SU2_CFD/src/___bin_SU2_CFD-output_cgns.o \
-	../../SU2_CFD/src/___bin_SU2_CFD-output_tecplot.o \
-	../../SU2_CFD/src/___bin_SU2_CFD-output_fieldview.o \
-	../../SU2_CFD/src/___bin_SU2_CFD-output_su2.o \
-	../../SU2_CFD/src/___bin_SU2_CFD-output_paraview.o \
-	../../SU2_CFD/src/___bin_SU2_CFD-variable_structure.o \
+	../../SU2_CFD/src/libSU2Core_a-solver_structure.o \
+	../../SU2_CFD/src/libSU2Core_a-output_structure.o \
+	../../SU2_CFD/src/libSU2Core_a-output_cgns.o \
+	../../SU2_CFD/src/libSU2Core_a-output_tecplot.o \
+	../../SU2_CFD/src/libSU2Core_a-output_fieldview.o \
+	../../SU2_CFD/src/libSU2Core_a-output_su2.o \
+	../../SU2_CFD/src/libSU2Core_a-output_paraview.o \
+	../../SU2_CFD/src/libSU2Core_a-variable_structure.o \
 	../../Common/lib/libSU2.a @su2_externals_LIBS@ @CGNS_LD@ \
 	@HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ \
 	$(am__empty)

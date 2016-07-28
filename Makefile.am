@@ -39,8 +39,6 @@ SUBDIRS = externals
 
 SUBDIRS += Common/lib
 
-SUBDIRS += SU2_PY
-
 if BUILD_CFD
 SUBDIRS +=SU2_CFD/obj
 endif
@@ -63,4 +61,10 @@ endif
 
 if BUILD_GEO
 SUBDIRS +=SU2_GEO/obj
+endif
+
+SUBDIRS += SU2_PY
+
+if BUILD_PY_WRAPPER
+SUBDIRS += SU2_PY/_SU2_API
 endif
