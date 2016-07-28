@@ -625,6 +625,8 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+BUILD_PY_WRAPPER_FALSE
+BUILD_PY_WRAPPER_TRUE
 BUILD_GEO_FALSE
 BUILD_GEO_TRUE
 BUILD_SOL_FALSE
@@ -823,6 +825,7 @@ enable_MSH
 enable_DEF
 enable_SOL
 enable_GEO
+enable_PY_WRAPPER
 enable_complex
 enable_normal
 with_MPI
@@ -1478,6 +1481,7 @@ Optional Features:
   --disable-DEF           build the SU2_DEF executable (default = yes)
   --disable-SOL           build the SU2_SOL executable (default = yes)
   --disable-GEO           build the SU2_GEO executable (default = yes)
+  --enable-PY_WRAPPER     wrap the SU2 code with Python (default = no)
   --enable-complex        build executables with complex datatype (default =
                           no)
   --disable-normal        build executables with normal datatype (default =
@@ -5740,6 +5744,13 @@ else
   build_GEO="yes"
 fi
 
+# Check whether --enable-PY_WRAPPER was given.
+if test "${enable_PY_WRAPPER+set}" = set; then :
+  enableval=$enable_PY_WRAPPER; build_PY_WRAPPER="yes"
+else
+  build_PY_WRAPPER="no"
+fi
+
 # Check whether --enable-complex was given.
 if test "${enable_complex+set}" = set; then :
   enableval=$enable_complex; build_COMPLEX="yes"
@@ -6998,10 +7009,18 @@ else
   BUILD_GEO_FALSE=
 fi
 
+ if test $build_PY_WRAPPER != "no"; then
+  BUILD_PY_WRAPPER_TRUE=
+  BUILD_PY_WRAPPER_FALSE='#'
+else
+  BUILD_PY_WRAPPER_TRUE='#'
+  BUILD_PY_WRAPPER_FALSE=
+fi
+
 
 ###########################
 
-ac_config_files="$ac_config_files Makefile externals/Makefile Common/lib/Makefile SU2_CFD/obj/Makefile SU2_DOT/obj/Makefile SU2_MSH/obj/Makefile SU2_DEF/obj/Makefile SU2_SOL/obj/Makefile SU2_GEO/obj/Makefile SU2_PY/Makefile"
+ac_config_files="$ac_config_files Makefile externals/Makefile Common/lib/Makefile SU2_CFD/obj/Makefile SU2_DOT/obj/Makefile SU2_MSH/obj/Makefile SU2_DEF/obj/Makefile SU2_SOL/obj/Makefile SU2_GEO/obj/Makefile SU2_PY/Makefile SU2_PY/_SU2_API/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -7282,6 +7301,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_GEO_TRUE}" && test -z "${BUILD_GEO_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_GEO\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_PY_WRAPPER_TRUE}" && test -z "${BUILD_PY_WRAPPER_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_PY_WRAPPER\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -7871,6 +7894,7 @@ do
     "SU2_SOL/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_SOL/obj/Makefile" ;;
     "SU2_GEO/obj/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_GEO/obj/Makefile" ;;
     "SU2_PY/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_PY/Makefile" ;;
+    "SU2_PY/_SU2_API/Makefile") CONFIG_FILES="$CONFIG_FILES SU2_PY/_SU2_API/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -8507,6 +8531,7 @@ Build Configuration Summary:
     Build SU2_DEF:        $build_DEF
     Build SU2_SOL:        $build_SOL
     Build SU2_GEO:        $build_GEO
+    Build Py Wrapper:     $build_PY_WRAPPER
 
 Please be sure to add the \$SU2_HOME and \$SU2_RUN environment variables,
 and update your \$PATH (and \$PYTHONPATH if applicable) with \$SU2_RUN.
@@ -8590,6 +8615,7 @@ Build Configuration Summary:
     Build SU2_DEF:        $build_DEF
     Build SU2_SOL:        $build_SOL
     Build SU2_GEO:        $build_GEO
+    Build Py Wrapper:     $build_PY_WRAPPER
 
 Please be sure to add the \$SU2_HOME and \$SU2_RUN environment variables,
 and update your \$PATH (and \$PYTHONPATH if applicable) with \$SU2_RUN.
