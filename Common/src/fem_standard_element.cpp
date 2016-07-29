@@ -3353,9 +3353,15 @@ FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(unsigned short val_VT
 #ifdef HAVE_MKL
   matDerBasisElemIntegrationSide0 = (su2double *) mkl_malloc(sizeMatSide0*sizeof(su2double), 64);
   matDerBasisElemIntegrationSide1 = (su2double *) mkl_malloc(sizeMatSide1*sizeof(su2double), 64);
+
+  matDerBasisElemIntegrationTransposeSide0 = (su2double *) mkl_malloc(sizeMatSide0*sizeof(su2double), 64);
+  matDerBasisElemIntegrationTransposeSide1 = (su2double *) mkl_malloc(sizeMatSide1*sizeof(su2double), 64);
 #else
   matDerBasisElemIntegrationSide0 = new su2double[sizeMatSide0];
   matDerBasisElemIntegrationSide1 = new su2double[sizeMatSide1];
+
+  matDerBasisElemIntegrationTransposeSide0 = new su2double[sizeMatSide0];
+  matDerBasisElemIntegrationTransposeSide1 = new su2double[sizeMatSide1];
 #endif
 
   ii = 0;
@@ -3377,6 +3383,31 @@ FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(unsigned short val_VT
 
   for(unsigned long i=0; i<dtLagBasisElemIntegrationSide1.size(); ++i, ++ii)
     matDerBasisElemIntegrationSide1[ii] = dtLagBasisElemIntegrationSide1[i];
+
+  /*--- Also create the transpose of the matDerBasisElemIntegrationSide0 and
+        matDerBasisElemIntegrationSide1, such that the residual of the
+        symmetrizing terms can be computed efficiently. ---*/
+  const unsigned short nDim = dtLagBasisElemIntegrationSide0.size() ? 3 : 2;
+
+  ii = 0;
+  for(unsigned short j=0; j<nDOFsElemSide0; ++j) {
+    for(unsigned short i=0; i<nIntegration; ++i) {
+      for(unsigned short iDim=0; iDim<nDim; ++iDim, ++ii) {
+        const unsigned int ind = iDim*nDOFsElemSide0*nIntegration + i*nDOFsElemSide0 + j;
+        matDerBasisElemIntegrationTransposeSide0[ii] = matDerBasisElemIntegrationSide0[ind];
+      }
+    }
+  }
+
+  ii = 0;
+  for(unsigned short j=0; j<nDOFsElemSide1; ++j) {
+    for(unsigned short i=0; i<nIntegration; ++i) {
+      for(unsigned short iDim=0; iDim<nDim; ++iDim, ++ii) {
+        const unsigned int ind = iDim*nDOFsElemSide1*nIntegration + i*nDOFsElemSide1 + j;
+        matDerBasisElemIntegrationTransposeSide1[ii] = matDerBasisElemIntegrationSide1[ind];
+      }
+    }
+  }
 }
 
 FEMStandardInternalFaceClass::~FEMStandardInternalFaceClass() {
@@ -3384,9 +3415,15 @@ FEMStandardInternalFaceClass::~FEMStandardInternalFaceClass() {
 #ifdef HAVE_MKL
   if( matDerBasisElemIntegrationSide0 ) mkl_free(matDerBasisElemIntegrationSide0);
   if( matDerBasisElemIntegrationSide1 ) mkl_free(matDerBasisElemIntegrationSide1);
+
+  if( matDerBasisElemIntegrationTransposeSide0 ) mkl_free(matDerBasisElemIntegrationTransposeSide0);
+  if( matDerBasisElemIntegrationTransposeSide1 ) mkl_free(matDerBasisElemIntegrationTransposeSide1);
 #else
   if( matDerBasisElemIntegrationSide0 ) delete[] matDerBasisElemIntegrationSide0;
   if( matDerBasisElemIntegrationSide1 ) delete[] matDerBasisElemIntegrationSide1;
+
+  if( matDerBasisElemIntegrationTransposeSide0 ) delete[] matDerBasisElemIntegrationTransposeSide0;
+  if( matDerBasisElemIntegrationTransposeSide1 ) delete[] matDerBasisElemIntegrationTransposeSide1;
 #endif
 }
 
@@ -3464,16 +3501,26 @@ void FEMStandardInternalFaceClass::Copy(const FEMStandardInternalFaceClass &othe
 #ifdef HAVE_MKL
   matDerBasisElemIntegrationSide0 = (su2double *) mkl_malloc(sizeMatSide0*sizeof(su2double), 64);
   matDerBasisElemIntegrationSide1 = (su2double *) mkl_malloc(sizeMatSide1*sizeof(su2double), 64);
+
+  matDerBasisElemIntegrationTransposeSide0 = (su2double *) mkl_malloc(sizeMatSide0*sizeof(su2double), 64);
+  matDerBasisElemIntegrationTransposeSide1 = (su2double *) mkl_malloc(sizeMatSide1*sizeof(su2double), 64);
 #else
   matDerBasisElemIntegrationSide0 = new su2double[sizeMatSide0];
   matDerBasisElemIntegrationSide1 = new su2double[sizeMatSide1];
+
+  matDerBasisElemIntegrationTransposeSide0 = new su2double[sizeMatSide0];
+  matDerBasisElemIntegrationTransposeSide1 = new su2double[sizeMatSide1];
 #endif
 
-  for(unsigned long i=0; i<sizeMatSide0; ++i)
-    matDerBasisElemIntegrationSide0[i] = other.matDerBasisElemIntegrationSide0[i];
+  for(unsigned long i=0; i<sizeMatSide0; ++i) {
+    matDerBasisElemIntegrationSide0[i]          = other.matDerBasisElemIntegrationSide0[i];
+    matDerBasisElemIntegrationTransposeSide0[i] = other.matDerBasisElemIntegrationTransposeSide0[i];
+  }
 
-  for(unsigned long i=0; i<sizeMatSide1; ++i)
-    matDerBasisElemIntegrationSide1[i] = other.matDerBasisElemIntegrationSide1[i];
+  for(unsigned long i=0; i<sizeMatSide1; ++i) {
+    matDerBasisElemIntegrationSide1[i]          = other.matDerBasisElemIntegrationSide1[i];
+    matDerBasisElemIntegrationTransposeSide1[i] = other.matDerBasisElemIntegrationTransposeSide1[i];
+  }
 }
 
 /*----------------------------------------------------------------------------------*/

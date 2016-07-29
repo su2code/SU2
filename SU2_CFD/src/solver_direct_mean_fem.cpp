@@ -3108,16 +3108,20 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
   /*--- Allocate the memory for some temporary storage needed to compute the
         residual efficiently. Note that when the MKL library is used
         a special allocation is used to optimize performance. Furthermore, note
-        the max function for the fluxes. This is because these arrays are also used
-        as temporary storage for the solution of the DOFs. ---*/
+        the size for fluxes and the max function for the viscFluxes. This is
+        because these arrays are also used as temporary storage for the solution
+        of the DOFs. ---*/
   su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes;
   su2double *viscosityIntL, *viscosityIntR;
+
+  unsigned short sizeFluxes = nIntegrationMax*nDim;
+  sizeFluxes = max(sizeFluxes, nDOFsMax);
 
 #ifdef HAVE_MKL
   solIntL       = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
   solIntR       = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
   gradSolInt    = (su2double *) mkl_malloc(nIntegrationMax*nVar*nDim*sizeof(su2double), 64);
-  fluxes        = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
+  fluxes        = (su2double *) mkl_malloc(sizeFluxes*nVar*sizeof(su2double), 64);
   viscFluxes    = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
   viscosityIntL = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
   viscosityIntR = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
@@ -3125,7 +3129,7 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpGradSolInt(nIntegrationMax*nVar*nDim);
-  vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
+  vector<su2double> helpFluxes(sizeFluxes*nVar);
   vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
   vector<su2double> helpViscosityIntL(nIntegrationMax);
   vector<su2double> helpViscosityIntR(nIntegrationMax);
@@ -3283,6 +3287,24 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
     /*---         of this matching face.                                   ---*/
     /*------------------------------------------------------------------------*/
 
+    /* Compute the symmetrizing fluxes in the nDim directions. */
+    SymmetrizingFluxesFace(nInt, solIntL, solIntR, viscosityIntL, viscosityIntR,
+                           matchingInternalFaces[l].metricNormalsFace, fluxes);
+
+    /*--- Multiply the fluxes just computed by their integration weights and
+          -theta/2. The parameter theta is the parameter in the Interior Penalty
+          formulation, the factor 1/2 comes in from the averaging and the minus
+          sign is from the convention that the viscous fluxes comes with a minus
+          sign in this code. ---*/
+    const su2double halfTheta = 0.5*config->GetTheta_Interior_Penalty_DGFEM();
+
+    for(unsigned short i=0; i<nInt; ++i) {
+      su2double *flux        = fluxes + i*nVar;
+      const su2double wTheta = -halfTheta*weights[i];
+
+      for(unsigned short j=0; j<nVar; ++j)
+        flux[j] *= wTheta;
+    }
 
     /*------------------------------------------------------------------------*/
     /*--- Step 6: Distribute the symmetrizing terms to the DOFs. Note that ---*/
@@ -3290,19 +3312,35 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
     /*---         adjacent elements, not only to the DOFs of the face.     ---*/
     /*------------------------------------------------------------------------*/
 
-    const unsigned short nDOFsElem0 = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
+    /* Get the element information of side 0 of the face. */
+    const unsigned short nDOFsElem0    = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
+    const su2double *derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide0();
+
     su2double *resElem0 = VecResFaces.data() + indResFaces*nVar;
     indResFaces        += nDOFsElem0;
 
-    for(unsigned short i=0; i<(nVar*nDOFsElem0); ++i) resElem0[i] = 0.0;
-
+    /* Call the general function to carry out the matrix product to compute
+       the residual for side 0. */
+    MatrixProduct(nDOFsElem0, nVar, nInt*nDim, derBasisElemTrans, fluxes, resElem0);
+    
+    /* Check if the element to the right is an owned element. Only then
+       the residual needs to be computed. */
     if(matchingInternalFaces[l].elemID1 < nVolElemOwned) {
 
+      /* Get the element information of side 1 of the face. */
       const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
+      derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide1();
+
       su2double *resElem1 = VecResFaces.data() + indResFaces*nVar;
       indResFaces        += nDOFsElem1;
 
-      for(unsigned short i=0; i<(nVar*nDOFsElem1); ++i) resElem1[i] = 0.0;
+      /* Call the general function to carry out the matrix product to compute
+         the residual for side 1. Afterwards the residual is negated, because the
+         normal is pointing into the adjacent element. */
+      MatrixProduct(nDOFsElem1, nVar, nInt*nDim, derBasisElemTrans, fluxes, resElem1);
+
+      for(unsigned short i=0; i<(nVar*nDOFsElem1); ++i)
+        resElem1[i] = -resElem1[i];
     }
   }
 
@@ -3511,6 +3549,18 @@ void CFEM_DG_NSSolver::PenaltyTermsFluxFace(const unsigned short nInt,
     for(unsigned short j=1; j<nVar; ++j)
       flux[j] = penFace*(sol0[j] - sol1[j]);
   }
+}
+
+void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
+                                              const su2double      *solInt0,
+                                              const su2double      *solInt1,
+                                              const su2double      *viscosityInt0,
+                                              const su2double      *viscosityInt1,
+                                              const su2double      *metricNormalsFace,
+                                              su2double            *symmFluxes) {
+
+  cout << "CFEM_DG_NSSolver::SymmetrizingFluxesFace: Not implemented yet" << endl;
+  exit(1);
 }
 
 void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
