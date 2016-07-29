@@ -2315,10 +2315,10 @@ void CDriver::StartSolver(){
       }
 
     /*--- Monitor the computations after each iteration. ---*/
-      Monitor();
+      Monitor(ExtIter);
 
     /*--- Output the solution in files. ---*/
-      Output();
+      Output(ExtIter);
 
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
@@ -2366,7 +2366,7 @@ void CDriver::PreprocessExtIter(unsigned long ExtIter){
 }
 
 
-bool CDriver::Monitor(){
+bool CDriver::Monitor(unsigned long ExtIter){
 
     /*--- Synchronization point after a single solver iteration. Compute the
      wall clock time required. ---*/
@@ -2430,14 +2430,14 @@ bool CDriver::Monitor(){
 }
 
 
-void CDriver::Output(){
+void CDriver::Output(unsigned long ExtIter){
 
 
     int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif // HAVE_MPI
+#endif
 
 
     /*--- Solution output. Determine whether a solution needs to be written
