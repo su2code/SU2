@@ -1261,6 +1261,8 @@ inline su2double CConfig::GetIncLoad_Criteria(unsigned short val_var) { return I
 
 inline bool CConfig::GetFSI_Simulation(void) { return FSI_Problem; }
 
+inline bool CConfig::GetAD_FSI_Strategy(void) { return AD_FSI_Strategy; }
+
 inline unsigned short CConfig::GetKindInterpolation(void) { return Kind_Interpolation; }
 
 inline unsigned short CConfig::GetRelaxation_Method_FSI(void) { return Kind_BGS_RelaxMethod; }

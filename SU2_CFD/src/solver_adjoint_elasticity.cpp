@@ -2096,6 +2096,9 @@ void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
   case REFERENCE_GEOMETRY:
       ObjFunc_Value = direct_solver->GetTotal_OFRefGeom();
       break;
+  default:
+      ObjFunc_Value = 0.0;  // If the objective function is computed in a different physical problem
+      break;
  /*--- Template for new objective functions where TemplateObjFunction()
   *  is the routine that returns the obj. function value. The computation
   * must be done while the tape is active, i.e. between AD::StartRecording() and

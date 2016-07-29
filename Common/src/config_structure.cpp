@@ -1329,6 +1329,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
   addDoubleOption("FSI_LINEAR_SOLVER_ERROR_STRUC", Linear_Solver_Error_FSI_Struc, 1E-6);
 
+  /*!\brief AD_FSI_STRATEGY
+   *  \n DESCRIPTION: FSI strategy \n OPTIONS: see \link FSI_Strategy_Map \endlink \n DEFAULT: PARTITIONED \ingroup Config*/
+  addEnumOption("AD_FSI_STRATEGY", AD_FSI_Strategy, FSI_Strategy_Map, PARTITIONED);
+
   /* DESCRIPTION: Restart from a steady state (sets grid velocities to 0 when loading the restart). */
   addBoolOption("RESTART_STEADY_STATE", SteadyRestart, false);
 
