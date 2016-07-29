@@ -5670,6 +5670,16 @@ protected:
                                  const su2double     *solR,
                                  su2double           *fluxes,
                                  CNumerics           *numerics);
+
+  /*!
+   * \brief Function, which creates the final residual by accumulating the
+            individual contributions and multiply the result by the inverse
+            of the (lumped) mass matrix.
+   * \param[in,out] tmpRes - Temporary storage array needed for multiplication
+                             with the inverse of the mass matrix.
+   */
+  void CreateFinalResidual(su2double *tmpRes);
+
   /*!
    * \brief Function, which computes the inviscid fluxes in face points of
             a matching internal face.
