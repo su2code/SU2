@@ -6001,6 +6001,26 @@ private:
                             su2double            *penaltyFluxes);
 
   /*!
+   * \brief Function to compute the penalty terms in the integration
+            points of a face.
+   * \param[in]  nInt              - Number of integration points of the face.
+   * \param[in]  solInt0           - Solution in the integration points of side 0.
+   * \param[in]  solInt1           - Solution in the integration points of side 1.
+   * \param[in]  viscosityInt0     - Viscosity in the integration points of side 0.
+   * \param[in]  viscosityInt1     - Viscosity in the integration points of side 1.
+   * \param[in]  metricNormalsFace - Metric terms in the integration points, which
+                                     contain the normals.
+   * \param[out] symmFluxes        - Penalty fluxes in the integration points.
+   */
+  void SymmetrizingFluxesFace(const unsigned short nInt,
+                              const su2double      *solInt0,
+                              const su2double      *solInt1,
+                              const su2double      *viscosityInt0,
+                              const su2double      *viscosityInt1,
+                              const su2double      *metricNormalsFace,
+                              su2double            *symmFluxes);
+
+  /*!
    * \brief Function to compute the viscous normal fluxes in the integration
             points of a face.
    * \param[in]   nInt                - Number of integration points of the face.

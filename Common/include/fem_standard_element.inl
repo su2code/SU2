@@ -77,7 +77,8 @@ inline unsigned short FEMStandardElementClass::GetNDOFs(void) const {return nDOF
 
 inline unsigned short FEMStandardElementClass::GetNPoly(void) const {return nPoly;}
 
-inline FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(){matDerBasisElemIntegrationSide0 = matDerBasisElemIntegrationSide1 = NULL;}
+inline FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(){matDerBasisElemIntegrationSide0          = matDerBasisElemIntegrationSide1 =
+                                                                    matDerBasisElemIntegrationTransposeSide0 = matDerBasisElemIntegrationTransposeSide1 = NULL;}
 
 inline FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(const FEMStandardInternalFaceClass &other) : FEMStandardElementBaseClass(other) {Copy(other);}
 
@@ -98,6 +99,10 @@ inline su2double* FEMStandardInternalFaceClass::GetDtBasisElemIntegrationSide1(v
 inline const su2double* FEMStandardInternalFaceClass::GetMatDerBasisElemIntegrationSide0(void) const {return matDerBasisElemIntegrationSide0;}
 
 inline const su2double* FEMStandardInternalFaceClass::GetMatDerBasisElemIntegrationSide1(void) const {return matDerBasisElemIntegrationSide1;}
+
+inline const su2double* FEMStandardInternalFaceClass::GetMatDerBasisElemIntegrationTransposeSide0(void) const {return matDerBasisElemIntegrationTransposeSide0;}
+
+inline const su2double* FEMStandardInternalFaceClass::GetMatDerBasisElemIntegrationTransposeSide1(void) const {return matDerBasisElemIntegrationTransposeSide1;}
 
 inline const su2double* FEMStandardInternalFaceClass::GetBasisFaceIntegrationSide0(void) const {return lagBasisFaceIntegrationSide0.data();}
 
