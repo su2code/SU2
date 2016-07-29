@@ -228,7 +228,7 @@ private:
 	su2double *NRBC_Var1, *NRBC_Var2;    /*!< \brief Specified values for NRBC boundary. */
 	su2double **NRBC_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for NRBC boundaries. */
 	su2double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
-    su2double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
+  su2double **Inlet_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for inlet boundaries. */
 	su2double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
 	su2double *Inlet_Pressure;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
 	su2double **Inlet_Velocity;  /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
@@ -712,7 +712,16 @@ private:
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff; /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint; /*!< \brief AD-based discrete adjoint mode. */
-
+  su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
+  *default_eng_box,           /*!< \brief Default engine box array for the COption class. */
+  *default_cfl_adapt,         /*!< \brief Default CFL adapt param array for the COption class. */
+  *default_ad_coeff_flow,     /*!< \brief Default artificial dissipation (flow) array for the COption class. */
+  *default_ad_coeff_adj,      /*!< \brief Default artificial dissipation (adjoint) array for the COption class. */
+  *default_obj_coeff,         /*!< \brief Default objective array for the COption class. */
+  *default_geo_loc,           /*!< \brief Default SU2_GEO section locations array for the COption class. */
+  *default_ea_lim,            /*!< \brief Default equivalent area limit array for the COption class. */
+  *default_grid_fix,          /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
+  *default_inc_crit;          /*!< \brief Default incremental criteria array for the COption class. */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map
@@ -827,13 +836,13 @@ private:
 
   void addDoubleArrayOption(const string name, const int size, su2double * & option_field, su2double * default_value) {
 
-    su2double * def = new su2double [size];
-    for (int i = 0; i < size; i++) {
-      def[i] = default_value[i];
-    }
+  //  su2double * def = new su2double [size];
+  //  for (int i = 0; i < size; i++) {
+  //    def[i] = default_value[i];
+  //  }
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionDoubleArray(name, size, option_field, def);
+    COptionBase* val = new COptionDoubleArray(name, size, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
