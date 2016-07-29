@@ -4763,6 +4763,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (Unsteady) write_heads = (iIntIter == 0);
     else write_heads = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0));
     
+    /*--- Turbomachinery performance summary frequency ---*/
     bool write_turbo = (((iExtIter % (config[val_iZone]->GetWrt_TurboSummary())) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter() -1)));
     if (Unsteady) write_turbo = ( iExtIter!=0 &&(iIntIter % (config[val_iZone]->GetWrt_TurboSummary())) == 0);
 
@@ -5705,7 +5706,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
       }
 
-      /*--- Write the turbomachinery summary---*/
+      /*--- Write the turbomachinery performance summary---*/
       if (turbo && write_turbo){
       	cout << endl << "------------------------- Turbomachinery Summary ------------------------" << endl;
       	cout << endl;
