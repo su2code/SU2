@@ -229,6 +229,12 @@ void CConfig::SetPointersNull(void) {
   ExtIter = 0;
   IntIter = 0;
   
+  nMarker_PerBound = 0;
+  nPeriodic_Index = 0;
+
+  Grid_Movement = false;
+  Aeroelastic_Simulation = false;
+  
 }
 
 void CConfig::SetRunTime_Options(void) {
