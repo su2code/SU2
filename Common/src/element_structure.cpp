@@ -34,71 +34,71 @@
 unsigned short CElement::nDim = 0;
 
 CElement::CElement(void) {
-
-	CurrentCoord = NULL;
-	RefCoord = NULL;
-	GaussWeight = NULL;
-	GaussCoord = NULL;
-
-	GaussWeightP = NULL;
-	GaussCoordP = NULL;
-
-	GaussPoint = NULL;
-	GaussPointP = NULL;
-
-	NodalStress = NULL;
-	NodalExtrap = NULL;
-
-	nNodes = 0;
-	nGaussPoints = 0;
-	nGaussPointsP = 0;
-
-	el_Pressure = 0.0;
-
-	Mab = NULL;
-	Kab = NULL;
-	Ks_ab = NULL;
-	Kk_ab = NULL;
-	Kt_a = NULL;
-
-	FDL_a = NULL;
-
+  
+  CurrentCoord = NULL;
+  RefCoord = NULL;
+  GaussWeight = NULL;
+  GaussCoord = NULL;
+  
+  GaussWeightP = NULL;
+  GaussCoordP = NULL;
+  
+  GaussPoint = NULL;
+  GaussPointP = NULL;
+  
+  NodalStress = NULL;
+  NodalExtrap = NULL;
+  
+  nNodes = 0;
+  nGaussPoints = 0;
+  nGaussPointsP = 0;
+  
+  el_Pressure = 0.0;
+  
+  Mab = NULL;
+  Kab = NULL;
+  Ks_ab = NULL;
+  Kk_ab = NULL;
+  Kt_a = NULL;
+  
+  FDL_a = NULL;
+  
 }
 
 
 CElement::CElement(unsigned short val_nDim, CConfig *config) {
-
-	/*--- Initializate the number of dimension and some structures we need ---*/
-	nDim = val_nDim;
-
-	CurrentCoord = NULL;
-	RefCoord = NULL;
-	GaussWeight = NULL;
-	GaussCoord = NULL;
-
-	GaussWeightP = NULL;
-	GaussCoordP = NULL;
-
-	GaussPoint = NULL;
-	GaussPointP = NULL;
-
-	NodalStress = NULL;
-	NodalExtrap = NULL;
-
-	nNodes = 0;
-	nGaussPoints = 0;
-	nGaussPointsP = 0;
-
-	el_Pressure = 0.0;
-
-	Mab = NULL;
-	Kab = NULL;
-	Ks_ab = NULL;
-	Kk_ab = NULL;
-	Kt_a = NULL;
-
-	FDL_a = NULL;
-
+  
+  /*--- Initializate the number of dimension and some structures we need ---*/
+  nDim = val_nDim;
+  
+  CurrentCoord = NULL;
+  RefCoord = NULL;
+  GaussWeight = NULL;
+  GaussCoord = NULL;
+  
+  GaussWeightP = NULL;
+  GaussCoordP = NULL;
+  
+  GaussPoint = NULL;
+  GaussPointP = NULL;
+  
+  NodalStress = NULL;
+  NodalExtrap = NULL;
+  
+  nNodes = 0;
+  nGaussPoints = 0;
+  nGaussPointsP = 0;
+  
+  el_Pressure = 0.0;
+  
+  Mab = NULL;
+  Kab = NULL;
+  Ks_ab = NULL;
+  Kk_ab = NULL;
+  Kt_a = NULL;
+  
+  FDL_a = NULL;
+  
 }
 
 CElement::~CElement(void) {
@@ -220,92 +220,92 @@ CElement::~CElement(void) {
 }
 
 void CElement::Add_Kab(su2double **val_Kab, unsigned short nodeA, unsigned short nodeB){
-
-	unsigned short iDim, jDim;
-
-	for(iDim = 0; iDim < nDim; iDim++) {
-		for (jDim = 0; jDim < nDim; jDim++) {
-			Kab[nodeA][nodeB][iDim*nDim+jDim] += val_Kab[iDim][jDim];
-		}
-	}
+  
+  unsigned short iDim, jDim;
+  
+  for(iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      Kab[nodeA][nodeB][iDim*nDim+jDim] += val_Kab[iDim][jDim];
+    }
+  }
 }
 
 void CElement::Add_Kab_T(su2double **val_Kab, unsigned short nodeA, unsigned short nodeB){
-
-	unsigned short iDim, jDim;
-
-	for(iDim = 0; iDim < nDim; iDim++) {
-		for (jDim = 0; jDim < nDim; jDim++) {
-			Kab[nodeA][nodeB][iDim*nDim+jDim] += val_Kab[jDim][iDim];
-		}
-	}
+  
+  unsigned short iDim, jDim;
+  
+  for(iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      Kab[nodeA][nodeB][iDim*nDim+jDim] += val_Kab[jDim][iDim];
+    }
+  }
 }
 
 void CElement::Set_Kk_ab(su2double **val_Kk_ab, unsigned short nodeA, unsigned short nodeB){
-
-	unsigned short iDim, jDim;
-
-	for(iDim = 0; iDim < nDim; iDim++) {
-		for (jDim = 0; jDim < nDim; jDim++) {
-			Kk_ab[nodeA][nodeB][iDim*nDim+jDim] += val_Kk_ab[iDim][jDim];
-		}
-	}
+  
+  unsigned short iDim, jDim;
+  
+  for(iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      Kk_ab[nodeA][nodeB][iDim*nDim+jDim] += val_Kk_ab[iDim][jDim];
+    }
+  }
 }
 
 void CElement::Add_Kt_a(su2double *val_Kt_a, unsigned short nodeA){
-
-	unsigned short iDim;
-
-	for(iDim = 0; iDim < nDim; iDim++) {
-		Kt_a[nodeA][iDim] += val_Kt_a[iDim];
-	}
-
+  
+  unsigned short iDim;
+  
+  for(iDim = 0; iDim < nDim; iDim++) {
+    Kt_a[nodeA][iDim] += val_Kt_a[iDim];
+  }
+  
 }
 
 void CElement::Add_FDL_a(su2double *val_FDL_a, unsigned short nodeA){
-
-	unsigned short iDim;
-
-	for(iDim = 0; iDim < nDim; iDim++) {
-		FDL_a[nodeA][iDim] += val_FDL_a[iDim];
-	}
-
+  
+  unsigned short iDim;
+  
+  for(iDim = 0; iDim < nDim; iDim++) {
+    FDL_a[nodeA][iDim] += val_FDL_a[iDim];
+  }
+  
 }
 
 
 void CElement::clearElement(void){
-
-	unsigned short iNode, jNode, iDim, nDimSq;
-
-	nDimSq = nDim*nDim;
-
-	for(iNode = 0; iNode < nNodes; iNode++) {
-		for(iDim = 0; iDim < nDim; iDim++){
-			if (Kt_a != NULL) Kt_a[iNode][iDim] = 0.0;
-			if (FDL_a != NULL) FDL_a[iNode][iDim] = 0.0;
-		}
-		for (jNode = 0; jNode < nNodes; jNode++) {
-			if (Ks_ab != NULL) Ks_ab[iNode][jNode] = 0.0;
-			if (Mab != NULL) Mab[iNode][jNode] = 0.0;
-			for(iDim = 0; iDim < nDimSq; iDim++){
-				if (Kab != NULL) Kab[iNode][jNode][iDim] = 0.0;
-			}
-		}
-	}
+  
+  unsigned short iNode, jNode, iDim, nDimSq;
+  
+  nDimSq = nDim*nDim;
+  
+  for(iNode = 0; iNode < nNodes; iNode++) {
+    for(iDim = 0; iDim < nDim; iDim++){
+      if (Kt_a != NULL) Kt_a[iNode][iDim] = 0.0;
+      if (FDL_a != NULL) FDL_a[iNode][iDim] = 0.0;
+    }
+    for (jNode = 0; jNode < nNodes; jNode++) {
+      if (Ks_ab != NULL) Ks_ab[iNode][jNode] = 0.0;
+      if (Mab != NULL) Mab[iNode][jNode] = 0.0;
+      for(iDim = 0; iDim < nDimSq; iDim++){
+        if (Kab != NULL) Kab[iNode][jNode][iDim] = 0.0;
+      }
+    }
+  }
 }
 
 void CElement::clearStress(void){
-
-	unsigned short iNode, iStress, nStress;
-
-	if (nDim == 2) nStress = 3;
-	else nStress = 6;
-
-	for(iNode = 0; iNode < nNodes; iNode++) {
-		for (iStress = 0; iStress < nStress; iStress++){
-			NodalStress[iNode][iStress] = 0.0;
-		}
-	}
-
+  
+  unsigned short iNode, iStress, nStress;
+  
+  if (nDim == 2) nStress = 3;
+  else nStress = 6;
+  
+  for(iNode = 0; iNode < nNodes; iNode++) {
+    for (iStress = 0; iStress < nStress; iStress++){
+      NodalStress[iNode][iStress] = 0.0;
+    }
+  }
+  
 }
 
