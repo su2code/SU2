@@ -4773,7 +4773,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   
   delete [] nElem_Bound_Copy;
   delete [] Marker_All_SendRecv_Copy;
-  
+  delete [] nElem_Bound_Copy;
 }
 
 void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone) {
@@ -11811,6 +11811,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
     iPoint_Global++;
   }
   restart_file.close();
+
+  delete [] Global2Local;
 }
 
 void CPhysicalGeometry::Check_Periodicity(CConfig *config) {

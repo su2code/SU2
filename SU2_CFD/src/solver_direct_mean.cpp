@@ -6984,7 +6984,7 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
         /*--- Compute the residual ---*/
         
         Pressure = node[iPoint]->GetPressureInc();
-        Density = node[iPoint]->GetPressureInc();
+        Density = node[iPoint]->GetDensityInc();
         
         Residual[0] = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
