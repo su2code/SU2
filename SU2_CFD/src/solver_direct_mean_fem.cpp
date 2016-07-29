@@ -268,16 +268,18 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   /*--- Determine the size of the vector to store residuals that come from the
         integral over the faces and determine the number of entries in this
         vector for the owned DOFs. ---*/
+  const bool viscous = config->GetViscous();
 
-  /* First the internal matching faces. */
+  /*--- First the internal matching faces. ---*/
   unsigned long sizeVecResFaces = 0;
   for(unsigned long i=0; i<nMatchingInternalFaces; ++i) {
+
+    /* The terms that only contribute to the DOFs located on the face. */
     const unsigned short ind = matchingInternalFaces[i].indStandardElement;
     const unsigned short nDOFsFace0 = standardMatchingFacesSol[ind].GetNDOFsFaceSide0();
     const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
 
     sizeVecResFaces += nDOFsFace0;
-
     for(unsigned short j=0; j<nDOFsFace0; ++j)
       ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolFaceSide0[j]+1];
 
@@ -285,6 +287,23 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
       sizeVecResFaces += nDOFsFace1;
       for(unsigned short j=0; j<nDOFsFace1; ++j)
         ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolFaceSide1[j]+1];
+    }
+
+    /* The symmetrizing terms, which are only present for a viscous discretization,
+       contribute to all the DOFs of the adjacent elements. */
+    if( viscous ) {
+      const unsigned short nDOFsElem0 = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
+      const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
+
+      sizeVecResFaces += nDOFsElem0;
+      for(unsigned short j=0; j<nDOFsElem0; ++j)
+        ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolElementSide0[j]+1];
+
+      if(matchingInternalFaces[i].elemID1 < nVolElemOwned) {
+        sizeVecResFaces += nDOFsElem1;
+        for(unsigned short j=0; j<nDOFsElem1; ++j)
+          ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolElementSide1[j]+1];
+      }
     }
   }
 
@@ -304,9 +323,20 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
         const unsigned short ind       = surfElem[i].indStandardElement;
         const unsigned short nDOFsFace = standardBoundaryFacesSol[ind].GetNDOFsFace();
 
+        /* The terms that only contribute to the DOFs located on the face. */
         sizeVecResFaces += nDOFsFace;
         for(unsigned short j=0; j<nDOFsFace; ++j)
           ++nEntriesResFaces[surfElem[i].DOFsSolFace[j]+1];
+
+        /* The symmetrizing terms, which are only present for a viscous discretization,
+           contribute to all the DOFs of the adjacent elements. */
+        if( viscous ) {
+          const unsigned short nDOFsElem = standardBoundaryFacesSol[ind].GetNDOFsElem();
+
+          sizeVecResFaces += nDOFsElem;
+          for(unsigned short j=0; j<nDOFsElem; ++j)
+            ++nEntriesResFaces[surfElem[i].DOFsSolElement[j]+1];
+        }
       }
     }
   }
@@ -327,6 +357,8 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   /* First the loop over the internal matching faces. */
   sizeVecResFaces = 0;
   for(unsigned long i=0; i<nMatchingInternalFaces; ++i) {
+
+    /* The terms that only contribute to the DOFs located on the face. */
     const unsigned short ind = matchingInternalFaces[i].indStandardElement;
     const unsigned short nDOFsFace0 = standardMatchingFacesSol[ind].GetNDOFsFaceSide0();
     const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
@@ -342,6 +374,25 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
         entriesResFaces[jj] = sizeVecResFaces++;
       }
     }
+
+    /* The symmetrizing terms, which are only present for a viscous discretization,
+       contribute to all the DOFs of the adjacent elements. */
+    if( viscous ) {
+      const unsigned short nDOFsElem0 = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
+      const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
+
+      for(unsigned short j=0; j<nDOFsElem0; ++j) {
+        unsigned long jj    = counterEntries[matchingInternalFaces[i].DOFsSolElementSide0[j]]++;
+        entriesResFaces[jj] = sizeVecResFaces++;
+      }
+
+      if(matchingInternalFaces[i].elemID1 < nVolElemOwned) {
+        for(unsigned short j=0; j<nDOFsElem1; ++j) {
+          unsigned long jj    = counterEntries[matchingInternalFaces[i].DOFsSolElementSide1[j]]++;
+          entriesResFaces[jj] = sizeVecResFaces++;
+        }
+      }
+    }
   }
 
   /* And the physical boundary faces. Exclude the periodic boundaries,
@@ -355,6 +406,8 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
       /*--- Loop over the surface elements to set entriesResFaces. ---*/
       for(unsigned long i=0; i<nSurfElem; ++i) {
+
+        /* The terms that only contribute to the DOFs located on the face. */
         const unsigned short ind       = surfElem[i].indStandardElement;
         const unsigned short nDOFsFace = standardBoundaryFacesSol[ind].GetNDOFsFace();
 
@@ -362,14 +415,25 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
           unsigned long jj    = counterEntries[surfElem[i].DOFsSolFace[j]]++;
           entriesResFaces[jj] = sizeVecResFaces++;
         }
+
+        /* The symmetrizing terms, which are only present for a viscous discretization,
+           contribute to all the DOFs of the adjacent elements. */
+        if( viscous ) {
+          const unsigned short nDOFsElem = standardBoundaryFacesSol[ind].GetNDOFsElem();
+
+          for(unsigned short j=0; j<nDOFsElem; ++j) {
+            unsigned long jj    = counterEntries[surfElem[i].DOFsSolElement[j]]++;
+            entriesResFaces[jj] = sizeVecResFaces++;
+          }
+        }
       }
     }
   }
 
   /*--- Check for a restart and set up the variables at each node
-   appropriately. Coarse multigrid levels will be intitially set to
-   the farfield values bc the solver will immediately interpolate
-   the solution from the finest mesh to the coarser levels. ---*/
+        appropriately. Coarse multigrid levels will be intitially set to
+        the farfield values bc the solver will immediately interpolate
+        the solution from the finest mesh to the coarser levels. ---*/
   
   if (!restart || (iMesh != MESH_0)) {
     
@@ -1769,53 +1833,12 @@ void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solve
   /*--------------------------------------------------------------------------*/
   /*--- Part 2: Accumulate the residuals for the owned DOFs and multiply   ---*/
   /*---         by the inverse of either the mass matrix or the lumped     ---*/
-  /*---         mass matrix. The accumulation of the residuals is carried  ---*/
-  /*---         inside the loop over the owned volume elements, such that  ---*/
-  /*---         an OpenMP parallelization of this loop can be done.        ---*/
+  /*---         mass matrix.                                               ---*/
   /*--------------------------------------------------------------------------*/
 
-  /* Loop over the owned volume elements. */
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
-
-    /* Easier storage of the residuals for this volume element. */
-    su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
-
-    /*--- Loop over the DOFs of the element and accumulate the residuals. ---*/
-    for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
-
-      su2double *resDOF      = res + nVar*i;
-      const unsigned long ii = volElem[l].offsetDOFsSolLocal + i;
-      for(unsigned long j=nEntriesResFaces[ii]; j<nEntriesResFaces[ii+1]; ++j) {
-        const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
-        for(unsigned short k=0; k<nVar; ++k)
-          resDOF[k] += resFace[k];
-      }
-    }
-
-    /* Check whether a multiplication must be carried out with the inverse of
-       the lumped mass matrix or the full mass matrix. Note that it is crucial
-       that the test is performed with the pointer lumpedMassMatrix and not
-       with massMatrix. The reason is that for implicit time stepping schemes
-       both arrays are in use. */
-    if( volElem[l].lumpedMassMatrix ) {
-
-      /* Multiply the residual with the inverse of the lumped mass matrix. */
-      for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
-
-        su2double *resDOF = res + nVar*i;
-        su2double lMInv   = 1.0/volElem[l].lumpedMassMatrix[i];
-        for(unsigned short k=0; k<nVar; ++k) resDOF[k] *= lMInv;
-      }
-    }
-    else {
-
-      /* Multiply the residual with the inverse of the mass matrix.
-         Use the array fluxes as temporary storage. */
-      memcpy(fluxes, res, nVar*volElem[l].nDOFsSol*sizeof(su2double));
-      MatrixProduct(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
-                    volElem[l].massMatrix, fluxes, res);
-    }
-  }
+  /* Call the function CreateFinalResidual to carry out the task. The array
+     fluxes is passed as temporary storage. */
+  CreateFinalResidual(fluxes);
 
   /*--- If the MKL is used the temporary storage must be released again. ---*/
 #ifdef HAVE_MKL
@@ -1896,6 +1919,55 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
   /* General function to compute the fluxes in the integration points. */
   ComputeInviscidFluxesFace(config, nInt, internalFace->metricNormalsFace,
                             solIntL, solIntR, fluxes, numerics);
+}
+
+void CFEM_DG_EulerSolver::CreateFinalResidual(su2double *tmpRes) {
+
+  /* Loop over the owned volume elements. */
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /* Easier storage of the residuals for this volume element. */
+    su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+
+    /*--- Loop over the DOFs of the element and accumulate the residuals.
+          This accumulation is carried inside the loop over the owned volume
+          elements, such that an OpenMP parallelization of the loop over the
+          volume elements is straightforward. ---*/
+    for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
+
+      su2double *resDOF      = res + nVar*i;
+      const unsigned long ii = volElem[l].offsetDOFsSolLocal + i;
+      for(unsigned long j=nEntriesResFaces[ii]; j<nEntriesResFaces[ii+1]; ++j) {
+        const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
+        for(unsigned short k=0; k<nVar; ++k)
+          resDOF[k] += resFace[k];
+      }
+    }
+
+    /* Check whether a multiplication must be carried out with the inverse of
+       the lumped mass matrix or the full mass matrix. Note that it is crucial
+       that the test is performed with the pointer lumpedMassMatrix and not
+       with massMatrix. The reason is that for implicit time stepping schemes
+       both arrays are in use. */
+    if( volElem[l].lumpedMassMatrix ) {
+
+      /* Multiply the residual with the inverse of the lumped mass matrix. */
+      for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
+
+        su2double *resDOF = res + nVar*i;
+        su2double lMInv   = 1.0/volElem[l].lumpedMassMatrix[i];
+        for(unsigned short k=0; k<nVar; ++k) resDOF[k] *= lMInv;
+      }
+    }
+    else {
+
+      /* Multiply the residual with the inverse of the mass matrix.
+         Use the array tmpRes as temporary storage. */
+      memcpy(tmpRes, res, nVar*volElem[l].nDOFsSol*sizeof(su2double));
+      MatrixProduct(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
+                    volElem[l].massMatrix, tmpRes, res);
+    }
+  }
 }
 
 void CFEM_DG_EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
@@ -3218,18 +3290,31 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
     /*---         adjacent elements, not only to the DOFs of the face.     ---*/
     /*------------------------------------------------------------------------*/
 
+    const unsigned short nDOFsElem0 = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
+    su2double *resElem0 = VecResFaces.data() + indResFaces*nVar;
+    indResFaces        += nDOFsElem0;
 
+    for(unsigned short i=0; i<(nVar*nDOFsElem0); ++i) resElem0[i] = 0.0;
+
+    if(matchingInternalFaces[l].elemID1 < nVolElemOwned) {
+
+      const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
+      su2double *resElem1 = VecResFaces.data() + indResFaces*nVar;
+      indResFaces        += nDOFsElem1;
+
+      for(unsigned short i=0; i<(nVar*nDOFsElem1); ++i) resElem1[i] = 0.0;
+    }
   }
-
 
   /*--------------------------------------------------------------------------*/
   /*--- Part 2: Accumulate the residuals for the owned DOFs and multiply   ---*/
   /*---         by the inverse of either the mass matrix or the lumped     ---*/
-  /*---         mass matrix. The accumulation of the residuals is carried  ---*/
-  /*---         inside the loop over the owned volume elements, such that  ---*/
-  /*---         an OpenMP parallelization of this loop can be done.        ---*/
+  /*---         mass matrix.                                               ---*/
   /*--------------------------------------------------------------------------*/
 
+  /* Call the function CreateFinalResidual to carry out the task. The array
+     fluxes is passed as temporary storage. */
+  CreateFinalResidual(fluxes);
 
   /*--- If the MKL is used the temporary storage must be released again. ---*/
 #ifdef HAVE_MKL
