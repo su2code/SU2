@@ -1374,6 +1374,18 @@ static const map<string, ENUM_DYNAMIC> Dynamic_Map = CCreateMap<string, ENUM_DYN
 ("YES", DYNAMIC);
 
 /*!
+ * \brief types of criteria to determine when the solution is converged
+ */
+enum ENUM_FSI_STRAT {
+  PARTITIONED = 0,     /*!< \brief Partitioned strategy. */
+  MONOLITHIC = 1       /*!< \brief Monolithic strategy. */
+};
+static const map<string, ENUM_FSI_STRAT> FSI_Strategy_Map = CCreateMap<string, ENUM_FSI_STRAT>
+("PARTITIONED", PARTITIONED)
+("MONOLITHIC", MONOLITHIC);
+
+
+/*!
  * \brief types of input file formats
  */
 enum ENUM_INPUT_REF {

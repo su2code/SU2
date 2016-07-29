@@ -390,6 +390,7 @@ private:
 	SpatialOrder_AdjTurb,		/*!< \brief Order of the spatial numerical integration.*/
   SpatialOrder_AdjLevelSet;		/*!< \brief Order of the spatial numerical integration.*/
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
+  unsigned short AD_FSI_Strategy;  /*!< \brief Strategy for AD FSI problems. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   unsigned short Kind_Material_Compress,	/*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   Kind_Material,			/*!< \brief Determines the material model to be used (structural analysis). */
@@ -5799,6 +5800,12 @@ public:
 	 * \return Value of the physical time in an unsteady simulation.
 	 */
 	 bool GetFSI_Simulation(void);
+
+	 /*!
+	  * \brief Get the AD strategy for FSI
+	  * \return Kind of strategy.
+	  */
+	 bool GetAD_FSI_Strategy(void);
 
 	/*!
 	 * \brief Check if we want to apply an incremental load to the nonlinear structural simulation
