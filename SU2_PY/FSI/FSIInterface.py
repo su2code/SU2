@@ -617,8 +617,8 @@ class Interface:
 		
 		# --- Update, monitor and output the fluid solution before the next time step  ---#
 		FluidSolver.Update()
-		FluidSolver.Monitor()
-		FluidSolver.Output()
+		FluidSolver.Monitor(TimeIter)
+		FluidSolver.Output(TimeIter)
 
 	   	if TimeIter >= TimeIterTreshold:
 		  if myid == self.rootProcess:

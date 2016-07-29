@@ -249,12 +249,12 @@ public:
   /*!
    * \brief Monitor the computation.
    */
-  bool Monitor();
+  bool Monitor(unsigned long ExtIter);
 
   /*!
    * \brief Output the solution in solution file.
    */
-  void Output();
+  void Output(unsigned long ExtIter);
 
   /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and update of the multigrid structure.
