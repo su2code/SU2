@@ -4771,7 +4771,6 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
     
   }
   
-  delete [] nElem_Bound_Copy;
   delete [] Marker_All_SendRecv_Copy;
   delete [] nElem_Bound_Copy;
 }
