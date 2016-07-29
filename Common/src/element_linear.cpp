@@ -604,6 +604,7 @@ CQUAD4P1::~CQUAD4P1(void) {
   
 }
 
+
 void CQUAD4P1::ComputeGrad_Pressure(void){
   
   su2double Xi, Eta;
@@ -1320,6 +1321,7 @@ void CHEXA8::ComputeGrad_NonLinear(void){
       }
     }
   }
+  
   
 }
 
