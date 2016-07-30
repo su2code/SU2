@@ -397,7 +397,8 @@ class Interface:
 	    for solidNode in self.globalSolidInterface.iterkeys():
 	        Fx = self.globalSolidInterface[solidNode][3]
 	        Fy = self.globalSolidInterface[solidNode][4]
-	        SolidSolver.applyload(solidNode, Fx, Fy)
+		Fz = self.globalSolidInterface[solidNode][5]
+	        SolidSolver.applyload(solidNode, Fx, Fy, Fz)
 
     def displacementPredictor(self, FSI_config , SolidSolver, deltaT):
 	"""
@@ -678,8 +679,8 @@ class Interface:
 	    while Iter < NbIter:
 	      FluidSolver.PreprocessExtIter(Iter)
 	      FluidSolver.Run()				
-	      StopIntegration = FluidSolver.Monitor()
-	      FluidSolver.Output()
+	      StopIntegration = FluidSolver.Monitor(Iter)
+	      FluidSolver.Output(Iter)
 	      if StopIntegration:
 		break;
 	      Iter += 1
