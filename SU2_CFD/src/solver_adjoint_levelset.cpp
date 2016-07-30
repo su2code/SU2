@@ -52,6 +52,10 @@ CAdjLevelSetSolver::CAdjLevelSetSolver(CGeometry *geometry, CConfig *config, uns
 	/*--- Dimension of the problem ---*/
 	nVar = 1;
   
+  /*--- Initialize nVarGrad for deallocation ---*/
+  
+  nVarGrad = nVar;
+  
   /*--- Single grid simulation ---*/
 	if (iMesh == MESH_0) {
 	
