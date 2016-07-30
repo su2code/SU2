@@ -1208,9 +1208,9 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   
   bool Wrt_Halo = config->GetWrt_Halo();
   bool *Write_Elem = NULL, notPeriodic, notHalo, addedPeriodic, isPeriodic;
-
+  
   unsigned short kind_SU2 = config->GetKind_SU2();
-
+  
   int *Conn_Elem = NULL;
   
   int rank = MASTER_NODE;
@@ -1286,7 +1286,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   if (rank == MASTER_NODE) {
     Buffer_Recv_Elem = new unsigned long[size*nBuffer_Scalar];
     Buffer_Recv_Halo = new unsigned short[size*MaxLocalElem];
-    Conn_Elem = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
+    if (MaxLocalElem > 0) Conn_Elem = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
   }
   
   /*--- Force the removal of all added periodic elements (use global index).
@@ -1296,22 +1296,22 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   
   vector<unsigned long> Added_Periodic;
   Added_Periodic.clear();
-
+  
   if (kind_SU2 != SU2_DEF){
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-      SendRecv = config->GetMarker_All_SendRecv(iMarker);
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-        if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-            (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 0) &&
-            (SendRecv < 0)) {
-          Added_Periodic.push_back(geometry->node[iPoint]->GetGlobalIndex());
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
+        SendRecv = config->GetMarker_All_SendRecv(iMarker);
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          
+          if ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+              (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 0) &&
+              (SendRecv < 0)) {
+            Added_Periodic.push_back(geometry->node[iPoint]->GetGlobalIndex());
+          }
         }
       }
     }
-  }
   }
   
   /*--- Now we communicate this information to all processors, so that they
@@ -1381,15 +1381,15 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
                    (SendRecv < 0) && (rank > RecvFrom));
         
         /*--- We want to keep the periodic nodes that were part of the original domain.
-         *    For SU2_DEF we want to keep all periodic nodes. ---*/
-
+         For SU2_DEF we want to keep all periodic nodes. ---*/
+        
         if (kind_SU2 == SU2_DEF){
           isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0));
         }else{
           isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
                         (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
         }
-
+        
         notPeriodic = (isPeriodic && (SendRecv < 0));
         
         /*--- Lastly, check that this isn't an added periodic point that
@@ -1666,7 +1666,7 @@ void COutput::MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, uns
   if (rank == MASTER_NODE) {
     Buffer_Recv_Elem = new unsigned long[size*nBuffer_Scalar];
     Buffer_Recv_Halo = new unsigned short[size*MaxLocalElem];
-    Conn_Elem = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
+    if (MaxLocalElem > 0) Conn_Elem = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
   }
   
   /*--- Force the removal of all added periodic elements (use global index).
@@ -3919,23 +3919,23 @@ void COutput::DeallocateConnectivity(CConfig *config, CGeometry *geometry, bool 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
   /*--- The master node alone owns all data found in this routine. ---*/
   if (rank == MASTER_NODE) {
     
     /*--- Deallocate memory for connectivity data ---*/
     if (surf_sol) {
-      if (nGlobal_Line > 0) delete [] Conn_Line;
-      if (nGlobal_BoundTria > 0) delete [] Conn_BoundTria;
-      if (nGlobal_BoundQuad > 0) delete [] Conn_BoundQuad;
+      if (nGlobal_Line > 0      && Conn_Line      != NULL) delete [] Conn_Line;
+      if (nGlobal_BoundTria > 0 && Conn_BoundTria != NULL) delete [] Conn_BoundTria;
+      if (nGlobal_BoundQuad > 0 && Conn_BoundQuad != NULL) delete [] Conn_BoundQuad;
     }
     else {
-      if (nGlobal_Tria > 0) delete [] Conn_Tria;
-      if (nGlobal_Quad > 0) delete [] Conn_Quad;
-      if (nGlobal_Tetr > 0) delete [] Conn_Tetr;
-      if (nGlobal_Hexa > 0) delete [] Conn_Hexa;
-      if (nGlobal_Pris > 0) delete [] Conn_Pris;
-      if (nGlobal_Pyra > 0) delete [] Conn_Pyra;
+      if (nGlobal_Tria > 0 && Conn_Tria != NULL) delete [] Conn_Tria;
+      if (Conn_Quad != NULL) delete [] Conn_Quad;
+      if (Conn_Tetr != NULL) delete [] Conn_Tetr;
+      if (Conn_Hexa != NULL) delete [] Conn_Hexa;
+      if (Conn_Pris != NULL) delete [] Conn_Pris;
+      if (Conn_Pyra != NULL) delete [] Conn_Pyra;
     }
     
   }
