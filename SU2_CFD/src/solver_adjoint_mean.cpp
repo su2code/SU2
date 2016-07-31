@@ -381,7 +381,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Area_Monitored = myArea_Monitored;
 #endif
 
-  if (config->GetnObj()>1){
+  if (config->GetnObj()>1 and iMesh==MESH_0){
     if (grid_movement) {
       Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
       RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
@@ -2463,17 +2463,19 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   RefDensity  = config->GetDensity_FreeStreamND();
 
   factor = 1.0;
+  /*-- For multi-objective problems these scaling factors are applied before solution ---*/
   if (config->GetnObj()==1){
     factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
-
     if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
         (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-        (ObjFunc == MASS_FLOW_RATE) || (ObjFunc == OUTFLOW_GENERALIZED))
+        (ObjFunc == MASS_FLOW_RATE) )
       factor = 1.0;
 
-   if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ) factor = 1.0/Area_Monitored;
+    if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
+       (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+
   }
-  
+
   /*--- Initialize sensitivities to zero ---*/
   
   Total_Sens_Geo = 0.0;
@@ -2642,15 +2644,6 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 
             SoundSpeed = solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
             if (Vn<SoundSpeed and Vn>0){
-              /* Characteristic-based
-              Sens_BPress[iMarker]+=Psi[nDim+1]*(SoundSpeed-Vn)/Gamma_Minus_One;
-              if (config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE)
-                Sens_BPress[iMarker]+=Vn/(SoundSpeed+Vn);
-              if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE){
-                for (iDim=0; iDim<nDim; iDim++) Sens_BPress[iMarker]+=Velocity[iDim]*Velocity[iDim]/(2.0*Vn*(SoundSpeed+Vn));
-              }
-               */
-              /*Pressure based*/
               /*TODO: MDO compatible*/
               Sens_BPress[iMarker]+=Psi[nDim+1]*(SoundSpeed*SoundSpeed-Vn*Vn)/(Vn*Gamma_Minus_One);
               if (config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE)
@@ -5576,7 +5569,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
    Area_Monitored = myArea_Monitored;
  #endif
 
-   if (config->GetnObj()>1){
+   if (config->GetnObj()>1 and iMesh == MESH_0){
      if (grid_movement) {
        Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
        RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
@@ -5604,6 +5597,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
         obj_weight = obj_weight*factor;
         config->SetWeight_ObjFunc(iMarker_Monitoring, obj_weight);
+
      }
    }
 
@@ -5985,15 +5979,18 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   RefDensity  = config->GetDensity_FreeStreamND();
   
   factor = 1.0;
+  /*-- For multi-objective problems these scaling factors are applied before solution ---*/
   if (config->GetnObj()==1){
     factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
-    /*-- For multi-objective problems these scaling factors are applied before solution ---*/
+
     if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
         (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-        (ObjFunc == MASS_FLOW_RATE) || (ObjFunc == OUTFLOW_GENERALIZED))
+        (ObjFunc == MASS_FLOW_RATE))
       factor = 1.0;
 
-    if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ) factor = 1.0/Area_Monitored;
+    if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE) ||
+        (ObjFunc == OUTFLOW_GENERALIZED)) factor = 1.0/Area_Monitored;
+
   }
 
 

@@ -97,21 +97,18 @@ def function( func_name, config, state=None ):
             raise Exception, 'unknown function name, %s' % func_name
         
     #: if not redundant
-    
+
     # prepare output
     if func_name == 'ALL':
         func_out = state['FUNCTIONS']
             # If combine_objective is true, use the 'combo' output. 
-    elif ((config.COMBINE_OBJECTIVE=="YES") and (type(func_name)==list)):
+    elif (multi_objective):
         objectives=config.OPT_OBJECTIVE
         func_out = 0.0
         for func in func_name:
             sign = su2io.get_objectiveSign(func)
             func_out+=state['FUNCTIONS'][func]*objectives[func]['SCALE']*sign
         state['FUNCTIONS']['COMBO'] = func_out
-    elif multi_objective:
-        for func in func_name:
-            func_out = state['FUNCTIONS'][func]
     else:
         func_out = state['FUNCTIONS'][func_name]
         

@@ -1615,7 +1615,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Weight_ObjFunc[0]=1.0;
     nObj=1;
   }
-  /*-- Correct for case where Weight_ObjFunc has not been provided or has lenght < kind_objfunc---*/
+  /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
   if (nObjW<nObj){
     if (Weight_ObjFunc!=NULL)
       delete [] Weight_ObjFunc;
@@ -1624,11 +1624,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Weight_ObjFunc[iObj]=1.0;
   }
 
-  /*-- If ComboObjective is not specified, only the first will be used. --*/
-  if (not ComboObjective ){
-    nObj = 1;
+  /*-- If ComboObjective is specified, but only one objective used, revert to single-objective methods. --*/
+  if (nObj == 1 and ComboObjective){
+    ComboObjective = false;
     Weight_ObjFunc[0] = 1.0;
   }
+
   /*--- Maker sure that nMarker = nObj ---*/
   if (nObj>0){
     if (nMarker_Monitoring!=nObj){
