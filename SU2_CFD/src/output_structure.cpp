@@ -3937,7 +3937,7 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
 
 void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char cstr[200], buffer[50], turb_resid[1000];
-  unsigned short iMarker, iMarker_Monitoring;
+  unsigned short iMarker_Monitoring;
   string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff;
   
   bool rotating_frame = config->GetRotating_Frame();
@@ -4140,14 +4140,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   rank = MASTER_NODE;
 #endif
 
-  /*-- Compute the total objective if a "combo" objective is used ---*/
-  if (output_comboObj){
-    switch (config[val_iZone]->GetKind_Solver()) {
-    case EULER:                   case NAVIER_STOKES:                   case RANS:
-      solver_container[val_iZone][FinestMesh][FLOW_SOL]->Compute_ComboObj(config[val_iZone]);
-      break;
-    }
-  }
+  solver_container[val_iZone][FinestMesh][FLOW_SOL]->SetTotal_ComboObj(0.0);
 
   /*--- If 1-D outputs requested, calculated them. Requires info from all nodes,
    Get area-averaged and flux-averaged values at the specified surface ---*/
@@ -4171,6 +4164,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   
   /*--- Output using only the master node ---*/
   if (rank == MASTER_NODE) {
+    /*-- Compute the total objective if a "combo" objective is used ---*/
+    if (output_comboObj){
+      switch (config[val_iZone]->GetKind_Solver()) {
+      case EULER:                   case NAVIER_STOKES:                   case RANS:
+        solver_container[val_iZone][FinestMesh][FLOW_SOL]->Compute_ComboObj(config[val_iZone]);
+        break;
+      }
+    }
     
     unsigned long iIntIter = config[val_iZone]->GetIntIter();
     unsigned long iExtIter = config[val_iZone]->GetExtIter();
@@ -4184,7 +4185,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     fem_resid[1000], end[1000], oneD_outputs[1000], massflow_outputs[1000], d_direct_coeff[1000];
 
     su2double dummy = 0.0, *Coord;
-    unsigned short iVar, iMarker, iMarker_Monitoring;
+    unsigned short iVar, iMarker_Monitoring;
     
     unsigned long LinSolvIter = 0, iPointMaxResid;
     su2double timeiter = timeused/su2double(iExtIter+1);

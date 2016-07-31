@@ -6694,13 +6694,6 @@ void CEulerSolver::Compute_ComboObj(CConfig *config){
   unsigned short iMarker_Monitoring;
   su2double obj_weight;
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  // Reset to 0 on each iteration.
-  Total_ComboObj=0.0;
   /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
@@ -6767,12 +6760,6 @@ void CEulerSolver::Compute_ComboObj(CConfig *config){
       break;
     }
   }
-  /*--- Update across processors ---*/
-#ifdef HAVE_MPI
-  su2double My_Total_ComboObj = Total_ComboObj; Total_ComboObj=0.0;
-  SU2_MPI::Allreduce(&My_Total_ComboObj, &Total_ComboObj, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#endif
-
 
 }
 

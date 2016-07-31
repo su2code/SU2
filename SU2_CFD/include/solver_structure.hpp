@@ -1790,6 +1790,13 @@ public:
 
 	/*!
    * \author H. Kline
+   * \brief Set the total "combo" objective (weighted sum of other values).
+   * \param[in] ComboObj - Value of the combined objective.
+   */
+	virtual void SetTotal_ComboObj(su2double ComboObj);
+
+	/*!
+   * \author H. Kline
    * \brief Provide the total "combo" objective (weighted sum of other values).
    * \return Value of the "combo" objective values.
    */
@@ -4317,6 +4324,13 @@ public:
 	 */
 	su2double GetTotal_CLift(void);
     
+  /*!
+   * \author H. Kline
+   * \brief Set the total "combo" objective (weighted sum of other values).
+   * \param[in] ComboObj - Value of the combined objective.
+   */
+  void SetTotal_ComboObj(su2double ComboObj);
+
   /*!
    * \author H. Kline
    * \brief Provide the total "combo" objective (weighted sum of other values).
