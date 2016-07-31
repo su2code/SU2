@@ -78,16 +78,20 @@ def gradient( func_name, method, config, state=None ):
     state = su2io.State(state)
     if func_name == 'ALL':
         raise Exception , "func_name = 'ALL' not yet supported"
+    if (config.COMBINE_OBJECTIVE == "YES" and any([method == 'DISCRETE_ADJOINT'])):
+        raise Exception, " Combined objectives and discrete adjoint not currently compatible. Please set COMBINE_OBJECTIVE=NO."
     func_name_string = func_name
     if (type(func_name)==list):
-        if (config.COMBINE_OBJECTIVE=="YES"):
+        if (config.COMBINE_OBJECTIVE=="YES" and not any([method == 'DISCRETE_ADJOINT'])):
             config.OBJECTIVE_FUNCTION = ', '.join(func_name)
             func_name_string = 'COMBO'
         else:
             func_name = func_name[0]
             config.OBJECTIVE_FUNCTION = func_name
     else:
+        config.COMBINE_OBJECTIVE="NO"
         config.OBJECTIVE_FUNCTION = func_name
+        config.OBJECTIVE_WEIGHT = "1.0"
     # redundancy check
     if not state['GRADIENTS'].has_key(func_name_string):
 
