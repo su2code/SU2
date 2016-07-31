@@ -424,6 +424,8 @@ inline su2double CSolver::GetOneD_FluxAvgEntalpy(void) {return 0;}
 
 inline void CSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) { }
 
+inline void CSolver::SetTotal_ComboObj(su2double ComboObj) {}
+
 inline su2double CSolver::GetTotal_ComboObj(void) { return 0;}
 
 inline void CSolver::Compute_ComboObj(CConfig *config) {};
@@ -837,6 +839,8 @@ inline su2double CEulerSolver::GetCSideForce_Inv(unsigned short val_marker) { re
 inline su2double CEulerSolver::GetCEff_Inv(unsigned short val_marker) { return CEff_Inv[val_marker]; }
 
 inline su2double CEulerSolver::GetTotal_CLift() { return Total_CLift; }
+
+inline void CEulerSolver::SetTotal_ComboObj(su2double ComboObj) {Total_ComboObj = ComboObj; }
 
 inline su2double CEulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
 
