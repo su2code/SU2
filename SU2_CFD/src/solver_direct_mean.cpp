@@ -8532,7 +8532,8 @@ void CEulerSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container
         case TOTAL_CONDITIONS_PT:
 
         	/*--- HARDCODED FOR TEST ONLY!! ---*/
-        	Period  = 0.0048429906542056074;
+//        	Period  = 0.0048429906542056074;
+        	Period  = 0.0049065420560747662;
         	Period /= config->GetTime_Ref();
         	Boundary_Vel  = 21.4;
         	Boundary_Vel /= config->GetVelocity_Ref();
@@ -8549,6 +8550,7 @@ void CEulerSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container
           T_Total  = geometry->GetSpline(NonUniformBC_InputVar1, NonUniformBC_InputVar3, NonUniformBC_d2Var3, NonUniformBC_InputDim, y_perio);
           Flow_Dir = config->GetNonUniform_FlowDir(Marker_Tag);
 
+//					P_Total = config->GetNonUniform_Var1(Marker_Tag)*(1+0.1*sin(2*PI_NUMBER/config->GetSpectralMethod_Period()*Physical_t));
           /*--- Non-dim. the inputs if necessary. ---*/
           P_Total /= config->GetPressure_Ref();
           T_Total /= config->GetTemperature_Ref();
