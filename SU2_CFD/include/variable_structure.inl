@@ -533,6 +533,10 @@ inline su2double CVariable::GetSolution_Geometry(unsigned short val_var) { retur
 
 inline void CVariable::SetSolution_Geometry(su2double *val_solution_geometry) { }
 
+inline su2double CVariable::GetGeometry_CrossTerm_Derivative(unsigned short val_var) { return 0.0;}
+
+inline void CVariable::SetGeometry_CrossTerm_Derivative(unsigned short iDim, su2double der) { }
+
 inline void CVariable::Set_OldSolution_Geometry(void) { }
 
 inline su2double CVariable::Get_OldSolution_Geometry(unsigned short iDim) { return 0.0;}
@@ -540,6 +544,14 @@ inline su2double CVariable::Get_OldSolution_Geometry(unsigned short iDim) { retu
 inline su2double CVariable::GetCross_Term_Derivative(unsigned short iVar) { return 0.0; }
 
 inline void CVariable::SetCross_Term_Derivative(unsigned short iVar, su2double der) { }
+
+inline void CVariable::Set_BGSSolution(void) { }
+
+inline su2double CVariable::Get_BGSSolution(unsigned short iDim) { return 0.0;}
+
+inline void CVariable::Set_BGSSolution_Geometry(void) { }
+
+inline su2double CVariable::Get_BGSSolution_Geometry(unsigned short iDim) { return 0.0;}
 
 inline su2double* CVariable::GetSolution_Vel_Direct() { return NULL; }
 
@@ -1302,6 +1314,10 @@ inline void CDiscAdjVariable::Set_OldSolution_Geometry(void) {
   }
 }
 
+inline su2double CDiscAdjVariable::GetGeometry_CrossTerm_Derivative(unsigned short val_var) { return Geometry_CrossTerm_Derivative[val_var];}
+
+inline void CDiscAdjVariable::SetGeometry_CrossTerm_Derivative(unsigned short iDim, su2double der) { Geometry_CrossTerm_Derivative[iDim] = der;}
+
 inline su2double CDiscAdjVariable::Get_OldSolution_Geometry(unsigned short iDim) { return Solution_Geometry_Old[iDim];}
 
 inline void CVariable::SetDynamic_Derivative(unsigned short iVar, su2double der) { }
@@ -1474,4 +1490,25 @@ inline void CDiscAdjVariable::SetCross_Term_Derivative(unsigned short iVar, su2d
 inline su2double CDiscAdjFEAVariable::GetCross_Term_Derivative(unsigned short iVar) { return Cross_Term_Derivative[iVar]; }
 
 inline void CDiscAdjFEAVariable::SetCross_Term_Derivative(unsigned short iVar, su2double der) { Cross_Term_Derivative[iVar] = der; }
+
+inline void CDiscAdjVariable::Set_BGSSolution(void) { 
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution_BGS_k[iVar] = Solution[iVar];
+}
+
+inline su2double CDiscAdjVariable::Get_BGSSolution(unsigned short iDim) { return Solution_BGS_k[iDim];}
+
+inline void CDiscAdjVariable::Set_BGSSolution_Geometry(void) { 
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Solution_Geometry_BGS_k[iDim] = Solution_Geometry[iDim];
+}
+
+inline su2double CDiscAdjVariable::Get_BGSSolution_Geometry(unsigned short iDim) { return Solution_Geometry_BGS_k[iDim];}
+
+inline void CDiscAdjFEAVariable::Set_BGSSolution(void) { 
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Solution_BGS_k[iDim] = Solution[iDim];
+}
+
+inline su2double CDiscAdjFEAVariable::Get_BGSSolution(unsigned short iDim) { return Solution_BGS_k[iDim];}
 

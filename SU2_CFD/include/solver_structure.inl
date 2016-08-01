@@ -1195,6 +1195,8 @@ inline void CSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 
 inline void CSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *config){}
 
+inline void CSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config){}
+
 inline void CSolver::RegisterObj_Func(CConfig *config){}
 
 inline void CSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config){}

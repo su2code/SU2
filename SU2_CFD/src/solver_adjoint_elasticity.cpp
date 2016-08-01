@@ -2313,6 +2313,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
 void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool fsi = config->GetFSI_Simulation();
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -2320,6 +2321,11 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
       Solution[iVar] = node[iPoint]->GetSolution(iVar);
+    }
+    if (fsi) {
+      for (iVar = 0; iVar < nVar; iVar++){
+        Solution[iVar] += node[iPoint]->GetCross_Term_Derivative(iVar);
+      }
     }
     if (dynamic){
       for (iVar = 0; iVar < nVar; iVar++){

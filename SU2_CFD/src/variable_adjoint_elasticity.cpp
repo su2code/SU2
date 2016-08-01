@@ -97,12 +97,15 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable() : CVariable(){
 
   Cross_Term_Derivative = NULL;
 
+  Solution_BGS_k        = NULL;
+
 }
 
 CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short val_ndim,
                                unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config){
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool fsi     = config->GetFSI_Simulation();
 
   Dynamic_Derivative          = NULL;
   Dynamic_Derivative_n        = NULL;
@@ -138,11 +141,13 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short
     Solution[iVar] = val_solution[iVar];
   }
 
+  Solution_BGS_k        = NULL;
   Cross_Term_Derivative = NULL;
-  if (config->GetFSI_Simulation()){
+  if (fsi){
     Cross_Term_Derivative = new su2double[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
       Cross_Term_Derivative[iVar] = 0.0;
+      Solution_BGS_k[iVar]        = 0.0;
     }
   }
 
@@ -152,6 +157,7 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, su2double* val
                                unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config){
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+  bool fsi     = config->GetFSI_Simulation();
 
   Dynamic_Derivative          = new su2double[nVar];
   Dynamic_Derivative_n        = new su2double[nVar];
@@ -218,11 +224,13 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, su2double* val
 
   }
 
+  Solution_BGS_k        = NULL;
   Cross_Term_Derivative = NULL;
-  if (config->GetFSI_Simulation()){
+  if (fsi){
     Cross_Term_Derivative = new su2double[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
       Cross_Term_Derivative[iVar] = 0.0;
+      Solution_BGS_k[iVar]        = 0.0;
     }
   }
 
@@ -255,6 +263,8 @@ CDiscAdjFEAVariable::~CDiscAdjFEAVariable(){
   if (Solution_Old_Accel    != NULL) delete [] Solution_Old_Accel;
 
   if (Cross_Term_Derivative    != NULL) delete [] Cross_Term_Derivative;
+
+  if (Solution_BGS_k           != NULL) delete [] Solution_BGS_k;
 
 }
 

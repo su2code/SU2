@@ -710,25 +710,28 @@ class CDiscAdjFSIStatDriver : public CFSIStatDriver {
   unsigned short CurrentRecording;          /*!< \brief Stores the current status of the recording. */
   unsigned short Kind_Objective_Function;   /*!< \brief Stores the kind of objective function of the recording. */
 
-
+  /*--- The first three are maintained so the values are the same as in the single-physics zone ---*/
   enum RECORDING{
     NONE = 0,               /*!< \brief Indicates that nothing is recorded. */
     FLOW_VARIABLES = 1,     /*!< \brief Indicates that the current recording can
-                                        be used to compute the gradients with
+                                        be used to compute the gradients of the flow problem with
                                         respect to the conservative flow variables. */
     GEOMETRY_VARIABLES = 2, /*!< \brief Indicates that the current recording can
-                                        be used to compute the gradients with respect
+                                        be used to compute the gradients of the flow problem with respect
                                         to the mesh geometry variables. */
     FEM_VARIABLES = 3,      /*!< \brief Indicates that the current recording can
-                                        be used to compute the gradients with respect
+                                        be used to compute the gradients of the structural problem with respect
                                         to the structural displacements. */
-    ALL_VARIABLES = 4,
+    ALL_VARIABLES = 4,      /*!< \brief All variables (monolithic solution) */
     FLOW_CROSS_TERM = 5,    /*!< \brief Indicates that the current recording can
                                         be used to compute the gradients of the structural problem
                                         with respect to the flow variables. */
-    FEM_CROSS_TERM = 6      /*!< \brief Indicates that the current recording can
+    FEM_CROSS_TERM = 6,      /*!< \brief Indicates that the current recording can
                                         be used to compute the gradients of the mesh problem
                                         with respect to the structural displacements. */
+    GEOMETRY_CROSS_TERM = 7   /*!< \brief Indicates that the current recording can
+                                        be used to compute the gradients of the structural problem
+                                        with respect to the geometry variables. */
   };
 
   enum OF_KIND{

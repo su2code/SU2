@@ -317,11 +317,6 @@ void CDiscAdjSolver::SetMesh_Recording(CGeometry** geometry, CVolumetricMovement
 //    }
 //  }
 
-//  /*--- Set the Jacobian to zero since this is not done inside the meanflow iteration
-//   * when running the discrete adjoint solver. ---*/
-//
-//  direct_solver->Jacobian.SetValZero();
-
 }
 
 void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
@@ -596,6 +591,34 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   SetResidual_RMS(geometry, config);
 }
 
+void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
+  su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
+
+  /*--- Extract the adjoint values of the farfield values ---*/
+
+  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS)){
+    Local_Sens_Mach  = SU2_TYPE::GetDerivative(Mach);
+    Local_Sens_AoA   = SU2_TYPE::GetDerivative(Alpha);
+    Local_Sens_Temp  = SU2_TYPE::GetDerivative(Temperature);
+    Local_Sens_Press = SU2_TYPE::GetDerivative(Pressure);
+
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&Local_Sens_Mach,  &Total_Sens_Mach,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_AoA,   &Total_Sens_AoA,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_Temp,  &Total_Sens_Temp,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    Total_Sens_Mach  = Local_Sens_Mach;
+    Total_Sens_AoA   = Local_Sens_AoA;
+    Total_Sens_Temp  = Local_Sens_Temp;
+    Total_Sens_Press = Local_Sens_Press;
+#endif
+  }
+
+  /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
+
+}
+
 
 void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config){
 
@@ -669,38 +692,48 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 //  SetResidual_RMS(geometry, config);
 }
 
-void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
-  su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
+void CDiscAdjSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *config){
 
-  /*--- Extract the adjoint values of the farfield values ---*/
+  unsigned short iVar;
+  unsigned long iPoint;
 
-  if ((config->GetKind_Regime() == COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS)){
-    Local_Sens_Mach  = SU2_TYPE::GetDerivative(Mach);
-    Local_Sens_AoA   = SU2_TYPE::GetDerivative(Alpha);
-    Local_Sens_Temp  = SU2_TYPE::GetDerivative(Temperature);
-    Local_Sens_Press = SU2_TYPE::GetDerivative(Pressure);
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
 
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&Local_Sens_Mach,  &Total_Sens_Mach,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_Sens_AoA,   &Total_Sens_AoA,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_Sens_Temp,  &Total_Sens_Temp,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&Local_Sens_Press, &Total_Sens_Press, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-#else
-    Total_Sens_Mach  = Local_Sens_Mach;
-    Total_Sens_AoA   = Local_Sens_AoA;
-    Total_Sens_Temp  = Local_Sens_Temp;
-    Total_Sens_Press = Local_Sens_Press;
-#endif
+    /*--- Extract the adjoint solution ---*/
+
+    direct_solver->node[iPoint]->GetAdjointSolution(Solution);
+
+    for (iVar = 0; iVar < nVar; iVar++) node[iPoint]->SetCross_Term_Derivative(iVar, Solution[iVar]);
+
   }
 
-  /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
 
 }
+
+void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config){
+
+  unsigned short iDim;
+  unsigned long iPoint;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    /*--- Extract the adjoint solution ---*/
+
+    geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+
+    for (iDim = 0; iDim < nDim; iDim++) node[iPoint]->SetGeometry_CrossTerm_Derivative(iDim, Solution_Geometry[iDim]);
+
+  }
+
+
+}
+
 
 void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 
   bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
       config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool fsi = config->GetFSI_Simulation();
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -708,6 +741,11 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
       Solution[iVar] = node[iPoint]->GetSolution(iVar);
+    }
+    if (fsi){
+      for (iVar = 0; iVar < nVar; iVar++){
+        Solution[iVar] += node[iPoint]->GetCross_Term_Derivative(iVar);
+      }
     }
     if (dual_time){
       for (iVar = 0; iVar < nVar; iVar++){
@@ -723,12 +761,19 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
   bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
       config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 
+  bool fsi = config->GetFSI_Simulation();
+
   unsigned short iDim;
   unsigned long iPoint;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iDim = 0; iDim < nDim; iDim++){
       Solution_Geometry[iDim] = node[iPoint]->GetSolution_Geometry(iDim);
+    }
+    if (fsi){
+      for (iDim = 0; iDim < nDim; iDim++){
+        Solution_Geometry[iDim] += node[iPoint]->GetGeometry_CrossTerm_Derivative(iDim);
+      }
     }
 //    if (dual_time){
 //      for (iDim = 0; iDim < nVar; iDim++){
@@ -853,22 +898,3 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     }
 }
 
-
-void CDiscAdjSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *config){
-
-  unsigned short iVar;
-  unsigned long iPoint;
-  su2double residual;
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-    /*--- Extract the adjoint solution ---*/
-
-    direct_solver->node[iPoint]->GetAdjointSolution(Solution);
-
-    for (iVar = 0; iVar < nVar; iVar++) node[iPoint]->SetCross_Term_Derivative(iVar, Solution[iVar]);
-
-  }
-
-
-}

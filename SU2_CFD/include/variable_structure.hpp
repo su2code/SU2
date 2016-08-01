@@ -1861,6 +1861,19 @@ public:
   virtual void SetSolution_Geometry(su2double *val_solution_geometry);
 
   /*!
+   * \brief A virtual member. Get the geometry solution.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the solution for the index <i>val_var</i>.
+   */
+  virtual su2double GetGeometry_CrossTerm_Derivative(unsigned short val_var);
+
+  /*!
+   * \brief A virtual member. Set the value of the mesh solution (adjoint).
+   * \param[in] val_solution - Solution of the problem (acceleration).
+   */
+  virtual void SetGeometry_CrossTerm_Derivative(unsigned short iDim, su2double der);
+
+  /*!
    * \brief A virtual member. Set the value of the old geometry solution (adjoint).
    */
   virtual void Set_OldSolution_Geometry(void);
@@ -1870,6 +1883,28 @@ public:
    * \param[out] val_solution - old adjoint solution for coordinate iDim
    */
   virtual su2double Get_OldSolution_Geometry(unsigned short iDim);
+
+  /*!
+   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
+   */
+  virtual void Set_BGSSolution(void);
+
+  /*!
+   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
+   * \param[out] val_solution - old adjoint solution for coordinate iDim
+   */
+  virtual su2double Get_BGSSolution(unsigned short iDim);
+
+  /*!
+   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
+   */
+  virtual void Set_BGSSolution_Geometry(void);
+
+  /*!
+   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
+   * \param[out] val_solution - old adjoint solution for coordinate iDim
+   */
+  virtual su2double Get_BGSSolution_Geometry(unsigned short iDim);
 
   /*!
    * \brief  A virtual member. Set the contribution of crossed terms into the derivative.
@@ -4457,10 +4492,14 @@ private:
     su2double* DualTime_Derivative_n;
 
     su2double* Cross_Term_Derivative;
+    su2double* Geometry_CrossTerm_Derivative;
 
     su2double* Solution_Geometry;
     su2double* Solution_Geometry_Old;
     su2double* Geometry_Direct;
+
+    su2double* Solution_BGS_k;
+    su2double* Solution_Geometry_BGS_k;
 
 public:
     /*!
@@ -4540,6 +4579,19 @@ public:
     void SetSolution_Geometry(su2double *val_solution_geometry);
 
     /*!
+     * \brief A virtual member. Get the geometry solution.
+     * \param[in] val_var - Index of the variable.
+     * \return Value of the solution for the index <i>val_var</i>.
+     */
+    su2double GetGeometry_CrossTerm_Derivative(unsigned short val_var);
+
+    /*!
+     * \brief A virtual member. Set the value of the mesh solution (adjoint).
+     * \param[in] der - cross term derivative.
+     */
+    void SetGeometry_CrossTerm_Derivative(unsigned short iDim, su2double der);
+
+    /*!
      * \brief Set the value of the mesh solution (adjoint).
      * \param[in] val_solution - Solution of the problem (acceleration).
      */
@@ -4550,6 +4602,28 @@ public:
      * \param[out] val_solution - old adjoint solution for coordinate iDim
      */
     su2double Get_OldSolution_Geometry(unsigned short iDim);
+
+    /*!
+     * \brief Set the value of the adjoint solution in the previous BGS subiteration.
+     */
+    void Set_BGSSolution(void);
+
+    /*!
+     * \brief Get the value of the adjoint solution in the previous BGS subiteration.
+     * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
+     */
+    su2double Get_BGSSolution(unsigned short iDim);
+
+    /*!
+     * \brief Set the value of the adjoint geometry solution in the previous BGS subiteration.
+     */
+    void Set_BGSSolution_Geometry(void);
+
+    /*!
+     * \brief Get the value of the adjoint geometry solution in the previous BGS subiteration.
+     * \param[out] val_solution - geometrical adjoint solution in the previous BGS subiteration.
+     */
+    su2double Get_BGSSolution_Geometry(unsigned short iDim);
 
     /*!
      * \brief Set the contribution of crossed terms into the derivative.
@@ -4596,6 +4670,8 @@ private:
     su2double* Solution_Direct_Accel;
 
     su2double* Cross_Term_Derivative;
+
+    su2double* Solution_BGS_k;
 
 public:
     /*!
@@ -4768,6 +4844,17 @@ public:
      * \brief Get the contribution of crossed terms into the derivative.
      */
     su2double GetCross_Term_Derivative(unsigned short iVar);
+
+    /*!
+     * \brief Set the value of the adjoint solution in the previous BGS subiteration.
+     */
+    void Set_BGSSolution(void);
+
+    /*!
+     * \brief Get the value of the adjoint solution in the previous BGS subiteration.
+     * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
+     */
+    su2double Get_BGSSolution(unsigned short iDim);
 
 };
 
