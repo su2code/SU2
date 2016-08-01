@@ -3559,8 +3559,113 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
                                               const su2double      *metricNormalsFace,
                                               su2double            *symmFluxes) {
 
-  cout << "CFEM_DG_NSSolver::SymmetrizingFluxesFace: Not implemented yet" << endl;
-  exit(1);
+  /* Constant factor present in the heat flux vector and the ratio of the
+     second viscosity and the viscosity itself. */
+  const su2double factHeatFlux =  Gamma/Prandtl_Lam;
+  const su2double lambdaOverMu = -2.0/3.0;
+
+  /*--- Set two factors such that either the original or the transposed diffusion
+        tensor is taken in the symmetrizing fluxes. ---*/
+
+  /* Use the following line for the original formulation. */
+  const su2double alpha = lambdaOverMu;
+
+  /* Use the following line for the transposed formulation. */
+  //const su2double alpha = 1.0;
+
+  /* Other constants, which appear in the symmetrizing fluxes. */
+  const su2double beta     = lambdaOverMu + 1.0 - alpha;
+  const su2double alphaP1  = alpha + 1.0;
+  const su2double lambdaP1 = lambdaOverMu + 1.0;
+
+  /*--- Loop over the number of integration points of the face. ---*/
+  for(unsigned short i=0; i<nInt; ++i) {
+
+    /* Easier storage of the variables for this integration point. */
+    const su2double *sol0   = solInt0 + nVar*i;
+    const su2double *sol1   = solInt1 + nVar*i;
+    const su2double *normal = metricNormalsFace + i*(nDim+1);
+    su2double       *flux   = symmFluxes + nVar*i*nDim;
+
+    /* Determine the difference in conservative variables. Multiply these
+       differences by the length of the normal vector to obtain the correct
+       dimensions for the symmetrizing fluxes. */
+    su2double dSol[5];
+    for(unsigned short j=0; j<nVar; ++j)
+      dSol[j] = normal[nDim]*(sol0[j] - sol1[j]);
+
+    /*--- Compute the terms that occur in the symmetrizing fluxes
+          for state 0 and state 1. ---*/
+    const su2double DensityInv0 = 1.0/sol0[0],          DensityInv1 = 1.0/sol1[0];
+    const su2double Etot0 = DensityInv0*sol0[nDim+1],   Etot1 = DensityInv1*sol1[nDim+1];
+    const su2double nu0 = DensityInv0*viscosityInt0[i], nu1 = DensityInv1*viscosityInt1[i];
+
+    su2double velNorm0 = 0.0, velNorm1 = 0.0, velSquared0 = 0.0, velSquared1 = 0.0;
+    su2double vel0[3], vel1[3];
+    for(unsigned short j=0; j<nDim; ++j) {
+      vel0[j] = DensityInv0*sol0[j+1];
+      vel1[j] = DensityInv1*sol1[j+1];
+
+      velNorm0 += vel0[j]*normal[j];
+      velNorm1 += vel1[j]*normal[j];
+
+      velSquared0 += vel0[j]*vel0[j];
+      velSquared1 += vel1[j]*vel1[j];
+    }
+
+    /*--- Compute the average of the terms that occur in the symmetrizing
+          fluxes. The average of the left and right terms is taken, rather
+          than the terms evaluated at the average state, because the viscous
+          fluxes are also computed as the average of the fluxes and not the
+          fluxes of the averaged state. ---*/
+    const su2double nuAvg = 0.5*(nu0 + nu1);
+    const su2double nuVelSquaredAvg     = 0.5*(nu0*velSquared0 + nu1*velSquared1);
+    const su2double nuVelNormAve        = 0.5*(nu0*velNorm0    + nu1*velNorm1);
+    const su2double nuEminVelSquaredAve = 0.5*(nu0*(Etot0-velSquared0)
+                                        +      nu1*(Etot1-velSquared1));
+
+    su2double nuVelAvg[3], nuVelVelAvg[3];
+    for(unsigned short j=0; j<nDim; ++j) {
+      nuVelAvg[j]    = 0.5*(nu0*vel0[j]          + nu1*vel1[j]);
+      nuVelVelAvg[j] = 0.5*(nu0*vel0[j]*velNorm0 + nu1*vel1[j]*velNorm1);
+    }
+
+    /*--- Abbreviations to make the flux computations a bit more efficient. ---*/
+    su2double abv1 = 0.0, abv2 = 0.0;
+    for(unsigned short j=0; j<nDim; ++j) {
+      abv1 += normal[j]  *dSol[j+1];
+      abv2 += nuVelAvg[j]*dSol[j+1];
+    }
+
+    const su2double abv3 = beta*(nuAvg*abv1 - nuVelNormAve*dSol[0]);
+    const su2double abv4 = factHeatFlux*(nuAvg*dSol[nDim+1] - abv2
+                         -               nuEminVelSquaredAve*dSol[0]) + abv2;
+
+    /*--- Loop over the dimensions to compute the symmetrizing fluxes.
+          ll is the counter for flux. ---*/
+    unsigned short ll = 0;
+    for(unsigned short k=0; k<nDim; ++k) {
+
+      /* The symmetrizing density flux, which is zero. */
+      flux[ll++] = 0.0;
+
+      /* Loop over the dimensions to compute the symmetrizing momentum fluxes. */
+      for(unsigned short j=0; j<nDim; ++j, ++ll) {
+
+        /* Make a distinction between k == j and k != j and compute
+           the momentum fluxes accordingly. */
+        if(k == j) flux[ll] = abv3 + alphaP1*normal[j]*(nuAvg*dSol[j+1]
+                                   -                    nuVelAvg[j+1]*dSol[0]);
+        else       flux[ll] = nuAvg*(normal[k]*dSol[j+1] + alpha*normal[j]*dSol[k+1])
+                            - (normal[k]*nuVelAvg[j] + alpha*normal[j]*nuVelAvg[k])*dSol[0];
+      }
+
+      /* The symmetrizing energy flux. */
+      flux[ll++] = normal[k]*abv4
+                 - (lambdaP1*nuVelVelAvg[k] + nuVelSquaredAvg*normal[k])*dSol[0]
+                 + alpha*nuVelNormAve*dSol[k+1] + beta*nuVelAvg[k]*abv1;
+    }
+  }
 }
 
 void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {

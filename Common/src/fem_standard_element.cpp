@@ -3469,6 +3469,8 @@ void FEMStandardInternalFaceClass::Copy(const FEMStandardInternalFaceClass &othe
   swapFaceInElementSide0 = other.swapFaceInElementSide0;
   swapFaceInElementSide1 = other.swapFaceInElementSide1;
 
+  penaltyConstantFace = other.penaltyConstantFace;
+
   rDOFsFaceSide0 = other.rDOFsFaceSide0;
   rDOFsFaceSide1 = other.rDOFsFaceSide1;
   sDOFsFaceSide0 = other.sDOFsFaceSide0;
