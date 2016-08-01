@@ -268,16 +268,18 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   /*--- Determine the size of the vector to store residuals that come from the
         integral over the faces and determine the number of entries in this
         vector for the owned DOFs. ---*/
+  const bool viscous = config->GetViscous();
 
-  /* First the internal matching faces. */
+  /*--- First the internal matching faces. ---*/
   unsigned long sizeVecResFaces = 0;
   for(unsigned long i=0; i<nMatchingInternalFaces; ++i) {
+
+    /* The terms that only contribute to the DOFs located on the face. */
     const unsigned short ind = matchingInternalFaces[i].indStandardElement;
     const unsigned short nDOFsFace0 = standardMatchingFacesSol[ind].GetNDOFsFaceSide0();
     const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
 
     sizeVecResFaces += nDOFsFace0;
-
     for(unsigned short j=0; j<nDOFsFace0; ++j)
       ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolFaceSide0[j]+1];
 
@@ -285,6 +287,23 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
       sizeVecResFaces += nDOFsFace1;
       for(unsigned short j=0; j<nDOFsFace1; ++j)
         ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolFaceSide1[j]+1];
+    }
+
+    /* The symmetrizing terms, which are only present for a viscous discretization,
+       contribute to all the DOFs of the adjacent elements. */
+    if( viscous ) {
+      const unsigned short nDOFsElem0 = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
+      const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
+
+      sizeVecResFaces += nDOFsElem0;
+      for(unsigned short j=0; j<nDOFsElem0; ++j)
+        ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolElementSide0[j]+1];
+
+      if(matchingInternalFaces[i].elemID1 < nVolElemOwned) {
+        sizeVecResFaces += nDOFsElem1;
+        for(unsigned short j=0; j<nDOFsElem1; ++j)
+          ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolElementSide1[j]+1];
+      }
     }
   }
 
@@ -304,9 +323,20 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
         const unsigned short ind       = surfElem[i].indStandardElement;
         const unsigned short nDOFsFace = standardBoundaryFacesSol[ind].GetNDOFsFace();
 
+        /* The terms that only contribute to the DOFs located on the face. */
         sizeVecResFaces += nDOFsFace;
         for(unsigned short j=0; j<nDOFsFace; ++j)
           ++nEntriesResFaces[surfElem[i].DOFsSolFace[j]+1];
+
+        /* The symmetrizing terms, which are only present for a viscous discretization,
+           contribute to all the DOFs of the adjacent elements. */
+        if( viscous ) {
+          const unsigned short nDOFsElem = standardBoundaryFacesSol[ind].GetNDOFsElem();
+
+          sizeVecResFaces += nDOFsElem;
+          for(unsigned short j=0; j<nDOFsElem; ++j)
+            ++nEntriesResFaces[surfElem[i].DOFsSolElement[j]+1];
+        }
       }
     }
   }
@@ -327,6 +357,8 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   /* First the loop over the internal matching faces. */
   sizeVecResFaces = 0;
   for(unsigned long i=0; i<nMatchingInternalFaces; ++i) {
+
+    /* The terms that only contribute to the DOFs located on the face. */
     const unsigned short ind = matchingInternalFaces[i].indStandardElement;
     const unsigned short nDOFsFace0 = standardMatchingFacesSol[ind].GetNDOFsFaceSide0();
     const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
@@ -342,6 +374,25 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
         entriesResFaces[jj] = sizeVecResFaces++;
       }
     }
+
+    /* The symmetrizing terms, which are only present for a viscous discretization,
+       contribute to all the DOFs of the adjacent elements. */
+    if( viscous ) {
+      const unsigned short nDOFsElem0 = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
+      const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
+
+      for(unsigned short j=0; j<nDOFsElem0; ++j) {
+        unsigned long jj    = counterEntries[matchingInternalFaces[i].DOFsSolElementSide0[j]]++;
+        entriesResFaces[jj] = sizeVecResFaces++;
+      }
+
+      if(matchingInternalFaces[i].elemID1 < nVolElemOwned) {
+        for(unsigned short j=0; j<nDOFsElem1; ++j) {
+          unsigned long jj    = counterEntries[matchingInternalFaces[i].DOFsSolElementSide1[j]]++;
+          entriesResFaces[jj] = sizeVecResFaces++;
+        }
+      }
+    }
   }
 
   /* And the physical boundary faces. Exclude the periodic boundaries,
@@ -355,6 +406,8 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
       /*--- Loop over the surface elements to set entriesResFaces. ---*/
       for(unsigned long i=0; i<nSurfElem; ++i) {
+
+        /* The terms that only contribute to the DOFs located on the face. */
         const unsigned short ind       = surfElem[i].indStandardElement;
         const unsigned short nDOFsFace = standardBoundaryFacesSol[ind].GetNDOFsFace();
 
@@ -362,14 +415,25 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
           unsigned long jj    = counterEntries[surfElem[i].DOFsSolFace[j]]++;
           entriesResFaces[jj] = sizeVecResFaces++;
         }
+
+        /* The symmetrizing terms, which are only present for a viscous discretization,
+           contribute to all the DOFs of the adjacent elements. */
+        if( viscous ) {
+          const unsigned short nDOFsElem = standardBoundaryFacesSol[ind].GetNDOFsElem();
+
+          for(unsigned short j=0; j<nDOFsElem; ++j) {
+            unsigned long jj    = counterEntries[surfElem[i].DOFsSolElement[j]]++;
+            entriesResFaces[jj] = sizeVecResFaces++;
+          }
+        }
       }
     }
   }
 
   /*--- Check for a restart and set up the variables at each node
-   appropriately. Coarse multigrid levels will be intitially set to
-   the farfield values bc the solver will immediately interpolate
-   the solution from the finest mesh to the coarser levels. ---*/
+        appropriately. Coarse multigrid levels will be intitially set to
+        the farfield values bc the solver will immediately interpolate
+        the solution from the finest mesh to the coarser levels. ---*/
   
   if (!restart || (iMesh != MESH_0)) {
     
@@ -1769,53 +1833,12 @@ void CFEM_DG_EulerSolver::External_Residual(CGeometry *geometry, CSolver **solve
   /*--------------------------------------------------------------------------*/
   /*--- Part 2: Accumulate the residuals for the owned DOFs and multiply   ---*/
   /*---         by the inverse of either the mass matrix or the lumped     ---*/
-  /*---         mass matrix. The accumulation of the residuals is carried  ---*/
-  /*---         inside the loop over the owned volume elements, such that  ---*/
-  /*---         an OpenMP parallelization of this loop can be done.        ---*/
+  /*---         mass matrix.                                               ---*/
   /*--------------------------------------------------------------------------*/
 
-  /* Loop over the owned volume elements. */
-  for(unsigned long l=0; l<nVolElemOwned; ++l) {
-
-    /* Easier storage of the residuals for this volume element. */
-    su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
-
-    /*--- Loop over the DOFs of the element and accumulate the residuals. ---*/
-    for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
-
-      su2double *resDOF      = res + nVar*i;
-      const unsigned long ii = volElem[l].offsetDOFsSolLocal + i;
-      for(unsigned long j=nEntriesResFaces[ii]; j<nEntriesResFaces[ii+1]; ++j) {
-        const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
-        for(unsigned short k=0; k<nVar; ++k)
-          resDOF[k] += resFace[k];
-      }
-    }
-
-    /* Check whether a multiplication must be carried out with the inverse of
-       the lumped mass matrix or the full mass matrix. Note that it is crucial
-       that the test is performed with the pointer lumpedMassMatrix and not
-       with massMatrix. The reason is that for implicit time stepping schemes
-       both arrays are in use. */
-    if( volElem[l].lumpedMassMatrix ) {
-
-      /* Multiply the residual with the inverse of the lumped mass matrix. */
-      for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
-
-        su2double *resDOF = res + nVar*i;
-        su2double lMInv   = 1.0/volElem[l].lumpedMassMatrix[i];
-        for(unsigned short k=0; k<nVar; ++k) resDOF[k] *= lMInv;
-      }
-    }
-    else {
-
-      /* Multiply the residual with the inverse of the mass matrix.
-         Use the array fluxes as temporary storage. */
-      memcpy(fluxes, res, nVar*volElem[l].nDOFsSol*sizeof(su2double));
-      MatrixProduct(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
-                    volElem[l].massMatrix, fluxes, res);
-    }
-  }
+  /* Call the function CreateFinalResidual to carry out the task. The array
+     fluxes is passed as temporary storage. */
+  CreateFinalResidual(fluxes);
 
   /*--- If the MKL is used the temporary storage must be released again. ---*/
 #ifdef HAVE_MKL
@@ -1896,6 +1919,55 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
   /* General function to compute the fluxes in the integration points. */
   ComputeInviscidFluxesFace(config, nInt, internalFace->metricNormalsFace,
                             solIntL, solIntR, fluxes, numerics);
+}
+
+void CFEM_DG_EulerSolver::CreateFinalResidual(su2double *tmpRes) {
+
+  /* Loop over the owned volume elements. */
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+    /* Easier storage of the residuals for this volume element. */
+    su2double *res = VecResDOFs.data() + nVar*volElem[l].offsetDOFsSolLocal;
+
+    /*--- Loop over the DOFs of the element and accumulate the residuals.
+          This accumulation is carried inside the loop over the owned volume
+          elements, such that an OpenMP parallelization of the loop over the
+          volume elements is straightforward. ---*/
+    for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
+
+      su2double *resDOF      = res + nVar*i;
+      const unsigned long ii = volElem[l].offsetDOFsSolLocal + i;
+      for(unsigned long j=nEntriesResFaces[ii]; j<nEntriesResFaces[ii+1]; ++j) {
+        const su2double *resFace = VecResFaces.data() + nVar*entriesResFaces[j];
+        for(unsigned short k=0; k<nVar; ++k)
+          resDOF[k] += resFace[k];
+      }
+    }
+
+    /* Check whether a multiplication must be carried out with the inverse of
+       the lumped mass matrix or the full mass matrix. Note that it is crucial
+       that the test is performed with the pointer lumpedMassMatrix and not
+       with massMatrix. The reason is that for implicit time stepping schemes
+       both arrays are in use. */
+    if( volElem[l].lumpedMassMatrix ) {
+
+      /* Multiply the residual with the inverse of the lumped mass matrix. */
+      for(unsigned short i=0; i<volElem[l].nDOFsSol; ++i) {
+
+        su2double *resDOF = res + nVar*i;
+        su2double lMInv   = 1.0/volElem[l].lumpedMassMatrix[i];
+        for(unsigned short k=0; k<nVar; ++k) resDOF[k] *= lMInv;
+      }
+    }
+    else {
+
+      /* Multiply the residual with the inverse of the mass matrix.
+         Use the array tmpRes as temporary storage. */
+      memcpy(tmpRes, res, nVar*volElem[l].nDOFsSol*sizeof(su2double));
+      MatrixProduct(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
+                    volElem[l].massMatrix, tmpRes, res);
+    }
+  }
 }
 
 void CFEM_DG_EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
@@ -3036,16 +3108,20 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
   /*--- Allocate the memory for some temporary storage needed to compute the
         residual efficiently. Note that when the MKL library is used
         a special allocation is used to optimize performance. Furthermore, note
-        the max function for the fluxes. This is because these arrays are also used
-        as temporary storage for the solution of the DOFs. ---*/
+        the size for fluxes and the max function for the viscFluxes. This is
+        because these arrays are also used as temporary storage for the solution
+        of the DOFs. ---*/
   su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes;
   su2double *viscosityIntL, *viscosityIntR;
+
+  unsigned short sizeFluxes = nIntegrationMax*nDim;
+  sizeFluxes = max(sizeFluxes, nDOFsMax);
 
 #ifdef HAVE_MKL
   solIntL       = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
   solIntR       = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
   gradSolInt    = (su2double *) mkl_malloc(nIntegrationMax*nVar*nDim*sizeof(su2double), 64);
-  fluxes        = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
+  fluxes        = (su2double *) mkl_malloc(sizeFluxes*nVar*sizeof(su2double), 64);
   viscFluxes    = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
   viscosityIntL = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
   viscosityIntR = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
@@ -3053,7 +3129,7 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
   vector<su2double> helpGradSolInt(nIntegrationMax*nVar*nDim);
-  vector<su2double> helpFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
+  vector<su2double> helpFluxes(sizeFluxes*nVar);
   vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
   vector<su2double> helpViscosityIntL(nIntegrationMax);
   vector<su2double> helpViscosityIntR(nIntegrationMax);
@@ -3211,6 +3287,24 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
     /*---         of this matching face.                                   ---*/
     /*------------------------------------------------------------------------*/
 
+    /* Compute the symmetrizing fluxes in the nDim directions. */
+    SymmetrizingFluxesFace(nInt, solIntL, solIntR, viscosityIntL, viscosityIntR,
+                           matchingInternalFaces[l].metricNormalsFace, fluxes);
+
+    /*--- Multiply the fluxes just computed by their integration weights and
+          -theta/2. The parameter theta is the parameter in the Interior Penalty
+          formulation, the factor 1/2 comes in from the averaging and the minus
+          sign is from the convention that the viscous fluxes comes with a minus
+          sign in this code. ---*/
+    const su2double halfTheta = 0.5*config->GetTheta_Interior_Penalty_DGFEM();
+
+    for(unsigned short i=0; i<nInt; ++i) {
+      su2double *flux        = fluxes + i*nVar;
+      const su2double wTheta = -halfTheta*weights[i];
+
+      for(unsigned short j=0; j<nVar; ++j)
+        flux[j] *= wTheta;
+    }
 
     /*------------------------------------------------------------------------*/
     /*--- Step 6: Distribute the symmetrizing terms to the DOFs. Note that ---*/
@@ -3218,18 +3312,47 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
     /*---         adjacent elements, not only to the DOFs of the face.     ---*/
     /*------------------------------------------------------------------------*/
 
+    /* Get the element information of side 0 of the face. */
+    const unsigned short nDOFsElem0    = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
+    const su2double *derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide0();
 
+    su2double *resElem0 = VecResFaces.data() + indResFaces*nVar;
+    indResFaces        += nDOFsElem0;
+
+    /* Call the general function to carry out the matrix product to compute
+       the residual for side 0. */
+    MatrixProduct(nDOFsElem0, nVar, nInt*nDim, derBasisElemTrans, fluxes, resElem0);
+    
+    /* Check if the element to the right is an owned element. Only then
+       the residual needs to be computed. */
+    if(matchingInternalFaces[l].elemID1 < nVolElemOwned) {
+
+      /* Get the element information of side 1 of the face. */
+      const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
+      derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide1();
+
+      su2double *resElem1 = VecResFaces.data() + indResFaces*nVar;
+      indResFaces        += nDOFsElem1;
+
+      /* Call the general function to carry out the matrix product to compute
+         the residual for side 1. Afterwards the residual is negated, because the
+         normal is pointing into the adjacent element. */
+      MatrixProduct(nDOFsElem1, nVar, nInt*nDim, derBasisElemTrans, fluxes, resElem1);
+
+      for(unsigned short i=0; i<(nVar*nDOFsElem1); ++i)
+        resElem1[i] = -resElem1[i];
+    }
   }
-
 
   /*--------------------------------------------------------------------------*/
   /*--- Part 2: Accumulate the residuals for the owned DOFs and multiply   ---*/
   /*---         by the inverse of either the mass matrix or the lumped     ---*/
-  /*---         mass matrix. The accumulation of the residuals is carried  ---*/
-  /*---         inside the loop over the owned volume elements, such that  ---*/
-  /*---         an OpenMP parallelization of this loop can be done.        ---*/
+  /*---         mass matrix.                                               ---*/
   /*--------------------------------------------------------------------------*/
 
+  /* Call the function CreateFinalResidual to carry out the task. The array
+     fluxes is passed as temporary storage. */
+  CreateFinalResidual(fluxes);
 
   /*--- If the MKL is used the temporary storage must be released again. ---*/
 #ifdef HAVE_MKL
@@ -3425,6 +3548,123 @@ void CFEM_DG_NSSolver::PenaltyTermsFluxFace(const unsigned short nInt,
     flux[0] = 0;
     for(unsigned short j=1; j<nVar; ++j)
       flux[j] = penFace*(sol0[j] - sol1[j]);
+  }
+}
+
+void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
+                                              const su2double      *solInt0,
+                                              const su2double      *solInt1,
+                                              const su2double      *viscosityInt0,
+                                              const su2double      *viscosityInt1,
+                                              const su2double      *metricNormalsFace,
+                                              su2double            *symmFluxes) {
+
+  /* Constant factor present in the heat flux vector and the ratio of the
+     second viscosity and the viscosity itself. */
+  const su2double factHeatFlux =  Gamma/Prandtl_Lam;
+  const su2double lambdaOverMu = -2.0/3.0;
+
+  /*--- Set two factors such that either the original or the transposed diffusion
+        tensor is taken in the symmetrizing fluxes. ---*/
+
+  /* Use the following line for the original formulation. */
+  const su2double alpha = lambdaOverMu;
+
+  /* Use the following line for the transposed formulation. */
+  //const su2double alpha = 1.0;
+
+  /* Other constants, which appear in the symmetrizing fluxes. */
+  const su2double beta     = lambdaOverMu + 1.0 - alpha;
+  const su2double alphaP1  = alpha + 1.0;
+  const su2double lambdaP1 = lambdaOverMu + 1.0;
+
+  /*--- Loop over the number of integration points of the face. ---*/
+  for(unsigned short i=0; i<nInt; ++i) {
+
+    /* Easier storage of the variables for this integration point. */
+    const su2double *sol0   = solInt0 + nVar*i;
+    const su2double *sol1   = solInt1 + nVar*i;
+    const su2double *normal = metricNormalsFace + i*(nDim+1);
+    su2double       *flux   = symmFluxes + nVar*i*nDim;
+
+    /* Determine the difference in conservative variables. Multiply these
+       differences by the length of the normal vector to obtain the correct
+       dimensions for the symmetrizing fluxes. */
+    su2double dSol[5];
+    for(unsigned short j=0; j<nVar; ++j)
+      dSol[j] = normal[nDim]*(sol0[j] - sol1[j]);
+
+    /*--- Compute the terms that occur in the symmetrizing fluxes
+          for state 0 and state 1. ---*/
+    const su2double DensityInv0 = 1.0/sol0[0],          DensityInv1 = 1.0/sol1[0];
+    const su2double Etot0 = DensityInv0*sol0[nDim+1],   Etot1 = DensityInv1*sol1[nDim+1];
+    const su2double nu0 = DensityInv0*viscosityInt0[i], nu1 = DensityInv1*viscosityInt1[i];
+
+    su2double velNorm0 = 0.0, velNorm1 = 0.0, velSquared0 = 0.0, velSquared1 = 0.0;
+    su2double vel0[3], vel1[3];
+    for(unsigned short j=0; j<nDim; ++j) {
+      vel0[j] = DensityInv0*sol0[j+1];
+      vel1[j] = DensityInv1*sol1[j+1];
+
+      velNorm0 += vel0[j]*normal[j];
+      velNorm1 += vel1[j]*normal[j];
+
+      velSquared0 += vel0[j]*vel0[j];
+      velSquared1 += vel1[j]*vel1[j];
+    }
+
+    /*--- Compute the average of the terms that occur in the symmetrizing
+          fluxes. The average of the left and right terms is taken, rather
+          than the terms evaluated at the average state, because the viscous
+          fluxes are also computed as the average of the fluxes and not the
+          fluxes of the averaged state. ---*/
+    const su2double nuAvg = 0.5*(nu0 + nu1);
+    const su2double nuVelSquaredAvg     = 0.5*(nu0*velSquared0 + nu1*velSquared1);
+    const su2double nuVelNormAve        = 0.5*(nu0*velNorm0    + nu1*velNorm1);
+    const su2double nuEminVelSquaredAve = 0.5*(nu0*(Etot0-velSquared0)
+                                        +      nu1*(Etot1-velSquared1));
+
+    su2double nuVelAvg[3], nuVelVelAvg[3];
+    for(unsigned short j=0; j<nDim; ++j) {
+      nuVelAvg[j]    = 0.5*(nu0*vel0[j]          + nu1*vel1[j]);
+      nuVelVelAvg[j] = 0.5*(nu0*vel0[j]*velNorm0 + nu1*vel1[j]*velNorm1);
+    }
+
+    /*--- Abbreviations to make the flux computations a bit more efficient. ---*/
+    su2double abv1 = 0.0, abv2 = 0.0;
+    for(unsigned short j=0; j<nDim; ++j) {
+      abv1 += normal[j]  *dSol[j+1];
+      abv2 += nuVelAvg[j]*dSol[j+1];
+    }
+
+    const su2double abv3 = beta*(nuAvg*abv1 - nuVelNormAve*dSol[0]);
+    const su2double abv4 = factHeatFlux*(nuAvg*dSol[nDim+1] - abv2
+                         -               nuEminVelSquaredAve*dSol[0]) + abv2;
+
+    /*--- Loop over the dimensions to compute the symmetrizing fluxes.
+          ll is the counter for flux. ---*/
+    unsigned short ll = 0;
+    for(unsigned short k=0; k<nDim; ++k) {
+
+      /* The symmetrizing density flux, which is zero. */
+      flux[ll++] = 0.0;
+
+      /* Loop over the dimensions to compute the symmetrizing momentum fluxes. */
+      for(unsigned short j=0; j<nDim; ++j, ++ll) {
+
+        /* Make a distinction between k == j and k != j and compute
+           the momentum fluxes accordingly. */
+        if(k == j) flux[ll] = abv3 + alphaP1*normal[j]*(nuAvg*dSol[j+1]
+                                   -                    nuVelAvg[j+1]*dSol[0]);
+        else       flux[ll] = nuAvg*(normal[k]*dSol[j+1] + alpha*normal[j]*dSol[k+1])
+                            - (normal[k]*nuVelAvg[j] + alpha*normal[j]*nuVelAvg[k])*dSol[0];
+      }
+
+      /* The symmetrizing energy flux. */
+      flux[ll++] = normal[k]*abv4
+                 - (lambdaP1*nuVelVelAvg[k] + nuVelSquaredAvg*normal[k])*dSol[0]
+                 + alpha*nuVelNormAve*dSol[k+1] + beta*nuVelAvg[k]*abv1;
+    }
   }
 }
 

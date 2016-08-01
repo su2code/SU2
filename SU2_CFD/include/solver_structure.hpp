@@ -76,6 +76,7 @@ protected:
   nPrimVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nSecondaryVar,                     /*!< \brief Number of primitive variables of the problem. */
   nSecondaryVarGrad,                 /*!< \brief Number of primitive variables of the problem in the gradient computation. */
+  nVarGrad,                 /*!< \brief Number of variables for deallocating the LS cvector. */
 	nDim;													/*!< \brief Number of dimensions of the problem. */
 	unsigned long nPoint;					/*!< \brief Number of points of the computational grid. */
   unsigned long nPointDomain; 	/*!< \brief Number of points of the computational grid. */
@@ -5670,6 +5671,16 @@ protected:
                                  const su2double     *solR,
                                  su2double           *fluxes,
                                  CNumerics           *numerics);
+
+  /*!
+   * \brief Function, which creates the final residual by accumulating the
+            individual contributions and multiply the result by the inverse
+            of the (lumped) mass matrix.
+   * \param[in,out] tmpRes - Temporary storage array needed for multiplication
+                             with the inverse of the mass matrix.
+   */
+  void CreateFinalResidual(su2double *tmpRes);
+
   /*!
    * \brief Function, which computes the inviscid fluxes in face points of
             a matching internal face.
@@ -5989,6 +6000,26 @@ private:
                             const su2double      lenScale1,
                             const su2double      *metricNormalsFace,
                             su2double            *penaltyFluxes);
+
+  /*!
+   * \brief Function to compute the penalty terms in the integration
+            points of a face.
+   * \param[in]  nInt              - Number of integration points of the face.
+   * \param[in]  solInt0           - Solution in the integration points of side 0.
+   * \param[in]  solInt1           - Solution in the integration points of side 1.
+   * \param[in]  viscosityInt0     - Viscosity in the integration points of side 0.
+   * \param[in]  viscosityInt1     - Viscosity in the integration points of side 1.
+   * \param[in]  metricNormalsFace - Metric terms in the integration points, which
+                                     contain the normals.
+   * \param[out] symmFluxes        - Penalty fluxes in the integration points.
+   */
+  void SymmetrizingFluxesFace(const unsigned short nInt,
+                              const su2double      *solInt0,
+                              const su2double      *solInt1,
+                              const su2double      *viscosityInt0,
+                              const su2double      *viscosityInt1,
+                              const su2double      *metricNormalsFace,
+                              su2double            *symmFluxes);
 
   /*!
    * \brief Function to compute the viscous normal fluxes in the integration

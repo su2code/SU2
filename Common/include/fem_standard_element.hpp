@@ -1108,6 +1108,13 @@ private:
   su2double *matDerBasisElemIntegrationSide1;       /*!< \brief Matrix of drLagBasisElemIntegrationSide1, dsLagBasisElemIntegrationSide1
                                                                 and dtLagBasisElemIntegrationSide1 combined for efficiency
                                                                 when using BLAS routines. */
+
+  su2double *matDerBasisElemIntegrationTransposeSide0; /*!< \brief Transpose of matDerBasisElemIntegrationSide0, such that
+                                                                   the residuals of the symmetrizing terms can be computed
+                                                                   with a single matrix multiplication. */
+  su2double *matDerBasisElemIntegrationTransposeSide1; /*!< \brief Transpose of matDerBasisElemIntegrationSide1, such that
+                                                                   the residuals of the symmetrizing terms can be computed
+                                                                   with a single matrix multiplication. */
 public:
   /*!
   * \brief Standard Constructor. Initialize some pointers to NULL.
@@ -1220,6 +1227,22 @@ public:
   * \return  The const pointer to data, which stores this information.
   */
   const su2double *GetMatDerBasisElemIntegrationSide1(void) const;
+
+  /*!
+  * \brief Function, which makes available the transpose of the matrix with
+           the derivatives of the element basis functions of side 0 in the
+           integration points.
+  * \return  The const pointer to data, which stores this information.
+  */
+  const su2double *GetMatDerBasisElemIntegrationTransposeSide0(void) const;
+
+  /*!
+  * \brief Function, which makes available the transpose of the matrix with
+           the derivatives of the element basis functions of side 1 in the
+           integration points.
+  * \return  The const pointer to data, which stores this information.
+  */
+  const su2double *GetMatDerBasisElemIntegrationTransposeSide1(void) const;
 
   /*!
   * \brief Function, which makes available the face basis functions of side 0
