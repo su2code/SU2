@@ -53,9 +53,10 @@ int main(int argc, char *argv[]) {
   /*--- MPI initialization, and buffer setting ---*/
   
 #ifdef HAVE_MPI
-  int *bptr, bl;
+  int  buffsize;
+  char *buffptr;
   SU2_MPI::Init(&argc, &argv);
-  MPI_Buffer_attach( malloc(BUFSIZE), BUFSIZE );
+  MPI_Buffer_attach(malloc(BUFSIZE), BUFSIZE);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -192,7 +193,7 @@ int main(int argc, char *argv[]) {
     geometry_container[iZone][MESH_0]->SetBoundaries(config_container[iZone]);
     
   }
-
+  
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
   
@@ -308,7 +309,7 @@ int main(int argc, char *argv[]) {
   }
   
   /*--- Coupling between zones (limited to two zones at the moment) ---*/
-
+  
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
   
   if ((nZone == 2) && !(fsi)) {
@@ -338,14 +339,14 @@ int main(int argc, char *argv[]) {
  
   /*--- Check for a dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
   if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY
-   && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
+      && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
     ExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
-
+  
   /*--- Initiate value at each interface for the mixing plane ---*/
   if(config_container[ZONE_0]->GetBoolMixingPlane())
-   for (iZone = 0; iZone < nZone; iZone++)
-     iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
-
+    for (iZone = 0; iZone < nZone; iZone++)
+      iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+  
   /*--- Main external loop of the solver. Within this loop, each iteration ---*/
   
   if (rank == MASTER_NODE)
@@ -358,7 +359,7 @@ int main(int argc, char *argv[]) {
 #else
   StartTime = MPI_Wtime();
 #endif
-
+  
   /*--- This is temporal and just to check. It will have to be added to the regular history file ---*/
   
   ofstream historyFile_FSI;
@@ -371,11 +372,12 @@ int main(int argc, char *argv[]) {
     historyFile_FSI << "Time,Iteration,Aitken,URes,logResidual,orderMagnResidual" << endl;
     historyFile_FSI.close();
   }
-
+  
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
     
     /*--- Set the value of the external iteration. ---*/
     for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetExtIter(ExtIter);
+    
     
     /*--- Read the target pressure ---*/
 
@@ -388,16 +390,17 @@ int main(int argc, char *argv[]) {
     if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
       output->SetHeat_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                     geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
- 
-      /*--- Perform a single iteration of the chosen PDE solver. ---*/
-
-      /*--- Run a single iteration of the problem using the driver class. ---*/
-
-      driver->Run(iteration_container, output, integration_container,
-                  geometry_container, solver_container, numerics_container,
-                  config_container, surface_movement, grid_movement, FFDBox,
-                  interpolator_container, transfer_container);
- 
+    
+    /*--- Perform a single iteration of the chosen PDE solver. ---*/
+    
+    /*--- Run a single iteration of the problem using the driver class. ---*/
+    
+    driver->Run(iteration_container, output, integration_container,
+                geometry_container, solver_container, numerics_container,
+                config_container, surface_movement, grid_movement, FFDBox,
+                interpolator_container, transfer_container);
+    
+    
     /*--- Synchronization point after a single solver iteration. Compute the
      wall clock time required. ---*/
     
@@ -422,14 +425,17 @@ int main(int argc, char *argv[]) {
     strcpy(runtime_file_name, "runtime.dat");
     runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
     runtime->SetExtIter(ExtIter);
-
+    delete runtime;
+    
     /*--- Update the convergence history file (serial and parallel computations). ---*/
-
+    
     if (!fsi){
       output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
                                   config_container, integration_container, false, UsedTime, ZONE_0);
+      
     }
-
+    
+    
     /*--- Evaluate the new CFL number (adaptive). ---*/
 
     if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
@@ -455,48 +461,49 @@ int main(int argc, char *argv[]) {
     }
     
     /*--- Solution output. Determine whether a solution needs to be written
-      after the current iteration, and if so, execute the output file writing
-      routines. ---*/
-  
+     after the current iteration, and if so, execute the output file writing
+     routines. ---*/
+    
     if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter())
-    
-       ||
-    
-       ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
-        !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-         (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) ||
-         (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)))
-    
-       ||
-    
-       (StopCalc)
-    
-       ||
-    
-       (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-        (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
-        ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))
-    
-       ||
-    
-       ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (!fsi) &&
-        ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
-          ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
-    
-       ||
-    
-       ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
-        ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
-
-       ||
-
-       (((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
+        
+        ||
+        
+        ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
+         !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+           (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) ||
+           (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)))
+        
+        ||
+        
+        (StopCalc)
+        
+        ||
+        
+        (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+          (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
+         ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))
+        
+        ||
+        
+        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (!fsi) &&
+         ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
+                             ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
+        
+        ||
+        
+        ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
+         ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
+        
+        ||
+        
+        (((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
           ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))){
-
+      
+      
       /*--- Low-fidelity simulations (using a coarser multigrid level
-        approximation to the solution) require an interpolation back to the
-        finest grid. ---*/
-          
+       approximation to the solution) require an interpolation back to the
+       finest grid. ---*/
+      
       if (config_container[ZONE_0]->GetLowFidelitySim()) {
         integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], solver_container[ZONE_0][MESH_1][FLOW_SOL], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
         integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
@@ -518,14 +525,14 @@ int main(int argc, char *argv[]) {
 //                                  config_container, integration_container, ZONE_0);
       
       /*--- Compute the forces at different sections. ---*/
-          
+      
       if (config_container[ZONE_0]->GetPlot_Section_Forces()) {
         output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                  geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
       }
-          
+      
       if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
-          
+      
     }
     
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
@@ -550,47 +557,62 @@ int main(int argc, char *argv[]) {
     /*--- Close the convergence history file. ---*/
     
     ConvHist_file.close();
-    cout << "History file, closed." << endl;
+    cout << "History file closed." << endl;
   }
   
   /*--- Deallocations: further work is needed,
    * these routines can be used to check for memory leaks---*/
-
+  
   if (rank == MASTER_NODE)
-      cout << endl <<"------------------------ Driver Postprocessing ------------------------" << endl;
-
+    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
+  
+  //if (rank == MASTER_NODE)
+  //  cout << endl <<"------------------------- Driver Postprocessing -------------------------" << endl;
+  
   driver->Postprocessing(iteration_container, solver_container, geometry_container,
-      integration_container, numerics_container, interpolator_container,
-      transfer_container, config_container, nZone);
-
+                         integration_container, numerics_container, interpolator_container,
+                         transfer_container, config_container, nZone);
+  
   delete driver;
-
+  if (rank == MASTER_NODE) cout << "Deleted CDriver class." << endl;
+  
   /*--- Geometry class deallocation ---*/
-  if (rank == MASTER_NODE)
-        cout << endl <<"------------------------ Geometry Postprocessing ------------------------" << endl;
+  //if (rank == MASTER_NODE)
+  //  cout << endl <<"------------------------ Geometry Postprocessing ------------------------" << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     if (geometry_container[iZone]!=NULL){
-      for (unsigned short iMGlevel = 1; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++){
+      for (unsigned short iMGlevel = 0; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++){
         if (geometry_container[iZone][iMGlevel]!=NULL) delete geometry_container[iZone][iMGlevel];
       }
       delete [] geometry_container[iZone];
     }
   }
   delete [] geometry_container;
-
+  if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
+  
   /*--- Free-form deformation class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
     delete FFDBox[iZone];
   }
   delete [] FFDBox;
-
+  if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
+  
   /*--- Grid movement and surface movement class deallocation ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete surface_movement[iZone];
+  }
   delete [] surface_movement;
+    if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete grid_movement[iZone];
+  }
   delete [] grid_movement;
-
+  if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
+  
   /*Deallocate config container*/
-  if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Config Postprocessing -------------------------" << endl;
+  //if (rank == MASTER_NODE)
+  //  cout << endl <<"------------------------- Config Postprocessing -------------------------" << endl;
   if (config_container!=NULL){
     for (iZone = 0; iZone < nZone; iZone++) {
       if (config_container[iZone]!=NULL){
@@ -599,10 +621,16 @@ int main(int argc, char *argv[]) {
     }
     delete [] config_container;
   }
-
+  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
+  
   /*--- Deallocate output container ---*/
-  if (output!=NULL) delete output;
+  
+  if (output != NULL) delete output;
+  if (rank == MASTER_NODE) cout << "Deleted COuput class." << endl;
+  
+  if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
 
+  
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
   
@@ -616,7 +644,7 @@ int main(int argc, char *argv[]) {
   
   UsedTime = StopTime-StartTime;
   if (rank == MASTER_NODE) {
-    cout << "\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
+    cout << "\nCompleted execution in " << fixed << UsedTime << " seconds on "<< size;
     if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
   }
 
@@ -629,12 +657,14 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Exit Success (SU2_CFD) ------------------------" << endl << endl;
-
+  
 #ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
-  MPI_Buffer_detach(&bptr, &bl);
+  MPI_Buffer_detach(&buffptr, &buffsize);
+  free(buffptr);
   MPI_Finalize();
 #endif
-
+  
   return EXIT_SUCCESS;
+  
 }
