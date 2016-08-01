@@ -88,7 +88,6 @@ void CMeanFlowIteration::Preprocess(COutput *output,
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
 
   bool fsi = config_container[val_iZone]->GetFSI_Simulation();
-  bool time_spectral = (config_container[val_iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL);
   bool turbomachinery = config_container[val_iZone]->GetBoolTurbomachinery();
   unsigned long FSIIter = config_container[val_iZone]->GetFSIIter();
 

@@ -2558,7 +2558,7 @@ void CSpectralDriver::SetSpectralMethod(CGeometry ***geometry_container, CSolver
   su2double *sbuf_force = NULL,  *rbuf_force = NULL;
   
   /*--- Other variables ---*/
-  unsigned short nVar_Force = 8;
+  unsigned short nVar_Force = 11;
   unsigned long current_iter = config_container[ZONE_0]->GetExtIter();
   
   /*--- Allocate memory for send buffer ---*/
@@ -2595,14 +2595,17 @@ void CSpectralDriver::SetSpectralMethod(CGeometry ***geometry_container, CSolver
     for (kZone = 0; kZone < nZone; kZone++) {
       
       /*--- Flow solution coefficients (parallel) ---*/
-      sbuf_force[0] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CLift();
-      sbuf_force[1] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
-      sbuf_force[2] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMx();
-      sbuf_force[3] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMy();
-      sbuf_force[4] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMz();
-      sbuf_force[5] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CT();
-      sbuf_force[6] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CQ();
-      sbuf_force[7] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMerit();
+    	sbuf_force[0] = 0.; // solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CLift();
+    	sbuf_force[1] = 0.; // solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+    	sbuf_force[2] = 0.; // solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMx();
+    	sbuf_force[3] = 0.; // solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMy();
+    	sbuf_force[4] = 0.; // solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMz();
+    	sbuf_force[5] = 0.; // solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CT();
+    	sbuf_force[6] = 0.; // solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CQ();
+    	sbuf_force[7] = 0.; // solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMerit();
+    	sbuf_force[8] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotalPressureLoss(0);
+    	sbuf_force[9] = solver_container[kZone][MESH_0][FLOW_SOL]->GetEntropyGen(0);
+      sbuf_force[10] = solver_container[kZone][MESH_0][FLOW_SOL]->GetKineticEnergyLoss(0);
       
       for (iVar = 0; iVar < nVar_Force; iVar++) {
         rbuf_force[iVar] = sbuf_force[iVar];
