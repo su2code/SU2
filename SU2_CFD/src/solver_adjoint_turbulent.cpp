@@ -53,6 +53,10 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
 		case SST :    nVar = 2; break;
 	}
   
+  /*--- Initialize nVarGrad for deallocation ---*/
+  
+  nVarGrad = nVar+1;
+  
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
   

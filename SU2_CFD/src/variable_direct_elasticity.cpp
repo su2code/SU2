@@ -32,34 +32,34 @@
 #include "../include/variable_structure.hpp"
 
 CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
-
-	dynamic_analysis 		= false;
-	fsi_analysis 			= false;
-
-	VonMises_Stress 		= 0.0;
-
-	Stress 					= NULL;		// Nodal stress (for output purposes)
-	FlowTraction 			= NULL;		// Nodal traction due to the fluid (fsi)
-//	Residual_Int 			= NULL;		// Internal component of the residual
-	Residual_Ext_Surf 		= NULL;		// Residual component due to external surface forces
-	Residual_Ext_Body 		= NULL;		// Residual component due to body forces
-
-	FlowTraction_n			= NULL;		// Nodal traction due to the fluid (fsi) at time n (for gen-alpha methods)
-	Residual_Ext_Surf_n		= NULL;		// Residual component due to external surface forces at time n (for gen-alpha methods)
-
-	Solution_time_n			= NULL;		// Solution at the node at the previous subiteration
-
-	Solution_Vel			= NULL;		// Velocity at the node at time t+dt
-	Solution_Vel_time_n 	= NULL;		// Velocity at the node at time t
-
-	Solution_Accel			    = NULL;		// Acceleration at the node at time t+dt
-	Solution_Accel_time_n 	= NULL;		// Acceleration at the node at time t
-
-	Solution_Pred			      = NULL;		// Predictor of the solution at the current subiteration
-	Solution_Pred_Old		    = NULL;		// Predictor of the solution at the previous subiteration
-
-	Prestretch              = NULL;   // Prestretch geometry
-
+  
+  dynamic_analysis 		= false;
+  fsi_analysis 			= false;
+  
+  VonMises_Stress 		= 0.0;
+  
+  Stress 					= NULL;		// Nodal stress (for output purposes)
+  FlowTraction 			= NULL;		// Nodal traction due to the fluid (fsi)
+  //	Residual_Int 			= NULL;		// Internal component of the residual
+  Residual_Ext_Surf 		= NULL;		// Residual component due to external surface forces
+  Residual_Ext_Body 		= NULL;		// Residual component due to body forces
+  
+  FlowTraction_n			= NULL;		// Nodal traction due to the fluid (fsi) at time n (for gen-alpha methods)
+  Residual_Ext_Surf_n		= NULL;		// Residual component due to external surface forces at time n (for gen-alpha methods)
+  
+  Solution_time_n			= NULL;		// Solution at the node at the previous subiteration
+  
+  Solution_Vel			= NULL;		// Velocity at the node at time t+dt
+  Solution_Vel_time_n 	= NULL;		// Velocity at the node at time t
+  
+  Solution_Accel			    = NULL;		// Acceleration at the node at time t+dt
+  Solution_Accel_time_n 	= NULL;		// Acceleration at the node at time t
+  
+  Solution_Pred			      = NULL;		// Predictor of the solution at the current subiteration
+  Solution_Pred_Old		    = NULL;		// Predictor of the solution at the previous subiteration
+  
+  Prestretch              = NULL;   // Prestretch geometry
+  
 }
 
 CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
@@ -152,31 +152,30 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
   Prestretch = NULL;
   if (prestretch_fem)  Prestretch = new su2double [nVar];
 
-
 }
 
 CFEM_ElasVariable::~CFEM_ElasVariable(void) {
-
-	if (Stress 					!= NULL) delete [] Stress;
-	if (FlowTraction 			!= NULL) delete [] FlowTraction;
-//	if (Residual_Int 			!= NULL) delete [] Residual_Int;
-	if (Residual_Ext_Surf 		!= NULL) delete [] Residual_Ext_Surf;
-	if (Residual_Ext_Body 		!= NULL) delete [] Residual_Ext_Body;
-
-	if (FlowTraction_n 			!= NULL) delete [] FlowTraction_n;
-	if (Residual_Ext_Surf_n		!= NULL) delete [] Residual_Ext_Surf_n;
-
-	if (Solution_time_n 		!= NULL) delete [] Solution_time_n;
-
-	if (Solution_Vel 			!= NULL) delete [] Solution_Vel;
-	if (Solution_Vel_time_n 	!= NULL) delete [] Solution_Vel_time_n;
-
-	if (Solution_Accel 			!= NULL) delete [] Solution_Accel;
-	if (Solution_Accel_time_n 	!= NULL) delete [] Solution_Accel_time_n;
-
-	if (Solution_Pred 			!= NULL) delete [] Solution_Pred;
-	if (Solution_Pred_Old 		!= NULL) delete [] Solution_Pred_Old;
-
-	if (Prestretch            != NULL) delete [] Prestretch;
-
+  
+  if (Stress 					!= NULL) delete [] Stress;
+  if (FlowTraction 			!= NULL) delete [] FlowTraction;
+  //	if (Residual_Int 			!= NULL) delete [] Residual_Int;
+  if (Residual_Ext_Surf 		!= NULL) delete [] Residual_Ext_Surf;
+  if (Residual_Ext_Body 		!= NULL) delete [] Residual_Ext_Body;
+  
+  if (FlowTraction_n 			!= NULL) delete [] FlowTraction_n;
+  if (Residual_Ext_Surf_n		!= NULL) delete [] Residual_Ext_Surf_n;
+  
+  if (Solution_time_n 		!= NULL) delete [] Solution_time_n;
+  
+  if (Solution_Vel 			!= NULL) delete [] Solution_Vel;
+  if (Solution_Vel_time_n 	!= NULL) delete [] Solution_Vel_time_n;
+  
+  if (Solution_Accel 			!= NULL) delete [] Solution_Accel;
+  if (Solution_Accel_time_n 	!= NULL) delete [] Solution_Accel_time_n;
+  
+  if (Solution_Pred 			!= NULL) delete [] Solution_Pred;
+  if (Solution_Pred_Old 		!= NULL) delete [] Solution_Pred_Old;
+  
+  if (Prestretch            != NULL) delete [] Prestretch;
+  
 }
