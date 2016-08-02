@@ -60,6 +60,15 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
 
+  /*--- Initialize arrays to NULL ---*/
+
+  CSensitivity = NULL;
+
+  Sens_Geo   = NULL;
+  Sens_Mach  = NULL;
+  Sens_AoA   = NULL;
+  Sens_Press = NULL;
+  Sens_Temp  = NULL;
 
   /*-- Store some information about direct solver ---*/
   this->KindDirect_Solver = Kind_Solver;
@@ -221,7 +230,24 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   }
 }
 
-CDiscAdjSolver::~CDiscAdjSolver(void){ }
+CDiscAdjSolver::~CDiscAdjSolver(void){ 
+
+  unsigned short iMarker;
+
+  if (CSensitivity != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      delete [] CSensitivity[iMarker];
+    }
+    delete [] CSensitivity;
+  }
+
+  if (Sens_Geo   != NULL) delete [] Sens_Geo;
+  if (Sens_Mach  != NULL) delete [] Sens_Mach;
+  if (Sens_AoA   != NULL) delete [] Sens_AoA;
+  if (Sens_Press != NULL) delete [] Sens_Press;
+  if (Sens_Temp  != NULL) delete [] Sens_Temp;
+
+}
 
 void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config, unsigned short kind_recording){
 
