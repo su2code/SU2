@@ -176,6 +176,8 @@ void CConfig::SetPointersNull(void) {
   EA_IntLimit=NULL;
   RK_Alpha_Step=NULL;
   Int_Coeffs = NULL;
+  Kind_ObjFunc = NULL;
+  Weight_ObjFunc = NULL;
 
   /*--- Moving mesh pointers ---*/
 
@@ -1659,20 +1661,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Weight_ObjFunc = new su2double[1];
     Weight_ObjFunc[0]=1.0;
     nObj=1;
+    nObjW=1;
   }
   /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
   if (nObjW<nObj){
-    if (Weight_ObjFunc!=NULL)
-      delete [] Weight_ObjFunc;
+    if (Weight_ObjFunc!=NULL){
+      cout <<"The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n"<<
+          "or be deleted from the config file (equal weights will be applied)."<< endl;
+      exit(EXIT_FAILURE);
+    }
     Weight_ObjFunc = new su2double[nObj];
     for (unsigned short iObj=0; iObj<nObj; iObj++)
       Weight_ObjFunc[iObj]=1.0;
   }
-
-  /*-- If ComboObjective is specified, but only one objective used, revert to single-objective methods. --*/
-  if (nObj == 1 ){
+  /*-- If only one objective used, revert to single-objective methods. --*/
+  if (nObj == 1 )
     Weight_ObjFunc[0] = 1.0;
-  }
 
   /*--- Maker sure that nMarker = nObj ---*/
   if (nObj>0){
@@ -1685,12 +1689,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         Marker_Monitoring = new string[nMarker_Monitoring];
         for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++)
           Marker_Monitoring[iMarker] = marker;
-
       }
       else if(nObj>1){
-        cout <<"WARNING: when using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length \n "<<
-            "For multiple surfaces per objective, list objective multiple times. \n"<<
-            "For multiple objectives per marker either use one marker overall or list marker multiple times."<<endl;
+        cout <<"When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length or length 1. \n "<<
+            "For multiple surfaces per objective, list the objective multiple times. \n"<<
+            "For multiple objectives per marker either use one marker overall or list the marker multiple times."<<endl;
         exit(EXIT_FAILURE);
       }
     }
@@ -4688,10 +4691,6 @@ CConfig::~CConfig(void) {
 
   if (Kind_ObjFunc != NULL)      delete[] Kind_ObjFunc;
   if (Weight_ObjFunc != NULL)      delete[] Weight_ObjFunc;
-
-  if (EA_IntLimit != NULL)    delete[] EA_IntLimit;
-  if (Hold_GridFixed_Coord != NULL)    delete[] Hold_GridFixed_Coord ;
-  if (Subsonic_Engine_Box != NULL)    delete[] Subsonic_Engine_Box ;
 
   if (DV_Value != NULL) {
     for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];
