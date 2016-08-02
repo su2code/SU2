@@ -615,11 +615,11 @@ void OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_fi
       /*--- Print the gradient to file and screen ---*/
 
       for (iDV_Value = 0; iDV_Value < nDV_Value; iDV_Value++){
-        cout << scientific << Gradient[iDV][iDV_Value];
+        cout << Gradient[iDV][iDV_Value];
         if (iDV_Value != nDV_Value-1 ){
           cout << ", ";
         }
-        Gradient_file << scientific << Gradient[iDV][iDV_Value] << endl;
+        Gradient_file << Gradient[iDV][iDV_Value] << endl;
       }
       cout << endl;
       cout <<"-------------------------------------------------------------------------" << endl;

@@ -105,7 +105,7 @@ def projection( config, state={}, step = 1e-3 ):
     if ('CUSTOM' in konfig.DV_KIND):
         if ('OUTFLOW_GENERALIZED' in objective):
             weight = 1.0
-            if (konfig['COMBINE_OBJECTIVE']=='YES'):
+            if (len(objective.split(','))>1):
                 obj = objective.split(',').index('OUTFLOW_GENERALIZED')
                 weight = float(konfig['OBJECTIVE_WEIGHT'].split(',')[obj])
             import downstream_function # Must be defined in run folder
@@ -133,7 +133,7 @@ def projection( config, state={}, step = 1e-3 ):
 
     # gradient output dictionary
     objective = objective.split(',')
-    if (len(objective)>1 and konfig.COMBINE_OBJECTIVE=="YES"):
+    if (len(objective)>1 ):
         objective = ['COMBO']
 
     gradients = { objective[0] : raw_gradients }

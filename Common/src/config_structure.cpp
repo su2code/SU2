@@ -776,9 +776,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief OBJECTIVE_FUNCTION
    *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
   addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
-  /*!\brief COMBINE_OBJECTIVE
-   * \n DESCRIPTION: Flag specifying whether to internally combine a multi-objective function or treat separately */
-  addBoolOption("COMBINE_OBJECTIVE", ComboObjective, false);
 
   default_vec_5d[0]=0.0; default_vec_5d[1]=0.0; default_vec_5d[2]=0.0;
   default_vec_5d[3]=0.0;  default_vec_5d[4]=0.0;
@@ -1365,6 +1362,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Setup for design variables (lower bound) */
   addPythonOption("OPT_BOUND_LOWER");
   
+  /*!\brief OPT_COMBINE_OBJECTIVE
+   *  \n DESCRIPTION: Flag specifying whether to internally combine a multi-objective function or treat separately */
+  addPythonOption("OPT_COMBINE_OBJECTIVE");
+
   /* DESCRIPTION: Current value of the design variables */
   addPythonOption("DV_VALUE_NEW");
 
@@ -1625,8 +1626,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   /*-- If ComboObjective is specified, but only one objective used, revert to single-objective methods. --*/
-  if (nObj == 1 and ComboObjective){
-    ComboObjective = false;
+  if (nObj == 1 ){
     Weight_ObjFunc[0] = 1.0;
   }
 
@@ -1643,14 +1643,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           Marker_Monitoring[iMarker] = marker;
 
       }
-      else if(nObj==1){
-        nObj=nMarker_Monitoring;
-        unsigned short kind_obj = Kind_ObjFunc[0];
-        Kind_ObjFunc = new unsigned short[nMarker_Monitoring];
-        for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++)
-          Kind_ObjFunc[iMarker] = kind_obj;
-      }
-      else{
+      else if(nObj>1){
         cout <<"WARNING: when using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length \n "<<
             "For multiple surfaces per objective, list objective multiple times. \n"<<
             "For multiple objectives per marker either use one marker overall or list marker multiple times."<<endl;
@@ -4760,7 +4753,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
     /*--- Remove filename extension (.dat) ---*/
     unsigned short lastindex = Filename.find_last_of(".");
     Filename = Filename.substr(0, lastindex);
-    if (not ComboObjective){
+    if (nObj==1){
       switch (Kind_ObjFunc[0]) {
       case DRAG_COEFFICIENT:        AdjExt = "_cd";       break;
       case LIFT_COEFFICIENT:        AdjExt = "_cl";       break;
@@ -4789,6 +4782,10 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       }
     }
     else{
+      if (DiscreteAdjoint) {
+        cout << endl << "Combined objective not yet compatible with discrete adjoint. Specify only one OBJECTIVE_FUNCTION." << endl << endl;
+        exit(EXIT_FAILURE);
+      }
       AdjExt = "_combo";
     }
     Filename.append(AdjExt);

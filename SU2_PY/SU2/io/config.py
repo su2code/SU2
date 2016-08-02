@@ -575,8 +575,8 @@ def read_config(filename):
         data_dict['OPT_BOUND_UPPER'] = 1e10
     if not data_dict.has_key('OPT_BOUND_LOWER'):
         data_dict['OPT_BOUND_LOWER'] = -1e10
-    if not data_dict.has_key('COMBINE_OBJECTIVE'):
-        data_dict['COMBINE_OBJECTIVE'] = "NO"
+    if not data_dict.has_key('OPT_COMBINE_OBJECTIVE'):
+        data_dict['OPT_COMBINE_OBJECTIVE'] = "NO"
     if not data_dict.has_key('VALUE_OBJFUNC_FILENAME'):
       data_dict['VALUE_OBJFUNC_FILENAME'] = 'of_eval.dat'
     if not data_dict.has_key('GRAD_OBJFUNC_FILENAME'):
