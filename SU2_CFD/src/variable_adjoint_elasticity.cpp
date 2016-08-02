@@ -144,10 +144,11 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short
   Solution_BGS_k        = NULL;
   Cross_Term_Derivative = NULL;
   if (fsi){
-    Cross_Term_Derivative = new su2double[nVar];
+    Cross_Term_Derivative = new su2double[nDim];
+    Solution_BGS_k        = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
-      Cross_Term_Derivative[iVar] = 0.0;
-      Solution_BGS_k[iVar]        = 0.0;
+      Cross_Term_Derivative[iDim] = 0.0;
+      Solution_BGS_k[iDim]        = 0.0;
     }
   }
 
@@ -227,10 +228,11 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, su2double* val
   Solution_BGS_k        = NULL;
   Cross_Term_Derivative = NULL;
   if (fsi){
-    Cross_Term_Derivative = new su2double[nVar];
+    Cross_Term_Derivative = new su2double[nDim];
+    Solution_BGS_k        = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
-      Cross_Term_Derivative[iVar] = 0.0;
-      Solution_BGS_k[iVar]        = 0.0;
+      Cross_Term_Derivative[iDim] = 0.0;
+      Solution_BGS_k[iDim]        = 0.0;
     }
   }
 

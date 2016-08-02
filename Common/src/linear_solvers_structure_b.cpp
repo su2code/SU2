@@ -94,6 +94,14 @@ void CSysSolve_b::Solve_b(AD::CheckpointHandler* data){
 
   /*--- Solve the system ---*/
 
+  cout << "The adjoint routine runs a" ;
+  switch (config->GetKind_DiscAdj_Linear_Solver()){
+  case CONJUGATE_GRADIENT: cout << " Conjugate Gradient "; break;
+  case FGMRES: cout << " FGMRES "; break;
+  case BCGSTAB: cout << " BCGSTAB "; break;
+  }
+  cout << "linear solver with nVar = " << nVar << " and nPoint = " << nBlk << endl;
+
   switch(config->GetKind_DiscAdj_Linear_Solver()){
     case FGMRES:
       solver->FGMRES_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol , MaxIter, &Residual, false);
