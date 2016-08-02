@@ -94,11 +94,13 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   Solution_Geometry_BGS_k = NULL;
   Geometry_CrossTerm_Derivative = NULL;
   if (fsi){
-    Solution_Geometry     = new su2double[nDim];
-    Geometry_Direct       = new su2double[nDim];
-    Solution_Geometry_Old = new su2double[nDim];
+    Solution_Geometry       = new su2double[nDim];
+    Geometry_Direct         = new su2double[nDim];
+    Solution_Geometry_Old   = new su2double[nDim];
     Geometry_CrossTerm_Derivative = new su2double[nDim];
-    Cross_Term_Derivative = new su2double[nVar];
+    Cross_Term_Derivative   = new su2double[nVar];
+    Solution_BGS_k          = new su2double[nVar];
+    Solution_Geometry_BGS_k = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
       Geometry_Direct[iDim]       = 0.0;
       Solution_Geometry[iDim]     = 1e-16;

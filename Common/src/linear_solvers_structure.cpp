@@ -627,6 +627,23 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
 #endif
   }
 
+  cout << "The direct solver runs a" ;
+  switch (config->GetKind_Linear_Solver()){
+  case CONJUGATE_GRADIENT: cout << " Conjugate Gradient "; break;
+  case FGMRES: cout << " FGMRES "; break;
+  case BCGSTAB: cout << " BCGSTAB "; break;
+  }
+  unsigned long nPoint = geometry->GetnPoint();
+  cout << "linear solver with nPoint = " << nPoint << endl;
+
+  cout << "The discrete adjoint solver for this problem is";
+  switch (config->GetKind_DiscAdj_Linear_Solver()){
+  case CONJUGATE_GRADIENT: cout << " Conjugate Gradient"; break;
+  case FGMRES: cout << " FGMRES"; break;
+  case BCGSTAB: cout << " BCGSTAB"; break;
+  }
+  cout << ". " << endl;
+
   /*--- Solve the linear system using a Krylov subspace method ---*/
   
   if (config->GetKind_Linear_Solver() == BCGSTAB ||

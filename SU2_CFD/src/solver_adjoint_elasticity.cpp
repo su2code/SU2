@@ -1922,12 +1922,19 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
 CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
 
-  delete [] direct_solver;
-  delete [] normalLoads;
-  delete [] Sens_E;
-  delete [] Sens_Nu;
-  delete [] Sens_nL;
-  delete [] CSensitivity;
+  unsigned short iMarker;
+
+  if (CSensitivity != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      delete [] CSensitivity[iMarker];
+    }
+    delete [] CSensitivity;
+  }
+
+  if (normalLoads   != NULL) delete [] normalLoads;
+  if (Sens_E        != NULL) delete [] Sens_E;
+  if (Sens_Nu       != NULL) delete [] Sens_Nu;
+  if (Sens_nL       != NULL) delete [] Sens_nL;
 
   if (Solution_Vel   != NULL) delete [] Solution_Vel;
   if (Solution_Accel != NULL) delete [] Solution_Accel;
