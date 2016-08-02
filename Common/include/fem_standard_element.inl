@@ -130,7 +130,7 @@ inline unsigned short FEMStandardInternalFaceClass::GetNDOFsFaceSide1(void) cons
 
 inline su2double FEMStandardInternalFaceClass::GetPenaltyConstant(void) const {return penaltyConstantFace;}
 
-inline FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(){matDerBasisElemIntegration = NULL;}
+inline FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(){matDerBasisElemIntegration = matDerBasisElemIntegrationTranspose = NULL;}
 
 inline FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(const FEMStandardBoundaryFaceClass &other) : FEMStandardElementBaseClass(other) {Copy(other);}
 
@@ -143,6 +143,8 @@ inline const su2double* FEMStandardBoundaryFaceClass::GetDsBasisElemIntegration(
 inline const su2double* FEMStandardBoundaryFaceClass::GetDtBasisElemIntegration(void) const {return dtLagBasisElemIntegration.data();}
 
 inline const su2double* FEMStandardBoundaryFaceClass::GetMatDerBasisElemIntegration(void) const {return matDerBasisElemIntegration;}
+
+inline const su2double* FEMStandardBoundaryFaceClass::GetMatDerBasisElemIntegrationTranspose(void) const {return matDerBasisElemIntegrationTranspose;}
 
 inline const su2double* FEMStandardBoundaryFaceClass::GetBasisFaceIntegration(void) const {return lagBasisFaceIntegration.data();}
 
@@ -157,5 +159,7 @@ inline unsigned short FEMStandardBoundaryFaceClass::GetNDOFsElem(void) const {re
 inline unsigned short FEMStandardBoundaryFaceClass::GetNDOFsFace(void) const {return nDOFsFace;}
 
 inline unsigned short FEMStandardBoundaryFaceClass::GetNSubFaces(void) const {return subConnForPlotting.size()/GetNDOFsPerSubFace();}
+
+inline su2double FEMStandardBoundaryFaceClass::GetPenaltyConstant(void) const {return penaltyConstantFace;}
 
 inline const unsigned short* FEMStandardBoundaryFaceClass::GetSubFaceConn(void) const {return subConnForPlotting.data();}
