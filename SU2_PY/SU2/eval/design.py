@@ -265,7 +265,7 @@ def obj_df(dvs,config,state=None):
     def_objs = config['OPT_OBJECTIVE']
     objectives = def_objs.keys()
     n_obj = len( objectives )
-    multi_objective = (config['COMBINE_OBJECTIVE']=="YES")
+    multi_objective = (config['OPT_COMBINE_OBJECTIVE']=="YES")
      
     dv_scales = config['DEFINITION_DV']['SCALE']
     dv_size   = config['DEFINITION_DV']['SIZE']
@@ -296,7 +296,7 @@ def obj_df(dvs,config,state=None):
             scale = def_objs[this_obj]['SCALE']
             sign  = su2io.get_objectiveSign(this_obj)
             # Correct marker monitoring for case where multiple objectives are evaluated separately
-            if n_obj>1:
+            if n_obj>1 and len(marker_monitored)>1:
                 config['MARKER_MONITORING'] = marker_monitored[i_obj]
 
             

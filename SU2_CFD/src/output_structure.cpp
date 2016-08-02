@@ -3951,8 +3951,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   bool output_1d = config->GetWrt_1D_Output();
   bool output_per_surface = false;
   bool output_massflow = (config->GetKind_ObjFunc() == MASS_FLOW_RATE);
-  bool output_comboObj = (config->GetComboObj());
-  if ((config->GetnMarker_Monitoring() > 1) &&(config->GetnObj() <=1)) output_per_surface = true;
+  bool output_comboObj = (config->GetnObj()>1);
+  if ((config->GetnMarker_Monitoring() > 1) &&(not output_comboObj)) output_per_surface = true;
   
   unsigned short direct_diff = config->GetDirectDiff();
 
@@ -4130,7 +4130,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   
   bool output_1d  = config[val_iZone]->GetWrt_1D_Output();
   bool output_massflow = (config[val_iZone]->GetKind_ObjFunc() == MASS_FLOW_RATE);
-  bool output_comboObj = (config[val_iZone]->GetComboObj());
+  bool output_comboObj = (config[val_iZone]->GetnObj()>1);
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   
   int rank;

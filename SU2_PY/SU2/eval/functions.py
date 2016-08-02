@@ -101,8 +101,8 @@ def function( func_name, config, state=None ):
     # prepare output
     if func_name == 'ALL':
         func_out = state['FUNCTIONS']
-            # If combine_objective is true, use the 'combo' output. 
     elif (multi_objective):
+        # If combine_objective is true, use the 'combo' output.
         objectives=config.OPT_OBJECTIVE
         func_out = 0.0
         for func in func_name:

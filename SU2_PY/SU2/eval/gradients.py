@@ -78,18 +78,18 @@ def gradient( func_name, method, config, state=None ):
     state = su2io.State(state)
     if func_name == 'ALL':
         raise Exception , "func_name = 'ALL' not yet supported"
-    if (config.COMBINE_OBJECTIVE == "YES" and any([method == 'DISCRETE_ADJOINT'])):
+    if (config.OPT_COMBINE_OBJECTIVE == "YES" and any([method == 'DISCRETE_ADJOINT'])):
         raise Exception, " Combined objectives and discrete adjoint not currently compatible. Please set COMBINE_OBJECTIVE=NO."
     func_name_string = func_name
     if (type(func_name)==list):
-        if (config.COMBINE_OBJECTIVE=="YES" and not any([method == 'DISCRETE_ADJOINT'])):
+        if (config.OPT_COMBINE_OBJECTIVE=="YES" and not any([method == 'DISCRETE_ADJOINT'])):
             config.OBJECTIVE_FUNCTION = ', '.join(func_name)
             func_name_string = 'COMBO'
         else:
             func_name = func_name[0]
             config.OBJECTIVE_FUNCTION = func_name
     else:
-        config.COMBINE_OBJECTIVE="NO"
+        config.OPT_COMBINE_OBJECTIVE="NO"
         config.OBJECTIVE_FUNCTION = func_name
         config.OBJECTIVE_WEIGHT = "1.0"
     # redundancy check
@@ -196,7 +196,7 @@ def adjoint( func_name, config, state=None ):
     # initialize
     state = su2io.State(state)
     special_cases = su2io.get_specialCases(config)
-    multi_objective = ((config.COMBINE_OBJECTIVE=="YES") and (type(func_name)==list))
+    multi_objective = ((config.OPT_COMBINE_OBJECTIVE=="YES") and (type(func_name)==list))
     func_name_string = func_name
     if (multi_objective):
         func_name_string = 'COMBO'

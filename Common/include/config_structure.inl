@@ -761,8 +761,6 @@ inline su2double CConfig::GetWeight_ObjFunc(unsigned short val_obj) {return Weig
 
 inline void CConfig::SetWeight_ObjFunc(unsigned short val_obj, su2double val) {Weight_ObjFunc[val_obj] = val; }
 
-inline bool CConfig::GetComboObj(void){return ComboObjective;}
-
 inline su2double CConfig::GetCoeff_ObjChainRule(unsigned short iVar) {return Obj_ChainRuleCoeff[iVar]; }
 
 inline unsigned short CConfig::GetKind_SensSmooth(void) {return Kind_SensSmooth; }
