@@ -724,7 +724,7 @@ def main():
     contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
     contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
     contadj_multi_py.test_iter  = 10
-    contadj_multi_py.su2_exec   = "continuous_adjoint.py"
+    contadj_multi_py.su2_exec   = "continuous_adjoint.py -f"
     contadj_multi_py.timeout    = 1600
     contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
     contadj_multi_py.test_file  = "of_grad_combo.dat"
