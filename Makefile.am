@@ -39,7 +39,9 @@ SUBDIRS = externals
 
 SUBDIRS += Common/lib
 
+if BUILD_PY
 SUBDIRS += SU2_PY
+endif
 
 if BUILD_CFD
 SUBDIRS +=SU2_CFD/obj
