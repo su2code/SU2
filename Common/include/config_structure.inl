@@ -1053,15 +1053,21 @@ inline unsigned short CConfig::GetnPeriodicIndex(void) { return nPeriodic_Index;
 
 inline su2double* CConfig::GetPeriodicCenter(unsigned short val_index) { return Periodic_Center[val_index]; }
 
-inline void CConfig::SetPeriodicCenter(unsigned short val_index, su2double* center) { Periodic_Center[val_index] = center; }
+inline void CConfig::SetPeriodicCenter(unsigned short val_index, su2double* center) {
+  for (unsigned short i = 0; i < 3; i++) Periodic_Center[val_index][i] = center[i];
+}
 
 inline su2double* CConfig::GetPeriodicRotation(unsigned short val_index) { return Periodic_Rotation[val_index]; }
 
-inline void CConfig::SetPeriodicRotation(unsigned short val_index, su2double* rotation) { Periodic_Rotation[val_index] = rotation; }
+inline void CConfig::SetPeriodicRotation(unsigned short val_index, su2double* rotation) {
+    for (unsigned short i = 0; i < 3; i++) Periodic_Rotation[val_index][i] = rotation[i];
+}
 
 inline su2double* CConfig::GetPeriodicTranslate(unsigned short val_index) { return Periodic_Translate[val_index]; }
 
-inline void CConfig::SetPeriodicTranslate(unsigned short val_index, su2double* translate) { Periodic_Translate[val_index] = translate; }
+inline void CConfig::SetPeriodicTranslate(unsigned short val_index, su2double* translate) {
+  for (unsigned short i = 0; i < 3; i++) Periodic_Translate[val_index][i] = translate[i];
+}
 
 inline su2double CConfig::GetCyclic_Pitch(void) { return Cyclic_Pitch; }
 

@@ -294,6 +294,7 @@ void Driver_Preprocessing(CDriver **driver,
 void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned short val_nZone) {
   
   unsigned short iMGlevel, iZone;
+  unsigned short requestedMGlevels = config[ZONE_0]->GetnMGLevels();
   unsigned long iPoint;
   int rank = MASTER_NODE;
   
@@ -363,6 +364,11 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
     if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
     geometry[iZone][MESH_0]->ComputeSurf_Curvature(config[iZone]);
     
+    /*--- Check for periodicity and disable MG if necessary. ---*/
+    
+    if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
+    geometry[iZone][MESH_0]->Check_Periodicity(config[iZone]);
+    
     if ((config[iZone]->GetnMGLevels() != 0) && (rank == MASTER_NODE))
       cout << "Setting the multigrid structure." << endl;
     
@@ -398,7 +404,16 @@ void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned
       /*--- Find closest neighbor to a surface point ---*/
       
       geometry[iZone][iMGlevel]->FindNormal_Neighbor(config[iZone]);
+     
+      /*--- Protect against the situation that we were not able to complete
+      the agglomeration for this level, i.e., there weren't enough points.
+      We need to check if we changed the total number of levels and delete
+      the incomplete CMultiGridGeometry object. ---*/
       
+      if (config[iZone]->GetnMGLevels() != requestedMGlevels) {
+        delete geometry[iZone][iMGlevel];
+        break;
+      } 
     }
     
   }

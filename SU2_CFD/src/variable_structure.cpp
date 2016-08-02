@@ -149,7 +149,7 @@ CVariable::~CVariable(void) {
 	if (Solution_Max        != NULL) delete [] Solution_Max;
 	if (Solution_Min        != NULL) delete [] Solution_Min;
 	if (Grad_AuxVar         != NULL) delete [] Grad_AuxVar;
-	if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
+	//if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian; // Need to break pointer dependence btwn CNumerics and CVariable
 	if (Res_TruncError      != NULL) delete [] Res_TruncError;
 	if (Residual_Old        != NULL) delete [] Residual_Old;
 	if (Residual_Sum        != NULL) delete [] Residual_Sum;
