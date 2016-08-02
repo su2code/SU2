@@ -7664,13 +7664,15 @@ CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) :
 
     /*--- Element container structure ---*/
 
+    element_container = new CElement* [MAX_FE_KINDS];
+    for (unsigned short iKind = 0; iKind < MAX_FE_KINDS; iKind++) {
+      element_container[iKind] = NULL;
+    }
     if (nDim == 2){
-      element_container = new CElement* [2];
       element_container[EL_TRIA] = new CTRIA1(nDim, config);
       element_container[EL_QUAD] = new CQUAD4(nDim, config);
     }
     else if (nDim == 3){
-      element_container = new CElement* [4];
       element_container[EL_TETRA] = new CTETRA1(nDim, config);
       element_container[EL_HEXA] = new CHEXA8(nDim, config);
       element_container[EL_PYRAM] = new CHEXA8(nDim, config);
@@ -7775,12 +7777,11 @@ CElasticityMovement::~CElasticityMovement(void) {
   delete [] GradNi_Ref_Mat;
 
   if (element_container != NULL) {
-    for (iVar = 0; iVar < nElemContainer; iVar++){
-      delete [] element_container[iVar];
+    for (iVar = 0; iVar < MAX_FE_KINDS; iVar++){
+      if (element_container[iVar] != NULL) delete element_container[iVar];
     }
     delete [] element_container;
   }
-
 
 }
 

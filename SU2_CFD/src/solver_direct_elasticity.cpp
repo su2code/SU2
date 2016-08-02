@@ -489,6 +489,9 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
 
   /*---- If we are solving an adjoint problem we need to define the number of design variables and delimit the regions ---*/
   /*---- The same if we are solving a problem with DEs ---*/
+  n_DV = 0;
+  DV_Val = NULL;
+  iElem_iDe = NULL;
   if ((config->GetKind_Solver() == ADJ_ELASTICITY) || (de_effects)) {
 
     unsigned short i_DV;
@@ -627,9 +630,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
       }
 
     }
-  } else{
-    n_DV = 0;
-    DV_Val = NULL;
   }
 
   /*--- Initialize the value of the total objective function ---*/
