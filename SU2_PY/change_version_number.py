@@ -32,7 +32,7 @@
 # Run the script from the base directory (ie $SU2HOME). Grep will search directories recursively for matches in version number
 import os,sys
 
-oldvers = '4.2.0 "Cardinal"'
+oldvers = '4.1.3 "Cardinal"'
 newvers = '4.2.0 "Cardinal"'
 
 os.system('rm -rf version.txt')
