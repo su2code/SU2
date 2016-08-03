@@ -45,7 +45,7 @@ bin_SCRIPTS = \
     compute_polar.py \
     discrete_adjoint.py \
     direct_differentiation.py \
-    LaunchFSIComputation.py
+    fsi_computation.py
 
 
 mypkgdir = $(prefix)/bin
@@ -95,7 +95,6 @@ nobase_dist_mypkg_DATA= \
     FSI/FSIInterface.py \
     FSI/io/__init__.py \
     FSI/io/FSI_config.py \
-    FSI/run/__init__.py \
     FSI/util/__init__.py \
     FSI/util/switch.py
 
