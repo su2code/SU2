@@ -4959,6 +4959,8 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
   su2double accel_check = 0.0;
   su2double *solDisp = NULL, *solVel = NULL, predicted_solution[3] = {0.0, 0.0, 0.0};
 
+  bool fsi = config->GetFSI_Simulation();
+
   bool predicted_de = config->GetDE_Predicted();
 
   su2double objective_function = 0.0;
@@ -5000,9 +5002,9 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
     if (config->GetDirectDiff() == D_RHO_DL)  cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the dead weight: " << Total_ForwardGradient << "." << endl;
 
   }
-  else{
+  else {
 
-    cout << "Objective function: " << Total_OFRefGeom << "." << endl;
+    if (!fsi) cout << "Objective function: " << Total_OFRefGeom << "." << endl;
 
   }
 

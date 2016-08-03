@@ -86,8 +86,12 @@ protected:
 	*Residual,						/*!< \brief Auxiliary nVar vector. */
 	*Residual_i,					/*!< \brief Auxiliary nVar vector for storing the residual at point i. */
 	*Residual_j;					/*!< \brief Auxiliary nVar vector for storing the residual at point j. */
+	su2double *Residual_BGS,  /*!< \brief Vector with the mean residual for each variable for BGS subiterations. */
+	*Residual_Max_BGS;        /*!< \brief Vector with the maximal residual for each variable for BGS subiterations. */
   unsigned long *Point_Max; /*!< \brief Vector with the maximal residual for each variable. */
+  unsigned long *Point_Max_BGS; /*!< \brief Vector with the maximal residual for each variable. */
   su2double **Point_Max_Coord; /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
+  su2double **Point_Max_Coord_BGS; /*!< \brief Vector with pointers to the coords of the maximal residual for each variable. */
 	su2double *Solution,		/*!< \brief Auxiliary nVar vector. */
 	*Solution_i,				/*!< \brief Auxiliary nVar vector for storing the solution at point i. */
 	*Solution_j;				/*!< \brief Auxiliary nVar vector for storing the solution at point j. */
@@ -167,6 +171,24 @@ public:
 	 * \param[in] val_iterlinsolver - Number of linear iterations.
 	 */
 	void SetResidual_RMS(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Communicate the value of the max residual and RMS residual.
+	 * \param[in] val_iterlinsolver - Number of linear iterations.
+	 */
+	void SetResidual_BGS(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set the value of the max residual and RMS residual.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  virtual void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  virtual void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
     
     /*!
 	 * \brief Set number of linear solver iterations.
@@ -353,6 +375,50 @@ public:
 	su2double GetRes_Max(unsigned short val_var);
 
 	/*!
+	 * \brief Set the residual for BGS subiterations.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
+	 */
+	void SetRes_BGS(unsigned short val_var, su2double val_residual);
+
+	/*!
+	 * \brief Adds the residual for BGS subiterations.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
+	 */
+	void AddRes_BGS(unsigned short val_var, su2double val_residual);
+
+	/*!
+	 * \brief Get the residual for BGS subiterations.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
+	 */
+	su2double GetRes_BGS(unsigned short val_var);
+
+	/*!
+	 * \brief Set the maximal residual for BGS subiterations.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
+	 */
+	void SetRes_Max_BGS(unsigned short val_var, su2double val_residual, unsigned long val_point);
+
+	/*!
+	 * \brief Adds the maximal residual for BGS subiterations.
+	 * \param[in] val_var - Index of the variable.
+	 * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
+	 * \param[in] val_point - Value of the point index for the max residual.
+	 * \param[in] val_coord - Location (x, y, z) of the max residual point.
+	 */
+	void AddRes_Max_BGS(unsigned short val_var, su2double val_residual, unsigned long val_point, su2double* val_coord);
+
+	/*!
+	 * \brief Get the maximal residual for BGS subiterations.
+	 * \param[in] val_var - Index of the variable.
+	 * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
+	 */
+	su2double GetRes_Max_BGS(unsigned short val_var);
+
+	/*!
 	 * \brief Get the residual for FEM structural analysis.
 	 * \param[in] val_var - Index of the variable.
 	 * \return Value of the residual for the variable in the position <i>val_var</i>.
@@ -373,6 +439,20 @@ public:
    */
   su2double* GetPoint_Max_Coord(unsigned short val_var);
   
+  /*!
+   * \brief Get the maximal residual, this is useful for the convergence history.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
+   */
+  unsigned long GetPoint_Max_BGS(unsigned short val_var);
+
+  /*!
+   * \brief Get the location of the maximal residual, this is useful for the convergence history.
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the location (x, y, z) of the biggest residual for the variable <i>val_var</i>.
+   */
+  su2double* GetPoint_Max_Coord_BGS(unsigned short val_var);
+
 	/*!
 	 * \brief Set Value of the residual if there is a grid movement.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2322,6 +2402,18 @@ public:
    */
   virtual su2double GetTotal_Sens_Nu(void);
   
+  /*!
+   * \brief A virtual member.
+   * \return Value of the sensitivity coefficient for the Young Modulus E
+   */
+  virtual su2double GetGlobal_Sens_E(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the Mach sensitivity for the Poisson's ratio Nu
+   */
+  virtual su2double GetGlobal_Sens_Nu(void);
+
   /*!
    * \brief A virtual member.
    * \return Value of the Young modulus from the adjoint solver
@@ -8429,6 +8521,18 @@ public:
 	* \param[in] Output - boolean to determine whether to print output.
 	 */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+
+  /*!
+   * \brief Set the value of the max residual and RMS residual.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 };
 
 /*!
@@ -8573,18 +8677,29 @@ public:
   void SetZeroAdj_ObjFunc(CGeometry *geometry, CConfig* config);
 
   /*!
-   * \brief Provide the total shape sensitivity coefficient.
-   * \return Value of the geometrical sensitivity coefficient
+   * \brief Provide the total Young's modulus sensitivity
+   * \return Value of the total Young's modulus sensitivity
    *         (inviscid + viscous contribution).
    */
   su2double GetTotal_Sens_E(void);
 
   /*!
-   * \brief Set the total Mach number sensitivity coefficient.
-   * \return Value of the Mach sensitivity coefficient
-   *         (inviscid + viscous contribution).
+   * \brief Set the total Poisson's ratio sensitivity.
+   * \return Value of the Poisson's ratio sensitivity
    */
   su2double GetTotal_Sens_Nu(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the sensitivity coefficient for the Young Modulus E
+   */
+  su2double GetGlobal_Sens_E(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the Mach sensitivity for the Poisson's ratio Nu
+   */
+  su2double GetGlobal_Sens_Nu(void);
 
   /*!
    * \brief Get the value of the Young modulus from the adjoint solver
@@ -8610,29 +8725,17 @@ public:
    */
   su2double GetVal_Rho_DL(void);
 
-//
-//  /*!
-//   * \brief Set the total farfield temperature sensitivity coefficient.
-//   * \return Value of the farfield temperature sensitivity coefficient
-//   *         (inviscid + viscous contribution).
-//   */
-//  su2double GetTotal_Sens_Temp(void);
-//
-//  /*!
-//   * \author H. Kline
-//   * \brief Get the total Back pressure number sensitivity coefficient.
-//   * \return Value of the Back sensitivity coefficient
-//   *         (inviscid + viscous contribution).
-//   */
-//  su2double GetTotal_Sens_BPress(void);
-//
-//  /*!
-//   * \brief Get the shape sensitivity coefficient.
-//   * \param[in] val_marker - Surface marker where the coefficient is computed.
-//   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
-//   * \return Value of the sensitivity coefficient.
-//   */
-//  su2double GetCSensitivity(unsigned short val_marker, unsigned long val_vertex);
+  /*!
+   * \brief Set the value of the max residual and RMS residual.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Prepare the solver for a new recording.
@@ -8665,5 +8768,17 @@ public:
   * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+
+  /*!
+   * \brief Enforce the solution to be 0 in the clamped nodes - Avoids accumulation of numerical error.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] solver - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                         unsigned short val_marker);
+
 };
 #include "solver_structure.inl"

@@ -94,6 +94,10 @@ void CSysSolve_b::Solve_b(AD::CheckpointHandler* data){
 
   /*--- Solve the system ---*/
 
+  bool print_output = config->GetDeform_Output();
+
+  if (print_output){
+
   cout << "The adjoint routine runs a" ;
   switch (config->GetKind_DiscAdj_Linear_Solver()){
   case CONJUGATE_GRADIENT: cout << " Conjugate Gradient "; break;
@@ -101,6 +105,8 @@ void CSysSolve_b::Solve_b(AD::CheckpointHandler* data){
   case BCGSTAB: cout << " BCGSTAB "; break;
   }
   cout << "linear solver with nVar = " << nVar << " and nPoint = " << nBlk << endl;
+
+  }
 
   switch(config->GetKind_DiscAdj_Linear_Solver()){
     case FGMRES:

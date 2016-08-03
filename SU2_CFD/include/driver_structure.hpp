@@ -1054,6 +1054,24 @@ public:
                           unsigned short kind_recording);
 
   /*!
+   * \brief Check the convergence of BGS subiteration process
+   * \param[in] iteration_container - Container vector with all the iteration methods.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] numerics_container -  Description of the numerical method (the way in which the equations are solved).
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config_container - Definition of the particular problem.
+   */
+  bool BGSConvergence(CIntegration ***integration_container,
+                         CGeometry ***geometry_container,
+                         CSolver ****solver_container,
+                         CNumerics *****numerics_container,
+                         CConfig **config_container,
+                         unsigned long IntIter,
+                         unsigned short ZONE_FLOW,
+                         unsigned short ZONE_STRUCT);
+
+
+  /*!
    * \brief Output the convergence history
    * \param[in] iteration_container - Container vector with all the iteration methods.
    * \param[in] geometry_container - Geometrical definition of the problem.

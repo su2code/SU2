@@ -627,6 +627,10 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
 #endif
   }
 
+  bool print_output = config->GetDeform_Output();
+
+  if (print_output){
+
   cout << "The direct solver runs a" ;
   switch (config->GetKind_Linear_Solver()){
   case CONJUGATE_GRADIENT: cout << " Conjugate Gradient "; break;
@@ -643,6 +647,8 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   case BCGSTAB: cout << " BCGSTAB"; break;
   }
   cout << ". " << endl;
+
+  }
 
   /*--- Solve the linear system using a Krylov subspace method ---*/
   

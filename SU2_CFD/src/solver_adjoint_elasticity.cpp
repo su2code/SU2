@@ -1671,6 +1671,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   unsigned short iVar, iMarker, iDim;
 
   bool restart = config->GetRestart();
+  bool fsi = config->GetFSI_Simulation();
 
   restart = false;
 
@@ -1742,6 +1743,24 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   for (iVar = 0; iVar < nVar; iVar++) {
     Point_Max_Coord[iVar] = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
+
+  /*--- Define some auxiliary vectors related to the residual for problems with a BGS strategy---*/
+
+  if (fsi){
+
+    Residual_BGS      = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]      = 1.0;
+    Residual_Max_BGS  = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
+
+    /*--- Define some structures for locating max residuals ---*/
+
+    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+    Point_Max_Coord_BGS = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+    }
+
   }
 
   /*--- Define some auxiliary vectors related to the solution ---*/
@@ -2425,99 +2444,80 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config){
   Total_Sens_Rho      += Global_Sens_Rho;
   Total_Sens_Rho_DL   += Global_Sens_Rho_DL;
 
-
-//  unsigned long iPoint;
-//  unsigned short iDim;
-//  su2double *Coord, Sensitivity, eps;
-//
-//  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
-//
-//  for (iPoint = 0; iPoint < nPoint; iPoint++){
-//    Coord = geometry->node[iPoint]->GetCoord();
-//
-//    for (iDim = 0; iDim < nDim; iDim++){
-//
-//      Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
-//
-//      /*--- Set the index manually to zero. ---*/
-//
-//     AD::ResetInput(Coord[iDim]);
-//
-//      /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
-//
-//      if (config->GetSens_Remove_Sharp()) {
-//        eps = config->GetLimiterCoeff()*config->GetRefElemLength();
-//        if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
-//          Sensitivity = 0.0;
-//      }
-//      if (!config){
-//        node[iPoint]->SetSensitivity(iDim, Sensitivity);
-//      } else {
-//        node[iPoint]->SetSensitivity(iDim, node[iPoint]->GetSensitivity(iDim) + Sensitivity);
-//      }
-//    }
-//  }
-//  SetSurface_Sensitivity(geometry, config);
 }
 
 void CDiscAdjFEASolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config){
-//  unsigned short iMarker,iDim;
-//  unsigned long iVertex, iPoint;
-//  su2double *Normal, Prod, Sens = 0.0, SensDim, Area;
-//  su2double Total_Sens_Geo_local = 0.0;
-//  Total_Sens_Geo = 0.0;
-//
-//  for (iMarker = 0; iMarker < nMarker; iMarker++){
-//    Sens_Geo[iMarker] = 0.0;
-//    /*--- Loop over boundary markers to select those for Euler walls and NS walls ---*/
-//
-//    if(config->GetMarker_All_KindBC(iMarker) == EULER_WALL
-//       || config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX
-//       || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL){
-//
-//      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
-//        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-//        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-//        Prod = 0.0;
-//        Area = 0.0;
-//        for (iDim = 0; iDim < nDim; iDim++){
-//          /*--- retrieve the gradient calculated with AD -- */
-//          SensDim = node[iPoint]->GetSensitivity(iDim);
-//
-//          /*--- calculate scalar product for projection onto the normal vector ---*/
-//          Prod += Normal[iDim]*SensDim;
-//
-//          Area += Normal[iDim]*Normal[iDim];
-//        }
-//
-//        Area = sqrt(Area);
-//
-//        /*--- projection of the gradient
-//         *     calculated with AD onto the normal
-//         *     vector of the surface ---*/
-//        Sens = Prod/Area;
-//
-//        /*--- Compute sensitivity for each surface point ---*/
-//        CSensitivity[iMarker][iVertex] = -Sens;
-//        if (geometry->node[iPoint]->GetDomain()){
-//          Sens_Geo[iMarker] += Sens*Sens;
-//        }
-//      }
-//      Total_Sens_Geo_local += sqrt(Sens_Geo[iMarker]);
-//    }
-//  }
-//
-//#ifdef HAVE_MPI
-//  SU2_MPI::Allreduce(&Total_Sens_Geo_local,&Total_Sens_Geo,1,MPI_DOUBLE,MPI_SUM, MPI_COMM_WORLD);
-//#else
-//  Total_Sens_Geo = Total_Sens_Geo_local;
-//#endif
+
+
+}
+
+void CDiscAdjFEASolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
+
+  unsigned short iVar;
+  unsigned long iPoint;
+  su2double residual;
+
+  /*--- Set Residuals to zero ---*/
+
+  for (iVar = 0; iVar < nVar; iVar++){
+      SetRes_BGS(iVar,0.0);
+      SetRes_Max_BGS(iVar,0.0,0);
+  }
+
+  /*--- Set the residuals ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      for (iVar = 0; iVar < nVar; iVar++){
+          residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->Get_BGSSolution(iVar);
+          AddRes_BGS(iVar,residual*residual);
+          AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+      }
+  }
+
+  SetResidual_BGS(geometry, config);
+
 }
 
 
+void CDiscAdjFEASolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
 
+  unsigned long iPoint;
 
+  /*--- To nPoint: The solution must be communicated beforehand ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
 
+    node[iPoint]->Set_BGSSolution();
 
+  }
 
+}
+
+void CDiscAdjFEASolver::BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                                            unsigned short val_marker) {
+
+  unsigned long iPoint, iVertex;
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    /*--- Get node index ---*/
+
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    if (nDim == 2) {
+      Solution[0] = 0.0;  Solution[1] = 0.0;
+    }
+    else {
+      Solution[0] = 0.0;  Solution[1] = 0.0;  Solution[2] = 0.0;
+    }
+
+    node[iPoint]->SetSolution(Solution);
+
+    if (dynamic){
+      node[iPoint]->SetSolution_Vel(Solution);
+      node[iPoint]->SetSolution_Accel(Solution);
+    }
+
+  }
+
+}
 
