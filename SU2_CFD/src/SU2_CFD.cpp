@@ -42,36 +42,37 @@ int main(int argc, char *argv[]) {
   /*--- MPI initialization, and buffer setting ---*/
   
 #ifdef HAVE_MPI
-  int *bptr, bl;
+  int  buffsize;
+  char *buffptr;
   SU2_MPI::Init(&argc, &argv);
   MPI_Buffer_attach( malloc(BUFSIZE), BUFSIZE );
 #endif
   
-    /*--- Create a pointer to the main SU2 Driver ---*/
-    CDriver *driver = NULL;
+  /*--- Create a pointer to the main SU2 Driver ---*/
+  CDriver *driver = NULL;
 
-    /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
+  /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
    file is specified, default.cfg is used) ---*/
 
-    if (argc == 2) { strcpy(config_file_name, argv[1]); }
-    else { strcpy(config_file_name, "default.cfg"); }
+  if (argc == 2) { strcpy(config_file_name, argv[1]); }
+  else { strcpy(config_file_name, "default.cfg"); }
 
-    /*--- Read the name and format of the input mesh file to get from the mesh
+  /*--- Read the name and format of the input mesh file to get from the mesh
    file the number of zones and dimensions from the numerical grid (required
    for variables allocation)  ---*/
 
-    CConfig *config = NULL;
-    config = new CConfig(config_file_name, SU2_CFD);
+  CConfig *config = NULL;
+  config = new CConfig(config_file_name, SU2_CFD);
 
-    nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-    nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-    fsi = config->GetFSI_Simulation();
+  nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  fsi = config->GetFSI_Simulation();
 
-    /*--- First, given the basic information about the number of zones and the
+  /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
 
-    if (nZone == SINGLE_ZONE) {
+  if (nZone == SINGLE_ZONE) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
 
@@ -85,9 +86,9 @@ int main(int argc, char *argv[]) {
 
   } else if ((nZone == 2) && fsi) {
 
-	    /*--- FSI problem: instantiate the FSI driver class. ---*/
+    /*--- FSI problem: instantiate the FSI driver class. ---*/
 
-	 driver = new CFSIDriver(config_file_name, nZone, nDim);
+    driver = new CFSIDriver(config_file_name, nZone, nDim);
 
   } else {
 
@@ -100,24 +101,25 @@ int main(int argc, char *argv[]) {
 
   }
 
-    delete config;
-    config = NULL;
+  delete config;
+  config = NULL;
 
-    /*--- Launch the main external loop of the solver ---*/
-    driver->StartSolver();
+  /*--- Launch the main external loop of the solver ---*/
+  driver->StartSolver();
 
-    /*--- Postprocess all the containers, close history file, exit SU2 ---*/
-    driver->Postprocessing();
+  /*--- Postprocess all the containers, close history file, exit SU2 ---*/
+  driver->Postprocessing();
 
-    if(driver != NULL) delete driver;
-    driver = NULL;
+  if(driver != NULL) delete driver;
+  driver = NULL;
 
 #ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
-  MPI_Buffer_detach(&bptr, &bl);
+  MPI_Buffer_detach(&buffptr, &buffsize);
+  free(buffptr);
   MPI_Finalize();
 #endif
-
+  
   return EXIT_SUCCESS;
-
+  
 }
