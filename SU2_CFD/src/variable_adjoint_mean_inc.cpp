@@ -31,7 +31,7 @@
 
 #include "../include/variable_structure.hpp"
 
-CAdjEulerVariable::CAdjEulerVariable(void) : CVariable() {
+CAdjIncEulerVariable::CAdjIncEulerVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
 	Psi = NULL;
@@ -42,7 +42,7 @@ CAdjEulerVariable::CAdjEulerVariable(void) : CVariable() {
   
 }
 
-CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, su2double val_psie, unsigned short val_nDim,
+CAdjIncEulerVariable::CAdjIncEulerVariable(su2double val_psirho, su2double *val_phi, su2double val_psie, unsigned short val_nDim,
 																		 unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
@@ -152,7 +152,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, s
 	
 }
 
-CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val_nDim,
+CAdjIncEulerVariable::CAdjIncEulerVariable(su2double *val_solution, unsigned short val_nDim,
                                      unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
@@ -236,7 +236,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val
   
 }
 
-CAdjEulerVariable::~CAdjEulerVariable(void) {
+CAdjIncEulerVariable::~CAdjIncEulerVariable(void) {
 	
 	if (Psi               != NULL) delete [] Psi;
 	if (ForceProj_Vector  != NULL) delete [] ForceProj_Vector;
@@ -246,7 +246,7 @@ CAdjEulerVariable::~CAdjEulerVariable(void) {
   
 }
 
-bool CAdjEulerVariable::SetPrimVar_Compressible(su2double SharpEdge_Distance, bool check, CConfig *config) {
+bool CAdjIncEulerVariable::SetPrimVar_Compressible(su2double SharpEdge_Distance, bool check, CConfig *config) {
 	unsigned short iVar;
   bool check_dens = false, RightVol = true;
   
@@ -271,7 +271,7 @@ bool CAdjEulerVariable::SetPrimVar_Compressible(su2double SharpEdge_Distance, bo
   
 }
 
-bool CAdjEulerVariable::SetPrimVar_Incompressible(su2double SharpEdge_Distance, bool check, CConfig *config) {
+bool CAdjIncEulerVariable::SetPrimVar_Incompressible(su2double SharpEdge_Distance, bool check, CConfig *config) {
   unsigned short iVar;
   bool check_press = false, RightVol = true;
   
@@ -296,7 +296,7 @@ bool CAdjEulerVariable::SetPrimVar_Incompressible(su2double SharpEdge_Distance, 
   
 }
 
-bool CAdjEulerVariable::SetPrimVar_FreeSurface(su2double SharpEdge_Distance, bool check, CConfig *config) {
+bool CAdjIncEulerVariable::SetPrimVar_FreeSurface(su2double SharpEdge_Distance, bool check, CConfig *config) {
   unsigned short iVar;
   bool check_press = false, RightVol = true;
   
@@ -324,16 +324,16 @@ bool CAdjEulerVariable::SetPrimVar_FreeSurface(su2double SharpEdge_Distance, boo
   
 }
 
-CAdjNSVariable::CAdjNSVariable(void) : CAdjEulerVariable() { }
+CAdjIncNSVariable::CAdjIncNSVariable(void) : CAdjIncEulerVariable() { }
 
-CAdjNSVariable::CAdjNSVariable(su2double *val_solution, unsigned short val_nDim,
-                               unsigned short val_nvar, CConfig *config) : CAdjEulerVariable(val_solution, val_nDim, val_nvar, config) {
+CAdjIncNSVariable::CAdjIncNSVariable(su2double *val_solution, unsigned short val_nDim,
+                               unsigned short val_nvar, CConfig *config) : CAdjIncEulerVariable(val_solution, val_nDim, val_nvar, config) {
   
 }
 
-CAdjNSVariable::CAdjNSVariable(su2double val_psirho, su2double *val_phi, su2double val_psie,
-                               unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CAdjEulerVariable(val_psirho, val_phi, val_psie, val_nDim, val_nvar, config) {
+CAdjIncNSVariable::CAdjIncNSVariable(su2double val_psirho, su2double *val_phi, su2double val_psie,
+                               unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CAdjIncEulerVariable(val_psirho, val_phi, val_psie, val_nDim, val_nvar, config) {
 
 }
 
-CAdjNSVariable::~CAdjNSVariable(void) { }
+CAdjIncNSVariable::~CAdjIncNSVariable(void) { }

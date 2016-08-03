@@ -9,11 +9,12 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - economon@stanford.edi
+            - tim.albring@scicomp.uni-kl.de
   
 branches:
     only:
-        - develop
+        - feature_incompressible
 
 env:
     global:
