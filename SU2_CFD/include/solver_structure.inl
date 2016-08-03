@@ -400,6 +400,10 @@ inline su2double CSolver::GetTotal_Sens_E(void) { return 0.0; }
 
 inline su2double CSolver::GetTotal_Sens_Nu(void) { return 0.0; }
 
+inline su2double CSolver::GetGlobal_Sens_E(void) { return 0.0; }
+
+inline su2double CSolver::GetGlobal_Sens_Nu(void) { return 0.0; }
+
 inline su2double CSolver::GetVal_Young(void) { return 0.0; }
 
 inline su2double CSolver::GetVal_Poisson(void) { return 0.0; }
@@ -706,11 +710,38 @@ inline void CSolver::AddRes_Max(unsigned short val_var, su2double val_residual, 
 
 inline su2double CSolver::GetRes_Max(unsigned short val_var) { return Residual_Max[val_var]; }
 
+inline void CSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::SetRes_BGS(unsigned short val_var, su2double val_residual) { Residual_RMS[val_var] = val_residual; }
+
+inline void CSolver::AddRes_BGS(unsigned short val_var, su2double val_residual) { Residual_RMS[val_var] += val_residual; }
+
+inline su2double CSolver::GetRes_BGS(unsigned short val_var) { return Residual_RMS[val_var]; }
+
+inline void CSolver::SetRes_Max_BGS(unsigned short val_var, su2double val_residual, unsigned long val_point) { Residual_Max_BGS[val_var] = val_residual; Point_Max_BGS[val_var] = val_point; }
+
+inline void CSolver::AddRes_Max_BGS(unsigned short val_var, su2double val_residual, unsigned long val_point, su2double* val_coord) {
+  if (val_residual > Residual_Max_BGS[val_var]) {
+  Residual_Max_BGS[val_var] = val_residual;
+  Point_Max_BGS[val_var] = val_point;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Point_Max_Coord_BGS[val_var][iDim] = val_coord[iDim];
+  }
+}
+
+inline su2double CSolver::GetRes_Max_BGS(unsigned short val_var) { return Residual_Max_BGS[val_var]; }
+
 inline su2double CSolver::GetRes_FEM(unsigned short val_var) { return 0.0; }
 
 inline unsigned long CSolver::GetPoint_Max(unsigned short val_var) { return Point_Max[val_var]; }
 
 inline su2double* CSolver::GetPoint_Max_Coord(unsigned short val_var) { return Point_Max_Coord[val_var]; }
+
+inline unsigned long CSolver::GetPoint_Max_BGS(unsigned short val_var) { return Point_Max_BGS[val_var]; }
+
+inline su2double* CSolver::GetPoint_Max_Coord_BGS(unsigned short val_var) { return Point_Max_Coord_BGS[val_var]; }
 
 inline void CSolver::Set_OldSolution(CGeometry *geometry) {
 	for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) 
@@ -1224,6 +1255,10 @@ inline su2double CDiscAdjSolver::GetCSensitivity(unsigned short val_marker, unsi
 inline su2double CDiscAdjFEASolver::GetTotal_Sens_E(void) { return Total_Sens_E; }
 
 inline su2double CDiscAdjFEASolver::GetTotal_Sens_Nu(void) { return Total_Sens_Nu; }
+
+inline su2double CDiscAdjFEASolver::GetGlobal_Sens_E(void) { return Global_Sens_E; }
+
+inline su2double CDiscAdjFEASolver::GetGlobal_Sens_Nu(void) { return Global_Sens_Nu; }
 
 inline su2double CDiscAdjFEASolver::GetVal_Young(void) { return E; }
 

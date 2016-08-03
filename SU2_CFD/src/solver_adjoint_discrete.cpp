@@ -44,6 +44,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   unsigned short iVar, iMarker, iDim;
 
   bool restart = config->GetRestart();
+  bool fsi = config->GetFSI_Simulation();
 
   unsigned long iVertex, iPoint, index;
   string text_line, mesh_filename;
@@ -91,6 +92,24 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   /*--- Define some auxiliary vectors related to the geometry adjoint (nDim) ---*/
   Solution_Geometry = new su2double[nDim];     for (iDim = 0; iDim < nDim; iDim++) Solution_Geometry[iDim] = 1.0;
+
+  /*--- Define some auxiliary vectors related to the residual for problems with a BGS strategy---*/
+
+  if (fsi){
+
+    Residual_BGS      = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]      = 1.0;
+    Residual_Max_BGS  = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
+
+    /*--- Define some structures for locating max residuals ---*/
+
+    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar] = 0;
+    Point_Max_Coord_BGS = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+    }
+
+  }
 
 
   /*--- Define some structures for locating max residuals ---*/
@@ -924,3 +943,43 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     }
 }
 
+void CDiscAdjSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
+
+  unsigned short iVar;
+  unsigned long iPoint;
+  su2double residual;
+
+  /*--- Set Residuals to zero ---*/
+
+  for (iVar = 0; iVar < nVar; iVar++){
+      SetRes_BGS(iVar,0.0);
+      SetRes_Max_BGS(iVar,0.0,0);
+  }
+
+  /*--- Set the residuals ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      for (iVar = 0; iVar < nVar; iVar++){
+          residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->Get_BGSSolution(iVar);
+
+          AddRes_BGS(iVar,residual*residual);
+          AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+      }
+  }
+
+  SetResidual_BGS(geometry, config);
+
+}
+
+void CDiscAdjSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
+
+  unsigned long iPoint;
+
+  /*--- To nPoint: The solution must be communicated beforehand ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    node[iPoint]->Set_BGSSolution();
+
+  }
+
+}

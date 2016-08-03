@@ -5723,11 +5723,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
           cout.precision(4);
           cout.setf(ios::scientific, ios::floatfield);
-          cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetTotal_Sens_E();
+          cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E();
 
           cout.precision(4);
           cout.setf(ios::scientific, ios::floatfield);
-          cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetTotal_Sens_Nu();
+          cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu();
 
           cout << endl;
           break;
