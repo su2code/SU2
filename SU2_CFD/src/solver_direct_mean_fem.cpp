@@ -3651,7 +3651,7 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
         /* Make a distinction between k == j and k != j and compute
            the momentum fluxes accordingly. */
         if(k == j) flux[ll] = abv3 + alphaP1*normal[j]*(nuAvg*dSol[j+1]
-                                   -                    nuVelAvg[j+1]*dSol[0]);
+                                   -                    nuVelAvg[j]*dSol[0]);
         else       flux[ll] = nuAvg*(normal[k]*dSol[j+1] + alpha*normal[j]*dSol[k+1])
                             - (normal[k]*nuVelAvg[j] + alpha*normal[j]*nuVelAvg[k])*dSol[0];
       }
