@@ -30,6 +30,7 @@
  */
 
 #include "../include/driver_structure.hpp"
+#include "../include/definition_structure.hpp"
 
 CDriver::CDriver(char* confFile,
                  unsigned short val_nZone,
@@ -170,6 +171,11 @@ CDriver::CDriver(char* confFile,
 
   }
 
+  /*--- If activated by the compile directive, perform a partition analysis. ---*/
+#if PARTITION
+  Partition_Analysis(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+#endif
+
   /*--- Output some information about the driver that has been instantiated for the problem. ---*/
 
   if (rank == MASTER_NODE)
@@ -253,31 +259,30 @@ CDriver::CDriver(char* confFile,
     if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
     
   }
-  
-	/*--- Definition of the interface and transfer conditions between different zones.
-	 *--- The transfer container is defined for zones paired one to one.
-	 *--- This only works for a multizone FSI problem (nZone > 1).
-	 *--- Also, at the moment this capability is limited to two zones (nZone < 3).
-	 *--- This will change in the future. ---*/
 
-	if ((rank == MASTER_NODE) && (fsi))
-		cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
+  /*--- Definition of the interface and transfer conditions between different zones.
+   *--- The transfer container is defined for zones paired one to one.
+   *--- This only works for a multizone FSI problem (nZone > 1).
+   *--- Also, at the moment this capability is limited to two zones (nZone < 3).
+   *--- This will change in the future. ---*/
+
+  if ((rank == MASTER_NODE) && (fsi))
+    cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
 
 
-	if (((nZone > 1) && (nZone < 3)) && (fsi)) {
 
-		for (iZone = 0; iZone < nZone; iZone++){
-			transfer_container[iZone] = new CTransfer*[nZone];
-			interpolator_container[iZone] = new CInterpolator*[nZone];
-			for (jZone = 0; jZone < nZone; jZone++){
-				transfer_container[iZone][jZone] = NULL;
-				interpolator_container[iZone][jZone] = NULL;
-			}
-		}
+  for (iZone = 0; iZone < nZone; iZone++){
+    transfer_container[iZone] = new CTransfer*[nZone];
+    interpolator_container[iZone] = new CInterpolator*[nZone];
+    for (jZone = 0; jZone < nZone; jZone++){
+      transfer_container[iZone][jZone] = NULL;
+      interpolator_container[iZone][jZone] = NULL;
+    }
+  }
 
-		Interface_Preprocessing();
-
-	}
+  if (((nZone > 1) && (nZone < 3)) && (fsi)) {
+    Interface_Preprocessing();
+  }
 
 	/*--- Instantiate the geometry movement classes for the solution of unsteady
    flows on dynamic meshes, including rigid mesh transformations, dynamically
@@ -294,8 +299,7 @@ CDriver::CDriver(char* confFile,
       surface_movement[iZone] = new CSurfaceMovement();
       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][MESH_0], config_container[iZone]);
       if (config_container[iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL)
-        iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox,
-                                                     solver_container, config_container, iZone, 0, 0);
+        iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, 0);
     }
 
     if (config_container[iZone]->GetDirectDiff() == D_DESIGN){
@@ -355,22 +359,21 @@ CDriver::CDriver(char* confFile,
 
   /*--- Check for a dynamic restart (structural analysis). Update ExtIter if necessary. ---*/
   if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY
-		  && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
-	  	  ExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
+      && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
+    ExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
 
   /*--- Initiate value at each interface for the mixing plane ---*/
   if(config_container[ZONE_0]->GetBoolMixingPlane())
-  	for (iZone = 0; iZone < nZone; iZone++)
-  	  iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+    for (iZone = 0; iZone < nZone; iZone++)
+      iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
 
+  /* --- Initiate some variables used for external communications trough the Py wrapper. ---*/
   APIVarCoord[0] = 0.0;
   APIVarCoord[1] = 0.0;
   APIVarCoord[2] = 0.0;
-
   APINodalForce[0] = 0.0;
   APINodalForce[1] = 0.0;
   APINodalForce[2] = 0.0;
-
   APINodalForceDensity[0] = 0.0;
   APINodalForceDensity[1] = 0.0;
   APINodalForceDensity[2] = 0.0;
@@ -386,6 +389,8 @@ CDriver::CDriver(char* confFile,
 }
 
 void CDriver::Postprocessing(){
+
+  unsigned short jZone;
 
   int rank = MASTER_NODE;
   int size = MASTER_NODE;
@@ -411,44 +416,64 @@ void CDriver::Postprocessing(){
     cout << "History file, closed." << endl;
   }
 
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
+
   for (iZone = 0; iZone < nZone; iZone++) {
-    /*
-    if (rank == MASTER_NODE)
-          cout << endl <<"----------------- Numerics Postprocessing ----------------" << endl;
-    Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone],
-                                   geometry_container[iZone], config_container[iZone]);
-    */
-    if (rank == MASTER_NODE)
-          cout << endl <<"----------------- Integration Postprocessing ----------------" << endl;
-
-    Integration_Postprocessing(integration_container[iZone], geometry_container[iZone],
-                                      config_container[iZone]);
-
-    if (rank == MASTER_NODE)
-          cout << endl <<"----------------- Solver Postprocessing ---------------------" << endl;
-
-
-    Solver_Postprocessing(solver_container[iZone], geometry_container[iZone],
-        config_container[iZone]);
-    // TODO: implement Iteration Postprocessing
-    /*
-    if (rank == MASTER_NODE){
-      cout << endl <<"------------------------ Iteration Postprocessing ------------------------" << endl;
-    }
-    Iteration_Postprocessing(iteration_container, config_container, iZone);
-     */
-
-    delete[] numerics_container[iZone];
-    delete[] integration_container[iZone];
-    delete[] solver_container[iZone];
+     Numerics_Postprocessing(numerics_container[iZone], solver_container[iZone],
+     geometry_container[iZone], config_container[iZone]);
+    delete [] numerics_container[iZone];
   }
-  delete[] numerics_container;
-  delete[] integration_container;
-  delete[] solver_container;
+  delete [] numerics_container;
+  if (rank == MASTER_NODE) cout << "Deleted CNumerics container." << endl;
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    Integration_Postprocessing(integration_container[iZone],
+                               geometry_container[iZone],
+                               config_container[iZone]);
+    delete [] integration_container[iZone];
+  }
+  delete [] integration_container;
+  if (rank == MASTER_NODE) cout << "Deleted CIntegration container." << endl;
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    Solver_Postprocessing(solver_container[iZone],
+                          geometry_container[iZone],
+                          config_container[iZone]);
+    delete [] solver_container[iZone];
+  }
+  delete [] solver_container;
+  if (rank == MASTER_NODE) cout << "Deleted CSolver container." << endl;
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete iteration_container[iZone];
+  }
+  delete [] iteration_container;
+  if (rank == MASTER_NODE) cout << "Deleted CIteration container." << endl;
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (jZone = 0; jZone < nZone; jZone++) {
+      if (interpolator_container[iZone][jZone] != NULL)
+        delete interpolator_container[iZone][jZone];
+    }
+    delete [] interpolator_container[iZone];
+  }
+  delete [] interpolator_container;
+  if (rank == MASTER_NODE) cout << "Deleted CInterpolator container." << endl;
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (jZone = 0; jZone < nZone; jZone++) {
+      if (transfer_container[iZone][jZone] != NULL)
+        delete transfer_container[iZone][jZone];
+    }
+    delete [] transfer_container[iZone];
+  }
+  delete [] transfer_container;
+  if (rank == MASTER_NODE) cout << "Deleted CTransfer container." << endl;
 
   /*--- Geometry class deallocation ---*/
-  if (rank == MASTER_NODE)
-        cout << endl <<"------------------------ Geometry Postprocessing ------------------------" << endl;
+  //if (rank == MASTER_NODE)
+  //      cout << endl <<"------------------------ Geometry Postprocessing ------------------------" << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     if (geometry_container[iZone]!=NULL){
       for (unsigned short iMGlevel = 1; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++){
@@ -458,20 +483,31 @@ void CDriver::Postprocessing(){
     }
   }
   delete [] geometry_container;
+  if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
 
   /*--- Free-form deformation class deallocation ---*/
   for (iZone = 0; iZone < nZone; iZone++) {
     delete FFDBox[iZone];
   }
   delete [] FFDBox;
+  if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
 
   /*--- Grid movement and surface movement class deallocation ---*/
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete surface_movement[iZone];
+  }
   delete [] surface_movement;
+  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    delete grid_movement[iZone];
+  }
   delete [] grid_movement;
+  if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
 
   /*Deallocate config container*/
-  if (rank == MASTER_NODE)
-        cout << endl <<"------------------------- Config Postprocessing -------------------------" << endl;
+  //if (rank == MASTER_NODE)
+  //      cout << endl <<"------------------------- Config Postprocessing -------------------------" << endl;
   if (config_container!=NULL){
     for (iZone = 0; iZone < nZone; iZone++) {
       if (config_container[iZone]!=NULL){
@@ -480,9 +516,14 @@ void CDriver::Postprocessing(){
     }
     delete [] config_container;
   }
+  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
 
   /*--- Deallocate output container ---*/
   if (output!=NULL) delete output;
+  if (rank == MASTER_NODE) cout << "Deleted COuput class." << endl;
+
+  if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
+
 
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
@@ -511,6 +552,7 @@ void CDriver::Postprocessing(){
 void CDriver::Geometrical_Preprocessing() {
 
   unsigned short iMGlevel;
+  unsigned short requestedMGlevels = config_container[ZONE_0]->GetnMGLevels();
   unsigned long iPoint;
   int rank = MASTER_NODE;
 
@@ -580,6 +622,11 @@ void CDriver::Geometrical_Preprocessing() {
     if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
     geometry_container[iZone][MESH_0]->ComputeSurf_Curvature(config_container[iZone]);
 
+    /*--- Check for periodicity and disable MG if necessary. ---*/
+    
+    if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
+    geometry_container[iZone][MESH_0]->Check_Periodicity(config_container[iZone]);
+
     if ((config_container[iZone]->GetnMGLevels() != 0) && (rank == MASTER_NODE))
       cout << "Setting the multigrid structure." << endl;
 
@@ -615,6 +662,16 @@ void CDriver::Geometrical_Preprocessing() {
       /*--- Find closest neighbor to a surface point ---*/
 
       geometry_container[iZone][iMGlevel]->FindNormal_Neighbor(config_container[iZone]);
+
+      /*--- Protect against the situation that we were not able to complete
+      the agglomeration for this level, i.e., there weren't enough points.
+      We need to check if we changed the total number of levels and delete
+      the incomplete CMultiGridGeometry object. ---*/
+      
+      if (config_container[iZone]->GetnMGLevels() != requestedMGlevels) {
+        delete geometry_container[iZone][iMGlevel];
+        break;
+      }
 
     }
 
@@ -767,16 +824,16 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
 
 
 void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geometry,
-    CConfig *config) {
+                                    CConfig *config) {
   unsigned short iMGlevel;
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj;
-
+  
   /*--- Initialize some useful booleans ---*/
-
+  
   euler            = false;  ns              = false;  turbulent = false;
   adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
   spalart_allmaras = false;  menter_sst      = false;
@@ -786,44 +843,44 @@ void CDriver::Solver_Postprocessing(CSolver ***solver_container, CGeometry **geo
   heat             = false;
   transition       = false;
   template_solver  = false;
-
+  
   /*--- Assign booleans ---*/
-
+  
   switch (config->GetKind_Solver()) {
-  case TEMPLATE_SOLVER: template_solver = true; break;
-  case EULER : euler = true; break;
-  case NAVIER_STOKES: ns = true; break;
-  case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
-  case POISSON_EQUATION: poisson = true; break;
-  case WAVE_EQUATION: wave = true; break;
-  case HEAT_EQUATION: heat = true; break;
-  case FEM_ELASTICITY: fem = true; break;
-  case ADJ_EULER : euler = true; adj_euler = true; break;
-  case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-  case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
-  case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
-  case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
-  case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
+    case TEMPLATE_SOLVER: template_solver = true; break;
+    case EULER : euler = true; break;
+    case NAVIER_STOKES: ns = true; break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case POISSON_EQUATION: poisson = true; break;
+    case WAVE_EQUATION: wave = true; break;
+    case HEAT_EQUATION: heat = true; break;
+    case FEM_ELASTICITY: fem = true; break;
+    case ADJ_EULER : euler = true; adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
+    case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; break;
   }
-
+  
   /*--- Assign turbulence model booleans --- */
-
+  
   if (turbulent)
     switch (config->GetKind_Turb_Model()) {
-    case SA:     spalart_allmaras = true;     break;
-    case SA_NEG: neg_spalart_allmaras = true; break;
-    case SST:    menter_sst = true;           break;
+      case SA:     spalart_allmaras = true;     break;
+      case SA_NEG: neg_spalart_allmaras = true; break;
+      case SST:    menter_sst = true;           break;
     }
-
+  
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
-and potential are incompatible, they use the same position in sol container ---*/
-  for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-
+   and potential are incompatible, they use the same position in sol container ---*/
+  for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+    
     /*--- DeAllocate solution for a template problem ---*/
     if (template_solver) {
       delete solver_container[iMGlevel][TEMPLATE_SOL];
     }
-
+    
     /*--- DeAllocate solution for adjoint problem ---*/
     if (adj_euler || adj_ns || disc_adj) {
       delete solver_container[iMGlevel][ADJFLOW_SOL];
@@ -831,12 +888,12 @@ and potential are incompatible, they use the same position in sol container ---*
         delete solver_container[iMGlevel][ADJTURB_SOL];
       }
     }
-
+    
     /*--- DeAllocate solution for direct problem ---*/
     if (euler || ns) {
       delete solver_container[iMGlevel][FLOW_SOL];
     }
-
+    
     if (turbulent) {
       if (spalart_allmaras || neg_spalart_allmaras || menter_sst ) {
         delete solver_container[iMGlevel][TURB_SOL];
@@ -857,10 +914,10 @@ and potential are incompatible, they use the same position in sol container ---*
     if (fem) {
       delete solver_container[iMGlevel][FEA_SOL];
     }
-
-
-    //delete[] solver_container[iMGlevel];
+    
+    delete [] solver_container[iMGlevel];
   }
+  
 }
 
 void CDriver::Integration_Preprocessing(CIntegration **integration_container,
@@ -930,7 +987,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   ns, adj_ns,
   turbulent, adj_turb,
   poisson, wave, fem, heat, template_solver, transition, disc_adj;
-
+  
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
   ns               = false; adj_ns           = false;
@@ -941,7 +998,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   fem = false;
   transition       = false;
   template_solver  = false;
-
+  
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
@@ -958,12 +1015,12 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; adj_turb=true; break;
-
+      
   }
-
+  
   /*--- DeAllocate solution for a template problem ---*/
   if (template_solver) integration_container[TEMPLATE_SOL] = new CSingleGridIntegration(config);
-
+  
   /*--- DeAllocate solution for direct problem ---*/
   if (euler || ns) delete integration_container[FLOW_SOL];
   if (turbulent) delete integration_container[TURB_SOL];
@@ -972,12 +1029,12 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   if (wave) delete integration_container[WAVE_SOL];
   if (heat) delete integration_container[HEAT_SOL];
   if (fem) delete integration_container[FEA_SOL];
-
+  
   /*--- DeAllocate solution for adjoint problem ---*/
   if (adj_euler || adj_ns || disc_adj) delete integration_container[ADJFLOW_SOL];
   if (adj_turb) delete integration_container[ADJTURB_SOL];
-
-
+  
+  
 }
 
 void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
@@ -1203,19 +1260,19 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
               break;
               
             case HLLC:
-		if (ideal_gas) {
-		      for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-		        numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
-		        numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
-		      }
-		}
-		else {
-		      for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-		        numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwGeneralHLLC_Flow(nDim, nVar_Flow, config);
-		        numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwGeneralHLLC_Flow(nDim, nVar_Flow, config);
-		      }
-		}
-             	break;
+              if (ideal_gas) {
+                for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                  numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
+                  numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwHLLC_Flow(nDim, nVar_Flow, config);
+                }
+              }
+              else {
+                for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                  numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwGeneralHLLC_Flow(nDim, nVar_Flow, config);
+                  numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwGeneralHLLC_Flow(nDim, nVar_Flow, config);
+                }
+              }
+              break;
               
             case MSW:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -1617,7 +1674,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     }
     
   }
-    
+  
   /*--- Solver definition for the turbulent adjoint problem ---*/
   if (adj_turb) {
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
@@ -1672,45 +1729,45 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     numerics_container[MESH_0][WAVE_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Wave, config);
     
   }
-
+  
   /*--- Solver definition for the FEM problem ---*/
   if (fem) {
-	switch (config->GetGeometricConditions()) {
-    	case SMALL_DEFORMATIONS :
-    		switch (config->GetMaterialModel()) {
-    			case LINEAR_ELASTIC: numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_LinearElasticity(nDim, nVar_FEM, config); break;
-    			case NEO_HOOKEAN : cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
-    			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
-    		}
-    		break;
-    	case LARGE_DEFORMATIONS :
-    		switch (config->GetMaterialModel()) {
-				case LINEAR_ELASTIC: cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
-    			case NEO_HOOKEAN :
-    				switch (config->GetMaterialCompressibility()) {
-    					case COMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config); break;
-    					case INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config); break;
-    					default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
-    				}
-    				break;
-    			default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
-    		}
-    		break;
-    	default: cout << " Solver not implemented." << endl; exit(EXIT_FAILURE); break;
-	}
-
+    switch (config->GetGeometricConditions()) {
+      case SMALL_DEFORMATIONS :
+        switch (config->GetMaterialModel()) {
+          case LINEAR_ELASTIC: numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_LinearElasticity(nDim, nVar_FEM, config); break;
+          case NEO_HOOKEAN : cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
+          default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+        }
+        break;
+      case LARGE_DEFORMATIONS :
+        switch (config->GetMaterialModel()) {
+          case LINEAR_ELASTIC: cout << "Material model does not correspond to geometric conditions." << endl; exit(EXIT_FAILURE); break;
+          case NEO_HOOKEAN :
+            switch (config->GetMaterialCompressibility()) {
+              case COMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Comp(nDim, nVar_FEM, config); break;
+              case INCOMPRESSIBLE_MAT : numerics_container[MESH_0][FEA_SOL][FEA_TERM] = new CFEM_NeoHookean_Incomp(nDim, nVar_FEM, config); break;
+              default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+            }
+            break;
+          default: cout << "Material model not implemented." << endl; exit(EXIT_FAILURE); break;
+        }
+        break;
+      default: cout << " Solver not implemented." << endl; exit(EXIT_FAILURE); break;
+    }
+    
   }
-
+  
 }
 
 
 void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
-                            CSolver ***solver_container, CGeometry **geometry,
-                            CConfig *config) {
-
+                                      CSolver ***solver_container, CGeometry **geometry,
+                                      CConfig *config) {
+  
   unsigned short iMGlevel, iSol;
-
-
+  
+  
   bool
   euler, adj_euler,
   ns, adj_ns,
@@ -1722,11 +1779,11 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   heat,
   transition,
   template_solver;
-
+  
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool freesurface = (config->GetKind_Regime() == FREESURFACE);
-
+  
   /*--- Initialize some useful booleans ---*/
   euler            = false;   ns               = false;   turbulent        = false;
   poisson          = false;
@@ -1735,7 +1792,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
   spalart_allmaras = false; neg_spalart_allmaras = false; menter_sst       = false;
   transition       = false;
   template_solver  = false;
-
+  
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
@@ -1750,20 +1807,20 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc()); break;
   }
-
+  
   /*--- Assign turbulence model booleans --- */
-
+  
   if (turbulent)
     switch (config->GetKind_Turb_Model()) {
       case SA:     spalart_allmaras = true;     break;
       case SA_NEG: neg_spalart_allmaras = true; break;
       case SST:    menter_sst = true;  break;
-
+        
     }
-
+  
   /*--- Solver definition for the template problem ---*/
   if (template_solver) {
-
+    
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Template()) {
       case SPACE_CENTERED : case SPACE_UPWIND :
@@ -1771,7 +1828,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
           delete numerics_container[iMGlevel][TEMPLATE_SOL][CONV_TERM];
         break;
     }
-
+    
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++){
       /*--- Definition of the viscous scheme for each equation and mesh level ---*/
       delete numerics_container[iMGlevel][TEMPLATE_SOL][VISC_TERM];
@@ -1780,48 +1837,48 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
       /*--- Definition of the boundary condition method ---*/
       delete numerics_container[iMGlevel][TEMPLATE_SOL][CONV_BOUND_TERM];
     }
-
+    
   }
-
+  
   /*--- Solver definition for the Potential, Euler, Navier-Stokes problems ---*/
   if ((euler) || (ns)) {
-
+    
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Flow()) {
-
+        
       case SPACE_CENTERED :
         if (compressible) {
-
+          
           /*--- Compressible flow ---*/
           switch (config->GetKind_Centered_Flow()) {
             case LAX : case JST :  case JST_KE : delete numerics_container[MESH_0][FLOW_SOL][CONV_TERM]; break;
           }
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
             delete numerics_container[iMGlevel][FLOW_SOL][CONV_TERM];
-
+          
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
             delete numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
-
+          
         }
         if (incompressible) {
           /*--- Incompressible flow, use artificial compressibility method ---*/
           switch (config->GetKind_Centered_Flow()) {
-
+              
             case LAX : case JST : delete numerics_container[MESH_0][FLOW_SOL][CONV_TERM]; break;
-
+              
           }
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
             delete numerics_container[iMGlevel][FLOW_SOL][CONV_TERM];
-
+          
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
             delete numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
-
+          
         }
         break;
       case SPACE_UPWIND :
-
+        
         if (compressible) {
           /*--- Compressible flow ---*/
           switch (config->GetKind_Upwind_Flow()) {
@@ -1830,10 +1887,10 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
                 delete numerics_container[iMGlevel][FLOW_SOL][CONV_TERM];
                 delete numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
               }
-
+              
               break;
           }
-
+          
         }
         if (incompressible || freesurface) {
           /*--- Incompressible flow, use artificial compressibility method ---*/
@@ -1846,38 +1903,38 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
               break;
           }
         }
-
+        
         break;
     }
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     if (compressible||incompressible||freesurface) {
       /*--- Compressible flow Ideal gas ---*/
       delete numerics_container[MESH_0][FLOW_SOL][VISC_TERM];
       for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
         delete numerics_container[iMGlevel][FLOW_SOL][VISC_TERM];
-
+      
       /*--- Definition of the boundary condition method ---*/
       for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
         delete numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM];
-
+      
     }
-
+    
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       delete numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM];
       delete numerics_container[iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM];
     }
-
+    
   }
-
-
+  
+  
   /*--- Solver definition for the turbulent model problem ---*/
-
+  
   if (turbulent) {
-
+    
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
-
+    
     switch (config->GetKind_ConvNumScheme_Turb()) {
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -1886,25 +1943,25 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
         }
         break;
     }
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     if (spalart_allmaras || neg_spalart_allmaras || menter_sst){
       for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-          delete numerics_container[iMGlevel][TURB_SOL][VISC_TERM];
-          delete numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM];
-          delete numerics_container[iMGlevel][TURB_SOL][SOURCE_SECOND_TERM];
-          /*--- Definition of the boundary condition method ---*/
-          delete numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM];
-          delete numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM];
-
+        delete numerics_container[iMGlevel][TURB_SOL][VISC_TERM];
+        delete numerics_container[iMGlevel][TURB_SOL][SOURCE_FIRST_TERM];
+        delete numerics_container[iMGlevel][TURB_SOL][SOURCE_SECOND_TERM];
+        /*--- Definition of the boundary condition method ---*/
+        delete numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM];
+        delete numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM];
+        
       }
     }
-
+    
   }
-
+  
   /*--- Solver definition for the transition model problem ---*/
   if (transition) {
-
+    
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Turb()) {
       case SPACE_UPWIND :
@@ -1913,7 +1970,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
         }
         break;
     }
-
+    
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       /*--- Definition of the viscous scheme for each equation and mesh level ---*/
       delete numerics_container[iMGlevel][TRANS_SOL][VISC_TERM];
@@ -1924,71 +1981,71 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
       delete numerics_container[iMGlevel][TRANS_SOL][CONV_BOUND_TERM];
     }
   }
-
+  
   /*--- Solver definition for the poisson potential problem ---*/
   if (poisson || heat) {
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     delete numerics_container[MESH_0][POISSON_SOL][VISC_TERM];
-
+    
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     delete numerics_container[MESH_0][POISSON_SOL][SOURCE_FIRST_TERM];
     delete numerics_container[MESH_0][POISSON_SOL][SOURCE_SECOND_TERM];
-
+    
   }
-
+  
   /*--- Solver definition for the flow adjoint problem ---*/
-
+  
   if (adj_euler || adj_ns ) {
-
+    
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
-
+    
     switch (config->GetKind_ConvNumScheme_AdjFlow()) {
       case SPACE_CENTERED :
-
+        
         if (compressible) {
-
+          
           /*--- Compressible flow ---*/
-
+          
           switch (config->GetKind_Centered_AdjFlow()) {
             case LAX : case JST:
               delete numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM];
               break;
           }
-
+          
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
             delete numerics_container[iMGlevel][ADJFLOW_SOL][CONV_TERM];
-
+          
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
             delete numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM];
-
+          
         }
-
+        
         if (incompressible || freesurface) {
-
+          
           /*--- Incompressible flow, use artificial compressibility method ---*/
-
+          
           switch (config->GetKind_Centered_AdjFlow()) {
             case LAX : case JST:
               delete numerics_container[MESH_0][ADJFLOW_SOL][CONV_TERM]; break;
           }
-
+          
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
             delete numerics_container[iMGlevel][ADJFLOW_SOL][CONV_TERM];
-
+          
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
             delete numerics_container[iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM];
-
+          
         }
-
+        
         break;
-
+        
       case SPACE_UPWIND :
-
+        
         if (compressible || incompressible || freesurface) {
-
+          
           /*--- Compressible flow ---*/
-
+          
           switch (config->GetKind_Upwind_AdjFlow()) {
             case ROE:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -1998,42 +2055,42 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
               break;
           }
         }
-
+        
         break;
     }
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-
+    
     if (compressible || incompressible || freesurface) {
-
+      
       /*--- Compressible flow ---*/
       for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
         delete numerics_container[iMGlevel][ADJFLOW_SOL][VISC_TERM];
         delete numerics_container[iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM];
       }
     }
-
+    
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-
+    
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-
-
+      
+      
       if (compressible || incompressible || freesurface) {
-
+        
         delete numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM];
         delete numerics_container[iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM];
-
+        
       }
     }
-
+    
   }
-
-
+  
+  
   /*--- Solver definition for the turbulent adjoint problem ---*/
   if (adj_turb) {
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_AdjTurb()) {
-
+        
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
           if (spalart_allmaras) {
@@ -2041,8 +2098,8 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
           }
         break;
     }
-
-
+    
+    
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras) {
         /*--- Definition of the viscous scheme for each equation and mesh level ---*/
@@ -2055,32 +2112,31 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
       }
     }
   }
-
+  
   /*--- Solver definition for the wave problem ---*/
   if (wave) {
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     delete numerics_container[MESH_0][WAVE_SOL][VISC_TERM];
-
+    
   }
-
+  
   /*--- Solver definition for the FEA problem ---*/
   if (fem) {
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    delete numerics_container[MESH_0][FEA_SOL][VISC_TERM];
-
+    delete numerics_container[MESH_0][FEA_SOL][FEA_TERM];
+    
   }
-
-
+  
   /*--- Definition of the Class for the numerical method: numerics_container[MESH_LEVEL][EQUATION][EQ_TERM] ---*/
   for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     for (iSol = 0; iSol < MAX_SOLS; iSol++){
-      delete numerics_container[iMGlevel][iSol];
+      delete [] numerics_container[iMGlevel][iSol];
     }
     delete[] numerics_container[iMGlevel];
   }
-
+  
 }
 
 void CDriver::Iteration_Preprocessing() {
@@ -2144,74 +2200,74 @@ void CDriver::Iteration_Preprocessing() {
 
 
 void CDriver::Interface_Preprocessing() {
-
-	int rank = MASTER_NODE;
-	unsigned short donorZone, targetZone;
-	unsigned short nVar, nVarTransfer;
-
-	/*--- Initialize some useful booleans ---*/
-	bool fluid_donor, structural_donor;
-	bool fluid_target, structural_target;
-
-	bool matching_mesh;
-
-	fluid_donor  = false;  structural_donor  = false;
-	fluid_target  = false;  structural_target  = false;
-
+  
+  int rank = MASTER_NODE;
+  unsigned short donorZone, targetZone;
+  unsigned short nVar, nVarTransfer;
+  
+  /*--- Initialize some useful booleans ---*/
+  bool fluid_donor, structural_donor;
+  bool fluid_target, structural_target;
+  
+  bool matching_mesh;
+  
+  fluid_donor  = false;  structural_donor  = false;
+  fluid_target  = false;  structural_target  = false;
+  
 
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
-	/*--- Coupling between zones (limited to two zones at the moment) ---*/
-	for (targetZone = 0; targetZone < nZone; targetZone++){
-
+  
+  /*--- Coupling between zones (limited to two zones at the moment) ---*/
+  for (targetZone = 0; targetZone < nZone; targetZone++){
+    
     /*--- Initialize target booleans ---*/
     fluid_target  = false;  structural_target  = false;
-
+    
     /*--- Set the target boolean: as of now, only Fluid-Structure Interaction considered ---*/
     switch (config_container[targetZone]->GetKind_Solver()) {
       case EULER : case NAVIER_STOKES: case RANS: fluid_target  = true;     break;
       case FEM_ELASTICITY:            structural_target = true;   break;
     }
-
-		for (donorZone = 0; donorZone < nZone; donorZone++){
-	    /*--- Initialize donor booleans ---*/
-	    fluid_donor  = false;  structural_donor  = false;
-	    matching_mesh = config_container[donorZone]->GetMatchingMesh();
-
-	    /*--- Set the donor boolean: as of now, only Fluid-Structure Interaction considered ---*/
-	    switch (config_container[donorZone]->GetKind_Solver()) {
-	      case EULER : case NAVIER_STOKES: case RANS: fluid_donor  = true;    break;
-	      case FEM_ELASTICITY:            structural_donor = true;  break;
-	    }
-
-
-			/*--- Retrieve the number of conservative variables (for problems not involving structural analysis ---*/
-			if (!structural_donor && !structural_target){
-				nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnVar();
-			}
-			else{
-				/*--- If at least one of the components is structural ---*/
-				nVar = nDim;
-			}
-
-			/*--- Interface conditions are only defined between different zones ---*/
-			if (donorZone != targetZone){
-
-				if (rank == MASTER_NODE) cout << "From zone " << donorZone << " to zone " << targetZone << ": ";
-
-				/*--- Match Zones ---*/
-				if (rank == MASTER_NODE) cout << "Setting coupling "<<endl;
-
-				/*--- If the mesh is matching: match points ---*/
-				if (matching_mesh){
-					if (rank == MASTER_NODE) cout << "between matching meshes. " << endl;
-					geometry_container[donorZone][MESH_0]->MatchZone(config_container[donorZone], geometry_container[targetZone][MESH_0],
-							config_container[targetZone], donorZone, nZone);
-				}
-				/*--- Else: interpolate ---*/
-				else {
+    
+    for (donorZone = 0; donorZone < nZone; donorZone++){
+      /*--- Initialize donor booleans ---*/
+      fluid_donor  = false;  structural_donor  = false;
+      matching_mesh = config_container[donorZone]->GetMatchingMesh();
+      
+      /*--- Set the donor boolean: as of now, only Fluid-Structure Interaction considered ---*/
+      switch (config_container[donorZone]->GetKind_Solver()) {
+        case EULER : case NAVIER_STOKES: case RANS: fluid_donor  = true;    break;
+        case FEM_ELASTICITY:            structural_donor = true;  break;
+      }
+      
+      
+      /*--- Retrieve the number of conservative variables (for problems not involving structural analysis ---*/
+      if (!structural_donor && !structural_target){
+        nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnVar();
+      }
+      else{
+        /*--- If at least one of the components is structural ---*/
+        nVar = nDim;
+      }
+      
+      /*--- Interface conditions are only defined between different zones ---*/
+      if (donorZone != targetZone){
+        
+        if (rank == MASTER_NODE) cout << "From zone " << donorZone << " to zone " << targetZone << ": ";
+        
+        /*--- Match Zones ---*/
+        if (rank == MASTER_NODE) cout << "Setting coupling "<<endl;
+        
+        /*--- If the mesh is matching: match points ---*/
+        if (matching_mesh){
+          if (rank == MASTER_NODE) cout << "between matching meshes. " << endl;
+          geometry_container[donorZone][MESH_0]->MatchZone(config_container[donorZone], geometry_container[targetZone][MESH_0],
+                                                           config_container[targetZone], donorZone, nZone);
+        }
+        /*--- Else: interpolate ---*/
+        else {
           switch (config_container[donorZone]->GetKindInterpolation()){
             case NEAREST_NEIGHBOR:
               interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, donorZone, targetZone);
@@ -2234,35 +2290,35 @@ void CDriver::Interface_Preprocessing() {
                 if (rank == MASTER_NODE) cout << "Consistent and conservative interpolation assumes the structure model mesh is evaluated second. Somehow this has not happened. The isoparametric coefficients will be calculated for both meshes, and are not guaranteed to be consistent." << endl;
               }
               break;
-				  }
-				}
-
-				/*--- Initialize the appropriate transfer strategy ---*/
-				if (rank == MASTER_NODE) cout << "Transferring ";
-
-				if (fluid_donor && structural_target) {
-					nVarTransfer = 2;
-					transfer_container[donorZone][targetZone] = new CTransfer_FlowTraction(nVar, nVarTransfer, config_container[donorZone]);
-					if (rank == MASTER_NODE) cout << "flow tractions. "<< endl;
-				}
-				else if (structural_donor && fluid_target){
-					nVarTransfer = 0;
-					transfer_container[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nVar, nVarTransfer, config_container[donorZone]);
-					if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
-				}
-				else {
-					nVarTransfer = 0;
-					transfer_container[donorZone][targetZone] = new CTransfer_ConservativeVars(nVar, nVarTransfer, config_container[donorZone]);
-					if (rank == MASTER_NODE) cout << "generic conservative variables. " << endl;
-				}
-
-			}
-
-
-		}
-
-	}
-
+          }
+        }
+        
+        /*--- Initialize the appropriate transfer strategy ---*/
+        if (rank == MASTER_NODE) cout << "Transferring ";
+        
+        if (fluid_donor && structural_target) {
+          nVarTransfer = 2;
+          transfer_container[donorZone][targetZone] = new CTransfer_FlowTraction(nVar, nVarTransfer, config_container[donorZone]);
+          if (rank == MASTER_NODE) cout << "flow tractions. "<< endl;
+        }
+        else if (structural_donor && fluid_target){
+          nVarTransfer = 0;
+          transfer_container[donorZone][targetZone] = new CTransfer_StructuralDisplacements(nVar, nVarTransfer, config_container[donorZone]);
+          if (rank == MASTER_NODE) cout << "structural displacements. "<< endl;
+        }
+        else {
+          nVarTransfer = 0;
+          transfer_container[donorZone][targetZone] = new CTransfer_ConservativeVars(nVar, nVarTransfer, config_container[donorZone]);
+          if (rank == MASTER_NODE) cout << "generic conservative variables. " << endl;
+        }
+        
+      }
+      
+      
+    }
+    
+  }
+  
 }
 
 void CDriver::StartSolver(){
@@ -2271,7 +2327,7 @@ void CDriver::StartSolver(){
 
 #ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif // HAVE_MPI
+#endif
 
     /*--- Main external loop of the solver. Within this loop, each iteration ---*/
 
@@ -2329,7 +2385,6 @@ void CDriver::StartSolver(){
   }
 
 }
-
 
 void CDriver::PreprocessExtIter(unsigned long ExtIter){
 
@@ -2392,14 +2447,15 @@ bool CDriver::Monitor(unsigned long ExtIter){
     strcpy(runtime_file_name, "runtime.dat");
     runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
     runtime->SetExtIter(ExtIter);
+    delete runtime;
 
-	/*--- Update the convergence history file (serial and parallel computations). ---*/
+    /*--- Update the convergence history file (serial and parallel computations). ---*/
 
-	if (!fsi){
-		output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
+    if (!fsi){
+      output->SetConvHistory_Body(&ConvHist_file, geometry_container, solver_container,
 				config_container, integration_container, false, UsedTime, ZONE_0);
 
-	}
+    }
 
 
     /*--- Evaluate the new CFL number (adaptive). ---*/
@@ -2418,8 +2474,8 @@ bool CDriver::Monitor(unsigned long ExtIter){
         StopCalc = integration_container[ZONE_0][WAVE_SOL]->GetConvergence(); break;
       case HEAT_EQUATION:
         StopCalc = integration_container[ZONE_0][HEAT_SOL]->GetConvergence(); break;
-	  case FEM_ELASTICITY:
-	    StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
+      case FEM_ELASTICITY:
+	StopCalc = integration_container[ZONE_0][FEA_SOL]->GetConvergence(); break;
       case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
         StopCalc = integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence(); break;
@@ -2441,79 +2497,79 @@ void CDriver::Output(unsigned long ExtIter){
 
 
     /*--- Solution output. Determine whether a solution needs to be written
-		 after the current iteration, and if so, execute the output file writing
-		 routines. ---*/
+     after the current iteration, and if so, execute the output file writing
+     routines. ---*/
 
-		if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter())
+    if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter())
 
-				||
+	||
 
-				((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
-				 !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-					 (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) ||
-					 (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)))
+	((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
+	 !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+	   (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) ||
+	   (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)))
 
-				||
+	||
 
-				(StopCalc)
+	(StopCalc)
 
-				||
+	||
 
-				(((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-				 (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
-				 ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))
+	(((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+	  (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
+	 ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))
 
-				||
+	||
 
-				((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (!fsi) &&
-				 ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
-														 ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
+	((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (!fsi) &&
+         ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
+			     ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
 
-				||
+	||
 
-				((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
-				 ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
+	((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
+	 ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
 
-				||
+	||
 
-				(((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
-						 ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))){
-
-
-          /*--- Low-fidelity simulations (using a coarser multigrid level
-           approximation to the solution) require an interpolation back to the
-           finest grid. ---*/
-
-          if (config_container[ZONE_0]->GetLowFidelitySim()) {
-            integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], solver_container[ZONE_0][MESH_1][FLOW_SOL], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
-            integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
-            solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Set_MPI_Solution(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
-            solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS, true);
-          }
+	(((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
+	  ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))){
 
 
-          if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
+      /*--- Low-fidelity simulations (using a coarser multigrid level
+       approximation to the solution) require an interpolation back to the
+       finest grid. ---*/
 
-          /*--- Execute the routine for writing restart, volume solution,
-           surface solution, and surface comma-separated value files. ---*/
+      if (config_container[ZONE_0]->GetLowFidelitySim()) {
+        integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], solver_container[ZONE_0][MESH_1][FLOW_SOL], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
+        integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
+        solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Set_MPI_Solution(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+        solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS, true);
+      }
 
-          output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
 
-          /*--- Output a file with the forces breakdown. ---*/
+      if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
 
-          output->SetForces_Breakdown(geometry_container, solver_container,
-                                      config_container, integration_container, ZONE_0);
+      /*--- Execute the routine for writing restart, volume solution,
+       surface solution, and surface comma-separated value files. ---*/
 
-          /*--- Compute the forces at different sections. ---*/
+      output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
 
-          if (config_container[ZONE_0]->GetPlot_Section_Forces()) {
-            output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                     geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
-          }
+      /*--- Output a file with the forces breakdown. ---*/
 
-          if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
+      output->SetForces_Breakdown(geometry_container, solver_container,
+                                  config_container, integration_container, ZONE_0);
 
-        }
+      /*--- Compute the forces at different sections. ---*/
+
+      if (config_container[ZONE_0]->GetPlot_Section_Forces()) {
+        output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+                                 geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
+      }
+
+      if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
+
+    }
 
 }
 
@@ -2964,9 +3020,9 @@ void CSingleZoneDriver::ResetConvergence(){
 
 void CSingleZoneDriver::DynamicMeshUpdate(unsigned long ExtIter){
 
-    bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool time_spectral = (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL);
 
-    /*--- Dynamic mesh update ---*/
+  /*--- Dynamic mesh update ---*/
   if ((config_container[ZONE_0]->GetGrid_Movement()) && (!time_spectral)) {
     iteration_container[ZONE_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, 0, ExtIter );
   }
@@ -2993,22 +3049,22 @@ void CSingleZoneDriver::StaticMeshUpdate(){
 
 void CSingleZoneDriver::SetInitialMesh(){
 
-    unsigned long iPoint;
+  unsigned long iPoint;
 
-    StaticMeshUpdate();
+  StaticMeshUpdate();
 
-    /*--- Propagate the initial deformation to the past ---*/
+  /*--- Propagate the initial deformation to the past ---*/
   //if (!restart){
-      for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++){
-        for(iPoint = 0; iPoint < geometry_container[ZONE_0][iMesh]->GetnPoint(); iPoint++){
-          //solver_container[ZONE_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
-          //solver_container[ZONE_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
-          geometry_container[ZONE_0][iMesh]->node[iPoint]->SetVolume_n();
-          geometry_container[ZONE_0][iMesh]->node[iPoint]->SetVolume_nM1();
-          geometry_container[ZONE_0][iMesh]->node[iPoint]->SetCoord_n();
-          geometry_container[ZONE_0][iMesh]->node[iPoint]->SetCoord_n1();
-        }
+    for (iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++){
+      for(iPoint = 0; iPoint < geometry_container[ZONE_0][iMesh]->GetnPoint(); iPoint++){
+        //solver_container[ZONE_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
+        //solver_container[ZONE_0][iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
+        geometry_container[ZONE_0][iMesh]->node[iPoint]->SetVolume_n();
+        geometry_container[ZONE_0][iMesh]->node[iPoint]->SetVolume_nM1();
+        geometry_container[ZONE_0][iMesh]->node[iPoint]->SetCoord_n();
+        geometry_container[ZONE_0][iMesh]->node[iPoint]->SetCoord_n1();
       }
+    }
   //}
 
 }
@@ -3093,15 +3149,15 @@ void CMultiZoneDriver::ResetConvergence(){
 
 void CMultiZoneDriver::DynamicMeshUpdate(unsigned long ExtIter){
 
-    bool time_spectral;
+  bool time_spectral;
 
-    for (iZone = 0; iZone < nZone; iZone++){
-        time_spectral = (config_container[iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL);
-        /*--- Dynamic mesh update ---*/
-        if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral)) {
-            iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
-        }
+  for (iZone = 0; iZone < nZone; iZone++){
+    time_spectral = (config_container[iZone]->GetUnsteady_Simulation() == TIME_SPECTRAL);
+    /*--- Dynamic mesh update ---*/
+    if ((config_container[iZone]->GetGrid_Movement()) && (!time_spectral)) {
+      iteration_container[iZone]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, iZone, 0, ExtIter );
     }
+  }
 
 }
 
@@ -3130,7 +3186,7 @@ void CMultiZoneDriver::SetInitialMesh(){
 
   StaticMeshUpdate();
 
-    /*--- Propagate the initial deformation to the past ---*/
+  /*--- Propagate the initial deformation to the past ---*/
   //if (!restart){
     for(iZone = 0; iZone < nZone; iZone++){
       for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
@@ -3145,6 +3201,7 @@ void CMultiZoneDriver::SetInitialMesh(){
       }
     }
   //}
+
 }
 
 CSpectralDriver::CSpectralDriver(char* confFile,
@@ -3176,13 +3233,11 @@ void CSpectralDriver::Run() {
                                            solver_container, numerics_container, config_container,
                                            surface_movement, grid_movement, FFDBox, iZone);
   
-  for (iZone = 0; iZone < nZone; iZone++) {
+  for (iZone = 0; iZone < nZone; iZone++)
     iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
                                         surface_movement, grid_movement, FFDBox, iZone);
     
-  }
-  
 }
 
 void CSpectralDriver::Update(){
@@ -3653,139 +3708,140 @@ CFSIDriver::CFSIDriver(char* confFile,
 CFSIDriver::~CFSIDriver(void) { }
 
 void CFSIDriver::Run() {
-
-	/*--- As of now, we are coding it for just 2 zones. ---*/
-	/*--- This will become more general, but we need to modify the configuration for that ---*/
-	unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
-
-	unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
-	unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
-	unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
-
+  
+  /*--- As of now, we are coding it for just 2 zones. ---*/
+  /*--- This will become more general, but we need to modify the configuration for that ---*/
+  unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
+  
+  unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
+  unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
+  unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
+  
 #ifdef HAVE_MPI
   int rank = MASTER_NODE;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-	 /*--- If there is a restart, we need to get the old geometry from the fluid field ---*/
-	 bool restart = (config_container[ZONE_FLOW]->GetRestart() || config_container[ZONE_FLOW]->GetRestart_Flow());
-	 unsigned long ExtIter = config_container[ZONE_FLOW]->GetExtIter();
+  /*--- If there is a restart, we need to get the old geometry from the fluid field ---*/
+  bool restart = (config_container[ZONE_FLOW]->GetRestart() || config_container[ZONE_FLOW]->GetRestart_Flow());
+  ExtIter = config_container[ZONE_FLOW]->GetExtIter();
 
-	 if (restart && (long)ExtIter == config_container[ZONE_FLOW]->GetUnst_RestartIter()){
-		unsigned short ZONE_FLOW = 0;
-		solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Restart_OldGeometry(geometry_container[ZONE_FLOW][MESH_0],config_container[ZONE_FLOW]);
-	 }
+  if (restart && (long)ExtIter == config_container[ZONE_FLOW]->GetUnst_RestartIter()){
+    unsigned short ZONE_FLOW = 0;
+    solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Restart_OldGeometry(geometry_container[ZONE_FLOW][MESH_0],config_container[ZONE_FLOW]);
+  }
 
-	/*-----------------------------------------------------------------*/
-	/*---------------- Predict structural displacements ---------------*/
-	/*-----------------------------------------------------------------*/
+  /*-----------------------------------------------------------------*/
+  /*---------------- Predict structural displacements ---------------*/
+  /*-----------------------------------------------------------------*/
+ 
+  Predict_Displacements(ZONE_STRUCT, ZONE_FLOW);
 
-	Predict_Displacements(ZONE_STRUCT, ZONE_FLOW);
+  while (FSIIter < nFSIIter){
 
-	while (FSIIter < nFSIIter){
+    /*-----------------------------------------------------------------*/
+    /*------------------- Transfer Displacements ----------------------*/
+    /*-----------------------------------------------------------------*/
 
-		/*-----------------------------------------------------------------*/
-		/*------------------- Transfer Displacements ----------------------*/
-		/*-----------------------------------------------------------------*/
+    Transfer_Displacements(ZONE_STRUCT, ZONE_FLOW);
 
-		Transfer_Displacements(ZONE_STRUCT, ZONE_FLOW);
+    /*-----------------------------------------------------------------*/
+    /*-------------------- Fluid subiteration -------------------------*/
+    /*-----------------------------------------------------------------*/
 
-		/*-----------------------------------------------------------------*/
-		/*-------------------- Fluid subiteration -------------------------*/
-		/*-----------------------------------------------------------------*/
+    iteration_container[ZONE_FLOW]->SetGrid_Movement(geometry_container,surface_movement,
+                                                     grid_movement, FFDBox, solver_container,
+                                                     config_container, ZONE_FLOW, 0, ExtIter);
 
-		iteration_container[ZONE_FLOW]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox,
-                                                     solver_container, config_container, ZONE_FLOW, 0, ExtIter);
+    iteration_container[ZONE_FLOW]->Preprocess(output, integration_container, geometry_container,
+		                               solver_container, numerics_container, config_container,
+		                               surface_movement, grid_movement, FFDBox, ZONE_FLOW);
 
-		iteration_container[ZONE_FLOW]->Preprocess(output, integration_container, geometry_container,
-		                                       solver_container, numerics_container, config_container,
-		                                       surface_movement, grid_movement, FFDBox, ZONE_FLOW);
+    iteration_container[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
+		                            solver_container, numerics_container, config_container,
+		                            surface_movement, grid_movement, FFDBox, ZONE_FLOW);
 
-		iteration_container[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
-		                                       solver_container, numerics_container, config_container,
-		                                       surface_movement, grid_movement, FFDBox, ZONE_FLOW);
+    /*--- Write the convergence history for the fluid (only screen output) ---*/
 
-		/*--- Write the convergence history for the fluid (only screen output) ---*/
+    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_FLOW);
 
-		output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_FLOW);
+    /*--- Set the fluid convergence to false (to make sure FSI subiterations converge) ---*/
 
-		/*--- Set the fluid convergence to false (to make sure FSI subiterations converge) ---*/
+    integration_container[ZONE_FLOW][FLOW_SOL]->SetConvergence(false);
 
-		integration_container[ZONE_FLOW][FLOW_SOL]->SetConvergence(false);
+    /*-----------------------------------------------------------------*/
+    /*------------------- Set FEA loads from fluid --------------------*/
+    /*-----------------------------------------------------------------*/
 
-		/*-----------------------------------------------------------------*/
-		/*------------------- Set FEA loads from fluid --------------------*/
-		/*-----------------------------------------------------------------*/
+    Transfer_Tractions(ZONE_FLOW, ZONE_STRUCT);
 
-		Transfer_Tractions(ZONE_FLOW, ZONE_STRUCT);
+    /*-----------------------------------------------------------------*/
+    /*------------------ Structural subiteration ----------------------*/
+    /*-----------------------------------------------------------------*/
 
-		/*-----------------------------------------------------------------*/
-		/*------------------ Structural subiteration ----------------------*/
-		/*-----------------------------------------------------------------*/
+    iteration_container[ZONE_STRUCT]->Iterate(output, integration_container, geometry_container,
+		                              solver_container, numerics_container, config_container,
+		                              surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
 
-		iteration_container[ZONE_STRUCT]->Iterate(output, integration_container, geometry_container,
-		                                       solver_container, numerics_container, config_container,
-		                                       surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
+    /*--- Write the convergence history for the structure (only screen output) ---*/
 
-		/*--- Write the convergence history for the structure (only screen output) ---*/
+    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUCT);
 
-		output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUCT);
+    /*--- Set the fluid convergence to false (to make sure FSI subiterations converge) ---*/
 
-		/*--- Set the fluid convergence to false (to make sure FSI subiterations converge) ---*/
+    integration_container[ZONE_STRUCT][FEA_SOL]->SetConvergence(false);
 
-		integration_container[ZONE_STRUCT][FEA_SOL]->SetConvergence(false);
+    /*-----------------------------------------------------------------*/
+    /*----------------- Displacements relaxation ----------------------*/
+    /*-----------------------------------------------------------------*/
 
-		/*-----------------------------------------------------------------*/
-		/*----------------- Displacements relaxation ----------------------*/
-		/*-----------------------------------------------------------------*/
+    Relaxation_Displacements(ZONE_STRUCT, ZONE_FLOW, FSIIter);
 
-		Relaxation_Displacements(ZONE_STRUCT, ZONE_FLOW, FSIIter);
+    /*-----------------------------------------------------------------*/
+    /*-------------------- Check convergence --------------------------*/
+    /*-----------------------------------------------------------------*/
 
-		/*-----------------------------------------------------------------*/
-		/*-------------------- Check convergence --------------------------*/
-		/*-----------------------------------------------------------------*/
-
-		integration_container[ZONE_STRUCT][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT],
+    integration_container[ZONE_STRUCT][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT],
 																solver_container[ZONE_STRUCT][MESH_0][FEA_SOL], FSIIter);
 
-		if (integration_container[ZONE_STRUCT][FEA_SOL]->GetConvergence_FSI()) break;
+    if (integration_container[ZONE_STRUCT][FEA_SOL]->GetConvergence_FSI()) break;
 
-		/*-----------------------------------------------------------------*/
-		/*--------------------- Update FSIIter ---------------------------*/
-		/*-----------------------------------------------------------------*/
+    /*-----------------------------------------------------------------*/
+    /*--------------------- Update FSIIter ---------------------------*/
+    /*-----------------------------------------------------------------*/
 
-		FSIIter++; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
+    FSIIter++; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
 
-	}
+  }
 
-	/*-----------------------------------------------------------------*/
-  	/*------------------ Update coupled solver ------------------------*/
-	/*-----------------------------------------------------------------*/
+  /*-----------------------------------------------------------------*/
+  /*------------------ Update coupled solver ------------------------*/
+  /*-----------------------------------------------------------------*/
 
-	Update(ZONE_FLOW, ZONE_STRUCT);
-
-
-	/*-----------------------------------------------------------------*/
-  	/*-------------------- Update fluid solver ------------------------*/
-	/*-----------------------------------------------------------------*/
-
-	iteration_container[ZONE_FLOW]->Update(output, integration_container, geometry_container,
-	          	  	  	  	  	  	  	  solver_container, numerics_container, config_container,
-	          	  	  	  	  	  	  	  surface_movement, grid_movement, FFDBox, ZONE_FLOW);
-
-	/*-----------------------------------------------------------------*/
-  	/*----------------- Update structural solver ----------------------*/
-	/*-----------------------------------------------------------------*/
-
-	iteration_container[ZONE_STRUCT]->Update(output, integration_container, geometry_container,
-	          	  	  	  	  	  	  	  solver_container, numerics_container, config_container,
-	          	  	  	  	  	  	  	  surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
+  Update(ZONE_FLOW, ZONE_STRUCT);
 
 
-	/*-----------------------------------------------------------------*/
-	/*--------------- Update convergence parameter --------------------*/
-	/*-----------------------------------------------------------------*/
-	integration_container[ZONE_STRUCT][FEA_SOL]->SetConvergence_FSI(false);
+  /*-----------------------------------------------------------------*/
+  /*-------------------- Update fluid solver ------------------------*/
+  /*-----------------------------------------------------------------*/
+
+  iteration_container[ZONE_FLOW]->Update(output, integration_container, geometry_container,
+	          	  	  	 solver_container, numerics_container, config_container,
+	          	  	  	 surface_movement, grid_movement, FFDBox, ZONE_FLOW);
+
+  /*-----------------------------------------------------------------*/
+  /*----------------- Update structural solver ----------------------*/
+  /*-----------------------------------------------------------------*/
+
+  iteration_container[ZONE_STRUCT]->Update(output, integration_container, geometry_container,
+	          	  	  	   solver_container, numerics_container, config_container,
+	          	  	  	   surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
+
+
+  /*-----------------------------------------------------------------*/
+  /*--------------- Update convergence parameter --------------------*/
+  /*-----------------------------------------------------------------*/
+  integration_container[ZONE_STRUCT][FEA_SOL]->SetConvergence_FSI(false);
 
   
 }
@@ -3793,18 +3849,18 @@ void CFSIDriver::Run() {
 void CFSIDriver::Predict_Displacements(unsigned short donorZone, unsigned short targetZone){
 
 #ifdef HAVE_MPI
-	int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
-	solver_container[donorZone][MESH_0][FEA_SOL]->PredictStruct_Displacement(geometry_container[donorZone], config_container[donorZone],
-			solver_container[donorZone]);
-
-	/*--- For parallel simulations we need to communicate the predicted solution before updating the fluid mesh ---*/
-
-	solver_container[donorZone][MESH_0][FEA_SOL]->Set_MPI_Solution_Pred(geometry_container[donorZone][MESH_0], config_container[donorZone]);
-
-
+  
+  solver_container[donorZone][MESH_0][FEA_SOL]->PredictStruct_Displacement(geometry_container[donorZone], config_container[donorZone],
+                                                                           solver_container[donorZone]);
+  
+  /*--- For parallel simulations we need to communicate the predicted solution before updating the fluid mesh ---*/
+  
+  solver_container[donorZone][MESH_0][FEA_SOL]->Set_MPI_Solution_Pred(geometry_container[donorZone][MESH_0], config_container[donorZone]);
+  
+  
 }
 
 void CFSIDriver::Predict_Tractions(unsigned short donorZone, unsigned short targetZone){
@@ -3814,167 +3870,167 @@ void CFSIDriver::Predict_Tractions(unsigned short donorZone, unsigned short targ
 void CFSIDriver::Transfer_Displacements(unsigned short donorZone, unsigned short targetZone){
 
 #ifdef HAVE_MPI
-	int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
-	bool MatchingMesh = config_container[targetZone]->GetMatchingMesh();
-
-	/*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
-
-	switch (config_container[targetZone]->GetKind_TransferMethod()) {
-	case BROADCAST_DATA:
-		if (MatchingMesh){
-			transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][FEA_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
-					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-					config_container[donorZone], config_container[targetZone]);
-			/*--- Set the volume deformation for the fluid zone ---*/
-//			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
-
-		}
-		else {
-			transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][FEA_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
-					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-					config_container[donorZone], config_container[targetZone]);
-			/*--- Set the volume deformation for the fluid zone ---*/
-//			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
-
-		}
-		break;
-	case SCATTER_DATA:
-		if (MatchingMesh){
-			transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][FEA_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
-					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-					config_container[donorZone], config_container[targetZone]);
-			/*--- Set the volume deformation for the fluid zone ---*/
-//			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
-		}
-		else {
-			cout << "Scatter method not implemented for non-matching meshes. Exiting..." << endl;
-			exit(EXIT_FAILURE);
-		}
-		break;
-	case ALLGATHER_DATA:
-		if (MatchingMesh){
-			cout << "Allgather method not yet implemented for matching meshes. Exiting..." << endl;
-			exit(EXIT_FAILURE);
-		}
-		else {
-			transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][FEA_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
-					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-					config_container[donorZone], config_container[targetZone]);
-			/*--- Set the volume deformation for the fluid zone ---*/
-//			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
-		}
-		break;
-	case LEGACY_METHOD:
-		if (MatchingMesh){
-			solver_container[targetZone][MESH_0][FLOW_SOL]->SetFlow_Displacement(geometry_container[targetZone], grid_movement[targetZone],
-					config_container[targetZone], config_container[donorZone],
-					geometry_container[donorZone], solver_container[donorZone]);
-		}
-		else {
-			solver_container[targetZone][MESH_0][FLOW_SOL]->SetFlow_Displacement_Int(geometry_container[targetZone], grid_movement[targetZone],
-					config_container[targetZone], config_container[donorZone],
-					geometry_container[donorZone], solver_container[donorZone]);
-		}
-		break;
-	}
-
+  
+  bool MatchingMesh = config_container[targetZone]->GetMatchingMesh();
+  
+  /*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
+  
+  switch (config_container[targetZone]->GetKind_TransferMethod()) {
+    case BROADCAST_DATA:
+      if (MatchingMesh){
+        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][FEA_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+                                                                                    geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+                                                                                    config_container[donorZone], config_container[targetZone]);
+        /*--- Set the volume deformation for the fluid zone ---*/
+        //			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+        
+      }
+      else {
+        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][FEA_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+                                                                                       geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+                                                                                       config_container[donorZone], config_container[targetZone]);
+        /*--- Set the volume deformation for the fluid zone ---*/
+        //			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+        
+      }
+      break;
+    case SCATTER_DATA:
+      if (MatchingMesh){
+        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][FEA_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+                                                                         geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+                                                                         config_container[donorZone], config_container[targetZone]);
+        /*--- Set the volume deformation for the fluid zone ---*/
+        //			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+      }
+      else {
+        cout << "Scatter method not implemented for non-matching meshes. Exiting..." << endl;
+        exit(EXIT_FAILURE);
+      }
+      break;
+    case ALLGATHER_DATA:
+      if (MatchingMesh){
+        cout << "Allgather method not yet implemented for matching meshes. Exiting..." << endl;
+        exit(EXIT_FAILURE);
+      }
+      else {
+        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][FEA_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
+                                                                           geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+                                                                           config_container[donorZone], config_container[targetZone]);
+        /*--- Set the volume deformation for the fluid zone ---*/
+        //			grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][MESH_0], config_container[targetZone], true);
+      }
+      break;
+    case LEGACY_METHOD:
+      if (MatchingMesh){
+        solver_container[targetZone][MESH_0][FLOW_SOL]->SetFlow_Displacement(geometry_container[targetZone], grid_movement[targetZone],
+                                                                             config_container[targetZone], config_container[donorZone],
+                                                                             geometry_container[donorZone], solver_container[donorZone]);
+      }
+      else {
+        solver_container[targetZone][MESH_0][FLOW_SOL]->SetFlow_Displacement_Int(geometry_container[targetZone], grid_movement[targetZone],
+                                                                                 config_container[targetZone], config_container[donorZone],
+                                                                                 geometry_container[donorZone], solver_container[donorZone]);
+      }
+      break;
+  }
+  
 }
 
 void CFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned short targetZone){
 
 #ifdef HAVE_MPI
-	int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
-	bool MatchingMesh = config_container[donorZone]->GetMatchingMesh();
-
-	/*--- Load transfer --  This will have to be modified for non-matching meshes ---*/
-
-	unsigned short SolContainer_Position_fea = config_container[targetZone]->GetContainerPosition(RUNTIME_FEA_SYS);
-
-	/*--- FEA equations -- Necessary as the SetFEA_Load routine is as of now contained in the structural solver ---*/
-	unsigned long ExtIter = config_container[targetZone]->GetExtIter();
-	config_container[targetZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
-
-	/*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
-
-	switch (config_container[donorZone]->GetKind_TransferMethod()) {
-	case BROADCAST_DATA:
-		if (MatchingMesh){
-			transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FEA_SOL],
-					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-					config_container[donorZone], config_container[targetZone]);
-		}
-		else {
-			transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FEA_SOL],
-					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-					config_container[donorZone], config_container[targetZone]);
-		}
-		break;
-	case SCATTER_DATA:
-		if (MatchingMesh){
-			transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FEA_SOL],
-					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-					config_container[donorZone], config_container[targetZone]);
-		}
-		else {
-			cout << "Scatter method not implemented for non-matching meshes. Exiting..." << endl;
-			exit(EXIT_FAILURE);
-		}
-		break;
-	case ALLGATHER_DATA:
-		if (MatchingMesh){
-			cout << "Allgather method not yet implemented for matching meshes. Exiting..." << endl;
-			exit(EXIT_FAILURE);
-		}
-		else {
-			transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FEA_SOL],
-					geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-					config_container[donorZone], config_container[targetZone]);
-		}
-		break;
-	case LEGACY_METHOD:
-		if (MatchingMesh){
-			solver_container[targetZone][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[donorZone], geometry_container[targetZone], geometry_container[donorZone],
-					config_container[targetZone], config_container[donorZone], numerics_container[targetZone][MESH_0][SolContainer_Position_fea][FEA_TERM]);
-		}
-		else {
-			solver_container[targetZone][MESH_0][FEA_SOL]->SetFEA_Load_Int(solver_container[donorZone], geometry_container[targetZone], geometry_container[donorZone],
-					config_container[targetZone], config_container[donorZone], numerics_container[targetZone][MESH_0][SolContainer_Position_fea][FEA_TERM]);
-		}
-		break;
-	}
-
+  
+  bool MatchingMesh = config_container[donorZone]->GetMatchingMesh();
+  
+  /*--- Load transfer --  This will have to be modified for non-matching meshes ---*/
+  
+  unsigned short SolContainer_Position_fea = config_container[targetZone]->GetContainerPosition(RUNTIME_FEA_SYS);
+  
+  /*--- FEA equations -- Necessary as the SetFEA_Load routine is as of now contained in the structural solver ---*/
+  unsigned long ExtIter = config_container[targetZone]->GetExtIter();
+  config_container[targetZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+  
+  /*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
+  
+  switch (config_container[donorZone]->GetKind_TransferMethod()) {
+    case BROADCAST_DATA:
+      if (MatchingMesh){
+        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FEA_SOL],
+                                                                                    geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+                                                                                    config_container[donorZone], config_container[targetZone]);
+      }
+      else {
+        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FEA_SOL],
+                                                                                       geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+                                                                                       config_container[donorZone], config_container[targetZone]);
+      }
+      break;
+    case SCATTER_DATA:
+      if (MatchingMesh){
+        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FEA_SOL],
+                                                                         geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+                                                                         config_container[donorZone], config_container[targetZone]);
+      }
+      else {
+        cout << "Scatter method not implemented for non-matching meshes. Exiting..." << endl;
+        exit(EXIT_FAILURE);
+      }
+      break;
+    case ALLGATHER_DATA:
+      if (MatchingMesh){
+        cout << "Allgather method not yet implemented for matching meshes. Exiting..." << endl;
+        exit(EXIT_FAILURE);
+      }
+      else {
+        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FEA_SOL],
+                                                                           geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+                                                                           config_container[donorZone], config_container[targetZone]);
+      }
+      break;
+    case LEGACY_METHOD:
+      if (MatchingMesh){
+        solver_container[targetZone][MESH_0][FEA_SOL]->SetFEA_Load(solver_container[donorZone], geometry_container[targetZone], geometry_container[donorZone],
+                                                                   config_container[targetZone], config_container[donorZone], numerics_container[targetZone][MESH_0][SolContainer_Position_fea][FEA_TERM]);
+      }
+      else {
+        solver_container[targetZone][MESH_0][FEA_SOL]->SetFEA_Load_Int(solver_container[donorZone], geometry_container[targetZone], geometry_container[donorZone],
+                                                                       config_container[targetZone], config_container[donorZone], numerics_container[targetZone][MESH_0][SolContainer_Position_fea][FEA_TERM]);
+      }
+      break;
+  }
+  
 }
 
 void CFSIDriver::Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long FSIIter){
 
 #ifdef HAVE_MPI
-	int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
-	/*-------------------- Aitken's relaxation ------------------------*/
-
-	/*------------------- Compute the coefficient ---------------------*/
-
-	solver_container[donorZone][MESH_0][FEA_SOL]->ComputeAitken_Coefficient(geometry_container[donorZone], config_container[donorZone],
-			solver_container[donorZone], FSIIter);
-
-	/*----------------- Set the relaxation parameter ------------------*/
-
-	solver_container[donorZone][MESH_0][FEA_SOL]->SetAitken_Relaxation(geometry_container[donorZone], config_container[donorZone],
-			solver_container[donorZone]);
-
-
-	/*----------------- Communicate the predicted solution and the old one ------------------*/
-	solver_container[donorZone][MESH_0][FEA_SOL]->Set_MPI_Solution_Pred_Old(geometry_container[donorZone][MESH_0], config_container[donorZone]);
-
-
+  
+  /*-------------------- Aitken's relaxation ------------------------*/
+  
+  /*------------------- Compute the coefficient ---------------------*/
+  
+  solver_container[donorZone][MESH_0][FEA_SOL]->ComputeAitken_Coefficient(geometry_container[donorZone], config_container[donorZone],
+                                                                          solver_container[donorZone], FSIIter);
+  
+  /*----------------- Set the relaxation parameter ------------------*/
+  
+  solver_container[donorZone][MESH_0][FEA_SOL]->SetAitken_Relaxation(geometry_container[donorZone], config_container[donorZone],
+                                                                     solver_container[donorZone]);
+  
+  
+  /*----------------- Communicate the predicted solution and the old one ------------------*/
+  solver_container[donorZone][MESH_0][FEA_SOL]->Set_MPI_Solution_Pred_Old(geometry_container[donorZone][MESH_0], config_container[donorZone]);
+  
+  
 }
 
 void CFSIDriver::Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long FSIIter){
@@ -3983,25 +4039,28 @@ void CFSIDriver::Relaxation_Tractions(unsigned short donorZone, unsigned short t
 
 void CFSIDriver::Update(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT){
 
-	unsigned long IntIter = 0; // This doesn't affect here but has to go into the function
-	unsigned long ExtIter = config_container[ZONE_FLOW]->GetExtIter();
+  unsigned long IntIter = 0; // This doesn't affect here but has to go into the function
+  ExtIter = config_container[ZONE_FLOW]->GetExtIter();
 
 
-	/*-----------------------------------------------------------------*/
-	/*--------------------- Enforce continuity ------------------------*/
-	/*-----------------------------------------------------------------*/
+  /*-----------------------------------------------------------------*/
+  /*--------------------- Enforce continuity ------------------------*/
+  /*-----------------------------------------------------------------*/
 
-	/*--- Enforces that the geometry of the flow corresponds to the converged, relaxed solution ---*/
+  /*--- Enforces that the geometry of the flow corresponds to the converged, relaxed solution ---*/
 
-	/*-------------------- Transfer the displacements --------------------*/
+  /*-------------------- Transfer the displacements --------------------*/
 
-	Transfer_Displacements(ZONE_STRUCT, ZONE_FLOW);
+  Transfer_Displacements(ZONE_STRUCT, ZONE_FLOW);
 
-	/*-------------------- Set the grid movement -------------------------*/
+  /*-------------------- Set the grid movement -------------------------*/
 
-	iteration_container[ZONE_FLOW]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_FLOW, IntIter, ExtIter);
+  iteration_container[ZONE_FLOW]->SetGrid_Movement(geometry_container, surface_movement,
+                                                   grid_movement, FFDBox, solver_container,
+                                                   config_container, ZONE_FLOW, IntIter, ExtIter);
 
-	/*----------- Store the solution_pred as solution_pred_old --------------*/
+  /*----------- Store the solution_pred as solution_pred_old --------------*/
+
 
 }
 
