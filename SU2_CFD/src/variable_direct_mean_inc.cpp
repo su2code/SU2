@@ -1,6 +1,6 @@
 /*!
- * \file variable_direct_mean.cpp
- * \brief Definition of the solution fields.
+ * \file variable_direct_mean_inc.cpp
+ * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
  * \version 4.2.0 "Cardinal"
  *
@@ -31,7 +31,7 @@
 
 #include "../include/variable_structure.hpp"
 
-CEulerVariable::CEulerVariable(void) : CVariable() {
+CIncEulerVariable::CIncEulerVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
   
@@ -58,7 +58,7 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
  
 }
 
-CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, unsigned short val_nDim,
+CIncEulerVariable::CIncEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, unsigned short val_nDim,
                                unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
@@ -247,7 +247,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   }
 }
 
-CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -398,7 +398,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   
 }
 
-CEulerVariable::~CEulerVariable(void) {
+CIncEulerVariable::~CIncEulerVariable(void) {
 	unsigned short iVar;
 
   if (TS_Source         != NULL) delete [] TS_Source;
@@ -424,7 +424,7 @@ CEulerVariable::~CEulerVariable(void) {
   
 }
 
-void CEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
+void CIncEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
 	unsigned short iVar, iDim;
   
 	for (iVar = 0; iVar < val_primvar; iVar++)
@@ -432,7 +432,7 @@ void CEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
 			Gradient_Primitive[iVar][iDim] = 0.0;
 }
 
-void CEulerVariable::SetGradient_SecondaryZero(unsigned short val_secondaryvar) {
+void CIncEulerVariable::SetGradient_SecondaryZero(unsigned short val_secondaryvar) {
 	unsigned short iVar, iDim;
   
 	for (iVar = 0; iVar < val_secondaryvar; iVar++)
@@ -440,7 +440,7 @@ void CEulerVariable::SetGradient_SecondaryZero(unsigned short val_secondaryvar) 
 			Gradient_Secondary[iVar][iDim] = 0.0;
 }
 
-su2double CEulerVariable::GetProjVel(su2double *val_vector) {
+su2double CIncEulerVariable::GetProjVel(su2double *val_vector) {
 	su2double ProjVel;
 	unsigned short iDim;
   
@@ -451,7 +451,7 @@ su2double CEulerVariable::GetProjVel(su2double *val_vector) {
 	return ProjVel;
 }
 
-bool CEulerVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) {
+bool CIncEulerVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) {
 	unsigned short iVar;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
   
@@ -503,7 +503,7 @@ bool CEulerVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) {
   
 }
 
-void CEulerVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
+void CIncEulerVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
 
    /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
 
@@ -512,7 +512,7 @@ void CEulerVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
 
 }
 
-bool CEulerVariable::SetPrimVar_Incompressible(su2double Density_Inf, CConfig *config) {
+bool CIncEulerVariable::SetPrimVar_Incompressible(su2double Density_Inf, CConfig *config) {
   
   su2double ArtComp_Factor = config->GetArtComp_Factor();
   
@@ -536,7 +536,7 @@ bool CEulerVariable::SetPrimVar_Incompressible(su2double Density_Inf, CConfig *c
   
 }
 
-bool CEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
+bool CIncEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
   
   su2double Heaviside, lambda, DensityInc, LevelSet;
 
@@ -576,11 +576,11 @@ bool CEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
   
 }
 
-CNSVariable::CNSVariable(void) : CEulerVariable() { }
+CIncNSVariable::CIncNSVariable(void) : CIncEulerVariable() { }
 
-CNSVariable::CNSVariable(su2double val_density, su2double *val_velocity, su2double val_energy,
+CIncNSVariable::CIncNSVariable(su2double val_density, su2double *val_velocity, su2double val_energy,
                          unsigned short val_nDim, unsigned short val_nvar,
-                         CConfig *config) : CEulerVariable(val_density, val_velocity, val_energy, val_nDim, val_nvar, config) {
+                         CConfig *config) : CIncEulerVariable(val_density, val_velocity, val_energy, val_nDim, val_nvar, config) {
   
 	Temperature_Ref = config->GetTemperature_Ref();
 	Viscosity_Ref   = config->GetViscosity_Ref();
@@ -590,8 +590,8 @@ CNSVariable::CNSVariable(su2double val_density, su2double *val_velocity, su2doub
   
 }
 
-CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
-                         unsigned short val_nvar, CConfig *config) : CEulerVariable(val_solution, val_nDim, val_nvar, config) {
+CIncNSVariable::CIncNSVariable(su2double *val_solution, unsigned short val_nDim,
+                         unsigned short val_nvar, CConfig *config) : CIncEulerVariable(val_solution, val_nDim, val_nvar, config) {
   
 	Temperature_Ref = config->GetTemperature_Ref();
 	Viscosity_Ref   = config->GetViscosity_Ref();
@@ -600,9 +600,9 @@ CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
 	Prandtl_Turb    = config->GetPrandtl_Turb();
 }
 
-CNSVariable::~CNSVariable(void) { }
+CIncNSVariable::~CIncNSVariable(void) { }
 
-bool CNSVariable::SetVorticity(bool val_limiter) {
+bool CIncNSVariable::SetVorticity(bool val_limiter) {
   
   Vorticity[0] = 0.0; Vorticity[1] = 0.0;
   
@@ -617,7 +617,7 @@ bool CNSVariable::SetVorticity(bool val_limiter) {
   
 }
 
-bool CNSVariable::SetStrainMag(bool val_limiter) {
+bool CIncNSVariable::SetStrainMag(bool val_limiter) {
   
   su2double Div;
   unsigned short iDim;
@@ -656,7 +656,7 @@ bool CNSVariable::SetStrainMag(bool val_limiter) {
   
 }
 
-bool CNSVariable::SetPrimVar_Compressible(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
+bool CIncNSVariable::SetPrimVar_Compressible(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
   
 	unsigned short iVar;
   su2double density, staticEnergy;
@@ -729,7 +729,7 @@ bool CNSVariable::SetPrimVar_Compressible(su2double eddy_visc, su2double turb_ke
   
 }
 
-void CNSVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
+void CIncNSVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
 
     /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
 
@@ -749,7 +749,7 @@ void CNSVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
 
 }
 
-bool CNSVariable::SetPrimVar_Incompressible(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config) {
+bool CIncNSVariable::SetPrimVar_Incompressible(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config) {
   
 	su2double ArtComp_Factor = config->GetArtComp_Factor();
   
@@ -778,7 +778,7 @@ bool CNSVariable::SetPrimVar_Incompressible(su2double Density_Inf, su2double Vis
   
 }
 
-bool CNSVariable::SetPrimVar_FreeSurface(su2double eddy_visc, su2double turb_ke, CConfig *config) {
+bool CIncNSVariable::SetPrimVar_FreeSurface(su2double eddy_visc, su2double turb_ke, CConfig *config) {
 
   su2double Heaviside, lambda, DensityInc, ViscosityInc, LevelSet;
   
