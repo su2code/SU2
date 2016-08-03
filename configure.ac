@@ -503,6 +503,8 @@ AC_SUBST([LAPACK_LD])
 ###########################
 # Determine what versions of the code to build
 
+build_PY=yes
+
 # Complex type
 COMPLEX_CXX="-std=gnu++11 -DCOMPLEX_TYPE"
 
@@ -540,6 +542,7 @@ then
   build_DEF=no
   build_SOL=no
   build_GEO=no
+  build_PY=no
 fi
 
 if test $build_REVERSE == "yes"
@@ -554,6 +557,7 @@ AM_CONDITIONAL([BUILD_MSH],[test $build_MSH != "no"])
 AM_CONDITIONAL([BUILD_DEF],[test $build_DEF != "no"])
 AM_CONDITIONAL([BUILD_SOL],[test $build_SOL != "no"])
 AM_CONDITIONAL([BUILD_GEO],[test $build_GEO != "no"])
+AM_CONDITIONAL([BUILD_PY],[test $build_PY != "no"])
 AM_CONDITIONAL([BUILD_PY_WRAPPER], [test $build_PY_WRAPPER != "no"])
 
 ###########################
