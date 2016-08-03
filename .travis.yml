@@ -9,7 +9,7 @@ compiler:
 notifications:
     email:
         recipients:
-            - economon@stanford.edi
+            - economon@stanford.edu
             - tim.albring@scicomp.uni-kl.de
   
 branches:
