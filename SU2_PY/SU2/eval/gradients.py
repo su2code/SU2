@@ -79,7 +79,7 @@ def gradient( func_name, method, config, state=None ):
     if func_name == 'ALL':
         raise Exception , "func_name = 'ALL' not yet supported"
     if (config.OPT_COMBINE_OBJECTIVE == "YES" and any([method == 'DISCRETE_ADJOINT'])):
-        raise Exception, " Combined objectives and discrete adjoint not currently compatible. Please set COMBINE_OBJECTIVE=NO."
+        raise Exception, " Combined objectives and discrete adjoint not currently compatible. Please set OPT_COMBINE_OBJECTIVE=NO."
     func_name_string = func_name
     if (type(func_name)==list):
         if (config.OPT_COMBINE_OBJECTIVE=="YES" and not any([method == 'DISCRETE_ADJOINT'])):

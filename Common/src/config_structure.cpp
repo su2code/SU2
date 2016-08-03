@@ -1680,7 +1680,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Maker sure that nMarker = nObj ---*/
   if (nObj>0){
-    if (nMarker_Monitoring!=nObj){
+    if (nMarker_Monitoring!=nObj and Marker_Monitoring!=NULL){
       if (nMarker_Monitoring==1){
         /*-- If only one marker was listed with multiple objectives, set that marker as the marker for each objective ---*/
         nMarker_Monitoring = nObj;
