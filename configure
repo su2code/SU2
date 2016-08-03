@@ -627,6 +627,8 @@ LTLIBOBJS
 LIBOBJS
 BUILD_PY_WRAPPER_FALSE
 BUILD_PY_WRAPPER_TRUE
+BUILD_PY_FALSE
+BUILD_PY_TRUE
 BUILD_GEO_FALSE
 BUILD_GEO_TRUE
 BUILD_SOL_FALSE
@@ -6772,6 +6774,8 @@ fi
 ###########################
 # Determine what versions of the code to build
 
+build_PY=yes
+
 # Complex type
 COMPLEX_CXX="-std=gnu++11 -DCOMPLEX_TYPE"
 
@@ -6953,6 +6957,7 @@ then
   build_DEF=no
   build_SOL=no
   build_GEO=no
+  build_PY=no
 fi
 
 if test $build_REVERSE == "yes"
@@ -7007,6 +7012,14 @@ fi
 else
   BUILD_GEO_TRUE='#'
   BUILD_GEO_FALSE=
+fi
+
+ if test $build_PY != "no"; then
+  BUILD_PY_TRUE=
+  BUILD_PY_FALSE='#'
+else
+  BUILD_PY_TRUE='#'
+  BUILD_PY_FALSE=
 fi
 
  if test $build_PY_WRAPPER != "no"; then
@@ -7301,6 +7314,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_GEO_TRUE}" && test -z "${BUILD_GEO_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_GEO\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_PY_TRUE}" && test -z "${BUILD_PY_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_PY\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_PY_WRAPPER_TRUE}" && test -z "${BUILD_PY_WRAPPER_FALSE}"; then
