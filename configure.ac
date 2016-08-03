@@ -572,7 +572,7 @@ AC_OUTPUT(Makefile \
 	SU2_SOL/obj/Makefile \
 	SU2_GEO/obj/Makefile \
 	SU2_PY/Makefile \
-	SU2_PY/_SU2_API/Makefile)
+	SU2_PY/pySU2/Makefile)
 
 abs_srcdir=`(cd $srcdir && pwd)`
 abs_prefix=$prefix #`(cd $prefix && pwd)`
