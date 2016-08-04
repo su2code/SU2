@@ -710,6 +710,18 @@ class CDiscAdjFSIStatDriver : public CFSIStatDriver {
   unsigned short CurrentRecording;          /*!< \brief Stores the current status of the recording. */
   unsigned short Kind_Objective_Function;   /*!< \brief Stores the kind of objective function of the recording. */
 
+  su2double *init_res_flow,     /*!< \brief Stores the initial residual for the flow. */
+            *init_res_struct,   /*!< \brief Stores the initial residual for the structure. */
+            *residual_flow,     /*!< \brief Stores the current residual for the flow. */
+            *residual_struct,   /*!< \brief Stores the current residual for the structure. */
+            *residual_flow_rel,
+            *residual_struct_rel;
+
+  su2double flow_criteria,
+            flow_criteria_rel,
+            structure_criteria,
+            structure_criteria_rel;
+
   /*--- The first three are maintained so the values are the same as in the single-physics zone ---*/
   enum RECORDING{
     NONE = 0,               /*!< \brief Indicates that nothing is recorded. */

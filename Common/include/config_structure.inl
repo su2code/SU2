@@ -1255,6 +1255,8 @@ inline su2double CConfig::GetSigmoid_Time(void) { return Sigmoid_Time; }
 
 inline su2double CConfig::GetSigmoid_K(void) { return Sigmoid_K; }
 
+inline su2double CConfig::GetRefGeom_Penalty(void) { return RefGeom_Penalty; }
+
 inline su2double CConfig::GetStatic_Time(void) { return Static_Time; }
 
 inline unsigned short CConfig::GetPredictorOrder(void) { return Pred_Order; }
@@ -1276,6 +1278,14 @@ inline unsigned short CConfig::GetRelaxation_Method_FSI(void) { return Kind_BGS_
 inline su2double CConfig::GetOrderMagResidualFSI(void) { return OrderMagResidualFSI; }
 
 inline su2double CConfig::GetMinLogResidualFSI(void) { return MinLogResidualFSI; }
+
+inline su2double CConfig::GetOrderMagResidual_BGS_F(void) { return OrderMagResidual_BGS_F; }
+
+inline su2double CConfig::GetMinLogResidual_BGS_F(void) { return MinLogResidual_BGS_F; }
+
+inline su2double CConfig::GetOrderMagResidual_BGS_S(void) { return OrderMagResidual_BGS_S; }
+
+inline su2double CConfig::GetMinLogResidual_BGS_S(void) { return MinLogResidual_BGS_S; }
 
 inline su2double CConfig::GetResidual_FEM_UTOL(void) { return Res_FEM_UTOL; }
 

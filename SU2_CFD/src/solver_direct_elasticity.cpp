@@ -4965,6 +4965,10 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
 
   su2double objective_function = 0.0;
 
+  su2double weight_OF = 1.0;
+
+  weight_OF = config->GetRefGeom_Penalty() / nPoint;
+
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
     for (iVar = 0; iVar < nVar; iVar++){
@@ -4976,12 +4980,12 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
       current_solution = node[iPoint]->GetSolution(iVar);
 
       /*--- The objective function is the sum of the difference between solution and difference, squared ---*/
-      objective_function += (current_solution - reference_geometry)*(current_solution - reference_geometry);
+      objective_function += weight_OF * (current_solution - reference_geometry)*(current_solution - reference_geometry);
     }
 
   }
 
-  // TODO: Need to do an MPI reduction to have the sum in all processors HERE
+  // TODO: Need to do an MPI reduction to have the sum in all processors HERE AND it should go to nPointDomain
 
   Total_OFRefGeom = objective_function;
 

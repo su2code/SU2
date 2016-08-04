@@ -75,6 +75,7 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 
   F_Mat_Iso = NULL;
   b_Mat_Iso = NULL;
+  cijkl     = NULL;
 	if (incompressible || nearly_incompressible){
 
 		F_Mat_Iso = new su2double *[3];
@@ -245,19 +246,21 @@ CFEM_NonlinearElasticity::~CFEM_NonlinearElasticity(void) {
 
 	if (cijkl != NULL){
 	  for (iVar = 0; iVar < 3; iVar++){
+	    cout << iVar << endl;
 	    for (jVar = 0; jVar < 3; jVar++){
+	      cout << jVar << endl;
 	      for (kVar = 0; kVar < 3;kVar++){
-	        if (cijkl[iVar][jVar][kVar] != NULL) delete [] cijkl[iVar][jVar][kVar];
+	        delete [] cijkl[iVar][jVar][kVar];
 	      }
-	      if (cijkl[iVar][jVar] != NULL) delete [] cijkl[iVar][jVar];
+	      delete [] cijkl[iVar][jVar];
 	    }
-	    if (cijkl[iVar] != NULL) delete [] cijkl[iVar];
+	    delete [] cijkl[iVar];
 	  }
 	  delete [] cijkl;
 	}
 
-	if (EField_Ref_Unit != NULL) 	delete [] EField_Ref_Unit;
-	if (EField_Ref_Mod != NULL) 	delete [] EField_Ref_Mod;
+	if (EField_Ref_Unit  != NULL) 	delete [] EField_Ref_Unit;
+	if (EField_Ref_Mod   != NULL) 	delete [] EField_Ref_Mod;
 	if (EField_Curr_Unit != NULL) 	delete [] EField_Curr_Unit;
 
 }
