@@ -149,10 +149,17 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     nIntegrationMax = max(nIntegrationMax, nInt);
   }
 
-  /*--- Determine the maximum number of DOFs used. This is for the volume elements. */
+  /*--- Determine the maximum number of DOFs used. This is for the volume elements.
+        Note that also the element adjacent to side 1 of the matching faces must
+        be taken into account, because this could be an external element. */
   nDOFsMax = 0;
   for(unsigned short i=0; i<nStandardElementsSol; ++i) {
     const unsigned short nDOFs = standardElementsSol[i].GetNDOFs();
+    nDOFsMax = max(nDOFsMax, nDOFs);
+  }
+
+  for(unsigned short i=0; i<nStandardMatchingFacesSol; ++i) {
+    const unsigned short nDOFs = standardMatchingFacesSol[i].GetNDOFsElemSide1();
     nDOFsMax = max(nDOFsMax, nDOFs);
   }
   
@@ -3665,7 +3672,7 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short nInt,
 }
 
 void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  
+
   /*--- Allocate the memory for some temporary storage needed to compute the
         residual efficiently. Note that when the MKL library is used
         a special allocation is used to optimize performance. Furthermore, note
