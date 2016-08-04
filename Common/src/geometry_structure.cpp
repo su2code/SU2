@@ -87,7 +87,7 @@ void unsignedLong2T::Copy(const unsignedLong2T &other) {
 
 FaceOfElementClass::FaceOfElementClass(){
   nCornerPoints   = 0;
-  cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = 0;
+  cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = ULONG_MAX;
   elemID0         = elemID1 = ULONG_MAX;
   nPolyGrid0      = nPolyGrid1 = 0;
   nPolySol0       = nPolySol1  = 0;
@@ -102,6 +102,7 @@ FaceOfElementClass::FaceOfElementClass(){
 
 bool FaceOfElementClass::operator<(const FaceOfElementClass &other) const {
   if(nCornerPoints != other.nCornerPoints) return nCornerPoints < other.nCornerPoints;
+
   for(unsigned short i=0; i<nCornerPoints; ++i)
     if(cornerPoints[i] != other.cornerPoints[i]) return cornerPoints[i] < other.cornerPoints[i];
 
@@ -119,6 +120,7 @@ bool FaceOfElementClass::operator ==(const FaceOfElementClass &other) const {
 void FaceOfElementClass::Copy(const FaceOfElementClass &other) {
   nCornerPoints = other.nCornerPoints;
   for(unsigned short i=0; i<nCornerPoints; ++i) cornerPoints[i] = other.cornerPoints[i];
+  for(unsigned short i=nCornerPoints; i<4; ++i) cornerPoints[i] = ULONG_MAX;
 
   elemID0 = other.elemID0;
   elemID1 = other.elemID1;
@@ -11370,7 +11372,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     sendBufFace[ii+2] = localFacesComm[i].cornerPoints[1];
     sendBufFace[ii+3] = localFacesComm[i].cornerPoints[2];
     sendBufFace[ii+4] = localFacesComm[i].cornerPoints[3];
-				sendBufFace[ii+5] = localFacesComm[i].elemID0;
+    sendBufFace[ii+5] = localFacesComm[i].elemID0;
     sendBufFace[ii+6] = localFacesComm[i].nPolySol0;
     sendBufFace[ii+7] = localFacesComm[i].nDOFsElem0;
   }
