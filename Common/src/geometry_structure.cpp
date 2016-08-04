@@ -13846,6 +13846,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
   bool sst = config->GetKind_Turb_Model() == SST;
   bool sa = config->GetKind_Turb_Model() == SA;
   bool grid_movement = config->GetGrid_Movement();
+  bool wrt_residuals = config->GetWrt_Residuals();
   su2double Sens, dull_val;
   unsigned short nExtIter, iDim;
   unsigned long iPoint, index;
@@ -13862,15 +13863,15 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  unsigned short skipVar = nDim;
-  
-  if (incompressible) { skipVar += nDim+1; }
-  if (freesurface)    { skipVar += nDim+2; }
-  if (compressible)   { skipVar += nDim+2; }
-  if (sst)            { skipVar += 2;}
-  if (sa)             { skipVar += 1;}
-  
-  if (grid_movement) {skipVar += nDim;}
+  unsigned short skipVar = nDim, skipMult = 1;
+
+  if (wrt_residuals){ skipMult = 2; }
+  if (incompressible) { skipVar += skipMult*(nDim+1); }
+  if (freesurface)    { skipVar += skipMult*(nDim+2); }
+  if (compressible)   { skipVar += skipMult*(nDim+2); }
+  if (sst)            { skipVar += skipMult*2;}
+  if (sa)             { skipVar += skipMult*1;}
+  if (grid_movement)  { skipVar += nDim;}
   
   /*--- Sensitivity in normal direction ---*/
   
