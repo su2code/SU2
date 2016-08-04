@@ -2705,8 +2705,10 @@ void CFEM_DG_EulerSolver::MatrixProduct(const int M,        const int N,        
 
 #ifdef HAVE_LIBXSMM
 
-  /* The gemm function of libxsmm is used to carry out the multiplication. */
-  libxsmm_gemm(NULL, NULL, M, N, K, NULL, A, NULL, B, NULL, NULL, C, NULL);
+  /* The gemm function of libxsmm is used to carry out the multiplication.
+     Note that libxsmm_gemm expects the matrices in column major order. That's
+     why the calling sequence is different from cblas_dgemm. */
+  libxsmm_gemm(NULL, NULL, N, M, K, NULL, B, NULL, A, NULL, NULL, C, NULL);
 
 #elif defined (HAVE_CBLAS) || defined(HAVE_MKL)
 
