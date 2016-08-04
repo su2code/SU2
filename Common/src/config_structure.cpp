@@ -1655,7 +1655,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Kind_SU2 = val_software;
 
   /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
-  if (nObj<1){
+  if (Weight_ObjFunc==NULL and Kind_ObjFunc==NULL){
     Kind_ObjFunc = new unsigned short[1];
     Kind_ObjFunc[0]=DRAG_COEFFICIENT;
     Weight_ObjFunc = new su2double[1];
@@ -1674,10 +1674,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     for (unsigned short iObj=0; iObj<nObj; iObj++)
       Weight_ObjFunc[iObj]=1.0;
   }
-  /*-- If only one objective used, revert to single-objective methods. --*/
-  if (nObj == 1 )
-    Weight_ObjFunc[0] = 1.0;
-
   /*--- Maker sure that nMarker = nObj ---*/
   if (nObj>0){
     if (nMarker_Monitoring!=nObj and Marker_Monitoring!=NULL){
@@ -1699,6 +1695,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
+  if (nObj == 1 )
+    Weight_ObjFunc[0] = 1.0;
+  /*--- Maker sure that nMarker = nObj ---*/
+  if (Marker_Monitoring!=NULL and nObj>1 and nMarker_Monitoring!=nObj){
+    cout <<"When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length. \n "<<
+        "For multiple surfaces per objective, list the objective multiple times. \n"<<
+        "For multiple objectives per marker list the marker multiple times."<<endl;
+    exit(EXIT_FAILURE);
+  }
   /*--- Low memory only for ASCII Tecplot ---*/
 
   if (Output_FileFormat != TECPLOT) Low_MemoryOutput = NO;
