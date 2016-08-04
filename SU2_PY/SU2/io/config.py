@@ -151,9 +151,6 @@ class Config(ordered_bunch):
         """
         
         dv_new = copy.deepcopy(dv_new)
-        # Type correction for use with pyopt
-        if type(dv_new)==dict:
-            dv_new = list(dv_new[dv_new.keys()[0]])
         dv_old = copy.deepcopy(dv_old)
         
         # handle unpacking cases
