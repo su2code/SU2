@@ -1093,6 +1093,10 @@ void CFEM_ElasticitySolver_Adj::RefGeom_Sensitivity(CGeometry *geometry, CSolver
 
   su2double objective_function = 0.0;
 
+  su2double weight_OF = 1.0;
+
+  weight_OF = config->GetRefGeom_Penalty() / nPoint;
+
   LinSysRes.SetValZero();
 
   if (!predicted_de){
@@ -1107,8 +1111,8 @@ void CFEM_ElasticitySolver_Adj::RefGeom_Sensitivity(CGeometry *geometry, CSolver
 
       for (iVar = 0; iVar < nVar; iVar++){
 
-        Solution[iVar] = 2*(current_solution[iVar]-reference_geometry[iVar]);
-        objective_function += (current_solution[iVar]-reference_geometry[iVar])*(current_solution[iVar]-reference_geometry[iVar]);
+        Solution[iVar] = 2 * weight_OF * (current_solution[iVar]-reference_geometry[iVar]);
+        objective_function += weight_OF * (current_solution[iVar]-reference_geometry[iVar])*(current_solution[iVar]-reference_geometry[iVar]);
 
       }
 
@@ -1134,8 +1138,8 @@ void CFEM_ElasticitySolver_Adj::RefGeom_Sensitivity(CGeometry *geometry, CSolver
         /*--- We now use a first order predictor for the solution ---*/
         predicted_solution[iVar] = solDisp[iVar] + Delta_t*solVel[iVar];
 
-        Solution[iVar] = 2*(predicted_solution[iVar]-reference_geometry[iVar]);
-        objective_function += (predicted_solution[iVar]-reference_geometry[iVar])*(predicted_solution[iVar]-reference_geometry[iVar]);
+        Solution[iVar] = 2 * weight_OF * (predicted_solution[iVar]-reference_geometry[iVar]);
+        objective_function += weight_OF * (predicted_solution[iVar]-reference_geometry[iVar])*(predicted_solution[iVar]-reference_geometry[iVar]);
 
       }
 

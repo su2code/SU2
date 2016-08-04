@@ -69,6 +69,10 @@ private:
 	su2double MinLogResidual; /*!< \brief Minimum value of the log residual. */
 	su2double OrderMagResidualFSI; /*!< \brief Order of magnitude reduction. */
 	su2double MinLogResidualFSI; /*!< \brief Minimum value of the log residual. */
+  su2double OrderMagResidual_BGS_F; /*!< \brief Order of magnitude reduction. */
+  su2double MinLogResidual_BGS_F; /*!< \brief Minimum value of the log residual. */
+  su2double OrderMagResidual_BGS_S; /*!< \brief Order of magnitude reduction. */
+  su2double MinLogResidual_BGS_S; /*!< \brief Minimum value of the log residual. */
 	su2double Res_FEM_UTOL; 		/*!< \brief UTOL criteria for structural FEM. */
 	su2double Res_FEM_RTOL; 		/*!< \brief RTOL criteria for structural FEM. */
 	su2double Res_FEM_ETOL; 		/*!< \brief ETOL criteria for structural FEM. */
@@ -750,6 +754,7 @@ private:
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
   bool Prestretch;             /*!< Read a reference geometry for optimization purposes. */
   string Prestretch_FEMFileName;         /*!< \brief File name for reference geometry. */
+  su2double RefGeom_Penalty;   /*!< \brief Penalty weight value for the reference geometry objective function. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
@@ -4650,6 +4655,30 @@ public:
 	 */
 	su2double GetMinLogResidualFSI(void);
 
+  /*!
+   * \brief Value of the order of magnitude reduction of the flow residual for BGS applications.
+   * \return Value of the order of magnitude reduction of the residual.
+   */
+  su2double GetOrderMagResidual_BGS_F(void);
+
+  /*!
+   * \brief Value of the minimum flow residual value for BGS applications (log10 scale).
+   * \return Value of the minimum residual value (log10 scale).
+   */
+  su2double GetMinLogResidual_BGS_F(void);
+
+  /*!
+   * \brief Value of the order of magnitude reduction of the flow residual for BGS applications.
+   * \return Value of the order of magnitude reduction of the residual.
+   */
+  su2double GetOrderMagResidual_BGS_S(void);
+
+  /*!
+   * \brief Value of the minimum flow residual value for BGS applications (log10 scale).
+   * \return Value of the minimum residual value (log10 scale).
+   */
+  su2double GetMinLogResidual_BGS_S(void);
+
 	/*!
 	 * \brief Value of the displacement tolerance UTOL for FEM structural analysis (log10 scale).
 	 * \return Value of Res_FEM_UTOL (log10 scale).
@@ -5791,6 +5820,12 @@ public:
 	 * \return 	Parameter of steepness of the sigmoid
 	 */
 	 su2double GetSigmoid_K(void);
+
+	 /*!
+	  * \brief Get the penalty weight value for the objective function.
+	  * \return  Penalty weight value for the reference geometry objective function.
+	  */
+	 su2double GetRefGeom_Penalty(void);
 
 	/*!
 	 * \brief Get the maximum time of the ramp.

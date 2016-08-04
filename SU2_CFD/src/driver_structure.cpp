@@ -42,7 +42,6 @@ CDriver::CDriver(CIteration **iteration_container,
                  unsigned short val_nZone,
                  unsigned short val_nDim) {
   
-  
   unsigned short iMesh, iZone, jZone, iSol;
   unsigned short nDim;
   
@@ -3250,6 +3249,13 @@ CDiscAdjFSIStatDriver::CDiscAdjFSIStatDriver(CIteration **iteration_container,
                                                                    val_nZone,
                                                                    val_nDim) {
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+  unsigned short iVar;
+  unsigned short nVar_Flow, nVar_Struct;
   RecordingState = 0;
   CurrentRecording = 0;
 
@@ -3282,11 +3288,65 @@ CDiscAdjFSIStatDriver::CDiscAdjFSIStatDriver(CIteration **iteration_container,
     switch (config_container[iZone]->GetKind_Solver()) {
        case DISC_ADJ_RANS: case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
          direct_iteration[iZone] = new CMeanFlowIteration(config_container[iZone]);
+         nVar_Flow = solver_container[iZone][MESH_0][ADJFLOW_SOL]->GetnVar();
+         flow_criteria = config_container[iZone]->GetMinLogResidual_BGS_F();
+         flow_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_F();
          break;
        case DISC_ADJ_FEM:
          direct_iteration[iZone] = new CFEM_StructuralAnalysis(config_container[iZone]);
+         nVar_Struct = solver_container[iZone][MESH_0][ADJFEA_SOL]->GetnVar();
+         structure_criteria    = config_container[iZone]->GetMinLogResidual_BGS_S();
+         structure_criteria_rel = config_container[iZone]->GetOrderMagResidual_BGS_S();
          break;
     }
+  }
+
+  init_res_flow   = new su2double[nVar_Flow];
+  init_res_struct = new su2double[nVar_Struct];
+
+  residual_flow   = new su2double[nVar_Flow];
+  residual_struct = new su2double[nVar_Struct];
+
+  residual_flow_rel   = new su2double[nVar_Flow];
+  residual_struct_rel = new su2double[nVar_Struct];
+
+  for (iVar = 0; iVar < nVar_Flow; iVar++){
+    init_res_flow[iVar] = 0.0;
+    residual_flow[iVar] = 0.0;
+    residual_flow_rel[iVar] = 0.0;
+  }
+  for (iVar = 0; iVar < nVar_Struct; iVar++){
+    init_res_struct[iVar] = 0.0;
+    residual_struct[iVar] = 0.0;
+    residual_struct_rel[iVar] = 0.0;
+  }
+
+
+  bool write_history = true;
+
+  /*--- Header of the temporary output file ---*/
+  if ((write_history) && (rank == MASTER_NODE)){
+    ofstream myfile_res;
+    myfile_res.open ("history_adjoint_FSI.csv");
+
+    myfile_res << "BGS_Iter\t";
+
+    for (iVar = 0; iVar < nVar_Flow; iVar++){
+      myfile_res << "ResFlow[" << iVar << "]\t";
+    }
+
+    for (iVar = 0; iVar < nVar_Struct; iVar++){
+      myfile_res << "ResFEA[" << iVar << "]\t";
+    }
+
+    if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION){
+      myfile_res << "Sens_E\t";
+      myfile_res << "Sens_Nu\t";
+    }
+
+    myfile_res << endl;
+
+    myfile_res.close();
   }
 
 }
@@ -3294,6 +3354,12 @@ CDiscAdjFSIStatDriver::CDiscAdjFSIStatDriver(CIteration **iteration_container,
 CDiscAdjFSIStatDriver::~CDiscAdjFSIStatDriver(void) {
 
   delete [] direct_iteration;
+  delete [] init_res_flow;
+  delete [] init_res_struct;
+  delete [] residual_flow;
+  delete [] residual_struct;
+  delete [] residual_flow_rel;
+  delete [] residual_struct_rel;
 
 }
 
@@ -4847,14 +4913,13 @@ void CDiscAdjFSIStatDriver::Iterate_Block_FlowOF(CIteration **iteration_containe
 
   unsigned long iFSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(iFSIIter);
   unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
-  nFSIIter = 2; // FOR DEBUGGING PURPOSES
 
   for (iFSIIter = 0; iFSIIter < nFSIIter; iFSIIter++){
 
     if (rank == MASTER_NODE){
-      cout << endl << "-------------------------------------------------------------------------" << endl;
-      cout << "                        BGS ITERATION " << iFSIIter << endl;
-      cout << "-------------------------------------------------------------------------" << endl;
+      cout << endl << "                    ****** BGS ITERATION ";
+      cout << iFSIIter;
+      cout << " ******" << endl;
     }
 
     for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(iFSIIter);
@@ -4953,9 +5018,9 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
   for (iFSIIter = 0; iFSIIter < nFSIIter; iFSIIter++){
 
     if (rank == MASTER_NODE){
-      cout << endl << "-------------------------------------------------------------------------" << endl;
-      cout << "                        BGS ITERATION " << iFSIIter << endl;
-      cout << "-------------------------------------------------------------------------" << endl;
+      cout << endl << "                    ****** BGS ITERATION ";
+      cout << iFSIIter;
+      cout << " ******" << endl;
     }
 
     for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(iFSIIter);
@@ -5029,7 +5094,24 @@ bool CDiscAdjFSIStatDriver::BGSConvergence(CIntegration ***integration_container
                                                  unsigned short ZONE_FLOW,
                                                  unsigned short ZONE_STRUCT){
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  int size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+
   unsigned short iMarker;
+  unsigned short nVar_Flow = solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetnVar(),
+                   nVar_Struct = solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetnVar();
+  unsigned short iRes;
+
+  bool flow_converged_absolute = false,
+        flow_converged_relative = false,
+        struct_converged_absolute = false,
+        struct_converged_relative = false;
+
+  bool Convergence = false;
 
   /*--- Apply BC's to the structural adjoint - otherwise, clamped nodes have too values that make no sense... ---*/
   for (iMarker = 0; iMarker < config_container[ZONE_STRUCT]->GetnMarker_All(); iMarker++)
@@ -5053,10 +5135,140 @@ bool CDiscAdjFSIStatDriver::BGSConvergence(CIntegration ***integration_container
   solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->ComputeResidual_BGS(geometry_container[ZONE_STRUCT][MESH_0],
                                                                          config_container[ZONE_STRUCT]);
 
-  /*--- Update the solution for the flow and structural zones ---*/
 
-  solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_BGS(0);
-  solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetRes_BGS(0);
+  /*--- Retrieve residuals ---*/
+
+  /*--- Flow residuals ---*/
+
+  for (iRes = 0; iRes < nVar_Flow; iRes++){
+    residual_flow[iRes] = log10(solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_BGS(iRes));
+    if (IntIter == 0) init_res_flow[iRes] = residual_flow[iRes];
+    residual_flow_rel[iRes] = fabs(residual_flow[iRes] - init_res_flow[iRes]);
+  }
+
+  /*--- Structure residuals ---*/
+
+  for (iRes = 0; iRes < nVar_Struct; iRes++){
+    residual_struct[iRes] = log10(solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetRes_BGS(iRes));
+    if (IntIter == 0) init_res_struct[iRes] = residual_struct[iRes];
+    residual_struct_rel[iRes] = fabs(residual_struct[iRes] - init_res_struct[iRes]);
+  }
+
+  if (rank == MASTER_NODE){
+
+    /*--- Check convergence ---*/
+    flow_converged_absolute = ((residual_flow[0] < flow_criteria) && (residual_flow[nVar_Flow-1] < flow_criteria));
+    flow_converged_relative = ((residual_flow_rel[0] > flow_criteria_rel) && (residual_flow_rel[nVar_Flow-1] > flow_criteria_rel));
+
+    struct_converged_absolute = ((residual_struct[0] < structure_criteria) && (residual_struct[nVar_Flow-1] < structure_criteria));
+    struct_converged_relative = ((residual_struct_rel[0] > structure_criteria_rel) && (residual_struct_rel[nVar_Flow-1] > structure_criteria_rel));
+
+    Convergence = ((flow_converged_absolute && struct_converged_absolute) ||
+                   (flow_converged_absolute && struct_converged_relative) ||
+                   (flow_converged_relative && struct_converged_relative) ||
+                   (flow_converged_relative && struct_converged_absolute));
+
+    cout << endl << "-------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << "Convergence summary for BGS subiteration ";
+    cout << IntIter << endl;
+    cout << endl;
+    cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
+    cout << "                      "; cout << "   Absolute" << "     Criteria" << "     Relative" << "     Criteria" << endl;
+    cout << "Flow       [Psi_Rho]: ";
+    cout.width(11); cout << residual_flow[0];
+    cout.width(13); cout << flow_criteria;
+    cout.width(13); cout << residual_flow_rel[0];
+    cout.width(13); cout << flow_criteria_rel << endl;
+    cout << "             [Psi_E]: ";
+    cout.width(11); cout << residual_flow[nVar_Flow-1];
+    cout.width(13); cout << flow_criteria;
+    cout.width(13); cout << residual_flow_rel[nVar_Flow-1];
+    cout.width(13); cout << flow_criteria_rel << endl;
+    cout << "Structure   [Psi_Ux]: ";
+    cout.width(11); cout << residual_struct[0];
+    cout.width(13); cout << structure_criteria;
+    cout.width(13); cout << residual_struct_rel[0];
+    cout.width(13); cout << structure_criteria_rel << endl;
+    cout << "            [Psi_Uy]: ";
+    cout.width(11); cout << residual_struct[1];
+    cout.width(13); cout << structure_criteria;
+    cout.width(13); cout << residual_struct_rel[1];
+    cout.width(13); cout << structure_criteria_rel << endl;
+    if (geometry_container[ZONE_FLOW][MESH_0]->GetnDim() == 3 ){
+      cout << "            [Psi_Uz]: ";
+      cout.width(11); cout << residual_struct[2];
+      cout.width(13); cout << structure_criteria;
+      cout.width(13); cout << residual_struct_rel[2];
+      cout.width(13); cout << structure_criteria_rel << endl;        }
+    cout << endl;
+    cout << "-------------------------------------------------------------------------" << endl;
+
+
+    bool write_history = true;
+    unsigned short iVar;
+
+    /*--- Header of the temporary output file ---*/
+    if ((write_history) && (rank == MASTER_NODE)){
+      ofstream myfile_res;
+      myfile_res.open ("history_adjoint_FSI.csv", ios::app);
+
+      myfile_res << IntIter << "\t";
+
+      myfile_res.precision(15);
+
+      for (iVar = 0; iVar < nVar_Flow; iVar++){
+        myfile_res << fixed << residual_flow[iVar] << "\t";
+      }
+
+      for (iVar = 0; iVar < nVar_Struct; iVar++){
+        myfile_res << fixed << residual_struct[iVar] << "\t";
+      }
+
+      if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION){
+        myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E() << "\t";
+        myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu() << "\t";
+      }
+
+      myfile_res << endl;
+
+      myfile_res.close();
+    }
+
+  }
+
+  /*--- Apply the same convergence criteria to all the processors ---*/
+
+#ifdef HAVE_MPI
+
+  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
+  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
+  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
+
+  /*--- Convergence criteria ---*/
+
+  sbuf_conv[0] = Convergence;
+  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+
+  /*-- Compute global convergence criteria in the master node --*/
+
+  sbuf_conv[0] = 0;
+  if (rank == MASTER_NODE) {
+    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
+    else sbuf_conv[0] = 0;
+  }
+
+  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+
+  if (sbuf_conv[0] == 1) { Convergence = true;}
+  else { Convergence = false;}
+
+  delete [] sbuf_conv;
+  delete [] rbuf_conv;
+
+#endif
+
+  /*--- Update the solution for the flow and structural zones ---*/
 
   /*--- Flow ---*/
 
@@ -5068,9 +5280,7 @@ bool CDiscAdjFSIStatDriver::BGSConvergence(CIntegration ***integration_container
   solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->UpdateSolution_BGS(geometry_container[ZONE_STRUCT][MESH_0],
                                                                        config_container[ZONE_STRUCT]);
 
-
-
-  return false;
+  return Convergence;
 }
 
 
