@@ -4617,14 +4617,6 @@ public:
 	 * \param[in] ExtIter - External iteration.
 	 */
 	void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
-  
-	/*!
-	 * \brief Recompute distance to the level set 0.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	void SetFreeSurface_Distance(CGeometry *geometry, CConfig *config);
-  
 
   /*!
    * \brief Set the freestream pressure.
@@ -4697,25 +4689,6 @@ protected:
   ***CharacPrimVar,		/*!< \brief Value of the characteristic variables at each boundary. */
   *ForceInviscid,		/*!< \brief Inviscid force for each boundary. */
   *MomentInviscid,	/*!< \brief Inviscid moment for each boundary. */
-  *Inflow_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
-  *Bleed_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
-  *Exhaust_MassFlow,	/*!< \brief Mass flow rate for each boundary. */
-  *Inflow_Pressure,	/*!< \brief Fan face pressure for each boundary. */
-  *Inflow_Mach,	/*!< \brief Fan face mach number for each boundary. */
-  *Inflow_Area,	/*!< \brief Boundary total area. */
-  *Bleed_Pressure,	/*!< \brief Fan face pressure for each boundary. */
-  *Bleed_Temperature,	/*!< \brief Fan face mach number for each boundary. */
-  *Bleed_Area,	/*!< \brief Boundary total area. */
-  *Exhaust_Area,	/*!< \brief Boundary total area. */
-  *Exhaust_Pressure,	/*!< \brief Fan face pressure for each boundary. */
-  *Exhaust_Temperature,	/*!< \brief Fan face mach number for each boundary. */
-  Inflow_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
-  Bleed_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
-  Exhaust_MassFlow_Total,	/*!< \brief Mass flow rate for each boundary. */
-  Inflow_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */
-  Inflow_Mach_Total,	/*!< \brief Fan face mach number for each boundary. */
-  Bleed_Pressure_Total,	/*!< \brief Fan face pressure for each boundary. */
-  Bleed_Temperature_Total,	/*!< \brief Fan face mach number for each boundary. */
   InverseDesign;	/*!< \brief Inverse design functional for each boundary. */
   
   su2double
@@ -5178,18 +5151,7 @@ public:
    */
   void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                              CConfig *config);
-  
-  /*!
-   * \brief Impose the actuator disk boundary condition using the residual.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_ActDisk_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                           CConfig *config);
-  
+
   /*!
    * \brief Impose the dirichlet boundary condition using the residual.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -5235,42 +5197,6 @@ public:
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                  CConfig *config, unsigned short val_marker);
   
-  /*!
-   * \brief Impose the nacelle inflow boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                        CConfig *config, unsigned short val_marker);
-  
-  /*!
-   * \brief Impose the nacelle bleed boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Engine_Bleed(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                       CConfig *config, unsigned short val_marker);
-  
-  /*!
-   * \brief Impose the ancelle exhaust boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                         CConfig *config, unsigned short val_marker);
-  
 	 /*!
     * \brief compare to values.
     * \param[in] a - value 1.
@@ -5287,23 +5213,7 @@ public:
    */
   void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep);
-  
-  /*!
-   * \brief Compute the Fan face Mach number.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Container vector with all the solutions.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
-  
-  /*!
-   * \brief Compute the Fan face Mach number.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Container vector with all the solutions.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void GetActuatorDisk_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
-  
+
   /*!
    * \brief Update the AoA and freestream velocity at the farfield.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -5498,34 +5408,6 @@ public:
    * \return Value of the drag coefficient (inviscid contribution) on the surface <i>val_marker</i>.
    */
   su2double GetCDrag_Inv(unsigned short val_marker);
-  
-  /*!
-   * \brief Provide the mass flow rate.
-   * \param val_marker Surface where the coeficient is going to be computed.
-   * \return Value of the mass flow rate on the surface <i>val_marker</i>.
-   */
-  su2double GetInflow_MassFlow(unsigned short val_marker);
-  
-  /*!
-   * \brief Provide the mass flow rate.
-   * \param val_marker Surface where the coeficient is going to be computed.
-   * \return Value of the mass flow rate on the surface <i>val_marker</i>.
-   */
-  su2double GetExhaust_MassFlow(unsigned short val_marker);
-  
-  /*!
-   * \brief Provide the mass flow rate.
-   * \param val_marker Surface where the coeficient is going to be computed.
-   * \return Value of the fan face pressure on the surface <i>val_marker</i>.
-   */
-  su2double GetInflow_Pressure(unsigned short val_marker);
-  
-  /*!
-   * \brief Provide the mass flow rate.
-   * \param val_marker Surface where the coeficient is going to be computed.
-   * \return Value of the fan face mach on the surface <i>val_marker</i>.
-   */
-  su2double GetInflow_Mach(unsigned short val_marker);
   
   /*!
    * \brief Provide the non dimensional sideforce coefficient (inviscid contribution).
