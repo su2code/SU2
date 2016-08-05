@@ -596,7 +596,7 @@ public:
    * \param[in] val_densityinc_i - Value of the pressure at point i.
    * \param[in] val_densityinc_j - Value of the pressure at point j.
    */
-  void SetDensityInc(su2double val_densityinc_i, su2double val_densityinc_j);
+  void SetDensity(su2double val_densityinc_i, su2double val_densityinc_j);
   
   /*!
    * \brief Set the value of the beta for incompressible flows.

@@ -3354,13 +3354,13 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
       // Retrieve the values of pressure, viscosity and density
       if (incompressible){
         
-        Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressureInc();
+        Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
         Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
         
         if (viscous_flow){
           
           Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
-          Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosityInc();
+          Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosity();
         }
       }
       else if (compressible){
@@ -3591,13 +3591,13 @@ void CFEM_ElasticitySolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fe
         // Retrieve the values of pressure, viscosity and density
         if (incompressible){
           
-          Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressureInc();
+          Pn = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetPressure();
           Pinf = flow_solution[MESH_0][FLOW_SOL]->GetPressure_Inf();
           
           if (viscous_flow){
             
             Grad_PrimVar = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetGradient_Primitive();
-            Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosityInc();
+            Viscosity = flow_solution[MESH_0][FLOW_SOL]->node[Point_Flow]->GetLaminarViscosity();
           }
         }
         else if (compressible){

@@ -1649,8 +1649,8 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     /*--- Set the primitive variables incompressible and compressible
      adjoint variables ---*/
     
-    if (compressible) RightSol = node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance, false, config);
-    if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(SharpEdge_Distance, false, config);
+    if (compressible) RightSol = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
+    if (incompressible) RightSol = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
     if (freesurface) RightSol = node[iPoint]->SetPrimVar_FreeSurface(SharpEdge_Distance, false, config);
     if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
     
@@ -1738,7 +1738,7 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
                             solver_container[FLOW_SOL]->node[jPoint]->GetEnthalpy());
     }
     if (incompressible || freesurface) {
-      numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc());
+      numerics->SetDensity(solver_container[FLOW_SOL]->node[iPoint]->GetDensity(), solver_container[FLOW_SOL]->node[jPoint]->GetDensity());
       numerics->SetBetaInc2(solver_container[FLOW_SOL]->node[iPoint]->GetBetaInc2(), solver_container[FLOW_SOL]->node[jPoint]->GetBetaInc2());
       numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
     }
@@ -1984,7 +1984,7 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   //
   //      su2double Volume = geometry->node[iPoint]->GetVolume();
   //      su2double **Gradient = solver_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
-  //      su2double coeff = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0) / solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
+  //      su2double coeff = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0) / solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
   //
   //      Residual[0] = 0.0;
   //      for (iDim = 0; iDim < nDim; iDim++) {
@@ -3185,11 +3185,11 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
       /*--- Incompressible solver ---*/
       if (incompressible || freesurface) {
         
-        DensityInc = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
+        DensityInc = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
         BetaInc2 = solver_container[FLOW_SOL]->node[iPoint]->GetBetaInc2();
         
         for (iDim = 0; iDim < nDim; iDim++)
-          Velocity[iDim] = U[iDim+1] / solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
+          Velocity[iDim] = U[iDim+1] / solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
         
         /*--- Compute projections ---*/
         bcn = 0.0; phin = 0.0;
@@ -4694,7 +4694,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
           if (fabs(LevelSet) <= epsilon) {
             V_outlet[0] = solver_container[FLOW_SOL]->node[Point_Normal]->GetSolution(0);
-            Density_Outlet = solver_container[FLOW_SOL]->node[Point_Normal]->GetDensityInc();
+            Density_Outlet = solver_container[FLOW_SOL]->node[Point_Normal]->GetDensity();
           }
 
         }
@@ -4831,8 +4831,8 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           V_outlet[nDim+6] = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
         }
         if (incompressible || freesurface) {
-          V_outlet[nDim+3] = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
-          V_outlet[nDim+4] = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc();
+          V_outlet[nDim+3] = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+          V_outlet[nDim+4] = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
         }
 
         /*--- Points in edge, coordinates and normal vector---*/
@@ -5564,8 +5564,8 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     /*--- Set the primitive variables incompressible and compressible
      adjoint variables ---*/
     
-    if (compressible) RightSol = node[iPoint]->SetPrimVar_Compressible(SharpEdge_Distance, false, config);
-    if (incompressible) RightSol = node[iPoint]->SetPrimVar_Incompressible(SharpEdge_Distance, false, config);
+    if (compressible) RightSol = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
+    if (incompressible) RightSol = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
     if (freesurface) RightSol = node[iPoint]->SetPrimVar_FreeSurface(SharpEdge_Distance, false, config);
     if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
     
@@ -5806,7 +5806,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 //
 //      su2double Volume = geometry->node[iPoint]->GetVolume();
 //      su2double **Gradient = solver_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
-//      su2double coeff = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0) / solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
+//      su2double coeff = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0) / solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
 //
 //      Residual[0] = 0.0;
 //      for (iDim = 0; iDim < nDim; iDim++) {
@@ -5919,7 +5919,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           PrimVar_Grad = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
           
           if (compressible) Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-          if (incompressible || freesurface) Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
+          if (incompressible || freesurface) Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
           
           heat_flux_factor = Cp * Laminar_Viscosity / Prandtl_Lam;
           
@@ -6006,7 +6006,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
             Density = U[0];
             if (compressible)   Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
-            if (incompressible || freesurface) Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressureInc();
+            if (incompressible || freesurface) Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
             Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
             
             /*--- Turbulent kinetic energy ---*/
@@ -6560,9 +6560,9 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
             Eddy_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); // Should be zero at the wall
           }
           if (incompressible || freesurface) {
-            Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressureInc();
-            Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
-            Eddy_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc(); // Should be zero at the wall
+            Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
+            Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+            Eddy_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); // Should be zero at the wall
           }
           
           ViscDens = (Laminar_Viscosity + Eddy_Viscosity) / Density;

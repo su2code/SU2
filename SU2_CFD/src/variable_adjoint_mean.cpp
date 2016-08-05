@@ -246,7 +246,7 @@ CAdjEulerVariable::~CAdjEulerVariable(void) {
   
 }
 
-bool CAdjEulerVariable::SetPrimVar_Compressible(su2double SharpEdge_Distance, bool check, CConfig *config) {
+bool CAdjEulerVariable::SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config) {
 	unsigned short iVar;
   bool check_dens = false, RightVol = true;
   
@@ -271,30 +271,6 @@ bool CAdjEulerVariable::SetPrimVar_Compressible(su2double SharpEdge_Distance, bo
   
 }
 
-bool CAdjEulerVariable::SetPrimVar_Incompressible(su2double SharpEdge_Distance, bool check, CConfig *config) {
-  unsigned short iVar;
-  bool check_press = false, RightVol = true;
-  
-  su2double adj_limit = config->GetAdjointLimit();
-  
-  check_press = (fabs(Solution[0]) > adj_limit);
-  
-  /*--- Check that the adjoint solution is bounded ---*/
-  
-  if (check_press) {
-
-    /*--- Copy the old solution ---*/
-    
-    for (iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] = Solution_Old[iVar];
-    
-    RightVol = false;
-    
-  }
-  
-  return RightVol;
-  
-}
 
 bool CAdjEulerVariable::SetPrimVar_FreeSurface(su2double SharpEdge_Distance, bool check, CConfig *config) {
   unsigned short iVar;
