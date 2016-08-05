@@ -4140,8 +4140,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   rank = MASTER_NODE;
 #endif
 
-  solver_container[val_iZone][FinestMesh][FLOW_SOL]->SetTotal_ComboObj(0.0);
-
   /*--- If 1-D outputs requested, calculated them. Requires info from all nodes,
    Get area-averaged and flux-averaged values at the specified surface ---*/
   
@@ -4166,6 +4164,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   if (rank == MASTER_NODE) {
     /*-- Compute the total objective if a "combo" objective is used ---*/
     if (output_comboObj){
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->SetTotal_ComboObj(0.0);
       switch (config[val_iZone]->GetKind_Solver()) {
       case EULER:                   case NAVIER_STOKES:                   case RANS:
         solver_container[val_iZone][FinestMesh][FLOW_SOL]->Compute_ComboObj(config[val_iZone]);
