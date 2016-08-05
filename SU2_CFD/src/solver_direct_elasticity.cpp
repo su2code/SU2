@@ -2581,10 +2581,10 @@ void CFEM_ElasticitySolver::BC_DispDir(CGeometry *geometry, CSolver **solver_con
 
   bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
-  su2double Transfer_Time;
+  su2double Transfer_Time = 0.0;
 
   if (Ramp_Load){
-    Transfer_Time = CurrentTime / Ramp_Time;
+    if (Ramp_Time != 0.0) Transfer_Time = CurrentTime / Ramp_Time;
     switch (config->GetDynamic_LoadTransfer()){
     case INSTANTANEOUS:
       ModAmpl = 1.0;
@@ -2882,7 +2882,7 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
   
   bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
-  su2double Transfer_Time;
+  su2double Transfer_Time = 0.0;
 
 //  if (Ramp_Load){
 //    ModAmpl=NormalLoad*CurrentTime/Ramp_Time;
@@ -2902,7 +2902,7 @@ void CFEM_ElasticitySolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver
 
   
   if (Ramp_Load){
-    Transfer_Time = CurrentTime / Ramp_Time;
+    if (Ramp_Time != 0.0) Transfer_Time = CurrentTime / Ramp_Time;
     switch (config->GetDynamic_LoadTransfer()){
     case INSTANTANEOUS:
       ModAmpl = 1.0;
@@ -3238,7 +3238,7 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
   
   bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
-  su2double Transfer_Time;
+  su2double Transfer_Time = 0.0;
 
 //  if (Ramp_Load){
 //    ModAmpl=LoadDirVal*LoadDirMult*CurrentTime/Ramp_Time;
@@ -3257,7 +3257,7 @@ void CFEM_ElasticitySolver::BC_Dir_Load(CGeometry *geometry, CSolver **solver_co
 //  }
   
   if (Ramp_Load){
-    Transfer_Time = CurrentTime / Ramp_Time;
+    if (Ramp_Time != 0.0) Transfer_Time = CurrentTime / Ramp_Time;
     switch (config->GetDynamic_LoadTransfer()){
     case INSTANTANEOUS:
       ModAmpl = 1.0;
@@ -4996,14 +4996,23 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
 
   if (direct_diff){
 
-    su2double local_forward_gradient = 0.0;
+    su2double local_forward_gradient = 0.0, forward_gradient = 0.0;
+    unsigned long current_iter = 1;
     local_forward_gradient = SU2_TYPE::GetDerivative(Total_OFRefGeom);
     Total_ForwardGradient += local_forward_gradient;
 
-    if (config->GetDirectDiff() == D_YOUNG)   cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Young Modulus: " << Total_ForwardGradient << "." << endl;
-    if (config->GetDirectDiff() == D_POISSON) cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Poisson's ratio: " << Total_ForwardGradient << "." << endl;
-    if (config->GetDirectDiff() == D_RHO)     cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the structural density: " << Total_ForwardGradient << "." << endl;
-    if (config->GetDirectDiff() == D_RHO_DL)  cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the dead weight: " << Total_ForwardGradient << "." << endl;
+    if (fsi) {
+      current_iter = config->GetFSIIter() + 1;
+      forward_gradient = Total_ForwardGradient / current_iter;
+    }
+    else {
+      forward_gradient = Total_ForwardGradient;
+    }
+
+    if (config->GetDirectDiff() == D_YOUNG)   cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Young Modulus: " << forward_gradient << "." << endl;
+    if (config->GetDirectDiff() == D_POISSON) cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Poisson's ratio: " << forward_gradient << "." << endl;
+    if (config->GetDirectDiff() == D_RHO)     cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the structural density: " << forward_gradient << "." << endl;
+    if (config->GetDirectDiff() == D_RHO_DL)  cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the dead weight: " << forward_gradient << "." << endl;
 
   }
   else {

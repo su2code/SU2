@@ -634,7 +634,8 @@ private:
 	string RefGeom_FEMFileName;    			/*!< \brief File name for reference geometry. */
 	unsigned short RefGeom_FileFormat;	/*!< \brief Mesh input format. */
 	unsigned short Kind_2DElasForm;			/*!< \brief Kind of bidimensional elasticity solver. */
-	unsigned short nIterFSI;	/*!< \brief Number of maximum number of subiterations in a FSI problem. */
+	unsigned short nIterFSI;	       /*!< \brief Number of maximum number of subiterations in a FSI problem. */
+  unsigned short nIterFSI_Ramp;  /*!< \brief Number of FSI subiterations during which a ramp is applied. */
 	su2double AitkenStatRelax;			/*!< \brief Aitken's relaxation factor (if set as static) */
 	su2double AitkenDynMaxInit;			/*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
 	su2double AitkenDynMinInit;			/*!< \brief Aitken's minimum dynamic relaxation factor for the first iteration */
@@ -5568,6 +5569,12 @@ public:
 	 * \return Number of FSI subiters.
 	 */
 	unsigned short GetnIterFSI(void);
+
+  /*!
+   * \brief Get the number of subiterations while a ramp is applied.
+   * \return Number of FSI subiters.
+   */
+  unsigned short GetnIterFSI_Ramp(void);
 
 	/*!
 	 * \brief Get Aitken's relaxation parameter for static relaxation cases.

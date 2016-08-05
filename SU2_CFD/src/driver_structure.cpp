@@ -4099,6 +4099,7 @@ void CDiscAdjFSIStatDriver::SetRecording(CIteration **iteration_container,
   bool dynamic = (config_container[ZONE_STRUCT]->GetDynamic_Analysis() == DYNAMIC);
 
   string kind_DirectIteration = " ";
+  string kind_AdjointIteration = " ";
 
   if (unsteady || dynamic){
     cout << "DYNAMIC ADJOINT SOLVER NOT IMPLEMENTED FOR FSI APPLICATIONS" << endl;
@@ -4114,24 +4115,31 @@ void CDiscAdjFSIStatDriver::SetRecording(CIteration **iteration_container,
     cout << endl;
     switch (kind_recording){
     case FLOW_VARIABLES:
+      kind_AdjointIteration = "Flow iteration: flow input -> flow output";
       kind_DirectIteration = "flow ";
       break;
     case GEOMETRY_VARIABLES:
+      kind_AdjointIteration = "Geometry iteration: geometry input -> flow output";
       kind_DirectIteration = "flow ";
       break;
     case FEM_VARIABLES:
+      kind_AdjointIteration = "Structural iteration: structural input -> structural output";
       kind_DirectIteration = "structural ";
       break;
     case FLOW_CROSS_TERM:
+      kind_AdjointIteration = "Flow cross term: flow input -> structural output";
       kind_DirectIteration = "structural ";
       break;
     case GEOMETRY_CROSS_TERM:
+      kind_AdjointIteration = "Geometry cross term: geometry input -> structural output";
       kind_DirectIteration = "structural ";
       break;
     case FEM_CROSS_TERM:
+      kind_AdjointIteration = "Structural cross term: structural input -> geometry output";
       kind_DirectIteration = "mesh deformation ";
       break;
     }
+//    cout << kind_AdjointIteration << endl;
     cout << "Direct " << kind_DirectIteration << "iteration to store computational graph." << endl;
     switch (kind_recording){
     case FLOW_VARIABLES: case GEOMETRY_VARIABLES:

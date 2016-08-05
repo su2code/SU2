@@ -77,15 +77,15 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 
 	/*--- Apply a ramp to the transfer of the fluid loads ---*/
 
-	su2double ModAmpl;
+	su2double ModAmpl = 0.0;
 	su2double CurrentTime = struct_config->GetCurrent_DynTime();
 	su2double Static_Time = struct_config->GetStatic_Time();
-	su2double Transfer_Time;
+	su2double Transfer_Time = 0.0;
 
 	bool Ramp_Load = struct_config->GetRamp_Load();
 	su2double Ramp_Time = struct_config->GetRamp_Time();
 
-    bool Sigmoid_Load = struct_config->GetSigmoid_Load();
+  bool Sigmoid_Load = struct_config->GetSigmoid_Load();
 	su2double Sigmoid_Time = struct_config->GetSigmoid_Time();
 	su2double Sigmoid_K = struct_config->GetSigmoid_K();
 	su2double SigAux = 0.0;
@@ -147,7 +147,35 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 
 	/*--- For static FSI, we cannot apply the ramp like this ---*/
 	if ((flow_config->GetUnsteady_Simulation() == STEADY) && (struct_config->GetDynamic_Analysis() == STATIC)){
-	  Physical_Constants[1] = 1.0;
+    Physical_Constants[1] = 1.0;
+	  if (Ramp_Load){
+	    CurrentTime = static_cast<su2double>(struct_config->GetFSIIter());
+	    Ramp_Time = static_cast<su2double>(struct_config->GetnIterFSI_Ramp() - 1);
+	    if (Ramp_Time != 0.0) Transfer_Time = CurrentTime / Ramp_Time;
+	    switch (struct_config->GetDynamic_LoadTransfer()){
+	    case INSTANTANEOUS:
+	      ModAmpl = 1.0;
+	      break;
+	    case POL_ORDER_1:
+	      ModAmpl = Transfer_Time;
+	      break;
+	    case POL_ORDER_3:
+	      ModAmpl = -2.0 * pow(Transfer_Time,3.0) + 3.0 * pow(Transfer_Time,2.0);
+	      break;
+	    case POL_ORDER_5:
+	      ModAmpl = 6.0 * pow(Transfer_Time, 5.0) - 15.0 * pow(Transfer_Time, 4.0) + 10 * pow(Transfer_Time, 3.0);
+	      break;
+	    case SIGMOID_10:
+	      ModAmpl = (1 / (1+exp(-1.0 * 10.0 * (Transfer_Time - 0.5)) ) );
+	      break;
+	    case SIGMOID_20:
+	      ModAmpl = (1 / (1+exp(-1.0 * 20.0 * (Transfer_Time - 0.5)) ) );
+	      break;
+	    }
+	    ModAmpl = max(ModAmpl,0.0);
+	    ModAmpl = min(ModAmpl,1.0);
+	    Physical_Constants[1] = ModAmpl;
+	  }
 	}
 
 }

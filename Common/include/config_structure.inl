@@ -1181,6 +1181,8 @@ inline unsigned short CConfig::GetConsole_Output_Verb(void) { return Console_Out
 
 inline unsigned short CConfig::GetnIterFSI(void) { return nIterFSI; }
 
+inline unsigned short CConfig::GetnIterFSI_Ramp(void) { return nIterFSI_Ramp; }
+
 inline su2double CConfig::GetAitkenStatRelax(void) { return AitkenStatRelax; }
 
 inline su2double CConfig::GetAitkenDynMaxInit(void) { return AitkenDynMaxInit; }
