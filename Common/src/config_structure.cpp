@@ -1402,6 +1402,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Maximum number of FSI iterations */
   addUnsignedShortOption("FSI_ITER", nIterFSI, 1);
+  /* DESCRIPTION: Number of FSI iterations during which a ramp is applied */
+  addUnsignedShortOption("RAMP_FSI_ITER", nIterFSI_Ramp, 2);
   /* DESCRIPTION: Aitken's static relaxation factor */
   addDoubleOption("STAT_RELAX_PARAMETER", AitkenStatRelax, 0.4);
   /* DESCRIPTION: Aitken's dynamic maximum relaxation factor for the first iteration */
