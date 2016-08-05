@@ -451,7 +451,7 @@ su2double CEulerVariable::GetProjVel(su2double *val_vector) {
 	return ProjVel;
 }
 
-bool CEulerVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) {
+bool CEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
 	unsigned short iVar;
   bool check_dens = false, check_press = false, check_sos = false, check_temp = false, RightVol = true;
   
@@ -503,7 +503,7 @@ bool CEulerVariable::SetPrimVar_Compressible(CFluidModel *FluidModel) {
   
 }
 
-void CEulerVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
+void CEulerVariable::SetSecondaryVar(CFluidModel *FluidModel) {
 
    /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
 
@@ -512,69 +512,6 @@ void CEulerVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
 
 }
 
-bool CEulerVariable::SetPrimVar_Incompressible(su2double Density_Inf, CConfig *config) {
-  
-  su2double ArtComp_Factor = config->GetArtComp_Factor();
-  
-  /*--- Set the value of the density ---*/
-  
-  SetDensityInc(Density_Inf);
-  
-  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
-  
-  SetVelocityInc();
-  
-  /*--- Set the value of the pressure ---*/
-  
-	SetPressureInc();
-  
-  /*--- Set the value of the artificial compressibility factor ---*/
-  
-  SetBetaInc2(ArtComp_Factor);
-  
-  return true;
-  
-}
-
-bool CEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
-  
-  su2double Heaviside, lambda, DensityInc, LevelSet;
-
-  su2double ArtComp_Factor = config->GetArtComp_Factor();
-  su2double epsilon = config->GetFreeSurface_Thickness();
-  
-  /*--- Set the value of the Level Set (already set in SetFreeSurface_Distance(geometry, config)) ---*/
-  
-  LevelSet = Primitive[nDim+5];
-
-  /*--- Set the value of the Heaviside function ---*/
-
-  Heaviside = 0.0;
-  if (LevelSet < -epsilon) Heaviside = 1.0;
-  if (fabs(LevelSet) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(LevelSet/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*LevelSet/epsilon)));
-  if (LevelSet > epsilon) Heaviside = 0.0;
-
-  /*--- Set the value of the density ---*/
-
-  lambda = config->GetRatioDensity();
-  DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
-  SetDensityInc(DensityInc);
-  
-  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
-  
-  SetVelocityInc();
-  
-  /*--- Set the value of the pressure ---*/
-  
-	SetPressureInc();
-  
-  /*--- Set the value of the artificial compressibility factor ---*/
-  
-  SetBetaInc2(ArtComp_Factor);
-  
-  return true;
-  
-}
 
 CNSVariable::CNSVariable(void) : CEulerVariable() { }
 
@@ -656,7 +593,7 @@ bool CNSVariable::SetStrainMag(bool val_limiter) {
   
 }
 
-bool CNSVariable::SetPrimVar_Compressible(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
+bool CNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
   
 	unsigned short iVar;
   su2double density, staticEnergy;
@@ -729,7 +666,7 @@ bool CNSVariable::SetPrimVar_Compressible(su2double eddy_visc, su2double turb_ke
   
 }
 
-void CNSVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
+void CNSVariable::SetSecondaryVar(CFluidModel *FluidModel) {
 
     /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
 
@@ -749,81 +686,3 @@ void CNSVariable::SetSecondaryVar_Compressible(CFluidModel *FluidModel) {
 
 }
 
-bool CNSVariable::SetPrimVar_Incompressible(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config) {
-  
-	su2double ArtComp_Factor = config->GetArtComp_Factor();
-  
-  /*--- Set the value of the density and viscosity ---*/
-  
-  SetDensityInc(Density_Inf);
-  SetLaminarViscosityInc(Viscosity_Inf);
-  
-  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
-  
-  SetVelocityInc();
-  
-  /*--- Set the value of the pressure ---*/
-  
-	SetPressureInc();
-  
-  /*--- Set the value of the artificial compressibility factor ---*/
-  
-  SetBetaInc2(ArtComp_Factor);
-  
-  /*--- Set eddy viscosity ---*/
-  
-  SetEddyViscosityInc(eddy_visc);
-  
-  return true;
-  
-}
-
-bool CNSVariable::SetPrimVar_FreeSurface(su2double eddy_visc, su2double turb_ke, CConfig *config) {
-
-  su2double Heaviside, lambda, DensityInc, ViscosityInc, LevelSet;
-  
-	su2double ArtComp_Factor = config->GetArtComp_Factor();
-  su2double epsilon = config->GetFreeSurface_Thickness();
-
-  /*--- Set the value of the Level Set (already set in SetFreeSurface_Distance(geometry, config)) ---*/
-  
-  LevelSet = Primitive[nDim+5];
-  
-  /*--- Set the value of the Heaviside function ---*/
-
-  Heaviside = 0.0;
-  if (LevelSet < -epsilon) Heaviside = 1.0;
-  if (fabs(LevelSet) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(LevelSet/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*LevelSet/epsilon)));
-  if (LevelSet > epsilon) Heaviside = 0.0;
-  
-  /*--- Set the value of the density ---*/
-
-  lambda = config->GetRatioDensity();
-  DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
-  SetDensityInc(DensityInc);
-  
-  /*--- Set the value of the laminar viscosity ---*/
-
-  lambda = config->GetRatioViscosity();
-  ViscosityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetViscosity_FreeStreamND();
-  SetLaminarViscosityInc(ViscosityInc);
-
-  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
-  
-  SetVelocityInc();
-  
-  /*--- Set the value of the pressure ---*/
-  
-	SetPressureInc();
-  
-  /*--- Set the value of the artificial compressibility factor ---*/
-  
-  SetBetaInc2(ArtComp_Factor);
-  
-  /*--- Set eddy viscosity ---*/
-  
-  SetEddyViscosityInc(eddy_visc);
-
-  return true;
-  
-}

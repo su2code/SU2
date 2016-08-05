@@ -2430,7 +2430,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the pressure and mach variables. ---*/
-          Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetDensityInc();
+          Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetDensity();
           jPoint++;
         }
       }
@@ -2483,17 +2483,15 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
         if (!Local_Halo[iPoint] || Wrt_Halo) {
           
           /*--- Load buffers with the pressure, Cp, and mach variables. ---*/
-          
-          if (compressible) {
-            Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure();
+
+          Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressure();
+          if (compressible){
             Buffer_Send_Res[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetTemperature();
-            Buffer_Send_Vol[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff;
+          } else{
+            Buffer_Send_Res[jPoint] =  0.0;
           }
-          if (incompressible || freesurface) {
-            Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetPressureInc();
-            Buffer_Send_Res[jPoint] = 0.0;
-            Buffer_Send_Vol[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff;
-          }
+          Buffer_Send_Vol[jPoint] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff;
+
           jPoint++;
         }
       }
@@ -2554,7 +2552,7 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           }
           if (incompressible || freesurface) {
             Buffer_Send_Var[jPoint] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())*config->GetVelocity_Ref()/
-            sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensityInc()*config->GetDensity_Ref()));
+            sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensity()*config->GetDensity_Ref()));
           }
           jPoint++;
         }
@@ -2604,12 +2602,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           
           /*--- Load buffers with the temperature and laminar viscosity variables. ---*/
           
-          if (compressible) {
-            Buffer_Send_Res[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-          }
-          if (incompressible || freesurface) {
-            Buffer_Send_Res[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosityInc();
-          }
+          Buffer_Send_Res[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+
           jPoint++;
         }
       }
@@ -2821,12 +2815,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           
           /*--- Load buffers with the pressure and mach variables. ---*/
           
-          if (compressible) {
-            Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
-          }
-          if (incompressible || freesurface) {
-            Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosityInc();
-          }
+          Buffer_Send_Var[jPoint] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
+
           jPoint++;
         }
       }
@@ -7027,9 +7017,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
   VelocityRef = 0.0, EnthalpyRef = 0.0, DensityRef = 0.0, PressureRef = 0.0; // Flux conserved values. TemperatureRef follows ideal gas
   su2double TotalArea=0.0;
   
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   su2double Gamma = config->GetGamma();
   unsigned short nDim = geometry->GetnDim();
   
@@ -7059,8 +7047,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
           Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
           for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
           
-          if (compressible)                    Pressure = solver_container->node[iPoint]->GetPressure();
-          if (incompressible || freesurface)   Pressure = solver_container->node[iPoint]->GetPressureInc();
+          Pressure = solver_container->node[iPoint]->GetPressure();
           
           /*-- Find velocity normal to the marked surface/opening --*/
           
@@ -7156,9 +7143,6 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
   unsigned short iDim;
   
   bool grid_movement = config->GetGrid_Movement();
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   Plane_P0 = new su2double [3];
   Plane_Normal = new su2double [3];
@@ -7198,12 +7182,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
     /*--- Copy the pressure to an auxiliar structure ---*/
     
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      if (compressible) {
-        CPressure[iPoint] = (solver_container->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff;
-      }
-      if (incompressible || freesurface) {
-        CPressure[iPoint] = (solver_container->node[iPoint]->GetPressureInc() - RefPressure)*factor*RefAreaCoeff;
-      }
+      CPressure[iPoint] = (solver_container->node[iPoint]->GetPressure() - RefPressure)*factor*RefAreaCoeff;
     }
     
     nSection = config->GetnSections();

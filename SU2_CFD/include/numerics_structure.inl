@@ -355,7 +355,7 @@ inline void CNumerics::SetPressure(su2double val_pressure_i, su2double val_press
 	Pressure_j = val_pressure_j;
 }
 
-inline void CNumerics::SetDensityInc(su2double val_densityinc_i, su2double val_densityinc_j) {
+inline void CNumerics::SetDensity(su2double val_densityinc_i, su2double val_densityinc_j) {
 	DensityInc_i = val_densityinc_i;
 	DensityInc_j = val_densityinc_j;
 }

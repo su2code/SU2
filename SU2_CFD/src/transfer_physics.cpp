@@ -146,12 +146,12 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 	// Retrieve the values of pressure and viscosity
 	if (incompressible){
 
-		Pn = flow_solution->node[Point_Flow]->GetPressureInc();
+		Pn = flow_solution->node[Point_Flow]->GetPressure();
 
 		if (viscous_flow){
 
 			Grad_PrimVar = flow_solution->node[Point_Flow]->GetGradient_Primitive();
-			Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosityInc();
+			Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
 
 		}
 	}

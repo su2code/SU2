@@ -829,12 +829,6 @@ public:
 	 * \return Value of the eddy viscosity.
 	 */		
 	virtual su2double GetEddyViscosity(void);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \return Value of the eddy viscosity.
-	 */
-	virtual su2double GetEddyViscosityInc(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -848,12 +842,6 @@ public:
 	 */
 	virtual su2double GetPressure(void);
   
-  /*!
-	 * \brief A virtual member.
-	 * \return Value of the flow pressure.
-	 */
-	virtual su2double GetPressureInc(void);
-
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_vector - Direction of projection.
@@ -874,12 +862,6 @@ public:
 	 * \return Value of the sound speed.
 	 */		
 	virtual su2double GetSoundSpeed(void);
-
-	/*!
-	 * \brief A virtual member.
-	 * \return Value of the density for the incompressible flow.
-	 */		
-	virtual su2double GetDensityInc(void);
 
   /*!
 	 * \brief A virtual member.
@@ -948,11 +930,6 @@ public:
 	 */		
 	virtual su2double GetLaminarViscosity(void);
 
-	/*!
-	 * \brief A virtual member.
-	 * \return The laminar viscosity of the incompressible flow.
-	 */		
-	virtual su2double GetLaminarViscosityInc(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1037,12 +1014,6 @@ public:
 	 * \param[in] eddy_visc - Value of the eddy viscosity.
 	 */		
 	virtual void SetEddyViscosity(su2double eddy_visc);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] eddy_visc - Value of the eddy viscosity.
-	 */
-	virtual void SetEddyViscosityInc(su2double eddy_visc);
 
 	/*!
 	 * \brief A virtual member.
@@ -1052,17 +1023,17 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual bool SetPrimVar_Compressible(CConfig *config);
+  virtual bool SetPrimVar(CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	 virtual bool SetPrimVar_Compressible(CFluidModel *FluidModel);
+   virtual bool SetPrimVar(CFluidModel *FluidModel);
 
 	/*!
      * \brief A virtual member.
 	 */
-     virtual void SetSecondaryVar_Compressible(CFluidModel *FluidModel);
+     virtual void SetSecondaryVar(CFluidModel *FluidModel);
 
   /*!
 	 * \brief A virtual member.
@@ -1078,13 +1049,8 @@ public:
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual bool SetPrimVar_Compressible(su2double SharpEdge_Distance, bool check, CConfig *config);
+  virtual bool SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config);
 	
-  /*!
-	 * \brief A virtual member.
-	 */
-	virtual bool SetPrimVar_Incompressible(su2double SharpEdge_Distance, bool check, CConfig *config);
-  
   /*!
 	 * \brief A virtual member.
 	 */
@@ -1093,17 +1059,17 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual bool SetPrimVar_Compressible(su2double eddy_visc, su2double turb_ke, CConfig *config);
+  virtual bool SetPrimVar(su2double eddy_visc, su2double turb_ke, CConfig *config);
 	
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual bool SetPrimVar_Compressible(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
+  virtual bool SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
 
 	/*!
 	 * \brief A virtual member.
 	 */
-	virtual bool SetPrimVar_Incompressible(su2double Density_Inf, CConfig *config);
+  virtual bool SetPrimVar(su2double Density_Inf, CConfig *config);
   
   /*!
 	 * \brief A virtual member.
@@ -1113,7 +1079,7 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual bool SetPrimVar_Incompressible(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
+  virtual bool SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
   
   /*!
 	 * \brief A virtual member.
@@ -1203,17 +1169,17 @@ public:
 	/*!
 	 * \brief A virtual member.
 	 */		
-	virtual void SetDensityInc(su2double val_density);
+  virtual void SetDensity(su2double val_density);
   
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetPressureInc(void);
+  virtual void SetPressure(void);
   
   /*!
 	 * \brief A virtual member.
 	 */
-	virtual void SetVelocityInc(void);
+  virtual void SetVelocity(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1242,11 +1208,6 @@ public:
 	 * \brief A virtual member.
 	 */
 	virtual bool SetPressure(su2double Gamma, su2double turb_ke);
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	virtual void SetPressure(void);
   
   /*!
    * \brief Calculates vib.-el. energy per mass, \f$e^{vib-el}_s\f$, for input species (not including KE)
@@ -1379,11 +1340,6 @@ public:
 	 * \param[in] config - Configuration parameters.
 	 */
 	virtual void SetThermalCoeff(CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 */
-	virtual void SetVelocity(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -1523,12 +1479,6 @@ public:
 	 * \param[in] val_velocity - Pointer to the velocity.
 	 */
 	virtual void SetVelocity_Old(su2double *val_velocity);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 */
-	virtual void SetVelocityInc_Old(su2double *val_velocity);
 
 	/*!
 	 * \brief A virtual member.
@@ -1541,12 +1491,6 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void SetLaminarViscosity(CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_laminar_viscosity_inc - Value of the laminar viscosity (incompressible flows).
-	 */		
-	virtual void SetLaminarViscosityInc(su2double val_laminar_viscosity_inc);
 
 	/*!
 	 * \brief A virtual member.
@@ -2947,26 +2891,13 @@ public:
 	/*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	bool SetPrimVar_Compressible(CFluidModel *FluidModel);
-  using CVariable::SetPrimVar_Compressible;
+  bool SetPrimVar(CFluidModel *FluidModel);
   
 	/*!
 	 * \brief A virtual member.
 	 */
-	void SetSecondaryVar_Compressible(CFluidModel *FluidModel);
+  void SetSecondaryVar(CFluidModel *FluidModel);
 
-	/*!
-	 * \brief Set all the primitive variables for incompressible flows.
-	 */
-	bool SetPrimVar_Incompressible(su2double Density_Inf, CConfig *config);
-  using CVariable::SetPrimVar_Incompressible;
-  
-  /*!
-	 * \brief Set all the primitive variables for incompressible flows.
-	 */
-	bool SetPrimVar_FreeSurface(CConfig *config);
-	using CVariable::SetPrimVar_FreeSurface;
-  
 	/*!
 	 * \brief Get the primitive variables.
 	 * \param[in] val_var - Index of the variable.
@@ -3023,30 +2954,10 @@ public:
 	 */
 	su2double *GetSecondary(void);
   
-	/*!
-	 * \brief Set the value of the density for the incompressible flows.
-	 */
-	void SetDensityInc(su2double val_density);
-  
   /*!
 	 * \brief Set the value of the density for the incompressible flows.
 	 */
 	bool SetDensity(void);
-  
-  /*!
-	 * \brief Set the value of the density for the incompressible flows.
-	 */
-	void SetPressureInc(void);
-  
-  /*!
-	 * \brief Set the value of the density for the incompressible flows.
-	 */
-	void SetVelocityInc(void);
-
-	/*!
-	 * \brief Set the value of the beta coeffient for incompressible flows.
-	 */
-	void SetBetaInc2(su2double val_betainc2);
 
 	/*!
 	 * \brief Set the value of the temperature.
@@ -3066,41 +2977,11 @@ public:
 	 */
 	su2double GetPressure(void);
   
-  /*!
-	 * \brief Get the flow pressure.
-	 * \return Value of the flow pressure.
-	 */
-	su2double GetPressureInc(void);
-  
 	/*!
 	 * \brief Get the speed of the sound.
 	 * \return Value of speed of the sound.
 	 */
 	su2double GetSoundSpeed(void);
-
-	/*!
-	 * \brief Get the value of density for the incompressible flow
-	 * \return Value of beta squared.
-	 */
-	su2double GetDensityInc(void);
-
-  /*!
-	 * \brief Get the value of levelset for the freesurface flows
-	 * \return Value of beta squared.
-	 */
-	su2double GetLevelSet(void);
-  
-  /*!
-	 * \brief Get the value of distance for the freesurface flows
-	 * \return Value of beta squared.
-	 */
-	su2double GetDistance(void);
-  
-	/*!
-	 * \brief Get the value of beta squared for the incompressible flow
-	 * \return Value of beta squared.
-	 */
-	su2double GetBetaInc2(void);
 
 	/*!
 	 * \brief Get the enthalpy of the flow.
@@ -3152,12 +3033,6 @@ public:
 	 */		
 	void SetVelocity_Old(su2double *val_velocity);
   
-  /*!
-	 * \brief Set the velocity vector from the old solution.
-	 * \param[in] val_velocity - Pointer to the velocity.
-	 */
-	void SetVelocityInc_Old(su2double *val_velocity);
-
 	/*!
 	 * \brief Set the time spectral source term.
 	 * \param[in] val_var - Index of the variable.
@@ -3229,13 +3104,7 @@ protected:
   su2double *Primitive;	/*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
   su2double **Gradient_Primitive;	/*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
-  
-  /*--- Secondary variable definition ---*/
-  
-  su2double *Secondary;	/*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
-  su2double **Gradient_Secondary;	/*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
-  su2double *Limiter_Secondary;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
-  
+
 public:
   
   /*!
@@ -3333,124 +3202,10 @@ public:
   su2double *GetLimiter_Primitive(void);
   
   /*!
-   * \brief Set to zero the gradient of the primitive variables.
-   */
-  void SetGradient_SecondaryZero(unsigned short val_secondaryvar);
-  
-  /*!
-   * \brief Add <i>val_value</i> to the gradient of the primitive variables.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_value - Value to add to the gradient of the primitive variables.
-   */
-  void AddGradient_Secondary(unsigned short val_var, unsigned short val_dim, su2double val_value);
-  
-  /*!
-   * \brief Subtract <i>val_value</i> to the gradient of the primitive variables.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_value - Value to subtract to the gradient of the primitive variables.
-   */
-  void SubtractGradient_Secondary(unsigned short val_var, unsigned short val_dim, su2double val_value);
-  
-  /*!
-   * \brief Get the value of the primitive variables gradient.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \return Value of the primitive variables gradient.
-   */
-  su2double GetGradient_Secondary(unsigned short val_var, unsigned short val_dim);
-  
-  /*!
-   * \brief Get the value of the primitive variables gradient.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \return Value of the primitive variables gradient.
-   */
-  su2double GetLimiter_Secondary(unsigned short val_var);
-  
-  /*!
-   * \brief Set the gradient of the primitive variables.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_value - Value of the gradient.
-   */
-  void SetGradient_Secondary(unsigned short val_var, unsigned short val_dim, su2double val_value);
-  
-  /*!
-   * \brief Set the gradient of the primitive variables.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_dim - Index of the dimension.
-   * \param[in] val_value - Value of the gradient.
-   */
-  void SetLimiter_Secondary(unsigned short val_var, su2double val_value);
-  
-  /*!
-   * \brief Get the value of the primitive variables gradient.
-   * \return Value of the primitive variables gradient.
-   */
-  su2double **GetGradient_Secondary(void);
-  
-  /*!
-   * \brief Get the value of the primitive variables gradient.
-   * \return Value of the primitive variables gradient.
-   */
-  su2double *GetLimiter_Secondary(void);
-  
-  /*!
- 	 * \brief A virtual member.
- 	 */
-  void SetdPdrho_e(su2double dPdrho_e);
-  
-  /*!
-   * \brief A virtual member.
-   */
-  void SetdPde_rho(su2double dPde_rho);
-  
-  /*!
    * \brief Set the value of the pressure.
    */
-  bool SetPressure(su2double Gamma);
-  
-  /*!
-   * \brief Set the value of the speed of the sound.
-   * \param[in] Gamma - Value of Gamma.
-   */
-  bool SetSoundSpeed(su2double Gamma);
-  
-  /*!
-   * \brief Set the value of the enthalpy.
-   */
-  void SetEnthalpy(void);
-  
-  //	/*!
-  //	 * \brief Set all the primitive variables for compressible flows.
-  //	 */
-  //	bool SetPrimVar_Compressible(CConfig *config);
-  
-  /*!
-   * \brief Set all the primitive variables for compressible flows.
-   */
-  bool SetPrimVar_Compressible(CFluidModel *FluidModel);
-  using CVariable::SetPrimVar_Compressible;
-  
-  /*!
-   * \brief A virtual member.
-   */
-  void SetSecondaryVar_Compressible(CFluidModel *FluidModel);
-  
-  /*!
-   * \brief Set all the primitive variables for incompressible flows.
-   */
-  bool SetPrimVar_Incompressible(su2double Density_Inf, CConfig *config);
-  using CVariable::SetPrimVar_Incompressible;
-  
-  /*!
-   * \brief Set all the primitive variables for incompressible flows.
-   */
-  bool SetPrimVar_FreeSurface(CConfig *config);
-  using CVariable::SetPrimVar_FreeSurface;
-  
+  void SetPressure();
+
   /*!
    * \brief Get the primitive variables.
    * \param[in] val_var - Index of the variable.
@@ -3480,64 +3235,20 @@ public:
   su2double *GetPrimitive(void);
   
   /*!
-   * \brief Get the primitive variables.
-   * \param[in] val_var - Index of the variable.
-   * \return Value of the primitive variable for the index <i>val_var</i>.
+   * \brief Set the value of the density for the incompressible flows.
    */
-  su2double GetSecondary(unsigned short val_var);
-  
-  /*!
-   * \brief Set the value of the primitive variables.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_var - Index of the variable.
-   * \return Set the value of the primitive variable for the index <i>val_var</i>.
-   */
-  void SetSecondary(unsigned short val_var, su2double val_secondary);
-  
-  /*!
-   * \brief Set the value of the primitive variables.
-   * \param[in] val_prim - Primitive variables.
-   * \return Set the value of the primitive variable for the index <i>val_var</i>.
-   */
-  void SetSecondary(su2double *val_secondary);
-  
-  /*!
-   * \brief Get the primitive variables of the problem.
-   * \return Pointer to the primitive variable vector.
-   */
-  su2double *GetSecondary(void);
+  void SetDensity(su2double val_density);
   
   /*!
    * \brief Set the value of the density for the incompressible flows.
    */
-  void SetDensityInc(su2double val_density);
-  
-  /*!
-   * \brief Set the value of the density for the incompressible flows.
-   */
-  bool SetDensity(void);
-  
-  /*!
-   * \brief Set the value of the density for the incompressible flows.
-   */
-  void SetPressureInc(void);
-  
-  /*!
-   * \brief Set the value of the density for the incompressible flows.
-   */
-  void SetVelocityInc(void);
+  void SetVelocity(void);
   
   /*!
    * \brief Set the value of the beta coeffient for incompressible flows.
    */
   void SetBetaInc2(su2double val_betainc2);
-  
-  /*!
-   * \brief Set the value of the temperature.
-   * \param[in] Gas_Constant - Value of Gas Constant
-   */
-  bool SetTemperature(su2double Gas_Constant);
-  
+
   /*!
    * \brief Get the norm 2 of the velocity.
    * \return Norm 2 of the velocity vector.
@@ -3549,25 +3260,7 @@ public:
    * \return Value of the flow pressure.
    */
   su2double GetPressure(void);
-  
-  /*!
-   * \brief Get the flow pressure.
-   * \return Value of the flow pressure.
-   */
-  su2double GetPressureInc(void);
-  
-  /*!
-   * \brief Get the speed of the sound.
-   * \return Value of speed of the sound.
-   */
-  su2double GetSoundSpeed(void);
-  
-  /*!
-   * \brief Get the value of density for the incompressible flow
-   * \return Value of beta squared.
-   */
-  su2double GetDensityInc(void);
-  
+
   /*!
    * \brief Get the value of levelset for the freesurface flows
    * \return Value of beta squared.
@@ -3585,31 +3278,13 @@ public:
    * \return Value of beta squared.
    */
   su2double GetBetaInc2(void);
-  
-  /*!
-   * \brief Get the enthalpy of the flow.
-   * \return Value of the enthalpy of the flow.
-   */
-  su2double GetEnthalpy(void);
-  
+
   /*!
    * \brief Get the density of the flow.
    * \return Value of the density of the flow.
    */
   su2double GetDensity(void);
-  
-  /*!
-   * \brief Get the energy of the flow.
-   * \return Value of the energy of the flow.
-   */
-  su2double GetEnergy(void);
-  
-  /*!
-   * \brief Get the temperature of the flow.
-   * \return Value of the temperature of the flow.
-   */
-  su2double GetTemperature(void);
-  
+
   /*!
    * \brief Get the velocity of the flow.
    * \param[in] val_dim - Index of the dimension.
@@ -3625,22 +3300,10 @@ public:
   su2double GetProjVel(su2double *val_vector);
   
   /*!
-   * \brief Set the velocity vector from the solution.
-   * \param[in] val_velocity - Pointer to the velocity.
-   */
-  void SetVelocity(void);
-  
-  /*!
    * \brief Set the velocity vector from the old solution.
    * \param[in] val_velocity - Pointer to the velocity.
    */
   void SetVelocity_Old(su2double *val_velocity);
-  
-  /*!
-   * \brief Set the velocity vector from the old solution.
-   * \param[in] val_velocity - Pointer to the velocity.
-   */
-  void SetVelocityInc_Old(su2double *val_velocity);
   
   /*!
    * \brief Set the time spectral source term.
@@ -3655,18 +3318,6 @@ public:
    * \return Value of the time spectral source term for the index <i>val_var</i>.
    */
   su2double GetTimeSpectral_Source(unsigned short val_var);
-  
-  /*!
-   * \brief Get the value of the preconditioner Beta.
-   * \return Value of the low Mach preconditioner variable Beta
-   */
-  su2double GetPreconditioner_Beta();
-  
-  /*!
-   * \brief Set the value of the preconditioner Beta.
-   * \param[in] Value of the low Mach preconditioner variable Beta
-   */
-  void SetPreconditioner_Beta(su2double val_Beta);
   
   /*!
    * \brief Get the value of the wind gust
@@ -3691,6 +3342,16 @@ public:
    * \param[in] Value of the derivatives of the wind gust
    */
   void SetWindGustDer(su2double* val_WindGust);
+
+  /*!
+   * \brief Set all the primitive variables for incompressible flows.
+   */
+  bool SetPrimVar(su2double Density_Inf, CConfig *config);
+
+  /*!
+   * \brief Set all the primitive variables for incompressible free-surface flows.
+   */
+  bool SetPrimVar_FreeSurface(CConfig *config);
 };
 
 /*!
@@ -3748,12 +3409,6 @@ public:
   void SetLaminarViscosity(su2double laminarViscosity);
   
   /*!
-   * \overload
-   * \param[in] val_laminar_viscosity_inc - Value of the laminar viscosity (incompressible flows).
-   */
-  void SetLaminarViscosityInc(su2double val_laminar_viscosity_inc);
-  
-  /*!
    * \brief Set the laminar viscosity.
    */
   void SetThermalConductivity(su2double thermalConductivity);
@@ -3778,13 +3433,7 @@ public:
    * \param[in] eddy_visc - Value of the eddy viscosity.
    */
   void SetEddyViscosity(su2double eddy_visc);
-  
-  /*!
-   * \overload
-   * \param[in] eddy_visc - Value of the eddy viscosity.
-   */
-  void SetEddyViscosityInc(su2double eddy_visc);
-  
+
   /*!
    * \brief Get the laminar viscosity of the flow.
    * \return Value of the laminar viscosity of the flow.
@@ -3792,35 +3441,23 @@ public:
   su2double GetLaminarViscosity(void);
   
   /*!
-   * \brief Get the laminar viscosity of the incompressible flow.
-   * \return Value of the laminar viscosity of the incompressible flow.
-   */
-  su2double GetLaminarViscosityInc(void);
-  
-  /*!
    * \brief Get the thermal conductivity of the flow.
    * \return Value of the laminar viscosity of the flow.
    */
   su2double GetThermalConductivity(void);
-  
+
   /*!
    * \brief Get the eddy viscosity of the flow.
    * \return The eddy viscosity of the flow.
    */
   su2double GetEddyViscosity(void);
-  
+
   /*!
    * \brief Get the specific heat at constant P of the flow.
    * \return Value of the specific heat at constant P  of the flow.
    */
   su2double GetSpecificHeatCp(void);
-  
-  /*!
-   * \brief Get the eddy viscosity of the flow.
-   * \return The eddy viscosity of the flow.
-   */
-  su2double GetEddyViscosityInc(void);
-  
+
   /*!
    * \brief Set the temperature at the wall
    */
@@ -3872,26 +3509,12 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows
    */
-  bool SetPrimVar_Compressible(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
-  using CVariable::SetPrimVar_Compressible;
+  bool SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
   
   /*!
    * \brief Set all the secondary variables (partial derivatives) for compressible flows
    */
-  void SetSecondaryVar_Compressible(CFluidModel *FluidModel);
-  
-  /*!
-   * \brief Set all the primitive variables for incompressible flows
-   */
-  bool SetPrimVar_Incompressible(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
-  using CVariable::SetPrimVar_Incompressible;
-  
-  /*!
-   * \brief Set all the primitive variables for incompressible flows
-   */
-  bool SetPrimVar_FreeSurface(su2double eddy_visc, su2double turb_ke, CConfig *config);
-  using CVariable::SetPrimVar_FreeSurface;
-  
+  void SetSecondaryVar(CFluidModel *FluidModel);
 };
 
 /*! 
@@ -3949,22 +3572,6 @@ public:
 	void SetLaminarViscosity(su2double laminarViscosity);
 
 	/*!
-	 * \overload
-	 * \param[in] val_laminar_viscosity_inc - Value of the laminar viscosity (incompressible flows).
-	 */
-	void SetLaminarViscosityInc(su2double val_laminar_viscosity_inc);
-
-	/*!
-	 * \brief Set the laminar viscosity.
-	 */
-	void SetThermalConductivity(su2double thermalConductivity);
-
-	/*!
-	 * \brief Set the specific heat Cp.
-	 */
-	void SetSpecificHeatCp(su2double Cp);
-
-	/*!
 	 * \brief Set the vorticity value.
 	 */
 	bool SetVorticity(bool val_limiter);
@@ -3980,12 +3587,6 @@ public:
 	 */
 	void SetEddyViscosity(su2double eddy_visc);
   
-  /*!
-	 * \overload
-	 * \param[in] eddy_visc - Value of the eddy viscosity.
-	 */
-	void SetEddyViscosityInc(su2double eddy_visc);
-
 	/*!
 	 * \brief Get the laminar viscosity of the flow.
 	 * \return Value of the laminar viscosity of the flow.
@@ -3993,39 +3594,10 @@ public:
 	su2double GetLaminarViscosity(void);
 
 	/*!
-	 * \brief Get the laminar viscosity of the incompressible flow.
-	 * \return Value of the laminar viscosity of the incompressible flow.
-	 */
-	su2double GetLaminarViscosityInc(void);
-
-	/*!
-	 * \brief Get the thermal conductivity of the flow.
-	 * \return Value of the laminar viscosity of the flow.
-	 */
-	su2double GetThermalConductivity(void);
-
-	/*!
 	 * \brief Get the eddy viscosity of the flow.
 	 * \return The eddy viscosity of the flow.
 	 */
 	su2double GetEddyViscosity(void);
-
-	/*!
-	 * \brief Get the specific heat at constant P of the flow.
-	 * \return Value of the specific heat at constant P  of the flow.
-	 */
-	su2double GetSpecificHeatCp(void);
-
-    /*!
-	 * \brief Get the eddy viscosity of the flow.
-	 * \return The eddy viscosity of the flow.
-	 */
-	su2double GetEddyViscosityInc(void);
-
-	/*!
-	 * \brief Set the temperature at the wall
-	 */
-	void SetWallTemperature(su2double temperature_wall);
 
 	/*!
 	 * \brief Get the value of the vorticity.
@@ -4039,59 +3611,16 @@ public:
 	 * \return Value of the rate of strain magnitude.
 	 */
 	su2double GetStrainMag(void);
-  
-  /*!
-   * \brief Set the derivative of temperature with respect to density (at constant internal energy).
-   */
-  void SetdTdrho_e(su2double dTdrho_e);
-  
-  /*!
-   * \brief Set the derivative of temperature with respect to internal energy (at constant density).
-   */
-  void SetdTde_rho(su2double dTde_rho);
-  
-  /*!
-   * \brief Set the derivative of laminar viscosity with respect to density (at constant temperature).
-   */
-  void Setdmudrho_T(su2double dmudrho_T);
-  
-  /*!
-   * \brief Set the derivative of laminar viscosity with respect to temperature (at constant density).
-   */
-  void SetdmudT_rho(su2double dmudT_rho);
-  
-  /*!
-   * \brief Set the derivative of thermal conductivity with respect to density (at constant temperature).
-   */
-  void Setdktdrho_T(su2double dktdrho_T);
-  
-  /*!
-   * \brief Set the derivative of thermal conductivity with respect to temperature (at constant density).
-   */
-  void SetdktdT_rho(su2double dktdT_rho);
-  
-  /*!
-   * \brief Set all the primitive variables for compressible flows
-   */
-  bool SetPrimVar_Compressible(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
-  using CVariable::SetPrimVar_Compressible;
-  
-	/*!
-	 * \brief Set all the secondary variables (partial derivatives) for compressible flows
-	 */
-	void SetSecondaryVar_Compressible(CFluidModel *FluidModel);
 
 	/*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
-	bool SetPrimVar_Incompressible(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
-  using CVariable::SetPrimVar_Incompressible;
+  bool SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
   
   /*!
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
 	bool SetPrimVar_FreeSurface(su2double eddy_visc, su2double turb_ke, CConfig *config);
-  using CVariable::SetPrimVar_FreeSurface;
   
 };
 
@@ -4400,20 +3929,12 @@ public:
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
-	bool SetPrimVar_Compressible(su2double SharpEdge_Distance, bool check, CConfig *config);
-  using CVariable::SetPrimVar_Compressible;
-  
-  /*!
-	 * \brief Set all the primitive variables for compressible flows.
-	 */
-	bool SetPrimVar_Incompressible(su2double SharpEdge_Distance, bool check, CConfig *config);
-  using CVariable::SetPrimVar_Incompressible;
+  bool SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config);
   
   /*!
 	 * \brief Set all the primitive variables for compressible flows.
 	 */
 	bool SetPrimVar_FreeSurface(su2double SharpEdge_Distance, bool check, CConfig *config);
-  using CVariable::SetPrimVar_FreeSurface;
   
 	/*!
 	 * \brief Set the value of the adjoint velocity.
@@ -4522,20 +4043,12 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
-  bool SetPrimVar_Compressible(su2double SharpEdge_Distance, bool check, CConfig *config);
-  using CVariable::SetPrimVar_Compressible;
-  
-  /*!
-   * \brief Set all the primitive variables for compressible flows.
-   */
-  bool SetPrimVar_Incompressible(su2double SharpEdge_Distance, bool check, CConfig *config);
-  using CVariable::SetPrimVar_Incompressible;
-  
+  bool SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config);
+    
   /*!
    * \brief Set all the primitive variables for compressible flows.
    */
   bool SetPrimVar_FreeSurface(su2double SharpEdge_Distance, bool check, CConfig *config);
-  using CVariable::SetPrimVar_FreeSurface;
   
   /*!
    * \brief Set the value of the adjoint velocity.

@@ -615,9 +615,9 @@ void CAdjLevelSetSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 		numerics->SetLevelSetVar(LevelSet_var_i, LevelSet_var_j);
 		
 		/*--- Set the value of the density ---*/
-		DensityInc_i = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
-		DensityInc_j = solver_container[FLOW_SOL]->node[jPoint]->GetDensityInc();
-		numerics->SetDensityInc(DensityInc_i, DensityInc_j);
+    DensityInc_i = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+    DensityInc_j = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
+    numerics->SetDensity(DensityInc_i, DensityInc_j);
 				
 		if (second_order) {
 
@@ -681,7 +681,7 @@ void CAdjLevelSetSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
 //		DiffLevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetDiffLevelSet();
 //		LevelSet = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0);
 //		MeanFlow = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-//    Density = solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc();
+//    Density = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
 //    
 //    /*--- Adjoint problem quantities ---*/
 //    
@@ -780,7 +780,7 @@ void CAdjLevelSetSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_con
 			
 			numerics->SetConservative(U_wall, U_wall);
 			numerics->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
-			numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
+      numerics->SetDensity(solver_container[FLOW_SOL]->node[iPoint]->GetDensity(), solver_container[FLOW_SOL]->node[iPoint]->GetDensity());
       numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);	
 			
 			LinSysRes.AddBlock(iPoint, Residual_i);
@@ -827,7 +827,7 @@ void CAdjLevelSetSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_cont
 			
 			conv_numerics->SetConservative(U_wall, U_wall);
 			conv_numerics->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
-			conv_numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
+      conv_numerics->SetDensity(solver_container[FLOW_SOL]->node[iPoint]->GetDensity(), solver_container[FLOW_SOL]->node[iPoint]->GetDensity());
       conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			
 			LinSysRes.AddBlock(iPoint, Residual_i);
@@ -873,7 +873,7 @@ void CAdjLevelSetSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_
 			
 			conv_numerics->SetConservative(U_wall, U_wall);
 			conv_numerics->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
-			conv_numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
+      conv_numerics->SetDensity(solver_container[FLOW_SOL]->node[iPoint]->GetDensity(), solver_container[FLOW_SOL]->node[iPoint]->GetDensity());
       conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			
 			LinSysRes.AddBlock(iPoint, Residual_i);
@@ -919,7 +919,7 @@ void CAdjLevelSetSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_cont
 			
 			conv_numerics->SetConservative(U_wall, U_wall);
 			conv_numerics->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
-			conv_numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
+      conv_numerics->SetDensity(solver_container[FLOW_SOL]->node[iPoint]->GetDensity(), solver_container[FLOW_SOL]->node[iPoint]->GetDensity());
       conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			
 			LinSysRes.AddBlock(iPoint, Residual_i);
@@ -965,7 +965,7 @@ void CAdjLevelSetSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
 			
 			conv_numerics->SetConservative(U_wall, U_wall);
 			conv_numerics->SetLevelSetVar(LevelSet_wall, LevelSet_wall);
-			conv_numerics->SetDensityInc(solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc(), solver_container[FLOW_SOL]->node[iPoint]->GetDensityInc());
+      conv_numerics->SetDensity(solver_container[FLOW_SOL]->node[iPoint]->GetDensity(), solver_container[FLOW_SOL]->node[iPoint]->GetDensity());
       conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
 			
 			LinSysRes.AddBlock(iPoint, Residual_i);
