@@ -58,9 +58,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   string filename, AdjExt;
   su2double dull_val, myArea_Monitored, Area, *Normal;
   bool restart = config->GetRestart();
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool axisymmetric = config->GetAxisymmetric();
   
   int rank = MASTER_NODE;
@@ -93,9 +90,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
   
-  if (compressible) { nVar = nDim + 2; }
-  if (incompressible) { nVar = nDim + 1; }
-  if (freesurface) { nVar = nDim + 2; }
+  nVar = nDim + 2;
   
   /*--- Initialize nVarGrad for deallocation ---*/
   
@@ -300,18 +295,8 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
        will be returned and used to instantiate the vars. ---*/
       iPoint_Local = Global2Local[iPoint_Global];
       if (iPoint_Local >= 0) {
-        if (compressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-        }
-        if (incompressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        }
-        if (freesurface) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        }
+        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
         node[iPoint_Local] = new CAdjEulerVariable(Solution, nDim, nVar, config);
       }
       iPoint_Global++;
@@ -1524,51 +1509,11 @@ void CAdjEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solver_
 void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
   unsigned long iPoint, Point_Fine;
   unsigned short iMesh, iChildren, iVar;
-  su2double LevelSet, Area_Children, Area_Parent, LevelSet_Fine, *Solution, *Solution_Fine;
+  su2double Area_Children, Area_Parent, *Solution, *Solution_Fine;
   
   bool restart = config->GetRestart();
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  
-  if (freesurface) {
-    
-    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-      
-      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        
-        /*--- Set initial boundary condition at iter 0 ---*/
-        if ((ExtIter == 0) && (!restart)) {
-          
-          /*--- Compute the adjoint level set value in all the MG levels ---*/
-          if (iMesh == MESH_0) {
-            solver_container[iMesh][ADJFLOW_SOL]->node[iPoint]->SetSolution(nDim+1, 0.0);
-          }
-          else {
-            Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
-            LevelSet = 0.0;
-            for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-              Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-              Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-              LevelSet_Fine = solver_container[iMesh-1][ADJFLOW_SOL]->node[Point_Fine]->GetSolution(nDim+1);
-              LevelSet += LevelSet_Fine*Area_Children/Area_Parent;
-            }
-            solver_container[iMesh][ADJFLOW_SOL]->node[iPoint]->SetSolution(nDim+1, LevelSet);
-          }
-          
-          /*--- Compute the flow solution using the level set value. ---*/
-          for (iVar = 0; iVar < nVar; iVar++)
-            solver_container[iMesh][ADJFLOW_SOL]->node[iPoint]->SetSolution(iVar, 0.0);
-          
-        }
-      }
-      
-      /*--- Set the MPI communication ---*/
-      solver_container[iMesh][ADJFLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-      
-    }
-    
-  }
   
   /*--- If restart solution, then interpolate the flow solution to
    all the multigrid levels, this is important with the dual time strategy ---*/
@@ -1625,9 +1570,6 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool limiter        = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
   bool center         = (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
-  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool engine         = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineBleed() != 0) || (config->GetnMarker_EngineExhaust() != 0));
 
   /*--- Compute nacelle inflow and exhaust properties ---*/
@@ -1646,12 +1588,10 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 
     node[iPoint]->SetNon_Physical(false);
     
-    /*--- Set the primitive variables incompressible and compressible
+    /*--- Set the primitive variables compressible
      adjoint variables ---*/
     
-    if (compressible) RightSol = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
-    if (incompressible) RightSol = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
-    if (freesurface) RightSol = node[iPoint]->SetPrimVar_FreeSurface(SharpEdge_Distance, false, config);
+    RightSol = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
     if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
     
     /*--- Initialize the convective residual vector ---*/
@@ -1708,9 +1648,6 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool second_order = ((config->GetKind_Centered_AdjFlow() == JST) && (iMesh == MESH_0));
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement  = config->GetGrid_Movement();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -1731,17 +1668,11 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     numerics->SetConservative(solver_container[FLOW_SOL]->node[iPoint]->GetSolution(),
                               solver_container[FLOW_SOL]->node[jPoint]->GetSolution());
     
-    if (compressible) {
-      numerics->SetSoundSpeed(solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed(),
-                              solver_container[FLOW_SOL]->node[jPoint]->GetSoundSpeed());
-      numerics->SetEnthalpy(solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy(),
-                            solver_container[FLOW_SOL]->node[jPoint]->GetEnthalpy());
-    }
-    if (incompressible || freesurface) {
-      numerics->SetDensity(solver_container[FLOW_SOL]->node[iPoint]->GetDensity(), solver_container[FLOW_SOL]->node[jPoint]->GetDensity());
-      numerics->SetBetaInc2(solver_container[FLOW_SOL]->node[iPoint]->GetBetaInc2(), solver_container[FLOW_SOL]->node[jPoint]->GetBetaInc2());
-      numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[jPoint]->GetCoord());
-    }
+    numerics->SetSoundSpeed(solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed(),
+                            solver_container[FLOW_SOL]->node[jPoint]->GetSoundSpeed());
+    numerics->SetEnthalpy(solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy(),
+                          solver_container[FLOW_SOL]->node[jPoint]->GetEnthalpy());
+
     
     numerics->SetLambda(solver_container[FLOW_SOL]->node[iPoint]->GetLambda(),
                         solver_container[FLOW_SOL]->node[jPoint]->GetLambda());
@@ -1887,7 +1818,6 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   bool axisymmetric   = config->GetAxisymmetric();
   //	bool gravity        = (config->GetGravityForce() == YES);
   bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-  //	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   /*--- Initialize the source residual to zero ---*/
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
@@ -1977,23 +1907,6 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   
   //	if (gravity) {
   //
-  //	}
-  
-  //	if (freesurface) {
-  //    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-  //
-  //      su2double Volume = geometry->node[iPoint]->GetVolume();
-  //      su2double **Gradient = solver_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
-  //      su2double coeff = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0) / solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-  //
-  //      Residual[0] = 0.0;
-  //      for (iDim = 0; iDim < nDim; iDim++) {
-  //        Residual[iDim+1] = coeff*Gradient[0][iDim]*Volume;
-  //      }
-  //
-  //      LinSysRes.AddBlock(iPoint, Residual);
-  //
-  //		}
   //	}
   
 }
@@ -2356,9 +2269,6 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   Velocity = new su2double[nDim];
 
   su2double Gas_Constant    = config->GetGas_ConstantND();
-  bool compressible      = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible    = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface       = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement     = config->GetGrid_Movement();
   su2double RefAreaCoeff    = config->GetRefAreaCoeff();
   su2double Mach_Motion     = config->GetMach_Motion();
@@ -2416,14 +2326,8 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
         if (geometry->node[iPoint]->GetDomain()) {
           Psi = node[iPoint]->GetSolution();
           U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-          if (compressible) {
-            Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
-            conspsi = U[0]*Psi[0] + U[0]*Enthalpy*Psi[nDim+1];
-          }
-          if (incompressible || freesurface) {
-            Beta2 = solver_container[FLOW_SOL]->node[iPoint]->GetBetaInc2();
-            conspsi = Beta2*Psi[0];
-          }
+          Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
+          conspsi = U[0]*Psi[0] + U[0]*Enthalpy*Psi[nDim+1];
           for (iDim = 0; iDim < nDim; iDim++) conspsi += U[iDim+1]*Psi[iDim+1];
           
           node[iPoint]->SetAuxVar(conspsi);
@@ -2434,14 +2338,8 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             Neigh = geometry->node[iPoint]->GetPoint(iNeigh);
             Psi = node[Neigh]->GetSolution();
             U = solver_container[FLOW_SOL]->node[Neigh]->GetSolution();
-            if (compressible) {
-              Enthalpy = solver_container[FLOW_SOL]->node[Neigh]->GetEnthalpy();
-              conspsi = U[0]*Psi[0] + U[0]*Enthalpy*Psi[nDim+1];
-            }
-            if (incompressible || freesurface) {
-              Beta2 = solver_container[FLOW_SOL]->node[Neigh]->GetBetaInc2();
-              conspsi = Beta2*Psi[0];
-            }
+            Enthalpy = solver_container[FLOW_SOL]->node[Neigh]->GetEnthalpy();
+            conspsi = U[0]*Psi[0] + U[0]*Enthalpy*Psi[nDim+1];
             for (iDim = 0; iDim < nDim; iDim++) conspsi += U[iDim+1]*Psi[iDim+1];
             node[Neigh]->SetAuxVar(conspsi);
           }
@@ -2479,8 +2377,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
             
             /*-- Retrieve the value of the pressure gradient ---*/
             
-            if (compressible) d_press += d[iDim]*PrimVar_Grad[nDim+1][iDim];
-            if (incompressible || freesurface) d_press += d[iDim]*ConsVar_Grad[0][iDim];
+            d_press += d[iDim]*PrimVar_Grad[nDim+1][iDim];
             
             /*-- Retrieve the value of the velocity gradient ---*/
             
@@ -2497,14 +2394,6 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
               v_gradconspsi -= GridVel[iDim] * ConsPsi_Grad[iDim];
             }
             
-          }
-          
-          /*--- Compute additional term in the surface sensitivity for free surface problem. ---*/
-          
-          if (freesurface) {
-            LevelSet = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(nDim+1);
-            Target_LevelSet = geometry->node[iPoint]->GetCoord(nDim-1);
-            d_press += 0.5*(Target_LevelSet - LevelSet)*(Target_LevelSet - LevelSet);
           }
           
           /*--- Compute sensitivity for each surface point ---*/
@@ -2532,37 +2421,36 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   
   /*--- Farfield Sensitivity (Mach, AoA, Press, Temp), only for compressible flows ---*/
   
-  if (compressible) {
-    
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      Sens_BPress[iMarker] = 0.0;
-      if (config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW){
 
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Sens_BPress[iMarker] = 0.0;
+    if (config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW){
 
-          if (geometry->node[iPoint]->GetDomain()) {
-            Psi = node[iPoint]->GetSolution();
-            U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-            Mach_Inf   = config->GetMach();
-            if (grid_movement) Mach_Inf = config->GetMach_Motion();
+        if (geometry->node[iPoint]->GetDomain()) {
+          Psi = node[iPoint]->GetSolution();
+          U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-            Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt(Area);
+          Mach_Inf   = config->GetMach();
+          if (grid_movement) Mach_Inf = config->GetMach_Motion();
 
-            for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt(Area);
 
-            Vn = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
-              Velocity[iDim] = U[iDim+1]/U[0];
-              Vn += UnitNormal[iDim]*Velocity[iDim];
-            }
+          for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
 
-            SoundSpeed = solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
-            if (Vn<SoundSpeed){
-              /* Characteristic-based
+          Vn = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Velocity[iDim] = U[iDim+1]/U[0];
+            Vn += UnitNormal[iDim]*Velocity[iDim];
+          }
+
+          SoundSpeed = solver_container[FLOW_SOL]->node[iPoint]->GetSoundSpeed();
+          if (Vn<SoundSpeed){
+            /* Characteristic-based
               Sens_BPress[iMarker]+=Psi[nDim+1]*(SoundSpeed-Vn)/Gamma_Minus_One;
               if (config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE)
                 Sens_BPress[iMarker]+=Vn/(SoundSpeed+Vn);
@@ -2570,256 +2458,256 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
                 for (iDim=0; iDim<nDim; iDim++) Sens_BPress[iMarker]+=Velocity[iDim]*Velocity[iDim]/(2.0*Vn*(SoundSpeed+Vn));
               }
                */
-              /*Pressure based*/
-              Sens_BPress[iMarker]+=Psi[nDim+1]*(SoundSpeed*SoundSpeed-Vn*Vn)/(Vn*Gamma_Minus_One);
-              if (config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE)
-                Sens_BPress[iMarker]+=1;
-              if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE){
-                for (iDim=0; iDim<nDim; iDim++)
-                  Sens_BPress[iMarker]+=0.5*Velocity[iDim]*Velocity[iDim]/(Vn*Vn);
-              }
+            /*Pressure based*/
+            Sens_BPress[iMarker]+=Psi[nDim+1]*(SoundSpeed*SoundSpeed-Vn*Vn)/(Vn*Gamma_Minus_One);
+            if (config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE)
+              Sens_BPress[iMarker]+=1;
+            if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE){
+              for (iDim=0; iDim<nDim; iDim++)
+                Sens_BPress[iMarker]+=0.5*Velocity[iDim]*Velocity[iDim]/(Vn*Vn);
             }
           }
-          Total_Sens_BPress+= Sens_BPress[iMarker] * scale * factor;
+        }
+        Total_Sens_BPress+= Sens_BPress[iMarker] * scale * factor;
+      }
+    }
+
+    if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD || config->GetMarker_All_KindBC(iMarker) == INLET_FLOW
+        || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_OUTLET
+        || config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW  ) {
+
+      Sens_Mach[iMarker]  = 0.0;
+      Sens_AoA[iMarker]   = 0.0;
+      Sens_Press[iMarker] = 0.0;
+      Sens_Temp[iMarker]  = 0.0;
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if (geometry->node[iPoint]->GetDomain()) {
+          Psi = node[iPoint]->GetSolution();
+          U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+          Mach_Inf   = config->GetMach();
+          if (grid_movement) Mach_Inf = config->GetMach_Motion();
+
+          r = U[0]; ru = U[1]; rv = U[2];
+          if (nDim == 2) { rw = 0.0; rE = U[3]; }
+          else { rw = U[3]; rE = U[4]; }
+          p = Gamma_Minus_One*(rE-(ru*ru + rv*rv + rw*rw)/(2*r));
+
+          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt(Area);
+          for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+
+          H = (rE + p)/r;
+
+          dp_dr = Gamma_Minus_One*(ru*ru + rv*rv + rw*rw)/(2*r*r);
+          dp_dru = -Gamma_Minus_One*ru/r;
+          dp_drv = -Gamma_Minus_One*rv/r;
+          if (nDim == 2) { dp_drw = 0.0; dp_drE = Gamma_Minus_One; }
+          else { dp_drw = -Gamma_Minus_One*rw/r; dp_drE = Gamma_Minus_One; }
+
+          dH_dr = (-H + dp_dr)/r; dH_dru = dp_dru/r; dH_drv = dp_drv/r;
+          if (nDim == 2) { dH_drw = 0.0; dH_drE = (1 + dp_drE)/r; }
+          else { dH_drw = dp_drw/r; dH_drE = (1 + dp_drE)/r; }
+
+          if (nDim == 2) {
+            Jacobian_j[0][0] = 0.0;
+            Jacobian_j[1][0] = Area*UnitNormal[0];
+            Jacobian_j[2][0] = Area*UnitNormal[1];
+            Jacobian_j[3][0] = 0.0;
+
+            Jacobian_j[0][1] = (-(ru*ru)/(r*r) + dp_dr)*Area*UnitNormal[0] + (-(ru*rv)/(r*r))*Area*UnitNormal[1];
+            Jacobian_j[1][1] = (2*ru/r + dp_dru)*Area*UnitNormal[0] + (rv/r)*Area*UnitNormal[1];
+            Jacobian_j[2][1] = (dp_drv)*Area*UnitNormal[0] + (ru/r)*Area*UnitNormal[1];
+            Jacobian_j[3][1] = (dp_drE)*Area*UnitNormal[0];
+
+            Jacobian_j[0][2] = (-(ru*rv)/(r*r))*Area*UnitNormal[0] + (-(rv*rv)/(r*r) + dp_dr)*Area*UnitNormal[1];
+            Jacobian_j[1][2] = (rv/r)*Area*UnitNormal[0] + (dp_dru)*Area*UnitNormal[1];
+            Jacobian_j[2][2] = (ru/r)*Area*UnitNormal[0] + (2*rv/r + dp_drv)*Area*UnitNormal[1];
+            Jacobian_j[3][2] = (dp_drE)*Area*UnitNormal[1];
+
+            Jacobian_j[0][3] = (ru*dH_dr)*Area*UnitNormal[0] + (rv*dH_dr)*Area*UnitNormal[1];
+            Jacobian_j[1][3] = (H + ru*dH_dru)*Area*UnitNormal[0] + (rv*dH_dru)*Area*UnitNormal[1];
+            Jacobian_j[2][3] = (ru*dH_drv)*Area*UnitNormal[0] + (H + rv*dH_drv)*Area*UnitNormal[1];
+            Jacobian_j[3][3] = (ru*dH_drE)*Area*UnitNormal[0] + (rv*dH_drE)*Area*UnitNormal[1];
+          }
+          else {
+            Jacobian_j[0][0] = 0.0;
+            Jacobian_j[1][0] = Area*UnitNormal[0];
+            Jacobian_j[2][0] = Area*UnitNormal[1];
+            Jacobian_j[3][0] = Area*UnitNormal[2];
+            Jacobian_j[4][0] = 0.0;
+
+            Jacobian_j[0][1] = (-(ru*ru)/(r*r) + dp_dr)*Area*UnitNormal[0] + (-(ru*rv)/(r*r))*Area*UnitNormal[1] + (-(ru*rw)/(r*r))*Area*UnitNormal[2];
+            Jacobian_j[1][1] = (2*ru/r + dp_dru)*Area*UnitNormal[0] + (rv/r)*Area*UnitNormal[1] + (rw/r)*Area*UnitNormal[2];
+            Jacobian_j[2][1] = (dp_drv)*Area*UnitNormal[0] + (ru/r)*Area*UnitNormal[1];
+            Jacobian_j[3][1] = (dp_drw)*Area*UnitNormal[0] + (ru/r)*Area*UnitNormal[2];
+            Jacobian_j[4][1] = (dp_drE)*Area*UnitNormal[0];
+
+            Jacobian_j[0][2] = (-(ru*rv)/(r*r))*Area*UnitNormal[0] + (-(rv*rv)/(r*r) + dp_dr)*Area*UnitNormal[1] + (-(rv*rw)/(r*r))*Area*UnitNormal[2];
+            Jacobian_j[1][2] = (rv/r)*Area*UnitNormal[0] + (dp_dru)*Area*UnitNormal[1];
+            Jacobian_j[2][2] = (ru/r)*Area*UnitNormal[0] + (2*rv/r + dp_drv)*Area*UnitNormal[1] + (rw/r)*Area*UnitNormal[2];
+            Jacobian_j[3][2] = (dp_drw)*Area*UnitNormal[1] + (rv/r)*Area*UnitNormal[2];
+            Jacobian_j[4][2] = (dp_drE)*Area*UnitNormal[1];
+
+            Jacobian_j[0][3] = (-(ru*rw)/(r*r))*Area*UnitNormal[0] + (-(rv*rw)/(r*r))*Area*UnitNormal[1] + (-(rw*rw)/(r*r) + dp_dr)*Area*UnitNormal[2];
+            Jacobian_j[1][3] = (rw/r)*Area*UnitNormal[0] + (dp_dru)*Area*UnitNormal[2];
+            Jacobian_j[2][3] = (rw/r)*Area*UnitNormal[1] + (dp_drv)*Area*UnitNormal[2];
+            Jacobian_j[3][3] = (ru/r)*Area*UnitNormal[0] + (rv/r)*Area*UnitNormal[1] + (2*rw/r + dp_drw)*Area*UnitNormal[2];
+            Jacobian_j[4][3] = (dp_drE)*Area*UnitNormal[2];
+
+            Jacobian_j[0][4] = (ru*dH_dr)*Area*UnitNormal[0] + (rv*dH_dr)*Area*UnitNormal[1] + (rw*dH_dr)*Area*UnitNormal[2];
+            Jacobian_j[1][4] = (H + ru*dH_dru)*Area*UnitNormal[0] + (rv*dH_dru)*Area*UnitNormal[1] + (rw*dH_dru)*Area*UnitNormal[2];
+            Jacobian_j[2][4] = (ru*dH_drv)*Area*UnitNormal[0] + (H + rv*dH_drv)*Area*UnitNormal[1] + (rw*dH_drv)*Area*UnitNormal[2];
+            Jacobian_j[3][4] = (ru*dH_drw)*Area*UnitNormal[0] + (rv*dH_drw)*Area*UnitNormal[1] + (H + rw*dH_drw)*Area*UnitNormal[2];
+            Jacobian_j[4][4] = (ru*dH_drE)*Area*UnitNormal[0] + (rv*dH_drE)*Area*UnitNormal[1] + (rw*dH_drE)*Area*UnitNormal[2];
+          }
+
+          /*--- Mach number sensitivity ---*/
+
+          USens[0] = 0.0; USens[1] = ru/Mach_Inf; USens[2] = rv/Mach_Inf;
+          if (nDim == 2) { USens[3] = Gamma*Mach_Inf*p; }
+          else { USens[3] = rw/Mach_Inf; USens[4] = Gamma*Mach_Inf*p; }
+          for (iPos = 0; iPos < nVar; iPos++) {
+            for (jPos = 0; jPos < nVar; jPos++) {
+              Sens_Mach[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
+            }
+          }
+
+          /*--- AoA sensitivity ---*/
+
+          USens[0] = 0.0;
+          if (nDim == 2) { USens[1] = -rv; USens[2] = ru; USens[3] = 0.0; }
+          else { USens[1] = -rw; USens[2] = 0.0; USens[3] = ru; USens[4] = 0.0; }
+          for (iPos = 0; iPos < nVar; iPos++) {
+            for (jPos = 0; jPos < nVar; jPos++) {
+              Sens_AoA[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
+            }
+          }
+
+          /*--- Pressure sensitivity ---*/
+
+          USens[0] = r/p; USens[1] = ru/p; USens[2] = rv/p;
+          if (nDim == 2) { USens[3] = rE/p; }
+          else { USens[3] = rw/p; USens[4] = rE/p; }
+          for (iPos = 0; iPos < nVar; iPos++) {
+            for (jPos = 0; jPos < nVar; jPos++) {
+              Sens_Press[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
+            }
+          }
+
+          /*--- Temperature sensitivity ---*/
+
+          T = p/(r*Gas_Constant);
+          USens[0] = -r/T; USens[1] = 0.5*ru/T; USens[2] = 0.5*rv/T;
+          if (nDim == 2) { USens[3] = (ru*ru + rv*rv + rw*rw)/(r*T); }
+          else { USens[3] = 0.5*rw/T; USens[4] = (ru*ru + rv*rv + rw*rw)/(r*T); }
+          for (iPos = 0; iPos < nVar; iPos++) {
+            for (jPos = 0; jPos < nVar; jPos++) {
+              Sens_Temp[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
+            }
+          }
         }
       }
 
-      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD || config->GetMarker_All_KindBC(iMarker) == INLET_FLOW
-          || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_OUTLET
-          || config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW  ) {
-        
-        Sens_Mach[iMarker]  = 0.0;
-        Sens_AoA[iMarker]   = 0.0;
-        Sens_Press[iMarker] = 0.0;
-        Sens_Temp[iMarker]  = 0.0;
-        
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          
-          if (geometry->node[iPoint]->GetDomain()) {
-            Psi = node[iPoint]->GetSolution();
-            U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            
-            Mach_Inf   = config->GetMach();
-            if (grid_movement) Mach_Inf = config->GetMach_Motion();
-            
-            r = U[0]; ru = U[1]; rv = U[2];
-            if (nDim == 2) { rw = 0.0; rE = U[3]; }
-            else { rw = U[3]; rE = U[4]; }
-            p = Gamma_Minus_One*(rE-(ru*ru + rv*rv + rw*rw)/(2*r));
-            
-            Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt(Area);
-            for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
-            
-            H = (rE + p)/r;
-            
-            dp_dr = Gamma_Minus_One*(ru*ru + rv*rv + rw*rw)/(2*r*r);
-            dp_dru = -Gamma_Minus_One*ru/r;
-            dp_drv = -Gamma_Minus_One*rv/r;
-            if (nDim == 2) { dp_drw = 0.0; dp_drE = Gamma_Minus_One; }
-            else { dp_drw = -Gamma_Minus_One*rw/r; dp_drE = Gamma_Minus_One; }
-            
-            dH_dr = (-H + dp_dr)/r; dH_dru = dp_dru/r; dH_drv = dp_drv/r;
-            if (nDim == 2) { dH_drw = 0.0; dH_drE = (1 + dp_drE)/r; }
-            else { dH_drw = dp_drw/r; dH_drE = (1 + dp_drE)/r; }
-            
-            if (nDim == 2) {
-              Jacobian_j[0][0] = 0.0;
-              Jacobian_j[1][0] = Area*UnitNormal[0];
-              Jacobian_j[2][0] = Area*UnitNormal[1];
-              Jacobian_j[3][0] = 0.0;
-              
-              Jacobian_j[0][1] = (-(ru*ru)/(r*r) + dp_dr)*Area*UnitNormal[0] + (-(ru*rv)/(r*r))*Area*UnitNormal[1];
-              Jacobian_j[1][1] = (2*ru/r + dp_dru)*Area*UnitNormal[0] + (rv/r)*Area*UnitNormal[1];
-              Jacobian_j[2][1] = (dp_drv)*Area*UnitNormal[0] + (ru/r)*Area*UnitNormal[1];
-              Jacobian_j[3][1] = (dp_drE)*Area*UnitNormal[0];
-              
-              Jacobian_j[0][2] = (-(ru*rv)/(r*r))*Area*UnitNormal[0] + (-(rv*rv)/(r*r) + dp_dr)*Area*UnitNormal[1];
-              Jacobian_j[1][2] = (rv/r)*Area*UnitNormal[0] + (dp_dru)*Area*UnitNormal[1];
-              Jacobian_j[2][2] = (ru/r)*Area*UnitNormal[0] + (2*rv/r + dp_drv)*Area*UnitNormal[1];
-              Jacobian_j[3][2] = (dp_drE)*Area*UnitNormal[1];
-              
-              Jacobian_j[0][3] = (ru*dH_dr)*Area*UnitNormal[0] + (rv*dH_dr)*Area*UnitNormal[1];
-              Jacobian_j[1][3] = (H + ru*dH_dru)*Area*UnitNormal[0] + (rv*dH_dru)*Area*UnitNormal[1];
-              Jacobian_j[2][3] = (ru*dH_drv)*Area*UnitNormal[0] + (H + rv*dH_drv)*Area*UnitNormal[1];
-              Jacobian_j[3][3] = (ru*dH_drE)*Area*UnitNormal[0] + (rv*dH_drE)*Area*UnitNormal[1];
-            }
-            else {
-              Jacobian_j[0][0] = 0.0;
-              Jacobian_j[1][0] = Area*UnitNormal[0];
-              Jacobian_j[2][0] = Area*UnitNormal[1];
-              Jacobian_j[3][0] = Area*UnitNormal[2];
-              Jacobian_j[4][0] = 0.0;
-              
-              Jacobian_j[0][1] = (-(ru*ru)/(r*r) + dp_dr)*Area*UnitNormal[0] + (-(ru*rv)/(r*r))*Area*UnitNormal[1] + (-(ru*rw)/(r*r))*Area*UnitNormal[2];
-              Jacobian_j[1][1] = (2*ru/r + dp_dru)*Area*UnitNormal[0] + (rv/r)*Area*UnitNormal[1] + (rw/r)*Area*UnitNormal[2];
-              Jacobian_j[2][1] = (dp_drv)*Area*UnitNormal[0] + (ru/r)*Area*UnitNormal[1];
-              Jacobian_j[3][1] = (dp_drw)*Area*UnitNormal[0] + (ru/r)*Area*UnitNormal[2];
-              Jacobian_j[4][1] = (dp_drE)*Area*UnitNormal[0];
-              
-              Jacobian_j[0][2] = (-(ru*rv)/(r*r))*Area*UnitNormal[0] + (-(rv*rv)/(r*r) + dp_dr)*Area*UnitNormal[1] + (-(rv*rw)/(r*r))*Area*UnitNormal[2];
-              Jacobian_j[1][2] = (rv/r)*Area*UnitNormal[0] + (dp_dru)*Area*UnitNormal[1];
-              Jacobian_j[2][2] = (ru/r)*Area*UnitNormal[0] + (2*rv/r + dp_drv)*Area*UnitNormal[1] + (rw/r)*Area*UnitNormal[2];
-              Jacobian_j[3][2] = (dp_drw)*Area*UnitNormal[1] + (rv/r)*Area*UnitNormal[2];
-              Jacobian_j[4][2] = (dp_drE)*Area*UnitNormal[1];
-              
-              Jacobian_j[0][3] = (-(ru*rw)/(r*r))*Area*UnitNormal[0] + (-(rv*rw)/(r*r))*Area*UnitNormal[1] + (-(rw*rw)/(r*r) + dp_dr)*Area*UnitNormal[2];
-              Jacobian_j[1][3] = (rw/r)*Area*UnitNormal[0] + (dp_dru)*Area*UnitNormal[2];
-              Jacobian_j[2][3] = (rw/r)*Area*UnitNormal[1] + (dp_drv)*Area*UnitNormal[2];
-              Jacobian_j[3][3] = (ru/r)*Area*UnitNormal[0] + (rv/r)*Area*UnitNormal[1] + (2*rw/r + dp_drw)*Area*UnitNormal[2];
-              Jacobian_j[4][3] = (dp_drE)*Area*UnitNormal[2];
-              
-              Jacobian_j[0][4] = (ru*dH_dr)*Area*UnitNormal[0] + (rv*dH_dr)*Area*UnitNormal[1] + (rw*dH_dr)*Area*UnitNormal[2];
-              Jacobian_j[1][4] = (H + ru*dH_dru)*Area*UnitNormal[0] + (rv*dH_dru)*Area*UnitNormal[1] + (rw*dH_dru)*Area*UnitNormal[2];
-              Jacobian_j[2][4] = (ru*dH_drv)*Area*UnitNormal[0] + (H + rv*dH_drv)*Area*UnitNormal[1] + (rw*dH_drv)*Area*UnitNormal[2];
-              Jacobian_j[3][4] = (ru*dH_drw)*Area*UnitNormal[0] + (rv*dH_drw)*Area*UnitNormal[1] + (H + rw*dH_drw)*Area*UnitNormal[2];
-              Jacobian_j[4][4] = (ru*dH_drE)*Area*UnitNormal[0] + (rv*dH_drE)*Area*UnitNormal[1] + (rw*dH_drE)*Area*UnitNormal[2];
-            }
-            
-            /*--- Mach number sensitivity ---*/
-            
-            USens[0] = 0.0; USens[1] = ru/Mach_Inf; USens[2] = rv/Mach_Inf;
-            if (nDim == 2) { USens[3] = Gamma*Mach_Inf*p; }
-            else { USens[3] = rw/Mach_Inf; USens[4] = Gamma*Mach_Inf*p; }
-            for (iPos = 0; iPos < nVar; iPos++) {
-              for (jPos = 0; jPos < nVar; jPos++) {
-                Sens_Mach[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
-              }
-            }
-            
-            /*--- AoA sensitivity ---*/
-            
-            USens[0] = 0.0;
-            if (nDim == 2) { USens[1] = -rv; USens[2] = ru; USens[3] = 0.0; }
-            else { USens[1] = -rw; USens[2] = 0.0; USens[3] = ru; USens[4] = 0.0; }
-            for (iPos = 0; iPos < nVar; iPos++) {
-              for (jPos = 0; jPos < nVar; jPos++) {
-                Sens_AoA[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
-              }
-            }
-            
-            /*--- Pressure sensitivity ---*/
-            
-            USens[0] = r/p; USens[1] = ru/p; USens[2] = rv/p;
-            if (nDim == 2) { USens[3] = rE/p; }
-            else { USens[3] = rw/p; USens[4] = rE/p; }
-            for (iPos = 0; iPos < nVar; iPos++) {
-              for (jPos = 0; jPos < nVar; jPos++) {
-                Sens_Press[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
-              }
-            }
-            
-            /*--- Temperature sensitivity ---*/
-            
-            T = p/(r*Gas_Constant);
-            USens[0] = -r/T; USens[1] = 0.5*ru/T; USens[2] = 0.5*rv/T;
-            if (nDim == 2) { USens[3] = (ru*ru + rv*rv + rw*rw)/(r*T); }
-            else { USens[3] = 0.5*rw/T; USens[4] = (ru*ru + rv*rv + rw*rw)/(r*T); }
-            for (iPos = 0; iPos < nVar; iPos++) {
-              for (jPos = 0; jPos < nVar; jPos++) {
-                Sens_Temp[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
-              }
-            }
-          }
-        }
-        
-        Total_Sens_Mach  -= Sens_Mach[iMarker] * scale * factor;
-        Total_Sens_AoA   -= Sens_AoA[iMarker] * scale * factor;
-        Total_Sens_Press -= Sens_Press[iMarker] * scale * factor;
-        Total_Sens_Temp  -= Sens_Temp[iMarker] * scale * factor;
-        
-      }
-    }
-    
-    /*--- Explicit contribution from objective function quantity ---*/
-    
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      
-      if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
-        
-        Sens_Mach[iMarker]  = 0.0;
-        Sens_AoA[iMarker]   = 0.0;
-        Sens_Press[iMarker] = 0.0;
-        Sens_Temp[iMarker]  = 0.0;
-        
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          
-          if (geometry->node[iPoint]->GetDomain()) {
-            
-            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
-            
-            Mach_Inf   = config->GetMach();
-            if (grid_movement) Mach_Inf = config->GetMach_Motion();
-            
-            d = node[iPoint]->GetForceProj_Vector();
-            Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt(Area);
-            for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
-            
-            /*--- Mach number sensitivity ---*/
-            
-            for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = -(2.0/Mach_Inf)*d[iPos];
-            for (iPos = 0; iPos < nDim; iPos++) Sens_Mach[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
-            
-            /*--- AoA sensitivity ---*/
-            
-            if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT ||
-                config->GetKind_ObjFunc() == LIFT_COEFFICIENT ||
-                config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT ||
-                config->GetKind_ObjFunc() == EQUIVALENT_AREA ||
-                config->GetKind_ObjFunc() == NEARFIELD_PRESSURE) {
-              if (nDim == 2) {
-                D[0][0] = 0.0; D[0][1] = -1.0;
-                D[1][0] = 1.0; D[1][1] = 0.0;
-              }
-              else {
-                D[0][0] = 0.0; D[0][1] = 0.0; D[0][2] = -1.0;
-                D[1][0] = 0.0; D[1][1] = 0.0; D[1][2] = 0.0;
-                D[2][0] = 1.0; D[2][1] = 0.0; D[2][2] = 0.0;
-              }
-              for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = 0.0;
-              for (iPos = 0; iPos < nDim; iPos++) {
-                for (jPos = 0; jPos < nDim; jPos++)
-                  Dd[iPos] += D[iPos][jPos]*d[jPos];
-              }
-            }
-            
-            /*--- Coefficients with no explicit AoA dependece ---*/
-            
-            else {
-              for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = 0.0;
-            }
-            
-            for (iPos = 0; iPos < nDim; iPos++)
-              Sens_AoA[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
-            
-            /*--- Pressure sensitivity ---*/
-            
-            for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = -(1/p)*d[iPos];
-            for (iPos = 0; iPos<nDim; iPos++)
-              Sens_Press[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
-            
-            /*--- Temperature sensitivity ---*/
-            
-            for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = 0.0;
-            for (iPos = 0; iPos<nDim; iPos++)
-              Sens_Temp[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
-            
-          }
-        }
-        
-        Total_Sens_Mach  += Sens_Mach[iMarker] * scale * factor;
-        Total_Sens_AoA   += Sens_AoA[iMarker] * scale * factor;
-        Total_Sens_Press += Sens_Press[iMarker] * scale * factor;
-        Total_Sens_Temp  += Sens_Temp[iMarker] * scale * factor;
-        
-      }
+      Total_Sens_Mach  -= Sens_Mach[iMarker] * scale * factor;
+      Total_Sens_AoA   -= Sens_AoA[iMarker] * scale * factor;
+      Total_Sens_Press -= Sens_Press[iMarker] * scale * factor;
+      Total_Sens_Temp  -= Sens_Temp[iMarker] * scale * factor;
+
     }
   }
+
+  /*--- Explicit contribution from objective function quantity ---*/
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+
+      Sens_Mach[iMarker]  = 0.0;
+      Sens_AoA[iMarker]   = 0.0;
+      Sens_Press[iMarker] = 0.0;
+      Sens_Temp[iMarker]  = 0.0;
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if (geometry->node[iPoint]->GetDomain()) {
+
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
+
+          Mach_Inf   = config->GetMach();
+          if (grid_movement) Mach_Inf = config->GetMach_Motion();
+
+          d = node[iPoint]->GetForceProj_Vector();
+          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt(Area);
+          for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+
+          /*--- Mach number sensitivity ---*/
+
+          for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = -(2.0/Mach_Inf)*d[iPos];
+          for (iPos = 0; iPos < nDim; iPos++) Sens_Mach[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
+
+          /*--- AoA sensitivity ---*/
+
+          if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT ||
+              config->GetKind_ObjFunc() == LIFT_COEFFICIENT ||
+              config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT ||
+              config->GetKind_ObjFunc() == EQUIVALENT_AREA ||
+              config->GetKind_ObjFunc() == NEARFIELD_PRESSURE) {
+            if (nDim == 2) {
+              D[0][0] = 0.0; D[0][1] = -1.0;
+              D[1][0] = 1.0; D[1][1] = 0.0;
+            }
+            else {
+              D[0][0] = 0.0; D[0][1] = 0.0; D[0][2] = -1.0;
+              D[1][0] = 0.0; D[1][1] = 0.0; D[1][2] = 0.0;
+              D[2][0] = 1.0; D[2][1] = 0.0; D[2][2] = 0.0;
+            }
+            for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = 0.0;
+            for (iPos = 0; iPos < nDim; iPos++) {
+              for (jPos = 0; jPos < nDim; jPos++)
+                Dd[iPos] += D[iPos][jPos]*d[jPos];
+            }
+          }
+
+          /*--- Coefficients with no explicit AoA dependece ---*/
+
+          else {
+            for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = 0.0;
+          }
+
+          for (iPos = 0; iPos < nDim; iPos++)
+            Sens_AoA[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
+
+          /*--- Pressure sensitivity ---*/
+
+          for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = -(1/p)*d[iPos];
+          for (iPos = 0; iPos<nDim; iPos++)
+            Sens_Press[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
+
+          /*--- Temperature sensitivity ---*/
+
+          for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = 0.0;
+          for (iPos = 0; iPos<nDim; iPos++)
+            Sens_Temp[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
+
+        }
+      }
+
+      Total_Sens_Mach  += Sens_Mach[iMarker] * scale * factor;
+      Total_Sens_AoA   += Sens_AoA[iMarker] * scale * factor;
+      Total_Sens_Press += Sens_Press[iMarker] * scale * factor;
+      Total_Sens_Temp  += Sens_Temp[iMarker] * scale * factor;
+
+    }
+  }
+
   
 #ifdef HAVE_MPI
   
@@ -3052,9 +2940,6 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
   unsigned short iDim, iVar, jDim;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement = config->GetGrid_Movement();
   
   UnitNormal = new su2double[nDim];
@@ -3081,161 +2966,101 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
       Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
       Area = sqrt(Area);
       for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
-      
-      
-      /*--- Compressible solver ---*/
-      if (compressible) {
-        
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        Velocity[iDim] = U[iDim+1] / U[0];
+
+      Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
+      sq_vel   = 0.5*solver_container[FLOW_SOL]->node[iPoint]->GetVelocity2();
+
+      /*--- Compute projections ---*/
+      ProjVel = 0.0; bcn = 0.0; vn = 0.0, phin = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        ProjVel -= Velocity[iDim]*Normal[iDim];
+        bcn     += d[iDim]*UnitNormal[iDim];
+        vn      += Velocity[iDim]*UnitNormal[iDim];
+        phin    += Psi[iDim+1]*UnitNormal[iDim];
+      }
+
+      /*--- Extra boundary term for grid movement ---*/
+      if (grid_movement) {
+        su2double ProjGridVel = 0.0;
+        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
         for (iDim = 0; iDim < nDim; iDim++)
-          Velocity[iDim] = U[iDim+1] / U[0];
-        
-        Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
-        sq_vel   = 0.5*solver_container[FLOW_SOL]->node[iPoint]->GetVelocity2();
-        
-        /*--- Compute projections ---*/
-        ProjVel = 0.0; bcn = 0.0; vn = 0.0, phin = 0.0;
+          ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
+        phin -= Psi[nVar-1]*ProjGridVel;
+      }
+
+      /*--- Introduce the boundary condition ---*/
+      for (iDim = 0; iDim < nDim; iDim++)
+        Psi[iDim+1] -= ( phin - bcn ) * UnitNormal[iDim];
+
+      /*--- Inner products after introducing BC (Psi has changed) ---*/
+      phis1 = 0.0; phis2 = Psi[0] + Enthalpy * Psi[nVar-1];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        phis1 -= Normal[iDim]*Psi[iDim+1];
+        phis2 += Velocity[iDim]*Psi[iDim+1];
+      }
+
+      /*--- Flux of the Euler wall ---*/
+      Residual[0] = ProjVel * Psi[0] - phis2 * ProjVel + phis1 * Gamma_Minus_One * sq_vel;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Residual[iDim+1] = ProjVel * Psi[iDim+1] - phis2 * Normal[iDim] - phis1 * Gamma_Minus_One * Velocity[iDim];
+      Residual[nVar-1] = ProjVel * Psi[nVar-1] + phis1 * Gamma_Minus_One;
+
+      /*--- Flux adjustment for grid movement ---*/
+      if (grid_movement) {
+        su2double ProjGridVel = 0.0;
+        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        for (iDim = 0; iDim < nDim; iDim++)
+          ProjGridVel -= GridVel[iDim]*Normal[iDim];
+        Residual[0] -= ProjGridVel*Psi[0];
+        for (iDim = 0; iDim < nDim; iDim++)
+          Residual[iDim+1] -= ProjGridVel*Psi[iDim+1];
+        Residual[nVar-1] -= ProjGridVel*Psi[nVar-1];
+      }
+
+      if (implicit) {
+
+        /*--- Adjoint density ---*/
+        Jacobian_ii[0][0] = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian_ii[0][iDim+1] = -ProjVel * (Velocity[iDim] - UnitNormal[iDim] * vn);
+        Jacobian_ii[0][nVar-1] = -ProjVel * Enthalpy;
+
+        /*--- Adjoint velocities ---*/
         for (iDim = 0; iDim < nDim; iDim++) {
-          ProjVel -= Velocity[iDim]*Normal[iDim];
-          bcn     += d[iDim]*UnitNormal[iDim];
-          vn      += Velocity[iDim]*UnitNormal[iDim];
-          phin    += Psi[iDim+1]*UnitNormal[iDim];
+          Jacobian_ii[iDim+1][0] = -Normal[iDim];
+          for (jDim = 0; jDim < nDim; jDim++)
+            Jacobian_ii[iDim+1][jDim+1] = -ProjVel*(UnitNormal[jDim]*UnitNormal[iDim] - Normal[iDim] * (Velocity[jDim] - UnitNormal[jDim] * vn));
+          Jacobian_ii[iDim+1][iDim+1] += ProjVel;
+          Jacobian_ii[iDim+1][nVar-1] = -Normal[iDim] * Enthalpy;
         }
-        
-        /*--- Extra boundary term for grid movement ---*/
-        if (grid_movement) {
-          su2double ProjGridVel = 0.0;
-          su2double *GridVel = geometry->node[iPoint]->GetGridVel();
-          for (iDim = 0; iDim < nDim; iDim++)
-            ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
-          phin -= Psi[nVar-1]*ProjGridVel;
-        }
-        
-        /*--- Introduce the boundary condition ---*/
+
+        /*--- Adjoint energy ---*/
+        Jacobian_ii[nVar-1][0] = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
-          Psi[iDim+1] -= ( phin - bcn ) * UnitNormal[iDim];
-        
-        /*--- Inner products after introducing BC (Psi has changed) ---*/
-        phis1 = 0.0; phis2 = Psi[0] + Enthalpy * Psi[nVar-1];
-        for (iDim = 0; iDim < nDim; iDim++) {
-          phis1 -= Normal[iDim]*Psi[iDim+1];
-          phis2 += Velocity[iDim]*Psi[iDim+1];
-        }
-        
-        /*--- Flux of the Euler wall ---*/
-        Residual[0] = ProjVel * Psi[0] - phis2 * ProjVel + phis1 * Gamma_Minus_One * sq_vel;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Residual[iDim+1] = ProjVel * Psi[iDim+1] - phis2 * Normal[iDim] - phis1 * Gamma_Minus_One * Velocity[iDim];
-        Residual[nVar-1] = ProjVel * Psi[nVar-1] + phis1 * Gamma_Minus_One;
-        
-        /*--- Flux adjustment for grid movement ---*/
+          Jacobian_ii[nVar-1][iDim+1] = 0.0;
+        Jacobian_ii[nVar-1][nVar-1] = ProjVel;
+
+        /*--- Jacobian contribution due to grid movement ---*/
         if (grid_movement) {
           su2double ProjGridVel = 0.0;
           su2double *GridVel = geometry->node[iPoint]->GetGridVel();
           for (iDim = 0; iDim < nDim; iDim++)
             ProjGridVel -= GridVel[iDim]*Normal[iDim];
-          Residual[0] -= ProjGridVel*Psi[0];
+          Jacobian_ii[0][0] -= ProjGridVel;
           for (iDim = 0; iDim < nDim; iDim++)
-            Residual[iDim+1] -= ProjGridVel*Psi[iDim+1];
-          Residual[nVar-1] -= ProjGridVel*Psi[nVar-1];
+            Jacobian_ii[iDim+1][iDim+1] -= ProjGridVel;
+          Jacobian_ii[nVar-1][nVar-1] -= ProjGridVel;
         }
-        
-        if (implicit) {
-          
-          /*--- Adjoint density ---*/
-          Jacobian_ii[0][0] = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Jacobian_ii[0][iDim+1] = -ProjVel * (Velocity[iDim] - UnitNormal[iDim] * vn);
-          Jacobian_ii[0][nVar-1] = -ProjVel * Enthalpy;
-          
-          /*--- Adjoint velocities ---*/
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Jacobian_ii[iDim+1][0] = -Normal[iDim];
-            for (jDim = 0; jDim < nDim; jDim++)
-              Jacobian_ii[iDim+1][jDim+1] = -ProjVel*(UnitNormal[jDim]*UnitNormal[iDim] - Normal[iDim] * (Velocity[jDim] - UnitNormal[jDim] * vn));
-            Jacobian_ii[iDim+1][iDim+1] += ProjVel;
-            Jacobian_ii[iDim+1][nVar-1] = -Normal[iDim] * Enthalpy;
-          }
-          
-          /*--- Adjoint energy ---*/
-          Jacobian_ii[nVar-1][0] = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Jacobian_ii[nVar-1][iDim+1] = 0.0;
-          Jacobian_ii[nVar-1][nVar-1] = ProjVel;
-          
-          /*--- Jacobian contribution due to grid movement ---*/
-          if (grid_movement) {
-            su2double ProjGridVel = 0.0;
-            su2double *GridVel = geometry->node[iPoint]->GetGridVel();
-            for (iDim = 0; iDim < nDim; iDim++)
-              ProjGridVel -= GridVel[iDim]*Normal[iDim];
-            Jacobian_ii[0][0] -= ProjGridVel;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Jacobian_ii[iDim+1][iDim+1] -= ProjGridVel;
-            Jacobian_ii[nVar-1][nVar-1] -= ProjGridVel;
-          }
-          
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-          
-        }
-        
-        /*--- Update residual ---*/
-        LinSysRes.SubtractBlock(iPoint, Residual);
-        
+
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
+
       }
-      /*--- Incompressible solver ---*/
-      if (incompressible || freesurface) {
-        
-        DensityInc = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-        BetaInc2 = solver_container[FLOW_SOL]->node[iPoint]->GetBetaInc2();
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          Velocity[iDim] = U[iDim+1] / solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-        
-        /*--- Compute projections ---*/
-        bcn = 0.0; phin = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          bcn += d[iDim]*UnitNormal[iDim];
-          phin += Psi[iDim+1]*UnitNormal[iDim];
-        }
-        
-        /*--- Introduce the boundary condition ---*/
-        for (iDim = 0; iDim < nDim; iDim++)
-          Psi[iDim+1] -= ( phin - bcn ) * UnitNormal[iDim];
-        
-        /*--- Inner products after introducing BC (Psi has changed) ---*/
-        phis1 = 0.0; phis2 = Psi[0] * (BetaInc2 / DensityInc);
-        for (iDim = 0; iDim < nDim; iDim++) {
-          phis1 -= Normal[iDim]*Psi[iDim+1];
-          phis2 += Velocity[iDim]*Psi[iDim+1];
-        }
-        
-        /*--- Flux of the Euler wall ---*/
-        Residual[0] = phis1;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Residual[iDim+1] = - phis2 * Normal[iDim];
-        
-        /*--- Update residual ---*/
-        LinSysRes.SubtractBlock(iPoint, Residual);
-        
-        if (implicit) {
-          
-          /*--- Adjoint density ---*/
-          Jacobian_ii[0][0] = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++)
-            Jacobian_ii[0][iDim+1] = - Normal[iDim];
-          
-          /*--- Adjoint velocities ---*/
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Jacobian_ii[iDim+1][0] = -Normal[iDim] * (BetaInc2 / DensityInc) ;
-            for (jDim = 0; jDim < nDim; jDim++)
-              Jacobian_ii[iDim+1][jDim+1] = - Normal[iDim] * Velocity[jDim];
-          }
-          
-          /*--- Update Jacobian ---*/
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_ii);
-        }
-        
-      }
+
+      /*--- Update residual ---*/
+      LinSysRes.SubtractBlock(iPoint, Residual);
       
     }
   }
@@ -3251,14 +3076,11 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
   
   unsigned long iVertex, iPoint;
   su2double *Normal, ProjVel = 0.0, vn = 0.0, Area, *UnitNormal,
-  *V_domain, *V_sym, *Psi_domain, *Psi_sym, *Velocity, Enthalpy = 0.0,
-  sq_vel, phin, phis1, phis2, NormalAdjVel;
+  *Psi_domain, *Psi_sym, *Velocity, Enthalpy = 0.0,
+  sq_vel, phin, phis1, phis2;
   unsigned short iDim, iVar, jDim;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement = config->GetGrid_Movement();
 
   Normal = new su2double[nDim];
@@ -3281,116 +3103,70 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
       
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim]   = -Normal[iDim]/Area;
-      
-      if (compressible) {
-        
-        /*--- Create a copy of the adjoint solution ---*/
-        
-        for (iVar = 0; iVar < nVar; iVar++) Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
 
-        /*--- Retrieve flow variables ---*/
+      /*--- Create a copy of the adjoint solution ---*/
 
-        for (iDim = 0; iDim < nDim; iDim++)
-          Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim);
-        
-        Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
-        sq_vel   = 0.5*solver_container[FLOW_SOL]->node[iPoint]->GetVelocity2();
-        
-        /*--- Compute projections ---*/
-        
-        ProjVel = 0.0; vn = 0.0, phin = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          ProjVel -= Velocity[iDim]*Normal[iDim];
-          vn      += Velocity[iDim]*UnitNormal[iDim];
-          phin    += Psi_domain[iDim+1]*UnitNormal[iDim];
-        }
-        
-        /*--- Grid Movement ---*/
-        
-        if (grid_movement) {
-          su2double ProjGridVel = 0.0;
-          su2double *GridVel = geometry->node[iPoint]->GetGridVel();
-          for (iDim = 0; iDim < nDim; iDim++) {
-            ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
-          }
-          phin -= Psi_domain[nVar-1]*ProjGridVel;
-        }
-        
-        /*--- Introduce the boundary condition ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          Psi_domain[iDim+1] -= phin * UnitNormal[iDim];
-        
-        /*--- Inner products after introducing BC (Psi has changed) ---*/
-        
-        phis1 = 0.0; phis2 = Psi_domain[0] + Enthalpy * Psi_domain[nVar-1];
-        for (iDim = 0; iDim < nDim; iDim++) {
-          phis1 -= Normal[iDim]*Psi_domain[iDim+1];
-          phis2 += Velocity[iDim]*Psi_domain[iDim+1];
-        }
-        
-        /*--- Flux of the Euler wall ---*/
-        
-        Residual_i[0] = ProjVel * Psi_domain[0] - phis2 * ProjVel + phis1 * Gamma_Minus_One * sq_vel;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Residual_i[iDim+1] = ProjVel * Psi_domain[iDim+1] - phis2 * Normal[iDim] - phis1 * Gamma_Minus_One * Velocity[iDim];
-        Residual_i[nVar-1] = ProjVel * Psi_domain[nVar-1] + phis1 * Gamma_Minus_One;
-        
-        /*--- Grid Movement ---*/
-        
-        if (grid_movement) {
-          su2double ProjGridVel = 0.0;
-          su2double *GridVel = geometry->node[iPoint]->GetGridVel();
-          for (iDim = 0; iDim < nDim; iDim++)
-            ProjGridVel -= GridVel[iDim]*Normal[iDim];
-          Residual_i[0] -= ProjGridVel*Psi_domain[0];
-          for (iDim = 0; iDim < nDim; iDim++)
-            Residual_i[iDim+1] -= ProjGridVel*Psi_domain[iDim+1];
-          Residual_i[nVar-1] -= ProjGridVel*Psi_domain[nVar-1];
-        }
-        
+      for (iVar = 0; iVar < nVar; iVar++) Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
+
+      /*--- Retrieve flow variables ---*/
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim);
+
+      Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
+      sq_vel   = 0.5*solver_container[FLOW_SOL]->node[iPoint]->GetVelocity2();
+
+      /*--- Compute projections ---*/
+
+      ProjVel = 0.0; vn = 0.0, phin = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        ProjVel -= Velocity[iDim]*Normal[iDim];
+        vn      += Velocity[iDim]*UnitNormal[iDim];
+        phin    += Psi_domain[iDim+1]*UnitNormal[iDim];
       }
-      
-      if (incompressible || freesurface) {
-        
-        /*--- Set the normal vector ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-        conv_numerics->SetNormal(Normal);
-        
-        /*--- Retrieve solution at boundary node ---*/
-        
-        V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-        V_sym = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
 
-        conv_numerics->SetPrimitive(V_domain, V_sym);
-        
-        /*--- Adjoint flow solution at the wall ---*/
-        
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
-          Psi_sym[iVar] = node[iPoint]->GetSolution(iVar);
+      /*--- Grid Movement ---*/
+
+      if (grid_movement) {
+        su2double ProjGridVel = 0.0;
+        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
         }
-        
-        /*--- Compute normal component of the adjoint velocity ---*/
-        
-        NormalAdjVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          NormalAdjVel += Psi_domain[iDim+1]*UnitNormal[iDim];
+        phin -= Psi_domain[nVar-1]*ProjGridVel;
+      }
 
-        /*--- Remove the normal component ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          Psi_sym[iDim+1] -= NormalAdjVel*UnitNormal[iDim];
-        
-        /*--- Set the value of the adjoint variables ---*/
+      /*--- Introduce the boundary condition ---*/
 
-        conv_numerics->SetAdjointVar(Psi_domain, Psi_sym);
-        
-        /*--- Compute the upwind flux ---*/
-        
-        conv_numerics->ComputeResidual(Residual_i, Residual_j, Jacobian_ii, Jacobian_ij, Jacobian_ji, Jacobian_jj, config);
-        
+      for (iDim = 0; iDim < nDim; iDim++)
+        Psi_domain[iDim+1] -= phin * UnitNormal[iDim];
+
+      /*--- Inner products after introducing BC (Psi has changed) ---*/
+
+      phis1 = 0.0; phis2 = Psi_domain[0] + Enthalpy * Psi_domain[nVar-1];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        phis1 -= Normal[iDim]*Psi_domain[iDim+1];
+        phis2 += Velocity[iDim]*Psi_domain[iDim+1];
+      }
+
+      /*--- Flux of the Euler wall ---*/
+
+      Residual_i[0] = ProjVel * Psi_domain[0] - phis2 * ProjVel + phis1 * Gamma_Minus_One * sq_vel;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Residual_i[iDim+1] = ProjVel * Psi_domain[iDim+1] - phis2 * Normal[iDim] - phis1 * Gamma_Minus_One * Velocity[iDim];
+      Residual_i[nVar-1] = ProjVel * Psi_domain[nVar-1] + phis1 * Gamma_Minus_One;
+
+      /*--- Grid Movement ---*/
+
+      if (grid_movement) {
+        su2double ProjGridVel = 0.0;
+        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        for (iDim = 0; iDim < nDim; iDim++)
+          ProjGridVel -= GridVel[iDim]*Normal[iDim];
+        Residual_i[0] -= ProjGridVel*Psi_domain[0];
+        for (iDim = 0; iDim < nDim; iDim++)
+          Residual_i[iDim+1] -= ProjGridVel*Psi_domain[iDim+1];
+        Residual_i[nVar-1] -= ProjGridVel*Psi_domain[nVar-1];
       }
       
       /*--- Update residual ---*/
@@ -3401,44 +3177,41 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
       
       if (implicit) {
         
-        if (compressible) {
-          
-          /*--- Adjoint density ---*/
-          
-          Jacobian_ii[0][0] = 0.0;
+        /*--- Adjoint density ---*/
+
+        Jacobian_ii[0][0] = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian_ii[0][iDim+1] = -ProjVel * (Velocity[iDim] - UnitNormal[iDim] * vn);
+        Jacobian_ii[0][nVar-1] = -ProjVel * Enthalpy;
+
+        /*--- Adjoint velocities ---*/
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Jacobian_ii[iDim+1][0] = -Normal[iDim];
+          for (jDim = 0; jDim < nDim; jDim++)
+            Jacobian_ii[iDim+1][jDim+1] = -ProjVel*(UnitNormal[jDim]*UnitNormal[iDim] - Normal[iDim] * (Velocity[jDim] - UnitNormal[jDim] * vn));
+          Jacobian_ii[iDim+1][iDim+1] += ProjVel;
+          Jacobian_ii[iDim+1][nVar-1] = -Normal[iDim] * Enthalpy;
+        }
+
+        /*--- Adjoint energy ---*/
+
+        Jacobian_ii[nVar-1][0] = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          Jacobian_ii[nVar-1][iDim+1] = 0.0;
+        Jacobian_ii[nVar-1][nVar-1] = ProjVel;
+
+        /*--- Contribution from grid movement ---*/
+
+        if (grid_movement) {
+          su2double ProjGridVel = 0.0;
+          su2double *GridVel = geometry->node[iPoint]->GetGridVel();
           for (iDim = 0; iDim < nDim; iDim++)
-            Jacobian_ii[0][iDim+1] = -ProjVel * (Velocity[iDim] - UnitNormal[iDim] * vn);
-          Jacobian_ii[0][nVar-1] = -ProjVel * Enthalpy;
-          
-          /*--- Adjoint velocities ---*/
-          
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Jacobian_ii[iDim+1][0] = -Normal[iDim];
-            for (jDim = 0; jDim < nDim; jDim++)
-              Jacobian_ii[iDim+1][jDim+1] = -ProjVel*(UnitNormal[jDim]*UnitNormal[iDim] - Normal[iDim] * (Velocity[jDim] - UnitNormal[jDim] * vn));
-            Jacobian_ii[iDim+1][iDim+1] += ProjVel;
-            Jacobian_ii[iDim+1][nVar-1] = -Normal[iDim] * Enthalpy;
-          }
-          
-          /*--- Adjoint energy ---*/
-          
-          Jacobian_ii[nVar-1][0] = 0.0;
+            ProjGridVel -= GridVel[iDim]*Normal[iDim];
+          Jacobian_ii[0][0] -= ProjGridVel;
           for (iDim = 0; iDim < nDim; iDim++)
-            Jacobian_ii[nVar-1][iDim+1] = 0.0;
-          Jacobian_ii[nVar-1][nVar-1] = ProjVel;
-          
-          /*--- Contribution from grid movement ---*/
-          
-          if (grid_movement) {
-            su2double ProjGridVel = 0.0;
-            su2double *GridVel = geometry->node[iPoint]->GetGridVel();
-            for (iDim = 0; iDim < nDim; iDim++)
-              ProjGridVel -= GridVel[iDim]*Normal[iDim];
-            Jacobian_ii[0][0] -= ProjGridVel;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Jacobian_ii[iDim+1][iDim+1] -= ProjGridVel;
-            Jacobian_ii[nVar-1][nVar-1] -= ProjGridVel;
-          }
+            Jacobian_ii[iDim+1][iDim+1] -= ProjGridVel;
+          Jacobian_ii[nVar-1][nVar-1] -= ProjGridVel;
         }
         
          /*--- Update jacobian ---*/
@@ -4297,9 +4070,6 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
 
   unsigned short Kind_Inlet = config->GetKind_Inlet();
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement = config->GetGrid_Movement();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
@@ -4343,71 +4113,59 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
         Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
       
       /*--- Construct the flow & adjoint states at the inlet ---*/
-      if (compressible) {
-        
-        /*--- Subsonic, compressible inflow: first build the flow state
+
+      /*--- Subsonic, compressible inflow: first build the flow state
          using the same method as the direct problem. Then, based on
          those conservative values, compute the characteristic-based
          adjoint boundary condition. The boundary update to be applied
          depends on whether total conditions or mass flow are specified. ---*/
-        
-        switch (Kind_Inlet) {
-            
-            /*--- Total properties have been specified at the inlet. ---*/
-          case TOTAL_CONDITIONS:
-            
-            /*--- Adjoint solution at the inlet. Set to zero for now
+
+      switch (Kind_Inlet) {
+
+      /*--- Total properties have been specified at the inlet. ---*/
+      case TOTAL_CONDITIONS:
+
+        /*--- Adjoint solution at the inlet. Set to zero for now
              but should be replaced with derived expression for this type of
              inlet. ---*/
-            for (iVar = 0; iVar < nVar; iVar++)
-              Psi_inlet[iVar] = 0.0;
-            
-            break;
-            
-            /*--- Mass flow has been specified at the inlet. ---*/
-          case MASS_FLOW:
-            
-            /*--- Get primitives from current inlet state. ---*/
-            for (iDim = 0; iDim < nDim; iDim++)
-              Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim);
+        for (iVar = 0; iVar < nVar; iVar++)
+          Psi_inlet[iVar] = 0.0;
 
-            /*--- Retrieve current adjoint solution values at the boundary ---*/
-            for (iVar = 0; iVar < nVar; iVar++)
-              Psi_inlet[iVar] = node[iPoint]->GetSolution(iVar);
-            
-            /*--- Some terms needed for the adjoint BC ---*/
-            bcn = 0.0; phin = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
-              bcn  -= (Gamma/Gamma_Minus_One)*Velocity[iDim]*UnitNormal[iDim];
-              phin += Psi_domain[iDim+1]*UnitNormal[iDim];
-            }
-            
-            /*--- Extra boundary term for grid movement ---*/
-            if (grid_movement) {
-              ProjGridVel = 0.0;
-              GridVel = geometry->node[iPoint]->GetGridVel();
-              for (iDim = 0; iDim < nDim; iDim++)
-                ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
-              bcn -= (1.0/Gamma_Minus_One)*ProjGridVel;
-            }
-            
-            /*--- Impose value for PsiE based on hand-derived expression. ---*/
-            Psi_inlet[nVar-1] = -phin*(1.0/bcn);
-            
-            break;
-        }
-        
-      }
-      
-      if (incompressible || freesurface) {
-        
-        /*--- Adjoint solution at the inlet ---*/
-        
-        Psi_inlet[0] = node[iPoint]->GetSolution(0);
+        break;
+
+        /*--- Mass flow has been specified at the inlet. ---*/
+      case MASS_FLOW:
+
+        /*--- Get primitives from current inlet state. ---*/
         for (iDim = 0; iDim < nDim; iDim++)
-          Psi_inlet[iDim+1] = 0.0;
-        
+          Velocity[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetVelocity(iDim);
+
+        /*--- Retrieve current adjoint solution values at the boundary ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          Psi_inlet[iVar] = node[iPoint]->GetSolution(iVar);
+
+        /*--- Some terms needed for the adjoint BC ---*/
+        bcn = 0.0; phin = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          bcn  -= (Gamma/Gamma_Minus_One)*Velocity[iDim]*UnitNormal[iDim];
+          phin += Psi_domain[iDim+1]*UnitNormal[iDim];
+        }
+
+        /*--- Extra boundary term for grid movement ---*/
+        if (grid_movement) {
+          ProjGridVel = 0.0;
+          GridVel = geometry->node[iPoint]->GetGridVel();
+          for (iDim = 0; iDim < nDim; iDim++)
+            ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
+          bcn -= (1.0/Gamma_Minus_One)*ProjGridVel;
+        }
+
+        /*--- Impose value for PsiE based on hand-derived expression. ---*/
+        Psi_inlet[nVar-1] = -phin*(1.0/bcn);
+
+        break;
       }
+
       
       /*--- Set the flow and adjoint states in the solver ---*/
       
@@ -4481,9 +4239,9 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Pressure=0.0, P_Exit=0.0,  Velocity2 = 0.0, Area=0.0, Density=0.0, Height=0.0,
-      Vn = 0.0, SoundSpeed = 0.0,  LevelSet=0.0, Vn_Exit=0.0, ProjGridVel = 0.0,
-      Riemann=0.0, Entropy=0.0, Density_Outlet = 0.0, Vn_rel=0.0;
+  su2double Pressure=0.0, P_Exit=0.0,  Velocity2 = 0.0, Area=0.0, Density=0.0,
+      Vn = 0.0, SoundSpeed = 0.0, Vn_Exit=0.0, ProjGridVel = 0.0,
+      Riemann=0.0, Entropy=0.0, Vn_rel=0.0;
   su2double Velocity[3], UnitNormal[3];
   su2double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
   su2double a1=0.0, a2=0.0; /*Placeholder terms to simplify expressions/ repeated terms*/
@@ -4491,15 +4249,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   su2double density_gradient, pressure_gradient, velocity_gradient;
 
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement  = config->GetGrid_Movement();
-  su2double FreeSurface_Zero = config->GetFreeSurface_Zero();
-  su2double PressFreeSurface = solver_container[FLOW_SOL]->GetPressure_Inf();
-  su2double epsilon          = config->GetFreeSurface_Thickness();
-  su2double RatioDensity     = config->GetRatioDensity();
-  su2double Froude           = config->GetFroude();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   Psi_domain = new su2double [nVar]; Psi_outlet = new su2double [nVar];
@@ -4547,179 +4297,129 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Construct the flow & adjoint states at the outlet ---*/
 
-      if (compressible) {
+      /*--- Retrieve the specified back pressure for this outlet, Non-dim. the inputs if necessary. ---*/
 
-        /*--- Retrieve the specified back pressure for this outlet, Non-dim. the inputs if necessary. ---*/
+      P_Exit = config->GetOutlet_Pressure(Marker_Tag);
+      P_Exit = P_Exit/config->GetPressure_Ref();
 
-        P_Exit = config->GetOutlet_Pressure(Marker_Tag);
-        P_Exit = P_Exit/config->GetPressure_Ref();
-
-        /*--- Check whether the flow is supersonic at the exit. The type
+      /*--- Check whether the flow is supersonic at the exit. The type
          of boundary update depends on this. ---*/
 
-        Density = V_domain[nDim+2];
-        Velocity2 = 0.0; Vn = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Velocity[iDim] = V_domain[iDim+1];
-          Velocity2 += Velocity[iDim]*Velocity[iDim];
-          Vn += Velocity[iDim]*UnitNormal[iDim];
+      Density = V_domain[nDim+2];
+      Velocity2 = 0.0; Vn = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Velocity[iDim] = V_domain[iDim+1];
+        Velocity2 += Velocity[iDim]*Velocity[iDim];
+        Vn += Velocity[iDim]*UnitNormal[iDim];
+      }
+      /*--- Extra boundary term for grid movement ---*/
+      if (grid_movement) {
+        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        for (iDim = 0; iDim < nDim; iDim++)
+          ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
+      }
+
+      Pressure = V_domain[nDim+1];
+      SoundSpeed = sqrt(Pressure*Gamma/Density);
+
+      /*--- Set Adjoint variables to 0 initially ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Psi_outlet[iVar] = 0.0;
+      }
+
+      if (Vn > SoundSpeed) {
+        /*--- Objective-dependent additions to energy term ---*/
+        Vn_Exit = Vn; /* Vn_Exit comes from Reiman conditions in subsonic case*/
+        Vn_rel = Vn_Exit-ProjGridVel;
+        /* Repeated term */
+        a1 = Gamma_Minus_One/(Vn_rel*Vn_rel-SoundSpeed*SoundSpeed);
+
+        switch (config->GetKind_ObjFunc()){
+        case OUTFLOW_GENERALIZED:
+          velocity_gradient = 0.0;
+          for (iDim=0; iDim<nDim; iDim++) velocity_gradient += UnitNormal[iDim]*config->GetCoeff_ObjChainRule(iDim+1);
+          density_gradient = config->GetCoeff_ObjChainRule(0);
+          pressure_gradient = config->GetCoeff_ObjChainRule(4);
+          Psi_outlet[nDim+1]=a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
+          break;
+        case AVG_TOTAL_PRESSURE:
+          /*--- Total Pressure term. NOTE: this is AREA averaged
+             * Additional terms are added later (as they are common between subsonic,
+             * supersonic equations) ---*/
+          Velocity2  = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Velocity2 += Velocity[iDim]*Velocity[iDim];
+          }
+          a2 = Pressure*(Gamma/Gamma_Minus_One)*pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),1.0/Gamma_Minus_One);
+          density_gradient = a2*(Gamma_Minus_One*Velocity2/(2.0*Gamma*Pressure));
+          velocity_gradient = 0.0;
+          for (iDim=0; iDim<nDim; iDim++)
+            velocity_gradient+=a2*Gamma_Minus_One*Density/(Gamma*Pressure)*Velocity[iDim]*UnitNormal[iDim];
+          pressure_gradient = a2*(-Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*pow(Pressure,2.0)))+pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),(Gamma/Gamma_Minus_One));
+          Psi_outlet[nDim+1]+=a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
+          break;
+        case AVG_OUTLET_PRESSURE:
+          /*Area averaged static pressure*/
+          /*--- Note: further terms are NOT added later for this case, only energy term is modified ---*/
+          Psi_outlet[nDim+1]+=a1*Vn_Exit;
+          break;
+        default:
+          break;
         }
+      } else {
+        /*---Subsonic Case: Psi-rho E term from volume, objective-specific terms which are common
+           * between subsonic and supersonic cases are added later  ---*/
+        /*--- Compute Riemann constant ---*/
+        Entropy = Pressure*pow(1.0/Density, Gamma);
+        Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
+
+        /*--- Compute the new fictious state at the outlet ---*/
+        Density    = pow(P_Exit/Entropy,1.0/Gamma);
+        SoundSpeed = sqrt(Gamma*P_Exit/Density);
+        Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
+        /*--- Update velocity terms ---*/
+        Vn_rel  = Vn_Exit-ProjGridVel;
+
+        Velocity2  = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
+          Velocity2 += Velocity[iDim]*Velocity[iDim];
+        }
+
         /*--- Extra boundary term for grid movement ---*/
+
         if (grid_movement) {
+          ProjGridVel = 0.0;
           su2double *GridVel = geometry->node[iPoint]->GetGridVel();
           for (iDim = 0; iDim < nDim; iDim++)
             ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
         }
 
-        Pressure = V_domain[nDim+1];
-        SoundSpeed = sqrt(Pressure*Gamma/Density);
+        /*--- Impose values for PsiRho & Phi using PsiE from domain. ---*/
 
-        /*--- Set Adjoint variables to 0 initially ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Psi_outlet[iVar] = 0.0;
-        }
+        Psi_outlet[nVar-1] = Psi_domain[nVar-1];
 
-        if (Vn > SoundSpeed) {
-          /*--- Objective-dependent additions to energy term ---*/
-          Vn_Exit = Vn; /* Vn_Exit comes from Reiman conditions in subsonic case*/
-          Vn_rel = Vn_Exit-ProjGridVel;
-          /* Repeated term */
-          a1 = Gamma_Minus_One/(Vn_rel*Vn_rel-SoundSpeed*SoundSpeed);
+      }
 
-          switch (config->GetKind_ObjFunc()){
-          case OUTFLOW_GENERALIZED:
-            velocity_gradient = 0.0;
-            for (iDim=0; iDim<nDim; iDim++) velocity_gradient += UnitNormal[iDim]*config->GetCoeff_ObjChainRule(iDim+1);
-            density_gradient = config->GetCoeff_ObjChainRule(0);
-            pressure_gradient = config->GetCoeff_ObjChainRule(4);
-            Psi_outlet[nDim+1]=a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
-            break;
-          case AVG_TOTAL_PRESSURE:
-            /*--- Total Pressure term. NOTE: this is AREA averaged
-             * Additional terms are added later (as they are common between subsonic,
-             * supersonic equations) ---*/
-            Velocity2  = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
-              Velocity2 += Velocity[iDim]*Velocity[iDim];
-            }
-            a2 = Pressure*(Gamma/Gamma_Minus_One)*pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),1.0/Gamma_Minus_One);
-            density_gradient = a2*(Gamma_Minus_One*Velocity2/(2.0*Gamma*Pressure));
-            velocity_gradient = 0.0;
-            for (iDim=0; iDim<nDim; iDim++)
-              velocity_gradient+=a2*Gamma_Minus_One*Density/(Gamma*Pressure)*Velocity[iDim]*UnitNormal[iDim];
-            pressure_gradient = a2*(-Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*pow(Pressure,2.0)))+pow((1.0+Gamma_Minus_One*Density*Velocity2/(2.0*Gamma*Pressure)),(Gamma/Gamma_Minus_One));
-            Psi_outlet[nDim+1]+=a1*(density_gradient/Vn_rel+pressure_gradient*Vn_rel-velocity_gradient/Density);
-            break;
-          case AVG_OUTLET_PRESSURE:
-            /*Area averaged static pressure*/
-            /*--- Note: further terms are NOT added later for this case, only energy term is modified ---*/
-            Psi_outlet[nDim+1]+=a1*Vn_Exit;
-            break;
-          default:
-            break;
-          }
-        } else {
-          /*---Subsonic Case: Psi-rho E term from volume, objective-specific terms which are common
-           * between subsonic and supersonic cases are added later  ---*/
-          /*--- Compute Riemann constant ---*/
-          Entropy = Pressure*pow(1.0/Density, Gamma);
-          Riemann = Vn + 2.0*SoundSpeed/Gamma_Minus_One;
-
-          /*--- Compute the new fictious state at the outlet ---*/
-          Density    = pow(P_Exit/Entropy,1.0/Gamma);
-          SoundSpeed = sqrt(Gamma*P_Exit/Density);
-          Vn_Exit    = Riemann - 2.0*SoundSpeed/Gamma_Minus_One;
-          /*--- Update velocity terms ---*/
-          Vn_rel  = Vn_Exit-ProjGridVel;
-
-          Velocity2  = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Velocity[iDim] = Velocity[iDim] + (Vn_Exit-Vn)*UnitNormal[iDim];
-            Velocity2 += Velocity[iDim]*Velocity[iDim];
-          }
-
-          /*--- Extra boundary term for grid movement ---*/
-
-          if (grid_movement) {
-            ProjGridVel = 0.0;
-            su2double *GridVel = geometry->node[iPoint]->GetGridVel();
-            for (iDim = 0; iDim < nDim; iDim++)
-              ProjGridVel += GridVel[iDim]*UnitNormal[iDim];
-          }
-
-          /*--- Impose values for PsiRho & Phi using PsiE from domain. ---*/
-
-          Psi_outlet[nVar-1] = Psi_domain[nVar-1];
-
-        }
-
-        /*--- When Psi_outlet[nVar-1] is not 0, the other terms of Psi_outlet must be updated
+      /*--- When Psi_outlet[nVar-1] is not 0, the other terms of Psi_outlet must be updated
         This occurs when subsonic, or for certain objective functions ---*/
-        if ( Psi_outlet[nVar-1]!=0.0 ){
-          /*--- Shorthand for repeated term in the boundary conditions ---*/
-          /* Characteristic-based version
+      if ( Psi_outlet[nVar-1]!=0.0 ){
+        /*--- Shorthand for repeated term in the boundary conditions ---*/
+        /* Characteristic-based version
           a1 = SoundSpeed/Gamma_Minus_One;
           Psi_outlet[0] += Psi_outlet[nVar-1]*(Velocity2*0.5+Vn_rel*a1);
           for (iDim = 0; iDim < nDim; iDim++) {
             Psi_outlet[iDim+1] += -Psi_outlet[nVar-1]*(a1*UnitNormal[iDim] + Velocity[iDim]);
           }
            */
-          /*Constant-pressure version*/
-          a1 = 0.0;
-          if (Vn!=0.0)
-            a1 = SoundSpeed*SoundSpeed/Gamma_Minus_One/Vn;
-          Psi_outlet[0] += Psi_outlet[nVar-1]*(Velocity2*0.5+Vn_rel*a1);
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Psi_outlet[iDim+1] += -Psi_outlet[nVar-1]*(a1*UnitNormal[iDim] + Velocity[iDim]);
-          }
+        /*Constant-pressure version*/
+        a1 = 0.0;
+        if (Vn!=0.0)
+          a1 = SoundSpeed*SoundSpeed/Gamma_Minus_One/Vn;
+        Psi_outlet[0] += Psi_outlet[nVar-1]*(Velocity2*0.5+Vn_rel*a1);
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Psi_outlet[iDim+1] += -Psi_outlet[nVar-1]*(a1*UnitNormal[iDim] + Velocity[iDim]);
         }
-
-      }
-      if (incompressible || freesurface) {
-
-        if (freesurface) {
-
-          /*--- Density computation at the exit using the level set function ---*/
-
-          Height = geometry->node[iPoint]->GetCoord(nDim-1);
-          LevelSet = Height - FreeSurface_Zero;
-
-          /*--- Pressure computation the density at the exit (imposed) ---*/
-
-          if (LevelSet < -epsilon) Density_Outlet = config->GetDensity_FreeStreamND();
-          if (LevelSet > epsilon) Density_Outlet = RatioDensity*config->GetDensity_FreeStreamND();
-          V_outlet[0] = PressFreeSurface + Density_Outlet*((FreeSurface_Zero-Height)/(Froude*Froude));
-
-          /*--- Neumann condition in the interface for the pressure and density ---*/
-
-          if (fabs(LevelSet) <= epsilon) {
-            V_outlet[0] = solver_container[FLOW_SOL]->node[Point_Normal]->GetSolution(0);
-            Density_Outlet = solver_container[FLOW_SOL]->node[Point_Normal]->GetDensity();
-          }
-
-        }
-
-        else {
-
-          /*--- Imposed pressure and density ---*/
-
-          Density_Outlet = solver_container[FLOW_SOL]->GetDensity_Inf();
-          V_outlet[0] = solver_container[FLOW_SOL]->GetPressure_Inf();
-
-        }
-
-        /*--- Neumann condition for the velocity ---*/
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_outlet[iDim+1] = node[Point_Normal]->GetSolution(iDim+1);
-
-        /*--- Adjoint flow solution at the outlet (hard-coded for size[3] again?) ---*/
-
-        Psi_outlet[2] = 0.0;
-        su2double coeff = (2.0*V_domain[1])/ solver_container[FLOW_SOL]->node[Point_Normal]->GetBetaInc2();
-        Psi_outlet[1] = node[Point_Normal]->GetSolution(1);
-        Psi_outlet[0] = -coeff*Psi_outlet[1];
-
       }
 
       /*--- Add terms for objective functions where additions are needed outside the energy term
@@ -4826,19 +4526,12 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       if (config->GetViscous()) {
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
-        if (compressible) {
-          V_outlet[nDim+5] = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-          V_outlet[nDim+6] = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
-        }
-        if (incompressible || freesurface) {
-          V_outlet[nDim+3] = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-          V_outlet[nDim+4] = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
-        }
+        V_outlet[nDim+5] = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+        V_outlet[nDim+6] = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
 
         /*--- Points in edge, coordinates and normal vector---*/
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-
 
         /*--- Conservative variables w/o reconstruction and adjoint variables w/o reconstruction---*/
 
@@ -5166,10 +4859,6 @@ void CAdjEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   su2double *U_time_nM1, *U_time_n, *U_time_nP1, Volume_nM1, Volume_n, Volume_nP1, TimeStep;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool FlowEq = (RunTime_EqSystem == RUNTIME_FLOW_SYS);
-  bool AdjEq = (RunTime_EqSystem == RUNTIME_ADJFLOW_SYS);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool Grid_Movement = config->GetGrid_Movement();
   
   /*--- loop over points ---*/
@@ -5203,9 +4892,7 @@ void CAdjEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         Residual[iVar] = ( 3.0*U_time_nP1[iVar]*Volume_nP1 - 4.0*U_time_n[iVar]*Volume_n
                           +  1.0*U_time_nM1[iVar]*Volume_nM1 ) / (2.0*TimeStep);
     }
-    
-    if (((incompressible || freesurface) && FlowEq) || ((incompressible || freesurface) && AdjEq)) Residual[0] = 0.0;
-    
+        
     /*--- Add Residual ---*/
     LinSysRes.AddBlock(iPoint, Residual);
     
@@ -5219,8 +4906,6 @@ void CAdjEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
           Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
       }
-      if (((incompressible || freesurface) && FlowEq) ||
-          ((incompressible || freesurface) && AdjEq)) Jacobian_i[0][0] = 0.0;
       Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
     }
   }
@@ -5237,9 +4922,6 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   string filename, AdjExt;
   su2double dull_val, Area=0.0, *Normal = NULL, myArea_Monitored;
   bool restart = config->GetRestart();
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -5263,10 +4945,8 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
   
-  if (compressible) { nVar = nDim + 2; }
-  if (incompressible) { nVar = nDim + 1; }
-  if (freesurface) { nVar = nDim + 1; }
-  
+  nVar = nDim + 2;
+
   /*--- Initialize nVarGrad for deallocation ---*/
   
   nVarGrad = nVar;
@@ -5447,18 +5127,9 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
        will be returned and used to instantiate the vars. ---*/
       iPoint_Local = Global2Local[iPoint_Global];
       if (iPoint_Local >= 0) {
-        if (compressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
-        }
-        if (incompressible) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        }
-        if (freesurface) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        }
+        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
+        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3] >> Solution[4];
+
         node[iPoint_Local] = new CAdjNSVariable(Solution, nDim, nVar, config);
       }
       iPoint_Global++;
@@ -5540,9 +5211,6 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool limiter        = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
-  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool engine         = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineBleed() != 0) || (config->GetnMarker_EngineExhaust() != 0));
 
   /*--- Compute nacelle inflow and exhaust properties ---*/
@@ -5561,12 +5229,10 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
     node[iPoint]->SetNon_Physical(false);
     
-    /*--- Set the primitive variables incompressible and compressible
+    /*--- Set the primitive variables compressible
      adjoint variables ---*/
     
-    if (compressible) RightSol = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
-    if (incompressible) RightSol = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
-    if (freesurface) RightSol = node[iPoint]->SetPrimVar_FreeSurface(SharpEdge_Distance, false, config);
+    RightSol = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
     if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
     
     /*--- Initialize the convective residual vector ---*/
@@ -5668,7 +5334,6 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool rotating_frame = config->GetRotating_Frame();
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   /*--- Loop over all the points, note that we are supposing that primitive and
    adjoint gradients have been computed previously ---*/
@@ -5800,24 +5465,6 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       
     }
   }
-  
-  if (freesurface) {
-//    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-//
-//      su2double Volume = geometry->node[iPoint]->GetVolume();
-//      su2double **Gradient = solver_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
-//      su2double coeff = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0) / solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-//
-//      Residual[0] = 0.0;
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        Residual[iDim+1] = coeff*Gradient[0][iDim]*Volume;
-//      }
-//
-//      LinSysRes.AddBlock(iPoint, Residual);
-//
-//		}
-  }
-  
 }
 
 void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
@@ -5848,9 +5495,6 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
     tau[iDim] = new su2double [nDim];
   su2double *Velocity = new su2double[nDim];
   
-  bool compressible      = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible    = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface       = (config->GetKind_Regime() == FREESURFACE);
   bool rotating_frame    = config->GetRotating_Frame();
   bool grid_movement     = config->GetGrid_Movement();
   su2double RefAreaCoeff    = config->GetRefAreaCoeff();
@@ -5918,8 +5562,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           PsiVar_Grad = node[iPoint]->GetGradient();
           PrimVar_Grad = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
           
-          if (compressible) Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-          if (incompressible || freesurface) Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+          Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
           
           heat_flux_factor = Cp * Laminar_Viscosity / Prandtl_Lam;
           
@@ -5931,60 +5574,45 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
           
           /*--- Compute the sensitivity related to the temperature ---*/
           
-          if (compressible) {
-            
-            normal_grad_psi5 = 0.0; normal_grad_T = 0.0;
+
+          normal_grad_psi5 = 0.0; normal_grad_T = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            normal_grad_psi5 += PsiVar_Grad[nVar-1][iDim]*UnitNormal[iDim];
+            normal_grad_T += PrimVar_Grad[0][iDim]*UnitNormal[iDim];
+          }
+
+          temp_sens = 0.0;
+          if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
+
+            /*--- Heat Flux Term: temp_sens = (\partial_tg \psi_5)\cdot (k \partial_tg T) ---*/
+
             for (iDim = 0; iDim < nDim; iDim++) {
-              normal_grad_psi5 += PsiVar_Grad[nVar-1][iDim]*UnitNormal[iDim];
-              normal_grad_T += PrimVar_Grad[0][iDim]*UnitNormal[iDim];
+              tang_deriv_psi5[iDim] = PsiVar_Grad[nVar-1][iDim] - normal_grad_psi5*UnitNormal[iDim];
+              tang_deriv_T[iDim] = PrimVar_Grad[0][iDim] - normal_grad_T*UnitNormal[iDim];
             }
-            
-            temp_sens = 0.0;
-            if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
-              
-              /*--- Heat Flux Term: temp_sens = (\partial_tg \psi_5)\cdot (k \partial_tg T) ---*/
-              
-              for (iDim = 0; iDim < nDim; iDim++) {
-                tang_deriv_psi5[iDim] = PsiVar_Grad[nVar-1][iDim] - normal_grad_psi5*UnitNormal[iDim];
-                tang_deriv_T[iDim] = PrimVar_Grad[0][iDim] - normal_grad_T*UnitNormal[iDim];
-              }
-              for (iDim = 0; iDim < nDim; iDim++)
-                temp_sens += heat_flux_factor * tang_deriv_psi5[iDim] * tang_deriv_T[iDim];
-              
-            } else if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
-              
-              /*--- Isothermal Term: temp_sens = - k * \partial_n(\psi_5) * \partial_n(T) ---*/
-              
-              temp_sens = - heat_flux_factor * normal_grad_psi5 * normal_grad_T;
-              
-            }
+            for (iDim = 0; iDim < nDim; iDim++)
+              temp_sens += heat_flux_factor * tang_deriv_psi5[iDim] * tang_deriv_T[iDim];
+
+          } else if (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
+
+            /*--- Isothermal Term: temp_sens = - k * \partial_n(\psi_5) * \partial_n(T) ---*/
+
+            temp_sens = - heat_flux_factor * normal_grad_psi5 * normal_grad_T;
+
           }
-          if (incompressible || freesurface) {
-            
-            /*--- Incompressible case ---*/
-            
-            temp_sens = 0.0;
-            
-          }
+
           
           /*--- Term: sigma_partial = \Sigma_{ji} n_i \partial_n v_j ---*/
           
-          if (compressible) {
-            div_phi = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
-              div_phi += PsiVar_Grad[iDim+1][iDim];
-              for (jDim = 0; jDim < nDim; jDim++)
-                Sigma[iDim][jDim] = Laminar_Viscosity * (PsiVar_Grad[iDim+1][jDim]+PsiVar_Grad[jDim+1][iDim]);
-            }
-            for (iDim = 0; iDim < nDim; iDim++)
-              Sigma[iDim][iDim] -= TWO3*Laminar_Viscosity * div_phi;
+          div_phi = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            div_phi += PsiVar_Grad[iDim+1][iDim];
+            for (jDim = 0; jDim < nDim; jDim++)
+              Sigma[iDim][jDim] = Laminar_Viscosity * (PsiVar_Grad[iDim+1][jDim]+PsiVar_Grad[jDim+1][iDim]);
           }
-          if (incompressible || freesurface) {
-            for (iDim = 0; iDim < nDim; iDim++) {
-              for (jDim = 0; jDim < nDim; jDim++)
-                Sigma[iDim][jDim] = Laminar_Viscosity * PsiVar_Grad[jDim+1][iDim];
-            }
-          }
+          for (iDim = 0; iDim < nDim; iDim++)
+            Sigma[iDim][iDim] -= TWO3*Laminar_Viscosity * div_phi;
+
           
           for (iDim = 0; iDim < nDim; iDim++) {
             normal_grad_vel[iDim] = 0.0;
@@ -6005,8 +5633,7 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             Psi = node[iPoint]->GetSolution();
             U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
             Density = U[0];
-            if (compressible)   Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
-            if (incompressible || freesurface) Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
+            Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
             Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
             
             /*--- Turbulent kinetic energy ---*/
@@ -6121,14 +5748,6 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
             
           }
           
-          /*--- Compute additional term in the surface sensitivity for free surface problem. ---*/
-          
-          if (freesurface) {
-            LevelSet = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(nDim+1);
-            Target_LevelSet = geometry->node[iPoint]->GetCoord(nDim-1);
-            sigma_partial += 0.5*(Target_LevelSet - LevelSet)*(Target_LevelSet - LevelSet);
-          }
-          
           /*--- Compute sensitivity for each surface point ---*/
           
           CSensitivity[iMarker][iVertex] = (sigma_partial - temp_sens) * Area * scale * factor;
@@ -6152,251 +5771,249 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   }
   
   /*--- Farfield Sensitivity (Mach, AoA, Press, Temp), only for compressible flows ---*/
-  
-  if (compressible) {
-    
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      
-      if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD || config->GetMarker_All_KindBC(iMarker) == INLET_FLOW ||
-          config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_OUTLET ||
-          config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW  ) {
-        
-        Sens_Mach[iMarker]  = 0.0;
-        Sens_AoA[iMarker]   = 0.0;
-        Sens_Press[iMarker] = 0.0;
-        Sens_Temp[iMarker]  = 0.0;
-        Sens_BPress[iMarker] = 0.0;
-        
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          
-          if (geometry->node[iPoint]->GetDomain()) {
-            Psi = node[iPoint]->GetSolution();
-            U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            
-            Mach_Inf   = config->GetMach();
-            if (grid_movement) Mach_Inf = config->GetMach_Motion();
-            
-            r = U[0]; ru = U[1]; rv = U[2];
-            if (nDim == 2) { rw = 0.0; rE = U[3]; }
-            else { rw = U[3]; rE = U[4]; }
-            p = Gamma_Minus_One*(rE-(ru*ru + rv*rv + rw*rw)/(2*r));
-            
-            Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt(Area);
-            for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
-            
-            H = (rE + p)/r;
-            
-            dp_dr = Gamma_Minus_One*(ru*ru + rv*rv + rw*rw)/(2*r*r);
-            dp_dru = -Gamma_Minus_One*ru/r;
-            dp_drv = -Gamma_Minus_One*rv/r;
-            if (nDim == 2) { dp_drw = 0.0; dp_drE = Gamma_Minus_One; }
-            else { dp_drw = -Gamma_Minus_One*rw/r; dp_drE = Gamma_Minus_One; }
-            
-            dH_dr = (-H + dp_dr)/r; dH_dru = dp_dru/r; dH_drv = dp_drv/r;
-            if (nDim == 2) { dH_drw = 0.0; dH_drE = (1 + dp_drE)/r; }
-            else { dH_drw = dp_drw/r; dH_drE = (1 + dp_drE)/r; }
-            
-            if (nDim == 2) {
-              Jacobian_j[0][0] = 0.0;
-              Jacobian_j[1][0] = Area*UnitNormal[0];
-              Jacobian_j[2][0] = Area*UnitNormal[1];
-              Jacobian_j[3][0] = 0.0;
-              
-              Jacobian_j[0][1] = (-(ru*ru)/(r*r) + dp_dr)*Area*UnitNormal[0] + (-(ru*rv)/(r*r))*Area*UnitNormal[1];
-              Jacobian_j[1][1] = (2*ru/r + dp_dru)*Area*UnitNormal[0] + (rv/r)*Area*UnitNormal[1];
-              Jacobian_j[2][1] = (dp_drv)*Area*UnitNormal[0] + (ru/r)*Area*UnitNormal[1];
-              Jacobian_j[3][1] = (dp_drE)*Area*UnitNormal[0];
-              
-              Jacobian_j[0][2] = (-(ru*rv)/(r*r))*Area*UnitNormal[0] + (-(rv*rv)/(r*r) + dp_dr)*Area*UnitNormal[1];
-              Jacobian_j[1][2] = (rv/r)*Area*UnitNormal[0] + (dp_dru)*Area*UnitNormal[1];
-              Jacobian_j[2][2] = (ru/r)*Area*UnitNormal[0] + (2*rv/r + dp_drv)*Area*UnitNormal[1];
-              Jacobian_j[3][2] = (dp_drE)*Area*UnitNormal[1];
-              
-              Jacobian_j[0][3] = (ru*dH_dr)*Area*UnitNormal[0] + (rv*dH_dr)*Area*UnitNormal[1];
-              Jacobian_j[1][3] = (H + ru*dH_dru)*Area*UnitNormal[0] + (rv*dH_dru)*Area*UnitNormal[1];
-              Jacobian_j[2][3] = (ru*dH_drv)*Area*UnitNormal[0] + (H + rv*dH_drv)*Area*UnitNormal[1];
-              Jacobian_j[3][3] = (ru*dH_drE)*Area*UnitNormal[0] + (rv*dH_drE)*Area*UnitNormal[1];
-            }
-            else {
-              Jacobian_j[0][0] = 0.0;
-              Jacobian_j[1][0] = Area*UnitNormal[0];
-              Jacobian_j[2][0] = Area*UnitNormal[1];
-              Jacobian_j[3][0] = Area*UnitNormal[2];
-              Jacobian_j[4][0] = 0.0;
-              
-              Jacobian_j[0][1] = (-(ru*ru)/(r*r) + dp_dr)*Area*UnitNormal[0] + (-(ru*rv)/(r*r))*Area*UnitNormal[1] + (-(ru*rw)/(r*r))*Area*UnitNormal[2];
-              Jacobian_j[1][1] = (2*ru/r + dp_dru)*Area*UnitNormal[0] + (rv/r)*Area*UnitNormal[1] + (rw/r)*Area*UnitNormal[2];
-              Jacobian_j[2][1] = (dp_drv)*Area*UnitNormal[0] + (ru/r)*Area*UnitNormal[1];
-              Jacobian_j[3][1] = (dp_drw)*Area*UnitNormal[0] + (ru/r)*Area*UnitNormal[2];
-              Jacobian_j[4][1] = (dp_drE)*Area*UnitNormal[0];
-              
-              Jacobian_j[0][2] = (-(ru*rv)/(r*r))*Area*UnitNormal[0] + (-(rv*rv)/(r*r) + dp_dr)*Area*UnitNormal[1] + (-(rv*rw)/(r*r))*Area*UnitNormal[2];
-              Jacobian_j[1][2] = (rv/r)*Area*UnitNormal[0] + (dp_dru)*Area*UnitNormal[1];
-              Jacobian_j[2][2] = (ru/r)*Area*UnitNormal[0] + (2*rv/r + dp_drv)*Area*UnitNormal[1] + (rw/r)*Area*UnitNormal[2];
-              Jacobian_j[3][2] = (dp_drw)*Area*UnitNormal[1] + (rv/r)*Area*UnitNormal[2];
-              Jacobian_j[4][2] = (dp_drE)*Area*UnitNormal[1];
-              
-              Jacobian_j[0][3] = (-(ru*rw)/(r*r))*Area*UnitNormal[0] + (-(rv*rw)/(r*r))*Area*UnitNormal[1] + (-(rw*rw)/(r*r) + dp_dr)*Area*UnitNormal[2];
-              Jacobian_j[1][3] = (rw/r)*Area*UnitNormal[0] + (dp_dru)*Area*UnitNormal[2];
-              Jacobian_j[2][3] = (rw/r)*Area*UnitNormal[1] + (dp_drv)*Area*UnitNormal[2];
-              Jacobian_j[3][3] = (ru/r)*Area*UnitNormal[0] + (rv/r)*Area*UnitNormal[1] + (2*rw/r + dp_drw)*Area*UnitNormal[2];
-              Jacobian_j[4][3] = (dp_drE)*Area*UnitNormal[2];
-              
-              Jacobian_j[0][4] = (ru*dH_dr)*Area*UnitNormal[0] + (rv*dH_dr)*Area*UnitNormal[1] + (rw*dH_dr)*Area*UnitNormal[2];
-              Jacobian_j[1][4] = (H + ru*dH_dru)*Area*UnitNormal[0] + (rv*dH_dru)*Area*UnitNormal[1] + (rw*dH_dru)*Area*UnitNormal[2];
-              Jacobian_j[2][4] = (ru*dH_drv)*Area*UnitNormal[0] + (H + rv*dH_drv)*Area*UnitNormal[1] + (rw*dH_drv)*Area*UnitNormal[2];
-              Jacobian_j[3][4] = (ru*dH_drw)*Area*UnitNormal[0] + (rv*dH_drw)*Area*UnitNormal[1] + (H + rw*dH_drw)*Area*UnitNormal[2];
-              Jacobian_j[4][4] = (ru*dH_drE)*Area*UnitNormal[0] + (rv*dH_drE)*Area*UnitNormal[1] + (rw*dH_drE)*Area*UnitNormal[2];
-            }
-            
-            /*--- Mach number sensitivity ---*/
-            
-            USens[0] = 0.0; USens[1] = ru/Mach_Inf; USens[2] = rv/Mach_Inf;
-            if (nDim == 2) { USens[3] = Gamma*Mach_Inf*p; }
-            else { USens[3] = rw/Mach_Inf; USens[4] = Gamma*Mach_Inf*p; }
-            for (iPos = 0; iPos < nVar; iPos++) {
-              for (jPos = 0; jPos < nVar; jPos++) {
-                Sens_Mach[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
-              }
-            }
-            
-            /*--- AoA sensitivity ---*/
-            
-            USens[0] = 0.0;
-            if (nDim == 2) { USens[1] = -rv; USens[2] = ru; USens[3] = 0.0; }
-            else { USens[1] = -rw; USens[2] = 0.0; USens[3] = ru; USens[4] = 0.0; }
-            for (iPos = 0; iPos < nVar; iPos++) {
-              for (jPos = 0; jPos < nVar; jPos++) {
-                Sens_AoA[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
-              }
-            }
-            
-            /*--- Pressure sensitivity ---*/
-            
-            USens[0] = r/p; USens[1] = ru/p; USens[2] = rv/p;
-            if (nDim == 2) { USens[3] = rE/p; }
-            else { USens[3] = rw/p; USens[4] = rE/p; }
-            for (iPos = 0; iPos < nVar; iPos++) {
-              for (jPos = 0; jPos < nVar; jPos++) {
-                Sens_Press[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
-              }
-            }
-            
-            /*--- Temperature sensitivity ---*/
-            
-            T = p/(r*Gas_Constant);
-            USens[0] = -r/T; USens[1] = 0.5*ru/T; USens[2] = 0.5*rv/T;
-            if (nDim == 2) { USens[3] = (ru*ru + rv*rv + rw*rw)/(r*T); }
-            else { USens[3] = 0.5*rw/T; USens[4] = (ru*ru + rv*rv + rw*rw)/(r*T); }
-            for (iPos = 0; iPos < nVar; iPos++) {
-              for (jPos = 0; jPos < nVar; jPos++) {
-                Sens_Temp[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
-              }
-            }
-          }
-        }
-        
-        Total_Sens_Mach  -= Sens_Mach[iMarker] * scale * factor;
-        Total_Sens_AoA   -= Sens_AoA[iMarker] * scale * factor;
-        Total_Sens_Press -= Sens_Press[iMarker] * scale * factor;
-        Total_Sens_Temp  -= Sens_Temp[iMarker] * scale * factor;
-        
-      }
-      
-    }
-    
-    /*--- Explicit contribution from objective function quantity ---*/
-    
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      
-      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
-          (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)) {
-        
-        Sens_Mach[iMarker]  = 0.0;
-        Sens_AoA[iMarker]   = 0.0;
-        Sens_Press[iMarker] = 0.0;
-        Sens_Temp[iMarker]  = 0.0;
-        Sens_BPress[iMarker] = 0.0;
-        
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          
-          if (geometry->node[iPoint]->GetDomain()) {
-            
-            Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-            p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
-            
-            Mach_Inf   = config->GetMach();
-            if (grid_movement) Mach_Inf = config->GetMach_Motion();
-            
-            d = node[iPoint]->GetForceProj_Vector();
-            Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-            Area = sqrt(Area);
-            for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
-            
-            /*--- Mach number sensitivity ---*/
-            
-            for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = -(2.0/Mach_Inf)*d[iPos];
-            for (iPos = 0; iPos < nDim; iPos++) Sens_Mach[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
-            
-            /*--- AoA sensitivity ---*/
 
-            if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT ||
-                config->GetKind_ObjFunc() == LIFT_COEFFICIENT ||
-                config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT ||
-                config->GetKind_ObjFunc() == EQUIVALENT_AREA ||
-                config->GetKind_ObjFunc() == NEARFIELD_PRESSURE) {
-              if (nDim == 2) {
-                D[0][0] = 0.0; D[0][1] = -1.0;
-                D[1][0] = 1.0; D[1][1] = 0.0;
-              }
-              else {
-                D[0][0] = 0.0; D[0][1] = 0.0; D[0][2] = -1.0;
-                D[1][0] = 0.0; D[1][1] = 0.0; D[1][2] = 0.0;
-                D[2][0] = 1.0; D[2][1] = 0.0; D[2][2] = 0.0;
-              }
-              for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = 0.0;
-              for (iPos = 0; iPos < nDim; iPos++) {
-                for (jPos = 0; jPos < nDim; jPos++)
-                  Dd[iPos] += D[iPos][jPos]*d[jPos];
-              }
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    if (config->GetMarker_All_KindBC(iMarker) == FAR_FIELD || config->GetMarker_All_KindBC(iMarker) == INLET_FLOW ||
+        config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_OUTLET ||
+        config->GetMarker_All_KindBC(iMarker) == ENGINE_INFLOW  ) {
+
+      Sens_Mach[iMarker]  = 0.0;
+      Sens_AoA[iMarker]   = 0.0;
+      Sens_Press[iMarker] = 0.0;
+      Sens_Temp[iMarker]  = 0.0;
+      Sens_BPress[iMarker] = 0.0;
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if (geometry->node[iPoint]->GetDomain()) {
+          Psi = node[iPoint]->GetSolution();
+          U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+          Mach_Inf   = config->GetMach();
+          if (grid_movement) Mach_Inf = config->GetMach_Motion();
+
+          r = U[0]; ru = U[1]; rv = U[2];
+          if (nDim == 2) { rw = 0.0; rE = U[3]; }
+          else { rw = U[3]; rE = U[4]; }
+          p = Gamma_Minus_One*(rE-(ru*ru + rv*rv + rw*rw)/(2*r));
+
+          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt(Area);
+          for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+
+          H = (rE + p)/r;
+
+          dp_dr = Gamma_Minus_One*(ru*ru + rv*rv + rw*rw)/(2*r*r);
+          dp_dru = -Gamma_Minus_One*ru/r;
+          dp_drv = -Gamma_Minus_One*rv/r;
+          if (nDim == 2) { dp_drw = 0.0; dp_drE = Gamma_Minus_One; }
+          else { dp_drw = -Gamma_Minus_One*rw/r; dp_drE = Gamma_Minus_One; }
+
+          dH_dr = (-H + dp_dr)/r; dH_dru = dp_dru/r; dH_drv = dp_drv/r;
+          if (nDim == 2) { dH_drw = 0.0; dH_drE = (1 + dp_drE)/r; }
+          else { dH_drw = dp_drw/r; dH_drE = (1 + dp_drE)/r; }
+
+          if (nDim == 2) {
+            Jacobian_j[0][0] = 0.0;
+            Jacobian_j[1][0] = Area*UnitNormal[0];
+            Jacobian_j[2][0] = Area*UnitNormal[1];
+            Jacobian_j[3][0] = 0.0;
+
+            Jacobian_j[0][1] = (-(ru*ru)/(r*r) + dp_dr)*Area*UnitNormal[0] + (-(ru*rv)/(r*r))*Area*UnitNormal[1];
+            Jacobian_j[1][1] = (2*ru/r + dp_dru)*Area*UnitNormal[0] + (rv/r)*Area*UnitNormal[1];
+            Jacobian_j[2][1] = (dp_drv)*Area*UnitNormal[0] + (ru/r)*Area*UnitNormal[1];
+            Jacobian_j[3][1] = (dp_drE)*Area*UnitNormal[0];
+
+            Jacobian_j[0][2] = (-(ru*rv)/(r*r))*Area*UnitNormal[0] + (-(rv*rv)/(r*r) + dp_dr)*Area*UnitNormal[1];
+            Jacobian_j[1][2] = (rv/r)*Area*UnitNormal[0] + (dp_dru)*Area*UnitNormal[1];
+            Jacobian_j[2][2] = (ru/r)*Area*UnitNormal[0] + (2*rv/r + dp_drv)*Area*UnitNormal[1];
+            Jacobian_j[3][2] = (dp_drE)*Area*UnitNormal[1];
+
+            Jacobian_j[0][3] = (ru*dH_dr)*Area*UnitNormal[0] + (rv*dH_dr)*Area*UnitNormal[1];
+            Jacobian_j[1][3] = (H + ru*dH_dru)*Area*UnitNormal[0] + (rv*dH_dru)*Area*UnitNormal[1];
+            Jacobian_j[2][3] = (ru*dH_drv)*Area*UnitNormal[0] + (H + rv*dH_drv)*Area*UnitNormal[1];
+            Jacobian_j[3][3] = (ru*dH_drE)*Area*UnitNormal[0] + (rv*dH_drE)*Area*UnitNormal[1];
+          }
+          else {
+            Jacobian_j[0][0] = 0.0;
+            Jacobian_j[1][0] = Area*UnitNormal[0];
+            Jacobian_j[2][0] = Area*UnitNormal[1];
+            Jacobian_j[3][0] = Area*UnitNormal[2];
+            Jacobian_j[4][0] = 0.0;
+
+            Jacobian_j[0][1] = (-(ru*ru)/(r*r) + dp_dr)*Area*UnitNormal[0] + (-(ru*rv)/(r*r))*Area*UnitNormal[1] + (-(ru*rw)/(r*r))*Area*UnitNormal[2];
+            Jacobian_j[1][1] = (2*ru/r + dp_dru)*Area*UnitNormal[0] + (rv/r)*Area*UnitNormal[1] + (rw/r)*Area*UnitNormal[2];
+            Jacobian_j[2][1] = (dp_drv)*Area*UnitNormal[0] + (ru/r)*Area*UnitNormal[1];
+            Jacobian_j[3][1] = (dp_drw)*Area*UnitNormal[0] + (ru/r)*Area*UnitNormal[2];
+            Jacobian_j[4][1] = (dp_drE)*Area*UnitNormal[0];
+
+            Jacobian_j[0][2] = (-(ru*rv)/(r*r))*Area*UnitNormal[0] + (-(rv*rv)/(r*r) + dp_dr)*Area*UnitNormal[1] + (-(rv*rw)/(r*r))*Area*UnitNormal[2];
+            Jacobian_j[1][2] = (rv/r)*Area*UnitNormal[0] + (dp_dru)*Area*UnitNormal[1];
+            Jacobian_j[2][2] = (ru/r)*Area*UnitNormal[0] + (2*rv/r + dp_drv)*Area*UnitNormal[1] + (rw/r)*Area*UnitNormal[2];
+            Jacobian_j[3][2] = (dp_drw)*Area*UnitNormal[1] + (rv/r)*Area*UnitNormal[2];
+            Jacobian_j[4][2] = (dp_drE)*Area*UnitNormal[1];
+
+            Jacobian_j[0][3] = (-(ru*rw)/(r*r))*Area*UnitNormal[0] + (-(rv*rw)/(r*r))*Area*UnitNormal[1] + (-(rw*rw)/(r*r) + dp_dr)*Area*UnitNormal[2];
+            Jacobian_j[1][3] = (rw/r)*Area*UnitNormal[0] + (dp_dru)*Area*UnitNormal[2];
+            Jacobian_j[2][3] = (rw/r)*Area*UnitNormal[1] + (dp_drv)*Area*UnitNormal[2];
+            Jacobian_j[3][3] = (ru/r)*Area*UnitNormal[0] + (rv/r)*Area*UnitNormal[1] + (2*rw/r + dp_drw)*Area*UnitNormal[2];
+            Jacobian_j[4][3] = (dp_drE)*Area*UnitNormal[2];
+
+            Jacobian_j[0][4] = (ru*dH_dr)*Area*UnitNormal[0] + (rv*dH_dr)*Area*UnitNormal[1] + (rw*dH_dr)*Area*UnitNormal[2];
+            Jacobian_j[1][4] = (H + ru*dH_dru)*Area*UnitNormal[0] + (rv*dH_dru)*Area*UnitNormal[1] + (rw*dH_dru)*Area*UnitNormal[2];
+            Jacobian_j[2][4] = (ru*dH_drv)*Area*UnitNormal[0] + (H + rv*dH_drv)*Area*UnitNormal[1] + (rw*dH_drv)*Area*UnitNormal[2];
+            Jacobian_j[3][4] = (ru*dH_drw)*Area*UnitNormal[0] + (rv*dH_drw)*Area*UnitNormal[1] + (H + rw*dH_drw)*Area*UnitNormal[2];
+            Jacobian_j[4][4] = (ru*dH_drE)*Area*UnitNormal[0] + (rv*dH_drE)*Area*UnitNormal[1] + (rw*dH_drE)*Area*UnitNormal[2];
+          }
+
+          /*--- Mach number sensitivity ---*/
+
+          USens[0] = 0.0; USens[1] = ru/Mach_Inf; USens[2] = rv/Mach_Inf;
+          if (nDim == 2) { USens[3] = Gamma*Mach_Inf*p; }
+          else { USens[3] = rw/Mach_Inf; USens[4] = Gamma*Mach_Inf*p; }
+          for (iPos = 0; iPos < nVar; iPos++) {
+            for (jPos = 0; jPos < nVar; jPos++) {
+              Sens_Mach[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
             }
-            
-            /*--- Coefficients with no explicit AoA dependece ---*/
-            
-            else {
-              for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = 0.0;
+          }
+
+          /*--- AoA sensitivity ---*/
+
+          USens[0] = 0.0;
+          if (nDim == 2) { USens[1] = -rv; USens[2] = ru; USens[3] = 0.0; }
+          else { USens[1] = -rw; USens[2] = 0.0; USens[3] = ru; USens[4] = 0.0; }
+          for (iPos = 0; iPos < nVar; iPos++) {
+            for (jPos = 0; jPos < nVar; jPos++) {
+              Sens_AoA[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
             }
-            
-            for (iPos = 0; iPos < nDim; iPos++)
-              Sens_AoA[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
-            
-            /*--- Pressure sensitivity ---*/
-            
-            for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = -(1/p)*d[iPos];
-            for (iPos = 0; iPos<nDim; iPos++)
-              Sens_Press[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
-            
-            /*--- Temperature sensitivity ---*/
-            
-            for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = 0.0;
-            for (iPos = 0; iPos<nDim; iPos++)
-              Sens_Temp[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
-            
+          }
+
+          /*--- Pressure sensitivity ---*/
+
+          USens[0] = r/p; USens[1] = ru/p; USens[2] = rv/p;
+          if (nDim == 2) { USens[3] = rE/p; }
+          else { USens[3] = rw/p; USens[4] = rE/p; }
+          for (iPos = 0; iPos < nVar; iPos++) {
+            for (jPos = 0; jPos < nVar; jPos++) {
+              Sens_Press[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
+            }
+          }
+
+          /*--- Temperature sensitivity ---*/
+
+          T = p/(r*Gas_Constant);
+          USens[0] = -r/T; USens[1] = 0.5*ru/T; USens[2] = 0.5*rv/T;
+          if (nDim == 2) { USens[3] = (ru*ru + rv*rv + rw*rw)/(r*T); }
+          else { USens[3] = 0.5*rw/T; USens[4] = (ru*ru + rv*rv + rw*rw)/(r*T); }
+          for (iPos = 0; iPos < nVar; iPos++) {
+            for (jPos = 0; jPos < nVar; jPos++) {
+              Sens_Temp[iMarker] += Psi[iPos]*Jacobian_j[jPos][iPos]*USens[jPos];
+            }
           }
         }
-        
-        Total_Sens_Mach  += Sens_Mach[iMarker] * scale * factor;
-        Total_Sens_AoA   += Sens_AoA[iMarker] * scale * factor;
-        Total_Sens_Press += Sens_Press[iMarker] * scale * factor;
-        Total_Sens_Temp  += Sens_Temp[iMarker] * scale * factor;
-        
       }
+
+      Total_Sens_Mach  -= Sens_Mach[iMarker] * scale * factor;
+      Total_Sens_AoA   -= Sens_AoA[iMarker] * scale * factor;
+      Total_Sens_Press -= Sens_Press[iMarker] * scale * factor;
+      Total_Sens_Temp  -= Sens_Temp[iMarker] * scale * factor;
+
+    }
+
+  }
+
+  /*--- Explicit contribution from objective function quantity ---*/
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)) {
+
+      Sens_Mach[iMarker]  = 0.0;
+      Sens_AoA[iMarker]   = 0.0;
+      Sens_Press[iMarker] = 0.0;
+      Sens_Temp[iMarker]  = 0.0;
+      Sens_BPress[iMarker] = 0.0;
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if (geometry->node[iPoint]->GetDomain()) {
+
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          p = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
+
+          Mach_Inf   = config->GetMach();
+          if (grid_movement) Mach_Inf = config->GetMach_Motion();
+
+          d = node[iPoint]->GetForceProj_Vector();
+          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt(Area);
+          for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim]/Area;
+
+          /*--- Mach number sensitivity ---*/
+
+          for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = -(2.0/Mach_Inf)*d[iPos];
+          for (iPos = 0; iPos < nDim; iPos++) Sens_Mach[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
+
+          /*--- AoA sensitivity ---*/
+
+          if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT ||
+              config->GetKind_ObjFunc() == LIFT_COEFFICIENT ||
+              config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT ||
+              config->GetKind_ObjFunc() == EQUIVALENT_AREA ||
+              config->GetKind_ObjFunc() == NEARFIELD_PRESSURE) {
+            if (nDim == 2) {
+              D[0][0] = 0.0; D[0][1] = -1.0;
+              D[1][0] = 1.0; D[1][1] = 0.0;
+            }
+            else {
+              D[0][0] = 0.0; D[0][1] = 0.0; D[0][2] = -1.0;
+              D[1][0] = 0.0; D[1][1] = 0.0; D[1][2] = 0.0;
+              D[2][0] = 1.0; D[2][1] = 0.0; D[2][2] = 0.0;
+            }
+            for (iPos = 0; iPos < nDim; iPos++) Dd[iPos] = 0.0;
+            for (iPos = 0; iPos < nDim; iPos++) {
+              for (jPos = 0; jPos < nDim; jPos++)
+                Dd[iPos] += D[iPos][jPos]*d[jPos];
+            }
+          }
+
+          /*--- Coefficients with no explicit AoA dependece ---*/
+
+          else {
+            for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = 0.0;
+          }
+
+          for (iPos = 0; iPos < nDim; iPos++)
+            Sens_AoA[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
+
+          /*--- Pressure sensitivity ---*/
+
+          for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = -(1/p)*d[iPos];
+          for (iPos = 0; iPos<nDim; iPos++)
+            Sens_Press[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
+
+          /*--- Temperature sensitivity ---*/
+
+          for (iPos = 0; iPos<nDim; iPos++) Dd[iPos] = 0.0;
+          for (iPos = 0; iPos<nDim; iPos++)
+            Sens_Temp[iMarker] += p*Dd[iPos]*Area*UnitNormal[iPos];
+
+        }
+      }
+
+      Total_Sens_Mach  += Sens_Mach[iMarker] * scale * factor;
+      Total_Sens_AoA   += Sens_AoA[iMarker] * scale * factor;
+      Total_Sens_Press += Sens_Press[iMarker] * scale * factor;
+      Total_Sens_Temp  += Sens_Temp[iMarker] * scale * factor;
+
     }
   }
+
   
 #ifdef HAVE_MPI
   
@@ -6453,9 +6070,6 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   su2double dSigma5_psi5;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement  = config->GetGrid_Movement();
   
   su2double Prandtl_Lam  = config->GetPrandtl_Lam();
@@ -6529,256 +6143,236 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
       
       /*--- Compute additional contributions to the adjoint density and energy
        equations which will be added to the residual (weak imposition) ---*/
-      
-      if (compressible) {
-        
-        /*--- Energy residual due to the convective term ---*/
-        
-        l1psi = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          l1psi += Normal[iDim]*d[iDim];
-        Res_Conv_i[nDim+1] = l1psi*Gamma_Minus_One;
-        
-        /*--- Flux contribution and Jacobian contributions for moving
+
+      /*--- Energy residual due to the convective term ---*/
+
+      l1psi = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        l1psi += Normal[iDim]*d[iDim];
+      Res_Conv_i[nDim+1] = l1psi*Gamma_Minus_One;
+
+      /*--- Flux contribution and Jacobian contributions for moving
          walls. Note that these are only for the adjoint density and
          adjoint energy equations (the adjoint vel. uses a strong BC). ---*/
-        
-        if (grid_movement) {
-          
-          /*--- Get the grid velocity at this node and impose v = u_wall ---*/
-          
-          GridVel = geometry->node[iPoint]->GetGridVel();
-          for (iDim = 0; iDim < nDim; iDim++) Velocity[iDim] = GridVel[iDim];
-          
-          /*--- Get some additional quantities from the flow solution ---*/
-          
-          Density = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-          if (compressible) {
-            Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
-            Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
-            Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-            Eddy_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); // Should be zero at the wall
-          }
-          if (incompressible || freesurface) {
-            Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
-            Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-            Eddy_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); // Should be zero at the wall
-          }
-          
-          ViscDens = (Laminar_Viscosity + Eddy_Viscosity) / Density;
-          XiDens = Gamma * (Laminar_Viscosity/Prandtl_Lam + Eddy_Viscosity/Prandtl_Turb) / Density;
-          
-          /*--- Compute projections, velocity squared divided by two, and
+
+      if (grid_movement) {
+
+        /*--- Get the grid velocity at this node and impose v = u_wall ---*/
+
+        GridVel = geometry->node[iPoint]->GetGridVel();
+        for (iDim = 0; iDim < nDim; iDim++) Velocity[iDim] = GridVel[iDim];
+
+        /*--- Get some additional quantities from the flow solution ---*/
+
+        Density = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+        Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
+        Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
+        Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+        Eddy_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); // Should be zero at the wall
+
+        ViscDens = (Laminar_Viscosity + Eddy_Viscosity) / Density;
+        XiDens = Gamma * (Laminar_Viscosity/Prandtl_Lam + Eddy_Viscosity/Prandtl_Turb) / Density;
+
+        /*--- Compute projections, velocity squared divided by two, and
            other inner products. Note that we are imposing v = u_wall from
            the direct problem and that phi = d - \psi_5 * v ---*/
-          
-          ProjGridVel = 0.0; sq_vel = 0.0;
-          vartheta = Psi[0] + Psi[nDim+1]*Enthalpy;
-          for (iDim = 0; iDim < nDim; iDim++) {
-            ProjGridVel += GridVel[iDim]*Normal[iDim];
-            sq_vel      += 0.5*GridVel[iDim]*GridVel[iDim];
-            vartheta    += GridVel[iDim]*phi[iDim];
-          }
-          
-          /*--- Convective flux at the wall node (adjoint density) ---*/
-          
-          Res_Conv_i[0] = -vartheta*ProjGridVel + l1psi*Gamma_Minus_One*sq_vel;
-          
-          /*--- Implicit contributions from convective part ---*/
-          
-          if (implicit) {
-            Jacobian_ii[0][0] += -ProjGridVel;
-            Jacobian_ii[0][nVar-1] += -ProjGridVel * Enthalpy;
-          }
-          
-          /*--- Viscous flux contributions at the wall node. Impose dPhiE_dn = 0 
+
+        ProjGridVel = 0.0; sq_vel = 0.0;
+        vartheta = Psi[0] + Psi[nDim+1]*Enthalpy;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          ProjGridVel += GridVel[iDim]*Normal[iDim];
+          sq_vel      += 0.5*GridVel[iDim]*GridVel[iDim];
+          vartheta    += GridVel[iDim]*phi[iDim];
+        }
+
+        /*--- Convective flux at the wall node (adjoint density) ---*/
+
+        Res_Conv_i[0] = -vartheta*ProjGridVel + l1psi*Gamma_Minus_One*sq_vel;
+
+        /*--- Implicit contributions from convective part ---*/
+
+        if (implicit) {
+          Jacobian_ii[0][0] += -ProjGridVel;
+          Jacobian_ii[0][nVar-1] += -ProjGridVel * Enthalpy;
+        }
+
+        /*--- Viscous flux contributions at the wall node. Impose dPhiE_dn = 0
            (adiabatic walls with frozen viscosity). ---*/
-          
-          dPhiE_dn = 0.0;
-          
-          /*--- Store the adjoint velocity and energy gradients for clarity ---*/
-          
-          PsiVar_Grad = node[iPoint]->GetGradient();
-          for (iDim = 0; iDim < nDim; iDim++) {
-            GradPsiE[iDim] =  PsiVar_Grad[nVar-1][iDim];
-            for (jDim = 0; jDim < nDim; jDim++)
-              GradPhi[iDim][jDim] =  PsiVar_Grad[iDim+1][jDim];
+
+        dPhiE_dn = 0.0;
+
+        /*--- Store the adjoint velocity and energy gradients for clarity ---*/
+
+        PsiVar_Grad = node[iPoint]->GetGradient();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          GradPsiE[iDim] =  PsiVar_Grad[nVar-1][iDim];
+          for (jDim = 0; jDim < nDim; jDim++)
+            GradPhi[iDim][jDim] =  PsiVar_Grad[iDim+1][jDim];
+        }
+
+        if (nDim == 2) {
+
+          /*--- Compute the adjoint stress tensor ---*/
+
+          Sigma_xx  = ViscDens * (FOUR3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1]);
+          Sigma_yy  = ViscDens * (-TWO3 * GradPhi[0][0] + FOUR3 * GradPhi[1][1]);
+          Sigma_xy  = ViscDens * (GradPhi[1][0] + GradPhi[0][1]);
+          Sigma_xx5 = ViscDens * ( FOUR3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1]);
+          Sigma_yy5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] + FOUR3 * Velocity[1] * GradPsiE[1]);
+          Sigma_xy5 = ViscDens * (Velocity[0] * GradPsiE[1] + Velocity[1] * GradPsiE[0]);
+          Sigma_5   = XiDens * dPhiE_dn;
+          eta_xx    = Sigma_xx + Sigma_xx5;
+          eta_yy    = Sigma_yy + Sigma_yy5;
+          eta_xy    = Sigma_xy + Sigma_xy5;
+
+          /*--- Viscous flux at the wall node (adjoint density & energy only) ---*/
+
+          Res_Visc_i[0] = - (Velocity[0] * Normal[0] * eta_xx  + Velocity[1] * Normal[1] * eta_yy
+              + (Velocity[0] * Normal[1] + Velocity[1] * Normal[0]) * eta_xy
+              - (sq_vel - Pressure/(Density*Gamma_Minus_One)) * Sigma_5);
+          Res_Visc_i[nDim+1] = Sigma_5;
+
+          /*--- Computation of the Jacobians at Point i---*/
+
+          if (implicit) {
+
+            /*--- Compute closest normal neighbor ---*/
+
+            Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+            /*--- Get coordinates of i & nearest normal and compute distance ---*/
+
+            Coord_i = geometry->node[iPoint]->GetCoord();
+            Coord_j = geometry->node[Point_Normal]->GetCoord();
+            dist_ij_2 = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+              dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+            }
+
+            dSigmaxx_phi1 = -FOUR3 * ViscDens * Edge_Vector[0]/dist_ij_2;
+            dSigmaxx_phi2 =   TWO3 * ViscDens * Edge_Vector[1]/dist_ij_2;
+            dSigmayy_phi1 =   TWO3 * ViscDens * Edge_Vector[0]/dist_ij_2;
+            dSigmayy_phi2 = -FOUR3 * ViscDens * Edge_Vector[1]/dist_ij_2;
+            dSigmaxy_phi1 = -ViscDens * Edge_Vector[1]/dist_ij_2;
+            dSigmaxy_phi2 = -ViscDens * Edge_Vector[0]/dist_ij_2;
+
+            //              dSigmaxx5_psi5 = -ViscDens * ( FOUR3*Velocity[0]*Edge_Vector[0] -  TWO3*Velocity[1]*Edge_Vector[1] )/dist_ij_2;
+            //              dSigmayy5_psi5 = -ViscDens * (- TWO3*Velocity[0]*Edge_Vector[0] + FOUR3*Velocity[1]*Edge_Vector[1] )/dist_ij_2;
+            //              dSigmaxy5_psi5 = -ViscDens * ( Velocity[0]*Edge_Vector[1] + Velocity[1]*Edge_Vector[0] )/dist_ij_2;
+            dSigma5_psi5   = -XiDens * ( Edge_Vector[0]*Normal[0] + Edge_Vector[1]*Normal[1] )/dist_ij_2;
+
+            Jacobian_ii[0][0] += 0.0;
+            Jacobian_ii[0][1] += -( Velocity[0]*Normal[0]*dSigmaxx_phi1 + Velocity[1]*Normal[1]*dSigmayy_phi1
+                + (Velocity[0]*Normal[1] + Velocity[1]*Normal[0])*dSigmaxy_phi1 );
+            Jacobian_ii[0][2] += -( Velocity[0]*Normal[0]*dSigmaxx_phi2 + Velocity[1]*Normal[1]*dSigmayy_phi2
+                + (Velocity[0]*Normal[1] + Velocity[1]*Normal[0])*dSigmaxy_phi2 );
+            Jacobian_ii[0][3] += (sq_vel - Pressure/(Density*Gamma_Minus_One)) * dSigma5_psi5;
+
+            Jacobian_ii[3][0] += 0.0;
+            Jacobian_ii[3][1] += 0.0;
+            Jacobian_ii[3][2] += 0.0;
+            Jacobian_ii[3][3] += dSigma5_psi5;
+
           }
-          
-          if (nDim == 2) {
-            
-            /*--- Compute the adjoint stress tensor ---*/
-            
-            Sigma_xx  = ViscDens * (FOUR3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1]);
-            Sigma_yy  = ViscDens * (-TWO3 * GradPhi[0][0] + FOUR3 * GradPhi[1][1]);
-            Sigma_xy  = ViscDens * (GradPhi[1][0] + GradPhi[0][1]);
-            Sigma_xx5 = ViscDens * ( FOUR3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1]);
-            Sigma_yy5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] + FOUR3 * Velocity[1] * GradPsiE[1]);
-            Sigma_xy5 = ViscDens * (Velocity[0] * GradPsiE[1] + Velocity[1] * GradPsiE[0]);
-            Sigma_5   = XiDens * dPhiE_dn;
-            eta_xx    = Sigma_xx + Sigma_xx5;
-            eta_yy    = Sigma_yy + Sigma_yy5;
-            eta_xy    = Sigma_xy + Sigma_xy5;
-            
-            /*--- Viscous flux at the wall node (adjoint density & energy only) ---*/
-            
-            Res_Visc_i[0] = - (Velocity[0] * Normal[0] * eta_xx  + Velocity[1] * Normal[1] * eta_yy
-                               + (Velocity[0] * Normal[1] + Velocity[1] * Normal[0]) * eta_xy
-                               - (sq_vel - Pressure/(Density*Gamma_Minus_One)) * Sigma_5);
-            Res_Visc_i[nDim+1] = Sigma_5;
-            
-            /*--- Computation of the Jacobians at Point i---*/
-            
-            if (implicit) {
-              
-              /*--- Compute closest normal neighbor ---*/
-              
-              Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-              
-              /*--- Get coordinates of i & nearest normal and compute distance ---*/
-              
-              Coord_i = geometry->node[iPoint]->GetCoord();
-              Coord_j = geometry->node[Point_Normal]->GetCoord();
-              dist_ij_2 = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++) {
-                Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-                dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-              }
-              
-              dSigmaxx_phi1 = -FOUR3 * ViscDens * Edge_Vector[0]/dist_ij_2;
-              dSigmaxx_phi2 =   TWO3 * ViscDens * Edge_Vector[1]/dist_ij_2;
-              dSigmayy_phi1 =   TWO3 * ViscDens * Edge_Vector[0]/dist_ij_2;
-              dSigmayy_phi2 = -FOUR3 * ViscDens * Edge_Vector[1]/dist_ij_2;
-              dSigmaxy_phi1 = -ViscDens * Edge_Vector[1]/dist_ij_2;
-              dSigmaxy_phi2 = -ViscDens * Edge_Vector[0]/dist_ij_2;
-              
-//              dSigmaxx5_psi5 = -ViscDens * ( FOUR3*Velocity[0]*Edge_Vector[0] -  TWO3*Velocity[1]*Edge_Vector[1] )/dist_ij_2;
-//              dSigmayy5_psi5 = -ViscDens * (- TWO3*Velocity[0]*Edge_Vector[0] + FOUR3*Velocity[1]*Edge_Vector[1] )/dist_ij_2;
-//              dSigmaxy5_psi5 = -ViscDens * ( Velocity[0]*Edge_Vector[1] + Velocity[1]*Edge_Vector[0] )/dist_ij_2;
-              dSigma5_psi5   = -XiDens * ( Edge_Vector[0]*Normal[0] + Edge_Vector[1]*Normal[1] )/dist_ij_2;
-              
-              Jacobian_ii[0][0] += 0.0;
-              Jacobian_ii[0][1] += -( Velocity[0]*Normal[0]*dSigmaxx_phi1 + Velocity[1]*Normal[1]*dSigmayy_phi1
-                                     + (Velocity[0]*Normal[1] + Velocity[1]*Normal[0])*dSigmaxy_phi1 );
-              Jacobian_ii[0][2] += -( Velocity[0]*Normal[0]*dSigmaxx_phi2 + Velocity[1]*Normal[1]*dSigmayy_phi2
-                                     + (Velocity[0]*Normal[1] + Velocity[1]*Normal[0])*dSigmaxy_phi2 );
-              Jacobian_ii[0][3] += (sq_vel - Pressure/(Density*Gamma_Minus_One)) * dSigma5_psi5;
-              
-              Jacobian_ii[3][0] += 0.0;
-              Jacobian_ii[3][1] += 0.0;
-              Jacobian_ii[3][2] += 0.0;
-              Jacobian_ii[3][3] += dSigma5_psi5;
-              
+
+
+        } else if (nDim == 3) {
+
+          /*--- Compute the adjoint stress tensor ---*/
+          Sigma_xx  = ViscDens * (FOUR3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1] - TWO3  * GradPhi[2][2]);
+          Sigma_yy  = ViscDens * (-TWO3 * GradPhi[0][0] + FOUR3 * GradPhi[1][1] - TWO3  * GradPhi[2][2]);
+          Sigma_zz  = ViscDens * (-TWO3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1] + FOUR3 * GradPhi[2][2]);
+          Sigma_xy  = ViscDens * (GradPhi[1][0] + GradPhi[0][1]);
+          Sigma_xz  = ViscDens * (GradPhi[2][0] + GradPhi[0][2]);
+          Sigma_yz  = ViscDens * (GradPhi[2][1] + GradPhi[1][2]);
+          Sigma_xx5 = ViscDens * ( FOUR3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1] -  TWO3 * Velocity[2] * GradPsiE[2]);
+          Sigma_yy5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] + FOUR3 * Velocity[1] * GradPsiE[1] -  TWO3 * Velocity[2] * GradPsiE[2]);
+          Sigma_zz5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1] + FOUR3 * Velocity[2] * GradPsiE[2]);
+          Sigma_xy5 = ViscDens * (Velocity[0] * GradPsiE[1] + Velocity[1] * GradPsiE[0]);
+          Sigma_xz5 = ViscDens * (Velocity[0] * GradPsiE[2] + Velocity[2] * GradPsiE[0]);
+          Sigma_yz5 = ViscDens * (Velocity[1] * GradPsiE[2] + Velocity[2] * GradPsiE[1]);
+          Sigma_5   = XiDens * dPhiE_dn;
+          eta_xx    = Sigma_xx + Sigma_xx5; eta_yy = Sigma_yy + Sigma_yy5; eta_zz = Sigma_zz + Sigma_zz5;
+          eta_xy    = Sigma_xy + Sigma_xy5; eta_xz = Sigma_xz + Sigma_xz5; eta_yz = Sigma_yz + Sigma_yz5;
+
+          /*--- Viscous flux at the wall node (adjoint density & energy only) ---*/
+
+          Res_Visc_i[0] = - (Velocity[0] * Normal[0] * eta_xx  + Velocity[1] * Normal[1] * eta_yy + Velocity[2] * Normal[2] * eta_zz
+              + (Velocity[0] * Normal[1] + Velocity[1] * Normal[0]) * eta_xy
+              + (Velocity[0] * Normal[2] + Velocity[2] * Normal[0]) * eta_xz
+              + (Velocity[2] * Normal[1] + Velocity[1] * Normal[2]) * eta_yz
+              - (sq_vel - Pressure/(Density*Gamma_Minus_One)) * Sigma_5);
+          Res_Visc_i[nDim+1] = Sigma_5;
+
+          /*--- Computation of the Jacobians at Point i---*/
+
+          if (implicit) {
+
+            /*--- Compute closest normal neighbor ---*/
+
+            Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+            /*--- Get coordinates of i & nearest normal and compute distance ---*/
+
+            Coord_i = geometry->node[iPoint]->GetCoord();
+            Coord_j = geometry->node[Point_Normal]->GetCoord();
+            dist_ij_2 = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+              dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
             }
-            
-            
-          } else if (nDim == 3) {
-            
-            /*--- Compute the adjoint stress tensor ---*/
-            Sigma_xx  = ViscDens * (FOUR3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1] - TWO3  * GradPhi[2][2]);
-            Sigma_yy  = ViscDens * (-TWO3 * GradPhi[0][0] + FOUR3 * GradPhi[1][1] - TWO3  * GradPhi[2][2]);
-            Sigma_zz  = ViscDens * (-TWO3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1] + FOUR3 * GradPhi[2][2]);
-            Sigma_xy  = ViscDens * (GradPhi[1][0] + GradPhi[0][1]);
-            Sigma_xz  = ViscDens * (GradPhi[2][0] + GradPhi[0][2]);
-            Sigma_yz  = ViscDens * (GradPhi[2][1] + GradPhi[1][2]);
-            Sigma_xx5 = ViscDens * ( FOUR3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1] -  TWO3 * Velocity[2] * GradPsiE[2]);
-            Sigma_yy5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] + FOUR3 * Velocity[1] * GradPsiE[1] -  TWO3 * Velocity[2] * GradPsiE[2]);
-            Sigma_zz5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1] + FOUR3 * Velocity[2] * GradPsiE[2]);
-            Sigma_xy5 = ViscDens * (Velocity[0] * GradPsiE[1] + Velocity[1] * GradPsiE[0]);
-            Sigma_xz5 = ViscDens * (Velocity[0] * GradPsiE[2] + Velocity[2] * GradPsiE[0]);
-            Sigma_yz5 = ViscDens * (Velocity[1] * GradPsiE[2] + Velocity[2] * GradPsiE[1]);
-            Sigma_5   = XiDens * dPhiE_dn;
-            eta_xx    = Sigma_xx + Sigma_xx5; eta_yy = Sigma_yy + Sigma_yy5; eta_zz = Sigma_zz + Sigma_zz5;
-            eta_xy    = Sigma_xy + Sigma_xy5; eta_xz = Sigma_xz + Sigma_xz5; eta_yz = Sigma_yz + Sigma_yz5;
-            
-            /*--- Viscous flux at the wall node (adjoint density & energy only) ---*/
-            
-            Res_Visc_i[0] = - (Velocity[0] * Normal[0] * eta_xx  + Velocity[1] * Normal[1] * eta_yy + Velocity[2] * Normal[2] * eta_zz
-                               + (Velocity[0] * Normal[1] + Velocity[1] * Normal[0]) * eta_xy
-                               + (Velocity[0] * Normal[2] + Velocity[2] * Normal[0]) * eta_xz
-                               + (Velocity[2] * Normal[1] + Velocity[1] * Normal[2]) * eta_yz
-                               - (sq_vel - Pressure/(Density*Gamma_Minus_One)) * Sigma_5);
-            Res_Visc_i[nDim+1] = Sigma_5;
-            
-            /*--- Computation of the Jacobians at Point i---*/
-            
-            if (implicit) {
-              
-              /*--- Compute closest normal neighbor ---*/
-              
-              Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-              
-              /*--- Get coordinates of i & nearest normal and compute distance ---*/
-              
-              Coord_i = geometry->node[iPoint]->GetCoord();
-              Coord_j = geometry->node[Point_Normal]->GetCoord();
-              dist_ij_2 = 0.0;
-              for (iDim = 0; iDim < nDim; iDim++) {
-                Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-                dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-              }
-              
-              dSigmaxx_phi1 = -FOUR3 * ViscDens * Edge_Vector[0]/dist_ij_2;
-              dSigmaxx_phi2 =   TWO3 * ViscDens * Edge_Vector[1]/dist_ij_2;
-              dSigmaxx_phi3 =   TWO3 * ViscDens * Edge_Vector[2]/dist_ij_2;
-              dSigmayy_phi1 =   TWO3 * ViscDens * Edge_Vector[0]/dist_ij_2;
-              dSigmayy_phi2 = -FOUR3 * ViscDens * Edge_Vector[1]/dist_ij_2;
-              dSigmayy_phi3 =   TWO3 * ViscDens * Edge_Vector[2]/dist_ij_2;
-              dSigmazz_phi1 =   TWO3 * ViscDens * Edge_Vector[0]/dist_ij_2;
-              dSigmazz_phi2 =   TWO3 * ViscDens * Edge_Vector[1]/dist_ij_2;
-              dSigmazz_phi3 = -FOUR3 * ViscDens * Edge_Vector[2]/dist_ij_2;
-              dSigmaxy_phi1 = -ViscDens * Edge_Vector[1]/dist_ij_2;
-              dSigmaxy_phi2 = -ViscDens * Edge_Vector[0]/dist_ij_2;
-              dSigmaxy_phi3 = 0;
-              dSigmaxz_phi1 = -ViscDens * Edge_Vector[2]/dist_ij_2;
-              dSigmaxz_phi2 = 0;
-              dSigmaxz_phi3 = -ViscDens * Edge_Vector[0]/dist_ij_2;
-              dSigmayz_phi1 = 0;
-              dSigmayz_phi2 = -ViscDens * Edge_Vector[2]/dist_ij_2;
-              dSigmayz_phi3 = -ViscDens * Edge_Vector[1]/dist_ij_2;
-              
-//              dSigmaxx5_psi5 = -ViscDens * ( FOUR3*Velocity[0]*Edge_Vector[0] -  TWO3*Velocity[1]*Edge_Vector[1] -  TWO3*Velocity[2]*Edge_Vector[2])/dist_ij_2;
-//              dSigmayy5_psi5 = -ViscDens * (- TWO3*Velocity[0]*Edge_Vector[0] + FOUR3*Velocity[1]*Edge_Vector[1] -  TWO3*Velocity[2]*Edge_Vector[2])/dist_ij_2;
-//              dSigmazz5_psi5 = -ViscDens * (- TWO3*Velocity[0]*Edge_Vector[0] -  TWO3*Velocity[1]*Edge_Vector[1] + FOUR3*Velocity[2]*Edge_Vector[2])/dist_ij_2;
-//              dSigmaxy5_psi5 = -ViscDens * ( Velocity[0]*Edge_Vector[1] + Velocity[1]*Edge_Vector[0] )/dist_ij_2;
-//              dSigmaxz5_psi5 = -ViscDens * ( Velocity[0]*Edge_Vector[2] + Velocity[2]*Edge_Vector[0] )/dist_ij_2;
-//              dSigmayz5_psi5 = -ViscDens * ( Velocity[1]*Edge_Vector[2] + Velocity[2]*Edge_Vector[1] )/dist_ij_2;
-              dSigma5_psi5   = -XiDens * ( Edge_Vector[0]*Normal[0] + Edge_Vector[1]*Normal[1] + Edge_Vector[2]*Normal[2] )/dist_ij_2;
-              
-              Jacobian_ii[0][0] += 0.0;
-              Jacobian_ii[0][1] += -( Velocity[0]*Normal[0]*dSigmaxx_phi1 + Velocity[1]*Normal[1]*dSigmayy_phi1 + Velocity[2]*Normal[2]*dSigmazz_phi1
-                                     + (Velocity[0]*Normal[1] + Velocity[1]*Normal[0])*dSigmaxy_phi1
-                                     + (Velocity[0]*Normal[2] + Velocity[2]*Normal[0])*dSigmaxz_phi1
-                                     + (Velocity[2]*Normal[1] + Velocity[1]*Normal[2])*dSigmayz_phi1 );
-              Jacobian_ii[0][2] += -( Velocity[0]*Normal[0]*dSigmaxx_phi2 + Velocity[1]*Normal[1]*dSigmayy_phi2 + Velocity[2]*Normal[2]*dSigmazz_phi2
-                                     + (Velocity[0]*Normal[1] + Velocity[1]*Normal[0])*dSigmaxy_phi2
-                                     + (Velocity[0]*Normal[2] + Velocity[2]*Normal[0])*dSigmaxz_phi2
-                                     + (Velocity[2]*Normal[1] + Velocity[1]*Normal[2])*dSigmayz_phi2 );
-              Jacobian_ii[0][3] += -( Velocity[0]*Normal[0]*dSigmaxx_phi3 + Velocity[1]*Normal[1]*dSigmayy_phi3 + Velocity[2]*Normal[2]*dSigmazz_phi3
-                                     + (Velocity[0]*Normal[1] + Velocity[1]*Normal[0])*dSigmaxy_phi3
-                                     + (Velocity[0]*Normal[2] + Velocity[2]*Normal[0])*dSigmaxz_phi3
-                                     + (Velocity[2]*Normal[1] + Velocity[1]*Normal[2])*dSigmayz_phi3 );
-              Jacobian_ii[0][4] += (sq_vel - Pressure/(Density*Gamma_Minus_One)) * dSigma5_psi5;
-              
-              Jacobian_ii[4][0] += 0.0;
-              Jacobian_ii[4][1] += 0.0;
-              Jacobian_ii[4][2] += 0.0;
-              Jacobian_ii[4][3] += 0.0;
-              Jacobian_ii[4][4] += dSigma5_psi5;
-              
-            }
+
+            dSigmaxx_phi1 = -FOUR3 * ViscDens * Edge_Vector[0]/dist_ij_2;
+            dSigmaxx_phi2 =   TWO3 * ViscDens * Edge_Vector[1]/dist_ij_2;
+            dSigmaxx_phi3 =   TWO3 * ViscDens * Edge_Vector[2]/dist_ij_2;
+            dSigmayy_phi1 =   TWO3 * ViscDens * Edge_Vector[0]/dist_ij_2;
+            dSigmayy_phi2 = -FOUR3 * ViscDens * Edge_Vector[1]/dist_ij_2;
+            dSigmayy_phi3 =   TWO3 * ViscDens * Edge_Vector[2]/dist_ij_2;
+            dSigmazz_phi1 =   TWO3 * ViscDens * Edge_Vector[0]/dist_ij_2;
+            dSigmazz_phi2 =   TWO3 * ViscDens * Edge_Vector[1]/dist_ij_2;
+            dSigmazz_phi3 = -FOUR3 * ViscDens * Edge_Vector[2]/dist_ij_2;
+            dSigmaxy_phi1 = -ViscDens * Edge_Vector[1]/dist_ij_2;
+            dSigmaxy_phi2 = -ViscDens * Edge_Vector[0]/dist_ij_2;
+            dSigmaxy_phi3 = 0;
+            dSigmaxz_phi1 = -ViscDens * Edge_Vector[2]/dist_ij_2;
+            dSigmaxz_phi2 = 0;
+            dSigmaxz_phi3 = -ViscDens * Edge_Vector[0]/dist_ij_2;
+            dSigmayz_phi1 = 0;
+            dSigmayz_phi2 = -ViscDens * Edge_Vector[2]/dist_ij_2;
+            dSigmayz_phi3 = -ViscDens * Edge_Vector[1]/dist_ij_2;
+
+            //              dSigmaxx5_psi5 = -ViscDens * ( FOUR3*Velocity[0]*Edge_Vector[0] -  TWO3*Velocity[1]*Edge_Vector[1] -  TWO3*Velocity[2]*Edge_Vector[2])/dist_ij_2;
+            //              dSigmayy5_psi5 = -ViscDens * (- TWO3*Velocity[0]*Edge_Vector[0] + FOUR3*Velocity[1]*Edge_Vector[1] -  TWO3*Velocity[2]*Edge_Vector[2])/dist_ij_2;
+            //              dSigmazz5_psi5 = -ViscDens * (- TWO3*Velocity[0]*Edge_Vector[0] -  TWO3*Velocity[1]*Edge_Vector[1] + FOUR3*Velocity[2]*Edge_Vector[2])/dist_ij_2;
+            //              dSigmaxy5_psi5 = -ViscDens * ( Velocity[0]*Edge_Vector[1] + Velocity[1]*Edge_Vector[0] )/dist_ij_2;
+            //              dSigmaxz5_psi5 = -ViscDens * ( Velocity[0]*Edge_Vector[2] + Velocity[2]*Edge_Vector[0] )/dist_ij_2;
+            //              dSigmayz5_psi5 = -ViscDens * ( Velocity[1]*Edge_Vector[2] + Velocity[2]*Edge_Vector[1] )/dist_ij_2;
+            dSigma5_psi5   = -XiDens * ( Edge_Vector[0]*Normal[0] + Edge_Vector[1]*Normal[1] + Edge_Vector[2]*Normal[2] )/dist_ij_2;
+
+            Jacobian_ii[0][0] += 0.0;
+            Jacobian_ii[0][1] += -( Velocity[0]*Normal[0]*dSigmaxx_phi1 + Velocity[1]*Normal[1]*dSigmayy_phi1 + Velocity[2]*Normal[2]*dSigmazz_phi1
+                + (Velocity[0]*Normal[1] + Velocity[1]*Normal[0])*dSigmaxy_phi1
+                + (Velocity[0]*Normal[2] + Velocity[2]*Normal[0])*dSigmaxz_phi1
+                + (Velocity[2]*Normal[1] + Velocity[1]*Normal[2])*dSigmayz_phi1 );
+            Jacobian_ii[0][2] += -( Velocity[0]*Normal[0]*dSigmaxx_phi2 + Velocity[1]*Normal[1]*dSigmayy_phi2 + Velocity[2]*Normal[2]*dSigmazz_phi2
+                + (Velocity[0]*Normal[1] + Velocity[1]*Normal[0])*dSigmaxy_phi2
+                + (Velocity[0]*Normal[2] + Velocity[2]*Normal[0])*dSigmaxz_phi2
+                + (Velocity[2]*Normal[1] + Velocity[1]*Normal[2])*dSigmayz_phi2 );
+            Jacobian_ii[0][3] += -( Velocity[0]*Normal[0]*dSigmaxx_phi3 + Velocity[1]*Normal[1]*dSigmayy_phi3 + Velocity[2]*Normal[2]*dSigmazz_phi3
+                + (Velocity[0]*Normal[1] + Velocity[1]*Normal[0])*dSigmaxy_phi3
+                + (Velocity[0]*Normal[2] + Velocity[2]*Normal[0])*dSigmaxz_phi3
+                + (Velocity[2]*Normal[1] + Velocity[1]*Normal[2])*dSigmayz_phi3 );
+            Jacobian_ii[0][4] += (sq_vel - Pressure/(Density*Gamma_Minus_One)) * dSigma5_psi5;
+
+            Jacobian_ii[4][0] += 0.0;
+            Jacobian_ii[4][1] += 0.0;
+            Jacobian_ii[4][2] += 0.0;
+            Jacobian_ii[4][3] += 0.0;
+            Jacobian_ii[4][4] += dSigma5_psi5;
+
           }
         }
-      }
-      
-      if (incompressible || freesurface) {
-        
-        /*--- Pressure residual due to the convective term ---*/
-        
-        l1psi = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          l1psi += Normal[iDim]*d[iDim];
-        Res_Conv_i[0] = l1psi;
       }
       
       /*--- Convective contribution to the residual at the wall ---*/
@@ -6849,8 +6443,6 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   su2double *dPoRho2 = new su2double[nDim];
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool grid_movement  = config->GetGrid_Movement();
   bool heat_flux_obj  = ((config->GetKind_ObjFunc() == TOTAL_HEATFLUX) ||
                          (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX) ||
@@ -6963,191 +6555,179 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       }
       
       /*--- Additional contributions to adjoint density (weak imposition) ---*/
-      if (compressible) {
-        
-        /*--- Acquire gradient information ---*/
-        PsiVar_Grad = node[iPoint]->GetGradient();
-        GradP    = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[nVar-1];
-        GradDens = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[nVar];
-        
-        /*--- Acqure flow information ---*/
-        rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-        pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
-        invrho3 = (1.0/rho)*(1.0/rho)*(1.0/rho);
-        
-        /*--- Calculate supporting quantities ---*/
-        mu2 = Thermal_Conductivity/Cp;
-        gpsiAv2 = 0.0;
-        gpsi5n = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          dPoRho2[iDim] = (GradP[iDim]*rho - 2.0*GradDens[iDim]*pressure)*invrho3;
-          gpsiAv2 += -mu2*Gamma/Gamma_Minus_One * PsiVar_Grad[nVar-1][iDim]*dPoRho2[iDim];
-          gpsi5n += PsiVar_Grad[nVar-1][iDim]*Normal[iDim];
-        }
-        
-        /*--- Apply first order term to boundary ---*/
-        Res_Conv_i[0] = gpsiAv2*Volume;
-        
-        /*--- Apply second order term to boundary ---*/
-        Res_Visc_i[0] = -mu2*Gamma/(rho*Gamma_Minus_One)*(pressure/rho)*gpsi5n;
-        
-        /*--- Components of the effective and adjoint stress tensors ---*/
-        PsiVar_Grad = node[iPoint]->GetGradient();
-        div_phi = 0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          div_phi += PsiVar_Grad[iDim+1][iDim];
-          for (jDim = 0; jDim < nDim; jDim++)
-            Tau[iDim][jDim] = (PsiVar_Grad[iDim+1][jDim]+PsiVar_Grad[jDim+1][iDim]);
-        }
-        for (iDim = 0; iDim < nDim; iDim++)
-          Tau[iDim][iDim] -= TWO3*div_phi;
-        
-        /*--- force_stress = n_i \Tau_{ij} d_j ---*/
-        force_stress = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          for (jDim = 0; jDim < nDim; jDim++)
-            force_stress += Normal[iDim]*Tau[iDim][jDim]*d[jDim];
-        
-        /*--- \partial \mu_dyn \partial T ---*/
-//        mu_dyn = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-//        Temp = solver_container[FLOW_SOL]->node[iPoint]->GetTemperature();
-        dVisc_T = 0.0;  // dVisc_T = mu_dyn*(Temp+3.0*mu2)/(2.0*Temp*(Temp+mu2));
-        
-        /*--- \Sigma_5 Check Area computation for Res_Conv[0] ---*/
-        Sigma_5 = (Gamma/Cp)*dVisc_T*force_stress;
-        
-        /*--- Imposition of residuals ---*/
-        rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-        pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
-        Res_Conv_i[0] = pressure*Sigma_5/(Gamma_Minus_One*rho*rho);
-        
-        /*--- Flux contribution and Jacobian contributions for moving
+
+      /*--- Acquire gradient information ---*/
+      PsiVar_Grad = node[iPoint]->GetGradient();
+      GradP    = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[nVar-1];
+      GradDens = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive()[nVar];
+
+      /*--- Acqure flow information ---*/
+      rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+      pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
+      invrho3 = (1.0/rho)*(1.0/rho)*(1.0/rho);
+
+      /*--- Calculate supporting quantities ---*/
+      mu2 = Thermal_Conductivity/Cp;
+      gpsiAv2 = 0.0;
+      gpsi5n = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        dPoRho2[iDim] = (GradP[iDim]*rho - 2.0*GradDens[iDim]*pressure)*invrho3;
+        gpsiAv2 += -mu2*Gamma/Gamma_Minus_One * PsiVar_Grad[nVar-1][iDim]*dPoRho2[iDim];
+        gpsi5n += PsiVar_Grad[nVar-1][iDim]*Normal[iDim];
+      }
+
+      /*--- Apply first order term to boundary ---*/
+      Res_Conv_i[0] = gpsiAv2*Volume;
+
+      /*--- Apply second order term to boundary ---*/
+      Res_Visc_i[0] = -mu2*Gamma/(rho*Gamma_Minus_One)*(pressure/rho)*gpsi5n;
+
+      /*--- Components of the effective and adjoint stress tensors ---*/
+      PsiVar_Grad = node[iPoint]->GetGradient();
+      div_phi = 0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        div_phi += PsiVar_Grad[iDim+1][iDim];
+        for (jDim = 0; jDim < nDim; jDim++)
+          Tau[iDim][jDim] = (PsiVar_Grad[iDim+1][jDim]+PsiVar_Grad[jDim+1][iDim]);
+      }
+      for (iDim = 0; iDim < nDim; iDim++)
+        Tau[iDim][iDim] -= TWO3*div_phi;
+
+      /*--- force_stress = n_i \Tau_{ij} d_j ---*/
+      force_stress = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        for (jDim = 0; jDim < nDim; jDim++)
+          force_stress += Normal[iDim]*Tau[iDim][jDim]*d[jDim];
+
+      /*--- \partial \mu_dyn \partial T ---*/
+      //        mu_dyn = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+      //        Temp = solver_container[FLOW_SOL]->node[iPoint]->GetTemperature();
+      dVisc_T = 0.0;  // dVisc_T = mu_dyn*(Temp+3.0*mu2)/(2.0*Temp*(Temp+mu2));
+
+      /*--- \Sigma_5 Check Area computation for Res_Conv[0] ---*/
+      Sigma_5 = (Gamma/Cp)*dVisc_T*force_stress;
+
+      /*--- Imposition of residuals ---*/
+      rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+      pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
+      Res_Conv_i[0] = pressure*Sigma_5/(Gamma_Minus_One*rho*rho);
+
+      /*--- Flux contribution and Jacobian contributions for moving
          walls. Note that these are only for the adjoint density and
          adjoint energy equations (the adjoint vel. uses a strong BC). ---*/
-        if (grid_movement) {
-          
-          /*--- Get the appropriate grid velocity at this node ---*/
-          GridVel = geometry->node[iPoint]->GetGridVel();
-          
-          /*--- Get the enthalpy from the direct solution ---*/
-          Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
-          
-          /*--- Compute projections, velocity squared divided by two, and
+      if (grid_movement) {
+
+        /*--- Get the appropriate grid velocity at this node ---*/
+        GridVel = geometry->node[iPoint]->GetGridVel();
+
+        /*--- Get the enthalpy from the direct solution ---*/
+        Enthalpy = solver_container[FLOW_SOL]->node[iPoint]->GetEnthalpy();
+
+        /*--- Compute projections, velocity squared divided by two, and
            other inner products. Note that we are imposing v = u_wall from
            the direct problem and that phi = d - \psi_5 * v ---*/
-          ProjVel = 0.0; sq_vel = 0.0; phi_u = 0.0; d_n = 0.0;
-          phis1 = 0.0; phis2 = Psi[0] + Enthalpy * Psi[nVar-1];
-          for (iDim = 0; iDim < nDim; iDim++) {
-            ProjVel += GridVel[iDim]*Normal[iDim];
-            sq_vel  += 0.5*GridVel[iDim]*GridVel[iDim];
-            phis1   += Normal[iDim]*phi[iDim];
-            phis2   += GridVel[iDim]*phi[iDim];
-            phi_u   += GridVel[iDim]*phi[iDim];
-            d_n     += d[iDim]*Normal[iDim];
-          }
-//          phis1 += ProjVel * Psi[nVar-1];
-          
-          /*--- Convective flux at the wall node (adjoint density & energy only) ---*/
-          
-          /*--- Version 1 (full) ---*/
-          //Res_Conv_i[0] = ProjVel * Psi[0] - phis2 * ProjVel + phis1 * Gamma_Minus_One * sq_vel - ProjVel*Psi[0];
-          //Res_Conv_i[nVar-1] = ProjVel * Psi[nVar-1] + phis1 * Gamma_Minus_One - ProjVel*Psi[nVar-1];
-          
-          /*--- Simplified version ---*/
-          Res_Conv_i[0] = -(Psi[0] + phi_u + Psi[nVar-1]*Enthalpy)*ProjVel + d_n*Gamma_Minus_One*sq_vel;
-          
-          /*--- TO DO: Implicit contributions for convective part ---*/
-          
-          
-          /*--- Viscous flux contributions at the wall node ---*/
-          U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
-          Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-          Eddy_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); // Should be zero at the wall
-          Density = U[0];
-          for (iDim = 0; iDim < nDim; iDim++) {
-            Velocity[iDim] = GridVel[iDim];
-          }
-          Energy = U[nDim+1] / Density;
-          SoundSpeed = sqrt(Gamma*Gamma_Minus_One*(Energy-sq_vel));
-          Pressure = (SoundSpeed * SoundSpeed * Density) / Gamma;
-          ViscDens = (Laminar_Viscosity + Eddy_Viscosity) / Density;
-          XiDens = Gamma * (Laminar_Viscosity/Prandtl_Lam + Eddy_Viscosity/Prandtl_Turb) / Density;
-          
-          /*--- Average of the derivatives of the adjoint variables ---*/
-          PsiVar_Grad = node[iPoint]->GetGradient();
-          
-          for (iDim = 0; iDim < nDim; iDim++) {
-            GradPsiE[iDim] =  PsiVar_Grad[nVar-1][iDim];
-            for (jDim = 0; jDim < nDim; jDim++)
-              GradPhi[iDim][jDim] =  PsiVar_Grad[iDim+1][jDim];
-          }
-          
-          /*--- Impose dPhiE_dn = 0 (adiabatic walls with frozen viscosity). Note
+        ProjVel = 0.0; sq_vel = 0.0; phi_u = 0.0; d_n = 0.0;
+        phis1 = 0.0; phis2 = Psi[0] + Enthalpy * Psi[nVar-1];
+        for (iDim = 0; iDim < nDim; iDim++) {
+          ProjVel += GridVel[iDim]*Normal[iDim];
+          sq_vel  += 0.5*GridVel[iDim]*GridVel[iDim];
+          phis1   += Normal[iDim]*phi[iDim];
+          phis2   += GridVel[iDim]*phi[iDim];
+          phi_u   += GridVel[iDim]*phi[iDim];
+          d_n     += d[iDim]*Normal[iDim];
+        }
+        //          phis1 += ProjVel * Psi[nVar-1];
+
+        /*--- Convective flux at the wall node (adjoint density & energy only) ---*/
+
+        /*--- Version 1 (full) ---*/
+        //Res_Conv_i[0] = ProjVel * Psi[0] - phis2 * ProjVel + phis1 * Gamma_Minus_One * sq_vel - ProjVel*Psi[0];
+        //Res_Conv_i[nVar-1] = ProjVel * Psi[nVar-1] + phis1 * Gamma_Minus_One - ProjVel*Psi[nVar-1];
+
+        /*--- Simplified version ---*/
+        Res_Conv_i[0] = -(Psi[0] + phi_u + Psi[nVar-1]*Enthalpy)*ProjVel + d_n*Gamma_Minus_One*sq_vel;
+
+        /*--- TO DO: Implicit contributions for convective part ---*/
+
+
+        /*--- Viscous flux contributions at the wall node ---*/
+        U = solver_container[FLOW_SOL]->node[iPoint]->GetSolution();
+        Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
+        Eddy_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); // Should be zero at the wall
+        Density = U[0];
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity[iDim] = GridVel[iDim];
+        }
+        Energy = U[nDim+1] / Density;
+        SoundSpeed = sqrt(Gamma*Gamma_Minus_One*(Energy-sq_vel));
+        Pressure = (SoundSpeed * SoundSpeed * Density) / Gamma;
+        ViscDens = (Laminar_Viscosity + Eddy_Viscosity) / Density;
+        XiDens = Gamma * (Laminar_Viscosity/Prandtl_Lam + Eddy_Viscosity/Prandtl_Turb) / Density;
+
+        /*--- Average of the derivatives of the adjoint variables ---*/
+        PsiVar_Grad = node[iPoint]->GetGradient();
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          GradPsiE[iDim] =  PsiVar_Grad[nVar-1][iDim];
+          for (jDim = 0; jDim < nDim; jDim++)
+            GradPhi[iDim][jDim] =  PsiVar_Grad[iDim+1][jDim];
+        }
+
+        /*--- Impose dPhiE_dn = 0 (adiabatic walls with frozen viscosity). Note
            that this is where a different adjoint boundary condition for temperature
            could be imposed. ---*/
-          dPhiE_dn = 0.0;
-          
-          if (nDim ==2) {
-            
-            /*--- Compute the adjoint stress tensor ---*/
-            Sigma_xx  = ViscDens * (FOUR3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1]);
-            Sigma_yy  = ViscDens * (-TWO3 * GradPhi[0][0] + FOUR3 * GradPhi[1][1]);
-            Sigma_xy  = ViscDens * (GradPhi[1][0] + GradPhi[0][1]);
-            Sigma_xx5 = ViscDens * ( FOUR3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1]);
-            Sigma_yy5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] + FOUR3 * Velocity[1] * GradPsiE[1]);
-            Sigma_xy5 = ViscDens * (Velocity[0] * GradPsiE[1] + Velocity[1] * GradPsiE[0]);
-            Sigma_5   = XiDens * dPhiE_dn;
-            eta_xx    = Sigma_xx + Sigma_xx5;
-            eta_yy    = Sigma_yy + Sigma_yy5;
-            eta_xy    = Sigma_xy + Sigma_xy5;
-            
-            /*--- Viscous flux at the wall node (adjoint density & energy only) ---*/
-            Res_Visc_i[0] = - (Velocity[0] * Normal[0] * eta_xx  + Velocity[1] * Normal[1] * eta_yy
-                               + (Velocity[0] * Normal[1] + Velocity[1] * Normal[0]) * eta_xy
-                               - (sq_vel - Pressure/(Density*Gamma_Minus_One)) * Sigma_5);
-            Res_Visc_i[1] = 0.0;
-            Res_Visc_i[2] = 0.0;
-            
-          } else if (nDim == 3) {
-            
-            /*--- Compute the adjoint stress tensor ---*/
-            Sigma_xx  = ViscDens * (FOUR3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1] - TWO3  * GradPhi[2][2]);
-            Sigma_yy  = ViscDens * (-TWO3 * GradPhi[0][0] + FOUR3 * GradPhi[1][1] - TWO3  * GradPhi[2][2]);
-            Sigma_zz  = ViscDens * (-TWO3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1] + FOUR3 * GradPhi[2][2]);
-            Sigma_xy  = ViscDens * (GradPhi[1][0] + GradPhi[0][1]);
-            Sigma_xz  = ViscDens * (GradPhi[2][0] + GradPhi[0][2]);
-            Sigma_yz  = ViscDens * (GradPhi[2][1] + GradPhi[1][2]);
-            Sigma_xx5 = ViscDens * ( FOUR3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1] -  TWO3 * Velocity[2] * GradPsiE[2]);
-            Sigma_yy5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] + FOUR3 * Velocity[1] * GradPsiE[1] -  TWO3 * Velocity[2] * GradPsiE[2]);
-            Sigma_zz5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1] + FOUR3 * Velocity[2] * GradPsiE[2]);
-            Sigma_xy5 = ViscDens * (Velocity[0] * GradPsiE[1] + Velocity[1] * GradPsiE[0]);
-            Sigma_xz5 = ViscDens * (Velocity[0] * GradPsiE[2] + Velocity[2] * GradPsiE[0]);
-            Sigma_yz5 = ViscDens * (Velocity[1] * GradPsiE[2] + Velocity[2] * GradPsiE[1]);
-            Sigma_5   = XiDens * dPhiE_dn;
-            eta_xx    = Sigma_xx + Sigma_xx5; eta_yy = Sigma_yy + Sigma_yy5; eta_zz = Sigma_zz + Sigma_zz5;
-            eta_xy    = Sigma_xy + Sigma_xy5; eta_xz = Sigma_xz + Sigma_xz5; eta_yz = Sigma_yz + Sigma_yz5;
-            
-            /*--- Viscous flux at the wall node (adjoint density & energy only) ---*/
-            Res_Visc_i[0] = - (Velocity[0] * Normal[0] * eta_xx  + Velocity[1] * Normal[1] * eta_yy + Velocity[2] * Normal[2] * eta_zz
-                               + (Velocity[0] * Normal[1] + Velocity[1] * Normal[0]) * eta_xy
-                               + (Velocity[0] * Normal[2] + Velocity[2] * Normal[0]) * eta_xz
-                               + (Velocity[2] * Normal[1] + Velocity[1] * Normal[2]) * eta_yz
-                               - (sq_vel - Pressure/(Density*Gamma_Minus_One)) * Sigma_5);
-            Res_Visc_i[1] = 0.0;
-            Res_Visc_i[2] = 0.0;
-            Res_Visc_i[3] = 0.0;
-          }
+        dPhiE_dn = 0.0;
+
+        if (nDim ==2) {
+
+          /*--- Compute the adjoint stress tensor ---*/
+          Sigma_xx  = ViscDens * (FOUR3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1]);
+          Sigma_yy  = ViscDens * (-TWO3 * GradPhi[0][0] + FOUR3 * GradPhi[1][1]);
+          Sigma_xy  = ViscDens * (GradPhi[1][0] + GradPhi[0][1]);
+          Sigma_xx5 = ViscDens * ( FOUR3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1]);
+          Sigma_yy5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] + FOUR3 * Velocity[1] * GradPsiE[1]);
+          Sigma_xy5 = ViscDens * (Velocity[0] * GradPsiE[1] + Velocity[1] * GradPsiE[0]);
+          Sigma_5   = XiDens * dPhiE_dn;
+          eta_xx    = Sigma_xx + Sigma_xx5;
+          eta_yy    = Sigma_yy + Sigma_yy5;
+          eta_xy    = Sigma_xy + Sigma_xy5;
+
+          /*--- Viscous flux at the wall node (adjoint density & energy only) ---*/
+          Res_Visc_i[0] = - (Velocity[0] * Normal[0] * eta_xx  + Velocity[1] * Normal[1] * eta_yy
+              + (Velocity[0] * Normal[1] + Velocity[1] * Normal[0]) * eta_xy
+              - (sq_vel - Pressure/(Density*Gamma_Minus_One)) * Sigma_5);
+          Res_Visc_i[1] = 0.0;
+          Res_Visc_i[2] = 0.0;
+
+        } else if (nDim == 3) {
+
+          /*--- Compute the adjoint stress tensor ---*/
+          Sigma_xx  = ViscDens * (FOUR3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1] - TWO3  * GradPhi[2][2]);
+          Sigma_yy  = ViscDens * (-TWO3 * GradPhi[0][0] + FOUR3 * GradPhi[1][1] - TWO3  * GradPhi[2][2]);
+          Sigma_zz  = ViscDens * (-TWO3 * GradPhi[0][0] -  TWO3 * GradPhi[1][1] + FOUR3 * GradPhi[2][2]);
+          Sigma_xy  = ViscDens * (GradPhi[1][0] + GradPhi[0][1]);
+          Sigma_xz  = ViscDens * (GradPhi[2][0] + GradPhi[0][2]);
+          Sigma_yz  = ViscDens * (GradPhi[2][1] + GradPhi[1][2]);
+          Sigma_xx5 = ViscDens * ( FOUR3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1] -  TWO3 * Velocity[2] * GradPsiE[2]);
+          Sigma_yy5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] + FOUR3 * Velocity[1] * GradPsiE[1] -  TWO3 * Velocity[2] * GradPsiE[2]);
+          Sigma_zz5 = ViscDens * (- TWO3 * Velocity[0] * GradPsiE[0] -  TWO3 * Velocity[1] * GradPsiE[1] + FOUR3 * Velocity[2] * GradPsiE[2]);
+          Sigma_xy5 = ViscDens * (Velocity[0] * GradPsiE[1] + Velocity[1] * GradPsiE[0]);
+          Sigma_xz5 = ViscDens * (Velocity[0] * GradPsiE[2] + Velocity[2] * GradPsiE[0]);
+          Sigma_yz5 = ViscDens * (Velocity[1] * GradPsiE[2] + Velocity[2] * GradPsiE[1]);
+          Sigma_5   = XiDens * dPhiE_dn;
+          eta_xx    = Sigma_xx + Sigma_xx5; eta_yy = Sigma_yy + Sigma_yy5; eta_zz = Sigma_zz + Sigma_zz5;
+          eta_xy    = Sigma_xy + Sigma_xy5; eta_xz = Sigma_xz + Sigma_xz5; eta_yz = Sigma_yz + Sigma_yz5;
+
+          /*--- Viscous flux at the wall node (adjoint density & energy only) ---*/
+          Res_Visc_i[0] = - (Velocity[0] * Normal[0] * eta_xx  + Velocity[1] * Normal[1] * eta_yy + Velocity[2] * Normal[2] * eta_zz
+              + (Velocity[0] * Normal[1] + Velocity[1] * Normal[0]) * eta_xy
+              + (Velocity[0] * Normal[2] + Velocity[2] * Normal[0]) * eta_xz
+              + (Velocity[2] * Normal[1] + Velocity[1] * Normal[2]) * eta_yz
+              - (sq_vel - Pressure/(Density*Gamma_Minus_One)) * Sigma_5);
+          Res_Visc_i[1] = 0.0;
+          Res_Visc_i[2] = 0.0;
+          Res_Visc_i[3] = 0.0;
         }
-      }
-      
-      if (incompressible) {
-        
-        /*--- Pressure residual due to the convective term ---*/
-        l1psi = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          l1psi += Normal[iDim]*d[iDim];
-        Res_Conv_i[0] = l1psi;
-        
       }
       
       /*--- Update convective and viscous residuals ---*/
