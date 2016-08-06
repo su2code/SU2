@@ -1150,6 +1150,7 @@ void CAdjMeanFlowIteration::Preprocess(COutput *output,
   bool dynamic_mesh = config_container[ZONE_0]->GetGrid_Movement();
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  bool set_intboundjump = false; /* flag for whether to call Set_IntBoundaryJump */
   
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -1235,9 +1236,12 @@ void CAdjMeanFlowIteration::Preprocess(COutput *output,
       solver_container[val_iZone][iMesh][ADJFLOW_SOL]->SetForceProj_Vector(geometry_container[val_iZone][iMesh], solver_container[val_iZone][iMesh], config_container[val_iZone]);
       
       /*--- Set the internal boundary condition on nearfield surfaces ---*/
-      
-      if ((config_container[val_iZone]->GetKind_ObjFunc() == EQUIVALENT_AREA) ||
-          (config_container[val_iZone]->GetKind_ObjFunc() == NEARFIELD_PRESSURE))
+      for (unsigned short iMarker=0; iMarker < config_container[val_iZone]->GetnMarker_Monitoring(); iMarker++){
+        if ((config_container[val_iZone]->GetKind_ObjFunc(iMarker) == EQUIVALENT_AREA) ||
+                  (config_container[val_iZone]->GetKind_ObjFunc(iMarker) == NEARFIELD_PRESSURE))
+          set_intboundjump=true;
+      }
+      if (set_intboundjump)
         solver_container[val_iZone][iMesh][ADJFLOW_SOL]->SetIntBoundary_Jump(geometry_container[val_iZone][iMesh], solver_container[val_iZone][iMesh], config_container[val_iZone]);
       
     }
@@ -1719,7 +1723,7 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   /*--- For flux-avg or area-avg objective functions the 1D values must be calculated first ---*/
   if (config_container[val_iZone]->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE ||
       config_container[val_iZone]->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
-      config_container[val_iZone]->GetKind_ObjFunc()==MASS_FLOW_RATE)
+      config_container[val_iZone]->GetKind_ObjFunc()==MASS_FLOW_RATE  )
     output->OneDimensionalOutput(solver_container[val_iZone][MESH_0][FLOW_SOL],
                                  geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
   
