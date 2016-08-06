@@ -46,9 +46,6 @@ CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, s
 																		 unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-	bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
@@ -90,43 +87,24 @@ CAdjEulerVariable::CAdjEulerVariable(su2double val_psirho, su2double *val_phi, s
 	}
   
   /*--- Allocate and initialize solution ---*/
-	if (compressible) {
-		Solution[0] = val_psirho; 	Solution_Old[0] = val_psirho;
-		Solution[nVar-1] = val_psie; Solution_Old[nVar-1] = val_psie;
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Solution[iDim+1] = val_phi[iDim];
-			Solution_Old[iDim+1] = val_phi[iDim];
-		}
-	}
-	if (incompressible || freesurface) {
-		Solution[0] = 0.0; 	Solution_Old[0] = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Solution[iDim+1] = 0.0;
-			Solution_Old[iDim+1] = 0.0;
-		}
-	}
+  Solution[0] = val_psirho; 	Solution_Old[0] = val_psirho;
+  Solution[nVar-1] = val_psie; Solution_Old[nVar-1] = val_psie;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Solution[iDim+1] = val_phi[iDim];
+    Solution_Old[iDim+1] = val_phi[iDim];
+  }
 
-  
   /*--- Allocate and initialize solution for dual time strategy ---*/
 	if (dual_time) {
-    if (compressible) {
-			Solution_time_n[0] = val_psirho;
-			Solution_time_n1[0] = val_psirho;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Solution_time_n[iDim+1] = val_phi[iDim];
-				Solution_time_n1[iDim+1] = val_phi[iDim];
-			}
-			Solution_time_n[nVar-1] = val_psie;
-			Solution_time_n1[nVar-1] = val_psie;
-		}
-    if (incompressible || freesurface) {
-			Solution_time_n[0] = 0.0;
-			Solution_time_n1[0] = 0.0;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				Solution_time_n[iDim+1] = 0.0;
-				Solution_time_n1[iDim+1] = 0.0;
-			}
-		}
+    Solution_time_n[0] = val_psirho;
+    Solution_time_n1[0] = val_psirho;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Solution_time_n[iDim+1] = val_phi[iDim];
+      Solution_time_n1[iDim+1] = val_phi[iDim];
+    }
+    Solution_time_n[nVar-1] = val_psie;
+    Solution_time_n1[nVar-1] = val_psie;
+
 
 	}
   
