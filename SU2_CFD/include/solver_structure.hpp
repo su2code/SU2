@@ -5740,6 +5740,31 @@ private:
   void Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
                                  CConfig *config);
 
+  /*!
+   * \brief Function, which computes the residual contribution from a boundary
+            face in an inviscid computation when the boundary conditions have
+            already been applied.
+   * \param[in]     config              - Definition of the particular problem.
+   * \param[in]     conv_numerics       - Description of the numerical method.
+   * \param[in]     surfElem            - Surface boundary element for which the
+                                          contribution to the residual must be computed.
+   * \param[in]     solInt0             - Solution in the integration points of side 0.
+   * \param[in]     solInt1             - Solution in the integration points of side 1.
+   * \param[out]    fluxes              - Temporary storage for the fluxes in the
+                                          integration points.
+   * \param[out]    resFaces            - Array to store the residuals of the face.
+   * \param[in,out] indResFaces         - Index in resFaces, where the current residual
+                                          should be stored. It is updated in the function
+                                          for the next boundary element.
+   */
+  void ResidualInviscidBoundaryFace(CConfig                  *config,
+                                    CNumerics                *conv_numerics,
+                                    const CSurfaceElementFEM *surfElem,
+                                    const su2double          *solInt0,
+                                    const su2double          *solInt1,
+                                    su2double                *fluxes,
+                                    su2double                *resFaces,
+                                    unsigned long            &indResFaces);
 public:
   /*!
    * \brief Function, which carries out the self communication. This typically
@@ -5872,6 +5897,41 @@ public:
    */
   void External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+
+  /*!
+   * \brief Impose via the residual the Euler wall boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                     unsigned short val_marker);
+
+  /*!
+   * \brief Impose the far-field boundary condition using characteristics.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                    CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Impose the symmetry boundary condition using the residual.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
@@ -6014,6 +6074,45 @@ private:
                             su2double            *penaltyFluxes);
 
   /*!
+   * \brief Function, which computes the residual contribution from a boundary
+            face in a viscous computation when the boundary conditions have
+            already been applied.
+   * \param[in]     config              - Definition of the particular problem.
+   * \param[in]     conv_numerics       - Description of the numerical method.
+   * \param[in]     surfElem            - Surface boundary element for which the
+                                          contribution to the residual must be computed.
+   * \param[in]     Wall_HeatFlux       - Value of the prescribed heat flux, if relevant.
+   * \param[in]     HeatFlux_Prescribed - Whether or not the heat flux is prescribed.
+   * \param[in]     solInt0             - Solution in the integration points of side 0.
+   * \param[in]     solInt1             - Solution in the integration points of side 1.
+   * \param[out]    gradSolInt          - Temporary storage for the gradients of the
+                                          solution variables in the integration points.
+   * \param[out]    fluxes              - Temporary storage for the fluxes in the
+                                          integration points.
+   * \param[out]    viscFluxes          - Temporary storage for the viscous fluxes in
+                                          the integration points.
+   * \param[out]    viscosityInt        - Temporary storage for the viscosity in the
+                                          integration points.
+   * \param[out]    resFaces            - Array to store the residuals of the face.
+   * \param[in,out] indResFaces         - Index in resFaces, where the current residual
+                                          should be stored. It is updated in the function
+                                          for the next boundary element.
+   */
+  void ResidualViscousBoundaryFace(CConfig                  *config,
+                                   CNumerics                *conv_numerics,
+                                   const CSurfaceElementFEM *surfElem,
+                                   const su2double          Wall_HeatFlux,
+                                   const bool               HeatFlux_Prescribed,
+                                   const su2double          *solInt0,
+                                   const su2double          *solInt1,
+                                   su2double                *gradSolInt,
+                                   su2double                *fluxes,
+                                   su2double                *viscFluxes,
+                                   su2double                *viscosityInt,
+                                   su2double                *resFaces,
+                                   unsigned long            &indResFaces);
+
+  /*!
    * \brief Function to compute the penalty terms in the integration
             points of a face.
    * \param[in]  nInt              - Number of integration points of the face.
@@ -6038,6 +6137,9 @@ private:
             points of a face.
    * \param[in]   nInt                - Number of integration points of the face.
    * \param[in]   nDOFsElem           - Number of DOFs of the adjacent element.
+   * \param[in]   Wall_HeatFlux       - The value of the prescribed heat flux.
+   * \param[in]   HeatFlux_Prescribed - Whether or not the heat flux is prescribed by
+                                        e.g. the boundary conditions.
    * \param[in]   derBasisElem        - Derivatives w.r.t. the parametric coordinates
                                         of the basis functions of the adjacent face.
    * \param[in]   solInt              - Solution in the integration points.
@@ -6055,6 +6157,8 @@ private:
    */
   void ViscousNormalFluxFace(const unsigned short nInt,
                              const unsigned short nDOFsElem,
+                             const su2double      Wall_HeatFlux,
+                             const bool           HeatFlux_Prescribed,
                              const su2double      *derBasisElem,
                              const su2double      *solInt,
                              const unsigned long  *DOFsElem,

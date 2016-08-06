@@ -445,6 +445,17 @@ protected:
   */
   void SubConnForPlottingTriangle(const unsigned short   nPoly,
                                   vector<unsigned short> &subConn);
+
+  /*!
+  * \brief Function, which computes the constant in the penalty terms for a
+           a viscous discretization.
+  * \param[in] VTK_TypeElem - The element type, using the VTK convention,
+                              adjacent to the face.
+  * \param[in] nPolyElem    - The polynomial degree of the adjacent element.
+  * \return                   The value of the viscous penalty parameter.
+  */
+  su2double ViscousPenaltyParameter(const unsigned short VTK_TypeElem,
+                                    const unsigned short nPolyElem);
 private:
   /*!
   * \brief Function, which determines the 1D Gauss Legendre integration points and weights.
@@ -1384,6 +1395,9 @@ private:
   bool swapFaceInElement;      /*!< \brief Whether or not the connectivity of the face must be swapped compared
                                            to the face of the corresponding standard element adjacent to the face. */
 
+  su2double penaltyConstantFace;  /*!< \brief The constant of the penalty parameter of the face,
+                                              which is used in the viscous discretization. */
+
   vector<su2double> rDOFsFace;   /*!< \brief r-location of the DOFs of the face. */
   vector<su2double> sDOFsFace;   /*!< \brief s-location of the DOFs of the face, if needed. */
 
@@ -1406,6 +1420,11 @@ private:
   su2double *matDerBasisElemIntegration;       /*!< \brief Matrix of drLagBasisElemIntegration, dsLagBasisElemIntegration
                                                            and dtLagBasisElemIntegration combined for efficiency
                                                            when using BLAS routines. */
+
+  su2double *matDerBasisElemIntegrationTranspose; /*!< \brief Transpose of matDerBasisElemIntegration, such that
+                                                              the residuals of the symmetrizing terms can be computed
+                                                              with a single matrix multiplication. */
+
 
   vector<unsigned short> subConnForPlotting; /*!< \brief Local subconnectivity of the high order element.
                                                          Used for plotting. */
@@ -1482,6 +1501,14 @@ public:
   const su2double *GetMatDerBasisElemIntegration(void) const;
 
   /*!
+  * \brief Function, which makes available the transpose of the matrix with
+           the derivatives of the element basis functions in the integration
+           points.
+  * \return  The const pointer to data, which stores this information.
+  */
+  const su2double *GetMatDerBasisElemIntegrationTranspose(void) const;
+
+  /*!
   * \brief Function, which makes available the face basis functions in the
            integration points.
   * \return  The pointer to data, which stores this information.
@@ -1535,6 +1562,12 @@ public:
   * \return  The number of DOFs of a linear subfaces of the face.
   */
   unsigned short GetNDOFsPerSubFace(void) const;
+
+  /*!
+  * \brief Function, which makes available the penalty constant for this standard face.
+  * \return  The penalty constant.
+  */
+  su2double GetPenaltyConstant(void) const;
 
   /*!
   * \brief Function, which makes available the the connectivity of the linear subfaces
