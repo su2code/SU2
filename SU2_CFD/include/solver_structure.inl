@@ -724,6 +724,8 @@ inline void CSolver::Copy_Zone_Solution(CSolver ***solver1_solution, CGeometry *
 
 inline CFluidModel* CSolver::GetFluidModel(void) { return NULL;}
 
+inline su2double* CSolver::GetVecSolDOFs(void) {return NULL;}
+
 inline CFluidModel* CEulerSolver::GetFluidModel(void) { return FluidModel;}
 
 inline void CSolver::Set_Prestretch(CGeometry *geometry, CConfig *config) { }
@@ -1079,6 +1081,8 @@ inline void CNSSolver::SetStrainMag_Max(su2double val_strainmag_max) { StrainMag
 inline void CNSSolver::SetOmega_Max(su2double val_omega_max) { Omega_Max = val_omega_max; }
 
 inline CFluidModel* CFEM_DG_EulerSolver::GetFluidModel(void) { return FluidModel;}
+
+inline su2double* CFEM_DG_EulerSolver::GetVecSolDOFs(void) {return VecSolDOFs.data();}
 
 inline su2double CFEM_DG_EulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 

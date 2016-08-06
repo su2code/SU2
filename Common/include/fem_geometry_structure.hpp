@@ -531,7 +531,19 @@ public:
   * \return  Pointer to the standard boundary faces of the solution.
   */
   FEMStandardBoundaryFaceClass *GetStandardBoundaryFacesSol(void);
-
+  
+  /*!
+   * \brief Function, which makes available the number of standard boundary faces of the grid.
+   * \return  Number of standard boundary faces of the grid.
+   */
+  unsigned short GetNStandardBoundaryFacesGrid(void);
+  
+  /*!
+   * \brief Function, which makes available the standard boundary faces of the grid.
+   * \return  Pointer to the standard boundary faces of the grid.
+   */
+  FEMStandardBoundaryFaceClass *GetStandardBoundaryFacesGrid(void);
+  
   /*!
   * \brief Function, which makes available the vector of ranks with which the
            current rank communicates as a const reference.
