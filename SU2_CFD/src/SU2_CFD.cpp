@@ -513,16 +513,25 @@ int main(int argc, char *argv[]) {
 
 
       if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
-          
-//      /*--- Execute the routine for writing restart, volume solution,
-//        surface solution, and surface comma-separated value files. ---*/
-//          
-//      output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
-//          
-//      /*--- Output a file with the forces breakdown. ---*/
-//          
-//      output->SetForces_Breakdown(geometry_container, solver_container,
-//                                  config_container, integration_container, ZONE_0);
+      
+      unsigned short KindSolver = config_container[ZONE_0]->GetKind_Solver();
+      if ((KindSolver == FEM_EULER) || (KindSolver == FEM_NAVIER_STOKES) || (KindSolver == FEM_RANS) || (KindSolver == FEM_LES)) {
+        
+        /*--- Temporary output for the FEM solver. ---*/
+        output->SetResult_Files_FEM(solver_container, geometry_container, config_container, ExtIter, nZone);
+        
+      } else {
+        
+        /*--- Execute the routine for writing restart, volume solution,
+         surface solution, and surface comma-separated value files. ---*/
+        
+        output->SetResult_Files(solver_container, geometry_container, config_container, ExtIter, nZone);
+        
+        /*--- Output a file with the forces breakdown. ---*/
+        
+        output->SetForces_Breakdown(geometry_container, solver_container,
+                                    config_container, integration_container, ZONE_0);
+      }
       
       /*--- Compute the forces at different sections. ---*/
       

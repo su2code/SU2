@@ -98,6 +98,10 @@ inline unsigned short CMeshFEM::GetNStandardBoundaryFacesSol(void) {return stand
 
 inline FEMStandardBoundaryFaceClass* CMeshFEM::GetStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.data();}
 
+inline unsigned short CMeshFEM::GetNStandardBoundaryFacesGrid(void) {return standardBoundaryFacesGrid.size();}
+
+inline FEMStandardBoundaryFaceClass* CMeshFEM::GetStandardBoundaryFacesGrid(void) {return standardBoundaryFacesGrid.data();}
+
 inline const vector<int>& CMeshFEM::GetRanksComm(void) const {return ranksComm;}
 
 inline const vector<vector<unsigned long> >& CMeshFEM::GetEntitiesReceive(void) const {return entitiesReceive;}

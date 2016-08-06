@@ -84,6 +84,7 @@
 		E9D9CE861C62A1A7004119E9 /* interpolation_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE851C62A1A7004119E9 /* interpolation_structure.cpp */; };
 		E9D9CE891C62A1C8004119E9 /* transfer_physics.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE871C62A1C8004119E9 /* transfer_physics.cpp */; };
 		E9D9CE8A1C62A1C8004119E9 /* transfer_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9D9CE881C62A1C8004119E9 /* transfer_structure.cpp */; };
+		E9F130D21D526A5000EC8963 /* gauss_jacobi_quadrature.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F130D11D526A5000EC8963 /* gauss_jacobi_quadrature.cpp */; };
 		E9F512C81CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F512C61CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp */; };
 		E9F512C91CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F512C71CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp */; };
 		E9F81E001D1922AB0080D669 /* fem_integration_rules.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F81DFD1D1922AB0080D669 /* fem_integration_rules.cpp */; };
@@ -336,6 +337,7 @@
 		E9D9CE971C62A2A7004119E9 /* interpolation_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = interpolation_structure.hpp; path = ../../Common/include/interpolation_structure.hpp; sourceTree = "<group>"; };
 		E9D9CE981C6563B3004119E9 /* parallel_regression_AD.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = parallel_regression_AD.py; sourceTree = "<group>"; };
 		E9D9CE991C6563B3004119E9 /* serial_regression_AD.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = serial_regression_AD.py; sourceTree = "<group>"; };
+		E9F130D11D526A5000EC8963 /* gauss_jacobi_quadrature.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gauss_jacobi_quadrature.cpp; path = ../../Common/src/gauss_jacobi_quadrature.cpp; sourceTree = "<group>"; };
 		E9F512C61CB2FD6B004D5089 /* numerics_direct_elasticity_linear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_elasticity_linear.cpp; path = ../../SU2_CFD/src/numerics_direct_elasticity_linear.cpp; sourceTree = "<group>"; };
 		E9F512C71CB2FD6B004D5089 /* numerics_direct_elasticity_nonlinear.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = numerics_direct_elasticity_nonlinear.cpp; path = ../../SU2_CFD/src/numerics_direct_elasticity_nonlinear.cpp; sourceTree = "<group>"; };
 		E9F5F1B41CFF9CA200522F68 /* def_brick_hex.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = def_brick_hex.cfg; sourceTree = "<group>"; };
@@ -442,6 +444,7 @@
 				E965EA001CAB578200C6020B /* fem_standard_element.cpp */,
 				E9F81DFD1D1922AB0080D669 /* fem_integration_rules.cpp */,
 				E9F81DFE1D1922AB0080D669 /* fem_wall_distance.cpp */,
+				E9F130D11D526A5000EC8963 /* gauss_jacobi_quadrature.cpp */,
 				E9F81DFF1D1922AB0080D669 /* gelite.cpp */,
 			);
 			name = Geometry;
@@ -1582,6 +1585,7 @@
 				05E6DC0E17EB62A100FA1F7E /* numerics_direct_heat.cpp in Sources */,
 				05F1089A1978D2AE00F2F288 /* fluid_model_pig.cpp in Sources */,
 				05E6DC1017EB62A100FA1F7E /* numerics_direct_mean.cpp in Sources */,
+				E9F130D21D526A5000EC8963 /* gauss_jacobi_quadrature.cpp in Sources */,
 				E9D85B4C1C3F1B9E0077122F /* ad_structure.cpp in Sources */,
 				0530E56E17FDF7C600733CE8 /* variable_direct_elasticity.cpp in Sources */,
 				05F1089D1978D2AE00F2F288 /* fluid_model.cpp in Sources */,
