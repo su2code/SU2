@@ -87,7 +87,7 @@ void unsignedLong2T::Copy(const unsignedLong2T &other) {
 
 FaceOfElementClass::FaceOfElementClass(){
   nCornerPoints   = 0;
-  cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = 0;
+  cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = ULONG_MAX;
   elemID0         = elemID1 = ULONG_MAX;
   nPolyGrid0      = nPolyGrid1 = 0;
   nPolySol0       = nPolySol1  = 0;
@@ -102,6 +102,7 @@ FaceOfElementClass::FaceOfElementClass(){
 
 bool FaceOfElementClass::operator<(const FaceOfElementClass &other) const {
   if(nCornerPoints != other.nCornerPoints) return nCornerPoints < other.nCornerPoints;
+
   for(unsigned short i=0; i<nCornerPoints; ++i)
     if(cornerPoints[i] != other.cornerPoints[i]) return cornerPoints[i] < other.cornerPoints[i];
 
@@ -119,6 +120,7 @@ bool FaceOfElementClass::operator ==(const FaceOfElementClass &other) const {
 void FaceOfElementClass::Copy(const FaceOfElementClass &other) {
   nCornerPoints = other.nCornerPoints;
   for(unsigned short i=0; i<nCornerPoints; ++i) cornerPoints[i] = other.cornerPoints[i];
+  for(unsigned short i=nCornerPoints; i<4; ++i) cornerPoints[i] = ULONG_MAX;
 
   elemID0 = other.elemID0;
   elemID1 = other.elemID1;
@@ -11370,7 +11372,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     sendBufFace[ii+2] = localFacesComm[i].cornerPoints[1];
     sendBufFace[ii+3] = localFacesComm[i].cornerPoints[2];
     sendBufFace[ii+4] = localFacesComm[i].cornerPoints[3];
-				sendBufFace[ii+5] = localFacesComm[i].elemID0;
+    sendBufFace[ii+5] = localFacesComm[i].elemID0;
     sendBufFace[ii+6] = localFacesComm[i].nPolySol0;
     sendBufFace[ii+7] = localFacesComm[i].nDOFsElem0;
   }
@@ -12098,10 +12100,12 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(CConfig                          
     const su2double *matDerBasisInt = &matBasisInt[nDOFs*nIntegration];
 
     /* Carry out the matrix matrix product using the libxsmm routine libxsmm_gemm
-       or the blas routine dgemm. */
+       or the blas routine dgemm. Note that libxsmm_gemm expects the matrices in
+       column major order. That's why the calling sequence is different from
+       cblas_dgemm. */
 #ifdef HAVE_LIBXSMM
-    libxsmm_gemm(NULL, NULL, nDim*nIntegration, nDim, nDOFs, NULL, matDerBasisInt,
-                 NULL, vecRHS, NULL, NULL, vecResult, NULL);
+    libxsmm_gemm(NULL, NULL, nDim, nDim*nIntegration, nDOFs, NULL, vecRHS, NULL,
+                 matDerBasisInt, NULL, NULL, vecResult, NULL);
 #else
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nDim*nIntegration, nDim, nDOFs,
                 1.0, matDerBasisInt, nDOFs, vecRHS, nDim, 0.0, vecResult, nDim);
@@ -13844,6 +13848,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
   bool sst = config->GetKind_Turb_Model() == SST;
   bool sa = config->GetKind_Turb_Model() == SA;
   bool grid_movement = config->GetGrid_Movement();
+  bool wrt_residuals = config->GetWrt_Residuals();
   su2double Sens, dull_val;
   unsigned short nExtIter, iDim;
   unsigned long iPoint, index;
@@ -13860,15 +13865,15 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  unsigned short skipVar = nDim;
-  
-  if (incompressible) { skipVar += nDim+1; }
-  if (freesurface)    { skipVar += nDim+2; }
-  if (compressible)   { skipVar += nDim+2; }
-  if (sst)            { skipVar += 2;}
-  if (sa)             { skipVar += 1;}
-  
-  if (grid_movement) {skipVar += nDim;}
+  unsigned short skipVar = nDim, skipMult = 1;
+
+  if (wrt_residuals){ skipMult = 2; }
+  if (incompressible) { skipVar += skipMult*(nDim+1); }
+  if (freesurface)    { skipVar += skipMult*(nDim+2); }
+  if (compressible)   { skipVar += skipMult*(nDim+2); }
+  if (sst)            { skipVar += skipMult*2;}
+  if (sa)             { skipVar += skipMult*1;}
+  if (grid_movement)  { skipVar += nDim;}
   
   /*--- Sensitivity in normal direction ---*/
   

@@ -1513,10 +1513,12 @@ void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
   }
 
   /* Carry out the matrix matrix product using the libxsmm routine libxsmm_gemm
-     or the blas routine dgemm. */
+     or the blas routine dgemm. Note that libxsmm_gemm expects the matrices in
+     column major order. That's why the calling sequence is different from
+     cblas_dgemm. */
 #ifdef HAVE_LIBXSMM
-  libxsmm_gemm(NULL, NULL, nDim*nIntegration, nDim, nDOFs, NULL, matDerBasisInt,
-               NULL, vecRHS, NULL, NULL, derivCoor, NULL);
+  libxsmm_gemm(NULL, NULL, nDim, nDim*nIntegration, nDOFs, NULL, vecRHS, NULL,
+               matDerBasisInt, NULL, NULL, derivCoor, NULL);
 #else
   cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nDim*nIntegration, nDim,
               nDOFs, 1.0, matDerBasisInt, nDOFs, vecRHS, nDim, 0.0, derivCoor, nDim);

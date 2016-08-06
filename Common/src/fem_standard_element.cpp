@@ -1060,6 +1060,41 @@ void FEMStandardElementBaseClass::SubConnForPlottingTriangle(
   }
 }
 
+su2double FEMStandardElementBaseClass::ViscousPenaltyParameter(
+                                       const unsigned short VTK_TypeElem, 
+                                       const unsigned short nPolyElem) {
+
+  /*--- Determine the element type and set the value of the penalty
+        parameter accordingly. ---*/
+  su2double penParam;
+
+  switch( VTK_TypeElem ) {
+    case TRIANGLE:
+      penParam = (nPolyElem+1)*(nPolyElem+2)*0.5;
+      break;
+    case QUADRILATERAL:
+      penParam = (nPolyElem+1)*(nPolyElem+1);
+      break;
+    case TETRAHEDRON:
+      penParam = (nPolyElem+1)*(nPolyElem+3)/3.0;
+      break;
+    case PYRAMID:
+      if(VTK_Type == TRIANGLE) penParam = (nPolyElem+1)*(2*nPolyElem+3)*1.05/3.0;
+      else                     penParam = (nPolyElem+1)*(nPolyElem+3)/3.0;
+      break;
+    case PRISM:
+      if(VTK_Type == TRIANGLE) penParam = (nPolyElem+1)*(nPolyElem+1);
+      else                     penParam = (nPolyElem+1)*(nPolyElem+2)*0.5;
+      break;
+    case HEXAHEDRON:
+      penParam = (nPolyElem+1)*(nPolyElem+1);
+      break;
+  }
+
+  /* Return the value of penParam. */
+  return penParam;
+}
+
 /*----------------------------------------------------------------------------------*/
 /*          Private member functions of FEMStandardElementBaseClass.                */
 /*----------------------------------------------------------------------------------*/
@@ -3168,55 +3203,9 @@ FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(unsigned short val_VT
   /*--- Determine the constant in the penalty parameter in the viscous
         discretization. This constant depends on the element type on
         both sides of the face as well as their polynomial degree. ---*/
-  su2double penSide0, penSide1;
+  const su2double penSide0 = ViscousPenaltyParameter(VTK_TypeElemSide0, nPolyElemSide0);
+  const su2double penSide1 = ViscousPenaltyParameter(VTK_TypeElemSide1, nPolyElemSide1);
 
-  switch( VTK_TypeElemSide0 ) {
-    case TRIANGLE:
-      penSide0 = (nPolyElemSide0+1)*(nPolyElemSide0+2)*0.5;
-      break;
-    case QUADRILATERAL:
-      penSide0 = (nPolyElemSide0+1)*(nPolyElemSide0+1); 
-      break;
-    case TETRAHEDRON:
-      penSide0 = (nPolyElemSide0+1)*(nPolyElemSide0+3)/3.0;
-      break;
-    case PYRAMID:
-      if(VTK_Type == TRIANGLE) penSide0 = (nPolyElemSide0+1)*(2*nPolyElemSide0+3)*1.05/3.0;
-      else                     penSide0 = (nPolyElemSide0+1)*(nPolyElemSide0+3)/3.0;
-      break;
-    case PRISM:
-      if(VTK_Type == TRIANGLE) penSide0 = (nPolyElemSide0+1)*(nPolyElemSide0+1);
-      else                     penSide0 = (nPolyElemSide0+1)*(nPolyElemSide0+2)*0.5;
-      break;
-    case HEXAHEDRON:
-      penSide0 = (nPolyElemSide0+1)*(nPolyElemSide0+1);
-      break;
-  }
-
-  switch( VTK_TypeElemSide1 ) {
-    case TRIANGLE:
-      penSide1 = (nPolyElemSide1+1)*(nPolyElemSide1+2)*0.5;
-      break;
-    case QUADRILATERAL:
-      penSide1 = (nPolyElemSide1+1)*(nPolyElemSide1+1);
-      break;
-    case TETRAHEDRON:
-      penSide1 = (nPolyElemSide1+1)*(nPolyElemSide1+3)/3.0;
-      break;
-    case PYRAMID: 
-      if(VTK_Type == TRIANGLE) penSide1 = (nPolyElemSide1+1)*(2*nPolyElemSide1+3)*1.05/3.0;
-      else                     penSide1 = (nPolyElemSide1+1)*(nPolyElemSide1+3)/3.0;
-      break;
-    case PRISM:
-      if(VTK_Type == TRIANGLE) penSide1 = (nPolyElemSide1+1)*(nPolyElemSide1+1);
-      else                     penSide1 = (nPolyElemSide1+1)*(nPolyElemSide1+2)*0.5;
-      break;
-    case HEXAHEDRON:
-      penSide1 = (nPolyElemSide1+1)*(nPolyElemSide1+1);
-      break;
-  }
-
-  /* The penalty parameter of the face is the maximum of the element parameters. */
   penaltyConstantFace = max(penSide0, penSide1);
 
   /*--- Determine the Lagrangian basis functions and its gradients in the
@@ -3545,6 +3534,11 @@ FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(unsigned short val_VT
   VTK_TypeElem      = val_VTK_TypeElem;
   swapFaceInElement = val_swapFaceInElement;
 
+  /*--- Determine the constant in the penalty parameter in the viscous
+        discretization. This constant depends on the element type as
+        well as its polynomial degree. ---*/
+  penaltyConstantFace = ViscousPenaltyParameter(VTK_TypeElem, nPolyElem);
+
   /*--- Determine the Lagrangian basis functions in the integration
         points of the face and the subconnectivity of the linear elements
         used for plotting. ---*/
@@ -3627,9 +3621,11 @@ FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(unsigned short val_VT
                         + dsLagBasisElemIntegration.size()
                         + dtLagBasisElemIntegration.size();
 #ifdef HAVE_MKL
-  matDerBasisElemIntegration = (su2double *) mkl_malloc(sizeMat*sizeof(su2double), 64);
+  matDerBasisElemIntegration          = (su2double *) mkl_malloc(sizeMat*sizeof(su2double), 64);
+  matDerBasisElemIntegrationTranspose = (su2double *) mkl_malloc(sizeMat*sizeof(su2double), 64);
 #else
-  matDerBasisElemIntegration = new su2double[sizeMat];
+  matDerBasisElemIntegration          = new su2double[sizeMat];
+  matDerBasisElemIntegrationTranspose = new su2double[sizeMat];
 #endif
 
   ii = 0;
@@ -3641,14 +3637,31 @@ FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(unsigned short val_VT
 
   for(unsigned long i=0; i<dtLagBasisElemIntegration.size(); ++i, ++ii)
     matDerBasisElemIntegration[ii] = dtLagBasisElemIntegration[i];
+
+
+  /*--- Also create the transpose of the matDerBasisElemIntegration, such that
+        the residual of the symmetrizing terms can be computed efficiently. ---*/
+  const unsigned short nDim = dtLagBasisElemIntegration.size() ? 3 : 2;
+
+  ii = 0;
+  for(unsigned short j=0; j<nDOFsElem; ++j) {
+    for(unsigned short i=0; i<nIntegration; ++i) {
+      for(unsigned short iDim=0; iDim<nDim; ++iDim, ++ii) {
+        const unsigned int ind = iDim*nDOFsElem*nIntegration + i*nDOFsElem + j;
+        matDerBasisElemIntegrationTranspose[ii] = matDerBasisElemIntegration[ind];
+      }
+    }
+  }
 }
 
 FEMStandardBoundaryFaceClass::~FEMStandardBoundaryFaceClass() {
 
 #ifdef HAVE_MKL
-  if( matDerBasisElemIntegration ) mkl_free(matDerBasisElemIntegration);
+  if( matDerBasisElemIntegration )          mkl_free(matDerBasisElemIntegration);
+  if( matDerBasisElemIntegrationTranspose ) mkl_free(matDerBasisElemIntegrationTranspose);
 #else
-  if( matDerBasisElemIntegration ) delete[] matDerBasisElemIntegration;
+  if( matDerBasisElemIntegration )          delete[] matDerBasisElemIntegration;
+  if( matDerBasisElemIntegrationTranspose ) delete[] matDerBasisElemIntegrationTranspose;
 #endif
 }
 
@@ -3705,6 +3718,8 @@ void FEMStandardBoundaryFaceClass::Copy(const FEMStandardBoundaryFaceClass &othe
   VTK_TypeElem      = other.VTK_TypeElem;
   swapFaceInElement = other.swapFaceInElement;
 
+  penaltyConstantFace = other.penaltyConstantFace;
+
   rDOFsFace = other.rDOFsFace;
   sDOFsFace = other.sDOFsFace;
 
@@ -3721,13 +3736,17 @@ void FEMStandardBoundaryFaceClass::Copy(const FEMStandardBoundaryFaceClass &othe
                         + dsLagBasisElemIntegration.size()
                         + dtLagBasisElemIntegration.size();
 #ifdef HAVE_MKL
-  matDerBasisElemIntegration = (su2double *) mkl_malloc(sizeMat*sizeof(su2double), 64);
+  matDerBasisElemIntegration          = (su2double *) mkl_malloc(sizeMat*sizeof(su2double), 64);
+  matDerBasisElemIntegrationTranspose = (su2double *) mkl_malloc(sizeMat*sizeof(su2double), 64);
 #else
-  matDerBasisElemIntegration = new su2double[sizeMat];
+  matDerBasisElemIntegration          = new su2double[sizeMat];
+  matDerBasisElemIntegrationTranspose = new su2double[sizeMat];
 #endif
 
-  for(unsigned long i=0; i<sizeMat; ++i)
-    matDerBasisElemIntegration[i] = other.matDerBasisElemIntegration[i];
+  for(unsigned long i=0; i<sizeMat; ++i) {
+    matDerBasisElemIntegration[i]          = other.matDerBasisElemIntegration[i];
+    matDerBasisElemIntegrationTranspose[i] = other.matDerBasisElemIntegrationTranspose[i];
+  }
 
   subConnForPlotting = other.subConnForPlotting;
 }
