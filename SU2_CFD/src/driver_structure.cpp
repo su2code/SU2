@@ -762,6 +762,19 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
                 numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwTurkel_Flow(nDim, nVar_Flow, config);
               }
               break;
+                  
+            case L2ROE:
+              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwL2Roe_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwL2Roe_Flow(nDim, nVar_Flow, config);
+              }
+              break;
+            case LMROE:
+              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwLMRoe_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwLMRoe_Flow(nDim, nVar_Flow, config);
+              }
+              break;
               
             case HLLC:
 		if (ideal_gas) {
@@ -1386,7 +1399,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
         if (compressible) {
           /*--- Compressible flow ---*/
           switch (config->GetKind_Upwind_Flow()) {
-            case ROE: case AUSM : case TURKEL: case HLLC: case MSW:  case CUSP:
+            case ROE: case AUSM : case TURKEL: case HLLC: case MSW:  case CUSP: case L2ROE: case LMROE:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 delete numerics_container[iMGlevel][FLOW_SOL][CONV_TERM];
                 delete numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
