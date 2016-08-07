@@ -1868,7 +1868,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
        (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
-       (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION)))
+       (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION) &&
+       (Kind_GridMovement[ZONE_0] != FLUID_STRUCTURE)))
     Grid_Movement = false;
   
   /*--- If it is not specified, set the mesh motion mach number

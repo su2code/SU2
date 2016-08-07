@@ -96,7 +96,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-    flatplate.test_vals = [-5.231743, 0.261628, -0.166871, 0.012706] #last 4 columns
+    flatplate.test_vals = [-5.231727, 0.261637, -0.166869, 0.012707] #last 4 columns
     flatplate.su2_exec  = "parallel_computation.py -f"
     flatplate.timeout   = 1600
     flatplate.tol       = 0.00001
