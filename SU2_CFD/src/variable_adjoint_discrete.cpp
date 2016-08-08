@@ -32,6 +32,14 @@
 
 CDiscAdjVariable::CDiscAdjVariable() : CVariable(){
 
+  /*--- Initialize arrays to NULL ---*/
+
+  Solution_Direct = NULL;
+  Sensitivity    = NULL;
+
+  DualTime_Derivative   = NULL;
+  DualTime_Derivative_n = NULL; 
+
 }
 
 CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_ndim,
@@ -39,6 +47,14 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
 
   bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
       || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+
+  /*--- Initialize arrays to NULL ---*/
+
+  Solution_Direct = NULL;
+  Sensitivity    = NULL;
+
+  DualTime_Derivative   = NULL;
+  DualTime_Derivative_n = NULL;
 
   if (dual_time){
     DualTime_Derivative = new su2double[nVar];
@@ -70,7 +86,12 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   }
 }
 
-
 CDiscAdjVariable::~CDiscAdjVariable(){
+
+  if (Solution_Direct != NULL) delete [] Solution_Direct;
+  if (Sensitivity     != NULL) delete [] Sensitivity;
+
+  if (DualTime_Derivative   != NULL) delete [] DualTime_Derivative;
+  if (DualTime_Derivative_n != NULL) delete [] DualTime_Derivative_n;
 
 }
