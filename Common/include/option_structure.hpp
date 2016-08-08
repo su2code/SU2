@@ -2675,10 +2675,10 @@ template <class Tenum>
 class COptionNRBC : public COptionBase{
 
   map<string, Tenum> m;
-  unsigned short* & field; // Reference to the fieldname
-  string name; // identifier for the option
   unsigned short & size;
   string * & marker;
+  unsigned short* & field; // Reference to the fieldname
+  string name; // identifier for the option
   su2double * & var1;
   su2double * & var2;
   su2double ** & flowdir;

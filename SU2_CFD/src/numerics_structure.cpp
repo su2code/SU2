@@ -1106,9 +1106,9 @@ void CNumerics::GetLMatrix(su2double val_soundspeed, su2double val_density, su2d
 }
 
 void CNumerics::ComputeResJacobianNRBC(CFluidModel *FluidModel, su2double pressure, su2double density, su2double *turboVel, su2double alphaInBC, su2double gammaInBC,  su2double **R_c, su2double **R_c_inv){
-  su2double rhoc, cc, **test, det;
+  su2double rhoc, cc, **test;
   su2double dhdrho_P, dhdP_rho, dsdrho_P,dsdP_rho;
-  unsigned short iVar, jVar, kVar;
+  unsigned short iVar;
 
   test= new su2double*[nVar-1];
   for (iVar = 0; iVar < nVar-1; iVar++)

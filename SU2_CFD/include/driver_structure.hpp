@@ -66,7 +66,8 @@ protected:
                 nZone,                          /*!< \brief Total number of zones in the problem. */
                 nDim;                           /*!< \brief Number of dimensions.*/
   bool StopCalc,                                /*!< \brief Stop computation flag.*/
-       fsi;                                     /*!< \brief FSI simulation flag.*/
+	     mixingplane,															/*!< \brief mixingplane simulation flag.*/
+			 fsi;                                     /*!< \brief FSI simulation flag.*/
   CIteration **iteration_container;             /*!< \brief Container vector with all the iteration methods. */
   COutput *output;                              /*!< \brief Pointer to the COutput class. */
   CIntegration ***integration_container;        /*!< \brief Container vector with all the integration methods. */
@@ -449,14 +450,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_nZone - Total number of zones.
    */
-  CDiscAdjMultiZoneDriver(CIteration **iteration_container,
-                   CSolver ****solver_container,
-                   CGeometry ***geometry_container,
-                   CIntegration ***integration_container,
-                   CNumerics *****numerics_container,
-                   CInterpolator ***interpolator_container,
-                   CTransfer ***transfer_container,
-                   CConfig **config,
+  CDiscAdjMultiZoneDriver(char* confFile,
                    unsigned short val_nZone,
                    unsigned short val_nDim);
 
@@ -467,58 +461,13 @@ public:
 
   /*!
    * \brief Run a single iteration of the physics within multiple zones.
-   * \param[in] iteration_container - Container vector with all the iteration methods.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
    */
 
-  void Run(CIteration **iteration_container,
-           COutput *output,
-           CIntegration ***integration_container,
-           CGeometry ***geometry_container,
-           CSolver ****solver_container,
-           CNumerics *****numerics_container,
-           CConfig **config_container,
-           CSurfaceMovement **surface_movement,
-           CVolumetricMovement **grid_movement,
-           CFreeFormDefBox*** FFDBox,
-           CInterpolator ***interpolator_container,
-           CTransfer ***transfer_container);
+  void Run();
 
-  void SetRecording(CIteration **iteration_container,
-                    COutput *output,
-                    CIntegration ***integration_container,
-                    CGeometry ***geometry_container,
-                    CSolver ****solver_container,
-                    CNumerics *****numerics_container,
-                    CConfig **config_container,
-                    CSurfaceMovement **surface_movement,
-                    CVolumetricMovement **grid_movement,
-                    CFreeFormDefBox*** FFDBox,
-                    CInterpolator ***interpolator_container,
-                    CTransfer ***transfer_container,
-                    unsigned short kind_recording);
+  void SetRecording(unsigned short kind_recording);
 
-  void SetSensitivity(CIteration **iteration_container,
-                      COutput *output,
-                      CIntegration ***integration_container,
-                      CGeometry ***geometry_container,
-                      CSolver ****solver_container,
-                      CNumerics *****numerics_container,
-                      CConfig **config_container,
-                      CSurfaceMovement **surface_movement,
-                      CVolumetricMovement **grid_movement,
-                      CFreeFormDefBox*** FFDBox,
-                      CInterpolator ***interpolator_container,
-                      CTransfer ***transfer_container,
-                      unsigned short kind_sensitivity);
+  void SetSensitivity(unsigned short kind_sensitivity);
 };
 
 /*!

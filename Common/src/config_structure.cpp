@@ -379,7 +379,6 @@ void CConfig::SetPointersNull(void) {
   NRBC_Var2 = NULL;
   Marker_TurboBoundIn = NULL;
   Marker_TurboBoundOut = NULL;
-  Kind_TurboPerformance = NULL;
   Marker_NRBC = NULL;
   
   /*--- Variable initialization ---*/
@@ -5133,7 +5132,6 @@ CConfig::~CConfig(void) {
   if (NRBC_Var2 != NULL) delete [] NRBC_Var2;
   if (Marker_TurboBoundIn != NULL) delete [] Marker_TurboBoundIn;
   if (Marker_TurboBoundOut != NULL) delete [] Marker_TurboBoundOut;
-  if (Kind_TurboPerformance != NULL) delete [] Kind_TurboPerformance;
   if (Marker_Riemann != NULL) delete [] Marker_Riemann;
   if (Marker_NRBC != NULL) delete [] Marker_NRBC;
  
