@@ -182,7 +182,7 @@ CDriver::CDriver(char* confFile,
     cout << endl <<"------------------------- Driver information --------------------------" << endl;
 
   fsi = config_container[ZONE_0]->GetFSI_Simulation();
-
+  mixingplane = config_container[ZONE_0]->GetBoolMixingPlaneInterface();
   if(nZone == SINGLE_ZONE){
     if (rank == MASTER_NODE) cout << "A single zone driver has been instantiated." << endl;
   }
@@ -364,11 +364,6 @@ CDriver::CDriver(char* confFile,
   if (config_container[ZONE_0]->GetKind_Solver() == FEM_ELASTICITY
       && config_container[ZONE_0]->GetWrt_Dynamic() && config_container[ZONE_0]->GetRestart())
     ExtIter = config_container[ZONE_0]->GetDyn_RestartIter();
-
-  /*--- Initiate value at each interface for the mixing plane ---*/
-  if(config_container[ZONE_0]->GetBoolMixingPlane())
-    for (iZone = 0; iZone < nZone; iZone++)
-      iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
 
   /* --- Initiate some variables used for external communications trough the Py wrapper. ---*/
   APIVarCoord[0] = 0.0;
@@ -624,6 +619,13 @@ void CDriver::Geometrical_Preprocessing() {
 
     if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
     geometry_container[iZone][MESH_0]->ComputeSurf_Curvature(config_container[iZone]);
+
+    /*--- Create turbovertex structure ---*/
+		 if (config_container[iZone]->GetBoolTurbomachinery()){
+			geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, INFLOW, true);
+			geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, OUTFLOW, true);
+		 }
+
 
     /*--- Check for periodicity and disable MG if necessary. ---*/
     
@@ -2979,7 +2981,7 @@ void CSingleZoneDriver::Run() {
 	/*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
 	if(ExtIter == 0){
 		if(config_container[ZONE_0]->GetBoolTurbomachinery()){
-			SetGeoTurboAvgValues(geometry_container, config_container, ZONE_0, true);
+			SetGeoTurboAvgValues(ZONE_0, true);
 		}
 	}
 
@@ -3091,7 +3093,7 @@ void CSingleZoneDriver::SetInitialMesh(){
 
 }
 
-void CSingleZoneDriver::SetGeoTurboAvgValues(CGeometry ***geometry_container, CConfig **config_container, unsigned short iZone, bool allocate){
+void CSingleZoneDriver::SetGeoTurboAvgValues(unsigned short iZone, bool allocate){
 
 	if ((config_container[iZone]->GetGrid_Movement())){
 					geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone);
@@ -3103,7 +3105,7 @@ void CSingleZoneDriver::SetGeoTurboAvgValues(CGeometry ***geometry_container, CC
 
 CMultiZoneDriver::CMultiZoneDriver(char* confFile,
                                    unsigned short val_nZone,
-                                   unsigned short val_nDim) : CDriver(confFile,
+                                   unsigned short val_nDim) : CSingleZoneDriver(confFile,
                                                                       val_nZone,
                                                                       val_nDim) { }
 
@@ -3121,7 +3123,7 @@ void CMultiZoneDriver::Run() {
   	/*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
   	if(config_container[iZone]->GetBoolTurbomachinery()){
   		for (iZone = 0; iZone < nZone; iZone++) {
-  			SetGeoTurboAvgValues(geometry_container, config_container, iZone, true);
+  			SetGeoTurboAvgValues(iZone, true);
 				solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
 				solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
 			}
@@ -3129,9 +3131,9 @@ void CMultiZoneDriver::Run() {
   }
 
   /* --- Set the mixing-plane interface ---*/
-  if (config_container[ZONE_0]->GetBoolMixingPlaneInterface()){
+  if (mixingplane){
 		for (iZone = 0; iZone < nZone; iZone++) {
-			SetMixingPlane(geometry_container, solver_container, config_container, interpolator_container, transfer_container, iZone);
+			SetMixingPlane(iZone);
 		}
   }
   
@@ -3152,7 +3154,7 @@ void CMultiZoneDriver::Run() {
   }
   /* --- Set turboperformance for multi-zone ---*/
   if (config_container[ZONE_0]->GetnMarker_Turbomachinery() > 0){
-    SetTurboPerformance(geometry_container, solver_container, config_container, interpolator_container, transfer_container, ZONE_0);
+    SetTurboPerformance(ZONE_0);
   }
 
 }
@@ -3261,12 +3263,7 @@ void CMultiZoneDriver::SetInitialMesh(){
 
 }
 
-void CMultiZoneDriver::SetMixingPlane(CGeometry ***geometry_container,
-                                      CSolver ****solver_container,
-                                      CConfig **config_container,
-                                      CInterpolator ***interpolator_container,
-                                      CTransfer ***transfer_container,
-                                      unsigned short donorZone){
+void CMultiZoneDriver::SetMixingPlane(unsigned short donorZone){
 
   unsigned short targetZone, nMarkerInt, iMarkerInt ;
 	nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
@@ -3282,12 +3279,7 @@ void CMultiZoneDriver::SetMixingPlane(CGeometry ***geometry_container,
 		}
 	}
 }
-void CMultiZoneDriver::SetTurboPerformance(CGeometry ***geometry_container,
-                                      CSolver ****solver_container,
-                                      CConfig **config_container,
-                                      CInterpolator ***interpolator_container,
-                                      CTransfer ***transfer_container,
-                                      unsigned short targetZone){
+void CMultiZoneDriver::SetTurboPerformance(unsigned short targetZone){
 
   unsigned short donorZone;
   //IMPORTANT this approach of multi-zone performances rely upon the fact that turbomachinery markers follow the natural (stator-rotor) development of the real machine.
@@ -3302,25 +3294,12 @@ void CMultiZoneDriver::SetTurboPerformance(CGeometry ***geometry_container,
   solver_container[targetZone][MESH_0][FLOW_SOL]->TurboPerformance2nd(config_container[targetZone]);
 }
 
-CDiscAdjMultiZoneDriver::CDiscAdjMultiZoneDriver(CIteration **iteration_container,
-                                                 CSolver ****solver_container,
-                                                 CGeometry ***geometry_container,
-                                                 CIntegration ***integration_container,
-                                                 CNumerics *****numerics_container,
-                                                 CInterpolator ***interpolator_container,
-                                                 CTransfer ***transfer_container,
-                                                 CConfig **config_container,
-                                                 unsigned short val_nZone,
-                                                 unsigned short val_nDim) : CMultiZoneDriver(iteration_container,
-                                                                                     solver_container,
-                                                                                     geometry_container,
-                                                                                     integration_container,
-                                                                                     numerics_container,
-                                                                                     interpolator_container,
-                                                                                     transfer_container,
-                                                                                     config_container,
-                                                                                     val_nZone,
-                                                                                     val_nDim) {
+CDiscAdjMultiZoneDriver::CDiscAdjMultiZoneDriver(char* confFile,
+    																						 unsigned short val_nZone,
+																								 unsigned short val_nDim) : CMultiZoneDriver(confFile,
+																										 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	val_nZone,
+																																										val_nDim) {
+
   direct_iteration = new CIteration*[nZone];
 
   unsigned short iZone;
@@ -3341,26 +3320,15 @@ CDiscAdjMultiZoneDriver::CDiscAdjMultiZoneDriver(CIteration **iteration_containe
 
 CDiscAdjMultiZoneDriver::~CDiscAdjMultiZoneDriver(){}
 
-void CDiscAdjMultiZoneDriver::Run(CIteration **iteration_container,
-                           COutput *output,
-                           CIntegration ***integration_container,
-                           CGeometry ***geometry_container,
-                           CSolver ****solver_container,
-                           CNumerics *****numerics_container,
-                           CConfig **config_container,
-                           CSurfaceMovement **surface_movement,
-                           CVolumetricMovement **grid_movement,
-                           CFreeFormDefBox*** FFDBox,
-                           CInterpolator ***interpolator_container,
-                           CTransfer ***transfer_container) {
-  unsigned short iZone;
+void CDiscAdjMultiZoneDriver::Run() {
+  unsigned short iZone = 0;
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
   /* --- Set the average for geometric quantities and steady grid velocity   ---*/
   if(ExtIter == 0){
     if(config_container[iZone]->GetBoolTurbomachinery()){
       for (iZone = 0; iZone < nZone; iZone++) {
-        SetGeoTurboAvgValues(geometry_container, config_container, iZone, true);
+        SetGeoTurboAvgValues(iZone, true);
         solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
         solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
       }
@@ -3368,49 +3336,30 @@ void CDiscAdjMultiZoneDriver::Run(CIteration **iteration_container,
   }
 
 
-  SetSensitivity(iteration_container, output, integration_container, geometry_container, solver_container,
-                             numerics_container, config_container, surface_movement, grid_movement, FFDBox,
-                             interpolator_container, transfer_container, SOLUTION);
+  SetSensitivity(SOLUTION);
 
 
   if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter()) ||
       ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0)) ||
       integration_container[ZONE_0][ADJFLOW_SOL]->GetConvergence()){
 
-    SetSensitivity(iteration_container, output, integration_container, geometry_container, solver_container,
-                               numerics_container, config_container, surface_movement, grid_movement, FFDBox,
-                               interpolator_container, transfer_container, GEOMETRY);
+    SetSensitivity(GEOMETRY);
 
   }
 }
 
-void CDiscAdjMultiZoneDriver::SetSensitivity(CIteration **iteration_container,
-                                             COutput *output,
-                                             CIntegration ***integration_container,
-                                             CGeometry ***geometry_container,
-                                             CSolver ****solver_container,
-                                             CNumerics *****numerics_container,
-                                             CConfig **config_container,
-                                             CSurfaceMovement **surface_movement,
-                                             CVolumetricMovement **grid_movement,
-                                             CFreeFormDefBox*** FFDBox,
-                                             CInterpolator ***interpolator_container,
-                                             CTransfer ***transfer_container,
-                                             unsigned short kind_sensitivity){
-  unsigned short iZone;
+void CDiscAdjMultiZoneDriver::SetSensitivity(unsigned short kind_sensitivity){
+
+	unsigned short iZone;
 
   if (RecordingState != kind_sensitivity){
     if (RecordingState != NONE){
 
-      SetRecording(iteration_container, output, integration_container, geometry_container,
-                   solver_container, numerics_container, config_container, surface_movement,
-                   grid_movement, FFDBox, interpolator_container, transfer_container, NONE);
+      SetRecording(NONE);
 
     }
 
-    SetRecording(iteration_container, output, integration_container, geometry_container,
-                 solver_container, numerics_container, config_container, surface_movement,
-                 grid_movement, FFDBox, interpolator_container, transfer_container, kind_sensitivity);
+    SetRecording(kind_sensitivity);
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -3437,19 +3386,7 @@ void CDiscAdjMultiZoneDriver::SetSensitivity(CIteration **iteration_container,
 }
 
 
-void CDiscAdjMultiZoneDriver::SetRecording(CIteration **iteration_container,
-                                           COutput *output,
-                                           CIntegration ***integration_container,
-                                           CGeometry ***geometry_container,
-                                           CSolver ****solver_container,
-                                           CNumerics *****numerics_container,
-                                           CConfig **config_container,
-                                           CSurfaceMovement **surface_movement,
-                                           CVolumetricMovement **grid_movement,
-                                           CFreeFormDefBox*** FFDBox,
-                                           CInterpolator ***interpolator_container,
-                                           CTransfer ***transfer_container,
-                                           unsigned short kind_recording){
+void CDiscAdjMultiZoneDriver::SetRecording(unsigned short kind_recording){
   unsigned short iZone;
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -3486,7 +3423,7 @@ void CDiscAdjMultiZoneDriver::SetRecording(CIteration **iteration_container,
 
   if(config_container[ZONE_0]->GetBoolTurbomachinery()){
     for (iZone = 0; iZone < nZone; iZone++) {
-      SetGeoTurboAvgValues(geometry_container, config_container, iZone, false);
+      SetGeoTurboAvgValues(iZone, false);
       direct_iteration[iZone]->Preprocess(output, integration_container, geometry_container,
                                           solver_container, numerics_container, config_container,
                                           surface_movement, grid_movement, FFDBox, iZone);
@@ -3495,9 +3432,9 @@ void CDiscAdjMultiZoneDriver::SetRecording(CIteration **iteration_container,
   }
 
   /* --- Set the mixing-plane interface ---*/
-  if (config_container[ZONE_0]->GetBoolMixingPlaneInterface()){
+  if (mixingplane){
     for (iZone = 0; iZone < nZone; iZone++) {
-      SetMixingPlane(geometry_container, solver_container, config_container, interpolator_container, transfer_container, iZone);
+      SetMixingPlane(iZone);
     }
   }
 
@@ -3521,7 +3458,7 @@ void CDiscAdjMultiZoneDriver::SetRecording(CIteration **iteration_container,
   /* --- Set turboperformance for multi-zone ---*/
 
   if (config_container[ZONE_0]->GetnMarker_Turbomachinery() > 0){
-     SetTurboPerformance(geometry_container, solver_container, config_container, interpolator_container, transfer_container, ZONE_0);
+     SetTurboPerformance(ZONE_0);
   }
 
   RecordingState = kind_recording;

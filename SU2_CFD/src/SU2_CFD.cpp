@@ -64,8 +64,8 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
 
-  nZone = GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  nDim  = GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   fsi = config->GetFSI_Simulation();
 
   /*--- First, given the basic information about the number of zones and the
@@ -95,8 +95,15 @@ int main(int argc, char *argv[]) {
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
      or a specialized driver class for a particular multi-physics problem. ---*/
 
-    driver = new CMultiZoneDriver(config_file_name, nZone, nDim);
+  	if (config->GetDiscrete_Adjoint()){
 
+  		driver = new CDiscAdjMultiZoneDriver(config_file_name, nZone, nDim);
+
+  	} else {
+
+  		driver = new CMultiZoneDriver(config_file_name, nZone, nDim);
+
+  	}
     /*--- Future multi-zone drivers instatiated here. ---*/
 
   }

@@ -4238,7 +4238,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     }
 
   /*--- initialize pointers for turbomachinery computations  ---*/
-  nVertexSpan 						= new unsigned long* [nMarker];
+  nVertexSpan 						= new long* [nMarker];
   nTotVertexSpan 				  = new unsigned long* [nMarker];
 	turbovertex 						= new CTurboVertex***[nMarker];
 	AverageTurboNormal 			= new su2double**[nMarker];
@@ -8454,10 +8454,10 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 }
 
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
-	unsigned long  iPoint, jPoint, iVertex, jVertex, kVertex, iSpanVertex, jSpanVertex, kSpanVertex, **ordered, **disordered, **oldVertex3D, oldVertex;
+	unsigned long  iPoint, jPoint = 0, jVertex, kVertex, kSpanVertex = 0, **ordered, **disordered, **oldVertex3D, oldVertex;
 	unsigned long nVert, nVertMax;
 	unsigned short iMarker, iMarkerTP, iSpan,iSize, jSpan, iDim, nSpanWiseSections;
-	su2double min, max, *coord, *span, delta, dist, Normal2, *TurboNormal, *NormalArea, target, **area, ***unitnormal, Area;
+	su2double min, max, *coord, *span, delta, dist, Normal2, *TurboNormal, *NormalArea, target = 0.0, **area, ***unitnormal, Area = 0.0;
 	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
 	int  globalindex;
@@ -8467,6 +8467,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 	su2double *ymin_loc, radius;
 	int *nVertex_loc;
+	long iVertex, iSpanVertex, jSpanVertex;
 	int *nTotVertex_gb;
 	su2double **x_loc, **y_loc, **z_loc;
 	int       **globIdx_loc;
@@ -8474,10 +8475,10 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	su2double MyMax, MyMin, ymin[size];
-	su2double *x_gb, *y_gb, *z_gb;
-	int       *globIdx_gb;
+	su2double *x_gb =NULL, *y_gb =NULL, *z_gb =NULL;
+	int       *globIdx_gb=NULL;
 
-	int nvertex_glob[size], nvertex_out[size], nvert;
+	int nvertex_glob[size], nvertex_out[size];
   unsigned long My_nVert;
 
 #endif
@@ -8518,7 +8519,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
 				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
 					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-						nVertexSpan[iMarker] 							= new unsigned long[nSpanWiseSections];
+						nVertexSpan[iMarker] 							= new long[nSpanWiseSections];
 						turbovertex[iMarker] 							= new CTurboVertex** [nSpanWiseSections];
 						nTotVertexSpan[iMarker]						= new unsigned long [nSpanWiseSections +1];
 						for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
@@ -8551,7 +8552,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 						min = 10E+06;
 						jVertex = 0;
 						oldVertex = 0;
-						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+						for (iVertex = 0; (unsigned long)iVertex < nVertex[iMarker]; iVertex++) {
 							iPoint = vertex[iMarker][iVertex]->GetNode();
 
 							/*--- only physical point need to be stored in the turbovertex structure ---*/
@@ -8586,7 +8587,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 						/*--- reordering pitch-wise, storing in the turbovertex structure, compute normal for the turbo frame of reference---*/
 						jVertex = 0;
-						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+						for (iVertex = 0; (unsigned long)iVertex  < nVertex[iMarker]; iVertex++) {
 							if(node[jPoint]->GetDomain()){
 								if (allocate){
 									turbovertex[iMarker][0][jVertex] = new CTurboVertex(jPoint, nDim);
@@ -8663,7 +8664,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
 				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
 					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+						for (iVertex = 0;(unsigned long)iVertex  < nVertex[iMarker]; iVertex++) {
 							iPoint = vertex[iMarker][iVertex]->GetNode();
 							coord = node[iPoint]->GetCoord();
 							switch (config->GetKind_TurboMachinery(val_iZone)){
@@ -8715,7 +8716,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 						/*--- compute the amount of vertexes for each span-wise section to initialize the CTurboVertex pointers and auxiliary pointers  ---*/
 						//TODO (turbo) this works only for centrifugal blade rotating around the Z-Axes.
-						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+						for (iVertex = 0; (unsigned long)iVertex  < nVertex[iMarker]; iVertex++) {
 							dist = 10E+06;
 							jSpan = -1;
 							iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -8785,7 +8786,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 						/*--- store the vertexes in a ordered manner in span-wise directions but not yet ordered pitch-wise ---*/
 						//TODO (turbo) this works only for centrifugal blade rotating around the Z-Axes.
-						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+						for (iVertex = 0; (unsigned long)iVertex < nVertex[iMarker]; iVertex++) {
 							dist = 10E+06;
 							jSpan = -1;
 							iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -8980,7 +8981,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 		SU2_MPI::Gather(&nVertex_loc[iSpan], 1, MPI_INT, nvertex_glob, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		min =  10.0E+06;
 		dist =  10.0E+06;
-		unsigned short imin;
+		unsigned short imin = 0;
 		unsigned long  nvertMPI;
 		if (rank==MASTER_NODE){
 			for(iSize=0; iSize<size; iSize++){
@@ -9241,11 +9242,12 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
 
 	unsigned short iMarker, iMarkerTP, iSpan, iDim;
-	unsigned long iVertex, iPoint;
+	unsigned long iPoint;
 	su2double *TurboNormal,*coord, *Normal, turboNormal2, Normal2, *gridVel, TotalArea, TotalRadius, radius;
   su2double *TotalTurboNormal,*TotalNormal, *TotalGridVel, Area;
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
+  long iVertex;
   /*-- Variables declaration and allocation ---*/
   TotalTurboNormal = new su2double[nDim];
   TotalNormal			 = new su2double[nDim];

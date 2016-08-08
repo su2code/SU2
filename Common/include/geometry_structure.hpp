@@ -117,7 +117,7 @@ public:
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
 	CTurboVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
 	unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
-  unsigned long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker.  */
+  long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker.  */
   unsigned long **nTotVertexSpan; /*! <\brief number of vertexes at each span wise section for each marker.  */
   unsigned long nVertexSpanMax[3]; /*! <\brief max number of vertexes for each span section for each marker flag.  */
 	su2double *** AverageTurboNormal; /*! <\brief Average boundary normal at each span wise section for each marker in the turbomachinery frame of reference.*/
