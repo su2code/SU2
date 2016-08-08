@@ -174,6 +174,7 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 	    }
 	    ModAmpl = max(ModAmpl,0.0);
 	    ModAmpl = min(ModAmpl,1.0);
+	    if (CurrentTime > Ramp_Time) ModAmpl = 1.0;
 	    Physical_Constants[1] = ModAmpl;
 	  }
 	}
