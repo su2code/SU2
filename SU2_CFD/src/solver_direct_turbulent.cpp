@@ -1128,6 +1128,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
   
+  /*--- Initialize nVarGrad for deallocation ---*/
+  
+  nVarGrad = nVar;
+  
   /*--- Define geometry constants in the solver structure ---*/
   
   nDim = geometry->GetnDim();
@@ -2510,6 +2514,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   nVar = 2;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
+  
+  /*--- Initialize nVarGrad for deallocation ---*/
+  
+  nVarGrad = nVar;
   
   /*--- Define geometry constants in the solver structure ---*/
   

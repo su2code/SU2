@@ -48,8 +48,13 @@ if BUILD_REVERSE
 bin_PROGRAMS += ../bin/SU2_CFD_AD
 endif
 
+noinst_LIBRARIES= 
 
-su2_cfd_sources = \
+if BUILD_NORMAL
+noinst_LIBRARIES+= libSU2Core.a
+endif
+
+libSU2Core_sources = \
   ../include/definition_structure.hpp \
   ../include/fluid_model.hpp \
   ../include/fluid_model.inl \
@@ -113,7 +118,6 @@ su2_cfd_sources = \
   ../src/solver_template.cpp \
   ../src/transfer_physics.cpp \
   ../src/transfer_structure.cpp \
-  ../src/SU2_CFD.cpp \
   ../src/transport_model.cpp \
   ../src/variable_adjoint_levelset.cpp \
   ../src/variable_adjoint_mean.cpp \
@@ -129,12 +133,20 @@ su2_cfd_sources = \
   ../src/variable_structure.cpp \
   ../src/variable_template.cpp
 
+su2_cfd_sources = \
+  ../include/SU2_CFD.hpp \
+  ../src/SU2_CFD.cpp
+
+libSU2Core_cxx_flags = -fPIC
+libSU2Core_libadd = 
+
 su2_cfd_cxx_flags =
 su2_cfd_ldadd =
 
 # always link to built dependencies from ./externals
 su2_cfd_cxx_flags += @su2_externals_INCLUDES@
 su2_cfd_ldadd += @su2_externals_LIBS@
+libSU2Core_cxx_flags += @su2_externals_INCLUDES@
 
 # if BUILD_CGNS
 su2_cfd_cxx_flags += @CGNS_CXX@
@@ -167,19 +179,22 @@ su2_cfd_ldadd += @ZLIB_LD@
 # endif
 
 if BUILD_NORMAL
+libSU2Core_a_SOURCES = $(libSU2Core_sources)
+libSU2Core_a_CXXFLAGS = $(libSU2Core_cxx_flags)
+libSU2Core_a_LIBADD = $(libSU2Core_libadd)
 ___bin_SU2_CFD_SOURCES = $(su2_cfd_sources)
 ___bin_SU2_CFD_CXXFLAGS = ${su2_cfd_cxx_flags}
-___bin_SU2_CFD_LDADD = ../../Common/lib/libSU2.a ${su2_cfd_ldadd}
+___bin_SU2_CFD_LDADD = libSU2Core.a ../../Common/lib/libSU2.a ${su2_cfd_ldadd}
 endif
 
 if BUILD_DIRECTDIFF
-___bin_SU2_CFD_DIRECTDIFF_SOURCES = $(su2_cfd_sources)
+___bin_SU2_CFD_DIRECTDIFF_SOURCES = $(su2_cfd_sources) ${libSU2Core_sources}
 ___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS = @DIRECTDIFF_CXX@ ${su2_cfd_cxx_flags}
 ___bin_SU2_CFD_DIRECTDIFF_LDADD = @DIRECTDIFF_LIBS@ ../../Common/lib/libSU2_DIRECTDIFF.a ${su2_cfd_ldadd}
 endif
 
 if BUILD_REVERSE
-___bin_SU2_CFD_AD_SOURCES = $(su2_cfd_sources)
+___bin_SU2_CFD_AD_SOURCES = $(su2_cfd_sources) ${libSU2Core_sources}
 ___bin_SU2_CFD_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_cfd_cxx_flags}
 ___bin_SU2_CFD_AD_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_AD.a ${su2_cfd_ldadd}
 endif

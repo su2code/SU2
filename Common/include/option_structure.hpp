@@ -120,6 +120,8 @@ const unsigned int MAX_ZONES = 3;            /*!< \brief Maximum number of zones
 const unsigned int MAX_FE_KINDS = 4;            	/*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;		       /*!< \brief No Runge-Kutta iteration. */
 
+const unsigned int OVERHEAD = 4; /*!< \brief Overhead space above nMarker when allocating space for boundary elems (MPI + periodic). */
+
 const unsigned int MESH_0 = 0; /*!< \brief Definition of the finest grid level. */
 const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. */
 const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
@@ -1716,15 +1718,22 @@ class COptionDoubleArray : public COptionBase{
   su2double * & field; // Reference to the feildname
   string name; // identifier for the option
   const int size;
+  su2double * def;
+  su2double * vals;
   su2double * default_value;
 
 public:
   COptionDoubleArray(string option_field_name, const int list_size, su2double * & option_field, su2double * default_value) : field(option_field), size(list_size) {
     this->name = option_field_name;
     this->default_value = default_value;
+    def  = NULL;
+    vals = NULL;
   }
 
-  ~COptionDoubleArray() {};
+  ~COptionDoubleArray() {
+     if(def  != NULL) delete [] def; 
+     if(vals != NULL) delete [] vals; 
+  };
   string SetValue(vector<string> option_value) {
     // Check that the size is correct
     if (option_value.size() != (unsigned long)this->size) {
@@ -1741,7 +1750,7 @@ public:
       newstring.append(" found");
       return newstring;
     }
-    su2double * vals = new su2double[this->size];
+    vals = new su2double[this->size];
     for (int i  = 0; i < this->size; i++) {
       istringstream is(option_value[i]);
       su2double val;
@@ -1756,7 +1765,11 @@ public:
   }
 
   void SetDefault() {
-    this->field = this->default_value;
+    def = new su2double [size];
+    for (int i = 0; i < size; i++) {
+      def[i] = default_value[i];
+    }
+    this->field = def;
   }
 };
 

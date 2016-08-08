@@ -241,7 +241,14 @@ inline void CPhysicalGeometry::SetPoint_Connectivity(CGeometry *geometry) { CGeo
 
 inline void CMultiGridGeometry::SetPoint_Connectivity(void) { CGeometry::SetPoint_Connectivity(); }
 
-inline long CPhysicalGeometry::GetGlobal_to_Local_Point(long val_ipoint) { return Global_to_Local_Point[val_ipoint]; }
+inline long CPhysicalGeometry::GetGlobal_to_Local_Point(long val_ipoint) {
+  map<long, long>::const_iterator MI = Global_to_Local_Point.find(val_ipoint);
+  if (MI != Global_to_Local_Point.end()) {
+    return Global_to_Local_Point[val_ipoint];
+  } else {
+    return -1;
+  }
+}
 
 inline unsigned short CPhysicalGeometry::GetGlobal_to_Local_Marker(unsigned short val_imarker) { return Global_to_Local_Marker[val_imarker]; }
 
@@ -335,3 +342,5 @@ inline su2double CPhysicalGeometry::GetSpanArea(unsigned short val_marker, unsig
 inline su2double CPhysicalGeometry::GetTurboRadius(unsigned short val_marker, unsigned short val_span){return TurboRadius[val_marker][val_span];}
 
 inline unsigned long CPhysicalGeometry::GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span){return nTotVertexSpan[val_marker][val_span];}
+
+inline void CGeometry::Check_Periodicity(CConfig* config){}
