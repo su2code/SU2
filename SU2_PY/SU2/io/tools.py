@@ -137,7 +137,7 @@ def read_plot( filename ):
 #  Read All Data from History File
 # -------------------------------------------------------------------
 
-def read_history( History_filename ):
+def read_history( History_filename, nZones = 1):
     """ reads a history file
         returns an ordered bunch with the history file headers for keys
         and a list of each header's floats for values.
@@ -154,7 +154,7 @@ def read_history( History_filename ):
     history_data = ordered_bunch()    
     
     # header name to config file name map
-    map_dict = get_headerMap()    
+    map_dict = get_headerMap(nZones)    
     
     # map header names
     for key in plot_data.keys():
@@ -174,7 +174,7 @@ def read_history( History_filename ):
 #  Define Dictionary Map for Header Names
 # -------------------------------------------------------------------
 
-def get_headerMap():
+def get_headerMap(nZones = 1):
     """ returns a dictionary that maps history file header names
         to optimization problem function names
     """
@@ -222,13 +222,13 @@ def get_headerMap():
                  "ComboObj"        : "COMBO"                   ,
                  "TotalPressureLoss_1"     : "TOTAL_PRESSURE_LOSS"    ,
                  "KineticEnergyLoss_1"     : "KINETIC_ENERGY_LOSS"    ,
-                 "EntropyGen_1"            : "ENTROPY_GENERATION"     ,                   
+                 "EntropyGen_" + str(getTurboPerfIndex(nZones)) : "ENTROPY_GENERATION"     ,                   
                  "FlowAngleOut_1"          : "FLOW_ANGLE_OUT"         ,
                  "FlowAngleIn_1"           : "FLOW_ANGLE_IN"          ,
                  "MassFlowIn_1"            : "MASS_FLOW_IN"           ,
                  "MassFlowOut_1"           : "MASS_FLOW_OUT"          ,
                  "PressureRatio_1"         : "PRESSURE_RATIO"         ,
-                 "TotalEfficiency_3"       : "TOTAL_EFFICIENCY"       ,
+                 "TotalEfficiency_" + str(getTurboPerfIndex(nZones))  : "TOTAL_EFFICIENCY"       ,
                  "TotalStaticEfficiency_3" : "TOTAL_STATIC_EFFICIENCY",
                  "D(TotalPressureLoss_0)"  : "D_TOTAL_PRESSURE_LOSS"  ,
                  "D(TotalEfficiency_0)"       : "D_TOTAL_EFFICIENCY"       ,
@@ -244,6 +244,15 @@ def get_headerMap():
                  "D(TotalEnthalpy_0)"         : "D_TOTAL_ENTHALPY_OUT"     }
     
     return map_dict
+
+def getTurboPerfIndex(nZones = 1):
+
+  if int(nZones) > 1:
+    index = int(nZones) + int(int(nZones)/2.0) + 1
+  else: 
+    index = 1
+  return index
+
 
 #: def get_headerMap()
 
@@ -412,7 +421,7 @@ grad_names_map = { "LIFT"      : "D_LIFT"           ,
 #  Read Aerodynamic Function Values from History File
 # -------------------------------------------------------------------
 
-def read_aerodynamics( History_filename , special_cases=[], final_avg=0 ):
+def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_avg=0 ):
     """ values = read_aerodynamics(historyname, special_cases=[])
         read aerodynamic function values from history file
         
@@ -423,7 +432,7 @@ def read_aerodynamics( History_filename , special_cases=[], final_avg=0 ):
     """
     
     # read the history data
-    history_data = read_history(History_filename)
+    history_data = read_history(History_filename, nZones)
     
     # list of functions to pull
     func_names = optnames_aero + grad_names_directdiff + optnames_turbo
@@ -777,7 +786,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
 #  Get Optimization File Header
 # -------------------------------------------------------------------    
     
-def get_optFileFormat(plot_format,special_cases=None):
+def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     
     if special_cases is None: special_cases = []
     
@@ -827,7 +836,7 @@ def get_optFileFormat(plot_format,special_cases=None):
             
     # build list of objective function names
     header_vars = []
-    map_dict = get_headerMap()
+    map_dict = get_headerMap(nZones)
     for variable in header_list:
         assert map_dict.has_key(variable) , 'unrecognized header variable'
         header_vars.append(map_dict[variable])
