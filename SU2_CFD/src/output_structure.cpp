@@ -4088,11 +4088,11 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
       ConvHist_file[0] << begin;
       if (!turbo) ConvHist_file[0] << flow_coeff;
       if (turbo) ConvHist_file[0] << turbo_coeff;
-      if (thermal) ConvHist_file[0] << heat_coeff;
+      if (thermal && !turbo) ConvHist_file[0] << heat_coeff;
       if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
       if (inv_design) {
         ConvHist_file[0] << Cp_inverse_design;
-        if (thermal) ConvHist_file[0] << Heat_inverse_design;
+        if (thermal && !turbo) ConvHist_file[0] << Heat_inverse_design;
       }
       if (rotating_frame && !turbo) ConvHist_file[0] << rotating_frame_coeff;
       ConvHist_file[0] << flow_resid;
