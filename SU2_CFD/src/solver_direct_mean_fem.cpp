@@ -3294,10 +3294,10 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
     const su2double halfTheta = 0.5*config->GetTheta_Interior_Penalty_DGFEM();
 
     for(unsigned short i=0; i<nInt; ++i) {
-      su2double *flux        = fluxes + i*nVar;
+      su2double *flux        = fluxes + i*nVar*nDim;
       const su2double wTheta = -halfTheta*weights[i];
 
-      for(unsigned short j=0; j<nVar; ++j)
+      for(unsigned short j=0; j<(nVar*nDim); ++j)
         flux[j] *= wTheta;
     }
 
@@ -4213,10 +4213,10 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
   const su2double halfTheta = 0.5*config->GetTheta_Interior_Penalty_DGFEM();
 
   for(unsigned short i=0; i<nInt; ++i) {
-    su2double *flux        = fluxes + i*nVar;
+    su2double *flux        = fluxes + i*nVar*nDim;
     const su2double wTheta = -halfTheta*weights[i];
 
-    for(unsigned short j=0; j<nVar; ++j)
+    for(unsigned short j=0; j<(nVar*nDim); ++j)
       flux[j] *= wTheta;
   }
 
