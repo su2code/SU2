@@ -3103,28 +3103,30 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
   /*--- Allocate the memory for some temporary storage needed to compute the
         residual efficiently. Note that when the MKL library is used
         a special allocation is used to optimize performance. Furthermore, note
-        the size for fluxes and the max function for the viscFluxes. This is
-        because these arrays are also used as temporary storage for the solution
-        of the DOFs. ---*/
+        the size for fluxes and gradSolInt and the max function for the viscFluxes.
+        This is because these arrays are also used as temporary storage for the other
+        purposes. ---*/
   su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes;
   su2double *viscosityIntL, *viscosityIntR;
 
   unsigned short sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = max(sizeFluxes, nDOFsMax);
+  sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+
+  const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
 #ifdef HAVE_MKL
   solIntL       = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
   solIntR       = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  gradSolInt    = (su2double *) mkl_malloc(nIntegrationMax*nVar*nDim*sizeof(su2double), 64);
-  fluxes        = (su2double *) mkl_malloc(sizeFluxes*nVar*sizeof(su2double), 64);
+  gradSolInt    = (su2double *) mkl_malloc(sizeGradSolInt*sizeof(su2double), 64);
+  fluxes        = (su2double *) mkl_malloc(sizeFluxes*sizeof(su2double), 64);
   viscFluxes    = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
   viscosityIntL = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
   viscosityIntR = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
 #else
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpGradSolInt(nIntegrationMax*nVar*nDim);
-  vector<su2double> helpFluxes(sizeFluxes*nVar);
+  vector<su2double> helpGradSolInt(sizeGradSolInt);
+  vector<su2double> helpFluxes(sizeFluxes);
   vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
   vector<su2double> helpViscosityIntL(nIntegrationMax);
   vector<su2double> helpViscosityIntR(nIntegrationMax);
@@ -3311,12 +3313,38 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
     const unsigned short nDOFsElem0    = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
     const su2double *derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide0();
 
+    /*--- Create the Cartesian derivatives of the basis functions in the integration
+          points. The array gradSolInt is used to store these derivatives. ---*/
+    unsigned int ii = 0;
+    for(unsigned short j=0; j<nDOFsElem0; ++j) {
+      for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
+
+        /* Easier storage of the derivatives of the basis function w.r.t. the
+           parametric coordinates, the location where to store the Cartesian
+           derivatives of the basis functions, and the metric terms in this
+           integration point. */
+        const su2double *derParam    = derBasisElemTrans + ii;
+        const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace0 + i*nDim*nDim;
+              su2double *derCar      = gradSolInt + ii;
+
+        /*--- Loop over the dimensions to compute the Cartesian derivatives
+              of the basis functions. ---*/
+        for(unsigned short k=0; k<nDim; ++k) {
+          derCar[k] = 0.0;
+          for(unsigned short l=0; l<nDim; ++l)
+            derCar[k] += derParam[l]*metricTerms[k+l*nDim];
+        }
+      }
+    }
+
+    /* Set the pointer where to store the current residual and update the
+       counter indResFaces. */
     su2double *resElem0 = VecResFaces.data() + indResFaces*nVar;
     indResFaces        += nDOFsElem0;
 
     /* Call the general function to carry out the matrix product to compute
        the residual for side 0. */
-    MatrixProduct(nDOFsElem0, nVar, nInt*nDim, derBasisElemTrans, fluxes, resElem0);
+    MatrixProduct(nDOFsElem0, nVar, nInt*nDim, gradSolInt, fluxes, resElem0);
     
     /* Check if the element to the right is an owned element. Only then
        the residual needs to be computed. */
@@ -3326,13 +3354,39 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
       const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
       derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide1();
 
+      /*--- Create the Cartesian derivatives of the basis functions in the integration
+            points. The array gradSolInt is used to store these derivatives. ---*/
+      ii = 0;
+      for(unsigned short j=0; j<nDOFsElem1; ++j) {
+        for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
+
+          /* Easier storage of the derivatives of the basis function w.r.t. the
+             parametric coordinates, the location where to store the Cartesian
+             derivatives of the basis functions, and the metric terms in this
+             integration point. */
+          const su2double *derParam    = derBasisElemTrans + ii;
+          const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace1 + i*nDim*nDim;
+                su2double *derCar      = gradSolInt + ii;
+
+          /*--- Loop over the dimensions to compute the Cartesian derivatives
+                of the basis functions. ---*/
+          for(unsigned short k=0; k<nDim; ++k) {
+            derCar[k] = 0.0;
+            for(unsigned short l=0; l<nDim; ++l)
+              derCar[k] += derParam[l]*metricTerms[k+l*nDim];
+          }
+        }
+      }
+
+      /* Set the pointer where to store the current residual and update the
+         counter indResFaces. */
       su2double *resElem1 = VecResFaces.data() + indResFaces*nVar;
       indResFaces        += nDOFsElem1;
 
       /* Call the general function to carry out the matrix product to compute
          the residual for side 1. Afterwards the residual is negated, because the
          normal is pointing into the adjacent element. */
-      MatrixProduct(nDOFsElem1, nVar, nInt*nDim, derBasisElemTrans, fluxes, resElem1);
+      MatrixProduct(nDOFsElem1, nVar, nInt*nDim, gradSolInt, fluxes, resElem1);
 
       for(unsigned short i=0; i<(nVar*nDOFsElem1); ++i)
         resElem1[i] = -resElem1[i];
@@ -3678,26 +3732,28 @@ void CFEM_DG_NSSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   /*--- Allocate the memory for some temporary storage needed to compute the
         residual efficiently. Note that when the MKL library is used
         a special allocation is used to optimize performance. Furthermore, note
-        the size for fluxes and the max function for the viscFluxes. This is
-        because these arrays are also used as temporary storage for the solution
-        of the DOFs. ---*/
+        the size for fluxes and gradSolInt and the max function for the viscFluxes.
+        This is because these arrays are also used as temporary storage for the other
+        purposes. ---*/
   su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes, *viscosityInt;
 
   unsigned short sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = max(sizeFluxes, nDOFsMax);
+  sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+
+  const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
 #ifdef HAVE_MKL
   solIntL      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
   solIntR      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  gradSolInt   = (su2double *) mkl_malloc(nIntegrationMax*nVar*nDim*sizeof(su2double), 64);
-  fluxes       = (su2double *) mkl_malloc(sizeFluxes*nVar*sizeof(su2double), 64);
+  gradSolInt   = (su2double *) mkl_malloc(sizeGradSolInt*sizeof(su2double), 64);
+  fluxes       = (su2double *) mkl_malloc(sizeFluxes*sizeof(su2double), 64);
   viscFluxes   = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
   viscosityInt = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
 #else
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpGradSolInt(nIntegrationMax*nVar*nDim);
-  vector<su2double> helpFluxes(sizeFluxes*nVar);
+  vector<su2double> helpGradSolInt(sizeGradSolInt);
+  vector<su2double> helpFluxes(sizeFluxes);
   vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
   vector<su2double> helpViscosityInt(nIntegrationMax);
   solIntL      = helpSolIntL.data();
@@ -3767,26 +3823,28 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
   /*--- Allocate the memory for some temporary storage needed to compute the
         residual efficiently. Note that when the MKL library is used
         a special allocation is used to optimize performance. Furthermore, note
-        the size for fluxes and the max function for the viscFluxes. This is
-        because these arrays are also used as temporary storage for the solution
-        of the DOFs. ---*/
+        the size for fluxes and gradSolInt and the max function for the viscFluxes.
+        This is because these arrays are also used as temporary storage for the other
+        purposes. ---*/
   su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes, *viscosityInt;
 
   unsigned short sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = max(sizeFluxes, nDOFsMax);
+  sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+
+  const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
 #ifdef HAVE_MKL
   solIntL      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
   solIntR      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  gradSolInt   = (su2double *) mkl_malloc(nIntegrationMax*nVar*nDim*sizeof(su2double), 64);
-  fluxes       = (su2double *) mkl_malloc(sizeFluxes*nVar*sizeof(su2double), 64);
+  gradSolInt   = (su2double *) mkl_malloc(sizeGradSolInt*sizeof(su2double), 64);
+  fluxes       = (su2double *) mkl_malloc(sizeFluxes*sizeof(su2double), 64);
   viscFluxes   = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
   viscosityInt = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
 #else
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpGradSolInt(nIntegrationMax*nVar*nDim);
-  vector<su2double> helpFluxes(sizeFluxes*nVar);
+  vector<su2double> helpGradSolInt(sizeGradSolInt);
+  vector<su2double> helpFluxes(sizeFluxes);
   vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
   vector<su2double> helpViscosityInt(nIntegrationMax);
   solIntL      = helpSolIntL.data();
@@ -3897,26 +3955,28 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_co
   /*--- Allocate the memory for some temporary storage needed to compute the
         residual efficiently. Note that when the MKL library is used
         a special allocation is used to optimize performance. Furthermore, note
-        the size for fluxes and the max function for the viscFluxes. This is
-        because these arrays are also used as temporary storage for the solution
-        of the DOFs. ---*/
+        the size for fluxes and gradSolInt and the max function for the viscFluxes.
+        This is because these arrays are also used as temporary storage for the other
+        purposes. ---*/
   su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes, *viscosityInt;
 
   unsigned short sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = max(sizeFluxes, nDOFsMax);
+  sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+
+  const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
 #ifdef HAVE_MKL
   solIntL      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
   solIntR      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  gradSolInt   = (su2double *) mkl_malloc(nIntegrationMax*nVar*nDim*sizeof(su2double), 64);
-  fluxes       = (su2double *) mkl_malloc(sizeFluxes*nVar*sizeof(su2double), 64);
+  gradSolInt   = (su2double *) mkl_malloc(sizeGradSolInt*sizeof(su2double), 64);
+  fluxes       = (su2double *) mkl_malloc(sizeFluxes*sizeof(su2double), 64);
   viscFluxes   = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
   viscosityInt = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
 #else
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpGradSolInt(nIntegrationMax*nVar*nDim);
-  vector<su2double> helpFluxes(sizeFluxes*nVar);
+  vector<su2double> helpGradSolInt(sizeGradSolInt);
+  vector<su2double> helpFluxes(sizeFluxes);
   vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
   vector<su2double> helpViscosityInt(nIntegrationMax);
   solIntL      = helpSolIntL.data();
@@ -4018,26 +4078,28 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
   /*--- Allocate the memory for some temporary storage needed to compute the
         residual efficiently. Note that when the MKL library is used
         a special allocation is used to optimize performance. Furthermore, note
-        the size for fluxes and the max function for the viscFluxes. This is
-        because these arrays are also used as temporary storage for the solution
-        of the DOFs. ---*/
+        the size for fluxes and gradSolInt and the max function for the viscFluxes.
+        This is because these arrays are also used as temporary storage for the other
+        purposes. ---*/
   su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes, *viscosityInt;
 
   unsigned short sizeFluxes = nIntegrationMax*nDim;
-  sizeFluxes = max(sizeFluxes, nDOFsMax);
+  sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+
+  const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
 
 #ifdef HAVE_MKL
   solIntL      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
   solIntR      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
-  gradSolInt   = (su2double *) mkl_malloc(nIntegrationMax*nVar*nDim*sizeof(su2double), 64);
-  fluxes       = (su2double *) mkl_malloc(sizeFluxes*nVar*sizeof(su2double), 64);
+  gradSolInt   = (su2double *) mkl_malloc(sizeGradSolInt*sizeof(su2double), 64);
+  fluxes       = (su2double *) mkl_malloc(sizeFluxes*sizeof(su2double), 64);
   viscFluxes   = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
   viscosityInt = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
 #else
   vector<su2double> helpSolIntL(nIntegrationMax*nVar);
   vector<su2double> helpSolIntR(nIntegrationMax*nVar);
-  vector<su2double> helpGradSolInt(nIntegrationMax*nVar*nDim);
-  vector<su2double> helpFluxes(sizeFluxes*nVar);
+  vector<su2double> helpGradSolInt(sizeGradSolInt);
+  vector<su2double> helpFluxes(sizeFluxes);
   vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
   vector<su2double> helpViscosityInt(nIntegrationMax);
   solIntL      = helpSolIntL.data();
@@ -4235,7 +4297,31 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
      multiplication to compute the residual. */
   const su2double *derBasisElemTrans = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegrationTranspose();
 
+  /*--- Create the Cartesian derivatives of the basis functions in the integration
+        points. The array gradSolInt is used to store these derivatives. ---*/
+  unsigned int ii = 0;
+  for(unsigned short j=0; j<nDOFsElem; ++j) {
+    for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
+
+      /* Easier storage of the derivatives of the basis function w.r.t. the
+         parametric coordinates, the location where to store the Cartesian
+         derivatives of the basis functions, and the metric terms in this
+         integration point. */
+      const su2double *derParam    = derBasisElemTrans + ii;
+      const su2double *metricTerms = surfElem->metricCoorDerivFace + i*nDim*nDim;
+            su2double *derCar      = gradSolInt + ii;
+
+      /*--- Loop over the dimensions to compute the Cartesian derivatives
+            of the basis functions. ---*/
+      for(unsigned short k=0; k<nDim; ++k) {
+        derCar[k] = 0.0;
+        for(unsigned short l=0; l<nDim; ++l)
+          derCar[k] += derParam[l]*metricTerms[k+l*nDim];
+      }
+    }
+  }
+
   /* Call the general function to carry out the matrix product to compute
      the residual. */
-  MatrixProduct(nDOFsElem, nVar, nInt*nDim, derBasisElemTrans, fluxes, resElem);
+  MatrixProduct(nDOFsElem, nVar, nInt*nDim, gradSolInt, fluxes, resElem);
 }
