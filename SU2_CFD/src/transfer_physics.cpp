@@ -193,19 +193,20 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 	bool compressible       = (flow_config->GetKind_Regime() == COMPRESSIBLE);
 	bool incompressible     = (flow_config->GetKind_Regime() == INCOMPRESSIBLE);
 	bool viscous_flow       = ((flow_config->GetKind_Solver() == NAVIER_STOKES) ||
-							   (flow_config->GetKind_Solver() == RANS) );
+							                (flow_config->GetKind_Solver() == RANS) ||
+							                (flow_config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) ||
+							                (flow_config->GetKind_Solver() == DISC_ADJ_RANS));
 
 	// Parameters for the calculations
 	// Pn: Pressure
 	// Pinf: Pressure_infinite
 	// div_vel: Velocity divergence
 	// Dij: Dirac delta
-	su2double Pn = 0.0, div_vel = 0.0, Dij = 0.0;
+	su2double Pn = 0.0, div_vel = 0.0;
 	su2double Viscosity = 0.0;
-	su2double **Grad_PrimVar = NULL;
-	su2double Tau[3][3] = { {0.0, 0.0, 0.0} ,
-							{0.0, 0.0, 0.0} ,
-							{0.0, 0.0, 0.0} } ;
+	su2double Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+	su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+	su2double delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
 
 	su2double Pinf = flow_solution->GetPressure_Inf();
 
@@ -213,28 +214,16 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 		// Get the normal at the vertex: this normal goes inside the fluid domain.
 	Normal_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNormal();
 
-	// Retrieve the values of pressure and viscosity
+	// Retrieve the values of pressure
 	if (incompressible){
 
 		Pn = flow_solution->node[Point_Flow]->GetPressureInc();
 
-		if (viscous_flow){
-
-			Grad_PrimVar = flow_solution->node[Point_Flow]->GetGradient_Primitive();
-			Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosityInc();
-
-		}
 	}
 	else if (compressible){
 
 		Pn = flow_solution->node[Point_Flow]->GetPressure();
 
-		if (viscous_flow){
-
-			Grad_PrimVar = flow_solution->node[Point_Flow]->GetGradient_Primitive();
-			Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
-
-		}
 	}
 
 	// Calculate tn in the fluid nodes for the inviscid term --> Units of force (non-dimensional).
@@ -246,19 +235,25 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
 	if ((incompressible || compressible) && viscous_flow){
 
+	  if (incompressible) Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosityInc();
+	  else Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0 ; jVar < nVar; jVar++) {
+        Grad_Vel[iVar][jVar] = flow_solution->node[Point_Flow]->GetGradient_Primitive(iVar+1, jVar);
+      }
+    }
+
 		// Divergence of the velocity
-		div_vel = 0.0; for (iVar = 0; iVar < nVar; iVar++) div_vel += Grad_PrimVar[iVar+1][iVar];
+    div_vel = 0.0; for (iVar = 0; iVar < nVar; iVar++) div_vel += Grad_Vel[iVar][iVar];
 		if (incompressible) div_vel = 0.0;
 
 		for (iVar = 0; iVar < nVar; iVar++) {
 
 			for (jVar = 0 ; jVar < nVar; jVar++) {
-				// Dirac delta
-				Dij = 0.0; if (iVar == jVar) Dij = 1.0;
 
 				// Viscous stress
-				Tau[iVar][jVar] = Viscosity*(Grad_PrimVar[jVar+1][iVar] + Grad_PrimVar[iVar+1][jVar]) -
-						TWO3*Viscosity*div_vel*Dij;
+        Tau[iVar][jVar] = Viscosity*(Grad_Vel[jVar][iVar] + Grad_Vel[iVar][jVar]) - TWO3*Viscosity*div_vel*delta[iVar][jVar];
 
 				// Viscous component in the tn vector --> Units of force (non-dimensional).
 				Donor_Variable[iVar] += Tau[iVar][jVar]*Normal_Flow[jVar];
