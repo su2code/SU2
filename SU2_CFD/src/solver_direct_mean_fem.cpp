@@ -3384,12 +3384,10 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
       indResFaces        += nDOFsElem1;
 
       /* Call the general function to carry out the matrix product to compute
-         the residual for side 1. Afterwards the residual is negated, because the
-         normal is pointing into the adjacent element. */
+         the residual for side 1. Note that the symmetrizing residual should not
+         be negated, because two minus signs enter the formulation for side 1,
+         which cancel each other. */
       MatrixProduct(nDOFsElem1, nVar, nInt*nDim, gradSolInt, fluxes, resElem1);
-
-      for(unsigned short i=0; i<(nVar*nDOFsElem1); ++i)
-        resElem1[i] = -resElem1[i];
     }
   }
 
