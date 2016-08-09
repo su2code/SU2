@@ -75,8 +75,15 @@ int main(int argc, char *argv[]) {
   if (nZone == SINGLE_ZONE) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
+  	if (config->GetDiscrete_Adjoint()){
 
-    driver = new CSingleZoneDriver(config_file_name, nZone, nDim);
+  		driver = new CDiscAdjMultiZoneDriver(config_file_name, nZone, nDim);
+
+  	} else {
+
+  		driver = new CSingleZoneDriver(config_file_name, nZone, nDim);
+
+  	}
 
   } else if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
 

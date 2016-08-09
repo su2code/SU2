@@ -1037,7 +1037,7 @@ void CDriver::Integration_Postprocessing(CIntegration **integration_container, C
   
   /*--- DeAllocate solution for adjoint problem ---*/
   if (adj_euler || adj_ns || disc_adj) delete integration_container[ADJFLOW_SOL];
-  if (adj_turb) delete integration_container[ADJTURB_SOL];
+  if (adj_turb && !disc_adj) delete integration_container[ADJTURB_SOL];
   
   
 }
