@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 common library
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 4.1.3 "Cardinal"
+# \version 4.2.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -85,6 +85,8 @@ lib_sources = \
   ../include/gauss_structure.inl \
   ../include/element_structure.hpp \
   ../include/element_structure.inl \
+  ../include/adt_structure.hpp \
+  ../include/adt_structure.inl \
   ../src/config_structure.cpp \
   ../src/dual_grid_structure.cpp \
   ../src/geometry_structure.cpp \
@@ -100,9 +102,10 @@ lib_sources = \
   ../src/gauss_structure.cpp \
   ../src/element_structure.cpp \
   ../src/element_linear.cpp \
-  ../src/interpolation_structure.cpp
+  ../src/interpolation_structure.cpp \
+  ../src/adt_structure.cpp
 
-lib_cxxflags =
+lib_cxxflags = -fPIC
 lib_ldadd =
 
 # always link to built dependencies from ./externals

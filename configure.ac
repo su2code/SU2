@@ -3,7 +3,7 @@
 # \file configure.ac
 # \brief Main file for configuring the autoconf/automake build process
 # \author M. Colonno, T. Economon, F. Palacios, B. Kirk
-# \version 4.1.3 "Cardinal"
+# \version 4.2.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -37,7 +37,7 @@
 # ParMETIS integration added by Ben Kirk & Thomas D. Economon, 2/3/2015
 ##########################
 
-AC_INIT([SU2], [4.1.2], [su2code-dev@lists.stanford.edu],
+AC_INIT([SU2], [4.2.0], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
@@ -130,6 +130,9 @@ AC_ARG_ENABLE(SOL,
 AC_ARG_ENABLE(GEO,
    	AS_HELP_STRING([--disable-GEO], [build the SU2_GEO executable (default = yes)]),
 	[build_GEO=$enableval], [build_GEO="yes"])
+AC_ARG_ENABLE(PY_WRAPPER,
+   	AS_HELP_STRING([--enable-PY_WRAPPER], [wrap the SU2 code with Python (default = no)]),
+	[build_PY_WRAPPER="yes"], [build_PY_WRAPPER="no"])
 AC_ARG_ENABLE(complex,
     AS_HELP_STRING([--enable-complex], [build executables with complex datatype (default = no)]),
     [build_COMPLEX="yes"], [build_COMPLEX="no"])
@@ -500,6 +503,8 @@ AC_SUBST([LAPACK_LD])
 ###########################
 # Determine what versions of the code to build
 
+build_PY=yes
+
 # Complex type
 COMPLEX_CXX="-std=gnu++11 -DCOMPLEX_TYPE"
 
@@ -537,6 +542,7 @@ then
   build_DEF=no
   build_SOL=no
   build_GEO=no
+  build_PY=no
 fi
 
 if test $build_REVERSE == "yes"
@@ -551,6 +557,8 @@ AM_CONDITIONAL([BUILD_MSH],[test $build_MSH != "no"])
 AM_CONDITIONAL([BUILD_DEF],[test $build_DEF != "no"])
 AM_CONDITIONAL([BUILD_SOL],[test $build_SOL != "no"])
 AM_CONDITIONAL([BUILD_GEO],[test $build_GEO != "no"])
+AM_CONDITIONAL([BUILD_PY],[test $build_PY != "no"])
+AM_CONDITIONAL([BUILD_PY_WRAPPER], [test $build_PY_WRAPPER != "no"])
 
 ###########################
 
@@ -563,7 +571,8 @@ AC_OUTPUT(Makefile \
 	SU2_DEF/obj/Makefile \
 	SU2_SOL/obj/Makefile \
 	SU2_GEO/obj/Makefile \
-	SU2_PY/Makefile)
+	SU2_PY/Makefile \
+	SU2_PY/pySU2/Makefile)
 
 abs_srcdir=`(cd $srcdir && pwd)`
 abs_prefix=$prefix #`(cd $prefix && pwd)`
@@ -573,7 +582,7 @@ AC_MSG_RESULT([
 
 -------------------------------------------------------------------------
 |    ___ _   _ ___                                                      |
-|   / __| | | |_  )   Release 4.1.3 'Cardinal'                          |
+|   / __| | | |_  )   Release 4.2.0 'Cardinal'                          |
 |   \\__ \\ |_| |/ /                                                      |
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
@@ -640,6 +649,7 @@ Build Configuration Summary:
     Build SU2_DEF:        $build_DEF
     Build SU2_SOL:        $build_SOL
     Build SU2_GEO:        $build_GEO
+    Build Py Wrapper:     $build_PY_WRAPPER
 
 Please be sure to add the [\$]SU2_HOME and [\$]SU2_RUN environment variables,
 and update your [\$]PATH (and [\$]PYTHONPATH if applicable) with [\$]SU2_RUN.

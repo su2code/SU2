@@ -2,7 +2,7 @@
  * \file solution_direct_poisson.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -48,6 +48,10 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver()
   nPointDomain =  geometry->GetnPointDomain();
 	nVar =          1;
 	node =          new CVariable*[nPoint];
+  
+  /*--- Initialize nVarGrad for deallocation ---*/
+  
+  nVarGrad = nVar;
   
 	Residual = new su2double[nVar]; Residual_RMS = new su2double[nVar];
 	Solution = new su2double[nVar];

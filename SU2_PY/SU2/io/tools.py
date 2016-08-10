@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.1.3 "Cardinal"
+#  \version 4.2.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -137,7 +137,7 @@ def read_plot( filename ):
 #  Read All Data from History File
 # -------------------------------------------------------------------
 
-def read_history( History_filename ):
+def read_history( History_filename, nZones = 1):
     """ reads a history file
         returns an ordered bunch with the history file headers for keys
         and a list of each header's floats for values.
@@ -154,7 +154,7 @@ def read_history( History_filename ):
     history_data = ordered_bunch()    
     
     # header name to config file name map
-    map_dict = get_headerMap()    
+    map_dict = get_headerMap(nZones)    
     
     # map header names
     for key in plot_data.keys():
@@ -174,7 +174,7 @@ def read_history( History_filename ):
 #  Define Dictionary Map for Header Names
 # -------------------------------------------------------------------
 
-def get_headerMap():
+def get_headerMap(nZones = 1):
     """ returns a dictionary that maps history file header names
         to optimization problem function names
     """
@@ -219,15 +219,16 @@ def get_headerMap():
                  "D(CFy)"          : "D_FORCE_Y"               ,
                  "D(CFz)"          : "D_FORCE_Z"               ,
                  "D(CL/CD)"        : "D_EFFICIENCY"            ,
+                 "ComboObj"        : "COMBO"                   ,
                  "TotalPressureLoss_1"     : "TOTAL_PRESSURE_LOSS"    ,
                  "KineticEnergyLoss_1"     : "KINETIC_ENERGY_LOSS"    ,
-                 "EntropyGen_1"            : "ENTROPY_GENERATION"     ,                   
+                 "EntropyGen_" + str(getTurboPerfIndex(nZones)) : "ENTROPY_GENERATION"     ,                   
                  "FlowAngleOut_1"          : "FLOW_ANGLE_OUT"         ,
                  "FlowAngleIn_1"           : "FLOW_ANGLE_IN"          ,
                  "MassFlowIn_1"            : "MASS_FLOW_IN"           ,
                  "MassFlowOut_1"           : "MASS_FLOW_OUT"          ,
                  "PressureRatio_1"         : "PRESSURE_RATIO"         ,
-                 "TotalEfficiency_3"       : "TOTAL_EFFICIENCY"       ,
+                 "TotalEfficiency_" + str(getTurboPerfIndex(nZones))  : "TOTAL_EFFICIENCY"       ,
                  "TotalStaticEfficiency_3" : "TOTAL_STATIC_EFFICIENCY",
                  "D(TotalPressureLoss_0)"  : "D_TOTAL_PRESSURE_LOSS"  ,
                  "D(TotalEfficiency_0)"       : "D_TOTAL_EFFICIENCY"       ,
@@ -243,6 +244,15 @@ def get_headerMap():
                  "D(TotalEnthalpy_0)"         : "D_TOTAL_ENTHALPY_OUT"     }
     
     return map_dict
+
+def getTurboPerfIndex(nZones = 1):
+
+  if int(nZones) > 1:
+    index = int(nZones) + int(int(nZones)/2.0) + 1
+  else: 
+    index = 1
+  return index
+
 
 #: def get_headerMap()
 
@@ -277,7 +287,8 @@ optnames_aero = [ "LIFT"                    ,
                   "INVERSE_DESIGN_PRESSURE" ,
                   "INVERSE_DESIGN_HEATFLUX" ,
                   "TOTAL_HEATFLUX"          ,
-                  "MAXIMUM_HEATFLUX"        ]
+                  "MAXIMUM_HEATFLUX"        ,
+                  "COMBO"]                
 
 # Turbo performance optimizer Function Names
 optnames_turbo = ["TOTAL_PRESSURE_LOSS"     ,
@@ -410,7 +421,7 @@ grad_names_map = { "LIFT"      : "D_LIFT"           ,
 #  Read Aerodynamic Function Values from History File
 # -------------------------------------------------------------------
 
-def read_aerodynamics( History_filename , special_cases=[], final_avg=0 ):
+def read_aerodynamics( History_filename , nZones = 1, special_cases=[], final_avg=0 ):
     """ values = read_aerodynamics(historyname, special_cases=[])
         read aerodynamic function values from history file
         
@@ -421,7 +432,7 @@ def read_aerodynamics( History_filename , special_cases=[], final_avg=0 ):
     """
     
     # read the history data
-    history_data = read_history(History_filename)
+    history_data = read_history(History_filename, nZones)
     
     # list of functions to pull
     func_names = optnames_aero + grad_names_directdiff + optnames_turbo
@@ -433,7 +444,7 @@ def read_aerodynamics( History_filename , special_cases=[], final_avg=0 ):
             Func_Values[this_objfun] = history_data[this_objfun] 
     
     # for unsteady cases, average time-accurate objective function values
-    if 'UNSTEADY_SIMULATION' in special_cases:
+    if 'UNSTEADY_SIMULATION' in special_cases and not final_avg:
         for key,value in Func_Values.iteritems():
             Func_Values[key] = sum(value)/len(value)
          
@@ -467,7 +478,6 @@ def get_objectiveSign( ObjFun_name ):
             THRUST
             FIGURE_OF_MERIT
             MASS_FLOW_RATE
-            AVG_OUTLET_PRESSURE
             AVG_TOTAL_PRESSURE
         returns +1 otherwise
     """
@@ -546,20 +556,25 @@ def get_adjointSuffix(objective_function=None):
                  "MASS_FLOW_OUT"           : "mfo"       ,
                  "MASS_FLOW_IN"            : "mfi"       ,
                  "TOTAL_EFFICIENCY"        : "teff"      ,
-                 "TOTAL_STATIC_EFFICIENCY" : "tseff"     
-                 }
+                 "TOTAL_STATIC_EFFICIENCY" : "tseff"     ,
+                 "COMBO"                   : "combo"}
     
     # if none or false, return map
     if not objective_function:
         return name_map
-    
-    # return desired objective function suffix
-    elif name_map.has_key(objective_function):
-        return name_map[objective_function]
-    
-    # otherwise...
     else:
-        raise Exception('Unrecognized adjoint function name')
+        # remove white space
+        objective = ''.join(objective_function.split())
+        objective = objective.split(",")
+        nObj = len(objective)
+        if (nObj>1):
+            return "combo"
+        if name_map.has_key(objective[0]):
+            return name_map[objective[0]]
+    
+        # otherwise...
+        else:
+            raise Exception('Unrecognized adjoint function name')
     
 #: def get_adjointSuffix()
     
@@ -771,7 +786,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
 #  Get Optimization File Header
 # -------------------------------------------------------------------    
     
-def get_optFileFormat(plot_format,special_cases=None):
+def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     
     if special_cases is None: special_cases = []
     
@@ -821,7 +836,7 @@ def get_optFileFormat(plot_format,special_cases=None):
             
     # build list of objective function names
     header_vars = []
-    map_dict = get_headerMap()
+    map_dict = get_headerMap(nZones)
     for variable in header_list:
         assert map_dict.has_key(variable) , 'unrecognized header variable'
         header_vars.append(map_dict[variable])
