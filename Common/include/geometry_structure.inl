@@ -173,6 +173,8 @@ inline void CGeometry::SetVertex(CConfig *config) { }
 
 inline void CGeometry::SetTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short marker_flag, bool allocate) { }
 
+inline void CGeometry::SetComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) { }
+
 inline void CGeometry::SetAvgTurboValue(CConfig *config,unsigned short val_iZone, unsigned short marker_flag, bool allocate) { }
 
 inline su2double* CGeometry::GetAverageTurboNormal(unsigned short val_marker, unsigned short val_span){ return NULL;}
