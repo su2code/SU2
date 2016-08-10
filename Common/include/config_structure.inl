@@ -753,7 +753,13 @@ inline unsigned short CConfig::GetnVolSections(void) { return nVolSections; }
 
 inline void CConfig::SetKind_TimeIntScheme(unsigned short val_kind_timeintscheme) { Kind_TimeNumScheme = val_kind_timeintscheme; }
 
-inline unsigned short CConfig::GetKind_ObjFunc(void) {return Kind_ObjFunc; }
+inline unsigned short CConfig::GetKind_ObjFunc(void) {return Kind_ObjFunc[0]; }
+
+inline unsigned short CConfig::GetKind_ObjFunc(unsigned short val_obj) {return Kind_ObjFunc[val_obj]; }
+
+inline su2double CConfig::GetWeight_ObjFunc(unsigned short val_obj) {return Weight_ObjFunc[val_obj]; }
+
+inline void CConfig::SetWeight_ObjFunc(unsigned short val_obj, su2double val) {Weight_ObjFunc[val_obj] = val; }
 
 inline su2double CConfig::GetCoeff_ObjChainRule(unsigned short iVar) {return Obj_ChainRuleCoeff[iVar]; }
 
@@ -868,6 +874,8 @@ inline unsigned short CConfig::GetnMarker_NearFieldBound(void) { return nMarker_
 inline unsigned short CConfig::GetnMarker_ActDisk_Inlet(void) { return nMarker_ActDisk_Inlet; }
 
 inline unsigned short CConfig::GetnMarker_ActDisk_Outlet(void) { return nMarker_ActDisk_Outlet; }
+
+inline unsigned short CConfig::GetnObj(void) { return nObj;}
 
 inline string CConfig::GetMesh_FileName(void) { return Mesh_FileName; }
 
@@ -1023,15 +1031,21 @@ inline unsigned short CConfig::GetnPeriodicIndex(void) { return nPeriodic_Index;
 
 inline su2double* CConfig::GetPeriodicCenter(unsigned short val_index) { return Periodic_Center[val_index]; }
 
-inline void CConfig::SetPeriodicCenter(unsigned short val_index, su2double* center) { Periodic_Center[val_index] = center; }
+inline void CConfig::SetPeriodicCenter(unsigned short val_index, su2double* center) {
+  for (unsigned short i = 0; i < 3; i++) Periodic_Center[val_index][i] = center[i];
+}
 
 inline su2double* CConfig::GetPeriodicRotation(unsigned short val_index) { return Periodic_Rotation[val_index]; }
 
-inline void CConfig::SetPeriodicRotation(unsigned short val_index, su2double* rotation) { Periodic_Rotation[val_index] = rotation; }
+inline void CConfig::SetPeriodicRotation(unsigned short val_index, su2double* rotation) {
+    for (unsigned short i = 0; i < 3; i++) Periodic_Rotation[val_index][i] = rotation[i];
+}
 
 inline su2double* CConfig::GetPeriodicTranslate(unsigned short val_index) { return Periodic_Translate[val_index]; }
 
-inline void CConfig::SetPeriodicTranslate(unsigned short val_index, su2double* translate) { Periodic_Translate[val_index] = translate; }
+inline void CConfig::SetPeriodicTranslate(unsigned short val_index, su2double* translate) {
+  for (unsigned short i = 0; i < 3; i++) Periodic_Translate[val_index][i] = translate[i];
+}
 
 inline su2double CConfig::GetCyclic_Pitch(void) { return Cyclic_Pitch; }
 
