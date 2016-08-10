@@ -93,6 +93,7 @@ nobase_dist_mypkg_DATA= \
     SU2/util/__init__.py \
     FSI/__init__.py \
     FSI/FSIInterface.py \
+    FSI/SolidSolverTester.py \
     FSI/io/__init__.py \
     FSI/io/FSI_config.py \
     FSI/util/__init__.py \
