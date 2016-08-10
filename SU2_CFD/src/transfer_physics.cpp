@@ -2,7 +2,7 @@
  * \file transfer_structure.cpp
  * \brief Main subroutines for physics of the information transfer between zones
  * \author R. Sanchez
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -391,8 +391,6 @@ CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short va
 }
 
 CTransfer_MixingPlaneInterface::~CTransfer_MixingPlaneInterface(void) {
-	if (Donor_Variable       != NULL) delete [] Donor_Variable;
-	if (Target_Variable      != NULL) delete [] Target_Variable;
 }
 
 

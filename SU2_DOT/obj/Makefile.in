@@ -19,7 +19,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_DOT
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 4.1.3 "Cardinal"
+# \version 4.2.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -88,14 +88,14 @@ bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 @BUILD_NORMAL_TRUE@am__append_1 = ../bin/SU2_DOT
 @BUILD_REVERSE_TRUE@am__append_2 = ../bin/SU2_DOT_AD
 @BUILD_NORMAL_TRUE@am__append_3 = \
-@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD-solver_structure.$(OBJEXT) \
-@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD-output_structure.$(OBJEXT) \
-@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD-output_cgns.$(OBJEXT) \
-@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD-output_tecplot.$(OBJEXT) \
-@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD-output_fieldview.$(OBJEXT) \
-@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD-output_su2.$(OBJEXT) \
-@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD-output_paraview.$(OBJEXT) \
-@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/___bin_SU2_CFD-variable_structure.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-solver_structure.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-output_structure.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-output_cgns.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-output_tecplot.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-output_fieldview.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-output_su2.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-output_paraview.$(OBJEXT) \
+@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-variable_structure.$(OBJEXT) \
 @BUILD_NORMAL_TRUE@  ../../Common/lib/libSU2.a
 
 @BUILD_REVERSE_TRUE@am__append_4 = \

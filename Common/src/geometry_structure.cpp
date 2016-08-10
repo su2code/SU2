@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -30,6 +30,7 @@
  */
 
 #include "../include/geometry_structure.hpp"
+#include "../include/adt_structure.hpp"
 
 /*--- Epsilon definition ---*/
 
@@ -55,42 +56,45 @@
 
 CGeometry::CGeometry(void) {
   
-  nEdge = 0;
-  nPoint = 0;
-  nElem = 0;
+  nEdge      = 0;
+  nPoint     = 0;
+  nPointNode = 0;
+  nElem      = 0;
   
-  nElem_Bound = NULL;
-  Tag_to_Marker = NULL;
-  elem = NULL;
-  face = NULL;
-  bound = NULL;
-  node = NULL;
-  edge = NULL;
-  vertex = NULL;
-  nVertex = NULL;
-  newBound = NULL;
-  nNewElem_Bound = NULL;
+  nElem_Bound         = NULL;
+  Tag_to_Marker       = NULL;
+  elem                = NULL;
+  face                = NULL;
+  bound               = NULL;
+  node                = NULL;
+  edge                = NULL;
+  vertex              = NULL;
+  nVertex             = NULL;
+  newBound            = NULL;
+  nNewElem_Bound      = NULL;
   Marker_All_SendRecv = NULL;
   
   PeriodicPoint[MAX_NUMBER_PERIODIC][2].clear();
   PeriodicElem[MAX_NUMBER_PERIODIC].clear();
-  XCoordList.clear();
 
+  XCoordList.clear();
   Xcoord_plane.clear();
   Ycoord_plane.clear();
   Zcoord_plane.clear();
   FaceArea_plane.clear();
   Plane_points.clear();
-  /*--- parmetis variables---*/
-  starting_node=NULL;
-  ending_node=NULL;
-  npoint_procs=NULL;
+  
+  /*--- Arrays for defining the linear partitioning ---*/
+  
+  starting_node = NULL;
+  ending_node   = NULL;
+  npoint_procs  = NULL;
   
 }
 
 CGeometry::~CGeometry(void) {
   
-  unsigned long iElem, iElem_Bound, iFace, iPoint;
+  unsigned long iElem, iElem_Bound, iEdge, iFace, iPoint, iVertex;
   unsigned short iMarker;
   
   if (elem != NULL) {
@@ -104,8 +108,9 @@ CGeometry::~CGeometry(void) {
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (bound[iMarker][iElem_Bound] != NULL) delete bound[iMarker][iElem_Bound];
       }
+      if (bound[iMarker] != NULL) delete [] bound[iMarker];
     }
-    delete[] bound;
+    delete [] bound;
   }
   
   if (face != NULL) {
@@ -115,12 +120,12 @@ CGeometry::~CGeometry(void) {
   }
   
   if (node != NULL) {
-    for (iPoint = 0; iPoint < nPoint; iPoint ++)
+    for (iPoint = 0; iPoint < nPointNode; iPoint ++)
       if (node[iPoint] != NULL) delete node[iPoint];
     delete[] node;
   }
   
-  /*
+  
   if (edge != NULL) {
     for (iEdge = 0; iEdge < nEdge; iEdge ++)
       if (edge[iEdge] != NULL) delete edge[iEdge];
@@ -130,11 +135,11 @@ CGeometry::~CGeometry(void) {
   if (vertex != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
       for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        if (vertex[iMarker][iVertex] != NULL) delete [] vertex[iMarker][iVertex];
+        if (vertex[iMarker][iVertex] != NULL) delete vertex[iMarker][iVertex];
       }
-      delete[] vertex[iMarker];
+      if (vertex[iMarker] != NULL) delete [] vertex[iMarker];
     }
-    delete[] vertex;
+    delete [] vertex;
   }
   
   if (newBound != NULL) {
@@ -146,13 +151,12 @@ CGeometry::~CGeometry(void) {
     }
     delete[] newBound;
   }
-  */
-  if (nElem_Bound != NULL) delete[] nElem_Bound;
-  if (nVertex != NULL) delete[] nVertex;
-  if (nNewElem_Bound != NULL) delete[] nNewElem_Bound;
-  if (Marker_All_SendRecv != NULL) delete[] Marker_All_SendRecv;
-  if (Tag_to_Marker != NULL) delete[] Tag_to_Marker;
   
+  if (nElem_Bound         != NULL) delete [] nElem_Bound;
+  if (nVertex             != NULL) delete [] nVertex;
+  if (nNewElem_Bound      != NULL) delete [] nNewElem_Bound;
+  if (Marker_All_SendRecv != NULL) delete [] Marker_All_SendRecv;
+  if (Tag_to_Marker       != NULL) delete [] Tag_to_Marker;
   
   if (starting_node != NULL) delete [] starting_node;
   if (ending_node   != NULL) delete [] ending_node;
@@ -1306,7 +1310,6 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
 
 CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
 
-  Global_to_Local_Point  = NULL;
   Local_to_Global_Point  = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
@@ -1318,7 +1321,6 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
 
 CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
   
-  Global_to_Local_Point = NULL;
   Local_to_Global_Point = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
@@ -1452,7 +1454,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   /*--- Initialize several class data members for later. ---*/
   
-  Global_to_Local_Point  = NULL;
   Local_to_Global_Point  = NULL;
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
@@ -1460,7 +1461,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   starting_node = NULL;
   ending_node   = NULL;
   npoint_procs  = NULL;
-  
+
   /*--- Local variables and counters for the following communications. ---*/
   
   unsigned long iter,  iPoint, jPoint, iElem, iVertex;
@@ -1477,7 +1478,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   unsigned long iVertexDomain, iBoundLine, iBoundTriangle, iBoundQuadrilateral;
   
   unsigned long iNode, iDim, iMarker, jMarker, nMarkerDomain = 0, iMarkerDomain;
-  unsigned long nDomain = 0, iDomain, jDomain, nPeriodic = 0, iPeriodic, overhead = 4, Buffer_Send_nMarkerDomain = 0, Buffer_Send_nDim = 0, Buffer_Send_nZone = 0, Buffer_Send_nPeriodic = 0;
+  unsigned long nDomain = 0, iDomain, jDomain, nPeriodic = 0, iPeriodic, Buffer_Send_nMarkerDomain = 0, Buffer_Send_nDim = 0, Buffer_Send_nZone = 0, Buffer_Send_nPeriodic = 0;
   
   bool *MarkerIn = NULL, **VertexIn = NULL, *ElemIn = NULL;
   long vnodes_local[8];
@@ -2480,6 +2481,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   
   nPoint = nPointTotal_r_tot;
   nPointDomain = nPointDomainTotal_r_tot;
+  nPointNode = nPoint;
   node = new CPoint*[nPoint];
   Local_to_Global_Point = new long[nPoint];
   
@@ -2734,12 +2736,12 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Allocate memory for the element recv ---*/
       
-      Buffer_Receive_Triangle_presence[iDomain]    = new unsigned long[nElemTriangle_r[iDomain]];
-      Buffer_Receive_Quadrilateral_presence[iDomain]   = new unsigned long[nElemQuadrilateral_r[iDomain]];
-      Buffer_Receive_Tetrahedron_presence[iDomain] = new unsigned long[nElemTetrahedron_r[iDomain]];
-      Buffer_Receive_Hexahedron_presence[iDomain]  = new unsigned long[nElemHexahedron_r[iDomain]];
-      Buffer_Receive_Prism_presence[iDomain]       = new unsigned long[nElemPrism_r[iDomain]];
-      Buffer_Receive_Pyramid_presence[iDomain]     = new unsigned long[nElemPyramid_r[iDomain]];
+      Buffer_Receive_Triangle_presence[iDomain]      = new unsigned long[nElemTriangle_r[iDomain]];
+      Buffer_Receive_Quadrilateral_presence[iDomain] = new unsigned long[nElemQuadrilateral_r[iDomain]];
+      Buffer_Receive_Tetrahedron_presence[iDomain]   = new unsigned long[nElemTetrahedron_r[iDomain]];
+      Buffer_Receive_Hexahedron_presence[iDomain]    = new unsigned long[nElemHexahedron_r[iDomain]];
+      Buffer_Receive_Prism_presence[iDomain]         = new unsigned long[nElemPrism_r[iDomain]];
+      Buffer_Receive_Pyramid_presence[iDomain]       = new unsigned long[nElemPyramid_r[iDomain]];
       
       /*--- Recv the element data ---*/
       
@@ -3071,6 +3073,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       delete[] Buffer_Receive_Hexahedron;
       delete[] Buffer_Receive_Prism;
       delete[] Buffer_Receive_Pyramid;
+      delete[] Buffer_Receive_GlobElem;
       
       delete[] Buffer_Receive_Triangle_presence[iDomain];
       delete[] Buffer_Receive_Quadrilateral_presence[iDomain];
@@ -3213,6 +3216,15 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   delete [] Buffer_Send_ReceivedDomain_Periodic;
   delete [] Buffer_Send_ReceivedDomain_PeriodicTrans;
   delete [] Buffer_Send_ReceivedDomain_PeriodicDonor;
+  
+#ifdef HAVE_MPI
+  delete [] Buffer_Receive_Triangle_presence;
+  delete [] Buffer_Receive_Quadrilateral_presence;
+  delete [] Buffer_Receive_Tetrahedron_presence;
+  delete [] Buffer_Receive_Hexahedron_presence;
+  delete [] Buffer_Receive_Prism_presence;
+  delete [] Buffer_Receive_Pyramid_presence;
+#endif
   
   delete [] Local_to_global_Triangle;
   delete [] Local_to_global_Quadrilateral;
@@ -3481,7 +3493,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       Buffer_Send_ReceivedDomain_PeriodicTrans  = new unsigned long[Buffer_Send_nTotalReceivedDomain_Periodic];
       Buffer_Send_ReceivedDomain_PeriodicDonor  = new unsigned long[Buffer_Send_nTotalReceivedDomain_Periodic];
       
-      if (iDomain != MASTER_NODE) {
+      if (iDomain != (unsigned long)MASTER_NODE) {
         
 #ifdef HAVE_MPI
         
@@ -3737,9 +3749,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         
         for (iPeriodic = 0; iPeriodic < nPeriodic; iPeriodic++) {
           
-          su2double* center = new su2double[3];       // Do not deallocate the memory
-          su2double* rotation  = new su2double[3];    // Do not deallocate the memory
-          su2double* translate = new su2double[3];    // Do not deallocate the memory
+          su2double* center    = new su2double[3];
+          su2double* rotation  = new su2double[3];
+          su2double* translate = new su2double[3];
           
           for (iDim = 0; iDim < 3; iDim++) {
             center[iDim] = Buffer_Receive_Center[iDim+iPeriodic*3];
@@ -3749,6 +3761,9 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
           config->SetPeriodicCenter(iPeriodic, center);
           config->SetPeriodicRotation(iPeriodic, rotation);
           config->SetPeriodicTranslate(iPeriodic, translate);
+        
+          delete [] center; delete [] rotation; delete [] translate;
+          
         }
         
       }
@@ -3894,7 +3909,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       
       /*--- Send the buffers with the geometrical information ---*/
       
-      if (iDomain != MASTER_NODE) {
+      if (iDomain != (unsigned long)MASTER_NODE) {
         
 #ifdef HAVE_MPI
         
@@ -4062,7 +4077,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       for (iMarker = 0; iMarker < nMarker; iMarker++)
         nElem_Bound[iMarker] = nVertexDomain[iMarker];
       
-      bound = new CPrimalGrid**[nMarker+(overhead*nDomain)];
+      bound = new CPrimalGrid**[nMarker+(OVERHEAD*size)];
+      for (iMarker = 0; iMarker < nMarker+(OVERHEAD*size); iMarker++)
+        bound[iMarker] = NULL;
+    
       for (iMarker = 0; iMarker < nMarker; iMarker++)
         bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
       
@@ -4220,7 +4238,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     }
 
   /*--- initialize pointers for turbomachinery computations  ---*/
-  nVertexSpan 						= new unsigned long* [nMarker];
+  nVertexSpan 						= new long* [nMarker];
   nTotVertexSpan 				  = new unsigned long* [nMarker];
 	turbovertex 						= new CTurboVertex***[nMarker];
 	AverageTurboNormal 			= new su2double**[nMarker];
@@ -4315,7 +4333,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
 
 CPhysicalGeometry::~CPhysicalGeometry(void) {
   
-  if (Global_to_Local_Point  != NULL) delete [] Global_to_Local_Point;
   if (Local_to_Global_Point  != NULL) delete [] Local_to_Global_Point;
   if (Global_to_Local_Marker != NULL) delete [] Global_to_Local_Marker;
   if (Local_to_Global_Marker != NULL) delete [] Local_to_Global_Marker;
@@ -4409,22 +4426,24 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     if (Local_to_Global_Point[iPoint] > (long)Max_GlobalPoint)
       Max_GlobalPoint = Local_to_Global_Point[iPoint];
   }
-  Global_to_Local_Point =  new long[Max_GlobalPoint+1]; // +1 to include the bigger point.
-  
-  /*--- Initialization of the array with -1 this is important for the FFD ---*/
-  for (iPoint = 0; iPoint < Max_GlobalPoint+1; iPoint++)
-    Global_to_Local_Point[iPoint] = -1;
   
   /*--- Set the value of some of the points ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     Global_to_Local_Point[Local_to_Global_Point[iPoint]] = iPoint;
   
+  map<long, long>::const_iterator MI;
+
   /*--- Add the new MPI send receive boundaries, reset the transformation, and save the local value ---*/
   for (iDomain = 0; iDomain < nDomain; iDomain++) {
     if (SendDomainLocal[iDomain].size() != 0) {
       nVertexDomain[nMarker] = SendDomainLocal[iDomain].size();
       for (iVertex = 0; iVertex < nVertexDomain[nMarker]; iVertex++) {
-        SendDomainLocal[iDomain][iVertex] = Global_to_Local_Point[SendDomainLocal[iDomain][iVertex]];
+        
+        MI = Global_to_Local_Point.find(SendDomainLocal[iDomain][iVertex]);
+        if (MI != Global_to_Local_Point.end()) iPoint = Global_to_Local_Point[SendDomainLocal[iDomain][iVertex]];
+        else iPoint = -1;
+          
+        SendDomainLocal[iDomain][iVertex] = iPoint;
         SendTransfLocal[iDomain].push_back(0);
       }
       nElem_Bound[nMarker] = nVertexDomain[nMarker];
@@ -4438,7 +4457,12 @@ void CPhysicalGeometry::SetSendReceive(CConfig *config) {
     if (ReceivedDomainLocal[iDomain].size() != 0) {
       nVertexDomain[nMarker] = ReceivedDomainLocal[iDomain].size();
       for (iVertex = 0; iVertex < nVertexDomain[nMarker]; iVertex++) {
-        ReceivedDomainLocal[iDomain][iVertex] = Global_to_Local_Point[ReceivedDomainLocal[iDomain][iVertex]];
+        
+        MI = Global_to_Local_Point.find(ReceivedDomainLocal[iDomain][iVertex]);
+        if (MI != Global_to_Local_Point.end()) iPoint = Global_to_Local_Point[ReceivedDomainLocal[iDomain][iVertex]];
+        else iPoint = -1;
+        
+        ReceivedDomainLocal[iDomain][iVertex] = iPoint;
         ReceivedTransfLocal[iDomain].push_back(0);
       }
       nElem_Bound[nMarker] = nVertexDomain[nMarker];
@@ -4685,12 +4709,15 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
     delete [] DomainReceiveMarkers[iDomain];
   delete[] DomainReceiveMarkers;
   
-  /*--- Deallocate the bound variables ---*/
+   /*--- Deallocate the bound variables ---*/
   
-  for (iMarker = 0; iMarker < nMarker; iMarker++)
-    delete [] bound[iMarker];
-  delete [] bound;
-  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+   for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++)
+     if (bound[iMarker][iElem_Bound] != NULL) delete bound[iMarker][iElem_Bound];
+    if (bound[iMarker] != NULL) delete [] bound[iMarker];
+  }
+  if (bound != NULL) delete [] bound;
+ 
   /*--- Allocate the new bound variables, and set the number of markers ---*/
   
   bound = bound_Copy;
@@ -4784,7 +4811,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
   }
   
   delete [] Marker_All_SendRecv_Copy;
-  
+  delete [] nElem_Bound_Copy;
 }
 
 void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone) {
@@ -4982,6 +5009,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
        and if so, then store it on the local processor. We only create enough
        space in the node container for the local nodes at this point. ---*/
       
+      nPointNode = nPoint; 
       node = new CPoint*[nPoint];
       iPoint = 0; node_count = 0;
       while (node_count < Global_nPoint) {
@@ -5851,6 +5879,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           tran >> translate[0]; tran >> translate[1]; tran >> translate[2];
           config->SetPeriodicTranslate(iPeriodic, translate);
           
+          delete [] center; delete [] rotation; delete [] translate;
         }
       }
     }
@@ -5866,9 +5895,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       for (unsigned short iDim = 0; iDim < 3; iDim++) {
         center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
       }
-      config->SetPeriodicCenter(iPeriodic, center);
-      config->SetPeriodicRotation(iPeriodic, rotation);
+      config->SetPeriodicCenter(iPeriodic,    center);
+      config->SetPeriodicRotation(iPeriodic,  rotation);
       config->SetPeriodicTranslate(iPeriodic, translate);
+      delete [] center; delete [] rotation; delete [] translate;
     }
   }
   
@@ -5894,7 +5924,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   unsigned short nMarker_Max = config->GetnMarker_Max();
   unsigned long iPoint = 0, iProcessor = 0, ielem = 0, GlobalIndex = 0;
   unsigned long globalOffset = 0;
-  int rank = MASTER_NODE, size = SINGLE_NODE;
   nZone = val_nZone;
   
   /*--- Local variables needed when calling the CGNS mid-level API. ---*/
@@ -5929,19 +5958,17 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   int** dataSize = NULL;
   bool** isInternal = NULL;
   char*** sectionNames = NULL;
-//  int indexElem = 0;
-//  int indexElemMaster = 0;
   
   /*--- Initialize counters for local/global points & elements ---*/
   
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
   unsigned long Local_nElem;
   unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
   unsigned long Local_nElemHex, Local_nElemPrism, Local_nElemPyramid;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-  
   MPI_Request *send_req, *recv_req;
   MPI_Status  status;
   int ind;
@@ -6092,7 +6119,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
     /*--- Loop over all zones in this base. Again, indexing starts at 1. ---*/
     
     for (int j = 1; j <= nzones; j++) {
-      
+     
+      connElems[j-1] = NULL;
+ 
       /*--- Read the basic information for this zone, including
        the name and the number of vertices, cells, and
        boundary cells which are stored in the cgsize variable. ---*/
@@ -6287,7 +6316,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
        as any boundaries which were labeled before export. ---*/
       
       for (int s = 1; s <= nsections; s++) {
-        
+      
+        connElems[j-1][s-1] = NULL; 
         /*--- Read the connectivity details for this section.
          Store the total number of elements in this section
          to be used later for memory allocation. ---*/
@@ -6647,7 +6677,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
             for (int jj = 0; jj < elemIndex[j-1][s-1]; jj++) {
               connElems[j-1][s-1][jj] = new cgsize_t[nElems[j-1][s-1]];
             }
-            //indexElemMaster = elemIndex[j-1][s-1];
             
             /*--- Retrieve the connectivity information and store. ---*/
             
@@ -6688,7 +6717,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           
           connElemTemp = new cgsize_t[nElems[j-1][s-1]*connSize];
           
-          /*--- Copy these values into the larger array for
+           /*--- Copy these values into the larger array for
            storage until writing the SU2 file. ---*/
 
           int counterTemp = 0, counterCGNS = 0;
@@ -6936,7 +6965,6 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               connElems[j-1][s-1][jj][ii] = (cgsize_t)connRecv[ii*connSize+jj];
             }
           }
-          //indexElem = connSize;
           
           /*--- Store the total number of elements I now have for
            the current section after completing the communications. ---*/
@@ -7303,6 +7331,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   }
   
   iPoint = 0;
+  nPointNode = nPoint;
   node = new CPoint*[nPoint];
   GlobalIndex = starting_node[rank];
   for (int k = 0; k < nzones; k++ ) {
@@ -7473,6 +7502,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
     config->SetPeriodicCenter(iPeriodic, center);
     config->SetPeriodicRotation(iPeriodic, rotation);
     config->SetPeriodicTranslate(iPeriodic, translate);
+    delete [] center; delete [] rotation; delete [] translate;
     
   }
   
@@ -7482,49 +7512,56 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   delete[] cells;
   delete[] boundVerts;
   
-//  for ( int kk = 0; kk < nzones; kk++) {
-//    for (int ii = 0; ii < nsections; ii++) {
-//      if (isInternal[kk][ii]) {
-//        for (int jj = 0; jj < indexElem; jj++) {
-//          delete [] connElems[kk][ii][jj];
-//        }
-//        delete connElems[kk][ii];
-//      } else if (!isInternal[kk][ii] && rank == MASTER_NODE) {
-//        for (int jj = 0; jj < indexElemMaster; jj++) {
-//          delete [] connElems[kk][ii][jj];
-//        }
-//        delete connElems[kk][ii];
-//      }
-//    }
-//    delete connElems[kk];
-//  }
-//  delete[] connElems;
+  for ( int kk = 0; kk < nzones; kk++) {
+    for (int ii = 0; ii < nsections; ii++) {
+      if (isInternal[kk][ii]) {
+        for (int jj = 0; jj < connSize; jj++) {
+          if (connElems[kk][ii][jj] != NULL) delete [] connElems[kk][ii][jj];
+        }
+        if (connElems[kk][ii] != NULL) delete []  connElems[kk][ii];
+      } else if (!isInternal[kk][ii] && rank == MASTER_NODE) {
+        for (int jj = 0; jj < elemIndex[kk][ii]; jj++) {
+          if (connElems[kk][ii][jj] != NULL) delete [] connElems[kk][ii][jj];
+        }
+        if (connElems[kk][ii] != NULL) delete [] connElems[kk][ii];
+      }
+    }
+    if (connElems[kk] != NULL) delete [] connElems[kk];
+  }
+  if (connElems != NULL) delete[] connElems;
   
   for ( int j = 0; j < nzones; j++) {
-    delete[] coordArray[j];
-    delete[] elemTypeVTK[j];
-    delete[] elemIndex[j];
-    delete[] nElems[j];
-    delete[] dataSize[j];
-    delete[] isInternal[j];
+    delete [] coordArray[j];
+    delete [] elemTypeVTK[j];
+    delete [] elemIndex[j];
+    delete [] nElems[j];
+    delete [] dataSize[j];
+    delete [] isInternal[j];
+    delete [] elemBegin[j];
+    delete [] elemEnd[j];
+    for (int ii = 0; ii < nsections; ii++) {
+      delete[] sectionNames[j][ii];
+    }
     delete[] sectionNames[j];
   }
   
-  delete[] coordArray;
-  delete[] elemTypeVTK;
-  delete[] elemIndex;
-  delete[] nElems;
-  delete[] dataSize;
-  delete[] isInternal;
-  delete[] sectionNames;
+  delete [] coordArray;
+  delete [] elemTypeVTK;
+  delete [] elemIndex;
+  delete [] nElems;
+  delete [] dataSize;
+  delete [] isInternal;
+  delete [] sectionNames;
+  delete [] elemBegin;
+  delete [] elemEnd;
   
   for ( int j = 0; j < nzones; j++) {
     for ( int i = 0; i < ncoords; i++ ) {
-      delete[] gridCoords[j][i];
+      delete [] gridCoords[j][i];
     }
-    delete[] gridCoords[j];
+    delete [] gridCoords[j];
   }
-  delete[] gridCoords;
+  delete [] gridCoords;
   
   delete [] nPoint_Linear;
   delete [] nElem_Linear;
@@ -7532,6 +7569,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   delete [] elemB;
   delete [] elemE;
   
+  delete [] cgsize;
+
 #else
   cout << "SU2 built without CGNS support!!" << endl;
   cout << "To use CGNS, remove the -DNO_CGNS directive ";
@@ -7908,204 +7947,71 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 }
 
 void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
-  
-  su2double *coord, dist;
-  passivedouble dist2, diff;
-  unsigned short iDim, iMarker;
-  unsigned long iPoint, iVertex, nVertex_SolidWall, iVertex_nearestWall = 0;
 
-
-#ifndef HAVE_MPI
-  
   /*--- Compute the total number of nodes on no-slip boundaries ---*/
   
-  nVertex_SolidWall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              )
+  unsigned long nVertex_SolidWall = 0;
+  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
       nVertex_SolidWall += GetnVertex(iMarker);
-  
-  /*--- Allocate an array to hold boundary node coordinates ---*/
-  
-  su2double **Coord_bound;
-  Coord_bound = new su2double* [nVertex_SolidWall];
-  for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++)
-    Coord_bound[iVertex] = new su2double [nDim];
-  
-  /*--- Retrieve and store the coordinates of the no-slip boundary nodes ---*/
-  
-  nVertex_SolidWall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              )
-      for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Coord_bound[nVertex_SolidWall][iDim] = node[iPoint]->GetCoord(iDim);
-        nVertex_SolidWall++;
-      }
+    }
   }
+  
+  /*--- Allocate the vectors to hold boundary node coordinates
+        and its local ID. ---*/
+
+  vector<su2double>     Coord_bound(nDim*nVertex_SolidWall);
+  vector<unsigned long> PointIDs(nVertex_SolidWall);
+
+  /*--- Retrieve and store the coordinates of the no-slip boundary nodes
+        and their local point IDs. ---*/
+
+  unsigned long ii = 0, jj = 0;
+  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
+    if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+      for(unsigned long iVertex=0; iVertex<GetnVertex(iMarker); ++iVertex) {
+        unsigned long iPoint = vertex[iMarker][iVertex]->GetNode();
+        PointIDs[jj++] = iPoint;
+        for(unsigned short iDim=0; iDim<nDim; ++iDim)
+          Coord_bound[ii++] = node[iPoint]->GetCoord(iDim);
+      }
+    }
+  }
+
+  /*--- Build the ADT of the boundary nodes. ---*/
+
+  su2_adtPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(), PointIDs.data());
   
   /*--- Loop over all interior mesh nodes and compute the distances to each
-   of the no-slip boundary nodes. Store the minimum distance to the wall for
-   each interior mesh node. ---*/
-  
-  su2double dist1 = 0.0;
-  if (nVertex_SolidWall != 0) {
-    for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
-      coord = node[iPoint]->GetCoord();
-      dist1 = 1E20;
-      for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++) {
-        dist2 = 0.0;
+        of the no-slip boundary nodes. Store the minimum distance to the wall
+        for each interior mesh node. ---*/
 
-        /*--- The wall distance computation is done using the plain su2double datatype to just
-         *  determine the index of the closest vertex. Otherwise we are storing a lot of
-         *  unnecessary derivative information when using AD.---*/
+  if( WallADT.IsEmpty() ) {
 
-        for (iDim = 0; iDim < nDim; iDim++){
-          diff = (SU2_TYPE::GetValue(coord[iDim])
-                  -SU2_TYPE::GetValue(Coord_bound[iVertex][iDim]));
-          dist2 += diff*diff;
-        }
-        if (dist2 < dist1) {
-          iVertex_nearestWall = iVertex;
-          dist1 = dist2;
-        }
-      }
-      dist = 0.0;
+    /*--- No solid wall boundary nodes in the entire mesh.
+          Set the wall distance to zero for all nodes. ---*/
 
-      /*--- Now we do the computation of the wall distance again using the general datatype.---*/
-
-      for (iDim = 0; iDim < nDim; iDim++){
-        dist += (coord[iDim] - Coord_bound[iVertex_nearestWall][iDim])*
-            (coord[iDim] - Coord_bound[iVertex_nearestWall][iDim]);
-      }
-      node[iPoint]->SetWall_Distance(sqrt(dist));
-    }
-  }
-  else {
-    for (iPoint = 0; iPoint < GetnPoint(); iPoint++)
+    for(unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint)
       node[iPoint]->SetWall_Distance(0.0);
   }
-  
-  /*--- Deallocate the vector of boundary coordinates. ---*/
-  
-  for (iVertex = 0; iVertex < nVertex_SolidWall; iVertex++)
-    delete[] Coord_bound[iVertex];
-  delete[] Coord_bound;
-  
-  
-#else
-  
-  /*--- Variables and buffers needed for MPI ---*/
-  
-  int iProcessor, nProcessor;
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  unsigned long nLocalVertex_NS = 0, nGlobalVertex_NS = 0, MaxLocalVertex_NS = 0;
-  unsigned long *Buffer_Send_nVertex    = new unsigned long [1];
-  unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
-  
-  /*--- Count the total number of nodes on no-slip boundaries within the
-   local partition. ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              )
-      nLocalVertex_NS += GetnVertex(iMarker);
-  
-  /*--- Communicate to all processors the total number of no-slip boundary
-   nodes, the maximum number of no-slip boundary nodes on any single single
-   partition, and the number of no-slip nodes on each partition. ---*/
-  
-  Buffer_Send_nVertex[0] = nLocalVertex_NS;
-  SU2_MPI::Allreduce(&nLocalVertex_NS, &nGlobalVertex_NS,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalVertex_NS, &MaxLocalVertex_NS, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  
-  /*--- Create and initialize to zero some buffers to hold the coordinates
-   of the boundary nodes that are communicated from each partition (all-to-all). ---*/
-  
-  su2double *Buffer_Send_Coord    = new su2double [MaxLocalVertex_NS*nDim];
-  su2double *Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_NS*nDim];
-  unsigned long nBuffer = MaxLocalVertex_NS*nDim;
-  
-  for (iVertex = 0; iVertex < MaxLocalVertex_NS; iVertex++)
-    for (iDim = 0; iDim < nDim; iDim++)
-      Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-  
-  /*--- Retrieve and store the coordinates of the no-slip boundary nodes on
-   the local partition and broadcast them to all partitions. ---*/
-  
-  nVertex_SolidWall = 0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-    if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)               ||
-        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)              )
-      for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Send_Coord[nVertex_SolidWall*nDim+iDim] = node[iPoint]->GetCoord(iDim);
-        nVertex_SolidWall++;
-      }
-  
-  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
-  
-  /*--- Loop over all interior mesh nodes on the local partition and compute
-   the distances to each of the no-slip boundary nodes in the entire mesh.
-   Store the minimum distance to the wall for each interior mesh node. ---*/
-  
-  nVertex_SolidWall = 0;
-  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-    nVertex_SolidWall += Buffer_Receive_nVertex[iProcessor];
-  }
-  
-  if (nVertex_SolidWall != 0) {
-    for (iPoint = 0; iPoint < GetnPoint(); iPoint++) {
-      coord = node[iPoint]->GetCoord();
-      dist = 1E20;
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-        for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-          dist2 = 0.0;
+  else {
 
-          /*--- The wall distance computation is done using the plain su2double datatype to just
-           *  determine the index of the closest vertex. Otherwise we are storing a lot of
-           *  unnecessary derivative information when using AD.---*/
+    /*--- Solid wall boundary nodes are present. Compute the wall
+          distance for all nodes. ---*/
 
-          for (iDim = 0; iDim < nDim; iDim++){
-            diff = SU2_TYPE::GetValue(coord[iDim]) -
-                SU2_TYPE::GetValue(Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_NS+iVertex)*nDim+iDim]);
-            dist2 += diff*diff;
-          }
-          if (dist2 < dist) {
-            iVertex_nearestWall = iProcessor*MaxLocalVertex_NS+iVertex;
-            dist = dist2;
-          }
-        }
+    for(unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint) {
 
-      /*--- Now we do the computation of the wall distance again using the general datatype.---*/
+      su2double dist;
+      unsigned long pointID;
+      int rankID;
 
-      dist = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++){
-        dist += (coord[iDim] - Buffer_Receive_Coord[iVertex_nearestWall*nDim+iDim])*
-            (coord[iDim] - Buffer_Receive_Coord[iVertex_nearestWall*nDim+iDim]);
-      }
-      node[iPoint]->SetWall_Distance(sqrt(dist));
+      WallADT.DetermineNearestNode(node[iPoint]->GetCoord(), dist,
+                                   pointID, rankID);
+      node[iPoint]->SetWall_Distance(dist);
     }
   }
-  else {
-    for (iPoint = 0; iPoint < GetnPoint(); iPoint++)
-      node[iPoint]->SetWall_Distance(0.0);
-  }
-  
-  /*--- Deallocate the buffers needed for the MPI communication. ---*/
-  
-  delete[] Buffer_Send_Coord;
-  delete[] Buffer_Receive_Coord;
-  delete[] Buffer_Send_nVertex;
-  delete[] Buffer_Receive_nVertex;
-  
-#endif
-  
 }
 
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {
@@ -8580,10 +8486,10 @@ void CPhysicalGeometry::SetComputeNSpan(CConfig *config, unsigned short val_iZon
 
 
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
-	unsigned long  iPoint, jPoint, iVertex, jVertex, kVertex, iSpanVertex, jSpanVertex, kSpanVertex, **ordered, **disordered, **oldVertex3D, oldVertex;
+	unsigned long  iPoint, jPoint = 0, jVertex, kVertex, kSpanVertex = 0, **ordered, **disordered, **oldVertex3D, oldVertex;
 	unsigned long nVert, nVertMax;
 	unsigned short iMarker, iMarkerTP, iSpan,iSize, jSpan, iDim, nSpanWiseSections;
-	su2double min, max, *coord, *span, delta, dist, Normal2, *TurboNormal, *NormalArea, target, **area, ***unitnormal, Area;
+	su2double min, max, *coord, *span, delta, dist, Normal2, *TurboNormal, *NormalArea, target = 0.0, **area, ***unitnormal, Area = 0.0;
 	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
 	int  globalindex;
@@ -8593,6 +8499,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 	su2double *ymin_loc, radius;
 	int *nVertex_loc;
+	long iVertex, iSpanVertex, jSpanVertex;
 	int *nTotVertex_gb;
 	su2double **x_loc, **y_loc, **z_loc;
 	int       **globIdx_loc;
@@ -8600,10 +8507,10 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	su2double MyMax, MyMin, ymin[size];
-	su2double *x_gb, *y_gb, *z_gb;
-	int       *globIdx_gb;
+	su2double *x_gb =NULL, *y_gb =NULL, *z_gb =NULL;
+	int       *globIdx_gb=NULL;
 
-	int nvertex_glob[size], nvertex_out[size], nvert;
+	int nvertex_glob[size], nvertex_out[size];
   unsigned long My_nVert;
 
 #endif
@@ -8644,7 +8551,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
 				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
 					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-						nVertexSpan[iMarker] 							= new unsigned long[nSpanWiseSections];
+						nVertexSpan[iMarker] 							= new long[nSpanWiseSections];
 						turbovertex[iMarker] 							= new CTurboVertex** [nSpanWiseSections];
 						nTotVertexSpan[iMarker]						= new unsigned long [nSpanWiseSections +1];
 						for(iSpan = 0; iSpan < nSpanWiseSections; iSpan++){
@@ -8677,7 +8584,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 						min = 10E+06;
 						jVertex = 0;
 						oldVertex = 0;
-						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+						for (iVertex = 0; (unsigned long)iVertex < nVertex[iMarker]; iVertex++) {
 							iPoint = vertex[iMarker][iVertex]->GetNode();
 
 							/*--- only physical point need to be stored in the turbovertex structure ---*/
@@ -8712,7 +8619,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 						/*--- reordering pitch-wise, storing in the turbovertex structure, compute normal for the turbo frame of reference---*/
 						jVertex = 0;
-						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+						for (iVertex = 0; (unsigned long)iVertex  < nVertex[iMarker]; iVertex++) {
 							if(node[jPoint]->GetDomain()){
 								if (allocate){
 									turbovertex[iMarker][0][jVertex] = new CTurboVertex(jPoint, nDim);
@@ -8789,7 +8696,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
 				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
 					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+						for (iVertex = 0;(unsigned long)iVertex  < nVertex[iMarker]; iVertex++) {
 							iPoint = vertex[iMarker][iVertex]->GetNode();
 							coord = node[iPoint]->GetCoord();
 							switch (config->GetKind_TurboMachinery(val_iZone)){
@@ -8841,7 +8748,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 						/*--- compute the amount of vertexes for each span-wise section to initialize the CTurboVertex pointers and auxiliary pointers  ---*/
 						//TODO (turbo) this works only for centrifugal blade rotating around the Z-Axes.
-						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+						for (iVertex = 0; (unsigned long)iVertex  < nVertex[iMarker]; iVertex++) {
 							dist = 10E+06;
 							jSpan = -1;
 							iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -8911,7 +8818,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 
 						/*--- store the vertexes in a ordered manner in span-wise directions but not yet ordered pitch-wise ---*/
 						//TODO (turbo) this works only for centrifugal blade rotating around the Z-Axes.
-						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+						for (iVertex = 0; (unsigned long)iVertex < nVertex[iMarker]; iVertex++) {
 							dist = 10E+06;
 							jSpan = -1;
 							iPoint = vertex[iMarker][iVertex]->GetNode();
@@ -9106,7 +9013,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 		SU2_MPI::Gather(&nVertex_loc[iSpan], 1, MPI_INT, nvertex_glob, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		min =  10.0E+06;
 		dist =  10.0E+06;
-		unsigned short imin;
+		unsigned short imin = 0;
 		unsigned long  nvertMPI;
 		if (rank==MASTER_NODE){
 			for(iSize=0; iSize<size; iSize++){
@@ -9360,11 +9267,12 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 void CPhysicalGeometry::SetAvgTurboValue(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
 
 	unsigned short iMarker, iMarkerTP, iSpan, iDim;
-	unsigned long iVertex, iPoint;
+	unsigned long iPoint;
 	su2double *TurboNormal,*coord, *Normal, turboNormal2, Normal2, *gridVel, TotalArea, TotalRadius, radius;
   su2double *TotalTurboNormal,*TotalNormal, *TotalGridVel, Area;
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
+  long iVertex;
   /*-- Variables declaration and allocation ---*/
   TotalTurboNormal = new su2double[nDim];
   TotalNormal			 = new su2double[nDim];
@@ -12919,37 +12827,32 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
   bool sst = config->GetKind_Turb_Model() == SST;
   bool sa = config->GetKind_Turb_Model() == SA;
   bool grid_movement = config->GetGrid_Movement();
+  bool wrt_residuals = config->GetWrt_Residuals();
   su2double Sens, dull_val;
-  //su2double delta_T, total_T;
-  unsigned short nExtIter, iDim, iExtIter;
+  unsigned short nExtIter, iDim;
   unsigned long iPoint, index;
-  
+
   Sensitivity = new su2double[nPoint*nDim];
-  
+
   if (config->GetUnsteady_Simulation()){
-    nExtIter = config->GetUnst_AdjointIter();
-    //    delta_T  = config->GetDelta_UnstTimeND();
-    //    delta_T  = 1.0;
-    //total_T  = (su2double)nExtIter*delta_T;
-  } else {
-    //total_T = 1.0;
+    nExtIter = config->GetnExtIter();
+  }else{
     nExtIter = 1;
   }
-  
-  int rank = MASTER_NODE;
+    int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  unsigned short skipVar = nDim;
-  
-  if (incompressible) { skipVar += nDim+1; }
-  if (freesurface)    { skipVar += nDim+2; }
-  if (compressible)   { skipVar += nDim+2; }
-  if (sst) 			{ skipVar += 2;}
-  if (sa)				{ skipVar += 1;}
-  
-  if (grid_movement) {skipVar += nDim;}
+  unsigned short skipVar = nDim, skipMult = 1;
+
+  if (wrt_residuals){ skipMult = 2; }
+  if (incompressible) { skipVar += skipMult*(nDim+1); }
+  if (freesurface)    { skipVar += skipMult*(nDim+2); }
+  if (compressible)   { skipVar += skipMult*(nDim+2); }
+  if (sst)            { skipVar += skipMult*2;}
+  if (sa)             { skipVar += skipMult*1;}
+  if (grid_movement)  { skipVar += nDim;}
   
   /*--- Sensitivity in normal direction ---*/
   
@@ -12976,58 +12879,89 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
       Sensitivity[iPoint*nDim+iDim] = 0.0;
     }
   }
-	for (iExtIter = 0; iExtIter < nExtIter; iExtIter++){
 
-		iPoint_Global = 0;
+  iPoint_Global = 0;
 
-		filename = config->GetSolution_AdjFileName();
+  filename = config->GetSolution_AdjFileName();
 
-		filename = config->GetObjFunc_Extension(filename);
+  filename = config->GetObjFunc_Extension(filename);
 
-		if (config->GetUnsteady_Simulation()){
-			filename = config->GetUnsteady_FileName(filename, iExtIter);
-		}
+  if (config->GetUnsteady_Simulation()){
+    filename = config->GetUnsteady_FileName(filename, nExtIter-1);
+  }
 
-		if (config->GetnZone() > 1){
-			filename = config->GetMultizone_FileName(filename, config->GetiZone());
-		}
-
-		restart_file.open(filename.data(), ios::in);
-		if (restart_file.fail()) {
-			cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
-			exit(EXIT_FAILURE);
-		}
-
-		if (rank == MASTER_NODE)
-			cout << "Reading in sensitivity at iteration " << iExtIter << "."<< endl;
-		/*--- The first line is the header ---*/
-		getline (restart_file, text_line);
-
-		while (getline (restart_file, text_line)) {
-			istringstream point_line(text_line);
-
-			/*--- Retrieve local index. If this node from the restart file lives
-					 on a different processor, the value of iPoint_Local will be -1.
-					 Otherwise, the local index for this node on the current processor
-					 will be returned and used to instantiate the vars. ---*/
-			iPoint_Local = Global2Local[iPoint_Global];
-
-			if (iPoint_Local >= 0){
-				point_line >> index;
-				for (iDim = 0; iDim < skipVar; iDim++){ point_line >> dull_val;}
-				for (iDim = 0; iDim < nDim; iDim++){
-					point_line >> Sens;
-					//                	  Sensitivity[iPoint_Local*nDim+iDim] += Sens*delta_T/total_T;
-					Sensitivity[iPoint_Local*nDim+iDim] += Sens;
-
-				}
-			}
-			iPoint_Global++;
-		}
-		restart_file.close();
+	if (config->GetnZone() > 1){
+		filename = config->GetMultizone_FileName(filename, config->GetiZone());
 	}
 
+  restart_file.open(filename.data(), ios::in);
+  if (restart_file.fail()) {
+    cout << "There is no adjoint restart file!! " << filename.data() << "."<< endl;
+    exit(EXIT_FAILURE);
+  }
+  
+  if (rank == MASTER_NODE)
+    cout << "Reading in sensitivity at iteration " << nExtIter-1 << "."<< endl;
+  /*--- The first line is the header ---*/
+  getline (restart_file, text_line);
+  
+  while (getline (restart_file, text_line)) {
+    istringstream point_line(text_line);
+
+    /*--- Retrieve local index. If this node from the restart file lives
+             on a different processor, the value of iPoint_Local will be -1.
+             Otherwise, the local index for this node on the current processor
+             will be returned and used to instantiate the vars. ---*/
+    iPoint_Local = Global2Local[iPoint_Global];
+
+    if (iPoint_Local >= 0){
+      point_line >> index;
+      for (iDim = 0; iDim < skipVar; iDim++){ point_line >> dull_val;}
+      for (iDim = 0; iDim < nDim; iDim++){
+        point_line >> Sens;
+        Sensitivity[iPoint_Local*nDim+iDim] = Sens;
+      }
+    }
+    iPoint_Global++;
+  }
+  restart_file.close();
+
   delete [] Global2Local;
+}
+
+void CPhysicalGeometry::Check_Periodicity(CConfig *config) {
+  
+  bool isPeriodic = false;
+  unsigned long iVertex;
+  unsigned short iMarker, RotationKind, nPeriodicR = 0, nPeriodicS = 0;
+  
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  
+  /*--- Check for the presence of any periodic BCs ---*/
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        RotationKind = vertex[iMarker][iVertex]->GetRotation_Type();
+        if (RotationKind > 0) nPeriodicS++;
+      }
+    }
+  }
+#ifndef HAVE_MPI
+  nPeriodicR = nPeriodicS;
+#else
+  SU2_MPI::Allreduce(&nPeriodicS, &nPeriodicR, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  if (nPeriodicR != 0) isPeriodic = true;
+  
+  if (isPeriodic && (config->GetnMGLevels() > 0)) {
+    if (rank == MASTER_NODE)
+      cout << "WARNING: Periodicity has been detected. Disabling multigrid. "<< endl;
+    config->SetMGLevels(0);
+  }
   
 }
 
@@ -13596,7 +13530,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_c
   /*--- Create the coarse grid structure using as baseline the fine grid ---*/
   
   CMultiGridQueue MGQueue_InnerCV(fine_grid->GetnPoint());
-  
+ 
+  nPointNode = fine_grid->GetnPoint(); 
   node = new CPoint*[fine_grid->GetnPoint()];
   for (iPoint = 0; iPoint < fine_grid->GetnPoint(); iPoint ++) {
     
@@ -15226,6 +15161,8 @@ CPeriodicGeometry::CPeriodicGeometry(CGeometry *geometry, CConfig *config) {
   nElem = geometry->GetnElem() + nElem_new;
   
   /*--- Add the old points ---*/
+
+  nPointNode = geometry->GetnPoint() + nPoint_new;
   node = new CPoint*[geometry->GetnPoint() + nPoint_new];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
     if (geometry->GetnDim() == 2)

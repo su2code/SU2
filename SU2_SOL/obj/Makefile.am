@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_SOL
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 4.1.3 "Cardinal"
+# \version 4.2.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -42,14 +42,14 @@ ___bin_SU2_SOL_SOURCES = \
 
 ___bin_SU2_SOL_CXXFLAGS =
 ___bin_SU2_SOL_LDADD = \
-  ../../SU2_CFD/src/___bin_SU2_CFD-solver_structure.o \
-  ../../SU2_CFD/src/___bin_SU2_CFD-output_structure.o \
-  ../../SU2_CFD/src/___bin_SU2_CFD-output_cgns.o \
-  ../../SU2_CFD/src/___bin_SU2_CFD-output_tecplot.o \
-  ../../SU2_CFD/src/___bin_SU2_CFD-output_fieldview.o \
-  ../../SU2_CFD/src/___bin_SU2_CFD-output_su2.o \
-  ../../SU2_CFD/src/___bin_SU2_CFD-output_paraview.o \
-  ../../SU2_CFD/src/___bin_SU2_CFD-variable_structure.o \
+  ../../SU2_CFD/src/libSU2Core_a-solver_structure.o \
+  ../../SU2_CFD/src/libSU2Core_a-output_structure.o \
+  ../../SU2_CFD/src/libSU2Core_a-output_cgns.o \
+  ../../SU2_CFD/src/libSU2Core_a-output_tecplot.o \
+  ../../SU2_CFD/src/libSU2Core_a-output_fieldview.o \
+  ../../SU2_CFD/src/libSU2Core_a-output_su2.o \
+  ../../SU2_CFD/src/libSU2Core_a-output_paraview.o \
+  ../../SU2_CFD/src/libSU2Core_a-variable_structure.o \
   ../../Common/lib/libSU2.a
 
 # always link to built dependencies from ./externals

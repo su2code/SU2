@@ -3,7 +3,7 @@
 ## \file adjoint.py
 #  \brief python package for running adjoint problems 
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.1.3 "Cardinal"
+#  \version 4.2.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -93,7 +93,7 @@ def adjoint( config ):
     special_cases    = su2io.get_specialCases(konfig)
     
     # get history
-    history = su2io.read_history( history_filename )
+    history = su2io.read_history( history_filename, config.NZONES )
     
     # update super config
     config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM'] ,

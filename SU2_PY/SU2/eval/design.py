@@ -3,7 +3,7 @@
 ## \file design.py
 #  \brief python package for designs
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.1.3 "Cardinal"
+#  \version 4.2.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -224,27 +224,20 @@ def obj_f(dvs,config,state=None):
     
     def_objs = config['OPT_OBJECTIVE']
     objectives = def_objs.keys()
-    n_obj = len( objectives )
-    assert n_obj == 1 , 'SU2 currently only supports one objective'
     
 #    if objectives: print('Evaluate Objectives')
-    
     # evaluate each objective
     vals_out = []
+    func = 0.0
     for i_obj,this_obj in enumerate(objectives):
         scale = def_objs[this_obj]['SCALE']
         sign  = su2io.get_objectiveSign(this_obj)
         
         # Evaluate Objective Function
-#        sys.stdout.write('  %s... ' % this_obj.title())
-        func = su2func(this_obj,config,state)
-#        sys.stdout.write('done: %.6f\n' % func)
-        
         # scaling and sign
-        func = func * sign * scale
+        func += su2func(this_obj,config,state) * sign * scale
         
-        vals_out.append(func)
-    
+    vals_out.append(func)
     #: for each objective
     
     return vals_out
@@ -272,32 +265,54 @@ def obj_df(dvs,config,state=None):
     def_objs = config['OPT_OBJECTIVE']
     objectives = def_objs.keys()
     n_obj = len( objectives )
-    assert n_obj == 1 , 'SU2 currently only supports one objective'
-    
+    multi_objective = (config['OPT_COMBINE_OBJECTIVE']=="YES")
+     
     dv_scales = config['DEFINITION_DV']['SCALE']
     dv_size   = config['DEFINITION_DV']['SIZE']
     
-#    if objectives: print('Evaluate Objective Gradients')
-    
+    #  if objectives: print('Evaluate Objective Gradients')
     # evaluate each objective
     vals_out = []
-    for i_obj,this_obj in enumerate(objectives):
-        scale = def_objs[this_obj]['SCALE']
-        sign  = su2io.get_objectiveSign(this_obj)
+    if (multi_objective and n_obj>1):
+        scale = [1.0]*n_obj
+        for i_obj,this_obj in enumerate(objectives):
+            sign = su2io.get_objectiveSign(this_obj)
+            scale[i_obj] = def_objs[this_obj]['SCALE']*sign
+            
+        config['OBJECTIVE_WEIGHT']=','.join(map(str,scale))
         
-        # Evaluate Objective Gradient
-#        sys.stdout.write('  %s... ' % this_obj.title())
-        grad = su2grad(this_obj,grad_method,config,state)
-#        sys.stdout.write('done\n')
-        
-        # scaling and sign
+        grad= su2grad(objectives,grad_method,config,state)
+        # scaling : obj scale  adn sign are accounted for in combo gradient, dv scale now applied
         k = 0
         for i_dv,dv_scl in enumerate(dv_scales):
             for i_grd in range(dv_size[i_dv]):
-                grad[k] = grad[k] * sign * scale / dv_scl
+                grad[k] = grad[k] / dv_scl
                 k = k + 1
 
         vals_out.append(grad)
+    else:
+        for i_obj,this_obj in enumerate(objectives):
+            marker_monitored = config['MARKER_MONITORING']
+            scale = def_objs[this_obj]['SCALE']
+            sign  = su2io.get_objectiveSign(this_obj)
+            # Correct marker monitoring for case where multiple objectives are evaluated separately
+            if n_obj>1 and len(marker_monitored)>1:
+                config['MARKER_MONITORING'] = marker_monitored[i_obj]
+
+            
+            # Evaluate Objective Gradient
+    #        sys.stdout.write('  %s... ' % this_obj.title())
+            grad = su2grad(this_obj,grad_method,config,state)
+    #        sys.stdout.write('done\n')
+            
+            # scaling and sign
+            k = 0
+            for i_dv,dv_scl in enumerate(dv_scales):
+                for i_grd in range(dv_size[i_dv]):
+                    grad[k] = grad[k] * sign * scale / dv_scl
+                    k = k + 1
+            
+            vals_out.append(grad)
     
     #: for each objective
     

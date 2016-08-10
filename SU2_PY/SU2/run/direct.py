@@ -3,7 +3,7 @@
 ## \file direct.py
 #  \brief python package for running direct solutions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 4.1.3 "Cardinal"
+#  \version 4.2.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -99,8 +99,8 @@ def direct ( config ):
     final_avg = config.get('ITER_AVERAGE_OBJ',0)
 
     # get history and objectives
-    history      = su2io.read_history( history_filename )
-    aerodynamics = su2io.read_aerodynamics( history_filename , special_cases, final_avg )
+    history      = su2io.read_history( history_filename , config.NZONES)
+    aerodynamics = su2io.read_aerodynamics( history_filename , config.NZONES, special_cases, final_avg )
     
     # update super config
     config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })

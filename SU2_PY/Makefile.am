@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for the SU2 Python framework
 # \author M. Colonno, T. Economon, F. Palacios, T. Lukaczyk
-# \version 4.1.3 "Cardinal"
+# \version 4.2.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -44,7 +44,8 @@ bin_SCRIPTS = \
     set_ffd_design_var.py \
     compute_polar.py \
     discrete_adjoint.py \
-    direct_differentiation.py
+    direct_differentiation.py \
+    fsi_computation.py
 
 
 mypkgdir = $(prefix)/bin
@@ -89,6 +90,12 @@ nobase_dist_mypkg_DATA= \
     SU2/util/pyCppTap.py \
     SU2/util/switch.py \
     SU2/util/which.py \
-    SU2/util/__init__.py
+    SU2/util/__init__.py \
+    FSI/__init__.py \
+    FSI/FSIInterface.py \
+    FSI/io/__init__.py \
+    FSI/io/FSI_config.py \
+    FSI/util/__init__.py \
+    FSI/util/switch.py
 
 EXTRA_DIST = $(bin_SCRIPTS)

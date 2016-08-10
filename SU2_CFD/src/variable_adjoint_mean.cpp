@@ -2,7 +2,7 @@
  * \file variable_adjoint_mean.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -185,6 +185,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double *val_solution, unsigned short val
 	/*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
 	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED)
 		Undivided_Laplacian = new su2double [nVar];
+  
 	if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) {
 		Limiter = new su2double [nVar];
 		Solution_Max = new su2double [nVar];

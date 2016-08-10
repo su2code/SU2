@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
 #endif
   
   for (iZone = 0; iZone < nZone; iZone++){
-
+  
     if (rank == MASTER_NODE)
       cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 
@@ -151,8 +151,10 @@ int main(int argc, char *argv[]) {
 
     /*--- Check the orientation before computing geometrical quantities ---*/
 
-    if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
+    if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the elements." <<endl;
+    geometry_container[iZone]->SetBoundVolume();
     geometry_container[iZone]->Check_IntElem_Orientation(config_container[iZone]);
+    geometry_container[iZone]->Check_BoundElem_Orientation(config_container[iZone]);
 
     /*--- Create the edge structure ---*/
 
