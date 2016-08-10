@@ -118,7 +118,7 @@ lib_sources = \
   ../src/interpolation_structure.cpp \
   ../src/adt_structure.cpp
 
-lib_cxxflags =
+lib_cxxflags = -fPIC
 lib_ldadd =
 
 # always link to built dependencies from ./externals
