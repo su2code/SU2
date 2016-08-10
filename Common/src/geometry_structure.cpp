@@ -8547,6 +8547,38 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
   }
 }
 
+
+void CPhysicalGeometry::SetComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
+	unsigned short iMarker, jMarker, iMarker_PerBound, iMarkerTP;
+	unsigned long iPoint, iVertex;
+	long check;
+
+	for (iMarker = 0; iMarker < nMarker; iMarker++){
+		for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+			if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+				if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+					for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+						iPoint = vertex[iMarker][iVertex]->GetNode();
+
+						for (jMarker = 0; jMarker < nMarker; jMarker++){
+							for (iMarker_PerBound = 0; iMarker_PerBound < config->GetnMarker_PerBound(); iMarker_PerBound++){
+								if (config->GetMarker_All_TagBound(jMarker) == config->GetMarker_PerBound(iMarker_PerBound)){
+									check = node[iPoint]->GetVertex(jMarker);
+
+									if (check != -1){
+										cout << "belongs to both inlet and periodic boundary " << config->GetMarker_All_TagBound(jMarker)<< endl;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
 	unsigned long  iPoint, jPoint, iVertex, jVertex, kVertex, iSpanVertex, jSpanVertex, kSpanVertex, **ordered, **disordered, **oldVertex3D, oldVertex;
 	unsigned long nVert, nVertMax;

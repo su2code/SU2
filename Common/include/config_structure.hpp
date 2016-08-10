@@ -2156,6 +2156,12 @@ public:
 	 */
 	unsigned short GetnMarker_ActDisk_Outlet(void);
 
+	/*!
+	 * \brief Get the total number of periodic boundary markers.
+	 * \return Total number of periodic boundary markers.
+	 */
+	unsigned short GetnMarker_PerBound(void);
+
   /*!
    * \brief Get the total number of 1D output markers.
    * \return Total number of monitoring markers.
@@ -3568,6 +3574,12 @@ public:
 	 * \return name of the bound.
 	 */
 	string GetMarker_TurboPerf_BoundOut(unsigned short index);
+
+	/*!
+	 * \brief get outlet bounds name for Turbomachinery performance calculation.
+	 * \return name of the bound.
+	 */
+	string GetMarker_PerBound(unsigned short val_marker);
 
     /*!
 	 * \brief Get the number of sections.
