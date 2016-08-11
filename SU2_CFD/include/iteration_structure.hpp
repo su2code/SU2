@@ -295,18 +295,6 @@ public:
    */
   void InitializeVortexDistribution(unsigned long &nVortex, vector<su2double>& x0, vector<su2double>& y0, vector<su2double>& vort_strength, vector<su2double>& r_core);
   
-  /*!
-   * \brief compute and set mixing-plane quantities at the interface between two adjacent zone.
-   * \author S. Vitale
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] output - Definition of the output for the particular problem.
-   * \param[in] iZone - zone of the problem.
-   */
-  void TurboPreprocess(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, CNumerics *****numerics_container, COutput *output, unsigned short iZone);
-
-
 };
 
 /*!
