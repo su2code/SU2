@@ -40,7 +40,7 @@ before_install:
     - sudo apt-get install -qq python-numpy python-scipy python-pip mpich2 swig
 
 install:
-    - pip install mpi4py
+    - sudo pip install mpi4py
     - echo $TRAVIS_BUILD_DIR
     - echo $CONFIGURE_COMMAND
     - $CONFIGURE_COMMAND
