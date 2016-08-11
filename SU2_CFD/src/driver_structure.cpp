@@ -3347,6 +3347,59 @@ CDiscAdjFSIStatDriver::CDiscAdjFSIStatDriver(CIteration **iteration_container,
     myfile_res << endl;
 
     myfile_res.close();
+
+    myfile_res.open ("structural_block.csv");
+
+    myfile_res << "BGS_Iter\t";
+    myfile_res << "Int_Iter\t";
+    myfile_res << "Node\t";
+    myfile_res << "Struct_1\t";
+    myfile_res << "Struct_2\t";
+    myfile_res << "CrossTerm_1\t";
+    myfile_res << "CrossTerm_2\t";
+    myfile_res << "StructSol_1\t";
+    myfile_res << "StructSol_2\t";
+
+    myfile_res << endl;
+
+    myfile_res.close();
+
+    myfile_res.open ("geometry_block.csv");
+
+    myfile_res << "BGS_Iter\t";
+    myfile_res << "Int_Iter\t";
+    myfile_res << "Node\t";
+    myfile_res << "Geom_1\t";
+    myfile_res << "Geom_2\t";
+    myfile_res << "CrossTerm_1\t";
+    myfile_res << "CrossTerm_2\t";
+    myfile_res << "GeomSol_1\t";
+    myfile_res << "GeomSol_2\t";
+    myfile_res << endl;
+
+    myfile_res.close();
+
+    myfile_res.open ("fluid_block.csv");
+
+    myfile_res << "BGS_Iter\t";
+    myfile_res << "Int_Iter\t";
+    myfile_res << "Node\t";
+    myfile_res << "Fluid_1\t";
+    myfile_res << "Fluid_2\t";
+    myfile_res << "Fluid_3\t";
+    myfile_res << "Fluid_4\t";
+    myfile_res << "CrossTerm_1\t";
+    myfile_res << "CrossTerm_2\t";
+    myfile_res << "CrossTerm_3\t";
+    myfile_res << "CrossTerm_4\t";
+    myfile_res << "FluidSol_1\t";
+    myfile_res << "FluidSol_2\t";
+    myfile_res << "FluidSol_3\t";
+    myfile_res << "FluidSol_4\t";
+
+    myfile_res << endl;
+
+    myfile_res.close();
   }
 
 }
@@ -3407,6 +3460,13 @@ void CDiscAdjFSIStatDriver::Run(CIteration **iteration_container,
 
   switch (config_container[ZONE_FLOW]->GetAD_FSI_Strategy()){
   case MONOLITHIC:
+    cout << endl << "******************* First solve partitioned *******************" << endl;
+
+    Iterate_Block_StructuralOF(iteration_container, output, integration_container, geometry_container, solver_container,
+                         numerics_container, config_container, surface_movement, grid_movement,
+                         FFDBox, interpolator_container, transfer_container, ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
+
+    cout << endl << "******************* Now solve the monolithic block *******************" << endl;
     Iterate_Block(iteration_container, output, integration_container, geometry_container, solver_container,
                  numerics_container, config_container, surface_movement, grid_movement,
                  FFDBox, interpolator_container, transfer_container, ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
@@ -3795,6 +3855,51 @@ void CDiscAdjFSIStatDriver::PrintDirect_Residuals(CSolver ****solver_container,
 
   }
 
+  if (kind_recording == ALL_VARIABLES)  {
+
+    if (rank == MASTER_NODE && ((ExtIter == 0) || unsteady )){
+      cout << "log10[RMS Density]: "<< log10(solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetRes_RMS(0))
+                     <<", Drag: " <<solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CDrag()
+                     <<", Lift: " << solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CLift() << "." << endl;
+
+    }
+
+    if (rank == MASTER_NODE && ((ExtIter == 0) || dynamic )){
+      if (nonlinear_analysis){
+        cout << "UTOL-A: "   << log10(solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRes_FEM(0))
+             << ", RTOL-A: " << log10(solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRes_FEM(1))
+             << ", ETOL-A: " << log10(solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRes_FEM(2)) << "." << endl;
+      }
+      else{
+        if (solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetnVar() == 2){
+          cout << "log10[RMS Ux]: "   << log10(solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRes_RMS(0))
+               << ", log10[RMS Uy]: " << log10(solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRes_RMS(1)) << "." << endl;
+
+        }
+        else{
+          cout << "log10[RMS Ux]: "   << log10(solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRes_RMS(0))
+               << ", log10[RMS Uy]: " << log10(solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRes_RMS(1))
+               << ", log10[RMS Uz]: " << log10(solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRes_RMS(2))<< "." << endl;
+        }
+
+      }
+    }
+
+    if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION){
+      switch (config_container[ZONE_STRUCT]->GetKind_ObjFunc()){
+      case REFERENCE_GEOMETRY:
+        kind_OFunction = "(Reference Geometry): ";
+        val_OFunction = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetTotal_OFRefGeom();
+        break;
+      default:
+        val_OFunction = 0.0;  // If the objective function is computed in a different physical problem
+        break;
+      }
+      cout << "Objective function " << kind_OFunction << val_OFunction << endl;
+    }
+
+  }
+
 }
 
 void CDiscAdjFSIStatDriver::Iterate_Direct(CIteration **iteration_container, COutput *output, CIntegration ***integration_container,
@@ -4004,9 +4109,36 @@ void CDiscAdjFSIStatDriver::Structural_Iteration_Direct(CIteration **iteration_c
     CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
     unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
-
+  unsigned long IntIter = config_container[ZONE_STRUCT]->GetIntIter();
+  unsigned long ExtIter = config_container[ZONE_STRUCT]->GetExtIter();
   // TODO! DOUBT HERE
   int val_DirectIter = 0;
+  unsigned long iPoint;
+
+  /*--- For adjoint applications, there is no prediction; we use the solution that has already been computed.
+   *--- However, we need to store the solution in the Solution_Pred to be able to reuse the FSI routines
+   */
+
+  for (iPoint = 0; iPoint < geometry_container[ZONE_STRUCT][MESH_0]->GetnPointDomain(); iPoint++)
+    solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
+
+  /*-----------------------------------------------------------------*/
+  /*------------------- Transfer Displacements ----------------------*/
+  /*-----------------------------------------------------------------*/
+
+  Transfer_Displacements(output, integration_container, geometry_container,
+      solver_container, numerics_container, config_container,
+      surface_movement, grid_movement, FFDBox, transfer_container,
+      ZONE_STRUCT, ZONE_FLOW);
+
+  /*-----------------------------------------------------------------*/
+  /*------------------- Set the Grid movement -----------------------*/
+  /*---- No longer done in the preprocess of the flow iteration -----*/
+  /*---- as the flag Grid_Movement is set to false in this case -----*/
+  /*-----------------------------------------------------------------*/
+
+  SetGrid_Movement(geometry_container[ZONE_FLOW], surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW], FFDBox[ZONE_FLOW],
+      solver_container[ZONE_FLOW], config_container[ZONE_FLOW], ZONE_FLOW, IntIter, ExtIter);
 
   /*------- Run pre-processing on the fluid domain solver -----------*/
   /*------- to compute the dependencies on the Cons. Vars. ----------*/
@@ -4138,8 +4270,12 @@ void CDiscAdjFSIStatDriver::SetRecording(CIteration **iteration_container,
       kind_AdjointIteration = "Structural cross term: structural input -> geometry output";
       kind_DirectIteration = "mesh deformation ";
       break;
+    case ALL_VARIABLES:
+      kind_AdjointIteration = "FSI iteration: all inputs -> all outputs";
+      kind_DirectIteration = "FSI ";
+      break;
     }
-//    cout << kind_AdjointIteration << endl;
+    cout << kind_AdjointIteration << endl;
     cout << "Direct " << kind_DirectIteration << "iteration to store computational graph." << endl;
     switch (kind_recording){
     case FLOW_VARIABLES: case GEOMETRY_VARIABLES:
@@ -4317,12 +4453,11 @@ void CDiscAdjFSIStatDriver::RegisterInput(CIteration **iteration_container,
     iteration_container[ZONE_STRUCT]->RegisterInput(solver_container, geometry_container, config_container, ZONE_STRUCT, kind_recording);
   }
 
-//  if (kind_recording == ALL_VARIABLES) {
-//    iteration_container[ZONE_FLOW]->RegisterInput(solver_container, geometry_container, config_container, ZONE_FLOW, FLOW_VARIABLES);
-//    iteration_container[ZONE_FLOW]->RegisterInput(solver_container, geometry_container, config_container, ZONE_FLOW, GEOMETRY_VARIABLES);
-//    iteration_container[ZONE_STRUCT]->RegisterInput(solver_container, geometry_container, config_container, ZONE_STRUCT, FEM_VARIABLES);
-//  }
-
+  if (kind_recording == ALL_VARIABLES) {
+    iteration_container[ZONE_FLOW]->RegisterInput(solver_container, geometry_container, config_container, ZONE_FLOW, FLOW_VARIABLES);
+    iteration_container[ZONE_FLOW]->RegisterInput(solver_container, geometry_container, config_container, ZONE_FLOW, GEOMETRY_VARIABLES);
+    iteration_container[ZONE_STRUCT]->RegisterInput(solver_container, geometry_container, config_container, ZONE_STRUCT, FEM_VARIABLES);
+  }
 
 
 }
@@ -4398,6 +4533,16 @@ void CDiscAdjFSIStatDriver::RegisterOutput(CIteration **iteration_container,
     solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->RegisterObj_Func(config_container[ZONE_STRUCT]);
   }
 
+  /*--- Register the objective function for all variables at a time ---*/
+  if (kind_recording == ALL_VARIABLES){
+    if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION){
+      solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->RegisterObj_Func(config_container[ZONE_STRUCT]);
+    }
+    else{
+      solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->RegisterObj_Func(config_container[ZONE_FLOW]);
+    }
+  }
+
   /*--- Register the conservative variables of the flow as output of the iteration ---*/
   if ((kind_recording == FLOW_VARIABLES) ||
       (kind_recording == GEOMETRY_VARIABLES)) {
@@ -4425,6 +4570,27 @@ void CDiscAdjFSIStatDriver::RegisterOutput(CIteration **iteration_container,
       (kind_recording == GEOMETRY_CROSS_TERM)) {
 
     if (print_output) cout << "  - 8. Register Structural Displacements as output." << endl;
+
+    solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->RegisterOutput(geometry_container[ZONE_STRUCT][MESH_0],config_container[ZONE_STRUCT]);
+
+  }
+
+  if (kind_recording == ALL_VARIABLES){
+
+    /*--- Register the conservative variables of the flow as output of the iteration ---*/
+
+    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->RegisterOutput(geometry_container[ZONE_FLOW][MESH_0],config_container[ZONE_FLOW]);
+
+    if (turbulent){
+      solver_container[ZONE_FLOW][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry_container[ZONE_FLOW][MESH_0],
+          config_container[ZONE_FLOW]);
+    }
+
+    /*--- Register the displacements of the nodes of the fluid as output of the iteration ---*/
+
+    geometry_container[ZONE_FLOW][MESH_0]->RegisterOutput_Coordinates(config_container[ZONE_FLOW]);
+
+    /*--- Register the displacements of the structure as output of the iteration ---*/
 
     solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->RegisterOutput(geometry_container[ZONE_STRUCT][MESH_0],config_container[ZONE_STRUCT]);
 
@@ -4505,7 +4671,7 @@ void CDiscAdjFSIStatDriver::Iterate_Block(CIteration **iteration_container,
     nIntIter = 1;
     break;
   case ALL_VARIABLES:
-    nIntIter = config_container[ZONE_FLOW]->GetUnst_nIntIter();
+    nIntIter = 10000;
     break;
   }
 
@@ -4609,6 +4775,16 @@ void CDiscAdjFSIStatDriver::InitializeAdjoint(CIteration **iteration_container,
   }
 
 
+  /*--- Register the objective function for all variables at a time ---*/
+  if (kind_recording == ALL_VARIABLES){
+    if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION){
+      solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->SetAdj_ObjFunc(geometry_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT]);
+    }
+    else{
+      solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
+    }
+  }
+
   /*--- Adjoint of the fluid conservative variables ---*/
 
   if ((kind_recording == FLOW_VARIABLES) ||
@@ -4650,6 +4826,29 @@ void CDiscAdjFSIStatDriver::InitializeAdjoint(CIteration **iteration_container,
 
   }
 
+
+  if (kind_recording == ALL_VARIABLES){
+
+    /*--- Initialize the adjoints the conservative variables ---*/
+
+    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->SetAdjoint_Output(geometry_container[ZONE_FLOW][MESH_0],
+                                                                    config_container[ZONE_FLOW]);
+
+    if (turbulent){
+      solver_container[ZONE_FLOW][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry_container[ZONE_FLOW][MESH_0],
+                                                                      config_container[ZONE_FLOW]);
+    }
+
+    /*--- Adjoint of the positions of the mesh ---*/
+
+    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->SetAdjoint_OutputMesh(geometry_container[ZONE_FLOW][MESH_0],
+                                                                            config_container[ZONE_FLOW]);
+    /*--- Adjoint of the structural displacements ---*/
+
+    solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry_container[ZONE_STRUCT][MESH_0],
+                                                                         config_container[ZONE_STRUCT]);
+
+  }
 
 }
 
@@ -4750,6 +4949,37 @@ void CDiscAdjFSIStatDriver::ExtractAdjoint(CIteration **iteration_container,
 
     solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_CrossTerm_Geometry(geometry_container[ZONE_FLOW][MESH_0],
                                                                                         config_container[ZONE_FLOW]);
+
+  }
+
+
+  if (kind_recording == ALL_VARIABLES) {
+
+    /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
+
+    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Solution(geometry_container[ZONE_FLOW][MESH_0],
+                                                      config_container[ZONE_FLOW]);
+
+    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry_container[ZONE_FLOW][MESH_0],
+                                                      config_container[ZONE_FLOW]);
+
+    if (config_container[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS) {
+      solver_container[ZONE_FLOW][MESH_0][ADJTURB_SOL]->ExtractAdjoint_Solution(geometry_container[ZONE_FLOW][MESH_0],
+                                                        config_container[ZONE_FLOW]);
+    }
+
+    /*--- Extract the adjoints of the geometrical input variables and store them for the next iteration ---*/
+
+    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Geometry(geometry_container[ZONE_FLOW][MESH_0],
+                                                      config_container[ZONE_FLOW]);
+
+    /*--- Extract the adjoints of the structural input variables and store them for the next iteration ---*/
+
+    solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Solution(geometry_container[ZONE_STRUCT][MESH_0],
+                                                                               config_container[ZONE_STRUCT]);
+
+    solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Variables(geometry_container[ZONE_STRUCT][MESH_0],
+                                                                                config_container[ZONE_STRUCT]);
 
   }
 
@@ -4889,6 +5119,67 @@ void CDiscAdjFSIStatDriver::ConvergenceHistory(CIntegration ***integration_conta
 
   }
 
+  if (kind_recording == ALL_VARIABLES) {
+
+
+    if (rank == MASTER_NODE){
+      if (IntIter == 0){
+        cout << endl;
+        cout << " Iter" << "    BGSIter" << "   Res[Psi_Rho]" << "     Res[Psi_E]";
+        cout << "    Res[Ux_bar]" << "     Res[Uy_bar]";
+        if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION) cout << "       Sens_E" << "       Sens_Nu" << endl;
+      }
+
+      if (IntIter % config_container[ZONE_FLOW]->GetWrt_Con_Freq() == 0){
+        /*--- Output the flow convergence ---*/
+        /*--- This is temporary as it requires several changes in the output structure ---*/
+        cout.width(5);     cout << IntIter;
+        cout.width(11);    cout << BGS_Iter + 1;
+        cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
+        cout.width(15);    cout << log10(solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0));
+        cout.width(15);    cout << log10(solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_RMS(1));
+        cout.width(15);    cout << log10(solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetRes_RMS(0));
+        cout.width(15);    cout << log10(solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetRes_RMS(1));
+        cout.precision(4); cout.setf(ios::scientific, ios::floatfield);
+        cout.width(15);    cout << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E();
+        cout.width(15);    cout << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu();
+        cout << endl;
+      }
+
+    }
+
+    bool write_history = true;
+    unsigned short iVar;
+
+    /*--- Header of the temporary output file ---*/
+    if ((write_history) && (rank == MASTER_NODE)){
+      ofstream myfile_res;
+      myfile_res.open ("history_adjoint_FSI.csv", ios::app);
+
+      myfile_res << IntIter << "\t";
+
+      myfile_res.precision(15);
+
+      myfile_res << fixed << log10(solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)) << "\t";
+      myfile_res << fixed << log10(solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_RMS(1)) << "\t";
+
+      myfile_res << fixed << log10(solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetRes_RMS(0)) << "\t";
+      myfile_res << fixed << log10(solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetRes_RMS(1)) << "\t";
+
+      if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION){
+        myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E() << "\t";
+        myfile_res << scientific << solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu() << "\t";
+      }
+
+      myfile_res << endl;
+
+      myfile_res.close();
+    }
+
+
+  }
+
+
 
 }
 
@@ -5023,6 +5314,8 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
   unsigned long iFSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(iFSIIter);
   unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
 
+  ofstream myfile_struc, myfile_flow, myfile_geo;
+
   for (iFSIIter = 0; iFSIIter < nFSIIter; iFSIIter++){
 
     if (rank == MASTER_NODE){
@@ -5035,6 +5328,21 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
 
     /*--- Iterate structure first ---*/
 
+    myfile_struc.open ("structural_block.csv", ios::app);
+    myfile_struc << "FEM_VARIABLES";
+    myfile_struc << endl;
+    myfile_struc.close();
+
+    myfile_geo.open ("geometry_block.csv", ios::app);
+    myfile_geo << "FEM_VARIABLES";
+    myfile_geo << endl;
+    myfile_geo.close();
+
+    myfile_flow.open ("fluid_block.csv", ios::app);
+    myfile_flow << "FEM_VARIABLES";
+    myfile_flow << endl;
+    myfile_flow.close();
+
     Iterate_Block(iteration_container, output, integration_container,
         geometry_container, solver_container, numerics_container,
         config_container, surface_movement, grid_movement,
@@ -5042,6 +5350,21 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
         ZONE_FLOW, ZONE_STRUCT, FEM_VARIABLES);
 
     /*--- Compute cross term (dS / dFv) ---*/
+
+    myfile_struc.open ("structural_block.csv", ios::app);
+    myfile_struc << "FLOW_CROSS_TERM";
+    myfile_struc << endl;
+    myfile_struc.close();
+
+    myfile_geo.open ("geometry_block.csv", ios::app);
+    myfile_geo << "FLOW_CROSS_TERM";
+    myfile_geo << endl;
+    myfile_geo.close();
+
+    myfile_flow.open ("fluid_block.csv", ios::app);
+    myfile_flow << "FLOW_CROSS_TERM";
+    myfile_flow << endl;
+    myfile_flow.close();
 
     Iterate_Block(iteration_container, output, integration_container,
         geometry_container, solver_container, numerics_container,
@@ -5051,6 +5374,21 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
 
     /*--- Compute cross term (dM / dSv) ---*/
 
+    myfile_struc.open ("structural_block.csv", ios::app);
+    myfile_struc << "GEOMETRY_CROSS_TERM";
+    myfile_struc << endl;
+    myfile_struc.close();
+
+    myfile_geo.open ("geometry_block.csv", ios::app);
+    myfile_geo << "GEOMETRY_CROSS_TERM";
+    myfile_geo << endl;
+    myfile_geo.close();
+
+    myfile_flow.open ("fluid_block.csv", ios::app);
+    myfile_flow << "GEOMETRY_CROSS_TERM";
+    myfile_flow << endl;
+    myfile_flow.close();
+
     Iterate_Block(iteration_container, output, integration_container,
         geometry_container, solver_container, numerics_container,
         config_container, surface_movement, grid_movement,
@@ -5058,6 +5396,21 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
         ZONE_FLOW, ZONE_STRUCT, GEOMETRY_CROSS_TERM);
 
     /*--- Iterate fluid (including cross term) ---*/
+
+    myfile_struc.open ("structural_block.csv", ios::app);
+    myfile_struc << "FLOW_VARIABLES";
+    myfile_struc << endl;
+    myfile_struc.close();
+
+    myfile_geo.open ("geometry_block.csv", ios::app);
+    myfile_geo << "FLOW_VARIABLES";
+    myfile_geo << endl;
+    myfile_geo.close();
+
+    myfile_flow.open ("fluid_block.csv", ios::app);
+    myfile_flow << "FLOW_VARIABLES";
+    myfile_flow << endl;
+    myfile_flow.close();
 
     Iterate_Block(iteration_container, output, integration_container,
         geometry_container, solver_container, numerics_container,
@@ -5067,6 +5420,21 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
 
     /*--- Compute mesh (it is a cross term dF / dMv ) ---*/
 
+    myfile_struc.open ("structural_block.csv", ios::app);
+    myfile_struc << "GEOMETRY_VARIABLES";
+    myfile_struc << endl;
+    myfile_struc.close();
+
+    myfile_geo.open ("geometry_block.csv", ios::app);
+    myfile_geo << "GEOMETRY_VARIABLES";
+    myfile_geo << endl;
+    myfile_geo.close();
+
+    myfile_flow.open ("fluid_block.csv", ios::app);
+    myfile_flow << "GEOMETRY_VARIABLES";
+    myfile_flow << endl;
+    myfile_flow.close();
+
     Iterate_Block(iteration_container, output, integration_container,
         geometry_container, solver_container, numerics_container,
         config_container, surface_movement, grid_movement,
@@ -5074,6 +5442,21 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
         ZONE_FLOW, ZONE_STRUCT, GEOMETRY_VARIABLES);
 
     /*--- Compute mesh cross term (dM / dSv) ---*/
+
+    myfile_struc.open ("structural_block.csv", ios::app);
+    myfile_struc << "FEM_CROSS_TERM";
+    myfile_struc << endl;
+    myfile_struc.close();
+
+    myfile_geo.open ("geometry_block.csv", ios::app);
+    myfile_geo << "FEM_CROSS_TERM";
+    myfile_geo << endl;
+    myfile_geo.close();
+
+    myfile_flow.open ("fluid_block.csv", ios::app);
+    myfile_flow << "FEM_CROSS_TERM";
+    myfile_flow << endl;
+    myfile_flow.close();
 
     Iterate_Block(iteration_container, output, integration_container,
         geometry_container, solver_container, numerics_container,
