@@ -2964,7 +2964,20 @@ void CDiscAdjFEAIteration::Postprocess(COutput *output,
     CSurfaceMovement **surface_movement,
     CVolumetricMovement **grid_movement,
     CFreeFormDefBox*** FFDBox,
-    unsigned short val_iZone) { }
+    unsigned short val_iZone) {
+
+  unsigned short iMarker;
+
+  /*--- Apply BC's to the structural adjoint - otherwise, clamped nodes have too values that make no sense... ---*/
+  for (iMarker = 0; iMarker < config_container[val_iZone]->GetnMarker_All(); iMarker++)
+  switch (config_container[val_iZone]->GetMarker_All_KindBC(iMarker)) {
+    case CLAMPED_BOUNDARY:
+    solver_container[val_iZone][MESH_0][ADJFEA_SOL]->BC_Clamped_Post(geometry_container[val_iZone][MESH_0],
+        solver_container[val_iZone][MESH_0], numerics_container[val_iZone][MESH_0][FEA_SOL][FEA_TERM],
+        config_container[val_iZone], iMarker);
+    break;
+  }
+}
 
 void FEM_StructuralIteration(COutput *output, CIntegration ***integration_container, CGeometry ***geometry_container,
                   	  	  	  	 CSolver ****solver_container, CNumerics *****numerics_container, CConfig **config_container,
