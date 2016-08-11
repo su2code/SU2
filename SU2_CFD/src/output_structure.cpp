@@ -1431,7 +1431,7 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
   /*--- Loop over this partition to collect the coords of the local points. ---*/
   su2double *Coords_Local; jPoint = 0;
   
-  for (iPoint = 0; iPoint < nMeshPoints; iPoint++) {
+  for (iPoint = 0; iPoint < nLocalPoint; iPoint++) {
     
     /*--- Check for halos and write only if requested ---*/
     //    if (!Local_Halo[iPoint] || Wrt_Halo) {
