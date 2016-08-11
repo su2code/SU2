@@ -356,6 +356,11 @@ void SetProjection_FD(CGeometry *geometry, CConfig *config, CSurfaceMovement *su
     else if (config->GetDesign_Variable(iDV) == HICKS_HENNE) {
       surface_movement->SetHicksHenne(geometry, config, iDV, true);
       }
+      
+      /*--- Kulfan (CST) design variable ---*/
+    else if (config->GetDesign_Variable(iDV) == CST) {
+      surface_movement->SetCST(geometry, config, iDV, true);
+      }
 
       /*--- Displacement design variable ---*/
 
