@@ -469,13 +469,6 @@ void CMeanFlowIteration::Preprocess(COutput *output,
   if (config_container[val_iZone]->GetWind_Gust()) {
     SetWind_GustField(config_container[val_iZone], geometry_container[val_iZone], solver_container[val_iZone]);
   }
-  
-
-  /*--- turbomachinery preprocess  ---*/
-  if(turbomachinery){
-  	TurboPreprocess(geometry_container, solver_container, config_container, numerics_container, output, val_iZone);
-  }
-
 }
 
 void CMeanFlowIteration::Iterate(COutput *output,
@@ -911,21 +904,6 @@ void CMeanFlowIteration::InitializeVortexDistribution(unsigned long &nVortex, ve
   // number of vortices
   nVortex = x0.size();
   
-}
-
-void CMeanFlowIteration::TurboPreprocess(CGeometry ***geometry_container, CSolver ****solver_container, CConfig **config_container, CNumerics *****numerics_container, COutput *output, unsigned short iZone) {
-
-	solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0], config_container[iZone], INFLOW);
-	solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0], config_container[iZone], OUTFLOW);
-	solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0], config_container[iZone], INFLOW);
-	solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0], config_container[iZone], OUTFLOW);
-
-	if (config_container[iZone]->GetBoolNRBC()){
-		solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessBC_NonReflecting(geometry_container[iZone][MESH_0], config_container[iZone], numerics_container[iZone][MESH_0][FLOW_SOL][CONV_BOUND_TERM], INFLOW);
-		solver_container[iZone][MESH_0][FLOW_SOL]->PreprocessBC_NonReflecting(geometry_container[iZone][MESH_0], config_container[iZone], numerics_container[iZone][MESH_0][FLOW_SOL][CONV_BOUND_TERM], OUTFLOW);
-	}
-  solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(config_container[iZone], geometry_container[iZone][MESH_0]);
-
 }
 
 
