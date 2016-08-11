@@ -3911,6 +3911,8 @@ void CDiscAdjFSIStatDriver::Iterate_Direct(CIteration **iteration_container, COu
 
   if (kind_recording == ALL_VARIABLES) {
 
+
+
     if (print_output) cout << "  - 6. Run Fluid-Structure Interaction Iteration." << endl;
 
     FSI_Iteration_Direct(iteration_container, transfer_container, output, integration_container, geometry_container,
@@ -3942,6 +3944,7 @@ void CDiscAdjFSIStatDriver::Iterate_Direct(CIteration **iteration_container, COu
         FFDBox, ZONE_FLOW, ZONE_STRUCT);
 
   }
+
 
   if (kind_recording == FEM_CROSS_TERM) {
 
@@ -4086,12 +4089,70 @@ void CDiscAdjFSIStatDriver::Fluid_Iteration_Direct(CIteration **iteration_contai
     CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
     unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
-
   /*--- Set ExtIter to 0 ---*/
 
-  config_container[ZONE_FLOW]->SetExtIter(0);
+  int val_DirectIter = 0;
+  unsigned long iPoint;
+  unsigned long IntIter = config_container[ZONE_FLOW]->GetIntIter();
+  unsigned long ExtIter = config_container[ZONE_FLOW]->GetExtIter();
 
-  /*--- For now only preprocess and iterate are necessary ---*/
+  /*-----------------------------------------------------------------*/
+  /*------- Compute the Cons. Vars. to obtain the tractions ---------*/
+  /*-----------------------------------------------------------------*/
+
+  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0],
+                                                              config_container[ZONE_FLOW], MESH_0, val_DirectIter, RUNTIME_FLOW_SYS, false);
+
+  /*-----------------------------------------------------------------*/
+  /*-------------------- Transfer Tractions -------------------------*/
+  /*-----------------------------------------------------------------*/
+
+  Transfer_Tractions(output, integration_container, geometry_container,
+              solver_container, numerics_container, config_container,
+              surface_movement, grid_movement, FFDBox, transfer_container,
+              ZONE_FLOW, ZONE_STRUCT);
+
+
+  /*-----------------------------------------------------------------*/
+  /*--------------- Iterate the structural solver -------------------*/
+  /*-----------------------------------------------------------------*/
+
+  direct_iteration[ZONE_STRUCT]->Iterate(output, integration_container, geometry_container,
+                                        solver_container, numerics_container, config_container,
+                                        surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
+
+  /*-----------------------------------------------------------------*/
+  /*------ Store the structural solution in Solution_Pred -----------*/
+  /*-----------------------------------------------------------------*/
+
+  for (iPoint = 0; iPoint < geometry_container[ZONE_STRUCT][MESH_0]->GetnPointDomain(); iPoint++)
+    solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
+
+  /*-----------------------------------------------------------------*/
+  /*------------------- Transfer Displacements ----------------------*/
+  /*-----------------------------------------------------------------*/
+
+  Transfer_Displacements(output, integration_container, geometry_container,
+      solver_container, numerics_container, config_container,
+      surface_movement, grid_movement, FFDBox, transfer_container,
+      ZONE_STRUCT, ZONE_FLOW);
+
+  /*-----------------------------------------------------------------*/
+  /*------------------- Set the Grid movement -----------------------*/
+  /*---- No longer done in the preprocess of the flow iteration -----*/
+  /*---- as the flag Grid_Movement is set to false in this case -----*/
+  /*-----------------------------------------------------------------*/
+
+  SetGrid_Movement(geometry_container[ZONE_FLOW], surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW], FFDBox[ZONE_FLOW],
+      solver_container[ZONE_FLOW], config_container[ZONE_FLOW], ZONE_FLOW, IntIter, ExtIter);
+
+  /*-----------------------------------------------------------------*/
+  /*----------------- Iterate the flow solver -----------------------*/
+  /*---- Sets all the cross dependencies for the flow variables -----*/
+  /*--------------- into the structural problem ---------------------*/
+  /*-----------------------------------------------------------------*/
+
+  config_container[ZONE_FLOW]->SetExtIter(0);
 
   direct_iteration[ZONE_FLOW]->Preprocess(output, integration_container, geometry_container,
       solver_container, numerics_container, config_container,
@@ -4108,6 +4169,81 @@ void CDiscAdjFSIStatDriver::Structural_Iteration_Direct(CIteration **iteration_c
     CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
     CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
     unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
+
+  unsigned long IntIter = config_container[ZONE_STRUCT]->GetIntIter();
+  unsigned long ExtIter = config_container[ZONE_STRUCT]->GetExtIter();
+  // TODO! DOUBT HERE
+  int val_DirectIter = 0;
+  unsigned long iPoint;
+
+  /*-----------------------------------------------------------------*/
+  /*------ Store the structural solution in Solution_Pred -----------*/
+  /*-----------------------------------------------------------------*/
+
+  for (iPoint = 0; iPoint < geometry_container[ZONE_STRUCT][MESH_0]->GetnPointDomain(); iPoint++)
+    solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
+
+  /*-----------------------------------------------------------------*/
+  /*------------------- Transfer Displacements ----------------------*/
+  /*-----------------------------------------------------------------*/
+
+  Transfer_Displacements(output, integration_container, geometry_container,
+      solver_container, numerics_container, config_container,
+      surface_movement, grid_movement, FFDBox, transfer_container,
+      ZONE_STRUCT, ZONE_FLOW);
+
+  /*-----------------------------------------------------------------*/
+  /*------------------- Set the Grid movement -----------------------*/
+  /*---- No longer done in the preprocess of the flow iteration -----*/
+  /*---- as the flag Grid_Movement is set to false in this case -----*/
+  /*-----------------------------------------------------------------*/
+
+  SetGrid_Movement(geometry_container[ZONE_FLOW], surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW], FFDBox[ZONE_FLOW],
+      solver_container[ZONE_FLOW], config_container[ZONE_FLOW], ZONE_FLOW, IntIter, ExtIter);
+
+  /*-----------------------------------------------------------------*/
+  /*----------------- Iterate the flow solver -----------------------*/
+  /*---- Sets all the cross dependencies for the flow variables -----*/
+  /*--------------- into the structural problem ---------------------*/
+  /*-----------------------------------------------------------------*/
+
+  config_container[ZONE_FLOW]->SetExtIter(0);
+
+  direct_iteration[ZONE_FLOW]->Preprocess(output, integration_container, geometry_container,
+      solver_container, numerics_container, config_container,
+      surface_movement, grid_movement, FFDBox, ZONE_FLOW);
+
+  direct_iteration[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
+      solver_container, numerics_container, config_container,
+      surface_movement, grid_movement, FFDBox, ZONE_FLOW);
+
+
+  /*-----------------------------------------------------------------*/
+  /*-------------------- Transfer Tractions -------------------------*/
+  /*-----------------------------------------------------------------*/
+
+  Transfer_Tractions(output, integration_container, geometry_container,
+              solver_container, numerics_container, config_container,
+              surface_movement, grid_movement, FFDBox, transfer_container,
+              ZONE_FLOW, ZONE_STRUCT);
+
+
+  /*-----------------------------------------------------------------*/
+  /*--------------- Iterate the structural solver -------------------*/
+  /*-----------------------------------------------------------------*/
+
+  direct_iteration[ZONE_STRUCT]->Iterate(output, integration_container, geometry_container,
+                                        solver_container, numerics_container, config_container,
+                                        surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
+
+}
+
+void CDiscAdjFSIStatDriver::Structural_Iteration_Direct_CrossTerm(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
+    CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
+    CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
+    CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+    unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
+
 
   unsigned long IntIter = config_container[ZONE_STRUCT]->GetIntIter();
   unsigned long ExtIter = config_container[ZONE_STRUCT]->GetExtIter();
@@ -4140,11 +4276,20 @@ void CDiscAdjFSIStatDriver::Structural_Iteration_Direct(CIteration **iteration_c
   SetGrid_Movement(geometry_container[ZONE_FLOW], surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW], FFDBox[ZONE_FLOW],
       solver_container[ZONE_FLOW], config_container[ZONE_FLOW], ZONE_FLOW, IntIter, ExtIter);
 
-  /*------- Run pre-processing on the fluid domain solver -----------*/
-  /*------- to compute the dependencies on the Cons. Vars. ----------*/
 
-  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0],
-                                                              config_container[ZONE_FLOW], MESH_0, val_DirectIter, RUNTIME_FLOW_SYS, false);
+  /*--- Set ExtIter to 0 ---*/
+
+  config_container[ZONE_FLOW]->SetExtIter(0);
+
+  /*--- For now only preprocess and iterate are necessary ---*/
+
+  direct_iteration[ZONE_FLOW]->Preprocess(output, integration_container, geometry_container,
+      solver_container, numerics_container, config_container,
+      surface_movement, grid_movement, FFDBox, ZONE_FLOW);
+
+  direct_iteration[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
+      solver_container, numerics_container, config_container,
+      surface_movement, grid_movement, FFDBox, ZONE_FLOW);
 
   /*------------------- Set FEA loads from fluid --------------------*/
 
@@ -5440,34 +5585,34 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
         config_container, surface_movement, grid_movement,
         FFDBox, interpolator_container, transfer_container,
         ZONE_FLOW, ZONE_STRUCT, GEOMETRY_VARIABLES);
-
-    /*--- Compute mesh cross term (dM / dSv) ---*/
-
-    myfile_struc.open ("structural_block.csv", ios::app);
-    myfile_struc << "FEM_CROSS_TERM";
-    myfile_struc << endl;
-    myfile_struc.close();
-
-    myfile_geo.open ("geometry_block.csv", ios::app);
-    myfile_geo << "FEM_CROSS_TERM";
-    myfile_geo << endl;
-    myfile_geo.close();
-
-    myfile_flow.open ("fluid_block.csv", ios::app);
-    myfile_flow << "FEM_CROSS_TERM";
-    myfile_flow << endl;
-    myfile_flow.close();
-
-    Iterate_Block(iteration_container, output, integration_container,
-        geometry_container, solver_container, numerics_container,
-        config_container, surface_movement, grid_movement,
-        FFDBox, interpolator_container, transfer_container,
-        ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM);
-
-
-    /*--- Check convergence of the BGS method ---*/
-    BGS_Converged = BGSConvergence(integration_container, geometry_container, solver_container, numerics_container,
-        config_container, iFSIIter, ZONE_FLOW, ZONE_STRUCT);
+//
+//    /*--- Compute mesh cross term (dM / dSv) ---*/
+//
+//    myfile_struc.open ("structural_block.csv", ios::app);
+//    myfile_struc << "FEM_CROSS_TERM";
+//    myfile_struc << endl;
+//    myfile_struc.close();
+//
+//    myfile_geo.open ("geometry_block.csv", ios::app);
+//    myfile_geo << "FEM_CROSS_TERM";
+//    myfile_geo << endl;
+//    myfile_geo.close();
+//
+//    myfile_flow.open ("fluid_block.csv", ios::app);
+//    myfile_flow << "FEM_CROSS_TERM";
+//    myfile_flow << endl;
+//    myfile_flow.close();
+//
+//    Iterate_Block(iteration_container, output, integration_container,
+//        geometry_container, solver_container, numerics_container,
+//        config_container, surface_movement, grid_movement,
+//        FFDBox, interpolator_container, transfer_container,
+//        ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM);
+//
+//
+//    /*--- Check convergence of the BGS method ---*/
+//    BGS_Converged = BGSConvergence(integration_container, geometry_container, solver_container, numerics_container,
+//        config_container, iFSIIter, ZONE_FLOW, ZONE_STRUCT);
 
     if (BGS_Converged) break;
 
