@@ -860,6 +860,18 @@ public:
       unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT);
 
   /*!
+   * \brief Run a direct structural iteration.
+   * \param[in] fluidZone - zone of the fluid solver.
+   * \param[in] structuralZone - zone of the structural solver.
+   */
+  void Structural_Iteration_Direct_CrossTerm(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
+      CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
+      CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
+      CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
+      unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT);
+
+
+  /*!
    * \brief Run a direct mesh deformation.
    * \param[in] fluidZone - zone of the fluid solver.
    * \param[in] structuralZone - zone of the structural solver.
