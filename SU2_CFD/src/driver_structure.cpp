@@ -2979,11 +2979,16 @@ void CSingleZoneDriver::Run() {
 	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
 	/*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
-	if(ExtIter == 0){
-		if(config_container[ZONE_0]->GetBoolTurbomachinery()){
+	if(config_container[ZONE_0]->GetBoolTurbomachinery()){
+		if(ExtIter == 0){
 			SetGeoTurboAvgValues(ZONE_0, true);
 		}
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],INFLOW);
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],INFLOW);
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
 	}
+
 
   /*--- Run an iteration of the physics within this single zone.
    We assume that the zone of interest is in the ZONE_0 container position. ---*/
@@ -3124,8 +3129,6 @@ void CMultiZoneDriver::Run() {
   	if(config_container[iZone]->GetBoolTurbomachinery()){
   		for (iZone = 0; iZone < nZone; iZone++) {
   			SetGeoTurboAvgValues(iZone, true);
-				solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-				solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
 			}
 		}
   }
@@ -3133,6 +3136,10 @@ void CMultiZoneDriver::Run() {
   /* --- Set the mixing-plane interface ---*/
   if (mixingplane){
 		for (iZone = 0; iZone < nZone; iZone++) {
+			solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+			solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+			solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+			solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
 			SetMixingPlane(iZone);
 		}
   }
