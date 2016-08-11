@@ -72,41 +72,6 @@ unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CCo
 unsigned short GetnDim(string val_mesh_filename, unsigned short val_format);
 
 /*!
- * \brief Definition of the driver class for single and multi-zone problems.
- * \param[in] driver - Pointer to the driver object to be instantiated.
- * \param[in] config - Definition of the particular problem.
- * \param[in] nZone - Total number of zones in the problem.
- */
-void Driver_Preprocessing(CDriver **driver,
-    CIteration **iteration_container,
-    CSolver ****solver_container,
-    CGeometry ***geometry_container,
-    CIntegration ***integration_container,
-    CNumerics *****numerics_container,
-    CInterpolator ***interpolator_container,
-    CTransfer ***transfer_container,
-    CConfig **config,
-    unsigned short val_nZone,
-    unsigned short val_nDim);
-
-
-/*! 
- * \brief Do the geometrical preprocessing.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- * \param[in] val_nZone - Total number of zones.
- */
-void Geometrical_Preprocessing(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);
-
-/*! 
- * \brief Do the geometrical preprocessing for the DG FEM solver.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- * \param[in] val_nZone - Total number of zones.
- */
-void Geometrical_Preprocessing_DGFEM(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);
-
-/*!
  * \brief Performs an analysis of the mesh partitions for distributed memory calculations.
  * \param[in] geometry - Geometrical definition of the problem.
  * \param[in] config - Definition of the particular problem.

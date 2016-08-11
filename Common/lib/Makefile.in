@@ -645,7 +645,7 @@ lib_sources = \
 # endif
 
 # if BUILD_GELITE
-lib_cxxflags = @su2_externals_INCLUDES@ @CGNS_CXX@ @LAPACK_CXX@ \
+lib_cxxflags = -fPIC @su2_externals_INCLUDES@ @CGNS_CXX@ @LAPACK_CXX@ \
 	@HDF5_CXX@ @SZIP_CXX@ @ZLIB_CXX@ @MUTATIONPP_CXX@ \
 	@JSONCPP_CXX@ @GELITE_CXX@ $(am__empty)
 lib_ldadd = @su2_externals_LIBS@ @CGNS_LD@ @LAPACK_LD@ @HDF5_LD@ \

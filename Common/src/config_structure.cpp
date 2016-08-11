@@ -176,6 +176,8 @@ void CConfig::SetPointersNull(void) {
   EA_IntLimit=NULL;
   RK_Alpha_Step=NULL;
   Int_Coeffs = NULL;
+  Kind_ObjFunc = NULL;
+  Weight_ObjFunc = NULL;
 
   /*--- Moving mesh pointers ---*/
 
@@ -824,9 +826,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
   /*!\brief MG_ADJFLOW\n DESCRIPTION: Multigrid with the adjoint problem. \n Defualt: YES \ingroup Config*/
   addBoolOption("MG_ADJFLOW", MG_AdjointFlow, true);
+
+  /*!\brief OBJECTIVE_WEIGHT  \n DESCRIPTION: Adjoint problem boundary condition weights. Applies scaling factor to objective(s) \ingroup Config*/
+  addDoubleListOption("OBJECTIVE_WEIGHT", nObjW, Weight_ObjFunc);
   /*!\brief OBJECTIVE_FUNCTION
    *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
-  addEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, DRAG_COEFFICIENT);
+  addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
 
   default_obj_coeff[0]=0.0; default_obj_coeff[1]=0.0; default_obj_coeff[2]=0.0;
   default_obj_coeff[3]=0.0;  default_obj_coeff[4]=0.0;
@@ -1423,6 +1428,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Setup for design variables (lower bound) */
   addPythonOption("OPT_BOUND_LOWER");
   
+  /*!\brief OPT_COMBINE_OBJECTIVE
+   *  \n DESCRIPTION: Flag specifying whether to internally combine a multi-objective function or treat separately */
+  addPythonOption("OPT_COMBINE_OBJECTIVE");
+
   /* DESCRIPTION: Current value of the design variables */
   addPythonOption("DV_VALUE_NEW");
 
@@ -1645,7 +1654,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
   
-  unsigned short iZone, iCFL, iDim;
+  unsigned short iZone, iCFL, iDim, iMarker;
   bool ideal_gas       = (Kind_FluidModel == STANDARD_AIR || Kind_FluidModel == IDEAL_GAS );
   bool standard_air       = (Kind_FluidModel == STANDARD_AIR);
   
@@ -1664,18 +1673,53 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Store the SU2 module that we are executing. ---*/
   
   Kind_SU2 = val_software;
-  
-  /*--- Make sure that 1D outputs are written when objective function requires ---*/
-  
-  if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE || Kind_ObjFunc == OUTFLOW_GENERALIZED) {
-    Wrt_1D_Output = YES;
-    Marker_Out_1D = new string[nMarker_Monitoring];
-    for (unsigned short iMarker=0; iMarker<nMarker_Monitoring; iMarker++){
-      Marker_Out_1D[iMarker] = Marker_Monitoring[iMarker];
-    }
-    nMarker_Out_1D = nMarker_Monitoring;
+
+  /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
+  if (Weight_ObjFunc==NULL and Kind_ObjFunc==NULL){
+    Kind_ObjFunc = new unsigned short[1];
+    Kind_ObjFunc[0]=DRAG_COEFFICIENT;
+    Weight_ObjFunc = new su2double[1];
+    Weight_ObjFunc[0]=1.0;
+    nObj=1;
+    nObjW=1;
   }
-  
+  /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
+  if (nObjW<nObj){
+    if (Weight_ObjFunc!=NULL){
+      cout <<"The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n"<<
+          "or be deleted from the config file (equal weights will be applied)."<< endl;
+      exit(EXIT_FAILURE);
+    }
+    Weight_ObjFunc = new su2double[nObj];
+    for (unsigned short iObj=0; iObj<nObj; iObj++)
+      Weight_ObjFunc[iObj]=1.0;
+  }
+  /*--- Ignore weights if only one objective provided ---*/
+  if (nObj == 1 )
+      Weight_ObjFunc[0] = 1.0;
+
+  /*--- Maker sure that nMarker = nObj ---*/
+  /*--- Maker sure that nMarker = nObj ---*/
+  if (nObj>0){
+    if (nMarker_Monitoring!=nObj and Marker_Monitoring!=NULL){
+      if (nMarker_Monitoring==1){
+        /*-- If only one marker was listed with multiple objectives, set that marker as the marker for each objective ---*/
+        nMarker_Monitoring = nObj;
+        string marker = Marker_Monitoring[0];
+        delete[] Marker_Monitoring;
+        Marker_Monitoring = new string[nMarker_Monitoring];
+        for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++)
+          Marker_Monitoring[iMarker] = marker;
+      }
+      else if(nObj>1){
+        cout <<"When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length or length 1. \n "<<
+            "For multiple surfaces per objective, list the objective multiple times. \n"<<
+            "For multiple objectives per marker either use one marker overall or list the marker multiple times."<<endl;
+        exit(EXIT_FAILURE);
+      }
+    }
+  }
+
   /*--- Low memory only for ASCII Tecplot ---*/
 
   if (Output_FileFormat != TECPLOT) Low_MemoryOutput = NO;
@@ -1844,7 +1888,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
        (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
-       (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION)))
+       (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION) &&
+       (Kind_GridMovement[ZONE_0] != FLUID_STRUCTURE)))
     Grid_Movement = false;
   
   /*--- If it is not specified, set the mesh motion mach number
@@ -2242,7 +2287,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    Unless only one value was specified, then set this value for all the markers
    being monitored. ---*/
   
-  unsigned short iMarker;
   
   if ((nRefOriginMoment_X != nRefOriginMoment_Y) || (nRefOriginMoment_X != nRefOriginMoment_Z) ) {
     cout << "ERROR: Length of REF_ORIGIN_MOMENT_X, REF_ORIGIN_MOMENT_Y and REF_ORIGIN_MOMENT_Z must be the same!!" << endl;
@@ -3488,31 +3532,36 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	if (((val_software == SU2_CFD) && ( ContinuousAdjoint )) || (val_software == SU2_DOT)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
-		switch (Kind_ObjFunc) {
-      case DRAG_COEFFICIENT:        cout << "CD objective function." << endl; break;
-      case LIFT_COEFFICIENT:        cout << "CL objective function." << endl; break;
-      case MOMENT_X_COEFFICIENT:    cout << "CMx objective function." << endl; break;
-      case MOMENT_Y_COEFFICIENT:    cout << "CMy objective function." << endl; break;
-      case MOMENT_Z_COEFFICIENT:    cout << "CMz objective function." << endl; break;
-      case INVERSE_DESIGN_PRESSURE: cout << "Inverse design (Cp) objective function." << endl; break;
-      case INVERSE_DESIGN_HEATFLUX: cout << "Inverse design (Heat Flux) objective function." << endl; break;
-      case SIDEFORCE_COEFFICIENT:   cout << "Side force objective function." << endl; break;
-      case EFFICIENCY:              cout << "CL/CD objective function." << endl; break;
-      case EQUIVALENT_AREA:         cout << "Equivalent area objective function. CD weight: " << WeightCd <<"."<< endl;  break;
-      case NEARFIELD_PRESSURE:      cout << "Nearfield pressure objective function. CD weight: " << WeightCd <<"."<< endl;  break;
-      case FORCE_X_COEFFICIENT:     cout << "X-force objective function." << endl; break;
-      case FORCE_Y_COEFFICIENT:     cout << "Y-force objective function." << endl; break;
-      case FORCE_Z_COEFFICIENT:     cout << "Z-force objective function." << endl; break;
-      case THRUST_COEFFICIENT:      cout << "Thrust objective function." << endl; break;
-      case TORQUE_COEFFICIENT:      cout << "Torque efficiency objective function." << endl; break;
-      case TOTAL_HEATFLUX:          cout << "Total heat flux objective function." << endl; break;
-      case MAXIMUM_HEATFLUX:        cout << "Maximum heat flux objective function." << endl; break;
-      case FIGURE_OF_MERIT:         cout << "Rotor Figure of Merit objective function." << endl; break;
-      case FREE_SURFACE:            cout << "Free-Surface objective function." << endl; break;
-      case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
-      case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
-      case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
-      case OUTFLOW_GENERALIZED:     cout << "Generalized outflow objective function." << endl; break;
+		if (nObj==1){
+      switch (Kind_ObjFunc[0]) {
+        case DRAG_COEFFICIENT:        cout << "CD objective function." << endl; break;
+        case LIFT_COEFFICIENT:        cout << "CL objective function." << endl; break;
+        case MOMENT_X_COEFFICIENT:    cout << "CMx objective function." << endl; break;
+        case MOMENT_Y_COEFFICIENT:    cout << "CMy objective function." << endl; break;
+        case MOMENT_Z_COEFFICIENT:    cout << "CMz objective function." << endl; break;
+        case INVERSE_DESIGN_PRESSURE: cout << "Inverse design (Cp) objective function." << endl; break;
+        case INVERSE_DESIGN_HEATFLUX: cout << "Inverse design (Heat Flux) objective function." << endl; break;
+        case SIDEFORCE_COEFFICIENT:   cout << "Side force objective function." << endl; break;
+        case EFFICIENCY:              cout << "CL/CD objective function." << endl; break;
+        case EQUIVALENT_AREA:         cout << "Equivalent area objective function. CD weight: " << WeightCd <<"."<< endl;  break;
+        case NEARFIELD_PRESSURE:      cout << "Nearfield pressure objective function. CD weight: " << WeightCd <<"."<< endl;  break;
+        case FORCE_X_COEFFICIENT:     cout << "X-force objective function." << endl; break;
+        case FORCE_Y_COEFFICIENT:     cout << "Y-force objective function." << endl; break;
+        case FORCE_Z_COEFFICIENT:     cout << "Z-force objective function." << endl; break;
+        case THRUST_COEFFICIENT:      cout << "Thrust objective function." << endl; break;
+        case TORQUE_COEFFICIENT:      cout << "Torque efficiency objective function." << endl; break;
+        case TOTAL_HEATFLUX:          cout << "Total heat flux objective function." << endl; break;
+        case MAXIMUM_HEATFLUX:        cout << "Maximum heat flux objective function." << endl; break;
+        case FIGURE_OF_MERIT:         cout << "Rotor Figure of Merit objective function." << endl; break;
+        case FREE_SURFACE:            cout << "Free-Surface objective function." << endl; break;
+        case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
+        case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
+        case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
+        case OUTFLOW_GENERALIZED:     cout << "Generalized outflow objective function." << endl; break;
+      }
+		}
+		else{
+		  cout << "Weighted sum objective function." << endl;
 		}
 
 	}
@@ -4071,10 +4120,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Restart flow file name: " << Restart_FlowFileName << "." << endl;
     if ((Kind_Adaptation == FULL_ADJOINT) || (Kind_Adaptation == GRAD_ADJOINT) || (Kind_Adaptation == GRAD_FLOW_ADJ) ||
         (Kind_Adaptation == COMPUTABLE) || (Kind_Adaptation == REMAINING)) {
-      if (Kind_ObjFunc == DRAG_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-      if (Kind_ObjFunc == EQUIVALENT_AREA) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-      if (Kind_ObjFunc == NEARFIELD_PRESSURE) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-      if (Kind_ObjFunc == LIFT_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
+      if (Kind_ObjFunc[0] == DRAG_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
+      if (Kind_ObjFunc[0] == EQUIVALENT_AREA) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
+      if (Kind_ObjFunc[0] == NEARFIELD_PRESSURE) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
+      if (Kind_ObjFunc[0] == LIFT_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
     }
   }
 
@@ -4725,6 +4774,10 @@ CConfig::~CConfig(void) {
   if (Marker_Plotting != NULL)        delete[] Marker_Plotting;
   if (Marker_FSIinterface != NULL)        delete[] Marker_FSIinterface;
   if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
+
+  if (Kind_ObjFunc != NULL)      delete[] Kind_ObjFunc;
+  if (Weight_ObjFunc != NULL)      delete[] Weight_ObjFunc;
+
   if (DV_Value != NULL) {
     for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];
     delete [] DV_Value;
@@ -4954,8 +5007,8 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
     /*--- Remove filename extension (.dat) ---*/
     unsigned short lastindex = Filename.find_last_of(".");
     Filename = Filename.substr(0, lastindex);
-
-    switch (Kind_ObjFunc) {
+    if (nObj==1){
+      switch (Kind_ObjFunc[0]) {
       case DRAG_COEFFICIENT:        AdjExt = "_cd";       break;
       case LIFT_COEFFICIENT:        AdjExt = "_cl";       break;
       case SIDEFORCE_COEFFICIENT:   AdjExt = "_csf";      break;
@@ -4980,6 +5033,14 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case AVG_OUTLET_PRESSURE:     AdjExt = "_pe";       break;
       case MASS_FLOW_RATE:          AdjExt = "_mfr";       break;
       case OUTFLOW_GENERALIZED:     AdjExt = "_chn";       break;
+      }
+    }
+    else{
+      if (DiscreteAdjoint) {
+        cout << endl << "Combined objective not yet compatible with discrete adjoint. Specify only one OBJECTIVE_FUNCTION." << endl << endl;
+        exit(EXIT_FAILURE);
+      }
+      AdjExt = "_combo";
     }
     Filename.append(AdjExt);
 
