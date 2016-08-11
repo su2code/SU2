@@ -2918,6 +2918,11 @@ public:
    */
   virtual su2double* GetVecSolDOFs(void);
   
+  /*!
+   * \brief A virtual member.
+   */
+  virtual unsigned long GetnDOFsGlobal(void);
+  
 };
 
 /*!
@@ -5219,6 +5224,12 @@ public:
    * \return Pointer to the vector of the solution degrees of freedom.
    */
   su2double* GetVecSolDOFs(void);
+  
+  /*!
+   * \brief Get the global number of solution degrees of freedom for the calculation.
+   * \return Global number of solution degrees of freedom
+   */
+  unsigned long GetnDOFsGlobal(void);
   
   /*!
    * \brief Compute the pressure at the infinity.
