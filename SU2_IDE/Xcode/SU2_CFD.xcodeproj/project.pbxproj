@@ -90,6 +90,7 @@
 		E9F81E001D1922AB0080D669 /* fem_integration_rules.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F81DFD1D1922AB0080D669 /* fem_integration_rules.cpp */; };
 		E9F81E011D1922AB0080D669 /* fem_wall_distance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F81DFE1D1922AB0080D669 /* fem_wall_distance.cpp */; };
 		E9F81E021D1922AB0080D669 /* gelite.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9F81DFF1D1922AB0080D669 /* gelite.cpp */; };
+		E9FB837C1D5AAA05009B00F1 /* gauss_jacobi_quadrature.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9FB837B1D5AAA05009B00F1 /* gauss_jacobi_quadrature.cpp */; };
 		E9FDF6EA1D2DD0560066E49C /* adt_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9FDF6E91D2DD0560066E49C /* adt_structure.cpp */; };
 /* End PBXBuildFile section */
 
@@ -353,6 +354,9 @@
 		E9F81DFE1D1922AB0080D669 /* fem_wall_distance.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_wall_distance.cpp; path = ../../Common/src/fem_wall_distance.cpp; sourceTree = "<group>"; };
 		E9F81DFF1D1922AB0080D669 /* gelite.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gelite.cpp; path = ../../Common/src/gelite.cpp; sourceTree = "<group>"; };
 		E9F81E031D1922D40080D669 /* gelite.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gelite.hpp; path = ../../Common/include/gelite.hpp; sourceTree = "<group>"; };
+		E9FB837B1D5AAA05009B00F1 /* gauss_jacobi_quadrature.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gauss_jacobi_quadrature.cpp; path = ../../Common/src/gauss_jacobi_quadrature.cpp; sourceTree = "<group>"; };
+		E9FB837D1D5AAA1D009B00F1 /* gauss_jacobi_quadrature.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = gauss_jacobi_quadrature.hpp; path = ../../Common/include/gauss_jacobi_quadrature.hpp; sourceTree = "<group>"; };
+		E9FB837E1D5AAA1D009B00F1 /* gauss_jacobi_quadrature.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = gauss_jacobi_quadrature.inl; path = ../../Common/include/gauss_jacobi_quadrature.inl; sourceTree = "<group>"; };
 		E9FDF6E91D2DD0560066E49C /* adt_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = adt_structure.cpp; path = ../../Common/src/adt_structure.cpp; sourceTree = "<group>"; };
 		E9FDF6EB1D2DD0710066E49C /* adt_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = adt_structure.inl; path = ../../Common/include/adt_structure.inl; sourceTree = "<group>"; };
 		E9FDF6EC1D2DD0860066E49C /* adt_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = adt_structure.hpp; path = ../../Common/include/adt_structure.hpp; sourceTree = "<group>"; };
@@ -444,7 +448,7 @@
 				E965EA001CAB578200C6020B /* fem_standard_element.cpp */,
 				E9F81DFD1D1922AB0080D669 /* fem_integration_rules.cpp */,
 				E9F81DFE1D1922AB0080D669 /* fem_wall_distance.cpp */,
-				E9F130D11D526A5000EC8963 /* gauss_jacobi_quadrature.cpp */,
+				E9FB837B1D5AAA05009B00F1 /* gauss_jacobi_quadrature.cpp */,
 				E9F81DFF1D1922AB0080D669 /* gelite.cpp */,
 			);
 			name = Geometry;
@@ -476,6 +480,7 @@
 				05E6DBB317EB624700FA1F7E /* variable_structure.inl */,
 				05E6DA9F17EB603F00FA1F7E /* config_structure.inl */,
 				05E6DAA017EB603F00FA1F7E /* dual_grid_structure.inl */,
+				E9FB837E1D5AAA1D009B00F1 /* gauss_jacobi_quadrature.inl */,
 				05E6DAA117EB603F00FA1F7E /* geometry_structure.inl */,
 				05E6DAA217EB603F00FA1F7E /* grid_adaptation_structure.inl */,
 				05E6DAA317EB603F00FA1F7E /* grid_movement_structure.inl */,
@@ -516,6 +521,7 @@
 				05E6DBB917EB627400FA1F7E /* solver_structure.hpp */,
 				05E6DBBB17EB627400FA1F7E /* variable_structure.hpp */,
 				05E6DAC617EB608000FA1F7E /* dual_grid_structure.hpp */,
+				E9FB837D1D5AAA1D009B00F1 /* gauss_jacobi_quadrature.hpp */,
 				05E6DAC717EB608000FA1F7E /* geometry_structure.hpp */,
 				05E6DAC817EB608000FA1F7E /* grid_adaptation_structure.hpp */,
 				05E6DAC917EB608000FA1F7E /* grid_movement_structure.hpp */,
@@ -1585,7 +1591,7 @@
 				05E6DC0E17EB62A100FA1F7E /* numerics_direct_heat.cpp in Sources */,
 				05F1089A1978D2AE00F2F288 /* fluid_model_pig.cpp in Sources */,
 				05E6DC1017EB62A100FA1F7E /* numerics_direct_mean.cpp in Sources */,
-				E9F130D21D526A5000EC8963 /* gauss_jacobi_quadrature.cpp in Sources */,
+				E9FB837C1D5AAA05009B00F1 /* gauss_jacobi_quadrature.cpp in Sources */,
 				E9D85B4C1C3F1B9E0077122F /* ad_structure.cpp in Sources */,
 				0530E56E17FDF7C600733CE8 /* variable_direct_elasticity.cpp in Sources */,
 				05F1089D1978D2AE00F2F288 /* fluid_model.cpp in Sources */,
