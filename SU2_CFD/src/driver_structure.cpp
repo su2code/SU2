@@ -3001,6 +3001,12 @@ void CSingleZoneDriver::Run() {
                                        solver_container, numerics_container, config_container,
                                        surface_movement, grid_movement, FFDBox, ZONE_0);
   
+	if(config_container[ZONE_0]->GetBoolTurbomachinery()){
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],INFLOW);
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->TurboPerformance(config_container[ZONE_0], geometry_container[ZONE_0][MESH_0]);
+	}
+
 }
 
 
@@ -3138,8 +3144,6 @@ void CMultiZoneDriver::Run() {
 		for (iZone = 0; iZone < nZone; iZone++) {
 			solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
 			solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
-			solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-			solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
 			SetMixingPlane(iZone);
 		}
   }
@@ -3160,8 +3164,13 @@ void CMultiZoneDriver::Run() {
     
   }
   /* --- Set turboperformance for multi-zone ---*/
-  if (config_container[ZONE_0]->GetnMarker_Turbomachinery() > 0){
-    SetTurboPerformance(ZONE_0);
+  if (mixingplane){
+  	for (iZone = 0; iZone < nZone ; iZone++){
+  		solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+  		solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+  		solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(config_container[iZone], geometry_container[iZone][MESH_0]);
+  	}
+	  SetTurboPerformance(ZONE_0);
   }
 
 }
