@@ -2985,8 +2985,6 @@ void CSingleZoneDriver::Run() {
 		}
 		solver_container[ZONE_0][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],INFLOW);
 		solver_container[ZONE_0][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
-		solver_container[ZONE_0][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],INFLOW);
-		solver_container[ZONE_0][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
 	}
 
 
@@ -3340,17 +3338,22 @@ void CDiscAdjMultiZoneDriver::Run() {
   unsigned short iZone = 0;
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
-  /* --- Set the average for geometric quantities and steady grid velocity   ---*/
-  if(ExtIter == 0){
-    if(config_container[iZone]->GetBoolTurbomachinery()){
-      for (iZone = 0; iZone < nZone; iZone++) {
+
+  /*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
+  if(config_container[ZONE_0]->GetBoolTurbomachinery()){
+    if(ExtIter == 0){
+      for (iZone = 0; iZone < nZone; iZone++){
         SetGeoTurboAvgValues(iZone, true);
-        solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-        solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+      }
+    }
+    for (iZone = 0; iZone < nZone; iZone++){
+      solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+      if (mixingplane){
+        SetMixingPlane(iZone); 
       }
     }
   }
-
 
   SetSensitivity(SOLUTION);
 
@@ -3436,26 +3439,24 @@ void CDiscAdjMultiZoneDriver::SetRecording(unsigned short kind_recording){
   for (iZone = 0; iZone < nZone; iZone++) {
     iteration_container[iZone]->SetDependencies(solver_container, geometry_container, config_container, iZone, kind_recording);
   }
-
   if(config_container[ZONE_0]->GetBoolTurbomachinery()){
-    for (iZone = 0; iZone < nZone; iZone++) {
-      SetGeoTurboAvgValues(iZone, false);
-      direct_iteration[iZone]->Preprocess(output, integration_container, geometry_container,
-                                          solver_container, numerics_container, config_container,
-                                          surface_movement, grid_movement, FFDBox, iZone);
-
+    for (iZone = 0; iZone < nZone; iZone++){
+      SetGeoTurboAvgValues(iZone, true);
     }
-  }
-
-  /* --- Set the mixing-plane interface ---*/
-  if (mixingplane){
-    for (iZone = 0; iZone < nZone; iZone++) {
-      SetMixingPlane(iZone);
+    for (iZone = 0; iZone < nZone; iZone++){
+      solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+      if (mixingplane){
+        SetMixingPlane(iZone); 
+      }
     }
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
+    direct_iteration[iZone]->Preprocess(output, integration_container, geometry_container,
+                                      solver_container, numerics_container, config_container,
+                                      surface_movement, grid_movement, FFDBox, iZone);
 
     direct_iteration[iZone]->Iterate(output, integration_container, geometry_container,
                                       solver_container, numerics_container, config_container,
@@ -3472,9 +3473,14 @@ void CDiscAdjMultiZoneDriver::SetRecording(unsigned short kind_recording){
 
 
   /* --- Set turboperformance for multi-zone ---*/
-
-  if (config_container[ZONE_0]->GetnMarker_Turbomachinery() > 0){
-     SetTurboPerformance(ZONE_0);
+  if(config_container[ZONE_0]->GetBoolTurbomachinery()){
+    for (iZone = 0; iZone < nZone ; iZone++){
+      solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(config_container[iZone], geometry_container[iZone][MESH_0]);
+    }
+    if (mixingplane)
+      SetTurboPerformance(ZONE_0);
   }
 
   RecordingState = kind_recording;
