@@ -410,6 +410,16 @@ int main(int argc, char *argv[]) {
         }
         surface_movement->SetHicksHenne(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
       }
+
+      /*--- CST design variable ---*/
+      
+      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == CST) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number "<< iDV <<"." << endl;
+          cout << "Perform 2D deformation of the surface." << endl;
+        }
+        surface_movement->SetCST(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
+      }
       
       /*--- Translation design variable ---*/
       
