@@ -1280,21 +1280,32 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
   
   unsigned short nDim = DGGeometry->GetnDim();
   
-  unsigned long nMeshPoints = DGGeometry->GetNMeshPoints();
   const CPointFEM *meshPoints  = DGGeometry->GetMeshPoints();
   
+  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
+  CVolumeElementFEM *volElem = DGGeometry->GetVolElem();
+  
   /*--- Create the map from the global DOF ID to the local index. ---*/
-  map<unsigned long, unsigned long> mapLocal2Global;
   vector<su2double> DOFsCoords;
-
-  /*--- Fill map with global IDs and collect coordinates for each mesh point. ---*/
+  vector<su2double> globalID;
+  
+  /*--- Update the solution by looping over the owned volume elements. ---*/
   unsigned long nLocalPoint = 0;
-  for(unsigned long i=0; i<nMeshPoints; ++i) {
-    mapLocal2Global[i] = meshPoints[i].globalID;
-    nLocalPoint++;
-
-    for(unsigned short k=0; k<nDim; ++k)
-      DOFsCoords.push_back(meshPoints[i].coor[k]);
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+    for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
+      
+      /* Store the coordinate of the first vertex of this element to give an
+       indication for the location of the maximum residual. */
+      const unsigned long ind = volElem[l].nodeIDsGrid[j];
+      const su2double *coor   = meshPoints[ind].coor;
+      
+      const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
+      globalID.push_back(globalIndex);
+      
+      for(unsigned short k=0; k<nDim; ++k) DOFsCoords.push_back(coor[k]);
+      
+      nLocalPoint++;
+    }
   }
   
 #ifndef HAVE_MPI
@@ -1304,8 +1315,8 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
   
   // need to double check for halos in parallel
   
-  nGlobal_Poin = nMeshPoints;
-  nGlobal_Doma = nMeshPoints;
+  nGlobal_Poin = nLocalPoint;
+  nGlobal_Doma = nLocalPoint;
   
   /*--- Allocate the coordinates data structure. ---*/
   
@@ -1316,14 +1327,14 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
   
   /*--- Loop over the mesh to collect the coords of the local points ---*/
   
-  for (iPoint = 0; iPoint < nMeshPoints; iPoint++) {
+  for (iPoint = 0; iPoint < nLocalPoint; iPoint++) {
     
     /*--- Check if the node belongs to the domain (i.e, not a halo node).
      Sort by the global index, even in serial there is a renumbering (e.g. RCM). ---*/
     
     /*--- Retrieve the current coordinates at this node. ---*/
     
-    unsigned long iGlobal_Index = mapLocal2Global[iPoint];
+    unsigned long iGlobal_Index = globalID[iPoint];
     
     for (iDim = 0; iDim < nDim; iDim++) {
       Coords[iDim][iGlobal_Index] = DOFsCoords[iPoint*nDim+iDim];
@@ -1355,7 +1366,6 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
   unsigned long iGlobal_Index = 0, nBuffer_Scalar = 0;
   
   if (rank == MASTER_NODE) Buffer_Recv_nPoin = new unsigned long[nProcessor];
-  
   
   /*--- Search all send/recv boundaries on this partition for any periodic
    nodes that were part of the original domain. We want to recover these
@@ -1426,7 +1436,6 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
     /*--- Check for halos and write only if requested ---*/
     //    if (!Local_Halo[iPoint] || Wrt_Halo) {
     
-      
       /*--- Load local coords into the temporary send buffer. These were stored above ---*/
       Buffer_Send_X[jPoint] = DOFsCoords[iPoint*nDim+0];
       Buffer_Send_Y[jPoint] = DOFsCoords[iPoint*nDim+1];
@@ -1441,7 +1450,7 @@ void COutput::MergeCoordinates_FEM(CConfig *config, CGeometry *geometry) {
       }
       
       /*--- Store the global index for this local node. ---*/
-      Buffer_Send_GlobalIndex[jPoint] = mapLocal2Global[iPoint];
+      Buffer_Send_GlobalIndex[jPoint] = globalID[iPoint];
       
       /*--- Increment jPoint as the counter. We need this because iPoint
        may include halo nodes that we skip over during this loop. ---*/
@@ -2274,15 +2283,12 @@ void COutput::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry,
   
   CVolumeElementFEM *volElem = DGGeometry->GetVolElem();
   
-  unsigned long nMeshPoints = DGGeometry->GetNMeshPoints();
-  
   const CBoundaryFEM *boundaries = DGGeometry->GetBoundaries();
-
-  const FEMStandardBoundaryFaceClass *standardBoundaryFacesGrid = DGGeometry->GetStandardBoundaryFacesGrid();
-
+  
+  const FEMStandardBoundaryFaceClass *standardBoundaryFacesSol = DGGeometry->GetStandardBoundaryFacesSol();
+  
   /*--- Create the map from the global DOF ID to the local index. ---*/
   map<unsigned long, unsigned long> mapLocal2Global;
-  
   unsigned long ii = 0;
   for(unsigned long i=0; i<nVolElemOwned; ++i) {
     for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j, ++ii) {
@@ -2290,23 +2296,12 @@ void COutput::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry,
     }
   }
   
-  /* Initialize an array for the mesh points, which eventually contains the
-   mapping from the local nodes to the number used in the connectivity of the
-   local boundary faces. However, in a first pass it is an indicator whether
-   or not a mesh point is on a local wall boundary. */
-  
-  vector<unsigned long> meshToSurface(nMeshPoints, 0);
-  
-  /* Define the vectors for the connectivity of the local linear subelements,
-   the element ID's, the element type and marker ID's. */
+  /* Define the vectors for the connectivity of the local linear subelements. */
   vector<unsigned long>  surfaceConn;
-  vector<unsigned long>  elemIDs;
-  vector<unsigned short> VTK_TypeElem;
-  vector<unsigned short> markerIDs;
   
   /*--- Counter for keeping track of the number of this element locally. ---*/
   nLocalElem = 0;
-
+  
   /* Loop over the boundary markers. */
   for(unsigned short iMarker=0; iMarker < config->GetnMarker_All(); ++iMarker) {
     if( !boundaries[iMarker].periodicBoundary ) {
@@ -2322,32 +2317,25 @@ void COutput::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry,
            such as the number of linear subfaces, the number of DOFs per
            linear subface and the corresponding local connectivity. */
           const unsigned short ind           = surfElem[i].indStandardElement;
-          const unsigned short VTK_Type      = standardBoundaryFacesGrid[ind].GetVTK_Type();
+          const unsigned short VTK_Type      = standardBoundaryFacesSol[ind].GetVTK_Type();
           
-          /*--- Only store the linear sub-elements if they are of 
+          /*--- Only store the linear sub-elements if they are of
            the current type that we are merging. ---*/
           if (VTK_Type == Elem_Type) {
             
-            /* Set the flag of the mesh points on this surface to true. */
-            for(unsigned short j=0; j<surfElem[i].nDOFsGrid; ++j)
-              meshToSurface[surfElem[i].DOFsGridFace[j]] = 1;
-            
-            const unsigned short nSubFaces     = standardBoundaryFacesGrid[ind].GetNSubFaces();
-            const unsigned short nDOFsPerFace  = standardBoundaryFacesGrid[ind].GetNDOFsPerSubFace();
-            const unsigned short *connSubFaces = standardBoundaryFacesGrid[ind].GetSubFaceConn();
+            const unsigned short nSubFaces     = standardBoundaryFacesSol[ind].GetNSubFaces();
+            const unsigned short nDOFsPerFace  = standardBoundaryFacesSol[ind].GetNDOFsPerSubFace();
+            const unsigned short *connSubFaces = standardBoundaryFacesSol[ind].GetSubFaceConn();
             
             /* Loop over the number of subfaces and store the required data. */
             unsigned short ii = 0;
             for(unsigned short j=0; j<nSubFaces; ++j) {
-              markerIDs.push_back(iMarker);
-              VTK_TypeElem.push_back(VTK_Type);
-              elemIDs.push_back(i);
-              nLocalElem++;
               
               /*--- Store the global index for the surface conn ---*/
               for(unsigned short k=0; k<nDOFsPerFace; ++k, ++ii)
-                surfaceConn.push_back(mapLocal2Global[surfElem[i].DOFsGridFace[connSubFaces[ii]]]);
-
+                surfaceConn.push_back(mapLocal2Global[surfElem[i].DOFsSolFace[connSubFaces[ii]]]);
+              
+              nLocalElem++;
             }
           }
         }
@@ -2524,7 +2512,6 @@ void COutput::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry,
         exit(EXIT_FAILURE); break;
     }
   }
-  
 }
 
 void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
@@ -4194,6 +4181,7 @@ void COutput::MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSolver **
       const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
       globalID.push_back(globalIndex);
 
+      //cout << nLocalPoint << ":  " << globalIndex << endl;
       for(unsigned short iVar=0; iVar<nVar_Consv; ++iVar, ++i) {
         DOFsSol.push_back(solDOFs[i]);
       }
@@ -4650,17 +4638,14 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
       restart_file << "\t\"Density\"";
     }
     
-    if (Kind_Solver == EULER     || Kind_Solver == NAVIER_STOKES     || Kind_Solver == RANS     ||
-        Kind_Solver == FEM_EULER || Kind_Solver == FEM_NAVIER_STOKES || Kind_Solver == FEM_RANS ||
-        Kind_Solver == FEM_LES)  {
+    if (Kind_Solver == EULER     || Kind_Solver == NAVIER_STOKES     || Kind_Solver == RANS)  {
       if (config->GetOutput_FileFormat() == PARAVIEW) {
         restart_file << "\t\"Pressure\"\t\"Temperature\"\t\"Pressure_Coefficient\"\t\"Mach\"";
       } else
         restart_file << "\t\"Pressure\"\t\"Temperature\"\t\"C<sub>p</sub>\"\t\"Mach\"";
     }
     
-    if (Kind_Solver == NAVIER_STOKES     || Kind_Solver == RANS ||
-        Kind_Solver == FEM_NAVIER_STOKES || Kind_Solver == FEM_RANS || Kind_Solver == FEM_LES)  {
+    if (Kind_Solver == NAVIER_STOKES     || Kind_Solver == RANS)  {
       if (config->GetOutput_FileFormat() == PARAVIEW) {
         if (nDim == 2) restart_file << "\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient_X\"\t\"Skin_Friction_Coefficient_Y\"\t\"Heat_Flux\"\t\"Y_Plus\"";
         if (nDim == 3) restart_file << "\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient_X\"\t\"Skin_Friction_Coefficient_Y\"\t\"Skin_Friction_Coefficient_Z\"\t\"Heat_Flux\"\t\"Y_Plus\"";
@@ -4670,7 +4655,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
       }
     }
     
-    if (Kind_Solver == RANS || Kind_Solver == FEM_RANS || Kind_Solver == FEM_LES) {
+    if (Kind_Solver == RANS) {
       if (config->GetOutput_FileFormat() == PARAVIEW) {
         restart_file << "\t\"Eddy_Viscosity\"";
       } else
@@ -4678,8 +4663,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     }
 
     if (config->GetWrt_SharpEdges()) {
-      if (((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) ||
-        ((Kind_Solver == FEM_EULER) || (Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_RANS) || (Kind_Solver == FEM_LES)))  {
+      if (((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)))  {
         restart_file << "\t\"Sharp_Edge_Dist\"";
       }
     }
@@ -4743,7 +4727,21 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   
   /*--- Write the restart file ---*/
   
-  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+  /*--- Determine whether or not the FEM solver is used, which decides the
+   type of geometry classes that are instantiated. ---*/
+  bool fem_solver = ((config->GetKind_Solver() == FEM_EULER)         ||
+                (config->GetKind_Solver() == FEM_NAVIER_STOKES) ||
+                (config->GetKind_Solver() == FEM_RANS)          ||
+                (config->GetKind_Solver() == FEM_LES));
+  
+  unsigned long nPointTotal = 0;
+  if ( fem_solver ) {
+    nPointTotal = solver[FLOW_SOL]->GetnDOFsGlobal();
+  } else {
+    nPointTotal = geometry->GetGlobal_nPointDomain();
+  }
+  
+  for (iPoint = 0; iPoint < nPointTotal; iPoint++) {
     
     /*--- Index of the point ---*/
     restart_file << iPoint << "\t";
@@ -7663,7 +7661,7 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     if (size > SINGLE_NODE) {
       Wrt_Vol = false;
-      Wrt_Srf = false;
+      //Wrt_Srf = false;
     }
 #endif
     
@@ -7703,18 +7701,18 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
     
     if (rank == MASTER_NODE) cout << "Merging solution in the Master node." << endl;
     MergeSolution_FEM(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+
+    /*--- Write restart, or Tecplot files using the merged data.
+     This data lives only on the master, and these routines are currently
+     executed by the master proc alone (as if in serial). ---*/
+    
+    if (rank == MASTER_NODE) {
+      
+      /*--- Write a native restart file ---*/
+      
+      if (rank == MASTER_NODE) cout << "Writing SU2 native restart file." << endl;
+      SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
 //
-//    /*--- Write restart, or Tecplot files using the merged data.
-//     This data lives only on the master, and these routines are currently
-//     executed by the master proc alone (as if in serial). ---*/
-//    
-//    if (rank == MASTER_NODE) {
-//      
-//      /*--- Write a native restart file ---*/
-//      
-//      if (rank == MASTER_NODE) cout << "Writing SU2 native restart file." << endl;
-//      SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
-//      
 //      if (Wrt_Vol) {
 //        
 //        switch (FileFormat) {
@@ -7769,57 +7767,57 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
 //        
 //      }
 //      
-//      if (Wrt_Srf) {
-//        
-//        switch (FileFormat) {
-//            
-//          case TECPLOT:
-//            
-//            /*--- Write a Tecplot ASCII file ---*/
-//            
+      if (Wrt_Srf) {
+        
+        switch (FileFormat) {
+            
+          case TECPLOT:
+            
+            /*--- Write a Tecplot ASCII file ---*/
+            
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII surface solution file." << endl;
             SetTecplotASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone, val_nZone, true);
-//            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
-//            break;
-//            
-//          case TECPLOT_BINARY:
-//            
-//            /*--- Write a Tecplot binary solution file ---*/
-//            
-//            if (rank == MASTER_NODE) cout << "Writing Tecplot binary surface solution file." << endl;
-//            SetTecplotBinary_SurfaceSolution(config[iZone], geometry[iZone][MESH_0], iZone);
-//            break;
-//            
-//          case PARAVIEW:
-//            
-//            /*--- Write a Paraview ASCII file ---*/
-//            
-//            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
-//            SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, true);
-//            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
-//            break;
-//            
-//          default:
-//            break;
-//        }
-//        
-//      }
-//      
-//      /*--- Release memory needed for merging the solution data. ---*/
-//      
-//      DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
-//      DeallocateSolution(config[iZone], geometry[iZone][MESH_0]);
-//      
-//    }
-//    
-//    /*--- Final broadcast (informing other procs that the base output
-//     file was written). ---*/
-//    
-//#ifdef HAVE_MPI
-//    SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-//    SU2_MPI::Bcast(&wrote_surf_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-//#endif
-//    
+            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
+            break;
+            
+          case TECPLOT_BINARY:
+            
+            /*--- Write a Tecplot binary solution file ---*/
+            
+            if (rank == MASTER_NODE) cout << "Writing Tecplot binary surface solution file." << endl;
+            SetTecplotBinary_SurfaceSolution(config[iZone], geometry[iZone][MESH_0], iZone);
+            break;
+            
+          case PARAVIEW:
+            
+            /*--- Write a Paraview ASCII file ---*/
+            
+            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
+            SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, true);
+            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
+            break;
+            
+          default:
+            break;
+        }
+        
+      }
+  
+      /*--- Release memory needed for merging the solution data. ---*/
+      
+      DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
+      DeallocateSolution(config[iZone], geometry[iZone][MESH_0]);
+      
+    }
+    
+    /*--- Final broadcast (informing other procs that the base output
+     file was written). ---*/
+    
+#ifdef HAVE_MPI
+    SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&wrote_surf_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+    
   }
 }
 
