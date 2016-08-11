@@ -31,7 +31,7 @@
 
 #include "../include/geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
-
+#include <iomanip>
 /*--- Epsilon definition ---*/
 
 #define EPSILON 0.000001
@@ -8454,25 +8454,107 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 }
 
 
-void CPhysicalGeometry::SetComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
+void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
 	unsigned short iMarker, jMarker, iMarker_PerBound, iMarkerTP;
 	unsigned long iPoint, iVertex;
-	long check;
+	long check, jVertex;
+	int nSpan, nSpan_loc;
+  su2double *coord, *valueSpan;
+	int rank = MASTER_NODE;
+	int size = SINGLE_NODE;
+  short SendRecv;
+  bool isPeriodic;
+#ifdef HAVE_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	int My_nSpan;
+#endif
 
-	for (iMarker = 0; iMarker < nMarker; iMarker++){
-		for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-			if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-				if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-					for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-						iPoint = vertex[iMarker][iVertex]->GetNode();
+  nSpan = 0;
+  nSpan_loc = 0;
 
-						for (jMarker = 0; jMarker < nMarker; jMarker++){
-							for (iMarker_PerBound = 0; iMarker_PerBound < config->GetnMarker_PerBound(); iMarker_PerBound++){
-								if (config->GetMarker_All_TagBound(jMarker) == config->GetMarker_PerBound(iMarker_PerBound)){
-									check = node[iPoint]->GetVertex(jMarker);
+  /*--- loop to find inflow of outflow marker---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+  	for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+  		if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+  			if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+  				for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+  					iPoint = vertex[iMarker][iVertex]->GetNode();
 
-									if (check != -1){
-										cout << "belongs to both inlet and periodic boundary " << config->GetMarker_All_TagBound(jMarker)<< endl;
+  				  /*--- loop to find the vertex that ar both of inflow or outflow marker and on the periodic
+  				   * in order to caount the number of Span ---*/
+  					for (jMarker = 0; jMarker < nMarker; jMarker++){
+  						if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) {
+  							SendRecv = config->GetMarker_All_SendRecv(jMarker);
+  							jVertex = node[iPoint]->GetVertex(jMarker);
+  							if (jVertex != -1) {
+  								isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
+  								if (isPeriodic && (SendRecv < 0)){
+//  									coord = node[iPoint]->GetCoord();
+  									nSpan++;
+//  									cout << coord[1] << " send_recv "<<  SendRecv<<endl;
+  								}
+  							}
+  						}
+  					}
+  				}
+  			}
+  		}
+  	}
+  }
+
+  /*--- storing the local number of span---*/
+	nSpan_loc = nSpan;
+
+  /*--- if parallel computing the global number of span---*/
+#ifdef HAVE_MPI
+	My_nSpan						 = nSpan;											nSpan								 = 0;
+	SU2_MPI::Allreduce(&My_nSpan, &nSpan, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+
+	cout << "Ngloabl " << nSpan << " n loc " << nSpan_loc << endl;
+
+	valueSpan = new su2double[nSpan_loc];
+  nSpan_loc = 0;
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+							iPoint = vertex[iMarker][iVertex]->GetNode();
+
+							for (jMarker = 0; jMarker < nMarker; jMarker++){
+								if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) {
+									SendRecv = config->GetMarker_All_SendRecv(jMarker);
+									jVertex = node[iPoint]->GetVertex(jMarker);
+									if (jVertex != -1) {
+										isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
+										if (isPeriodic && (SendRecv < 0)){
+											coord = node[iPoint]->GetCoord();
+											switch (config->GetKind_TurboMachinery(val_iZone)){
+											case CENTRIFUGAL:
+												valueSpan[nSpan_loc] = coord[2];
+												break;
+											case CENTRIPETAL:
+												valueSpan[nSpan_loc] = coord[2];
+												break;
+											case AXIAL:
+												valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+												break;
+											case CENTRIPETAL_AXIAL:
+												if (marker_flag == OUTFLOW){
+													valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+												}
+												else{
+													valueSpan[nSpan_loc] = coord[2];
+												}
+												break;
+
+											}
+											cout << setprecision(16)<< valueSpan[nSpan_loc] << " span value it flag " << marker_flag <<endl;
+											nSpan_loc++;
+										}
 									}
 								}
 							}
@@ -8481,7 +8563,6 @@ void CPhysicalGeometry::SetComputeNSpan(CConfig *config, unsigned short val_iZon
 				}
 			}
 		}
-	}
 }
 
 
@@ -8726,6 +8807,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
 				}
 			}
 		}
+
 
 		/*--- compute global minimum and maximum value on span-wise ---*/
 #ifdef HAVE_MPI

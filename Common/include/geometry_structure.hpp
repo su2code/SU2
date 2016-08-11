@@ -416,7 +416,7 @@ public:
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void SetComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
+	virtual void ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
 
 	/*!
 	 * \brief A virtual member.
@@ -1194,7 +1194,7 @@ public:
 	 * \brief Set number of span wise level for turbomachinery computation.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void SetComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
+	void ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate);
 
 	/*!
 	 * \brief Set turbo boundary vertex.
