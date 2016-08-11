@@ -29,7 +29,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os
+import sys
 from TestCase import TestCase
 
 def main():
@@ -38,7 +38,6 @@ def main():
        to make sure nothing is broken. '''
 
     test_list = []
-    SU2_HOME = os.environ['SU2_HOME']
     
     ##########################
     ### Compressible Euler ###
@@ -742,7 +741,7 @@ def main():
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 100
     pywrapper_naca0012.test_vals = [-6.191618, -5.592802, 0.334809, 0.022197] #last 4 columns
-    pywrapper_naca0012.su2_exec  = SU2_HOME + "/TestCases/test_pywrapper.py --nDim 2 --nZone 1 -f"
+    pywrapper_naca0012.su2_exec  = "pyWrap_SU2_CFD.py -f"
     pywrapper_naca0012.timeout   = 1600
     pywrapper_naca0012.tol       = 0.00001
     test_list.append(pywrapper_naca0012)
@@ -754,7 +753,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
     pywrapper_turb_naca0012_sst.test_vals = [-15.039675, -7.219913, 1.059622, 0.019138] #last 4 columns
-    pywrapper_turb_naca0012_sst.su2_exec  = SU2_HOME + "/TestCases/test_pywrapper.py --nDim 2 --nZone 1 -f"
+    pywrapper_turb_naca0012_sst.su2_exec  = "pyWrap_SU2_CFD.py -f"
     pywrapper_turb_naca0012_sst.timeout   = 3200
     pywrapper_turb_naca0012_sst.tol       = 0.00001
     test_list.append(pywrapper_turb_naca0012_sst)
@@ -766,7 +765,7 @@ def main():
     pywrapper_square_cylinder.cfg_file  = "turb_square.cfg"
     pywrapper_square_cylinder.test_iter = 3
     pywrapper_square_cylinder.test_vals = [-1.166406,0.076804,1.398548,2.197047] #last 4 columns
-    pywrapper_square_cylinder.su2_exec  = SU2_HOME + "/TestCases/test_pywrapper.py --nDim 2 --nZone 1 -f"
+    pywrapper_square_cylinder.su2_exec  = "pyWrap_SU2_CFD.py -f"
     pywrapper_square_cylinder.timeout   = 1600
     pywrapper_square_cylinder.tol       = 0.00001
     pywrapper_square_cylinder.unsteady  = True
@@ -779,7 +778,7 @@ def main():
     pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     pywrapper_aeroelastic.test_iter = 2
     pywrapper_aeroelastic.test_vals = [0.077106, 0.036449, -1.684916e-03, -1.131735e-04] #last 4 columns
-    pywrapper_aeroelastic.su2_exec  = SU2_HOME + "/TestCases/test_pywrapper.py --nDim 2 --nZone 1 -f"
+    pywrapper_aeroelastic.su2_exec  = "pyWrap_SU2_CFD.py -f"
     pywrapper_aeroelastic.timeout   = 1600
     pywrapper_aeroelastic.tol       = 0.000001
     pywrapper_aeroelastic.unsteady  = True
@@ -792,7 +791,7 @@ def main():
     pywrapper_fsi2d.cfg_file  = "configFSI_2D.cfg"
     pywrapper_fsi2d.test_iter = 4
     pywrapper_fsi2d.test_vals = [2.000000, 0.500000, -7.777916, -1.139835] #last 4 columns
-    pywrapper_fsi2d.su2_exec  = SU2_HOME + "/TestCases/test_pywrapper.py --nDim 2 --nZone 2 --fsi True -f"
+    pywrapper_fsi2d.su2_exec  = "pyWrap_SU2_CFD.py --nZone 2 --fsi True -f"
     pywrapper_fsi2d.timeout   = 1600
     pywrapper_fsi2d.tol       = 0.00001
     test_list.append(pywrapper_fsi2d)

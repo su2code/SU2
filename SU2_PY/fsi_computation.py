@@ -98,7 +98,7 @@ def main():
       import GetDPSolver
       SolidSolver = GetDPSolver.GetDPSolver(CSD_ConFile, True)
     elif CSD_Solver == 'TESTER':
-      SolidSolver = FSI.SolidSolverTester.Solver(CSD_ConFile)
+      SolidSolver = FSI.PitchPlungeAirfoilStructuralTester.Solver(CSD_ConFile)
   else:
     SolidSolver = None
 
