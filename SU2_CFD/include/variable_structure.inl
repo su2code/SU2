@@ -91,12 +91,6 @@ inline su2double CVariable::Get_FlowTraction_n(unsigned short iVar) { return 0.0
 
 inline su2double CVariable::GetBetaInc2(void) { return 0; }
 
-inline su2double CVariable::GetDiffLevelSet(void) { return 0; }
-
-inline su2double CVariable::GetLevelSet(void) { return 0; }
-
-inline su2double CVariable::GetDistance(void) { return 0; }
-
 inline su2double CVariable::GetMassFraction(unsigned short val_Species) { return 0; }
 
 inline void CVariable::SetNon_Physical(bool val_value) { Non_Physical = !val_value; }
@@ -311,8 +305,6 @@ inline void CVariable::SetEnthalpy(void) { }
 
 inline bool CVariable::SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config) { return true; }
 
-inline bool CVariable::SetPrimVar_FreeSurface(su2double SharpEdge_Distance, bool check, CConfig *config) { return true; }
-
 inline bool CVariable::SetPrimVar(CConfig *config) { return true; }
 
 inline bool CVariable::SetPrimVar(CFluidModel *FluidModel) { return true; }
@@ -325,11 +317,7 @@ inline bool CVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluid
 
 inline bool CVariable::SetPrimVar(su2double Density_Inf, CConfig *config) { return true; }
 
-inline bool CVariable::SetPrimVar_FreeSurface(CConfig *config) { return true; }
-
 inline bool CVariable::SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config) { return true; }
-
-inline bool CVariable::SetPrimVar_FreeSurface(su2double eddy_visc, su2double turb_ke, CConfig *config) { return true; }
 
 inline su2double CVariable::GetPrimitive(unsigned short val_var) { return 0; }
 
@@ -356,8 +344,6 @@ inline void CVariable::Prim2ConsVar(CConfig *config, su2double *V, su2double *U)
 inline void CVariable::SetBetaInc2(su2double val_betainc2) { }
 
 inline void CVariable::SetPhi_Old(su2double *val_phi) { }
-
-inline void CVariable::SetDiffLevelSet(su2double val_difflevelset) { }
 
 inline void CVariable::SetdPdrho_e(su2double dPdrho_e) { }
 
@@ -796,10 +782,6 @@ inline void CAdjNSVariable::SetVelSolutionOldDVector(void) { for (unsigned short
 inline void CAdjNSVariable::SetVelSolutionDVector(void) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution[iDim+1] = ForceProj_Vector[iDim]; };
 
 inline su2double CIncEulerVariable::GetDensity(void) { return Primitive[nDim+1]; }
-
-inline su2double CIncEulerVariable::GetLevelSet(void) { return Primitive[nDim+5]; }
-
-inline su2double CIncEulerVariable::GetDistance(void) { return Primitive[nDim+6]; }
 
 inline su2double CIncEulerVariable::GetBetaInc2(void) { return Primitive[nDim+2]; }
 

@@ -78,7 +78,6 @@ su2_cfd_sources = \
   ../src/integration_time.cpp \
   ../src/driver_structure.cpp \
   ../src/iteration_structure.cpp \
-  ../src/numerics_adjoint_levelset.cpp \
   ../src/numerics_adjoint_mean.cpp \
   ../src/numerics_adjoint_mean_inc.cpp \
   ../src/numerics_adjoint_turbulent.cpp \
@@ -100,7 +99,6 @@ su2_cfd_sources = \
   ../src/output_fieldview.cpp \
   ../src/output_su2.cpp \
   ../src/output_paraview.cpp \
-  ../src/solver_adjoint_levelset.cpp \
   ../src/solver_adjoint_mean.cpp \
   ../src/solver_adjoint_mean_inc.cpp \
   ../src/solver_adjoint_turbulent.cpp \
@@ -119,7 +117,6 @@ su2_cfd_sources = \
   ../src/transfer_structure.cpp \
   ../src/SU2_CFD.cpp \
   ../src/transport_model.cpp \
-  ../src/variable_adjoint_levelset.cpp \
   ../src/variable_adjoint_mean.cpp \
   ../src/variable_adjoint_mean_inc.cpp \
   ../src/variable_adjoint_turbulent.cpp \

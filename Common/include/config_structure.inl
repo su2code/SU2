@@ -105,18 +105,6 @@ inline su2double *CConfig::GetHold_GridFixed_Coord(void) { return Hold_GridFixed
 
 inline su2double *CConfig::GetSubsonic_Engine_Box(void) { return Subsonic_Engine_Box; }
 
-inline su2double CConfig::GetRatioDensity(void) { return RatioDensity; }
-
-inline su2double CConfig::GetFreeSurface_Thickness(void) { return FreeSurface_Thickness; }
-
-inline su2double CConfig::GetFreeSurface_Damping_Coeff(void) { return FreeSurface_Damping_Coeff; }
-
-inline su2double CConfig::GetFreeSurface_Damping_Length(void) { return FreeSurface_Damping_Length; }
-
-inline su2double CConfig::GetFreeSurface_Outlet(void) { return FreeSurface_Outlet; }
-
-inline su2double CConfig::GetRatioViscosity(void) { return RatioViscosity; }
-
 inline unsigned short CConfig::GetAnalytical_Surface(void) { return Analytical_Surface; }
 
 inline unsigned short CConfig::GetAxis_Orientation(void) { return Axis_Orientation; }
@@ -180,10 +168,6 @@ inline su2double CConfig::GetGas_Constant(void) { return Gas_Constant; }
 inline su2double CConfig::GetGas_ConstantND(void) { return Gas_ConstantND; }
 
 inline su2double CConfig::GetWallTemperature(void) { return Wall_Temperature; }
-
-inline su2double CConfig::GetFreeSurface_Zero(void) { return FreeSurface_Zero; }
-
-inline su2double CConfig::GetFreeSurface_Depth(void) { return FreeSurface_Depth; }
 
 inline su2double CConfig::GetGas_Constant_Ref(void) { return Gas_Constant_Ref; }
 
@@ -643,8 +627,6 @@ inline unsigned short CConfig::GetSpatialOrder_Flow(void) { return SpatialOrder_
 
 inline unsigned short CConfig::GetSpatialOrder_Turb(void) { return SpatialOrder_Turb; }
 
-inline unsigned short CConfig::GetSpatialOrder_AdjLevelSet(void) { return SpatialOrder_AdjLevelSet; }
-
 inline unsigned short CConfig::GetSpatialOrder_AdjFlow(void) { return SpatialOrder_AdjFlow; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Flow(void) { return Kind_TimeIntScheme_Flow; }
@@ -663,13 +645,9 @@ inline unsigned short CConfig::GetKind_TransferMethod(void) { return Kind_Transf
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Flow(void) { return Kind_ConvNumScheme_Flow; }
 
-inline unsigned short CConfig::GetKind_ConvNumScheme_AdjLevelSet(void) { return Kind_ConvNumScheme_AdjLevelSet; }
-
 inline unsigned short CConfig::GetKind_ConvNumScheme_Template(void) { return Kind_ConvNumScheme_Template; }
 
 inline unsigned short CConfig::GetKind_Centered_Flow(void) { return Kind_Centered_Flow; }
-
-inline unsigned short CConfig::GetKind_Centered_AdjLevelSet(void) { return Kind_Centered_AdjLevelSet; }
 
 inline unsigned short CConfig::GetKind_SlopeLimit(void) { return Kind_SlopeLimit; }
 
@@ -677,15 +655,11 @@ inline unsigned short CConfig::GetKind_SlopeLimit_Flow(void) { return Kind_Slope
 
 inline unsigned short CConfig::GetKind_SlopeLimit_Turb(void) { return Kind_SlopeLimit_Turb; }
 
-inline unsigned short CConfig::GetKind_SlopeLimit_AdjLevelSet(void) { return Kind_SlopeLimit_AdjLevelSet; }
-
 inline unsigned short CConfig::GetKind_SlopeLimit_AdjTurb(void) { return Kind_SlopeLimit_AdjTurb; }
 
 inline unsigned short CConfig::GetKind_SlopeLimit_AdjFlow(void) { return Kind_SlopeLimit_AdjFlow; }
 
 inline unsigned short CConfig::GetKind_Upwind_Flow(void) { return Kind_Upwind_Flow; }
-
-inline unsigned short CConfig::GetKind_Upwind_AdjLevelSet(void) { return Kind_Upwind_AdjLevelSet; }
 
 inline su2double CConfig::GetKappa_1st_Flow(void) { return Kappa_1st_Flow; }
 
@@ -708,8 +682,6 @@ inline su2double CConfig::GetKappa_2nd_AdjFlow(void) { return Kappa_2nd_AdjFlow;
 inline su2double CConfig::GetKappa_4th_AdjFlow(void) { return Kappa_4th_AdjFlow; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Turb(void) { return Kind_TimeIntScheme_Turb; }
-
-inline unsigned short CConfig::GetKind_TimeIntScheme_AdjLevelSet(void) { return Kind_TimeIntScheme_AdjLevelSet; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Turb(void) { return Kind_ConvNumScheme_Turb; }
 

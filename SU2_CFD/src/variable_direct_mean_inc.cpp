@@ -59,7 +59,6 @@ CIncEulerVariable::CIncEulerVariable(su2double val_density, su2double *val_veloc
                                unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -88,7 +87,6 @@ CIncEulerVariable::CIncEulerVariable(su2double val_density, su2double *val_veloc
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   
   nPrimVar = nDim+5; nPrimVarGrad = nDim+3;
-  if (freesurface) { nPrimVar += 2; nPrimVarGrad += 3; }
 
 	/*--- Allocate residual structures ---*/
   
@@ -103,7 +101,7 @@ CIncEulerVariable::CIncEulerVariable(su2double val_density, su2double *val_veloc
 	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
-	if ((nMGSmooth > 0) || low_fidelity || freesurface) {
+  if ((nMGSmooth > 0) || low_fidelity) {
 		Residual_Sum = new su2double [nVar];
 		Residual_Old = new su2double [nVar];
 	}
@@ -166,20 +164,14 @@ CIncEulerVariable::CIncEulerVariable(su2double val_density, su2double *val_veloc
     WindGust = new su2double [nDim];
     WindGustDer = new su2double [nDim+1];
   }
-  
-	/*--- Allocate auxiliar vector for free surface source term ---*/
-  
-	if (freesurface) Grad_AuxVar = new su2double [nDim];
-  
-  /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta),
-        FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist) ---*/
+
+  /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta) ---*/
   
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
 
-  /*--- Incompressible flow, gradients primitive variables nDim+2, (P, vx, vy, vz, rho),
-        FreeSurface Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta, dist),
-        We need P, and rho for running the adjoint problem ---*/
+  /*--- Incompressible flow, gradients primitive variables nDim+2, (P, vx, vy, vz, rho)
+   * We need P, and rho for running the adjoint problem ---*/
   
   Gradient_Primitive = new su2double* [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -192,7 +184,6 @@ CIncEulerVariable::CIncEulerVariable(su2double val_density, su2double *val_veloc
 CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
 	unsigned short iVar, iDim, iMesh, nMGSmooth = 0;
   
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -220,7 +211,6 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
  
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
   nPrimVar = nDim+5; nPrimVarGrad = nDim+3;
-  if (freesurface)    { nPrimVar += 2; nPrimVarGrad += 3; }
   
 	/*--- Allocate residual structures ---*/
 	Res_TruncError = new su2double [nVar];
@@ -233,7 +223,7 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
 	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
-	if ((nMGSmooth > 0) || low_fidelity || freesurface) {
+  if ((nMGSmooth > 0) || low_fidelity) {
 		Residual_Sum = new su2double [nVar];
 		Residual_Old = new su2double [nVar];
 	}
@@ -288,18 +278,11 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
     WindGustDer = new su2double [nDim+1];
   }
   
-	/*--- Allocate auxiliar vector for free surface source term ---*/
-	if (freesurface) Grad_AuxVar = new su2double [nDim];
-
-  /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta),
-        FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist),
-        Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c) ---*/
+  /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta) ---*/
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
 
   /*--- Incompressible flow, gradients primitive variables nDim+2, (P, vx, vy, vz, rho),
-        FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist),
-        Compressible flow, gradients primitive variables nDim+4, (T, vx, vy, vz, P, rho, h)
         We need P, and rho for running the adjoint problem ---*/
   Gradient_Primitive = new su2double* [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -357,46 +340,6 @@ bool CIncEulerVariable::SetPrimVar(su2double Density_Inf, CConfig *config) {
   /*--- Set the value of the density ---*/
   
   SetDensity(Density_Inf);
-  
-  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
-  
-  SetVelocity();
-  
-  /*--- Set the value of the pressure ---*/
-  
-  SetPressure();
-  
-  /*--- Set the value of the artificial compressibility factor ---*/
-  
-  SetBetaInc2(ArtComp_Factor);
-  
-  return true;
-  
-}
-
-bool CIncEulerVariable::SetPrimVar_FreeSurface(CConfig *config) {
-  
-  su2double Heaviside, lambda, DensityInc, LevelSet;
-
-  su2double ArtComp_Factor = config->GetArtComp_Factor();
-  su2double epsilon = config->GetFreeSurface_Thickness();
-  
-  /*--- Set the value of the Level Set (already set in SetFreeSurface_Distance(geometry, config)) ---*/
-  
-  LevelSet = Primitive[nDim+5];
-
-  /*--- Set the value of the Heaviside function ---*/
-
-  Heaviside = 0.0;
-  if (LevelSet < -epsilon) Heaviside = 1.0;
-  if (fabs(LevelSet) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(LevelSet/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*LevelSet/epsilon)));
-  if (LevelSet > epsilon) Heaviside = 0.0;
-
-  /*--- Set the value of the density ---*/
-
-  lambda = config->GetRatioDensity();
-  DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
-  SetDensity(DensityInc);
   
   /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
   
@@ -524,52 +467,3 @@ bool CIncNSVariable::SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf, 
   
 }
 
-bool CIncNSVariable::SetPrimVar_FreeSurface(su2double eddy_visc, su2double turb_ke, CConfig *config) {
-
-  su2double Heaviside, lambda, DensityInc, ViscosityInc, LevelSet;
-  
-	su2double ArtComp_Factor = config->GetArtComp_Factor();
-  su2double epsilon = config->GetFreeSurface_Thickness();
-
-  /*--- Set the value of the Level Set (already set in SetFreeSurface_Distance(geometry, config)) ---*/
-  
-  LevelSet = Primitive[nDim+5];
-  
-  /*--- Set the value of the Heaviside function ---*/
-
-  Heaviside = 0.0;
-  if (LevelSet < -epsilon) Heaviside = 1.0;
-  if (fabs(LevelSet) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(LevelSet/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*LevelSet/epsilon)));
-  if (LevelSet > epsilon) Heaviside = 0.0;
-  
-  /*--- Set the value of the density ---*/
-
-  lambda = config->GetRatioDensity();
-  DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
-  SetDensity(DensityInc);
-  
-  /*--- Set the value of the laminar viscosity ---*/
-
-  lambda = config->GetRatioViscosity();
-  ViscosityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetViscosity_FreeStreamND();
-  SetLaminarViscosity(ViscosityInc);
-
-  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
-  
-  SetVelocity();
-  
-  /*--- Set the value of the pressure ---*/
-  
-  SetPressure();
-  
-  /*--- Set the value of the artificial compressibility factor ---*/
-  
-  SetBetaInc2(ArtComp_Factor);
-  
-  /*--- Set eddy viscosity ---*/
-  
-  SetEddyViscosity(eddy_visc);
-
-  return true;
-  
-}

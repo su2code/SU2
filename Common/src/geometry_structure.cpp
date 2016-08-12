@@ -11712,7 +11712,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
   string filename = config->GetSolution_AdjFileName();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool sst = config->GetKind_Turb_Model() == SST;
   bool sa = config->GetKind_Turb_Model() == SA;
   bool grid_movement = config->GetGrid_Movement();
@@ -11735,7 +11734,6 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
   unsigned short skipVar = nDim;
   
   if (incompressible) { skipVar += nDim+1; }
-  if (freesurface)    { skipVar += nDim+2; }
   if (compressible)   { skipVar += nDim+2; }
   if (sst) 			{ skipVar += 2;}
   if (sa)				{ skipVar += 1;}
