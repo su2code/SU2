@@ -756,6 +756,7 @@ private:
   bool Prestretch;             /*!< Read a reference geometry for optimization purposes. */
   string Prestretch_FEMFileName;         /*!< \brief File name for reference geometry. */
   su2double RefGeom_Penalty;   /*!< \brief Penalty weight value for the reference geometry objective function. */
+  bool addCrossTerm;          /*!< \brief Evaluates the need to add the cross term when setting the adjoint output. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
   bool ParMETIS;      /*!< \brief Boolean for activating ParMETIS mode (while testing). */
@@ -1692,6 +1693,19 @@ public:
     */
 
   bool GetPrestretch(void);
+
+  /*!
+    * \brief Decide whether it's necessary to add the cross term for adjoint FSI.
+    * \return <code>TRUE</code> if it's necessary to add the cross term, <code>FALSE</code> otherwise.
+    */
+
+  bool Add_CrossTerm(void);
+
+  /*!
+    * \brief Set the boolean addCrossTerm to true or false.
+    */
+
+  void Set_CrossTerm(bool needCrossTerm);
 
   /*!
    * \brief Get the name of the file with the reference geometry of the structural problem.

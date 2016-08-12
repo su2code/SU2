@@ -639,6 +639,23 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
    Total_ForwardGradient = 0.0;
 
 
+   /*--- Header of the temporary output file ---*/
+   ofstream myfile_res;
+   myfile_res.open ("Output_Direct_Diff.txt");
+
+   myfile_res << "Objective Function " << "\t";
+
+   myfile_res << "Sensitivity Young Local" << "\t";
+
+   myfile_res << "Sensitivity Young Global" << "\t";
+
+   myfile_res << "Sensitivity E Averaged";
+
+   myfile_res << endl;
+
+   myfile_res.close();
+
+
   /*--- Perform the MPI communication of the solution ---*/
 
   Set_MPI_Solution(geometry, config);
@@ -4996,10 +5013,21 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
 
   if (direct_diff){
 
+    ofstream myfile_res;
+    myfile_res.open ("Output_Direct_Diff.txt", ios::app);
+
+    myfile_res.precision(15);
+
+    myfile_res << scientific << Total_OFRefGeom << "\t";
+
     su2double local_forward_gradient = 0.0, forward_gradient = 0.0;
     unsigned long current_iter = 1;
     local_forward_gradient = SU2_TYPE::GetDerivative(Total_OFRefGeom);
     Total_ForwardGradient += local_forward_gradient;
+
+    myfile_res << scientific << local_forward_gradient << "\t";
+
+    myfile_res << scientific << Total_ForwardGradient << "\t";
 
     if (fsi) {
       current_iter = config->GetFSIIter() + 1;
@@ -5008,6 +5036,13 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
     else {
       forward_gradient = Total_ForwardGradient;
     }
+
+    myfile_res << scientific << forward_gradient ;
+
+    myfile_res << endl;
+
+    myfile_res.close();
+
 
     if (config->GetDirectDiff() == D_YOUNG)   cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Young Modulus: " << forward_gradient << "." << endl;
     if (config->GetDirectDiff() == D_POISSON) cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Poisson's ratio: " << forward_gradient << "." << endl;
