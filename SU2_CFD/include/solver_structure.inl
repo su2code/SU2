@@ -66,8 +66,6 @@ inline su2double CSolver::GetCSensitivity(unsigned short val_marker, unsigned lo
 inline void CSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep, 
 																		 unsigned short iMesh, unsigned short RunTime_EqSystem) { }
 																		 
-inline void CSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config) { }
-
 inline void CSolver::SetFEA_Load(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics) { }
 
 inline void CSolver::SetFEA_Load_Int(CSolver ***flow_solution, CGeometry **fea_geometry, CGeometry **flow_geometry, CConfig *fea_config, CConfig *flow_config, CNumerics *fea_numerics) { }
@@ -278,8 +276,6 @@ inline su2double CSolver::GetTotal_CpDiff() { return 0; }
 
 inline su2double CSolver::GetTotal_HeatFluxDiff() { return 0; }
 
-inline su2double CSolver::GetTotal_CFreeSurface() { return 0; }
-
 inline su2double CSolver::GetTotal_CFEA() { return 0; }
 
 inline su2double CSolver::GetTotal_CNearFieldOF() { return 0; }
@@ -301,8 +297,6 @@ inline void CSolver::SetWAitken_Dyn(su2double waitk) {  }
 inline void CSolver::SetWAitken_Dyn_tn1(su2double waitk_tn1) {  }
 
 inline void CSolver::SetLoad_Increment(su2double val_loadIncrement) {  }
-
-inline void CSolver::SetTotal_CFreeSurface(su2double val_freesurface) { }
 
 inline void CSolver::SetTotal_CNearFieldOF(su2double val_cnearfieldpress) { }
 
@@ -936,10 +930,6 @@ inline su2double CEulerSolver::GetAllBound_CFy_Inv() { return AllBound_CFy_Inv; 
 
 inline su2double CEulerSolver::GetAllBound_CFz_Inv() { return AllBound_CFz_Inv; }
 
-inline su2double CEulerSolver::GetTotal_CFreeSurface() { return Total_CFreeSurface; }
-
-inline void CEulerSolver::SetTotal_CFreeSurface(su2double cfreesurface) { Total_CFreeSurface = cfreesurface; }
-
 inline su2double CEulerSolver::GetOneD_TotalPress(void) { return OneD_TotalPress; }
 
 inline void CEulerSolver::SetOneD_TotalPress(su2double AveragePressure) { OneD_TotalPress = AveragePressure; }
@@ -1285,10 +1275,6 @@ inline su2double CIncEulerSolver::GetAllBound_CFx_Inv() { return AllBound_CFx_In
 inline su2double CIncEulerSolver::GetAllBound_CFy_Inv() { return AllBound_CFy_Inv; }
 
 inline su2double CIncEulerSolver::GetAllBound_CFz_Inv() { return AllBound_CFz_Inv; }
-
-inline su2double CIncEulerSolver::GetTotal_CFreeSurface() { return Total_CFreeSurface; }
-
-inline void CIncEulerSolver::SetTotal_CFreeSurface(su2double cfreesurface) { Total_CFreeSurface = cfreesurface; }
 
 inline su2double CIncEulerSolver::GetOneD_TotalPress(void) { return OneD_TotalPress; }
 

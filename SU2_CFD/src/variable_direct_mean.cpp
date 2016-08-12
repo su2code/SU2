@@ -64,7 +64,6 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -97,7 +96,6 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
-  if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
   if (compressible)   { nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
     if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
     else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
@@ -116,7 +114,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
 	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
-	if ((nMGSmooth > 0) || low_fidelity || freesurface) {
+  if ((nMGSmooth > 0) || low_fidelity) {
 		Residual_Sum = new su2double [nVar];
 		Residual_Old = new su2double [nVar];
 	}
@@ -163,7 +161,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
 		Solution[nVar-1] = val_density*val_energy;
 		Solution_Old[nVar-1] = val_density*val_energy;
 	}
-	if (incompressible || freesurface) {
+  if (incompressible) {
 		Solution[0] = config->GetPressure_FreeStreamND();
 		Solution_Old[0] = config->GetPressure_FreeStreamND();
 		for (iDim = 0; iDim < nDim; iDim++) {
@@ -185,7 +183,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
 			Solution_time_n[nVar-1] = val_density*val_energy;
 			Solution_time_n1[nVar-1] = val_density*val_energy;
 		}
-    if (incompressible || freesurface) {
+    if (incompressible) {
 			Solution_time_n[0] = config->GetPressure_FreeStreamND();
 			Solution_time_n1[0] = config->GetPressure_FreeStreamND();
 			for (iDim = 0; iDim < nDim; iDim++) {
@@ -209,13 +207,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
     WindGustDer = new su2double [nDim+1];
   }
   
-	/*--- Allocate auxiliar vector for free surface source term ---*/
-  
-	if (freesurface) Grad_AuxVar = new su2double [nDim];
-  
-  /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta),
-        FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist),
-        Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c) ---*/
+  /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta) ---*/
   
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
@@ -225,9 +217,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
     for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
   }
 
-  /*--- Incompressible flow, gradients primitive variables nDim+2, (P, vx, vy, vz, rho),
-        FreeSurface Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta, dist),
-        Compressible flow, gradients primitive variables nDim+4, (T, vx, vy, vz, P, rho, h)
+  /*--- Compressible flow, gradients primitive variables nDim+4, (T, vx, vy, vz, P, rho, h)
         We need P, and rho for running the adjoint problem ---*/
   
   Gradient_Primitive = new su2double* [nPrimVarGrad];
@@ -252,7 +242,6 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool low_fidelity = config->GetLowFidelitySim();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -284,7 +273,6 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
  
 	/*--- Allocate and initialize the primitive variables and gradients ---*/
   if (incompressible) { nPrimVar = nDim+5; nPrimVarGrad = nDim+3; }
-  if (freesurface)    { nPrimVar = nDim+7; nPrimVarGrad = nDim+6; }
   if (compressible)   { nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
     if (viscous) { nSecondaryVar = 8; nSecondaryVarGrad = 2; }
     else { nSecondaryVar = 2; nSecondaryVarGrad = 2; }
@@ -301,7 +289,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
 	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
 		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
   
-	if ((nMGSmooth > 0) || low_fidelity || freesurface) {
+  if ((nMGSmooth > 0) || low_fidelity) {
 		Residual_Sum = new su2double [nVar];
 		Residual_Old = new su2double [nVar];
 	}
@@ -362,12 +350,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
     WindGustDer = new su2double [nDim+1];
   }
   
-	/*--- Allocate auxiliar vector for free surface source term ---*/
-	if (freesurface) Grad_AuxVar = new su2double [nDim];
-
-  /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta),
-        FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist),
-        Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c) ---*/
+  /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c) ---*/
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
@@ -376,9 +359,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
     for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
   }
 
-  /*--- Incompressible flow, gradients primitive variables nDim+2, (P, vx, vy, vz, rho),
-        FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist),
-        Compressible flow, gradients primitive variables nDim+4, (T, vx, vy, vz, P, rho, h)
+  /*--- Compressible flow, gradients primitive variables nDim+4, (T, vx, vy, vz, P, rho, h)
         We need P, and rho for running the adjoint problem ---*/
   Gradient_Primitive = new su2double* [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {

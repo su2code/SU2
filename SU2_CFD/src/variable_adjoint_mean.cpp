@@ -249,35 +249,6 @@ bool CAdjEulerVariable::SetPrimVar(su2double SharpEdge_Distance, bool check, CCo
   
 }
 
-
-bool CAdjEulerVariable::SetPrimVar_FreeSurface(su2double SharpEdge_Distance, bool check, CConfig *config) {
-  unsigned short iVar;
-  bool check_press = false, RightVol = true;
-  
-  su2double adj_limit = config->GetAdjointLimit();
-  su2double dist_limit = config->GetLimiterCoeff()*config->GetRefElemLength()*config->GetSharpEdgesCoeff();
-  
-  if (SharpEdge_Distance < dist_limit) {
-    
-    check_press = (fabs(Solution[0]) > adj_limit); // Check adjoint pressure
-    
-    /*--- Check that the solution has a physical meaning ---*/
-    if (check_press) {
-      
-      /*--- Copy the old solution ---*/
-      for (iVar = 0; iVar < nVar; iVar++)
-        Solution[iVar] = Solution_Old[iVar];
-      
-      RightVol = false;
-      
-    }
-    
-  }
-  
-  return RightVol;
-  
-}
-
 CAdjNSVariable::CAdjNSVariable(void) : CAdjEulerVariable() { }
 
 CAdjNSVariable::CAdjNSVariable(su2double *val_solution, unsigned short val_nDim,

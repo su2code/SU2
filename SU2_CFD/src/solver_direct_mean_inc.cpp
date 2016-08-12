@@ -95,7 +95,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
@@ -167,18 +166,13 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
-  /*--- Define geometry constants in the solver structure
-   Incompressible flow, primitive variables (P, vx, vy, vz, rho, beta, lamMu, EddyMu).
-   FreeSurface Incompressible flow, primitive variables (P, vx, vy, vz, rho, beta, lamMu, EddyMu, LevelSet, Dist).
-   ---*/
+  /*--- Define geometry constants in the solver structure.
+   * Incompressible flow, primitive variables (P, vx, vy, vz, rho, beta, lamMu, EddyMu) ---*/
   
   nDim = geometry->GetnDim();
   
   nVar = nDim+1; nPrimVar = nDim+5; nPrimVarGrad = nDim+3;
-  if (freesurface) {
-    nVar += 1; nPrimVar += 2; nPrimVarGrad += 3;
-  }
-  
+
   /*--- Initialize nVarGrad for deallocation ---*/
   
   nVarGrad = nPrimVarGrad;
@@ -519,11 +513,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       if (iPoint_Local >= 0) {
         if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
         if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-
-        if (freesurface){
-          if (nDim == 2) point_line >> Solution[3];
-          if (nDim == 3) point_line >> Solution[4];
-        }
         node[iPoint_Local] = new CIncEulerVariable(Solution, nDim, nVar, config);
         iPoint_Global_Local++;
       }
@@ -1679,211 +1668,6 @@ void CIncEulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *co
   
 }
 
-//void CIncEulerSolver::Set_MPI_Secondary_Gradient(CGeometry *geometry, CConfig *config) {
-//  unsigned short iVar, iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
-//  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-//  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
-//  *Buffer_Receive_Gradient = NULL, *Buffer_Send_Gradient = NULL;
-//  int send_to, receive_from;
-//
-//  su2double **Gradient = new su2double* [nSecondaryVarGrad];
-//  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-//    Gradient[iVar] = new su2double[nDim];
-//
-//#ifdef HAVE_MPI
-//  MPI_Status status;
-//#endif
-//
-//  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-//
-//    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-//        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-//
-//      MarkerS = iMarker;  MarkerR = iMarker+1;
-//
-//      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-//      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-//
-//      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-//      nBufferS_Vector = nVertexS*nSecondaryVarGrad*nDim;        nBufferR_Vector = nVertexR*nSecondaryVarGrad*nDim;
-//
-//      /*--- Allocate Receive and send buffers  ---*/
-//      Buffer_Receive_Gradient = new su2double [nBufferR_Vector];
-//      Buffer_Send_Gradient = new su2double[nBufferS_Vector];
-//
-//      /*--- Copy the solution old that should be sended ---*/
-//      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-//        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-//        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-//          for (iDim = 0; iDim < nDim; iDim++)
-//            Buffer_Send_Gradient[iDim*nSecondaryVarGrad*nVertexS+iVar*nVertexS+iVertex] = node[iPoint]->GetGradient_Secondary(iVar, iDim);
-//      }
-//
-//#ifdef HAVE_MPI
-//
-//      /*--- Send/Receive information using Sendrecv ---*/
-//      SU2_MPI::Sendrecv(Buffer_Send_Gradient, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-//                   Buffer_Receive_Gradient, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-//
-//#else
-//
-//      /*--- Receive information without MPI ---*/
-//      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-//        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-//        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-//          for (iDim = 0; iDim < nDim; iDim++)
-//            Buffer_Receive_Gradient[iDim*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] = Buffer_Send_Gradient[iDim*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex];
-//      }
-//
-//#endif
-//
-//      /*--- Deallocate send buffer ---*/
-//      delete [] Buffer_Send_Gradient;
-//
-//      /*--- Do the coordinate transformation ---*/
-//      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-//
-//        /*--- Find point and its type of transformation ---*/
-//        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-//        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
-//
-//        /*--- Retrieve the supplied periodic information. ---*/
-//        angles = config->GetPeriodicRotation(iPeriodic_Index);
-//
-//        /*--- Store angles separately for clarity. ---*/
-//        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-//        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-//        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-//
-//        /*--- Compute the rotation matrix. Note that the implicit
-//         ordering is rotation about the x-axis, y-axis,
-//         then z-axis. Note that this is the transpose of the matrix
-//         used during the preprocessing stage. ---*/
-//        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-//        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-//        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
-//
-//        /*--- Copy conserved variables before performing transformation. ---*/
-//        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-//          for (iDim = 0; iDim < nDim; iDim++)
-//            Gradient[iVar][iDim] = Buffer_Receive_Gradient[iDim*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex];
-//
-//        /*--- Need to rotate the gradients for all conserved variables. ---*/
-//        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
-//          if (nDim == 2) {
-//            Gradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Gradient[0*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_Gradient[1*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex];
-//            Gradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Gradient[0*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_Gradient[1*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex];
-//          }
-//          else {
-//            Gradient[iVar][0] = rotMatrix[0][0]*Buffer_Receive_Gradient[0*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][1]*Buffer_Receive_Gradient[1*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[0][2]*Buffer_Receive_Gradient[2*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex];
-//            Gradient[iVar][1] = rotMatrix[1][0]*Buffer_Receive_Gradient[0*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][1]*Buffer_Receive_Gradient[1*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[1][2]*Buffer_Receive_Gradient[2*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex];
-//            Gradient[iVar][2] = rotMatrix[2][0]*Buffer_Receive_Gradient[0*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][1]*Buffer_Receive_Gradient[1*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex] + rotMatrix[2][2]*Buffer_Receive_Gradient[2*nSecondaryVarGrad*nVertexR+iVar*nVertexR+iVertex];
-//          }
-//        }
-//
-//        /*--- Store the received information ---*/
-//        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-//          for (iDim = 0; iDim < nDim; iDim++)
-//            node[iPoint]->SetGradient_Secondary(iVar, iDim, Gradient[iVar][iDim]);
-//
-//      }
-//
-//      /*--- Deallocate receive buffer ---*/
-//      delete [] Buffer_Receive_Gradient;
-//
-//    }
-//
-//  }
-//
-//  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-//    delete [] Gradient[iVar];
-//  delete [] Gradient;
-//
-//}
-
-//void CIncEulerSolver::Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config) {
-//  unsigned short iVar, iMarker, MarkerS, MarkerR;
-//  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-//  su2double *Buffer_Receive_Limit = NULL, *Buffer_Send_Limit = NULL;
-//  int send_to, receive_from;
-//
-//  su2double *Limiter = new su2double [nSecondaryVarGrad];
-//
-//#ifdef HAVE_MPI
-//  MPI_Status status;
-//#endif
-//
-//  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-//
-//    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-//        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-//
-//      MarkerS = iMarker;  MarkerR = iMarker+1;
-//
-//      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-//      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-//
-//      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-//      nBufferS_Vector = nVertexS*nSecondaryVarGrad;        nBufferR_Vector = nVertexR*nSecondaryVarGrad;
-//
-//      /*--- Allocate Receive and send buffers  ---*/
-//      Buffer_Receive_Limit = new su2double [nBufferR_Vector];
-//      Buffer_Send_Limit = new su2double[nBufferS_Vector];
-//
-//      /*--- Copy the solution old that should be sended ---*/
-//      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-//        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-//        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-//          Buffer_Send_Limit[iVar*nVertexS+iVertex] = node[iPoint]->GetLimiter_Secondary(iVar);
-//      }
-//
-//#ifdef HAVE_MPI
-//
-//      /*--- Send/Receive information using Sendrecv ---*/
-//      SU2_MPI::Sendrecv(Buffer_Send_Limit, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-//                   Buffer_Receive_Limit, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-//
-//#else
-//
-//      /*--- Receive information without MPI ---*/
-//      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-//        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-//        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-//          Buffer_Receive_Limit[iVar*nVertexR+iVertex] = Buffer_Send_Limit[iVar*nVertexR+iVertex];
-//      }
-//
-//#endif
-//
-//      /*--- Deallocate send buffer ---*/
-//      delete [] Buffer_Send_Limit;
-//
-//      /*--- Do the coordinate transformation ---*/
-//      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-//
-//        /*--- Find point and its type of transformation ---*/
-//        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-//
-//        /*--- Copy conserved variables before performing transformation. ---*/
-//        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-//          Limiter[iVar] = Buffer_Receive_Limit[iVar*nVertexR+iVertex];
-//
-//        /*--- Copy transformed conserved variables back into buffer. ---*/
-//        for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
-//          node[iPoint]->SetLimiter_Secondary(iVar, Limiter[iVar]);
-//
-//      }
-//
-//      /*--- Deallocate receive buffer ---*/
-//      delete [] Buffer_Receive_Limit;
-//
-//    }
-//
-//  }
-//
-//  delete [] Limiter;
-//
-//}
-
 void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
   
   su2double Temperature_FreeStream = 0.0,  ModVel_FreeStream = 0.0,Energy_FreeStream = 0.0,
@@ -2218,114 +2002,19 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
 void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
   
   unsigned long iPoint, Point_Fine;
-  unsigned short iMesh, iChildren, iVar, iDim;
-  su2double Density, Pressure, yFreeSurface, PressFreeSurface, Froude, yCoord, Velx, Vely, Velz, RhoVelx, RhoVely, RhoVelz, YCoord = 0.0,
-  ZCoord = 0.0, DensityInc, ViscosityInc, Heaviside, LevelSet, lambda, Area_Children, Area_Parent, LevelSet_Fine, epsilon,
-  *Solution_Fine, *Solution, PressRef, yCoordRef;
+  unsigned short iMesh, iChildren, iVar;
+  su2double Density, Pressure, yCoord,
+  Area_Children, Area_Parent, *Solution_Fine,
+  *Solution, PressRef, yCoordRef;
   
   unsigned short nDim = geometry[MESH_0]->GetnDim();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool rans = ((config->GetKind_Solver() == RANS) ||
                (config->GetKind_Solver() == ADJ_RANS) ||
                (config->GetKind_Solver() == DISC_ADJ_RANS));
 	bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool gravity = (config->GetGravityForce() == YES);
-  bool engine_intake = config->GetEngine_Intake();
-  
-  
-  /*--- Set the location and value of the free-surface ---*/
-  
-  if (freesurface) {
-    
-    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-      
-      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        
-        /*--- Set initial boundary condition at iter 0 ---*/
-        
-        if ((ExtIter == 0) && (!restart)) {
-          
-          /*--- Compute the level set value in all the MG levels (basic case, distance to
-           the Y/Z plane, and interpolate the solution to the coarse levels ---*/
-          
-          if (iMesh == MESH_0) {
-            YCoord = geometry[iMesh]->node[iPoint]->GetCoord(1);
-            if (nDim == 2) LevelSet = YCoord - config->GetFreeSurface_Zero();
-            else {
-              ZCoord = geometry[iMesh]->node[iPoint]->GetCoord(2);
-              LevelSet = ZCoord - config->GetFreeSurface_Zero();
-            }
-            solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(nDim+1, LevelSet);
-          }
-          else {
-            Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
-            LevelSet = 0.0;
-            for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-              Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-              Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-              LevelSet_Fine = solver_container[iMesh-1][FLOW_SOL]->node[Point_Fine]->GetSolution(nDim+1);
-              LevelSet += LevelSet_Fine*Area_Children/Area_Parent;
-            }
-            solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(nDim+1, LevelSet);
-          }
-          
-          /*--- Compute the flow solution using the level set value. ---*/
-          
-          epsilon = config->GetFreeSurface_Thickness();
-          Heaviside = 0.0;
-          if (LevelSet < -epsilon) Heaviside = 1.0;
-          if (fabs(LevelSet) <= epsilon) Heaviside = 1.0 - (0.5*(1.0+(LevelSet/epsilon)+(1.0/PI_NUMBER)*sin(PI_NUMBER*LevelSet/epsilon)));
-          if (LevelSet > epsilon) Heaviside = 0.0;
-          
-          /*--- Set the value of the incompressible density for free surface flows (density ratio g/l) ---*/
-          
-          lambda = config->GetRatioDensity();
-          DensityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetDensity_FreeStreamND();
-          solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetDensity(DensityInc);
-          
-          /*--- Set the value of the incompressible viscosity for free surface flows (viscosity ratio g/l) ---*/
-          
-          lambda = config->GetRatioViscosity();
-          ViscosityInc = (lambda + (1.0 - lambda)*Heaviside)*config->GetViscosity_FreeStreamND();
-          solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetLaminarViscosity(ViscosityInc);
-          
-          /*--- Update solution with the new pressure ---*/
-          
-          yFreeSurface = config->GetFreeSurface_Zero();
-          PressFreeSurface = solver_container[iMesh][FLOW_SOL]->GetPressure_Inf();
-          Density = solver_container[iMesh][FLOW_SOL]->node[iPoint]->GetDensity();
-          Froude = config->GetFroude();
-          yCoord = geometry[iMesh]->node[iPoint]->GetCoord(nDim-1);
-          Pressure = PressFreeSurface + Density*((yFreeSurface-yCoord)/(Froude*Froude));
-          solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(0, Pressure);
-          
-          /*--- Update solution with the new velocity ---*/
-          
-          Velx = solver_container[iMesh][FLOW_SOL]->GetVelocity_Inf(0);
-          Vely = solver_container[iMesh][FLOW_SOL]->GetVelocity_Inf(1);
-          RhoVelx = Velx * Density; RhoVely = Vely * Density;
-          solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(1, RhoVelx);
-          solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(2, RhoVely);
-          if (nDim == 3) {
-            Velz = solver_container[iMesh][FLOW_SOL]->GetVelocity_Inf(2);
-            RhoVelz = Velz * Density;
-            solver_container[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(3, RhoVelz);
-          }
-          
-        }
-        
-      }
-      
-      /*--- Set the MPI communication ---*/
-      
-      solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-      solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution_Old(geometry[iMesh], config);
-      
-    }
-    
-  }
   
   /*--- Set the pressure value in simulations with gravity ---*/
   
@@ -2475,17 +2164,12 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (!low_fidelity) && (ExtIter <= config->GetLimiterIter()));
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
-  bool freesurface      = (config->GetKind_Regime() == FREESURFACE);
   bool fixed_cl         = config->GetFixed_CL_Mode();
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
   if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
-  
-  /*--- Compute distance function to zero level set (Set LevelSet and Distance primitive variables)---*/
-  
-  if (freesurface) { SetFreeSurface_Distance(geometry, config); }
-  
+
   /*--- Set the primitive variables ---*/
   
   ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
@@ -2548,7 +2232,6 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
   
   unsigned long iPoint, ErrorCounter = 0;
   bool RightSol     = true;
-  bool freesurface  = (config->GetKind_Regime() == FREESURFACE);
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -2556,14 +2239,9 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
     
     node[iPoint]->SetNon_Physical(false);
     
-    /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta),
-     FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist) ---*/
+    /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta) ---*/
     
-    if (!freesurface){
-      RightSol = node[iPoint]->SetPrimVar(Density_Inf, config);
-    } else{
-      RightSol = node[iPoint]->SetPrimVar_FreeSurface(config);
-    }
+    RightSol = node[iPoint]->SetPrimVar(Density_Inf, config);
     
     if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
     
@@ -2578,14 +2256,12 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
 void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
   
-  su2double *Normal, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Mean_BetaInc2, Lambda, Local_Delta_Time, Mean_DensityInc, Mean_LevelSet,
-  Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j, Delta = 0.0, a, b, c, e, f;
+  su2double *Normal, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Mean_BetaInc2, Lambda, Local_Delta_Time, Mean_DensityInc,
+  Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
   
-  su2double epsilon = config->GetFreeSurface_Thickness();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement = config->GetGrid_Movement();
 	bool time_steping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -2616,24 +2292,6 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
     Mean_BetaInc2 = 0.5 * (node[iPoint]->GetBetaInc2() + node[jPoint]->GetBetaInc2());
     Mean_DensityInc = 0.5 * (node[iPoint]->GetDensity() + node[jPoint]->GetDensity());
     Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
-
-    if (freesurface){
-      Mean_ProjVel = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
-      Mean_BetaInc2 = 0.5 * (node[iPoint]->GetBetaInc2() + node[jPoint]->GetBetaInc2());
-      Mean_DensityInc = 0.5 * (node[iPoint]->GetDensity() + node[jPoint]->GetDensity());
-      Mean_LevelSet = 0.5 * (node[iPoint]->GetLevelSet() + node[jPoint]->GetLevelSet());
-
-      if (Mean_LevelSet < -epsilon) Delta = 0.0;
-      if (fabs(Mean_LevelSet) <= epsilon) Delta = 0.5*(1.0+cos(PI_NUMBER*Mean_LevelSet/epsilon))/epsilon;
-      if (Mean_LevelSet > epsilon) Delta = 0.0;
-
-      a = Mean_BetaInc2/Mean_DensityInc, b = Mean_LevelSet/Mean_DensityInc;
-      c = (1.0 - config->GetRatioDensity())*Delta*config->GetDensity_FreeStreamND();
-      e = (2.0*fabs(Mean_ProjVel) + b*c*fabs(Mean_ProjVel)), f = sqrt(4.0*a*Area*Area + e*e);
-      Mean_SoundSpeed = 0.5*f;
-      Mean_ProjVel = 0.5*e;
-      
-    }
     
     /*--- Adjustment for grid movement ---*/
     
@@ -2673,23 +2331,6 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
       Mean_BetaInc2 = node[iPoint]->GetBetaInc2();
       Mean_DensityInc = node[iPoint]->GetDensity();
       Mean_SoundSpeed = sqrt(Mean_ProjVel*Mean_ProjVel + (Mean_BetaInc2/Mean_DensityInc)*Area*Area);
-
-      if (freesurface){
-        Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
-        Mean_BetaInc2 = node[iPoint]->GetBetaInc2();
-        Mean_DensityInc = node[iPoint]->GetDensity();
-        Mean_LevelSet = node[iPoint]->GetLevelSet();
-        
-        if (Mean_LevelSet < -epsilon) Delta = 0.0;
-        if (fabs(Mean_LevelSet) <= epsilon) Delta = 0.5*(1.0+cos(PI_NUMBER*Mean_LevelSet/epsilon))/epsilon;
-        if (Mean_LevelSet > epsilon) Delta = 0.0;
-        
-        a = Mean_BetaInc2/Mean_DensityInc; b = Mean_LevelSet/Mean_DensityInc;
-        c = (1.0 - config->GetRatioDensity())*Delta*config->GetDensity_FreeStreamND();
-        e = (2.0*fabs(Mean_ProjVel) + b*c*fabs(Mean_ProjVel)); f = sqrt(4.0*a*Area*Area + e*e);
-        Mean_SoundSpeed = 0.5*f;
-        Mean_ProjVel = 0.5*e;
-      }
       
       /*--- Adjustment for grid movement ---*/
       
@@ -2863,18 +2504,15 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                    CConfig *config, unsigned short iMesh) {
   
-  su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j, RoeVelocity[3] = {0.0,0.0,0.0}, R, sq_vel, RoeEnthalpy,
-  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, YDistance, GradHidrosPress, sqvel, Non_Physical = 1.0;
+  su2double **Gradient_i, **Gradient_j, Project_Grad_i, Project_Grad_j,
+  *V_i, *V_j, *S_i, *S_j, *Limiter_i = NULL, *Limiter_j = NULL, Non_Physical = 1.0;
   unsigned long iEdge, iPoint, jPoint, counter_local = 0, counter_global = 0;
   unsigned short iDim, iVar;
-  bool neg_density_i = false, neg_density_j = false, neg_pressure_i = false, neg_pressure_j = false, neg_sound_speed = false;
-  
   
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
   bool second_order     = (((config->GetSpatialOrder_Flow() == SECOND_ORDER) || (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER)) && ((iMesh == MESH_0) || low_fidelity));
   bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && !low_fidelity);
-  bool freesurface      = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement    = config->GetGrid_Movement();
 
   /*--- Loop over all the edges ---*/
@@ -2895,24 +2533,6 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
     
     V_i = node[iPoint]->GetPrimitive(); V_j = node[jPoint]->GetPrimitive();
     S_i = node[iPoint]->GetSecondary(); S_j = node[jPoint]->GetSecondary();
-
-    /*--- The zero order reconstruction includes the gradient
-     of the hydrostatic pressure contribution ---*/
-
-    if (freesurface) {
-      
-      YDistance = 0.5*(geometry->node[jPoint]->GetCoord(nDim-1)-geometry->node[iPoint]->GetCoord(nDim-1));
-      GradHidrosPress = node[iPoint]->GetDensity()/(config->GetFroude()*config->GetFroude());
-      Primitive_i[0] = V_i[0] - GradHidrosPress*YDistance;
-      GradHidrosPress = node[jPoint]->GetDensity()/(config->GetFroude()*config->GetFroude());
-      Primitive_j[0] = V_j[0] + GradHidrosPress*YDistance;
-    
-      for (iVar = 1; iVar < nPrimVar; iVar++) {
-        Primitive_i[iVar] = V_i[iVar]+EPS;
-        Primitive_j[iVar] = V_j[iVar]+EPS;
-      }
-      
-    }
 
     /*--- High order reconstruction using MUSCL strategy ---*/
     
@@ -2958,10 +2578,6 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       numerics->SetPrimitive(V_i, V_j);
       numerics->SetSecondary(S_i, S_j);
       
-      if (freesurface) {
-        numerics->SetPrimitive(Primitive_i, Primitive_j);
-      }
-      
     }
     
     /*--- Compute the residual ---*/
@@ -3000,12 +2616,11 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                    CConfig *config, unsigned short iMesh) {
   
-  unsigned short iVar, jVar;
+  unsigned short iVar;
   unsigned long iPoint;
   bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool rotating_frame = config->GetRotating_Frame();
   bool axisymmetric   = config->GetAxisymmetric();
-  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool gravity        = (config->GetGravityForce() == YES);
   bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
   bool windgust       = config->GetWind_Gust();
@@ -3092,42 +2707,6 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       
       /*--- Add Residual ---*/
       LinSysRes.AddBlock(iPoint, Residual);
-      
-    }
-    
-  }
-  
-  if (freesurface) {
-    
-    unsigned long iPoint;
-    su2double Vol, x_o, x_od, x, z, levelset, DampingFactor;
-    su2double factor = config->GetFreeSurface_Damping_Length();
-    
-    x_o = config->GetFreeSurface_Outlet();
-    x_od = x_o - factor*2.0*PI_NUMBER*config->GetFroude()*config->GetFroude();
-    
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      
-      Vol = geometry->node[iPoint]->GetVolume();
-      x = geometry->node[iPoint]->GetCoord()[0];
-      z = geometry->node[iPoint]->GetCoord()[nDim-1]-config->GetFreeSurface_Zero();
-      levelset = node[iPoint]->GetSolution(nDim+1);
-      
-      DampingFactor = 0.0;
-      if (x >= x_od)
-        DampingFactor = config->GetFreeSurface_Damping_Coeff()*pow((x-x_od)/(x_o-x_od), 2.0);
-      
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Residual[iVar] = 0.0;
-        for (jVar = 0; jVar < nVar; jVar++)
-          Jacobian_i[iVar][jVar] = 0.0;
-      }
-      
-      Residual[nDim+1] = Vol*(levelset-z)*DampingFactor;
-      Jacobian_i[nDim+1][nDim+1] = Vol*DampingFactor;
-      
-      LinSysRes.AddBlock(iPoint, Residual);
-      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
     }
     
@@ -4481,17 +4060,16 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
 void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config, unsigned short val_marker) {
   
-  unsigned short iDim, iVar, jVar, kVar, jDim;
+  unsigned short iDim, iVar, jVar;
   unsigned long iPoint, iVertex;
   su2double Density = 0.0, Pressure = 0.0, *Normal = NULL, *GridVel = NULL, Area, UnitNormal[3], *NormalArea,
   ProjGridVel = 0.0, turb_ke;
-  su2double Density_b, StaticEnergy_b, Enthalpy_b, *Velocity_b, Kappa_b, Chi_b, Energy_b, VelMagnitude2_b, Pressure_b;
-  su2double Density_i, *Velocity_i, ProjVelocity_i = 0.0, Energy_i, VelMagnitude2_i;
+  su2double *Velocity_b;
+  su2double *Velocity_i;
   su2double **Jacobian_b, **DubDu;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
   
@@ -4536,9 +4114,6 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
       Residual[0] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         Residual[iDim+1] = Pressure*NormalArea[iDim];
-      if (freesurface) {
-        Residual[nVar-1] = 0.0;
-      }
 
       /*--- Add the Reynolds stress tensor contribution ---*/
 
@@ -4724,7 +4299,6 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement        = config->GetGrid_Movement();
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
 
@@ -4765,54 +4339,27 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       
       V_domain = node[iPoint]->GetPrimitive();
 
-      if (!freesurface){
-        /*--- Retrieve the specified velocity for the inlet. ---*/
-        
-        Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag)/config->GetVelocity_Ref();
-        Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
-        
-        /*--- Store the velocity in the primitive variable vector ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
-        
-        /*--- Neumann condition for pressure ---*/
-        
-        V_inlet[0] = node[iPoint]->GetPressure();
-        
-        /*--- Constant value of density ---*/
-        
-        V_inlet[nDim+1] = GetDensity_Inf();
-        
-        /*--- Beta coefficient from the config file ---*/
-        
-        V_inlet[nDim+2] = config->GetArtComp_Factor();
-        
-      } else {
-        
-        /*--- Neumann condition for pressure, density, level set, and distance ---*/
-        
-        V_inlet[0] = node[iPoint]->GetPressure();
-        V_inlet[nDim+1] = node[iPoint]->GetDensity();
-        V_inlet[nDim+5] = node[iPoint]->GetLevelSet();
-        V_inlet[nDim+6] = node[iPoint]->GetDistance();
-        
-        /*--- The velocity is computed from the infinity values ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++) {
-          V_inlet[iDim+1] = GetVelocity_Inf(iDim);
-        }
-        
-        /*--- The y/z velocity is interpolated due to the
-         free surface effect on the pressure ---*/
-        
-        V_inlet[nDim] = node[iPoint]->GetPrimitive(nDim);
-        
-        /*--- Neumann condition for artifical compresibility factor ---*/
-        
-        V_inlet[nDim+2] = config->GetArtComp_Factor();
-        
-      }
+      /*--- Retrieve the specified velocity for the inlet. ---*/
+
+      Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag)/config->GetVelocity_Ref();
+      Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+
+      /*--- Store the velocity in the primitive variable vector ---*/
+
+      for (iDim = 0; iDim < nDim; iDim++)
+        V_inlet[iDim+1] = Vel_Mag*Flow_Dir[iDim];
+
+      /*--- Neumann condition for pressure ---*/
+
+      V_inlet[0] = node[iPoint]->GetPressure();
+
+      /*--- Constant value of density ---*/
+
+      V_inlet[nDim+1] = GetDensity_Inf();
+
+      /*--- Beta coefficient from the config file ---*/
+
+      V_inlet[nDim+2] = config->GetArtComp_Factor();
       
       /*--- Set various quantities in the solver class ---*/
       
@@ -4881,22 +4428,15 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
 void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  unsigned short iVar, iDim;
+  unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double LevelSet, Density_Outlet = 0.0,
-  Area, UnitNormal[3], Height, yCoordRef, yCoord;
+  su2double Area, UnitNormal[3], yCoordRef, yCoord;
   su2double *V_outlet, *V_domain;
   
   bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement      = config->GetGrid_Movement();
-  su2double FreeSurface_Zero = config->GetFreeSurface_Zero();
-  su2double epsilon          = config->GetFreeSurface_Thickness();
-  su2double RatioDensity     = config->GetRatioDensity();
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
-  su2double PressFreeSurface = GetPressure_Inf();
-  su2double Froude           = config->GetFroude();
 
   su2double *Normal = new su2double[nDim];
   
@@ -4929,58 +4469,26 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Current solution at this boundary node ---*/
       V_domain = node[iPoint]->GetPrimitive();
 
-      if (!freesurface) {
-        
-        /*--- The pressure is computed from the infinity values ---*/
-        if (gravity) {
-          yCoordRef = 0.0;
-          yCoord = geometry->node[iPoint]->GetCoord(nDim-1);
-          V_outlet[0] = GetPressure_Inf() + GetDensity_Inf()*((yCoordRef-yCoord)/(config->GetFroude()*config->GetFroude()));
-        }
-        else {
-          V_outlet[0] = GetPressure_Inf();
-        }
-        
-        /*--- Neumann condition for the velocity ---*/
-        for (iDim = 0; iDim < nDim; iDim++) {
-          V_outlet[iDim+1] = node[Point_Normal]->GetPrimitive(iDim+1);
-        }
-        
-        /*--- Constant value of density ---*/
-        V_outlet[nDim+1] = GetDensity_Inf();
-        
-        /*--- Beta coefficient from the config file ---*/
-        V_outlet[nDim+2] = config->GetArtComp_Factor();
-        
-      } else {
-        
-        /*--- Imposed pressure, density, level set and distance ---*/
-        Height = geometry->node[iPoint]->GetCoord(nDim-1);
-        LevelSet = Height - FreeSurface_Zero;
-        if (LevelSet < -epsilon) Density_Outlet = config->GetDensity_FreeStreamND();
-        if (LevelSet > epsilon) Density_Outlet = RatioDensity*config->GetDensity_FreeStreamND();
-        V_outlet[0] = PressFreeSurface + Density_Outlet*((FreeSurface_Zero-Height)/(Froude*Froude));
-        V_outlet[nDim+1] = Density_Outlet;
-        V_outlet[nDim+5] = LevelSet;
-        V_outlet[nDim+6] = LevelSet;
-        
-        /*--- Neumann condition in the interface for the pressure, density and level set and distance ---*/
-        if (fabs(LevelSet) <= epsilon) {
-          V_outlet[0] = node[Point_Normal]->GetPressure();
-          V_outlet[nDim+1] = node[Point_Normal]->GetDensity();
-          V_outlet[nDim+5] = node[Point_Normal]->GetLevelSet();
-          V_outlet[nDim+6] = node[Point_Normal]->GetDistance();
-        }
-        
-        /*--- Neumann condition for the velocity ---*/
-        for (iDim = 0; iDim < nDim; iDim++) {
-          V_outlet[iDim+1] = node[Point_Normal]->GetPrimitive(iDim+1);
-        }
-        
-        /*--- Neumann condition for artifical compresibility factor ---*/
-        V_outlet[nDim+2] = config->GetArtComp_Factor();
-        
+      /*--- The pressure is computed from the infinity values ---*/
+      if (gravity) {
+        yCoordRef = 0.0;
+        yCoord = geometry->node[iPoint]->GetCoord(nDim-1);
+        V_outlet[0] = GetPressure_Inf() + GetDensity_Inf()*((yCoordRef-yCoord)/(config->GetFroude()*config->GetFroude()));
       }
+      else {
+        V_outlet[0] = GetPressure_Inf();
+      }
+
+      /*--- Neumann condition for the velocity ---*/
+      for (iDim = 0; iDim < nDim; iDim++) {
+        V_outlet[iDim+1] = node[Point_Normal]->GetPrimitive(iDim+1);
+      }
+
+      /*--- Constant value of density ---*/
+      V_outlet[nDim+1] = GetDensity_Inf();
+
+      /*--- Beta coefficient from the config file ---*/
+      V_outlet[nDim+2] = config->GetArtComp_Factor();
       
       /*--- Set various quantities in the solver class ---*/
       conv_numerics->SetPrimitive(V_domain, V_outlet);
@@ -6089,7 +5597,6 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned long iPoint, index, iChildren, Point_Fine;
   unsigned short turb_model = config->GetKind_Turb_Model();
   su2double Area_Children, Area_Parent, *Coord, *Solution_Fine, dull_val;
-  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement  = config->GetGrid_Movement();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
@@ -6167,12 +5674,6 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     if (iPoint_Local >= 0) {
       if (nDim == 2) point_line >> index >> Coord[0] >> Coord[1] >> Solution[0] >> Solution[1] >> Solution[2];
       if (nDim == 3) point_line >> index >> Coord[0] >> Coord[1] >> Coord[2] >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-
-      if (freesurface){
-        if (nDim == 2) point_line >> Solution[3];
-        if (nDim == 3) point_line >> Solution[4];
-      }
-      
       node[iPoint_Local]->SetSolution(Solution);
       
       /*--- For dynamic meshes, read in and store the
@@ -6274,225 +5775,6 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
 }
 
-void CIncEulerSolver::SetFreeSurface_Distance(CGeometry *geometry, CConfig *config) {
-  su2double *coord = NULL, dist2, *iCoord = NULL, *jCoord = NULL, LevelSet_i, LevelSet_j,
-  **Coord_LevelSet = NULL, *xCoord = NULL, *yCoord = NULL, *zCoord = NULL, auxCoordx, auxCoordy,
-  auxCoordz, FreeSurface, volume, LevelSetDiff_Squared, LevelSetDiff, dist, Min_dist;
-  unsigned short iDim;
-  unsigned long iPoint, jPoint, iVertex, jVertex, nVertex_LevelSet, iEdge;
-  ifstream index_file;
-  ofstream LevelSet_file;
-  string text_line;
-  int rank = MASTER_NODE;
-  char cstr[200], buffer[50];
-  
-  unsigned short nDim = geometry->GetnDim();
-  unsigned long iExtIter = config->GetExtIter();
-  
-#ifndef HAVE_MPI
-  
-  /*--- Identification of the 0 level set points and coordinates ---*/
-  nVertex_LevelSet = 0;
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edge[iEdge]->GetNode(0); LevelSet_i = node[iPoint]->GetSolution(nDim+1);
-    jPoint = geometry->edge[iEdge]->GetNode(1); LevelSet_j = node[jPoint]->GetSolution(nDim+1);
-    if (LevelSet_i*LevelSet_j < 0.0) nVertex_LevelSet ++;
-  }
-  
-  /*--- Allocate vector of boundary coordinates ---*/
-  Coord_LevelSet = new su2double* [nVertex_LevelSet];
-  for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++)
-    Coord_LevelSet[iVertex] = new su2double [nDim];
-  
-  /*--- Get coordinates of the points of the surface ---*/
-  nVertex_LevelSet = 0;
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edge[iEdge]->GetNode(0); LevelSet_i = node[iPoint]->GetSolution(nDim+1); iCoord = geometry->node[iPoint]->GetCoord();
-    jPoint = geometry->edge[iEdge]->GetNode(1); LevelSet_j = node[jPoint]->GetSolution(nDim+1); jCoord = geometry->node[jPoint]->GetCoord();
-    if (LevelSet_i*LevelSet_j < 0.0) {
-      for (iDim = 0; iDim < nDim; iDim++)
-        Coord_LevelSet[nVertex_LevelSet][iDim] = iCoord[iDim]-LevelSet_i*(jCoord[iDim]-iCoord[iDim])/(LevelSet_j-LevelSet_i);
-      nVertex_LevelSet++;
-    }
-  }
-  
-#else
-  
-  int nProcessor, iProcessor;
-  unsigned long *Buffer_Send_nVertex = NULL, *Buffer_Receive_nVertex = NULL,
-  nLocalVertex_LevelSet = 0, nGlobalVertex_LevelSet = 0, MaxLocalVertex_LevelSet = 0, nBuffer;
-  su2double *Buffer_Send_Coord = NULL, *Buffer_Receive_Coord = NULL;
-  
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
-  Buffer_Send_nVertex = new unsigned long [1];
-  Buffer_Receive_nVertex = new unsigned long [nProcessor];
-  
-  nLocalVertex_LevelSet = 0;
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edge[iEdge]->GetNode(0); LevelSet_i = node[iPoint]->GetSolution(nDim+1);
-    jPoint = geometry->edge[iEdge]->GetNode(1); LevelSet_j = node[jPoint]->GetSolution(nDim+1);
-    if (LevelSet_i*LevelSet_j < 0.0) nLocalVertex_LevelSet ++;
-  }
-  
-  Buffer_Send_nVertex[0] = nLocalVertex_LevelSet;
-  
-  SU2_MPI::Allreduce(&nLocalVertex_LevelSet, &nGlobalVertex_LevelSet, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalVertex_LevelSet, &MaxLocalVertex_LevelSet, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  
-  nBuffer = MaxLocalVertex_LevelSet*nDim;
-  Buffer_Send_Coord = new su2double [nBuffer];
-  Buffer_Receive_Coord = new su2double [nProcessor*nBuffer];
-  
-  for (iVertex = 0; iVertex < MaxLocalVertex_LevelSet; iVertex++)
-    for (iDim = 0; iDim < nDim; iDim++)
-      Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-  
-  nLocalVertex_LevelSet = 0;
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    iPoint = geometry->edge[iEdge]->GetNode(0); LevelSet_i = node[iPoint]->GetSolution(nDim+1); iCoord = geometry->node[iPoint]->GetCoord();
-    jPoint = geometry->edge[iEdge]->GetNode(1); LevelSet_j = node[jPoint]->GetSolution(nDim+1); jCoord = geometry->node[jPoint]->GetCoord();
-    
-    if (LevelSet_i*LevelSet_j < 0.0) {
-      for (iDim = 0; iDim < nDim; iDim++)
-        Buffer_Send_Coord[nLocalVertex_LevelSet*nDim+iDim] = iCoord[iDim]-LevelSet_i*(jCoord[iDim]-iCoord[iDim])/(LevelSet_j-LevelSet_i);
-      nLocalVertex_LevelSet++;
-    }
-  }
-  
-  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer, MPI_DOUBLE, MPI_COMM_WORLD);
-  
-  /*--- Identification of the 0 level set points and coordinates ---*/
-  nVertex_LevelSet = 0;
-  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-    nVertex_LevelSet += Buffer_Receive_nVertex[iProcessor];
-  
-  /*--- Allocate vector of boundary coordinates ---*/
-  Coord_LevelSet = new su2double* [nVertex_LevelSet];
-  for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++)
-    Coord_LevelSet[iVertex] = new su2double [nDim];
-  
-  /*--- Set the value of the coordinates at the level set zero ---*/
-  nVertex_LevelSet = 0;
-  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-    for (iVertex = 0; iVertex < Buffer_Receive_nVertex[iProcessor]; iVertex++) {
-      for (iDim = 0; iDim < nDim; iDim++)
-        Coord_LevelSet[nVertex_LevelSet][iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_LevelSet+iVertex)*nDim+iDim];
-      nVertex_LevelSet++;
-    }
-  
-  delete [] Buffer_Send_Coord;
-  delete [] Buffer_Receive_Coord;
-  delete [] Buffer_Send_nVertex;
-  delete [] Buffer_Receive_nVertex;
-  
-#endif
-  
-  /*--- Get coordinates of the points and compute distances to the surface ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    coord = geometry->node[iPoint]->GetCoord();
-    
-    /*--- Compute the min distance ---*/
-    Min_dist = 1E20;
-    for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++) {
-      
-      dist2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        dist2 += (coord[iDim] - Coord_LevelSet[iVertex][iDim])*(coord[iDim]-Coord_LevelSet[iVertex][iDim]);
-      dist = sqrt(dist2);
-      if (dist < Min_dist) { Min_dist = dist; }
-      
-    }
-    
-    /*--- Compute the sign using the current solution ---*/
-    su2double NumberSign = 1.0;
-    if (node[iPoint]->GetSolution(0) != 0.0)
-      NumberSign = node[iPoint]->GetSolution(nDim+1)/fabs(node[iPoint]->GetSolution(nDim+1));
-    
-    /*--- Store the value of the Level Set and the Distance (primitive variables) ---*/
-    node[iPoint]->SetPrimitive(nDim+5, node[iPoint]->GetSolution(nDim+1));
-    node[iPoint]->SetPrimitive(nDim+6, Min_dist*NumberSign);
-    
-  }
-  
-  if (config->GetIntIter() == 0) {
-    
-    /*--- Order the arrays (x Coordinate, y Coordinate, z Coordiante) ---*/
-    for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++) {
-      for (jVertex = 0; jVertex < nVertex_LevelSet - 1 - iVertex; jVertex++) {
-        if (Coord_LevelSet[jVertex][0] > Coord_LevelSet[jVertex+1][0]) {
-          auxCoordx = Coord_LevelSet[jVertex][0]; Coord_LevelSet[jVertex][0] = Coord_LevelSet[jVertex+1][0]; Coord_LevelSet[jVertex+1][0] = auxCoordx;
-          auxCoordy = Coord_LevelSet[jVertex][1]; Coord_LevelSet[jVertex][1] = Coord_LevelSet[jVertex+1][1]; Coord_LevelSet[jVertex+1][1] = auxCoordy;
-          if (nDim == 3) { auxCoordz = Coord_LevelSet[jVertex][2]; Coord_LevelSet[jVertex][2] = Coord_LevelSet[jVertex+1][2]; Coord_LevelSet[jVertex+1][2] = auxCoordz; }
-        }
-      }
-    }
-    
-    /*--- Get coordinates of the points and compute distances to the surface ---*/
-    FreeSurface = 0.0;
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      coord = geometry->node[iPoint]->GetCoord();
-      volume = geometry->node[iPoint]->GetVolume();
-      LevelSetDiff = (node[iPoint]->GetSolution(nDim+1) - coord[nDim-1]);
-      LevelSetDiff_Squared = LevelSetDiff*LevelSetDiff;
-      FreeSurface += 0.5*LevelSetDiff_Squared*volume;
-      
-      node[iPoint]->SetDiffLevelSet(LevelSetDiff);
-      
-    }
-    
-    if ((rank == MASTER_NODE) && (iExtIter % config->GetWrt_Sol_Freq_DualTime() == 0)) {
-      
-      /*--- Write the Level Set distribution, the target level set---*/
-      LevelSet_file.precision(15);
-      
-      /*--- Write file name with extension ---*/
-      strcpy (cstr, "LevelSet");
-      if (config->GetUnsteady_Simulation()) {
-        if ((SU2_TYPE::Int(iExtIter) >= 0) && (SU2_TYPE::Int(iExtIter) < 10)) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
-        if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(iExtIter));
-        if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(iExtIter));
-        if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.dat", SU2_TYPE::Int(iExtIter));
-        if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(iExtIter));
-      }
-      else {
-        SPRINTF (buffer, ".dat");
-      }
-      
-      strcat(cstr, buffer);
-      
-      LevelSet_file.open(cstr, ios::out);
-      LevelSet_file << "TITLE = \"SU2 Free surface simulation\"" << endl;
-      if (nDim == 2) LevelSet_file << "VARIABLES = \"x coord\",\"y coord\"" << endl;
-      if (nDim == 3) LevelSet_file << "VARIABLES = \"x coord\",\"y coord\",\"z coord\"" << endl;
-      LevelSet_file << "ZONE T= \"Free Surface\"" << endl;
-      
-      for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++) {
-        if (nDim == 2) LevelSet_file << scientific << Coord_LevelSet[iVertex][0] << ", " << Coord_LevelSet[iVertex][1] << endl;
-        if (nDim == 3) LevelSet_file << scientific << Coord_LevelSet[iVertex][0] << ", " << Coord_LevelSet[iVertex][1] << ", " << Coord_LevelSet[iVertex][2] << endl;
-      }
-      LevelSet_file.close();
-      
-    }
-    
-    /*--- Store the value of the free surface coefficient ---*/
-    SetTotal_CFreeSurface(FreeSurface);
-    
-    delete [] xCoord;
-    delete [] yCoord;
-    if (nDim == 3) delete [] zCoord;
-    
-  }
-  
-  /*--- Deallocate vector of boundary coordinates ---*/
-  for (iVertex = 0; iVertex < nVertex_LevelSet; iVertex++)
-    delete Coord_LevelSet[iVertex];
-  delete [] Coord_LevelSet;
-  
-}
-
 void CIncEulerSolver::SetFreeStream_Solution(CConfig *config){
 
 
@@ -6539,7 +5821,6 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
@@ -6573,16 +5854,11 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Gamma_Minus_One = Gamma - 1.0;
   
   /*--- Define geometry constants in the solver structure
-   Incompressible flow, primitive variables (P, vx, vy, vz, rho, beta, lamMu, EddyMu),
-   FreeSurface Incompressible flow, primitive variables (P, vx, vy, vz, rho, beta, lamMu, EddyMu, LevelSet, Dist),
-   ---*/
-  
+   * Incompressible flow, primitive variables (P, vx, vy, vz, rho, beta, lamMu, EddyMu) --- */
+
   nDim = geometry->GetnDim();
   
   nVar = nDim+1; nPrimVar = nDim+5; nPrimVarGrad = nDim+3;
-  if (freesurface) {
-    nVar += 1; nPrimVar += 2; nPrimVarGrad += 3;
-  }
   
   /*--- Initialize nVarGrad for deallocation ---*/
   
@@ -6997,11 +6273,6 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
       if (iPoint_Local >= 0) {
         if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
         if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-
-        if (freesurface){
-          if (nDim == 2) point_line >> Solution[3];
-          if (nDim == 3) point_line >> Solution[4];
-        }
         node[iPoint_Local] = new CIncNSVariable(Solution, nDim, nVar, config);
         iPoint_Global_Local++;
       }
@@ -7050,8 +6321,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   }
 
   
-  /*--- For incompressible solver set the initial values for the density and viscosity,
-   unless a freesurface problem, this must be constant during the computation ---*/
+  /*--- For incompressible solver set the initial values for the density and viscosity ---*/
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     node[iPoint]->SetDensity(Density_Inf);
@@ -7140,16 +6410,11 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool limiter_turb         = ((config->GetSpatialOrder_Turb() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool limiter_adjflow      = ((config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool limiter_visc         = config->GetViscous_Limiter_Flow();
-  bool freesurface          = (config->GetKind_Regime() == FREESURFACE);
   bool fixed_cl             = config->GetFixed_CL_Mode();
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
   if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
-  
-  /*--- Compute distance function to zero level set ---*/
-  
-  if (freesurface) { SetFreeSurface_Distance(geometry, config); }
   
   /*--- Set the primitive variables ---*/
   
@@ -7236,7 +6501,6 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
   bool RightSol = true;
   
   bool tkeNeeded            = (turb_model == SST);
-  bool freesurface          = (config->GetKind_Regime() == FREESURFACE);
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -7251,14 +6515,9 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
     
     node[iPoint]->SetNon_Physical(false);
     
-    /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta),
-     FreeSurface Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, rho, beta, dist) ---*/
+    /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta) --- */
 
-    if (!freesurface){
-      RightSol = node[iPoint]->SetPrimVar(Density_Inf, Viscosity_Inf, eddy_visc, turb_ke, config);
-    } else {
-      RightSol = node[iPoint]->SetPrimVar_FreeSurface(eddy_visc, turb_ke, config);
-    }
+    RightSol = node[iPoint]->SetPrimVar(Density_Inf, Viscosity_Inf, eddy_visc, turb_ke, config);
     
     if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
     

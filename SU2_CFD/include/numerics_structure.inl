@@ -273,16 +273,6 @@ inline void CNumerics::SetTransVarGradient(su2double **val_transvar_grad_i, su2d
 	TransVar_Grad_j = val_transvar_grad_j;
 }
 
-inline void CNumerics::SetLevelSetVar(su2double *val_levelsetvar_i, su2double *val_levelsetvar_j) {
-	LevelSetVar_i = val_levelsetvar_i;
-	LevelSetVar_j = val_levelsetvar_j;
-}
-
-inline void CNumerics::SetLevelSetVarGradient(su2double **val_levelsetvar_grad_i, su2double **val_levelsetvar_grad_j) {
-	LevelSetVar_Grad_i = val_levelsetvar_grad_i;
-	LevelSetVar_Grad_j = val_levelsetvar_grad_j;
-}
-
 inline void CNumerics::SetPrimVarGradient(su2double **val_primvar_grad_i, su2double **val_primvar_grad_j) {
 	PrimVar_Grad_i = val_primvar_grad_i;
 	PrimVar_Grad_j = val_primvar_grad_j;

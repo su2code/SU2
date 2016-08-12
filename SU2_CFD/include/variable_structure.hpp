@@ -863,18 +863,6 @@ public:
 	 */		
 	virtual su2double GetSoundSpeed(void);
 
-  /*!
-	 * \brief A virtual member.
-	 * \return Value of the levelset for the freesurface flows.
-	 */
-	virtual su2double GetLevelSet(void);
-  
-  /*!
-	 * \brief A virtual member.
-	 * \return Value of the distance for the freesurface flows.
-	 */
-	virtual su2double GetDistance(void);
-  
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the beta for the incompressible flow.
@@ -1051,11 +1039,6 @@ public:
 	 */
   virtual bool SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config);
 	
-  /*!
-	 * \brief A virtual member.
-	 */
-	virtual bool SetPrimVar_FreeSurface(su2double SharpEdge_Distance, bool check, CConfig *config);
-  
 	/*!
 	 * \brief A virtual member.
 	 */		
@@ -1071,21 +1054,11 @@ public:
 	 */
   virtual bool SetPrimVar(su2double Density_Inf, CConfig *config);
   
-  /*!
-	 * \brief A virtual member.
-	 */
-	virtual bool SetPrimVar_FreeSurface(CConfig *config);
-	
 	/*!
 	 * \brief A virtual member.
 	 */		
   virtual bool SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
-  
-  /*!
-	 * \brief A virtual member.
-	 */
-	virtual bool SetPrimVar_FreeSurface(su2double eddy_visc, su2double turb_ke, CConfig *config);
-	
+
 	/*!
 	 * \brief A virtual member.
 	 */
@@ -1704,17 +1677,6 @@ public:
 	 * \param[in] iSpecies - Value of iSpecies to which the eigenvalue belongs
 	 */
 	virtual void AddMax_Lambda_Visc(su2double val_max_lambda, unsigned short iSpecies);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_difflevelset - Value of the diff level set (value-target).
-	 */	
-	virtual void SetDiffLevelSet(su2double val_difflevelset);
-
-	/*!
-	 * \brief A virtual member.
-	 */		
-	virtual su2double GetDiffLevelSet(void);
 
 	/*!
 	 * \brief A virtual member.
@@ -3262,18 +3224,6 @@ public:
   su2double GetPressure(void);
 
   /*!
-   * \brief Get the value of levelset for the freesurface flows
-   * \return Value of beta squared.
-   */
-  su2double GetLevelSet(void);
-  
-  /*!
-   * \brief Get the value of distance for the freesurface flows
-   * \return Value of beta squared.
-   */
-  su2double GetDistance(void);
-  
-  /*!
    * \brief Get the value of beta squared for the incompressible flow
    * \return Value of beta squared.
    */
@@ -3348,10 +3298,6 @@ public:
    */
   bool SetPrimVar(su2double Density_Inf, CConfig *config);
 
-  /*!
-   * \brief Set all the primitive variables for incompressible free-surface flows.
-   */
-  bool SetPrimVar_FreeSurface(CConfig *config);
 };
 
 /*!
@@ -3616,11 +3562,6 @@ public:
 	 * \brief Set all the primitive variables for incompressible flows
 	 */
   bool SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config);
-  
-  /*!
-	 * \brief Set all the primitive variables for incompressible flows
-	 */
-	bool SetPrimVar_FreeSurface(su2double eddy_visc, su2double turb_ke, CConfig *config);
   
 };
 
@@ -3931,11 +3872,6 @@ public:
 	 */
   bool SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config);
   
-  /*!
-	 * \brief Set all the primitive variables for compressible flows.
-	 */
-	bool SetPrimVar_FreeSurface(su2double SharpEdge_Distance, bool check, CConfig *config);
-  
 	/*!
 	 * \brief Set the value of the adjoint velocity.
 	 * \param[in] val_phi - Value of the adjoint velocity.
@@ -4044,12 +3980,7 @@ public:
    * \brief Set all the primitive variables for compressible flows.
    */
   bool SetPrimVar(su2double SharpEdge_Distance, bool check, CConfig *config);
-    
-  /*!
-   * \brief Set all the primitive variables for compressible flows.
-   */
-  bool SetPrimVar_FreeSurface(su2double SharpEdge_Distance, bool check, CConfig *config);
-  
+
   /*!
    * \brief Set the value of the adjoint velocity.
    * \param[in] val_phi - Value of the adjoint velocity.
@@ -4299,44 +4230,6 @@ public:
 	 * \return Pointer to the Eddy Viscosity Sensitivity.
 	 */
 	su2double *GetEddyViscSens(void);
-};
-
-/*! 
- * \class CAdjLevelSetVariable
- * \brief Main class for defining the variables of the Level Set.
- * \ingroup LevelSet_Model
- * \author F. Palacios
- * \version 4.2.0 "Cardinal"
- */
-class CAdjLevelSetVariable : public CVariable {
-public:
-	/*!
-	 * \brief Constructor of the class. 
-	 */	
-	CAdjLevelSetVariable(void);
-
-	/*!
-	 * \overload
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.
-	 */
-	CAdjLevelSetVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-
-	/*!
-	 * \overload
-	 * \param[in] val_levelset - Level set variable value (initialization value).
-	 * \param[in] val_nDim - Number of dimensions of the problem.
-	 * \param[in] val_nvar - Number of variables of the problem.
-	 * \param[in] config - Definition of the particular problem.	 
-	 */	
-	CAdjLevelSetVariable(su2double val_levelset, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-
-	/*!
-	 * \brief Destructor of the class.
-	 */
-	virtual ~CAdjLevelSetVariable(void);
-
 };
 
 /*! 

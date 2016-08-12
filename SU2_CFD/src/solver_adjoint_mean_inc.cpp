@@ -58,7 +58,6 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   string filename, AdjExt;
   su2double dull_val, myArea_Monitored, Area, *Normal;
   bool restart = config->GetRestart();
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool axisymmetric = config->GetAxisymmetric();
   
   int rank = MASTER_NODE;
@@ -92,7 +91,6 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   nPointDomain = geometry->GetnPointDomain();
   
   nVar = nDim + 1;
-  if (freesurface) { nVar +=  1; }
   
   /*--- Initialize nVarGrad for deallocation ---*/
   
@@ -297,13 +295,8 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
        will be returned and used to instantiate the vars. ---*/
       iPoint_Local = Global2Local[iPoint_Global];
       if (iPoint_Local >= 0) {
-        if (!freesurface) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        } else {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        }
+        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
         node[iPoint_Local] = new CAdjIncEulerVariable(Solution, nDim, nVar, config);
       }
       iPoint_Global++;
@@ -1516,51 +1509,11 @@ void CAdjIncEulerSolver::SetIntBoundary_Jump(CGeometry *geometry, CSolver **solv
 void CAdjIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter) {
   unsigned long iPoint, Point_Fine;
   unsigned short iMesh, iChildren, iVar;
-  su2double LevelSet, Area_Children, Area_Parent, LevelSet_Fine, *Solution, *Solution_Fine;
+  su2double Area_Children, Area_Parent, *Solution, *Solution_Fine;
   
   bool restart = config->GetRestart();
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  
-  if (freesurface) {
-    
-    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-      
-      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-        
-        /*--- Set initial boundary condition at iter 0 ---*/
-        if ((ExtIter == 0) && (!restart)) {
-          
-          /*--- Compute the adjoint level set value in all the MG levels ---*/
-          if (iMesh == MESH_0) {
-            solver_container[iMesh][ADJFLOW_SOL]->node[iPoint]->SetSolution(nDim+1, 0.0);
-          }
-          else {
-            Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
-            LevelSet = 0.0;
-            for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-              Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-              Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-              LevelSet_Fine = solver_container[iMesh-1][ADJFLOW_SOL]->node[Point_Fine]->GetSolution(nDim+1);
-              LevelSet += LevelSet_Fine*Area_Children/Area_Parent;
-            }
-            solver_container[iMesh][ADJFLOW_SOL]->node[iPoint]->SetSolution(nDim+1, LevelSet);
-          }
-          
-          /*--- Compute the flow solution using the level set value. ---*/
-          for (iVar = 0; iVar < nVar; iVar++)
-            solver_container[iMesh][ADJFLOW_SOL]->node[iPoint]->SetSolution(iVar, 0.0);
-          
-        }
-      }
-      
-      /*--- Set the MPI communication ---*/
-      solver_container[iMesh][ADJFLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-      
-    }
-    
-  }
   
   /*--- If restart solution, then interpolate the flow solution to
    all the multigrid levels, this is important with the dual time strategy ---*/
@@ -1617,13 +1570,7 @@ void CAdjIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
   bool limiter        = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
   bool center         = (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
-  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
-  bool engine         = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineBleed() != 0) || (config->GetnMarker_EngineExhaust() != 0));
 
-  /*--- Compute nacelle inflow and exhaust properties ---*/
-  
-  if (engine) { GetEngine_Properties(geometry, config, iMesh, Output); }
-  
   /*--- Residual initialization ---*/
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
@@ -1638,8 +1585,7 @@ void CAdjIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
     
     /*--- Set the primitive variables incompressible adjoint variables ---*/
     
-    if (!freesurface) RightSol = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
-    else RightSol = node[iPoint]->SetPrimVar_FreeSurface(SharpEdge_Distance, false, config);
+    RightSol = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
     if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
     
     /*--- Initialize the convective residual vector ---*/
@@ -1865,7 +1811,6 @@ void CAdjIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
   bool axisymmetric   = config->GetAxisymmetric();
   //	bool gravity        = (config->GetGravityForce() == YES);
   bool time_spectral  = (config->GetUnsteady_Simulation() == TIME_SPECTRAL);
-  //	bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   /*--- Initialize the source residual to zero ---*/
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
@@ -1952,27 +1897,6 @@ void CAdjIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_c
       
     }
   }
-  
-  //	if (gravity) {
-  //
-  //	}
-  
-  //	if (freesurface) {
-  //    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-  //
-  //      su2double Volume = geometry->node[iPoint]->GetVolume();
-  //      su2double **Gradient = solver_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
-  //      su2double coeff = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0) / solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-  //
-  //      Residual[0] = 0.0;
-  //      for (iDim = 0; iDim < nDim; iDim++) {
-  //        Residual[iDim+1] = coeff*Gradient[0][iDim]*Volume;
-  //      }
-  //
-  //      LinSysRes.AddBlock(iPoint, Residual);
-  //
-  //		}
-  //	}
   
 }
 
@@ -2324,7 +2248,7 @@ void CAdjIncEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **sol
   su2double *d = NULL, *Normal = NULL, *Psi = NULL, *U = NULL,  conspsi = 0.0,
   Area, **PrimVar_Grad = NULL, **ConsVar_Grad = NULL, *ConsPsi_Grad = NULL,
   ConsPsi, d_press, grad_v, Beta2, v_gradconspsi, *GridVel = NULL,
-  LevelSet, Target_LevelSet, eps, *USens, scale = 1.0;
+  eps, *USens, scale = 1.0;
   su2double RefVel2, RefDensity, Mach2Vel, *Velocity_Inf, factor;
   su2double *Velocity;
   
@@ -2332,7 +2256,6 @@ void CAdjIncEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **sol
   Velocity = new su2double[nDim];
 
   su2double Gas_Constant    = config->GetGas_ConstantND();
-  bool freesurface       = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement     = config->GetGrid_Movement();
   su2double RefAreaCoeff    = config->GetRefAreaCoeff();
   su2double Mach_Motion     = config->GetMach_Motion();
@@ -2361,7 +2284,7 @@ void CAdjIncEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **sol
 
   factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
   
-  if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
+  if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
       (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
       (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
 
@@ -2459,14 +2382,6 @@ void CAdjIncEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **sol
               v_gradconspsi -= GridVel[iDim] * ConsPsi_Grad[iDim];
             }
             
-          }
-          
-          /*--- Compute additional term in the surface sensitivity for free surface problem. ---*/
-          
-          if (freesurface) {
-            LevelSet = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(nDim+1);
-            Target_LevelSet = geometry->node[iPoint]->GetCoord(nDim-1);
-            d_press += 0.5*(Target_LevelSet - LevelSet)*(Target_LevelSet - LevelSet);
           }
           
           /*--- Compute sensitivity for each surface point ---*/
@@ -3563,8 +3478,7 @@ void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
   
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Pressure=0.0, Velocity2 = 0.0, Area=0.0, Density=0.0, Height=0.0,
-            LevelSet=0.0, Vn_Exit=0.0, Density_Outlet = 0.0;
+  su2double Pressure=0.0, Velocity2 = 0.0, Area=0.0, Density=0.0, Vn_Exit=0.0, Density_Outlet = 0.0;
   su2double Velocity[3], UnitNormal[3];
   su2double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
   su2double a2=0.0; /*Placeholder terms to simplify expressions/ repeated terms*/
@@ -3572,13 +3486,7 @@ void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
   su2double density_gradient, pressure_gradient, velocity_gradient;
 
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   bool grid_movement  = config->GetGrid_Movement();
-  su2double FreeSurface_Zero = config->GetFreeSurface_Zero();
-  su2double PressFreeSurface = solver_container[FLOW_SOL]->GetPressure_Inf();
-  su2double epsilon          = config->GetFreeSurface_Thickness();
-  su2double RatioDensity     = config->GetRatioDensity();
-  su2double Froude           = config->GetFroude();
 
   Psi_domain = new su2double [nVar]; Psi_outlet = new su2double [nVar];
   Normal = new su2double[nDim];
@@ -3623,36 +3531,11 @@ void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
       for (iVar = 0; iVar < nVar; iVar++)
         Psi_domain[iVar] = node[iPoint]->GetSolution(iVar);
 
-      if (freesurface) {
+      /*--- Imposed pressure and density ---*/
 
-        /*--- Density computation at the exit using the level set function ---*/
+      Density_Outlet = solver_container[FLOW_SOL]->GetDensity_Inf();
+      V_outlet[0] = solver_container[FLOW_SOL]->GetPressure_Inf();
 
-        Height = geometry->node[iPoint]->GetCoord(nDim-1);
-        LevelSet = Height - FreeSurface_Zero;
-
-        /*--- Pressure computation the density at the exit (imposed) ---*/
-
-        if (LevelSet < -epsilon) Density_Outlet = config->GetDensity_FreeStreamND();
-        if (LevelSet > epsilon) Density_Outlet = RatioDensity*config->GetDensity_FreeStreamND();
-        V_outlet[0] = PressFreeSurface + Density_Outlet*((FreeSurface_Zero-Height)/(Froude*Froude));
-
-        /*--- Neumann condition in the interface for the pressure and density ---*/
-
-        if (fabs(LevelSet) <= epsilon) {
-          V_outlet[0] = solver_container[FLOW_SOL]->node[Point_Normal]->GetSolution(0);
-          Density_Outlet = solver_container[FLOW_SOL]->node[Point_Normal]->GetDensity();
-        }
-
-      }
-
-      else {
-
-        /*--- Imposed pressure and density ---*/
-
-        Density_Outlet = solver_container[FLOW_SOL]->GetDensity_Inf();
-        V_outlet[0] = solver_container[FLOW_SOL]->GetPressure_Inf();
-
-      }
 
       /*--- Neumann condition for the velocity ---*/
 
@@ -3888,7 +3771,6 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
   string text_line, mesh_filename;
   unsigned short iDim, iVar, iMarker, nLineLets;
   ifstream restart_file;
-  bool freesurface = config->GetKind_Regime() == FREESURFACE;
   string filename, AdjExt;
   su2double dull_val, Area=0.0, *Normal = NULL, myArea_Monitored;
   bool restart = config->GetRestart();
@@ -4097,13 +3979,8 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
        will be returned and used to instantiate the vars. ---*/
       iPoint_Local = Global2Local[iPoint_Global];
       if (iPoint_Local >= 0) {
-        if (!freesurface) {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        } else {
-          if (nDim == 2) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
-          if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
-        }
+        if (nDim == 2) point_line >> index >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2];
+        if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> Solution[0] >> Solution[1] >> Solution[2] >> Solution[3];
         node[iPoint_Local] = new CAdjIncNSVariable(Solution, nDim, nVar, config);
       }
       iPoint_Global++;
@@ -4185,7 +4062,6 @@ void CAdjIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool limiter        = (config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
-  bool freesurface    = (config->GetKind_Regime() == FREESURFACE);
 
   /*--- Residual initialization ---*/
   
@@ -4202,8 +4078,7 @@ void CAdjIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     /*--- Set the primitive variables incompressible and compressible
      adjoint variables ---*/
     
-    if (!freesurface) RightSol = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
-    else RightSol = node[iPoint]->SetPrimVar_FreeSurface(SharpEdge_Distance, false, config);
+    RightSol = node[iPoint]->SetPrimVar(SharpEdge_Distance, false, config);
     if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
     
     /*--- Initialize the convective residual vector ---*/
@@ -4305,7 +4180,6 @@ void CAdjIncNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool rotating_frame = config->GetRotating_Frame();
-  bool freesurface = (config->GetKind_Regime() == FREESURFACE);
   
   /*--- Loop over all the points, note that we are supposing that primitive and
    adjoint gradients have been computed previously ---*/
@@ -4438,23 +4312,6 @@ void CAdjIncNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     }
   }
   
-  if (freesurface) {
-//    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-//
-//      su2double Volume = geometry->node[iPoint]->GetVolume();
-//      su2double **Gradient = solver_container[ADJLEVELSET_SOL]->node[iPoint]->GetGradient();
-//      su2double coeff = solver_container[LEVELSET_SOL]->node[iPoint]->GetSolution(0) / solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-//
-//      Residual[0] = 0.0;
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        Residual[iDim+1] = coeff*Gradient[0][iDim]*Volume;
-//      }
-//
-//      LinSysRes.AddBlock(iPoint, Residual);
-//
-//		}
-  }
-  
 }
 
 void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
@@ -4462,7 +4319,7 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
   unsigned long iVertex, iPoint;
   unsigned short iDim, jDim, iMarker;
   su2double **PsiVar_Grad = NULL, **PrimVar_Grad = NULL, *Normal = NULL, Area,
-  sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor, LevelSet, Target_LevelSet,
+  sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor,
   temp_sens = 0.0, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v,
   psi5_tau_partial, psi5_tau_grad_vel, source_v_1, Density, Pressure = 0.0, div_vel, val_turb_ke,
   vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3] = {0.0,0.0,0.0},
@@ -4489,7 +4346,6 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
     tau[iDim] = new su2double [nDim];
   su2double *Velocity = new su2double[nDim];
   
-  bool freesurface       = (config->GetKind_Regime() == FREESURFACE);
   bool rotating_frame    = config->GetRotating_Frame();
   bool grid_movement     = config->GetGrid_Movement();
   su2double RefAreaCoeff    = config->GetRefAreaCoeff();
@@ -4522,7 +4378,7 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
   
   factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
   
-  if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) || (ObjFunc == FREE_SURFACE) ||
+  if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
       (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
       (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
 
@@ -4711,14 +4567,6 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
             
             sigma_partial = sigma_partial + vartheta_partial + psi5_tau_partial + psi5_p_div_vel + psi5_tau_grad_vel + source_v_1;
             
-          }
-          
-          /*--- Compute additional term in the surface sensitivity for free surface problem. ---*/
-          
-          if (freesurface) {
-            LevelSet = solver_container[FLOW_SOL]->node[iPoint]->GetSolution(nDim+1);
-            Target_LevelSet = geometry->node[iPoint]->GetCoord(nDim-1);
-            sigma_partial += 0.5*(Target_LevelSet - LevelSet)*(Target_LevelSet - LevelSet);
           }
           
           /*--- Compute sensitivity for each surface point ---*/
