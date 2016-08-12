@@ -888,7 +888,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
     for (iVar = 0; iVar < nVar; iVar++){
       Solution[iVar] = node[iPoint]->GetSolution(iVar);
     }
-    if (fsi){
+    if (fsi && config->Add_CrossTerm()){
       for (iVar = 0; iVar < nVar; iVar++){
         Solution[iVar] += node[iPoint]->GetCross_Term_Derivative(iVar);
       }
@@ -901,10 +901,18 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
       myfile_res << scientific << node[iPoint]->GetSolution(1) << "\t";
       myfile_res << scientific << node[iPoint]->GetSolution(2) << "\t";
       myfile_res << scientific << node[iPoint]->GetSolution(3) << "\t";
+      if (config->Add_CrossTerm()){
       myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(0) << "\t";
       myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(1) << "\t";
       myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(2) << "\t";
       myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(3) << "\t";
+      }
+      else{
+        myfile_res << "Set_to_0.0" << "\t";
+        myfile_res << "Set_to_0.0" << "\t";
+        myfile_res << "Set_to_0.0" << "\t";
+        myfile_res << "Set_to_0.0" << "\t";
+      }
       myfile_res << scientific << Solution[0] << "\t";
       myfile_res << scientific << Solution[1] << "\t";
       myfile_res << scientific << Solution[2] << "\t";

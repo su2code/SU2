@@ -4319,13 +4319,39 @@ void CDiscAdjFSIStatDriver::Mesh_Deformation_Direct(CIteration **iteration_conta
 
   unsigned long iPoint;
 
+  int val_DirectIter = 0;
+
+  /*-----------------------------------------------------------------*/
+  /*----------------- Iterate the flow solver -----------------------*/
+  /*---- Sets all the cross dependencies for the flow variables -----*/
+  /*------------ into the mesh deformation problem ------------------*/
+  /*-----------------------------------------------------------------*/
+
+//  /*-----------------------------------------------------------------*/
+//  /*------- Compute the Cons. Vars. to obtain the tractions ---------*/
+//  /*-----------------------------------------------------------------*/
+//
+//  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0],
+//                                                              config_container[ZONE_FLOW], MESH_0, val_DirectIter, RUNTIME_FLOW_SYS, false);
+//
+//
+//  /*------------------- Set FEA loads from fluid --------------------*/
+//
+//  Transfer_Tractions(output, integration_container, geometry_container,
+//              solver_container, numerics_container, config_container,
+//              surface_movement, grid_movement, FFDBox, transfer_container,
+//              ZONE_FLOW, ZONE_STRUCT);
+//
+//
+//  /*------------------ Structural subiteration ----------------------*/
+//
+//  direct_iteration[ZONE_STRUCT]->Iterate(output, integration_container, geometry_container,
+//                                        solver_container, numerics_container, config_container,
+//                                        surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
+
   /*-----------------------------------------------------------------*/
   /*---------------- Predict structural displacements ---------------*/
   /*-----------------------------------------------------------------*/
-
-  /*--- For adjoint applications, there is no prediction; we use the solution that has already been computed.
-   *--- However, we need to store the solution in the Solution_Pred to be able to reuse the FSI routines
-   */
 
   for (iPoint = 0; iPoint < geometry_container[ZONE_STRUCT][MESH_0]->GetnPointDomain(); iPoint++)
     solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
@@ -5488,6 +5514,9 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
     myfile_flow << endl;
     myfile_flow.close();
 
+    config_container[ZONE_FLOW]->Set_CrossTerm(true);
+    config_container[ZONE_STRUCT]->Set_CrossTerm(true);
+
     Iterate_Block(iteration_container, output, integration_container,
         geometry_container, solver_container, numerics_container,
         config_container, surface_movement, grid_movement,
@@ -5510,6 +5539,9 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
     myfile_flow << "FLOW_CROSS_TERM";
     myfile_flow << endl;
     myfile_flow.close();
+
+    config_container[ZONE_FLOW]->Set_CrossTerm(true);
+    config_container[ZONE_STRUCT]->Set_CrossTerm(true);
 
     Iterate_Block(iteration_container, output, integration_container,
         geometry_container, solver_container, numerics_container,
@@ -5534,6 +5566,9 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
     myfile_flow << endl;
     myfile_flow.close();
 
+    config_container[ZONE_FLOW]->Set_CrossTerm(true);
+    config_container[ZONE_STRUCT]->Set_CrossTerm(true);
+
     Iterate_Block(iteration_container, output, integration_container,
         geometry_container, solver_container, numerics_container,
         config_container, surface_movement, grid_movement,
@@ -5556,6 +5591,9 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
     myfile_flow << "FLOW_VARIABLES";
     myfile_flow << endl;
     myfile_flow.close();
+
+    config_container[ZONE_FLOW]->Set_CrossTerm(true);
+    config_container[ZONE_STRUCT]->Set_CrossTerm(true);
 
     Iterate_Block(iteration_container, output, integration_container,
         geometry_container, solver_container, numerics_container,
@@ -5580,39 +5618,45 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
     myfile_flow << endl;
     myfile_flow.close();
 
+    config_container[ZONE_FLOW]->Set_CrossTerm(true);
+    config_container[ZONE_STRUCT]->Set_CrossTerm(true);
+
     Iterate_Block(iteration_container, output, integration_container,
         geometry_container, solver_container, numerics_container,
         config_container, surface_movement, grid_movement,
         FFDBox, interpolator_container, transfer_container,
         ZONE_FLOW, ZONE_STRUCT, GEOMETRY_VARIABLES);
-//
-//    /*--- Compute mesh cross term (dM / dSv) ---*/
-//
-//    myfile_struc.open ("structural_block.csv", ios::app);
-//    myfile_struc << "FEM_CROSS_TERM";
-//    myfile_struc << endl;
-//    myfile_struc.close();
-//
-//    myfile_geo.open ("geometry_block.csv", ios::app);
-//    myfile_geo << "FEM_CROSS_TERM";
-//    myfile_geo << endl;
-//    myfile_geo.close();
-//
-//    myfile_flow.open ("fluid_block.csv", ios::app);
-//    myfile_flow << "FEM_CROSS_TERM";
-//    myfile_flow << endl;
-//    myfile_flow.close();
-//
-//    Iterate_Block(iteration_container, output, integration_container,
-//        geometry_container, solver_container, numerics_container,
-//        config_container, surface_movement, grid_movement,
-//        FFDBox, interpolator_container, transfer_container,
-//        ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM);
-//
-//
-//    /*--- Check convergence of the BGS method ---*/
-//    BGS_Converged = BGSConvergence(integration_container, geometry_container, solver_container, numerics_container,
-//        config_container, iFSIIter, ZONE_FLOW, ZONE_STRUCT);
+
+    /*--- Compute mesh cross term (dM / dSv) ---*/
+
+    myfile_struc.open ("structural_block.csv", ios::app);
+    myfile_struc << "FEM_CROSS_TERM";
+    myfile_struc << endl;
+    myfile_struc.close();
+
+    myfile_geo.open ("geometry_block.csv", ios::app);
+    myfile_geo << "FEM_CROSS_TERM";
+    myfile_geo << endl;
+    myfile_geo.close();
+
+    myfile_flow.open ("fluid_block.csv", ios::app);
+    myfile_flow << "FEM_CROSS_TERM";
+    myfile_flow << endl;
+    myfile_flow.close();
+
+    config_container[ZONE_FLOW]->Set_CrossTerm(true);
+    config_container[ZONE_STRUCT]->Set_CrossTerm(true);
+
+    Iterate_Block(iteration_container, output, integration_container,
+        geometry_container, solver_container, numerics_container,
+        config_container, surface_movement, grid_movement,
+        FFDBox, interpolator_container, transfer_container,
+        ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM);
+
+
+    /*--- Check convergence of the BGS method ---*/
+    BGS_Converged = BGSConvergence(integration_container, geometry_container, solver_container, numerics_container,
+        config_container, iFSIIter, ZONE_FLOW, ZONE_STRUCT);
 
     if (BGS_Converged) break;
 
