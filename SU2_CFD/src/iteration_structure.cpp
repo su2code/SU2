@@ -3265,6 +3265,7 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
   bool stat_mesh = true;
   bool adjoint = config_container->GetContinuous_Adjoint();
   bool time_spectral = (config_container->GetUnsteady_Simulation() == TIME_SPECTRAL);
+  bool discrete_adjoint = config_container->GetDiscrete_Adjoint();
   
   /*--- For a time-spectral case, set "iteration number" to the zone number,
    so that the meshes are positioned correctly for each instance. ---*/
@@ -3605,16 +3606,17 @@ void SetGrid_Movement(CGeometry **geometry_container, CSurfaceMovement *surface_
 
     case FLUID_STRUCTURE_STATIC:
 
-      if (rank == MASTER_NODE)
+      if ((rank == MASTER_NODE) && (!discrete_adjoint))
         cout << endl << "Deforming the grid for static Fluid-Structure Interaction applications." << endl;
 
       /*--- Deform the volume grid around the new boundary locations ---*/
 
-      if (rank == MASTER_NODE)
+      if ((rank == MASTER_NODE) && (!discrete_adjoint))
         cout << "Deforming the volume grid." << endl;
+
         grid_movement->SetVolume_Deformation_Elas(geometry_container[MESH_0], config_container, true, false);
 
-      if (rank == MASTER_NODE)
+      if ((rank == MASTER_NODE) && (!discrete_adjoint))
         cout << "There is no grid velocity." << endl;
 
 //      for (iPoint = 0; iPoint < geometry_container[MESH_0]->GetnPoint(); iPoint++) {
