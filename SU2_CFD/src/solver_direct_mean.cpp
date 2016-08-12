@@ -11023,6 +11023,20 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       }
       break;
 
+    case GLOBAL_STATIC_PRESSURE:
+      Pressure_e = config->GetNRBC_Var1(Marker_Tag);
+      Pressure_e /= config->GetPressure_Ref();
+
+      /* --- Compute avg characteristic jump  --- */
+      if (nDim == 2){
+        c_avg[3] = -2.0*(AveragePressure[val_marker][nSpanWiseSections]-Pressure_e);
+      }
+      else
+      {
+        c_avg[4] = -2.0*(AveragePressure[val_marker][nSpanWiseSections]-Pressure_e);
+      }
+      break;
+
     case RADIAL_EQUILIBRIUM:
 			Pressure_e = RadialEquilibriumPressure[val_marker][iSpan];
 
@@ -11172,7 +11186,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         break;
 
 
-      case STATIC_PRESSURE:case MIXING_OUT:case RADIAL_EQUILIBRIUM:
+      case STATIC_PRESSURE:case GLOBAL_STATIC_PRESSURE:case MIXING_OUT:case RADIAL_EQUILIBRIUM:
 
         /* --- implementation of NRBC ---*/
         if (AvgMach >= 1.000){
