@@ -668,7 +668,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_MIXINGPLANE \n DESCRIPTION: Identify the boundaries in which the mixing plane is applied. \ingroup Config*/
   addTurboPerfOption("MARKER_TURBOMACHINERY", nMarker_Turbomachinery, Marker_TurboBoundIn, Marker_TurboBoundOut);
   /* DESCRIPTION: Integer number of spanwise sections to compute 3D BC and Performance for turbomachinery */
-  addUnsignedShortOption("NUM_SPANWISE_SECTIONS", nSpanWiseSections, 1);
+  addUnsignedShortOption("NUM_SPANWISE_SECTIONS", nSpanWiseSections_User, 1);
+  /* DESCRIPTION: Integer number of spanwise sections to compute 3D BC and Performance for turbomachinery */
+  addEnumOption("SPANWISE_KIND", Kind_SpanWise, SpanWise_Map, AUTOMATIC);
   /*!\brief TURBOMACHINERY_TYPE \n DESCRIPTION: types of turbomachynery architecture.
       \n OPTIONS: see \link TurboMachinery_Map \endlink \n Default: AXIAL */
   addEnumListOption("TURBOMACHINERY_KIND",nTurboMachineryKind, Kind_TurboMachinery, TurboMachinery_Map);
@@ -2005,7 +2007,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   /*--- Force number of span-wise section to 1 if 2D case ---*/
-  if(val_nDim ==2) nSpanWiseSections=1;
+  if(val_nDim ==2){
+  	nSpanWiseSections_User=1;
+  	Kind_SpanWise= EQUISPACED;
+  }
 
   /*--- Set number of TurboPerformance markers ---*/
   if(nMarker_Turbomachinery > 0){

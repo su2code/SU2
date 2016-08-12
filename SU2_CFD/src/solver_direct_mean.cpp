@@ -116,7 +116,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
-  unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
+  unsigned short nSpanWiseSections;
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -493,6 +493,14 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   AverageTurboVelocity 		= new su2double** [nMarker];
   ExtAverageTurboVelocity 		= new su2double** [nMarker];
   AverageTurboMach 		= new su2double** [nMarker];
+
+  /*---Initilize span-wise quantities---*/
+  if (geometry->GetnSpanWiseSections(INFLOW) >= geometry->GetnSpanWiseSections(OUTFLOW)){
+  	nSpanWiseSections = geometry->GetnSpanWiseSections(INFLOW);
+  }
+  else{
+  	nSpanWiseSections = geometry->GetnSpanWiseSections(OUTFLOW);
+  }
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     AverageVelocity[iMarker] 	= new su2double* [nSpanWiseSections + 1];
@@ -4963,7 +4971,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
   int markerTP;
   string Marker_Tag;
 
-  unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
+  unsigned short nSpanWiseSections;
   unsigned short iZone             = config->GetiZone();
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -5029,6 +5037,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
         Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
         nBlades = config->GetnBlades(iZone);
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW){
+        	nSpanWiseSections = geometry->GetnSpanWiseSections(INFLOW);
           markerTP = iMarkerTP;
           //					cout << markerTP -1 << " "<< config->GetMarker_All_TagBound(iMarker)<<endl;
           avgVelRel2In= 0.0;
@@ -5127,6 +5136,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
 
         /*--- compute or retrieve outlet information ---*/
         if (config->GetMarker_All_TurbomachineryFlag(iMarker) == OUTFLOW){
+        	nSpanWiseSections = geometry->GetnSpanWiseSections(OUTFLOW);
           avgVelRel2Out = 0.0;
           avgGridVel2Out = 0.0;
           avgVel2Out = 0.0;
@@ -5401,8 +5411,9 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
   int size = SINGLE_NODE;
   int markerTP;
   string Marker_Tag;
-
-  unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
+//TODO turbo Turboperformance spanwise can only be computed if inflow and outflow have the same ammount of sections
+//			interpolation should be implemented.
+  unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(INFLOW);
   unsigned short iZone             = config->GetiZone();
   unsigned short nZone             = config->GetnZone();
 
@@ -5480,7 +5491,7 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
                 Marker_Tag         = config->GetMarker_All_TagBound(iMarker);
                 nBlades = config->GetnBlades(iZone);
                 if (config->GetMarker_All_TurbomachineryFlag(iMarker) == INFLOW){
-                  markerTP = iMarkerTP;
+                	markerTP = iMarkerTP;
                   //          cout << markerTP -1 << " "<< config->GetMarker_All_TagBound(iMarker)<<endl;
                   avgVelRel2In= 0.0;
                   avgGridVel2In= 0.0;
@@ -9126,7 +9137,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement        = config->GetGrid_Movement();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
-  unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
+  unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(config->GetMarker_All_TurbomachineryFlag(val_marker));
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
@@ -9724,7 +9735,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
   TotalMassVelocity     = new su2double[nDim];
   TotalFluxes 					= new su2double[nVar];
 
-  unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
+  unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(marker_flag);
 
 
 
@@ -9993,7 +10004,7 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
                val_init_pressure = TotalAreaPressure/TotalArea;
 
                if (abs(AverageFlux[iMarker][iSpan][0])<(10.0e-9)*TotalAreaDensity) {
-                 cout << "Mass flux is 0.0 so a Area Averaged algorithm is used for the Mixing Procees" << endl;
+//                 cout << "Mass flux is 0.0 so a Area Averaged algorithm is used for the Mixing Procees" << endl;
                  AverageDensity[iMarker][iSpan] = TotalAreaDensity / TotalArea;
                  AveragePressure[iMarker][iSpan] = TotalAreaPressure / TotalArea;
                  for (iDim = 0; iDim < nDim; iDim++)
@@ -10196,7 +10207,7 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
   TotalMassVelocity     = new su2double[nDim];
   TotalFluxes 					= new su2double[nVar];
 
-  unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
+  unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(marker_flag);
 
 
 
@@ -10464,7 +10475,7 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
              val_init_pressure = TotalAreaPressure/TotalArea;
 
              if (abs(AverageFlux[iMarker][nSpanWiseSections][0])<(10.0e-9)*TotalAreaDensity) {
-               cout << "Mass flux is 0.0 so a Area Averaged algorithm is used for the Mixing Procees" << endl;
+//               cout << "Mass flux is 0.0 so a Area Averaged algorithm is used for the Mixing Procees" << endl;
                AverageDensity[iMarker][nSpanWiseSections] = TotalAreaDensity / TotalArea;
                AveragePressure[iMarker][nSpanWiseSections] = TotalAreaPressure / TotalArea;
                for (iDim = 0; iDim < nDim; iDim++)
@@ -10694,7 +10705,7 @@ void CEulerSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *conf
   unsigned long  iPoint, kend, k;
   long iVertex;
   unsigned short  iZone     = config->GetiZone();
-  unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
+  unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(marker_flag);
   int j;
   int rank = MASTER_NODE;
   turboNormal 	= new su2double[nDim];
@@ -10864,7 +10875,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
   bool grid_movement        = config->GetGrid_Movement();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
-  unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
+  unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(config->GetMarker_All_TurbomachineryFlag(val_marker));
   su2double relfacAvg       = config->GetNRBC_RelaxFactorAverage(Marker_Tag);
   su2double relfacFou       = config->GetNRBC_RelaxFactorFourier(Marker_Tag);
   su2double *Normal;
@@ -14997,7 +15008,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   unsigned short direct_diff = config->GetDirectDiff();
   unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
-  unsigned short nSpanWiseSections = config->Get_nSpanWiseSections();
+  unsigned short nSpanWiseSections;
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
@@ -15402,6 +15413,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   AverageTurboVelocity 		= new su2double** [nMarker];
   ExtAverageTurboVelocity 		= new su2double** [nMarker];
   AverageTurboMach 		= new su2double** [nMarker];
+
+  /*---Initilize span-wise quantities---*/
+  if (geometry->GetnSpanWiseSections(INFLOW) >= geometry->GetnSpanWiseSections(OUTFLOW)){
+  	nSpanWiseSections = geometry->GetnSpanWiseSections(INFLOW);
+  }
+  else{
+  	nSpanWiseSections = geometry->GetnSpanWiseSections(OUTFLOW);
+  }
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     AverageVelocity[iMarker] 	= new su2double* [nSpanWiseSections + 1];
