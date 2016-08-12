@@ -356,6 +356,7 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
 
   AD::StartPreacc();
   AD::SetPreaccIn(coor, nDimADT);
+  AD::SetPreaccIn(coorPoints.data(), coorPoints.size());
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Initialize the nearest node to the central node of the     ---*/
