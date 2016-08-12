@@ -7792,6 +7792,8 @@ void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfi
   su2double NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
 
+  bool discrete_adjoint = config->GetDiscrete_Adjoint();
+
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -7816,7 +7818,7 @@ void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfi
 
     /*--- Compute the minimum and maximum area/volume for the mesh. ---*/
     SetMinMaxVolume(geometry, config);
-    if (rank == MASTER_NODE) {
+    if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
       if (nDim == 2) cout << scientific << "Min. area: "<< MinVolume <<", max. area: " << MaxVolume <<"." << endl;
       else           cout << scientific << "Min. volume: "<< MinVolume <<", max. volume: " << MaxVolume <<"." << endl;
     }
@@ -7841,7 +7843,7 @@ void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfi
     /*--- In order to do this, we recompute the minimum and maximum area/volume for the mesh. ---*/
     SetMinMaxVolume(geometry, config);
 
-    if (rank == MASTER_NODE) {
+    if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
       cout << scientific << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << nIterMesh << ". ";
       if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << valResidual << "." << endl;
       else cout << "Min. volume: " << MinVolume << ". Error: " << valResidual << "." << endl;
@@ -8262,6 +8264,8 @@ void CElasticityMovement::SetMinMaxVolume(CGeometry *geometry, CConfig *config) 
   su2double val_Coord;
   int EL_KIND = 0;
 
+  bool discrete_adjoint = config->GetDiscrete_Adjoint();
+
   bool RightVol = true;
 
   su2double ElemVolume;
@@ -8271,7 +8275,7 @@ void CElasticityMovement::SetMinMaxVolume(CGeometry *geometry, CConfig *config) 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  if (rank == MASTER_NODE)
+  if ((rank == MASTER_NODE) && (!discrete_adjoint))
     cout << "Computing volumes of the grid elements." << endl;
 
   MaxVolume = -1E22; MinVolume = 1E22;
