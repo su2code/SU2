@@ -9,11 +9,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - tdavid91@hotmail.com
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - feature_pyWrapper
+        - develop
 
 env:
     global:
@@ -57,7 +57,7 @@ before_script:
     # Get the test cases
     - git clone https://github.com/su2code/TestCases.git ./TestData
     - cd TestData/
-    - git checkout feature_pyWrapper
+    - git checkout develop
     # Go back to SU2 root and copy the test data into the folder structure
     - cd $TRAVIS_BUILD_DIR
     - cp -R ./TestData/* ./TestCases/
