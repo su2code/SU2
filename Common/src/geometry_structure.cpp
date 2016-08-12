@@ -4238,6 +4238,13 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     }
 
   /*--- initialize pointers for turbomachinery computations  ---*/
+  nSpanWiseSection        = new unsigned short[2];
+  SpanWiseValue						= new su2double*[2];
+  for (iMarker = 0; iMarker < 2; iMarker++){
+  	nSpanWiseSection[iMarker] = 0;
+  	SpanWiseValue[iMarker] = NULL;
+  }
+
   nVertexSpan 						= new long* [nMarker];
   nTotVertexSpan 				  = new unsigned long* [nMarker];
 	turbovertex 						= new CTurboVertex***[nMarker];
@@ -8455,11 +8462,11 @@ void CPhysicalGeometry::SetVertex(CConfig *config) {
 
 
 void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
-	unsigned short iMarker, jMarker, iMarker_PerBound, iMarkerTP;
+	unsigned short iMarker, jMarker, iMarker_PerBound, iMarkerTP, iSpan, iSize, jSpan, kSpan;
 	unsigned long iPoint, iVertex;
 	long check, jVertex;
-	int nSpan, nSpan_loc;
-  su2double *coord, *valueSpan;
+	int nSpan, nSpan_loc, nSpan_max;
+  su2double *coord, *valueSpan, *valueSpan_gb, min, target;
 	int rank = MASTER_NODE;
 	int size = SINGLE_NODE;
   short SendRecv;
@@ -8467,7 +8474,8 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
-	int My_nSpan;
+	int My_nSpan, My_MaxnSpan, *My_nSpan_loc = NULL;
+	su2double *MyTotValueSpan =NULL,*MyValueSpan =NULL;
 #endif
 
   nSpan = 0;
@@ -8490,9 +8498,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
   							if (jVertex != -1) {
   								isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
   								if (isPeriodic && (SendRecv < 0)){
-//  									coord = node[iPoint]->GetCoord();
   									nSpan++;
-//  									cout << coord[1] << " send_recv "<<  SendRecv<<endl;
   								}
   							}
   						}
@@ -8505,67 +8511,166 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 
   /*--- storing the local number of span---*/
 	nSpan_loc = nSpan;
-
+  nSpan_max = nSpan;
   /*--- if parallel computing the global number of span---*/
 #ifdef HAVE_MPI
 	My_nSpan						 = nSpan;											nSpan								 = 0;
+	My_MaxnSpan          = nSpan_max;                     nSpan_max            = 0;
 	SU2_MPI::Allreduce(&My_nSpan, &nSpan, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+	SU2_MPI::Allreduce(&My_MaxnSpan, &nSpan_max, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
 #endif
 
-	cout << "Ngloabl " << nSpan << " n loc " << nSpan_loc << endl;
 
-	valueSpan = new su2double[nSpan_loc];
+// check on the global number local number of span and on the max number
+//
+//	if(rank == MASTER_NODE){
+//		cout << "Ngloabl " << nSpan << " n loc " << nSpan_loc << endl;
+//		cout << "NSpan max " <<nSpan_max << endl;
+//	}
+
+
+	/*--- initialize the vector that will contain the disordered values span-wise ---*/
+	nSpanWiseSection[marker_flag -1] = nSpan;
+	valueSpan = new su2double[nSpan];
+
+  for (iSpan = 0; iSpan < nSpan; iSpan ++ ){
+  	valueSpan[iSpan] = -1001.0;
+  }
+
+
+  /*--- store the local span-wise value for each processor ---*/
   nSpan_loc = 0;
-
   for (iMarker = 0; iMarker < nMarker; iMarker++){
-			for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
-				if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
-					if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
-						for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-							iPoint = vertex[iMarker][iVertex]->GetNode();
+  	for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
+  		if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
+  			if (config->GetMarker_All_TurbomachineryFlag(iMarker) == marker_flag){
+  				for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+  					iPoint = vertex[iMarker][iVertex]->GetNode();
 
-							for (jMarker = 0; jMarker < nMarker; jMarker++){
-								if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) {
-									SendRecv = config->GetMarker_All_SendRecv(jMarker);
-									jVertex = node[iPoint]->GetVertex(jMarker);
-									if (jVertex != -1) {
-										isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
-										if (isPeriodic && (SendRecv < 0)){
-											coord = node[iPoint]->GetCoord();
-											switch (config->GetKind_TurboMachinery(val_iZone)){
-											case CENTRIFUGAL:
-												valueSpan[nSpan_loc] = coord[2];
-												break;
-											case CENTRIPETAL:
-												valueSpan[nSpan_loc] = coord[2];
-												break;
-											case AXIAL:
-												valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-												break;
-											case CENTRIPETAL_AXIAL:
-												if (marker_flag == OUTFLOW){
-													valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
-												}
-												else{
-													valueSpan[nSpan_loc] = coord[2];
-												}
-												break;
+  					for (jMarker = 0; jMarker < nMarker; jMarker++){
+  						if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) {
+  							SendRecv = config->GetMarker_All_SendRecv(jMarker);
+  							jVertex = node[iPoint]->GetVertex(jMarker);
+  							if (jVertex != -1) {
+  								isPeriodic = ((vertex[jMarker][jVertex]->GetRotation_Type() > 0) && (vertex[jMarker][jVertex]->GetRotation_Type() % 2 == 1));
+  								if (isPeriodic && (SendRecv < 0)){
+  									coord = node[iPoint]->GetCoord();
+  									switch (config->GetKind_TurboMachinery(val_iZone)){
+  									case CENTRIFUGAL:
+  										valueSpan[nSpan_loc] = coord[2];
+  										break;
+  									case CENTRIPETAL:
+  										valueSpan[nSpan_loc] = coord[2];
+  										break;
+  									case AXIAL:
+  										valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+  										break;
+  									case CENTRIPETAL_AXIAL:
+  										if (marker_flag == OUTFLOW){
+  											valueSpan[nSpan_loc] = sqrt(coord[0]*coord[0]+coord[1]*coord[1]);
+  										}
+  										else{
+  											valueSpan[nSpan_loc] = coord[2];
+  										}
+  										break;
 
-											}
-											cout << setprecision(16)<< valueSpan[nSpan_loc] << " span value it flag " << marker_flag <<endl;
-											nSpan_loc++;
-										}
-									}
-								}
-							}
-						}
-					}
-				}
+  									}
+  									nSpan_loc++;
+  								}
+  							}
+  						}
+  					}
+  				}
+  			}
+  		}
+  	}
+  }
+
+  /*--- Gather the span-wise values on all the processor ---*/
+
+#ifdef HAVE_MPI
+  MyTotValueSpan    				= new su2double[nSpan_max*size];
+  MyValueSpan								= new su2double[nSpan_max];
+  My_nSpan_loc							= new int[size];
+  for(iSpan = 0; iSpan < nSpan_max; iSpan++){
+  	MyValueSpan[iSpan] = -1001.0;
+  	for (iSize = 0; iSize< size; iSize++){
+  		MyTotValueSpan[iSize*nSpan_max + iSpan] = -1001.0;
+  	}
+  }
+
+  for(iSpan = 0; iSpan <nSpan_loc; iSpan++){
+  	MyValueSpan[iSpan] = valueSpan[iSpan];
+  }
+
+  for(iSpan = 0; iSpan <nSpan; iSpan++){
+  	valueSpan[iSpan] = -1001.0;
+  }
+
+  SU2_MPI::Allgather(MyValueSpan, nSpan_max , MPI_DOUBLE, MyTotValueSpan, nSpan_max, MPI_DOUBLE, MPI_COMM_WORLD);
+  SU2_MPI::Allgather(&nSpan_loc, 1 , MPI_INT, My_nSpan_loc, 1, MPI_INT, MPI_COMM_WORLD);
+
+
+  for (iSize = 0; iSize< size; iSize++){
+  	for(iSpan = 0; iSpan < My_nSpan_loc[iSize]; iSpan++){
+  		valueSpan[jSpan] = MyTotValueSpan[iSize*nSpan_max + iSpan];
+  		jSpan++;
+  	}
+  }
+
+  delete [] MyTotValueSpan; delete [] MyValueSpan; delete [] My_nSpan_loc;
+
+#endif
+
+// check if the value are gathered correctly
+//
+//  for (iSpan = 0; iSpan < nSpan; iSpan++){
+//  	if(rank == MASTER_NODE){
+//  		cout << setprecision(16)<<  iSpan +1 << " with a value of " <<valueSpan[iSpan]<< " at flag " << marker_flag <<endl;
+//  	}
+//  }
+
+
+  /*--- Find the minimum value among the span-wise values  ---*/
+  min = 10.0E+06;
+  for (iSpan = 0; iSpan < nSpan; iSpan++){
+  	if(valueSpan[iSpan]< min) min = valueSpan[iSpan];
+  }
+
+  /*---Initilize the vector of span-wise values that will be ordered ---*/
+	SpanWiseValue[marker_flag -1] = new su2double[nSpan];
+	for (iSpan = 0; iSpan < nSpan; iSpan++){
+		SpanWiseValue[marker_flag -1][iSpan] = 0;
+	}
+
+	/*---Ordering the vector of span-wise values---*/
+	SpanWiseValue[marker_flag -1][0] = min;
+	target 					 = min;
+	for (iSpan = 1; iSpan < nSpan; iSpan++){
+		min = 10.0E+06;
+		for (jSpan = 0; jSpan < nSpan; jSpan++){
+			if((valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1]) < min && (valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1]) > EPS){
+				min    = valueSpan[jSpan] - SpanWiseValue[marker_flag -1][iSpan-1];
+				kSpan = jSpan;
 			}
 		}
+		SpanWiseValue[marker_flag -1][iSpan] = valueSpan[kSpan];
+	}
+
+//	 check if the value are ordered correctly
+//
+//	  for (iSpan = 0; iSpan < nSpan; iSpan++){
+//	  	if(rank == MASTER_NODE){
+//	  		cout << setprecision(16)<<  iSpan +1 << " with a value of " <<SpanWiseValue[marker_flag-1][iSpan]<< " at flag " << marker_flag <<endl;
+//	  	}
+//	  }
+
+
+
+  delete [] valueSpan;
+
+
 }
-
-
 void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) {
 	unsigned long  iPoint, jPoint = 0, jVertex, kVertex, kSpanVertex = 0, **ordered, **disordered, **oldVertex3D, oldVertex;
 	unsigned long nVert, nVertMax;
