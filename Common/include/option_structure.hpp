@@ -856,6 +856,19 @@ static const map<string, MIXINGPROCESS_TYPE> MixingProcess_Map = CCreateMap<stri
 ("MIXEDOUT_AVERAGE_CYL",  MIXEDOUT_AVERAGE_CYL)
 ("MASSFLOW_AVERAGE", MASSFLOW_AVERAGE);
 
+
+/*!
+ * \brief this option allow to compute the span-wise section in different ways.
+ */
+enum SPANWISE_TYPE {
+  AUTOMATIC = 1,		/*!< \brief number of span-wise section are computed automatically */
+  EQUISPACED = 2           /*!< \brief number of span-wise section are specified from the user */
+};
+
+static const map<string, SPANWISE_TYPE> SpanWise_Map = CCreateMap<string, SPANWISE_TYPE>
+("AUTOMATIC", AUTOMATIC)
+("EQUISPACED", EQUISPACED);
+
 /*!
  * \brief types of mixing process for averaging quantities at the boundaries.
  */

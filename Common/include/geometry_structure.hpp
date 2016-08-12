@@ -117,7 +117,7 @@ public:
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
 	CTurboVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
 	unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
-  unsigned short *nSpanWiseSection; /*!< \brief Number of Span wise section for each turbo marker. */
+  unsigned short *nSpanWiseSections; /*!< \brief Number of Span wise section for each turbo marker. */
   su2double **SpanWiseValue; /*!< \brief Span wise values for each turbo marker. */
   long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker.  */
   unsigned long **nTotVertexSpan; /*! <\brief number of vertexes at each span wise section for each marker.  */
@@ -227,6 +227,12 @@ public:
 	 */
 	unsigned long GetnVertex(unsigned short val_marker);
 
+	/*!
+	 * \brief Get number of span wise section.
+	 * \param[in] marker_flag - flag of the turbomachinery boundary.
+	 * \return Number of span wise section.
+	 */
+	unsigned short GetnSpanWiseSections(unsigned short marker_flag);
 	/*!
 	 * \brief Get number of vertices.
 	 * \param[in] val_marker - Marker of the boundary.

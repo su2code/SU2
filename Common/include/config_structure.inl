@@ -731,6 +731,8 @@ inline unsigned short CConfig::GetKind_MixingProcess(void) { return Kind_MixingP
 
 inline unsigned short CConfig::GetKind_TurboMachinery(unsigned short val_iZone) { return Kind_TurboMachinery[val_iZone]; }
 
+inline unsigned short CConfig::GetKind_SpanWise(void) { return Kind_SpanWise; }
+
 inline bool CConfig::GetBoolMixingPlaneInterface(void) { return (nMarker_MixingPlaneInterface !=0);}
 
 inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachinery !=0);}
@@ -747,7 +749,7 @@ inline unsigned short CConfig::GetnMarker_Turbomachinery(void) { return nMarker_
 
 inline unsigned short CConfig::GetnMarker_TurboPerformance(void) { return nMarker_TurboPerformance;}
 
-inline unsigned short CConfig::Get_nSpanWiseSections(void) { return nSpanWiseSections;}
+inline unsigned short CConfig::Get_nSpanWiseSections_User(void) { return nSpanWiseSections_User;}
 
 inline string CConfig::GetMarker_TurboPerf_BoundIn(unsigned short index) {return Marker_TurboBoundIn[index];}
 
