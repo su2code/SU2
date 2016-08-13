@@ -2864,9 +2864,9 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
         if(standardElementsSol[j].SameStandardElement(volElem[i].VTK_Type,
                                                       volElem[i].nPolySol,
                                                       volElem[i].JacIsConsideredConstant) &&
-           standardElementsSol[j].SameStandardElement(volElem[i].VTK_Type,
-                                                      volElem[i].nPolyGrid,
-                                                      volElem[i].JacIsConsideredConstant) ) {
+           standardElementsGrid[j].SameStandardElement(volElem[i].VTK_Type,
+                                                       volElem[i].nPolyGrid,
+                                                       volElem[i].JacIsConsideredConstant) ) {
            volElem[i].indStandardElement = j;
            break;
         }
