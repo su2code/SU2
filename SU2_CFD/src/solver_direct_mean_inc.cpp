@@ -579,7 +579,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
 CIncEulerSolver::~CIncEulerSolver(void) {
 
-  unsigned short iVar, iMarker;
+  unsigned short iMarker;
   unsigned long iVertex;
 
   /*--- Array deallocation ---*/
@@ -1679,7 +1679,7 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
   Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
-  Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0;
+  Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
   
   unsigned short iDim;
   
@@ -1700,18 +1700,6 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
   bool gravity            = config->GetGravityForce();
   bool turbulent          = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
   bool tkeNeeded          = ((turbulent) && (config->GetKind_Turb_Model() == SST));
-  bool aeroelastic        = config->GetAeroelastic_Simulation();
-  
-  /*--- Set temperature via the flutter speed index ---*/
-  if (aeroelastic) {
-    su2double vf             = config->GetAeroelastic_Flutter_Speed_Index();
-    su2double w_alpha        = config->GetAeroelastic_Frequency_Pitch();
-    su2double b              = config->GetLength_Reynolds()/2.0; // airfoil semichord, Reynolds length is by defaul 1.0
-    su2double mu             = config->GetAeroelastic_Airfoil_Mass_Ratio();
-    // The temperature times gamma times the gas constant. Depending on the FluidModel temp is calculated below.
-    TgammaR = ((vf*vf)*(b*b)*(w_alpha*w_alpha)*mu) / (Mach*Mach);
-  }
-  
 
   /*--- Reference length = 1 (by default)
      Reference density   = liquid density or freestream
@@ -4294,7 +4282,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double *Flow_Dir,  Vel_Mag, Area, UnitNormal[3];
+  su2double *Flow_Dir,  Vel_Mag, Area;
   su2double *V_inlet, *V_domain;
   
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -4331,9 +4319,6 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
       
       /*--- Retrieve solution at this boundary node ---*/
       
@@ -4430,7 +4415,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Area, UnitNormal[3], yCoordRef, yCoord;
+  su2double Area, yCoordRef, yCoord;
   su2double *V_outlet, *V_domain;
   
   bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -4462,10 +4447,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
-      
+       
       /*--- Current solution at this boundary node ---*/
       V_domain = node[iPoint]->GetPrimitive();
 
@@ -6795,14 +6777,14 @@ void CIncNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;
   su2double Viscosity = 0.0, div_vel, *Normal, MomentDist[3] = {0.0, 0.0, 0.0}, WallDist[3] = {0.0, 0.0, 0.0},
   *Coord, *Coord_Normal, Area, WallShearStress, TauNormal, factor, RefTemp, RefVel2,
-  RefDensity, GradTemperature, Density = 0.0, WallDistMod, FrictionVel,
+  RefDensity, Density = 0.0, WallDistMod, FrictionVel,
   Mach2Vel, Mach_Motion, UnitNormal[3] = {0.0, 0.0, 0.0}, TauElem[3] = {0.0, 0.0, 0.0}, TauTangent[3] = {0.0, 0.0, 0.0},
-  Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Force[3] = {0.0, 0.0, 0.0}, Cp, thermal_conductivity, MaxNorm = 8.0,
+  Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Force[3] = {0.0, 0.0, 0.0},
   Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Grad_Temp[3] = {0.0, 0.0, 0.0},
   delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   
 #ifdef HAVE_MPI
-  su2double MyAllBound_CDrag_Visc, MyAllBound_CLift_Visc, MyAllBound_CSideForce_Visc, MyAllBound_CMx_Visc, MyAllBound_CMy_Visc, MyAllBound_CMz_Visc, MyAllBound_CFx_Visc, MyAllBound_CFy_Visc, MyAllBound_CFz_Visc, MyAllBound_CT_Visc, MyAllBound_CQ_Visc, MyAllBound_HeatFlux_Visc, MyAllBound_MaxHeatFlux_Visc, *MySurface_CLift_Visc = NULL, *MySurface_CDrag_Visc = NULL, *MySurface_CSideForce_Visc = NULL, *MySurface_CEff_Visc = NULL, *MySurface_CFx_Visc = NULL, *MySurface_CFy_Visc = NULL, *MySurface_CFz_Visc = NULL, *MySurface_CMx_Visc = NULL, *MySurface_CMy_Visc = NULL, *MySurface_CMz_Visc = NULL;
+  su2double MyAllBound_CDrag_Visc, MyAllBound_CLift_Visc, MyAllBound_CSideForce_Visc, MyAllBound_CMx_Visc, MyAllBound_CMy_Visc, MyAllBound_CMz_Visc, MyAllBound_CFx_Visc, MyAllBound_CFy_Visc, MyAllBound_CFz_Visc, MyAllBound_CT_Visc, MyAllBound_CQ_Visc, *MySurface_CLift_Visc = NULL, *MySurface_CDrag_Visc = NULL, *MySurface_CSideForce_Visc = NULL, *MySurface_CEff_Visc = NULL, *MySurface_CFx_Visc = NULL, *MySurface_CFy_Visc = NULL, *MySurface_CFz_Visc = NULL, *MySurface_CMx_Visc = NULL, *MySurface_CMy_Visc = NULL, *MySurface_CMz_Visc = NULL;
 #endif
   
   string Marker_Tag, Monitoring_Tag;
@@ -7170,7 +7152,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   unsigned short iDim, jDim, iVar, jVar;
   unsigned long iVertex, iPoint, Point_Normal, total_index;
   
-  su2double Wall_HeatFlux, dist_ij, *Coord_i, *Coord_j, theta2;
+  su2double dist_ij, *Coord_i, *Coord_j, theta2;
   su2double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
   su2double ProjGridVel, *GridVel, GridVel2, *Normal, Area, Pressure = 0.0;
   su2double total_viscosity, div_vel, Density, tau_vel[3] = {0.0, 0.0, 0.0}, UnitNormal[3] = {0.0, 0.0, 0.0};
@@ -7184,10 +7166,6 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   /*--- Identify the boundary by string name ---*/
   
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  
-  /*--- Get the specified wall heat flux from config ---*/
-  
-  Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
   
   /*--- Loop over all of the vertices on this boundary marker ---*/
   
@@ -7403,7 +7381,7 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   unsigned long iVertex, iPoint, Point_Normal, total_index;
   
   su2double *Normal, *Coord_i, *Coord_j, Area, dist_ij, theta2;
-  su2double Twall, dTdn, dTdrho, thermal_conductivity;
+  su2double dTdrho, thermal_conductivity;
   su2double thetax, thetay, thetaz, etax, etay, etaz, pix, piy, piz, factor;
   su2double ProjGridVel, *GridVel, GridVel2, Pressure = 0.0, Density, Vel2;
   su2double total_viscosity, div_vel, tau_vel[3] = {0.0,0.0,0.0}, UnitNormal[3] = {0.0,0.0,0.0};
@@ -7421,10 +7399,6 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   /*--- Identify the boundary ---*/
   
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  
-  /*--- Retrieve the specified wall temperature ---*/
-  
-  Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
   
   /*--- Loop over boundary points ---*/
   
@@ -7487,11 +7461,7 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       for (iDim = 0; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, iDim+1);
       node[iPoint]->SetVel_ResTruncError_Zero();
-      
-      /*--- Compute the normal gradient in temperature using Twall ---*/
-      
-      dTdn = -(node[Point_Normal]->GetPrimitive(0) - Twall)/dist_ij;
-      
+
       /*--- Get transport coefficients ---*/
       
       laminar_viscosity    = node[iPoint]->GetLaminarViscosity();
@@ -7517,7 +7487,6 @@ void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         Vel2 = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
           Vel2 += node[iPoint]->GetPrimitive(iDim+1) * node[iPoint]->GetPrimitive(iDim+1);
-        dTdrho = 1.0/Density * ( -Twall + (Gamma-1.0)/Gas_Constant*(Vel2/2.0) );
         
         /*--- Enforce the no-slip boundary condition in a strong way ---*/
         

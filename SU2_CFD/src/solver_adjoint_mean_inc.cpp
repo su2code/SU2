@@ -3354,7 +3354,7 @@ void CAdjIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
   
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Area, UnitNormal[3];
+  su2double Area;
   su2double *V_inlet, *V_domain, *Normal, *Psi_domain, *Psi_inlet;
 
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -3382,9 +3382,6 @@ void CAdjIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_containe
       for (iDim = 0; iDim < nDim; iDim++)
         Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
       
       /*--- Allocate the value at the inlet ---*/
       
@@ -3478,12 +3475,12 @@ void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
   
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  su2double Pressure=0.0, Velocity2 = 0.0, Area=0.0, Density=0.0, Vn_Exit=0.0, Density_Outlet = 0.0;
+  su2double Pressure=0.0, Velocity2 = 0.0, Area=0.0, Density=0.0, Vn_Exit=0.0;
   su2double Velocity[3], UnitNormal[3];
   su2double *V_outlet, *V_domain, *Psi_domain, *Psi_outlet, *Normal;
   su2double a2=0.0; /*Placeholder terms to simplify expressions/ repeated terms*/
   /*Gradient terms for the generalized boundary */
-  su2double density_gradient, pressure_gradient, velocity_gradient;
+  su2double density_gradient, velocity_gradient;
 
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
   bool grid_movement  = config->GetGrid_Movement();
@@ -3533,7 +3530,6 @@ void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Imposed pressure and density ---*/
 
-      Density_Outlet = solver_container[FLOW_SOL]->GetDensity_Inf();
       V_outlet[0] = solver_container[FLOW_SOL]->GetPressure_Inf();
 
 
@@ -3559,7 +3555,6 @@ void CAdjIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_contain
         break;
       case OUTFLOW_GENERALIZED:
         density_gradient = config->GetCoeff_ObjChainRule(0);
-        pressure_gradient = config->GetCoeff_ObjChainRule(4);
         velocity_gradient = 0.0;    /*Inside the option, this term is $\vec{v} \cdot \frac{dg}{d\vec{v}}$ */
         for (iDim=0; iDim<nDim; iDim++)
           velocity_gradient += Velocity[iDim]*config->GetCoeff_ObjChainRule(iDim+1);
@@ -4319,7 +4314,7 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
   unsigned long iVertex, iPoint;
   unsigned short iDim, jDim, iMarker;
   su2double **PsiVar_Grad = NULL, **PrimVar_Grad = NULL, *Normal = NULL, Area,
-  sigma_partial, Laminar_Viscosity = 0.0, heat_flux_factor,
+  sigma_partial, Laminar_Viscosity = 0.0,
   temp_sens = 0.0, *Psi = NULL, *U = NULL, Enthalpy, **GridVel_Grad, gradPsi5_v,
   psi5_tau_partial, psi5_tau_grad_vel, source_v_1, Density, Pressure = 0.0, div_vel, val_turb_ke,
   vartheta, vartheta_partial, psi5_p_div_vel, Omega[3], rho_v[3] = {0.0,0.0,0.0},
@@ -4352,8 +4347,6 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
   su2double Mach_Motion     = config->GetMach_Motion();
   unsigned short ObjFunc = config->GetKind_ObjFunc();
   su2double Gas_Constant    = config->GetGas_ConstantND();
-  su2double Cp              = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  su2double Prandtl_Lam     = config->GetPrandtl_Lam();
   
   if (config->GetSystemMeasurements() == US) scale = 1.0/12.0;
   else scale = 1.0;
@@ -4414,8 +4407,6 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
           PrimVar_Grad = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
           
           Laminar_Viscosity = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-          
-          heat_flux_factor = Cp * Laminar_Viscosity / Prandtl_Lam;
           
           /*--- Compute face area and the unit normal to the surface ---*/
           
@@ -4753,7 +4744,7 @@ void CAdjIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_c
   unsigned short iDim, iVar, jVar;
   su2double *d, q, l1psi, phi[3] = {0.0,0.0,0.0};
   su2double *GridVel;
-  su2double Laminar_Viscosity, Eddy_Viscosity;
+  su2double Laminar_Viscosity;
   su2double kGTdotn=0.0, Area=0.0, Xi=0.0;
   
   su2double *Psi = new su2double[nVar];
@@ -4777,11 +4768,8 @@ void CAdjIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_c
                          (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX));
   
   su2double Prandtl_Lam  = config->GetPrandtl_Lam();
-  su2double Prandtl_Turb = config->GetPrandtl_Turb();
   su2double Gas_Constant = config->GetGas_ConstantND();
   su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  su2double Thermal_Conductivity;
-  su2double Volume;
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
@@ -4805,7 +4793,6 @@ void CAdjIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_c
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      Volume = geometry->node[iPoint]->GetVolume();
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       
       /*--- Get the force projection vector (based on the objective function) ---*/
@@ -4838,10 +4825,7 @@ void CAdjIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_c
       
       /*--- Get transport coefficient information ---*/
       Laminar_Viscosity    = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-      Eddy_Viscosity       = solver_container[FLOW_SOL]->node[iPoint]->GetEddyViscosity();
-      Thermal_Conductivity = Cp * ( Laminar_Viscosity/Prandtl_Lam
-                                   +Eddy_Viscosity/Prandtl_Turb);
-      
+
 //      GradV = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
       
       /*--- Calculate Dirichlet condition for energy equation ---*/

@@ -2258,7 +2258,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
   unsigned short iPos, jPos;
   unsigned short iDim, iMarker, iNeigh;
   su2double *d = NULL, *Normal = NULL, *Psi = NULL, *U = NULL, Enthalpy, conspsi = 0.0, Mach_Inf,
-  Area, **PrimVar_Grad = NULL, **ConsVar_Grad = NULL, *ConsPsi_Grad = NULL,
+  Area, **PrimVar_Grad = NULL, *ConsPsi_Grad = NULL,
   ConsPsi, d_press, grad_v, v_gradconspsi, UnitNormal[3], *GridVel = NULL,
   eps, r, ru, rv, rw, rE, p, T, dp_dr, dp_dru, dp_drv,
   dp_drw, dp_drE, dH_dr, dH_dru, dH_drv, dH_drw, dH_drE, H, *USens, D[3][3], Dd[3], scale = 1.0;
@@ -2368,7 +2368,6 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           Area = sqrt(Area);
           
           PrimVar_Grad = solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive();
-          ConsVar_Grad = solver_container[FLOW_SOL]->node[iPoint]->GetGradient();
           ConsPsi_Grad = node[iPoint]->GetAuxVarGradient();
           ConsPsi = node[iPoint]->GetAuxVar();
           
@@ -2936,7 +2935,7 @@ void CAdjEulerSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config,
 void CAdjEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
   unsigned long iVertex, iPoint;
   su2double *d = NULL, *Normal, *U, *Psi_Aux, ProjVel = 0.0, bcn, vn = 0.0, Area, *UnitNormal;
-  su2double *Velocity, *Psi, Enthalpy = 0.0, sq_vel, phin, phis1, phis2, DensityInc = 0.0, BetaInc2 = 0.0;
+  su2double *Velocity, *Psi, Enthalpy = 0.0, sq_vel, phin, phis1, phis2;
   unsigned short iDim, iVar, jDim;
   
   bool implicit = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
@@ -6417,7 +6416,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   
   unsigned long iVertex, iPoint, total_index;
   unsigned short iDim, iVar, jVar, jDim;
-  su2double *d, q, *U, l1psi, dVisc_T, rho, pressure, div_phi,
+  su2double *d, q, *U, dVisc_T, rho, pressure, div_phi,
   force_stress, Sigma_5, **PsiVar_Grad, phi[3] = {0.0,0.0,0.0};
   su2double phis1, phis2, sq_vel, ProjVel, Enthalpy, *GridVel, phi_u, d_n;
   su2double Energy, ViscDens, XiDens, Density, SoundSpeed, Pressure, dPhiE_dn, Laminar_Viscosity, Eddy_Viscosity,
