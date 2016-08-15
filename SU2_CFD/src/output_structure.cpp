@@ -908,7 +908,7 @@ void COutput::MergeConnectivity_FEM(CConfig *config, CGeometry *geometry, unsign
   
   /*--- Flags identifying the types of files to be written. ---*/
   
-  bool Wrt_Vol = false; //config->GetWrt_Vol_Sol();
+  bool Wrt_Vol = config->GetWrt_Vol_Sol();
   bool Wrt_Srf = config->GetWrt_Srf_Sol();
   
   /*--- Merge connectivity for each type of element (excluding halos). Note
@@ -918,30 +918,30 @@ void COutput::MergeConnectivity_FEM(CConfig *config, CGeometry *geometry, unsign
   /*--- Merge volumetric grid. ---*/
   
   if (Wrt_Vol) {
-    
+//    
 //    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tria != 0))
 //      cout <<"Merging volumetric triangle grid connectivity." << endl;
-//    MergeVolumetricConnectivity(config, geometry, TRIANGLE    );
+//    MergeVolumetricConnectivity_FEM(config, geometry, TRIANGLE    );
 //    
 //    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Quad != 0))
 //      cout <<"Merging volumetric quadrilateral grid connectivity." << endl;
-//    MergeVolumetricConnectivity(config, geometry, QUADRILATERAL   );
-//    
-//    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0))
-//      cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
-//    MergeVolumetricConnectivity(config, geometry, TETRAHEDRON );
+//    MergeVolumetricConnectivity_FEM(config, geometry, QUADRILATERAL   );
+    
+    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Tetr != 0))
+      cout <<"Merging volumetric tetrahedron grid connectivity." << endl;
+    MergeVolumetricConnectivity_FEM(config, geometry, TETRAHEDRON );
 //    
 //    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Hexa != 0))
 //      cout <<"Merging volumetric hexahedron grid connectivity." << endl;
-//    MergeVolumetricConnectivity(config, geometry, HEXAHEDRON  );
+//    MergeVolumetricConnectivity_FEM(config, geometry, HEXAHEDRON  );
 //    
 //    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pris != 0))
 //      cout <<"Merging volumetric prism grid connectivity." << endl;
-//    MergeVolumetricConnectivity(config, geometry, PRISM       );
+//    MergeVolumetricConnectivity_FEM(config, geometry, PRISM       );
 //    
 //    if ((rank == MASTER_NODE) && (size != SINGLE_NODE) && (nGlobal_Pyra != 0))
 //      cout <<"Merging volumetric pyramid grid connectivity." << endl;
-//    MergeVolumetricConnectivity(config, geometry, PYRAMID     );
+//    MergeVolumetricConnectivity_FEM(config, geometry, PYRAMID     );
     
   }
   
@@ -1844,6 +1844,307 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   delete [] Buffer_Send_AddedPeriodic;
   delete [] Buffer_Recv_AddedPeriodic;
   delete [] Local_Halo;
+  if (rank == MASTER_NODE) {
+    delete [] Buffer_Recv_nElem;
+    delete [] Buffer_Recv_Elem;
+    delete [] Buffer_Recv_Halo;
+    delete [] Write_Elem;
+  }
+  
+  /*--- Store the particular global element count in the class data,
+   and set the class data pointer to the connectivity array. ---*/
+  
+  if (rank == MASTER_NODE) {
+    switch (Elem_Type) {
+      case TRIANGLE:
+        nGlobal_Tria = nElem_Total;
+        if (nGlobal_Tria > 0) Conn_Tria = Conn_Elem;
+        break;
+      case QUADRILATERAL:
+        nGlobal_Quad = nElem_Total;
+        if (nGlobal_Quad > 0) Conn_Quad = Conn_Elem;
+        break;
+      case TETRAHEDRON:
+        nGlobal_Tetr = nElem_Total;
+        if (nGlobal_Tetr > 0) Conn_Tetr = Conn_Elem;
+        break;
+      case HEXAHEDRON:
+        nGlobal_Hexa = nElem_Total;
+        if (nGlobal_Hexa > 0) Conn_Hexa = Conn_Elem;
+        break;
+      case PRISM:
+        nGlobal_Pris = nElem_Total;
+        if (nGlobal_Pris > 0) Conn_Pris = Conn_Elem;
+        break;
+      case PYRAMID:
+        nGlobal_Pyra = nElem_Total;
+        if (nGlobal_Pyra > 0) Conn_Pyra = Conn_Elem;
+        break;
+      default:
+        cout << "Error: Unrecognized element type \n";
+        exit(EXIT_FAILURE); break;
+    }
+  }
+  
+}
+
+void COutput::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
+  
+  int iProcessor;
+  unsigned short NODES_PER_ELEMENT;
+  unsigned long iPoint, iNode, jNode;
+  unsigned long iElem = 0;
+  unsigned long nLocalElem = 0, nElem_Total = 0;
+  
+  unsigned long jElem;
+  
+  unsigned long Buffer_Send_nElem[1], *Buffer_Recv_nElem = NULL;
+  unsigned long nBuffer_Scalar = 0;
+  unsigned long kNode = 0, kElem = 0;
+  unsigned long MaxLocalElem = 0;
+  
+  bool Wrt_Halo = config->GetWrt_Halo();
+  bool *Write_Elem = NULL;
+  
+  int *Conn_Elem = NULL;
+  
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+  
+  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
+   geometrical information for the FEM DG solver. ---*/
+  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+  
+  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
+  
+  CVolumeElementFEM *volElem = DGGeometry->GetVolElem();
+  
+  const FEMStandardElementClass *standardElementsSol = DGGeometry->GetStandardElementsSol();
+  
+  /* Define the vectors for the connectivity of the local linear subelements. */
+  vector<unsigned long> volumeConn;
+  
+  /*--- Create the map from the global DOF ID to the local index. ---*/
+  map<unsigned long, unsigned long> mapLocal2Global;
+  unsigned long ii = 0;
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+    for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j, ++ii) {
+      mapLocal2Global[ii] = volElem[i].offsetDOFsSolGlobal+j;
+    }
+  }
+  
+  /*--- Counter for keeping track of the number of this element locally. ---*/
+  nLocalElem = 0;
+  for(unsigned long i=0; i<nVolElemOwned; ++i) {
+    
+    /* Determine the necessary data from the corresponding standard elem,
+     such as the number of linear sub elements, the number of DOFs per
+     linear sub element and the corresponding local connectivity. */
+    const unsigned short ind       = volElem[i].indStandardElement;
+    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_Type1();
+    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_Type2();
+    
+    /*--- Only store the linear sub elements if they are of
+     the current type that we are merging. ---*/
+    if (Elem_Type == VTK_Type1) {
+      
+      const unsigned short nSubElems       = standardElementsSol[ind].GetNSubElemsType1();
+      const unsigned short nDOFsPerSubElem = standardElementsSol[ind].GetNDOFsPerSubElem(VTK_Type1);
+      const unsigned short *connSubElems   = standardElementsSol[ind].GetSubConnType1();
+      
+      /* Loop over the number of subfaces and store the required data. */
+      unsigned short kk = 0;
+      for(unsigned short j=0; j<nSubElems; ++j) {
+        
+        /*--- Store the global index for the surface conn ---*/
+        for(unsigned short k=0; k<nDOFsPerSubElem; ++k, ++kk)
+          volumeConn.push_back(mapLocal2Global[volElem[i].offsetDOFsSolLocal+connSubElems[kk]]);
+
+        nLocalElem++;
+      }
+      
+    } else if (Elem_Type == VTK_Type2) {
+      
+      const unsigned short nSubElems       = standardElementsSol[ind].GetNSubElemsType2();
+      const unsigned short nDOFsPerSubElem = standardElementsSol[ind].GetNDOFsPerSubElem(VTK_Type2);
+      const unsigned short *connSubElems   = standardElementsSol[ind].GetSubConnType2();
+      
+      /* Loop over the number of subfaces and store the required data. */
+      unsigned short kk = 0;
+      for(unsigned short j=0; j<nSubElems; ++j) {
+        
+        /*--- Store the global index for the surface conn ---*/
+        for(unsigned short k=0; k<nDOFsPerSubElem; ++k, ++kk)
+          volumeConn.push_back(mapLocal2Global[volElem[i].offsetDOFsSolLocal+connSubElems[kk]]);
+        
+        nLocalElem++;
+      }
+    }
+  }
+  
+  /*--- Store the local number of this element type and the number of nodes
+   per this element type. In serial, this will be the total number of this
+   element type in the entire mesh. In parallel, it is the number on only
+   the current partition. ---*/
+  
+  switch (Elem_Type) {
+    case TRIANGLE:
+      NODES_PER_ELEMENT = N_POINTS_TRIANGLE;
+      break;
+    case QUADRILATERAL:
+      NODES_PER_ELEMENT = N_POINTS_QUADRILATERAL;
+      break;
+    case TETRAHEDRON:
+      NODES_PER_ELEMENT = N_POINTS_TETRAHEDRON;
+      break;
+    case HEXAHEDRON:
+      NODES_PER_ELEMENT = N_POINTS_HEXAHEDRON;
+      break;
+    case PRISM:
+      NODES_PER_ELEMENT = N_POINTS_PRISM;
+      break;
+    case PYRAMID:
+      NODES_PER_ELEMENT = N_POINTS_PYRAMID;
+      break;
+    default:
+      cout << "Error: Unrecognized element type \n";
+      exit(EXIT_FAILURE); break;
+  }
+  
+  /*--- Find the max number of this element type among all
+   partitions and set up buffers. ---*/
+  
+  Buffer_Send_nElem[0] = nLocalElem;
+  if (rank == MASTER_NODE) Buffer_Recv_nElem = new unsigned long[size];
+  
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&nLocalElem, &MaxLocalElem, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+  SU2_MPI::Gather(&Buffer_Send_nElem, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nElem, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+#else
+  MaxLocalElem = nLocalElem;
+  Buffer_Recv_nElem[0] = Buffer_Send_nElem[0];
+#endif
+  
+  nBuffer_Scalar = MaxLocalElem*NODES_PER_ELEMENT;
+  
+  /*--- Send and Recv buffers ---*/
+  
+  unsigned long *Buffer_Send_Elem = new unsigned long[nBuffer_Scalar];
+  unsigned long *Buffer_Recv_Elem = NULL;
+  
+  unsigned short *Buffer_Send_Halo = new unsigned short[MaxLocalElem];
+  unsigned short *Buffer_Recv_Halo = NULL;
+  
+  /*--- Prepare the receive buffers on the master node only. ---*/
+  
+  if (rank == MASTER_NODE) {
+    Buffer_Recv_Elem = new unsigned long[size*nBuffer_Scalar];
+    Buffer_Recv_Halo = new unsigned short[size*MaxLocalElem];
+    if (MaxLocalElem > 0) Conn_Elem = new int[size*MaxLocalElem*NODES_PER_ELEMENT];
+  }
+  
+  /*--- Loop over all elements in this partition and load the
+   elements of the current type into the buffer to be sent to
+   the master node. ---*/
+  
+  jNode = 0;
+  for (iElem = 0; iElem < nLocalElem; iElem++) {
+    
+    /*--- Loop over all nodes in this element and load the
+     connectivity into the send buffer. ---*/
+    Buffer_Send_Halo[iElem] = false;
+    for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+      
+      /*--- Store the global index values directly. ---*/
+      
+      Buffer_Send_Elem[jNode] = volumeConn[iElem*NODES_PER_ELEMENT+iNode];
+      
+      /*--- Increment jNode as the counter. We need this because iElem
+       may include other elements that we skip over during this loop. ---*/
+      
+      jNode++;
+    }
+  }
+  
+  /*--- Gather the element connectivity information. ---*/
+  
+#ifdef HAVE_MPI
+  SU2_MPI::Gather(Buffer_Send_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, Buffer_Recv_Elem, nBuffer_Scalar, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, Buffer_Recv_Halo, MaxLocalElem, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+#else
+  for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Elem[iPoint] = Buffer_Send_Elem[iPoint];
+  for (iPoint = 0; iPoint < MaxLocalElem; iPoint++) Buffer_Recv_Halo[iPoint] = Buffer_Send_Halo[iPoint];
+#endif
+  
+  /*--- The master node unpacks and sorts the connectivity. ---*/
+  
+  if (rank == MASTER_NODE) {
+    
+    /*---  We need to remove any duplicate elements (halo cells) that
+     exist on multiple partitions. Start by initializing all elements
+     to the "write" state by using a boolean array. ---*/
+    
+    Write_Elem = new bool[size*MaxLocalElem];
+    for (iElem = 0; iElem < size*MaxLocalElem; iElem++) {
+      Write_Elem[iElem] = true;
+    }
+    
+    /*--- Remove the rind layer from the solution only if requested ---*/
+    
+    if (!Wrt_Halo) {
+      
+      /*--- Loop for flagging duplicate elements so that they are not
+       included in the final connectivity list. ---*/
+      
+      kElem = 0;
+      for (iProcessor = 0; iProcessor < size; iProcessor++) {
+        for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
+          
+          /*--- Check if this element was marked as a halo. ---*/
+          if (Buffer_Recv_Halo[kElem+iElem])
+            Write_Elem[kElem+iElem] = false;
+          
+        }
+        kElem = (iProcessor+1)*MaxLocalElem;
+      }
+    }
+    
+    /*--- Store the unique connectivity list for this element type. ---*/
+    
+    jNode = 0; kNode = 0; jElem = 0; nElem_Total = 0;
+    for (iProcessor = 0; iProcessor < size; iProcessor++) {
+      for (iElem = 0; iElem < Buffer_Recv_nElem[iProcessor]; iElem++) {
+        
+        /*--- Only write the elements that were flagged for it. ---*/
+        if (Write_Elem[jElem+iElem]) {
+          
+          /*--- Increment total count for this element type ---*/
+          nElem_Total++;
+          
+          /*--- Get global index, then loop over each variable and store.
+           Note that we are adding one to the index value because CGNS/Tecplot
+           use 1-based indexing.---*/
+          
+          for (iNode = 0; iNode < NODES_PER_ELEMENT; iNode++) {
+            Conn_Elem[kNode] = (int)Buffer_Recv_Elem[jNode+iElem*NODES_PER_ELEMENT+iNode] + 1;
+            kNode++;
+          }
+        }
+      }
+      /*--- Adjust jNode to index of next proc's data in the buffers. ---*/
+      jElem = (iProcessor+1)*MaxLocalElem;
+      jNode = (iProcessor+1)*nBuffer_Scalar;
+    }
+  }
+  
+  /*--- Immediately release the temporary buffers. ---*/
+  delete [] Buffer_Send_Elem;
+  delete [] Buffer_Send_Halo;
   if (rank == MASTER_NODE) {
     delete [] Buffer_Recv_nElem;
     delete [] Buffer_Recv_Elem;
@@ -7651,7 +7952,7 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
     
     /*--- Flags identifying the types of files to be written. ---*/
     
-    bool Wrt_Vol = false; //config[iZone]->GetWrt_Vol_Sol();
+    bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
     bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
     
 #ifdef HAVE_MPI
@@ -7660,7 +7961,7 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
     
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     if (size > SINGLE_NODE) {
-      Wrt_Vol = false;
+      //Wrt_Vol = false;
       //Wrt_Srf = false;
     }
 #endif
@@ -7685,18 +7986,18 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
     if (rank == MASTER_NODE) cout << "Merging coordinates in the Master node." << endl;
     MergeCoordinates_FEM(config[iZone], geometry[iZone][MESH_0]);
     
-//    if ((rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
-//      if (FileFormat == TECPLOT_BINARY) {
-//        if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume and surface mesh files." << endl;
-//        SetTecplotBinary_DomainMesh(config[iZone], geometry[iZone][MESH_0], iZone);
-//        SetTecplotBinary_SurfaceMesh(config[iZone], geometry[iZone][MESH_0], iZone);
-//        if (!wrote_base_file)
-//          DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
-//        if (!wrote_surf_file)
-//          DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], wrote_surf_file);
-//      }
-//    }
-//    
+    if ((rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
+      if (FileFormat == TECPLOT_BINARY) {
+        if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume and surface mesh files." << endl;
+        SetTecplotBinary_DomainMesh(config[iZone], geometry[iZone][MESH_0], iZone);
+        SetTecplotBinary_SurfaceMesh(config[iZone], geometry[iZone][MESH_0], iZone);
+        if (!wrote_base_file)
+          DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+        if (!wrote_surf_file)
+          DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], wrote_surf_file);
+      }
+    }
+    
     /*--- Merge the solution data needed for volume solutions and restarts ---*/
     
     if (rank == MASTER_NODE) cout << "Merging solution in the Master node." << endl;
@@ -7712,61 +8013,61 @@ void COutput::SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geo
       
       if (rank == MASTER_NODE) cout << "Writing SU2 native restart file." << endl;
       SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
-//
-//      if (Wrt_Vol) {
-//        
-//        switch (FileFormat) {
-//            
-//          case TECPLOT:
-//            
-//            /*--- Write a Tecplot ASCII file ---*/
-//            
-//            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
-//            SetTecplotASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone, val_nZone, false);
-//            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
-//            break;
-//            
-//          case FIELDVIEW:
-//            
-//            /*--- Write a FieldView ASCII file ---*/
-//            
-//            if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file volume solution file." << endl;
-//            SetFieldViewASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone);
-//            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
-//            break;
-//            
-//          case TECPLOT_BINARY:
-//            
-//            /*--- Write a Tecplot binary solution file ---*/
-//            
-//            if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume solution file." << endl;
-//            SetTecplotBinary_DomainSolution(config[iZone], geometry[iZone][MESH_0], iZone);
-//            break;
-//            
-//          case FIELDVIEW_BINARY:
-//            
-//            /*--- Write a FieldView binary file ---*/
-//            
-//            if (rank == MASTER_NODE) cout << "Writing FieldView binary file volume solution file." << endl;
-//            SetFieldViewBinary(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone);
-//            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
-//            break;
-//            
-//          case PARAVIEW:
-//            
-//            /*--- Write a Paraview ASCII file ---*/
-//            
-//            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII volume solution file." << endl;
-//            SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, false);
-//            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
-//            break;
-//            
-//          default:
-//            break;
-//        }
-//        
-//      }
-//      
+
+      if (Wrt_Vol) {
+        
+        switch (FileFormat) {
+            
+          case TECPLOT:
+            
+            /*--- Write a Tecplot ASCII file ---*/
+            
+            if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
+            SetTecplotASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone, val_nZone, false);
+            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+            break;
+            
+          case FIELDVIEW:
+            
+            /*--- Write a FieldView ASCII file ---*/
+            
+            if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file volume solution file." << endl;
+            SetFieldViewASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone);
+            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+            break;
+            
+          case TECPLOT_BINARY:
+            
+            /*--- Write a Tecplot binary solution file ---*/
+            
+            if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume solution file." << endl;
+            SetTecplotBinary_DomainSolution(config[iZone], geometry[iZone][MESH_0], iZone);
+            break;
+            
+          case FIELDVIEW_BINARY:
+            
+            /*--- Write a FieldView binary file ---*/
+            
+            if (rank == MASTER_NODE) cout << "Writing FieldView binary file volume solution file." << endl;
+            SetFieldViewBinary(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone);
+            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+            break;
+            
+          case PARAVIEW:
+            
+            /*--- Write a Paraview ASCII file ---*/
+            
+            if (rank == MASTER_NODE) cout << "Writing Paraview ASCII volume solution file." << endl;
+            SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, false);
+            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+            break;
+            
+          default:
+            break;
+        }
+        
+      }
+      
       if (Wrt_Srf) {
         
         switch (FileFormat) {

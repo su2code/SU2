@@ -2077,6 +2077,9 @@ void FEMStandardElementClass::Copy(const FEMStandardElementClass &other) {
 
   nPoly = other.nPoly;
   nDOFs = other.nDOFs;
+  
+  VTK_Type1 = other.VTK_Type1;
+  VTK_Type2 = other.VTK_Type2;
 
   rDOFs = other.rDOFs;
   sDOFs = other.sDOFs;
@@ -2411,6 +2414,10 @@ void FEMStandardElementClass::DataStandardHexahedron(void) {
 
 void FEMStandardElementClass::SubConnTetrahedron(void) {
 
+  /*--- Set the VTK_type(s) for this sub element. ---*/
+  VTK_Type1 = TETRAHEDRON;
+  VTK_Type2 = NONE;
+  
   /*--- Initialize the number of DOFs for the current edges to the number of
         DOFs of the edges present in the tetrahedron. Also initialize the
         current k offset to zero.    ---*/
@@ -2604,6 +2611,10 @@ void FEMStandardElementClass::SubConnTetrahedron(void) {
 
 void FEMStandardElementClass::SubConnPyramid(void) {
 
+  /*--- Set the VTK_type(s) for this sub element. ---*/
+  VTK_Type1 = PYRAMID;
+  VTK_Type2 = TETRAHEDRON;
+  
   /*--- Initialize the number of DOFs for the current edges to the number of
         DOFs of the edges on the base of the pyramid. Also initialize the
         current k offset to zero.     ---*/
@@ -2760,6 +2771,10 @@ void FEMStandardElementClass::SubConnPyramid(void) {
 
 void FEMStandardElementClass::SubConnPrism(void) {
 
+  /*--- Set the VTK_type(s) for this sub element. ---*/
+  VTK_Type1 = PRISM;
+  VTK_Type2 = NONE;
+  
   /*--- Determine the number of DOFs for a triangle. This is the offset in
         k-direction, the structured direction of a prisms.    ---*/
   unsigned short nDOFTria = (nPoly+1)*(nPoly+2)/2;
@@ -2834,6 +2849,10 @@ void FEMStandardElementClass::SubConnPrism(void) {
 
 void FEMStandardElementClass::SubConnHexahedron(void) {
 
+  /*--- Set the VTK_type(s) for this sub element. ---*/
+  VTK_Type1 = HEXAHEDRON;
+  VTK_Type2 = NONE;
+  
   /*--- Determine the nodal offset in j- and k-direction. ---*/
   unsigned short jOff = nPoly+1;
   unsigned short kOff = jOff*jOff;
@@ -2875,6 +2894,35 @@ void FEMStandardElementClass::SubConnHexahedron(void) {
       }
     }
   }
+}
+
+unsigned short FEMStandardElementClass::GetNDOFsPerSubElem(unsigned short val_VTK_Type) const {
+  
+  /*--- Distinguish between the possible element types for a linear
+   sub-element and set the nDOFs accordingly. ---*/
+  unsigned short nDOFsSubElem;
+  switch( val_VTK_Type ) {
+    case NONE:          nDOFsSubElem = 0; break;
+    case LINE:          nDOFsSubElem = 2; break;
+    case TRIANGLE:      nDOFsSubElem = 3; break;
+    case QUADRILATERAL: nDOFsSubElem = 4; break;
+    case TETRAHEDRON:   nDOFsSubElem = 4; break;
+    case PYRAMID:       nDOFsSubElem = 5; break;
+    case PRISM:         nDOFsSubElem = 6; break;
+    case HEXAHEDRON:    nDOFsSubElem = 8; break;    default:
+      cout << "In FEMStandardElementClass::GetNDOFsPerSubElem." << endl;
+      cout << "Impossible FEM sub element type, " << val_VTK_Type
+      << ", encountered." << endl;
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+  }
+  
+  /* Return the number of DOFs for a subface. */
+  return nDOFsSubElem;
 }
 
 void FEMStandardElementClass::ChangeDirectionQuadConn(vector<unsigned short> &connQuad,

@@ -270,6 +270,14 @@ public:
 	void MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
   
   /*!
+   * \brief Merge the connectivity for a single element type from all processors for the FEM solver.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being merged.
+   */
+  void MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  
+  /*!
 	 * \brief Merge the connectivity for a single element type from all processors.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -278,7 +286,7 @@ public:
 	void MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
   
   /*!
-   * \brief Merge the connectivity for a single element type from all processors.
+   * \brief Merge the connectivity for a single element type from all processors for the FEM solver.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being merged.

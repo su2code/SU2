@@ -766,7 +766,7 @@ public:
   * \return  Pointer to the standard volume elements of the solution.
   */
   FEMStandardElementClass *GetStandardElementsSol(void);
-
+  
  /*!
   * \brief Function, which makes available the number of standard internal matching faces of the solution.
   * \return  Number of standard internal matching faces of the solution.

@@ -77,6 +77,18 @@ inline unsigned short FEMStandardElementClass::GetNDOFs(void) const {return nDOF
 
 inline unsigned short FEMStandardElementClass::GetNPoly(void) const {return nPoly;}
 
+inline unsigned short FEMStandardElementClass::GetVTK_Type1(void) const {return VTK_Type1;}
+
+inline unsigned short FEMStandardElementClass::GetNSubElemsType1(void) const {return subConn1ForPlotting.size()/GetNDOFsPerSubElem(GetVTK_Type1());}
+
+inline const unsigned short* FEMStandardElementClass::GetSubConnType1(void) const {return subConn1ForPlotting.data();}
+
+inline unsigned short FEMStandardElementClass::GetVTK_Type2(void) const {return VTK_Type2;}
+
+inline unsigned short FEMStandardElementClass::GetNSubElemsType2(void) const {return subConn2ForPlotting.size()/GetNDOFsPerSubElem(GetVTK_Type2());}
+
+inline const unsigned short* FEMStandardElementClass::GetSubConnType2(void) const {return subConn2ForPlotting.data();}
+
 inline FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(){matDerBasisElemIntegrationSide0          = matDerBasisElemIntegrationSide1 =
                                                                     matDerBasisElemIntegrationTransposeSide0 = matDerBasisElemIntegrationTransposeSide1 = NULL;}
 

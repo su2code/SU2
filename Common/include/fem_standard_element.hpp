@@ -788,7 +788,10 @@ class FEMStandardElementClass : public FEMStandardElementBaseClass {
 private:
   unsigned short nPoly;        /*!< \brief Polynomial degree of the element. */
   unsigned short nDOFs;        /*!< \brief Number of DOFs of the element. */
-
+  
+  unsigned short VTK_Type1;    /*!< \brief VTK type for elements of type 1 in subConn1ForPlotting. */
+  unsigned short VTK_Type2;    /*!< \brief VTK type for elements of type 2 in subConn2ForPlotting. */
+  
   vector<su2double> rDOFs;     /*!< \brief r-location of the DOFs for this standard element. */
   vector<su2double> sDOFs;     /*!< \brief s-location of the DOFs for this standard element, if needed. */
   vector<su2double> tDOFs;     /*!< \brief t-location of the DOFs for this standard element, if needed. */
@@ -816,7 +819,7 @@ private:
                                                 of the DOFs is such that the element is to the left of the face. */
   vector<unsigned short> connFace5; /*!< \brief Local connectivity of face 5 of the element, if present. The numbering
                                                 of the DOFs is such that the element is to the left of the face. */
-
+  
   vector<unsigned short> subConn1ForPlotting; /*!< \brief Local subconnectivity of element type 1 of the high order element.
                                                           Used for plotting. */
   vector<unsigned short> subConn2ForPlotting; /*!< \brief Local subconnectivity of element type 2 of the high order element.
@@ -943,7 +946,49 @@ public:
   * \return  The polynomial degree of this standard element.
   */
   unsigned short GetNPoly(void) const;
+  
+  /*!
+   * \brief Function, which makes available the type of the element in subConn1ForPlotting.
+   * \return  The type of the elements in subConn1ForPlotting using the VTK convention.
+   */
+  unsigned short GetVTK_Type1(void) const;
+  
+  /*!
+   * \brief Function, which makes available the number of sub-elements of type 1 for plotting.
+   * \return  The number of sub-elements of type 1 for plotting.
+   */
+  unsigned short GetNSubElemsType1(void) const;
+  
+  /*!
+   * \brief Function, which makes available the the connectivity of the linear elements of type 1 as a const pointer.
+   * \return  The pointer to the local connectivity of the linear elements of type 1.
+   */
+  const unsigned short *GetSubConnType1(void) const;
 
+  /*!
+   * \brief Function, which makes available the type of the element in subConn2ForPlotting.
+   * \return  The type of the elements in subConn2ForPlotting using the VTK convention.
+   */
+  unsigned short GetVTK_Type2(void) const;
+  
+  /*!
+   * \brief Function, which makes available the number of sub-elements of type 2 for plotting.
+   * \return  The number of sub-elements of type 2 for plotting.
+   */
+  unsigned short GetNSubElemsType2(void) const;
+  
+  /*!
+   * \brief Function, which makes available the the connectivity of the linear elements of type 2 as a const pointer.
+   * \return  The pointer to the local connectivity of the linear elements of type 2.
+   */
+  const unsigned short *GetSubConnType2(void) const;
+  
+  /*!
+   * \brief Function, which makes available the number of DOFs of a linear element, used for plotting.
+   * \return  The number of DOFs of the linear elements.
+   */
+  unsigned short GetNDOFsPerSubElem(unsigned short val_VTK_Type) const;
+  
   /*!
   * \brief Function, which checks if the function arguments correspond to this standard element.
   * \param[in] val_VTK_Type - Type of the element using the VTK convention.
@@ -954,7 +999,7 @@ public:
   bool SameStandardElement(unsigned short val_VTK_Type,
                            unsigned short val_nPoly,
                            bool           val_constJac);
-
+  
 private:
   /*!
   * \brief Function, which changes the given quadrilateral connectivity, such that the direction coincides
