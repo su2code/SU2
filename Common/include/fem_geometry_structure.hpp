@@ -531,7 +531,7 @@ public:
   * \return  Pointer to the standard boundary faces of the solution.
   */
   FEMStandardBoundaryFaceClass *GetStandardBoundaryFacesSol(void);
-
+  
   /*!
   * \brief Function, which makes available the vector of ranks with which the
            current rank communicates as a const reference.
@@ -766,7 +766,7 @@ public:
   * \return  Pointer to the standard volume elements of the solution.
   */
   FEMStandardElementClass *GetStandardElementsSol(void);
-
+  
  /*!
   * \brief Function, which makes available the number of standard internal matching faces of the solution.
   * \return  Number of standard internal matching faces of the solution.

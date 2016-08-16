@@ -2632,12 +2632,12 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
   su2double Prim_L[8];
   su2double Prim_R[8];
   
-//Jacobian_i = new su2double*[nVar];
-//Jacobian_j = new su2double*[nVar];
-//for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
-//  Jacobian_i[iVar] = new su2double[nVar];
-//  Jacobian_j[iVar] = new su2double[nVar];
-//}
+  Jacobian_i = new su2double*[nVar];
+  Jacobian_j = new su2double*[nVar];
+  for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
+    Jacobian_i[iVar] = new su2double[nVar];
+    Jacobian_j[iVar] = new su2double[nVar];
+  }
   
   /*--- Loop over the number of points. ---*/
   
@@ -2689,15 +2689,15 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig             *config,
     numerics->ComputeResidual(flux, Jacobian_i, Jacobian_j, config);
   }
   
-//for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-//  delete [] Jacobian_i[iVar];
-//  delete [] Jacobian_j[iVar];
-//}
-//delete [] Jacobian_i;
-//delete [] Jacobian_j;
-//
-//Jacobian_i = NULL;
-//Jacobian_j = NULL;
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    delete [] Jacobian_i[iVar];
+    delete [] Jacobian_j[iVar];
+  }
+  delete [] Jacobian_i;
+  delete [] Jacobian_j;
+
+  Jacobian_i = NULL;
+  Jacobian_j = NULL;
 }
 
 void CFEM_DG_EulerSolver::MatrixProduct(const int M,        const int N,        const int K,

@@ -48,6 +48,8 @@
 #include "solver_structure.hpp"
 #include "integration_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
+#include "../../Common/include/fem_geometry_structure.hpp"
+#include "../../Common/include/fem_standard_element.hpp"
 #include "../../Common/include/config_structure.hpp"
 
 using namespace std;
@@ -118,6 +120,18 @@ public:
 	void SetResult_Files(CSolver ****solver_container, CGeometry ***geometry, CConfig **config, 
 											 unsigned long iExtIter, unsigned short val_nZone);
 	
+  /*!
+   * \brief Writes and organizes the all the output files, except the history one, for serial computations with the FEM solver.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] val_iZone - Total number of domains in the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  void SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geometry, CConfig **config,
+                       unsigned long iExtIter, unsigned short val_nZone);
+  
   /*!
 	 * \brief Writes and organizes the all the output files, except the history one, for serial computations.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -226,11 +240,26 @@ public:
 	void MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
   
   /*!
+   * \brief Merge the FEM geometry into a data structure used for output file writing.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_nZone - iZone index.
+   */
+  void MergeConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+  
+  /*!
 	 * \brief Merge the node coordinates from all processors.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
 	void MergeCoordinates(CConfig *config, CGeometry *geometry);
+  
+  /*!
+   * \brief Merge the node coordinates from all processors for the FEM solver.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void MergeCoordinates_FEM(CConfig *config, CGeometry *geometry);
   
   /*!
 	 * \brief Merge the connectivity for a single element type from all processors.
@@ -241,12 +270,28 @@ public:
 	void MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
   
   /*!
+   * \brief Merge the connectivity for a single element type from all processors for the FEM solver.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being merged.
+   */
+  void MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  
+  /*!
 	 * \brief Merge the connectivity for a single element type from all processors.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] Elem_Type - VTK index of the element type being merged.
 	 */
 	void MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  
+  /*!
+   * \brief Merge the connectivity for a single element type from all processors for the FEM solver.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being merged.
+   */
+  void MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
   
 	/*!
 	 * \brief Merge the solution into a data structure used for output file writing.
@@ -257,6 +302,15 @@ public:
 	 */
 	void MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
+  /*!
+   * \brief Merge the FEM solution into a data structure used for output file writing.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_nZone - iZone index.
+   */
+  void MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+  
   /*!
 	 * \brief Merge the solution into a data structure used for output file writing.
 	 * \param[in] config - Definition of the particular problem.

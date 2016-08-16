@@ -2912,6 +2912,17 @@ public:
    */
   virtual void External_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                          CConfig *config, unsigned short iMesh, unsigned short iRKStep);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double* GetVecSolDOFs(void);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual unsigned long GetnDOFsGlobal(void);
+  
 };
 
 /*!
@@ -5207,6 +5218,18 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  
+  /*!
+   * \brief Get a pointer to the vector of the solution degrees of freedom.
+   * \return Pointer to the vector of the solution degrees of freedom.
+   */
+  su2double* GetVecSolDOFs(void);
+  
+  /*!
+   * \brief Get the global number of solution degrees of freedom for the calculation.
+   * \return Global number of solution degrees of freedom
+   */
+  unsigned long GetnDOFsGlobal(void);
   
   /*!
    * \brief Compute the pressure at the infinity.
