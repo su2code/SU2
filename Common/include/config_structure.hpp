@@ -542,6 +542,7 @@ private:
   SurfSens_FileName,			/*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName;			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
 	bool Low_MemoryOutput,      /*!< \brief Write a volume solution file */
+  Wrt_Output,                /*!< \brief Write any output files */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
 	Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
 	Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
@@ -2332,6 +2333,12 @@ public:
 	 */
 	bool GetLowFidelitySim(void);
 
+  /*!
+   * \brief Get information about writing output files.
+   * \return <code>TRUE</code> means that output files will be written.
+   */
+  bool GetWrt_Output(void);
+  
 	/*!
 	 * \brief Get information about writing a volume solution file.
 	 * \return <code>TRUE</code> means that a volume solution file will be written.
