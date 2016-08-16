@@ -11,7 +11,6 @@
 # ----------------------------------------------------------------------
 
 import os, sys, shutil, copy
-from mpi4py import MPI
 import numpy as np
 from math import *
 
@@ -24,12 +23,20 @@ class Interface:
     FSI interface class that handles fluid/solid solvers synchronisation and communication
     """
    
-    def __init__(self, FSI_config, FluidSolver, SolidSolver):
+    def __init__(self, FSI_config, FluidSolver, SolidSolver, have_MPI):
 	""" 
 	Class constructor. Define some variables and do some screen outputs.
 	"""
+        
+        if have_MPI == True:
+          from mpi4py import MPI
+          self.comm = MPI.COMM_WORLD		#MPI communicator
+          self.have_MPI = True
+        else:
+          self.comm = 0
+          self.have_MPI = False
+
 	self.rootProcess = 0			#the root process is imposed
-        self.comm = MPI.COMM_WORLD		#MPI communicator
         self.fluidInterfaceIdentifier = None	#object that can identify the f/s interface within the fluid solver
         self.solidInterfaceIdentifier = None	#object that can identify the f/s interface within the solid solver
 	self.nLocalFluidInterfaceNodes = 0	#number of interface fluid nodes for the current partition
@@ -46,7 +53,11 @@ class Interface:
 	self.mappingInterface = {}		#interface mapping/interpolation "matrix"
 	self.Center = [0,0,0]			#in case of rigid body structural model, the center of rotation has to be tracked
 
-        myid = self.comm.Get_rank()
+        if self.have_MPI == True:
+          myid = self.comm.Get_rank()
+        else:
+          myid = 0
+
         if myid == self.rootProcess:
 	    print('Fluid solver : SU2_CFD')
 	    print('Solid solver : {}'.format(FSI_config['CSD_SOLVER']))
@@ -82,8 +93,13 @@ class Interface:
 	Creates the communication support between the two solvers.
 	Gets information about f/s interfaces from the two solvers.
 	"""
-        myid = self.comm.Get_rank()
-	MPIsize = self.comm.Get_size()
+        if self.have_MPI == True:
+          from mpi4py import MPI
+          myid = self.comm.Get_rank()
+	  MPIsize = self.comm.Get_size()
+        else:
+          myid = 0
+          MPIsize = 1
 	
 	# identifies the fluid and solid interfaces and store the number of nodes on both sides (and for each partition)
         if FluidSolver != None:
@@ -102,28 +118,37 @@ class Interface:
 	else:
 	    pass
 
-	self.comm.barrier()
+	if self.have_MPI == True:
+          self.comm.barrier()
 	
 	# calculates the total number of nodes at the interface (sum over all the partitions)
 	# fluid side
         sendBuff = np.array(int(self.nLocalFluidInterfaceNodes))
-	rcvbuff = np.zeros(1, dtype=int)			
-        self.comm.barrier()
-	self.comm.Reduce(sendBuff,rcvbuff,op=MPI.SUM, root=self.rootProcess)
-	self.nFluidInterfaceNodes = rcvbuff[0]
+	rcvbuff = np.zeros(1, dtype=int)
+        if self.have_MPI == True:			
+          self.comm.barrier()
+	  self.comm.Reduce(sendBuff,rcvbuff,op=MPI.SUM, root=self.rootProcess)
+          self.nFluidInterfaceNodes = rcvbuff[0]
+        else:
+          self.nFluidInterfaceNodes = np.copy(sendBuff)
+	
 	# solid side
         sendBuff = np.array(int(self.nLocalSolidInterfaceNodes))
 	rcvbuff = np.zeros(1, dtype=int)
-	self.comm.barrier()
-	self.comm.Reduce(sendBuff,rcvbuff,op=MPI.SUM, root=self.rootProcess)
-	self.nSolidInterfaceNodes = rcvbuff[0]
+        if self.have_MPI == True:
+	  self.comm.barrier()
+	  self.comm.Reduce(sendBuff,rcvbuff,op=MPI.SUM, root=self.rootProcess)
+          self.nSolidInterfaceNodes = rcvbuff[0]
+        else:
+          self.nSolidInterfaceNodes = np.copy(sendBuff)
         del sendBuff
         del rcvbuff
 	if myid==self.rootProcess:
 	    print('Total number of fluid nodes (halo nodes included) : {}'.format(self.nFluidInterfaceNodes))
 	    print('Total number of solid nodes (halo nodes included) : {}'.format(self.nSolidInterfaceNodes))
 
-	self.comm.barrier()
+	if self.have_MPI == True:
+          self.comm.barrier()
 
 	# gets the fluid interface from fluid solver (!on each process!)
         self.getFluidInterfacePosition(FluidSolver)
@@ -132,23 +157,32 @@ class Interface:
 	self.getSolidInterfacePosition(SolidSolver)
 
 	# gathers the fluid interface on the root process
-        buff = self.localFluidInterface
-	self.__ReconstructFluidInterface(buff)
+        if self.have_MPI == True:
+          buff = self.localFluidInterface
+	  self.__ReconstructFluidInterface(buff)
+          del buff
+        else:
+          self.globalFluidInterface = self.localFluidInterface.copy()
           
 	if myid==self.rootProcess:
 	  print('Total number of physical fluid nodes : {}'.format(len(self.globalFluidInterface)))
 	  # we assume the solid is only running on one process (we skip the gather)
 	  print('Total number of physical solid nodes : {}'.format(self.nSolidInterfaceNodes))
 
-	self.comm.barrier()
+	if self.have_MPI == True:
+          self.comm.barrier()
 
     def interfaceMapping(self,FluidSolver, SolidSolver, FSI_config):
 	""" 
 	Creates the one-to-one mapping between interfaces in case of matching meshes.
 	Creates the interpolation rules between interfaces in case of non-matching meshes.
 	"""
-	myid = self.comm.Get_rank()
-	MPIsize = self.comm.Get_size()
+	if self.have_MPI == True:
+          myid = self.comm.Get_rank()
+	  MPIsize = self.comm.Get_size()
+        else:
+          myid = 0
+          MPIsize = 1
 
 	# the f/s interfaces mapping/interpolation is performed on the root process only
 	if myid==self.rootProcess:
@@ -174,7 +208,10 @@ class Interface:
 	"""
 	Applies the one-to-one mapping or the interpolaiton rules from solid to fluid mesh.
 	"""
-	myid = self.comm.Get_rank()
+	if self.have_MPI == True:
+          myid = self.comm.Get_rank()
+        else:
+          myid = 0
 
 	# the f/s interfaces interpolation is performed on the root process only
 	if myid==self.rootProcess:	
@@ -186,7 +223,10 @@ class Interface:
 	"""
 	Applies the one-to-one mapping or the interpolaiton rules from fluid to solid mesh.
 	"""
-	myid = self.comm.Get_rank()
+	if self.have_MPI == True:
+          myid = self.comm.Get_rank()
+        else:
+          myid = 0
 
 	#The f/s interfaces interpolation is performed on the root process only
 	if myid==self.rootProcess:	
@@ -198,8 +238,6 @@ class Interface:
 	"""
 	Computes the distance between two nodes (x,y,z)
 	"""
-	myid = self.comm.Get_rank()
-	MPIsize = self.comm.Get_size()
 
 	distance = sqrt((nodeB[0]-nodeA[0])**2 + (nodeB[1]-nodeA[1])**2 + (nodeB[2]-nodeA[2])**2)
 	
@@ -209,7 +247,10 @@ class Interface:
 	"""
 	Gets the current solid interface position from the solid solver.
 	"""
-	myid = self.comm.Get_rank()
+        if self.have_MPI == True:
+	  myid = self.comm.Get_rank()
+        else:
+          myid = 0
 	
 	GlobalIndex = int()
 	normVarPosSquare = 0.0
@@ -231,7 +272,10 @@ class Interface:
 	Computes the solid interface displacement residual.
 	"""
 
-	myid = self.comm.Get_rank()
+        if self.have_MPI == True:
+	  myid = self.comm.Get_rank()
+        else:
+          myid = 0
 
 	normInterfaceResidualSquare = 0.0
 	
@@ -253,7 +297,10 @@ class Interface:
 	"""
 	Apply solid displacement under-relaxation.
 	"""
-	myid = self.comm.Get_rank()
+        if self.have_MPI == True:
+	  myid = self.comm.Get_rank()
+        else:
+          myid = 0
 
 	if FSI_config['AITKEN_RELAX'] == 'STATIC':
 	    self.aitkenParam = FSI_config['AITKEN_PARAM']
@@ -342,7 +389,10 @@ class Interface:
 	Communicates the change of coordinates of the fluid interface to the fluid solver.
 	Prepares the fluid solver for mesh deformation.
 	"""
-	myid = self.comm.Get_rank()
+        if self.have_MPI == True:
+	  myid = self.comm.Get_rank()
+        else:
+          myid = 0
 	
 	varCoordNormSquare = 0.0	# this can be used for FSI convergence criterion
 	for iVertex in range(self.nLocalFluidInterfaceNodes):
@@ -362,7 +412,10 @@ class Interface:
 	Communicates the new solid interface loads to the solid solver.
 	In case of rigid body motion, calculates the new resultant forces (lift, drag, ...).
 	"""
-	myid = self.comm.Get_rank()
+        if self.have_MPI == True:
+	  myid = self.comm.Get_rank()
+        else:
+          myid = 0
 
 	FY = 0.0 # solid-side resultant forces
         FX = 0.0
@@ -482,8 +535,12 @@ class Interface:
 	  F/s interface data are exchanged through interface mapping and interpolation (if non mathcing meshes).
 	  """
 
-	  myid = self.comm.Get_rank()
-	  numberPart = self.comm.Get_size()
+          if self.have_MPI == True:
+	    myid = self.comm.Get_rank()
+	    numberPart = self.comm.Get_size()
+          else:
+            myid = 0
+            numberPart = 1
 
 	  # --- Set some general variables for the unsteady computation --- #
   	  deltaT = FSI_config['UNST_TIMESTEP']		# physical time step
@@ -519,11 +576,13 @@ class Interface:
 	    FluidSolver.setTemporalIteration(TimeIter)
 	    if myid == self.rootProcess:
 	      SolidSolver.outputDisplacements(FluidSolver.getInterRigidDispArray(), True)
-	    self.comm.barrier()
+            if self.have_MPI == True:
+	      self.comm.barrier()
 	    FluidSolver.setInitialMesh(True)
 	    if myid == self.rootProcess:
 	      SolidSolver.displacementPredictor(FluidSolver.getInterRigidDispArray())
-	    self.comm.barrier()								
+	    if self.have_MPI == True:
+              self.comm.barrier()								
 	    if myid == self.rootProcess:
 	      SolidSolver.updateSolution()
 	  #If no restart
@@ -533,8 +592,9 @@ class Interface:
 	      SolidSolver.setInitialDisplacements()
 	      self.getSolidInterfacePosition(SolidSolver)
 	      self.interpolateSolidPositionOnFluidMesh(FSI_config)
-	    self.comm.barrier()
-	    self.__BroadcastFluidInterface()
+            if self.have_MPI == True:
+	      self.comm.barrier()
+	      self.__BroadcastFluidInterface()
 	    self.setFluidInterfaceVarCoord(FluidSolver)
 	    FluidSolver.SetInitialMesh()	# if there is an initial deformation in the solid, it has to be communicated to the fluid solver
 	    if myid == self.rootProcess:
@@ -564,25 +624,32 @@ class Interface:
 			  # --- Mesh morphing step (displacements interpolation, displacements communication, and mesh morpher call) --- #
 			  self.interpolateSolidPositionOnFluidMesh(FSI_config)
                           print('\nPerforming dynamic mesh deformation (ALE)...\n')
-                        self.comm.barrier()
-                        self.__BroadcastFluidInterface()
+                        if self.have_MPI == True:
+                          self.comm.barrier()
+                          self.__BroadcastFluidInterface()
                         self.setFluidInterfaceVarCoord(FluidSolver)
                         FluidSolver.DynamicMeshUpdate(TimeIter)
 			
 			# --- Fluid solver call for FSI subiteration --- #
 			if myid == self.rootProcess:
 		          print('\nLaunching fluid solver for one single dual-time iteration...')
-			self.comm.barrier()
+                        if self.have_MPI == True:
+			  self.comm.barrier()
 			FluidSolver.ResetConvergence()
 			FluidSolver.Run()
 
 			# --- Surface fluid loads interpolation and communication --- #
 		        if myid == self.rootProcess:
 		          print('\nProcessing surface fluid loads...')
-		 	self.comm.barrier()
+                        if self.have_MPI == True:
+		 	  self.comm.barrier()
 		        buff = self.getFluidInterfaceNodalForce(FSI_config, FluidSolver)
-		        self.__ReconstructFluidInterface(buff)
-		   	self.comm.barrier()
+                        if self.have_MPI == True:
+		          self.__ReconstructFluidInterface(buff)
+		   	  self.comm.barrier()
+                        else:
+                          self.globalFluidInterface = buff.copy()
+                        del buff
 			if TimeIter > TimeIterTreshold:
 			  if myid == self.rootProcess:
 			    self.interpolateFluidLoadsOnSolidMesh(FSI_config)
@@ -598,8 +665,9 @@ class Interface:
 			    # --- Compute and monitor the FSI residual --- #
 			    varCoordNorm = self.computeSolidInterfaceResidual(SolidSolver)
 			    print('\nFSI displacement norm : {}\n'.format(varCoordNorm))
-			  self.comm.barrier()
-			  varCoordNorm = self.comm.bcast(varCoordNorm, root=0)
+                          if self.have_MPI == True:
+			    self.comm.barrier()
+			    varCoordNorm = self.comm.bcast(varCoordNorm, root=0)
 			  if varCoordNorm < FSITolerance:		
 			    FSIConv = True
 			    break
@@ -640,7 +708,8 @@ class Interface:
 		time += deltaT
 	  #--- End of the temporal loop --- #
 
-	  self.comm.barrier()
+          if self.have_MPI == True:
+	    self.comm.barrier()
 
 	  if myid == self.rootProcess:
 	    print('\n*************************')
@@ -652,8 +721,12 @@ class Interface:
 	  Runs the steady FSI computation by synchronizing the fluid and solid solver with data exchange at the f/s interface.
 	  """
 
-	  myid = self.comm.Get_rank()
-	  numberPart = self.comm.Get_size()
+          if self.have_MPI == True:
+	    myid = self.comm.Get_rank()
+	    numberPart = self.comm.Get_size()
+          else:
+            myid = 0
+            numberPart = 1
 
 	  # --- Set some general variables for the steady computation --- #
 	  NbIter = FSI_config['NB_EXT_ITER']		# number of fluid iteration at each FSI step
@@ -688,15 +761,20 @@ class Interface:
 	    # --- Surface fluid loads interpolation and communication ---#
             if myid == self.rootProcess:
 		print('\nProcessing surface fluid loads...')
-	    self.comm.barrier()
+            if self.have_MPI == True:
+	      self.comm.barrier()
 	    buff = self.getFluidInterfaceNodalForce(FSI_config, FluidSolver)
-	    self.__ReconstructFluidInterface(buff)
-	    self.comm.barrier()
+            if self.have_MPI == True:
+	      self.__ReconstructFluidInterface(buff)
+	      self.comm.barrier()
+            else:
+              self.globalFluidInterface = buff.copy()
+            del buff
 	    if myid == self.rootProcess:
 	      self.interpolateFluidLoadsOnSolidMesh(FSI_config)
 	      self.setSolidInterfaceLoads(SolidSolver, FSI_config)
 	     
-	      # --- Solid solver call for FSO subiteration --- #
+	      # --- Solid solver call for FSI subiteration --- #
 	      print('\nLaunching solid solver for a static computation...\n')
 	      if FSI_config['CSD_SOLVER'] == 'NATIVE':
 	          SolidSolver.staticComputation()	
@@ -705,8 +783,9 @@ class Interface:
 	      # --- Compute and monitor the FSI residual --- #
 	      varCoordNorm = self.computeSolidInterfaceResidual(SolidSolver)
 	      print('\n>>>> FSI Residual : {} <<<<'.format(varCoordNorm))
-	    self.comm.barrier()
-	    varCoordNorm = self.comm.bcast(varCoordNorm, root=0)
+            if self.have_MPI == True:
+	      self.comm.barrier()
+	      varCoordNorm = self.comm.bcast(varCoordNorm, root=0)
 	    if varCoordNorm < FSITolerance:			
 	      break
 
@@ -718,13 +797,15 @@ class Interface:
 	      #--- Mesh morphing step (displacement interpolation, displacements communication, and mesh morpher call) --- #
 	      self.interpolateSolidPositionOnFluidMesh(FSI_config)						
 	      print('\nPerforming static mesh deformation...\n')
-	    self.comm.barrier()
-	    self.__BroadcastFluidInterface()
+            if self.have_MPI == True:
+	      self.comm.barrier()
+	      self.__BroadcastFluidInterface()
 	    self.setFluidInterfaceVarCoord(FluidSolver)									
 	    FluidSolver.StaticMeshUpdate()
 	    self.FSIIter += 1
 
-	  self.comm.barrier()
+          if self.have_MPI == True:
+	    self.comm.barrier()
 
 	  if myid == self.rootProcess:
 	    print('\nBGS is converged (strong coupling)')
