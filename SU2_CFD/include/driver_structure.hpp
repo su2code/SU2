@@ -94,7 +94,8 @@ public:
 	 */
   CDriver(char* confFile,
           unsigned short val_nZone,
-          unsigned short val_nDim);
+          unsigned short val_nDim,
+          SU2_Comm MPICommunicator);
 	
 	/*!
 	 * \brief Destructor of the class.
@@ -311,7 +312,8 @@ public:
 	 */
   CSingleZoneDriver(char* confFile,
                     unsigned short val_nZone,
-                    unsigned short val_nDim);
+                    unsigned short val_nDim,
+                    SU2_Comm MPICommunicator);
 	
 	/*!
 	 * \brief Destructor of the class.
@@ -368,7 +370,8 @@ public:
    */
   CMultiZoneDriver(char* confFile,
                    unsigned short val_nZone,
-                   unsigned short val_nDim);
+                   unsigned short val_nDim,
+                   SU2_Comm MPICommunicator);
   
   /*!
    * \brief Destructor of the class.
@@ -425,7 +428,8 @@ public:
    */
   CSpectralDriver(char* confFile,
                   unsigned short val_nZone,
-                  unsigned short val_nDim);
+                  unsigned short val_nDim,
+                  SU2_Comm MPICommunicator);
   
   /*!
    * \brief Destructor of the class.
@@ -486,7 +490,8 @@ public:
 	 */
   CFSIDriver(char* confFile,
              unsigned short val_nZone,
-             unsigned short val_nDim);
+             unsigned short val_nDim,
+             SU2_Comm MPICommunicator);
 
 	/*!
 	 * \brief Destructor of the class.

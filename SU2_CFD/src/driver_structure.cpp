@@ -34,14 +34,15 @@
 
 CDriver::CDriver(char* confFile,
                  unsigned short val_nZone,
-                 unsigned short val_nDim):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), nDim(val_nDim), StopCalc(false), fsi(false) {
+                 unsigned short val_nDim,
+                 SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), nDim(val_nDim), StopCalc(false), fsi(false) {
   
 
   unsigned short jZone, iSol;
 
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPICommunicator, &rank);
 #endif
 
     /*--- Create pointers to all of the classes that may be used throughout
@@ -100,6 +101,7 @@ CDriver::CDriver(char* confFile,
      read and stored. ---*/
 
     config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
+    config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
     /*--- Definition of the geometry class to store the primal grid in the
      partitioning process. ---*/
@@ -393,7 +395,7 @@ void CDriver::Postprocessing(){
   unsigned short jZone;
 
   int rank = MASTER_NODE;
-  int size = MASTER_NODE;
+  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -2326,7 +2328,7 @@ void CDriver::StartSolver(){
     int rank = MASTER_NODE;
 
 #ifdef HAVE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_rank(config_container[ZONE_0]->GetMPICommunicator(), &rank);
 #endif
 
     /*--- Main external loop of the solver. Within this loop, each iteration ---*/
@@ -2953,9 +2955,11 @@ su2double CDriver::SetVertexVarCoord(unsigned short iMarker, unsigned short iVer
 
 CSingleZoneDriver::CSingleZoneDriver(char* confFile,
                                      unsigned short val_nZone,
-                                     unsigned short val_nDim) : CDriver(confFile,
+                                     unsigned short val_nDim,
+                                     SU2_Comm MPICommunicator) : CDriver(confFile,
                                                                         val_nZone,
-                                                                        val_nDim) { }
+                                                                        val_nDim,
+                                                                        MPICommunicator) { }
 
 CSingleZoneDriver::~CSingleZoneDriver(void) { }
 
@@ -3071,9 +3075,11 @@ void CSingleZoneDriver::SetInitialMesh(){
 
 CMultiZoneDriver::CMultiZoneDriver(char* confFile,
                                    unsigned short val_nZone,
-                                   unsigned short val_nDim) : CDriver(confFile,
-                                                                      val_nZone,
-                                                                      val_nDim) { }
+                                   unsigned short val_nDim,
+                                   SU2_Comm MPICommunicator) : CDriver(confFile,
+                                                                       val_nZone,
+                                                                       val_nDim,
+                                                                       MPICommunicator) { }
 
 
 CMultiZoneDriver::~CMultiZoneDriver(void) { }
@@ -3206,9 +3212,11 @@ void CMultiZoneDriver::SetInitialMesh(){
 
 CSpectralDriver::CSpectralDriver(char* confFile,
                                  unsigned short val_nZone,
-                                 unsigned short val_nDim) : CDriver(confFile,
+                                 unsigned short val_nDim,
+                                 SU2_Comm MPICommunicator) : CDriver(confFile,
                                                                     val_nZone,
-                                                                    val_nDim) { }
+                                                                    val_nDim,
+                                                                    MPICommunicator) { }
 
 CSpectralDriver::~CSpectralDriver(void) { }
 
@@ -3701,9 +3709,11 @@ void CSpectralDriver::SetTimeSpectral_Velocities() {
 
 CFSIDriver::CFSIDriver(char* confFile,
                        unsigned short val_nZone,
-                       unsigned short val_nDim) : CDriver(confFile,
+                       unsigned short val_nDim,
+                       SU2_Comm MPICommunicator) : CDriver(confFile,
                                                           val_nZone,
-                                                          val_nDim) { }
+                                                          val_nDim,
+                                                          MPICommunicator) { }
 
 CFSIDriver::~CFSIDriver(void) { }
 
