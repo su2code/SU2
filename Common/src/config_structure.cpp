@@ -960,6 +960,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief LOW_MEMORY_OUTPUT
    *  \n DESCRIPTION: Output less information for lower memory use.  \ingroup Config*/
   addBoolOption("LOW_MEMORY_OUTPUT", Low_MemoryOutput, false);
+  /*!\brief WRT_OUTPUT
+   *  \n DESCRIPTION: Write output files (disable all output by setting to NO)  \ingroup Config*/
+  addBoolOption("WRT_OUTPUT", Wrt_Output, true);
   /*!\brief WRT_VOL_SOL
    *  \n DESCRIPTION: Write a volume solution file  \ingroup Config*/
   addBoolOption("WRT_VOL_SOL", Wrt_Vol_Sol, true);

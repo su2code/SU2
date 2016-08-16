@@ -1061,6 +1061,8 @@ inline string CConfig::GetMotion_FileName(void) { return Motion_Filename; }
 
 inline bool CConfig::GetLow_MemoryOutput(void) { return Low_MemoryOutput; }
 
+inline bool CConfig::GetWrt_Output(void) { return Wrt_Output; }
+
 inline bool CConfig::GetWrt_Vol_Sol(void) { return Wrt_Vol_Sol; }
 
 inline bool CConfig::GetWrt_Srf_Sol(void) { return Wrt_Srf_Sol; }

@@ -2135,6 +2135,10 @@ void FEMStandardElementClass::DataStandardLine(void) {
 
   /*--- Determine the local subconnectivity used for plotting purposes. ---*/
   SubConnForPlottingLine(nPoly, subConn1ForPlotting);
+  
+  /*--- Set the VTK_type(s) for this sub element. ---*/
+  VTK_Type1 = LINE;
+  VTK_Type2 = NONE;
 }
 
 void FEMStandardElementClass::DataStandardTriangle(void) {
@@ -2159,6 +2163,10 @@ void FEMStandardElementClass::DataStandardTriangle(void) {
   /*--- Determine the local subconnectivity of the triangular element used for
         plotting purposes. ---*/
   SubConnForPlottingTriangle(nPoly, subConn1ForPlotting);
+  
+  /*--- Set the VTK_type(s) for this sub element. ---*/
+  VTK_Type1 = TRIANGLE;
+  VTK_Type2 = NONE;
 }
 
 void FEMStandardElementClass::DataStandardQuadrilateral(void) {
@@ -2188,6 +2196,10 @@ void FEMStandardElementClass::DataStandardQuadrilateral(void) {
   /*--- Determine the local subconnectivity of the quadrilateral element used for
         plotting purposes. ---*/
   SubConnForPlottingQuadrilateral(nPoly, subConn1ForPlotting);
+  
+  /*--- Set the VTK_type(s) for this sub element. ---*/
+  VTK_Type1 = QUADRILATERAL;
+  VTK_Type2 = NONE;
 }
 
 void FEMStandardElementClass::DataStandardTetrahedron(void) {
@@ -2237,6 +2249,10 @@ void FEMStandardElementClass::DataStandardTetrahedron(void) {
         plotting purposes. The high order tetrahedron is split in several
         linear subtetrahedra.           ---*/
   SubConnTetrahedron();
+  
+  /*--- Set the VTK_type(s) for this sub element. ---*/
+  VTK_Type1 = TETRAHEDRON;
+  VTK_Type2 = NONE;
 }
 
 void FEMStandardElementClass::DataStandardPyramid(void) {
@@ -2293,6 +2309,10 @@ void FEMStandardElementClass::DataStandardPyramid(void) {
         plotting purposes. The high order pyramid is split in several
         linear subpyramids and subtetrahedra, i.e. two element types. ---*/
   SubConnPyramid();
+  
+  /*--- Set the VTK_type(s) for this sub element. ---*/
+  VTK_Type1 = PYRAMID;
+  VTK_Type2 = TETRAHEDRON;
 }
 
 void FEMStandardElementClass::DataStandardPrism(void) {
@@ -2350,6 +2370,10 @@ void FEMStandardElementClass::DataStandardPrism(void) {
         plotting purposes. The high order prism is split in several
         linear subprisms.                      ---*/
   SubConnPrism();
+  
+  /*--- Set the VTK_type(s) for this sub element. ---*/
+  VTK_Type1 = PRISM;
+  VTK_Type2 = NONE;
 }
 
 void FEMStandardElementClass::DataStandardHexahedron(void) {
@@ -2410,13 +2434,13 @@ void FEMStandardElementClass::DataStandardHexahedron(void) {
         plotting purposes. The high order hexahedron is split in several
         linear subhexahedra.                      ---*/
   SubConnHexahedron();
+  
+  /*--- Set the VTK_type(s) for this sub element. ---*/
+  VTK_Type1 = HEXAHEDRON;
+  VTK_Type2 = NONE;
 }
 
 void FEMStandardElementClass::SubConnTetrahedron(void) {
-
-  /*--- Set the VTK_type(s) for this sub element. ---*/
-  VTK_Type1 = TETRAHEDRON;
-  VTK_Type2 = NONE;
   
   /*--- Initialize the number of DOFs for the current edges to the number of
         DOFs of the edges present in the tetrahedron. Also initialize the
@@ -2610,10 +2634,6 @@ void FEMStandardElementClass::SubConnTetrahedron(void) {
 }
 
 void FEMStandardElementClass::SubConnPyramid(void) {
-
-  /*--- Set the VTK_type(s) for this sub element. ---*/
-  VTK_Type1 = PYRAMID;
-  VTK_Type2 = TETRAHEDRON;
   
   /*--- Initialize the number of DOFs for the current edges to the number of
         DOFs of the edges on the base of the pyramid. Also initialize the
@@ -2770,10 +2790,6 @@ void FEMStandardElementClass::SubConnPyramid(void) {
 }
 
 void FEMStandardElementClass::SubConnPrism(void) {
-
-  /*--- Set the VTK_type(s) for this sub element. ---*/
-  VTK_Type1 = PRISM;
-  VTK_Type2 = NONE;
   
   /*--- Determine the number of DOFs for a triangle. This is the offset in
         k-direction, the structured direction of a prisms.    ---*/
@@ -2848,10 +2864,6 @@ void FEMStandardElementClass::SubConnPrism(void) {
 }
 
 void FEMStandardElementClass::SubConnHexahedron(void) {
-
-  /*--- Set the VTK_type(s) for this sub element. ---*/
-  VTK_Type1 = HEXAHEDRON;
-  VTK_Type2 = NONE;
   
   /*--- Determine the nodal offset in j- and k-direction. ---*/
   unsigned short jOff = nPoly+1;
