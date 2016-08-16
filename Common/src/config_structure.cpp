@@ -109,6 +109,18 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 
 }
 
+SU2_Comm CConfig::GetMPICommunicator() {
+
+  return SU2_Communicator;
+
+}
+
+void CConfig::SetMPICommunicator(SU2_Comm Communicator) {
+
+  SU2_Communicator = Communicator;
+
+}
+
 void CConfig::SetPointersNull(void) {
   Marker_CfgFile_Out_1D=NULL;       Marker_All_Out_1D=NULL;
   Marker_CfgFile_GeoEval=NULL;      Marker_All_GeoEval=NULL;
