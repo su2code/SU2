@@ -10,8 +10,6 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-from mpi4py import MPI  # MPI is initialized from now by python and can be continued in C++ !
-
 import os, sys, shutil, copy
 import time as timer
 from math import *	# use mathematical expressions
@@ -30,10 +28,27 @@ import SU2Solver
 
 def main():
 
-  comm = MPI.COMM_WORLD
-  myid = comm.Get_rank()
-  numberPart = comm.Get_size()
- 
+  # --- Get the FSI conig file name form the command line options --- #
+  parser=OptionParser()
+  parser.add_option("-f", "--file",       dest="filename",
+                      help="read config from FILE", metavar="FILE")
+  parser.add_option("--parallel", action="store_true",
+                      help="Specify if we need to initialize MPI", dest="with_MPI", default=False)
+
+  (options, args)=parser.parse_args()
+
+  if options.with_MPI == True:
+    from mpi4py import MPI  # MPI is initialized from now by python and can be continued in C++ !
+    comm = MPI.COMM_WORLD
+    myid = comm.Get_rank()
+    numberPart = comm.Get_size()
+    have_MPI = True
+  else:
+    comm = 0
+    myid = 0
+    numberPart = 1
+    have_MPI = False
+
   rootProcess = 0
 
   # --- Set the working directory --- #
@@ -46,13 +61,6 @@ def main():
 
   # starts timer
   start = timer.time()
-
-  # --- Get the FSI conig file name form the command line options --- #
-  parser=OptionParser()
-  parser.add_option("-f", "--file",       dest="filename",
-                      help="read config from FILE", metavar="FILE")
-
-  (options, args)=parser.parse_args()
 
   confFile = str(options.filename)
 
@@ -76,14 +84,16 @@ def main():
     konfig = copy.deepcopy(config)
     konfig.dump(CFD_ConFile)
 
-  comm.barrier()
+  if have_MPI == True:
+    comm.barrier()
 
   # --- Initialize the fluid solver --- #
   if myid == rootProcess:
     print('\n***************************** Initializing fluid solver *****************************')
-  FluidSolver = SU2Solver.CSingleZoneDriver(CFD_ConFile, 1, FSI_config['NDIM'])
+  FluidSolver = SU2Solver.CSingleZoneDriver(CFD_ConFile, 1, FSI_config['NDIM'], comm)
 
-  comm.barrier()
+  if have_MPI == True:
+    comm.barrier()
   
   # --- Initialize the solid solver --- # (!! for now we are using only serial solid solvers)
   if myid == rootProcess:
@@ -102,25 +112,30 @@ def main():
   else:
     SolidSolver = None
 
-  comm.barrier()
+  if have_MPI == True:
+    comm.barrier()
 
   # --- Initialize and set the FSI interface (coupling environement) --- #
   if myid == rootProcess:
     print('\n***************************** Initializing FSI interface *****************************')
-  comm.barrier()
-  FSIInterface = FSI.Interface(FSI_config, FluidSolver, SolidSolver)
+  if have_MPI == True:
+    comm.barrier()
+  FSIInterface = FSI.Interface(FSI_config, FluidSolver, SolidSolver, have_MPI)
   
   if myid == rootProcess:
     print('\n***************************** Connect fluid and solid solvers *****************************')
-  comm.barrier()
+  if have_MPI == True:
+    comm.barrier()
   FSIInterface.connect(FluidSolver, SolidSolver)
 
   if myid == rootProcess:
     print('\n***************************** Mapping fluid-solid interfaces *****************************')
-  comm.barrier()
+  if have_MPI == True:
+    comm.barrier()
   FSIInterface.interfaceMapping(FluidSolver, SolidSolver, FSI_config)
-  
-  comm.barrier()
+ 
+  if have_MPI == True: 
+    comm.barrier()
 
   # --- Launch a steady or unsteady FSI computation --- #
   if FSI_config['UNSTEADY_SIMULATION'] == "YES":
@@ -149,14 +164,16 @@ def main():
       if myid == rootProcess:
         print('A KeyboardInterrupt occured in FSIInterface.SteadyFSI : ',exception)
   
-  comm.barrier()
+  if have_MPI == True:
+    comm.barrier()
 
   # --- Exit cleanly the fluid and solid solvers --- #
   FluidSolver.Postprocessing()
   if myid == rootProcess:
       SolidSolver.exit()
 
-  comm.barrier()
+  if have_MPI == True:
+    comm.barrier()
 
   # stops timer
   stop = timer.time()

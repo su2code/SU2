@@ -33,7 +33,6 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-from mpi4py import MPI			# use mpi4py for parallel run (also valid for serial) 
 from optparse import OptionParser	# use a parser for configuration
 import SU2				# imports SU2 python tools
 
@@ -52,29 +51,36 @@ def main():
                     metavar="DIMENSIONS")
   parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES",
                     metavar="ZONES")
-  parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver",
-                    metavar="FSI")
-  parser.add_option("--spectral", dest="time_spectral", default="False",
+  parser.add_option("--fsi", dest="fsi", action="store_true", default="False", 
+                    help="Launch the FSI driver", metavar="FSI")
+  parser.add_option("--spectral", action="store_true", dest="time_spectral", default="False",
                     help="Launch the time SPECTRAL driver", metavar="SPECTRAL")
+  parser.add_option("--parallel", action="store_true",
+                    help="Specify if we need to initialize MPI", dest="with_MPI", default=False)
 
   (options, args) = parser.parse_args()
   options.nDim  = int( options.nDim )
   options.nZone = int( options.nZone )
-  options.fsi = options.fsi.upper() == 'TRUE'
-  options.time_spectral = options.time_spectral.upper() == 'TRUE'
 
   if options.filename == None:
     raise Exception("No config file provided. Use -f flag")
 
+  if options.with_MPI == True:
+    from mpi4py import MPI			# use mpi4py for parallel run (also valid for serial)
+    comm = MPI.COMM_WORLD
+  else:
+    comm = 0 
+
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   if options.nZone == 1:
-    SU2Driver = SU2Solver.CSingleZoneDriver(options.filename, options.nZone, options.nDim);
-  elif options.time_spectral:
-    SU2Driver = SU2Solver.CSpectralDriver(options.filename, options.nZone, options.nDim);
-  elif (options.nZone == 2) and (options.fsi):
-    SU2Driver = SU2Solver.CFSIDriver(options.filename, options.nZone, options.nDim);
+    SU2Driver = SU2Solver.CSingleZoneDriver(options.filename, options.nZone, options.nDim, comm);
+  elif options.time_spectral == True:
+    print options.time_spectral
+    SU2Driver = SU2Solver.CSpectralDriver(options.filename, options.nZone, options.nDim, comm);
+  elif (options.nZone == 2) and (options.fsi == True):
+    SU2Driver = SU2Solver.CFSIDriver(options.filename, options.nZone, options.nDim, comm);
   else:
-    SU2Driver = SU2Solver.CMultiZoneDriver(options.filename, options.nZone, options.nDim);
+    SU2Driver = SU2Solver.CMultiZoneDriver(options.filename, options.nZone, options.nDim, comm);
 
   # Launch the solver for the entire computation
   SU2Driver.StartSolver()
