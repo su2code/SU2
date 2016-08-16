@@ -30,4 +30,16 @@
  */
 #pragma once
 
+#ifdef HAVE_MPI
+  #include "mpi.h"
+#endif
+
 typedef double su2double;
+
+#ifdef HAVE_MPI
+  typedef MPI_Comm SU2_Comm;
+#endif
+
+#ifndef HAVE_MPI
+  typedef unsigned short SU2_Comm;
+#endif
