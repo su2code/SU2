@@ -46,6 +46,9 @@ int main(int argc, char *argv[]) {
   char *buffptr;
   SU2_MPI::Init(&argc, &argv);
   MPI_Buffer_attach( malloc(BUFSIZE), BUFSIZE );
+  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
+#else
+  SU2_Comm MPICommunicator(0);
 #endif
   
   /*--- Create a pointer to the main SU2 Driver ---*/
@@ -76,26 +79,26 @@ int main(int argc, char *argv[]) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
 
-    driver = new CSingleZoneDriver(config_file_name, nZone, nDim);
+    driver = new CSingleZoneDriver(config_file_name, nZone, nDim, MPICommunicator);
 
   } else if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
 
     /*--- Use the spectral method driver. ---*/
 
-    driver = new CSpectralDriver(config_file_name, nZone, nDim);
+    driver = new CSpectralDriver(config_file_name, nZone, nDim, MPICommunicator);
 
   } else if ((nZone == 2) && fsi) {
 
     /*--- FSI problem: instantiate the FSI driver class. ---*/
 
-    driver = new CFSIDriver(config_file_name, nZone, nDim);
+    driver = new CFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
 
   } else {
 
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
      or a specialized driver class for a particular multi-physics problem. ---*/
 
-    driver = new CMultiZoneDriver(config_file_name, nZone, nDim);
+    driver = new CMultiZoneDriver(config_file_name, nZone, nDim, MPICommunicator);
 
     /*--- Future multi-zone drivers instatiated here. ---*/
 
