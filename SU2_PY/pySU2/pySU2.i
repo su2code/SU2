@@ -14,9 +14,13 @@ threads="1"
 %}
 
 // ----------- USED MODULES ------------
+%import "../../Common/include/datatypes/primitive_structure.hpp"
 %include "std_string.i"
 %include "typemaps.i"
-%include "numpy.i"
+//%include "numpy.i"
+#ifdef HAVE_MPI			//Need mpi4py only for a parallel build of the wrapper.
+  %include "mpi4py/mpi4py.i"
+  %mpi4py_typemap(Comm, MPI_Comm)
+#endif
 // ----------- API CLASSES ----------------
 %include "../../SU2_CFD/include/driver_structure.hpp"
-%include "../../Common/include/datatypes/primitive_structure.hpp"

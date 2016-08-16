@@ -41,25 +41,20 @@ SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
 SWIG_SO_REAL = _SU2Solver.${SO_EXT}
 
 PYTHON_INCLUDE = -I/usr/include/python2.7
-NUMPY_INCLUDE = /usr/lib/python2.7/dist-packages/numpy/core/include
-#MPI4PY_INCLUDE = /usr/lib/python2.7/dist-packages/mpi4py/include
+#NUMPY_INCLUDE = /usr/lib/python2.7/dist-packages/numpy/core/include
+MPI4PY_INCLUDE = ${HOME}/.local/lib/python2.7/site-packages/mpi4py/include \
+                 -I/usr/local/lib/python2.7/site-packages/mpi4py/include \
+                 -I/usr/local/lib/python2.7/dist-packages/mpi4py/include \
+                 -I/usr/local/lib/python2.7/dist-packages/mpi4py/include
 
 SWIG = swig
 
 pySU2_INCLUDE = -I${abs_top_srcdir}/Common/include \
-	-I${abs_top_srcdir}/SU2_CFD/include \
-	-I${abs_top_srcdir}/SU2_DEF/include \
-	-I${abs_top_srcdir}/SU2_DOT/include \
-	-I${abs_top_srcdir}/SU2_DOT/include \
-	-I${abs_top_srcdir}/SU2_GEO/include \
-	-I${abs_top_srcdir}/SU2_MSH/include \
-	-I${abs_top_srcdir}/SU2_SOL/include
+	-I${abs_top_srcdir}/SU2_CFD/include
 
+PY_INCLUDE = ${PYTHON_INCLUDE} -I${MPI4PY_INCLUDE}
 
-#PY_INCLUDE = ${PYTHON_INCLUDE} -I${NUMPY_INCLUDE} -I${MPI4PY_INCLUDE}
-PY_INCLUDE = ${PYTHON_INCLUDE} -I${NUMPY_INCLUDE}
-SWIG_INCLUDE = -I${abs_top_srcdir}/SU2_CFD/include \
-		-I${abs_top_srcdir}/Common/include
+SWIG_INCLUDE = ${PY_INCLUDE}
 
 SUBDIR_EXEC = ${bindir}
 
@@ -88,13 +83,13 @@ SU2SOLVER_LIB = ${abs_top_builddir}/SU2_CFD/obj/libSU2Core.a \
 pySU2_LD_FLAGS = ${SU2SOLVER_LIB} ${TECIO_LIB} ${PARMETIS_LIB} ${METIS_LIB}
 
 # Set the command line flags to use for compilation
-pySU2_CC_FLAGS = ${EXTRA_CC_FLAGS} ${METIS_INCLUDE} ${PARMETIS_INCLUDE} ${TECIO_INCLUDE} ${pySU2_INCLUDE}
+pySU2_CC_FLAGS = ${CPPFLAGS} ${EXTRA_CC_FLAGS} ${METIS_INCLUDE} ${PARMETIS_INCLUDE} ${TECIO_INCLUDE} ${pySU2_INCLUDE}
 
 SO_LINK_FLAGS= -fPIC -shared 
 
 # Default rule for creating the _wrap.cxx file from the .i file
 ${SWIG_WRAP_REAL}.cxx: ${SU2SOLVER_LIB} ${SWIG_SRC}
-	${SWIG} ${TACS_DEF} -Wall ${SWIG_INCLUDE} -outdir ./ -o ${SWIG_WRAP_REAL}.cxx -c++ -python ${SWIG_SRC} 
+	${SWIG} ${CPPFLAGS} -Wall ${SWIG_INCLUDE} -outdir ./ -o ${SWIG_WRAP_REAL}.cxx -c++ -python ${SWIG_SRC} 
 
 #Default rule for compiling the .o files
 ${SWIG_WRAP_REAL}.o: ${SWIG_WRAP_REAL}.cxx
@@ -116,6 +111,6 @@ clean:
 	rm -f ${CURRENT_DIR}/*.py
 
 install:
-	/usr/bin/install -c  SU2Solver.py ${bindir}
-	/usr/bin/install -c _SU2Solver.so ${bindir}
+	${INSTALL} SU2Solver.py ${bindir}
+	${INSTALL} _SU2Solver.so ${bindir}
 
