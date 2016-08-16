@@ -60,6 +60,7 @@ using namespace std;
 
 class CConfig {
 private:
+  SU2_Comm SU2_Communicator;
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
@@ -1030,6 +1031,10 @@ public:
 	 * \brief Destructor of the class.
 	 */
 	~CConfig(void);
+
+  SU2_Comm GetMPICommunicator();
+
+  void SetMPICommunicator(SU2_Comm Communicator);
 
   /*!
    * \brief Initializes pointers to null
