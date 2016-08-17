@@ -442,13 +442,9 @@ public:
 
   /*!
    * \brief Constructor of the class.
-   * \param[in] iteration_container - Container vector with all the iteration methods.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim  - Total number of physical dimensions.
    */
   CDiscAdjMultiZoneDriver(char* confFile,
                    unsigned short val_nZone,
@@ -576,6 +572,40 @@ public:
   void ResetConvergence();  
 };
 
+
+class CDiscAdjSpectralDriver : public CSpectralDriver {
+
+  CSpectralDriver* direct_driver;
+  CIteration** direct_iteration;
+
+  unsigned short RecordingState;
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim  - Total number of physical dimensions.
+   */
+  CDiscAdjSpectralDriver(char* confFile,
+                   unsigned short val_nZone,
+                   unsigned short val_nDim);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjSpectralDriver(void);
+
+  /*!
+   * \brief Run a single iteration of the physics within multiple zones.
+   */
+
+  void Run();
+
+  void SetRecording(unsigned short kind_recording);
+
+  void SetSensitivity(unsigned short kind_sensitivity);
+};
 
 /*!
  * \class CFSIDriver
