@@ -1687,6 +1687,7 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
   bool dual_time_1st = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST);
   bool dual_time_2nd = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   bool dual_time = (dual_time_1st || dual_time_2nd);
+  bool spectral_method = config_container[val_iZone]->GetUnsteady_Simulation() == SPECTRAL_METHOD;
   unsigned short iMesh;
   int Direct_Iter;
 
@@ -1697,7 +1698,7 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
 
   /*--- For the unsteady adjoint, load direct solutions from restart files. ---*/
 
-  if (config_container[val_iZone]->GetUnsteady_Simulation()) {
+  if (config_container[val_iZone]->GetUnsteady_Simulation() && !spectral_method) {
 
     Direct_Iter = SU2_TYPE::Int(config_container[val_iZone]->GetUnst_AdjointIter()) - SU2_TYPE::Int(ExtIter) - 2;
 

@@ -2883,7 +2883,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Disable writing of limiters if enabled ---*/
     Wrt_Limiters = false;
 
-    if (Unsteady_Simulation){
+    if (Unsteady_Simulation == DT_STEPPING_1ST || Unsteady_Simulation == DT_STEPPING_2ND || Unsteady_Simulation == TIME_STEPPING){
 
       Restart_Flow = false;
 

@@ -5735,7 +5735,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       }
 
       /*--- Write the turbomachinery performance summary---*/
-      if (turbo && write_turbo){
+      if (turbo && write_turbo && !adjoint ){
       	cout << endl << "------------------------- Turbomachinery Summary ------------------------" << endl;
       	cout << endl;
       	for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Turbomachinery(); iMarker_Monitoring++){

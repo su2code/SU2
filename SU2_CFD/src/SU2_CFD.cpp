@@ -86,11 +86,19 @@ int main(int argc, char *argv[]) {
 
   	}
 
-  } else if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+  } else if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
+
+
+    if (config->GetDiscrete_Adjoint()){
 
     /*--- Use the spectral method driver. ---*/
+    	driver = new CDiscAdjSpectralDriver(config_file_name, nZone, nDim);
 
-    driver = new CSpectralDriver(config_file_name, nZone, nDim);
+    } else {
+
+    	driver = new CSpectralDriver(config_file_name, nZone, nDim);
+
+    }
 
   } else if ((nZone == 2) && fsi) {
 

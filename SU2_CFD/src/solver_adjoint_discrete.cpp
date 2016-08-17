@@ -472,7 +472,8 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
 void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config){
   int rank = MASTER_NODE;
 
-  bool time_stepping = config->GetUnsteady_Simulation() != STEADY;
+  bool spectral_method = config->GetUnsteady_Simulation() == SPECTRAL_METHOD;
+  bool time_stepping = config->GetUnsteady_Simulation() != STEADY && !spectral_method;
   unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
   unsigned long ExtIter = config->GetExtIter();
   su2double seeding = 1.0;
@@ -624,7 +625,8 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config){
   unsigned short iDim;
   su2double *Coord, Sensitivity, eps;
 
-  bool time_stepping = (config->GetUnsteady_Simulation() != STEADY);
+  bool spectral_method = config->GetUnsteady_Simulation() == SPECTRAL_METHOD;
+  bool time_stepping = config->GetUnsteady_Simulation() != STEADY && !spectral_method;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     Coord = geometry->node[iPoint]->GetCoord();
