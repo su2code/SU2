@@ -8626,8 +8626,8 @@ void CEulerSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container
         	Boundary_Vel /= config->GetVelocity_Ref();
         	y_0 = y_min*100 + NonUniformBC_InputVar1[0];
 
-        	t_perio = fmod(Physical_t, Period);
-        	y_perio = fmod(Boundary_Vel*t_perio + (yCoord - y_0), yPitch);
+        	t_perio = fmod(SU2_TYPE::GetValue(Physical_t), SU2_TYPE::GetValue(Period));
+        	y_perio = fmod(SU2_TYPE::GetValue(Boundary_Vel*t_perio + (yCoord - y_0)), SU2_TYPE::GetValue(yPitch));
 
 
         	/*--- Retrieve the specified total conditions for this boundary. ---*/
@@ -11394,6 +11394,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 	Pressure, Density, Energy, *Flow_Dir, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
 	alpha, aa, bb, cc, dd, Area, UnitNormal[3];
 	su2double *V_inlet, *V_domain;
+	su2double Physical_dt, Physical_t ;
+
+	//TODO Clean from spectral method hardcoded once fixed the possible bug with scaling the geometry
 
 	bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool grid_movement        = config->GetGrid_Movement();
@@ -11462,7 +11465,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 				/*--- Total properties have been specified at the inlet. ---*/
 
 				case TOTAL_CONDITIONS:
-					su2double Physical_dt, Physical_t ;
 
 					if (spectral_method) {
 						/*--- time interval using nTimeInstances ---*/
