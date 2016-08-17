@@ -639,21 +639,31 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
    Total_ForwardGradient = 0.0;
 
 
-   /*--- Header of the temporary output file ---*/
-   ofstream myfile_res;
-   myfile_res.open ("Output_Direct_Diff.txt");
 
-   myfile_res << "Objective Function " << "\t";
+   if (config->GetDirectDiff() == D_YOUNG ||
+       config->GetDirectDiff() == D_POISSON ||
+       config->GetDirectDiff() == D_RHO ||
+       config->GetDirectDiff() == D_RHO_DL){
 
-   myfile_res << "Sensitivity Young Local" << "\t";
+     /*--- Header of the temporary output file ---*/
+     ofstream myfile_res;
 
-   myfile_res << "Sensitivity Young Global" << "\t";
+     if (config->GetDirectDiff() == D_YOUNG) myfile_res.open ("Output_Direct_Diff_E.txt");
+     if (config->GetDirectDiff() == D_POISSON) myfile_res.open ("Output_Direct_Diff_Nu.txt");
+     if (config->GetDirectDiff() == D_RHO) myfile_res.open ("Output_Direct_Diff_Rho.txt");
+     if (config->GetDirectDiff() == D_RHO_DL) myfile_res.open ("Output_Direct_Diff_Rho_DL.txt");
 
-   myfile_res << "Sensitivity E Averaged";
+     myfile_res << "Objective Function " << "\t";
 
-   myfile_res << endl;
+     myfile_res << "Sensitivity Local" << "\t";
 
-   myfile_res.close();
+     myfile_res << "Sensitivity Global" << "\t";
+
+     myfile_res << endl;
+
+     myfile_res.close();
+
+   }
 
 
   /*--- Perform the MPI communication of the solution ---*/
@@ -5014,40 +5024,39 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
   if (direct_diff){
 
     ofstream myfile_res;
-    myfile_res.open ("Output_Direct_Diff.txt", ios::app);
+
+    if (config->GetDirectDiff() == D_YOUNG) myfile_res.open ("Output_Direct_Diff_E.txt", ios::app);
+    if (config->GetDirectDiff() == D_POISSON) myfile_res.open ("Output_Direct_Diff_Nu.txt", ios::app);
+    if (config->GetDirectDiff() == D_RHO) myfile_res.open ("Output_Direct_Diff_Rho.txt", ios::app);
+    if (config->GetDirectDiff() == D_RHO_DL) myfile_res.open ("Output_Direct_Diff_Rho_DL.txt", ios::app);
 
     myfile_res.precision(15);
 
     myfile_res << scientific << Total_OFRefGeom << "\t";
 
-    su2double local_forward_gradient = 0.0, forward_gradient = 0.0;
+    su2double local_forward_gradient = 0.0;
     unsigned long current_iter = 1;
     local_forward_gradient = SU2_TYPE::GetDerivative(Total_OFRefGeom);
-    Total_ForwardGradient += local_forward_gradient;
+
+    if (fsi) {
+      Total_ForwardGradient = local_forward_gradient;
+    }
+    else {
+      Total_ForwardGradient += local_forward_gradient;
+    }
 
     myfile_res << scientific << local_forward_gradient << "\t";
 
     myfile_res << scientific << Total_ForwardGradient << "\t";
 
-    if (fsi) {
-      current_iter = config->GetFSIIter() + 1;
-      forward_gradient = Total_ForwardGradient / current_iter;
-    }
-    else {
-      forward_gradient = Total_ForwardGradient;
-    }
-
-    myfile_res << scientific << forward_gradient ;
-
     myfile_res << endl;
 
     myfile_res.close();
 
-
-    if (config->GetDirectDiff() == D_YOUNG)   cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Young Modulus: " << forward_gradient << "." << endl;
-    if (config->GetDirectDiff() == D_POISSON) cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Poisson's ratio: " << forward_gradient << "." << endl;
-    if (config->GetDirectDiff() == D_RHO)     cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the structural density: " << forward_gradient << "." << endl;
-    if (config->GetDirectDiff() == D_RHO_DL)  cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the dead weight: " << forward_gradient << "." << endl;
+    if (config->GetDirectDiff() == D_YOUNG)   cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Young Modulus: " << Total_ForwardGradient << "." << endl;
+    if (config->GetDirectDiff() == D_POISSON) cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the Poisson's ratio: " << Total_ForwardGradient << "." << endl;
+    if (config->GetDirectDiff() == D_RHO)     cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the structural density: " << Total_ForwardGradient << "." << endl;
+    if (config->GetDirectDiff() == D_RHO_DL)  cout << "Objective function: " << Total_OFRefGeom << ". Global derivative of the dead weight: " << Total_ForwardGradient << "." << endl;
 
   }
   else {

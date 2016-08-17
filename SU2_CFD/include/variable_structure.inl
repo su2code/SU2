@@ -1318,6 +1318,10 @@ inline su2double CDiscAdjVariable::GetGeometry_CrossTerm_Derivative(unsigned sho
 
 inline void CDiscAdjVariable::SetGeometry_CrossTerm_Derivative(unsigned short iDim, su2double der) { Geometry_CrossTerm_Derivative[iDim] = der;}
 
+inline su2double CDiscAdjFEAVariable::GetGeometry_CrossTerm_Derivative(unsigned short val_var) { return Geometry_CrossTerm_Derivative[val_var];}
+
+inline void CDiscAdjFEAVariable::SetGeometry_CrossTerm_Derivative(unsigned short iDim, su2double der) { Geometry_CrossTerm_Derivative[iDim] = der;}
+
 inline su2double CDiscAdjVariable::Get_OldSolution_Geometry(unsigned short iDim) { return Solution_Geometry_Old[iDim];}
 
 inline void CVariable::SetDynamic_Derivative(unsigned short iVar, su2double der) { }

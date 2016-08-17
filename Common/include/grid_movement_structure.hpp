@@ -1079,6 +1079,13 @@ public:
 	 * \param[out] Number of iterations.
 	 */
 	unsigned long Get_nIterMesh(void);
+
+  /*!
+   * \brief Set the boundary dependencies in the mesh side of the problem
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Boundary_Dependencies(CGeometry **geometry, CConfig *config);
 };
 
 /*! 
@@ -1242,6 +1249,20 @@ public:
    * \param[in] element_container - Element structure for the particular element integrated.
    */
   void Compute_Constitutive_Matrix(void);
+
+  /*!
+   * \brief Set the boundary displacements in the mesh side of the problem
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Set the boundary displacements in the mesh side of the problem
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Boundary_Dependencies(CGeometry **geometry, CConfig *config);
 
 };
 

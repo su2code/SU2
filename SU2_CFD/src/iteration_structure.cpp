@@ -2799,7 +2799,8 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver ****solver_container, CGeometry
 
   }
 
-  if (kind_recording == FEM_CROSS_TERM){
+  if ((kind_recording == FEM_CROSS_TERM_GEOMETRY) ||
+      (kind_recording == FEM_CROSS_TERM_FLOW)){
 
     /*--- Register only structural displacements as input ---*/
 
