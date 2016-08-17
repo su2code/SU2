@@ -58,6 +58,8 @@ protected:
   char runtime_file_name[MAX_STRING_SIZE];
   su2double StartTime,                          /*!< \brief Start point of the timer for performance benchmarking.*/
   StopTime,                           /*!< \brief Stop point of the timer for performance benchmarking.*/
+  UsedTimePreproc,                           /*!< \brief Elapsed time between Start and Stop point of the timer for tracking preprocessing phase.*/
+  UsedTimeCompute,                           /*!< \brief Elapsed time between Start and Stop point of the timer for tracking compute phase.*/
   UsedTime;                           /*!< \brief Elapsed time between Start and Stop point of the timer.*/
   unsigned long ExtIter;                        /*!< \brief External iteration.*/
   ofstream ConvHist_file;                       /*!< \brief Convergence history file.*/
