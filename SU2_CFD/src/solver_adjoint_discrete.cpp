@@ -60,6 +60,15 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
 
+  /*--- Initialize arrays to NULL ---*/
+
+  CSensitivity = NULL;
+
+  Sens_Geo   = NULL;
+  Sens_Mach  = NULL;
+  Sens_AoA   = NULL;
+  Sens_Press = NULL;
+  Sens_Temp  = NULL;
 
   /*-- Store some information about direct solver ---*/
   this->KindDirect_Solver = Kind_Solver;
@@ -217,6 +226,24 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   }
 }
 
+CDiscAdjSolver::~CDiscAdjSolver(void){ 
+
+  unsigned short iMarker;
+
+  if (CSensitivity != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      delete [] CSensitivity[iMarker];
+    }
+    delete [] CSensitivity;
+  }
+
+  if (Sens_Geo   != NULL) delete [] Sens_Geo;
+  if (Sens_Mach  != NULL) delete [] Sens_Mach;
+  if (Sens_AoA   != NULL) delete [] Sens_AoA;
+  if (Sens_Press != NULL) delete [] Sens_Press;
+  if (Sens_Temp  != NULL) delete [] Sens_Temp;
+
+}
 
 void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
@@ -260,6 +287,30 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 }
 
+void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
+  unsigned long iPoint, nPoint = geometry->GetnPoint();
+
+  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
+  time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND,
+  input = true;
+
+  /*--- Register solution at all necessary time instances and other variables on the tape ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    direct_solver->node[iPoint]->RegisterSolution(input);
+  }
+  if (time_n_needed){
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      direct_solver->node[iPoint]->RegisterSolution_time_n();
+    }
+  }
+  if (time_n1_needed){
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
+      direct_solver->node[iPoint]->RegisterSolution_time_n1();
+    }
+  }
+}
 
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
 
@@ -311,6 +362,20 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
      * extracted in the ExtractAdjointVariables routine. ---*/
 }
 
+void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config){
+
+  unsigned long iPoint, nPoint = geometry->GetnPoint();
+
+  /*--- Register variables as output of the solver iteration ---*/
+
+  bool input = false;
+
+  /*--- Register output variables on the tape ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    direct_solver->node[iPoint]->RegisterSolution(input);
+  }
+}
 
 
 void CDiscAdjSolver::RegisterObj_Func(CConfig *config){

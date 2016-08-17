@@ -49,6 +49,10 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config) : CSolver()
 	nVar =          1;
 	node =          new CVariable*[nPoint];
   
+  /*--- Initialize nVarGrad for deallocation ---*/
+  
+  nVarGrad = nVar;
+  
 	Residual = new su2double[nVar]; Residual_RMS = new su2double[nVar];
 	Solution = new su2double[nVar];
   Residual_Max = new su2double[nVar];

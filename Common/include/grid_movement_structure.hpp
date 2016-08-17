@@ -68,7 +68,7 @@ public:
 	/*! 
 	 * \brief Destructor of the class. 
 	 */
-	~CGridMovement(void);
+         virtual ~CGridMovement(void);
   
   /*!
 	 * \brief A pure virtual member.

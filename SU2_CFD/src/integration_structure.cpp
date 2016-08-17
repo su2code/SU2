@@ -97,7 +97,15 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   solver_container[MainSolver]->BC_NearField_Boundary(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
 
-  
+  /*--- Compute Fourier Transformations for markers where NRBC_BOUNDARY is applied---*/
+
+  if (config->GetBoolNRBC()){
+		solver_container[MainSolver]->PreprocessBC_NonReflecting(geometry, config, numerics[CONV_BOUND_TERM], INFLOW);
+
+		solver_container[MainSolver]->PreprocessBC_NonReflecting(geometry, config, numerics[CONV_BOUND_TERM], OUTFLOW);
+  }
+
+
   /*--- Weak boundary conditions ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {

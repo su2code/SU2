@@ -235,12 +235,12 @@ def main():
     contadj_oneram6.tol       = 0.00001
     test_list.append(contadj_oneram6)
 
-    # Inviscid WEDGE: generalized adjoint and custom DV
+    # Inviscid WEDGE: tests generalized adjoint
     contadj_wedge             = TestCase('contadj_wedge')
     contadj_wedge.cfg_dir   = "cont_adj_euler/wedge"
     contadj_wedge.cfg_file  = "inv_wedge_ROE.cfg"
     contadj_wedge.test_iter = 10
-    contadj_wedge.test_vals = [-7.364977, -13.301134, 0.000266, 0.000000] #last 4 columns
+    contadj_wedge.test_vals = [2.780403, -3.223266, -1448300.000000, -0.000004] #last 4 columns
     contadj_wedge.su2_exec  = "SU2_CFD"
     contadj_wedge.timeout   = 1600
     contadj_wedge.tol       = 0.00001
@@ -427,7 +427,7 @@ def main():
     ls89_sa.cfg_dir   = "nicf/LS89"
     ls89_sa.cfg_file  = "turb_SA_PR.cfg"
     ls89_sa.test_iter = 100
-    ls89_sa.test_vals = [-6.383146, -13.350551, 0.069079, 0.160886] #last 4 columns
+    ls89_sa.test_vals = [-5.062991, -13.374292, 0.128005, 0.323965] #last 4 columns
     ls89_sa.su2_exec  = "SU2_CFD"
     ls89_sa.timeout   = 1600
     ls89_sa.tol       = 0.00001
@@ -455,7 +455,7 @@ def main():
     edge_VW.tol       = 0.00001
     test_list.append(edge_VW)
 
-    # Rarefaction shock wave edge_PPR                                                                                                                                                                                                
+    # Rarefaction shock wave edge_PPR               
     edge_PPR           = TestCase('edge_PPR')
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
@@ -717,6 +717,18 @@ def main():
     shape_opt_euler_py.tol       = 0.00001
     pass_list.append(shape_opt_euler_py.run_opt())
     test_list.append(shape_opt_euler_py)
+
+    # test continuous_adjoint.py, with multiple objectives
+    contadj_multi_py            = TestCase('contadj_multi_py')
+    contadj_multi_py.cfg_dir    = "cont_adj_euler/wedge"
+    contadj_multi_py.cfg_file   = "inv_wedge_ROE_multiobj.cfg"
+    contadj_multi_py.test_iter  = 10
+    contadj_multi_py.su2_exec   = "continuous_adjoint.py"
+    contadj_multi_py.timeout    = 1600
+    contadj_multi_py.reference_file = "of_grad_combo.dat.ref"
+    contadj_multi_py.test_file  = "of_grad_combo.dat"
+    pass_list.append(contadj_multi_py.run_filediff())
+    test_list.append(contadj_multi_py)
 
     
     # Tests summary

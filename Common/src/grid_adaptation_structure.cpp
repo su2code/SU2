@@ -258,24 +258,29 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config) {
   unsigned short lastindex = copy.find_last_of(".");
   copy = copy.substr(0, lastindex);
 	strcpy (cstr, copy.c_str());
-	if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT)        SPRINTF (buffer, "_cd.dat");
-	if (config->GetKind_ObjFunc() == LIFT_COEFFICIENT)        SPRINTF (buffer, "_cl.dat");
-	if (config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT)   SPRINTF (buffer, "_csf.dat");
-	if (config->GetKind_ObjFunc() == INVERSE_DESIGN_PRESSURE) SPRINTF (buffer, "_invpress.dat");
-	if (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX) SPRINTF (buffer, "_invheat.dat");
-	if (config->GetKind_ObjFunc() == MOMENT_X_COEFFICIENT)    SPRINTF (buffer, "_cmx.dat");
-	if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT)    SPRINTF (buffer, "_cmy.dat");
-	if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT)    SPRINTF (buffer, "_cmz.dat");
-	if (config->GetKind_ObjFunc() == EFFICIENCY)              SPRINTF (buffer, "_eff.dat");
-  if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT)     SPRINTF (buffer, "_cfx.dat");
-	if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT)     SPRINTF (buffer, "_cfy.dat");
-	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT)     SPRINTF (buffer, "_cfz.dat");
-  if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          SPRINTF (buffer, "_totheat.dat");
-  if (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)        SPRINTF (buffer, "_maxheat.dat");
-  if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)      SPRINTF (buffer, "_pt.dat");
-  if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE)      SPRINTF (buffer, "_pe.dat");
-	if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)          SPRINTF (buffer, "_mfr.dat");
-	if (config->GetKind_ObjFunc() == OUTFLOW_GENERALIZED)       SPRINTF (buffer, "_chn.dat");
+	if (config->GetnObj()>1){
+	  SPRINTF (buffer, "_combo.dat");
+	}
+	else{
+    if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT)        SPRINTF (buffer, "_cd.dat");
+    if (config->GetKind_ObjFunc() == LIFT_COEFFICIENT)        SPRINTF (buffer, "_cl.dat");
+    if (config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT)   SPRINTF (buffer, "_csf.dat");
+    if (config->GetKind_ObjFunc() == INVERSE_DESIGN_PRESSURE) SPRINTF (buffer, "_invpress.dat");
+    if (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX) SPRINTF (buffer, "_invheat.dat");
+    if (config->GetKind_ObjFunc() == MOMENT_X_COEFFICIENT)    SPRINTF (buffer, "_cmx.dat");
+    if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT)    SPRINTF (buffer, "_cmy.dat");
+    if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT)    SPRINTF (buffer, "_cmz.dat");
+    if (config->GetKind_ObjFunc() == EFFICIENCY)              SPRINTF (buffer, "_eff.dat");
+    if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT)     SPRINTF (buffer, "_cfx.dat");
+    if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT)     SPRINTF (buffer, "_cfy.dat");
+    if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT)     SPRINTF (buffer, "_cfz.dat");
+    if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          SPRINTF (buffer, "_totheat.dat");
+    if (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)        SPRINTF (buffer, "_maxheat.dat");
+    if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)      SPRINTF (buffer, "_pt.dat");
+    if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE)      SPRINTF (buffer, "_pe.dat");
+    if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)          SPRINTF (buffer, "_mfr.dat");
+    if (config->GetKind_ObjFunc() == OUTFLOW_GENERALIZED)       SPRINTF (buffer, "_chn.dat");
+	}
 
 	strcat(cstr, buffer);
 	
@@ -3521,24 +3526,29 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry 
   unsigned short lastindex = copy.find_last_of(".");
   copy = copy.substr(0, lastindex);
 	strcpy (cstr, copy.c_str());
-	if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT)        SPRINTF (buffer, "_cd.dat");
-	if (config->GetKind_ObjFunc() == LIFT_COEFFICIENT)        SPRINTF (buffer, "_cl.dat");
-	if (config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT)   SPRINTF (buffer, "_csf.dat");
-	if (config->GetKind_ObjFunc() == INVERSE_DESIGN_PRESSURE) SPRINTF (buffer, "_invpress.dat");
-  if (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX) SPRINTF (buffer, "_invheat.dat");
-	if (config->GetKind_ObjFunc() == MOMENT_X_COEFFICIENT)    SPRINTF (buffer, "_cmx.dat");
-	if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT)    SPRINTF (buffer, "_cmy.dat");
-	if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT)    SPRINTF (buffer, "_cmz.dat");
-	if (config->GetKind_ObjFunc() == EFFICIENCY)              SPRINTF (buffer, "_eff.dat");
-  if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT)     SPRINTF (buffer, "_cfx.dat");
-	if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT)     SPRINTF (buffer, "_cfy.dat");
-	if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT)     SPRINTF (buffer, "_cfz.dat");
-  if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          SPRINTF (buffer, "_totheat.dat");
-  if (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)        SPRINTF (buffer, "_maxheat.dat");
-  if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)      SPRINTF (buffer, "_pt.dat");
-  if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE)      SPRINTF (buffer, "_pe.dat");
-  if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)          SPRINTF (buffer, "_mfr.dat");
-  if (config->GetKind_ObjFunc() == OUTFLOW_GENERALIZED)       SPRINTF (buffer, "_chn.dat");
+  if (config->GetnObj()>1){
+    SPRINTF (buffer, "_combo.dat");
+  }
+  else{
+    if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT)        SPRINTF (buffer, "_cd.dat");
+    if (config->GetKind_ObjFunc() == LIFT_COEFFICIENT)        SPRINTF (buffer, "_cl.dat");
+    if (config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT)   SPRINTF (buffer, "_csf.dat");
+    if (config->GetKind_ObjFunc() == INVERSE_DESIGN_PRESSURE) SPRINTF (buffer, "_invpress.dat");
+    if (config->GetKind_ObjFunc() == INVERSE_DESIGN_HEATFLUX) SPRINTF (buffer, "_invheat.dat");
+    if (config->GetKind_ObjFunc() == MOMENT_X_COEFFICIENT)    SPRINTF (buffer, "_cmx.dat");
+    if (config->GetKind_ObjFunc() == MOMENT_Y_COEFFICIENT)    SPRINTF (buffer, "_cmy.dat");
+    if (config->GetKind_ObjFunc() == MOMENT_Z_COEFFICIENT)    SPRINTF (buffer, "_cmz.dat");
+    if (config->GetKind_ObjFunc() == EFFICIENCY)              SPRINTF (buffer, "_eff.dat");
+    if (config->GetKind_ObjFunc() == FORCE_X_COEFFICIENT)     SPRINTF (buffer, "_cfx.dat");
+    if (config->GetKind_ObjFunc() == FORCE_Y_COEFFICIENT)     SPRINTF (buffer, "_cfy.dat");
+    if (config->GetKind_ObjFunc() == FORCE_Z_COEFFICIENT)     SPRINTF (buffer, "_cfz.dat");
+    if (config->GetKind_ObjFunc() == TOTAL_HEATFLUX)          SPRINTF (buffer, "_totheat.dat");
+    if (config->GetKind_ObjFunc() == MAXIMUM_HEATFLUX)        SPRINTF (buffer, "_maxheat.dat");
+    if (config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)      SPRINTF (buffer, "_pt.dat");
+    if (config->GetKind_ObjFunc() == AVG_OUTLET_PRESSURE)      SPRINTF (buffer, "_pe.dat");
+    if (config->GetKind_ObjFunc() == MASS_FLOW_RATE)          SPRINTF (buffer, "_mfr.dat");
+    if (config->GetKind_ObjFunc() == OUTFLOW_GENERALIZED)       SPRINTF (buffer, "_chn.dat");
+  }
   
 	strcat(cstr, buffer);
 	

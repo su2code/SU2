@@ -72,6 +72,7 @@ protected:
 	unsigned long nPoint,	/*!< \brief Number of points of the mesh. */
 	nPointDomain,						/*!< \brief Number of real points of the mesh. */
 	nPointGhost,					/*!< \brief Number of ghost points of the mesh. */
+	nPointNode,					/*!< \brief Size of the node array allocated to hold CPoint objects. */
   Global_nPoint,	/*!< \brief Total number of nodes in a simulation across all processors (including halos). */
 	Global_nPointDomain,	/*!< \brief Total number of nodes in a simulation across all processors (excluding halos). */
 	nElem,					/*!< \brief Number of elements of the mesh. */
@@ -116,7 +117,7 @@ public:
 	CVertex*** vertex;		/*!< \brief Boundary Vertex vector (dual grid information). */
 	CTurboVertex**** turbovertex; /*!< \brief Boundary Vertex vector ordered for turbomachinery calculation(dual grid information). */
 	unsigned long *nVertex;	/*!< \brief Number of vertex for each marker. */
-  unsigned long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker.  */
+  long **nVertexSpan; /*! <\brief number of vertexes for span wise section for each marker.  */
   unsigned long **nTotVertexSpan; /*! <\brief number of vertexes at each span wise section for each marker.  */
   unsigned long nVertexSpanMax[3]; /*! <\brief max number of vertexes for each span section for each marker flag.  */
 	su2double *** AverageTurboNormal; /*! <\brief Average boundary normal at each span wise section for each marker in the turbomachinery frame of reference.*/
@@ -126,7 +127,7 @@ public:
 	su2double ** SpanArea; /*! <\brief Area at each span wise section for each marker.*/
   su2double ** TurboRadius; /*! <\brief Radius at each span wise section for each marker.*/
 	unsigned short nCommLevel;		/*!< \brief Number of non-blocking communication levels. */
-	vector<unsigned long> PeriodicPoint[MAX_NUMBER_PERIODIC][2];			/*!< \brief PeriodicPoint[Periodic bc] and return the point that 
+	vector<unsigned long> PeriodicPoint[MAX_NUMBER_PERIODIC][2];			/*!< \brief PeriodicPoint[Periodic bc] and return the point that
 																			 must be sent [0], and the image point in the periodic bc[1]. */
 	vector<unsigned long> PeriodicElem[MAX_NUMBER_PERIODIC];				/*!< \brief PeriodicElem[Periodic bc] and return the elements that 
 																			 must be sent. */
@@ -965,6 +966,7 @@ public:
    */
   virtual void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val);
 
+  
   /*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - marker value.
@@ -1014,6 +1016,12 @@ public:
 	 */
   virtual su2double* GetAverageGridVel(unsigned short val_marker, unsigned short val_span);
 
+  /*!
+   * \brief A virtual member.
+   * \param config - Config
+   */
+  virtual void Check_Periodicity(CConfig *config);
+  
 };
 
 /*!
@@ -1025,11 +1033,10 @@ public:
  */
 class CPhysicalGeometry : public CGeometry {
 
-  long *Global_to_Local_Point;				/*!< \brief Global-local indexation for the points. */
-
-	long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
-	unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
-	unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
+  map<long,long> Global_to_Local_Point; /*!< \brief Global-local indexation for the points. */
+  long *Local_to_Global_Point;				/*!< \brief Local-global indexation for the points. */
+  unsigned short *Local_to_Global_Marker;	/*!< \brief Local to Global marker. */
+  unsigned short *Global_to_Local_Marker;	/*!< \brief Global to Local marker. */
   unsigned long *adj_counter; /*!< \brief Adjacency counter. */
   unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
   su2double* Sensitivity; /*! <\brief Vector holding the sensitivities at each point. */
@@ -1570,6 +1577,12 @@ public:
    * \param[in] val - Value of the sensitivity.
    */
   void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val);
+  
+  /*!
+   * \brief Check the mesh for periodicity and deactivate multigrid if periodicity is found.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Check_Periodicity(CConfig *config);
 
   /*!
 	 * \brief Get the average normal at a specific span for a given marker in the turbomachinery reference of frame.

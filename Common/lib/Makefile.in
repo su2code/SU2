@@ -617,7 +617,7 @@ lib_sources = \
 # endif
 
 # if BUILD_JSONCPP
-lib_cxxflags = @su2_externals_INCLUDES@ @CGNS_CXX@ @HDF5_CXX@ \
+lib_cxxflags = -fPIC @su2_externals_INCLUDES@ @CGNS_CXX@ @HDF5_CXX@ \
 	@SZIP_CXX@ @ZLIB_CXX@ @MUTATIONPP_CXX@ @JSONCPP_CXX@ \
 	$(am__empty)
 lib_ldadd = @su2_externals_LIBS@ @CGNS_LD@ @HDF5_LD@ @SZIP_LD@ \

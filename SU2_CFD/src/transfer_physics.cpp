@@ -391,8 +391,6 @@ CTransfer_MixingPlaneInterface::CTransfer_MixingPlaneInterface(unsigned short va
 }
 
 CTransfer_MixingPlaneInterface::~CTransfer_MixingPlaneInterface(void) {
-	if (Donor_Variable       != NULL) delete [] Donor_Variable;
-	if (Target_Variable      != NULL) delete [] Target_Variable;
 }
 
 

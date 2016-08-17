@@ -3318,7 +3318,7 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
   
   su2double Coord_0[] = {0,0,0}, Coord_1[] = {0,0,0};
   unsigned short iMarker, iNode, jNode, lDegree, mDegree, nDegree, iDim;
-  unsigned long iElem, iPoint, jPoint;
+  unsigned long iElem, iPoint, jPoint, iSurfacePoints;
   
   unsigned short Kind_SU2 = config->GetKind_SU2();
 
@@ -3407,79 +3407,83 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_GEO)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT)) ||
         ((config->GetMarker_All_DV(iMarker) == YES) && (config->GetDirectDiff() == D_DESIGN))) {
-	found_Marker = false;
-        for (unsigned long iSurfacePoints = 0; iSurfacePoints < FFDBox->GetnSurfacePoint(); iSurfacePoints++) {
-          
-          if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_All_TagBound(FFDBox->Get_MarkerIndex(iSurfacePoints))){
-            found_Marker = true;
-            cout << config->GetMarker_All_TagBound(iMarker) << " " << iFFDBox << endl;
-            break; 
-          }
+
+      found_Marker = false;
+
+      /* --- Double check if the marker is indeed moved by the FFD box (i.e. if there is at least one surface point moved)
+       *     This is important because the intersection could be outside of the FFD box with a surface that is moved by a different FFD box. ---*/
+
+      for (iSurfacePoints = 0; iSurfacePoints < FFDBox->GetnSurfacePoint(); iSurfacePoints++) {
+        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_All_TagBound(FFDBox->Get_MarkerIndex(iSurfacePoints))){
+          found_Marker = true;
+          break;
         }
-        if (found_Marker == true){
+      }
 
-      for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
-        for (iNode = 0; iNode < geometry->bound[iMarker][iElem]->GetnNodes(); iNode++) {
-          iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
-          for (jNode = 0; jNode < geometry->bound[iMarker][iElem]->GetnNodes(); jNode++) {
-            jPoint = geometry->bound[iMarker][iElem]->GetNode(jNode);
-            
-            if (jPoint > iPoint) {
-              
-              for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
-                Coord_0[iDim] = geometry->node[iPoint]->GetCoord()[iDim];
-                Coord_1[iDim] = geometry->node[jPoint]->GetCoord()[iDim];
-              }
-              
-              if (geometry->GetnDim() == 3){
-              
-              if (!IPlane_Intersect_A) {
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_1_A, IPlane_Coord_2_A)) { IPlane_Intersect_A = true; }
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_A_, IPlane_Coord_1_A_, IPlane_Coord_2_A_)) { IPlane_Intersect_A = true; }
-              }
-              
-              if (!IPlane_Intersect_B) {
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_B, IPlane_Coord_1_B, IPlane_Coord_2_B)) { IPlane_Intersect_B = true; }
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_B_, IPlane_Coord_1_B_, IPlane_Coord_2_B_)) { IPlane_Intersect_B = true; }
-              }
-              
-              if (!JPlane_Intersect_A) {
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_A, JPlane_Coord_1_A, JPlane_Coord_2_A)) { JPlane_Intersect_A = true; }
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_A_, JPlane_Coord_1_A_, JPlane_Coord_2_A_)) { JPlane_Intersect_A = true; }
-              }
-              
-              if (!JPlane_Intersect_B) {
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_B, JPlane_Coord_1_B, JPlane_Coord_2_B)) { JPlane_Intersect_B = true; }
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_B_, JPlane_Coord_1_B_, JPlane_Coord_2_B_)) { JPlane_Intersect_B = true; }
-              }
-              
-              if (!KPlane_Intersect_A) {
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_A, KPlane_Coord_1_A, KPlane_Coord_2_A)) { KPlane_Intersect_A = true; }
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_A_, KPlane_Coord_1_A_, KPlane_Coord_2_A_)) { KPlane_Intersect_A = true; }
-              }
-              
-              if (!KPlane_Intersect_B) {
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_B, KPlane_Coord_1_B, KPlane_Coord_2_B)) { KPlane_Intersect_B = true; }
-                if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_B_, KPlane_Coord_1_B_, KPlane_Coord_2_B_)) { KPlane_Intersect_B = true; }
-              }
-              
-              } else {
+      if (found_Marker == true){
 
-                if (!IPlane_Intersect_A){
-                  if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_2_A)){ IPlane_Intersect_A = true;}
+        for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
+          for (iNode = 0; iNode < geometry->bound[iMarker][iElem]->GetnNodes(); iNode++) {
+            iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
+            for (jNode = 0; jNode < geometry->bound[iMarker][iElem]->GetnNodes(); jNode++) {
+              jPoint = geometry->bound[iMarker][iElem]->GetNode(jNode);
+
+              if (jPoint > iPoint) {
+
+                for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
+                  Coord_0[iDim] = geometry->node[iPoint]->GetCoord()[iDim];
+                  Coord_1[iDim] = geometry->node[jPoint]->GetCoord()[iDim];
                 }
-                if (!IPlane_Intersect_B){
-                  if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_B, IPlane_Coord_2_B)){ IPlane_Intersect_B = true;}
-                }
-                if (!JPlane_Intersect_A){
-                  if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_A, JPlane_Coord_2_A)){ JPlane_Intersect_A = true;}
-                }
-                if (!JPlane_Intersect_B){
-                  if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_B, JPlane_Coord_2_B)){ JPlane_Intersect_B = true;}
+
+                if (geometry->GetnDim() == 3){
+
+                  if (!IPlane_Intersect_A) {
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_1_A, IPlane_Coord_2_A)) { IPlane_Intersect_A = true; }
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_A_, IPlane_Coord_1_A_, IPlane_Coord_2_A_)) { IPlane_Intersect_A = true; }
+                  }
+
+                  if (!IPlane_Intersect_B) {
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_B, IPlane_Coord_1_B, IPlane_Coord_2_B)) { IPlane_Intersect_B = true; }
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_B_, IPlane_Coord_1_B_, IPlane_Coord_2_B_)) { IPlane_Intersect_B = true; }
+                  }
+
+                  if (!JPlane_Intersect_A) {
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_A, JPlane_Coord_1_A, JPlane_Coord_2_A)) { JPlane_Intersect_A = true; }
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_A_, JPlane_Coord_1_A_, JPlane_Coord_2_A_)) { JPlane_Intersect_A = true; }
+                  }
+
+                  if (!JPlane_Intersect_B) {
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_B, JPlane_Coord_1_B, JPlane_Coord_2_B)) { JPlane_Intersect_B = true; }
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, JPlane_Coord_0_B_, JPlane_Coord_1_B_, JPlane_Coord_2_B_)) { JPlane_Intersect_B = true; }
+                  }
+
+                  if (!KPlane_Intersect_A) {
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_A, KPlane_Coord_1_A, KPlane_Coord_2_A)) { KPlane_Intersect_A = true; }
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_A_, KPlane_Coord_1_A_, KPlane_Coord_2_A_)) { KPlane_Intersect_A = true; }
+                  }
+
+                  if (!KPlane_Intersect_B) {
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_B, KPlane_Coord_1_B, KPlane_Coord_2_B)) { KPlane_Intersect_B = true; }
+                    if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, KPlane_Coord_0_B_, KPlane_Coord_1_B_, KPlane_Coord_2_B_)) { KPlane_Intersect_B = true; }
+                  }
+
+                } else {
+
+                  if (!IPlane_Intersect_A){
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_2_A)){ IPlane_Intersect_A = true;}
+                  }
+                  if (!IPlane_Intersect_B){
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_B, IPlane_Coord_2_B)){ IPlane_Intersect_B = true;}
+                  }
+                  if (!JPlane_Intersect_A){
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_A, JPlane_Coord_2_A)){ JPlane_Intersect_A = true;}
+                  }
+                  if (!JPlane_Intersect_B){
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_B, JPlane_Coord_2_B)){ JPlane_Intersect_B = true;}
+                  }
                 }
               }
             }
-          }
           }
         }
       }

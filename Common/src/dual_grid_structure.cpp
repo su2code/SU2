@@ -611,7 +611,6 @@ CTurboVertex::CTurboVertex(unsigned long val_point, unsigned short val_nDim) : C
 	unsigned short iDim;
  /*--- Pointers initialization ---*/
 	TurboNormal = NULL;
-
 	/*--- Allocate node, and face normal ---*/
 	TurboNormal = new su2double [nDim];
 

@@ -305,9 +305,10 @@ void CConfig::SetPointersNull(void) {
   Bleed_MassFlow_Target = NULL;   Bleed_MassFlow = NULL;            Exhaust_Pressure = NULL; Exhaust_Temperature = NULL;
   Bleed_Pressure = NULL;          Outlet_Pressure = NULL;           Isothermal_Temperature = NULL;
   Heat_Flux = NULL;               Displ_Value = NULL;               Load_Value = NULL;
-  FlowLoad_Value = NULL;          Periodic_RotCenter = NULL;        Periodic_RotAngles = NULL;
-  Periodic_Translation = NULL;    Periodic_Center = NULL;           Periodic_Rotation = NULL;
-  Periodic_Translate = NULL;
+  FlowLoad_Value = NULL;
+  
+  Periodic_Translate=NULL;    Periodic_Rotation=NULL;    Periodic_Center=NULL;
+  Periodic_Translation=NULL;   Periodic_RotAngles=NULL;   Periodic_RotCenter=NULL;
 
   Load_Dir = NULL;	          Load_Dir_Value = NULL;          Load_Dir_Multiplier = NULL;
   Load_Sine_Dir = NULL;	      Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
@@ -330,6 +331,9 @@ void CConfig::SetPointersNull(void) {
   Hold_GridFixed_Coord=NULL;
   EA_IntLimit=NULL;
   RK_Alpha_Step=NULL;
+  Int_Coeffs = NULL;
+  Kind_ObjFunc = NULL;
+  Weight_ObjFunc = NULL;
 
   /*--- Moving mesh pointers ---*/
 
@@ -344,16 +348,52 @@ void CConfig::SetPointersNull(void) {
   Plunging_Ampl_X = NULL;     Plunging_Ampl_Y = NULL;     Plunging_Ampl_Z = NULL;
   RefOriginMoment_X = NULL;   RefOriginMoment_Y = NULL;   RefOriginMoment_Z = NULL;
   MoveMotion_Origin = NULL;
-  Periodic_Translate=NULL;    Periodic_Rotation=NULL;    Periodic_Center=NULL;
-  Periodic_Translation=NULL;   Periodic_RotAngles=NULL;   Periodic_RotCenter=NULL;
 
   /* Harmonic Balance Frequency pointer */
   Omega_HB = NULL;
     
+  /*--- Initialize some default arrays to NULL. ---*/
+  
+  default_vel_inf       = NULL;
+  default_eng_box       = NULL;
+  default_cfl_adapt     = NULL;
+  default_ad_coeff_flow = NULL;
+  default_ad_coeff_adj  = NULL;
+  default_obj_coeff     = NULL;
+  default_geo_loc       = NULL;
+  default_ea_lim        = NULL;
+  default_grid_fix      = NULL;
+  default_inc_crit      = NULL;
+  
+  Riemann_FlowDir= NULL;
+  NRBC_FlowDir = NULL;
+  ActDisk_Origin= NULL;
+  CoordFFDBox= NULL;
+  DegreeFFDBox= NULL;
+  FFDTag = NULL;
+  nDV_Value = NULL;
+  TagFFDBox = NULL;
+ 
+  Kind_Data_Riemann = NULL;
+  Riemann_Var1 = NULL;
+  Riemann_Var2 = NULL;
+  Kind_Data_NRBC = NULL;
+  NRBC_Var1 = NULL;
+  NRBC_Var2 = NULL;
+  Marker_TurboBoundIn = NULL;
+  Marker_TurboBoundOut = NULL;
+  Marker_NRBC = NULL;
+  
   /*--- Variable initialization ---*/
   
   ExtIter = 0;
   IntIter = 0;
+  
+  nMarker_PerBound = 0;
+  nPeriodic_Index = 0;
+
+  Grid_Movement = false;
+  Aeroelastic_Simulation = false;
   
 }
 
@@ -367,22 +407,27 @@ void CConfig::SetRunTime_Options(void) {
 
 void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZone) {
   
-  su2double default_vec_3d[3];
-  su2double default_vec_4d[4];
-  su2double default_vec_5d[5];
-  su2double default_vec_2d[2];
-  su2double default_vec_6d[6];
-  
   nZone = val_nZone;
   iZone = val_iZone;
 
+  /*--- Allocate some default arrays needed for lists of doubles. ---*/
+  
+  default_vel_inf       = new su2double[3];
+  default_eng_box       = new su2double[6];
+  default_cfl_adapt     = new su2double[4];
+  default_ad_coeff_flow = new su2double[3];
+  default_ad_coeff_adj  = new su2double[3];
+  default_obj_coeff     = new su2double[5];
+  default_geo_loc       = new su2double[2];
+  default_ea_lim        = new su2double[3];
+  default_grid_fix      = new su2double[6];
+  default_inc_crit      = new su2double[3];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
   // the best you can to follow the established format. It's very hard to parse c++ code
   // and none of us that write the parsers want to write a full c++ interpreter. Please
   // play nice with the existing format so that you don't break the existing scripts.
-
 
   /* BEGIN_CONFIG_OPTIONS */
 
@@ -496,9 +541,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 288.15);
   /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
-  default_vec_3d[0] = 1.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
+  default_vel_inf[0] = 1.0; default_vel_inf[1] = 0.0; default_vel_inf[2] = 0.0;
   /*!\brief FREESTREAM_VELOCITY\n DESCRIPTION: Free-stream velocity (m/s) */
-  addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vec_3d);
+  addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vel_inf);
   /* DESCRIPTION: Free-stream viscosity (1.853E-5 Ns/m^2 (air), 0.798E-3 Ns/m^2 (water)) */
   addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
   /* DESCRIPTION:  */
@@ -658,10 +703,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBleedOption("MARKER_ENGINE_BLEED", nMarker_EngineBleed, Marker_EngineBleed, Bleed_MassFlow_Target, Bleed_Temperature_Target);
   /*!\brief SUBSONIC_ENGINE\n DESCRIPTION: Engine subsonic intake region \ingroup Config*/
   addBoolOption("SUBSONIC_ENGINE", Engine_Intake, false);
-  default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
-  default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
+  default_eng_box[0] = -1E15; default_eng_box[1] = -1E15; default_eng_box[2] = -1E15;
+  default_eng_box[3] =  1E15; default_eng_box[4] =  1E15; default_eng_box[5] =  1E15;
   /* DESCRIPTION: Coordinates of the box to impose a subsonic nacellle (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
-  addDoubleArrayOption("SUBSONIC_ENGINE_BOX", 6, Subsonic_Engine_Box, default_vec_6d);
+  addDoubleArrayOption("SUBSONIC_ENGINE_BOX", 6, Subsonic_Engine_Box, default_eng_box);
   /* DESCRIPTION: Engine exhaust boundary marker(s)
    Format: (nacelle exhaust marker, total nozzle temp, total nozzle pressure, ... )*/
   addExhaustOption("MARKER_ENGINE_EXHAUST", nMarker_EngineExhaust, Marker_EngineExhaust, Exhaust_Temperature_Target, Exhaust_Pressure_Target);
@@ -703,8 +748,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    * DESCRIPTION: Parameters of the adaptive CFL number (factor down, factor up, CFL limit (min and max) )
    * Factor down generally >1.0, factor up generally < 1.0 to cause the CFL to increase when residual is decreasing,
    * and decrease when the residual is increasing or stalled. \ingroup Config*/
-  default_vec_4d[0] = 0.0; default_vec_4d[1] = 0.0; default_vec_4d[2] = 1.0; default_vec_4d[3] = 100.0;
-  addDoubleArrayOption("CFL_ADAPT_PARAM", 4, CFL_AdaptParam, default_vec_4d);
+  default_cfl_adapt[0] = 0.0; default_cfl_adapt[1] = 0.0; default_cfl_adapt[2] = 1.0; default_cfl_adapt[3] = 100.0;
+  addDoubleArrayOption("CFL_ADAPT_PARAM", 4, CFL_AdaptParam, default_cfl_adapt);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJFLOW", CFLRedCoeff_AdjFlow, 0.8);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the level set problem */
@@ -882,9 +927,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
-  default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
+  default_ad_coeff_flow[0] = 0.15; default_ad_coeff_flow[1] = 0.5; default_ad_coeff_flow[2] = 0.02;
   /*!\brief AD_COEFF_FLOW \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients \ingroup Config*/
-  addDoubleArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_FLOW", 3, Kappa_Flow, default_ad_coeff_flow);
 
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
@@ -896,11 +941,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SLOPE_LIMITER_ADJFLOW
      * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, VENKATAKRISHNAN);
-  default_vec_3d[0] = 0.15; default_vec_3d[1] = 0.5; default_vec_3d[2] = 0.02;
+  default_ad_coeff_adj[0] = 0.15; default_ad_coeff_adj[1] = 0.5; default_ad_coeff_adj[2] = 0.02;
   /*!\brief AD_COEFF_ADJFLOW
    *  \n DESCRIPTION: 1st, 2nd and 4th order artificial dissipation coefficients for the adjoint solver.
    *  \n FORMAT and default values: AD_COEFF_ADJFLOW = (0.15, 0.5, 0.02) \ingroup Config*/
-  addDoubleArrayOption("AD_COEFF_ADJFLOW", 3, Kappa_AdjFlow, default_vec_3d);
+  addDoubleArrayOption("AD_COEFF_ADJFLOW", 3, Kappa_AdjFlow, default_ad_coeff_adj);
 
   /*!\brief SPATIAL_ORDER_TURB
    *  \n DESCRIPTION: Spatial numerical order integration.\n OPTIONS: See \link SpatialOrder_Map \endlink \n DEFAULT: FIRST_ORDER \ingroup Config*/
@@ -943,21 +988,24 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("LIMIT_ADJFLOW", AdjointLimit, 1E6);
   /*!\brief MG_ADJFLOW\n DESCRIPTION: Multigrid with the adjoint problem. \n Defualt: YES \ingroup Config*/
   addBoolOption("MG_ADJFLOW", MG_AdjointFlow, true);
+
+  /*!\brief OBJECTIVE_WEIGHT  \n DESCRIPTION: Adjoint problem boundary condition weights. Applies scaling factor to objective(s) \ingroup Config*/
+  addDoubleListOption("OBJECTIVE_WEIGHT", nObjW, Weight_ObjFunc);
   /*!\brief OBJECTIVE_FUNCTION
    *  \n DESCRIPTION: Adjoint problem boundary condition \n OPTIONS: see \link Objective_Map \endlink \n DEFAULT: DRAG_COEFFICIENT \ingroup Config*/
-  addEnumOption("OBJECTIVE_FUNCTION", Kind_ObjFunc, Objective_Map, DRAG_COEFFICIENT);
+  addEnumListOption("OBJECTIVE_FUNCTION", nObj, Kind_ObjFunc, Objective_Map);
 
-  default_vec_5d[0]=0.0; default_vec_5d[1]=0.0; default_vec_5d[2]=0.0;
-  default_vec_5d[3]=0.0;  default_vec_5d[4]=0.0;
+  default_obj_coeff[0]=0.0; default_obj_coeff[1]=0.0; default_obj_coeff[2]=0.0;
+  default_obj_coeff[3]=0.0;  default_obj_coeff[4]=0.0;
   /*!\brief OBJ_CHAIN_RULE_COEFF
   * \n DESCRIPTION: Coefficients defining the objective function gradient using the chain rule
   * with area-averaged outlet primitive variables. This is used with the genereralized outflow
   * objective.  \ingroup Config   */
-  addDoubleArrayOption("OBJ_CHAIN_RULE_COEFF",5,Obj_ChainRuleCoeff,default_vec_5d);
+  addDoubleArrayOption("OBJ_CHAIN_RULE_COEFF",5,Obj_ChainRuleCoeff,default_obj_coeff);
 
-  default_vec_2d[0] = 0.0; default_vec_2d[1] = 1.0;
+  default_geo_loc[0] = 0.0; default_geo_loc[1] = 1.0;
   /* DESCRIPTION: Definition of the airfoil section */
-  addDoubleArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_vec_2d);
+  addDoubleArrayOption("GEO_LOCATION_SECTIONS", 2, Section_Location, default_geo_loc);
   /* DESCRIPTION: Identify the axis of the section */
   addEnumOption("GEO_ORIENTATION_SECTIONS", Axis_Orientation, Axis_Orientation_Map, Y_AXIS);
   /* DESCRIPTION: Percentage of new elements (% of the original number of elements) */
@@ -1231,9 +1279,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /* DESCRIPTION: Evaluate equivalent area on the Near-Field  */
   addBoolOption("EQUIV_AREA", EquivArea, false);
-  default_vec_3d[0] = 0.0; default_vec_3d[1] = 1.0; default_vec_3d[2] = 1.0;
+  default_ea_lim[0] = 0.0; default_ea_lim[1] = 1.0; default_ea_lim[2] = 1.0;
   /* DESCRIPTION: Integration limits of the equivalent area ( xmin, xmax, Dist_NearField ) */
-  addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_vec_3d);
+  addDoubleArrayOption("EA_INT_LIMIT", 3, EA_IntLimit, default_ea_lim);
   /* DESCRIPTION: Equivalent area scaling factor */
   addDoubleOption("EA_SCALE_FACTOR", EA_ScaleFactor, 1.0);
 
@@ -1291,10 +1339,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
 	/* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
-	default_vec_6d[0] = -1E15; default_vec_6d[1] = -1E15; default_vec_6d[2] = -1E15;
-	default_vec_6d[3] =  1E15; default_vec_6d[4] =  1E15; default_vec_6d[5] =  1E15;
+	default_grid_fix[0] = -1E15; default_grid_fix[1] = -1E15; default_grid_fix[2] = -1E15;
+	default_grid_fix[3] =  1E15; default_grid_fix[4] =  1E15; default_grid_fix[5] =  1E15;
 	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
-	addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_vec_6d);
+	addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_grid_fix);
 	/* DESCRIPTION: Visualize the deformation */
   addBoolOption("VISUALIZE_DEFORMATION", Visualize_Deformation, false);
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
@@ -1390,9 +1438,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Maximum number of increments of the  */
   addUnsignedLongOption("NUMBER_INCREMENTS", IncLoad_Nincrements, 10);
 
-  default_vec_3d[0] = 0.0; default_vec_3d[1] = 0.0; default_vec_3d[2] = 0.0;
+  default_inc_crit[0] = 0.0; default_inc_crit[1] = 0.0; default_inc_crit[2] = 0.0;
   /* DESCRIPTION: Definition of the  UTOL RTOL ETOL*/
-  addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, IncLoad_Criteria, default_vec_3d);
+  addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, IncLoad_Criteria, default_inc_crit);
 
   /* DESCRIPTION: Time while the structure is static */
   addDoubleOption("STATIC_TIME", Static_Time, 0.0);
@@ -1538,6 +1586,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Setup for design variables (lower bound) */
   addPythonOption("OPT_BOUND_LOWER");
   
+  /*!\brief OPT_COMBINE_OBJECTIVE
+   *  \n DESCRIPTION: Flag specifying whether to internally combine a multi-objective function or treat separately */
+  addPythonOption("OPT_COMBINE_OBJECTIVE");
+
   /* DESCRIPTION: Current value of the design variables */
   addPythonOption("DV_VALUE_NEW");
 
@@ -1763,7 +1815,7 @@ bool CConfig::SetRunTime_Parsing(char case_filename[MAX_STRING_SIZE]) {
 
 void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_izone, unsigned short val_nDim) {
   
-  unsigned short iZone, iCFL, iDim;
+  unsigned short iZone, iCFL, iDim, iMarker;
   bool ideal_gas       = (Kind_FluidModel == STANDARD_AIR || Kind_FluidModel == IDEAL_GAS );
   bool standard_air       = (Kind_FluidModel == STANDARD_AIR);
   
@@ -1782,18 +1834,53 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Store the SU2 module that we are executing. ---*/
   
   Kind_SU2 = val_software;
-  
-  /*--- Make sure that 1D outputs are written when objective function requires ---*/
-  
-  if (Kind_ObjFunc== AVG_OUTLET_PRESSURE || Kind_ObjFunc == AVG_TOTAL_PRESSURE || Kind_ObjFunc == OUTFLOW_GENERALIZED) {
-    Wrt_1D_Output = YES;
-    Marker_Out_1D = new string[nMarker_Monitoring];
-    for (unsigned short iMarker=0; iMarker<nMarker_Monitoring; iMarker++){
-      Marker_Out_1D[iMarker] = Marker_Monitoring[iMarker];
-    }
-    nMarker_Out_1D = nMarker_Monitoring;
+
+  /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
+  if (Weight_ObjFunc==NULL and Kind_ObjFunc==NULL){
+    Kind_ObjFunc = new unsigned short[1];
+    Kind_ObjFunc[0]=DRAG_COEFFICIENT;
+    Weight_ObjFunc = new su2double[1];
+    Weight_ObjFunc[0]=1.0;
+    nObj=1;
+    nObjW=1;
   }
-  
+  /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
+  if (nObjW<nObj){
+    if (Weight_ObjFunc!=NULL){
+      cout <<"The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n"<<
+          "or be deleted from the config file (equal weights will be applied)."<< endl;
+      exit(EXIT_FAILURE);
+    }
+    Weight_ObjFunc = new su2double[nObj];
+    for (unsigned short iObj=0; iObj<nObj; iObj++)
+      Weight_ObjFunc[iObj]=1.0;
+  }
+  /*--- Ignore weights if only one objective provided ---*/
+  if (nObj == 1 )
+      Weight_ObjFunc[0] = 1.0;
+
+  /*--- Maker sure that nMarker = nObj ---*/
+  /*--- Maker sure that nMarker = nObj ---*/
+  if (nObj>0){
+    if (nMarker_Monitoring!=nObj and Marker_Monitoring!=NULL){
+      if (nMarker_Monitoring==1){
+        /*-- If only one marker was listed with multiple objectives, set that marker as the marker for each objective ---*/
+        nMarker_Monitoring = nObj;
+        string marker = Marker_Monitoring[0];
+        delete[] Marker_Monitoring;
+        Marker_Monitoring = new string[nMarker_Monitoring];
+        for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++)
+          Marker_Monitoring[iMarker] = marker;
+      }
+      else if(nObj>1){
+        cout <<"When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length or length 1. \n "<<
+            "For multiple surfaces per objective, list the objective multiple times. \n"<<
+            "For multiple objectives per marker either use one marker overall or list the marker multiple times."<<endl;
+        exit(EXIT_FAILURE);
+      }
+    }
+  }
+
   /*--- Low memory only for ASCII Tecplot ---*/
 
   if (Output_FileFormat != TECPLOT) Low_MemoryOutput = NO;
@@ -1827,10 +1914,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Don't do any deformation if there is no Design variable information ---*/
   
-  if (Design_Variable == NULL) {
-    Design_Variable = new unsigned short [1];
-    nDV = 1; Design_Variable[0] = NONE;
-  }
+//  if (Design_Variable == NULL) {
+//    Design_Variable = new unsigned short [1];
+//    nDV = 1; Design_Variable[0] = NONE;
+//  }
   
   /*--- Identification of free-surface problem, this problems are always 
    unsteady and incompressible. ---*/
@@ -1973,7 +2060,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
        (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
-       (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION)))
+       (Kind_GridMovement[ZONE_0] != STEADY_TRANSLATION) &&
+       (Kind_GridMovement[ZONE_0] != FLUID_STRUCTURE)))
     Grid_Movement = false;
   
   /*--- If it is not specified, set the mesh motion mach number
@@ -2404,7 +2492,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    Unless only one value was specified, then set this value for all the markers
    being monitored. ---*/
   
-  unsigned short iMarker;
   
   if ((nRefOriginMoment_X != nRefOriginMoment_Y) || (nRefOriginMoment_X != nRefOriginMoment_Z) ) {
     cout << "ERROR: Length of REF_ORIGIN_MOMENT_X, REF_ORIGIN_MOMENT_Y and REF_ORIGIN_MOMENT_Z must be the same!!" << endl;
@@ -2874,7 +2961,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   
   /*--- Add the possible send/receive domains ---*/
 
-  nMarker_Max = nMarker_CfgFile + 2*size;
+  nMarker_Max = nMarker_CfgFile + OVERHEAD*size;
   
   /*--- Basic dimensionalization of the markers (worst scenario) ---*/
 
@@ -3704,31 +3791,36 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	if (((val_software == SU2_CFD) && ( ContinuousAdjoint )) || (val_software == SU2_DOT)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
-		switch (Kind_ObjFunc) {
-      case DRAG_COEFFICIENT:        cout << "CD objective function." << endl; break;
-      case LIFT_COEFFICIENT:        cout << "CL objective function." << endl; break;
-      case MOMENT_X_COEFFICIENT:    cout << "CMx objective function." << endl; break;
-      case MOMENT_Y_COEFFICIENT:    cout << "CMy objective function." << endl; break;
-      case MOMENT_Z_COEFFICIENT:    cout << "CMz objective function." << endl; break;
-      case INVERSE_DESIGN_PRESSURE: cout << "Inverse design (Cp) objective function." << endl; break;
-      case INVERSE_DESIGN_HEATFLUX: cout << "Inverse design (Heat Flux) objective function." << endl; break;
-      case SIDEFORCE_COEFFICIENT:   cout << "Side force objective function." << endl; break;
-      case EFFICIENCY:              cout << "CL/CD objective function." << endl; break;
-      case EQUIVALENT_AREA:         cout << "Equivalent area objective function. CD weight: " << WeightCd <<"."<< endl;  break;
-      case NEARFIELD_PRESSURE:      cout << "Nearfield pressure objective function. CD weight: " << WeightCd <<"."<< endl;  break;
-      case FORCE_X_COEFFICIENT:     cout << "X-force objective function." << endl; break;
-      case FORCE_Y_COEFFICIENT:     cout << "Y-force objective function." << endl; break;
-      case FORCE_Z_COEFFICIENT:     cout << "Z-force objective function." << endl; break;
-      case THRUST_COEFFICIENT:      cout << "Thrust objective function." << endl; break;
-      case TORQUE_COEFFICIENT:      cout << "Torque efficiency objective function." << endl; break;
-      case TOTAL_HEATFLUX:          cout << "Total heat flux objective function." << endl; break;
-      case MAXIMUM_HEATFLUX:        cout << "Maximum heat flux objective function." << endl; break;
-      case FIGURE_OF_MERIT:         cout << "Rotor Figure of Merit objective function." << endl; break;
-      case FREE_SURFACE:            cout << "Free-Surface objective function." << endl; break;
-      case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
-      case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
-      case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
-      case OUTFLOW_GENERALIZED:     cout << "Generalized outflow objective function." << endl; break;
+		if (nObj==1){
+      switch (Kind_ObjFunc[0]) {
+        case DRAG_COEFFICIENT:        cout << "CD objective function." << endl; break;
+        case LIFT_COEFFICIENT:        cout << "CL objective function." << endl; break;
+        case MOMENT_X_COEFFICIENT:    cout << "CMx objective function." << endl; break;
+        case MOMENT_Y_COEFFICIENT:    cout << "CMy objective function." << endl; break;
+        case MOMENT_Z_COEFFICIENT:    cout << "CMz objective function." << endl; break;
+        case INVERSE_DESIGN_PRESSURE: cout << "Inverse design (Cp) objective function." << endl; break;
+        case INVERSE_DESIGN_HEATFLUX: cout << "Inverse design (Heat Flux) objective function." << endl; break;
+        case SIDEFORCE_COEFFICIENT:   cout << "Side force objective function." << endl; break;
+        case EFFICIENCY:              cout << "CL/CD objective function." << endl; break;
+        case EQUIVALENT_AREA:         cout << "Equivalent area objective function. CD weight: " << WeightCd <<"."<< endl;  break;
+        case NEARFIELD_PRESSURE:      cout << "Nearfield pressure objective function. CD weight: " << WeightCd <<"."<< endl;  break;
+        case FORCE_X_COEFFICIENT:     cout << "X-force objective function." << endl; break;
+        case FORCE_Y_COEFFICIENT:     cout << "Y-force objective function." << endl; break;
+        case FORCE_Z_COEFFICIENT:     cout << "Z-force objective function." << endl; break;
+        case THRUST_COEFFICIENT:      cout << "Thrust objective function." << endl; break;
+        case TORQUE_COEFFICIENT:      cout << "Torque efficiency objective function." << endl; break;
+        case TOTAL_HEATFLUX:          cout << "Total heat flux objective function." << endl; break;
+        case MAXIMUM_HEATFLUX:        cout << "Maximum heat flux objective function." << endl; break;
+        case FIGURE_OF_MERIT:         cout << "Rotor Figure of Merit objective function." << endl; break;
+        case FREE_SURFACE:            cout << "Free-Surface objective function." << endl; break;
+        case AVG_TOTAL_PRESSURE:      cout << "Average total objective pressure." << endl; break;
+        case AVG_OUTLET_PRESSURE:     cout << "Average static objective pressure." << endl; break;
+        case MASS_FLOW_RATE:          cout << "Mass flow rate objective function." << endl; break;
+        case OUTFLOW_GENERALIZED:     cout << "Generalized outflow objective function." << endl; break;
+      }
+		}
+		else{
+		  cout << "Weighted sum objective function." << endl;
 		}
 
 	}
@@ -4247,10 +4339,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     cout << "Restart flow file name: " << Restart_FlowFileName << "." << endl;
     if ((Kind_Adaptation == FULL_ADJOINT) || (Kind_Adaptation == GRAD_ADJOINT) || (Kind_Adaptation == GRAD_FLOW_ADJ) ||
         (Kind_Adaptation == COMPUTABLE) || (Kind_Adaptation == REMAINING)) {
-      if (Kind_ObjFunc == DRAG_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-      if (Kind_ObjFunc == EQUIVALENT_AREA) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-      if (Kind_ObjFunc == NEARFIELD_PRESSURE) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
-      if (Kind_ObjFunc == LIFT_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
+      if (Kind_ObjFunc[0] == DRAG_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
+      if (Kind_ObjFunc[0] == EQUIVALENT_AREA) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
+      if (Kind_ObjFunc[0] == NEARFIELD_PRESSURE) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
+      if (Kind_ObjFunc[0] == LIFT_COEFFICIENT) cout << "Restart adjoint file name: " << Restart_AdjFileName << "." << endl;
     }
   }
 
@@ -4808,70 +4900,85 @@ unsigned short CConfig::GetMarker_CfgFile_PerBound(string val_marker) {
 }
 
 CConfig::~CConfig(void) {
+ 
+  unsigned long iDV, iMarker, iPeriodic, iFFD;
+
+  /*--- Delete all of the option objects in the global option map ---*/
+    
+  for(map<string, COptionBase*>::iterator itr = option_map.begin(); itr != option_map.end(); itr++) {
+    delete itr->second;
+  }
+ 
+  if (RK_Alpha_Step !=NULL) delete [] RK_Alpha_Step;
+  if (MG_PreSmooth  !=NULL) delete [] MG_PreSmooth;
+  if (MG_PostSmooth !=NULL) delete [] MG_PostSmooth;
   
-  if (RK_Alpha_Step!=NULL) delete [] RK_Alpha_Step;
-  if (MG_PreSmooth!=NULL) delete [] MG_PreSmooth;
-  if (MG_PostSmooth!=NULL) delete [] MG_PostSmooth;
   /*--- Free memory for Aeroelastic problems. ---*/
-  
 
   if (Grid_Movement && Aeroelastic_Simulation) {
-    if (Aeroelastic_pitch!=NULL) delete[] Aeroelastic_pitch;
-    if (Aeroelastic_plunge!=NULL) delete[] Aeroelastic_plunge;
+    if (Aeroelastic_pitch  !=NULL) delete[] Aeroelastic_pitch;
+    if (Aeroelastic_plunge !=NULL) delete[] Aeroelastic_plunge;
   }
-
 
   /*--- Free memory for unspecified grid motion parameters ---*/
 
- if (Kind_GridMovement != NULL)    delete [] Kind_GridMovement;
+ if (Kind_GridMovement != NULL) delete [] Kind_GridMovement;
 
   /*--- motion origin: ---*/
   
-  if (Motion_Origin_X != NULL)    delete [] Motion_Origin_X;
-  if (Motion_Origin_Y != NULL)    delete [] Motion_Origin_Y;
-  if (Motion_Origin_Z != NULL)    delete [] Motion_Origin_Z;
-  if (MoveMotion_Origin != NULL)    delete [] MoveMotion_Origin;
+  if (Motion_Origin_X   != NULL) delete [] Motion_Origin_X;
+  if (Motion_Origin_Y   != NULL) delete [] Motion_Origin_Y;
+  if (Motion_Origin_Z   != NULL) delete [] Motion_Origin_Z;
+  if (MoveMotion_Origin != NULL) delete [] MoveMotion_Origin;
+
+  /*--- translation: ---*/
+  
+  if (Translation_Rate_X != NULL) delete [] Translation_Rate_X;
+  if (Translation_Rate_Y != NULL) delete [] Translation_Rate_Y;
+  if (Translation_Rate_Z != NULL) delete [] Translation_Rate_Z;
 
   /*--- rotation: ---*/
   
-  if (Rotation_Rate_X != NULL)    delete [] Rotation_Rate_X;
-  if (Rotation_Rate_Y != NULL)    delete [] Rotation_Rate_Y;
-  if (Rotation_Rate_Z != NULL)    delete [] Rotation_Rate_Z;
+  if (Rotation_Rate_X != NULL) delete [] Rotation_Rate_X;
+  if (Rotation_Rate_Y != NULL) delete [] Rotation_Rate_Y;
+  if (Rotation_Rate_Z != NULL) delete [] Rotation_Rate_Z;
 
   /*--- pitching: ---*/
   
-  if (Pitching_Omega_X != NULL)    delete [] Pitching_Omega_X;
-  if (Pitching_Omega_Y != NULL)    delete [] Pitching_Omega_Y;
-  if (Pitching_Omega_Z != NULL)    delete [] Pitching_Omega_Z;
+  if (Pitching_Omega_X != NULL) delete [] Pitching_Omega_X;
+  if (Pitching_Omega_Y != NULL) delete [] Pitching_Omega_Y;
+  if (Pitching_Omega_Z != NULL) delete [] Pitching_Omega_Z;
 
   /*--- pitching amplitude: ---*/
   
-  if (Pitching_Ampl_X != NULL)    delete [] Pitching_Ampl_X;
-  if (Pitching_Ampl_Y != NULL)    delete [] Pitching_Ampl_Y;
-  if (Pitching_Ampl_Z != NULL)    delete [] Pitching_Ampl_Z;
+  if (Pitching_Ampl_X != NULL) delete [] Pitching_Ampl_X;
+  if (Pitching_Ampl_Y != NULL) delete [] Pitching_Ampl_Y;
+  if (Pitching_Ampl_Z != NULL) delete [] Pitching_Ampl_Z;
 
   /*--- pitching phase: ---*/
   
-  if (Pitching_Phase_X != NULL)    delete [] Pitching_Phase_X;
-  if (Pitching_Phase_Y != NULL)    delete [] Pitching_Phase_Y;
-  if (Pitching_Phase_Z != NULL)    delete [] Pitching_Phase_Z;
+  if (Pitching_Phase_X != NULL) delete [] Pitching_Phase_X;
+  if (Pitching_Phase_Y != NULL) delete [] Pitching_Phase_Y;
+  if (Pitching_Phase_Z != NULL) delete [] Pitching_Phase_Z;
 
   /*--- plunging: ---*/
   
-  if (Plunging_Omega_X != NULL)    delete [] Plunging_Omega_X;
-  if (Plunging_Omega_Y != NULL)    delete [] Plunging_Omega_Y;
-  if (Plunging_Omega_Z != NULL)    delete [] Plunging_Omega_Z;
+  if (Plunging_Omega_X != NULL) delete [] Plunging_Omega_X;
+  if (Plunging_Omega_Y != NULL) delete [] Plunging_Omega_Y;
+  if (Plunging_Omega_Z != NULL) delete [] Plunging_Omega_Z;
 
   /*--- plunging amplitude: ---*/
   
-  if (Plunging_Ampl_X != NULL)    delete [] Plunging_Ampl_X;
-  if (Plunging_Ampl_Y != NULL)    delete [] Plunging_Ampl_Y;
-  if (Plunging_Ampl_Z != NULL)    delete [] Plunging_Ampl_Z;
+  if (Plunging_Ampl_X != NULL) delete [] Plunging_Ampl_X;
+  if (Plunging_Ampl_Y != NULL) delete [] Plunging_Ampl_Y;
+  if (Plunging_Ampl_Z != NULL) delete [] Plunging_Ampl_Z;
 
-  if (RefOriginMoment != NULL)    delete [] RefOriginMoment;
-  if (RefOriginMoment_X != NULL)    delete [] RefOriginMoment_X;
-  if (RefOriginMoment_Y != NULL)    delete [] RefOriginMoment_Y;
-  if (RefOriginMoment_Z != NULL)    delete [] RefOriginMoment_Z;
+  /*--- reference origin for moments ---*/
+  
+  if (RefOriginMoment   != NULL) delete [] RefOriginMoment;
+  if (RefOriginMoment_X != NULL) delete [] RefOriginMoment_X;
+  if (RefOriginMoment_Y != NULL) delete [] RefOriginMoment_Y;
+  if (RefOriginMoment_Z != NULL) delete [] RefOriginMoment_Z;
 
   /*--- Free memory for Harmonic Blance Frequency  pointer ---*/
     
@@ -4879,28 +4986,38 @@ CConfig::~CConfig(void) {
     
   /*--- Marker pointers ---*/
   
-  if (Marker_CfgFile_Out_1D != NULL)   delete[] Marker_CfgFile_Out_1D;
-  if (Marker_All_Out_1D != NULL)      delete[] Marker_All_Out_1D;
-  if (Marker_CfgFile_GeoEval != NULL)  delete[] Marker_CfgFile_GeoEval;
-  if (Marker_All_GeoEval != NULL)     delete[] Marker_All_GeoEval;
-  if (Marker_CfgFile_TagBound != NULL)      delete[] Marker_CfgFile_TagBound;
-  if (Marker_All_TagBound != NULL)         delete[] Marker_All_TagBound;
+  if (Marker_CfgFile_Out_1D != NULL) delete[] Marker_CfgFile_Out_1D;
+  if (Marker_All_Out_1D     != NULL) delete[] Marker_All_Out_1D;
+  
+  if (Marker_CfgFile_GeoEval != NULL) delete[] Marker_CfgFile_GeoEval;
+  if (Marker_All_GeoEval     != NULL) delete[] Marker_All_GeoEval;
+  
+  if (Marker_CfgFile_TagBound != NULL) delete[] Marker_CfgFile_TagBound;
+  if (Marker_All_TagBound     != NULL) delete[] Marker_All_TagBound;
+  
   if (Marker_CfgFile_KindBC != NULL) delete[] Marker_CfgFile_KindBC;
-  if (Marker_All_KindBC != NULL)    delete[] Marker_All_KindBC;
-  if (Marker_CfgFile_Monitoring != NULL)    delete[] Marker_CfgFile_Monitoring;
-  if (Marker_All_Monitoring != NULL)   delete[] Marker_All_Monitoring;
+  if (Marker_All_KindBC     != NULL) delete[] Marker_All_KindBC;
+  
+  if (Marker_CfgFile_Monitoring != NULL) delete[] Marker_CfgFile_Monitoring;
+  if (Marker_All_Monitoring     != NULL) delete[] Marker_All_Monitoring;
+  
   if (Marker_CfgFile_Designing != NULL) delete[] Marker_CfgFile_Designing;
-  if (Marker_All_Designing != NULL)    delete[] Marker_All_Designing;
-  if (Marker_CfgFile_Plotting != NULL)  delete[] Marker_CfgFile_Plotting;
-  if (Marker_CfgFile_FSIinterface != NULL)  delete[] Marker_CfgFile_FSIinterface;
-  if (Marker_All_Plotting != NULL)     delete[] Marker_All_Plotting;
-  if (Marker_All_FSIinterface != NULL)     delete[] Marker_All_FSIinterface;
-  if (Marker_CfgFile_DV!=NULL)        delete[] Marker_CfgFile_DV;
-  if (Marker_All_DV!=NULL)           delete[] Marker_All_DV;
-  if (Marker_CfgFile_Moving != NULL)   delete[] Marker_CfgFile_Moving;
-  if (Marker_All_Moving != NULL)      delete[] Marker_All_Moving;
+  if (Marker_All_Designing     != NULL) delete[] Marker_All_Designing;
+  
+  if (Marker_CfgFile_Plotting != NULL) delete[] Marker_CfgFile_Plotting;
+  if (Marker_All_Plotting     != NULL) delete[] Marker_All_Plotting;
+
+  if (Marker_CfgFile_FSIinterface != NULL) delete[] Marker_CfgFile_FSIinterface;
+  if (Marker_All_FSIinterface     != NULL) delete[] Marker_All_FSIinterface;
+  
+  if (Marker_CfgFile_DV !=NULL) delete[] Marker_CfgFile_DV;
+  if (Marker_All_DV     !=NULL) delete[] Marker_All_DV;
+  
+  if (Marker_CfgFile_Moving != NULL) delete[] Marker_CfgFile_Moving;
+  if (Marker_All_Moving     != NULL) delete[] Marker_All_Moving;
+  
   if (Marker_CfgFile_PerBound != NULL) delete[] Marker_CfgFile_PerBound;
-  if (Marker_All_PerBound != NULL)    delete[] Marker_All_PerBound;
+  if (Marker_All_PerBound     != NULL) delete[] Marker_All_PerBound;
 
   if (Marker_DV!=NULL)               delete[] Marker_DV;
   if (Marker_Moving != NULL)           delete[] Marker_Moving;
@@ -4910,20 +5027,81 @@ CConfig::~CConfig(void) {
   if (Marker_Plotting != NULL)        delete[] Marker_Plotting;
   if (Marker_FSIinterface != NULL)        delete[] Marker_FSIinterface;
   if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
-  if (EA_IntLimit != NULL)    delete[] EA_IntLimit;
-  if (Hold_GridFixed_Coord != NULL)    delete[] Hold_GridFixed_Coord ;
-  if (Subsonic_Engine_Box != NULL)    delete[] Subsonic_Engine_Box ;
-  if (DV_Value != NULL)    delete[] DV_Value;
+
+  if (Kind_ObjFunc != NULL)      delete[] Kind_ObjFunc;
+  if (Weight_ObjFunc != NULL)      delete[] Weight_ObjFunc;
+
+  if (DV_Value != NULL) {
+    for (iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];
+    delete [] DV_Value;
+  }
+  
+  if (ParamDV != NULL) {
+    for (iDV = 0; iDV < nDV; iDV++) delete[] ParamDV[iDV];
+    delete [] ParamDV;
+  }
+  
+  if (CoordFFDBox != NULL) {
+    for (iFFD = 0; iFFD < nFFDBox; iFFD++) delete[] CoordFFDBox[iFFD];
+    delete [] CoordFFDBox;
+  }
+  
+  if (DegreeFFDBox != NULL) {
+    for (iFFD = 0; iFFD < nFFDBox; iFFD++) delete[] DegreeFFDBox[iFFD];
+    delete [] DegreeFFDBox;
+  }
+  
   if (Design_Variable != NULL)    delete[] Design_Variable;
   if (Dirichlet_Value != NULL)    delete[] Dirichlet_Value;
   if (Exhaust_Temperature_Target != NULL)    delete[]  Exhaust_Temperature_Target;
   if (Exhaust_Pressure_Target != NULL)    delete[]  Exhaust_Pressure_Target;
-  if (Inlet_Ttotal != NULL)    delete[]  Inlet_Ttotal;
-  if (Inlet_Ptotal != NULL)    delete[]  Inlet_Ptotal;
-  if (Inlet_FlowDir != NULL)    delete[] Inlet_FlowDir;
+  
+  if (Inlet_Ttotal != NULL) delete[]  Inlet_Ttotal;
+  if (Inlet_Ptotal != NULL) delete[]  Inlet_Ptotal;
+  if (Inlet_FlowDir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Inlet; iMarker++)
+      delete [] Inlet_FlowDir[iMarker];
+    delete [] Inlet_FlowDir;
+  }
+  
+  if (Inlet_Velocity != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Supersonic_Inlet; iMarker++)
+      delete [] Inlet_Velocity[iMarker];
+    delete [] Inlet_Velocity;
+  }
+  
+  if (Riemann_FlowDir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++)
+      delete [] Riemann_FlowDir[iMarker];
+    delete [] Riemann_FlowDir;
+  }
+  
+  if (NRBC_FlowDir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_NRBC; iMarker++)
+      delete [] NRBC_FlowDir[iMarker];
+    delete [] NRBC_FlowDir;
+  }
+  
+  if (Load_Sine_Dir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Load_Sine; iMarker++)
+      delete [] Load_Sine_Dir[iMarker];
+    delete [] Load_Sine_Dir;
+  }
+  
+  if (Load_Dir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Load_Dir; iMarker++)
+      delete [] Load_Dir[iMarker];
+    delete [] Load_Dir;
+  }
+  
+  if (ActDisk_Origin != NULL) {
+    for (iMarker = 0; iMarker < nMarker_ActDisk_Inlet; iMarker++)
+      delete [] ActDisk_Origin[iMarker];
+    delete [] ActDisk_Origin;
+  }
+  
   if (Inlet_Temperature != NULL)    delete[] Inlet_Temperature;
   if (Inlet_Pressure != NULL)    delete[] Inlet_Pressure;
-  if (Inlet_Velocity != NULL)    delete[] Inlet_Velocity ;
   if (Inflow_Mach_Target != NULL)    delete[] Inflow_Mach_Target;
   if (Inflow_Mach != NULL)    delete[]  Inflow_Mach;
   if (Inflow_Pressure != NULL)    delete[] Inflow_Pressure;
@@ -4939,26 +5117,34 @@ CConfig::~CConfig(void) {
   if (Heat_Flux != NULL)    delete[] Heat_Flux;
   if (Displ_Value != NULL)    delete[] Displ_Value;
   if (Load_Value != NULL)    delete[] Load_Value;
-  if (Load_Dir != NULL)    delete[] Load_Dir;
   if (Load_Dir_Multiplier != NULL)    delete[] Load_Dir_Multiplier;
   if (Load_Dir_Value != NULL)    delete[] Load_Dir_Value;
   if (Load_Sine_Amplitude != NULL)    delete[] Load_Sine_Amplitude;
   if (Load_Sine_Frequency != NULL)    delete[] Load_Sine_Frequency;
   if (FlowLoad_Value != NULL)    delete[] FlowLoad_Value;
-  if (Periodic_RotCenter != NULL)    delete[] Periodic_RotCenter;
-  if (Periodic_RotAngles != NULL)    delete[] Periodic_RotAngles;
-  if (Periodic_Translation != NULL)    delete[] Periodic_Translation;
-  if (Periodic_Center != NULL)    delete[] Periodic_Center;
-  if (Periodic_Rotation != NULL)    delete[] Periodic_Rotation;
-  if (Periodic_Translate != NULL)    delete[] Periodic_Translate;
 
-  if (ParamDV!=NULL)                  delete[] ParamDV;
+  /*--- related to periodic boundary conditions ---*/
+  
+  for (iMarker = 0; iMarker < nMarker_PerBound; iMarker++) {
+    if (Periodic_RotCenter   != NULL) delete [] Periodic_RotCenter[iMarker];
+    if (Periodic_RotAngles   != NULL) delete [] Periodic_RotAngles[iMarker];
+    if (Periodic_Translation != NULL) delete [] Periodic_Translation[iMarker];
+  }
+  if (Periodic_RotCenter   != NULL) delete[] Periodic_RotCenter;
+  if (Periodic_RotAngles   != NULL) delete[] Periodic_RotAngles;
+  if (Periodic_Translation != NULL) delete[] Periodic_Translation;
+
+  for (iPeriodic = 0; iPeriodic < nPeriodic_Index; iPeriodic++) {
+    if (Periodic_Center    != NULL) delete [] Periodic_Center[iPeriodic];
+    if (Periodic_Rotation  != NULL) delete [] Periodic_Rotation[iPeriodic];
+    if (Periodic_Translate != NULL) delete [] Periodic_Translate[iPeriodic];
+  }
+  if (Periodic_Center      != NULL) delete[] Periodic_Center;
+  if (Periodic_Rotation    != NULL) delete[] Periodic_Rotation;
+  if (Periodic_Translate   != NULL) delete[] Periodic_Translate;
+  
   if (MG_CorrecSmooth != NULL)        delete[] MG_CorrecSmooth;
-  if (Section_Location != NULL)       delete[] Section_Location;
-  if (Kappa_Flow != NULL )            delete[] Kappa_Flow;
-  if (Kappa_AdjFlow != NULL)          delete[] Kappa_AdjFlow;
   if (PlaneTag != NULL)               delete[] PlaneTag;
-  if (CFL_AdaptParam != NULL)         delete[] CFL_AdaptParam;
   if (CFL!=NULL)                      delete[] CFL;
   
   /*--- String markers ---*/
@@ -4989,6 +5175,36 @@ CConfig::~CConfig(void) {
   if (Marker_Neumann != NULL )            delete[] Marker_Neumann;
   if (Marker_HeatFlux != NULL )               delete[] Marker_HeatFlux;
 
+  if (Int_Coeffs != NULL) delete [] Int_Coeffs;
+  
+  /*--- Delete some arrays needed just for initializing options. ---*/
+  
+  if (default_vel_inf       != NULL) delete [] default_vel_inf;
+  if (default_eng_box       != NULL) delete [] default_eng_box;
+  if (default_cfl_adapt     != NULL) delete [] default_cfl_adapt;
+  if (default_ad_coeff_flow != NULL) delete [] default_ad_coeff_flow;
+  if (default_ad_coeff_adj  != NULL) delete [] default_ad_coeff_adj;
+  if (default_obj_coeff     != NULL) delete [] default_obj_coeff;
+  if (default_geo_loc       != NULL) delete [] default_geo_loc;
+  if (default_ea_lim        != NULL) delete [] default_ea_lim;
+  if (default_grid_fix      != NULL) delete [] default_grid_fix;
+  if (default_inc_crit      != NULL) delete [] default_inc_crit;
+ 
+  if (FFDTag != NULL) delete [] FFDTag;
+  if (nDV_Value != NULL) delete [] nDV_Value;
+  if (TagFFDBox != NULL) delete [] TagFFDBox;
+  
+  if (Kind_Data_Riemann != NULL) delete [] Kind_Data_Riemann;
+  if (Riemann_Var1 != NULL) delete [] Riemann_Var1;
+  if (Riemann_Var2 != NULL) delete [] Riemann_Var2;
+  if (Kind_Data_NRBC != NULL) delete [] Kind_Data_NRBC;
+  if (NRBC_Var1 != NULL) delete [] NRBC_Var1;
+  if (NRBC_Var2 != NULL) delete [] NRBC_Var2;
+  if (Marker_TurboBoundIn != NULL) delete [] Marker_TurboBoundIn;
+  if (Marker_TurboBoundOut != NULL) delete [] Marker_TurboBoundOut;
+  if (Marker_Riemann != NULL) delete [] Marker_Riemann;
+  if (Marker_NRBC != NULL) delete [] Marker_NRBC;
+ 
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
@@ -5043,8 +5259,8 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
     /*--- Remove filename extension (.dat) ---*/
     unsigned short lastindex = Filename.find_last_of(".");
     Filename = Filename.substr(0, lastindex);
-
-    switch (Kind_ObjFunc) {
+    if (nObj==1){
+      switch (Kind_ObjFunc[0]) {
       case DRAG_COEFFICIENT:        AdjExt = "_cd";       break;
       case LIFT_COEFFICIENT:        AdjExt = "_cl";       break;
       case SIDEFORCE_COEFFICIENT:   AdjExt = "_csf";      break;
@@ -5079,6 +5295,14 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case MASS_FLOW_IN:            AdjExt = "_mfi";       break;
       case MASS_FLOW_OUT:           AdjExt = "_mfo";       break;
       case ENTROPY_GENERATION:      AdjExt = "_entg";       break;
+      }
+    }
+    else{
+      if (DiscreteAdjoint) {
+        cout << endl << "Combined objective not yet compatible with discrete adjoint. Specify only one OBJECTIVE_FUNCTION." << endl << endl;
+        exit(EXIT_FAILURE);
+      }
+      AdjExt = "_combo";
     }
     Filename.append(AdjExt);
 
@@ -5370,7 +5594,13 @@ void CConfig::SetnPeriodicIndex(unsigned short val_index) {
   Periodic_Center    = new su2double*[nPeriodic_Index];
   Periodic_Rotation  = new su2double*[nPeriodic_Index];
   Periodic_Translate = new su2double*[nPeriodic_Index];
-
+  
+  for (unsigned long i = 0; i < nPeriodic_Index; i++) {
+    Periodic_Center[i]    = new su2double[3];
+    Periodic_Rotation[i]  = new su2double[3];
+    Periodic_Translate[i] = new su2double[3];
+  }
+  
 }
 
 unsigned short CConfig::GetMarker_Moving(string val_marker) {
