@@ -8606,4 +8606,65 @@ void CElasticityMovement::Compute_Constitutive_Matrix(void){
 
 }
 
+void CElasticityMovement::Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker){
+
+  unsigned short iDim, jDim;
+  unsigned long iNode, iVertex;
+
+  su2double *VarCoord;
+  su2double new_coord;
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+    /*--- Get node index ---*/
+
+    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Get the displacement on the vertex ---*/
+
+    VarCoord = geometry->vertex[val_marker][iVertex]->GetVarCoord();
+
+    if (geometry->node[iNode]->GetDomain()) {
+
+      /*--- Update the grid coordinates using the solution of the structural problem
+       *--- recorded in VarCoord. */
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        new_coord = geometry->node[iNode]->GetCoord(iDim)+VarCoord[iDim];
+        if (fabs(new_coord) < EPS*EPS) new_coord = 0.0;
+        geometry->node[iNode]->SetCoord(iDim, new_coord);
+      }
+    }
+
+  }
+
+}
+
+void CElasticityMovement::Boundary_Dependencies(CGeometry **geometry, CConfig *config){
+
+
+  unsigned short iMarker;
+
+  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
+   deforming meshes (MARKER_FSI_INTERFACE). ---*/
+
+  unsigned short Kind_SU2 = config->GetKind_SU2();
+
+  /*--- Set the dependencies on the FSI interfaces. ---*/
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_FSIinterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
+      Transfer_Boundary_Displacements(geometry[MESH_0], config, iMarker);
+    }
+  }
+
+  /*--- Update Dual Grid and Multigrid to recompute normals ---*/
+//  UpdateDualGrid(geometry[MESH_0], config);
+//  UpdateMultiGrid(geometry, config);
+//  geometry[MESH_0]->SetCoord_CG();
+//  geometry[MESH_0]->SetControlVolume(config, UPDATE);
+//  geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+
+}
+
 

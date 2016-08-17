@@ -96,6 +96,7 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable() : CVariable(){
   Solution_Accel_time_n = NULL;
 
   Cross_Term_Derivative = NULL;
+  Geometry_CrossTerm_Derivative = NULL;
 
   Solution_BGS_k        = NULL;
 
@@ -143,10 +144,13 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short
 
   Solution_BGS_k        = NULL;
   Cross_Term_Derivative = NULL;
+  Geometry_CrossTerm_Derivative = NULL;
   if (fsi){
     Cross_Term_Derivative = new su2double[nDim];
+    Geometry_CrossTerm_Derivative = new su2double[nDim];
     Solution_BGS_k        = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
+      Geometry_CrossTerm_Derivative [iDim] = 0.0;
       Cross_Term_Derivative[iDim] = 0.0;
       Solution_BGS_k[iDim]        = 0.0;
     }
@@ -227,10 +231,13 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, su2double* val
 
   Solution_BGS_k        = NULL;
   Cross_Term_Derivative = NULL;
+  Geometry_CrossTerm_Derivative = NULL;
   if (fsi){
     Cross_Term_Derivative = new su2double[nDim];
+    Geometry_CrossTerm_Derivative = new su2double[nDim];
     Solution_BGS_k        = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
+      Geometry_CrossTerm_Derivative [iDim] = 0.0;
       Cross_Term_Derivative[iDim] = 0.0;
       Solution_BGS_k[iDim]        = 0.0;
     }
@@ -265,6 +272,7 @@ CDiscAdjFEAVariable::~CDiscAdjFEAVariable(){
   if (Solution_Old_Accel    != NULL) delete [] Solution_Old_Accel;
 
   if (Cross_Term_Derivative    != NULL) delete [] Cross_Term_Derivative;
+  if (Geometry_CrossTerm_Derivative    != NULL) delete [] Geometry_CrossTerm_Derivative;
 
   if (Solution_BGS_k           != NULL) delete [] Solution_BGS_k;
 

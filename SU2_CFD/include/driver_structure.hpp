@@ -738,12 +738,15 @@ class CDiscAdjFSIStatDriver : public CFSIStatDriver {
     FLOW_CROSS_TERM = 5,    /*!< \brief Indicates that the current recording can
                                         be used to compute the gradients of the structural problem
                                         with respect to the flow variables. */
-    FEM_CROSS_TERM = 6,      /*!< \brief Indicates that the current recording can
+    FEM_CROSS_TERM_GEOMETRY = 6,      /*!< \brief Indicates that the current recording can
                                         be used to compute the gradients of the mesh problem
                                         with respect to the structural displacements. */
-    GEOMETRY_CROSS_TERM = 7   /*!< \brief Indicates that the current recording can
+    GEOMETRY_CROSS_TERM = 7,   /*!< \brief Indicates that the current recording can
                                         be used to compute the gradients of the structural problem
                                         with respect to the geometry variables. */
+    FEM_CROSS_TERM_FLOW = 8   /*!< \brief Indicates that the current recording can
+                                        be used to compute the gradients of the structural problem
+                                        with respect to the flow variables. */
   };
 
   enum OF_KIND{
@@ -1045,6 +1048,22 @@ public:
                          unsigned short ZONE_FLOW,
                          unsigned short ZONE_STRUCT,
                          unsigned short kind_recording);
+
+  /*!
+   * \brief Add cross term to the adjoint solution variables
+   * \param[in] iteration_container - Container vector with all the iteration methods.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config_container - Definition of the particular problem.
+   */
+  void Add_CrossTerm(CIteration **iteration_container,
+                         CGeometry ***geometry_container,
+                         CSolver ****solver_container,
+                         CConfig **config_container,
+                         unsigned short ZONE_FLOW,
+                         unsigned short ZONE_STRUCT,
+                         unsigned short kind_recording);
+
 
   /*!
    * \brief Check the convergence of the problem

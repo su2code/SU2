@@ -2383,6 +2383,9 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
     }
     if (fsi && config->Add_CrossTerm()) {
       for (iVar = 0; iVar < nVar; iVar++){
+        Solution[iVar] += node[iPoint]->GetGeometry_CrossTerm_Derivative(iVar);
+      }
+      for (iVar = 0; iVar < nVar; iVar++){
         Solution[iVar] += node[iPoint]->GetCross_Term_Derivative(iVar);
       }
     }
@@ -2393,10 +2396,14 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
       myfile_res << scientific << node[iPoint]->GetSolution(0) << "\t";
       myfile_res << scientific << node[iPoint]->GetSolution(1) << "\t";
       if (config->Add_CrossTerm()){
+        myfile_res << scientific << node[iPoint]->GetGeometry_CrossTerm_Derivative(0) << "\t";
+        myfile_res << scientific << node[iPoint]->GetGeometry_CrossTerm_Derivative(1) << "\t";
         myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(0) << "\t";
         myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(1) << "\t";
       }
       else{
+        myfile_res << "Set_to_0.0" << "\t";
+        myfile_res << "Set_to_0.0" << "\t";
         myfile_res << "Set_to_0.0" << "\t";
         myfile_res << "Set_to_0.0" << "\t";
       }
@@ -2494,6 +2501,57 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *c
 
   myfile_res.close();
 }
+
+void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config){
+
+  unsigned short iVar;
+  unsigned long iPoint;
+  su2double residual;
+
+  ofstream myfile_res;
+  myfile_res.open ("structural_block.csv", ios::app);
+
+  unsigned long BGS_Iter = config->GetFSIIter();
+  unsigned long Int_Iter = config->GetIntIter();
+
+  bool extract_adjoint_output = false;
+
+  if (extract_adjoint_output) myfile_res << "Cross Term " << endl;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    /*--- Extract the adjoint solution ---*/
+
+    direct_solver->node[iPoint]->GetAdjointSolution(Solution);
+
+    for (iVar = 0; iVar < nVar; iVar++) node[iPoint]->SetGeometry_CrossTerm_Derivative(iVar, Solution[iVar]);
+
+    if ((geometry->node[iPoint]->GetGlobalIndex() == 25) && extract_adjoint_output){
+      myfile_res << BGS_Iter << "\t";
+      myfile_res << Int_Iter << "\t";
+      myfile_res.precision(15);
+      myfile_res << scientific << Solution[0] << "\t";
+      myfile_res << scientific << Solution[1] << "\t";
+      myfile_res << scientific << node[iPoint]->GetGeometry_CrossTerm_Derivative(0) << "\t";
+      myfile_res << scientific << node[iPoint]->GetGeometry_CrossTerm_Derivative(1) << "\t";
+      myfile_res << endl;
+    }
+
+  }
+
+  myfile_res.close();
+}
+
+void CDiscAdjFEASolver::AddAdjoint_CrossTerm(CGeometry *geometry, CConfig *config){
+
+
+
+
+
+
+
+}
+
 
 void CDiscAdjFEASolver::SetZeroAdj_ObjFunc(CGeometry *geometry, CConfig *config){
 

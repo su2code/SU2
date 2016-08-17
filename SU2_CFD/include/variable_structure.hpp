@@ -4670,6 +4670,8 @@ private:
     su2double* Solution_Direct_Accel;
 
     su2double* Cross_Term_Derivative;
+    su2double* Geometry_CrossTerm_Derivative;
+
 
     su2double* Solution_BGS_k;
 
@@ -4844,6 +4846,20 @@ public:
      * \brief Get the contribution of crossed terms into the derivative.
      */
     su2double GetCross_Term_Derivative(unsigned short iVar);
+
+    /*!
+     * \brief A virtual member. Get the geometry solution.
+     * \param[in] val_var - Index of the variable.
+     * \return Value of the solution for the index <i>val_var</i>.
+     */
+    su2double GetGeometry_CrossTerm_Derivative(unsigned short val_var);
+
+    /*!
+     * \brief A virtual member. Set the value of the mesh solution (adjoint).
+     * \param[in] der - cross term derivative.
+     */
+    void SetGeometry_CrossTerm_Derivative(unsigned short iDim, su2double der);
+
 
     /*!
      * \brief Set the value of the adjoint solution in the previous BGS subiteration.

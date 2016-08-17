@@ -866,6 +866,15 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CCon
 
 }
 
+void CDiscAdjSolver::AddAdjoint_CrossTerm(CGeometry *geometry, CConfig *config){
+
+}
+
+void CDiscAdjSolver::AddAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config){
+
+
+}
+
 
 void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 

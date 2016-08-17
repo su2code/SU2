@@ -2899,6 +2899,22 @@ public:
   */
  virtual void ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry,  CConfig *config);
 
+ /*!
+  * \brief A virtual member.
+  * \param[in] geometry - The geometrical definition of the problem.
+  * \param[in] solver_container - The solver container holding all solutions.
+  * \param[in] config - The particular config.
+  */
+ virtual void AddAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config);
+
+ /*!
+  * \brief A virtual member.
+  * \param[in] geometry - The geometrical definition of the problem.
+  * \param[in] solver_container - The solver container holding all solutions.
+  * \param[in] config - The particular config.
+  */
+ virtual void AddAdjoint_CrossTerm_Geometry(CGeometry *geometry,  CConfig *config);
+
   /*!
   * \brief A virtual member
   * \param[in] geometry - The geometrical definition of the problem.
@@ -8398,6 +8414,22 @@ public:
   */
  void ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry,  CConfig *config);
 
+ /*!
+  * \brief A virtual member.
+  * \param[in] geometry - The geometrical definition of the problem.
+  * \param[in] solver_container - The solver container holding all solutions.
+  * \param[in] config - The particular config.
+  */
+ void AddAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config);
+
+ /*!
+  * \brief A virtual member.
+  * \param[in] geometry - The geometrical definition of the problem.
+  * \param[in] solver_container - The solver container holding all solutions.
+  * \param[in] config - The particular config.
+  */
+ void AddAdjoint_CrossTerm_Geometry(CGeometry *geometry,  CConfig *config);
+
   /*!
   * \brief Register the objective function as output.
   * \param[in] geometry - The geometrical definition of the problem.
@@ -8641,6 +8673,22 @@ public:
   * \param[in] config - The particular config.
   */
  void ExtractAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config);
+
+ /*!
+  * \brief A virtual member.
+  * \param[in] geometry - The geometrical definition of the problem.
+  * \param[in] solver_container - The solver container holding all solutions.
+  * \param[in] config - The particular config.
+  */
+ void ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry,  CConfig *config);
+
+ /*!
+  * \brief A virtual member.
+  * \param[in] geometry - The geometrical definition of the problem.
+  * \param[in] solver_container - The solver container holding all solutions.
+  * \param[in] config - The particular config.
+  */
+ void AddAdjoint_CrossTerm(CGeometry *geometry,  CConfig *config);
 
   /*!
   * \brief Register the objective function as output.

@@ -76,6 +76,8 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 	bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);	// Generalized alpha method requires residual at previous time step.
 	bool prestretch_fem = config->GetPrestretch();    // Structure is prestretched
 
+	bool discrete_adjoint = config->GetDiscrete_Adjoint();
+
 	bool refgeom = config->GetRefGeom();				// Reference geometry needs to be stored
 //	bool structural_adj = config->GetStructural_Adj();	// A structural adjoint simulation is to be run (temporary)
 
@@ -135,6 +137,13 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
 	if (incremental_load && nonlinear_analysis){
 		Solution_Old 			=  new su2double [nVar];
 	}
+  /*--- If we are running a discrete adjoint iteration, we need this vector for cross-dependencies ---*/
+	else if (discrete_adjoint && fsi_analysis){
+    Solution_Old      =  new su2double [nVar];
+    for (iVar = 0; iVar < nVar; iVar++){
+      Solution_Old[iVar] = val_fea[iVar];
+    }
+  }
 
 	/*--- If we are going to use a generalized alpha integration method, we need a way to store the old residuals ---*/
   Residual_Ext_Surf_n = NULL;
