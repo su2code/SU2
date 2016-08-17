@@ -41,8 +41,17 @@ CDriver::CDriver(char* confFile,
   bool fem_solver = false;
   
   int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+  
+  /*--- Start timer to track preprocessing for benchmarking. ---*/
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
 #endif
   
   /*--- Create pointers to all of the classes that may be used throughout
@@ -412,8 +421,20 @@ CDriver::CDriver(char* confFile,
   APINodalForceDensity[1] = 0.0;
   APINodalForceDensity[2] = 0.0;
   
-  /*--- Set up a timer for performance benchmarking (preprocessing time is not included) ---*/
+  /*--- Preprocessing time is reported now, but not included in the next compute portion. ---*/
   
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  
+  /*--- Compute/print the total time for performance benchmarking. ---*/
+  
+  UsedTime = StopTime-StartTime;
+  UsedTimePreproc = UsedTime;
+  
+  /*--- Reset timer for compute performance benchmarking. ---*/
 #ifndef HAVE_MPI
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
@@ -427,7 +448,7 @@ void CDriver::Postprocessing(){
   unsigned short jZone;
 
   int rank = MASTER_NODE;
-  int size = MASTER_NODE;
+  int size = SINGLE_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -559,20 +580,19 @@ void CDriver::Postprocessing(){
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
 
 
-  /*--- Synchronization point after a single solver iteration. Compute the
-   wall clock time required. ---*/
-
-#ifndef HAVE_MPI
-  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-#else
-  StopTime = MPI_Wtime();
-#endif
-
-  /*--- Compute/print the total time for performance benchmarking. ---*/
+  /*--- Print the time for the compute portion for performance benchmarking. 
+   Note that the StopTime was computed in the Monitor() routine, so that
+   we do not include solution output time in the reported value. ---*/
 
   UsedTime = StopTime-StartTime;
+  UsedTimeCompute = UsedTime;
+  
   if (rank == MASTER_NODE) {
-    cout << "\nCompleted in " << fixed << UsedTime << " seconds on "<< size;
+    cout << "\nPreprocessing phase completed in " << fixed << UsedTimePreproc << " seconds on "<< size;
+    if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
+  }
+  if (rank == MASTER_NODE) {
+    cout << "Compute phase completed in " << fixed << UsedTimeCompute << " seconds on "<< size;
     if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
   }
 
