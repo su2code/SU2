@@ -2383,9 +2383,6 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
     }
     if (fsi && config->Add_CrossTerm()) {
       for (iVar = 0; iVar < nVar; iVar++){
-        Solution[iVar] += node[iPoint]->GetGeometry_CrossTerm_Derivative(iVar);
-      }
-      for (iVar = 0; iVar < nVar; iVar++){
         Solution[iVar] += node[iPoint]->GetCross_Term_Derivative(iVar);
       }
     }
@@ -2396,8 +2393,6 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
       myfile_res << scientific << node[iPoint]->GetSolution(0) << "\t";
       myfile_res << scientific << node[iPoint]->GetSolution(1) << "\t";
       if (config->Add_CrossTerm()){
-        myfile_res << scientific << node[iPoint]->GetGeometry_CrossTerm_Derivative(0) << "\t";
-        myfile_res << scientific << node[iPoint]->GetGeometry_CrossTerm_Derivative(1) << "\t";
         myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(0) << "\t";
         myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(1) << "\t";
       }

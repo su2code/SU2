@@ -2223,7 +2223,20 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
     
   }
 
-  if (kind_recording == FLOW_CROSS_TERM){
+  if (kind_recording == EULERIAN_TERM){
+
+    /*--- Register flow and turbulent variables as input ---*/
+
+    solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+    solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterVariables(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+    if (turbulent){
+      solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
+    }
+  }
+
+  if (kind_recording == EULERIAN_CROSS_TERM){
 
     /*--- Register flow and turbulent variables as input ---*/
 
@@ -2232,9 +2245,11 @@ void CDiscAdjMeanFlowIteration::RegisterInput(CSolver ****solver_container, CGeo
     if (turbulent){
       solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
+
   }
 
-  if (kind_recording == GEOMETRY_CROSS_TERM){
+  if ((kind_recording == LAGRANGIAN_TERM) ||
+      (kind_recording == LAGRANGIAN_CROSS_TERM)){
 
     /*--- Register node coordinates as input ---*/
 
@@ -2799,12 +2814,24 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver ****solver_container, CGeometry
 
   }
 
-  if ((kind_recording == FEM_CROSS_TERM_GEOMETRY) ||
-      (kind_recording == FEM_CROSS_TERM_FLOW)){
+  if (kind_recording == LAGRANGIAN_TERM){
+
+    /*--- Register structural displacements as input ---*/
+
+    solver_container[iZone][MESH_0][ADJFEA_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+    /*--- Register variables as input ---*/
+
+    solver_container[iZone][MESH_0][ADJFEA_SOL]->RegisterVariables(geometry_container[iZone][MESH_0], config_container[iZone]);
+
+  }
+
+  if (kind_recording == LAGRANGIAN_CROSS_TERM){
 
     /*--- Register only structural displacements as input ---*/
 
     solver_container[iZone][MESH_0][ADJFEA_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
+
 
   }
 
@@ -2812,23 +2839,13 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver ****solver_container, CGeometry
 
 void CDiscAdjFEAIteration::SetDependencies(CSolver ****solver_container, CGeometry ***geometry_container, CNumerics *****numerics_container, CConfig **config_container, unsigned short iZone, unsigned short kind_recording){
 
+  /*--- Add dependencies for E and Nu ---*/
 
-//  /*--- If we are recording a FEM problem, we need to set the dependencies with E, Nu, Rho and Rho_DL ---*/
-//  if (kind_recording == FEM_VARIABLES){
+  numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Properties(solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(), solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson());
 
-    /*--- Add dependencies for E and Nu ---*/
+  /*--- Add dependencies for Rho and Rho_DL ---*/
 
-    numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Properties(solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Young(), solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Poisson());
-
-    /*--- Add dependencies for Rho and Rho_DL ---*/
-
-    numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Density(solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(), solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL());
-
-//  }
-//  /*--- If we are recording the crossed flow terms of a fluid problem, we need to set the dependencies with E, Nu, Rho and Rho_DL ---*/
-
-
-
+  numerics_container[iZone][MESH_0][FEA_SOL][FEA_TERM]->SetMaterial_Density(solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho(), solver_container[iZone][MESH_0][ADJFEA_SOL]->GetVal_Rho_DL());
 
 }
 

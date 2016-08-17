@@ -735,17 +735,17 @@ class CDiscAdjFSIStatDriver : public CFSIStatDriver {
                                         be used to compute the gradients of the structural problem with respect
                                         to the structural displacements. */
     ALL_VARIABLES = 4,      /*!< \brief All variables (monolithic solution) */
-    FLOW_CROSS_TERM = 5,    /*!< \brief Indicates that the current recording can
-                                        be used to compute the gradients of the structural problem
+    EULERIAN_TERM = 5,    /*!< \brief Indicates that the current recording can
+                                        be used to compute the gradients of the eulerian problem (flow)
                                         with respect to the flow variables. */
-    FEM_CROSS_TERM_GEOMETRY = 6,      /*!< \brief Indicates that the current recording can
-                                        be used to compute the gradients of the mesh problem
-                                        with respect to the structural displacements. */
-    GEOMETRY_CROSS_TERM = 7,   /*!< \brief Indicates that the current recording can
-                                        be used to compute the gradients of the structural problem
-                                        with respect to the geometry variables. */
-    FEM_CROSS_TERM_FLOW = 8   /*!< \brief Indicates that the current recording can
-                                        be used to compute the gradients of the structural problem
+    LAGRANGIAN_TERM = 6,      /*!< \brief Indicates that the current recording can
+                                        be used to compute the gradients of the lagrangian problem (structure and mesh)
+                                        with respect to the structural and fluid mesh displacements. */
+    EULERIAN_CROSS_TERM = 7,   /*!< \brief Indicates that the current recording can
+                                        be used to compute the gradients of the eulerian problem (flow)
+                                        with respect to the structural and fluid mesh displacements. */
+    LAGRANGIAN_CROSS_TERM = 8   /*!< \brief Indicates that the current recording can
+                                        be used to compute the gradients of the lagrangian problem (structure and mesh)
                                         with respect to the flow variables. */
   };
 
@@ -830,22 +830,11 @@ public:
                                 CTransfer ***transfer_container, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, unsigned short kind_recording);
 
   /*!
-   * \brief Run a direct FSI iteration.
-   * \param[in] fluidZone - zone of the fluid solver.
-   * \param[in] structuralZone - zone of the structural solver.
-   */
-  void FSI_Iteration_Direct(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
-      CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
-      CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
-      CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
-      unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT);
-
-  /*!
    * \brief Run a direct flow iteration.
    * \param[in] fluidZone - zone of the fluid solver.
    * \param[in] structuralZone - zone of the structural solver.
    */
-  void Fluid_Iteration_Direct(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
+  void Eulerian_Iteration_Direct(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
       CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
       CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
       CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
@@ -856,18 +845,7 @@ public:
    * \param[in] fluidZone - zone of the fluid solver.
    * \param[in] structuralZone - zone of the structural solver.
    */
-  void Structural_Iteration_Direct(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
-      CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
-      CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
-      CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
-      unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT);
-
-  /*!
-   * \brief Run a direct mesh deformation.
-   * \param[in] fluidZone - zone of the fluid solver.
-   * \param[in] structuralZone - zone of the structural solver.
-   */
-  void Mesh_Deformation_Direct(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
+  void Lagrangian_Iteration_Direct(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
       CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
       CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
       CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
