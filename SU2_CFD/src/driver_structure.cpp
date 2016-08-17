@@ -4347,6 +4347,9 @@ void CDiscAdjSpectralDriver::SetRecording(unsigned short kind_recording){
     }
   }
 
+  for (iZone = 0; iZone < nZone; iZone++)
+  	SetSpectralMethod((iZone+1)%nZone);
+
   for (iZone = 0; iZone < nZone; iZone++) {
 
     direct_iteration[iZone]->Preprocess(output, integration_container, geometry_container,
