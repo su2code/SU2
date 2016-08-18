@@ -57,14 +57,20 @@ int main(int argc, char *argv[]) {
 	CSolver **solver_container     = NULL;
 	CConfig **config_container     = NULL;
 	
-  /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
-   file is specified, default.cfg is used) ---*/
+  /*--- Load in the number of zones and spatial dimensions in the mesh file
+   (if no config file is specified, default.cfg is used) ---*/
   
-  if (argc == 2) { strcpy(config_file_name,argv[1]); }
-  else if (argc == 3) {
-	  strcpy(config_file_name,argv[1]);
-	  nZone = atoi(argv[2]);}
+  if (argc == 2) { strcpy(config_file_name, argv[1]); }
   else { strcpy(config_file_name, "default.cfg"); }
+
+  /*--- Read the name and format of the input mesh file to get from the mesh
+   file the number of zones and dimensions from the numerical grid (required
+   for variables allocation)  ---*/
+
+  CConfig *config = NULL;
+  config = new CConfig(config_file_name, SU2_SOL);
+
+  nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
     
 	/*--- Definition of the containers per zones ---*/
   
@@ -306,34 +312,20 @@ int main(int argc, char *argv[]) {
 
 		}
     
-    else if (config_container[ZONE_0]->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
+		else if (config_container[ZONE_0]->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
 
-			/*--- Time-spectral simulation: merge files for each time instance (each zone). ---*/
-			unsigned short nSpectralMethod = config_container[ZONE_0]->GetnTimeInstances();
-			unsigned short iSpectralMethod;
-			for (iSpectralMethod = 0; iSpectralMethod < nSpectralMethod; iSpectralMethod++) {
 
-				/*--- Set the current instance number in the config class to "ExtIter." ---*/
-				config_container[ZONE_0]->SetExtIter(iSpectralMethod);
+			/*--- Read in the restart file for this time step ---*/
+			/*--- N.B. In SU2_SOL, nZone != nTimeInstances ---*/
+			for (iZone = 0; iZone < nZone; iZone++) {
 
-				/*--- Read in the restart file for this time step ---*/
-				/*--- N.B. In SU2_SOL, nZone != nTimeInstances ---*/
-				for (iZone = 0; iZone < nZone; iZone++) {
+				/*--- Either instantiate the solution class or load a restart file. ---*/
+				solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone], MESH_0);
 
-					/*--- Either instantiate the solution class or load a restart file. ---*/
-					if (iSpectralMethod== 0)
-						solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone], MESH_0);
-					else
-						solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0));
-				}
-
-				/*--- Print progress in solution writing to the screen. ---*/
-				if (rank == MASTER_NODE) {
-					cout << "Writing the volume solution for time instance " << iSpectralMethod << "." << endl;
-				}
-
-				output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iSpectralMethod, nZone);
 			}
+				output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iZone, nZone);
+
+
 		}
     
     else if (config_container[ZONE_0]->GetWrt_Dynamic()){

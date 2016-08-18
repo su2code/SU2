@@ -80,8 +80,8 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
 
   /*--- For time spectral integration, nZones = nTimeInstances. ---*/
 
-  if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
-    nZone = config->GetnTimeInstances();
+  if (config->GetUnsteady_Simulation() == SPECTRAL_METHOD && (config->GetKind_SU2() != SU2_DEF)   ) {
+  	nZone = config->GetnTimeInstances();
   }
 
   return (unsigned short) nZone;
@@ -5221,7 +5221,7 @@ string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
 
   /*--- Append iteration number for unsteady cases ---*/
 
-  if ((Wrt_Unsteady) || (Unsteady_Simulation == SPECTRAL_METHOD) || (Wrt_Dynamic)) {
+  if ((Wrt_Unsteady) || (Wrt_Dynamic)) {
     unsigned short lastindex = UnstFilename.find_last_of(".");
     UnstFilename = UnstFilename.substr(0, lastindex);
     if ((val_iter >= 0)    && (val_iter < 10))    SPRINTF (buffer, "_0000%d.dat", val_iter);

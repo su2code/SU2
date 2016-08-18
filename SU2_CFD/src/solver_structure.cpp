@@ -1914,7 +1914,6 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
 
-
   /*--- Define geometry constants in the solver structure ---*/
   
   nDim = geometry->GetnDim();
@@ -1945,7 +1944,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 	filename = config->GetMultizone_FileName(filename, iZone);
 
   /*--- Unsteady problems require an iteration number to be appended. ---*/
-  if (config->GetWrt_Unsteady() || config->GetUnsteady_Simulation() == SPECTRAL_METHOD) {
+  if (config->GetWrt_Unsteady() ) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if (config->GetWrt_Dynamic()) {
 	filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));

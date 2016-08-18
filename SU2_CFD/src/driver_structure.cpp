@@ -3526,7 +3526,6 @@ void CSpectralDriver::Run() {
 
 	/*--- If this is the first iteration, set up the spectral operators,
    initialize the source terms, and compute any grid veocities, if necessary. ---*/
-	cout << "entro"<<endl;
 	if (ExtIter == 0) {
 		if (config_container[ZONE_0]->GetGrid_Movement() && (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL))
 			SetTimeSpectral_Velocities();
