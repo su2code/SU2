@@ -4114,56 +4114,22 @@ void CDiscAdjFSIStatDriver::Structural_Iteration_Direct(CIteration **iteration_c
   int val_DirectIter = 0;
   unsigned long iPoint;
 
-//  geometry_container[ZONE_FLOW][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
+  geometry_container[ZONE_FLOW][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
 
-  /*-----------------------------------------------------------------*/
-  /*------------------- Transfer Displacements ----------------------*/
-  /*-----------------------------------------------------------------*/
+  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
-  Transfer_Displacements(output, integration_container, geometry_container,
-      solver_container, numerics_container, config_container,
-      surface_movement, grid_movement, FFDBox, transfer_container,
-      ZONE_STRUCT, ZONE_FLOW);
-
-  /*-----------------------------------------------------------------*/
-  /*------------------- Set the Grid movement -----------------------*/
-  /*---- No longer done in the preprocess of the flow iteration -----*/
-  /*---- as the flag Grid_Movement is set to false in this case -----*/
-  /*-----------------------------------------------------------------*/
-
-//  grid_movement[ZONE_FLOW]->Boundary_Dependencies(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
-
-  SetGrid_Movement(geometry_container[ZONE_FLOW], surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW], FFDBox[ZONE_FLOW],
-      solver_container[ZONE_FLOW], config_container[ZONE_FLOW], ZONE_FLOW, IntIter, ExtIter);
-
-  /*-----------------------------------------------------------------*/
-  /*----------------- Iterate the flow solver -----------------------*/
-  /*---- Sets all the cross dependencies for the flow variables -----*/
-  /*--------------- into the structural problem ---------------------*/
-  /*-----------------------------------------------------------------*/
-
-  config_container[ZONE_FLOW]->SetExtIter(0);
-
-  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_FLOW], solver_container[ZONE_FLOW],
-                                                                     config_container[ZONE_FLOW], ExtIter);
-
-  direct_iteration[ZONE_FLOW]->Iterate(output, integration_container, geometry_container,
-      solver_container, numerics_container, config_container,
-      surface_movement, grid_movement, FFDBox, ZONE_FLOW);
-
-  // Add dependencies on mesh and flow variables
-
-//  for (iPoint = 0; iPoint < geometry_container[ZONE_STRUCT][MESH_0]->GetnPointDomain(); iPoint++)
-//    solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
-
+//  /*-----------------------------------------------------------------*/
+//  /*------------------- Transfer Displacements ----------------------*/
+//  /*-----------------------------------------------------------------*/
+//
 //  Transfer_Displacements(output, integration_container, geometry_container,
-//        solver_container, numerics_container, config_container,
-//        surface_movement, grid_movement, FFDBox, transfer_container,
-//        ZONE_STRUCT, ZONE_FLOW);
+//      solver_container, numerics_container, config_container,
+//      surface_movement, grid_movement, FFDBox, transfer_container,
+//      ZONE_STRUCT, ZONE_FLOW);
 //
 //  grid_movement[ZONE_FLOW]->Boundary_Dependencies(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
-
-  geometry_container[ZONE_FLOW][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
+//
+//  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
   /*-----------------------------------------------------------------*/
   /*-------------------- Transfer Tractions -------------------------*/
@@ -4173,7 +4139,6 @@ void CDiscAdjFSIStatDriver::Structural_Iteration_Direct(CIteration **iteration_c
               solver_container, numerics_container, config_container,
               surface_movement, grid_movement, FFDBox, transfer_container,
               ZONE_FLOW, ZONE_STRUCT);
-
 
   /*-----------------------------------------------------------------*/
   /*--------------- Iterate the structural solver -------------------*/
@@ -4202,8 +4167,8 @@ void CDiscAdjFSIStatDriver::Mesh_Deformation_Direct(CIteration **iteration_conta
   /*---------------- Predict structural displacements ---------------*/
   /*-----------------------------------------------------------------*/
 
-  for (iPoint = 0; iPoint < geometry_container[ZONE_STRUCT][MESH_0]->GetnPointDomain(); iPoint++)
-    solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
+//  for (iPoint = 0; iPoint < geometry_container[ZONE_STRUCT][MESH_0]->GetnPointDomain(); iPoint++)
+//    solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
 
   /*-----------------------------------------------------------------*/
   /*------------------- Transfer Displacements ----------------------*/
@@ -5449,29 +5414,29 @@ void CDiscAdjFSIStatDriver::Iterate_Block_StructuralOF(CIteration **iteration_co
 
     /*--- Compute flow cross term (dF / dSv) ---*/
 
-//    myfile_struc.open ("structural_block.csv", ios::app);
-//    myfile_struc << "FEM_CROSS_TERM_FLOW";
-//    myfile_struc << endl;
-//    myfile_struc.close();
-//
-//    myfile_geo.open ("geometry_block.csv", ios::app);
-//    myfile_geo << "FEM_CROSS_TERM_FLOW";
-//    myfile_geo << endl;
-//    myfile_geo.close();
-//
-//    myfile_flow.open ("fluid_block.csv", ios::app);
-//    myfile_flow << "FEM_CROSS_TERM_FLOW";
-//    myfile_flow << endl;
-//    myfile_flow.close();
-//
-//    config_container[ZONE_FLOW]->Set_CrossTerm(false);
-//    config_container[ZONE_STRUCT]->Set_CrossTerm(false);
-//
-//    Iterate_Block(iteration_container, output, integration_container,
-//        geometry_container, solver_container, numerics_container,
-//        config_container, surface_movement, grid_movement,
-//        FFDBox, interpolator_container, transfer_container,
-//        ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM_FLOW);
+    myfile_struc.open ("structural_block.csv", ios::app);
+    myfile_struc << "FEM_CROSS_TERM_FLOW";
+    myfile_struc << endl;
+    myfile_struc.close();
+
+    myfile_geo.open ("geometry_block.csv", ios::app);
+    myfile_geo << "FEM_CROSS_TERM_FLOW";
+    myfile_geo << endl;
+    myfile_geo.close();
+
+    myfile_flow.open ("fluid_block.csv", ios::app);
+    myfile_flow << "FEM_CROSS_TERM_FLOW";
+    myfile_flow << endl;
+    myfile_flow.close();
+
+    config_container[ZONE_FLOW]->Set_CrossTerm(true);
+    config_container[ZONE_STRUCT]->Set_CrossTerm(true);
+
+    Iterate_Block(iteration_container, output, integration_container,
+        geometry_container, solver_container, numerics_container,
+        config_container, surface_movement, grid_movement,
+        FFDBox, interpolator_container, transfer_container,
+        ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM_FLOW);
 
     /*--- Compute mesh cross term (dM / dSv) ---*/
 
