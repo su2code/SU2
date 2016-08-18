@@ -549,5 +549,6 @@ public:
    * \param[in] zoneStruct - zone of the structural equations.
    */
   void Update(unsigned short zoneFlow, unsigned short zoneStruct);
-
+  using CDriver::Update;
+  
 };
