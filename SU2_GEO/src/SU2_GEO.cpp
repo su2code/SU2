@@ -50,8 +50,11 @@ int main(int argc, char *argv[]) {
 
 #ifdef HAVE_MPI
 	SU2_MPI::Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
+	MPI_Comm_rank(MPICommunicator,&rank);
+  MPI_Comm_size(MPICommunicator,&size);
+#else
+  SU2_Comm MPICommunicator(0);
 #endif
 	
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
@@ -88,6 +91,7 @@ int main(int argc, char *argv[]) {
      read and stored. ---*/
     
     config_container[iZone] = new CConfig(config_file_name, SU2_GEO, iZone, nZone, 0, VERB_HIGH);
+    config_container[iZone]->SetMPICommunicator(MPICommunicator);
         
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
     
