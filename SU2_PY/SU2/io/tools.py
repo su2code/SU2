@@ -891,7 +891,7 @@ def get_specialCases(config):
         if config.has_key('PHYSICAL_PROBLEM') and config['PHYSICAL_PROBLEM'] == key:
             special_cases.append(key)
             
-    if config.get('UNSTEADY_SIMULATION','NO') != 'NO':
+    if config.get('UNSTEADY_SIMULATION','NO') != 'NO' and config['UNSTEADY_SIMULATION'] != 'SPECTRAL_METHOD':
         special_cases.append('UNSTEADY_SIMULATION')
      
     # no support for more than one special case
@@ -902,9 +902,9 @@ def get_specialCases(config):
     if (config['WRT_SOL_FREQ'] != 1) and ('WRT_UNSTEADY' in special_cases):
         raise Exception('Must set WRT_SOL_FREQ= 1 for WRT_UNSTEADY= YES')
   
-    # Special case for time-spectral
-    if config.has_key('UNSTEADY_SIMULATION') and config['UNSTEADY_SIMULATION'] == 'TIME_SPECTRAL':
-        special_cases.append('TIME_SPECTRAL')
+    # Special case for spectral-method
+    if config.has_key('UNSTEADY_SIMULATION') and config['UNSTEADY_SIMULATION'] == 'SPECTRAL_METHOD':
+        special_cases.append('SPECTRAL_METHOD')
 
     # Special case for rotating frame
     if config.has_key('GRID_MOVEMENT_KIND') and config['GRID_MOVEMENT_KIND'] == 'ROTATING_FRAME':

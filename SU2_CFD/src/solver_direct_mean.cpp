@@ -10363,6 +10363,7 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
           AverageEnthalpy[iMarker][nSpanWiseSections] 					= FluidModel->GetStaticEnergy() + AveragePressure[iMarker][nSpanWiseSections]/AverageDensity[iMarker][nSpanWiseSections];
           AverageSoundSpeed[iMarker][nSpanWiseSections]					= FluidModel->GetSoundSpeed();
           AverageEntropy[iMarker][nSpanWiseSections] 						= FluidModel->GetEntropy();
+          cout << AverageEntropy[iMarker][nSpanWiseSections] << endl;
 
           ComputeTurboVelocity(AverageVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageTurboVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
           SpanMassFlow[iMarker][nSpanWiseSections]							= AverageDensity[iMarker][nSpanWiseSections]*AverageTurboVelocity[iMarker][nSpanWiseSections][0]*TotalArea;

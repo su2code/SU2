@@ -3521,18 +3521,18 @@ CSpectralDriver::CSpectralDriver(char* confFile,
 CSpectralDriver::~CSpectralDriver(void) { }
 
 void CSpectralDriver::Run() {
-  
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  
-  /*--- If this is the first iteration, set up the spectral operators,
-   initialize the source terms, and compute any grid veocities, if necessary. ---*/
 
-  if (ExtIter == 0) {
-  	if (config_container[ZONE_0]->GetGrid_Movement() && (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL))
-  		SetTimeSpectral_Velocities();
-  	for (iZone = 0; iZone < nZone; iZone++)
-  		SetSpectralMethod((iZone+1)%nZone);
-  }
+	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+
+	/*--- If this is the first iteration, set up the spectral operators,
+   initialize the source terms, and compute any grid veocities, if necessary. ---*/
+	cout << "entro"<<endl;
+	if (ExtIter == 0) {
+		if (config_container[ZONE_0]->GetGrid_Movement() && (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL))
+			SetTimeSpectral_Velocities();
+		for (iZone = 0; iZone < nZone; iZone++)
+			SetSpectralMethod((iZone+1)%nZone);
+	}
 
 	/*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
 	if(ExtIter == 0){
@@ -3540,21 +3540,34 @@ void CSpectralDriver::Run() {
 			for (iZone = 0; iZone < nZone; iZone++)
 				SetGeoTurboAvgValues(iZone, true);
 		}
+		for (iZone = 0; iZone < nZone; iZone++){
+			solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+			solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+		}
 	}
 
-  /*--- Run a single iteration of a spectral method problem. Preprocess all
+	/*--- Run a single iteration of a spectral method problem. Preprocess all
    all zones before beginning the iteration. ---*/
-  
-  for (iZone = 0; iZone < nZone; iZone++)
-    iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
-                                           solver_container, numerics_container, config_container,
-                                           surface_movement, grid_movement, FFDBox, iZone);
-  
-  for (iZone = 0; iZone < nZone; iZone++)
-    iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
-                                        solver_container, numerics_container, config_container,
-                                        surface_movement, grid_movement, FFDBox, iZone);
-    
+
+	for (iZone = 0; iZone < nZone; iZone++)
+		iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
+				solver_container, numerics_container, config_container,
+				surface_movement, grid_movement, FFDBox, iZone);
+
+	for (iZone = 0; iZone < nZone; iZone++)
+		iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
+				solver_container, numerics_container, config_container,
+				surface_movement, grid_movement, FFDBox, iZone);
+
+	for (iZone = 0; iZone < nZone; iZone++){
+		cout <<config_container[iZone]->GetBoolTurbomachinery() <<endl;
+		if(config_container[iZone]->GetBoolTurbomachinery()){
+			cout << "entro"<<endl;
+			solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+			solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+			solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(config_container[iZone], geometry_container[iZone][MESH_0]);
+		}
+	}
 }
 
 void CSpectralDriver::Update(){
