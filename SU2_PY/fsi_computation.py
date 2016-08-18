@@ -70,27 +70,21 @@ def main():
 
   CSD_Solver = FSI_config['CSD_SOLVER']			# CSD solver
 
-  # Redefine the fluid solver configuration file if we are running in parallel
-  config = SU2.io.Config(CFD_ConFile)
-  config.NUMBER_PART = numberPart
-  config.DECOMPOSED = False
-  if numberPart > 1:
-    config.DECOMPOSED  = True
-    config.NUMBER_PART = numberPart
-  else:
-    config.DECOMPOSED  = False
-  CFD_ConFile = 'config_CFD.cfg'
-  if myid == rootProcess:
-    konfig = copy.deepcopy(config)
-    konfig.dump(CFD_ConFile)
-
   if have_MPI == True:
     comm.barrier()
 
   # --- Initialize the fluid solver --- #
   if myid == rootProcess:
     print('\n***************************** Initializing fluid solver *****************************')
-  FluidSolver = SU2Solver.CSingleZoneDriver(CFD_ConFile, 1, FSI_config['NDIM'], comm)
+  try:
+    FluidSolver = SU2Solver.CSingleZoneDriver(CFD_ConFile, 1, FSI_config['NDIM'], comm)
+  except TypeError as exception:
+    print('A TypeError occured in SU2Solver.CSingleZoneDriver : ',exception)
+    if have_MPI == True:
+      print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')
+    else:
+      print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')
+    return
 
   if have_MPI == True:
     comm.barrier()

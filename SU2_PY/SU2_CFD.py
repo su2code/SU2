@@ -72,15 +72,22 @@ def main():
     comm = 0 
 
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
-  if options.nZone == 1:
-    SU2Driver = SU2Solver.CSingleZoneDriver(options.filename, options.nZone, options.nDim, comm);
-  elif options.time_spectral == True:
-    print options.time_spectral
-    SU2Driver = SU2Solver.CSpectralDriver(options.filename, options.nZone, options.nDim, comm);
-  elif (options.nZone == 2) and (options.fsi == True):
-    SU2Driver = SU2Solver.CFSIDriver(options.filename, options.nZone, options.nDim, comm);
-  else:
-    SU2Driver = SU2Solver.CMultiZoneDriver(options.filename, options.nZone, options.nDim, comm);
+  try:
+    if options.nZone == 1:
+      SU2Driver = SU2Solver.CSingleZoneDriver(options.filename, options.nZone, options.nDim, comm);
+    elif options.time_spectral == True:
+      SU2Driver = SU2Solver.CSpectralDriver(options.filename, options.nZone, options.nDim, comm);
+    elif (options.nZone == 2) and (options.fsi == True):
+      SU2Driver = SU2Solver.CFSIDriver(options.filename, options.nZone, options.nDim, comm);
+    else:
+      SU2Driver = SU2Solver.CMultiZoneDriver(options.filename, options.nZone, options.nDim, comm);
+  except TypeError as exception:
+    print('A TypeError occured in SU2Solver.CSingleZoneDriver : ',exception)
+    if options.with_MPI == True:
+      print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')
+    else:
+      print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')
+    return
 
   # Launch the solver for the entire computation
   SU2Driver.StartSolver()
