@@ -47,11 +47,6 @@ ___bin_SU2_MSH_LDADD = ../../Common/lib/libSU2.a
 ___bin_SU2_MSH_CXXFLAGS += @su2_externals_INCLUDES@
 ___bin_SU2_MSH_LDADD += @su2_externals_LIBS@
 
-# if BUILD_CGNS
-___bin_SU2_MSH_CXXFLAGS += @CGNS_CXX@
-___bin_SU2_MSH_LDADD += @CGNS_LD@
-# endif
-
 # if BUILD_HDF5
 ___bin_SU2_MSH_CXXFLAGS += @HDF5_CXX@
 ___bin_SU2_MSH_LDADD += @HDF5_LD@
