@@ -45,7 +45,8 @@ bin_SCRIPTS = \
     compute_polar.py \
     discrete_adjoint.py \
     direct_differentiation.py \
-    fsi_computation.py
+    fsi_computation.py \
+    pyWrap_SU2_CFD.py
 
 
 mypkgdir = $(prefix)/bin
@@ -93,6 +94,7 @@ nobase_dist_mypkg_DATA= \
     SU2/util/__init__.py \
     FSI/__init__.py \
     FSI/FSIInterface.py \
+    FSI/PitchPlungeAirfoilStructuralTester.py \
     FSI/io/__init__.py \
     FSI/io/FSI_config.py \
     FSI/util/__init__.py \
