@@ -604,7 +604,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     node[iPoint]->SetSolution(Solution);
 
-    if ((geometry->node[iPoint]->GetGlobalIndex() == 650) && extract_adjoint_output){
+    if ((geometry->node[iPoint]->GetGlobalIndex() == 300) && extract_adjoint_output){
       myfile_res << BGS_Iter << "\t";
       myfile_res << Int_Iter << "\t";
       myfile_res.precision(15);
@@ -730,7 +730,7 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 
     node[iPoint]->SetSolution_Geometry(Solution_Geometry);
 
-    if ((geometry->node[iPoint]->GetGlobalIndex() == 650) && extract_adjoint_output){
+    if ((geometry->node[iPoint]->GetGlobalIndex() == 300) && extract_adjoint_output){
       myfile_res << BGS_Iter << "\t";
       myfile_res << Int_Iter << "\t";
       myfile_res.precision(15);
@@ -806,7 +806,7 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *conf
 
     for (iVar = 0; iVar < nVar; iVar++) node[iPoint]->SetCross_Term_Derivative(iVar, Solution[iVar]);
 
-    if ((geometry->node[iPoint]->GetGlobalIndex() == 650) && extract_adjoint_output){
+    if ((geometry->node[iPoint]->GetGlobalIndex() == 300) && extract_adjoint_output){
       myfile_res << BGS_Iter << "\t";
       myfile_res << Int_Iter << "\t";
       myfile_res.precision(15);
@@ -849,7 +849,7 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CCon
 
     for (iDim = 0; iDim < nDim; iDim++) node[iPoint]->SetGeometry_CrossTerm_Derivative(iDim, Solution_Geometry[iDim]);
 
-    if ((geometry->node[iPoint]->GetGlobalIndex() == 650) && extract_adjoint_output){
+    if ((geometry->node[iPoint]->GetGlobalIndex() == 300) && extract_adjoint_output){
       myfile_res << BGS_Iter << "\t";
       myfile_res << Int_Iter << "\t";
       myfile_res.precision(15);
@@ -902,7 +902,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
         Solution[iVar] += node[iPoint]->GetCross_Term_Derivative(iVar);
       }
     }
-    if ((geometry->node[iPoint]->GetGlobalIndex() == 650) && (!extract_adjoint_output)){
+    if ((geometry->node[iPoint]->GetGlobalIndex() == 300) && (!extract_adjoint_output)){
       myfile_res << BGS_Iter << "\t";
       myfile_res << Int_Iter << "\t";
       myfile_res.precision(15);
@@ -966,7 +966,7 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
         Solution_Geometry[iDim] += node[iPoint]->GetGeometry_CrossTerm_Derivative(iDim);
       }
     }
-    if ((geometry->node[iPoint]->GetGlobalIndex() == 650) && (!extract_adjoint_output)){
+    if ((geometry->node[iPoint]->GetGlobalIndex() == 300) && (!extract_adjoint_output)){
       myfile_res << BGS_Iter << "\t";
       myfile_res << Int_Iter << "\t";
       myfile_res.precision(15);
