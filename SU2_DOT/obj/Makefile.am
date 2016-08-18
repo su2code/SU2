@@ -80,11 +80,6 @@ endif
 su2_dot_cxx_flags += @su2_externals_INCLUDES@
 su2_dot_ldadd += @su2_externals_LIBS@
 
-# if BUILD_CGNS
-su2_dot_cxx_flags += @CGNS_CXX@
-su2_dot_ldadd += @CGNS_LD@
-# endif
-
 # if BUILD_MUTATIONPP
 su2_dot_cxx_flags += @MUTATIONPP_CXX@
 su2_dot_ldadd += @MUTATIONPP_LD@

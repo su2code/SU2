@@ -148,11 +148,6 @@ su2_cfd_cxx_flags += @su2_externals_INCLUDES@
 su2_cfd_ldadd += @su2_externals_LIBS@
 libSU2Core_cxx_flags += @su2_externals_INCLUDES@
 
-# if BUILD_CGNS
-su2_cfd_cxx_flags += @CGNS_CXX@
-su2_cfd_ldadd += @CGNS_LD@
-# endif
-
 # if BUILD_MUTATIONPP
 su2_cfd_cxx_flags += @MUTATIONPP_CXX@
 su2_cfd_ldadd += @MUTATIONPP_LD@
