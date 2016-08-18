@@ -58,7 +58,7 @@ class FSIConfig:
 
             for case in switch(this_param):
 	        #integer values
-		#if case("NDIM")			      : pass
+		if case("NDIM")			      : pass
 	        #if case("MESH_DEF_LIN_ITER")	      : pass
 	        #if case("MESH_DEF_NONLIN_ITER")       : pass
 		if case("RESTART_ITER")		      : pass
