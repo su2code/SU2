@@ -6432,7 +6432,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 printf("\n\n   !!! Error !!!\n" );
                 printf(" HEXA-20 element type not supported\n");
                 printf(" Section %d, npe=%d\n", s, npe);
-                printf(" startE %d, endE %d\n", startE, endE);
+                printf(" startE %d, endE %d\n", (int)startE, (int)endE);
                 printf(" Now exiting...\n\n");
               }
 #ifndef HAVE_MPI
@@ -6447,7 +6447,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 printf("\n\n   !!! Error !!!\n" );
                 printf(" Unknown elem: (type %d, npe=%d)\n", elemType, npe);
                 printf(" Section %d\n", s);
-                printf(" startE %d, endE %d\n", startE, endE);
+                printf(" startE %d, endE %d\n", (int)startE, (int)endE);
                 printf(" Now exiting...\n\n");
               }
 #ifndef HAVE_MPI
@@ -6594,7 +6594,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 printf( "\n\n   !!! Error !!!\n" );
                 printf( " HEXA-20 element type not supported\n");
                 printf(" Section %d, npe=%d\n", s, npe);
-                printf(" startE %d, endE %d\n", startE, endE);
+                printf(" startE %d, endE %d\n", (int)startE, (int)endE);
                 printf( " Now exiting...\n\n");
 #ifndef HAVE_MPI
                 exit(EXIT_FAILURE);
@@ -6611,7 +6611,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 printf( "\n\n   !!! Error !!!\n" );
                 printf( " Unknown elem: (type %d, npe=%d)\n", elemType, npe);
                 printf(" Section %d\n", s);
-                printf(" startE %d, endE %d\n", startE, endE);
+                printf(" startE %d, endE %d\n", (int)startE, (int)endE);
                 printf( " Now exiting...\n\n");
 #ifndef HAVE_MPI
                 exit(EXIT_FAILURE);
