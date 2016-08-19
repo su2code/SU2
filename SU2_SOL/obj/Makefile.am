@@ -56,11 +56,6 @@ ___bin_SU2_SOL_LDADD = \
 ___bin_SU2_SOL_CXXFLAGS += @su2_externals_INCLUDES@
 ___bin_SU2_SOL_LDADD += @su2_externals_LIBS@
 
-# if BUILD_CGNS
-___bin_SU2_SOL_CXXFLAGS += @CGNS_CXX@
-___bin_SU2_SOL_LDADD += @CGNS_LD@
-# endif
-
 # if BUILD_HDF5
 ___bin_SU2_SOL_CXXFLAGS += @HDF5_CXX@
 ___bin_SU2_SOL_LDADD += @HDF5_LD@

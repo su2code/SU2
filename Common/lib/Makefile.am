@@ -112,11 +112,6 @@ lib_ldadd =
 lib_cxxflags += @su2_externals_INCLUDES@
 lib_ldadd += @su2_externals_LIBS@
 
-# if BUILD_CGNS
-lib_cxxflags += @CGNS_CXX@
-lib_ldadd += @CGNS_LD@
-# endif
-
 # if BUILD_HDF5
 lib_cxxflags += @HDF5_CXX@
 lib_ldadd += @HDF5_LD@

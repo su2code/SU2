@@ -35,6 +35,7 @@
 # METIS & TECIO integration added by Ben Kirk, 3/24/2014
 # LAPACK connection added by Teus van der Stelt, 11/13/2014
 # ParMETIS integration added by Ben Kirk & Thomas D. Economon, 2/3/2015
+# CGNS integration added by Thomas D. Economon, 8/17/2016
 ##########################
 
 AC_INIT([SU2], [4.2.0], [su2code-dev@lists.stanford.edu],
@@ -66,12 +67,6 @@ AC_CHECK_SIZEOF(double)
 AC_CHECK_SIZEOF(void *)
 
 # optional bindings
-AC_ARG_WITH(CGNS-lib,
-    	AS_HELP_STRING([--with-CGNS-lib[=ARG]], [CGNS library directory, ARG = path to libcgns.a]),
-	[with_CGNS_lib=$withval], [with_CGNS_lib="no"])
-AC_ARG_WITH(CGNS-include,
-    	AS_HELP_STRING([--with-CGNS-include[=ARG]], [CGNS include directory, ARG = path to cgnslib.h]),
-	[with_CGNS_include=$withval], [with_CGNS_include="no"])
 
 AC_ARG_WITH(HDF5-lib,
 AS_HELP_STRING([--with-HDF5-lib[=ARG]], [HDF5 library directory, ARG = path to libhdf5.a]),
@@ -188,53 +183,20 @@ fi
 AM_CONDITIONAL(BUILD_PARMETIS, test x$enableparmetis = xyes)
 AC_CONFIG_FILES([externals/parmetis/Makefile])
 
+# CGNS
+CONFIGURE_CGNS
+if (test $enablecgns = yes); then
+  su2_externals_INCLUDES="-DHAVE_CGNS $CGNS_INCLUDE $su2_externals_INCLUDES"
+  su2_externals_LIBS="$CGNS_LIB $su2_externals_LIBS"
+else
+  su2_externals_INCLUDES="$su2_externals_INCLUDES"
+fi
+AM_CONDITIONAL(BUILD_CGNS, test x$enablecgns = xyes)
+AC_CONFIG_FILES([externals/cgns/Makefile])
 
 AC_SUBST([su2_externals_INCLUDES])
 AC_SUBST([su2_externals_LIBS])
 
-##########################
-
-# check for lib
-CGNSlib=libcgns.a
-CGNSheader=cgnslib.h
-have_CGNS="no"
-
-if test "$with_CGNS_lib" != "no"
-then
-  	AC_CHECK_FILE([$with_CGNS_lib/$CGNSlib],[have_CGNS="yes"],[have_CGNS="no"])
-	if test "$have_CGNS" == "no"
-	then
-		AC_MSG_ERROR([CGNS requested but library file not found.])
-	fi
-fi
-
-# check for header
-if test "$have_CGNS" != "no"
-then
-	if test "$with_CGNS_include" != "no"
-	then
-		AC_CHECK_FILE([$with_CGNS_include/$CGNSheader],[have_CGNS='yes'],[have_CGNS='no'])
-		if test "$have_CGNS" == "no"
-		then
-			AC_MSG_ERROR([CGNS requested but header file not found.])
-		fi
-	else
-		have_CGNS="no"
-	fi
-fi
-
-if test "$have_CGNS" != "no"
-then
-  	AM_CONDITIONAL(BUILD_CGNS,true)
-	CGNS_CXX="-DHAVE_CGNS -I"$with_CGNS_include""
-	CGNS_LD="$with_CGNS_lib"/$CGNSlib
-else
-	AM_CONDITIONAL(BUILD_CGNS,false)
-	CGNS_CXX=
-	CGNS_LD=
-fi
-AC_SUBST([CGNS_CXX])
-AC_SUBST([CGNS_LD])
 
 ##########################
 
@@ -627,7 +589,7 @@ Build Configuration Summary:
     Metis support:        $enablemetis
     Parmetis support:     $enableparmetis
     TecIO support:        $enabletecio
-    CGNS support:         $have_CGNS
+    CGNS support:         $enablecgns
     HDF5 support:         $have_HDF5
     SZIP support:         $have_SZIP
     ZLIB support:         $have_ZLIB
