@@ -539,6 +539,7 @@ def findiff( config, state=None, step=1e-4 ):
     # files: direct solution
     if files.has_key('DIRECT'):
         name = files['DIRECT']
+        name = su2io.expand_zones(name,config)
         name = su2io.expand_time(name,config)
         link.extend(name)
 
@@ -559,7 +560,9 @@ def findiff( config, state=None, step=1e-4 ):
         import downstream_function
         chaingrad = downstream_function.downstream_gradient(config,state)
         custom_dv=1
-        
+    if (config.has_key('MARKER_NONUNIFORM')):
+        pull.append( config['NONUNIFORM_BC_FILENAME'] )
+            
     # output redirection
     with redirect_folder('FINDIFF',pull,link) as push:
         with redirect_output(log_findiff):
