@@ -47,11 +47,6 @@ ___bin_SU2_GEO_LDADD = ../../Common/lib/libSU2.a
 ___bin_SU2_GEO_CXXFLAGS += @su2_externals_INCLUDES@
 ___bin_SU2_GEO_LDADD += @su2_externals_LIBS@
 
-# if BUILD_CGNS
-___bin_SU2_GEO_CXXFLAGS += @CGNS_CXX@
-___bin_SU2_GEO_LDADD += @CGNS_LD@
-# endif
-
 # if BUILD_HDF5
 ___bin_SU2_GEO_CXXFLAGS += @HDF5_CXX@
 ___bin_SU2_GEO_LDADD += @HDF5_LD@
