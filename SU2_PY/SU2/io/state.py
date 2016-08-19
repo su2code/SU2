@@ -196,6 +196,9 @@ class State(ordered_bunch):
                 pull.append(value)
         
         #: for each filename
+        if (config.has_key('MARKER_NONUNIFORM')):
+            pull.append( config['NONUNIFORM_BC_FILENAME'] )
+        
         
         return pull,link
     
