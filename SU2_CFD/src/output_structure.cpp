@@ -2107,9 +2107,9 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       iVar_SensDim = nVar_Total; nVar_Total += nDim;
     }
     
-//    if ((Kind_Solver == DISC_ADJ_FEM)){
-//      nVar_Total += 2;
-//    }
+    if ((Kind_Solver == DISC_ADJ_FEM) && (config->GetFSI_Simulation())){
+      iVar_FEA_Extra = nVar_Total; nVar_Total += 2;
+    }
 
     if (config->GetExtraOutput()) {
       if (Kind_Solver == RANS) {
@@ -3361,63 +3361,63 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
       }
     }
     
-//    if ((Kind_Solver == DISC_ADJ_FEM)) {
-//      /*--- Loop over this partition to collect the current variable ---*/
-//
-//      jPoint = 0;
-//      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-//
-//        /*--- Check for halos & write only if requested ---*/
-//
-//        if (!Local_Halo[iPoint] || Wrt_Halo) {
-//
-//          /*--- Load buffers with the skin friction, heat transfer, y+ variables. ---*/
-//
-//          Buffer_Send_Var[jPoint] = solver[ADJFEA_SOL]->node[iPoint]->GetSensitivity(0);
-//          Buffer_Send_Res[jPoint] = solver[ADJFEA_SOL]->node[iPoint]->GetSensitivity(1);
-//          if (nDim == 3)
-//            Buffer_Send_Vol[jPoint] = solver[ADJFEA_SOL]->node[iPoint]->GetSensitivity(2);
-//          jPoint++;
-//        }
-//      }
-//
-//      /*--- Gather the data on the master node. ---*/
-//
-//#ifdef HAVE_MPI
-//      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-//      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-//      if (nDim == 3)
-//        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-//#else
-//      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
-//      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
-//      if (nDim == 3)
-//        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
-//#endif
-//
-//      /*--- The master node unpacks and sorts this variable by global index ---*/
-//
-//      if (rank == MASTER_NODE) {
-//        jPoint = 0; iVar = iVar_SensDim;
-//        for (iProcessor = 0; iProcessor < size; iProcessor++) {
-//          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
-//
-//            /*--- Get global index, then loop over each variable and store ---*/
-//
-//            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
-//            Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
-//            Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
-//            if (nDim == 3)
-//              Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
-//            jPoint++;
-//          }
-//
-//          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
-//
-//          jPoint = (iProcessor+1)*nBuffer_Scalar;
-//        }
-//      }
-//    }
+    if ((Kind_Solver == DISC_ADJ_FEM) && (config->GetFSI_Simulation())) {
+      /*--- Loop over this partition to collect the current variable ---*/
+
+      jPoint = 0;
+      for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+
+        /*--- Check for halos & write only if requested ---*/
+
+        if (!Local_Halo[iPoint] || Wrt_Halo) {
+
+          /*--- Load buffers with the skin friction, heat transfer, y+ variables. ---*/
+
+          Buffer_Send_Var[jPoint] = solver[ADJFEA_SOL]->node[iPoint]->GetGeometry_CrossTerm_Derivative(0);
+          Buffer_Send_Res[jPoint] = solver[ADJFEA_SOL]->node[iPoint]->GetGeometry_CrossTerm_Derivative(1);
+          if (geometry->GetnDim() == 3)
+            Buffer_Send_Vol[jPoint] = solver[ADJFEA_SOL]->node[iPoint]->GetGeometry_CrossTerm_Derivative(2);
+          jPoint++;
+        }
+      }
+
+      /*--- Gather the data on the master node. ---*/
+
+#ifdef HAVE_MPI
+      SU2_MPI::Gather(Buffer_Send_Var, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Var, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      SU2_MPI::Gather(Buffer_Send_Res, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Res, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+      if (nDim == 3)
+        SU2_MPI::Gather(Buffer_Send_Vol, nBuffer_Scalar, MPI_DOUBLE, Buffer_Recv_Vol, nBuffer_Scalar, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#else
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Var[iPoint] = Buffer_Send_Var[iPoint];
+      for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Res[iPoint] = Buffer_Send_Res[iPoint];
+      if (nDim == 3)
+        for (iPoint = 0; iPoint < nBuffer_Scalar; iPoint++) Buffer_Recv_Vol[iPoint] = Buffer_Send_Vol[iPoint];
+#endif
+
+      /*--- The master node unpacks and sorts this variable by global index ---*/
+
+      if (rank == MASTER_NODE) {
+        jPoint = 0; iVar = iVar_FEA_Extra;
+        for (iProcessor = 0; iProcessor < size; iProcessor++) {
+          for (iPoint = 0; iPoint < Buffer_Recv_nPoint[iProcessor]; iPoint++) {
+
+            /*--- Get global index, then loop over each variable and store ---*/
+
+            iGlobal_Index = Buffer_Recv_GlobalIndex[jPoint];
+            Data[iVar+0][iGlobal_Index] = Buffer_Recv_Var[jPoint];
+            Data[iVar+1][iGlobal_Index] = Buffer_Recv_Res[jPoint];
+            if (nDim == 3)
+              Data[iVar+2][iGlobal_Index] = Buffer_Recv_Vol[jPoint];
+            jPoint++;
+          }
+
+          /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+
+          jPoint = (iProcessor+1)*nBuffer_Scalar;
+        }
+      }
+    }
 
     if (config->GetExtraOutput()) {
       
@@ -3893,6 +3893,13 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
       }
     }
     
+    if ((Kind_Solver == DISC_ADJ_FEM) && (config->GetFSI_Simulation())){
+      if (geometry->GetnDim() == 2)
+        restart_file << "\t\"CrossTerm_1\"\t\"CrossTerm_2\"";
+      if (geometry->GetnDim() == 3)
+        restart_file << "\t\"CrossTerm_1\"\t\"CrossTerm_2\"\t\"CrossTerm_3\"";
+    }
+
     
     if (config->GetExtraOutput()) {
       string *headings = NULL;
