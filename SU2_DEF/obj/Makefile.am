@@ -56,11 +56,6 @@ ___bin_SU2_DEF_LDADD = ../../Common/lib/libSU2.a \
 ___bin_SU2_DEF_CXXFLAGS += @su2_externals_INCLUDES@
 ___bin_SU2_DEF_LDADD += @su2_externals_LIBS@
 
-# if BUILD_CGNS
-___bin_SU2_DEF_CXXFLAGS += @CGNS_CXX@
-___bin_SU2_DEF_LDADD += @CGNS_LD@
-# endif
-
 # if BUILD_HDF5
 ___bin_SU2_DEF_CXXFLAGS += @HDF5_CXX@
 ___bin_SU2_DEF_LDADD += @HDF5_LD@

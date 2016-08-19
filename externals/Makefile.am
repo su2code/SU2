@@ -41,6 +41,10 @@ endif
 if BUILD_METIS
   SUBDIRS += metis
 if BUILD_PARMETIS
-    SUBDIRS += parmetis
+  SUBDIRS += parmetis
 endif
+endif
+
+if BUILD_CGNS
+  SUBDIRS += cgns
 endif

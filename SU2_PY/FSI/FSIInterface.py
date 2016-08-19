@@ -393,7 +393,7 @@ class Interface:
 	    SolidSolver.setGeneralisedForce(FX, FY)
 	    SolidSolver.setGeneralisedMoment(Mz)
 	# in other cases, we communicate nodal fluid loads
-	if FSI_config['CSD_SOLVER'] == 'METAFOR' or FSI_config['CSD_SOLVER'] == 'GETDP':
+	if FSI_config['CSD_SOLVER'] == 'METAFOR' or FSI_config['CSD_SOLVER'] == 'GETDP' or FSI_config['CSD_SOLVER'] == 'TESTER':
 	    for solidNode in self.globalSolidInterface.iterkeys():
 	        Fx = self.globalSolidInterface[solidNode][3]
 	        Fy = self.globalSolidInterface[solidNode][4]
@@ -592,7 +592,7 @@ class Interface:
 			    print('\nLaunching solid solver for a single time iteration...\n')
 			    if FSI_config['CSD_SOLVER'] == 'NATIVE':
 			        SolidSolver.timeIteration(time)
-			    elif FSI_config['CSD_SOLVER'] == 'METAFOR' or FSI_config['CSD_SOLVER'] == 'GETDP':
+			    elif FSI_config['CSD_SOLVER'] == 'METAFOR' or FSI_config['CSD_SOLVER'] == 'GETDP' or FSI_config['CSD_SOLVER'] == 'TESTER':
 				SolidSolver.run(time-deltaT, time)
 
 			    # --- Compute and monitor the FSI residual --- #
@@ -632,7 +632,7 @@ class Interface:
 			SolidSolver.updateGeometry()
 		        SolidSolver.displacementPredictor()
 			self.getSolidInterfacePosition(SolidSolver)
-		    elif FSI_config['CSD_SOLVER'] == 'METAFOR' or FSI_config['CSD_SOLVER'] == 'GETDP':
+		    elif FSI_config['CSD_SOLVER'] == 'METAFOR' or FSI_config['CSD_SOLVER'] == 'GETDP' or FSI_config['CSD_SOLVER'] == 'TESTER':
 			self.displacementPredictor(FSI_config, SolidSolver, deltaT)
 		    SolidSolver.updateSolution()
 		
