@@ -69,6 +69,8 @@ def main():
     parser.add_option("--with-ad", action="store",  type = "string",  help="AD Tool, CODI/ADOLC", default="CODI", dest="adtool")
     parser.add_option("--enable-mpi", action="store_true",
                       help="Enable mpi support", dest="mpi_enabled", default=False)
+    parser.add_option("--enable-PY_WRAPPER", action="store_true",
+                      help="Enable Python wrapper compilation", dest="py_wrapper_enabled", default=False)
     parser.add_option("--disable-normal", action="store_true",
                       help="Disable normal mode support", dest="normal_mode", default=False)
     parser.add_option("-c" , "--check", action="store_true",
@@ -105,7 +107,6 @@ def main():
               'SU2_DIRECTDIFF' : adtool_dd ,
               'SU2_AD'    : adtool_da }
 
-
     # Create a dictionary from the arguments
     argument_dict = dict(zip(args[::2],args[1::2]))
 
@@ -120,6 +121,7 @@ def main():
         configure(argument_dict,
                   conf_environ,
                   options.mpi_enabled,
+		  options.py_wrapper_enabled,
                   modes,
                   made_adolc,
                   made_codi)
@@ -420,6 +422,7 @@ def download_module(name, alt_name, git_repo, commit_sha, logfile, errorfile):
 def configure(argument_dict,
               conf_environ,
               mpi_support,
+	      py_wrapper,
               modes,
               made_adolc,
               made_codi):
@@ -434,6 +437,8 @@ def configure(argument_dict,
     configure_mode = ''
     if mpi_support:
         configure_base = configure_base + ' --enable-mpi'
+    if py_wrapper:
+	configure_base = configure_base + ' --enable-PY_WRAPPER'
 
     build_dirs = ''
 
