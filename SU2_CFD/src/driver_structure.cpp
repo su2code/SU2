@@ -3559,9 +3559,7 @@ void CSpectralDriver::Run() {
 				surface_movement, grid_movement, FFDBox, iZone);
 
 	for (iZone = 0; iZone < nZone; iZone++){
-		cout <<config_container[iZone]->GetBoolTurbomachinery() <<endl;
 		if(config_container[iZone]->GetBoolTurbomachinery()){
-			cout << "entro"<<endl;
 			solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
 			solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
 			solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(config_container[iZone], geometry_container[iZone][MESH_0]);
@@ -4220,7 +4218,7 @@ void CSpectralDriver::SetSpectralTurboPerformanceAvg(unsigned short iZone){
 	}
 
 	TotalPressureLossAvg /= nZone;
-	EntropyGenAvg /= nZone;
+	EntropyGenAvg        /= nZone;
 	KineticEnergyLossAvg /= nZone;
 
 	solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetTotalPressureLoss(TotalPressureLossAvg,0);

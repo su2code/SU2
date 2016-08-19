@@ -12804,13 +12804,14 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
   bool sa = config->GetKind_Turb_Model() == SA;
   bool grid_movement = config->GetGrid_Movement();
   bool wrt_residuals = config->GetWrt_Residuals();
+  bool spectral_method = config->GetUnsteady_Simulation() == SPECTRAL_METHOD;
   su2double Sens, dull_val;
   unsigned short nExtIter, iDim;
   unsigned long iPoint, index;
 
   Sensitivity = new su2double[nPoint*nDim];
 
-  if (config->GetUnsteady_Simulation()){
+  if (config->GetUnsteady_Simulation() && !spectral_method){
     nExtIter = config->GetnExtIter();
   }else{
     nExtIter = 1;
@@ -12866,7 +12867,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
     filename = config->GetUnsteady_FileName(filename, nExtIter-1);
   }
 
-	if (config->GetnZone() > 1){
+	if (config->GetnZone() > 1 ){
 		filename = config->GetMultizone_FileName(filename, config->GetiZone());
 	}
 
