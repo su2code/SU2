@@ -4044,25 +4044,6 @@ void CDiscAdjFSIStatDriver::FSI_Iteration_Direct(CIteration **iteration_containe
       solver_container, numerics_container, config_container,
       surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
 
-//  /*-----------------------------------------------------------------*/
-//  /*----------------- Displacements relaxation ----------------------*/
-//  /*-----------------------------------------------------------------*/
-//
-//  /*--- Set the predicted solution as the solution computed ---*/
-//  for (iPoint = 0; iPoint < geometry_container[ZONE_STRUCT][MESH_0]->GetnPointDomain(); iPoint++)
-//    solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
-//
-//  /*-----------------------------------------------------------------*/
-//  /*----------------- Update structural solver ----------------------*/
-//  /*-----------------------------------------------------------------*/
-//
-//  /*--- Output the relaxed result, which is the one transferred into the fluid domain (for restart purposes) ---*/
-//  switch (config_container[ZONE_STRUCT]->GetKind_TimeIntScheme_FEA()) {
-//  case (NEWMARK_IMPLICIT):
-//        solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->ImplicitNewmark_Relaxation(geometry_container[ZONE_STRUCT][MESH_0], solver_container[ZONE_STRUCT][MESH_0], config_container[ZONE_STRUCT]);
-//  break;
-//  }
-
   }
 
 }
@@ -4114,22 +4095,13 @@ void CDiscAdjFSIStatDriver::Structural_Iteration_Direct(CIteration **iteration_c
   int val_DirectIter = 0;
   unsigned long iPoint;
 
+  /*-----------------------------------------------------------------*/
+  /*---------- Set Dependencies on Geometry and Flow ----------------*/
+  /*-----------------------------------------------------------------*/
+
   geometry_container[ZONE_FLOW][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
 
   solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
-
-//  /*-----------------------------------------------------------------*/
-//  /*------------------- Transfer Displacements ----------------------*/
-//  /*-----------------------------------------------------------------*/
-//
-//  Transfer_Displacements(output, integration_container, geometry_container,
-//      solver_container, numerics_container, config_container,
-//      surface_movement, grid_movement, FFDBox, transfer_container,
-//      ZONE_STRUCT, ZONE_FLOW);
-//
-//  grid_movement[ZONE_FLOW]->Boundary_Dependencies(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
-//
-//  solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
   /*-----------------------------------------------------------------*/
   /*-------------------- Transfer Tractions -------------------------*/
@@ -4162,13 +4134,6 @@ void CDiscAdjFSIStatDriver::Mesh_Deformation_Direct(CIteration **iteration_conta
   unsigned long iPoint;
 
   int val_DirectIter = 0;
-
-  /*-----------------------------------------------------------------*/
-  /*---------------- Predict structural displacements ---------------*/
-  /*-----------------------------------------------------------------*/
-
-//  for (iPoint = 0; iPoint < geometry_container[ZONE_STRUCT][MESH_0]->GetnPointDomain(); iPoint++)
-//    solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->node[iPoint]->SetSolution_Pred();
 
   /*-----------------------------------------------------------------*/
   /*------------------- Transfer Displacements ----------------------*/
