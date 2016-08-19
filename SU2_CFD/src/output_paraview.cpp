@@ -935,6 +935,44 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 
     }
     
+    if ((Kind_Solver == DISC_ADJ_FEM) && (config->GetFSI_Simulation())) {
+
+      Paraview_File << "\nSCALARS CrossTerm_1 float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (! surf_sol) {
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+
+      Paraview_File << "\nSCALARS CrossTerm_2 float 1\n";
+      Paraview_File << "LOOKUP_TABLE default\n";
+
+      for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+        if (! surf_sol) {
+          Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+        }
+      }
+      VarCounter++;
+
+      if (nDim == 3){
+
+        Paraview_File << "\nSCALARS CrossTerm_3 float 1\n";
+        Paraview_File << "LOOKUP_TABLE default\n";
+
+        for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+          if (! surf_sol) {
+            Paraview_File << scientific << Data[VarCounter][iPoint] << "\t";
+          }
+        }
+        VarCounter++;
+
+      }
+
+    }
+
   }
   
 	Paraview_File.close();
