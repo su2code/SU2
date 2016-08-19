@@ -221,11 +221,17 @@ def aerodynamics( config, state=None ):
     if ( 'INV_DESIGN_CP' in special_cases and
          'TARGET_CP' in files ) :
         pull.append( files['TARGET_CP'] )
+        
+        
 
     # files: target heat flux distribution
     if ( 'INV_DESIGN_HEATFLUX' in special_cases and
          'TARGET_HEATFLUX' in files ) :
         pull.append( files['TARGET_HEATFLUX'] )
+        
+    if (config.has_key('MARKER_NONUNIFORM')):
+        pull.append( config['NONUNIFORM_BC_FILENAME'] )
+
 
     # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
