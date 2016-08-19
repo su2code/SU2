@@ -3966,7 +3966,10 @@ void CDiscAdjFSIStatDriver::Lagrangian_Iteration_Direct(CIteration **iteration_c
   int val_DirectIter = 0;
   unsigned long iPoint;
 
+  geometry_container[ZONE_FLOW][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
+
   solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+
 
   /*-----------------------------------------------------------------*/
   /*------------------- Transfer Displacements ----------------------*/
@@ -3986,8 +3989,6 @@ void CDiscAdjFSIStatDriver::Lagrangian_Iteration_Direct(CIteration **iteration_c
   SetGrid_Movement(geometry_container[ZONE_FLOW], surface_movement[ZONE_FLOW], grid_movement[ZONE_FLOW], FFDBox[ZONE_FLOW],
       solver_container[ZONE_FLOW], config_container[ZONE_FLOW], ZONE_FLOW, IntIter, ExtIter);
 
-//  geometry_container[ZONE_FLOW][MESH_0]->UpdateGeometry(geometry_container[ZONE_FLOW], config_container[ZONE_FLOW]);
-
   /*-----------------------------------------------------------------*/
   /*-------------------- Transfer Tractions -------------------------*/
   /*-----------------------------------------------------------------*/
@@ -4004,6 +4005,7 @@ void CDiscAdjFSIStatDriver::Lagrangian_Iteration_Direct(CIteration **iteration_c
   direct_iteration[ZONE_STRUCT]->Iterate(output, integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
                                         surface_movement, grid_movement, FFDBox, ZONE_STRUCT);
+
 
 
 }
@@ -4049,19 +4051,19 @@ void CDiscAdjFSIStatDriver::SetRecording(CIteration **iteration_container,
     cout << endl;
     switch (kind_recording){
     case EULERIAN_TERM:
-      kind_AdjointIteration = "Eulerian iteration: flow input -> flow output";
+      kind_AdjointIteration = "Eulerian iteration: eulerian input -> eulerian output";
       kind_DirectIteration = "flow ";
       break;
     case LAGRANGIAN_TERM:
-      kind_AdjointIteration = "Lagrangian iteration: geometry input -> flow output";
+      kind_AdjointIteration = "Lagrangian iteration: lagrangian input -> lagrangian output";
       kind_DirectIteration = "flow ";
       break;
     case EULERIAN_CROSS_TERM:
-      kind_AdjointIteration = "Eulerian iteration: structural input -> structural output";
+      kind_AdjointIteration = "Eulerian cross term iteration: eulerian input -> lagrangian output";
       kind_DirectIteration = "structural ";
       break;
     case LAGRANGIAN_CROSS_TERM:
-      kind_AdjointIteration = "Flow cross term: flow input -> structural output";
+      kind_AdjointIteration = "Lagrangian cross term iteration: flow input -> structural output";
       kind_DirectIteration = "structural ";
       break;
     case ALL_VARIABLES:
@@ -4218,8 +4220,8 @@ void CDiscAdjFSIStatDriver::RegisterInput(CIteration **iteration_container,
   if ((kind_recording == LAGRANGIAN_TERM) ||
       (kind_recording == LAGRANGIAN_CROSS_TERM)){
 
-//    /*--- Register fluid mesh variables ---*/
-//    iteration_container[ZONE_FLOW]->RegisterInput(solver_container, geometry_container, config_container, ZONE_FLOW, kind_recording);
+    /*--- Register fluid mesh variables ---*/
+    iteration_container[ZONE_FLOW]->RegisterInput(solver_container, geometry_container, config_container, ZONE_FLOW, kind_recording);
 
     /*--- Register structural displacements ---*/
     iteration_container[ZONE_STRUCT]->RegisterInput(solver_container, geometry_container, config_container, ZONE_STRUCT, kind_recording);
@@ -4326,7 +4328,7 @@ void CDiscAdjFSIStatDriver::RegisterOutput(CIteration **iteration_container,
       (kind_recording == EULERIAN_CROSS_TERM)) {
 
     /*--- Register the coordinates of the mesh deformation ---*/
-//    geometry_container[ZONE_FLOW][MESH_0]->RegisterOutput_Coordinates(config_container[ZONE_FLOW]);
+    geometry_container[ZONE_FLOW][MESH_0]->RegisterOutput_Coordinates(config_container[ZONE_FLOW]);
 
     /*--- Register the displacements of the structure ---*/
     solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->RegisterOutput(geometry_container[ZONE_STRUCT][MESH_0],config_container[ZONE_STRUCT]);
@@ -4527,8 +4529,8 @@ void CDiscAdjFSIStatDriver::InitializeAdjoint(CIteration **iteration_container,
   if ((kind_recording == LAGRANGIAN_TERM) ||
       (kind_recording == EULERIAN_CROSS_TERM)){
 
-//    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->SetAdjoint_OutputMesh(geometry_container[ZONE_FLOW][MESH_0],
-//                                                                            config_container[ZONE_FLOW]);
+    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->SetAdjoint_OutputMesh(geometry_container[ZONE_FLOW][MESH_0],
+                                                                            config_container[ZONE_FLOW]);
 
     /*--- Initialize the adjoints the conservative variables ---*/
 
@@ -4613,8 +4615,8 @@ void CDiscAdjFSIStatDriver::ExtractAdjoint(CIteration **iteration_container,
 
     /*--- Extract the adjoints of the flow geometry and store them for the next iteration ---*/
 
-//    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Geometry(geometry_container[ZONE_FLOW][MESH_0],
-//        config_container[ZONE_FLOW]);
+    solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Geometry(geometry_container[ZONE_FLOW][MESH_0],
+        config_container[ZONE_FLOW]);
 
     /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
 

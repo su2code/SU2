@@ -8239,7 +8239,7 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
 
     /*--- Prepare the externally differentiated linear solver ---*/
 
-    system->SetExternalSolve(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
+    system->SetExternalSolve_Mesh(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
 
   }
 

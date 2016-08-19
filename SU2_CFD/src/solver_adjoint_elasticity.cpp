@@ -2185,7 +2185,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
   ofstream myfile_res;
   myfile_res.open ("structural_block.csv", ios::app);
 
-  bool extract_adjoint_output = false;
+  bool extract_adjoint_output = true;
 
   unsigned long BGS_Iter = config->GetFSIIter();
   unsigned long Int_Iter = config->GetIntIter();
@@ -2372,7 +2372,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
   ofstream myfile_res;
   myfile_res.open ("structural_block.csv", ios::app);
 
-  bool extract_adjoint_output = false;
+  bool extract_adjoint_output = true;
 
   unsigned long BGS_Iter = config->GetFSIIter();
   unsigned long Int_Iter = config->GetIntIter();
@@ -2469,7 +2469,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *c
   unsigned long BGS_Iter = config->GetFSIIter();
   unsigned long Int_Iter = config->GetIntIter();
 
-  bool extract_adjoint_output = false;
+  bool extract_adjoint_output = true;
 
   if (extract_adjoint_output) myfile_res << "Cross Term " << endl;
 
@@ -2509,7 +2509,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
   unsigned long BGS_Iter = config->GetFSIIter();
   unsigned long Int_Iter = config->GetIntIter();
 
-  bool extract_adjoint_output = false;
+  bool extract_adjoint_output = true;
 
   if (extract_adjoint_output) myfile_res << "Cross Term " << endl;
 

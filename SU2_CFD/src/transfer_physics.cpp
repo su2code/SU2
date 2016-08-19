@@ -354,17 +354,18 @@ void CTransfer_StructuralDisplacements_DiscAdj::GetDonor_Variable(CSolver *struc
 					   	   	   	   	   	   	   	          unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct){
 
 
-  su2double *DisplacementDonor, *DisplacementDonor_Prev;
+
+  su2double *Coord_Struct, *Displacement_Struct;
   unsigned short iVar;
 
+  Coord_Struct = struct_geometry->node[Point_Struct]->GetCoord();
+
   /*--- The displacements come from the predicted solution ---*/
-  DisplacementDonor = struct_solution->node[Point_Struct]->GetSolution();
+  Displacement_Struct = struct_solution->node[Point_Struct]->GetSolution();
 
-  DisplacementDonor_Prev = struct_solution->node[Point_Struct]->GetSolution_Old();
-
-	for (iVar = 0; iVar < nVar; iVar++){
-		Donor_Variable[iVar] = DisplacementDonor[iVar] - DisplacementDonor_Prev[iVar];
-	}
+  for (iVar = 0; iVar < nVar; iVar++){
+    Donor_Variable[iVar] = Coord_Struct[iVar] + Displacement_Struct[iVar];
+  }
 
 }
 
@@ -372,11 +373,13 @@ void CTransfer_StructuralDisplacements_DiscAdj::SetTarget_Variable(CSolver *flow
 														   CConfig *flow_config, unsigned long Marker_Flow,
 														   unsigned long Vertex_Flow, unsigned long Point_Flow){
 
-  su2double VarCoord[3] = {0.0, 0.0, 0.0};
+  su2double *Coord, VarCoord[3] = {0.0, 0.0, 0.0};
   unsigned short iVar;
 
+  Coord = flow_geometry->node[Point_Flow]->GetCoord();
+
   for (iVar = 0; iVar < nVar; iVar++)
-    VarCoord[iVar] = Target_Variable[iVar];
+    VarCoord[iVar] = Target_Variable[iVar]-Coord[iVar];
 
   flow_geometry->vertex[Marker_Flow][Vertex_Flow]->SetVarCoord(VarCoord);
 
