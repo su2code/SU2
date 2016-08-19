@@ -33,8 +33,18 @@
 #include "codi.hpp"
 #include "tools/dataStore.hpp"
 
+#ifdef HAVE_MPI
+  #include "mpi.h"
+#endif
+
 #ifdef CODI_INDEX_TAPE
 typedef codi::RealReverseIndex su2double;
 #else
 typedef codi::RealReverse su2double;
+#endif
+
+#ifdef HAVE_MPI
+  typedef MPI_Comm SU2_Comm;
+#else
+  typedef unsigned short SU2_Comm;
 #endif
