@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for SU2_DOT
 # \author M. Colonno, T. Economon, F. Palacios
-# \version 4.1.3 "Cardinal"
+# \version 4.2.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -47,17 +47,38 @@ endif
 su2_dot_sources = ../include/SU2_DOT.hpp \
 		../src/SU2_DOT.cpp
 
-su2_dot_cxx_flags = 
 su2_dot_ldadd =
+su2_dot_cxx_flags =
+
+if BUILD_NORMAL
+su2_dot_ldadd += \
+  ../../SU2_CFD/src/libSU2Core_a-solver_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_cgns.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_tecplot.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_fieldview.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_su2.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_paraview.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-variable_structure.$(OBJEXT) \
+  ../../Common/lib/libSU2.a
+endif
+
+if BUILD_REVERSE
+su2_dot_ldadd += \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-solver_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_cgns.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_tecplot.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_fieldview.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_su2.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-variable_structure.$(OBJEXT) \
+   ../../Common/lib/libSU2_AD.a
+endif
 
 # always link to built dependencies from ./externals
 su2_dot_cxx_flags += @su2_externals_INCLUDES@
 su2_dot_ldadd += @su2_externals_LIBS@
-
-# if BUILD_CGNS
-su2_dot_cxx_flags += @CGNS_CXX@
-su2_dot_ldadd += @CGNS_LD@
-# endif
 
 # if BUILD_MUTATIONPP
 su2_dot_cxx_flags += @MUTATIONPP_CXX@
@@ -87,11 +108,11 @@ su2_dot_ldadd += @ZLIB_LD@
 if BUILD_NORMAL
 ___bin_SU2_DOT_SOURCES = ${su2_dot_sources}
 ___bin_SU2_DOT_CXXFLAGS = ${su2_dot_cxx_flags}
-___bin_SU2_DOT_LDADD = ../../Common/lib/libSU2.a ${su2_dot_ldadd}
+___bin_SU2_DOT_LDADD =  ${su2_dot_ldadd}
 endif
 
 if BUILD_REVERSE
 ___bin_SU2_DOT_AD_SOURCES = ${su2_dot_sources}
 ___bin_SU2_DOT_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_dot_cxx_flags} 
-___bin_SU2_DOT_AD_LDADD = @REVERSE_LIBS@ ../../Common/lib/libSU2_AD.a ${su2_dot_ldadd}
+___bin_SU2_DOT_AD_LDADD = @REVERSE_LIBS@ ${su2_dot_ldadd}
 endif

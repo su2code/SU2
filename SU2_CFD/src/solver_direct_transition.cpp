@@ -2,7 +2,7 @@
  * \file solution_direct_transition.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author A. Aranake
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -61,6 +61,10 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 	
 	/*--- Dimension of the problem --> 2 Transport equations (intermittency, Reth) ---*/
 	nVar = 2;
+  
+  /*--- Initialize nVarGrad for deallocation ---*/
+  
+  nVarGrad = nVar;
 	
 	if (iMesh == MESH_0) {
 		
