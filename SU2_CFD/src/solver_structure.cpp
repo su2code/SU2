@@ -2,7 +2,7 @@
  * \file solver_structure.cpp
  * \brief Main subrotuines for solving direct, adjoint and linearized problems.
  * \author F. Palacios, T. Economon
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -95,8 +95,9 @@ CSolver::~CSolver(void) {
   if (Point_Max != NULL) delete [] Point_Max;
 
   if (Point_Max_Coord != NULL) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      delete Point_Max_Coord[iVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      delete [] Point_Max_Coord[iVar];
+    }
     delete [] Point_Max_Coord;
   }
 
@@ -116,53 +117,51 @@ CSolver::~CSolver(void) {
 
   if (Jacobian_i != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_i[iVar];
+      delete [] Jacobian_i[iVar];
     delete [] Jacobian_i;
   }
 
   if (Jacobian_j != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_j[iVar];
+      delete [] Jacobian_j[iVar];
     delete [] Jacobian_j;
   }
 
   if (Jacobian_ii != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_ii[iVar];
+      delete [] Jacobian_ii[iVar];
     delete [] Jacobian_ii;
   }
 
   if (Jacobian_ij != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_ij[iVar];
+      delete [] Jacobian_ij[iVar];
     delete [] Jacobian_ij;
   }
 
   if (Jacobian_ji != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_ji[iVar];
+      delete [] Jacobian_ji[iVar];
     delete [] Jacobian_ji;
   }
 
   if (Jacobian_jj != NULL) {
     for (iVar = 0; iVar < nVar; iVar++)
-      delete Jacobian_jj[iVar];
+      delete [] Jacobian_jj[iVar];
     delete [] Jacobian_jj;
   }
 
   if (Smatrix != NULL) {
     for (iDim = 0; iDim < nDim; iDim++)
-      delete Smatrix[iDim];
+      delete [] Smatrix[iDim];
     delete [] Smatrix;
   }
 
   if (cvector != NULL) {
-    for (iVar = 0; iVar < nVar; iVar++)
-      delete cvector[iVar];
+    for (iVar = 0; iVar < nVarGrad; iVar++)
+      delete [] cvector[iVar];
     delete [] cvector;
   }
-
-
 
 }
 
@@ -577,6 +576,9 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
     
+    /*--- Set the value of the singular ---*/
+    singular = false;
+    
     /*--- Get coordinates ---*/
     
     Coord_i = geometry->node[iPoint]->GetCoord();
@@ -606,15 +608,16 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
       
       /*--- Sumations for entries of upper triangular matrix R ---*/
       
-      if (fabs(weight) > EPS) {
+      if (weight != 0.0) {
+        
         r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
         r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
         r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
         if (nDim == 3) {
-          r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
+          r13   += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
           r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
           r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-          r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
+          r33   += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
         }
         
         /*--- Entries of c:= transpose(A)*b ---*/
@@ -628,15 +631,14 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
     
     /*--- Entries of upper triangular matrix R ---*/
     
-    if (fabs(r11) < EPS) r11 = EPS;
-    r11 = sqrt(r11);
-    r12 = r12/(r11);
-    r22 = sqrt(r22-r12*r12);
-    if (fabs(r22) < EPS) r22 = EPS;
+    if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
+    if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
+    if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
+    
     if (nDim == 3) {
-      r13 = r13/(r11);
-      r23 = r23_a/(r22) - r23_b*r12/(r11*r22);
-      r33 = sqrt(r33-r23*r23-r13*r13);
+      if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
+      if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
+      if (r33-r23*r23-r13*r13 >= 0.0) r33 = sqrt(r33-r23*r23-r13*r13); else r33 = 0.0;
     }
     
     /*--- Compute determinant ---*/
@@ -646,7 +648,7 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
     
     /*--- Detect singular matrices ---*/
     
-    if (fabs(detR2) < EPS) singular = true;
+    if (abs(detR2) <= EPS) { detR2 = 1.0; singular = true; }
     
     /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
     
@@ -1827,6 +1829,35 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
 
+CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short nVar, vector<string> field_names){
+
+  unsigned long iPoint;
+  unsigned short iVar;
+
+  config->fields = field_names;
+
+  Solution = new su2double[nVar];
+
+  for (iVar = 0; iVar < nVar; iVar++){
+    Solution[iVar] = 0.0;
+  }
+
+  /*--- Define geometry constants in the solver structure ---*/
+
+  nDim = geometry->GetnDim();
+
+  /*--- Allocate the node variables ---*/
+
+  node = new CVariable*[geometry->GetnPoint()];
+
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+
+    node[iPoint] = new CBaselineVariable(Solution, nVar, config);
+
+  }
+
+}
+
 CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
   
   int rank = MASTER_NODE;
@@ -1989,11 +2020,22 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 }
 
 void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
-  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned short iVar, iMarker, iPeriodic_Index, MarkerS, MarkerR, GridVel_Index;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
   su2double rotMatrix[3][3], *transl, *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL, *Solution = NULL;
   
   Solution = new su2double[nVar];
+
+  GridVel_Index = 2*nDim;
+
+  if (config->GetKind_Turb_Model() == SA){
+    GridVel_Index += 1;
+  }else if (config->GetKind_Turb_Model() == SST){
+    GridVel_Index += 2;
+  }
+  if (config->GetKind_Regime() != INCOMPRESSIBLE){
+    GridVel_Index += 1;
+  }
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
@@ -2102,6 +2144,13 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
                               rotMatrix[0][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex]);
           Solution[nDim+2] = (rotMatrix[1][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
                               rotMatrix[1][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex]);
+
+          if (config->GetGrid_Movement()){
+            Solution[GridVel_Index + 1] = (rotMatrix[0][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                           rotMatrix[0][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex]);
+            Solution[GridVel_Index + 2] = (rotMatrix[1][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                           rotMatrix[1][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex]);
+          }
         } else {
           
           /*--- Coords ---*/
@@ -2118,15 +2167,27 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
           
           /*--- Momentum ---*/
           
-          Solution[nDim+1] = (rotMatrix[0][0]*Buffer_Receive_U[nDim+1*nVertexR+iVertex] +
-                              rotMatrix[0][1]*Buffer_Receive_U[nDim+2*nVertexR+iVertex] +
-                              rotMatrix[0][2]*Buffer_Receive_U[nDim+3*nVertexR+iVertex]);
-          Solution[nDim+2] = (rotMatrix[1][0]*Buffer_Receive_U[nDim+1*nVertexR+iVertex] +
-                              rotMatrix[1][1]*Buffer_Receive_U[nDim+2*nVertexR+iVertex] +
-                              rotMatrix[1][2]*Buffer_Receive_U[nDim+3*nVertexR+iVertex]);
-          Solution[nDim+3] = (rotMatrix[2][0]*Buffer_Receive_U[nDim+1*nVertexR+iVertex] +
-                              rotMatrix[2][1]*Buffer_Receive_U[nDim+2*nVertexR+iVertex] +
-                              rotMatrix[2][2]*Buffer_Receive_U[nDim+3*nVertexR+iVertex]);
+          Solution[nDim+1] = (rotMatrix[0][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
+                              rotMatrix[0][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex] +
+                              rotMatrix[0][2]*Buffer_Receive_U[(nDim+3)*nVertexR+iVertex]);
+          Solution[nDim+2] = (rotMatrix[1][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
+                              rotMatrix[1][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex] +
+                              rotMatrix[1][2]*Buffer_Receive_U[(nDim+3)*nVertexR+iVertex]);
+          Solution[nDim+3] = (rotMatrix[2][0]*Buffer_Receive_U[(nDim+1)*nVertexR+iVertex] +
+                              rotMatrix[2][1]*Buffer_Receive_U[(nDim+2)*nVertexR+iVertex] +
+                              rotMatrix[2][2]*Buffer_Receive_U[(nDim+3)*nVertexR+iVertex]);
+
+          if (config->GetGrid_Movement()){
+            Solution[GridVel_Index+1] = (rotMatrix[0][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                         rotMatrix[0][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex] +
+                                         rotMatrix[0][2]*Buffer_Receive_U[(GridVel_Index+3)*nVertexR+iVertex]);
+            Solution[GridVel_Index+2] = (rotMatrix[1][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                         rotMatrix[1][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex] +
+                                         rotMatrix[1][2]*Buffer_Receive_U[(GridVel_Index+3)*nVertexR+iVertex]);
+            Solution[GridVel_Index+3] = (rotMatrix[2][0]*Buffer_Receive_U[(GridVel_Index+1)*nVertexR+iVertex] +
+                                         rotMatrix[2][1]*Buffer_Receive_U[(GridVel_Index+2)*nVertexR+iVertex] +
+                                         rotMatrix[2][2]*Buffer_Receive_U[(GridVel_Index+3)*nVertexR+iVertex]);
+          }
         }
         
         /*--- Copy transformed conserved variables back into buffer. ---*/
@@ -2163,12 +2224,12 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   unsigned short iField;
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
-  
+  bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry[iZone]->GetnZone();
 
   /*--- Retrieve filename from config ---*/
-  if (config->GetContinuous_Adjoint()) {
+  if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){
@@ -2277,12 +2338,12 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CC
   unsigned short iField;
   unsigned long iExtIter = config->GetExtIter();
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
-
+  bool adjoint = (config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint());
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
 
   /*--- Retrieve filename from config ---*/
-  if (config->GetContinuous_Adjoint()) {
+  if (adjoint) {
     filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem){

@@ -2,7 +2,7 @@
  * \file dataype_structure.cpp
  * \brief Main subroutines for the datatype structures.
  * \author T. Albring
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -61,10 +61,10 @@ namespace AD {
 
       EndPosition = globalTape.getPosition();
 
-      /*--- Allocate local memory on the stack (does not need to be deleted at the end of the routine!) ---*/
+      /*--- Allocate local memory ---*/
 
-      passivedouble* local_jacobi     = (passivedouble*)alloca(sizeof(passivedouble)*(nVarOut*nVarIn));
-      unsigned short* nNonzero = (unsigned short*)alloca(sizeof(unsigned short)*nVarOut);
+      passivedouble* local_jacobi     = new passivedouble[nVarOut*nVarIn];
+      unsigned short* nNonzero        = new unsigned short[nVarOut];
 
       /*--- Compute the local Jacobi matrix of the code between the start and end position
        * using the inputs and outputs declared with StartPreacc(...)/EndPreacc(...) ---*/
@@ -112,8 +112,12 @@ namespace AD {
 
       /* --- Clear local vectors and reset indicator ---*/
 
+
       localInputValues.clear();
       localOutputValues.clear();
+
+      delete [] local_jacobi;
+      delete [] nNonzero;
 
       PreaccActive = false;
     }

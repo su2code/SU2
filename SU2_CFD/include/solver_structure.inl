@@ -2,7 +2,7 @@
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 4.1.3 "Cardinal"
+ * \version 4.2.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -284,6 +284,8 @@ inline su2double CSolver::GetTotal_CFEA() { return 0; }
 
 inline su2double CSolver::GetTotal_CNearFieldOF() { return 0; }
 
+inline void CSolver::AddTotal_ComboObj(su2double val_obj) {}
+
 inline void CSolver::SetTotal_CEquivArea(su2double val_cequivarea) { }
 
 inline void CSolver::SetTotal_CpDiff(su2double val_pressure) { }
@@ -422,6 +424,12 @@ inline su2double CSolver::GetOneD_FluxAvgEntalpy(void) {return 0;}
 
 inline void CSolver::SetOneD_FluxAvgEntalpy(su2double EnthalpyRef) { }
 
+inline void CSolver::SetTotal_ComboObj(su2double ComboObj) {}
+
+inline su2double CSolver::GetTotal_ComboObj(void) { return 0;}
+
+inline void CSolver::Compute_ComboObj(CConfig *config) {};
+
 inline void CSolver::Solve_System(CGeometry *geometry, CSolver **solver_container, CConfig *config){ }
 
 inline su2double CSolver::GetAveragedDensity(unsigned short valMarker){ return 0;}
@@ -547,7 +555,7 @@ inline void CSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_cont
 
 inline void CSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										 CConfig *config, unsigned short val_marker) { }
-                     
+
 inline void CSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, 
 										  CConfig *config, unsigned short val_marker) { }
                       
@@ -832,6 +840,10 @@ inline su2double CEulerSolver::GetCEff_Inv(unsigned short val_marker) { return C
 
 inline su2double CEulerSolver::GetTotal_CLift() { return Total_CLift; }
 
+inline void CEulerSolver::SetTotal_ComboObj(su2double ComboObj) {Total_ComboObj = ComboObj; }
+
+inline su2double CEulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
+
 inline su2double CEulerSolver::GetTotal_CDrag() { return Total_CDrag; }
 
 inline su2double CEulerSolver::GetTotal_CMx() { return Total_CMx; }
@@ -875,6 +887,8 @@ inline su2double CEulerSolver::GetTotal_CpDiff() { return Total_CpDiff; }
 inline su2double CEulerSolver::GetTotal_HeatFluxDiff() { return Total_HeatFluxDiff; }
 
 inline su2double CEulerSolver::GetTotal_CNearFieldOF() { return Total_CNearFieldOF; }
+
+inline void CEulerSolver::AddTotal_ComboObj(su2double val_obj) {Total_ComboObj +=val_obj;}
 
 inline void CEulerSolver::SetTotal_CEquivArea(su2double cequivarea) { Total_CEquivArea = cequivarea; }
 
@@ -1057,7 +1071,7 @@ inline su2double CNSSolver::GetAllBound_CSideForce_Visc() { return AllBound_CSid
 
 inline su2double CNSSolver::GetAllBound_CDrag_Visc() { return AllBound_CDrag_Visc; }
 
-inline su2double CNSSolver::GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return CSkinFriction[val_marker][val_vertex][val_dim]; }
+inline su2double CNSSolver::GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return CSkinFriction[val_marker][val_dim][val_vertex]; }
 
 inline su2double CNSSolver::GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return HeatFlux[val_marker][val_vertex]; }
 
@@ -1166,4 +1180,18 @@ inline void CEulerSolver::SetTemperature_Inf(su2double t_inf){Temperature_Inf = 
 inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){}
 
 inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){}
+
+inline void CSolver::SetFreeStream_Solution(CConfig *config){}
+
+inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config){
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint]->SetSolution(0, nu_tilde_Inf);
+}
+
+inline void CTurbSSTSolver::SetFreeStream_Solution(CConfig *config){
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+    node[iPoint]->SetSolution(0, kine_Inf);
+    node[iPoint]->SetSolution(1, omega_Inf);
+  }
+}
 

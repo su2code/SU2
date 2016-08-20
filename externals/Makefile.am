@@ -3,7 +3,7 @@
 # \file Makefile.am
 # \brief Makefile for external libraries
 # \author B. Kirk, T. Economon, F. Palacios
-# \version 4.1.3 "Cardinal"
+# \version 4.2.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -41,6 +41,10 @@ endif
 if BUILD_METIS
   SUBDIRS += metis
 if BUILD_PARMETIS
-    SUBDIRS += parmetis
+  SUBDIRS += parmetis
 endif
+endif
+
+if BUILD_CGNS
+  SUBDIRS += cgns
 endif
