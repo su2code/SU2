@@ -192,13 +192,9 @@ inline su2double CSolver::GetCSideForce_Inv(unsigned short val_marker) { return 
 
 inline su2double CSolver::GetCEff_Inv(unsigned short val_marker) { return 0; }
 
-inline su2double CSolver::GetCLift_Visc(unsigned short val_marker) { return 0; }
+inline su2double CSolver::GetSurface_TotalHeatFlux(unsigned short val_marker) { return 0; }
 
-inline su2double CSolver::GetCMz_Visc(unsigned short val_marker) { return 0; }
-
-inline su2double CSolver::GetCSideForce_Visc(unsigned short val_marker) { return 0; }
-
-inline su2double CSolver::GetCDrag_Visc(unsigned short val_marker) { return 0; }
+inline su2double CSolver::GetSurface_MaxHeatFlux(unsigned short val_marker) { return 0; }
 
 inline su2double CSolver::GetAllBound_CLift_Inv() { return 0; }
 
@@ -1057,13 +1053,9 @@ inline su2double CNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 
 inline su2double CNSSolver::GetTke_Inf(void) { return Tke_Inf; }
 
-inline su2double CNSSolver::GetCLift_Visc(unsigned short val_marker) { return CLift_Visc[val_marker]; }
+inline su2double CNSSolver::GetSurface_TotalHeatFlux(unsigned short val_marker) { return Surface_TotHeatFlux[val_marker]; }
 
-inline su2double CNSSolver::GetCMz_Visc(unsigned short val_marker) { return CMz_Visc[val_marker]; }
-
-inline su2double CNSSolver::GetCSideForce_Visc(unsigned short val_marker) { return CSideForce_Visc[val_marker]; }
-
-inline su2double CNSSolver::GetCDrag_Visc(unsigned short val_marker) { return CDrag_Visc[val_marker]; }
+inline su2double CNSSolver::GetSurface_MaxHeatFlux(unsigned short val_marker) { return Surface_MaxHeatFlux[val_marker]; }
 
 inline su2double CNSSolver::GetAllBound_CLift_Visc() { return AllBound_CLift_Visc; }
 

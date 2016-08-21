@@ -6898,32 +6898,47 @@ void CEulerSolver::Compute_ComboObj(CConfig *config){
     case FORCE_Z_COEFFICIENT:
       Total_ComboObj+=obj_weight*Surface_CFz[iMarker_Monitoring];
       break;
-      /*--- The following are not per-surface ---*/
-    case EQUIVALENT_AREA:
-      break;
-    case NEARFIELD_PRESSURE:
-      break;
-    case INVERSE_DESIGN_PRESSURE:
-      break;
-    case INVERSE_DESIGN_HEATFLUX:
-      break;
-    case THRUST_COEFFICIENT:
-      break;
-    case TORQUE_COEFFICIENT:
-      break;
     case TOTAL_HEATFLUX:
+      Total_ComboObj+=obj_weight*Surface_TotHeatFlux[iMarker_Monitoring];
       break;
     case MAXIMUM_HEATFLUX:
+      Total_ComboObj+=obj_weight*Surface_MaxHeatFlux[iMarker_Monitoring];
+      break;
+    /*--- The following are not per-surface, and as a result will be
+     * double-counted iff multiple surfaces are specified as well as multi-objective
+     * TODO: print a warning to the user about that possibility. ---*/
+    case EQUIVALENT_AREA:
+      Total_ComboObj+=obj_weight*Total_CEquivArea;
+      break;
+    case NEARFIELD_PRESSURE:
+      Total_ComboObj+=obj_weight*Total_CNearFieldOF;
+      break;
+    case INVERSE_DESIGN_PRESSURE:
+      Total_ComboObj+=obj_weight*Total_CpDiff;
+      break;
+    case INVERSE_DESIGN_HEATFLUX:
+      Total_ComboObj+=obj_weight*Total_HeatFluxDiff;
+      break;
+    case THRUST_COEFFICIENT:
+      Total_ComboObj+=obj_weight*Total_CT;
+      break;
+    case TORQUE_COEFFICIENT:
+      Total_ComboObj+=obj_weight*Total_CQ;
       break;
     case FIGURE_OF_MERIT:
+      Total_ComboObj+=obj_weight*Total_CMerit;
       break;
     case FREE_SURFACE:
+      Total_ComboObj+=obj_weight*Total_CFreeSurface;
       break;
     case AVG_TOTAL_PRESSURE:
+      Total_ComboObj+=obj_weight*OneD_TotalPress;
       break;
     case AVG_OUTLET_PRESSURE:
+      Total_ComboObj+=obj_weight*OneD_PressureRef;
       break;
     case MASS_FLOW_RATE:
+      Total_ComboObj+=obj_weight*OneD_MassFlowRate;
       break;
     default:
       break;
@@ -12242,6 +12257,7 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   Surface_CLift_Visc = NULL; Surface_CDrag_Visc = NULL; Surface_CSideForce_Visc = NULL; Surface_CEff_Visc = NULL;
   Surface_CFx_Visc = NULL;   Surface_CFy_Visc = NULL;   Surface_CFz_Visc = NULL;
   Surface_CMx_Visc = NULL;   Surface_CMy_Visc = NULL;   Surface_CMz_Visc = NULL;
+  Surface_TotHeatFlux = NULL; Surface_MaxHeatFlux = NULL;
   
   /*--- Rotorcraft simulation array initialization ---*/
   
@@ -12286,6 +12302,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Surface_CLift_Visc = NULL; Surface_CDrag_Visc = NULL; Surface_CSideForce_Visc = NULL; Surface_CEff_Visc = NULL;
   Surface_CFx_Visc = NULL;   Surface_CFy_Visc = NULL;   Surface_CFz_Visc = NULL;
   Surface_CMx_Visc = NULL;   Surface_CMy_Visc = NULL;   Surface_CMz_Visc = NULL;
+  Surface_TotHeatFlux = NULL; Surface_MaxHeatFlux = NULL;
   
   CMerit_Visc = NULL;      CT_Visc = NULL;      CQ_Visc = NULL;
   MaxHeatFlux_Visc = NULL; ForceViscous = NULL; MomentViscous = NULL;
@@ -12564,6 +12581,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Surface_CMx_Visc        = new su2double[config->GetnMarker_Monitoring()];
   Surface_CMy_Visc        = new su2double[config->GetnMarker_Monitoring()];
   Surface_CMz_Visc        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_TotHeatFlux     = new su2double[config->GetnMarker_Monitoring()];
+  Surface_MaxHeatFlux     = new su2double[config->GetnMarker_Monitoring()];
   
   /*--- Rotational coefficients ---*/
   
@@ -13033,6 +13052,8 @@ CNSSolver::~CNSSolver(void) {
   if (Surface_CMx_Visc != NULL)        delete [] Surface_CMx_Visc;
   if (Surface_CMy_Visc != NULL)        delete [] Surface_CMy_Visc;
   if (Surface_CMz_Visc != NULL)        delete [] Surface_CMz_Visc;
+  if (Surface_TotHeatFlux != NULL)     delete [] Surface_TotHeatFlux;
+  if (Surface_MaxHeatFlux != NULL)     delete [] Surface_MaxHeatFlux;
   
   if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
   
@@ -13518,7 +13539,11 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   
 #ifdef HAVE_MPI
-  su2double MyAllBound_CDrag_Visc, MyAllBound_CLift_Visc, MyAllBound_CSideForce_Visc, MyAllBound_CMx_Visc, MyAllBound_CMy_Visc, MyAllBound_CMz_Visc, MyAllBound_CFx_Visc, MyAllBound_CFy_Visc, MyAllBound_CFz_Visc, MyAllBound_CT_Visc, MyAllBound_CQ_Visc, MyAllBound_HeatFlux_Visc, MyAllBound_MaxHeatFlux_Visc, *MySurface_CLift_Visc = NULL, *MySurface_CDrag_Visc = NULL, *MySurface_CSideForce_Visc = NULL, *MySurface_CEff_Visc = NULL, *MySurface_CFx_Visc = NULL, *MySurface_CFy_Visc = NULL, *MySurface_CFz_Visc = NULL, *MySurface_CMx_Visc = NULL, *MySurface_CMy_Visc = NULL, *MySurface_CMz_Visc = NULL;
+  su2double MyAllBound_CDrag_Visc, MyAllBound_CLift_Visc, MyAllBound_CSideForce_Visc, MyAllBound_CMx_Visc, MyAllBound_CMy_Visc, MyAllBound_CMz_Visc,
+  MyAllBound_CFx_Visc, MyAllBound_CFy_Visc, MyAllBound_CFz_Visc, MyAllBound_CT_Visc, MyAllBound_CQ_Visc,
+  MyAllBound_HeatFlux_Visc, MyAllBound_MaxHeatFlux_Visc, *MySurface_TotHeatFlux, *MySurface_MaxHeatFlux,
+  *MySurface_CLift_Visc = NULL, *MySurface_CDrag_Visc = NULL, *MySurface_CSideForce_Visc = NULL,  *MySurface_CEff_Visc = NULL,
+  *MySurface_CFx_Visc = NULL, *MySurface_CFy_Visc = NULL, *MySurface_CFz_Visc = NULL, *MySurface_CMx_Visc = NULL, *MySurface_CMy_Visc = NULL, *MySurface_CMz_Visc = NULL;
 #endif
   
   string Marker_Tag, Monitoring_Tag;
@@ -13568,6 +13593,7 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CFx_Visc[iMarker_Monitoring]        = 0.0; Surface_CFy_Visc[iMarker_Monitoring]        = 0.0;
     Surface_CFz_Visc[iMarker_Monitoring]        = 0.0; Surface_CMx_Visc[iMarker_Monitoring]        = 0.0;
     Surface_CMy_Visc[iMarker_Monitoring]        = 0.0; Surface_CMz_Visc[iMarker_Monitoring]        = 0.0;
+    Surface_TotHeatFlux[iMarker_Monitoring]     = 0.0; Surface_MaxHeatFlux[iMarker_Monitoring]     = 0.0;
   }
   
   /*--- Loop over the Navier-Stokes markers ---*/
@@ -13776,6 +13802,8 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
             Surface_CMx_Visc[iMarker_Monitoring]        += CMx_Visc[iMarker];
             Surface_CMy_Visc[iMarker_Monitoring]        += CMy_Visc[iMarker];
             Surface_CMz_Visc[iMarker_Monitoring]        += CMz_Visc[iMarker];
+            Surface_TotHeatFlux[iMarker_Monitoring]     += Heat_Visc[iMarker];
+            Surface_MaxHeatFlux[iMarker_Monitoring]     += pow(MaxHeatFlux_Visc[iMarker],MaxNorm);
           }
         }
         
@@ -13840,6 +13868,8 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   MySurface_CMx_Visc        = new su2double[config->GetnMarker_Monitoring()];
   MySurface_CMy_Visc        = new su2double[config->GetnMarker_Monitoring()];
   MySurface_CMz_Visc        = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_TotHeatFlux     = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_MaxHeatFlux     = new su2double[config->GetnMarker_Monitoring()];
   
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     
@@ -13853,6 +13883,8 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
     MySurface_CMx_Visc[iMarker_Monitoring]        = Surface_CMx_Visc[iMarker_Monitoring];
     MySurface_CMy_Visc[iMarker_Monitoring]        = Surface_CMy_Visc[iMarker_Monitoring];
     MySurface_CMz_Visc[iMarker_Monitoring]        = Surface_CMz_Visc[iMarker_Monitoring];
+    MySurface_TotHeatFlux[iMarker_Monitoring]     = Surface_TotHeatFlux[iMarker_Monitoring];
+    MySurface_MaxHeatFlux[iMarker_Monitoring]     = Surface_MaxHeatFlux[iMarker_Monitoring];
     
     Surface_CLift_Visc[iMarker_Monitoring]      = 0.0;
     Surface_CDrag_Visc[iMarker_Monitoring]      = 0.0;
@@ -13864,6 +13896,8 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CMx_Visc[iMarker_Monitoring]        = 0.0;
     Surface_CMy_Visc[iMarker_Monitoring]        = 0.0;
     Surface_CMz_Visc[iMarker_Monitoring]        = 0.0;
+    Surface_TotHeatFlux[iMarker_Monitoring]     = 0.0;
+    Surface_MaxHeatFlux[iMarker_Monitoring]     = 0.0;
   }
   
   SU2_MPI::Allreduce(MySurface_CLift_Visc, Surface_CLift_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -13877,11 +13911,13 @@ void CNSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   SU2_MPI::Allreduce(MySurface_CMx_Visc, Surface_CMx_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(MySurface_CMy_Visc, Surface_CMy_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(MySurface_CMz_Visc, Surface_CMz_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(MySurface_TotHeatFlux, Surface_TotHeatFlux, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(MySurface_MaxHeatFlux, Surface_MaxHeatFlux, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   
   delete [] MySurface_CLift_Visc; delete [] MySurface_CDrag_Visc; delete [] MySurface_CSideForce_Visc;
   delete [] MySurface_CEff_Visc;  delete [] MySurface_CFx_Visc;   delete [] MySurface_CFy_Visc;
   delete [] MySurface_CFz_Visc;   delete [] MySurface_CMx_Visc;   delete [] MySurface_CMy_Visc;
-  delete [] MySurface_CMz_Visc;
+  delete [] MySurface_CMz_Visc;   delete [] MySurface_TotHeatFlux; delete [] MySurface_MaxHeatFlux;
   
 #endif
   
