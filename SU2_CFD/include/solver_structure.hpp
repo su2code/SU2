@@ -1565,27 +1565,13 @@ public:
 	 */
 	virtual su2double GetCLift_Inv(unsigned short val_marker);
     
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
-	 */
-	virtual su2double GetCLift_Visc(unsigned short val_marker);
-
     /*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
 	 * \return Value of the z moment coefficient (inviscid contribution) on the surface <i>val_marker</i>.
 	 */
 	virtual su2double GetCMz_Inv(unsigned short val_marker);
-    
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
-	 */
-	virtual su2double GetCMz_Visc(unsigned short val_marker);
-    
+
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -1726,13 +1712,6 @@ public:
    */
   virtual su2double GetSurface_CMz_Inv(unsigned short val_marker);
   
-  /*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
-	 */
-	virtual su2double GetCSideForce_Visc(unsigned short val_marker);
-    
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_marker - Surface marker where the coefficient is computed.
@@ -1782,12 +1761,19 @@ public:
 	 */
 	virtual su2double GetCEff_Inv(unsigned short val_marker);
     
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the drag coefficient (viscous contribution) on the surface <i>val_marker</i>.
-	 */
-	virtual su2double GetCDrag_Visc(unsigned short val_marker);
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the heat flux is computed.
+   * \return Value of the integrated heat flux (viscous contribution) on the surface <i>val_marker</i>.
+   */
+	virtual su2double GetSurface_TotalHeatFlux(unsigned short val_marker);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the heat flux is computed.
+   * \return Value of the maximum heat flux (viscous contribution) on the surface <i>val_marker</i>.
+   */
+	virtual su2double GetSurface_MaxHeatFlux(unsigned short val_marker);
 
 	/*!
    * \author H. Kline
@@ -3040,15 +3026,15 @@ protected:
 	Total_CFz,			/*!< \brief Total z force coefficient for all the boundaries. */
 	Total_CEff,			/*!< \brief Total efficiency coefficient for all the boundaries. */
 	Total_CMerit,			/*!< \brief Total rotor Figure of Merit for all the boundaries. */
-	Total_CT,		/*!< \brief Total thrust coefficient for all the boundaries. */
-	Total_CQ,		/*!< \brief Total torque coefficient for all the boundaries. */
-  Total_Heat,    /*!< \brief Total heat load for all the boundaries. */
-  Total_MaxHeat, /*!< \brief Maximum heat flux on all boundaries. */
-	Total_CEquivArea,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+	Total_CT,		            /*!< \brief Total thrust coefficient for all the boundaries. */
+	Total_CQ,		            /*!< \brief Total torque coefficient for all the boundaries. */
+  Total_Heat,             /*!< \brief Total heat load for all the boundaries. */
+  Total_MaxHeat,          /*!< \brief Maximum heat flux on all boundaries. */
+	Total_CEquivArea,			  /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
 	Total_CNearFieldOF,			/*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
   Total_CFreeSurface,			/*!< \brief Total Free Surface coefficient for all the boundaries. */
-  Total_CpDiff,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
-	Total_HeatFluxDiff,			/*!< \brief Total Equivalent Area coefficient for all the boundaries. */
+  Total_CpDiff,			      /*!< \brief Total Cp difference coefficient for all the boundaries (Pressure inverse design). */
+	Total_HeatFluxDiff,			/*!< \brief Total Heat Flux difference coefficient for all the boundaries. */
   Total_MassFlowRate;     /*!< \brief Total Mass Flow Rate on monitored boundaries. */
   su2double *Surface_CLift,   /*!< \brief Lift coefficient for each monitoring surface. */
   *Surface_CDrag,          /*!< \brief Drag coefficient for each monitoring surface. */
@@ -3059,7 +3045,9 @@ protected:
   *Surface_CFz,            /*!< \brief z Force coefficient for each monitoring surface. */
   *Surface_CMx,            /*!< \brief x Moment coefficient for each monitoring surface. */
   *Surface_CMy,            /*!< \brief y Moment coefficient for each monitoring surface. */
-  *Surface_CMz;            /*!< \brief z Moment coefficient for each monitoring surface. */
+  *Surface_CMz,            /*!< \brief z Moment coefficient for each monitoring surface. */
+  *Surface_TotHeatFlux,   /*!< \brief Total (integrated) heat flux for each monitored surface. */
+  *Surface_MaxHeatFlux;   /*!< \brief Maximum heat flux for each monitored surface. */
 	su2double *iPoint_UndLapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	*jPoint_UndLapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	su2double *SecondaryVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
@@ -4853,33 +4841,19 @@ public:
 	 */
 	void Viscous_Forces(CGeometry *geometry, CConfig *config);
     
-	/*!
-	 * \brief Get the non dimensional lift coefficient (viscous contribution).
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the lift coefficient (viscous contribution) on the surface <i>val_marker</i>.
-	 */
-	su2double GetCLift_Visc(unsigned short val_marker);
-    
-    /*!
-	 * \brief Get the non dimensional z moment coefficient (viscous contribution).
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the z moment coefficient (viscous contribution) on the surface <i>val_marker</i>.
-	 */
-	su2double GetCMz_Visc(unsigned short val_marker);
-  
   /*!
-	 * \brief Get the non dimensional sideforce coefficient (viscous contribution).
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the sideforce coefficient (viscous contribution) on the surface <i>val_marker</i>.
-	 */
-	su2double GetCSideForce_Visc(unsigned short val_marker);
-    
-	/*!
-	 * \brief Get the non dimensional drag coefficient (viscous contribution).
-	 * \param[in] val_marker - Surface marker where the coefficient is computed.
-	 * \return Value of the drag coefficient (viscous contribution) on the surface <i>val_marker</i>.
-	 */
-	su2double GetCDrag_Visc(unsigned short val_marker);
+   * \brief Get the total heat flux.
+   * \param[in] val_marker - Surface marker where the heat flux is computed.
+   * \return Value of the integrated heat flux (viscous contribution) on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_TotalHeatFlux(unsigned short val_marker);
+
+  /*!
+   * \brief Get the maximum (per surface) heat flux.
+   * \param[in] val_marker - Surface marker where the heat flux is computed.
+   * \return Value of the maximum heat flux (viscous contribution) on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_MaxHeatFlux(unsigned short val_marker);
     
 	/*!
 	 * \brief Get the total non dimensional lift coefficient (viscous contribution).
@@ -4898,7 +4872,7 @@ public:
 	 * \return Value of the drag coefficient (viscous contribution).
 	 */
 	su2double GetAllBound_CDrag_Visc(void);
-    
+
 	/*!
 	 * \brief Compute the viscous residuals.
 	 * \param[in] geometry - Geometrical definition of the problem.
