@@ -3202,18 +3202,7 @@ void CMultiZoneDriver::Run() {
 		if (checkConvergence == nZone) break;
 	}
 
-	for (iZone = 0; iZone < nZone; iZone++) {
-		
-		iteration_container[iZone]->Update(output, integration_container, geometry_container,
-		solver_container, numerics_container, config_container,
-		surface_movement, grid_movement, FFDBox, iZone);
 
-		iteration_container[iZone]->Monitor();     /*--- Does nothing for now. ---*/
-
-		iteration_container[iZone]->Output();      /*--- Does nothing for now. ---*/
-
-		iteration_container[iZone]->Postprocess(); /*--- Does nothing for now. ---*/
-	}
 }
 
 void CMultiZoneDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone){
@@ -3964,7 +3953,7 @@ void CFSIDriver::Run() {
 		/*-----------------------------------------------------------------*/
 		/*------------------- Set FEA loads from fluid --------------------*/
 		/*-----------------------------------------------------------------*/
-		if(transfer_container[ZONE_FLOW][ZONE_STRUCT]!= NULL)
+		if(transfer_container[ZONE_FLOW][ZONE_STRUCT] != NULL)
 			Transfer_Tractions(ZONE_FLOW, ZONE_STRUCT);
 
 
