@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
 
-  if (nZone == SINGLE_ZONE) {
+  if (nZone == SINGLE_ZONE && config->GetKind_Solver() == FEM_ELASTICITY) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
 
