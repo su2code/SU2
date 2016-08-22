@@ -2079,12 +2079,20 @@ void CDiscAdjMeanFlowIteration::SetRecording(COutput *output,
   /*--- Register flow variables and objective function as output ---*/
   
   /*--- For flux-avg or area-avg objective functions the 1D values must be calculated first ---*/
-  if (config_container[val_iZone]->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE ||
-      config_container[val_iZone]->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||
-      config_container[val_iZone]->GetKind_ObjFunc()==MASS_FLOW_RATE)
-    output->OneDimensionalOutput(solver_container[val_iZone][MESH_0][FLOW_SOL],
-                                 geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
-  
+  for (unsigned short iObj=0; iObj<config_container[val_iZone]->GetnObj(); iObj++){
+    if (config_container[val_iZone]->GetKind_ObjFunc(iObj)==AVG_OUTLET_PRESSURE ||
+        config_container[val_iZone]->GetKind_ObjFunc(iObj)==AVG_TOTAL_PRESSURE ||
+        config_container[val_iZone]->GetKind_ObjFunc(iObj)==MASS_FLOW_RATE){
+      output->OneDimensionalOutput(solver_container[val_iZone][MESH_0][FLOW_SOL],
+                                   geometry_container[val_iZone][MESH_0], config_container[val_iZone]);
+      break;
+    }
+  }
+  /*--- For a combined objective function, the total should be computed and stored ---*/
+  if (config_container[val_iZone]->GetnObj()>0){
+    solver_container[val_iZone][MESH_0][FLOW_SOL]->Compute_ComboObj(config_container[val_iZone]);
+  }
+
   RegisterOutput(solver_container, geometry_container, config_container, val_iZone);
   
   /*--- Stop the recording ---*/
