@@ -4952,10 +4952,6 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       }
     }
     else{
-      if (DiscreteAdjoint) {
-        cout << endl << "Combined objective not yet compatible with discrete adjoint. Specify only one OBJECTIVE_FUNCTION." << endl << endl;
-        exit(EXIT_FAILURE);
-      }
       AdjExt = "_combo";
     }
     Filename.append(AdjExt);
