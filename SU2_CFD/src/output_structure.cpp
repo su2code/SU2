@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -5935,6 +5937,8 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Breakdown_file << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << "\n";
     Breakdown_file << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << "\n";
     Breakdown_file << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << "\n";
+    Breakdown_file << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << "\n";
+    Breakdown_file << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << "\n";
     Breakdown_file <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file << "| Copyright (C) 2012-2016 SU2, the open-source CFD code.                |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";

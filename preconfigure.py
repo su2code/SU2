@@ -13,6 +13,8 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
 # Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
@@ -579,6 +581,8 @@ def header():
           '| - Prof. Nicolas R. Gauger\'s group at Kaiserslautern U. of Technology. | \n'\
           '| - Prof. Alberto Guardone\'s group at Polytechnic University of Milan.  | \n'\
           '| - Prof. Rafael Palacios\' group at Imperial College London.            | \n'\
+          '| - Prof. Edwin van der Weide\'s group at the University of Twente.      | \n'\
+          '| - Prof. Vincent Terrapon\'s group at the University of Liege.          | \n'\
           '------------------------------------------------------------------------- \n'\
           '| Copyright (C) 2012-2016 SU2, the open-source CFD code.                | \n'\
           '|                                                                       | \n'\
