@@ -3,7 +3,7 @@
 ## \file test_pyWrapper.py
 #  \brief Python script to launch SU2_CFD through the Python Wrapper
 #  \author David Thomas
-#  \version 4.2.0 "Cardinal"
+#  \version 4.3.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
