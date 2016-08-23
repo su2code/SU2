@@ -64,3 +64,5 @@ and the most active groups developing SU2 are:
    - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
    - Prof. Alberto Guardone's group at Polytechnic University of Milan.
    - Prof. Rafael Palacios' group at Imperial College London.
+   - Prof. Edwin van der Weide's group at the University of Twente.
+   - Prof. Vincent Terrapon's group at the University of Liege.
