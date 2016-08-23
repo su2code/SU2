@@ -4206,7 +4206,29 @@ void CSpectralDriver::SetGeoTurboAvgValues(unsigned short iZone, bool allocate){
 
 }
 
-void CSpectralDriver::SetSpectralTurboPerformanceAvg(unsigned short iZone){
+
+void CSpectralDriver::SetSpectralTurboPerformanceAvg(){
+
+	unsigned short kZone;
+	su2double TotalPressureLossAvg = 0, EntropyGenAvg = 0, KineticEnergyLossAvg = 0;
+
+	for (kZone = 0; kZone < nZone; kZone++) {
+		TotalPressureLossAvg += 	solver_container[kZone][MESH_0][FLOW_SOL]->GetTotalPressureLoss(0);
+		EntropyGenAvg        += 	solver_container[kZone][MESH_0][FLOW_SOL]->GetEntropyGen(0);
+		KineticEnergyLossAvg += 	solver_container[kZone][MESH_0][FLOW_SOL]->GetKineticEnergyLoss(0);
+	}
+
+	TotalPressureLossAvg /= nZone;
+	EntropyGenAvg        /= nZone;
+	KineticEnergyLossAvg /= nZone;
+
+	solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetTotalPressureLoss(TotalPressureLossAvg,0);
+	solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetEntropyGen(EntropyGenAvg,0);
+	solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetKineticEnergyLoss(KineticEnergyLossAvg,0);
+}
+
+
+void CSpectralDriver::SetSpectralInterpolation(unsigned short iZone){
 
 	unsigned short kZone;
 	su2double TotalPressureLossAvg = 0, EntropyGenAvg = 0, KineticEnergyLossAvg = 0;

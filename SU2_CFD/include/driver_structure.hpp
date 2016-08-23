@@ -555,11 +555,16 @@ public:
   void SetGeoTurboAvgValues(unsigned short iZone, bool allocate);
 
   /*!
-    * \brief Set some average geometric quantities needed for turbomachinery computation
+    * \brief Set average needed for turbomachinery objective functions
+    */
+   void SetSpectralTurboPerformanceAvg();
+
+
+  /*!
+    * \brief Interpolation of spectral methods using DiscreteFourierTtransform
     * \param[in] iZone - zone in which compute the quantities.
     */
-   void SetSpectralTurboPerformanceAvg(unsigned short iZone);
-
+   void SetSpectralInterpolation(unsigned short iZone);
 
   /*!
    * \brief Computation and storage of the time-spectral mesh velocities.
