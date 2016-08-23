@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
   /*--- Postprocess all the containers, close history file, exit SU2 ---*/
   driver->Postprocessing();
 
-  if(driver != NULL) delete driver;
+  if (driver != NULL) delete driver;
   driver = NULL;
 
 #ifdef HAVE_MPI
