@@ -273,6 +273,8 @@ def adjoint( func_name, config, state=None ):
     # files: target heat flux coefficient
     if 'INV_DESIGN_HEATFLUX' in special_cases:
         pull.append(files['TARGET_HEATFLUX'])
+    if (config.has_key('MARKER_NONUNIFORM')):
+        pull.append( config['NONUNIFORM_BC_FILENAME'] )
 
     # output redirection
     with redirect_folder( ADJ_NAME, pull, link ) as push:
