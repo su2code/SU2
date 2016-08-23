@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -50,7 +52,7 @@ using namespace std;
  * \class CDriver
  * \brief Parent class for driving an iteration of a single or multi-zone problem.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CDriver {
 protected:
@@ -298,7 +300,7 @@ public:
  * \class CSingleZoneDriver
  * \brief Class for driving a structural iteration of the physics within multiple zones.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CSingleZoneDriver : public CDriver {
 public:
@@ -353,10 +355,10 @@ public:
 
 
 /*!
- * \class CMultipleZoneDriver
- * \brief Class for driving an iteration of the physics within single or multiple zones.
- * \author Giulio Gori, Politecnico di Milano
- * \version 4.2.0 "Cardinal"
+ * \class CMultiZoneDriver
+ * \brief Class for driving an iteration of the physics within multiple zones.
+ * \author T. Economon, G. Gori
+ * \version 4.3.0 "Cardinal"
  */
 class CMultiZoneDriver : public CDriver {
 public:
@@ -418,7 +420,7 @@ public:
  * \class CSpectralDriver
  * \brief Class for driving an iteration of a spectral method problem using multiple zones.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CSpectralDriver : public CDriver {
 public:
@@ -480,7 +482,7 @@ public:
  * \class CFSIDriver
  * \brief Class for driving a BGS iteration for a fluid-structure interaction problem in multiple zones.
  * \author R. Sanchez.
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CFSIDriver : public CDriver {
 public:
