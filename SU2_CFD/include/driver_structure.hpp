@@ -830,17 +830,6 @@ public:
                                 CTransfer ***transfer_container, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, unsigned short kind_recording);
 
   /*!
-   * \brief Run a direct FSI iteration.
-   * \param[in] fluidZone - zone of the fluid solver.
-   * \param[in] structuralZone - zone of the structural solver.
-   */
-  void FSI_Iteration_Direct(CIteration **iteration_container, CTransfer ***transfer_container, COutput *output,
-      CIntegration ***integration_container, CGeometry ***geometry_container, CSolver ****solver_container,
-      CNumerics *****numerics_container, CConfig **config_container, CInterpolator ***interpolator_container,
-      CSurfaceMovement **surface_movement, CVolumetricMovement **grid_movement, CFreeFormDefBox*** FFDBox,
-      unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT);
-
-  /*!
    * \brief Run a direct flow iteration.
    * \param[in] fluidZone - zone of the fluid solver.
    * \param[in] structuralZone - zone of the structural solver.
@@ -1042,21 +1031,6 @@ public:
    * \param[in] config_container - Definition of the particular problem.
    */
   void ExtractAdjoint(CIteration **iteration_container,
-                         CGeometry ***geometry_container,
-                         CSolver ****solver_container,
-                         CConfig **config_container,
-                         unsigned short ZONE_FLOW,
-                         unsigned short ZONE_STRUCT,
-                         unsigned short kind_recording);
-
-  /*!
-   * \brief Add cross term to the adjoint solution variables
-   * \param[in] iteration_container - Container vector with all the iteration methods.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config_container - Definition of the particular problem.
-   */
-  void Add_CrossTerm(CIteration **iteration_container,
                          CGeometry ***geometry_container,
                          CSolver ****solver_container,
                          CConfig **config_container,
