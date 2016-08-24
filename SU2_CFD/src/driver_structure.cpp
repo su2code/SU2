@@ -4211,20 +4211,24 @@ void CSpectralDriver::SetGeoTurboAvgValues(unsigned short iZone, bool allocate){
 void CSpectralDriver::SetSpectralInterpolation(){
 
 	unsigned short nIntPoints = 10;
-	const   complex<double> J(0.0,1.0);
+	const   complex<su2double> J(0.0,1.0);
   unsigned short i,k, iZone;
-	complex<su2double> **Einv          = new complex<su2double>*[nZone];
 	complex<su2double> **E             = new complex<su2double>*[nZone];
+	complex<su2double> **I             = new complex<su2double>*[nZone];
+	complex<su2double> **Einv          = new complex<su2double>*[nZone];
 	complex<su2double> **EinvExtended  = new complex<su2double>*[nZone];
   for (iZone = 0; iZone < nZone; iZone++){
-    Einv[iZone] = new complex<su2double>[nZone];
     E[iZone]    = new complex<su2double>[nZone];
+    I[iZone]    = new complex<su2double>[nZone];
+    Einv[iZone] = new complex<su2double>[nZone];
     EinvExtended[iZone] = new complex<su2double>[nIntPoints];
   }
 
-	su2double *Omega_t   = new su2double[nZone];
-	su2double *tExtended = new su2double[nIntPoints];
-	su2double Period     = config_container[ZONE_0]->GetSpectralMethod_Period();
+	su2double *Object                = new su2double[nZone];
+	su2double *ObjectInterpolated    = new su2double[nZone];
+	su2double *Omega_t               = new su2double[nZone];
+	su2double *tExtended             = new su2double[nIntPoints];
+	su2double Period                 = config_container[ZONE_0]->GetSpectralMethod_Period();
 	su2double step;
 
 	step = Period/(nIntPoints-1);
@@ -4248,13 +4252,13 @@ void CSpectralDriver::SetSpectralInterpolation(){
   /*--- Build the spectral matrices ---*/
 	for (i = 0; i < nZone; i++) {
       for (k = 0; k < nZone; k++) {
-          Einv[i][k] = cos(Omega_t[i]*(k*Period/nZone)) + J*sin(Omega_t[i]*(k*Period/nZone));
+          Einv[i][k] = complex<su2double>(cos(Omega_t[i]*(k*Period/nZone))) + J*complex<su2double>(sin(Omega_t[i]*(k*Period/nZone)));
       }
   }
 
   for (i = 0; i < nZone; i++) {
       for (k = 0; k < nIntPoints; k++) {
-          EinvExtended[i][k] = cos(Omega_t[i]*(k*Period/nZone)) + J*sin(Omega_t[i]*(k*Period/nZone));
+          EinvExtended[i][k] = complex<su2double>(cos(Omega_t[i]*(k*Period/nZone))) + J*complex<su2double>(sin(Omega_t[i]*(k*Period/nZone)));
       }
   }
 
@@ -4306,7 +4310,7 @@ void CSpectralDriver::SetSpectralInterpolation(){
 
   	//Back-substitution
   	for (int k = nZone - 1; k > 0; k--) {
-  		if (temp[k][k] != 0.0) {
+  		if (temp[k][k] != complex<su2double>(0.0)) {
   			for (int i = k - 1; i > -1; i--) {
   				complex<su2double> c = temp[i][k] / temp[k][k];
   				for (int j = 0; j < (nZone * 2); j++) {
@@ -4334,12 +4338,28 @@ void CSpectralDriver::SetSpectralInterpolation(){
   	}
   	delete[] temp;
 
+  	for (iZone = 0; iZone < nZone; iZone++) {
+  			Object[iZone] = 	solver_container[iZone][MESH_0][FLOW_SOL]->GetTotalPressureLoss(0);
+  	}
+
+  	for (int row = 0; row < nZone; row++) {
+  		for (int col = 0; col < nZone; col++) {
+  			for (int inner = 0; inner < nZone; inner++) {
+  				I[row][col] += E[row][inner] * Einv[inner][col];
+  			}
+  		}
+  	}
+
 
   /*--- delete dynamic memory ---*/
   for (iZone = 0; iZone < nZone; iZone++){
+    delete [] I[iZone];
+    delete [] E[iZone];
     delete [] Einv[iZone];
     delete [] EinvExtended[iZone];
   }
+  delete [] I;
+  delete [] E;
   delete [] Einv;
   delete [] EinvExtended;
   delete [] tExtended;
