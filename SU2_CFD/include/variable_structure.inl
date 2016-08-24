@@ -545,9 +545,13 @@ inline su2double CVariable::GetCross_Term_Derivative(unsigned short iVar) { retu
 
 inline void CVariable::SetCross_Term_Derivative(unsigned short iVar, su2double der) { }
 
-inline void CVariable::Set_BGSSolution(void) { }
+inline void CVariable::Set_BGSSolution(unsigned short iDim, su2double val_solution) { }
+
+inline void CVariable::Set_BGSSolution_k(void) { }
 
 inline su2double CVariable::Get_BGSSolution(unsigned short iDim) { return 0.0;}
+
+inline su2double CVariable::Get_BGSSolution_k(unsigned short iDim) { return 0.0;}
 
 inline void CVariable::Set_BGSSolution_Geometry(void) { }
 
@@ -1495,12 +1499,18 @@ inline su2double CDiscAdjFEAVariable::GetCross_Term_Derivative(unsigned short iV
 
 inline void CDiscAdjFEAVariable::SetCross_Term_Derivative(unsigned short iVar, su2double der) { Cross_Term_Derivative[iVar] = der; }
 
-inline void CDiscAdjVariable::Set_BGSSolution(void) { 
+inline void CDiscAdjVariable::Set_BGSSolution_k(void) { 
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    Solution_BGS_k[iVar] = Solution[iVar];
+    Solution_BGS_k[iVar] = Solution_BGS[iVar];
 }
 
-inline su2double CDiscAdjVariable::Get_BGSSolution(unsigned short iDim) { return Solution_BGS_k[iDim];}
+inline void CDiscAdjVariable::Set_BGSSolution(unsigned short iDim, su2double val_solution) { 
+  Solution_BGS[iDim] = val_solution;
+}
+
+inline su2double CDiscAdjVariable::Get_BGSSolution(unsigned short iDim) { return Solution_BGS[iDim];}
+
+inline su2double CDiscAdjVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
 
 inline void CDiscAdjVariable::Set_BGSSolution_Geometry(void) { 
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -1509,10 +1519,16 @@ inline void CDiscAdjVariable::Set_BGSSolution_Geometry(void) {
 
 inline su2double CDiscAdjVariable::Get_BGSSolution_Geometry(unsigned short iDim) { return Solution_Geometry_BGS_k[iDim];}
 
-inline void CDiscAdjFEAVariable::Set_BGSSolution(void) { 
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Solution_BGS_k[iDim] = Solution[iDim];
+inline void CDiscAdjFEAVariable::Set_BGSSolution(unsigned short iDim, su2double val_solution) { 
+  Solution_BGS[iDim] = val_solution;
 }
 
-inline su2double CDiscAdjFEAVariable::Get_BGSSolution(unsigned short iDim) { return Solution_BGS_k[iDim];}
+inline void CDiscAdjFEAVariable::Set_BGSSolution_k(void) { 
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Solution_BGS_k[iDim] = Solution_BGS[iDim];
+}
+
+inline su2double CDiscAdjFEAVariable::Get_BGSSolution(unsigned short iDim) { return Solution_BGS[iDim];}
+
+inline su2double CDiscAdjFEAVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
 

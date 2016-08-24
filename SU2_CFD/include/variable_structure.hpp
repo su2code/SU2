@@ -1887,13 +1887,24 @@ public:
   /*!
    * \brief A virtual member. Set the value of the old geometry solution (adjoint).
    */
-  virtual void Set_BGSSolution(void);
+  virtual void Set_BGSSolution(unsigned short iDim, su2double val_solution);
+
+  /*!
+   * \brief A virtual member. Set the value of the old geometry solution (adjoint).
+   */
+  virtual void Set_BGSSolution_k(void);
 
   /*!
    * \brief A virtual member. Get the value of the old geometry solution (adjoint).
    * \param[out] val_solution - old adjoint solution for coordinate iDim
    */
   virtual su2double Get_BGSSolution(unsigned short iDim);
+
+  /*!
+   * \brief A virtual member. Get the value of the old geometry solution (adjoint).
+   * \param[out] val_solution - old adjoint solution for coordinate iDim
+   */
+  virtual su2double Get_BGSSolution_k(unsigned short iDim);
 
   /*!
    * \brief A virtual member. Set the value of the old geometry solution (adjoint).
@@ -4498,7 +4509,9 @@ private:
     su2double* Solution_Geometry_Old;
     su2double* Geometry_Direct;
 
+    su2double* Solution_BGS;
     su2double* Solution_BGS_k;
+    su2double* Solution_Geometry_BGS;
     su2double* Solution_Geometry_BGS_k;
 
 public:
@@ -4604,15 +4617,26 @@ public:
     su2double Get_OldSolution_Geometry(unsigned short iDim);
 
     /*!
+     * \brief Set the value of the adjoint solution in the current BGS subiteration.
+     */
+    void Set_BGSSolution(unsigned short iDim, su2double val_solution);
+
+    /*!
      * \brief Set the value of the adjoint solution in the previous BGS subiteration.
      */
-    void Set_BGSSolution(void);
+    void Set_BGSSolution_k(void);
 
     /*!
      * \brief Get the value of the adjoint solution in the previous BGS subiteration.
      * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
      */
     su2double Get_BGSSolution(unsigned short iDim);
+
+    /*!
+     * \brief Get the value of the adjoint solution in the previous BGS subiteration.
+     * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
+     */
+    su2double Get_BGSSolution_k(unsigned short iDim);
 
     /*!
      * \brief Set the value of the adjoint geometry solution in the previous BGS subiteration.
@@ -4672,7 +4696,7 @@ private:
     su2double* Cross_Term_Derivative;
     su2double* Geometry_CrossTerm_Derivative;
 
-
+    su2double* Solution_BGS;
     su2double* Solution_BGS_k;
 
 public:
@@ -4862,15 +4886,26 @@ public:
 
 
     /*!
+     * \brief Set the value of the adjoint solution in the current BGS subiteration.
+     */
+    void Set_BGSSolution(unsigned short iDim, su2double val_solution);
+
+    /*!
      * \brief Set the value of the adjoint solution in the previous BGS subiteration.
      */
-    void Set_BGSSolution(void);
+    void Set_BGSSolution_k(void);
 
     /*!
      * \brief Get the value of the adjoint solution in the previous BGS subiteration.
      * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
      */
     su2double Get_BGSSolution(unsigned short iDim);
+
+    /*!
+     * \brief Get the value of the adjoint solution in the previous BGS subiteration.
+     * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
+     */
+    su2double Get_BGSSolution_k(unsigned short iDim);
 
 };
 
