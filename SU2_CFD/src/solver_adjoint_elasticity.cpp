@@ -2589,7 +2589,7 @@ void CDiscAdjFEASolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config
 
   unsigned short iVar;
   unsigned long iPoint;
-  su2double residual;
+  su2double residual, bgs_sol;
 
   /*--- Set Residuals to zero ---*/
 
@@ -2598,10 +2598,18 @@ void CDiscAdjFEASolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config
       SetRes_Max_BGS(iVar,0.0,0);
   }
 
+  /*--- Compute the BGS solution (adding the cross term) ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++){
+      bgs_sol = node[iPoint]->GetSolution(iVar) + node[iPoint]->GetGeometry_CrossTerm_Derivative(iVar);
+      node[iPoint]->Set_BGSSolution(iVar, bgs_sol);
+    }
+  }
+
   /*--- Set the residuals ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++){
       for (iVar = 0; iVar < nVar; iVar++){
-          residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->Get_BGSSolution(iVar);
+          residual = node[iPoint]->Get_BGSSolution(iVar) - node[iPoint]->Get_BGSSolution_k(iVar);
           AddRes_BGS(iVar,residual*residual);
           AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
@@ -2619,7 +2627,7 @@ void CDiscAdjFEASolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config)
   /*--- To nPoint: The solution must be communicated beforehand ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
-    node[iPoint]->Set_BGSSolution();
+    node[iPoint]->Set_BGSSolution_k();
 
   }
 
