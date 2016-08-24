@@ -4264,7 +4264,7 @@ void CSpectralDriver::SetSpectralInterpolation(){
 
   /*--- Invert Spectral matrix Ein with Gauss elimination ---*/
 
-  //A temporary matrix to hold the inverse, dynamically allocated
+  /*--  A temporary matrix to hold the inverse, dynamically allocated ---*/
   	complex<su2double> **temp = new complex<su2double>*[nZone];
   	for (int i = 0; i < nZone; i++) {
   		temp[i] = new complex<su2double>[2 * nZone];
@@ -4349,7 +4349,6 @@ void CSpectralDriver::SetSpectralInterpolation(){
   			}
   		}
   	}
-
 
   /*--- delete dynamic memory ---*/
   for (iZone = 0; iZone < nZone; iZone++){
