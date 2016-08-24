@@ -1086,22 +1086,29 @@ void CFEM_ElasticitySolver_Adj::RefGeom_Sensitivity(CGeometry *geometry, CSolver
 
   unsigned short iVar;
   unsigned long iPoint;
+  unsigned long nTotalPoint = 1;
+
   su2double *reference_geometry = NULL, *current_solution = NULL;
   su2double *solDisp = NULL, *solVel = NULL, predicted_solution[3] = {0.0, 0.0, 0.0};
 
   bool predicted_de = config->GetDE_Predicted();
 
-  su2double objective_function = 0.0;
-
+  su2double objective_function = 0.0, objective_function_reduce = 0.0;
   su2double weight_OF = 1.0;
 
-  weight_OF = config->GetRefGeom_Penalty() / nPoint;
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&nPointDomain,  &nTotalPoint,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+    nTotalPoint        = nPointDomain;
+#endif
+
+  weight_OF = config->GetRefGeom_Penalty() / nTotalPoint;
 
   LinSysRes.SetValZero();
 
   if (!predicted_de){
 
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++){
 
       /*--- The reference geometry is stored in the adjoint variable ---*/
       reference_geometry = node[iPoint]->GetReference_Geometry();
@@ -1149,9 +1156,13 @@ void CFEM_ElasticitySolver_Adj::RefGeom_Sensitivity(CGeometry *geometry, CSolver
 
   }
 
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&objective_function,  &objective_function_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    objective_function_reduce        = objective_function;
+#endif
 
-  val_I = objective_function;
-
+  val_I = objective_function_reduce;
 
 }
 
@@ -1285,7 +1296,6 @@ void CFEM_ElasticitySolver_Adj::DE_Sensitivity(CGeometry *geometry, CSolver **so
     DV_TERM = DE_ADJ;
     break;
   }
-
 
   /*--- For the solution of the adjoint problem, this routine computes dK/dv, being v the design variables ---*/
 
@@ -2182,14 +2192,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
   unsigned long iPoint;
   su2double residual;
 
-  ofstream myfile_res;
-  myfile_res.open ("structural_block.csv", ios::app);
-
-  bool extract_adjoint_output = false;
-
-  unsigned long BGS_Iter = config->GetFSIIter();
-  unsigned long Int_Iter = config->GetIntIter();
-
   /*--- Set Residuals to zero ---*/
 
   for (iVar = 0; iVar < nVar; iVar++){
@@ -2211,16 +2213,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
     node[iPoint]->SetSolution(Solution);
 
-    if ((geometry->node[iPoint]->GetGlobalIndex() == 25) && (extract_adjoint_output)){
-      myfile_res << BGS_Iter << "\t";
-      myfile_res << Int_Iter << "\t";
-      myfile_res.precision(15);
-      myfile_res << scientific << Solution[0] << "\t";
-      myfile_res << scientific << Solution[1] << "\t";
-      myfile_res << scientific << node[iPoint]->GetSolution(0) << "\t";
-      myfile_res << scientific << node[iPoint]->GetSolution(1) << "\t";
-      myfile_res << endl;
-    }
   }
 
   /*--- Solution for acceleration (u'') and velocity (u') at time n ---*/
@@ -2328,7 +2320,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
   SetResidual_RMS(geometry, config);
 
-  myfile_res.close();
 }
 
 void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
@@ -2369,47 +2360,17 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
   unsigned short iVar;
   unsigned long iPoint;
 
-  ofstream myfile_res;
-  myfile_res.open ("structural_block.csv", ios::app);
-
-  bool extract_adjoint_output = false;
-
-  unsigned long BGS_Iter = config->GetFSIIter();
-  unsigned long Int_Iter = config->GetIntIter();
-
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
       Solution[iVar] = node[iPoint]->GetSolution(iVar);
     }
-    if (fsi && config->Add_CrossTerm()) {
+    if (fsi) {
       for (iVar = 0; iVar < nVar; iVar++){
         Solution[iVar] += node[iPoint]->GetGeometry_CrossTerm_Derivative(iVar);
       }
       for (iVar = 0; iVar < nVar; iVar++){
         Solution[iVar] += node[iPoint]->GetCross_Term_Derivative(iVar);
       }
-    }
-    if ((geometry->node[iPoint]->GetGlobalIndex() == 25) && (!extract_adjoint_output)){
-      myfile_res << BGS_Iter << "\t";
-      myfile_res << Int_Iter << "\t";
-      myfile_res.precision(15);
-      myfile_res << scientific << node[iPoint]->GetSolution(0) << "\t";
-      myfile_res << scientific << node[iPoint]->GetSolution(1) << "\t";
-      if (config->Add_CrossTerm()){
-        myfile_res << scientific << node[iPoint]->GetGeometry_CrossTerm_Derivative(0) << "\t";
-        myfile_res << scientific << node[iPoint]->GetGeometry_CrossTerm_Derivative(1) << "\t";
-        myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(0) << "\t";
-        myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(1) << "\t";
-      }
-      else{
-        myfile_res << "Set_to_0.0" << "\t";
-        myfile_res << "Set_to_0.0" << "\t";
-        myfile_res << "Set_to_0.0" << "\t";
-        myfile_res << "Set_to_0.0" << "\t";
-      }
-      myfile_res << scientific << Solution[0] << "\t";
-      myfile_res << scientific << Solution[1] << "\t";
-      myfile_res << endl;
     }
 
     if (dynamic){
@@ -2437,7 +2398,6 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 
   }
 
-  myfile_res.close();
 }
 
 void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output){
@@ -2468,16 +2428,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *c
   unsigned long iPoint;
   su2double residual;
 
-  ofstream myfile_res;
-  myfile_res.open ("structural_block.csv", ios::app);
-
-  unsigned long BGS_Iter = config->GetFSIIter();
-  unsigned long Int_Iter = config->GetIntIter();
-
-  bool extract_adjoint_output = false;
-
-  if (extract_adjoint_output) myfile_res << "Cross Term " << endl;
-
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
     /*--- Extract the adjoint solution ---*/
@@ -2486,20 +2436,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *c
 
     for (iVar = 0; iVar < nVar; iVar++) node[iPoint]->SetCross_Term_Derivative(iVar, Solution[iVar]);
 
-    if ((geometry->node[iPoint]->GetGlobalIndex() == 25) && extract_adjoint_output){
-      myfile_res << BGS_Iter << "\t";
-      myfile_res << Int_Iter << "\t";
-      myfile_res.precision(15);
-      myfile_res << scientific << Solution[0] << "\t";
-      myfile_res << scientific << Solution[1] << "\t";
-      myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(0) << "\t";
-      myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(1) << "\t";
-      myfile_res << endl;
-    }
-
   }
 
-  myfile_res.close();
 }
 
 void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config){
@@ -2507,16 +2445,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
   unsigned short iVar;
   unsigned long iPoint;
   su2double residual;
-
-  ofstream myfile_res;
-  myfile_res.open ("structural_block.csv", ios::app);
-
-  unsigned long BGS_Iter = config->GetFSIIter();
-  unsigned long Int_Iter = config->GetIntIter();
-
-  bool extract_adjoint_output = false;
-
-  if (extract_adjoint_output) myfile_res << "Cross Term " << endl;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
@@ -2526,20 +2454,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
 
     for (iVar = 0; iVar < nVar; iVar++) node[iPoint]->SetGeometry_CrossTerm_Derivative(iVar, Solution[iVar]);
 
-    if ((geometry->node[iPoint]->GetGlobalIndex() == 25) && extract_adjoint_output){
-      myfile_res << BGS_Iter << "\t";
-      myfile_res << Int_Iter << "\t";
-      myfile_res.precision(15);
-      myfile_res << scientific << Solution[0] << "\t";
-      myfile_res << scientific << Solution[1] << "\t";
-      myfile_res << scientific << node[iPoint]->GetGeometry_CrossTerm_Derivative(0) << "\t";
-      myfile_res << scientific << node[iPoint]->GetGeometry_CrossTerm_Derivative(1) << "\t";
-      myfile_res << endl;
-    }
-
   }
 
-  myfile_res.close();
 }
 
 void CDiscAdjFEASolver::AddAdjoint_CrossTerm(CGeometry *geometry, CConfig *config){

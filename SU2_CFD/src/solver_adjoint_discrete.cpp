@@ -575,14 +575,6 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   unsigned long iPoint;
   su2double residual;
 
-  ofstream myfile_res;
-  myfile_res.open ("fluid_block.csv", ios::app);
-
-  bool extract_adjoint_output = false;
-
-  unsigned long BGS_Iter = config->GetFSIIter();
-  unsigned long Int_Iter = config->GetIntIter();
-
   /*--- Set Residuals to zero ---*/
 
   for (iVar = 0; iVar < nVar; iVar++){
@@ -604,20 +596,6 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     node[iPoint]->SetSolution(Solution);
 
-    if ((geometry->node[iPoint]->GetGlobalIndex() == 300) && extract_adjoint_output){
-      myfile_res << BGS_Iter << "\t";
-      myfile_res << Int_Iter << "\t";
-      myfile_res.precision(15);
-      myfile_res << scientific << Solution[0] << "\t";
-      myfile_res << scientific << Solution[1] << "\t";
-      myfile_res << scientific << Solution[2] << "\t";
-      myfile_res << scientific << Solution[3] << "\t";
-      myfile_res << scientific << node[iPoint]->GetSolution(0) << "\t";
-      myfile_res << scientific << node[iPoint]->GetSolution(1) << "\t";
-      myfile_res << scientific << node[iPoint]->GetSolution(2) << "\t";
-      myfile_res << scientific << node[iPoint]->GetSolution(3) << "\t";
-      myfile_res << endl;
-    }
   }
 
   if (time_n_needed){
@@ -658,7 +636,6 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   SetResidual_RMS(geometry, config);
 
-  myfile_res.close();
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
@@ -701,14 +678,6 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
   unsigned long iPoint;
   su2double residual;
 
-  ofstream myfile_res;
-  myfile_res.open ("geometry_block.csv", ios::app);
-
-  bool extract_adjoint_output = false;
-
-  unsigned long BGS_Iter = config->GetFSIIter();
-  unsigned long Int_Iter = config->GetIntIter();
-
   /*--- Set Residuals to zero ---*/
 
 //  for (iVar = 0; iVar < nVar; iVar++){
@@ -730,16 +699,6 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
 
     node[iPoint]->SetSolution_Geometry(Solution_Geometry);
 
-    if ((geometry->node[iPoint]->GetGlobalIndex() == 300) && extract_adjoint_output){
-      myfile_res << BGS_Iter << "\t";
-      myfile_res << Int_Iter << "\t";
-      myfile_res.precision(15);
-      myfile_res << scientific << Solution_Geometry[0] << "\t";
-      myfile_res << scientific << Solution_Geometry[1] << "\t";
-      myfile_res << scientific << node[iPoint]->GetSolution_Geometry(0) << "\t";
-      myfile_res << scientific << node[iPoint]->GetSolution_Geometry(1) << "\t";
-      myfile_res << endl;
-    }
   }
 
 //  if (time_n_needed){
@@ -778,7 +737,6 @@ void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *confi
       }
   }
 
-  myfile_res.close();
 
 //  SetResidual_RMS(geometry, config);
 }
@@ -788,16 +746,6 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *conf
   unsigned short iVar;
   unsigned long iPoint;
 
-  ofstream myfile_res;
-  myfile_res.open ("fluid_block.csv", ios::app);
-
-  unsigned long BGS_Iter = config->GetFSIIter();
-  unsigned long Int_Iter = config->GetIntIter();
-
-  bool extract_adjoint_output = false;
-
-  if (extract_adjoint_output) myfile_res << "Cross Term " << endl;
-
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
     /*--- Extract the adjoint solution ---*/
@@ -806,24 +754,8 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *conf
 
     for (iVar = 0; iVar < nVar; iVar++) node[iPoint]->SetCross_Term_Derivative(iVar, Solution[iVar]);
 
-    if ((geometry->node[iPoint]->GetGlobalIndex() == 300) && extract_adjoint_output){
-      myfile_res << BGS_Iter << "\t";
-      myfile_res << Int_Iter << "\t";
-      myfile_res.precision(15);
-      myfile_res << scientific << Solution[0] << "\t";
-      myfile_res << scientific << Solution[1] << "\t";
-      myfile_res << scientific << Solution[2] << "\t";
-      myfile_res << scientific << Solution[3] << "\t";
-      myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(0) << "\t";
-      myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(1) << "\t";
-      myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(2) << "\t";
-      myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(3) << "\t";
-      myfile_res << endl;
-    }
-
   }
 
-  myfile_res.close();
 }
 
 void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config){
@@ -831,15 +763,6 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CCon
   unsigned short iDim;
   unsigned long iPoint;
 
-  ofstream myfile_res;
-  myfile_res.open ("geometry_block.csv", ios::app);
-
-  unsigned long BGS_Iter = config->GetFSIIter();
-  unsigned long Int_Iter = config->GetIntIter();
-
-  bool extract_adjoint_output = false;
-
-  if (extract_adjoint_output) myfile_res << "Cross Term " << endl;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
@@ -849,20 +772,7 @@ void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CCon
 
     for (iDim = 0; iDim < nDim; iDim++) node[iPoint]->SetGeometry_CrossTerm_Derivative(iDim, Solution_Geometry[iDim]);
 
-    if ((geometry->node[iPoint]->GetGlobalIndex() == 300) && extract_adjoint_output){
-      myfile_res << BGS_Iter << "\t";
-      myfile_res << Int_Iter << "\t";
-      myfile_res.precision(15);
-      myfile_res << scientific << Solution_Geometry[0] << "\t";
-      myfile_res << scientific << Solution_Geometry[1] << "\t";
-      myfile_res << scientific << node[iPoint]->GetGeometry_CrossTerm_Derivative(0) << "\t";
-      myfile_res << scientific << node[iPoint]->GetGeometry_CrossTerm_Derivative(1) << "\t";
-      myfile_res << endl;
-    }
-
   }
-
-  myfile_res.close();
 
 }
 
@@ -885,48 +795,14 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
   unsigned short iVar;
   unsigned long iPoint;
 
-  ofstream myfile_res;
-  myfile_res.open ("fluid_block.csv", ios::app);
-
-  bool extract_adjoint_output = false;
-
-  unsigned long BGS_Iter = config->GetFSIIter();
-  unsigned long Int_Iter = config->GetIntIter();
-
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iVar = 0; iVar < nVar; iVar++){
       Solution[iVar] = node[iPoint]->GetSolution(iVar);
     }
-    if (fsi && config->Add_CrossTerm()){
+    if (fsi){
       for (iVar = 0; iVar < nVar; iVar++){
         Solution[iVar] += node[iPoint]->GetCross_Term_Derivative(iVar);
       }
-    }
-    if ((geometry->node[iPoint]->GetGlobalIndex() == 300) && (!extract_adjoint_output)){
-      myfile_res << BGS_Iter << "\t";
-      myfile_res << Int_Iter << "\t";
-      myfile_res.precision(15);
-      myfile_res << scientific << node[iPoint]->GetSolution(0) << "\t";
-      myfile_res << scientific << node[iPoint]->GetSolution(1) << "\t";
-      myfile_res << scientific << node[iPoint]->GetSolution(2) << "\t";
-      myfile_res << scientific << node[iPoint]->GetSolution(3) << "\t";
-      if (config->Add_CrossTerm()){
-      myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(0) << "\t";
-      myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(1) << "\t";
-      myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(2) << "\t";
-      myfile_res << scientific << node[iPoint]->GetCross_Term_Derivative(3) << "\t";
-      }
-      else{
-        myfile_res << "Set_to_0.0" << "\t";
-        myfile_res << "Set_to_0.0" << "\t";
-        myfile_res << "Set_to_0.0" << "\t";
-        myfile_res << "Set_to_0.0" << "\t";
-      }
-      myfile_res << scientific << Solution[0] << "\t";
-      myfile_res << scientific << Solution[1] << "\t";
-      myfile_res << scientific << Solution[2] << "\t";
-      myfile_res << scientific << Solution[3] << "\t";
-      myfile_res << endl;
     }
     if (dual_time){
       for (iVar = 0; iVar < nVar; iVar++){
@@ -936,7 +812,6 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
     direct_solver->node[iPoint]->SetAdjointSolution(Solution);
   }
 
-  myfile_res.close();
 }
 
 void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config){
@@ -949,14 +824,6 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
   unsigned short iDim;
   unsigned long iPoint;
 
-  ofstream myfile_res;
-  myfile_res.open ("geometry_block.csv", ios::app);
-
-  bool extract_adjoint_output = false;
-
-  unsigned long BGS_Iter = config->GetFSIIter();
-  unsigned long Int_Iter = config->GetIntIter();
-
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iDim = 0; iDim < nDim; iDim++){
       Solution_Geometry[iDim] = node[iPoint]->GetSolution_Geometry(iDim);
@@ -966,18 +833,6 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
         Solution_Geometry[iDim] += node[iPoint]->GetGeometry_CrossTerm_Derivative(iDim);
       }
     }
-    if ((geometry->node[iPoint]->GetGlobalIndex() == 300) && (!extract_adjoint_output)){
-      myfile_res << BGS_Iter << "\t";
-      myfile_res << Int_Iter << "\t";
-      myfile_res.precision(15);
-      myfile_res << scientific << node[iPoint]->GetSolution_Geometry(0) << "\t";
-      myfile_res << scientific << node[iPoint]->GetSolution_Geometry(1) << "\t";
-      myfile_res << scientific << node[iPoint]->GetGeometry_CrossTerm_Derivative(0) << "\t";
-      myfile_res << scientific << node[iPoint]->GetGeometry_CrossTerm_Derivative(1) << "\t";
-      myfile_res << scientific << Solution_Geometry[0] << "\t";
-      myfile_res << scientific << Solution_Geometry[1] << "\t";
-      myfile_res << endl;
-    }
 //    if (dual_time){
 //      for (iDim = 0; iDim < nVar; iDim++){
 //        Solution_Geometry[iDim] += node[iPoint]->GetDual_Time_Derivative_Geometry(iDim);
@@ -985,7 +840,6 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
 //    }
     geometry->node[iPoint]->SetAdjointCoord(Solution_Geometry);
   }
-  myfile_res.close();
 
 }
 
@@ -1100,6 +954,7 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
         }
 
     }
+
 }
 
 void CDiscAdjSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
@@ -1122,7 +977,6 @@ void CDiscAdjSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
       node[iPoint]->Set_BGSSolution(iVar, bgs_sol);
     }
   }
-
 
   /*--- Set the residuals ---*/
 

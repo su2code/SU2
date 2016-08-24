@@ -638,8 +638,6 @@ CFEM_ElasticitySolver::CFEM_ElasticitySolver(CGeometry *geometry, CConfig *confi
    /*--- Initialize the value of the total gradient for the forward mode ---*/
    Total_ForwardGradient = 0.0;
 
-
-
    if (config->GetDirectDiff() == D_YOUNG ||
        config->GetDirectDiff() == D_POISSON ||
        config->GetDirectDiff() == D_RHO ||
@@ -1204,7 +1202,6 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
   su2double dull_val;
   long Dyn_RestartIter;
 
-
   /*--- Restart the solution from file information ---*/
 
   filename = config->GetSolution_FEMFileName();
@@ -1272,8 +1269,6 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
         if (nDim == 3) point_line >> index >> dull_val >> dull_val >> dull_val >> SolRest[0] >> SolRest[1] >> SolRest[2];
       }
 
-//      node[iPoint_Local] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
-
       for (iVar = 0; iVar < nVar; iVar++) node[iPoint_Local]->SetSolution(iVar, SolRest[iVar]);
       if (dynamic){
         for (iVar = 0; iVar < nVar; iVar++) node[iPoint_Local]->SetSolution_Vel(iVar, SolRest[iVar+nVar]);
@@ -1309,14 +1304,6 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
 #endif
   }
 
-  /*--- Instantiate the variable class with an arbitrary solution
-   at any halo/periodic nodes. The initial solution can be arbitrary,
-   because a send/recv is performed immediately in the solver (Set_MPI_Solution()). ---*/
-
-//  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-//    node[iPoint] = new CFEM_ElasVariable(SolRest, nDim, nVar, config);
-//  }
-
   /*--- Close the restart file ---*/
 
   restart_file.close();
@@ -1325,6 +1312,9 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
 
   delete [] Global2Local;
 
+  /*--- MPI solution ---*/
+
+  solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
 
 }
 
@@ -4982,21 +4972,32 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
 
   unsigned short iVar;
   unsigned long iPoint;
+  unsigned long nTotalPoint = 1;
+
   su2double reference_geometry = 0.0, current_solution = 0.0;
   su2double accel_check = 0.0;
   su2double *solDisp = NULL, *solVel = NULL, predicted_solution[3] = {0.0, 0.0, 0.0};
 
   bool fsi = config->GetFSI_Simulation();
-
   bool predicted_de = config->GetDE_Predicted();
 
-  su2double objective_function = 0.0;
-
+  su2double objective_function = 0.0, objective_function_reduce = 0.0;
   su2double weight_OF = 1.0;
 
-  weight_OF = config->GetRefGeom_Penalty() / nPoint;
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&nPointDomain,  &nTotalPoint,  1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+    nTotalPoint        = nPointDomain;
+#endif
+
+  weight_OF = config->GetRefGeom_Penalty() / nTotalPoint;
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
 
     for (iVar = 0; iVar < nVar; iVar++){
 
@@ -5012,16 +5013,20 @@ void CFEM_ElasticitySolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **sol
 
   }
 
-  // TODO: Need to do an MPI reduction to have the sum in all processors HERE AND it should go to nPointDomain
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&objective_function,  &objective_function_reduce,  1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    objective_function_reduce        = objective_function;
+#endif
 
-  Total_OFRefGeom = objective_function;
+  Total_OFRefGeom = objective_function_reduce;
 
   bool direct_diff = ((config->GetDirectDiff() == D_YOUNG) ||
                       (config->GetDirectDiff() == D_POISSON) ||
                       (config->GetDirectDiff() == D_RHO) ||
                       (config->GetDirectDiff() == D_RHO_DL));
 
-  if (direct_diff){
+  if ((direct_diff) && (rank == MASTER_NODE)){
 
     ofstream myfile_res;
 
