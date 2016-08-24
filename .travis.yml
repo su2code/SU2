@@ -10,11 +10,10 @@ notifications:
     email:
         recipients:
             - a.rubino@tudelft.nl
-  	    - sravya@stanford.edu
   
 branches:
     only:
-        - feature_HB
+        - feature_spectralint
 
 env:
     global:
