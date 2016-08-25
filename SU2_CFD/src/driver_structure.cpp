@@ -4212,157 +4212,171 @@ void CSpectralDriver::SetSpectralInterpolation(){
 
 	unsigned short nIntPoints = 10;
 	const   complex<su2double> J(0.0,1.0);
-  unsigned short i,k, iZone;
+	unsigned short i,k, iZone;
 	complex<su2double> **E             = new complex<su2double>*[nZone];
 	complex<su2double> **I             = new complex<su2double>*[nZone];
 	complex<su2double> **Einv          = new complex<su2double>*[nZone];
 	complex<su2double> **EinvExtended  = new complex<su2double>*[nZone];
-  for (iZone = 0; iZone < nZone; iZone++){
-    E[iZone]    = new complex<su2double>[nZone];
-    I[iZone]    = new complex<su2double>[nZone];
-    Einv[iZone] = new complex<su2double>[nZone];
-    EinvExtended[iZone] = new complex<su2double>[nIntPoints];
-  }
+	for (iZone = 0; iZone < nZone; iZone++){
+		E[iZone]    = new complex<su2double>[nZone];
+		I[iZone]    = new complex<su2double>[nZone];
+		Einv[iZone] = new complex<su2double>[nZone];
+		EinvExtended[iZone] = new complex<su2double>[nIntPoints];
+	}
 
-	su2double *Object                = new su2double[nZone];
-	su2double *ObjectInterpolated    = new su2double[nZone];
-	su2double *Omega_t               = new su2double[nZone];
-	su2double *tExtended             = new su2double[nIntPoints];
-	su2double Period                 = config_container[ZONE_0]->GetSpectralMethod_Period();
-	su2double step;
+	complex<su2double> *Object        = new complex<su2double>[nZone];
+	su2double *ObjectInterpolated     = new su2double[nIntPoints];
+	su2double *Omega_t                = new su2double[nZone];
+	su2double *tExtended              = new su2double[nIntPoints];
+	su2double Period                  = config_container[ZONE_0]->GetSpectralMethod_Period();
+	su2double Step;
 
-	step = Period/(nIntPoints-1);
+	Step = Period/(nIntPoints-1);
 	for (i = 0; i < nIntPoints; i++ ){
-		tExtended[i] = i* step;
+		tExtended[i] = i* Step;
 	}
 
-  if (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL) {
-  	/*--- Compute the omega for time spectral ---*/
-  	Omega_t[0] = 0;
-  	for (i = 1; i < (nZone-1)/2+1; i++){
-  		Omega_t[i]             =  2*PI_NUMBER*i/Period;
-  	  Omega_t[i+(nZone-1)/2] = -2*PI_NUMBER*i/Period;
-  	}
-  }
-  if (config_container[ZONE_0]->GetSpectralMethod_Type() == HARMONIC_BALANCE)
-  	for (iZone = 0; iZone < nZone; iZone++){
-  		Omega_t[iZone]  = config_container[iZone]->GetOmega_HB()[iZone];
+	if (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL) {
+		/*--- Compute the omega for time spectral ---*/
+		Omega_t[0] = 0;
+		for (i = 1; i < (nZone-1)/2+1; i++){
+			Omega_t[i]             =  2*PI_NUMBER*i/Period;
+			Omega_t[i+(nZone-1)/2] = -2*PI_NUMBER*i/Period;
+		}
 	}
+	if (config_container[ZONE_0]->GetSpectralMethod_Type() == HARMONIC_BALANCE)
+		/*--- Compute the omega for harmonic balance ---*/
+		for (iZone = 0; iZone < nZone; iZone++){
+			Omega_t[iZone]  = config_container[iZone]->GetOmega_HB()[iZone];
+		}
 
-  /*--- Build the spectral matrices ---*/
+	/*--- Build the spectral matrices ---*/
 	for (i = 0; i < nZone; i++) {
-      for (k = 0; k < nZone; k++) {
-          Einv[i][k] = complex<su2double>(cos(Omega_t[i]*(k*Period/nZone))) + J*complex<su2double>(sin(Omega_t[i]*(k*Period/nZone)));
-      }
-  }
+		for (k = 0; k < nZone; k++) {
+			Einv[i][k] = complex<su2double>(cos(Omega_t[i]*(k*Period/nZone))) + J*complex<su2double>(sin(Omega_t[i]*(k*Period/nZone)));
+		}
+	}
 
-  for (i = 0; i < nZone; i++) {
-      for (k = 0; k < nIntPoints; k++) {
-          EinvExtended[i][k] = complex<su2double>(cos(Omega_t[i]*(k*Period/nZone))) + J*complex<su2double>(sin(Omega_t[i]*(k*Period/nZone)));
-      }
-  }
+	for (i = 0; i < nZone; i++) {
+		for (k = 0; k < nIntPoints; k++) {
+			EinvExtended[i][k] = complex<su2double>(cos(Omega_t[i]*tExtended[k])) + J*complex<su2double>(sin(Omega_t[i]*tExtended[k]));
+		}
+	}
 
-  /*--- Invert Spectral matrix Ein with Gauss elimination ---*/
+	/*---  Invert Spectral matrix Ein with Gauss elimination ---*/
 
-  /*--  A temporary matrix to hold the inverse, dynamically allocated ---*/
-  	complex<su2double> **temp = new complex<su2double>*[nZone];
-  	for (int i = 0; i < nZone; i++) {
-  		temp[i] = new complex<su2double>[2 * nZone];
-  	}
+	/*--  A temporary matrix to hold the inverse, dynamically allocated ---*/
+	complex<su2double> **temp = new complex<su2double>*[nZone];
+	for (int i = 0; i < nZone; i++) {
+		temp[i] = new complex<su2double>[2 * nZone];
+	}
 
-  	//Copy the desired matrix into the temporary matrix
-  	for (int i = 0; i < nZone; i++) {
-  		for (int j = 0; j < nZone; j++) {
-  			temp[i][j] = Einv[i][j];
-  			temp[i][nZone + j] = 0;
-  		}
-  		temp[i][nZone + i] = 1;
-  	}
+	/*---  Copy the desired matrix into the temporary matrix ---*/
+	for (int i = 0; i < nZone; i++) {
+		for (int j = 0; j < nZone; j++) {
+			temp[i][j] = Einv[i][j];
+			temp[i][nZone + j] = 0;
+		}
+		temp[i][nZone + i] = 1;
+	}
 
-  	su2double max_val;
-  	int max_idx;
-  	//Pivot each column such that the largest number possible divides the other rows
-  	//The goal is to avoid zeros or small numbers in division.
-  	for (int k = 0; k < nZone - 1; k++) {
-  		max_idx = k;
-  		max_val = abs(temp[k][k]);
-  		//Find the largest value (pivot) in the column
-  		for (int j = k; j < nZone; j++) {
-  			if (abs(temp[j][k]) > max_val) {
-  				max_idx = j;
-  				max_val = abs(temp[j][k]);
-  			}
-  		}
-  		//Move the row with the highest value up
-  		for (int j = 0; j < (nZone * 2); j++) {
-  			complex<su2double> d = temp[k][j];
-  			temp[k][j] = temp[max_idx][j];
-  			temp[max_idx][j] = d;
-  		}
-  		//Subtract the moved row from all other rows
-  		for (int i = k + 1; i < nZone; i++) {
-  			complex<su2double> c = temp[i][k] / temp[k][k];
-  			for (int j = 0; j < (nZone * 2); j++) {
-  				temp[i][j] = temp[i][j] - temp[k][j] * c;
-  			}
-  		}
-  	}
+	su2double max_val;
+	int max_idx;
 
-  	//Back-substitution
-  	for (int k = nZone - 1; k > 0; k--) {
-  		if (temp[k][k] != complex<su2double>(0.0)) {
-  			for (int i = k - 1; i > -1; i--) {
-  				complex<su2double> c = temp[i][k] / temp[k][k];
-  				for (int j = 0; j < (nZone * 2); j++) {
-  					temp[i][j] = temp[i][j] - temp[k][j] * c;
-  				}
-  			}
-  		}
-  	}
-  	//Normalize the inverse
-  	for (int i = 0; i < nZone; i++) {
-  		complex<su2double> c = temp[i][i];
-  		for (int j = 0; j < nZone; j++) {
-  			temp[i][j + nZone] = temp[i][j + nZone] / c;
-  		}
-  	}
-  	//Copy the inverse back to the main program flow
-  	for (int i = 0; i < nZone; i++) {
-  		for (int j = 0; j < nZone; j++) {
-  			E[i][j] = temp[i][j + nZone];
-  		}
-  	}
-  	//Delete dynamic template
-  	for (int i = 0; i < nZone; i++) {
-  		delete[] temp[i];
-  	}
-  	delete[] temp;
+	/*---  Pivot each column such that the largest number possible divides the other rows  ---*/
+	for (int k = 0; k < nZone - 1; k++) {
+		max_idx = k;
+		max_val = abs(temp[k][k]);
+		/*---  Find the largest value (pivot) in the column  ---*/
+		for (int j = k; j < nZone; j++) {
+			if (abs(temp[j][k]) > max_val) {
+				max_idx = j;
+				max_val = abs(temp[j][k]);
+			}
+		}
+		/*---  Move the row with the highest value up  ---*/
+		for (int j = 0; j < (nZone * 2); j++) {
+			complex<su2double> d = temp[k][j];
+			temp[k][j] = temp[max_idx][j];
+			temp[max_idx][j] = d;
+		}
+		/*---  Subtract the moved row from all other rows ---*/
+		for (int i = k + 1; i < nZone; i++) {
+			complex<su2double> c = temp[i][k] / temp[k][k];
+			for (int j = 0; j < (nZone * 2); j++) {
+				temp[i][j] = temp[i][j] - temp[k][j] * c;
+			}
+		}
+	}
+	/*---  Back-substitution  ---*/
+	for (int k = nZone - 1; k > 0; k--) {
+		if (temp[k][k] != complex<su2double>(0.0)) {
+			for (int i = k - 1; i > -1; i--) {
+				complex<su2double> c = temp[i][k] / temp[k][k];
+				for (int j = 0; j < (nZone * 2); j++) {
+					temp[i][j] = temp[i][j] - temp[k][j] * c;
+				}
+			}
+		}
+	}
+	/*---  Normalize the inverse  ---*/
+	for (int i = 0; i < nZone; i++) {
+		complex<su2double> c = temp[i][i];
+		for (int j = 0; j < nZone; j++) {
+			temp[i][j + nZone] = temp[i][j + nZone] / c;
+		}
+	}
+	/*---  Copy the inverse back to the main program flow ---*/
+	for (int i = 0; i < nZone; i++) {
+		for (int j = 0; j < nZone; j++) {
+			E[i][j] = temp[i][j + nZone];
+		}
+	}
+	/*---  Delete dynamic template  ---*/
+	for (int i = 0; i < nZone; i++) {
+		delete[] temp[i];
+	}
+	delete[] temp;
 
-  	for (iZone = 0; iZone < nZone; iZone++) {
-  			Object[iZone] = 	solver_container[iZone][MESH_0][FLOW_SOL]->GetTotalPressureLoss(0);
-  	}
+	for (iZone = 0; iZone < nZone; iZone++) {
+		Object[iZone] = 	solver_container[iZone][MESH_0][FLOW_SOL]->GetTotalPressureLoss(0);
+	}
 
-  	for (int row = 0; row < nZone; row++) {
-  		for (int col = 0; col < nZone; col++) {
-  			for (int inner = 0; inner < nZone; inner++) {
-  				I[row][col] += E[row][inner] * Einv[inner][col];
-  			}
-  		}
-  	}
+	/*---  Temporary array   ---*/
+	complex<su2double> *Itemp = new complex<su2double>[nZone];
+	for (i = 0; i < nZone; i++){
+		for(k = 0; k < nZone; k++){
+			Itemp[i] += Object[k] * E[i][k];
+		}
+	}
+	/*---  Calculate the interpolated array in temporary complex  array  ---*/
+	complex<su2double> *ObjectIntTemp = new complex<su2double>[nIntPoints];
+	for (i = 0; i < nIntPoints; i++){
+		for(k = 0; k < nZone; k++){
+			ObjectIntTemp[i] += Itemp[k] * EinvExtended[k][i];
+		}
+	}
+	delete [] Itemp;
+	/*---  Calculate the interpolated  ---*/
+	for (i = 0; i < nIntPoints; i++){
+		ObjectInterpolated[i] = real(ObjectIntTemp[i]);
+	}
+	delete [] ObjectIntTemp;
 
-  /*--- delete dynamic memory ---*/
-  for (iZone = 0; iZone < nZone; iZone++){
-    delete [] I[iZone];
-    delete [] E[iZone];
-    delete [] Einv[iZone];
-    delete [] EinvExtended[iZone];
-  }
-  delete [] I;
-  delete [] E;
-  delete [] Einv;
-  delete [] EinvExtended;
-  delete [] tExtended;
-  delete [] Omega_t;
+
+	/*--- Deallocate dynamic memory ---*/
+	for (iZone = 0; iZone < nZone; iZone++){
+		delete [] I[iZone];
+		delete [] E[iZone];
+		delete [] Einv[iZone];
+		delete [] EinvExtended[iZone];
+	}
+	delete [] I;
+	delete [] E;
+	delete [] Einv;
+	delete [] EinvExtended;
+	delete [] tExtended;
+	delete [] Omega_t;
 }
 
 
