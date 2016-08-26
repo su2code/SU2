@@ -186,7 +186,7 @@ CDriver::CDriver(char* confFile,
   if(nZone == SINGLE_ZONE){
     if (rank == MASTER_NODE) cout << "A single zone driver has been instantiated." << endl;
   }
-  else if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL){
+  else if (config_container[ZONE_0]->GetUnsteady_Simulation() == SPECTRAL_METHOD){
     if (rank == MASTER_NODE) cout << "A spectral method driver has been instantiated." << endl;
   }
   else if (nZone == 2 && fsi){
@@ -3516,9 +3516,19 @@ CSpectralDriver::CSpectralDriver(char* confFile,
                                  unsigned short val_nZone,
                                  unsigned short val_nDim) : CDriver(confFile,
                                                                     val_nZone,
-                                                                    val_nDim) { }
+                                                                    val_nDim) {
 
-CSpectralDriver::~CSpectralDriver(void) { }
+	nZoneInterp = 10;
+	TotalPressureLossObj       = new su2double [nZone];
+	TotalPressureLossObjInterp = new su2double [nZoneInterp];
+
+}
+
+CSpectralDriver::~CSpectralDriver(void) {
+	//deallocate pointers!!
+  if (TotalPressureLossObj       != NULL) delete [] TotalPressureLossObj;
+  if (TotalPressureLossObjInterp != NULL) delete [] TotalPressureLossObjInterp;
+}
 
 void CSpectralDriver::Run() {
 
@@ -3565,7 +3575,9 @@ void CSpectralDriver::Run() {
 			solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(config_container[iZone], geometry_container[iZone][MESH_0]);
 		}
 	}
-	SetSpectralInterpolation();
+
+	SetSpectralObjective();
+
 }
 
 void CSpectralDriver::Update(){
@@ -4208,9 +4220,18 @@ void CSpectralDriver::SetGeoTurboAvgValues(unsigned short iZone, bool allocate){
 }
 
 
-void CSpectralDriver::SetSpectralInterpolation(){
+void CSpectralDriver::SetSpectralObjective(){
 
-	unsigned short nIntPoints = 10;
+
+	for (iZone = 0; iZone < nZone; iZone++) {
+		TotalPressureLossObj[iZone] = 	solver_container[iZone][MESH_0][FLOW_SOL]->GetTotalPressureLoss(0);
+	}
+  ComputeSpectralInterpolation(TotalPressureLossObj, TotalPressureLossObjInterp);
+}
+
+void CSpectralDriver::ComputeSpectralInterpolation(su2double *Object, su2double *ObjectInterpolated){
+
+//	unsigned short nZoneInterp = 10;
 	const   complex<su2double> J(0.0,1.0);
 	unsigned short i,k, iZone;
 	complex<su2double> **E             = new complex<su2double>*[nZone];
@@ -4221,18 +4242,18 @@ void CSpectralDriver::SetSpectralInterpolation(){
 		E[iZone]    = new complex<su2double>[nZone];
 		I[iZone]    = new complex<su2double>[nZone];
 		Einv[iZone] = new complex<su2double>[nZone];
-		EinvExtended[iZone] = new complex<su2double>[nIntPoints];
+		EinvExtended[iZone] = new complex<su2double>[nZoneInterp];
 	}
 
-	complex<su2double> *Object        = new complex<su2double>[nZone];
-	su2double *ObjectInterpolated     = new su2double[nIntPoints];
+//	complex<su2double> *Object        = new complex<su2double>[nZone];
+//	su2double *ObjectInterpolated     = new su2double[nZoneInterp];
 	su2double *Omega_t                = new su2double[nZone];
-	su2double *tExtended              = new su2double[nIntPoints];
+	su2double *tExtended              = new su2double[nZoneInterp];
 	su2double Period                  = config_container[ZONE_0]->GetSpectralMethod_Period();
 	su2double Step;
 
-	Step = Period/(nIntPoints-1);
-	for (i = 0; i < nIntPoints; i++ ){
+	Step = Period/(nZoneInterp-1);
+	for (i = 0; i < nZoneInterp; i++ ){
 		tExtended[i] = i* Step;
 	}
 
@@ -4258,7 +4279,7 @@ void CSpectralDriver::SetSpectralInterpolation(){
 	}
 
 	for (i = 0; i < nZone; i++) {
-		for (k = 0; k < nIntPoints; k++) {
+		for (k = 0; k < nZoneInterp; k++) {
 			EinvExtended[i][k] = complex<su2double>(cos(Omega_t[i]*tExtended[k])) + J*complex<su2double>(sin(Omega_t[i]*tExtended[k]));
 		}
 	}
@@ -4338,27 +4359,27 @@ void CSpectralDriver::SetSpectralInterpolation(){
 	}
 	delete[] temp;
 
-	for (iZone = 0; iZone < nZone; iZone++) {
-		Object[iZone] = 	solver_container[iZone][MESH_0][FLOW_SOL]->GetTotalPressureLoss(0);
-	}
+//	for (iZone = 0; iZone < nZone; iZone++) {
+//		Object[iZone] = complex<su2double>(Object[iZone]);
+//	}
 
 	/*---  Temporary array   ---*/
 	complex<su2double> *Itemp = new complex<su2double>[nZone];
 	for (i = 0; i < nZone; i++){
 		for(k = 0; k < nZone; k++){
-			Itemp[i] += Object[k] * E[i][k];
+			Itemp[i] += complex<su2double>(Object[k]) * E[i][k];
 		}
 	}
 	/*---  Calculate the interpolated array in temporary complex  array  ---*/
-	complex<su2double> *ObjectIntTemp = new complex<su2double>[nIntPoints];
-	for (i = 0; i < nIntPoints; i++){
+	complex<su2double> *ObjectIntTemp = new complex<su2double>[nZoneInterp];
+	for (i = 0; i < nZoneInterp; i++){
 		for(k = 0; k < nZone; k++){
 			ObjectIntTemp[i] += Itemp[k] * EinvExtended[k][i];
 		}
 	}
 	delete [] Itemp;
 	/*---  Calculate the interpolated  ---*/
-	for (i = 0; i < nIntPoints; i++){
+	for (i = 0; i < nZoneInterp; i++){
 		ObjectInterpolated[i] = real(ObjectIntTemp[i]);
 	}
 	delete [] ObjectIntTemp;
@@ -4380,7 +4401,7 @@ void CSpectralDriver::SetSpectralInterpolation(){
 }
 
 
-void CSpectralDriver::SetSpectralTurboPerformanceAvg(){
+void CSpectralDriver::SetSpectralAverage(){
 
 	unsigned short kZone;
 	su2double TotalPressureLossAvg = 0, EntropyGenAvg = 0, KineticEnergyLossAvg = 0;

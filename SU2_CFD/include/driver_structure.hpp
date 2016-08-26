@@ -474,7 +474,12 @@ public:
  */
 class CSpectralDriver : public CDriver {
 public:
-  
+
+	unsigned short nZoneInterp;
+	su2double *TotalPressureLossObj;
+	su2double *TotalPressureLossObjInterp;
+
+
   /*!
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
@@ -555,15 +560,21 @@ public:
   void SetGeoTurboAvgValues(unsigned short iZone, bool allocate);
 
   /*!
-    * \brief Interpolation of spectral methods using DiscreteFourierTtransform
-    * \param[in] iZone - zone in which compute the quantities.
-    */
-   void SetSpectralInterpolation();
+   * \brief Set the objective function for spectral methods with selected average type
+   */
+  void SetSpectralObjective();
 
   /*!
-    * \brief Set average needed for turbomachinery objective functions
-    */
-   void SetSpectralTurboPerformanceAvg();
+   * \brief Interpolation of spectral methods using DiscreteFourierTtransform
+   * \param[in] Object - Input object to be interpolated.
+   * \param[in] ObjectInterpolated - Interpolated object.
+   */
+  void ComputeSpectralInterpolation(su2double *Object, su2double *ObjectInterpolated);
+
+  /*!
+   * \brief Set average needed for objective functions
+   */
+  void SetSpectralAverage();
 
   /*!
    * \brief Computation and storage of the time-spectral mesh velocities.
