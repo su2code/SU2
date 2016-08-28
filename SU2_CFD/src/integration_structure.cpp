@@ -295,8 +295,8 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
 			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTime_Step(geometry[iZone][iMGLevel], solver_container[iZone][iMGLevel], config[iZone], iMGLevel, Iteration);
       
 			/*--- Set the force coefficients ---*/
-			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CDrag(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag());
-			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CLift(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CLift());
+			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CD(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CD());
+			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CL(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CL());
 			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CT(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CT());
 			solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CQ());
       

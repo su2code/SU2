@@ -8951,9 +8951,9 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
   int rank, nProcessor;
   unsigned short Beneficiary = 0, Donor = 0, iBC;
   
-  unsigned short nMarker_ActDisk_Inlet = config->GetnMarker_ActDisk_Inlet();
+  unsigned short nMarker_ActDiskInlet = config->GetnMarker_ActDiskInlet();
   
-  if (nMarker_ActDisk_Inlet != 0) {
+  if (nMarker_ActDiskInlet != 0) {
     
     for (iBC = 0; iBC < 2; iBC++) {
       

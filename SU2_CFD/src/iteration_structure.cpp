@@ -1589,8 +1589,8 @@ void CAdjMeanFlowIteration::Preprocess(COutput *output,
       
       /*--- Set the value of the non-dimensional coefficients in the coarse levels, using the fine level solution ---*/
       
-      solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CDrag(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag());
-      solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CLift(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CLift());
+      solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CD(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CD());
+      solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CL(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CL());
       solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CT(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CT());
       solver_container[val_iZone][iMesh][FLOW_SOL]->SetTotal_CQ(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CQ());
       
@@ -1845,8 +1845,8 @@ void CDiscAdjMeanFlowIteration::Preprocess(COutput *output,
     
     if (rank == MASTER_NODE && ((ExtIter == 0) || unsteady )){
       cout << "log10[RMS Density]: "<< log10(solver_container[val_iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
-           <<", Drag: " <<solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag()
-          <<", Lift: " << solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CLift() << "." << endl;
+           <<", Drag: " <<solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CD()
+          <<", Lift: " << solver_container[val_iZone][MESH_0][FLOW_SOL]->GetTotal_CL() << "." << endl;
 
       if (turbulent){
         cout << "log10[RMS k]: " << log10(solver_container[val_iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;

@@ -697,14 +697,15 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       
       /*--- Calculate the inviscid and viscous forces ---*/
       
-      solver_container[FinestMesh][FLOW_SOL]->Inviscid_Forces(geometry[FinestMesh], config);
+      solver_container[FinestMesh][FLOW_SOL]->Pressure_Forces(geometry[FinestMesh], config);
+      solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Viscous_Forces(geometry[FinestMesh], config);
       
       /*--- Evaluate convergence monitor ---*/
       
       if (config->GetConvCriteria() == CAUCHY) {
-        if (config->GetCauchy_Func_Flow() == DRAG_COEFFICIENT) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CDrag();
-        if (config->GetCauchy_Func_Flow() == LIFT_COEFFICIENT) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CLift();
+        if (config->GetCauchy_Func_Flow() == DRAG_COEFFICIENT) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CD();
+        if (config->GetCauchy_Func_Flow() == LIFT_COEFFICIENT) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CL();
         if (config->GetCauchy_Func_Flow() == NEARFIELD_PRESSURE) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetTotal_CNearFieldOF();
         if (config->GetCauchy_Func_Flow() == MASS_FLOW_RATE) (*monitor) = solver_container[FinestMesh][FLOW_SOL]->GetOneD_MassFlowRate();
       }

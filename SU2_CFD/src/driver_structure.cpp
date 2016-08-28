@@ -2589,7 +2589,7 @@ su2double CDriver::Get_Drag(){
 
   /*--- Calculate drag force based on drag coefficient ---*/
   factor = 0.5*RefDensity*RefAreaCoeff*RefVel2;
-  CDrag = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CDrag();
+  CDrag = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CD();
 
   return CDrag*factor;
 }
@@ -2610,7 +2610,7 @@ su2double CDriver::Get_Lift(){
 
   /*--- Calculate drag force based on drag coefficient ---*/
   factor = 0.5*RefDensity*RefAreaCoeff*RefVel2;
-  CLift = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CLift();
+  CLift = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CL();
 
   return CLift*factor;
 }
@@ -2647,7 +2647,7 @@ unsigned short CDriver::GetMovingMarker(){
     Moving = config_container[ZONE_0]->GetMarker_All_Moving(iMarker);
     if (Moving == YES) {
       for (jMarker = 0; jMarker<config_container[ZONE_0]->GetnMarker_Moving(); jMarker++) {
-        Moving_Tag = config_container[ZONE_0]->GetMarker_Moving(jMarker);
+        Moving_Tag = config_container[ZONE_0]->GetMarker_Moving_TagBound(jMarker);
         Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Moving_Tag) {
           IDtoSend = iMarker;
@@ -2672,7 +2672,7 @@ unsigned long CDriver::GetNumberVertices(unsigned short iMarker){
   Moving = config_container[ZONE_0]->GetMarker_All_Moving(iMarker);
   if (Moving == YES) {
     for (jMarker = 0; jMarker<config_container[ZONE_0]->GetnMarker_Moving(); jMarker++) {
-      Moving_Tag = config_container[ZONE_0]->GetMarker_Moving(jMarker);
+      Moving_Tag = config_container[ZONE_0]->GetMarker_Moving_TagBound(jMarker);
       Marker_Tag = config_container[ZONE_0]->GetMarker_All_TagBound(iMarker);
       if (Marker_Tag == Moving_Tag) {
         nFluidVertex = geometry_container[ZONE_0][MESH_0]->nVertex[iMarker];
@@ -2684,10 +2684,9 @@ unsigned long CDriver::GetNumberVertices(unsigned short iMarker){
 
 }
 
-unsigned int CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex){
+unsigned unsigned long CDriver::GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex){
 
   unsigned long iPoint, GlobalIndex;
-
 
   iPoint = geometry_container[ZONE_0][MESH_0]->vertex[iMarker][iVertex]->GetNode();
   GlobalIndex = geometry_container[ZONE_0][MESH_0]->node[iPoint]->GetGlobalIndex();
@@ -3514,8 +3513,8 @@ void CSpectralDriver::SetTimeSpectral(unsigned short iZone) {
     for (kZone = 0; kZone < nZone; kZone++) {
       
       /*--- Flow solution coefficients (parallel) ---*/
-      sbuf_force[0] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CLift();
-      sbuf_force[1] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+      sbuf_force[0] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CL();
+      sbuf_force[1] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CD();
       sbuf_force[2] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMx();
       sbuf_force[3] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMy();
       sbuf_force[4] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMz();

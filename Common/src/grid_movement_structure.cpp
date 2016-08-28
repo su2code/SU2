@@ -4804,7 +4804,7 @@ void CSurfaceMovement::Surface_Translating(CGeometry *geometry, CConfig *config,
     if (Moving == YES) {
       for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
         
-        Moving_Tag = config->GetMarker_Moving(jMarker);
+        Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
         if (Marker_Tag == Moving_Tag) {
@@ -4920,7 +4920,7 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
     if (Moving == YES) {
       for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
         
-        Moving_Tag = config->GetMarker_Moving(jMarker);
+        Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
         if (Marker_Tag == Moving_Tag) {
@@ -5046,7 +5046,7 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
     if (Moving == YES) {
       for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
         
-        Moving_Tag = config->GetMarker_Moving(jMarker);
+        Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
         if (Marker_Tag == Moving_Tag) {
@@ -5202,7 +5202,7 @@ void CSurfaceMovement::Surface_Rotating(CGeometry *geometry, CConfig *config,
     if (Moving == YES) {
       for (jMarker = 0; jMarker<config->GetnMarker_Moving(); jMarker++) {
         
-        Moving_Tag = config->GetMarker_Moving(jMarker);
+        Moving_Tag = config->GetMarker_Moving_TagBound(jMarker);
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         
         if (Marker_Tag == Moving_Tag) {
@@ -5397,7 +5397,7 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry *geometry, CConfig *config, u
   unsigned long iPoint, iVertex;
   su2double x_new, y_new;
   su2double VarCoord[3];
-  string Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+  string Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
   
   /*--- Calculate the plunge displacement for the Typical Section Wing Model taking into account rotation ---*/
   if (config->GetKind_GridMovement(ZONE_0) == AEROELASTIC_RIGID_MOTION) {

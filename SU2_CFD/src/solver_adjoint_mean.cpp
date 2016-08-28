@@ -357,7 +357,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
         config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_TOTAL_PRESSURE ||
         config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_OUTLET_PRESSURE){
 
-      Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+      Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
       /*-- Find the marker index ---*/
       iMarker = 0;
       for (jMarker= 0; jMarker < config->GetnMarker_All(); jMarker++) {
@@ -1142,8 +1142,8 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   
   /*--- Compute coefficients needed for objective function evaluation. ---*/
   
-  CD = solver_container[FLOW_SOL]->GetTotal_CDrag();
-  CL = solver_container[FLOW_SOL]->GetTotal_CLift();
+  CD = solver_container[FLOW_SOL]->GetTotal_CD();
+  CL = solver_container[FLOW_SOL]->GetTotal_CL();
   CT = solver_container[FLOW_SOL]->GetTotal_CT();
   CQ = solver_container[FLOW_SOL]->GetTotal_CQ();
   invCD  = 1.0/CD; CLCD2  = CL/(CD*CD);
@@ -1169,7 +1169,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
     obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
     /*--- Find the matching iMarker ---*/
-    Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+    Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
     for (jMarker=0; jMarker<nMarker; jMarker++){
       Marker_Tag = config->GetMarker_All_TagBound(jMarker);
       if (Monitoring_Tag==Marker_Tag)
@@ -4590,7 +4590,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Identify marker monitoring index ---*/
   for (jMarker = 0; jMarker < config->GetnMarker_Monitoring(); jMarker++){
-    Monitoring_Tag = config->GetMarker_Monitoring(jMarker);
+    Monitoring_Tag = config->GetMarker_Monitoring_TagBound(jMarker);
     if (Monitoring_Tag==Marker_Tag)
       iMarker_Monitoring = jMarker;
   }
@@ -5548,7 +5548,7 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
          config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_TOTAL_PRESSURE ||
          config->GetKind_ObjFunc(iMarker_Monitoring)==AVG_OUTLET_PRESSURE){
 
-       Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+       Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
        /*-- Find the marker index ---*/
        iMarker = 0;
        for (jMarker= 0; jMarker < config->GetnMarker_All(); jMarker++) {
@@ -6985,7 +6985,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   
   /*--- Identify marker monitoring index ---*/
   for (jMarker = 0; jMarker < config->GetnMarker_Monitoring(); jMarker++){
-    Monitoring_Tag = config->GetMarker_Monitoring(jMarker);
+    Monitoring_Tag = config->GetMarker_Monitoring_TagBound(jMarker);
     if (Monitoring_Tag==Marker_Tag)
       iMarker_Monitoring = jMarker;
   }

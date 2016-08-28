@@ -485,8 +485,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
    rotation_angle_z-axis, translation_x, translation_y, translation_z, ... ) \ingroup Config*/
-  addActuatorDiskOption("MARKER_ACTDISK", nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
-                        Marker_ActDisk_Inlet, Marker_ActDisk_Outlet,
+  addActuatorDiskOption("MARKER_ACTDISK", nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
+                        Marker_ActDiskInlet, Marker_ActDiskOutlet,
                         ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius,
                         ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega, ActDisk_Distribution);
 
@@ -2599,7 +2599,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Subsonic_Engine_Box[4] = Subsonic_Engine_Box[4]/12.0;
     Subsonic_Engine_Box[5] = Subsonic_Engine_Box[5]/12.0;
     
-    for (iMarker = 0; iMarker < nMarker_ActDisk_Inlet; iMarker++) {
+    for (iMarker = 0; iMarker < nMarker_ActDiskInlet; iMarker++) {
       for (iDim = 0; iDim < val_nDim; iDim++)
         ActDisk_Origin[iMarker][iDim] = ActDisk_Origin[iMarker][iDim]/12.0;
       ActDisk_RootRadius[iMarker] = ActDisk_RootRadius[iMarker]/12.0;
@@ -2715,7 +2715,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
   iMarker_DV, iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine,
-  iMarker_ActDisk_Inlet, iMarker_ActDisk_Outlet, iMarker_Out_1D;
+  iMarker_ActDiskInlet, iMarker_ActDiskOutlet, iMarker_Out_1D;
 
   int size = SINGLE_NODE;
   
@@ -2734,7 +2734,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
   nMarker_Clamped + nMarker_Load_Sine + nMarker_Load_Dir +
-  nMarker_ActDisk_Inlet + nMarker_ActDisk_Outlet + nMarker_Out_1D;
+  nMarker_ActDiskInlet + nMarker_ActDiskOutlet + nMarker_Out_1D;
   
   /*--- Add the possible send/receive domains ---*/
 
@@ -2836,14 +2836,14 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
-  for (iMarker_ActDisk_Inlet = 0; iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet; iMarker_ActDisk_Inlet++) {
-		Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDisk_Inlet[iMarker_ActDisk_Inlet];
+  for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
+		Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDiskInlet[iMarker_ActDiskInlet];
 		Marker_CfgFile_KindBC[iMarker_CfgFile] = ACTDISK_INLET;
 		iMarker_CfgFile++;
 	}
 
-  for (iMarker_ActDisk_Outlet = 0; iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet; iMarker_ActDisk_Outlet++) {
-		Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDisk_Outlet[iMarker_ActDisk_Outlet];
+  for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
+		Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
 		Marker_CfgFile_KindBC[iMarker_CfgFile] = ACTDISK_OUTLET;
 		iMarker_CfgFile++;
 	}
@@ -3070,8 +3070,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_DV, iDV_Value,
   iMarker_FSIinterface, iMarker_Load_Dir, iMarker_Load_Sine, iMarker_Clamped,
-  iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDisk_Inlet,
-  iMarker_ActDisk_Outlet;
+  iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
+  iMarker_ActDiskOutlet;
   
   
   /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
@@ -4310,20 +4310,20 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
-  if (nMarker_ActDisk_Inlet != 0) {
+  if (nMarker_ActDiskInlet != 0) {
 		cout << "Actuator disk (inlet) boundary marker(s): ";
-		for (iMarker_ActDisk_Inlet = 0; iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet; iMarker_ActDisk_Inlet++) {
-			cout << Marker_ActDisk_Inlet[iMarker_ActDisk_Inlet];
-			if (iMarker_ActDisk_Inlet < nMarker_ActDisk_Inlet-1) cout << ", ";
+		for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
+			cout << Marker_ActDiskInlet[iMarker_ActDiskInlet];
+			if (iMarker_ActDiskInlet < nMarker_ActDiskInlet-1) cout << ", ";
 			else cout <<"."<< endl;
 		}
 	}
 
-  if (nMarker_ActDisk_Outlet != 0) {
+  if (nMarker_ActDiskOutlet != 0) {
 		cout << "Actuator disk (outlet) boundary marker(s): ";
-		for (iMarker_ActDisk_Outlet = 0; iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet; iMarker_ActDisk_Outlet++) {
-			cout << Marker_ActDisk_Outlet[iMarker_ActDisk_Outlet];
-			if (iMarker_ActDisk_Outlet < nMarker_ActDisk_Outlet-1) cout << ", ";
+		for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
+			cout << Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
+			if (iMarker_ActDiskOutlet < nMarker_ActDiskOutlet-1) cout << ", ";
 			else cout <<"."<< endl;
 		}
 	}
@@ -4762,7 +4762,7 @@ CConfig::~CConfig(void) {
   }
   
   if (ActDisk_Origin != NULL) {
-    for (iMarker = 0; iMarker < nMarker_ActDisk_Inlet; iMarker++)
+    for (iMarker = 0; iMarker < nMarker_ActDiskInlet; iMarker++)
       delete [] ActDisk_Origin[iMarker];
     delete [] ActDisk_Origin;
   }
@@ -5173,72 +5173,72 @@ unsigned short CConfig::GetMarker_Periodic_Donor(string val_marker) {
 
 su2double* CConfig::GetActDisk_Origin(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
   return ActDisk_Origin[iMarker_ActDisk];
 }
 
 su2double CConfig::GetActDisk_RootRadius(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
   return ActDisk_RootRadius[iMarker_ActDisk];
 }
 
 su2double CConfig::GetActDisk_TipRadius(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
   return ActDisk_TipRadius[iMarker_ActDisk];
 }
 
 su2double CConfig::GetActDisk_PressJump(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
   return ActDisk_PressJump[iMarker_ActDisk];
 }
 
 su2double CConfig::GetActDisk_TempJump(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
   return ActDisk_TempJump[iMarker_ActDisk];
 }
 
 su2double CConfig::GetActDisk_Omega(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
   return ActDisk_Omega[iMarker_ActDisk];
 }
 
 unsigned short CConfig::GetActDisk_Distribution(string val_marker) {
   unsigned short iMarker_ActDisk;
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if ((Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) ||
-        (Marker_ActDisk_Outlet[iMarker_ActDisk] == val_marker)) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if ((Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) ||
+        (Marker_ActDiskOutlet[iMarker_ActDisk] == val_marker)) break;
   return ActDisk_Distribution[iMarker_ActDisk];
 }
 
-unsigned short CConfig::GetMarker_ActDisk_Outlet(string val_marker) {
+unsigned short CConfig::GetMarker_ActDiskOutlet(string val_marker) {
   unsigned short iMarker_ActDisk, kMarker_All;
 
   /*--- Find the marker for this actuator disk inlet. ---*/
 
-  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDisk_Inlet; iMarker_ActDisk++)
-    if (Marker_ActDisk_Inlet[iMarker_ActDisk] == val_marker) break;
+  for (iMarker_ActDisk = 0; iMarker_ActDisk < nMarker_ActDiskInlet; iMarker_ActDisk++)
+    if (Marker_ActDiskInlet[iMarker_ActDisk] == val_marker) break;
 
   /*--- Find and return global marker index for the actuator disk outlet. ---*/
 
   for (kMarker_All = 0; kMarker_All < nMarker_CfgFile; kMarker_All++)
-    if (Marker_ActDisk_Outlet[iMarker_ActDisk] == Marker_All_TagBound[kMarker_All]) break;
+    if (Marker_ActDiskOutlet[iMarker_ActDisk] == Marker_All_TagBound[kMarker_All]) break;
 
   return kMarker_All;
 }
