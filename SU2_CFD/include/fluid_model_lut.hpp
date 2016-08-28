@@ -1,7 +1,7 @@
 /*!
- * \file fluid_model.hpp
- * \brief Headers of the main thermodynamic subroutines of the SU2 solvers.
- * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
+ * \file fluid_model_lut.hpp
+ * \brief LuT thermodynamic model based on a 2 zone unstructured table.
+ * \author M.Kosec
  * \version 4.1.2 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
@@ -47,7 +47,6 @@
 
 using namespace std;
 
-#include "../include/fluid_model.hpp"
 #include "../../Common/include/config_structure.hpp"
 
 /*!
@@ -60,21 +59,22 @@ using namespace std;
  * \version 4.1.2 "Cardinal"
  */
 
-class CTrapezoidalMap{
+class CTrapezoidalMap {
 protected:
 	int rank, UpperI, LowerI, middleI, LowerJ, UpperJ, middleJ;
 	int UpperEdge, LowerEdge;
 	//The unique values of x which exist in the data
-	vector< su2double > Unique_X_Bands;
-	vector< vector <int> >  Unique_Edges;
-	vector< vector <su2double> > X_Limits_of_Edges, Y_Limits_of_Edges;
+	vector<su2double> Unique_X_Bands;
+	vector<vector<int> > Unique_Edges;
+	vector<vector<su2double> > X_Limits_of_Edges, Y_Limits_of_Edges;
 	//The value that each edge which intersects the band takes within that
 	//same band. Used to sort the edges
-	vector< vector < pair < su2double,int > > > Y_Values_of_Edge_Within_Band_And_Index;
+	vector<vector<pair<su2double, int> > > Y_Values_of_Edge_Within_Band_And_Index;
 public:
 	CTrapezoidalMap();
-	CTrapezoidalMap(vector< su2double > const &x_samples,
-			vector< su2double >  const &y_samples, vector<vector<int> > const &unique_edges);
+	CTrapezoidalMap(vector<su2double> const &x_samples,
+			vector<su2double> const &y_samples,
+			vector<vector<int> > const &unique_edges);
 	void Find_Containing_Simplex(su2double x, su2double y);
 	void Search_Bands_For(su2double x);
 	void Search_Band_For_Edge(su2double x, su2double y);
@@ -104,19 +104,20 @@ public:
 	}
 };
 
+#include "../include/fluid_model.hpp"
 
 /*!
  * \class CLookUpTable
  * \brief Class for defining a lookuptable fluid model
- * \author: A. Rubino, S.Vitale., M. Kosec
+ * \author: M. Kosec, A. Rubino, S.Vitale.
  * \version 4.1.2 "Cardinal"
  */
-class CLookUpTable : public CFluidModel {
+class CLookUpTable: public CFluidModel {
 
 protected:
 	int rank;
 	int CurrentZone;
-	vector< int > CurrentPoints;
+	vector<int> CurrentPoints;
 	bool LUT_Debug_Mode;/*!< \brief If true, master node prints errors of points outside LUT*/
 	su2double Pressure_Reference_Value;
 	su2double Density_Reference_Value;
@@ -125,28 +126,10 @@ protected:
 	su2double Energy_Reference_Value;
 
 	//Put the trapezoidal maps into variables
-	CTrapezoidalMap rhoe_map[2],Prho_map[2],hs_map[2],Ps_map[2],rhoT_map[2], PT_map[2];
+	CTrapezoidalMap rhoe_map[2], Prho_map[2], hs_map[2], Ps_map[2], rhoT_map[2],
+			PT_map[2];
 
-	su2double StaticEnergy, /*!< \brief Internal Energy. */
-	Entropy, /*!< \brief Entropy. */
-	Enthalpy, /*!< \brief Enthalpy required as separate variable for use in HS tree. */
-	Density, /*!< \brief Density. */
-	Pressure, /*!< \brief Pressure. */
-	SoundSpeed2, /*!< \brief The speed of sound squared. */
-	Temperature, /*!< \brief Temperature. */
-	dPdrho_e, /*!< \brief Fluid derivative DpDd_e. */
-	dPde_rho, /*!< \brief Fluid derivative DpDe_d. */
-	dTdrho_e, /*!< \brief Fluid derivative DTDd_e. */
-	dTde_rho, /*!< \brief Fluid derivative DTDe_d. */
-	Cp, /*!< \brief Specific Heat Capacity at constant pressure. */
-	Mu, /*!< \brief Laminar Viscosity. */
-	dmudrho_T, /*!< \brief Fluid derivative DmuDrho_T */
-	dmudT_rho, /*!< \brief Fluid derivative DmuDT_rho. */
-	Kt, /*!< \brief Thermal Conductivity. */
-	dktdrho_T, /*!< \brief Fluid derivative DktDrho_T.  */
-	dktdT_rho; /*!< \brief Fluid derivative DktDT_rho. */
-
-	vector< su2double > ThermoTables_StaticEnergy[2], /*!< \brief Internal Energy look up table values. */
+	vector<su2double> ThermoTables_StaticEnergy[2], /*!< \brief Internal Energy look up table values. */
 	ThermoTables_Entropy[2], /*!< \brief Entropy look up table values. */
 	ThermoTables_Enthalpy[2], /*!< \brief Enthalpy required as separate variable for use in HS tree look up table values. */
 	ThermoTables_Density[2], /*!< \brief Density look up table values. */
@@ -170,14 +153,12 @@ protected:
 	int LowerI, UpperI, middleI, LowerJ, UpperJ, middleJ;/*!< \brief The i,j indexes (rho, P) of the position of the table search. Can be used as a restart for next search.*/
 	int nTable_Zone_Stations[2]; /*!< \brief Number of nodes in the '2' zones of the LuT*/
 	int nTable_Zone_Triangles[2]; /*!< \brief Number of triangles in the '2' zones of the LuT (must be triangles for now)*/
-	vector< vector <int> > Table_Zone_Triangles[2];  /*!< \brief The triangles in each zone are stored as three intgers (the tree defining data-points)*/
-	vector< vector <int> > Table_Zone_Edges[2]; /*!< \brief Number of edges in the '2' zones of the LuT*/
-
+	vector<vector<int> > Table_Zone_Triangles[2]; /*!< \brief The triangles in each zone are stored as three intgers (the tree defining data-points)*/
+	vector<vector<int> > Table_Zone_Edges[2]; /*!< \brief Number of edges in the '2' zones of the LuT*/
 
 public:
 
-
-
+	CLookUpTable(void);
 	/*!
 	 * \brief Constructor the LUT by reading it in from a file.
 	 * \param[in] Filename - The name of the (.rgp) file from which to load the table
@@ -196,7 +177,8 @@ public:
 	 */
 	void Get_Unique_Edges();
 
-	void Get_Current_Points_From_TrapezoidalMap(CTrapezoidalMap *t_map, su2double x, su2double y);
+	void Get_Current_Points_From_TrapezoidalMap(CTrapezoidalMap *t_map,
+			su2double x, su2double y);
 
 	void SetTDState_rhoe(su2double rho, su2double e);
 
@@ -253,16 +235,16 @@ public:
 
 	void Gaussian_Inverse(int nDim);
 
-
-	void Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x, su2double y, vector< su2double > *ThermoTables_X, vector< su2double > *ThermoTables_Y, std::string grid_var);
-
+	void Interpolate_2D_Bilinear(su2double x, su2double y,
+			vector<su2double> *ThermoTables_X, vector<su2double> *ThermoTables_Y,
+			std::string grid_var);
 
 	/*!
 	 * \brief Use the interpolation coefficients to interpolate a given thermodynamic variable property. (Must calculate the interpolation coefficients first)
 	 * \param[in] interpolant_var - the name of the variable to be interpolated e.g Density
 	 */
 
-	su2double Interpolate_2D_Bilinear(vector< su2double > *ThermoTables_Z);
+	su2double Interpolate_2D_Bilinear(vector<su2double> *ThermoTables_Z);
 
 	/*!
 	 * \brief Load the LUT table from a CFX file format. X axis must be Density, and Y axis pressure. Equal spacing not required.
@@ -290,3 +272,4 @@ public:
 	void RecordState(char* file);
 
 };
+

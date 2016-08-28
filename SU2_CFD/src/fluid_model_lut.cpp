@@ -135,7 +135,7 @@ CTrapezoidalMap::CTrapezoidalMap(vector<su2double> const &x_samples,
 	su2double duration = ((su2double) clock() - (su2double) build_start)
 			/ ((su2double) CLOCKS_PER_SEC);
 	if (rank == MASTER_NODE)
-		cout << duration << " seconds\n";
+		if (rank == MASTER_NODE) cout << duration << " seconds\n";
 }
 
 void CTrapezoidalMap::Find_Containing_Simplex(su2double x, su2double y) {
@@ -204,6 +204,7 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 	LUT_Debug_Mode = false;
 	rank = MASTER_NODE;
 	CurrentPoints.resize(4, 0);
+	LUT_Debug_Mode = config->GetLUT_Debug_Mode();
 
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -370,7 +371,7 @@ void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 
 	//Now use the quadrilateral which contains the point to interpolate
 	//Determine the interpolation coefficients
-	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(rho, e, ThermoTables_Density,
+	Interpolate_2D_Bilinear(rho, e, ThermoTables_Density,
 			ThermoTables_StaticEnergy, "RHOE");
 
 //Interpolate the fluid properties
@@ -395,13 +396,12 @@ void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
 // Check if inputs are in total range (necessary but not sufficient condition)
 	Get_Current_Points_From_TrapezoidalMap(PT_map, P, T);
 	//Determine interpolation coefficients
-	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(P, T, ThermoTables_Pressure,
+	Interpolate_2D_Bilinear(P, T, ThermoTables_Pressure,
 			ThermoTables_Temperature, "PT");
 	//Interpolate the fluid properties
 	Pressure = P;
 	Temperature = T;
 	Density = Interpolate_2D_Bilinear(ThermoTables_Density);
-	cout<<Density<<endl;
 	StaticEnergy = Interpolate_2D_Bilinear(ThermoTables_StaticEnergy);
 	Enthalpy = Interpolate_2D_Bilinear(ThermoTables_Enthalpy);
 	Entropy = Interpolate_2D_Bilinear(ThermoTables_Entropy);
@@ -421,7 +421,7 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 	Get_Current_Points_From_TrapezoidalMap(Prho_map, P, rho);
 
 	//Determine interpolation coefficients
-	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(rho, P, ThermoTables_Density,
+	Interpolate_2D_Bilinear(rho, P, ThermoTables_Density,
 			ThermoTables_Pressure, "PRHO");
 //Interpolate the fluid properties
 	Pressure = P;
@@ -446,7 +446,7 @@ void CLookUpTable::SetEnergy_Prho(su2double P, su2double rho) {
 	Get_Current_Points_From_TrapezoidalMap(Prho_map, P, rho);
 
 //Determine interpolation coefficients
-	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(rho, P, ThermoTables_Density,
+	Interpolate_2D_Bilinear(rho, P, ThermoTables_Density,
 			ThermoTables_Pressure, "PRHO");
 	StaticEnergy = Interpolate_2D_Bilinear(ThermoTables_StaticEnergy);
 	Pressure = P;
@@ -459,7 +459,7 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 	Get_Current_Points_From_TrapezoidalMap(hs_map, h, s);
 
 //Determine interpolation coefficients
-	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(h, s, ThermoTables_Enthalpy,
+	Interpolate_2D_Bilinear(h, s, ThermoTables_Enthalpy,
 			ThermoTables_Entropy, "HS");
 
 //Interpolate the fluid properties
@@ -485,7 +485,7 @@ void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 	Get_Current_Points_From_TrapezoidalMap(Ps_map, P, s);
 
 //Determine interpolation coefficients
-	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(s, P, ThermoTables_Entropy,
+	Interpolate_2D_Bilinear(s, P, ThermoTables_Entropy,
 			ThermoTables_Pressure, "PS");
 
 //Interpolate the fluid properties
@@ -510,7 +510,7 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 
 	Get_Current_Points_From_TrapezoidalMap(rhoT_map, rho, T);
 //Determine the interpolation coefficients
-	Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(rho, T, ThermoTables_Density,
+	Interpolate_2D_Bilinear(rho, T, ThermoTables_Density,
 			ThermoTables_Temperature, "RHOT");
 
 //Interpolate the fluid properties
@@ -531,7 +531,7 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 
 }
 
-void CLookUpTable::Interpolate_2D_Bilinear_Arbitrary_Skew_Coeff(su2double x,
+void CLookUpTable::Interpolate_2D_Bilinear(su2double x,
 		su2double y, vector<su2double> *ThermoTables_X,
 		vector<su2double> *ThermoTables_Y, std::string grid_var) {
 	//The x,y coordinates of the quadrilateral
@@ -683,13 +683,14 @@ void CLookUpTable::LookUpTable_Load_TEC(std::string filename) {
 	while (getline(table, line)) {
 		found = line.find("ZONE");
 		if (found != -1) {
-			cout << line << endl;
+			if (rank == MASTER_NODE and LUT_Debug_Mode)
+			{cout << line << endl;}
 			istringstream in(line);
 //Note down the dimensions of the table
 			int nPoints_in_Zone, nTriangles_in_Zone;
 			string c1, c2, c3, c4;
 			in >> c1 >> c2 >> nPoints_in_Zone >> c3 >> c4 >> nTriangles_in_Zone;
-			cout << nPoints_in_Zone << "  " << nTriangles_in_Zone << endl;
+			if (rank == MASTER_NODE) cout << nPoints_in_Zone << "  " << nTriangles_in_Zone << endl;
 //Create the actual LUT of CThermoLists which is used in the FluidModel
 			nTable_Zone_Stations[zone_scanned] = nPoints_in_Zone;
 			nTable_Zone_Triangles[zone_scanned] = nTriangles_in_Zone;
@@ -809,4 +810,3 @@ void CLookUpTable::NonDimensionalise_Table_Values() {
 		}
 	}
 }
-
