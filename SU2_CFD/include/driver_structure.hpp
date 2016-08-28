@@ -274,12 +274,13 @@ public:
   virtual void SetInitialMesh() { };
 
   /*--- External communication layer ---*/
+  
   su2double Get_Drag();
   su2double Get_Lift();
   su2double Get_Mz();
   unsigned short GetMovingMarker();
   unsigned long GetNumberVertices(unsigned short iMarker);
-  unsigned int GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex);
+  unsigned unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex);
   su2double GetVertexCoordX(unsigned short iMarker, unsigned short iVertex);
   su2double GetVertexCoordY(unsigned short iMarker, unsigned short iVertex);
   su2double GetVertexCoordZ(unsigned short iMarker, unsigned short iVertex);

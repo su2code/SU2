@@ -4010,9 +4010,10 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   char mass_flow_rate[] = ",\"MassFlowRate\"";
   char d_flow_coeff[] = ",\"D(CLift)\",\"D(CDrag)\",\"D(CSideForce)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"D(CFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\"";
   
-  /* Find the markers being monitored and create a header for them */
+  /*--- Find the markers being monitored and create a header for them ---*/
+  
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+    Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
     monitoring_coeff += ",\"CLift_"  + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CDrag_"  + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CSideForce_" + Monitoring_Tag + "\"";
@@ -4028,6 +4029,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   }
 
   char combo_obj[] = ",\"ComboObj\"";
+  
   /*--- Header for the residuals ---*/
   
   char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
@@ -4057,6 +4059,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config) {
   }
   
   /*--- Write the header, case depending ---*/
+  
   switch (config->GetKind_Solver()) {
       
     case EULER : case NAVIER_STOKES: case RANS :
@@ -4233,7 +4236,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
-    su2double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
+    su2double Total_CL = 0.0, Total_CD = 0.0, Total_CSF = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
     Total_CT = 0.0, Total_CQ = 0.0, Total_CFreeSurface = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0, Total_CpDiff = 0.0, Total_HeatFluxDiff = 0.0,
     Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Mdot = 0.0, Total_CFEM = 0.0;
@@ -4266,7 +4269,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double Total_Sens_Press = 0.0, Total_Sens_Temp = 0.0;
     
     /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
-    su2double D_Total_CLift = 0.0, D_Total_CDrag = 0.0, D_Total_CSideForce = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0;
+    su2double D_Total_CL = 0.0, D_Total_CD = 0.0, D_Total_CSF = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0, D_Total_CFy = 0.0, D_Total_CFz = 0.0;
     
     /*--- Residual arrays ---*/
     su2double *residual_flow         = NULL,
@@ -4284,9 +4287,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Coefficients Monitored arrays ---*/
     su2double *aeroelastic_plunge = NULL,
     *aeroelastic_pitch  = NULL,
-    *Surface_CLift      = NULL,
-    *Surface_CDrag      = NULL,
-    *Surface_CSideForce = NULL,
+    *Surface_CL      = NULL,
+    *Surface_CD      = NULL,
+    *Surface_CSF = NULL,
     *Surface_CEff       = NULL,
     *Surface_CFx        = NULL,
     *Surface_CFy        = NULL,
@@ -4347,9 +4350,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Allocate memory for the coefficients being monitored ---*/
     aeroelastic_plunge = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     aeroelastic_pitch  = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CLift      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CDrag      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CSideForce = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CL      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CD      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CSF = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CEff       = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFx        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFy        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
@@ -4386,9 +4389,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
         
         /*--- Flow solution coefficients ---*/
-        Total_CLift       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CLift();
-        Total_CDrag       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CDrag();
-        Total_CSideForce  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CSideForce();
+        Total_CL       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CL();
+        Total_CD       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CD();
+        Total_CSF  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CSF();
         Total_CEff        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CEff();
         Total_CMx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMx();
         Total_CMy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMy();
@@ -4399,9 +4402,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         Total_ComboObj    = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_ComboObj();
 
         if (direct_diff != NO_DERIVATIVE){
-          D_Total_CLift       = SU2_TYPE::GetDerivative(Total_CLift);
-          D_Total_CDrag       = SU2_TYPE::GetDerivative(Total_CDrag);
-          D_Total_CSideForce  = SU2_TYPE::GetDerivative(Total_CSideForce);
+          D_Total_CL       = SU2_TYPE::GetDerivative(Total_CL);
+          D_Total_CD       = SU2_TYPE::GetDerivative(Total_CD);
+          D_Total_CSF  = SU2_TYPE::GetDerivative(Total_CSF);
           D_Total_CEff        = SU2_TYPE::GetDerivative(Total_CEff);
           D_Total_CMx         = SU2_TYPE::GetDerivative(Total_CMx);
           D_Total_CMy         = SU2_TYPE::GetDerivative(Total_CMy);
@@ -4425,8 +4428,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           Total_CNearFieldOF  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CNearFieldOF();
           
           /*--- Note that there is a redefinition of the nearfield based functionals ---*/
-          Total_CEquivArea    = config[val_iZone]->GetWeightCd()*Total_CDrag + (1.0-config[val_iZone]->GetWeightCd())*Total_CEquivArea;
-          Total_CNearFieldOF  = config[val_iZone]->GetWeightCd()*Total_CDrag + (1.0-config[val_iZone]->GetWeightCd())*Total_CNearFieldOF;
+          Total_CEquivArea    = config[val_iZone]->GetWeightCd()*Total_CD + (1.0-config[val_iZone]->GetWeightCd())*Total_CEquivArea;
+          Total_CNearFieldOF  = config[val_iZone]->GetWeightCd()*Total_CD + (1.0-config[val_iZone]->GetWeightCd())*Total_CNearFieldOF;
         }
         
         if (inv_design) {
@@ -4453,9 +4456,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         if (output_per_surface) {
           /*--- Look over the markers being monitored and get the desired values ---*/
           for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-            Surface_CLift[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CLift(iMarker_Monitoring);
-            Surface_CDrag[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CDrag(iMarker_Monitoring);
-            Surface_CSideForce[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSideForce(iMarker_Monitoring);
+            Surface_CL[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CL(iMarker_Monitoring);
+            Surface_CD[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CD(iMarker_Monitoring);
+            Surface_CSF[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSF(iMarker_Monitoring);
             Surface_CEff[iMarker_Monitoring]       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff(iMarker_Monitoring);
             Surface_CFx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx(iMarker_Monitoring);
             Surface_CFy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy(iMarker_Monitoring);
@@ -4702,35 +4705,35 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             /*--- Direct coefficients ---*/
             SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
-                     Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
+                     Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                      Total_CFz, Total_CEff);
             if (direct_diff != NO_DERIVATIVE){
               SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
-                       D_Total_CLift, D_Total_CDrag, D_Total_CSideForce, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
+                       D_Total_CL, D_Total_CD, D_Total_CSF, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
                        D_Total_CFz, D_Total_CEff);
             }
             if (thermal)
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy,
+              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy,
                        Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat);
             if (equiv_area)
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CEquivArea, Total_CNearFieldOF);
+              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CEquivArea, Total_CNearFieldOF);
             if (inv_design) {
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CpDiff);
+              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CpDiff);
               Total_CpDiff  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CpDiff();
               if (thermal) {
-                SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat, Total_CpDiff, Total_HeatFluxDiff);
+                SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_Heat, Total_MaxHeat, Total_CpDiff, Total_HeatFluxDiff);
               }
             }
             if (rotating_frame)
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx,
+              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx,
                        Total_CMy, Total_CMz, Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CMerit, Total_CT, Total_CQ);
             
             if (freesurface) {
-              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
+              SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                        Total_CFz, Total_CEff, Total_CFreeSurface);
             }
             //            if (fluid_structure)
-            //              SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CLift, Total_CDrag, Total_CSideForce, Total_CMx, Total_CMy, Total_CMz,
+            //              SPRINTF (direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz,
             //                       Total_CFx, Total_CFy, Total_CFz, Total_CEff, Total_CFEA);
             
             if (aeroelastic) {
@@ -4752,15 +4755,15 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
                 //Append one by one the surface coeff to monitoring coeff. (Think better way do this, maybe use string)
                 if (iMarker_Monitoring == 0) {
-                  SPRINTF(monitoring_coeff, ", %12.10f", Surface_CLift[iMarker_Monitoring]);
+                  SPRINTF(monitoring_coeff, ", %12.10f", Surface_CL[iMarker_Monitoring]);
                 }
                 else {
-                  SPRINTF(surface_coeff, ", %12.10f", Surface_CLift[iMarker_Monitoring]);
+                  SPRINTF(surface_coeff, ", %12.10f", Surface_CL[iMarker_Monitoring]);
                   strcat(monitoring_coeff, surface_coeff);
                 }
-                SPRINTF(surface_coeff, ", %12.10f", Surface_CDrag[iMarker_Monitoring]);
+                SPRINTF(surface_coeff, ", %12.10f", Surface_CD[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
-                SPRINTF(surface_coeff, ", %12.10f", Surface_CSideForce[iMarker_Monitoring]);
+                SPRINTF(surface_coeff, ", %12.10f", Surface_CSF[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", Surface_CEff[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
@@ -4944,8 +4947,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   }
                   
                   cout << "    D_CLift(Total)" << "    D_CDrag(Total)" << "      D_CMz(Total)" <<"     D_CEff(Total)" << endl;
-                  cout.width(18); cout << D_Total_CLift;
-                  cout.width(18); cout << D_Total_CDrag;
+                  cout.width(18); cout << D_Total_CL;
+                  cout.width(18); cout << D_Total_CD;
                   cout.width(18); cout << D_Total_CMz;
                   cout.width(18); cout << D_Total_CEff;
                   cout << endl << "-------------------------------------------------------------------------" << endl;
@@ -5376,11 +5379,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.width(15); cout << Total_CQ;
             cout.unsetf(ios_base::floatfield);
           }
-          else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); cout.width(15);
+          else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); cout.width(15);
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout << Total_CNearFieldOF; }
-          else if (freesurface) { cout.width(15); cout << Total_CLift; cout.width(15); cout << Total_CFreeSurface; }
+          else if (freesurface) { cout.width(15); cout << Total_CL; cout.width(15); cout << Total_CFreeSurface; }
           else if (turbo) {
             cout.setf(ios::scientific, ios::floatfield);
             switch (config[ZONE_0]->GetKind_TurboPerf(0)) {
@@ -5397,7 +5400,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             cout.unsetf(ios_base::floatfield);
           }
-          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); }
+          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); }
           if (aeroelastic) {
             cout.setf(ios::scientific, ios::floatfield);
             cout.width(15); cout << aeroelastic_plunge[0]; //Only output the first marker being monitored to the console.
@@ -5450,7 +5453,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout << Total_CQ;
             cout.unsetf(ios_base::floatfield);
           }
-          else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); cout.width(15);
+          else if (equiv_area) { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); cout.width(15);
             cout.precision(4);
             cout.setf(ios::scientific, ios::floatfield);
             cout << Total_CNearFieldOF; }
@@ -5470,7 +5473,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
             cout.unsetf(ios_base::floatfield);
           }
-          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CLift)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CDrag)); }
+          else { cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD)); }
           
           if (aeroelastic) {
             cout.setf(ios::scientific, ios::floatfield);
@@ -5491,7 +5494,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             cout.setf(ios::fixed, ios::floatfield);
             cout.width(13); cout << log10(residual_flow[0]);
             cout.width(14); cout << log10(residual_levelset[0]);
-            cout.width(15); cout << Total_CLift;
+            cout.width(15); cout << Total_CL;
             cout.width(14); cout << Total_CFreeSurface;
             
             cout << endl;
@@ -5685,9 +5688,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     delete [] residual_adjturbulent;
     delete [] residual_adjlevelset;
     
-    delete [] Surface_CLift;
-    delete [] Surface_CDrag;
-    delete [] Surface_CSideForce;
+    delete [] Surface_CL;
+    delete [] Surface_CD;
+    delete [] Surface_CSF;
     delete [] Surface_CEff;
     delete [] Surface_CFx;
     delete [] Surface_CFy;
@@ -5827,10 +5830,36 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     /*--- Initialize variables to store information from all domains (direct solution) ---*/
     
-    su2double Total_CLift = 0.0, Total_CDrag = 0.0, Total_CSideForce = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0,
-    Inv_CLift = 0.0, Inv_CDrag = 0.0, Inv_CSideForce = 0.0, Inv_CMx = 0.0, Inv_CMy = 0.0, Inv_CMz = 0.0, Inv_CEff = 0.0, Inv_CFx = 0.0, Inv_CFy = 0.0, Inv_CFz = 0.0,
-    *Surface_CLift = NULL, *Surface_CDrag = NULL, *Surface_CSideForce = NULL, *Surface_CEff = NULL, *Surface_CFx = NULL, *Surface_CFy = NULL,  *Surface_CFz = NULL, *Surface_CMx = NULL, *Surface_CMy = NULL, *Surface_CMz = NULL,
-    *Surface_CLift_Inv = NULL, *Surface_CDrag_Inv = NULL, *Surface_CSideForce_Inv = NULL, *Surface_CEff_Inv = NULL, *Surface_CFx_Inv = NULL, *Surface_CFy_Inv = NULL,  *Surface_CFz_Inv = NULL, *Surface_CMx_Inv = NULL, *Surface_CMy_Inv = NULL, *Surface_CMz_Inv = NULL;
+    su2double Total_CL = 0.0, Total_CD = 0.0, Total_CSF = 0.0,
+				Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
+				Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Inv_CLift = 0.0,
+				Inv_CDrag = 0.0, Inv_CSideForce = 0.0, Inv_CMx = 0.0, Inv_CMy = 0.0,
+				Inv_CMz = 0.0, Inv_CEff = 0.0, Inv_CFx = 0.0, Inv_CFy = 0.0, Inv_CFz =
+    0.0, 		 Mnt_CLift = 0.0,
+    Mnt_CDrag = 0.0, Mnt_CSideForce = 0.0, Mnt_CMx = 0.0, Mnt_CMy = 0.0,
+    Mnt_CMz = 0.0, Mnt_CEff = 0.0, Mnt_CFx = 0.0, Mnt_CFy = 0.0, Mnt_CFz =
+    0.0, Visc_CLift = 0.0,
+    Visc_CDrag = 0.0, Visc_CSideForce = 0.0, Visc_CMx = 0.0, Visc_CMy = 0.0,
+    Visc_CMz = 0.0, Visc_CEff = 0.0, Visc_CFx = 0.0, Visc_CFy = 0.0, Visc_CFz =
+    0.0, *Surface_CL = NULL, *Surface_CD = NULL,
+				*Surface_CSF = NULL, *Surface_CEff = NULL, *Surface_CFx = NULL,
+				*Surface_CFy = NULL, *Surface_CFz = NULL,
+				*Surface_CMx = NULL, *Surface_CMy = NULL, *Surface_CMz = NULL,
+				*Surface_CL_Inv = NULL,
+				*Surface_CD_Inv = NULL, *Surface_CSF_Inv = NULL,
+				*Surface_CEff_Inv = NULL, *Surface_CFx_Inv = NULL, *Surface_CFy_Inv =
+    NULL, *Surface_CFz_Inv = NULL, *Surface_CMx_Inv = NULL,
+				*Surface_CMy_Inv = NULL, *Surface_CMz_Inv = NULL,
+				*Surface_CL_Visc = NULL,
+    *Surface_CD_Visc = NULL, *Surface_CSF_Visc = NULL,
+    *Surface_CEff_Visc = NULL, *Surface_CFx_Visc = NULL, *Surface_CFy_Visc =
+    NULL, *Surface_CFz_Visc = NULL, *Surface_CMx_Visc = NULL,
+    *Surface_CMy_Visc = NULL, *Surface_CMz_Visc = NULL,
+    *Surface_CL_Mnt = NULL,
+    *Surface_CD_Mnt = NULL, *Surface_CSF_Mnt = NULL,
+    *Surface_CEff_Mnt = NULL, *Surface_CFx_Mnt = NULL, *Surface_CFy_Mnt =
+    NULL, *Surface_CFz_Mnt = NULL, *Surface_CMx_Mnt = NULL,
+    *Surface_CMy_Mnt = NULL, *Surface_CMz_Mnt = NULL;
     
     /*--- WARNING: when compiling on Windows, ctime() is not available. Comment out
      the two lines below that use the dt variable. ---*/
@@ -5839,9 +5868,9 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     
     /*--- Allocate memory for the coefficients being monitored ---*/
     
-    Surface_CLift      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CDrag      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CSideForce = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CL      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CD      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CSF = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CEff       = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFx        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFy        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
@@ -5850,9 +5879,9 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Surface_CMy        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMz        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     
-    Surface_CLift_Inv      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CDrag_Inv      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
-    Surface_CSideForce_Inv = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CL_Inv      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CD_Inv      = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CSF_Inv = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CEff_Inv       = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFx_Inv        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CFy_Inv        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
@@ -5861,11 +5890,36 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Surface_CMy_Inv        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMz_Inv        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     
+    Surface_CL_Visc = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CD_Visc = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CSF_Visc =
+				new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CEff_Visc = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFx_Visc = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFy_Visc = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFz_Visc = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMx_Visc = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMy_Visc = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMz_Visc = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    
+    
+    Surface_CL_Mnt = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CD_Mnt = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CSF_Mnt =
+				new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CEff_Mnt = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFx_Mnt = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFy_Mnt = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CFz_Mnt = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMx_Mnt = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMy_Mnt = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    Surface_CMz_Mnt = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+
     /*--- Flow solution coefficients ---*/
     
-    Total_CLift       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CLift();
-    Total_CDrag       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CDrag();
-    Total_CSideForce  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CSideForce();
+    Total_CL       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CL();
+    Total_CD       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CD();
+    Total_CSF      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CSF();
     Total_CEff        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CEff();
     Total_CMx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMx();
     Total_CMy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMy();
@@ -5874,44 +5928,184 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Total_CFy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
     Total_CFz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
     
-    /*--- Flow inviscid solution coefficients ---*/
+    /*--- Flow viscous solution coefficients ---*/
     
-    Inv_CLift       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CLift_Inv();
-    Inv_CDrag       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CDrag_Inv();
-    Inv_CSideForce  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CSideForce_Inv();
-    Inv_CEff        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CEff_Inv();
-    Inv_CMx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMx_Inv();
-    Inv_CMy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMy_Inv();
-    Inv_CMz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMz_Inv();
-    Inv_CFx         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFx_Inv();
-    Inv_CFy         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFy_Inv();
-    Inv_CFz         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFz_Inv();
+    Visc_CLift =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CL_Visc();
+    Visc_CDrag =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CD_Visc();
+    Visc_CSideForce =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CSF_Visc();
+    Visc_CEff =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CEff_Visc();
+    Visc_CMx =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMx_Visc();
+    Visc_CMy =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMy_Visc();
+    Visc_CMz =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMz_Visc();
+    Visc_CFx =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFx_Visc();
+    Visc_CFy =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFy_Visc();
+    Visc_CFz =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFz_Visc();
+    
+    /*--- Flow momentum solution coefficients ---*/
+    
+    Mnt_CLift =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CL_Mnt();
+    Mnt_CDrag =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CD_Mnt();
+    Mnt_CSideForce =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CSF_Mnt();
+    Mnt_CEff =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CEff_Mnt();
+    Mnt_CMx =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMx_Mnt();
+    Mnt_CMy =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMy_Mnt();
+    Mnt_CMz =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMz_Mnt();
+    Mnt_CFx =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFx_Mnt();
+    Mnt_CFy =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFy_Mnt();
+    Mnt_CFz =
+				solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFz_Mnt();
+    
     
     /*--- Look over the markers being monitored and get the desired values ---*/
     
-    for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-      Surface_CLift[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CLift(iMarker_Monitoring);
-      Surface_CDrag[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CDrag(iMarker_Monitoring);
-      Surface_CSideForce[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSideForce(iMarker_Monitoring);
-      Surface_CEff[iMarker_Monitoring]       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff(iMarker_Monitoring);
-      Surface_CFx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx(iMarker_Monitoring);
-      Surface_CFy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy(iMarker_Monitoring);
-      Surface_CFz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz(iMarker_Monitoring);
-      Surface_CMx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx(iMarker_Monitoring);
-      Surface_CMy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy(iMarker_Monitoring);
-      Surface_CMz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz(iMarker_Monitoring);
+    for (iMarker_Monitoring = 0;
+         iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring();
+         iMarker_Monitoring++) {
+      Surface_CL[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CL(
+                                                                       iMarker_Monitoring);
+      Surface_CD[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CD(
+                                                                       iMarker_Monitoring);
+      Surface_CSF[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSF(
+                                                                        iMarker_Monitoring);
+      Surface_CEff[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff(
+                                                                         iMarker_Monitoring);
+      Surface_CMx[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx(
+                                                                        iMarker_Monitoring);
+      Surface_CMy[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy(
+                                                                        iMarker_Monitoring);
+      Surface_CMz[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz(
+                                                                        iMarker_Monitoring);
+      Surface_CFx[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx(
+                                                                        iMarker_Monitoring);
+      Surface_CFy[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy(
+                                                                        iMarker_Monitoring);
+      Surface_CFz[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz(
+                                                                        iMarker_Monitoring);
       
-      Surface_CLift_Inv[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CLift_Inv(iMarker_Monitoring);
-      Surface_CDrag_Inv[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CDrag_Inv(iMarker_Monitoring);
-      Surface_CSideForce_Inv[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSideForce_Inv(iMarker_Monitoring);
-      Surface_CEff_Inv[iMarker_Monitoring]       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff_Inv(iMarker_Monitoring);
-      Surface_CFx_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx_Inv(iMarker_Monitoring);
-      Surface_CFy_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy_Inv(iMarker_Monitoring);
-      Surface_CFz_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz_Inv(iMarker_Monitoring);
-      Surface_CMx_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx_Inv(iMarker_Monitoring);
-      Surface_CMy_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy_Inv(iMarker_Monitoring);
-      Surface_CMz_Inv[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz_Inv(iMarker_Monitoring);
+      Surface_CL_Inv[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CL_Inv(
+                                                                           iMarker_Monitoring);
+      Surface_CD_Inv[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CD_Inv(
+                                                                           iMarker_Monitoring);
+      Surface_CSF_Inv[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSF_Inv(
+                                                                            iMarker_Monitoring);
+      Surface_CEff_Inv[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff_Inv(
+                                                                             iMarker_Monitoring);
+      Surface_CMx_Inv[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx_Inv(
+                                                                            iMarker_Monitoring);
+      Surface_CMy_Inv[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy_Inv(
+                                                                            iMarker_Monitoring);
+      Surface_CMz_Inv[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz_Inv(
+                                                                            iMarker_Monitoring);
+      Surface_CFx_Inv[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx_Inv(
+                                                                            iMarker_Monitoring);
+      Surface_CFy_Inv[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy_Inv(
+                                                                            iMarker_Monitoring);
+      Surface_CFz_Inv[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz_Inv(
+                                                                            iMarker_Monitoring);
+      
+      Surface_CL_Visc[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CL_Visc(
+                                                                            iMarker_Monitoring);
+      Surface_CD_Visc[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CD_Visc(
+                                                                            iMarker_Monitoring);
+      Surface_CSF_Visc[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSF_Visc(
+                                                                             iMarker_Monitoring);
+      Surface_CEff_Visc[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff_Visc(
+                                                                              iMarker_Monitoring);
+      Surface_CMx_Visc[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx_Visc(
+                                                                             iMarker_Monitoring);
+      Surface_CMy_Visc[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy_Visc(
+                                                                             iMarker_Monitoring);
+      Surface_CMz_Visc[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz_Visc(
+                                                                             iMarker_Monitoring);
+      Surface_CFx_Visc[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx_Visc(
+                                                                             iMarker_Monitoring);
+      Surface_CFy_Visc[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy_Visc(
+                                                                             iMarker_Monitoring);
+      Surface_CFz_Visc[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz_Visc(
+                                                                             iMarker_Monitoring);
+      
+      Surface_CL_Mnt[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CL_Mnt(
+                                                                           iMarker_Monitoring);
+      Surface_CD_Mnt[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CD_Mnt(
+                                                                           iMarker_Monitoring);
+      Surface_CSF_Mnt[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSF_Mnt(
+                                                                            iMarker_Monitoring);
+      Surface_CEff_Mnt[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff_Mnt(
+                                                                             iMarker_Monitoring);
+      Surface_CMx_Mnt[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx_Mnt(
+                                                                            iMarker_Monitoring);
+      Surface_CMy_Mnt[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy_Mnt(
+                                                                            iMarker_Monitoring);
+      Surface_CMz_Mnt[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz_Mnt(
+                                                                            iMarker_Monitoring);
+      Surface_CFx_Mnt[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx_Mnt(
+                                                                            iMarker_Monitoring);
+      Surface_CFy_Mnt[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy_Mnt(
+                                                                            iMarker_Monitoring);
+      Surface_CFz_Mnt[iMarker_Monitoring] =
+      solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz_Mnt(
+                                                                            iMarker_Monitoring);
+      
     }
+    
     
     /*--- Write file name with extension ---*/
     
@@ -6242,271 +6436,630 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     Breakdown_file << "\n" << "\n" <<"Forces breakdown:" << "\n" << "\n";
     
     Breakdown_file << "Total CL:    ";
-    Breakdown_file.width(11); Breakdown_file << Total_CLift;
-    Breakdown_file << " | Pressure Component (";
-    Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Inv_CLift*100.0)/(Total_CLift+EPS));
+    Breakdown_file.width(11);
+    Breakdown_file << Total_CL;
+    Breakdown_file << " | Pressure (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Inv_CLift * 100.0) / (Total_CL + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11); Breakdown_file << Inv_CLift;
-    Breakdown_file << " | Friction Component (";
-    Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Inv_CLift*100.0)/(Total_CLift+EPS));
+    Breakdown_file.width(11);
+    Breakdown_file << Inv_CLift;
+    Breakdown_file << " | Friction (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Visc_CLift * 100.0) / (Total_CL + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11); Breakdown_file << Total_CLift-Inv_CLift << "\n";
+    Breakdown_file.width(11);
+    Breakdown_file << Visc_CLift;
+    Breakdown_file << " | Momentum (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Mnt_CLift * 100.0) / (Total_CL + EPS));
+    Breakdown_file << "%): ";
+    Breakdown_file.width(11);
+    Breakdown_file << Mnt_CLift << "\n";
     
     Breakdown_file << "Total CD:    ";
-    Breakdown_file.width(11); Breakdown_file << Total_CDrag;
-    Breakdown_file << " | Pressure Component (";
-    Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Inv_CDrag*100.0)/(Total_CDrag+EPS)) << "%): ";;
-    Breakdown_file.width(11); Breakdown_file << Inv_CDrag;
-    Breakdown_file << " | Friction Component (";
-    Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Inv_CDrag*100.0)/(Total_CDrag+EPS));
-    Breakdown_file << "%): ";
-    Breakdown_file.width(11); Breakdown_file << Total_CDrag-Inv_CDrag << "\n";
+    Breakdown_file.width(11);
+    Breakdown_file << Total_CD;
+    Breakdown_file << " | Pressure (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Inv_CDrag * 100.0) / (Total_CD + EPS)) << "%): ";
+    Breakdown_file.width(11);
+    Breakdown_file << Inv_CDrag;
+    Breakdown_file << " | Friction (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Visc_CDrag * 100.0) / (Total_CD + EPS)) << "%): ";
+    Breakdown_file.width(11);
+    Breakdown_file << Visc_CDrag;
+    Breakdown_file << " | Momentum (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Mnt_CDrag * 100.0) / (Total_CD + EPS)) << "%): ";
+    Breakdown_file.width(11);
+    Breakdown_file << Mnt_CDrag << "\n";
     
     if (nDim == 3) {
       Breakdown_file << "Total CSF:   ";
-      Breakdown_file.width(11); Breakdown_file << Total_CSideForce;
-      Breakdown_file << " | Pressure Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Inv_CSideForce*100.0)/(Total_CSideForce+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Total_CSF;
+      Breakdown_file << " | Pressure (";
+      Breakdown_file.width(5);
+      Breakdown_file << SU2_TYPE::Int((Inv_CSideForce * 100.0) / (Total_CSF + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Inv_CSideForce;
-      Breakdown_file << " | Friction Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Inv_CSideForce*100.0)/(Total_CSideForce+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Inv_CSideForce;
+      Breakdown_file << " | Friction (";
+      Breakdown_file.width(5);
+      Breakdown_file <<  SU2_TYPE::Int((Visc_CSideForce * 100.0) / (Total_CSF + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Total_CSideForce-Inv_CSideForce << "\n";
+      Breakdown_file.width(11);
+      Breakdown_file << Visc_CSideForce;
+      Breakdown_file << " | Momentum (";
+      Breakdown_file.width(5);
+      Breakdown_file << SU2_TYPE::Int((Mnt_CSideForce * 100.0) / (Total_CSF + EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11);
+      Breakdown_file << Mnt_CSideForce << "\n";
     }
     
     Breakdown_file << "Total CL/CD: ";
-    Breakdown_file.width(11); Breakdown_file << Total_CEff;
-    Breakdown_file << " | Pressure Component (";
-    Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Inv_CEff*100.0)/(Total_CEff+EPS));
+    Breakdown_file.width(11);
+    Breakdown_file << Total_CEff;
+    Breakdown_file << " | Pressure (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Inv_CEff * 100.0) / (Total_CEff + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11); Breakdown_file << Inv_CEff;
-    Breakdown_file << " | Friction Component (";
-    Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Inv_CEff*100.0)/(Total_CEff+EPS));
+    Breakdown_file.width(11);
+    Breakdown_file << Inv_CEff;
+    Breakdown_file << " | Friction (";
+    Breakdown_file.width(5);
+    Breakdown_file <<  SU2_TYPE::Int((Visc_CEff * 100.0) / (Total_CEff + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11); Breakdown_file << Total_CEff-Inv_CEff << "\n";
+    Breakdown_file.width(11);
+    Breakdown_file << Visc_CEff;
+    Breakdown_file << " | Momentum (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Mnt_CEff * 100.0) / (Total_CEff + EPS));
+    Breakdown_file << "%): ";
+    Breakdown_file.width(11);
+    Breakdown_file << Mnt_CEff << "\n";
     
     if (nDim == 3) {
       Breakdown_file << "Total CMx:   ";
-      Breakdown_file.width(11); Breakdown_file << Total_CMx;
-      Breakdown_file << " | Pressure Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Inv_CMx*100.0)/(Total_CMx+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Total_CMx;
+      Breakdown_file << " | Pressure (";
+      Breakdown_file.width(5);
+      Breakdown_file << SU2_TYPE::Int((Inv_CMx * 100.0) / (Total_CMx + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Inv_CMx;
-      Breakdown_file << " | Friction Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Inv_CMx*100.0)/(Total_CMx+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Inv_CMx;
+      Breakdown_file << " | Friction (";
+      Breakdown_file.width(5);
+      Breakdown_file << SU2_TYPE::Int((Visc_CMx * 100.0) / (Total_CMx + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Total_CMx-Inv_CMx << "\n";
+      Breakdown_file.width(11);
+      Breakdown_file << Visc_CMx;
+      Breakdown_file << " | Momentum (";
+      Breakdown_file.width(5);
+      Breakdown_file << SU2_TYPE::Int((Mnt_CMx * 100.0) / (Total_CMx + EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11);
+      Breakdown_file << Mnt_CMx << "\n";
       
       Breakdown_file << "Total CMy:   ";
-      Breakdown_file.width(11); Breakdown_file << Total_CMy;
-      Breakdown_file << " | Pressure Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Inv_CMy*100.0)/(Total_CMy+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Total_CMy;
+      Breakdown_file << " | Pressure (";
+      Breakdown_file.width(5);
+      Breakdown_file << SU2_TYPE::Int((Inv_CMy * 100.0) / (Total_CMy + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Inv_CMy;
-      Breakdown_file << " | Friction Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Inv_CMy*100.0)/(Total_CMy+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Inv_CMy;
+      Breakdown_file << " | Friction (";
+      Breakdown_file.width(5);
+      Breakdown_file << SU2_TYPE::Int((Visc_CMy * 100.0) / (Total_CMy + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Total_CMy-Inv_CMy << "\n";
+      Breakdown_file.width(11);
+      Breakdown_file << Visc_CMy;
+      Breakdown_file << " | Momentum (";
+      Breakdown_file.width(5);
+      Breakdown_file << SU2_TYPE::Int((Mnt_CMz * 100.0) / (Total_CMz + EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11);
+      Breakdown_file << Mnt_CMy << "\n";
     }
     
     Breakdown_file << "Total CMz:   ";
-    Breakdown_file.width(11); Breakdown_file << Total_CMz;
-    Breakdown_file << " | Pressure Component (";
-    Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Inv_CMz*100.0)/(Total_CMz+EPS));
+    Breakdown_file.width(11);
+    Breakdown_file << Total_CMz;
+    Breakdown_file << " | Pressure (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Inv_CMz * 100.0) / (Total_CMz + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11); Breakdown_file << Inv_CMz;
-    Breakdown_file << " | Friction Component (";
-    Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Inv_CMz*100.0)/(Total_CMz+EPS));
+    Breakdown_file.width(11);
+    Breakdown_file << Inv_CMz;
+    Breakdown_file << " | Friction (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Visc_CMz * 100.0) / (Total_CMz + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11); Breakdown_file << Total_CMz-Inv_CMz << "\n";
+    Breakdown_file.width(11);
+    Breakdown_file << Visc_CMz;
+    Breakdown_file << " | Momentum (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Mnt_CMz * 100.0) / (Total_CMz + EPS));
+    Breakdown_file << "%): ";
+    Breakdown_file.width(11);
+    Breakdown_file << Mnt_CMz << "\n";
     
     Breakdown_file << "Total CFx:   ";
-    Breakdown_file.width(11); Breakdown_file << Total_CFx;
-    Breakdown_file << " | Pressure Component (";
-    Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Inv_CFx*100.0)/(Total_CFx+EPS));
+    Breakdown_file.width(11);
+    Breakdown_file << Total_CFx;
+    Breakdown_file << " | Pressure (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Inv_CFx * 100.0) / (Total_CFx + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11); Breakdown_file << Inv_CFx;
-    Breakdown_file << " | Friction Component (";
-    Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Inv_CFx*100.0)/(Total_CFx+EPS));
+    Breakdown_file.width(11);
+    Breakdown_file << Inv_CFx;
+    Breakdown_file << " | Friction (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Visc_CFx * 100.0) / (Total_CFx + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11); Breakdown_file << Total_CFx-Inv_CFx << "\n";
+    Breakdown_file.width(11);
+    Breakdown_file << Visc_CFx;
+    Breakdown_file << " | Momentum (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Mnt_CFx * 100.0) / (Total_CFx + EPS));
+    Breakdown_file << "%): ";
+    Breakdown_file.width(11);
+    Breakdown_file << Mnt_CFx << "\n";
     
     Breakdown_file << "Total CFy:   ";
-    Breakdown_file.width(11); Breakdown_file << Total_CFy;
-    Breakdown_file << " | Pressure Component (";
-    Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Inv_CFy*100.0)/(Total_CFy+EPS));
+    Breakdown_file.width(11);
+    Breakdown_file << Total_CFy;
+    Breakdown_file << " | Pressure (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Inv_CFy * 100.0) / (Total_CFy + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11); Breakdown_file << Inv_CFy;
-    Breakdown_file << " | Friction Component (";
-    Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Inv_CFy*100.0)/(Total_CFy+EPS));
+    Breakdown_file.width(11);
+    Breakdown_file << Inv_CFy;
+    Breakdown_file << " | Friction (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Visc_CFy * 100.0) / (Total_CFy + EPS));
     Breakdown_file << "%): ";
-    Breakdown_file.width(11); Breakdown_file << Total_CFy-Inv_CFy << "\n";
+    Breakdown_file.width(11);
+    Breakdown_file << Visc_CFy;
+    Breakdown_file << " | Momentum (";
+    Breakdown_file.width(5);
+    Breakdown_file << SU2_TYPE::Int((Mnt_CFy * 100.0) / (Total_CFy + EPS));
+    Breakdown_file << "%): ";
+    Breakdown_file.width(11);
+    Breakdown_file << Mnt_CFy << "\n";
     
     if (nDim == 3) {
       Breakdown_file << "Total CFz:   ";
-      Breakdown_file.width(11); Breakdown_file << Total_CFz;
-      Breakdown_file << " | Pressure Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Inv_CFz*100.0)/(Total_CFz+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Total_CFz;
+      Breakdown_file << " | Pressure (";
+      Breakdown_file.width(5);
+      Breakdown_file << SU2_TYPE::Int((Inv_CFz * 100.0) / (Total_CFz + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Inv_CFz;
-      Breakdown_file << " | Friction Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Inv_CFz*100.0)/(Total_CFz+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Inv_CFz;
+      Breakdown_file << " | Friction (";
+      Breakdown_file.width(5);
+      Breakdown_file << SU2_TYPE::Int((Visc_CFz * 100.0) / (Total_CFz + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Total_CFz-Inv_CFz << "\n";
+      Breakdown_file.width(11);
+      Breakdown_file << Visc_CFz;
+      Breakdown_file << " | Momentum (";
+      Breakdown_file.width(5);
+      Breakdown_file << SU2_TYPE::Int((Mnt_CFz * 100.0) / (Total_CFz + EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11);
+      Breakdown_file << Mnt_CFz << "\n";
     }
     
     Breakdown_file << "\n" << "\n";
     
-    for (iMarker_Monitoring = 0; iMarker_Monitoring < config[val_iZone]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    for (iMarker_Monitoring = 0;
+         iMarker_Monitoring < config[val_iZone]->GetnMarker_Monitoring();
+         iMarker_Monitoring++) {
       
-      Breakdown_file << "Surface name: " << config[val_iZone]->GetMarker_Monitoring(iMarker_Monitoring) << "\n" << "\n";
+      Breakdown_file << "Surface name: "
+      << config[val_iZone]->GetMarker_Monitoring_TagBound(
+                                                          iMarker_Monitoring) << "\n" << "\n";
       
       Breakdown_file << "Total CL    (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CLift[iMarker_Monitoring]*100.0)/(Total_CLift+EPS));
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CL[iMarker_Monitoring] * 100.0)
+                       / (Total_CL + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CLift[iMarker_Monitoring];
-      Breakdown_file << " | Pressure Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CLift_Inv[iMarker_Monitoring]*100.0)/(Surface_CLift[iMarker_Monitoring]+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Surface_CL[iMarker_Monitoring];
+      Breakdown_file << " | Pressure (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CL_Inv[iMarker_Monitoring] * 100.0)
+                       / (Surface_CL[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CLift_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Friction Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Surface_CLift_Inv[iMarker_Monitoring]*100.0)/(Surface_CLift[iMarker_Monitoring]+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Surface_CL_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Friction (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CL_Visc[iMarker_Monitoring] * 100.0)
+                       / (Surface_CL[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CLift[iMarker_Monitoring]-Surface_CLift_Inv[iMarker_Monitoring] << "\n";
+      Breakdown_file.width(11);
+      Breakdown_file << Surface_CL_Visc[iMarker_Monitoring];
+      Breakdown_file << " | Momentum (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CL_Mnt[iMarker_Monitoring] * 100.0)
+                       / (Surface_CL[iMarker_Monitoring] + EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11);
+      Breakdown_file << Surface_CL_Mnt[iMarker_Monitoring] << "\n";
       
       Breakdown_file << "Total CD    (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CDrag[iMarker_Monitoring]*100.0)/(Total_CDrag+EPS));
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CD[iMarker_Monitoring] * 100.0)
+                       / (Total_CD + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CDrag[iMarker_Monitoring];
-      Breakdown_file << " | Pressure Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CDrag_Inv[iMarker_Monitoring]*100.0)/(Surface_CDrag[iMarker_Monitoring]+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Surface_CD[iMarker_Monitoring];
+      Breakdown_file << " | Pressure (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CD_Inv[iMarker_Monitoring] * 100.0)
+                       / (Surface_CD[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CDrag_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Friction Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Surface_CDrag_Inv[iMarker_Monitoring]*100.0)/(Surface_CDrag[iMarker_Monitoring]+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Surface_CD_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Friction (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CD_Visc[iMarker_Monitoring] * 100.0)
+                       / (Surface_CD[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CDrag[iMarker_Monitoring]-Surface_CDrag_Inv[iMarker_Monitoring] << "\n";
+      Breakdown_file.width(11);
+      Breakdown_file << Surface_CD_Visc[iMarker_Monitoring];
+      Breakdown_file << " | Momentum (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CD_Mnt[iMarker_Monitoring] * 100.0)
+                       / (Surface_CD[iMarker_Monitoring] + EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11);
+      Breakdown_file << Surface_CD_Mnt[iMarker_Monitoring] << "\n";
       
       if (nDim == 3) {
         Breakdown_file << "Total CSF   (";
-        Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CSideForce[iMarker_Monitoring]*100.0)/(Total_CSideForce+EPS));
+        Breakdown_file.width(5);
+        Breakdown_file
+        << SU2_TYPE::Int(
+                         (Surface_CSF[iMarker_Monitoring] * 100.0)
+                         / (Total_CSF + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11); Breakdown_file << Surface_CSideForce[iMarker_Monitoring];
-        Breakdown_file << " | Pressure Component (";
-        Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CSideForce_Inv[iMarker_Monitoring]*100.0)/(Surface_CSideForce[iMarker_Monitoring]+EPS));
+        Breakdown_file.width(11);
+        Breakdown_file << Surface_CSF[iMarker_Monitoring];
+        Breakdown_file << " | Pressure (";
+        Breakdown_file.width(5);
+        Breakdown_file
+        << SU2_TYPE::Int(
+                         (Surface_CSF_Inv[iMarker_Monitoring] * 100.0)
+                         / (Surface_CSF[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11); Breakdown_file << Surface_CSideForce_Inv[iMarker_Monitoring];
-        Breakdown_file << " | Friction Component (";
-        Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Surface_CSideForce_Inv[iMarker_Monitoring]*100.0)/(Surface_CSideForce[iMarker_Monitoring]+EPS));
+        Breakdown_file.width(11);
+        Breakdown_file << Surface_CSF_Inv[iMarker_Monitoring];
+        Breakdown_file << " | Friction (";
+        Breakdown_file.width(5);
+        Breakdown_file
+        << SU2_TYPE::Int(
+                         (Surface_CSF_Visc[iMarker_Monitoring] * 100.0)
+                         / (Surface_CSF[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11); Breakdown_file << Surface_CSideForce[iMarker_Monitoring]-Surface_CSideForce_Inv[iMarker_Monitoring] << "\n";
+        Breakdown_file.width(11);
+        Breakdown_file
+        << Surface_CSF_Visc[iMarker_Monitoring];
+        Breakdown_file << " | Momentum (";
+        Breakdown_file.width(5);
+        Breakdown_file
+        << SU2_TYPE::Int(
+                         (Surface_CSF_Mnt[iMarker_Monitoring] * 100.0)
+                         / (Surface_CSF[iMarker_Monitoring] + EPS));
+        Breakdown_file << "%): ";
+        Breakdown_file.width(11);
+        Breakdown_file
+        << Surface_CSF_Mnt[iMarker_Monitoring] << "\n";
       }
       
       Breakdown_file << "Total CL/CD (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CEff[iMarker_Monitoring]*100.0)/(Total_CEff+EPS));
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CEff[iMarker_Monitoring] * 100.0) / (Total_CEff + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CEff[iMarker_Monitoring];
-      Breakdown_file << " | Pressure Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CEff_Inv[iMarker_Monitoring]*100.0)/(Surface_CEff[iMarker_Monitoring]+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Surface_CEff[iMarker_Monitoring];
+      Breakdown_file << " | Pressure (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CEff_Inv[iMarker_Monitoring] * 100.0)
+                       / (Surface_CEff[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CEff_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Friction Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Surface_CEff_Inv[iMarker_Monitoring]*100.0)/(Surface_CEff[iMarker_Monitoring]+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Surface_CEff_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Friction (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CEff_Visc[iMarker_Monitoring] * 100.0)
+                       / (Surface_CEff[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      
-      Breakdown_file.width(11); Breakdown_file << Surface_CEff[iMarker_Monitoring]-Surface_CEff_Inv[iMarker_Monitoring] << "\n";
+      Breakdown_file.width(11);
+      Breakdown_file
+      << Surface_CEff_Visc[iMarker_Monitoring];
+      Breakdown_file << " | Momentum (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CEff_Mnt[iMarker_Monitoring] * 100.0)
+                       / (Surface_CEff[iMarker_Monitoring] + EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11);
+      Breakdown_file
+      << Surface_CEff_Mnt[iMarker_Monitoring] << "\n";
       
       if (nDim == 3) {
         
         Breakdown_file << "Total CMx   (";
-        Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CMx[iMarker_Monitoring]*100.0)/(Total_CMx+EPS));
+        Breakdown_file.width(5);
+        Breakdown_file
+        << SU2_TYPE::Int(
+                         (Surface_CMx[iMarker_Monitoring] * 100.0) / (Total_CMx + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11); Breakdown_file << Surface_CMx[iMarker_Monitoring];
-        Breakdown_file << " | Pressure Component (";
-        Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CMx_Inv[iMarker_Monitoring]*100.0)/(Surface_CMx[iMarker_Monitoring]+EPS));
+        Breakdown_file.width(11);
+        Breakdown_file << Surface_CMx[iMarker_Monitoring];
+        Breakdown_file << " | Pressure (";
+        Breakdown_file.width(5);
+        Breakdown_file
+        << SU2_TYPE::Int(
+                         (Surface_CMx_Inv[iMarker_Monitoring] * 100.0)
+                         / (Surface_CMx[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11); Breakdown_file << Surface_CMx_Inv[iMarker_Monitoring];
-        Breakdown_file << " | Friction Component (";
-        Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Surface_CMx_Inv[iMarker_Monitoring]*100.0)/(Surface_CMx[iMarker_Monitoring]+EPS));
+        Breakdown_file.width(11);
+        Breakdown_file << Surface_CMx_Inv[iMarker_Monitoring];
+        Breakdown_file << " | Friction (";
+        Breakdown_file.width(5);
+        Breakdown_file
+        << SU2_TYPE::Int(
+                         (Surface_CMx_Visc[iMarker_Monitoring] * 100.0)
+                         / (Surface_CMx[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11); Breakdown_file << Surface_CMx[iMarker_Monitoring]-Surface_CMx_Inv[iMarker_Monitoring] << "\n";
+        Breakdown_file.width(11);
+        Breakdown_file
+        << Surface_CMx_Visc[iMarker_Monitoring];
+        Breakdown_file << " | Momentum (";
+        Breakdown_file.width(5);
+        Breakdown_file
+        << SU2_TYPE::Int(
+                         (Surface_CMx_Mnt[iMarker_Monitoring] * 100.0)
+                         / (Surface_CMx[iMarker_Monitoring] + EPS));
+        Breakdown_file << "%): ";
+        Breakdown_file.width(11);
+        Breakdown_file
+        << Surface_CMx_Mnt[iMarker_Monitoring] << "\n";
         
         Breakdown_file << "Total CMy   (";
-        Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CMy[iMarker_Monitoring]*100.0)/(Total_CMy+EPS));
+        Breakdown_file.width(5);
+        Breakdown_file
+        << SU2_TYPE::Int(
+                         (Surface_CMy[iMarker_Monitoring] * 100.0) / (Total_CMy + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11); Breakdown_file << Surface_CMy[iMarker_Monitoring];
-        Breakdown_file << " | Pressure Component (";
-        Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CMy_Inv[iMarker_Monitoring]*100.0)/(Surface_CMy[iMarker_Monitoring]+EPS));
+        Breakdown_file.width(11);
+        Breakdown_file << Surface_CMy[iMarker_Monitoring];
+        Breakdown_file << " | Pressure (";
+        Breakdown_file.width(5);
+        Breakdown_file
+        << SU2_TYPE::Int(
+                         (Surface_CMy_Inv[iMarker_Monitoring] * 100.0)
+                         / (Surface_CMy[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11); Breakdown_file << Surface_CMy_Inv[iMarker_Monitoring];
-        Breakdown_file << " | Friction Component (";
-        Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Surface_CMy_Inv[iMarker_Monitoring]*100.0)/(Surface_CMy[iMarker_Monitoring]+EPS));
+        Breakdown_file.width(11);
+        Breakdown_file << Surface_CMy_Inv[iMarker_Monitoring];
+        Breakdown_file << " | Friction (";
+        Breakdown_file.width(5);
+        Breakdown_file
+        << SU2_TYPE::Int(
+                         (Surface_CMy_Visc[iMarker_Monitoring] * 100.0)
+                         / (Surface_CMy[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11); Breakdown_file << Surface_CMy[iMarker_Monitoring]-Surface_CMy_Inv[iMarker_Monitoring] << "\n";
+        Breakdown_file.width(11);
+        Breakdown_file
+        << Surface_CMy_Visc[iMarker_Monitoring];
+        Breakdown_file << " | Momentum (";
+        Breakdown_file.width(5);
+        Breakdown_file
+        << SU2_TYPE::Int(
+                         (Surface_CMy_Mnt[iMarker_Monitoring] * 100.0)
+                         / (Surface_CMy[iMarker_Monitoring] + EPS));
+        Breakdown_file << "%): ";
+        Breakdown_file.width(11);
+        Breakdown_file
+        << Surface_CMy_Mnt[iMarker_Monitoring] << "\n";
       }
       
       Breakdown_file << "Total CMz   (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CMz[iMarker_Monitoring]*100.0)/(Total_CMz+EPS));
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int((Surface_CMz[iMarker_Monitoring] * 100.0) / (Total_CMz + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CMz[iMarker_Monitoring];
-      Breakdown_file << " | Pressure Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CMz_Inv[iMarker_Monitoring]*100.0)/(Surface_CMz[iMarker_Monitoring]+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Surface_CMz[iMarker_Monitoring];
+      Breakdown_file << " | Pressure (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CMz_Inv[iMarker_Monitoring] * 100.0)
+                       / (Surface_CMz[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CMz_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Friction Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Surface_CMz_Inv[iMarker_Monitoring]*100.0)/(Surface_CMz[iMarker_Monitoring]+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Surface_CMz_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Friction (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CMz_Visc[iMarker_Monitoring] * 100.0)
+                       / (Surface_CMz[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CMz[iMarker_Monitoring]-Surface_CMz_Inv[iMarker_Monitoring] << "\n";
+      Breakdown_file.width(11);
+      Breakdown_file
+      << Surface_CMz_Visc[iMarker_Monitoring];
+      Breakdown_file << " | Momentum (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CMz_Mnt[iMarker_Monitoring] * 100.0)
+                       / (Surface_CMz[iMarker_Monitoring] + EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11);
+      Breakdown_file
+      << Surface_CMz_Mnt[iMarker_Monitoring] << "\n";
       
       Breakdown_file << "Total CFx   (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CFx[iMarker_Monitoring]*100.0)/(Total_CFx+EPS));
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int((Surface_CFx[iMarker_Monitoring] * 100.0) / (Total_CFx + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CFx[iMarker_Monitoring];
-      Breakdown_file << " | Pressure Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CFx_Inv[iMarker_Monitoring]*100.0)/(Surface_CFx[iMarker_Monitoring]+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Surface_CFx[iMarker_Monitoring];
+      Breakdown_file << " | Pressure (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CFx_Inv[iMarker_Monitoring] * 100.0)
+                       / (Surface_CFx[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CFx_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Friction Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Surface_CFx_Inv[iMarker_Monitoring]*100.0)/(Surface_CFx[iMarker_Monitoring]+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Surface_CFx_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Friction (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CFx_Visc[iMarker_Monitoring] * 100.0)
+                       / (Surface_CFx[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CFx[iMarker_Monitoring]-Surface_CFx_Inv[iMarker_Monitoring] << "\n";
+      Breakdown_file.width(11);
+      Breakdown_file
+      << Surface_CFx_Visc[iMarker_Monitoring];
+      Breakdown_file << " | Momentum (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CFx_Mnt[iMarker_Monitoring] * 100.0)
+                       / (Surface_CFx[iMarker_Monitoring] + EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11);
+      Breakdown_file
+      << Surface_CFx_Mnt[iMarker_Monitoring] << "\n";
       
       Breakdown_file << "Total CFy   (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CFy[iMarker_Monitoring]*100.0)/(Total_CFy+EPS));
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int((Surface_CFy[iMarker_Monitoring] * 100.0) / (Total_CFy + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CFy[iMarker_Monitoring];
-      Breakdown_file << " | Pressure Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CFy_Inv[iMarker_Monitoring]*100.0)/(Surface_CFy[iMarker_Monitoring]+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Surface_CFy[iMarker_Monitoring];
+      Breakdown_file << " | Pressure (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CFy_Inv[iMarker_Monitoring] * 100.0)
+                       / (Surface_CFy[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CFy_Inv[iMarker_Monitoring];
-      Breakdown_file << " | Friction Component (";
-      Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Surface_CFy_Inv[iMarker_Monitoring]*100.0)/(Surface_CFy[iMarker_Monitoring]+EPS));
+      Breakdown_file.width(11);
+      Breakdown_file << Surface_CFy_Inv[iMarker_Monitoring];
+      Breakdown_file << " | Friction (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CFy_Visc[iMarker_Monitoring] * 100.0)
+                       / (Surface_CFy[iMarker_Monitoring] + EPS));
       Breakdown_file << "%): ";
-      Breakdown_file.width(11); Breakdown_file << Surface_CFy[iMarker_Monitoring]-Surface_CFy_Inv[iMarker_Monitoring] << "\n";
+      Breakdown_file.width(11);
+      Breakdown_file
+      << Surface_CFy_Visc[iMarker_Monitoring];
+      Breakdown_file << " | Momentum (";
+      Breakdown_file.width(5);
+      Breakdown_file
+      << SU2_TYPE::Int(
+                       (Surface_CFy_Mnt[iMarker_Monitoring] * 100.0)
+                       / (Surface_CFy[iMarker_Monitoring] + EPS));
+      Breakdown_file << "%): ";
+      Breakdown_file.width(11);
+      Breakdown_file
+      << Surface_CFy_Mnt[iMarker_Monitoring] << "\n";
       
       if (nDim == 3) {
         Breakdown_file << "Total CFz   (";
-        Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CFz[iMarker_Monitoring]*100.0)/(Total_CFz+EPS));
+        Breakdown_file.width(5);
+        Breakdown_file
+        << SU2_TYPE::Int(
+                         (Surface_CFz[iMarker_Monitoring] * 100.0) / (Total_CFz + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11); Breakdown_file << Surface_CFz[iMarker_Monitoring];
-        Breakdown_file << " | Pressure Component (";
-        Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int((Surface_CFz_Inv[iMarker_Monitoring]*100.0)/(Surface_CFz[iMarker_Monitoring]+EPS));
+        Breakdown_file.width(11);
+        Breakdown_file << Surface_CFz[iMarker_Monitoring];
+        Breakdown_file << " | Pressure (";
+        Breakdown_file.width(5);
+        Breakdown_file
+        << SU2_TYPE::Int(
+                         (Surface_CFz_Inv[iMarker_Monitoring] * 100.0)
+                         / (Surface_CFz[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11); Breakdown_file << Surface_CFz_Inv[iMarker_Monitoring];
-        Breakdown_file << " | Friction Component (";
-        Breakdown_file.width(5); Breakdown_file << SU2_TYPE::Int(100.0-(Surface_CFz_Inv[iMarker_Monitoring]*100.0)/(Surface_CFz[iMarker_Monitoring]+EPS));
+        Breakdown_file.width(11);
+        Breakdown_file << Surface_CFz_Inv[iMarker_Monitoring];
+        Breakdown_file << " | Friction (";
+        Breakdown_file.width(5);
+        Breakdown_file
+        << SU2_TYPE::Int(
+                         (Surface_CFz_Visc[iMarker_Monitoring] * 100.0)
+                         / (Surface_CFz[iMarker_Monitoring] + EPS));
         Breakdown_file << "%): ";
-        Breakdown_file.width(11); Breakdown_file << Surface_CFz[iMarker_Monitoring]-Surface_CFz_Inv[iMarker_Monitoring] << "\n";
+        Breakdown_file.width(11);
+        Breakdown_file
+        << Surface_CFz_Visc[iMarker_Monitoring];
+        Breakdown_file << " | Momentum (";
+        Breakdown_file.width(5);
+        Breakdown_file
+        << SU2_TYPE::Int(
+                         (Surface_CFz_Mnt[iMarker_Monitoring] * 100.0)
+                         / (Surface_CFz[iMarker_Monitoring] + EPS));
+        Breakdown_file << "%): ";
+        Breakdown_file.width(11);
+        Breakdown_file
+        << Surface_CFz_Mnt[iMarker_Monitoring] << "\n";
+        
       }
       
       Breakdown_file << "\n";
       
+      
     }
     
-    delete [] Surface_CLift;
-    delete [] Surface_CDrag;
-    delete [] Surface_CSideForce;
+    delete [] Surface_CL;
+    delete [] Surface_CD;
+    delete [] Surface_CSF;
     delete [] Surface_CEff;
     delete [] Surface_CFx;
     delete [] Surface_CFy;
@@ -6515,9 +7068,9 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     delete [] Surface_CMy;
     delete [] Surface_CMz;
     
-    delete [] Surface_CLift_Inv;
-    delete [] Surface_CDrag_Inv;
-    delete [] Surface_CSideForce_Inv;
+    delete [] Surface_CL_Inv;
+    delete [] Surface_CD_Inv;
+    delete [] Surface_CSF_Inv;
     delete [] Surface_CEff_Inv;
     delete [] Surface_CFx_Inv;
     delete [] Surface_CFy_Inv;
@@ -6526,6 +7079,28 @@ void COutput::SetForces_Breakdown(CGeometry ***geometry,
     delete [] Surface_CMy_Inv;
     delete [] Surface_CMz_Inv;
     
+    delete [] Surface_CL_Visc;
+    delete [] Surface_CD_Visc;
+    delete [] Surface_CSF_Visc;
+    delete [] Surface_CEff_Visc;
+    delete [] Surface_CFx_Visc;
+    delete [] Surface_CFy_Visc;
+    delete [] Surface_CFz_Visc;
+    delete [] Surface_CMx_Visc;
+    delete [] Surface_CMy_Visc;
+    delete [] Surface_CMz_Visc;
+
+    delete [] Surface_CL_Mnt;
+    delete [] Surface_CD_Mnt;
+    delete [] Surface_CSF_Mnt;
+    delete [] Surface_CEff_Mnt;
+    delete [] Surface_CFx_Mnt;
+    delete [] Surface_CFy_Mnt;
+    delete [] Surface_CFz_Mnt;
+    delete [] Surface_CMx_Mnt;
+    delete [] Surface_CMy_Mnt;
+    delete [] Surface_CMz_Mnt;
+
     Breakdown_file.close();
     
   }
@@ -7132,7 +7707,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
     // TODO: make sure this works in parallel (potential solution: move combination across processors to be pe-marker. will be called more times, but may be needed )
     Marker_Tag = config->GetMarker_All_TagBound(iMarker);
     for (unsigned short jMarker_Monitoring=0; jMarker_Monitoring <config->GetnMarker_Monitoring(); jMarker_Monitoring++){
-      Monitoring_Tag = config->GetMarker_Monitoring(jMarker_Monitoring);
+      Monitoring_Tag = config->GetMarker_Monitoring_TagBound(jMarker_Monitoring);
       if (Monitoring_Tag==Marker_Tag)
         iMarker_Monitoring = jMarker_Monitoring;
     }
@@ -7202,7 +7777,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
   short iSection, nSection;
   unsigned long iVertex, iPoint;
   su2double *Plane_P0, *Plane_Normal, MinPlane, MaxPlane, *CPressure, MinXCoord, MaxXCoord, Force[3], ForceInviscid[3],
-  MomentInviscid[3] = {0.0,0.0,0.0}, MomentDist[3] = {0.0,0.0,0.0}, RefDensity, RefPressure, RefAreaCoeff, *Velocity_Inf, Gas_Constant, Mach2Vel, Mach_Motion, Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin, RefLengthMoment, Alpha, Beta, CDrag_Inv, CLift_Inv, CMy_Inv;
+  MomentInviscid[3] = {0.0,0.0,0.0}, MomentDist[3] = {0.0,0.0,0.0}, RefDensity, RefPressure, RefAreaCoeff, *Velocity_Inf, Gas_Constant, Mach2Vel, Mach_Motion, Gamma, RefVel2 = 0.0, factor, NDPressure, *Origin, RefLengthMoment, Alpha, Beta, CD_Inv, CL_Inv, CMy_Inv;
   vector<su2double> Xcoord_Airfoil, Ycoord_Airfoil, Zcoord_Airfoil, Pressure_Airfoil;
   string Marker_Tag, Slice_Filename, Slice_Ext;
   ofstream Cp_File;
@@ -7349,8 +7924,8 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
           
         }
         
-        CLift_Inv = fabs( -ForceInviscid[0]*sin(Alpha) + ForceInviscid[2]*cos(Alpha));
-        CDrag_Inv = fabs( ForceInviscid[0]*cos(Alpha)*cos(Beta) + ForceInviscid[1]*sin(Beta) + ForceInviscid[2]*sin(Alpha)*cos(Beta));
+        CL_Inv = fabs( -ForceInviscid[0]*sin(Alpha) + ForceInviscid[2]*cos(Alpha));
+        CD_Inv = fabs( ForceInviscid[0]*cos(Alpha)*cos(Beta) + ForceInviscid[1]*sin(Beta) + ForceInviscid[2]*sin(Alpha)*cos(Beta));
         CMy_Inv = MomentInviscid[1];
         
         
@@ -7367,7 +7942,7 @@ void COutput::SetForceSections(CSolver *solver_container, CGeometry *geometry, C
         
         /*--- Coordinates and pressure value ---*/
         
-        Load_File << Ycoord_Airfoil[0] <<" "<< CLift_Inv <<" "<< CDrag_Inv  <<" "<< CMy_Inv << "\n";
+        Load_File << Ycoord_Airfoil[0] <<" "<< CL_Inv <<" "<< CD_Inv  <<" "<< CMy_Inv << "\n";
         
         /*--- Basic conectivity ---*/
         

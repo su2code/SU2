@@ -390,13 +390,13 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
 
   switch (config->GetKind_ObjFunc()){
   case DRAG_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CDrag();
+      ObjFunc_Value = direct_solver->GetTotal_CD();
       break;
   case LIFT_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CLift();
+      ObjFunc_Value = direct_solver->GetTotal_CL();
       break;
   case SIDEFORCE_COEFFICIENT:
-      ObjFunc_Value = direct_solver->GetTotal_CSideForce();
+      ObjFunc_Value = direct_solver->GetTotal_CSF();
       break;
   case EFFICIENCY:
       ObjFunc_Value = direct_solver->GetTotal_CEff();
