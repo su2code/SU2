@@ -2,7 +2,7 @@
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -3113,7 +3115,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl << "-------------------------------------------------------------------------" << endl;
   cout << "|    ___ _   _ ___                                                      |" << endl;
-  cout << "|   / __| | | |_  )   Release 4.2.0  \"Cardinal\"                         |" << endl;
+  cout << "|   / __| | | |_  )   Release 4.3.0  \"Cardinal\"                         |" << endl;
   cout << "|   \\__ \\ |_| |/ /                                                      |" << endl;
   switch (val_software) {
     case SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << endl; break;
@@ -3136,6 +3138,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |" << endl;
   cout << "| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |" << endl;
   cout << "| - Prof. Rafael Palacios' group at Imperial College London.            |" << endl;
+  cout << "| - Prof. Edwin van der Weide's group at the University of Twente.      |" << endl;
+  cout << "| - Prof. Vincent Terrapon's group at the University of Liege.          |" << endl;
   cout <<"-------------------------------------------------------------------------" << endl;
   cout << "| Copyright (C) 2012-2016 SU2, the open-source CFD code.                |" << endl;
   cout << "|                                                                       |" << endl;

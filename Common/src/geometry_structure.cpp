@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -6768,7 +6770,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 printf("\n\n   !!! Error !!!\n" );
                 printf(" HEXA-20 element type not supported\n");
                 printf(" Section %d, npe=%d\n", s, npe);
-                printf(" startE %d, endE %d\n", startE, endE);
+                printf(" startE %d, endE %d\n", (int)startE, (int)endE);
                 printf(" Now exiting...\n\n");
               }
 #ifndef HAVE_MPI
@@ -6783,7 +6785,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 printf("\n\n   !!! Error !!!\n" );
                 printf(" Unknown elem: (type %d, npe=%d)\n", elemType, npe);
                 printf(" Section %d\n", s);
-                printf(" startE %d, endE %d\n", startE, endE);
+                printf(" startE %d, endE %d\n", (int)startE, (int)endE);
                 printf(" Now exiting...\n\n");
               }
 #ifndef HAVE_MPI
@@ -6930,7 +6932,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 printf( "\n\n   !!! Error !!!\n" );
                 printf( " HEXA-20 element type not supported\n");
                 printf(" Section %d, npe=%d\n", s, npe);
-                printf(" startE %d, endE %d\n", startE, endE);
+                printf(" startE %d, endE %d\n", (int)startE, (int)endE);
                 printf( " Now exiting...\n\n");
 #ifndef HAVE_MPI
                 exit(EXIT_FAILURE);
@@ -6947,7 +6949,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 printf( "\n\n   !!! Error !!!\n" );
                 printf( " Unknown elem: (type %d, npe=%d)\n", elemType, npe);
                 printf(" Section %d\n", s);
-                printf(" startE %d, endE %d\n", startE, endE);
+                printf(" startE %d, endE %d\n", (int)startE, (int)endE);
                 printf( " Now exiting...\n\n");
 #ifndef HAVE_MPI
                 exit(EXIT_FAILURE);

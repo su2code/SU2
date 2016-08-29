@@ -13,6 +13,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -380,7 +382,7 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
 
   AD::StartPreacc();
   AD::SetPreaccIn(coor, nDimADT);
-  AD::SetPreaccIn(coorPoints.data(), coorPoints.size());
+  AD::SetPreaccIn(coorPoints.data(), (int)coorPoints.size());
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Initialize the nearest node to the central node of the     ---*/
