@@ -1314,7 +1314,7 @@ void CFEM_ElasticitySolver::LoadRestart(CGeometry **geometry, CSolver ***solver,
 
   /*--- MPI solution ---*/
 
-  solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  solver[MESH_0][FEA_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
 
 }
 
