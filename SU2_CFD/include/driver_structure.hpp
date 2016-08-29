@@ -478,7 +478,10 @@ public:
 	unsigned short nZoneInterp;
 	su2double *TotalPressureLossObj;
 	su2double *TotalPressureLossObjInterp;
-
+	su2double *EntropyGenObj;
+	su2double *EntropyGenObjInterp;
+	su2double *KineticEnergyLossObj;
+	su2double *KineticEnergyLossObjInterp;
 
   /*!
    * \brief Constructor of the class.

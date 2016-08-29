@@ -3521,13 +3521,20 @@ CSpectralDriver::CSpectralDriver(char* confFile,
 	nZoneInterp = 10;
 	TotalPressureLossObj       = new su2double [nZone];
 	TotalPressureLossObjInterp = new su2double [nZoneInterp];
+	EntropyGenObj              = new su2double [nZone];
+	EntropyGenObjInterp        = new su2double [nZoneInterp];
+	KineticEnergyLossObj       = new su2double [nZone];
+	KineticEnergyLossObjInterp = new su2double [nZoneInterp];
 
 }
 
 CSpectralDriver::~CSpectralDriver(void) {
-	//deallocate pointers!!
   if (TotalPressureLossObj       != NULL) delete [] TotalPressureLossObj;
   if (TotalPressureLossObjInterp != NULL) delete [] TotalPressureLossObjInterp;
+	if (EntropyGenObj              != NULL) delete [] EntropyGenObj;
+	if (EntropyGenObjInterp        != NULL) delete [] EntropyGenObjInterp;
+	if (KineticEnergyLossObj       != NULL) delete [] KineticEnergyLossObj;
+	if (KineticEnergyLossObjInterp != NULL) delete [] KineticEnergyLossObjInterp;
 }
 
 void CSpectralDriver::Run() {
@@ -4225,13 +4232,18 @@ void CSpectralDriver::SetSpectralObjective(){
 
 	for (iZone = 0; iZone < nZone; iZone++) {
 		TotalPressureLossObj[iZone] = 	solver_container[iZone][MESH_0][FLOW_SOL]->GetTotalPressureLoss(0);
+		EntropyGenObj[iZone]        = 	solver_container[iZone][MESH_0][FLOW_SOL]->GetEntropyGen(0);
+		KineticEnergyLossObj[iZone] = 	solver_container[iZone][MESH_0][FLOW_SOL]->GetKineticEnergyLoss(0);
 	}
+
   ComputeSpectralInterpolation(TotalPressureLossObj, TotalPressureLossObjInterp);
+  ComputeSpectralInterpolation(EntropyGenObj, EntropyGenObjInterp);
+  ComputeSpectralInterpolation(KineticEnergyLossObj, KineticEnergyLossObjInterp);
+
 }
 
 void CSpectralDriver::ComputeSpectralInterpolation(su2double *Object, su2double *ObjectInterpolated){
 
-//	unsigned short nZoneInterp = 10;
 	const   complex<su2double> J(0.0,1.0);
 	unsigned short i,k, iZone;
 	complex<su2double> **E             = new complex<su2double>*[nZone];
@@ -4245,8 +4257,6 @@ void CSpectralDriver::ComputeSpectralInterpolation(su2double *Object, su2double 
 		EinvExtended[iZone] = new complex<su2double>[nZoneInterp];
 	}
 
-//	complex<su2double> *Object        = new complex<su2double>[nZone];
-//	su2double *ObjectInterpolated     = new su2double[nZoneInterp];
 	su2double *Omega_t                = new su2double[nZone];
 	su2double *tExtended              = new su2double[nZoneInterp];
 	su2double Period                  = config_container[ZONE_0]->GetSpectralMethod_Period();
