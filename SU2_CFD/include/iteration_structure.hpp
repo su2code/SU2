@@ -3,7 +3,7 @@
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -13,6 +13,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -51,7 +53,7 @@ using namespace std;
  * \class CIteration
  * \brief Parent class for defining a single iteration of a physics problem.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CIteration {
 protected:
@@ -165,7 +167,7 @@ public:
  * \class CMeanFlowIteration
  * \brief Class for driving an iteration of the mean flow system.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CMeanFlowIteration : public CIteration {
 public:
@@ -408,7 +410,7 @@ public:
  * \class CWaveIteration
  * \brief Class for driving an iteration of the wave system.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CWaveIteration : public CIteration {
 public:
@@ -517,7 +519,7 @@ public:
  * \class CHeatIteration
  * \brief Class for driving an iteration of the heat system.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CHeatIteration : public CIteration {
 public:
@@ -610,7 +612,7 @@ public:
  * \class CPoissonIteration
  * \brief Class for driving an iteration of the poisson system.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CPoissonIteration : public CIteration {
 public:
@@ -790,7 +792,7 @@ public:
  * \class CAdjMeanFlowIteration
  * \brief Class for driving an iteration of the adjoint mean flow system.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CAdjMeanFlowIteration : public CIteration {
 public:
@@ -883,7 +885,7 @@ public:
  * \class CDiscAdjMeanFlowIteration
  * \brief Class for driving an iteration of the discrete adjoint mean flow system.
  * \author T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  */
 class CDiscAdjMeanFlowIteration : public CIteration {
 
