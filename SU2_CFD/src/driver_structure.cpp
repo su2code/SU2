@@ -3583,7 +3583,7 @@ void CSpectralDriver::Run() {
 		}
 	}
 
-	SetSpectralObjective();
+	SetSpectralAverage();
 
 }
 
@@ -4234,6 +4234,7 @@ void CSpectralDriver::SetSpectralObjective(){
 		TotalPressureLossObj[iZone] = 	solver_container[iZone][MESH_0][FLOW_SOL]->GetTotalPressureLoss(0);
 		EntropyGenObj[iZone]        = 	solver_container[iZone][MESH_0][FLOW_SOL]->GetEntropyGen(0);
 		KineticEnergyLossObj[iZone] = 	solver_container[iZone][MESH_0][FLOW_SOL]->GetKineticEnergyLoss(0);
+
 	}
 
   ComputeSpectralInterpolation(TotalPressureLossObj, TotalPressureLossObjInterp);
@@ -4416,19 +4417,41 @@ void CSpectralDriver::SetSpectralAverage(){
 	unsigned short kZone;
 	su2double TotalPressureLossAvg = 0, EntropyGenAvg = 0, KineticEnergyLossAvg = 0;
 
-	for (kZone = 0; kZone < nZone; kZone++) {
-		TotalPressureLossAvg += 	solver_container[kZone][MESH_0][FLOW_SOL]->GetTotalPressureLoss(0);
-		EntropyGenAvg        += 	solver_container[kZone][MESH_0][FLOW_SOL]->GetEntropyGen(0);
-		KineticEnergyLossAvg += 	solver_container[kZone][MESH_0][FLOW_SOL]->GetKineticEnergyLoss(0);
+	switch (config_container[ZONE_0]->GetKind_SpectralAverage()) {
+	case ARITHMETIC_MEAN:
+		for (kZone = 0; kZone < nZone; kZone++){
+			TotalPressureLossAvg += 	solver_container[kZone][MESH_0][FLOW_SOL]->GetTotalPressureLoss(0);
+			EntropyGenAvg        += 	solver_container[kZone][MESH_0][FLOW_SOL]->GetEntropyGen(0);
+			KineticEnergyLossAvg += 	solver_container[kZone][MESH_0][FLOW_SOL]->GetKineticEnergyLoss(0);
+		}
+		TotalPressureLossAvg /= nZone;
+		EntropyGenAvg        /= nZone;
+		KineticEnergyLossAvg /= nZone;
+		break;
+
+	case INTERPOLATED_MEAN :
+		/*---    ---*/
+		SetSpectralObjective();
+		for (kZone = 0; kZone < nZoneInterp; kZone++ ){
+			if (kZone == 0 || kZone == nZoneInterp-1)
+				TotalPressureLossAvg +=  TotalPressureLossObjInterp[kZone];
+			else
+				TotalPressureLossAvg +=  2.*TotalPressureLossObjInterp[kZone];
+		}
+
+		TotalPressureLossAvg /=  2.*(nZoneInterp-1);
+		break;
+
+	default :
+		cout << "SPECTRAL_AVERAGE_KIND: Type of average not available." << endl; exit(EXIT_FAILURE);
+		break;
 	}
 
-	TotalPressureLossAvg /= nZone;
-	EntropyGenAvg        /= nZone;
-	KineticEnergyLossAvg /= nZone;
 
 	solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetTotalPressureLoss(TotalPressureLossAvg,0);
 	solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetEntropyGen(EntropyGenAvg,0);
 	solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetKineticEnergyLoss(KineticEnergyLossAvg,0);
+
 }
 
 

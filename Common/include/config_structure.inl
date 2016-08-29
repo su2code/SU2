@@ -73,6 +73,8 @@ inline su2double CConfig::GetSpectralMethod_Period(void) { return SpectralMethod
 
 inline unsigned short CConfig::GetSpectralInterpolation_Pts(void) { return SpectralInterpolation_Pts; }
 
+inline unsigned short CConfig::GetKind_SpectralAverage(void) { return Kind_SpectralAverage; }
+
 inline void CConfig::SetExtIter(unsigned long val_iter) { ExtIter = val_iter; }
 
 inline void CConfig::SetFSIIter(unsigned long val_iter) { FSIIter = val_iter; }

@@ -1327,6 +1327,18 @@ static const map<string, ENUM_SPECTRALMETHODTYPE> Spectral_Map = CCreateMap<stri
 ("HARMONIC_BALANCE", HARMONIC_BALANCE);
 
 /*!
+ * \brief types of spectral average over time instances.
+ */
+enum SPECTRALAVERAGE_TYPE {
+  ARITHMETIC_MEAN = 1,		/*!< \brief an algebraic average is computed at the boundary of interest. */
+  INTERPOLATED_MEAN = 2           /*!< \brief a mass flow average is computed at the boundary of interest. */
+
+};
+
+static const map<string, SPECTRALAVERAGE_TYPE> SpectralAverage_Map = CCreateMap<string, SPECTRALAVERAGE_TYPE>
+("ARITHMETIC_MEAN", ARITHMETIC_MEAN)
+("INTERPOLATED_MEAN", INTERPOLATED_MEAN);
+/*!
  * \brief types of criteria to determine when the solution is converged
  */
 enum ENUM_CONVERGE_CRIT {
