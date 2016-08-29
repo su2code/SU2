@@ -2,7 +2,7 @@
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -473,9 +475,6 @@ void CDriver::Postprocessing(){
   delete [] transfer_container;
   if (rank == MASTER_NODE) cout << "Deleted CTransfer container." << endl;
 
-  /*--- Geometry class deallocation ---*/
-  //if (rank == MASTER_NODE)
-  //      cout << endl <<"------------------------ Geometry Postprocessing ------------------------" << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     if (geometry_container[iZone]!=NULL){
       for (unsigned short iMGlevel = 1; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++){
@@ -507,9 +506,6 @@ void CDriver::Postprocessing(){
   delete [] grid_movement;
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
 
-  /*Deallocate config container*/
-  //if (rank == MASTER_NODE)
-  //      cout << endl <<"------------------------- Config Postprocessing -------------------------" << endl;
   if (config_container!=NULL){
     for (iZone = 0; iZone < nZone; iZone++) {
       if (config_container[iZone]!=NULL){
@@ -522,7 +518,7 @@ void CDriver::Postprocessing(){
 
   /*--- Deallocate output container ---*/
   if (output!=NULL) delete output;
-  if (rank == MASTER_NODE) cout << "Deleted COuput class." << endl;
+  if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
 
