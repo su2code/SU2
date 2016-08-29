@@ -1678,6 +1678,8 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config)  : CS
   Solution_Vel  = NULL;
   Solution_Accel= NULL;
 
+  SolRest = NULL;
+
 }
 
 CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver, unsigned short Kind_Solver, unsigned short iMesh)  : CSolver(){
@@ -1782,6 +1784,10 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   Solution        = new su2double[nVar];
 
   for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]          = 1e-16;
+
+  SolRest    = NULL;
+  if (dynamic) SolRest = new su2double[3 * nVar];
+  else SolRest = new su2double[nVar];
 
   Solution_Vel    = NULL;
   Solution_Accel  = NULL;
@@ -1971,6 +1977,116 @@ CDiscAdjFEASolver::~CDiscAdjFEASolver(void){
 
   if (Solution_Vel   != NULL) delete [] Solution_Vel;
   if (Solution_Accel != NULL) delete [] Solution_Accel;
+
+  if (SolRest        != NULL) delete [] SolRest;
+
+}
+
+void CDiscAdjFEASolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
+
+
+  unsigned short iVar, iMarker, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  su2double *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
+
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
+
+  unsigned short nSolVar;
+
+  if (dynamic) nSolVar = 3 * nVar;
+  else nSolVar = nVar;
+
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  MPI_Status status;
+#endif
+
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+
+#ifdef HAVE_MPI
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nSolVar;     nBufferR_Vector = nVertexR*nSolVar;
+
+      /*--- Allocate Receive and send buffers  ---*/
+      Buffer_Receive_U = new su2double [nBufferR_Vector];
+      Buffer_Send_U = new su2double[nBufferS_Vector];
+
+      /*--- Copy the solution that should be sent ---*/
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
+        if (dynamic){
+          for (iVar = 0; iVar < nVar; iVar++){
+            Buffer_Send_U[(iVar+nVar)*nVertexS+iVertex] = node[iPoint]->GetSolution_Vel(iVar);
+            Buffer_Send_U[(iVar+2*nVar)*nVertexS+iVertex] = node[iPoint]->GetSolution_Accel(iVar);
+          }
+        }
+      }
+
+#ifdef HAVE_MPI
+
+      /*--- Send/Receive information using Sendrecv ---*/
+      SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                        Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+
+#else
+
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iVar = 0; iVar < nVar; iVar++)
+          Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+        if (dynamic){
+          for (iVar = nVar; iVar < 3*nVar; iVar++)
+            Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
+        }
+      }
+
+#endif
+
+      /*--- Deallocate send buffer ---*/
+      delete [] Buffer_Send_U;
+
+      /*--- Do the coordinate transformation ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+
+        /*--- Find point and its type of transformation ---*/
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+
+        /*--- Copy solution variables. ---*/
+        for (iVar = 0; iVar < nSolVar; iVar++)
+          SolRest[iVar] = Buffer_Receive_U[iVar*nVertexR+iVertex];
+
+        /*--- Store received values back into the variable. ---*/
+        for (iVar = 0; iVar < nVar; iVar++)
+          node[iPoint]->SetSolution(iVar, SolRest[iVar]);
+
+        if (dynamic){
+
+          for (iVar = 0; iVar < nVar; iVar++){
+            node[iPoint]->SetSolution_Vel(iVar, SolRest[iVar+nVar]);
+            node[iPoint]->SetSolution_Accel(iVar, SolRest[iVar+2*nVar]);
+          }
+
+        }
+
+      }
+
+      /*--- Deallocate receive buffer ---*/
+      delete [] Buffer_Receive_U;
+
+    }
+
+  }
 
 }
 
@@ -2192,12 +2308,19 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
   unsigned long iPoint;
   su2double residual;
 
+  int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   /*--- Set Residuals to zero ---*/
 
   for (iVar = 0; iVar < nVar; iVar++){
       SetRes_RMS(iVar,0.0);
       SetRes_Max(iVar,0.0,0);
   }
+
+  cout << "---------------------------------------------------------------------" << endl;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
@@ -2212,6 +2335,10 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     /*--- Store the adjoint solution ---*/
 
     node[iPoint]->SetSolution(Solution);
+
+    if (geometry->node[iPoint]->GetGlobalIndex() == 276){
+      cout << rank << " " << iPoint << " " << geometry->node[iPoint]->GetGlobalIndex() << " " << node[iPoint]->GetSolution(0) << " " << node[iPoint]->GetSolution(1) << endl;
+    }
 
   }
 
@@ -2292,6 +2419,11 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
     }
 
   }
+
+//  /*--- Set MPI solution ---*/
+//  Set_MPI_Solution(geometry, config);
+
+  /*--- TODO: Need to set the MPI solution in the previous TS ---*/
 
   /*--- Set the residuals ---*/
 

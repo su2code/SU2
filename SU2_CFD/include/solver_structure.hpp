@@ -8586,6 +8586,8 @@ private:
   su2double *Solution_Vel,      /*!< \brief Velocity componenent of the solution. */
   *Solution_Accel;              /*!< \brief Acceleration componenent of the solution. */
 
+  su2double *SolRest;     /*!< \brief Auxiliary vector to restart the solution */
+
   su2double Total_Sens_E;       /*!< \brief Total Young modulus sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_Nu;      /*!< \brief Total Poisson's ratio sensitivity coefficient for all the boundaries. */
   su2double Total_Sens_Rho;     /*!< \brief Total density sensitivity coefficient for all the boundaries. */
@@ -8632,6 +8634,13 @@ public:
    * \brief Destructor of the class.
    */
   ~CDiscAdjFEASolver(void);
+
+  /*!
+   * \brief Impose the send-receive boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
