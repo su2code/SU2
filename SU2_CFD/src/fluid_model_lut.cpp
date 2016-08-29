@@ -131,11 +131,15 @@ CTrapezoidalMap::CTrapezoidalMap(vector<su2double> const &x_samples,
 		//Move on to the next band of x values
 		b++;
 	}
+	//Initialize the search to table limits
+	UpperI = Unique_X_Bands.size() - 1;
+	LowerI = 0;
 
 	su2double duration = ((su2double) clock() - (su2double) build_start)
 			/ ((su2double) CLOCKS_PER_SEC);
 	if (rank == MASTER_NODE)
-		if (rank == MASTER_NODE) cout << duration << " seconds\n";
+		if (rank == MASTER_NODE)
+			cout << duration << " seconds\n";
 }
 
 void CTrapezoidalMap::Find_Containing_Simplex(su2double x, su2double y) {
@@ -146,24 +150,33 @@ void CTrapezoidalMap::Find_Containing_Simplex(su2double x, su2double y) {
 }
 
 void CTrapezoidalMap::Search_Bands_For(su2double x) {
-	su2double x00;
-	UpperI = Unique_X_Bands.size() - 1;
-	LowerI = 0;
+	su2double x_middle, x_lower, x_upper;
 
-	while (UpperI - LowerI > 1) {
+	do {
 		middleI = (UpperI + LowerI) / 2;
-		x00 = Unique_X_Bands[middleI];
-		if (x00 > x) {
+		x_middle = Unique_X_Bands[middleI];
+		x_lower  = Unique_X_Bands[LowerI];
+		x_upper  = Unique_X_Bands[UpperI];
+		//Step used for restarting the search on the low end
+		if (x < x_lower) {
+			UpperI = LowerI;
+			LowerI = LowerI / 2;
+			//Step used for restarting the search on the upper end
+		} else if (x > x_upper) {
+			LowerI = UpperI;
+			UpperI = (UpperI + (Unique_X_Bands.size()-1)) / 2;
+			//After the restart is cleared, do the normal binary search
+		} else if (x < x_middle) {
 			UpperI = middleI;
-		} else if (x00 < x) {
+		} else if (x > x_middle) {
 			LowerI = middleI;
-		} else if (x00 == x) {
+		} else if (x_middle == x) {
 			LowerI = middleI;
 			UpperI = LowerI + 1;
 			break;
 		}
 
-	}
+	} while (UpperI - LowerI > 1);
 }
 
 void CTrapezoidalMap::Search_Band_For_Edge(su2double x, su2double y) {
@@ -369,8 +382,8 @@ void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 
 	Get_Current_Points_From_TrapezoidalMap(rhoe_map, rho, e);
 
-	//Now use the quadrilateral which contains the point to interpolate
-	//Determine the interpolation coefficients
+//Now use the quadrilateral which contains the point to interpolate
+//Determine the interpolation coefficients
 	Interpolate_2D_Bilinear(rho, e, ThermoTables_Density,
 			ThermoTables_StaticEnergy, "RHOE");
 
@@ -387,18 +400,18 @@ void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 	dTdrho_e = Interpolate_2D_Bilinear(ThermoTables_dTdrho_e);
 	dTde_rho = Interpolate_2D_Bilinear(ThermoTables_dTde_rho);
 	Cp = Interpolate_2D_Bilinear(ThermoTables_Cp);
-	//Mu = Interpolate_2D_Bilinear(ThermoTables_Mu);
-	//Kt = Interpolate_2D_Bilinear(ThermoTables_Kt);
+//Mu = Interpolate_2D_Bilinear(ThermoTables_Mu);
+//Kt = Interpolate_2D_Bilinear(ThermoTables_Kt);
 
 }
 
 void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
 // Check if inputs are in total range (necessary but not sufficient condition)
 	Get_Current_Points_From_TrapezoidalMap(PT_map, P, T);
-	//Determine interpolation coefficients
-	Interpolate_2D_Bilinear(P, T, ThermoTables_Pressure,
-			ThermoTables_Temperature, "PT");
-	//Interpolate the fluid properties
+//Determine interpolation coefficients
+	Interpolate_2D_Bilinear(P, T, ThermoTables_Pressure, ThermoTables_Temperature,
+			"PT");
+//Interpolate the fluid properties
 	Pressure = P;
 	Temperature = T;
 	Density = Interpolate_2D_Bilinear(ThermoTables_Density);
@@ -420,9 +433,9 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 
 	Get_Current_Points_From_TrapezoidalMap(Prho_map, P, rho);
 
-	//Determine interpolation coefficients
-	Interpolate_2D_Bilinear(rho, P, ThermoTables_Density,
-			ThermoTables_Pressure, "PRHO");
+//Determine interpolation coefficients
+	Interpolate_2D_Bilinear(rho, P, ThermoTables_Density, ThermoTables_Pressure,
+			"PRHO");
 //Interpolate the fluid properties
 	Pressure = P;
 	Density = rho;
@@ -446,8 +459,8 @@ void CLookUpTable::SetEnergy_Prho(su2double P, su2double rho) {
 	Get_Current_Points_From_TrapezoidalMap(Prho_map, P, rho);
 
 //Determine interpolation coefficients
-	Interpolate_2D_Bilinear(rho, P, ThermoTables_Density,
-			ThermoTables_Pressure, "PRHO");
+	Interpolate_2D_Bilinear(rho, P, ThermoTables_Density, ThermoTables_Pressure,
+			"PRHO");
 	StaticEnergy = Interpolate_2D_Bilinear(ThermoTables_StaticEnergy);
 	Pressure = P;
 	Density = rho;
@@ -459,8 +472,8 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 	Get_Current_Points_From_TrapezoidalMap(hs_map, h, s);
 
 //Determine interpolation coefficients
-	Interpolate_2D_Bilinear(h, s, ThermoTables_Enthalpy,
-			ThermoTables_Entropy, "HS");
+	Interpolate_2D_Bilinear(h, s, ThermoTables_Enthalpy, ThermoTables_Entropy,
+			"HS");
 
 //Interpolate the fluid properties
 	Enthalpy = h;
@@ -485,8 +498,8 @@ void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 	Get_Current_Points_From_TrapezoidalMap(Ps_map, P, s);
 
 //Determine interpolation coefficients
-	Interpolate_2D_Bilinear(s, P, ThermoTables_Entropy,
-			ThermoTables_Pressure, "PS");
+	Interpolate_2D_Bilinear(s, P, ThermoTables_Entropy, ThermoTables_Pressure,
+			"PS");
 
 //Interpolate the fluid properties
 	Entropy = s;
@@ -531,10 +544,10 @@ void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 
 }
 
-void CLookUpTable::Interpolate_2D_Bilinear(su2double x,
-		su2double y, vector<su2double> *ThermoTables_X,
-		vector<su2double> *ThermoTables_Y, std::string grid_var) {
-	//The x,y coordinates of the quadrilateral
+void CLookUpTable::Interpolate_2D_Bilinear(su2double x, su2double y,
+		vector<su2double> *ThermoTables_X, vector<su2double> *ThermoTables_Y,
+		std::string grid_var) {
+//The x,y coordinates of the quadrilateral
 	su2double x0, y0, x1, x2, y1, y2;
 	sort(CurrentPoints.begin(), CurrentPoints.end());
 	vector<int>::iterator iter = unique(CurrentPoints.begin(),
@@ -548,7 +561,7 @@ void CLookUpTable::Interpolate_2D_Bilinear(su2double x,
 	x2 = ThermoTables_X[CurrentZone][CurrentPoints[2]];
 	y2 = ThermoTables_Y[CurrentZone][CurrentPoints[2]];
 
-	//Setup the LHM matrix for the interpolation (Vandermonde)
+//Setup the LHM matrix for the interpolation (Vandermonde)
 	Interpolation_Matrix[0][0] = 1;
 	Interpolation_Matrix[0][1] = 0;
 	Interpolation_Matrix[0][2] = 0;
@@ -561,7 +574,7 @@ void CLookUpTable::Interpolate_2D_Bilinear(su2double x,
 	Interpolation_Matrix[2][1] = x2 - x0;
 	Interpolation_Matrix[2][2] = y2 - y0;
 
-	//Invert the Interpolation matrix and take the transpose
+//Invert the Interpolation matrix and take the transpose
 	Interpolation_Coeff[0][0] = 1;
 	Interpolation_Coeff[0][1] = (y1 - y2)
 			/ (x0 * y1 - x0 * y2 - x1 * y0 + x1 * y2 + x2 * y0 - x2 * y1);
@@ -578,8 +591,8 @@ void CLookUpTable::Interpolate_2D_Bilinear(su2double x,
 	Interpolation_Coeff[2][2] = (-x0 + x1)
 			/ (x0 * y1 - x0 * y2 - x1 * y0 + x1 * y2 + x2 * y0 - x2 * y1);
 
-	//The transpose allows the same coefficients to be used
-	// for all Thermo variables (need only 4 coefficients)
+//The transpose allows the same coefficients to be used
+// for all Thermo variables (need only 4 coefficients)
 	su2double d;
 	for (int i = 0; i < 3; i++) {
 		d = 0;
@@ -683,14 +696,16 @@ void CLookUpTable::LookUpTable_Load_TEC(std::string filename) {
 	while (getline(table, line)) {
 		found = line.find("ZONE");
 		if (found != -1) {
-			if (rank == MASTER_NODE and LUT_Debug_Mode)
-			{cout << line << endl;}
+			if (rank == MASTER_NODE and LUT_Debug_Mode) {
+				cout << line << endl;
+			}
 			istringstream in(line);
 //Note down the dimensions of the table
 			int nPoints_in_Zone, nTriangles_in_Zone;
 			string c1, c2, c3, c4;
 			in >> c1 >> c2 >> nPoints_in_Zone >> c3 >> c4 >> nTriangles_in_Zone;
-			if (rank == MASTER_NODE) cout << nPoints_in_Zone << "  " << nTriangles_in_Zone << endl;
+			if (rank == MASTER_NODE)
+				cout << nPoints_in_Zone << "  " << nTriangles_in_Zone << endl;
 //Create the actual LUT of CThermoLists which is used in the FluidModel
 			nTable_Zone_Stations[zone_scanned] = nPoints_in_Zone;
 			nTable_Zone_Triangles[zone_scanned] = nTriangles_in_Zone;
@@ -768,16 +783,16 @@ void CLookUpTable::LookUpTable_Malloc(int Index_of_Zone) {
 			nTable_Zone_Stations[Index_of_Zone], 0);
 	ThermoTables_Mu[Index_of_Zone] = vector<su2double>(
 			nTable_Zone_Stations[Index_of_Zone], 0);
-	//ThermoTables_dmudrho_T[Index_of_Zone] = vector< su2double >(
-	//	nTable_Zone_Stations[Index_of_Zone], 0);
-	//ThermoTables_dmudT_rho[Index_of_Zone] = vector< su2double >(
-	//	nTable_Zone_Stations[Index_of_Zone], 0);
+//ThermoTables_dmudrho_T[Index_of_Zone] = vector< su2double >(
+//	nTable_Zone_Stations[Index_of_Zone], 0);
+//ThermoTables_dmudT_rho[Index_of_Zone] = vector< su2double >(
+//	nTable_Zone_Stations[Index_of_Zone], 0);
 	ThermoTables_Kt[Index_of_Zone] = vector<su2double>(
 			nTable_Zone_Stations[Index_of_Zone], 0);
-	//ThermoTables_dktdrho_T[Index_of_Zone] = vector< su2double >(
-	//		nTable_Zone_Stations[Index_of_Zone], 0);
-	//ThermoTables_dktdT_rho[Index_of_Zone] = vector< su2double >(
-	//		nTable_Zone_Stations[Index_of_Zone], 0);
+//ThermoTables_dktdrho_T[Index_of_Zone] = vector< su2double >(
+//		nTable_Zone_Stations[Index_of_Zone], 0);
+//ThermoTables_dktdT_rho[Index_of_Zone] = vector< su2double >(
+//		nTable_Zone_Stations[Index_of_Zone], 0);
 	Table_Zone_Triangles[Index_of_Zone] = vector<vector<int> >(
 			nTable_Zone_Triangles[Index_of_Zone]);
 	for (int j = 0; j < nTable_Zone_Triangles[Index_of_Zone]; j++) {
