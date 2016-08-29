@@ -71,6 +71,8 @@ inline unsigned short CConfig::GetnTimeInstances(void) { return nTimeInstances; 
 
 inline su2double CConfig::GetSpectralMethod_Period(void) { return SpectralMethod_Period; }
 
+inline unsigned short CConfig::GetSpectralInterpolation_Pts(void) { return SpectralInterpolation_Pts; }
+
 inline void CConfig::SetExtIter(unsigned long val_iter) { ExtIter = val_iter; }
 
 inline void CConfig::SetFSIIter(unsigned long val_iter) { FSIIter = val_iter; }

@@ -144,6 +144,7 @@ private:
     unsigned short SpectralMethod_Type; /*!< \brief Type of Spectral method, TimeSpectral or HarmonicBalance. */
 	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for Time Spectral integration. */
 	su2double SpectralMethod_Period;		/*!< \brief Period of oscillation to be used with time-spectral computations. */
+	unsigned short SpectralInterpolation_Pts;		/*!< \brief Number of points for spectral interpolation using DFT. */
 	su2double New_Elem_Adapt;			/*!< \brief Elements to adapt in the numerical grid adaptation process. */
 	su2double Delta_UnstTime,			/*!< \brief Time step for unsteady computations. */
 	Delta_UnstTimeND;						/*!< \brief Time step for unsteady computations (non dimensional). */
@@ -2293,6 +2294,12 @@ public:
 	 * \return: Period for Time Spectral.
 	 */
 	su2double GetSpectralMethod_Period(void);
+
+	/*!
+	 * \brief Retrieves the number of points for spectral interpolation using DFT.
+	 * \return: Number of points for DFT intepolation.
+	 */
+	unsigned short GetSpectralInterpolation_Pts(void);
 
 	/*!
 	 * \brief Set the number of external iterations.

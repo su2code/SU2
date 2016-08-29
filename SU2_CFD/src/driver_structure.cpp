@@ -3518,7 +3518,7 @@ CSpectralDriver::CSpectralDriver(char* confFile,
                                                                     val_nZone,
                                                                     val_nDim) {
 
-	nZoneInterp = 10;
+	nZoneInterp = config_container[ZONE_0]->GetSpectralInterpolation_Pts();
 	TotalPressureLossObj       = new su2double [nZone];
 	TotalPressureLossObjInterp = new su2double [nZoneInterp];
 	EntropyGenObj              = new su2double [nZone];
