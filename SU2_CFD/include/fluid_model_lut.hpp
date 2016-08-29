@@ -62,7 +62,7 @@ using namespace std;
 class CTrapezoidalMap {
 protected:
 	int rank, UpperI, LowerI, middleI, LowerJ, UpperJ, middleJ;
-	int UpperEdge, LowerEdge;
+	int UpperEdge, MiddleEdge, LowerEdge;
 	//The unique values of x which exist in the data
 	vector<su2double> Unique_X_Bands;
 	vector<vector<int> > Unique_Edges;
@@ -102,6 +102,9 @@ public:
 	int getUpperEdge() const {
 		return UpperEdge;
 	}
+	int getMiddleEdge() const {
+			return MiddleEdge;
+		}
 };
 
 #include "../include/fluid_model.hpp"
