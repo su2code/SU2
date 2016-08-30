@@ -97,7 +97,7 @@ void CIdealGas::SetTDState_hs (su2double h, su2double s ) {
 
 }
 
-void CIdealGas::SetTDState_Ps (su2double P, su2double s ){
+void CIdealGas::SetTDState_Ps (su2double P, su2double s ) {
 
 	su2double T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
 	su2double rho = P/(T*Gas_Constant);

@@ -36,11 +36,11 @@
 /*--- Explicit cast functions ---*/
 
 namespace SU2_TYPE{
-  inline int Int(const su2double& data){
+  inline int Int(const su2double& data) {
     return int(SU2_TYPE::GetValue(data));
   }
 
-  inline short Short(const su2double& data){
+  inline short Short(const su2double& data) {
     return short(SU2_TYPE::GetValue(data));
   }
 }

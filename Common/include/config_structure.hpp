@@ -976,7 +976,7 @@ private:
   }
 
   void addMixingPlaneOption(const string & name, unsigned short & nMarker_MixBound,
-                    string* & Marker_MixBound, string* & Marker_MixDonor){
+                    string* & Marker_MixBound, string* & Marker_MixDonor) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionMixingPlane(name, nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
@@ -984,7 +984,7 @@ private:
   }
   template <class Tenum>
   void addTurboPerfOption(const string & name, unsigned short & nMarker_TurboPerf,
-                    string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut,  unsigned short* & Kind_TurboPerformance, const map<string, Tenum> & TurboPerformance_Map){
+                    string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut,  unsigned short* & Kind_TurboPerformance, const map<string, Tenum> & TurboPerformance_Map) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionTurboPerformance<Tenum>(name, nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut, Kind_TurboPerformance, TurboPerformance_Map );

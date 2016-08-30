@@ -112,19 +112,21 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
 }
 
 void CConfig::SetPointersNull(void) {
-  Marker_CfgFile_Out_1D=NULL;       Marker_All_Out_1D=NULL;
-  Marker_CfgFile_GeoEval=NULL;      Marker_All_GeoEval=NULL;
-  Marker_CfgFile_Monitoring=NULL;   Marker_All_Monitoring=NULL;
-  Marker_CfgFile_Designing=NULL;    Marker_All_Designing=NULL;
-  Marker_CfgFile_Plotting=NULL;     Marker_All_Plotting=NULL;
-  Marker_CfgFile_DV=NULL;           Marker_All_DV=NULL;
-  Marker_CfgFile_Moving=NULL;       Marker_All_Moving=NULL;
-  Marker_CfgFile_PerBound=NULL;     Marker_All_PerBound=NULL;   Marker_PerBound=NULL;
-  Marker_CfgFile_FSIinterface=NULL;
   
-  Marker_DV=NULL;  Marker_Moving=NULL;  Marker_Monitoring=NULL;
-  Marker_Designing=NULL;  Marker_GeoEval=NULL;  Marker_Plotting=NULL;
-  Marker_CfgFile_KindBC=NULL;       Marker_All_KindBC=NULL;
+  Marker_CfgFile_Out_1D = NULL;       Marker_All_Out_1D = NULL;
+  Marker_CfgFile_GeoEval = NULL;      Marker_All_GeoEval = NULL;
+  Marker_CfgFile_Monitoring = NULL;   Marker_All_Monitoring = NULL;
+  Marker_CfgFile_Designing = NULL;    Marker_All_Designing = NULL;
+  Marker_CfgFile_Plotting = NULL;     Marker_All_Plotting = NULL;
+  Marker_CfgFile_DV = NULL;           Marker_All_DV = NULL;
+  Marker_CfgFile_Moving = NULL;       Marker_All_Moving = NULL;
+  Marker_CfgFile_PerBound = NULL;     Marker_All_PerBound = NULL;   Marker_PerBound = NULL;
+  Marker_CfgFile_FSIinterface = NULL;
+  
+  Marker_DV = NULL;  Marker_Moving = NULL;  Marker_Monitoring = NULL;
+  Marker_Designing = NULL;  Marker_GeoEval = NULL;  Marker_Plotting = NULL;
+  Marker_CfgFile_KindBC = NULL;       Marker_All_KindBC = NULL;
+  
   /*--- Marker Pointers ---*/
 
   Marker_Euler = NULL;            Marker_FarField = NULL;           Marker_Custom = NULL;
@@ -139,7 +141,7 @@ void CConfig::SetPointersNull(void) {
   Marker_FlowLoad = NULL;         Marker_Neumann = NULL;
   Marker_All_TagBound = NULL;     Marker_CfgFile_TagBound = NULL;   Marker_All_KindBC = NULL;
   Marker_CfgFile_KindBC = NULL;   Marker_All_SendRecv = NULL;       Marker_All_PerBound = NULL;
-  Marker_FSIinterface = NULL;     Marker_All_FSIinterface=NULL; Marker_Riemann = NULL;
+  Marker_FSIinterface = NULL;     Marker_All_FSIinterface = NULL;     Marker_Riemann = NULL;
   Marker_Load = NULL;
   /*--- Boundary Condition settings ---*/
 
@@ -153,8 +155,8 @@ void CConfig::SetPointersNull(void) {
   Heat_Flux = NULL;               Displ_Value = NULL;               Load_Value = NULL;
   FlowLoad_Value = NULL;
   
-  Periodic_Translate=NULL;    Periodic_Rotation=NULL;    Periodic_Center=NULL;
-  Periodic_Translation=NULL;   Periodic_RotAngles=NULL;   Periodic_RotCenter=NULL;
+  Periodic_Translate = NULL;    Periodic_Rotation = NULL;    Periodic_Center = NULL;
+  Periodic_Translation = NULL;   Periodic_RotAngles = NULL;   Periodic_RotCenter = NULL;
 
   Load_Dir = NULL;	          Load_Dir_Value = NULL;          Load_Dir_Multiplier = NULL;
   Load_Sine_Dir = NULL;	      Load_Sine_Amplitude = NULL;     Load_Sine_Frequency = NULL;
@@ -165,16 +167,16 @@ void CConfig::SetPointersNull(void) {
   MassFrac_FreeStream = NULL;
   Velocity_FreeStream = NULL;
   RefOriginMoment = NULL;
-  CFL_AdaptParam = NULL;            CFL=NULL;
+  CFL_AdaptParam = NULL;            CFL = NULL;
   PlaneTag = NULL;
   Kappa_Flow = NULL;    Kappa_AdjFlow = NULL;
   Section_Location = NULL;
-  ParamDV=NULL;     DV_Value = NULL;    Design_Variable=NULL;
+  ParamDV = NULL;     DV_Value = NULL;    Design_Variable = NULL;
   MG_PreSmooth = NULL;
   MG_PostSmooth = NULL;
   MG_CorrecSmooth = NULL;
   Subsonic_Engine_Box = NULL;
-  Hold_GridFixed_Coord=NULL;
+  Hold_GridFixed_Coord = NULL;
   EA_IntLimit=NULL;
   RK_Alpha_Step=NULL;
   Int_Coeffs = NULL;
@@ -1657,7 +1659,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   Kind_SU2 = val_software;
 
   /*--- If Kind_Obj has not been specified, these arrays need to take a default --*/
-  if (Weight_ObjFunc==NULL and Kind_ObjFunc==NULL){
+  if (Weight_ObjFunc==NULL and Kind_ObjFunc==NULL) {
     Kind_ObjFunc = new unsigned short[1];
     Kind_ObjFunc[0]=DRAG_COEFFICIENT;
     Weight_ObjFunc = new su2double[1];
@@ -1666,8 +1668,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     nObjW=1;
   }
   /*-- Correct for case where Weight_ObjFunc has not been provided or has length < kind_objfunc---*/
-  if (nObjW<nObj){
-    if (Weight_ObjFunc!=NULL){
+  if (nObjW<nObj) {
+    if (Weight_ObjFunc!=NULL) {
       cout <<"The option OBJECTIVE_WEIGHT must either have the same length as OBJECTIVE_FUNCTION,\n"<<
           "or be deleted from the config file (equal weights will be applied)."<< endl;
       exit(EXIT_FAILURE);
@@ -1682,9 +1684,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Maker sure that nMarker = nObj ---*/
   /*--- Maker sure that nMarker = nObj ---*/
-  if (nObj>0){
-    if (nMarker_Monitoring!=nObj and Marker_Monitoring!=NULL){
-      if (nMarker_Monitoring==1){
+  if (nObj>0) {
+    if (nMarker_Monitoring!=nObj and Marker_Monitoring!=NULL) {
+      if (nMarker_Monitoring==1) {
         /*-- If only one marker was listed with multiple objectives, set that marker as the marker for each objective ---*/
         nMarker_Monitoring = nObj;
         string marker = Marker_Monitoring[0];
@@ -1693,7 +1695,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         for (iMarker=0; iMarker<nMarker_Monitoring; iMarker++)
           Marker_Monitoring[iMarker] = marker;
       }
-      else if(nObj>1){
+      else if(nObj>1) {
         cout <<"When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIOR must be the same length or length 1. \n "<<
             "For multiple surfaces per objective, list the objective multiple times. \n"<<
             "For multiple objectives per marker either use one marker overall or list the marker multiple times."<<endl;
@@ -1716,8 +1718,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    *--- All the other zones are structure.
    *--- This will allow us to define multiple physics structural problems */
 
-  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION){
-	  if (val_izone==0) {	Kind_Solver = Kind_Solver_Fluid_FSI; 		FSI_Problem = true;}
+  if (Kind_Solver == FLUID_STRUCTURE_INTERACTION) {
+	  if (val_izone == 0) {	Kind_Solver = Kind_Solver_Fluid_FSI; 		FSI_Problem = true;}
 
 	  else {			 	Kind_Solver = Kind_Solver_Struc_FSI;	  	FSI_Problem = true;
 	  	  	  	  	  	  	Kind_Linear_Solver = Kind_Linear_Solver_FSI_Struc;
@@ -1725,7 +1727,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 	  	  	  	  	  	  	Linear_Solver_Error = Linear_Solver_Error_FSI_Struc;
 	  	  	  	  	  	  	Linear_Solver_Iter = Linear_Solver_Iter_FSI_Struc;}
   }
-  else{ FSI_Problem = false; }
+  else { FSI_Problem = false; }
 
   
   /*--- Initialize non-physical points/reconstructions to zero ---*/
@@ -1785,8 +1787,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Check for Fluid model consistency ---*/
 
-  if (standard_air){
-	if (Gamma != 1.4 || Gas_Constant != 287.058){
+  if (standard_air) {
+	if (Gamma != 1.4 || Gas_Constant != 287.058) {
 		Gamma = 1.4;
 		Gas_Constant = 287.058;
         }
@@ -2530,7 +2532,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   nCFL = nMGLevels+1;
   CFL = new su2double[nCFL];
   CFL[0] = CFLFineGrid;
-  if (ContinuousAdjoint){
+  if (ContinuousAdjoint) {
     CFL[0] = CFL[0] * CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[2]*=CFLRedCoeff_AdjFlow;
     CFL_AdaptParam[3]*=CFLRedCoeff_AdjFlow;
@@ -2608,9 +2610,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     
   }
   
-  if (DirectDiff != NO_DERIVATIVE){
+  if (DirectDiff != NO_DERIVATIVE) {
 #if !defined COMPLEX_TYPE && !defined ADOLC_FORWARD_TYPE && !defined CODI_FORWARD_TYPE
-      if (Kind_SU2 == SU2_CFD){
+      if (Kind_SU2 == SU2_CFD) {
         cout << "SU2_CFD: Config option DIRECT_DIFF= YES requires AD or complex support!" << endl;
         cout << "Please use SU2_CFD_DIRECTDIFF (configuration/compilation is done using the preconfigure.py script)." << endl;
         exit(EXIT_FAILURE);
@@ -2642,15 +2644,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 #if defined CODI_REVERSE_TYPE
   AD_Mode = YES;
 #else
-  if (AD_Mode == YES){
+  if (AD_Mode == YES) {
     cout << "AUTO_DIFF=YES requires Automatic Differentiation support." << endl;
     cout << "Please use correct executables (configuration/compilation is done using the preconfigure.py script)." << endl;
   }
 #endif
 
-  if (DiscreteAdjoint){
+  if (DiscreteAdjoint) {
 #if !defined ADOLC_REVERSE_TYPE && !defined CODI_REVERSE_TYPE
-    if (Kind_SU2 == SU2_CFD){
+    if (Kind_SU2 == SU2_CFD) {
       cout << "SU2_CFD: Config option MATH_PROBLEM= DISCRETE_ADJOINT requires AD support!" << endl;
       cout << "Please use SU2_CFD_AD (configuration/compilation is done using the preconfigure.py script)." << endl;
       exit(EXIT_FAILURE);
@@ -2660,23 +2662,23 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Disable writing of limiters if enabled ---*/
     Wrt_Limiters = false;
 
-    if (Unsteady_Simulation){
+    if (Unsteady_Simulation) {
 
       Restart_Flow = false;
 
-      if (Grid_Movement){
+      if (Grid_Movement) {
         cout << "Dynamic mesh movement currently not supported for the discrete adjoint solver." << endl;
         exit(EXIT_FAILURE);
       }
 
-      /* --- If the averaging interval is not set, we average over all time-steps ---*/
+      /*--- If the averaging interval is not set, we average over all time-steps ---*/
 
-      if (Iter_Avg_Objective == 0.0){
+      if (Iter_Avg_Objective == 0.0) {
         Iter_Avg_Objective = nExtIter;
       }
     }
 
-    switch(Kind_Solver){
+    switch(Kind_Solver) {
       case EULER:
         Kind_Solver = DISC_ADJ_EULER;
         break;
@@ -3125,11 +3127,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl <<"------------------------ Physical Case Definition -----------------------" << endl;
   if (val_software == SU2_CFD) {
-	if (FSI_Problem){
+	if (FSI_Problem) {
 	   cout << "Fluid-Structure Interaction." << endl;
 	}
 
-  if (DiscreteAdjoint){
+  if (DiscreteAdjoint) {
      cout <<"Discrete Adjoint equations using Algorithmic Differentiation " << endl;
      cout <<"based on the physical case: ";
   }
@@ -3331,9 +3333,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << "Input mesh file name: " << Mesh_FileName << endl;
 
 	if (val_software == SU2_DOT) {
-    if (DiscreteAdjoint){
+    if (DiscreteAdjoint) {
       cout << "Input sensitivity file name: " << GetObjFunc_Extension(Solution_AdjFileName) << "." << endl;
-    }else{
+    }else {
 		cout << "Input sensitivity file name: " << SurfAdjCoeff_FileName << "." << endl;
 	}
   }
@@ -3404,7 +3406,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           else cout << " <-> ";
         }
 
-        for (iDV_Value = 0; iDV_Value < nDV_Value[iDV]; iDV_Value++){
+        for (iDV_Value = 0; iDV_Value < nDV_Value[iDV]; iDV_Value++) {
           cout << DV_Value[iDV][iDV_Value];
           if (iDV_Value != nDV_Value[iDV]-1) cout << ", ";
         }
@@ -3492,7 +3494,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	if (((val_software == SU2_CFD) && ( ContinuousAdjoint )) || (val_software == SU2_DOT)) {
 
 		cout << endl <<"----------------------- Design problem definition -----------------------" << endl;
-		if (nObj==1){
+		if (nObj==1) {
       switch (Kind_ObjFunc[0]) {
         case DRAG_COEFFICIENT:        cout << "CD objective function." << endl; break;
         case LIFT_COEFFICIENT:        cout << "CL objective function." << endl; break;
@@ -3520,7 +3522,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case OUTFLOW_GENERALIZED:     cout << "Generalized outflow objective function." << endl; break;
       }
 		}
-		else{
+		else {
 		  cout << "Weighted sum objective function." << endl;
 		}
 
@@ -3829,7 +3831,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         cout << endl;
       }
 
-			if (Unsteady_Simulation != TIME_STEPPING){
+			if (Unsteady_Simulation != TIME_STEPPING) {
 				cout << "Courant-Friedrichs-Lewy number:   ";
 				cout.precision(3);
 				cout.width(6); cout << CFL[0];
@@ -4028,7 +4030,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_DOT) {
-    if (DiscreteAdjoint){
+    if (DiscreteAdjoint) {
       cout << "Output Volume Sensitivity file name: " << VolSens_FileName << ". " << endl;
       cout << "Output Surface Sensitivity file name: " << SurfSens_FileName << ". " << endl;
     }
@@ -4908,7 +4910,7 @@ string CConfig::GetMultizone_FileName(string val_filename, int val_iZone) {
     string multizone_filename = val_filename;
     char buffer[50];
     
-    if (GetnZone() > 1){
+    if (GetnZone() > 1) {
         unsigned short lastindex = multizone_filename.find_last_of(".");
         multizone_filename = multizone_filename.substr(0, lastindex);
         SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
@@ -4927,7 +4929,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
     /*--- Remove filename extension (.dat) ---*/
     unsigned short lastindex = Filename.find_last_of(".");
     Filename = Filename.substr(0, lastindex);
-    if (nObj==1){
+    if (nObj==1) {
       switch (Kind_ObjFunc[0]) {
       case DRAG_COEFFICIENT:        AdjExt = "_cd";       break;
       case LIFT_COEFFICIENT:        AdjExt = "_cl";       break;
@@ -4955,7 +4957,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case OUTFLOW_GENERALIZED:     AdjExt = "_chn";       break;
       }
     }
-    else{
+    else {
       if (DiscreteAdjoint) {
         cout << endl << "Combined objective not yet compatible with discrete adjoint. Specify only one OBJECTIVE_FUNCTION." << endl << endl;
         exit(EXIT_FAILURE);

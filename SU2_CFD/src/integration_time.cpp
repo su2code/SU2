@@ -808,7 +808,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
   
   if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
     for (iMesh = FinestMesh; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {
-      if ((config[iZone]->GetMGCycle() == FULLMG_CYCLE) || config[iZone]->GetLowFidelitySim()){
+      if ((config[iZone]->GetMGCycle() == FULLMG_CYCLE) || config[iZone]->GetLowFidelitySim()) {
         SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
       }
       SetRestricted_EddyVisc(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
