@@ -38,7 +38,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
-#include <string>
+#include <cstring>
 #include <vector>
 #include <stdlib.h>
 #include <cmath>
