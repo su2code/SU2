@@ -656,6 +656,9 @@ inline void CSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 inline void CSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
 										 CConfig *config, unsigned short val_marker) { }
 
+inline void CSolver::BC_TurboNonUniform(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+										 CConfig *config, unsigned short val_marker) { }
+
 inline void CSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
 										 CConfig *config, unsigned short val_marker) { }
 
