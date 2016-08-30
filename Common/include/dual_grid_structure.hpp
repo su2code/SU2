@@ -1214,8 +1214,12 @@ class CTurboVertex : public CVertex {
 private:
 	su2double *TurboNormal;			/*!< \brief Normal for computing correct turbomachinery quantities. */
 	su2double Area;							/*!< \brief Value of the face area associated to the vertex */
+//	su2double PitchCoord;       /*!< \brief Value of the abscissa pitch wise */
+	su2double AngularCoord;     /*!< \brief Value of the angular coordinate  */
+	su2double DeltaAngularCoord;     /*!< \brief Value of the angular coordinate w.r.t. the minimum pitch point  */
 	unsigned long OldVertex;    /*!< \brief Value of the vertex numeration before the ordering */
 	int GlobalIndex;						/*!< \brief Value of the vertex numeration after the ordering and global with respect to MPI partinioning */
+
 public:
 
 	/*!
@@ -1279,6 +1283,36 @@ public:
 	 * \brief get global index for ordered span-wise turbovertex.
 	 */
 	int GetGlobalVertexIndex(void);
+
+//	/*!
+//	 * \brief set global pitch coord.
+//	 */
+//	void SetPitchCoord(su2double pitchCoord);
+//
+//	/*!
+//	 * \brief get global pitch coord.
+//	 */
+//	su2double GetPitchCoord(void);
+
+	/*!
+	 * \brief set angular coord.
+	 */
+	void SetAngularCoord(su2double angCoord);
+
+	/*!
+	 * \brief get angular coord.
+	 */
+	su2double GetAngularCoord(void);
+
+	/*!
+	 * \brief set angular coord.
+	 */
+	void SetDeltaAngularCoord(su2double angCoord);
+
+	/*!
+	 * \brief get angular coord.
+	 */
+	su2double GetDeltaAngularCoord(void);
 };
 
 #include "dual_grid_structure.inl"
