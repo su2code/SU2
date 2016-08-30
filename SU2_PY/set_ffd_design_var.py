@@ -3,7 +3,7 @@
 ## \file set_ffd_design_var.py.py
 #  \brief Python script for automatically generating a list of FFD variables.
 #  \author T. Economon, F. Palacios
-#  \version 4.2.0 "Cardinal"
+#  \version 4.3.0 "Cardinal"
 #
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
@@ -14,6 +14,8 @@
 #                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
 #                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
 #                 Prof. Rafael Palacios' group at Imperial College London.
+#                 Prof. Edwin van der Weide's group at the University of Twente.
+#                 Prof. Vincent Terrapon's group at the University of Liege.
 #
 # Copyright (C) 2012-2016 SU2, the open-source CFD code.
 #
