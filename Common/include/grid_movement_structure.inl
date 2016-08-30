@@ -218,9 +218,9 @@ inline void CVolumetricMovement::Set_nIterMesh(unsigned long val_nIterMesh) { nI
 
 inline unsigned long CVolumetricMovement::Get_nIterMesh() { return nIterMesh; }
 
-inline bool CSurfaceMovement::CheckFFDBoxDefinition(CConfig *config, unsigned short iDV){
-  for (unsigned short iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++){
-    if (FFDBox[iFFDBox]->GetTag() == config->GetFFDTag(iDV)){ return true;}
+inline bool CSurfaceMovement::CheckFFDBoxDefinition(CConfig *config, unsigned short iDV) {
+  for (unsigned short iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
+    if (FFDBox[iFFDBox]->GetTag() == config->GetFFDTag(iDV)) { return true;}
   }
   return false;
 }

@@ -1881,7 +1881,7 @@ class COptionMathProblem : public COptionBase{
   bool restart_def;
 
 public:
-  COptionMathProblem(string option_field_name, bool & cont_adjoint_field, bool cont_adjoint_default, bool & disc_adjoint_field, bool disc_adjoint_default, bool & restart_field, bool restart_default) : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field){
+  COptionMathProblem(string option_field_name, bool & cont_adjoint_field, bool cont_adjoint_default, bool & disc_adjoint_field, bool disc_adjoint_default, bool & restart_field, bool restart_default) : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field) {
     this->name = option_field_name;
     this->cont_adjoint_def = cont_adjoint_default;
     this->disc_adjoint_def = disc_adjoint_default;
@@ -1912,7 +1912,7 @@ public:
       this->restart= true;
       return "";
     }
-    if (option_value[0] == "DISCRETE_ADJOINT"){
+    if (option_value[0] == "DISCRETE_ADJOINT") {
       this->disc_adjoint = true;
       this->cont_adjoint= false;
       this->restart = true;
@@ -2154,7 +2154,7 @@ public:
       }
     }
 
-    if (i != totalnValueDV){
+    if (i != totalnValueDV) {
       string newstring;
       newstring.append(this->name);
       newstring.append(": a design variable in the configuration file has the wrong number of values");
@@ -2602,7 +2602,7 @@ class COptionNRBC : public COptionRiemann<Tenum> {
 public:
 	  COptionNRBC(string option_field_name, unsigned short & nMarker_NRBC, string* & Marker_NRBC, unsigned short* & option_field,
 			  	  const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir): COptionRiemann<Tenum>(option_field_name, nMarker_NRBC,  Marker_NRBC, option_field,
-			  	   m, var1, var2,FlowDir){}
+			  	   m, var1, var2,FlowDir) {}
 	  ~COptionNRBC() {};
 
 };

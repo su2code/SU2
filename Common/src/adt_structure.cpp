@@ -68,7 +68,7 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
   isEmpty = false;
   nLeaves = nPoints -1;
   if(nPoints <= 1) ++nLeaves;
-  if(nLeaves == 0){isEmpty = true; return;}
+  if(nLeaves == 0) {isEmpty = true; return;}
 
   /*--- Allocate the memory for the leaves of the ADT and the minimum and
         maximum coordinates of the leaves. Note that these coordinates are

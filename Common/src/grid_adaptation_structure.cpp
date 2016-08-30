@@ -258,10 +258,10 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config) {
   unsigned short lastindex = copy.find_last_of(".");
   copy = copy.substr(0, lastindex);
 	strcpy (cstr, copy.c_str());
-	if (config->GetnObj()>1){
+	if (config->GetnObj()>1) {
 	  SPRINTF (buffer, "_combo.dat");
 	}
-	else{
+	else {
     if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT)        SPRINTF (buffer, "_cd.dat");
     if (config->GetKind_ObjFunc() == LIFT_COEFFICIENT)        SPRINTF (buffer, "_cl.dat");
     if (config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT)   SPRINTF (buffer, "_csf.dat");
@@ -3526,10 +3526,10 @@ void CGridAdaptation::SetRestart_AdjSolution(CConfig *config, CPhysicalGeometry 
   unsigned short lastindex = copy.find_last_of(".");
   copy = copy.substr(0, lastindex);
 	strcpy (cstr, copy.c_str());
-  if (config->GetnObj()>1){
+  if (config->GetnObj()>1) {
     SPRINTF (buffer, "_combo.dat");
   }
-  else{
+  else {
     if (config->GetKind_ObjFunc() == DRAG_COEFFICIENT)        SPRINTF (buffer, "_cd.dat");
     if (config->GetKind_ObjFunc() == LIFT_COEFFICIENT)        SPRINTF (buffer, "_cl.dat");
     if (config->GetKind_ObjFunc() == SIDEFORCE_COEFFICIENT)   SPRINTF (buffer, "_csf.dat");

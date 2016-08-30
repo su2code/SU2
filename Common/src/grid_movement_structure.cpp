@@ -84,7 +84,7 @@ void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) 
 			geometry->node[iPoint]->SetCoord(iDim, new_coord);
 		}
 
-  /* --- LinSysSol contains the non-transformed displacements in the periodic halo cells.
+  /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
    * Hence we still need a communication of the transformed coordinates, otherwise periodicity
    * is not maintained. ---*/
 
@@ -176,7 +176,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
     /*--- Set the boundary derivatives (overrides the actual displacements) ---*/
 
-    if (Derivative){
+    if (Derivative) {
       SetBoundaryDerivatives(geometry, config);
     }
     
@@ -201,7 +201,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      * we solve the system using the normal matrix vector product and preconditioner.
      * For the mesh sensitivities using the discrete adjoint method we solve the system using the transposed matrix,
      * hence we need the corresponding matrix vector product and the preconditioner.  ---*/
-    if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative)){
+    if (!Derivative || ((config->GetKind_SU2() == SU2_CFD) && Derivative)) {
       mat_vec = new CSysMatrixVectorProduct(StiffMatrix, geometry, config);
       precond = new CLU_SGSPreconditioner(StiffMatrix, geometry, config);
 
@@ -281,9 +281,9 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/
 
-    if (!Derivative){
+    if (!Derivative) {
       UpdateGridCoord(geometry, config);
-    }else{
+    }else {
       UpdateGridCoord_Derivatives(geometry, config);
     }
 
@@ -1737,12 +1737,12 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 	        MeanCoord[iDim] += VarCoord[iDim]*VarCoord[iDim];
 	    }
 	    for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = sqrt(MeanCoord[iDim]);
-	    if (nDim==3){
+	    if (nDim==3) {
 	      if ((MeanCoord[0] <= MeanCoord[1]) && (MeanCoord[0] <= MeanCoord[2])) axis = 0;
 	      if ((MeanCoord[1] <= MeanCoord[0]) && (MeanCoord[1] <= MeanCoord[2])) axis = 1;
 	      if ((MeanCoord[2] <= MeanCoord[0]) && (MeanCoord[2] <= MeanCoord[1])) axis = 2;
 	    }
-	    else{
+	    else {
 	      if ((MeanCoord[0] <= MeanCoord[1]) ) axis = 0;
 	      if ((MeanCoord[1] <= MeanCoord[0]) ) axis = 1;
 	    }
@@ -1814,13 +1814,13 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
 
 }
 
-void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *config){
+void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *config) {
   unsigned short iDim, iMarker;
   unsigned long iPoint, total_index, iVertex;
 
   su2double * VarCoord;
   unsigned short Kind_SU2 = config->GetKind_SU2();
-  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)){
+  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ((config->GetMarker_All_DV(iMarker) == YES)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -1837,8 +1837,8 @@ void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *c
     if (LinSysRes.norm() == 0.0) cout << "Warning: Derivatives are zero!" << endl;
   } else if (Kind_SU2 == SU2_DOT) {
 
-    for (iPoint = 0; iPoint < nPoint; iPoint++){
-      for (iDim = 0; iDim < nDim; iDim++){
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
         total_index = iPoint*nDim + iDim;
         LinSysRes[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
         LinSysSol[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
@@ -1847,7 +1847,7 @@ void CVolumetricMovement::SetBoundaryDerivatives(CGeometry *geometry, CConfig *c
   }
 }
 
-void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config){
+void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConfig *config) {
   unsigned short iDim, iMarker;
   unsigned long iPoint, total_index, iVertex;
   su2double *new_coord = new su2double[3];
@@ -1856,8 +1856,8 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
 
   /*--- Update derivatives of the grid coordinates using the solution of the linear system
      after grid deformation (LinSysSol contains the derivatives of the x, y, z displacements). ---*/
-  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)){
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++){
+  if ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD)) {
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       new_coord[0] = 0.0; new_coord[1] = 0.0; new_coord[2] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         total_index = iPoint*nDim + iDim;
@@ -1866,14 +1866,14 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
       }
       geometry->node[iPoint]->SetCoord(new_coord);
     }
-  } else if (Kind_SU2 == SU2_DOT){
+  } else if (Kind_SU2 == SU2_DOT) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
-         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )){
+         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (geometry->node[iPoint]->GetDomain()){
+          if (geometry->node[iPoint]->GetDomain()) {
             for (iDim = 0; iDim < nDim; iDim++) {
               total_index = iPoint*nDim + iDim;
               geometry->SetSensitivity(iPoint,iDim, LinSysSol[total_index]);
@@ -2816,10 +2816,10 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         
       }
       
-      /* --- Check if the FFD boxes referenced in the design variable definition can be found --- */
+      /*--- Check if the FFD boxes referenced in the design variable definition can be found ---*/
 
       for (iDV = 0; iDV < config->GetnDV(); iDV++) {
-        if (!CheckFFDBoxDefinition(config, iDV)){
+        if (!CheckFFDBoxDefinition(config, iDV)) {
          cout << endl << "There is no FFD box with tag \"" << config->GetFFDTag(iDV)
               << "\" defined in the mesh file." << endl;
          cout << "Check the definition of the design variables and/or the FFD settings !!" << endl;
@@ -3043,12 +3043,12 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     allmoving = true;
     
     /*--- Loop over markers ---*/
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_DV(iMarker) == NO)
         allmoving = false;
     }
     
-    if (!allmoving){
+    if (!allmoving) {
       /*---Only some markers are moving, use the surface method ---*/
       if (config->GetDesign_Variable(0) == ROTATION)
         SetRotation(geometry, config, iDV, false);
@@ -3057,7 +3057,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       if (config->GetDesign_Variable(0) == TRANSLATION)
         SetTranslation(geometry, config, iDV, false);
     }
-    else{
+    else {
       if (rank == MASTER_NODE)
         cout << "No surface deformation (scaling, rotation, or translation)." << endl;
     }
@@ -3075,21 +3075,21 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 }
 
 
-void CSurfaceMovement::SetSurface_Derivative(CGeometry *geometry, CConfig *config){
+void CSurfaceMovement::SetSurface_Derivative(CGeometry *geometry, CConfig *config) {
 
   su2double DV_Value = 0.0;
 
   unsigned short iDV = 0, iDV_Value = 0;
 
-  for (iDV = 0; iDV < config->GetnDV(); iDV++){
-    for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++){
+  for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+    for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
 
       DV_Value = config->GetDV_Value(iDV, iDV_Value);
 
       /*--- If value of the design variable is not 0.0 we apply the differentation.
      *     Note if multiple variables are non-zero, we end up with the sum of all the derivatives. ---*/
 
-      if (DV_Value != 0.0){
+      if (DV_Value != 0.0) {
 
         DV_Value = 0.0;
 
@@ -3402,17 +3402,17 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
 
       found_Marker = false;
 
-      /* --- Double check if the marker is indeed moved by the FFD box (i.e. if there is at least one surface point moved)
+      /*--- Double check if the marker is indeed moved by the FFD box (i.e. if there is at least one surface point moved)
        *     This is important because the intersection could be outside of the FFD box with a surface that is moved by a different FFD box. ---*/
 
       for (iSurfacePoints = 0; iSurfacePoints < FFDBox->GetnSurfacePoint(); iSurfacePoints++) {
-        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_All_TagBound(FFDBox->Get_MarkerIndex(iSurfacePoints))){
+        if (config->GetMarker_All_TagBound(iMarker) == config->GetMarker_All_TagBound(FFDBox->Get_MarkerIndex(iSurfacePoints))) {
           found_Marker = true;
           break;
         }
       }
 
-      if (found_Marker == true){
+      if (found_Marker == true) {
 
         for (iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++) {
           for (iNode = 0; iNode < geometry->bound[iMarker][iElem]->GetnNodes(); iNode++) {
@@ -3422,12 +3422,12 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
 
               if (jPoint > iPoint) {
 
-                for (iDim = 0; iDim < geometry->GetnDim(); iDim++){
+                for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
                   Coord_0[iDim] = geometry->node[iPoint]->GetCoord()[iDim];
                   Coord_1[iDim] = geometry->node[jPoint]->GetCoord()[iDim];
                 }
 
-                if (geometry->GetnDim() == 3){
+                if (geometry->GetnDim() == 3) {
 
                   if (!IPlane_Intersect_A) {
                     if (geometry->SegmentIntersectsTriangle(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_1_A, IPlane_Coord_2_A)) { IPlane_Intersect_A = true; }
@@ -3461,17 +3461,17 @@ void CSurfaceMovement::CheckFFDIntersections(CGeometry *geometry, CConfig *confi
 
                 } else {
 
-                  if (!IPlane_Intersect_A){
-                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_2_A)){ IPlane_Intersect_A = true;}
+                  if (!IPlane_Intersect_A) {
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_A, IPlane_Coord_2_A)) { IPlane_Intersect_A = true;}
                   }
-                  if (!IPlane_Intersect_B){
-                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_B, IPlane_Coord_2_B)){ IPlane_Intersect_B = true;}
+                  if (!IPlane_Intersect_B) {
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, IPlane_Coord_0_B, IPlane_Coord_2_B)) { IPlane_Intersect_B = true;}
                   }
-                  if (!JPlane_Intersect_A){
-                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_A, JPlane_Coord_2_A)){ JPlane_Intersect_A = true;}
+                  if (!JPlane_Intersect_A) {
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_A, JPlane_Coord_2_A)) { JPlane_Intersect_A = true;}
                   }
-                  if (!JPlane_Intersect_B){
-                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_B, JPlane_Coord_2_B)){ JPlane_Intersect_B = true;}
+                  if (!JPlane_Intersect_B) {
+                    if (geometry->SegmentIntersectsLine(Coord_0, Coord_1, JPlane_Coord_0_B, JPlane_Coord_2_B)) { JPlane_Intersect_B = true;}
                   }
                 }
               }
@@ -3743,7 +3743,7 @@ void CSurfaceMovement::SetFFDCPChange_2D(CGeometry *geometry, CConfig *config, C
     /*--- If we have only design value, than this value is the amplitude,
      * otherwise we have a general movement. ---*/
 
-    if (config->GetnDV_Value(iDV) == 1){
+    if (config->GetnDV_Value(iDV) == 1) {
 
       Ampl = config->GetDV_Value(iDV);
 
@@ -6347,7 +6347,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry *geometry, CConfig *config, CFreeFo
             for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
               jPoint =  geometry->vertex[iMarker][iVertex]->GetNode();
               if (iPoint == geometry->node[jPoint]->GetGlobalIndex()) {
-                for (iDim = 0; iDim < nDim; iDim++){
+                for (iDim = 0; iDim < nDim; iDim++) {
                   coord[iDim] = geometry->node[jPoint]->GetCoord()[iDim];
                 }
                 FFDBox[iFFDBox]->Set_MarkerIndex(iMarker);
