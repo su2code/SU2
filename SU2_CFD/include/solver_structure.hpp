@@ -1352,7 +1352,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	virtual void Viscous_Forces(CGeometry *geometry, CConfig *config);
+	virtual void Friction_Forces(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief A virtual member.
@@ -5408,7 +5408,7 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void Viscous_Forces(CGeometry *geometry, CConfig *config);
+	void Friction_Forces(CGeometry *geometry, CConfig *config);
     
 	/*!
 	 * \brief Get the non dimensional lift coefficient (viscous contribution).
