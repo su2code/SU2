@@ -151,6 +151,8 @@ inline void CGeometry::SetnDim(unsigned short val_nDim) { nDim = val_nDim; }
 
 inline unsigned long CGeometry::GetnVertex(unsigned short val_marker) { return nVertex[val_marker]; }
 
+inline unsigned short CGeometry::GetnSpanWiseSections(unsigned short marker_flag) { return nSpanWiseSections[marker_flag -1]; }
+
 inline unsigned long CGeometry::GetnVertexSpan(unsigned short val_marker, unsigned short val_span) { return nVertexSpan[val_marker][val_span]; }
 
 inline unsigned long CGeometry::GetnFreqSpan(unsigned short val_marker, unsigned short val_span) { return (nTotVertexSpan[val_marker][val_span]/2 -1); }
@@ -170,6 +172,8 @@ inline void CGeometry::SetBoundVolume(void) { }
 inline void CGeometry::SetVertex(void) { }
 
 inline void CGeometry::SetVertex(CConfig *config) { }
+
+inline void CGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, unsigned short marker_flag, bool allocate) { }
 
 inline void CGeometry::SetTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short marker_flag, bool allocate) { }
 

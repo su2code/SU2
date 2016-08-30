@@ -622,6 +622,8 @@ void CDriver::Geometrical_Preprocessing() {
 
     /*--- Create turbovertex structure ---*/
 		 if (config_container[iZone]->GetBoolTurbomachinery()){
+			geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, INFLOW, true);
+			geometry_container[iZone][MESH_0]->ComputeNSpan(config_container[iZone], iZone, OUTFLOW, true);
 			geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, INFLOW, true);
 			geometry_container[iZone][MESH_0]->SetTurboVertex(config_container[iZone], iZone, OUTFLOW, true);
 		 }

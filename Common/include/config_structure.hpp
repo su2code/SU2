@@ -68,6 +68,7 @@ private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
   unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
+  unsigned short Kind_SpanWise; /*!< \brief Kind of span-wise section computation.*/
   unsigned short *Kind_TurboMachinery;  /*!< \brief Kind of turbomachynery architecture.*/
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
 	su2double OrderMagResidual; /*!< \brief Order of magnitude reduction. */
@@ -165,7 +166,7 @@ private:
 	nMarker_MixingPlaneInterface,				/*!< \brief Number of mixing plane interface boundary markers. */
 	nMarker_Turbomachinery,				/*!< \brief Number turbomachinery markers. */
 	nMarker_TurboPerformance,				/*!< \brief Number of turboperformance markers. */
-	nSpanWiseSections,			/*!< \brief Number of spanwise sections to compute 3D BC and Performance for turbomachinery   */
+	nSpanWiseSections_User,			/*!< \brief Number of spanwise sections to compute 3D BC and Performance for turbomachinery   */
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
   nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
@@ -2205,6 +2206,12 @@ public:
 	 */
 	unsigned short GetnMarker_ActDisk_Outlet(void);
 
+	/*!
+	 * \brief Get the total number of periodic boundary markers.
+	 * \return Total number of periodic boundary markers.
+	 */
+	unsigned short GetnMarker_PerBound(void);
+
   /*!
    * \brief Get the total number of 1D output markers.
    * \return Total number of monitoring markers.
@@ -3589,6 +3596,13 @@ public:
 	 * \return Kind of turbomachinery architecture.
 	 */
 	unsigned short GetKind_TurboMachinery(unsigned short val_iZone);
+
+	/*!
+	 * \brief Get the kind of turbomachinery architecture.
+	 * \return Kind of turbomachinery architecture.
+	 */
+	unsigned short GetKind_SpanWise(void);
+
 	/*!
      * \brief Verify if there is mixing plane interface specified from config file.
 	 * \return boolean.
@@ -3652,7 +3666,7 @@ public:
    * \brief number span-wise sections to compute 3D BC and performance for turbomachinery.
    * \return number of span-wise sections.
    */
-	unsigned short Get_nSpanWiseSections(void);
+	unsigned short Get_nSpanWiseSections_User(void);
 
     /*!
 	 * \brief get inlet bounds name for Turbomachinery performance calculation.
@@ -3665,6 +3679,12 @@ public:
 	 * \return name of the bound.
 	 */
 	string GetMarker_TurboPerf_BoundOut(unsigned short index);
+
+	/*!
+	 * \brief get outlet bounds name for Turbomachinery performance calculation.
+	 * \return name of the bound.
+	 */
+	string GetMarker_PerBound(unsigned short val_marker);
 
     /*!
 	 * \brief Get the number of sections.

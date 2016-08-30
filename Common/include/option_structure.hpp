@@ -807,7 +807,8 @@ enum RIEMANN_TYPE {
   MIXING_IN = 7, /*!< \brief User does not specify anything information are retrieved from the other domain */
   MIXING_OUT = 8, /*!< \brief User does not specify anything information are retrieved from the other domain */
   SUPERSONIC_OUTFLOW = 9,
-	RADIAL_EQUILIBRIUM = 10
+	RADIAL_EQUILIBRIUM = 10,
+	GLOBAL_STATIC_PRESSURE = 11
 };
 
 static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>
@@ -820,7 +821,8 @@ static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_
 ("MIXING_IN", MIXING_IN)
 ("MIXING_OUT", MIXING_OUT)
 ("SUPERSONIC_OUTFLOW", SUPERSONIC_OUTFLOW)
-("RADIAL_EQUILIBRIUM", RADIAL_EQUILIBRIUM);
+("RADIAL_EQUILIBRIUM", RADIAL_EQUILIBRIUM)
+("GLOBAL_STATIC_PRESSURE", GLOBAL_STATIC_PRESSURE);
 
 static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYPE>
 ("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
@@ -832,7 +834,8 @@ static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYP
 ("MIXING_IN", MIXING_IN)
 ("MIXING_OUT", MIXING_OUT)
 ("SUPERSONIC_OUTFLOW", SUPERSONIC_OUTFLOW)
-("RADIAL_EQUILIBRIUM", RADIAL_EQUILIBRIUM);
+("RADIAL_EQUILIBRIUM", RADIAL_EQUILIBRIUM)
+("GLOBAL_STATIC_PRESSURE", GLOBAL_STATIC_PRESSURE);
 
 static const map<string, RIEMANN_TYPE> NonUniform_Map = CCreateMap<string, RIEMANN_TYPE>
 ("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
@@ -857,6 +860,19 @@ static const map<string, MIXINGPROCESS_TYPE> MixingProcess_Map = CCreateMap<stri
 ("MIXEDOUT_AVERAGE",  MIXEDOUT_AVERAGE)
 ("MIXEDOUT_AVERAGE_CYL",  MIXEDOUT_AVERAGE_CYL)
 ("MASSFLOW_AVERAGE", MASSFLOW_AVERAGE);
+
+
+/*!
+ * \brief this option allow to compute the span-wise section in different ways.
+ */
+enum SPANWISE_TYPE {
+  AUTOMATIC = 1,		/*!< \brief number of span-wise section are computed automatically */
+  EQUISPACED = 2           /*!< \brief number of span-wise section are specified from the user */
+};
+
+static const map<string, SPANWISE_TYPE> SpanWise_Map = CCreateMap<string, SPANWISE_TYPE>
+("AUTOMATIC", AUTOMATIC)
+("EQUISPACED", EQUISPACED);
 
 /*!
  * \brief types of mixing process for averaging quantities at the boundaries.

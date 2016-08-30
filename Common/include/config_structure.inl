@@ -741,6 +741,8 @@ inline unsigned short CConfig::GetKind_MixingProcess(void) { return Kind_MixingP
 
 inline unsigned short CConfig::GetKind_TurboMachinery(unsigned short val_iZone) { return Kind_TurboMachinery[val_iZone]; }
 
+inline unsigned short CConfig::GetKind_SpanWise(void) { return Kind_SpanWise; }
+
 inline bool CConfig::GetBoolMixingPlaneInterface(void) { return (nMarker_MixingPlaneInterface !=0);}
 
 inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachinery !=0);}
@@ -759,11 +761,13 @@ inline unsigned short CConfig::GetnMarker_Turbomachinery(void) { return nMarker_
 
 inline unsigned short CConfig::GetnMarker_TurboPerformance(void) { return nMarker_TurboPerformance;}
 
-inline unsigned short CConfig::Get_nSpanWiseSections(void) { return nSpanWiseSections;}
+inline unsigned short CConfig::Get_nSpanWiseSections_User(void) { return nSpanWiseSections_User;}
 
 inline string CConfig::GetMarker_TurboPerf_BoundIn(unsigned short index) {return Marker_TurboBoundIn[index];}
 
 inline string CConfig::GetMarker_TurboPerf_BoundOut(unsigned short index) {return Marker_TurboBoundOut[index];}
+
+inline string CConfig::GetMarker_PerBound(unsigned short val_marker){return Marker_PerBound[val_marker];}
 
 inline unsigned short CConfig::GetnSections(void) { return nSections; }
 
@@ -904,6 +908,8 @@ inline unsigned short CConfig::GetnMarker_NearFieldBound(void) { return nMarker_
 inline unsigned short CConfig::GetnMarker_ActDisk_Inlet(void) { return nMarker_ActDisk_Inlet; }
 
 inline unsigned short CConfig::GetnMarker_ActDisk_Outlet(void) { return nMarker_ActDisk_Outlet; }
+
+inline unsigned short CConfig::GetnMarker_PerBound(void){return nMarker_PerBound;}
 
 inline unsigned short CConfig::GetnObj(void) { return nObj;}
 
