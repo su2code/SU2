@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-## \file test_pyWrapper.py
-#  \brief Python script to launch SU2_CFD through the Python Wrapper
+## \file SU2_CFD.py
+#  \brief Python script to launch SU2_CFD through the Python Wrapper.
 #  \author David Thomas
 #  \version 4.3.0 "Cardinal"
 #
