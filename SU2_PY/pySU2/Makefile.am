@@ -1,7 +1,7 @@
 ################################################################################
 #
 # \file Makefile.am
-# \brief Makefile for the SU2 Python-wrapper
+# \brief Makefile for the SU2 Python wrapper.
 # \author D. Thomas
 # \version 4.3.0 "Cardinal"
 #
@@ -61,7 +61,6 @@ SWIG_INCLUDE = ${PY_INCLUDE}
 SUBDIR_EXEC = ${bindir}
 
 all:	
-	@echo "******** Wrapping SU2 ********"; \
 	${MAKE} real; 
 	
 # List the dependencies
@@ -112,7 +111,7 @@ clean:
 	rm -f ${CURRENT_DIR}/*.h
 	rm -f ${CURRENT_DIR}/*.py
 
-install:
+install: all
 	${INSTALL} SU2Solver.py ${bindir}
 	${INSTALL} _SU2Solver.so ${bindir}
 
