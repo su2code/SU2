@@ -67,6 +67,8 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   
   CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
   
+  CMerit_Mnt = NULL;  CT_Mnt = NULL;  CQ_Mnt = NULL;
+
   /*--- Supersonic simulation array initialization ---*/
   
   CEquivArea_Inv = NULL;
@@ -212,6 +214,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Rotorcraft simulation array initialization ---*/
 
   CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
+
+  CMerit_Mnt = NULL; CT_Mnt = NULL; CQ_Mnt = NULL;
 
   /*--- Supersonic simulation array initialization ---*/
   
@@ -544,6 +548,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   CQ_Inv           = new su2double[nMarker];
   CMerit_Inv       = new su2double[nMarker];
   
+  CT_Mnt           = new su2double[nMarker];
+  CQ_Mnt           = new su2double[nMarker];
+  CMerit_Mnt       = new su2double[nMarker];
+
   /*--- Supersonic coefficients ---*/
   
   CEquivArea_Inv   = new su2double[nMarker];
@@ -1008,6 +1016,12 @@ CEulerSolver::~CEulerSolver(void) {
   if (CQ_Inv != NULL)            delete [] CQ_Inv;
   if (CEquivArea_Inv != NULL)    delete [] CEquivArea_Inv;
   if (CNearFieldOF_Inv != NULL)  delete [] CNearFieldOF_Inv;
+  
+  if (CEff_Mnt != NULL)          delete [] CEff_Mnt;
+  if (CMerit_Mnt != NULL)        delete [] CMerit_Mnt;
+  if (CT_Mnt != NULL)            delete [] CT_Mnt;
+  if (CQ_Mnt != NULL)            delete [] CQ_Mnt;
+
   if (ForceInviscid != NULL)     delete [] ForceInviscid;
   if (MomentInviscid != NULL)    delete [] MomentInviscid;
   if (ForceMomentum != NULL)     delete [] ForceMomentum;
@@ -12941,6 +12955,19 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   CFy_Inv        = new su2double[nMarker];
   CFz_Inv        = new su2double[nMarker];
   
+  ForceMomentum  = new su2double[3];
+  MomentMomentum = new su2double[3];
+  CD_Mnt      = new su2double[nMarker];
+  CL_Mnt      = new su2double[nMarker];
+  CSF_Mnt = new su2double[nMarker];
+  CMx_Mnt        = new su2double[nMarker];
+  CMy_Mnt        = new su2double[nMarker];
+  CMz_Mnt        = new su2double[nMarker];
+  CEff_Mnt       = new su2double[nMarker];
+  CFx_Mnt        = new su2double[nMarker];
+  CFy_Mnt        = new su2double[nMarker];
+  CFz_Mnt        = new su2double[nMarker];
+
   ForceViscous     = new su2double[3];
   MomentViscous    = new su2double[3];
   CD_Visc       = new su2double[nMarker];
@@ -12964,6 +12991,18 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Surface_CMx_Inv        = new su2double[config->GetnMarker_Monitoring()];
   Surface_CMy_Inv        = new su2double[config->GetnMarker_Monitoring()];
   Surface_CMz_Inv        = new su2double[config->GetnMarker_Monitoring()];
+  
+  Surface_CL_Mnt      = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CD_Mnt      = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CSF_Mnt = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CEff_Mnt       = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CFx_Mnt        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CFy_Mnt        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CFz_Mnt        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CMx_Mnt        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CMy_Mnt        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CMz_Mnt        = new su2double[config->GetnMarker_Monitoring()];
+
   Surface_CL          = new su2double[config->GetnMarker_Monitoring()];
   Surface_CD          = new su2double[config->GetnMarker_Monitoring()];
   Surface_CSF     = new su2double[config->GetnMarker_Monitoring()];
@@ -12992,6 +13031,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   CT_Inv     = new su2double[nMarker];
   CQ_Inv     = new su2double[nMarker];
   
+  CMerit_Mnt = new su2double[nMarker];
+  CT_Mnt     = new su2double[nMarker];
+  CQ_Mnt     = new su2double[nMarker];
+
   CMerit_Visc = new su2double[nMarker];
   CT_Visc     = new su2double[nMarker];
   CQ_Visc     = new su2double[nMarker];
