@@ -1044,6 +1044,9 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
       case HEAT_FLUX:
         solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         break;
+      case CUSTOM_BOUNDARY:
+        solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        break;
       default:
         cout << "BC not implemented." << endl;
 #ifndef HAVE_MPI
