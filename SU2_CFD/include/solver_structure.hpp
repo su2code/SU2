@@ -3518,9 +3518,18 @@ protected:
 	*TotalEnthalpyOutIs,
 	*AbsFlowAngleOut,
 	*PressureOut_BC;
-  vector<su2double> NonUniformBC_InputVar1, NonUniformBC_InputVar2, NonUniformBC_InputVar3;
-  vector<su2double> NonUniformBC_d2Var2, NonUniformBC_d2Var3;
-  unsigned long NonUniformBC_InputDim;
+  vector<su2double> NonUniformBC_Coord,
+	NonUniformBC_Var1,
+	NonUniformBC_Var2,
+  NonUniformBC_FlowDir_x,
+	NonUniformBC_FlowDir_y,
+	NonUniformBC_FlowDir_z,
+  NonUniformBC_d2Var1,
+	NonUniformBC_d2Var2,
+	NonUniformBC_d2FlowDir_x,
+	NonUniformBC_d2FlowDir_y,
+	NonUniformBC_d2FlowDir_z;
+  unsigned long NonUniformBC_InputPoints;
 
   su2double **TotalPressureLossSpw,
   **KineticEnergyLossSpw,

@@ -5182,16 +5182,20 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
             massFlowOut							= SpanMassFlow[iMarker][nSpanWiseSections]*nBlades/geometry->GetSpanArea(iMarker, nSpanWiseSections);
 
 
-          if(config->GetBoolNRBC() || config->GetBoolRiemann()){
+          if(config->GetBoolNRBC() || config->GetBoolRiemann() || config->GetBoolNonUniformBC()){
 
             if(config->GetBoolRiemann()){
               pressureOut_BC  = config->GetRiemann_Var1(Marker_Tag);
               pressureOut_BC /= config->GetPressure_Ref();
             }
-            else{
+            if(config->GetBoolNRBC()){
               pressureOut_BC  = config->GetNRBC_Var1(Marker_Tag);
               pressureOut_BC /= config->GetPressure_Ref();
 
+            }
+            if(config->GetBoolNonUniformBC()){
+            	pressureOut_BC  = config->GetNonUniform_Var1(Marker_Tag);
+            	pressureOut_BC /= config->GetPressure_Ref();
             }
           }
           else{
@@ -5535,7 +5539,7 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
                   absFlowAngleIn          = atan(AverageTurboVelocity[iMarker][iSpan  ][1]/AverageTurboVelocity[iMarker][iSpan  ][0]);
 
                   //TODO(turbo) better location has to be found for this computation, perhaps in the outputstructure file.
-                  if(config->GetBoolNRBC() || config->GetBoolRiemann()){
+                  if(config->GetBoolNRBC() || config->GetBoolRiemann() || config->GetBoolNonUniformBC()){
 
                     if(config->GetBoolRiemann()){
                       P_Total  = config->GetRiemann_Var1(Marker_Tag);
@@ -5546,7 +5550,7 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
                       T_Total /= config->GetTemperature_Ref();
 
                     }else{
-                      if(config->GetKind_Data_NRBC(Marker_Tag) == TOTAL_CONDITIONS_PT){
+                      if( config->GetBoolNRBC()  && config->GetKind_Data_NRBC(Marker_Tag) == TOTAL_CONDITIONS_PT){
                         P_Total  = config->GetNRBC_Var1(Marker_Tag);
                         T_Total  = config->GetNRBC_Var2(Marker_Tag);
                         FlowDir = config->GetNRBC_FlowDir(Marker_Tag);
@@ -5559,6 +5563,15 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
                         P_Total  = ExtAverageTotPressure[iMarker][0];
                         T_Total  = ExtAverageTotTemperature[iMarker][0];
                         alphaIn_BC = atan(ExtAverageTurboVelocity[iMarker][0][1]/ExtAverageTurboVelocity[iMarker][0][0]);
+                      }
+
+                      if(config->GetKind_Data_NonUniform(Marker_Tag) == TOTAL_CONDITIONS_PT){
+                      	P_Total  = config->GetNonUniform_Var1(Marker_Tag);
+                      	T_Total  = config->GetNonUniform_Var2(Marker_Tag);
+                      	FlowDir = config->GetNonUniform_FlowDir(Marker_Tag);
+                      	alphaIn_BC = atan(FlowDir[1]/FlowDir[0]);
+                      	P_Total /= config->GetPressure_Ref();
+                      	T_Total /= config->GetTemperature_Ref();
                       }
                     }
 
@@ -5634,16 +5647,21 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
                   absFlowAngleOut          = atan(AverageTurboVelocity[iMarker][iSpan  ][1]/AverageTurboVelocity[iMarker][iSpan  ][0]);
 
 
-                  if(config->GetBoolNRBC() || config->GetBoolRiemann()){
+                  if(config->GetBoolNRBC() || config->GetBoolRiemann() || config->GetBoolNonUniformBC()){
 
                     if(config->GetBoolRiemann()){
                       pressureOut_BC  = config->GetRiemann_Var1(Marker_Tag);
                       pressureOut_BC /= config->GetPressure_Ref();
                     }
-                    else{
+
+                    if(config->GetBoolNRBC()){
                       pressureOut_BC  = config->GetNRBC_Var1(Marker_Tag);
                       pressureOut_BC /= config->GetPressure_Ref();
 
+                    }
+                    if(config->GetBoolNonUniformBC()){
+                    	pressureOut_BC  = config->GetNonUniform_Var1(Marker_Tag);
+                    	pressureOut_BC /= config->GetPressure_Ref();
                     }
                   }
                   else{
@@ -9126,47 +9144,68 @@ void CEulerSolver::SetBC_NonUniform(CGeometry *geometry, CConfig *config){
   	cout << "There is no input file!! " << input_filename.data() << "."<< endl;
   	exit(EXIT_FAILURE);
   }
-  su2double Var1In, Var2In, Var3In;
-  su2double dVar2_1, dVar2_N, dVar3_1, dVar3_N;
-  vector<su2double> InputVar1, InputVar2, InputVar3;
-  unsigned long InputDim;
+  su2double CoordIn, Var1In, Var2In, FlowDir_x, FlowDir_y, FlowDir_z;
+  su2double dVar1_1, dVar1_N, dVar2_1, dVar2_N, dFlowDir_x1, dFlowDir_xN, dFlowDir_y1, dFlowDir_yN, dFlowDir_z1, dFlowDir_zN;
+  vector<su2double> InputCoord, InputVar1, InputVar2, InputFlowDir_x, InputFlowDir_y, InputFlowDir_z;
+  unsigned long InputPoints;
 
   /*--- Read head of the file for allocation ---*/
   getline (input_file, text_line);
   istringstream point_line(text_line);
-  point_line >> InputDim;
+  point_line >> InputPoints;
   while (getline (input_file, text_line)) {
   	istringstream point_line(text_line);
-  	point_line >> Var1In >> Var2In >> Var3In;
+  	point_line >> CoordIn >> Var1In >> Var2In >> FlowDir_x >> FlowDir_y >> FlowDir_z;
+  	InputCoord.push_back(CoordIn);
   	InputVar1.push_back(Var1In);
   	InputVar2.push_back(Var2In);
-  	InputVar3.push_back(Var3In);
+  	InputFlowDir_x.push_back(FlowDir_x);
+  	InputFlowDir_y.push_back(FlowDir_y);
+  	InputFlowDir_z.push_back(FlowDir_z);
   }
   input_file.close();
 
+  /*---  Number of points in input file ---*/
+  NonUniformBC_InputPoints  = InputPoints;
   /*---  Boundary Coordinate input ---*/
-  NonUniformBC_InputVar1 = InputVar1;
+  NonUniformBC_Coord = InputCoord;
   /*---  First variable input from file to assign at boundary ---*/
-  NonUniformBC_InputVar2 = InputVar2;
+  NonUniformBC_Var1 = InputVar1;
   /*---  Second variable input from file to assign at boundary ---*/
-  NonUniformBC_InputVar3 = InputVar3;
-  NonUniformBC_InputDim  = InputDim;
+  NonUniformBC_Var2 = InputVar2;
+  /*---  Input flow direction ---*/
+  NonUniformBC_FlowDir_x = InputFlowDir_x;
+  NonUniformBC_FlowDir_y = InputFlowDir_y;
+  NonUniformBC_FlowDir_z = InputFlowDir_z;
 
   /*---  Check if input file is sorted ---*/
-  if (InputVar1[1]<InputVar1[0]) {
+  if (InputCoord[1]<InputCoord[0]) {
   	cout << "The input file " << input_filename.data() << " is not sorted in ascending order!"<< endl;
   	exit(EXIT_FAILURE);
   }
   /*---  Compute first derivatives   ---*/
-  dVar2_1 = (InputVar2[1]-InputVar2[0])/(InputVar1[1]-InputVar1[0]);
-  dVar2_N = (InputVar2[InputDim-1]-InputVar2[InputDim])/(InputVar1[InputDim-1]-InputVar1[InputDim]);
-  NonUniformBC_d2Var2.resize(InputDim);
-  dVar3_1 = (InputVar3[1]-InputVar3[0])/(InputVar1[1]-InputVar1[0]);
-  dVar3_N = (InputVar3[InputDim-1]-InputVar3[InputDim])/(InputVar1[InputDim-1]-InputVar1[InputDim]);
-  NonUniformBC_d2Var3.resize(InputDim);
+  dVar1_1 = (InputVar1[1]-InputVar1[0])/(InputCoord[1]-InputCoord[0]);
+  dVar1_N = (InputVar1[InputPoints-1]-InputVar1[InputPoints])/(InputCoord[InputPoints-1]-InputCoord[InputPoints]);
+  NonUniformBC_d2Var1.resize(InputPoints);
+  dVar2_1 = (InputVar2[1]-InputVar2[0])/(InputCoord[1]-InputCoord[0]);
+  dVar2_N = (InputVar2[InputPoints-1]-InputVar2[InputPoints])/(InputCoord[InputPoints-1]-InputCoord[InputPoints]);
+  NonUniformBC_d2Var2.resize(InputPoints);
+  dFlowDir_x1 = (InputFlowDir_x[1]-InputFlowDir_x[0])/(InputCoord[1]-InputCoord[0]);
+  dFlowDir_xN = (InputFlowDir_x[InputPoints-1]-InputFlowDir_x[InputPoints])/(InputCoord[InputPoints-1]-InputCoord[InputPoints]);
+  NonUniformBC_d2FlowDir_x.resize(InputPoints);
+  dFlowDir_y1 = (InputFlowDir_y[1]-InputFlowDir_y[0])/(InputCoord[1]-InputCoord[0]);
+  dFlowDir_yN = (InputFlowDir_y[InputPoints-1]-InputFlowDir_y[InputPoints])/(InputCoord[InputPoints-1]-InputCoord[InputPoints]);
+  NonUniformBC_d2FlowDir_y.resize(InputPoints);
+  dFlowDir_z1 = (InputFlowDir_z[1]-InputFlowDir_z[0])/(InputCoord[1]-InputCoord[0]);
+  dFlowDir_zN = (InputFlowDir_z[InputPoints-1]-InputFlowDir_z[InputPoints])/(InputCoord[InputPoints-1]-InputCoord[InputPoints]);
+  NonUniformBC_d2FlowDir_z.resize(InputPoints);
 
-  geometry->SetSpline(InputVar1, InputVar2, InputDim, dVar2_1, dVar2_N, NonUniformBC_d2Var2);
-  geometry->SetSpline(InputVar1, InputVar3, InputDim, dVar3_1, dVar3_N, NonUniformBC_d2Var3);
+  geometry->SetSpline(InputCoord, InputVar1, InputPoints, dVar1_1, dVar1_N, NonUniformBC_d2Var1);
+  geometry->SetSpline(InputCoord, InputVar2, InputPoints, dVar2_1, dVar2_N, NonUniformBC_d2Var2);
+  geometry->SetSpline(InputCoord, InputFlowDir_x, InputPoints, dFlowDir_x1, dFlowDir_xN, NonUniformBC_d2FlowDir_x);
+  geometry->SetSpline(InputCoord, InputFlowDir_y, InputPoints, dFlowDir_y1, dFlowDir_yN, NonUniformBC_d2FlowDir_y);
+  geometry->SetSpline(InputCoord, InputFlowDir_z, InputPoints, dFlowDir_z1, dFlowDir_zN, NonUniformBC_d2FlowDir_z);
+
 }
 
 void CEulerSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container,
@@ -9323,19 +9362,19 @@ void CEulerSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container
         	Period /= config->GetTime_Ref();
         	Boundary_Vel  = 21.4;
         	Boundary_Vel /= config->GetVelocity_Ref();
-        	y_0 = y_min*100 + NonUniformBC_InputVar1[0];
+        	y_0 = y_min*100 + NonUniformBC_Coord[0];
 
         	t_perio = fmod(SU2_TYPE::GetValue(Physical_t), SU2_TYPE::GetValue(Period));
         	y_perio = fmod(SU2_TYPE::GetValue(Boundary_Vel*t_perio + (yCoord - y_0)), SU2_TYPE::GetValue(yPitch));
 
 
         	/*--- Retrieve the specified total conditions for this boundary. ---*/
-          P_Total  =  P_Total = geometry->GetSpline(NonUniformBC_InputVar1, NonUniformBC_InputVar2, NonUniformBC_d2Var2, NonUniformBC_InputDim, y_perio);
+          P_Total = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_Var1, NonUniformBC_d2Var1, NonUniformBC_InputPoints, y_perio);
           if (gravity) {
           	P_Total -= geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
           }
 
-          T_Total  = geometry->GetSpline(NonUniformBC_InputVar1, NonUniformBC_InputVar3, NonUniformBC_d2Var3, NonUniformBC_InputDim, y_perio);
+          T_Total  = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_Var2, NonUniformBC_d2Var2, NonUniformBC_InputPoints, y_perio);
           Flow_Dir = config->GetNonUniform_FlowDir(Marker_Tag);
 
 //					P_Total = config->GetNonUniform_Var1(Marker_Tag)*(1+0.1*sin(2*PI_NUMBER/config->GetSpectralMethod_Period()*Physical_t));

@@ -2727,13 +2727,12 @@ protected:
   unsigned short & size;
   string * & marker;
   unsigned short* & field; // Reference to the field name
-  string * & filename;
   su2double * & omega;
 
 public:
   COptionTurboNonUniform(string option_field_name, unsigned short & nMarker_TurboNonUniform, string* & Marker_TurboNonUniform,
-  		unsigned short* & option_field, const map<string, Tenum> m, string* & filename , su2double* & omega): size(nMarker_TurboNonUniform),
-			marker(Marker_TurboNonUniform), field(option_field), filename(filename), omega(omega) {
+  		unsigned short* & option_field, const map<string, Tenum> m, su2double* & omega): size(nMarker_TurboNonUniform),
+			marker(Marker_TurboNonUniform), field(option_field), omega(omega) {
     this->name = option_field_name;
     this->m = m;
   }
@@ -2746,32 +2745,29 @@ public:
       this->size = 0;
       this->marker = NULL;
       this->field = 0;
-      this->filename = NULL;
       this->omega = NULL;
       return "";
     }
 
-    if (totalVals != 4) {
+    if (totalVals != 3) {
       string newstring;
       newstring.append(this->name);
-      newstring.append(": must have a number of entries equal to 4");
+      newstring.append(": must have a number of entries equal to 3");
       this->size = 0;
       this->marker = NULL;
-      this->filename = NULL;
       this->omega = NULL;
       return newstring;
     }
 
-    unsigned short nVals = totalVals / 4;
+    unsigned short nVals = totalVals / 3;
     this->size = nVals;
     this->marker = new string[nVals];
-    this->filename = new string[nVals];
     this->omega = new su2double[nVals];
 
     for (unsigned long i = 0; i < nVals; i++) {
-      this->marker[i].assign(option_value[4*i]);
+      this->marker[i].assign(option_value[3*i]);
         // Check to see if the enum value is in the map
-    if (this->m.find(option_value[4*i + 1]) == m.end()) {
+    if (this->m.find(option_value[3*i + 1]) == m.end()) {
       string str;
       str.append(this->name);
       str.append(": invalid option value ");
@@ -2779,15 +2775,11 @@ public:
       str.append(". Check current SU2 options in config_template.cfg.");
       return str;
     }
-      Tenum val = this->m[option_value[4*i + 1]];
+      Tenum val = this->m[option_value[3*i + 1]];
       this->field[i] = val;
 
-      istringstream ss_1st(option_value[4*i + 2]);
-      if (!(ss_1st >> this->var1[i])) {
-        return badValue(option_value, "NonUniform", this->name);
-      }
-      istringstream ss_2nd(option_value[4*i + 3]);
-      if (!(ss_2nd >> this->var2[i])) {
+      istringstream ss_1st(option_value[3*i + 2]);
+      if (!(ss_1st >> this->omega[i])) {
         return badValue(option_value, "NonUniform", this->name);
       }
     }
@@ -2797,7 +2789,6 @@ public:
 
   void SetDefault() {
     this->marker = NULL;
-    this->filename = NULL;
     this->omega = NULL;
     this->size = 0; // There is no default value for list
   }
