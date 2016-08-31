@@ -60,6 +60,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
   Surface_CLift = NULL; Surface_CDrag = NULL; Surface_CSideForce = NULL; Surface_CEff = NULL;
   Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
   Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
+
+  /*--- Initialization of the boolean symmetrizingTermsPresent. ---*/
+  symmetrizingTermsPresent = true;
 }
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -275,7 +278,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   /*--- Determine the size of the vector to store residuals that come from the
         integral over the faces and determine the number of entries in this
         vector for the owned DOFs. ---*/
-  const bool viscous = config->GetViscous();
+  symmetrizingTermsPresent = false;
+  if(config->GetViscous() && (fabs(config->GetTheta_Interior_Penalty_DGFEM()) > 1.e-8))
+    symmetrizingTermsPresent = true;
 
   /*--- First the internal matching faces. ---*/
   unsigned long sizeVecResFaces = 0;
@@ -296,9 +301,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
         ++nEntriesResFaces[matchingInternalFaces[i].DOFsSolFaceSide1[j]+1];
     }
 
-    /* The symmetrizing terms, which are only present for a viscous discretization,
-       contribute to all the DOFs of the adjacent elements. */
-    if( viscous ) {
+    /* The symmetrizing terms, if present, contribute to all
+       the DOFs of the adjacent elements. */
+    if( symmetrizingTermsPresent ) {
       const unsigned short nDOFsElem0 = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
       const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
 
@@ -335,9 +340,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
         for(unsigned short j=0; j<nDOFsFace; ++j)
           ++nEntriesResFaces[surfElem[i].DOFsSolFace[j]+1];
 
-        /* The symmetrizing terms, which are only present for a viscous discretization,
-           contribute to all the DOFs of the adjacent elements. */
-        if( viscous ) {
+        /* The symmetrizing terms, if present, contribute to all
+           the DOFs of the adjacent elements. */
+        if( symmetrizingTermsPresent ) {
           const unsigned short nDOFsElem = standardBoundaryFacesSol[ind].GetNDOFsElem();
 
           sizeVecResFaces += nDOFsElem;
@@ -382,9 +387,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
       }
     }
 
-    /* The symmetrizing terms, which are only present for a viscous discretization,
-       contribute to all the DOFs of the adjacent elements. */
-    if( viscous ) {
+    /* The symmetrizing terms, if present, contribute to all
+       the DOFs of the adjacent elements. */
+    if( symmetrizingTermsPresent ) {
       const unsigned short nDOFsElem0 = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
       const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
 
@@ -423,9 +428,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
           entriesResFaces[jj] = sizeVecResFaces++;
         }
 
-        /* The symmetrizing terms, which are only present for a viscous discretization,
-           contribute to all the DOFs of the adjacent elements. */
-        if( viscous ) {
+        /* The symmetrizing terms, if present, contribute to all
+           the DOFs of the adjacent elements. */
+        if( symmetrizingTermsPresent ) {
           const unsigned short nDOFsElem = standardBoundaryFacesSol[ind].GetNDOFsElem();
 
           for(unsigned short j=0; j<nDOFsElem; ++j) {
@@ -2536,6 +2541,13 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_con
   BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
 }
 
+void CFEM_DG_EulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container,
+                                    CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+
+  cout << "CFEM_DG_EulerSolver::BC_Custom: Not implemented yet" << endl;
+  exit(1);
+}
+
 void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
                                       CConfig                  *config,
                                       CNumerics                *conv_numerics,
@@ -3026,7 +3038,7 @@ void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_c
       for(unsigned short k=0; k<nDim; ++k) {
         tauVis[k][k] = 2.0*Viscosity*velGrad[k][k] + lamDivTerm;    // Normal stress
         for(unsigned short j=(k+1); j<nDim; ++j) {
-          tauVis[j][k] = Viscosity*(velGrad[j][k] + velGrad[j][k]); // Shear stress
+          tauVis[j][k] = Viscosity*(velGrad[j][k] + velGrad[k][j]); // Shear stress
           tauVis[k][j] = tauVis[j][k];
         }
       }
@@ -3280,84 +3292,45 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
     }
 
     /*------------------------------------------------------------------------*/
-    /*--- Step 5: Compute the symmetrizing terms in the integration points ---*/
-    /*---         of this matching face.                                   ---*/
+    /*--- Step 5: Compute the symmetrizing terms, if present, in the       ---*/
+    /*---         integration points of this matching face.                ---*/
     /*------------------------------------------------------------------------*/
 
-    /* Compute the symmetrizing fluxes in the nDim directions. */
-    SymmetrizingFluxesFace(nInt, solIntL, solIntR, viscosityIntL, viscosityIntR,
-                           matchingInternalFaces[l].metricNormalsFace, fluxes);
+    if( symmetrizingTermsPresent ) {
 
-    /*--- Multiply the fluxes just computed by their integration weights and
-          -theta/2. The parameter theta is the parameter in the Interior Penalty
-          formulation, the factor 1/2 comes in from the averaging and the minus
-          sign is from the convention that the viscous fluxes comes with a minus
-          sign in this code. ---*/
-    const su2double halfTheta = 0.5*config->GetTheta_Interior_Penalty_DGFEM();
+      /* Compute the symmetrizing fluxes in the nDim directions. */
+      SymmetrizingFluxesFace(nInt, solIntL, solIntR, viscosityIntL, viscosityIntR,
+                             matchingInternalFaces[l].metricNormalsFace, fluxes);
 
-    for(unsigned short i=0; i<nInt; ++i) {
-      su2double *flux        = fluxes + i*nVar*nDim;
-      const su2double wTheta = -halfTheta*weights[i];
+      /*--- Multiply the fluxes just computed by their integration weights and
+            -theta/2. The parameter theta is the parameter in the Interior Penalty
+            formulation, the factor 1/2 comes in from the averaging and the minus
+            sign is from the convention that the viscous fluxes comes with a minus
+            sign in this code. ---*/
+      const su2double halfTheta = 0.5*config->GetTheta_Interior_Penalty_DGFEM();
 
-      for(unsigned short j=0; j<(nVar*nDim); ++j)
-        flux[j] *= wTheta;
-    }
+      for(unsigned short i=0; i<nInt; ++i) {
+        su2double *flux        = fluxes + i*nVar*nDim;
+        const su2double wTheta = -halfTheta*weights[i];
 
-    /*------------------------------------------------------------------------*/
-    /*--- Step 6: Distribute the symmetrizing terms to the DOFs. Note that ---*/
-    /*---         these terms must be distributed to all the DOFs of the   ---*/
-    /*---         adjacent elements, not only to the DOFs of the face.     ---*/
-    /*------------------------------------------------------------------------*/
-
-    /* Get the element information of side 0 of the face. */
-    const unsigned short nDOFsElem0    = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
-    const su2double *derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide0();
-
-    /*--- Create the Cartesian derivatives of the basis functions in the integration
-          points. The array gradSolInt is used to store these derivatives. ---*/
-    unsigned int ii = 0;
-    for(unsigned short j=0; j<nDOFsElem0; ++j) {
-      for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
-
-        /* Easier storage of the derivatives of the basis function w.r.t. the
-           parametric coordinates, the location where to store the Cartesian
-           derivatives of the basis functions, and the metric terms in this
-           integration point. */
-        const su2double *derParam    = derBasisElemTrans + ii;
-        const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace0 + i*nDim*nDim;
-              su2double *derCar      = gradSolInt + ii;
-
-        /*--- Loop over the dimensions to compute the Cartesian derivatives
-              of the basis functions. ---*/
-        for(unsigned short k=0; k<nDim; ++k) {
-          derCar[k] = 0.0;
-          for(unsigned short l=0; l<nDim; ++l)
-            derCar[k] += derParam[l]*metricTerms[k+l*nDim];
-        }
+        for(unsigned short j=0; j<(nVar*nDim); ++j)
+          flux[j] *= wTheta;
       }
-    }
 
-    /* Set the pointer where to store the current residual and update the
-       counter indResFaces. */
-    su2double *resElem0 = VecResFaces.data() + indResFaces*nVar;
-    indResFaces        += nDOFsElem0;
+      /*------------------------------------------------------------------------*/
+      /*--- Step 6: Distribute the symmetrizing terms to the DOFs. Note that ---*/
+      /*---         these terms must be distributed to all the DOFs of the   ---*/
+      /*---         adjacent elements, not only to the DOFs of the face.     ---*/
+      /*------------------------------------------------------------------------*/
 
-    /* Call the general function to carry out the matrix product to compute
-       the residual for side 0. */
-    MatrixProduct(nDOFsElem0, nVar, nInt*nDim, gradSolInt, fluxes, resElem0);
-    
-    /* Check if the element to the right is an owned element. Only then
-       the residual needs to be computed. */
-    if(matchingInternalFaces[l].elemID1 < nVolElemOwned) {
-
-      /* Get the element information of side 1 of the face. */
-      const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
-      derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide1();
+      /* Get the element information of side 0 of the face. */
+      const unsigned short nDOFsElem0    = standardMatchingFacesSol[ind].GetNDOFsElemSide0();
+      const su2double *derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide0();
 
       /*--- Create the Cartesian derivatives of the basis functions in the integration
             points. The array gradSolInt is used to store these derivatives. ---*/
-      ii = 0;
-      for(unsigned short j=0; j<nDOFsElem1; ++j) {
+      unsigned int ii = 0;
+      for(unsigned short j=0; j<nDOFsElem0; ++j) {
         for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
 
           /* Easier storage of the derivatives of the basis function w.r.t. the
@@ -3365,7 +3338,7 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
              derivatives of the basis functions, and the metric terms in this
              integration point. */
           const su2double *derParam    = derBasisElemTrans + ii;
-          const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace1 + i*nDim*nDim;
+          const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace0 + i*nDim*nDim;
                 su2double *derCar      = gradSolInt + ii;
 
           /*--- Loop over the dimensions to compute the Cartesian derivatives
@@ -3380,14 +3353,56 @@ void CFEM_DG_NSSolver::External_Residual(CGeometry *geometry, CSolver **solver_c
 
       /* Set the pointer where to store the current residual and update the
          counter indResFaces. */
-      su2double *resElem1 = VecResFaces.data() + indResFaces*nVar;
-      indResFaces        += nDOFsElem1;
+      su2double *resElem0 = VecResFaces.data() + indResFaces*nVar;
+      indResFaces        += nDOFsElem0;
 
       /* Call the general function to carry out the matrix product to compute
-         the residual for side 1. Note that the symmetrizing residual should not
-         be negated, because two minus signs enter the formulation for side 1,
-         which cancel each other. */
-      MatrixProduct(nDOFsElem1, nVar, nInt*nDim, gradSolInt, fluxes, resElem1);
+         the residual for side 0. */
+      MatrixProduct(nDOFsElem0, nVar, nInt*nDim, gradSolInt, fluxes, resElem0);
+    
+      /* Check if the element to the right is an owned element. Only then
+         the residual needs to be computed. */
+      if(matchingInternalFaces[l].elemID1 < nVolElemOwned) {
+
+        /* Get the element information of side 1 of the face. */
+        const unsigned short nDOFsElem1 = standardMatchingFacesSol[ind].GetNDOFsElemSide1();
+        derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide1();
+
+        /*--- Create the Cartesian derivatives of the basis functions in the integration
+              points. The array gradSolInt is used to store these derivatives. ---*/
+        ii = 0;
+        for(unsigned short j=0; j<nDOFsElem1; ++j) {
+          for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
+
+            /* Easier storage of the derivatives of the basis function w.r.t. the
+               parametric coordinates, the location where to store the Cartesian
+               derivatives of the basis functions, and the metric terms in this
+               integration point. */
+            const su2double *derParam    = derBasisElemTrans + ii;
+            const su2double *metricTerms = matchingInternalFaces[l].metricCoorDerivFace1 + i*nDim*nDim;
+                  su2double *derCar      = gradSolInt + ii;
+
+            /*--- Loop over the dimensions to compute the Cartesian derivatives
+                  of the basis functions. ---*/
+            for(unsigned short k=0; k<nDim; ++k) {
+              derCar[k] = 0.0;
+              for(unsigned short l=0; l<nDim; ++l)
+                derCar[k] += derParam[l]*metricTerms[k+l*nDim];
+            }
+          }
+        }
+
+        /* Set the pointer where to store the current residual and update the
+           counter indResFaces. */
+        su2double *resElem1 = VecResFaces.data() + indResFaces*nVar;
+        indResFaces        += nDOFsElem1;
+
+        /* Call the general function to carry out the matrix product to compute
+           the residual for side 1. Note that the symmetrizing residual should not
+           be negated, because two minus signs enter the formulation for side 1,
+           which cancel each other. */
+        MatrixProduct(nDOFsElem1, nVar, nInt*nDim, gradSolInt, fluxes, resElem1);
+      }
     }
   }
 
@@ -3517,7 +3532,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(const unsigned short nInt,
     for(unsigned short k=0; k<nDim; ++k) {
       tauVis[k][k] = 2.0*Viscosity*velGrad[k][k] + lamDivTerm;    // Normal stress
       for(unsigned short j=(k+1); j<nDim; ++j) {
-        tauVis[j][k] = Viscosity*(velGrad[j][k] + velGrad[j][k]); // Shear stress
+        tauVis[j][k] = Viscosity*(velGrad[j][k] + velGrad[k][j]); // Shear stress
         tauVis[k][j] = tauVis[j][k];
       }
     }
@@ -3600,10 +3615,9 @@ void CFEM_DG_NSSolver::PenaltyTermsFluxFace(const unsigned short nInt,
     const su2double penFace = normal[nDim]*max(pen0, pen1);
 
     /* Compute the penalty flux, where it is assumed that the normal points from
-       side 0 to side 1. Note that the density does not get a penalty term,
-       because the mass conservation does not have a viscous contribution. */
+       side 0 to side 1. */
     flux[0] = 0;
-    for(unsigned short j=1; j<nVar; ++j)
+    for(unsigned short j=0; j<nVar; ++j)
       flux[j] = penFace*(sol0[j] - sol1[j]);
   }
 }
@@ -4173,6 +4187,139 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_
 #endif
 }
 
+void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container,
+                                 CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+
+#ifdef CUSTOM_BC_NSUNITQUAD
+  /* Get the flow angle, which is stored in the angle of attack and the
+     viscosity coefficient. */
+  const su2double flowAngle = config->GetAoA()*PI_NUMBER/180.0;
+  const su2double mu        = config->GetViscosity_FreeStreamND();
+
+  const su2double cosFlowAngle = cos(flowAngle);
+  const su2double sinFlowAngle = sin(flowAngle);
+#endif
+
+  /*--- Allocate the memory for some temporary storage needed to compute the
+        residual efficiently. Note that when the MKL library is used
+        a special allocation is used to optimize performance. Furthermore, note
+        the size for fluxes and gradSolInt and the max function for the viscFluxes.
+        This is because these arrays are also used as temporary storage for the other
+        purposes. ---*/
+  su2double *solIntL, *solIntR, *gradSolInt, *fluxes, *viscFluxes, *viscosityInt;
+
+  unsigned short sizeFluxes = nIntegrationMax*nDim;
+  sizeFluxes = nVar*max(sizeFluxes, nDOFsMax);
+
+  const unsigned short sizeGradSolInt = nIntegrationMax*nDim*max(nVar,nDOFsMax);
+
+#ifdef HAVE_MKL
+  solIntL      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  solIntR      = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  gradSolInt   = (su2double *) mkl_malloc(sizeGradSolInt*sizeof(su2double), 64);
+  fluxes       = (su2double *) mkl_malloc(sizeFluxes*sizeof(su2double), 64);
+  viscFluxes   = (su2double *) mkl_malloc(max(nIntegrationMax,nDOFsMax)*nVar*sizeof(su2double), 64);
+  viscosityInt = (su2double *) mkl_malloc(nIntegrationMax*sizeof(su2double), 64);
+#else
+  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
+  vector<su2double> helpSolIntR(nIntegrationMax*nVar);
+  vector<su2double> helpGradSolInt(sizeGradSolInt);
+  vector<su2double> helpFluxes(sizeFluxes);
+  vector<su2double> helpViscFluxes(max(nIntegrationMax,nDOFsMax)*nVar);
+  vector<su2double> helpViscosityInt(nIntegrationMax);
+  solIntL      = helpSolIntL.data();
+  solIntR      = helpSolIntR.data();
+  gradSolInt   = helpGradSolInt.data();
+  fluxes       = helpFluxes.data();
+  viscFluxes   = helpViscFluxes.data();
+  viscosityInt = helpViscosityInt.data();
+#endif
+
+  /* Set the starting position in the vector for the face residuals for
+     this boundary marker. */
+  su2double *resFaces = VecResFaces.data() + nVar*startLocResFacesMarkers[val_marker];
+
+  /* Easier storage of the boundary faces for this boundary marker. */
+  const unsigned long      nSurfElem = boundaries[val_marker].surfElem.size();
+  const CSurfaceElementFEM *surfElem = boundaries[val_marker].surfElem.data();
+
+  /*--- Loop over the boundary faces. ---*/
+  unsigned long indResFaces = 0;
+  for(unsigned long l=0; l<nSurfElem; ++l) {
+
+    /* Compute the left states in the integration points of the face.
+       The array fluxes is used as temporary storage inside the function
+       LeftStatesIntegrationPointsBoundaryFace. */
+    LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], fluxes, solIntL);
+
+    /* Determine the number of integration points. */
+    const unsigned short ind  = surfElem[l].indStandardElement;
+    const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
+
+    /*--- Loop over the integration points to compute the right state via the
+          customized boundary conditions. ---*/
+    for(unsigned short i=0; i<nInt; ++i) {
+
+      /* Easier storage of the right solution for this integration point and
+         the coordinates of this integration point. */
+      const su2double *coor = surfElem[l].coorIntegrationPoints + i*nDim;
+            su2double *UR   = solIntR + i*nVar;
+
+#ifdef CUSTOM_BC_NSUNITQUAD
+
+      /*--- Set the exact solution in this integration point. ---*/
+      const double xTilde = coor[0]*cosFlowAngle - coor[1]*sinFlowAngle;
+      const double yTilde = coor[0]*sinFlowAngle + coor[1]*cosFlowAngle;
+
+      UR[0] =  1.0;
+      UR[1] =  cosFlowAngle*yTilde*yTilde;
+      UR[2] = -sinFlowAngle*yTilde*yTilde;
+      UR[3] =  (2.0*mu*xTilde + 10)/Gamma_Minus_One
+            +  0.5*yTilde*yTilde*yTilde*yTilde;
+#else
+
+      /* No compiler directive specified. Write an error message and exit. */
+      int rank = MASTER_NODE;
+#ifdef HAVE_MPI
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+      if (rank == MASTER_NODE) {
+        cout << endl;
+        cout << "In function CFEM_DG_NSSolver::BC_Custom. " << endl;
+        cout << "No or wrong compiler directive specified. This is necessary "
+                "for customized boundary conditions." << endl << endl;
+      }
+#ifndef HAVE_MPI
+      exit(EXIT_FAILURE);
+#else
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Abort(MPI_COMM_WORLD,1);
+      MPI_Finalize();
+#endif
+
+#endif
+    }
+
+    /* The remainder of the contribution of this boundary face to the residual
+       is the same for all boundary conditions. Hence a generic function can
+       be used to carry out this task. */
+    ResidualViscousBoundaryFace(config, numerics, &surfElem[l], 0.0,
+                                false, solIntL, solIntR, gradSolInt, fluxes,
+                                viscFluxes, viscosityInt, resFaces, indResFaces);
+  }
+
+  /*--- If the MKL is used the temporary storage must be released again. ---*/
+#ifdef HAVE_MKL
+  mkl_free(solIntL);
+  mkl_free(solIntR);
+  mkl_free(gradSolInt);
+  mkl_free(fluxes);
+  mkl_free(viscFluxes);
+  mkl_free(viscosityInt);
+#endif
+}
+
 void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
                                       CConfig                  *config,
                                       CNumerics                *conv_numerics,
@@ -4257,69 +4404,72 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
   MatrixProduct(nDOFs, nVar, nInt, basisFaceTrans, fluxes, resFace);
 
   /*------------------------------------------------------------------------*/
-  /*--- Step 3: Compute the symmetrizing terms in the integration points ---*/
-  /*---         of this boundary face.                                   ---*/
+  /*--- Step 3: Compute the symmetrizing terms, if present, in the       ---*/
+  /*---         integration points of this boundary face.                ---*/
   /*------------------------------------------------------------------------*/
 
-  /* Compute the symmetrizing fluxes in the nDim directions. */
-  SymmetrizingFluxesFace(nInt, solInt0, solInt1, viscosityInt, viscosityInt,
-                         surfElem->metricNormalsFace, fluxes);
+  if( symmetrizingTermsPresent ) {
 
-  /*--- Multiply the fluxes just computed by their integration weights and
-        -theta/2. The parameter theta is the parameter in the Interior Penalty
-        formulation, the factor 1/2 comes in from the averaging and the minus
-        sign is from the convention that the viscous fluxes comes with a minus
-        sign in this code. ---*/
-  const su2double halfTheta = 0.5*config->GetTheta_Interior_Penalty_DGFEM();
+    /* Compute the symmetrizing fluxes in the nDim directions. */
+    SymmetrizingFluxesFace(nInt, solInt0, solInt1, viscosityInt, viscosityInt,
+                           surfElem->metricNormalsFace, fluxes);
 
-  for(unsigned short i=0; i<nInt; ++i) {
-    su2double *flux        = fluxes + i*nVar*nDim;
-    const su2double wTheta = -halfTheta*weights[i];
+    /*--- Multiply the fluxes just computed by their integration weights and
+          -theta/2. The parameter theta is the parameter in the Interior Penalty
+          formulation, the factor 1/2 comes in from the averaging and the minus
+          sign is from the convention that the viscous fluxes comes with a minus
+          sign in this code. ---*/
+    const su2double halfTheta = 0.5*config->GetTheta_Interior_Penalty_DGFEM();
 
-    for(unsigned short j=0; j<(nVar*nDim); ++j)
-      flux[j] *= wTheta;
-  }
+    for(unsigned short i=0; i<nInt; ++i) {
+      su2double *flux        = fluxes + i*nVar*nDim;
+      const su2double wTheta = -halfTheta*weights[i];
 
-  /*------------------------------------------------------------------------*/
-  /*--- Step 4: Distribute the symmetrizing terms to the DOFs. Note that ---*/
-  /*---         these terms must be distributed to all the DOFs of the   ---*/
-  /*---         adjacent element, not only to the DOFs of the face.      ---*/
-  /*------------------------------------------------------------------------*/
+      for(unsigned short j=0; j<(nVar*nDim); ++j)
+        flux[j] *= wTheta;
+    }
 
-  /* Easier storage of the position in the residual array for this face
-     and update the corresponding counter. */
-  su2double *resElem = resFaces + indResFaces*nVar;
-  indResFaces       += nDOFsElem;
+    /*------------------------------------------------------------------------*/
+    /*--- Step 4: Distribute the symmetrizing terms to the DOFs. Note that ---*/
+    /*---         these terms must be distributed to all the DOFs of the   ---*/
+    /*---         adjacent element, not only to the DOFs of the face.      ---*/
+    /*------------------------------------------------------------------------*/
 
-  /* Get the correct form of the basis functions needed for the matrix
-     multiplication to compute the residual. */
-  const su2double *derBasisElemTrans = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegrationTranspose();
+    /* Easier storage of the position in the residual array for this face
+       and update the corresponding counter. */
+    su2double *resElem = resFaces + indResFaces*nVar;
+    indResFaces       += nDOFsElem;
 
-  /*--- Create the Cartesian derivatives of the basis functions in the integration
-        points. The array gradSolInt is used to store these derivatives. ---*/
-  unsigned int ii = 0;
-  for(unsigned short j=0; j<nDOFsElem; ++j) {
-    for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
+    /* Get the correct form of the basis functions needed for the matrix
+       multiplication to compute the residual. */
+    const su2double *derBasisElemTrans = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegrationTranspose();
 
-      /* Easier storage of the derivatives of the basis function w.r.t. the
-         parametric coordinates, the location where to store the Cartesian
-         derivatives of the basis functions, and the metric terms in this
-         integration point. */
-      const su2double *derParam    = derBasisElemTrans + ii;
-      const su2double *metricTerms = surfElem->metricCoorDerivFace + i*nDim*nDim;
-            su2double *derCar      = gradSolInt + ii;
+    /*--- Create the Cartesian derivatives of the basis functions in the integration
+          points. The array gradSolInt is used to store these derivatives. ---*/
+    unsigned int ii = 0;
+    for(unsigned short j=0; j<nDOFsElem; ++j) {
+      for(unsigned short i=0; i<nInt; ++i, ii+=nDim) {
 
-      /*--- Loop over the dimensions to compute the Cartesian derivatives
-            of the basis functions. ---*/
-      for(unsigned short k=0; k<nDim; ++k) {
-        derCar[k] = 0.0;
-        for(unsigned short l=0; l<nDim; ++l)
-          derCar[k] += derParam[l]*metricTerms[k+l*nDim];
+        /* Easier storage of the derivatives of the basis function w.r.t. the
+           parametric coordinates, the location where to store the Cartesian
+           derivatives of the basis functions, and the metric terms in this
+           integration point. */
+        const su2double *derParam    = derBasisElemTrans + ii;
+        const su2double *metricTerms = surfElem->metricCoorDerivFace + i*nDim*nDim;
+              su2double *derCar      = gradSolInt + ii;
+
+        /*--- Loop over the dimensions to compute the Cartesian derivatives
+              of the basis functions. ---*/
+        for(unsigned short k=0; k<nDim; ++k) {
+          derCar[k] = 0.0;
+          for(unsigned short l=0; l<nDim; ++l)
+            derCar[k] += derParam[l]*metricTerms[k+l*nDim];
+        }
       }
     }
-  }
 
-  /* Call the general function to carry out the matrix product to compute
-     the residual. */
-  MatrixProduct(nDOFsElem, nVar, nInt*nDim, gradSolInt, fluxes, resElem);
+    /* Call the general function to carry out the matrix product to compute
+       the residual. */
+    MatrixProduct(nDOFsElem, nVar, nInt*nDim, gradSolInt, fluxes, resElem);
+  }
 }

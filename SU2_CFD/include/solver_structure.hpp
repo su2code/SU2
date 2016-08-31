@@ -5176,6 +5176,9 @@ protected:
 
   vector<unsigned long> startLocResFacesMarkers; /*!< \brief The starting location in the residual of the
                                                              faces for the boundary markers. */
+
+  bool symmetrizingTermsPresent;    /*!< \brief Whether or not symmetrizing terms are present in the
+                                                discretization. */
 private:
 
 #ifdef HAVE_MPI
@@ -5400,6 +5403,17 @@ public:
    */
   void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Impose the user customized boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                 CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief Update the solution using a Runge-Kutta scheme.
@@ -6016,7 +6030,7 @@ public:
   void BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
   
   /*!
-   * \brief Impose the Navier-Stokes boundary condition (strong).
+   * \brief Impose the Navier-Stokes boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
@@ -6026,6 +6040,17 @@ public:
    */
   void BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                           unsigned short val_marker);
+
+  /*!
+   * \brief Impose the user customized boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                 CConfig *config, unsigned short val_marker);
   
   /*!
    * \brief Compute the viscosity at the infinity.
