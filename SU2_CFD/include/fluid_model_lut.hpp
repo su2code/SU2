@@ -32,7 +32,6 @@
 #pragma once
 
 #include "../../Common/include/mpi_structure.hpp"
-
 #include <stdio.h>
 #include <string.h>
 #include <iostream>
@@ -62,7 +61,8 @@ using namespace std;
 class CTrapezoidalMap {
 protected:
 	int rank, UpperI, LowerI, middleI, LowerJ, UpperJ, middleJ;
-	int UpperEdge, MiddleEdge, LowerEdge;
+	int UpperEdge, LowerEdge;
+	vector<int> CurrentFace;
 	//The unique values of x which exist in the data
 	vector<su2double> Unique_X_Bands;
 	vector<vector<int> > Unique_Edges;
@@ -70,41 +70,20 @@ protected:
 	//The value that each edge which intersects the band takes within that
 	//same band. Used to sort the edges
 	vector<vector<pair<su2double, int> > > Y_Values_of_Edge_Within_Band_And_Index;
+	vector<vector<int> > Edge_To_Face_Connectivity;
 public:
 	CTrapezoidalMap();
 	CTrapezoidalMap(vector<su2double> const &x_samples,
 			vector<su2double> const &y_samples,
-			vector<vector<int> > const &unique_edges);
+			vector<vector<int> > const &unique_edges,
+			vector<vector<int> > const &edge_to_face_connectivity);
 	void Find_Containing_Simplex(su2double x, su2double y);
 	void Search_Bands_For(su2double x);
 	void Search_Band_For_Edge(su2double x, su2double y);
 
-	int getLowerI() const {
-		return LowerI;
+	int getCurrentFace() const {
+		return CurrentFace[0];
 	}
-
-	int getLowerJ() const {
-		return LowerJ;
-	}
-
-	int getUpperI() const {
-		return UpperI;
-	}
-
-	int getUpperJ() const {
-		return UpperJ;
-	}
-
-	int getLowerEdge() const {
-		return LowerEdge;
-	}
-
-	int getUpperEdge() const {
-		return UpperEdge;
-	}
-	int getMiddleEdge() const {
-			return MiddleEdge;
-		}
 };
 
 #include "../include/fluid_model.hpp"
@@ -120,6 +99,7 @@ class CLookUpTable: public CFluidModel {
 protected:
 	int rank;
 	int CurrentZone;
+	int CurrentFace;
 	vector<int> CurrentPoints;
 	bool LUT_Debug_Mode;/*!< \brief If true, master node prints errors of points outside LUT*/
 	su2double Pressure_Reference_Value;
@@ -152,12 +132,13 @@ protected:
 	ThermoTables_dktdT_rho[2]; /*!< \brief Fluid derivative DktDT_rho look up table values. */
 
 	su2double Interpolation_Matrix[4][4]; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
+
 	su2double Interpolation_Coeff[4][4]; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
-	int LowerI, UpperI, middleI, LowerJ, UpperJ, middleJ;/*!< \brief The i,j indexes (rho, P) of the position of the table search. Can be used as a restart for next search.*/
 	int nTable_Zone_Stations[2]; /*!< \brief Number of nodes in the '2' zones of the LuT*/
 	int nTable_Zone_Triangles[2]; /*!< \brief Number of triangles in the '2' zones of the LuT (must be triangles for now)*/
 	vector<vector<int> > Table_Zone_Triangles[2]; /*!< \brief The triangles in each zone are stored as three intgers (the tree defining data-points)*/
-	vector<vector<int> > Table_Zone_Edges[2]; /*!< \brief Number of edges in the '2' zones of the LuT*/
+	vector<vector<int> > Table_Zone_Edges[2]; /*!< \brief The edges in the '2' zones of the LuT*/
+	vector<vector<int> > Table_Edge_To_Face_Connectivity[2];/*!< \brief Number of edges in the '2' zones of the LuT*/
 
 public:
 
@@ -180,7 +161,7 @@ public:
 	 */
 	void Get_Unique_Edges();
 
-	void Get_Current_Points_From_TrapezoidalMap(CTrapezoidalMap *t_map,
+	void Get_Bounding_Simplex_From_TrapezoidalMap(CTrapezoidalMap *t_map,
 			su2double x, su2double y);
 
 	void SetTDState_rhoe(su2double rho, su2double e);
