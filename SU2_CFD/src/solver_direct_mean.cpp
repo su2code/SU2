@@ -9111,6 +9111,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   delete [] Velocity_b;
   delete [] Velocity_i;
   delete [] FlowDirMix;
+  delete [] Flow_Dir;
 
   delete [] S_boundary;
   delete [] Lambda_i;
@@ -9238,6 +9239,7 @@ void CEulerSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container
   Velocity_b = new su2double[nDim];
   Velocity_e = new su2double[nDim];
   FlowDirMix = new su2double[nDim];
+  Flow_Dir    = new su2double[nDim];
   Lambda_i = new su2double[nVar];
   u_i = new su2double[nVar];
   u_e = new su2double[nVar];
@@ -9375,7 +9377,10 @@ void CEulerSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container
           }
 
           T_Total  = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_Var2, NonUniformBC_d2Var2, NonUniformBC_InputPoints, y_perio);
-          Flow_Dir = config->GetNonUniform_FlowDir(Marker_Tag);
+//          Flow_Dir = config->GetNonUniform_FlowDir(Marker_Tag);
+          Flow_Dir[0] = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_FlowDir_x, NonUniformBC_d2FlowDir_x, NonUniformBC_InputPoints, y_perio);
+          Flow_Dir[1] = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_FlowDir_y, NonUniformBC_d2FlowDir_y, NonUniformBC_InputPoints, y_perio);
+          Flow_Dir[2] = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_FlowDir_z, NonUniformBC_d2FlowDir_z, NonUniformBC_InputPoints, y_perio);
 
 //					P_Total = config->GetNonUniform_Var1(Marker_Tag)*(1+0.1*sin(2*PI_NUMBER/config->GetSpectralMethod_Period()*Physical_t));
           /*--- Non-dim. the inputs if necessary. ---*/

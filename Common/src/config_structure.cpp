@@ -367,6 +367,7 @@ void CConfig::SetPointersNull(void) {
   
   Riemann_FlowDir= NULL;
   NRBC_FlowDir = NULL;
+  NonUniform_FlowDir = NULL;
   ActDisk_Origin= NULL;
   CoordFFDBox= NULL;
   DegreeFFDBox= NULL;
@@ -5092,6 +5093,12 @@ CConfig::~CConfig(void) {
     delete [] NRBC_FlowDir;
   }
   
+  if (NonUniform_FlowDir != NULL) {
+    for (iMarker = 0; iMarker < nMarker_NonUniform; iMarker++)
+      delete [] NonUniform_FlowDir[iMarker];
+    delete [] NonUniform_FlowDir;
+  }
+
   if (Load_Sine_Dir != NULL) {
     for (iMarker = 0; iMarker < nMarker_Load_Sine; iMarker++)
       delete [] Load_Sine_Dir[iMarker];
