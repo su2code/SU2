@@ -233,8 +233,8 @@ CDriver::CDriver(char* confFile,
   
   /*--- If activated by the compile directive, perform a partition analysis. ---*/
 #if PARTITION
-  if(!fem_solver)
-    Partition_Analysis(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+  if( fem_solver ) Partition_Analysis_FEM(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+  else Partition_Analysis(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
 #endif
   
   /*--- Output some information about the driver that has been instantiated for the problem. ---*/
