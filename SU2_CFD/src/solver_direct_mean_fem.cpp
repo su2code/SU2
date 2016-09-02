@@ -4354,8 +4354,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
                             solInt0, solInt1, fluxes, conv_numerics);
 
   /* Call the general function to compute the viscous flux in normal
-     direction for the face. Make sure that the prescribed heat flux
-     is used. */
+     direction for the face. */
   ViscousNormalFluxFace(nInt, nDOFsElem, Wall_HeatFlux, HeatFlux_Prescribed,
                         derBasisElem, solInt0, surfElem->DOFsSolElement,
                         surfElem->metricCoorDerivFace, surfElem->metricNormalsFace,
