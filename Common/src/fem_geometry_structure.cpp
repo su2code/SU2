@@ -5171,29 +5171,22 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
       sizeMassMatrix             += nDOFs;
 
       /*--- Loop over the DOFs to compute the diagonal elements of the local mass
-            matrix. Determine the trace as well. ---*/
-      su2double traceMass = 0.0;
+            matrix. It is the sum of the absolute values of the row. ---*/
       for(unsigned short j=0; j<nDOFs; ++j) {
         volElem[i].lumpedMassMatrix[j] = 0.0;
 
-        /* Loop over the integration point to create the actual value. */
-        for(unsigned short l=0; l<nInt; ++l)
-          volElem[i].lumpedMassMatrix[j] += volElem[i].metricTerms[l*nMetricPerPoint]
-                                          * w[l]*lag[l*nDOFs+j]*lag[l*nDOFs+j];
-        traceMass += volElem[i].lumpedMassMatrix[j];
+        /* Loop over the DOFs to compute the elements of the row of the mass matrix. */
+        for(unsigned short k=0; k<nDOFs; ++k) {
+
+          su2double Mjk = 0.0;
+          for(unsigned short l=0; l<nInt; ++l)
+            Mjk += volElem[i].metricTerms[l*nMetricPerPoint]
+                 * w[l]*lag[l*nDOFs+k]*lag[l*nDOFs+j];
+
+          /* Update the lumped mass matrix. */
+          volElem[i].lumpedMassMatrix[j] += fabs(Mjk);
+        }
       }
-
-      /* Compute the volume of the element and divide it by the trace of the
-         mass matrix. This is the scaling factor for currently stored diagonal
-         entries of the mass matrix to obtain the lumped version. */
-      su2double volume = 0.0;
-      for(unsigned short l=0; l<nInt; ++l)
-        volume += w[l]*volElem[i].metricTerms[l*nMetricPerPoint];
-      volume /= traceMass;
-
-      /* Compute the values of the lumped mass matrix for the DOFs. */
-      for(unsigned short j=0; j<nDOFs; ++j)
-        volElem[i].lumpedMassMatrix[j] *= volume;
     }
   }
 }
