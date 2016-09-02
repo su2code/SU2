@@ -5434,6 +5434,25 @@ public:
 	su2double GetSpline(vector<su2double> &xa, vector<su2double> &ya, vector<su2double> &y2a, unsigned long n, su2double x);
   
   /*!
+   * \brief Start the timer for profiling subroutines.
+   * \param[in] val_start_time - the value of the start time.
+   */
+  void Tick(double *val_start_time);
+  
+  /*!
+   * \brief Stop the timer for profiling subroutines and store results.
+   * \param[in] val_start_time - the value of the start time.
+   * \param[in] val_function_name - string for the name of the profiled subroutine.
+   * \param[in] val_group_id - string for the name of the profiled subroutine.
+   */
+  void Tock(double val_start_time, string val_function_name, int val_group_id);
+  
+  /*!
+   * \brief Write a CSV file containing the results of the profiling.
+   */
+  void SetProfilingCSV(void);
+  
+  /*!
    * \brief Get the verbosity level of the console output.
    * \return Verbosity level for the console output.
    */

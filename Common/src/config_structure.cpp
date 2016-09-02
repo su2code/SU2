@@ -33,6 +33,13 @@
 
 #include "../include/config_structure.hpp"
 
+vector<string> Profile_Function_tp;       /*!< \brief Vector of string names for profiled functions. */
+vector<double> Profile_Time_tp;           /*!< \brief Vector of elapsed time for profiled functions. */
+vector<double> Profile_ID_tp;             /*!< \brief Vector of group ID number for profiled functions. */
+map<string, vector<int> > Profile_Map_tp; /*!< \brief Map containing the final results for profiled functions. */
+
+//#pragma omp threadprivate(Profile_Function_tp, Profile_Time_tp, Profile_ID_tp, Profile_Map_tp)
+
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
 
   int rank = MASTER_NODE;
@@ -5725,4 +5732,194 @@ su2double CConfig::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vector<
   y=a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
 
   return y;
+}
+
+void CConfig::Tick(double *val_start_time) {
+  
+#ifdef PROFILE
+#ifndef HAVE_MPI
+  *val_start_time = double(clock())/double(CLOCKS_PER_SEC);
+#else
+  *val_start_time = MPI_Wtime();
+#endif
+  
+#endif
+  
+}
+
+void CConfig::Tock(double val_start_time, string val_function_name, int val_group_id) {
+  
+#ifdef PROFILE
+  
+  double val_stop_time = 0.0, val_elapsed_time = 0.0;
+  
+#ifndef HAVE_MPI
+  val_stop_time = double(clock())/double(CLOCKS_PER_SEC);
+#else
+  val_stop_time = MPI_Wtime();
+#endif
+  
+  /*--- Compute the elapsed time for this subroutine ---*/
+  val_elapsed_time = val_stop_time - val_start_time;
+  
+  /*--- Store the subroutine name and the elapsed time ---*/
+  Profile_Function_tp.push_back(val_function_name);
+  Profile_Time_tp.push_back(val_elapsed_time);
+  Profile_ID_tp.push_back(val_group_id);
+  
+#endif
+  
+}
+
+void CConfig::SetProfilingCSV(void) {
+  
+#ifdef PROFILE
+  
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+  
+  /*--- Each rank has the same stack trace, so the they have the same
+   function calls and ordering in the vectors. We're going to reduce
+   the timings from each rank and extract the avg, min, and max timings. ---*/
+  
+  /*--- First, create a local mapping, so that we can extract the
+   min and max values for each function. ---*/
+  
+  for (unsigned int i = 0; i < Profile_Function_tp.size(); i++) {
+    
+    /*--- Add the function and initialize if not already stored (the ID
+     only needs to be stored the first time).---*/
+    if (Profile_Map_tp.find(Profile_Function_tp[i]) == Profile_Map_tp.end()) {
+      
+      vector<int> profile; profile.push_back(i);
+      Profile_Map_tp.insert(pair<string,vector<int> >(Profile_Function_tp[i],profile));
+      
+    } else {
+      
+      /*--- This function has already been added, so simply increment the
+       number of calls and total time for this function. ---*/
+      
+      Profile_Map_tp[Profile_Function_tp[i]].push_back(i);
+      
+    }
+  }
+  
+  /*--- We now have everything gathered by function name, so we can loop over
+   each function and store the min/max times. ---*/
+  
+  int map_size = 0;
+  for (map<string,vector<int> >::iterator it=Profile_Map_tp.begin(); it!=Profile_Map_tp.end(); ++it) {
+    map_size++;
+  }
+  
+  /*--- Allocate and initialize memory ---*/
+  
+  double *l_min_red, *l_max_red, *l_tot_red, *l_avg_red;
+  int *n_calls_red;
+  double* l_min = new double[map_size];
+  double* l_max = new double[map_size];
+  double* l_tot = new double[map_size];
+  double* l_avg = new double[map_size];
+  int* n_calls  = new int[map_size];
+  for (int i = 0; i < map_size; i++)
+  {
+    l_min[i]   = 1e10;
+    l_max[i]   = 0.0;
+    l_tot[i]   = 0.0;
+    l_avg[i]   = 0.0;
+    n_calls[i] = 0;
+  }
+  
+  /*--- Collect the info for each function from the current rank ---*/
+  
+  int func_counter = 0;
+  for (map<string,vector<int> >::iterator it=Profile_Map_tp.begin(); it!=Profile_Map_tp.end(); ++it) {
+    
+    for (unsigned int i = 0; i < (it->second).size(); i++) {
+      n_calls[func_counter]++;
+      l_tot[func_counter] += Profile_Time_tp[(it->second)[i]];
+      if (Profile_Time_tp[(it->second)[i]] < l_min[func_counter])
+        l_min[func_counter] = Profile_Time_tp[(it->second)[i]];
+      if (Profile_Time_tp[(it->second)[i]] > l_max[func_counter])
+        l_max[func_counter] = Profile_Time_tp[(it->second)[i]];
+      
+    }
+    l_avg[func_counter] = l_tot[func_counter]/((double)n_calls[func_counter]);
+    func_counter++;
+  }
+  
+  /*--- Now reduce the data ---*/
+  
+  if (rank == MASTER_NODE) {
+    l_min_red = new double[map_size];
+    l_max_red = new double[map_size];
+    l_tot_red = new double[map_size];
+    l_avg_red = new double[map_size];
+    n_calls_red  = new int[map_size];
+  }
+  MPI_Reduce(n_calls, n_calls_red, map_size, MPI_INT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Reduce(l_tot, l_tot_red, map_size, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Reduce(l_avg, l_avg_red, map_size, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Reduce(l_min, l_min_red, map_size, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+  MPI_Reduce(l_max, l_max_red, map_size, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+  
+  /*--- The master rank will write the file ---*/
+  
+  if (rank == MASTER_NODE) {
+    
+    /*--- Take averages over all ranks on the master ---*/
+    
+    for (int i = 0; i < map_size; i++) {
+      l_tot_red[i]   = l_tot_red[i]/(double)size;
+      l_avg_red[i]   = l_avg_red[i]/(double)size;
+      n_calls_red[i] = n_calls_red[i]/size;
+    }
+    
+    /*--- Now write a CSV file with the processed results ---*/
+    
+    char cstr[200];
+    ofstream Profile_File;
+    strcpy (cstr, "profiling.csv");
+    
+    /*--- Prepare and open the file ---*/
+    
+    Profile_File.precision(15);
+    Profile_File.open(cstr, ios::out);
+    
+    /*--- Create the CSV header ---*/
+    
+    Profile_File << "\"Function_Name\", \"N_Calls\", \"Avg_Total_Time\", \"Avg_Time\", \"Min_Time\", \"Max_Time\", \"Function_ID\"" << endl;
+    
+    /*--- Loop through the map and write the results to the file ---*/
+    
+    func_counter = 0;
+    for (map<string,vector<int> >::iterator it=Profile_Map_tp.begin(); it!=Profile_Map_tp.end(); ++it) {
+      
+      Profile_File << scientific << it->first << ", " << n_calls_red[func_counter] << ", " << l_tot_red[func_counter] << ", " << l_avg_red[func_counter] << ", " << l_min_red[func_counter] << ", " << l_max_red[func_counter] << ", " << (int)Profile_ID_tp[(it->second)[0]] << endl;
+      func_counter++;
+    }
+    
+    Profile_File.close();
+    
+  }
+  
+  delete [] l_min;
+  delete [] l_max;
+  delete [] l_avg;
+  delete [] l_tot;
+  delete [] n_calls;
+  if (rank == MASTER_NODE) {
+    delete [] l_min_red;
+    delete [] l_max_red;
+    delete [] l_avg_red;
+    delete [] l_tot_red;
+    delete [] n_calls_red;
+  }
+  
+#endif
+  
 }
