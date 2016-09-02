@@ -41,6 +41,7 @@ CDriver::CDriver(char* confFile,
   
   unsigned short jZone, iSol;
   bool fem_solver = false;
+  su2double tick = 0.0;
   
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
@@ -127,16 +128,21 @@ CDriver::CDriver(char* confFile,
     
     /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
     
+    config_container[ZONE_0]->Tick(&tick);
     geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+    config_container[ZONE_0]->Tock(tick,"CPhysicalGeometry_1",1);
     
     /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
     
+    config_container[ZONE_0]->Tick(&tick);
     if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[iZone]);
     else              geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+    config_container[ZONE_0]->Tock(tick,"SetColorGrid_Parallel",1);
     
     /*--- Allocate the memory of the current domain, and divide the grid
      between the ranks. ---*/
     
+    config_container[ZONE_0]->Tick(&tick);
     geometry_container[iZone] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
     
     if( fem_solver ) {
@@ -150,18 +156,21 @@ CDriver::CDriver(char* confFile,
     else {
       geometry_container[iZone][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
     }
+    config_container[ZONE_0]->Tock(tick,"CPhysicalGeometry_2",1);
     
     /*--- Deallocate the memory of geometry_aux ---*/
     
     delete geometry_aux;
     
     /*--- Add the Send/Receive boundaries ---*/
-    
+    config_container[ZONE_0]->Tick(&tick);
     geometry_container[iZone][MESH_0]->SetSendReceive(config_container[iZone]);
+    config_container[ZONE_0]->Tock(tick,"SetSendReceive",1);
     
     /*--- Add the Send/Receive boundaries ---*/
-    
+    config_container[ZONE_0]->Tick(&tick);
     geometry_container[iZone][MESH_0]->SetBoundaries(config_container[iZone]);
+    config_container[ZONE_0]->Tock(tick,"SetBoundaries",1);
     
   }
   
@@ -173,6 +182,7 @@ CDriver::CDriver(char* confFile,
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
   
+  config_container[ZONE_0]->Tick(&tick);
   if( fem_solver ) {
     switch( config_container[ZONE_0]->GetKind_FEM_Flow() ) {
       case DG: {
@@ -184,6 +194,7 @@ CDriver::CDriver(char* confFile,
   else {
     Geometrical_Preprocessing();
   }
+  config_container[ZONE_0]->Tock(tick,"Geometrical_Preprocessing",1);
   
   for (iZone = 0; iZone < nZone; iZone++) {
     
@@ -198,13 +209,17 @@ CDriver::CDriver(char* confFile,
       if (rank == MASTER_NODE)
         cout << "Computing wall distances." << endl;
       
+      config_container[ZONE_0]->Tick(&tick);
       geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
+      config_container[ZONE_0]->Tock(tick,"ComputeWall_Distance",1);
     }
     
     /*--- Computation of positive surface area in the z-plane which is used for
      the calculation of force coefficient (non-dimensionalization). ---*/
     
+    config_container[ZONE_0]->Tick(&tick);
     geometry_container[iZone][MESH_0]->SetPositive_ZArea(config_container[iZone]);
+    config_container[ZONE_0]->Tock(tick,"SetPositive_ZArea",1);
     
     /*--- Set the near-field, interface and actuator disk boundary conditions, if necessary. ---*/
     
@@ -251,7 +266,9 @@ CDriver::CDriver(char* confFile,
     if (rank == MASTER_NODE){
       cout << endl <<"------------------------ Iteration Preprocessing ------------------------" << endl;
     }
+    config_container[ZONE_0]->Tick(&tick);
     Iteration_Preprocessing();
+    config_container[ZONE_0]->Tock(tick,"Iteration_Preprocessing",1);
     
     /*--- Definition of the solver class: solver_container[#ZONES][#MG_GRIDS][#EQ_SYSTEMS].
      The solver classes are specific to a particular set of governing equations,
@@ -271,9 +288,10 @@ CDriver::CDriver(char* confFile,
       for (iSol = 0; iSol < MAX_SOLS; iSol++)
         solver_container[iZone][iMesh][iSol] = NULL;
     }
+    config_container[ZONE_0]->Tick(&tick);
     Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
                          config_container[iZone]);
-    
+    config_container[ZONE_0]->Tock(tick,"Solver_Preprocessing",1);
     
     if (rank == MASTER_NODE)
       cout << endl <<"----------------- Integration and Numerics Preprocessing ----------------" << endl;
@@ -285,9 +303,10 @@ CDriver::CDriver(char* confFile,
      steady state or time-accurately. ---*/
     
     integration_container[iZone] = new CIntegration*[MAX_SOLS];
+    config_container[ZONE_0]->Tick(&tick);
     Integration_Preprocessing(integration_container[iZone], geometry_container[iZone],
                               config_container[iZone]);
-    
+    config_container[ZONE_0]->Tock(tick,"Integration_Preprocessing",1);
     
     if (rank == MASTER_NODE) cout << "Integration Preprocessing." << endl;
     
@@ -299,8 +318,10 @@ CDriver::CDriver(char* confFile,
      (piecewise constant reconstruction) evaluated in each dual mesh volume. ---*/
     
     numerics_container[iZone] = new CNumerics***[config_container[iZone]->GetnMGLevels()+1];
+    config_container[ZONE_0]->Tick(&tick);
     Numerics_Preprocessing(numerics_container[iZone], solver_container[iZone],
                            geometry_container[iZone], config_container[iZone]);
+    config_container[ZONE_0]->Tock(tick,"Numerics_Preprocessing",1);
     
     if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
     
@@ -449,13 +470,16 @@ CDriver::CDriver(char* confFile,
 void CDriver::Postprocessing(){
 
   unsigned short jZone;
-
+  
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
+
+  su2double tick = 0.0;
+  config_container[ZONE_0]->Tick(&tick);
 
     /*--- Output some information to the console. ---*/
 
@@ -592,6 +616,13 @@ void CDriver::Postprocessing(){
     cout << "Compute phase completed in " << fixed << UsedTimeCompute << " seconds on "<< size;
     if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
   }
+  
+  config_container[ZONE_0]->Tock(tick,"Postprocessing",1);
+  
+  /*--- Output profiling information ---*/
+  // Note that for now this is called only by a single thread, but all
+  // necessary variables have been made thread private for safety (tick/tock)!!
+  config_container[ZONE_0]->SetProfilingCSV();
 
   /*--- Exit the solver cleanly ---*/
 
@@ -2617,7 +2648,7 @@ void CDriver::Interface_Preprocessing() {
 void CDriver::StartSolver(){
 
     int rank = MASTER_NODE;
-
+  su2double tick = 0.0;
 #ifdef HAVE_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
@@ -2643,7 +2674,7 @@ void CDriver::StartSolver(){
   while (ExtIter < config_container[ZONE_0]->GetnExtIter()) {
 
     /*--- Perform some external iteration preprocessing. ---*/
-
+      config_container[ZONE_0]->Tick(&tick);
       PreprocessExtIter(ExtIter);
 
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
@@ -2651,23 +2682,33 @@ void CDriver::StartSolver(){
       if (!fsi){
 
         /*--- Perform a dynamic mesh update if required. ---*/
+        config_container[ZONE_0]->Tick(&tick);
         DynamicMeshUpdate(ExtIter);
+        config_container[ZONE_0]->Tock(tick,"DynamicMeshUpdate",1);
 
         /*--- Run a single iteration of the problem (mean flow, wave, heat, ...). ---*/
+        config_container[ZONE_0]->Tick(&tick);
         Run();
-
+config_container[ZONE_0]->Tock(tick,"Run",1);
+        
         /*--- Update the solution for dual time stepping strategy ---*/
+        config_container[ZONE_0]->Tick(&tick);
         Update();
+        config_container[ZONE_0]->Tock(tick,"Update",1);
       }
       else{
         Run();      //In the FSIDriver case, mesh and solution updates are already included into the Run function
       }
 
     /*--- Monitor the computations after each iteration. ---*/
+    config_container[ZONE_0]->Tick(&tick);
       Monitor(ExtIter);
+    config_container[ZONE_0]->Tock(tick,"Monitor",1);
 
     /*--- Output the solution in files. ---*/
+    config_container[ZONE_0]->Tick(&tick);
       Output(ExtIter);
+    config_container[ZONE_0]->Tock(tick,"Output",1);
 
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
