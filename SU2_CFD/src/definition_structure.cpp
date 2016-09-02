@@ -302,3 +302,103 @@ void Partition_Analysis(CGeometry *geometry, CConfig *config) {
   delete [] isHalo;
   
 }
+
+void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config) {
+  
+  /*--- This routine does a quick and dirty output of the total
+   vertices, ghost vertices, total elements, ghost elements, etc.,
+   so that we can analyze the partition quality. ---*/
+  
+  unsigned long nNeighbors = 0;
+  unsigned long nElemOwned = 0, nElemSendTotal = 0, nElemRecvTotal = 0;
+  unsigned long nDOFOwned  = 0, nDOFSendTotal  = 0, nDOFRecvTotal  = 0;
+  
+  int iRank;
+  int rank = MASTER_NODE;
+  int size = SINGLE_NODE;
+  
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+#endif
+  
+  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
+   geometrical information for the FEM DG solver. ---*/
+  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+  
+  unsigned long nVolElemOwned = DGGeometry->GetNVolElemOwned();
+  CVolumeElementFEM *volElem = DGGeometry->GetVolElem();
+  
+  /*--- Update the solution by looping over the owned volume elements. ---*/
+  
+  nElemOwned = nVolElemOwned;
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+    nDOFOwned += volElem[l].nDOFsSol;
+  }
+  
+  /*--- Get the communication information from DG_Geometry. Note that for a
+   FEM DG discretization the communication entities of FEMGeometry contain
+   the volume elements. ---*/
+  const vector<int>                    &ranksComm       = DGGeometry->GetRanksComm();
+  const vector<vector<unsigned long> > &elementsSend    = DGGeometry->GetEntitiesSend();
+  const vector<vector<unsigned long> > &elementsReceive = DGGeometry->GetEntitiesReceive();
+  
+  nNeighbors = ranksComm.size();
+  
+  /*--- Loop over the ranks for which communication takes place. ---*/
+  for(unsigned long i=0; i<ranksComm.size(); ++i) {
+    
+    /*--- Determine the derived data type for sending the data. ---*/
+    const unsigned int nElemSend = (unsigned int)elementsSend[i].size();
+    
+    nElemSendTotal += nElemSend;
+    
+    for(unsigned int j=0; j<nElemSend; ++j) {
+      const unsigned long jj = elementsSend[i][j];
+      nDOFSendTotal += volElem[jj].nDOFsSol;
+    }
+    
+    /*--- Determine the derived data type for receiving the data. ---*/
+    const unsigned int nElemRecv = (unsigned int)elementsReceive[i].size();
+    
+    nElemRecvTotal += nElemRecv;
+    
+    for(unsigned int j=0; j<nElemRecv; ++j) {
+      const unsigned long jj = elementsReceive[i][j];
+      nDOFRecvTotal += volElem[jj].nDOFsSol;
+    }
+    
+  }
+  
+  /*--- Now put this info into a CSV file for processing ---*/
+  
+  char cstr[200];
+  ofstream Profile_File;
+  strcpy (cstr, "partitioning.csv");
+  Profile_File.precision(15);
+  
+  if (rank == MASTER_NODE) {
+    /*--- Prepare and open the file ---*/
+    Profile_File.open(cstr, ios::out);
+    /*--- Create the CSV header ---*/
+    Profile_File << "\"Rank\", \"nNeighbors\", \"nElemOwned\", \"nElemSendTotal\", \"nElemRecvTotal\", \"nDOFOwned\", \"nDOFSendTotal\", \"nDOFRecvTotal\"" << endl;
+    Profile_File.close();
+  }
+#ifdef HAVE_MPI
+  MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  
+  /*--- Loop through the map and write the results to the file ---*/
+  
+  for (iRank = 0; iRank < size; iRank++) {
+    if (rank == iRank) {
+      Profile_File.open(cstr, ios::out | ios::app);
+      Profile_File << rank << ", " << nNeighbors << ", " << nElemOwned << ", " << nElemSendTotal << ", " << nElemRecvTotal << ", " << nDOFOwned << ", " << nDOFSendTotal << ", " << nDOFRecvTotal << endl;
+      Profile_File.close();
+    }
+#ifdef HAVE_MPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+  }
+  
+}
