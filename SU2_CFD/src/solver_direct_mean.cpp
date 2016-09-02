@@ -576,7 +576,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   /*--- Init total coefficients ---*/
   
-  Total_CD   = 0.0;	Total_CL        = 0.0;  Total_CSF   = 0.0;
+  Total_CD      = 0.0;	Total_CL           = 0.0;  Total_CSF          = 0.0;
   Total_CMx     = 0.0;	Total_CMy          = 0.0;  Total_CMz          = 0.0;
   Total_CEff    = 0.0;	Total_CEquivArea   = 0.0;  Total_CNearFieldOF = 0.0;
   Total_CFx     = 0.0;	Total_CFy          = 0.0;  Total_CFz          = 0.0;
@@ -4618,7 +4618,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   
   /*-- Variables initialization ---*/
   
-  Total_CD = 0.0;        Total_CL = 0.0; Total_CSF = 0.0; Total_CEff = 0.0;
+  Total_CD = 0.0;           Total_CL = 0.0;    Total_CSF = 0.0;     Total_CEff = 0.0;
   Total_CMx = 0.0;          Total_CMy = 0.0;   Total_CMz = 0.0;
   Total_CFx = 0.0;          Total_CFy = 0.0;   Total_CFz = 0.0;
   Total_CT = 0.0;           Total_CQ = 0.0;    Total_CMerit = 0.0;
@@ -4896,9 +4896,9 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   
   /*--- Update the total coefficients (note that all the nodes have the same value) ---*/
   
-  Total_CD         = AllBound_CD_Inv;
-  Total_CL         = AllBound_CL_Inv;
-  Total_CSF    = AllBound_CSF_Inv;
+  Total_CD            = AllBound_CD_Inv;
+  Total_CL            = AllBound_CL_Inv;
+  Total_CSF           = AllBound_CSF_Inv;
   Total_CEff          = Total_CL / (Total_CD + EPS);
   Total_CMx           = AllBound_CMx_Inv;
   Total_CMy           = AllBound_CMy_Inv;
@@ -5250,19 +5250,19 @@ void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
   
   /*--- Update the total coefficients (note that all the nodes have the same value) ---*/
   
-  Total_CD         += AllBound_CD_Mnt;
-  Total_CL        += AllBound_CL_Mnt;
-  Total_CSF    += AllBound_CSF_Mnt;
-  Total_CEff          += Total_CL / (Total_CD + EPS);
+  Total_CD            += AllBound_CD_Mnt;
+  Total_CL            += AllBound_CL_Mnt;
+  Total_CSF           += AllBound_CSF_Mnt;
+  Total_CEff          = Total_CL / (Total_CD + EPS);
   Total_CMx           += AllBound_CMx_Mnt;
   Total_CMy           += AllBound_CMy_Mnt;
-  Total_CMz          += AllBound_CMz_Mnt;
+  Total_CMz           += AllBound_CMz_Mnt;
   Total_CFx           += AllBound_CFx_Mnt;
   Total_CFy           += AllBound_CFy_Mnt;
   Total_CFz           += AllBound_CFz_Mnt;
   Total_CT            += AllBound_CT_Mnt;
   Total_CQ            += AllBound_CQ_Mnt;
-  Total_CMerit        += Total_CT / (Total_CQ + EPS);
+  Total_CMerit        = Total_CT / (Total_CQ + EPS);
   
   /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
   
@@ -13068,7 +13068,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   /*--- Init total coefficients ---*/
   
-  Total_CD   = 0.0;	Total_CL        = 0.0;  Total_CSF   = 0.0;
+  Total_CD      = 0.0;	Total_CL           = 0.0;  Total_CSF          = 0.0;
   Total_CMx     = 0.0;	Total_CMy          = 0.0;  Total_CMz          = 0.0;
   Total_CEff    = 0.0;	Total_CEquivArea   = 0.0;  Total_CNearFieldOF = 0.0;
   Total_CFx     = 0.0;	Total_CFy          = 0.0;  Total_CFz          = 0.0;
@@ -14351,9 +14351,9 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   
   /*--- Update the total coefficients (note that all the nodes have the same value)---*/
   
-  Total_CD       += AllBound_CD_Visc;
-  Total_CL       += AllBound_CL_Visc;
-  Total_CSF  += AllBound_CSF_Visc;
+  Total_CD          += AllBound_CD_Visc;
+  Total_CL          += AllBound_CL_Visc;
+  Total_CSF         += AllBound_CSF_Visc;
   Total_CEff        = Total_CL / (Total_CD + EPS);
   Total_CMx         += AllBound_CMx_Visc;
   Total_CMy         += AllBound_CMy_Visc;
@@ -14363,7 +14363,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   Total_CFz         += AllBound_CFz_Visc;
   Total_CT          += AllBound_CT_Visc;
   Total_CQ          += AllBound_CQ_Visc;
-  Total_CMerit       = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
+  Total_CMerit      = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
   Total_Heat        = AllBound_HF_Visc;
   Total_MaxHeat     = AllBound_MaxHF_Visc;
   
