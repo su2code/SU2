@@ -172,11 +172,11 @@ void CTrapezoidalMap::Search_Bands_For(su2double x) {
 		x_lower = Unique_X_Bands[LowerI];
 		x_upper = Unique_X_Bands[UpperI];
 		//Step used for restarting the search on the low end
-		if (x < x_lower) {
+		if (x < x_lower and (LowerI > 0	)) {
 			UpperI = LowerI;
 			LowerI = LowerI / 2;
 			//Step used for restarting the search on the upper end
-		} else if (x > x_upper) {
+		} else if (x > x_upper and (UpperI < (Unique_X_Bands.size() - 1))) {
 			LowerI = UpperI;
 			UpperI = (UpperI + (Unique_X_Bands.size() - 1)) / 2;
 			//After the restart is cleared, do the normal binary search
@@ -720,7 +720,7 @@ void CLookUpTable::Interpolate_2D_Bilinear(su2double x, su2double y,
 
 su2double CLookUpTable::Interpolate_2D_Bilinear(
 		vector<su2double> *ThermoTables_Z) {
-	//The function values at the 4 corners of the quad
+
 	su2double func_value_0, func_value_1, func_value_2;
 
 	func_value_0 = ThermoTables_Z[CurrentZone][CurrentPoints[0]];
