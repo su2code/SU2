@@ -172,7 +172,7 @@ void CTrapezoidalMap::Search_Bands_For(su2double x) {
 		x_lower = Unique_X_Bands[LowerI];
 		x_upper = Unique_X_Bands[UpperI];
 		//Step used for restarting the search on the low end
-		if (x < x_lower and (LowerI > 0 )) {
+		if (x < x_lower and (LowerI > 0)) {
 			UpperI = LowerI;
 			LowerI = LowerI / 2;
 			//Step used for restarting the search on the upper end
@@ -265,7 +265,6 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 		}
 		exit(EXIT_FAILURE);
 	}
-
 
 	if (rank == MASTER_NODE) {
 		// Give the user some information on the size of the table
@@ -753,206 +752,377 @@ su2double CLookUpTable::Interpolate_2D_Bilinear(
 	return result;
 }
 
+struct KD_node* CLookUpTable::KD_Tree(vector<su2double> const &x_values,
+		vector<su2double> const & y_values, vector<int> const & i_values, int dim,
+		int depth) {
+
+	struct KD_node *kdn = new KD_node;
+	kdn->x_values = x_values;
+	kdn->x_values = y_values;
+	kdn->Flattened_Point_Index = i_values;
+	vector<su2double> upperx,lowerx;
+	vector<su2double> uppery,lowery;
+	vector<int> upperi,loweri;
+	vector<su2double>::iterator lower, upper;
+
+	// The depth is used to define the splitting direction of the KD_tree
+	kdn->Branch_Splitting_Direction = depth;
+	// The dimension of the KD_tree branch
+	kdn->Branch_Dimension = dim;
+	vector<su2double> temporary_coords(kdn->x_values.size());
+	// If  branch dimension is larger than 1, the branch get's split
+	if (dim > 1) {
+		// If the depth of the branch is even, then sort along the y_values--*/
+		if (depth % 2 == 0) {
+
+			for (int i = 0; i < kdn->x_values.size(); i++) {
+				kdn->search_couple.push_back(
+						make_pair(kdn->x_values[i], kdn->Flattened_Point_Index[i]));
+			}
+			stable_sort(kdn->search_couple.begin(), kdn->search_couple.end());
+			for (int i = 0; i < kdn->y_values.size(); i++) {
+				temporary_coords[i] = kdn->y_values[kdn->search_couple[i].second];
+			}
+			kdn->y_values = temporary_coords;
+			lower = lower_bound(x_values.begin(),x_values.end(),x_values[x_values.size()/2]);
+			upper = upper_bound(x_values.begin(),x_values.end(),x_values[x_values.size()/2]);
+		}
+	} else if (depth % 2 == 1) {
+		for (int i = 0; i < kdn->y_values.size(); i++) {
+			kdn->search_couple.push_back(
+					make_pair(kdn->y_values[i], kdn->Flattened_Point_Index[i]));
+		}
+		stable_sort(kdn->search_couple.begin(), kdn->search_couple.end());
+		for (int i = 0; i < kdn->y_values.size(); i++) {
+			temporary_coords[i] = kdn->x_values[kdn->search_couple[i].second];
+		}
+		kdn->x_values = temporary_coords;
+		lower = lower_bound(y_values.begin(),y_values.end(),y_values[y_values.size()/2]);
+		upper = upper_bound(y_values.begin(),y_values.end(),y_values[y_values.size()/2]);
+	}
+	upperx = copy(upper,x_values.end());
+	uppery = ;
+  lowerx = ;
+  lowery = ;
+
+	kdn->upper = KD_Tree(upperx, uppery, upperi, dim / 2, depth + 1);
+	kdn->lower = KD_Tree(lowerx, lowery, loweri, dim - dim / 2, depth + 1);
+}
+return kdn;
+}
+
+su2double CLookUpTable::Dist2_KD_Tree(su2double x, su2double y,
+	KD_node *branch) {
+su2double dist;
+/*!
+ * The distance between the branch and the search point is characterized
+ * by the distance between branch median point of the branch to the search.
+ */
+dist = pow((branch->x_values[branch->Branch_Dimension / 2] - x) / x, 2)\
+
+		+ pow((branch->y_values[branch->Branch_Dimension / 2] - y) / y, 2);
+return dist;
+}
+
+void CLookUpTable::N_Nearest_Neighbours_KD_Tree(int N, su2double thermo1,
+	su2double thermo2, KD_node *root, su2double *best_dist) {
+
+su2double dist = Dist2_KD_Tree(thermo1, thermo2, root);/*!< \brief First compute the Euclidean branch distance to the search item using  */
+/*!
+ * This algorithm is kept general such that it works for N nearest neighbors.
+ * The following loop look at the current point and checks whether it is closer
+ * than any of the N current closest points.
+ */
+int i = 0;
+while (i < N) {
+	if (dist == best_dist[i])
+		i = i + 1;
+	if (dist < best_dist[i]) {
+		for (int j = N - 1; j > i; j--) {
+			best_dist[j] = best_dist[j - 1];
+			Nearest_Neighbour_iIndex[j] = Nearest_Neighbour_iIndex[j - 1];
+			Nearest_Neighbour_jIndex[j] = Nearest_Neighbour_jIndex[j - 1];
+		}
+		best_dist[i] = dist;
+		Nearest_Neighbour_iIndex[i] =
+				root->Flattened_Point_Index[root->Branch_Dimension / 2]
+						/ Table_Pressure_Stations;
+		Nearest_Neighbour_jIndex[i] =
+				root->Flattened_Point_Index[root->Branch_Dimension / 2]
+						% Table_Pressure_Stations;
+		i = N + 1;
+	}
+	i++;
+
+}
+/*!
+ * Propagate the search further down the tree based on whether the search value
+ * is above or below the median value. If the branch splitting direction is
+ * even, the x_values are compared, if it is odd y_values get compared. This
+ * corresponds to the sorting order.
+ */
+if ((root->Branch_Dimension > 1)) {
+	if (root->Branch_Splitting_Direction % 2 == 0) {
+		if (root->x_values[root->Branch_Dimension / 2] <= thermo1) {
+			/*!
+			 * Propagate into the upper branch according to x_values
+			 */
+			N_Nearest_Neighbours_KD_Tree(N, thermo1, thermo2, root->upper, best_dist);
+			if (dist < best_dist[N - 1]) {
+				/*!
+				 * Unwinding the search back up the tree ensures that the closest points
+				 * are found even when their x and y values lie below the search term (i.e.
+				 * this would mean the search would not cover them on its downward pass)
+				 */
+				N_Nearest_Neighbours_KD_Tree(N, thermo1, thermo2, root->lower,
+						best_dist);
+			}
+		} else if (root->x_values[root->Branch_Dimension / 2] > thermo1) {
+			/*!
+			 * Propagate the search into the lower branch according to x_values
+			 */
+			N_Nearest_Neighbours_KD_Tree(N, thermo1, thermo2, root->lower, best_dist);
+			if (dist < best_dist[N - 1]) {
+				/*!
+				 * Unwinding the search; see above.
+				 */
+				N_Nearest_Neighbours_KD_Tree(N, thermo1, thermo2, root->upper,
+						best_dist);
+			}
+		}
+		/*!
+		 * If depth is odd, split the search in the y direction.
+		 */
+	} else if (root->Branch_Splitting_Direction % 2 == 1) {
+		if (root->y_values[root->Branch_Dimension / 2] <= thermo2) {
+			/*!
+			 * Propagate the search into the upper branch according to y_values
+			 */
+			N_Nearest_Neighbours_KD_Tree(N, thermo1, thermo2, root->upper, best_dist);
+			if (dist < best_dist[N - 1]) {
+				/*!
+				 * Unwinding the search; see above.
+				 */
+				N_Nearest_Neighbours_KD_Tree(N, thermo1, thermo2, root->lower,
+						best_dist);
+			}
+		} else if (root->y_values[root->Branch_Dimension / 2] > thermo2) {
+			/*!
+			 * Propagate the search into the lower branch according to y_values
+			 */
+			N_Nearest_Neighbours_KD_Tree(N, thermo1, thermo2, root->lower, best_dist);
+			/*!
+			 * Unwinding the search; see above.
+			 */
+			if (dist < best_dist[N - 1]) {
+				N_Nearest_Neighbours_KD_Tree(N, thermo1, thermo2, root->upper,
+						best_dist);
+			}
+		}
+	}
+}
+}
+
 void CLookUpTable::RecordState(char* file) {
-	//Record the state of the fluid model to a file for
-	//verificaiton purposes
-	fstream fs;
-	fs.open(file, fstream::app);
-	fs.precision(17);
-	assert(fs.is_open());
-	fs << Temperature << ", ";
-	fs << Density << ", ";
-	fs << Enthalpy << ", ";
-	fs << StaticEnergy << ", ";
-	fs << Entropy << ", ";
-	fs << Pressure << ", ";
-	fs << SoundSpeed2 << ", ";
-	fs << dPdrho_e << ", ";
-	fs << dPde_rho << ", ";
-	fs << dTdrho_e << ", ";
-	fs << dTde_rho << ", ";
-	fs << Cp << ", ";
-	fs << Mu << ", ";
-	//fs << dmudrho_T << ", ";
-	//fs << dmudT_rho << ", ";
-	fs << Kt << " ";
-	//fs << dktdrho_T << ", ";
-	//fs << dktdT_rho << ", ";
-	fs << "\n";
-	fs.close();
+//Record the state of the fluid model to a file for
+//verificaiton purposes
+fstream fs;
+fs.open(file, fstream::app);
+fs.precision(17);
+assert(fs.is_open());
+fs << Temperature << ", ";
+fs << Density << ", ";
+fs << Enthalpy << ", ";
+fs << StaticEnergy << ", ";
+fs << Entropy << ", ";
+fs << Pressure << ", ";
+fs << SoundSpeed2 << ", ";
+fs << dPdrho_e << ", ";
+fs << dPde_rho << ", ";
+fs << dTdrho_e << ", ";
+fs << dTde_rho << ", ";
+fs << Cp << ", ";
+fs << Mu << ", ";
+//fs << dmudrho_T << ", ";
+//fs << dmudT_rho << ", ";
+fs << Kt << " ";
+//fs << dktdrho_T << ", ";
+//fs << dktdT_rho << ", ";
+fs << "\n";
+fs.close();
 }
 
 void CLookUpTable::LookUpTable_Print_To_File(char* filename) {
 //Print the entire table to a file such that the mesh can be plotted
 //externally (for verification purposes)
-	//for (int i = 0; i < 2; i++) {
-	int i = CurrentZone;
-	for (int j = 0; j < nTable_Zone_Stations[i]; j++) {
-		Temperature = ThermoTables_Temperature[i][j];
-		Density = ThermoTables_Density[i][j];
-		Enthalpy = ThermoTables_Enthalpy[i][j];
-		StaticEnergy = ThermoTables_StaticEnergy[i][j];
-		Entropy = ThermoTables_Entropy[i][j];
-		Pressure = ThermoTables_Pressure[i][j];
-		SoundSpeed2 = ThermoTables_SoundSpeed2[i][j];
-		dPdrho_e = ThermoTables_dPdrho_e[i][j];
-		dPde_rho = ThermoTables_dPde_rho[i][j];
-		dTdrho_e = ThermoTables_dTdrho_e[i][j];
-		dTde_rho = ThermoTables_dTde_rho[i][j];
-		Cp = ThermoTables_Cp[i][j];
-		Kt = ThermoTables_Kt[i][j];
-		Mu = ThermoTables_Mu[i][j];
-		RecordState(filename);
-	}
-	//}
+//for (int i = 0; i < 2; i++) {
+int i = CurrentZone;
+for (int j = 0; j < nTable_Zone_Stations[i]; j++) {
+	Temperature = ThermoTables_Temperature[i][j];
+	Density = ThermoTables_Density[i][j];
+	Enthalpy = ThermoTables_Enthalpy[i][j];
+	StaticEnergy = ThermoTables_StaticEnergy[i][j];
+	Entropy = ThermoTables_Entropy[i][j];
+	Pressure = ThermoTables_Pressure[i][j];
+	SoundSpeed2 = ThermoTables_SoundSpeed2[i][j];
+	dPdrho_e = ThermoTables_dPdrho_e[i][j];
+	dPde_rho = ThermoTables_dPde_rho[i][j];
+	dTdrho_e = ThermoTables_dTdrho_e[i][j];
+	dTde_rho = ThermoTables_dTde_rho[i][j];
+	Cp = ThermoTables_Cp[i][j];
+	Kt = ThermoTables_Kt[i][j];
+	Mu = ThermoTables_Mu[i][j];
+	RecordState(filename);
+}
+//}
 
 }
 
 void CLookUpTable::LookUpTable_Load_TEC(std::string filename) {
-	string line;
-	string value;
-	int found;
-	int zone_scanned;
+string line;
+string value;
+int found;
+int zone_scanned;
 
-	ifstream table(filename.c_str());
-	if (!table.is_open()) {
-		if (rank == MASTER_NODE) {
-			cout << "The LUT file appears to be missing!! " << filename << endl;
-		}
-		exit(EXIT_FAILURE);
+ifstream table(filename.c_str());
+if (!table.is_open()) {
+	if (rank == MASTER_NODE) {
+		cout << "The LUT file appears to be missing!! " << filename << endl;
 	}
-	zone_scanned = 0;
+	exit(EXIT_FAILURE);
+}
+zone_scanned = 0;
 //Go through all lines in the table file.
-	getline(table, line);	//Skip the header
-	while (getline(table, line)) {
-		found = line.find("ZONE");
-		if (found != -1) {
-			if (rank == MASTER_NODE and LUT_Debug_Mode) {
-				cout << line << endl;
-			}
-			istringstream in(line);
-			//Note down the dimensions of the table
-			int nPoints_in_Zone, nTriangles_in_Zone;
-			string c1, c2, c3, c4;
-			in >> c1 >> c2 >> nPoints_in_Zone >> c3 >> c4 >> nTriangles_in_Zone;
-			if (rank == MASTER_NODE)
-				cout << nPoints_in_Zone << "  " << nTriangles_in_Zone << endl;
-			//Create the actual LUT of CThermoLists which is used in the FluidModel
-			nTable_Zone_Stations[zone_scanned] = nPoints_in_Zone;
-			nTable_Zone_Triangles[zone_scanned] = nTriangles_in_Zone;
-			//Allocate the memory for the table
-			LookUpTable_Malloc(zone_scanned);
-
-			//Load the values of the themordynamic properties at each table station
-			for (int j = 0; j < nTable_Zone_Stations[zone_scanned]; j++) {
-				getline(table, line);
-				istringstream in(line);
-				in >> ThermoTables_Density[zone_scanned][j];
-				in >> ThermoTables_Pressure[zone_scanned][j];
-				in >> ThermoTables_SoundSpeed2[zone_scanned][j];
-				in >> ThermoTables_Cp[zone_scanned][j];
-				in >> ThermoTables_Entropy[zone_scanned][j];
-				in >> ThermoTables_Mu[zone_scanned][j];
-				in >> ThermoTables_Kt[zone_scanned][j];
-				in >> ThermoTables_dPdrho_e[zone_scanned][j];
-				in >> ThermoTables_dPde_rho[zone_scanned][j];
-				in >> ThermoTables_dTdrho_e[zone_scanned][j];
-				in >> ThermoTables_dTde_rho[zone_scanned][j];
-				in >> ThermoTables_Temperature[zone_scanned][j];
-				in >> ThermoTables_StaticEnergy[zone_scanned][j];
-				in >> ThermoTables_Enthalpy[zone_scanned][j];
-			}
-			//Skip empty line
-			getline(table, line);
-			//Load the triangles i.e. how the data point in each zone are connected
-			for (int j = 0; j < nTable_Zone_Triangles[zone_scanned]; j++) {
-				getline(table, line);
-				istringstream in(line);
-				in >> Table_Zone_Triangles[zone_scanned][j][0]
-						>> Table_Zone_Triangles[zone_scanned][j][1]
-						>> Table_Zone_Triangles[zone_scanned][j][2];
-				//Triangles in .tec file are indexed from 1
-				//In cpp it is more convenient to start with 0.
-				Table_Zone_Triangles[zone_scanned][j][0]--;
-				Table_Zone_Triangles[zone_scanned][j][1]--;
-				Table_Zone_Triangles[zone_scanned][j][2]--;
-			}
-
-			zone_scanned++;
+getline(table, line);	//Skip the header
+while (getline(table, line)) {
+	found = line.find("ZONE");
+	if (found != -1) {
+		if (rank == MASTER_NODE and LUT_Debug_Mode) {
+			cout << line << endl;
 		}
-	}
+		istringstream in(line);
+		//Note down the dimensions of the table
+		int nPoints_in_Zone, nTriangles_in_Zone;
+		string c1, c2, c3, c4;
+		in >> c1 >> c2 >> nPoints_in_Zone >> c3 >> c4 >> nTriangles_in_Zone;
+		if (rank == MASTER_NODE)
+			cout << nPoints_in_Zone << "  " << nTriangles_in_Zone << endl;
+		//Create the actual LUT of CThermoLists which is used in the FluidModel
+		nTable_Zone_Stations[zone_scanned] = nPoints_in_Zone;
+		nTable_Zone_Triangles[zone_scanned] = nTriangles_in_Zone;
+		//Allocate the memory for the table
+		LookUpTable_Malloc(zone_scanned);
 
-	table.close();
+		//Load the values of the themordynamic properties at each table station
+		for (int j = 0; j < nTable_Zone_Stations[zone_scanned]; j++) {
+			getline(table, line);
+			istringstream in(line);
+			in >> ThermoTables_Density[zone_scanned][j];
+			in >> ThermoTables_Pressure[zone_scanned][j];
+			in >> ThermoTables_SoundSpeed2[zone_scanned][j];
+			in >> ThermoTables_Cp[zone_scanned][j];
+			in >> ThermoTables_Entropy[zone_scanned][j];
+			in >> ThermoTables_Mu[zone_scanned][j];
+			in >> ThermoTables_Kt[zone_scanned][j];
+			in >> ThermoTables_dPdrho_e[zone_scanned][j];
+			in >> ThermoTables_dPde_rho[zone_scanned][j];
+			in >> ThermoTables_dTdrho_e[zone_scanned][j];
+			in >> ThermoTables_dTde_rho[zone_scanned][j];
+			in >> ThermoTables_Temperature[zone_scanned][j];
+			in >> ThermoTables_StaticEnergy[zone_scanned][j];
+			in >> ThermoTables_Enthalpy[zone_scanned][j];
+		}
+		//Skip empty line
+		getline(table, line);
+		//Load the triangles i.e. how the data point in each zone are connected
+		for (int j = 0; j < nTable_Zone_Triangles[zone_scanned]; j++) {
+			getline(table, line);
+			istringstream in(line);
+			in >> Table_Zone_Triangles[zone_scanned][j][0]
+					>> Table_Zone_Triangles[zone_scanned][j][1]
+					>> Table_Zone_Triangles[zone_scanned][j][2];
+			//Triangles in .tec file are indexed from 1
+			//In cpp it is more convenient to start with 0.
+			Table_Zone_Triangles[zone_scanned][j][0]--;
+			Table_Zone_Triangles[zone_scanned][j][1]--;
+			Table_Zone_Triangles[zone_scanned][j][2]--;
+		}
+
+		zone_scanned++;
+	}
+}
+
+table.close();
 //NonDimensionalise
-	NonDimensionalise_Table_Values();
+NonDimensionalise_Table_Values();
 }
 
 void CLookUpTable::LookUpTable_Malloc(int Index_of_Zone) {
-	ThermoTables_StaticEnergy[Index_of_Zone] = vector<su2double>(
-			nTable_Zone_Stations[Index_of_Zone], 0);
-	ThermoTables_Entropy[Index_of_Zone] = vector<su2double>(
-			nTable_Zone_Stations[Index_of_Zone], 0);
-	ThermoTables_Enthalpy[Index_of_Zone] = vector<su2double>(
-			nTable_Zone_Stations[Index_of_Zone], 0);
-	ThermoTables_Density[Index_of_Zone] = vector<su2double>(
-			nTable_Zone_Stations[Index_of_Zone], 0);
-	ThermoTables_Pressure[Index_of_Zone] = vector<su2double>(
-			nTable_Zone_Stations[Index_of_Zone], 0);
-	ThermoTables_SoundSpeed2[Index_of_Zone] = vector<su2double>(
-			nTable_Zone_Stations[Index_of_Zone], 0);
-	ThermoTables_Temperature[Index_of_Zone] = vector<su2double>(
-			nTable_Zone_Stations[Index_of_Zone], 0);
-	ThermoTables_dPdrho_e[Index_of_Zone] = vector<su2double>(
-			nTable_Zone_Stations[Index_of_Zone], 0);
-	ThermoTables_dPde_rho[Index_of_Zone] = vector<su2double>(
-			nTable_Zone_Stations[Index_of_Zone], 0);
-	ThermoTables_dTdrho_e[Index_of_Zone] = vector<su2double>(
-			nTable_Zone_Stations[Index_of_Zone], 0);
-	ThermoTables_dTde_rho[Index_of_Zone] = vector<su2double>(
-			nTable_Zone_Stations[Index_of_Zone], 0);
-	ThermoTables_Cp[Index_of_Zone] = vector<su2double>(
-			nTable_Zone_Stations[Index_of_Zone], 0);
-	ThermoTables_Mu[Index_of_Zone] = vector<su2double>(
-			nTable_Zone_Stations[Index_of_Zone], 0);
-	//ThermoTables_dmudrho_T[Index_of_Zone] = vector< su2double >(
-	//	nTable_Zone_Stations[Index_of_Zone], 0);
-	//ThermoTables_dmudT_rho[Index_of_Zone] = vector< su2double >(
-	//	nTable_Zone_Stations[Index_of_Zone], 0);
-	ThermoTables_Kt[Index_of_Zone] = vector<su2double>(
-			nTable_Zone_Stations[Index_of_Zone], 0);
-	//ThermoTables_dktdrho_T[Index_of_Zone] = vector< su2double >(
-	//		nTable_Zone_Stations[Index_of_Zone], 0);
-	//ThermoTables_dktdT_rho[Index_of_Zone] = vector< su2double >(
-	//		nTable_Zone_Stations[Index_of_Zone], 0);
-	Table_Zone_Triangles[Index_of_Zone] = vector<vector<int> >(
-			nTable_Zone_Triangles[Index_of_Zone]);
-	for (int j = 0; j < nTable_Zone_Triangles[Index_of_Zone]; j++) {
-		Table_Zone_Triangles[Index_of_Zone][j] = vector<int>(3, 0);
-	}
+ThermoTables_StaticEnergy[Index_of_Zone] = vector<su2double>(
+		nTable_Zone_Stations[Index_of_Zone], 0);
+ThermoTables_Entropy[Index_of_Zone] = vector<su2double>(
+		nTable_Zone_Stations[Index_of_Zone], 0);
+ThermoTables_Enthalpy[Index_of_Zone] = vector<su2double>(
+		nTable_Zone_Stations[Index_of_Zone], 0);
+ThermoTables_Density[Index_of_Zone] = vector<su2double>(
+		nTable_Zone_Stations[Index_of_Zone], 0);
+ThermoTables_Pressure[Index_of_Zone] = vector<su2double>(
+		nTable_Zone_Stations[Index_of_Zone], 0);
+ThermoTables_SoundSpeed2[Index_of_Zone] = vector<su2double>(
+		nTable_Zone_Stations[Index_of_Zone], 0);
+ThermoTables_Temperature[Index_of_Zone] = vector<su2double>(
+		nTable_Zone_Stations[Index_of_Zone], 0);
+ThermoTables_dPdrho_e[Index_of_Zone] = vector<su2double>(
+		nTable_Zone_Stations[Index_of_Zone], 0);
+ThermoTables_dPde_rho[Index_of_Zone] = vector<su2double>(
+		nTable_Zone_Stations[Index_of_Zone], 0);
+ThermoTables_dTdrho_e[Index_of_Zone] = vector<su2double>(
+		nTable_Zone_Stations[Index_of_Zone], 0);
+ThermoTables_dTde_rho[Index_of_Zone] = vector<su2double>(
+		nTable_Zone_Stations[Index_of_Zone], 0);
+ThermoTables_Cp[Index_of_Zone] = vector<su2double>(
+		nTable_Zone_Stations[Index_of_Zone], 0);
+ThermoTables_Mu[Index_of_Zone] = vector<su2double>(
+		nTable_Zone_Stations[Index_of_Zone], 0);
+//ThermoTables_dmudrho_T[Index_of_Zone] = vector< su2double >(
+//	nTable_Zone_Stations[Index_of_Zone], 0);
+//ThermoTables_dmudT_rho[Index_of_Zone] = vector< su2double >(
+//	nTable_Zone_Stations[Index_of_Zone], 0);
+ThermoTables_Kt[Index_of_Zone] = vector<su2double>(
+		nTable_Zone_Stations[Index_of_Zone], 0);
+//ThermoTables_dktdrho_T[Index_of_Zone] = vector< su2double >(
+//		nTable_Zone_Stations[Index_of_Zone], 0);
+//ThermoTables_dktdT_rho[Index_of_Zone] = vector< su2double >(
+//		nTable_Zone_Stations[Index_of_Zone], 0);
+Table_Zone_Triangles[Index_of_Zone] = vector<vector<int> >(
+		nTable_Zone_Triangles[Index_of_Zone]);
+for (int j = 0; j < nTable_Zone_Triangles[Index_of_Zone]; j++) {
+	Table_Zone_Triangles[Index_of_Zone][j] = vector<int>(3, 0);
+}
 }
 
 void CLookUpTable::NonDimensionalise_Table_Values() {
-	for (int i = 0; i < 2; i++) {
-		for (int j = 0; j < nTable_Zone_Stations[i]; j++) {
-			ThermoTables_Density[i][j] /= Density_Reference_Value;
-			ThermoTables_Pressure[i][j] /= Pressure_Reference_Value;
-			ThermoTables_SoundSpeed2[i][j] = pow(ThermoTables_SoundSpeed2[i][j], 2);
-			ThermoTables_SoundSpeed2[i][j] /= pow(Velocity_Reference_Value, 2);
-			ThermoTables_Cp[i][j] *= (Temperature_Reference_Value
-					/ Energy_Reference_Value);
-			ThermoTables_Entropy[i][j] *= (Temperature_Reference_Value
-					/ Energy_Reference_Value);
-			ThermoTables_dPdrho_e[i][j] *= (Density_Reference_Value
-					/ Pressure_Reference_Value);
-			ThermoTables_dPde_rho[i][j] *= (Energy_Reference_Value
-					/ Pressure_Reference_Value);
-			ThermoTables_dTdrho_e[i][j] *= (Density_Reference_Value
-					/ Temperature_Reference_Value);
-			ThermoTables_dTde_rho[i][j] *= (Energy_Reference_Value
-					/ Temperature_Reference_Value);
-			ThermoTables_Temperature[i][j] /= Temperature_Reference_Value;
-			ThermoTables_StaticEnergy[i][j] /= Energy_Reference_Value;
-			ThermoTables_Enthalpy[i][j] /= Energy_Reference_Value;
-		}
+for (int i = 0; i < 2; i++) {
+	for (int j = 0; j < nTable_Zone_Stations[i]; j++) {
+		ThermoTables_Density[i][j] /= Density_Reference_Value;
+		ThermoTables_Pressure[i][j] /= Pressure_Reference_Value;
+		ThermoTables_SoundSpeed2[i][j] = pow(ThermoTables_SoundSpeed2[i][j], 2);
+		ThermoTables_SoundSpeed2[i][j] /= pow(Velocity_Reference_Value, 2);
+		ThermoTables_Cp[i][j] *= (Temperature_Reference_Value
+				/ Energy_Reference_Value);
+		ThermoTables_Entropy[i][j] *= (Temperature_Reference_Value
+				/ Energy_Reference_Value);
+		ThermoTables_dPdrho_e[i][j] *= (Density_Reference_Value
+				/ Pressure_Reference_Value);
+		ThermoTables_dPde_rho[i][j] *= (Energy_Reference_Value
+				/ Pressure_Reference_Value);
+		ThermoTables_dTdrho_e[i][j] *= (Density_Reference_Value
+				/ Temperature_Reference_Value);
+		ThermoTables_dTde_rho[i][j] *= (Energy_Reference_Value
+				/ Temperature_Reference_Value);
+		ThermoTables_Temperature[i][j] /= Temperature_Reference_Value;
+		ThermoTables_StaticEnergy[i][j] /= Energy_Reference_Value;
+		ThermoTables_Enthalpy[i][j] /= Energy_Reference_Value;
 	}
+}
 }

@@ -48,6 +48,17 @@ using namespace std;
 
 #include "../../Common/include/config_structure.hpp"
 
+struct KD_node {
+	int Branch_Splitting_Direction, /*!< \brief The depth of the branch within the tree, even numbers are split in x, odd in y */
+	Branch_Dimension; /*!< \brief The number of points contained on the branch */
+	vector<int> Flattened_Point_Index; /*!< \brief The flattened 2D index of the original LUT. Used to access variables other */
+	vector<su2double> x_values, /*!< \brief The x_values of the data. Values are sorted if splitting direction is even.*/
+	y_values; /*!< \brief  The (sorted) y_values of the data. Values are sorted if splitting direction is odd. */
+	vector<pair <su2double, int> > search_couple;
+	KD_node* upper; /*!< \brief The tree-branch on the next level of the tree containing upper 50 percentile. Based on x_values for branches of even depth and y_values for odd. */
+	KD_node* lower; /*!< \brief The tree-branch on the next level of the tree containing lower 50 percentile. Based on x_values for branches of even depth and y_values for odd. */
+};
+
 /*!
  * \class CTrapezoidalMap
  * \brief An algorithm for finding the polygon
@@ -111,6 +122,7 @@ protected:
 	//Put the trapezoidal maps into variables
 	CTrapezoidalMap rhoe_map[2], Prho_map[2], hs_map[2], Ps_map[2], rhoT_map[2],
 			PT_map[2];
+	vector<int>Nearest_Neighbour_Index;
 
 	vector<su2double> ThermoTables_StaticEnergy[2], /*!< \brief Internal Energy look up table values. */
 	ThermoTables_Entropy[2], /*!< \brief Entropy look up table values. */
@@ -131,8 +143,8 @@ protected:
 	ThermoTables_dktdrho_T[2], /*!< \brief Fluid derivative DktDrho_T look up table values. */
 	ThermoTables_dktdT_rho[2]; /*!< \brief Fluid derivative DktDT_rho look up table values. */
 
-	vector<vector <su2double> > Interpolation_Matrix; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
-	vector<vector <su2double> > Interpolation_Coeff; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
+	vector<vector<su2double> > Interpolation_Matrix; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
+	vector<vector<su2double> > Interpolation_Coeff; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
 
 	int nTable_Zone_Stations[2]; /*!< \brief Number of nodes in the '2' zones of the LuT*/
 	int nTable_Zone_Triangles[2]; /*!< \brief Number of triangles in the '2' zones of the LuT (must be triangles for now)*/
@@ -160,7 +172,6 @@ public:
 	 * \param[in] e   - input StaticEnergy (must be within LUT limits)
 	 */
 	void Get_Unique_Edges();
-
 
 	void Get_Bounding_Simplex_From_TrapezoidalMap(CTrapezoidalMap *t_map,
 			su2double x, su2double y);
@@ -220,7 +231,26 @@ public:
 
 	void Gaussian_Inverse(int nDim);
 
-	vector<su2double> Evaluate_Interpolation_Vector(su2double x,su2double y);
+	vector<su2double> Evaluate_Interpolation_Vector(su2double x, su2double y);
+
+	struct KD_node* KD_Tree(vector<su2double> const &x_values, vector<su2double> const & y_values,
+			vector<int> const & i_values, int dim, int depth);
+
+	/*!
+	 * \brief The squared Euclidian distance between the x,y search values and the median of the current tree branch
+	 * \param[in] x - the x value (i.e. location) of the point being searched for
+	 * \param[in] y - the y value (i.e. location) of the point being searched for
+	 * \param[in] branch   - the branch of the KD_tree from which to take the median value
+	 */
+	su2double Dist2_KD_Tree(su2double x, su2double y, KD_node *branch);
+
+	/*!
+	 * \brief Recursively descend through the tree and free up the x_values,y_values, and i_values dynamic arrays
+	 * \param[in] root - the branch of the tree into which to descend (should usually start with the highest level e.g. this->HS_tree)
+	 */
+
+	void N_Nearest_Neighbours_KD_Tree(int N, su2double thermo1, su2double thermo2,
+			KD_node *root, su2double* best_dist);
 
 	void Interpolate_2D_Bilinear(su2double x, su2double y,
 			vector<su2double> *ThermoTables_X, vector<su2double> *ThermoTables_Y,
