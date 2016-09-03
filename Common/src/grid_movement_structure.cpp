@@ -3009,6 +3009,30 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
 
 	}
   
+  /*--- 2D airfoil CST method with Kulfan parameters ---*/
+  else if (config->GetDesign_Variable(0) == CST) {
+    
+    /*--- Apply rotation, displacement and stretching design variables (this
+     should be done before the CST method deformation design variables) ---*/
+
+    for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+			switch ( config->GetDesign_Variable(iDV) ) {
+        case SCALE :  SetScale(geometry, config, iDV, false); break;
+        case TRANSLATION :  SetTranslation(geometry, config, iDV, false); break;
+        case ROTATION :     SetRotation(geometry, config, iDV, false); break;
+			}
+		}
+
+		/*--- Apply the design variables to the control point position ---*/
+
+		for (iDV = 0; iDV < config->GetnDV(); iDV++) {
+			switch ( config->GetDesign_Variable(iDV) ) {
+				case CST :  SetCST(geometry, config, iDV, false); break;
+			}
+		}
+
+	}
+  
   /*--- NACA_4Digits design variable ---*/
 
   else if (config->GetDesign_Variable(0) == NACA_4DIGITS) { SetNACA_4Digits(geometry, config); }
@@ -4545,6 +4569,184 @@ void CSurfaceMovement::SetHicksHenne(CGeometry *boundary, CConfig *config, unsig
 		}
 	}
   
+}
+
+void CSurfaceMovement::SetCST(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
+	unsigned long iVertex;
+	unsigned short iMarker;
+	su2double VarCoord[3] = {0.0,0.0,0.0}, VarCoord_[3] = {0.0,0.0,0.0}, *Coord_, *Normal_, fk,
+  	Coord[3] = {0.0,0.0,0.0}, Normal[3] = {0.0,0.0,0.0},
+  	TPCoord[2] = {0.0, 0.0}, LPCoord[2] = {0.0, 0.0}, Distance, Chord, AoA, ValCos, ValSin;
+  
+	bool upper = true;
+
+	/*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
+
+	if ((iDV == 0) || (ResetDef == true)) {
+		for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
+			for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+				VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+				boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+			}
+	}
+  
+  	/*--- Compute the angle of attack to apply the deformation ---*/
+  
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      Coord_ = boundary->vertex[iMarker][0]->GetCoord();
+      TPCoord[0] = Coord_[0]; TPCoord[1] = Coord_[1];
+      for (iVertex = 1; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+				Coord_ = boundary->vertex[iMarker][iVertex]->GetCoord();
+        if (Coord_[0] > TPCoord[0]) { TPCoord[0] = Coord_[0]; TPCoord[1] = Coord_[1]; }
+			}
+		}
+	}
+  
+#ifdef HAVE_MPI
+
+	int iProcessor, nProcessor;
+	su2double *Buffer_Send_Coord, *Buffer_Receive_Coord;
+
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  
+	Buffer_Receive_Coord = new su2double [nProcessor*2];
+  Buffer_Send_Coord = new su2double [2];
+  
+  Buffer_Send_Coord[0] = TPCoord[0]; Buffer_Send_Coord[1] = TPCoord[1];
+
+	SU2_MPI::Allgather(Buffer_Send_Coord, 2, MPI_DOUBLE, Buffer_Receive_Coord, 2, MPI_DOUBLE, MPI_COMM_WORLD);
+
+  TPCoord[0] = Buffer_Receive_Coord[0]; TPCoord[1] = Buffer_Receive_Coord[1];
+  for (iProcessor = 1; iProcessor < nProcessor; iProcessor++) {
+    Coord[0] = Buffer_Receive_Coord[iProcessor*2 + 0];
+    Coord[1] = Buffer_Receive_Coord[iProcessor*2 + 1];
+    if (Coord[0] > TPCoord[0]) { TPCoord[0] = Coord[0]; TPCoord[1] = Coord[1]; }
+  }
+  
+	delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
+  
+#endif
+
+
+  Chord = 0.0;
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+        Coord_ = boundary->vertex[iMarker][iVertex]->GetCoord();
+        Distance = sqrt(pow(Coord_[0] - TPCoord[0], 2.0) + pow(Coord_[1] - TPCoord[1], 2.0));
+        if (Chord < Distance) { Chord = Distance; LPCoord[0] = Coord_[0]; LPCoord[1] = Coord_[1]; }
+      }
+    }
+  }
+  
+#ifdef HAVE_MPI
+ 
+	MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  
+	Buffer_Receive_Coord = new su2double [nProcessor*2];
+  Buffer_Send_Coord = new su2double [2];
+  
+  Buffer_Send_Coord[0] = LPCoord[0]; Buffer_Send_Coord[1] = LPCoord[1];
+
+	SU2_MPI::Allgather(Buffer_Send_Coord, 2, MPI_DOUBLE, Buffer_Receive_Coord, 2, MPI_DOUBLE, MPI_COMM_WORLD);
+  
+  Chord = 0.0;
+  for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+    Coord[0] = Buffer_Receive_Coord[iProcessor*2 + 0];
+    Coord[1] = Buffer_Receive_Coord[iProcessor*2 + 1];
+    Distance = sqrt(pow(Coord[0] - TPCoord[0], 2.0) + pow(Coord[1] - TPCoord[1], 2.0));
+    if (Chord < Distance) { Chord = Distance; LPCoord[0] = Coord[0]; LPCoord[1] = Coord[1]; }
+  }
+  
+	delete[] Buffer_Send_Coord;   delete[] Buffer_Receive_Coord;
+  
+#endif
+  
+  AoA = atan((LPCoord[1] - TPCoord[1]) / (TPCoord[0] - LPCoord[0]))*180/PI_NUMBER;
+  
+  /*--- WARNING: AoA currently overwritten to zero. ---*/
+  AoA = 0.0;
+
+	/*--- Perform multiple airfoil deformation ---*/
+  	
+	su2double Ampl = config->GetDV_Value(iDV);
+	su2double KulfanNum = config->GetParamDV(iDV, 1) - 1.0;
+	su2double maxKulfanNum = config->GetParamDV(iDV, 2) - 1.0;
+	if (KulfanNum < 0){
+		std::cout << "Warning: Kulfan number should be greater than 1." << std::endl;
+	}
+	if (KulfanNum > maxKulfanNum){
+		std::cout << "Warning: Kulfan number should be less than provided maximum." << std::endl;
+	}
+
+	if (config->GetParamDV(iDV, 0) == NO) { upper = false;}
+	if (config->GetParamDV(iDV, 0) == YES) { upper = true;}
+  
+	for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+		for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+			VarCoord[0] = 0.0; VarCoord[1] = 0.0; VarCoord[2] = 0.0;
+      
+			if (config->GetMarker_All_DV(iMarker) == YES) {
+        
+				Coord_ = boundary->vertex[iMarker][iVertex]->GetCoord();
+				Normal_ = boundary->vertex[iMarker][iVertex]->GetNormal();
+        
+        /*--- The CST functions should be applied to a basic airfoil without AoA,
+         and unitary chord, a tranformation is required ---*/
+
+        ValCos = cos(AoA*PI_NUMBER/180.0);
+        ValSin = sin(AoA*PI_NUMBER/180.0);
+        
+        Coord[0] = Coord_[0]*ValCos - Coord_[1]*ValSin;
+        Coord[0] = max(0.0, Coord[0]); // Coord x should be always positive
+        Coord[1] = Coord_[1]*ValCos + Coord_[0]*ValSin;
+        
+        Normal[0] = Normal_[0]*ValCos - Normal_[1]*ValSin;
+        Normal[1] = Normal_[1]*ValCos + Normal_[0]*ValSin;
+	
+        /*--- CST computation ---*/
+        su2double fact_n = 1;
+	su2double fact_cst = 1;
+        su2double fact_cst_n = 1;
+	
+	for (int i = 1; i <= maxKulfanNum; i++){
+		fact_n = fact_n * i;
+	}
+	for (int i = 1; i <= KulfanNum; i++){
+		fact_cst = fact_cst * i;
+	}
+	for (int i = 1; i <= maxKulfanNum - KulfanNum; i++){
+		fact_cst_n = fact_cst_n * i;
+	} 
+	
+	// CST method only for 2D NACA type airfoils  
+	su2double N1, N2;       
+	N1 = 0.5;
+	N2 = 1.0;
+ 
+	/*--- Upper and lower surface change in coordinates based on CST equations by Kulfan et. al (www.brendakulfan.com/docs/CST3.pdf)  ---*/
+        fk = pow(Coord[0],N1)*pow((1-Coord[0]), N2) * fact_n/(fact_cst*(fact_cst_n)) * pow(Coord[0], KulfanNum) * pow((1-Coord[0]), (maxKulfanNum-(KulfanNum)));
+
+	if (( upper) && (Normal[1] > 0)) { VarCoord[1] =  Ampl*fk; }
+
+        if ((!upper) && (Normal[1] < 0)) { VarCoord[1] =  Ampl*fk; }
+
+	
+	}
+      
+      /*--- Apply the transformation to the coordinate variation ---*/
+
+      ValCos = cos(-AoA*PI_NUMBER/180.0);
+      ValSin = sin(-AoA*PI_NUMBER/180.0);
+
+      VarCoord_[0] = VarCoord[0]*ValCos - VarCoord[1]*ValSin;
+      VarCoord_[1] = VarCoord[1]*ValCos + VarCoord[0]*ValSin;
+
+      			boundary->vertex[iMarker][iVertex]->AddVarCoord(VarCoord_);
+		}
+	}
 }
 
 void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef) {
