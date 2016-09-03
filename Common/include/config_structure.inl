@@ -783,19 +783,19 @@ inline void CConfig::SetnMarker_All(unsigned short val_nmarker) { nMarker_All = 
 
 inline string CConfig::GetMarker_All_TagBound(unsigned short val_marker) { return Marker_All_TagBound[val_marker]; }
 
-inline string CConfig::GetMarker_ActDisk_Inlet(unsigned short val_marker) { return Marker_ActDisk_Inlet[val_marker]; }
+inline string CConfig::GetMarker_ActDiskInlet_TagBound(unsigned short val_marker) { return Marker_ActDiskInlet[val_marker]; }
 
-inline string CConfig::GetMarker_ActDisk_Outlet(unsigned short val_marker) { return Marker_ActDisk_Outlet[val_marker]; }
+inline string CConfig::GetMarker_ActDiskOutlet_TagBound(unsigned short val_marker) { return Marker_ActDiskOutlet[val_marker]; }
 
-inline string CConfig::GetMarker_EngineInflow(unsigned short val_marker) { return Marker_EngineInflow[val_marker]; }
+inline string CConfig::GetMarker_EngineInflow_TagBound(unsigned short val_marker) { return Marker_EngineInflow[val_marker]; }
 
-inline string CConfig::GetMarker_EngineBleed(unsigned short val_marker) { return Marker_EngineBleed[val_marker]; }
+inline string CConfig::GetMarker_EngineBleed_TagBound(unsigned short val_marker) { return Marker_EngineBleed[val_marker]; }
 
-inline string CConfig::GetMarker_EngineExhaust(unsigned short val_marker) { return Marker_EngineExhaust[val_marker]; }
+inline string CConfig::GetMarker_EngineExhaust_TagBound(unsigned short val_marker) { return Marker_EngineExhaust[val_marker]; }
 
-inline string CConfig::GetMarker_Monitoring(unsigned short val_marker) { return Marker_Monitoring[val_marker]; }
+inline string CConfig::GetMarker_Monitoring_TagBound(unsigned short val_marker) { return Marker_Monitoring[val_marker]; }
 
-inline string CConfig::GetMarker_Moving(unsigned short val_marker) { return Marker_Moving[val_marker]; }
+inline string CConfig::GetMarker_Moving_TagBound(unsigned short val_marker) { return Marker_Moving[val_marker]; }
 
 inline short CConfig::GetMarker_All_TagBound(string val_tag) {
 	for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
@@ -873,9 +873,9 @@ inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; 
 
 inline unsigned short CConfig::GetnMarker_NearFieldBound(void) { return nMarker_NearFieldBound; }
 
-inline unsigned short CConfig::GetnMarker_ActDisk_Inlet(void) { return nMarker_ActDisk_Inlet; }
+inline unsigned short CConfig::GetnMarker_ActDiskInlet(void) { return nMarker_ActDiskInlet; }
 
-inline unsigned short CConfig::GetnMarker_ActDisk_Outlet(void) { return nMarker_ActDisk_Outlet; }
+inline unsigned short CConfig::GetnMarker_ActDiskOutlet(void) { return nMarker_ActDiskOutlet; }
 
 inline unsigned short CConfig::GetnObj(void) { return nObj;}
 
@@ -1227,7 +1227,7 @@ inline su2double CConfig::GetResidual_FEM_RTOL(void) { return Res_FEM_RTOL; }
 
 inline su2double CConfig::GetResidual_FEM_ETOL(void) { return Res_FEM_ETOL; }
 
-inline unsigned short CConfig::GetDirectDiff(){ return DirectDiff;}
+inline unsigned short CConfig::GetDirectDiff() { return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() {return DiscreteAdjoint;}
 

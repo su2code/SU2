@@ -1881,7 +1881,7 @@ class COptionMathProblem : public COptionBase{
   bool restart_def;
 
 public:
-  COptionMathProblem(string option_field_name, bool & cont_adjoint_field, bool cont_adjoint_default, bool & disc_adjoint_field, bool disc_adjoint_default, bool & restart_field, bool restart_default) : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field){
+  COptionMathProblem(string option_field_name, bool & cont_adjoint_field, bool cont_adjoint_default, bool & disc_adjoint_field, bool disc_adjoint_default, bool & restart_field, bool restart_default) : cont_adjoint(cont_adjoint_field), disc_adjoint(disc_adjoint_field), restart(restart_field) {
     this->name = option_field_name;
     this->cont_adjoint_def = cont_adjoint_default;
     this->disc_adjoint_def = disc_adjoint_default;
@@ -1912,7 +1912,7 @@ public:
       this->restart= true;
       return "";
     }
-    if (option_value[0] == "DISCRETE_ADJOINT"){
+    if (option_value[0] == "DISCRETE_ADJOINT") {
       this->disc_adjoint = true;
       this->cont_adjoint= false;
       this->restart = true;
@@ -2154,7 +2154,7 @@ public:
       }
     }
 
-    if (i != totalnValueDV){
+    if (i != totalnValueDV) {
       string newstring;
       newstring.append(this->name);
       newstring.append(": a design variable in the configuration file has the wrong number of values");
@@ -2602,7 +2602,7 @@ class COptionNRBC : public COptionRiemann<Tenum> {
 public:
 	  COptionNRBC(string option_field_name, unsigned short & nMarker_NRBC, string* & Marker_NRBC, unsigned short* & option_field,
 			  	  const map<string, Tenum> m, su2double* & var1, su2double* & var2, su2double** & FlowDir): COptionRiemann<Tenum>(option_field_name, nMarker_NRBC,  Marker_NRBC, option_field,
-			  	   m, var1, var2,FlowDir){}
+			  	   m, var1, var2,FlowDir) {}
 	  ~COptionNRBC() {};
 
 };
@@ -3189,7 +3189,7 @@ class COptionActuatorDisk : public COptionBase{
   unsigned short * & distribution;
 
 public:
-  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet, string * & Marker_ActDisk_Inlet, string * & Marker_ActDisk_Outlet, su2double ** & ActDisk_Origin, su2double * & ActDisk_RootRadius, su2double * & ActDisk_TipRadius, su2double * & ActDisk_PressJump, su2double * & ActDisk_TempJump, su2double * & ActDisk_Omega, unsigned short * & ActDisk_Distribution) : inlet_size(nMarker_ActDisk_Inlet), outlet_size(nMarker_ActDisk_Outlet), marker_inlet(Marker_ActDisk_Inlet), marker_outlet(Marker_ActDisk_Outlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega), distribution(ActDisk_Distribution) {
+  COptionActuatorDisk(const string name, unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet, string * & Marker_ActDiskInlet, string * & Marker_ActDiskOutlet, su2double ** & ActDisk_Origin, su2double * & ActDisk_RootRadius, su2double * & ActDisk_TipRadius, su2double * & ActDisk_PressJump, su2double * & ActDisk_TempJump, su2double * & ActDisk_Omega, unsigned short * & ActDisk_Distribution) : inlet_size(nMarker_ActDiskInlet), outlet_size(nMarker_ActDiskOutlet), marker_inlet(Marker_ActDiskInlet), marker_outlet(Marker_ActDiskOutlet), origin(ActDisk_Origin), root_radius(ActDisk_RootRadius), tip_radius(ActDisk_TipRadius), press_jump(ActDisk_PressJump), temp_jump(ActDisk_TempJump), omega(ActDisk_Omega), distribution(ActDisk_Distribution) {
     this->name = name;
   }
 
