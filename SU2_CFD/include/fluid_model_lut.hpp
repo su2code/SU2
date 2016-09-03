@@ -131,9 +131,9 @@ protected:
 	ThermoTables_dktdrho_T[2], /*!< \brief Fluid derivative DktDrho_T look up table values. */
 	ThermoTables_dktdT_rho[2]; /*!< \brief Fluid derivative DktDT_rho look up table values. */
 
-	su2double Interpolation_Matrix[4][4]; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
+	vector<vector <su2double> > Interpolation_Matrix; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
+	vector<vector <su2double> > Interpolation_Coeff; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
 
-	su2double Interpolation_Coeff[4][4]; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
 	int nTable_Zone_Stations[2]; /*!< \brief Number of nodes in the '2' zones of the LuT*/
 	int nTable_Zone_Triangles[2]; /*!< \brief Number of triangles in the '2' zones of the LuT (must be triangles for now)*/
 	vector<vector<int> > Table_Zone_Triangles[2]; /*!< \brief The triangles in each zone are stored as three intgers (the tree defining data-points)*/
@@ -160,6 +160,7 @@ public:
 	 * \param[in] e   - input StaticEnergy (must be within LUT limits)
 	 */
 	void Get_Unique_Edges();
+
 
 	void Get_Bounding_Simplex_From_TrapezoidalMap(CTrapezoidalMap *t_map,
 			su2double x, su2double y);
@@ -218,6 +219,8 @@ public:
 	 */
 
 	void Gaussian_Inverse(int nDim);
+
+	vector<su2double> Evaluate_Interpolation_Vector(su2double x,su2double y);
 
 	void Interpolate_2D_Bilinear(su2double x, su2double y,
 			vector<su2double> *ThermoTables_X, vector<su2double> *ThermoTables_Y,

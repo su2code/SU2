@@ -172,7 +172,7 @@ void CTrapezoidalMap::Search_Bands_For(su2double x) {
 		x_lower = Unique_X_Bands[LowerI];
 		x_upper = Unique_X_Bands[UpperI];
 		//Step used for restarting the search on the low end
-		if (x < x_lower and (LowerI > 0	)) {
+		if (x < x_lower and (LowerI > 0 )) {
 			UpperI = LowerI;
 			LowerI = LowerI / 2;
 			//Step used for restarting the search on the upper end
@@ -233,6 +233,8 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 	CurrentPoints.resize(4, 0);
 	CurrentZone = 1;
 	LUT_Debug_Mode = config->GetLUT_Debug_Mode();
+	Interpolation_Matrix.resize(4, vector<su2double>(4, 0));
+	Interpolation_Coeff.resize(4, vector<su2double>(4, 0));
 
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -264,11 +266,7 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 		exit(EXIT_FAILURE);
 	}
 
-	for (int i = 0; i < 4; i++) {
-		for (int j = 0; j < 4; j++) {
-			Interpolation_Coeff[i][j] = -1.0;
-		}
-	}
+
 	if (rank == MASTER_NODE) {
 		// Give the user some information on the size of the table
 		cout << "Number of stations  in zone 0: " << nTable_Zone_Stations[0]
@@ -668,11 +666,36 @@ inline void CLookUpTable::Gaussian_Inverse(int nDim) {
 	return;
 }
 
+vector<su2double> CLookUpTable::Evaluate_Interpolation_Vector(su2double x,
+		su2double y) {
+	vector<su2double> interpolation_vector;
+	interpolation_vector.resize(3, 0);
+	interpolation_vector[0] = 1;
+	interpolation_vector[1] = x;
+	interpolation_vector[2] = y;
+//	interpolation_vector[3] = x * y;
+//	interpolation_vector[4] = 1 / x;
+//	interpolation_vector[5] = 1 / y;
+//	interpolation_vector[6] = 1 / (x * y);
+//	interpolation_vector[7] = log(x);
+//	interpolation_vector[8] = log(y);
+//	interpolation_vector[9] = log(x + y);
+//	interpolation_vector[10] = exp(x);
+//	interpolation_vector[11] = exp(y);
+//	interpolation_vector[12] = exp(x * y);
+//	interpolation_vector[13] = exp(-x);
+//	interpolation_vector[14] = exp(-y);
+//	interpolation_vector[15] = exp(x * y);
+
+	return interpolation_vector;
+}
+
 void CLookUpTable::Interpolate_2D_Bilinear(su2double x, su2double y,
 		vector<su2double> *ThermoTables_X, vector<su2double> *ThermoTables_Y,
 		std::string grid_var) {
 	//The x,y coordinates of the quadrilateral
 	su2double x0, y0, x1, x2, y1, y2, x3, y3;
+	vector<su2double> query_vector;
 
 	x0 = ThermoTables_X[CurrentZone][CurrentPoints[0]];
 	y0 = ThermoTables_Y[CurrentZone][CurrentPoints[0]];
@@ -683,17 +706,10 @@ void CLookUpTable::Interpolate_2D_Bilinear(su2double x, su2double y,
 
 	//Setup the LHM matrix for the interpolation (Vandermonde)
 
-	Interpolation_Matrix[0][0] = 1;
-	Interpolation_Matrix[0][1] = 0;
-	Interpolation_Matrix[0][2] = 0;
-
-	Interpolation_Matrix[1][0] = 1;
-	Interpolation_Matrix[1][1] = (x1 - x0);
-	Interpolation_Matrix[1][2] = (y1 - y0);
-
-	Interpolation_Matrix[2][0] = 1;
-	Interpolation_Matrix[2][1] = (x2 - x0);
-	Interpolation_Matrix[2][2] = (y2 - y0);
+	Interpolation_Matrix[0] = Evaluate_Interpolation_Vector(x0, y0);
+	Interpolation_Matrix[1] = Evaluate_Interpolation_Vector(x1, y1);
+	Interpolation_Matrix[2] = Evaluate_Interpolation_Vector(x2, y2);
+	query_vector = Evaluate_Interpolation_Vector(x, y);
 
 	//Invert the Interpolation matrix using Gaussian elimination with pivoting
 	Gaussian_Inverse(3);
@@ -711,9 +727,9 @@ void CLookUpTable::Interpolate_2D_Bilinear(su2double x, su2double y,
 	// for all Thermo variables (need only 4 coefficients)
 	for (int i = 0; i < 3; i++) {
 		d = 0;
-		d = d + Interpolation_Coeff[i][0] * 1;
-		d = d + Interpolation_Coeff[i][1] * (x - x0);
-		d = d + Interpolation_Coeff[i][2] * (y - y0);
+		for (int j = 0; j < 3; j++) {
+			d = d + Interpolation_Coeff[i][j] * query_vector[j];
+		}
 		Interpolation_Coeff[i][0] = d;
 	}
 }
