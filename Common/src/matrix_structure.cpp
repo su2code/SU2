@@ -499,7 +499,7 @@ void CSysMatrix::Gauss_Elimination(unsigned long block_i, su2double* rhs, bool t
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
   
-  if (!transposed){
+  if (!transposed) {
     for (iVar = 0; iVar < (short)nVar; iVar++)
       for (jVar = 0; jVar < (short)nVar; jVar++)
         block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
@@ -1211,7 +1211,7 @@ void CSysMatrix::BuildILUPreconditioner(bool transposed) {
   for (iPoint = 0; iPoint < (long)nPointDomain; iPoint++) {
     for (index = row_ptr[iPoint]; index < row_ptr[iPoint+1]; index++) {
       jPoint = col_ind[index];
-      if (transposed){
+      if (transposed) {
         Block_ij = GetBlock(jPoint, iPoint);
         SetBlockTransposed_ILUMatrix(iPoint, jPoint, Block_ij);
       } else {

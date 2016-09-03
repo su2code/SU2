@@ -65,7 +65,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   if (Kind_Solver == POISSON_EQUATION)
     filename = config->GetStructure_FileName().c_str();
 
-  if (config->GetKind_SU2() == SU2_DOT){
+  if (config->GetKind_SU2() == SU2_DOT) {
     filename = config->GetVolSens_FileName().c_str();
   }
   
