@@ -760,10 +760,6 @@ struct KD_node* CLookUpTable::KD_Tree(vector<su2double> const &x_values,
 	kdn->x_values = x_values;
 	kdn->x_values = y_values;
 	kdn->Flattened_Point_Index = i_values;
-	vector<su2double> upperx,lowerx;
-	vector<su2double> uppery,lowery;
-	vector<int> upperi,loweri;
-	vector<su2double>::iterator lower, upper;
 
 	// The depth is used to define the splitting direction of the KD_tree
 	kdn->Branch_Splitting_Direction = depth;
@@ -784,8 +780,6 @@ struct KD_node* CLookUpTable::KD_Tree(vector<su2double> const &x_values,
 				temporary_coords[i] = kdn->y_values[kdn->search_couple[i].second];
 			}
 			kdn->y_values = temporary_coords;
-			lower = lower_bound(x_values.begin(),x_values.end(),x_values[x_values.size()/2]);
-			upper = upper_bound(x_values.begin(),x_values.end(),x_values[x_values.size()/2]);
 		}
 	} else if (depth % 2 == 1) {
 		for (int i = 0; i < kdn->y_values.size(); i++) {
@@ -797,17 +791,35 @@ struct KD_node* CLookUpTable::KD_Tree(vector<su2double> const &x_values,
 			temporary_coords[i] = kdn->x_values[kdn->search_couple[i].second];
 		}
 		kdn->x_values = temporary_coords;
-		lower = lower_bound(y_values.begin(),y_values.end(),y_values[y_values.size()/2]);
-		upper = upper_bound(y_values.begin(),y_values.end(),y_values[y_values.size()/2]);
 	}
-	upperx = copy(upper,x_values.end());
-	uppery = ;
-  lowerx = ;
-  lowery = ;
+	/*!
+	 * \brief Now that the arrays have been sorted they get split.
+	 * The values lower than the median will go into the lower branch of the
+	 * current tree, and the ones above into the upper branch. The arrays are
+	 * split in half, so identical values are not accounted for in the median.
+	 * Dynamic allocation is used during the recursive insertion of points into the tree.
+	 */
+	vector<su2double> upperx,lowerx;
+	vector<su2double> uppery,lowery;
+	vector<int> upperi,loweri;
 
+	for (int i = dim / 2; i < dim; i++) {
+		upperx.push_back(kdn->x_values[i]);
+		uppery.push_back(kdn->y_values[i]);
+		upperi.push_back(kdn->Flattened_Point_Index[i]);
+	}
+	for (int i = 0; i < dim / 2; i++) {
+		lowerx.push_back(kdn->x_values[i]);
+		lowery.push_back(kdn->y_values[i]);
+		loweri.push_back(kdn->Flattened_Point_Index[i]);
+	}
+	/*!
+	 * \brief Trigger the recursion into the upper and lower branches.
+	 * The depth increment allows the tree to track whether to split the
+	 * branch along x, or y.
+	 */
 	kdn->upper = KD_Tree(upperx, uppery, upperi, dim / 2, depth + 1);
 	kdn->lower = KD_Tree(lowerx, lowery, loweri, dim - dim / 2, depth + 1);
-}
 return kdn;
 }
 
@@ -840,16 +852,11 @@ while (i < N) {
 	if (dist < best_dist[i]) {
 		for (int j = N - 1; j > i; j--) {
 			best_dist[j] = best_dist[j - 1];
-			Nearest_Neighbour_iIndex[j] = Nearest_Neighbour_iIndex[j - 1];
-			Nearest_Neighbour_jIndex[j] = Nearest_Neighbour_jIndex[j - 1];
+			Nearest_Neighbour_Index[j] = Nearest_Neighbour_Index[j - 1];
 		}
 		best_dist[i] = dist;
-		Nearest_Neighbour_iIndex[i] =
-				root->Flattened_Point_Index[root->Branch_Dimension / 2]
-						/ Table_Pressure_Stations;
-		Nearest_Neighbour_jIndex[i] =
-				root->Flattened_Point_Index[root->Branch_Dimension / 2]
-						% Table_Pressure_Stations;
+		Nearest_Neighbour_Index[i] =
+				root->Flattened_Point_Index[root->Branch_Dimension / 2];
 		i = N + 1;
 	}
 	i++;
