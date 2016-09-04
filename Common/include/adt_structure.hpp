@@ -242,19 +242,23 @@ public:
                             su2double       &dist,
                             unsigned long   &pointID,
                             int             &rankID);
-private:
+  void Determine_N_NearestNodes(int N, const su2double *coor,
+                              su2double *       dist,
+                              unsigned long*  pointID,
+                              int*             rankID);
+
   /*!
-   * \brief Default constructor of the class, disabled.
+   * \brief Default constructor of the class
    */
   su2_adtPointsOnlyClass();
 
   /*!
-   * \brief Copy constructor of the class, disabled.
+   * \brief Copy constructor of the class
    */
   su2_adtPointsOnlyClass(const su2_adtPointsOnlyClass &);
 
   /*!
-   * \brief Assignment operator, disabled.
+   * \brief Assignment operator
    */
   su2_adtPointsOnlyClass& operator=(const su2_adtPointsOnlyClass &);
 };
