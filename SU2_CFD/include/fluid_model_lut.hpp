@@ -101,7 +101,8 @@ protected:
 	int rank;
 	int CurrentZone;
 	int CurrentFace;
-	vector<int> CurrentPoints;
+	int nInterpPoints;
+	vector<unsigned long> CurrentPoints;
 	bool LUT_Debug_Mode;/*!< \brief If true, master node prints errors of points outside LUT*/
 	su2double Pressure_Reference_Value;
 	su2double Density_Reference_Value;
@@ -113,6 +114,16 @@ protected:
 	CTrapezoidalMap rhoe_map[2], Prho_map[2], hs_map[2], Ps_map[2], rhoT_map[2],
 			PT_map[2];
 
+	//Each triangle will have precomputed interpolation coefficients and
+	//matrices. The coefficients are simple the function values
+	vector<vector<unsigned long> > Interpolation_Points[2];
+	vector<vector<vector<su2double> > > Rhoe_Interpolation_Matrix_Inverse[2];
+	vector<vector< vector<su2double> > > PT_Interpolation_Matrix_Inverse[2];
+	vector<vector< vector<su2double> > > Prho_Interpolation_Matrix_Inverse[2];
+	vector<vector< vector<su2double> >  > rhoT_Interpolation_Matrix_Inverse[2];
+	vector<vector< vector<su2double> > > hs_Interpolation_Matrix_Inverse[2];
+	vector<vector< vector<su2double> > > Ps_Interpolation_Matrix_Inverse[2];
+	vector<su2double> Query_Specific_Interpolation_Coefficients;
 
 	//KD tree things.
 	su2_adtPointsOnlyClass *KD_tree;
@@ -122,7 +133,6 @@ protected:
 	vector<su2double> best_dist;
 	vector<unsigned long> result_IDs;
 	vector<int> result_ranks;
-
 
 	vector<su2double> ThermoTables_StaticEnergy[2], /*!< \brief Internal Energy look up table values. */
 	ThermoTables_Entropy[2], /*!< \brief Entropy look up table values. */
@@ -144,7 +154,7 @@ protected:
 	ThermoTables_dktdT_rho[2]; /*!< \brief Fluid derivative DktDT_rho look up table values. */
 
 	vector<vector<su2double> > Interpolation_Matrix; /*!< \brief The (Vandermonde) matrix for the interpolation (bilinear) */
-	vector<vector<su2double> > Interpolation_Coeff; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
+	vector<vector<su2double> > Interpolation_Matrix_Inverse; /*!< \brief Used to hold inverse of Interpolation_Matrix, and solution vector */
 
 	int nTable_Zone_Stations[2]; /*!< \brief Number of nodes in the '2' zones of the LuT*/
 	int nTable_Zone_Triangles[2]; /*!< \brief Number of triangles in the '2' zones of the LuT (must be triangles for now)*/
@@ -172,6 +182,8 @@ public:
 	 * \param[in] e   - input StaticEnergy (must be within LUT limits)
 	 */
 	void Get_Unique_Edges();
+
+	void Compute_Interpolation_Coefficients();
 
 	void Get_Bounding_Simplex_From_TrapezoidalMap(CTrapezoidalMap *t_map,
 			su2double x, su2double y);
@@ -231,9 +243,8 @@ public:
 
 	void Gaussian_Inverse(int nDim);
 
-	void Interpolate_Function2D(su2double x, su2double y,
-			vector<su2double> *ThermoTables_X, vector<su2double> *ThermoTables_Y,
-			std::string grid_var);
+	vector<vector<double> > Interpolation_Matrix_Prepare_And_Invert(vector<su2double> *ThermoTables_X, vector<su2double> *ThermoTables_Y);
+	void Calculate_Query_Specific_Coefficients(su2double x, su2double y);
 
 	su2double Interpolate_Function2D(vector< su2double > *ThermoTables_Z);
 

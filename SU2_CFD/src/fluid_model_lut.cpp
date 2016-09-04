@@ -230,11 +230,14 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 		CFluidModel() {
 	LUT_Debug_Mode = false;
 	rank = MASTER_NODE;
-	CurrentPoints.resize(4, 0);
 	CurrentZone = 1;
+	nInterpPoints = 16;
+	CurrentPoints.resize(nInterpPoints, 0);
 	LUT_Debug_Mode = config->GetLUT_Debug_Mode();
-	Interpolation_Matrix.resize(4, vector<su2double>(4, 0));
-	Interpolation_Coeff.resize(4, vector<su2double>(4, 0));
+	Interpolation_Matrix.resize(nInterpPoints,
+			vector<su2double>(nInterpPoints, 0));
+	Interpolation_Matrix_Inverse.resize(nInterpPoints,
+			vector<su2double>(nInterpPoints, 0));
 
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -350,26 +353,13 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 		cout << "Print LUT errors? (LUT_Debug_Mode):  " << LUT_Debug_Mode << endl;
 	}
 
-	CurrentZone = 1;		//The vapor region
-	PointIDs.resize(ThermoTables_Density[1].size(), 0);
-	coors.resize(2 * ThermoTables_Density[1].size(), 0);
-
-	for (unsigned long i = 0; i < ThermoTables_Density[1].size(); i++) {
-		PointIDs[i] = i;
-		coors[2 * i] = ThermoTables_Density[1][i];
-		coors[2 * i + 1] = ThermoTables_Pressure[1][i];
-	}
-	KD_tree = new su2_adtPointsOnlyClass(2, PointIDs.size(),
-			coors.data(), PointIDs.data());
-	query.resize(2, 0);
-	best_dist.resize(16, 0);
-	result_IDs.resize(16, 0);
-	result_ranks.resize(16, 0);
-	query[0] = ThermoTables_Density[1][4000];
-	query[1] = ThermoTables_Pressure[1][4000];
-	KD_tree->Determine_N_NearestNodes(16, query.data(), best_dist.data(),
-			result_IDs.data(), result_ranks.data());
-
+	if (rank == MASTER_NODE) {
+			cout << "Precomputing interpolation coefficients..." << endl;
+		}
+	Compute_Interpolation_Coefficients();
+	if (rank == MASTER_NODE) {
+				cout << "LuT fluid model ready for use" << endl;
+			}
 
 }
 
@@ -438,26 +428,114 @@ void CLookUpTable::Get_Unique_Edges() {
 
 //Filter out all the edges which have been imported twice
 }
+void CLookUpTable::Compute_Interpolation_Coefficients() {
+
+	//First build a KD tree for the current zone in Prho
+	PointIDs.resize(ThermoTables_Density[CurrentZone].size(), 0);
+	coors.resize(2 * ThermoTables_Density[CurrentZone].size(), 0);
+
+	for (unsigned long i = 0; i < ThermoTables_Density[CurrentZone].size(); i++) {
+		PointIDs[i] = i;
+		coors[2 * i] = ThermoTables_Density[CurrentZone][i];
+		coors[2 * i + 1] = ThermoTables_Pressure[CurrentZone][i];
+	}
+	KD_tree = new su2_adtPointsOnlyClass(2, PointIDs.size(), coors.data(),
+			PointIDs.data());
+	query.resize(2, 0);
+	best_dist.resize(16, 0);
+	result_IDs.resize(16, 0);
+	result_ranks.resize(16, 0);
+	//Allocate the space for all the interpolation coefficients to be stored
+	Rhoe_Interpolation_Matrix_Inverse[CurrentZone].resize(
+			Table_Zone_Triangles[CurrentZone].size(),
+			vector<vector<su2double> >(nInterpPoints,
+					vector<su2double>(nInterpPoints, 0)));
+	PT_Interpolation_Matrix_Inverse[CurrentZone].resize(
+			Table_Zone_Triangles[CurrentZone].size(),
+			vector<vector<su2double> >(nInterpPoints,
+					vector<su2double>(nInterpPoints, 0)));
+	Prho_Interpolation_Matrix_Inverse[CurrentZone].resize(
+			Table_Zone_Triangles[CurrentZone].size(),
+			vector<vector<su2double> >(nInterpPoints,
+					vector<su2double>(nInterpPoints, 0)));
+	rhoT_Interpolation_Matrix_Inverse[CurrentZone].resize(
+			Table_Zone_Triangles[CurrentZone].size(),
+			vector<vector<su2double> >(nInterpPoints,
+					vector<su2double>(nInterpPoints, 0)));
+	hs_Interpolation_Matrix_Inverse[CurrentZone].resize(
+			Table_Zone_Triangles[CurrentZone].size(),
+			vector<vector<su2double> >(nInterpPoints,
+					vector<su2double>(nInterpPoints, 0)));
+	Ps_Interpolation_Matrix_Inverse[CurrentZone].resize(
+				Table_Zone_Triangles[CurrentZone].size(),
+				vector<vector<su2double> >(nInterpPoints,
+						vector<su2double>(nInterpPoints, 0)));
+	//Also store the indexes of the points on which the coefficients are based
+	//as these directly yueld funciton values
+	Interpolation_Points[CurrentZone].resize(
+			Table_Zone_Triangles[CurrentZone].size(), vector<unsigned long>(nInterpPoints, 0));
+
+	//Now for each triangle in the zone calculate the e.g. 16 nearest points
+	for (int i = 0; i < Table_Zone_Triangles[CurrentZone].size(); i++) {
+		vector<int> Points_in_Triangle = Table_Zone_Triangles[CurrentZone][i];
+		//The query point is to be the weighted average of the vertexes of the
+		//triangle
+		query[0] = 0;
+		query[1] = 0;
+		query[0] += ThermoTables_Density[CurrentZone][Points_in_Triangle[0]];
+		query[0] += ThermoTables_Density[CurrentZone][Points_in_Triangle[1]];
+		query[0] += ThermoTables_Density[CurrentZone][Points_in_Triangle[2]];
+		query[0] /= 3;
+		query[1] += ThermoTables_Pressure[CurrentZone][Points_in_Triangle[0]];
+		query[1] += ThermoTables_Pressure[CurrentZone][Points_in_Triangle[1]];
+		query[1] += ThermoTables_Pressure[CurrentZone][Points_in_Triangle[2]];
+		query[1] /= 3;
+		//Then search the tree for the KD_vector.
+		KD_tree->Determine_N_NearestNodes(nInterpPoints, query.data(),
+				best_dist.data(), result_IDs.data(), result_ranks.data());
+		//Set the found points as the current points
+		CurrentPoints = result_IDs;
+		Interpolation_Points[CurrentZone][i] = result_IDs;
+		//Now use the nearest 16 points to construct an interpolation function
+		//for each search pair option
+		Rhoe_Interpolation_Matrix_Inverse[CurrentZone][i] =
+				Interpolation_Matrix_Prepare_And_Invert(ThermoTables_Density,
+						ThermoTables_StaticEnergy);
+		PT_Interpolation_Matrix_Inverse[CurrentZone][i] =
+				Interpolation_Matrix_Prepare_And_Invert(ThermoTables_Pressure,
+						ThermoTables_Temperature);
+		Prho_Interpolation_Matrix_Inverse[CurrentZone][i] =
+				Interpolation_Matrix_Prepare_And_Invert(ThermoTables_Pressure,
+						ThermoTables_Density);
+		rhoT_Interpolation_Matrix_Inverse[CurrentZone][i] =
+				Interpolation_Matrix_Prepare_And_Invert(ThermoTables_Density,
+						ThermoTables_Temperature);
+		hs_Interpolation_Matrix_Inverse[CurrentZone][i] =
+				Interpolation_Matrix_Prepare_And_Invert(ThermoTables_Entropy,
+						ThermoTables_Enthalpy);
+		Ps_Interpolation_Matrix_Inverse[CurrentZone][i] =
+						Interpolation_Matrix_Prepare_And_Invert(ThermoTables_Pressure,
+								ThermoTables_Entropy);
+	}
+}
 
 void CLookUpTable::Get_Bounding_Simplex_From_TrapezoidalMap(
 		CTrapezoidalMap *t_map, su2double x, su2double y) {
 
 	t_map[CurrentZone].Find_Containing_Simplex(x, y);
 	CurrentFace = t_map[CurrentZone].getCurrentFace();
-	CurrentPoints = Table_Zone_Triangles[CurrentZone][CurrentFace];
+	CurrentPoints = Interpolation_Points[CurrentZone][CurrentFace];
 
 }
 
 void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 
 	Get_Bounding_Simplex_From_TrapezoidalMap(rhoe_map, rho, e);
+	Interpolation_Matrix_Inverse =
+			Rhoe_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
+	Calculate_Query_Specific_Coefficients(rho,e);
 
-	//Now use the quadrilateral which contains the point to interpolate
-	//Determine the interpolation coefficients
-	Interpolate_Function2D(rho, e, ThermoTables_Density,
-			ThermoTables_StaticEnergy, "RHOE");
-
-//Interpolate the fluid properties
+	//Interpolate the fluid properties
 	StaticEnergy = e;
 	Density = rho;
 	Entropy = Interpolate_Function2D(ThermoTables_Entropy);
@@ -478,9 +556,10 @@ void CLookUpTable::SetTDState_rhoe(su2double rho, su2double e) {
 void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
 
 	Get_Bounding_Simplex_From_TrapezoidalMap(PT_map, P, T);
-	//Determine interpolation coefficients
-	Interpolate_Function2D(P, T, ThermoTables_Pressure, ThermoTables_Temperature,
-			"PT");
+	Interpolation_Matrix_Inverse =
+				PT_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
+	Calculate_Query_Specific_Coefficients(P,T);
+
 	//Interpolate the fluid properties
 	Pressure = P;
 	Density = Interpolate_Function2D(ThermoTables_Density);
@@ -502,10 +581,10 @@ void CLookUpTable::SetTDState_PT(su2double P, su2double T) {
 void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 
 	Get_Bounding_Simplex_From_TrapezoidalMap(Prho_map, P, rho);
+	Interpolation_Matrix_Inverse =
+					Prho_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
+	Calculate_Query_Specific_Coefficients(P,rho);
 
-//Determine interpolation coefficients
-	Interpolate_Function2D(rho, P, ThermoTables_Density, ThermoTables_Pressure,
-			"PRHO");
 //Interpolate the fluid properties
 	Pressure = P;
 	Density = rho;
@@ -527,10 +606,10 @@ void CLookUpTable::SetTDState_Prho(su2double P, su2double rho) {
 void CLookUpTable::SetEnergy_Prho(su2double P, su2double rho) {
 
 	Get_Bounding_Simplex_From_TrapezoidalMap(Prho_map, P, rho);
+	Interpolation_Matrix_Inverse =
+					Prho_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
+	Calculate_Query_Specific_Coefficients(P,rho);
 
-//Determine interpolation coefficients
-	Interpolate_Function2D(rho, P, ThermoTables_Density, ThermoTables_Pressure,
-			"PRHO");
 	StaticEnergy = Interpolate_Function2D(ThermoTables_StaticEnergy);
 	Pressure = P;
 	Density = rho;
@@ -540,10 +619,9 @@ void CLookUpTable::SetEnergy_Prho(su2double P, su2double rho) {
 void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 
 	Get_Bounding_Simplex_From_TrapezoidalMap(hs_map, h, s);
-
-//Determine interpolation coefficients
-	Interpolate_Function2D(h, s, ThermoTables_Enthalpy, ThermoTables_Entropy,
-			"HS");
+	Interpolation_Matrix_Inverse =
+					hs_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
+	Calculate_Query_Specific_Coefficients(h,s);
 
 //Interpolate the fluid properties
 	Enthalpy = h;
@@ -566,10 +644,9 @@ void CLookUpTable::SetTDState_hs(su2double h, su2double s) {
 void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 
 	Get_Bounding_Simplex_From_TrapezoidalMap(Ps_map, P, s);
-
-//Determine interpolation coefficients
-	Interpolate_Function2D(P, s, ThermoTables_Pressure, ThermoTables_Entropy,
-			"PS");
+	Interpolation_Matrix_Inverse =
+					Ps_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
+	Calculate_Query_Specific_Coefficients(P,s);
 
 //Interpolate the fluid properties
 	Entropy = s;
@@ -592,9 +669,9 @@ void CLookUpTable::SetTDState_Ps(su2double P, su2double s) {
 void CLookUpTable::SetTDState_rhoT(su2double rho, su2double T) {
 
 	Get_Bounding_Simplex_From_TrapezoidalMap(rhoT_map, rho, T);
-//Determine the interpolation coefficients
-	Interpolate_Function2D(rho, T, ThermoTables_Density, ThermoTables_Temperature,
-			"RHOT");
+	Interpolation_Matrix_Inverse =
+					rhoT_Interpolation_Matrix_Inverse[CurrentZone][CurrentFace];
+	Calculate_Query_Specific_Coefficients(rho,T);
 
 //Interpolate the fluid properties
 	Temperature = T;
@@ -678,7 +755,7 @@ inline void CLookUpTable::Gaussian_Inverse(int nDim) {
 	//Copy the inverse back to the main program flow
 	for (int i = 0; i < nDim; i++) {
 		for (int j = 0; j < nDim; j++) {
-			Interpolation_Coeff[i][j] = temp[i][j + nDim];
+			Interpolation_Matrix_Inverse[i][j] = temp[i][j + nDim];
 		}
 	}
 	return;
@@ -687,87 +764,73 @@ inline void CLookUpTable::Gaussian_Inverse(int nDim) {
 vector<su2double> CLookUpTable::Evaluate_Interpolation_Vector(su2double x,
 		su2double y) {
 	vector<su2double> interpolation_vector;
-	interpolation_vector.resize(3, 0);
+	interpolation_vector.resize(nInterpPoints, 0);
 	interpolation_vector[0] = 1;
 	interpolation_vector[1] = x;
 	interpolation_vector[2] = y;
-//	interpolation_vector[3] = x * y;
-//	interpolation_vector[4] = 1 / x;
-//	interpolation_vector[5] = 1 / y;
-//	interpolation_vector[6] = 1 / (x * y);
-//	interpolation_vector[7] = log(x);
-//	interpolation_vector[8] = log(y);
-//	interpolation_vector[9] = log(x + y);
-//	interpolation_vector[10] = exp(x);
-//	interpolation_vector[11] = exp(y);
-//	interpolation_vector[12] = exp(x * y);
-//	interpolation_vector[13] = exp(-x);
-//	interpolation_vector[14] = exp(-y);
-//	interpolation_vector[15] = exp(x * y);
+	interpolation_vector[3] = x * y;
+	interpolation_vector[4] = 1 / x;
+	interpolation_vector[5] = 1 / y;
+	interpolation_vector[6] = 1 / (x * y);
+	interpolation_vector[7] = log(x);
+	interpolation_vector[8] = log(y);
+	interpolation_vector[9] = log(x + y);
+	interpolation_vector[10] = exp(x);
+	interpolation_vector[11] = exp(y);
+	interpolation_vector[12] = exp(x * y);
+	interpolation_vector[13] = exp(-x);
+	interpolation_vector[14] = exp(-y);
+	interpolation_vector[15] = exp(x * y);
 
 	return interpolation_vector;
 }
 
-void CLookUpTable::Interpolate_Function2D(su2double x, su2double y,
-		vector<su2double> *ThermoTables_X, vector<su2double> *ThermoTables_Y,
-		std::string grid_var) {
-	//The x,y coordinates of the quadrilateral
-	su2double x0, y0, x1, x2, y1, y2, x3, y3;
-	vector<su2double> query_vector;
+vector<vector<double> > CLookUpTable::Interpolation_Matrix_Prepare_And_Invert(
+		vector<su2double> *ThermoTables_X, vector<su2double> *ThermoTables_Y) {
 
-	x0 = ThermoTables_X[CurrentZone][CurrentPoints[0]];
-	y0 = ThermoTables_Y[CurrentZone][CurrentPoints[0]];
-	x1 = ThermoTables_X[CurrentZone][CurrentPoints[1]];
-	y1 = ThermoTables_Y[CurrentZone][CurrentPoints[1]];
-	x2 = ThermoTables_X[CurrentZone][CurrentPoints[2]];
-	y2 = ThermoTables_Y[CurrentZone][CurrentPoints[2]];
+	//Setup the LHM matrix for the interpolation
+	for (int i = 0; i < nInterpPoints; i++) {
+		su2double x = ThermoTables_X[CurrentZone][CurrentPoints[i]];
+		su2double y = ThermoTables_Y[CurrentZone][CurrentPoints[i]];
+		Interpolation_Matrix[i] = Evaluate_Interpolation_Vector(x, y);
+	}
 
-	//Setup the LHM matrix for the interpolation (Vandermonde)
-
-	Interpolation_Matrix[0] = Evaluate_Interpolation_Vector(x0, y0);
-	Interpolation_Matrix[1] = Evaluate_Interpolation_Vector(x1, y1);
-	Interpolation_Matrix[2] = Evaluate_Interpolation_Vector(x2, y2);
-	query_vector = Evaluate_Interpolation_Vector(x, y);
-
-	//Invert the Interpolation matrix using Gaussian elimination with pivoting
-	Gaussian_Inverse(3);
+//Invert the Interpolation matrix using Gaussian elimination with pivoting
+	Gaussian_Inverse(nInterpPoints);
 	su2double d;
 
-	//Transpose the inverse
-	for (int i = 0; i < 2; i++) {
-		for (int j = i + 1; j < 3; j++) {
-			d = Interpolation_Coeff[i][j];
-			Interpolation_Coeff[i][j] = Interpolation_Coeff[j][i];
-			Interpolation_Coeff[j][i] = d;
+//Transpose the inverse
+	for (int i = 0; i < (nInterpPoints - 1); i++) {
+		for (int j = i + 1; j < nInterpPoints; j++) {
+			d = Interpolation_Matrix_Inverse[i][j];
+			Interpolation_Matrix_Inverse[i][j] = Interpolation_Matrix_Inverse[j][i];
+			Interpolation_Matrix_Inverse[j][i] = d;
 		}
 	}
-	//The transpose allows the same coefficients to be used
-	// for all Thermo variables (need only 4 coefficients)
-	for (int i = 0; i < 3; i++) {
-		d = 0;
-		for (int j = 0; j < 3; j++) {
-			d = d + Interpolation_Coeff[i][j] * query_vector[j];
-		}
-		Interpolation_Coeff[i][0] = d;
-	}
+	return Interpolation_Matrix_Inverse;
 }
 
+void CLookUpTable::Calculate_Query_Specific_Coefficients(su2double x,
+		su2double y) {
+	vector<su2double> query_vector = Evaluate_Interpolation_Vector(x, y);
+	Query_Specific_Interpolation_Coefficients.resize(nInterpPoints,0);
+	su2double d;
+	for (int i = 0; i < nInterpPoints; i++) {
+		d = 0;
+		for (int j = 0; j < nInterpPoints; j++) {
+			d = d + Interpolation_Matrix_Inverse[i][j] * query_vector[j];
+		}
+		Query_Specific_Interpolation_Coefficients[i] = d;
+	}
+
+}
 su2double CLookUpTable::Interpolate_Function2D(
 		vector<su2double> *ThermoTables_Z) {
-
-	su2double func_value_0, func_value_1, func_value_2;
-
-	func_value_0 = ThermoTables_Z[CurrentZone][CurrentPoints[0]];
-	func_value_1 = ThermoTables_Z[CurrentZone][CurrentPoints[1]];
-	func_value_2 = ThermoTables_Z[CurrentZone][CurrentPoints[2]];
-
-	//The Interpolation_Coeff values depend on location alone
-	//and are the same regardless of function values
 	su2double result = 0;
-	result = result + Interpolation_Coeff[0][0] * func_value_0;
-	result = result + Interpolation_Coeff[1][0] * func_value_1;
-	result = result + Interpolation_Coeff[2][0] * func_value_2;
-
+	for (int i = 0; i < nInterpPoints; i++) {
+		su2double z = ThermoTables_Z[CurrentZone][CurrentPoints[i]];
+		result += Query_Specific_Interpolation_Coefficients[i] * z;
+	}
 	return result;
 }
 
