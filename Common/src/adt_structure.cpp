@@ -492,7 +492,7 @@ void su2_adtPointsOnlyClass::Determine_N_NearestNodes(int N,
 
 	for (int i = 0; i < N; i++) {
 		pointID[0] = 0;
-		rankID[0] = 0;
+		rankID[0] = HUGE_VAL;
 		dist[i] = HUGE_VAL;
 	}
 
@@ -549,85 +549,88 @@ void su2_adtPointsOnlyClass::Determine_N_NearestNodes(int N,
 					//Generalization of the algorithm to handle as many points as desired.
 					int dist_i = 0;
 					while (dist_i < N) {
-						if (distTarget <= dist[dist_i] and pointID[dist_i] != localPointIDs[kk]) {
-							for (int dist_j = N - 1; dist_j > dist_i; dist_j--) {
-								dist[dist_j] = dist[dist_j - 1];
-								pointID[dist_j] = pointID[dist_j - 1];
-								rankID[dist_j] = rankID[dist_j - 1];
-							}
-							dist[dist_i] = distTarget;
-							pointID[dist_i] = localPointIDs[kk];
-							rankID[dist_i] = ranksOfPoints[kk];
-							dist_i = N + 1; //break the loop
-						}
-						dist_i++;
-					}
-				} else {
-
-					/*--- Child contains a leaf. Determine the possible minimum distance
-					 squared to that leaf. ---*/
-					su2double posDist = 0.0;
-					for (unsigned short l = 0; l < nDimADT; ++l) {
-						su2double ds = 0.0;
-						if (coor[l] < leaves[kk].xMin[l])
-							ds = (coor[l] - leaves[kk].xMin[l]) / coor[l];
-						else if (coor[l] > leaves[kk].xMax[l])
-							ds = (coor[l] - leaves[kk].xMax[l]) / coor[l];
-
-						posDist += ds * ds;
-					}
-
-					/*--- Check if the possible minimum distance is less than the currently
-					 worst stored minimum distance. If so this leaf must be stored for the
-					 next round. In that case the distance squared to the central node is
-					 determined, which is used to update the currently stored value. ---*/
-					if (posDist < dist[N - 1]) {
-						frontLeavesNew.push_back(kk);
-
-						const unsigned long jj = leaves[kk].centralNodeID;
-
-						coorTarget = coorPoints.data() + nDimADT * jj;
-						su2double distTarget = 0;
-						for (unsigned short l = 0; l < nDimADT; ++l) {
-							const su2double ds = (coor[l] - coorTarget[l]) / coor[l];
-							distTarget += ds * ds;
-						}
-
-						//Generalization of the algorithm to handle as many points as desired.
-						int dist_i = 0;
-						while (dist_i < N) {
-							if (distTarget <= dist[dist_i] and pointID[dist_i] != localPointIDs[jj]) {
+						if (distTarget <= dist[dist_i]) {
+							if (pointID[dist_i] == localPointIDs[kk]) {
+								dist_i = N + 1;
+							} else {
 								for (int dist_j = N - 1; dist_j > dist_i; dist_j--) {
 									dist[dist_j] = dist[dist_j - 1];
 									pointID[dist_j] = pointID[dist_j - 1];
 									rankID[dist_j] = rankID[dist_j - 1];
 								}
 								dist[dist_i] = distTarget;
-								pointID[dist_i] = localPointIDs[jj];
-								rankID[dist_i] = ranksOfPoints[jj];
+								pointID[dist_i] = localPointIDs[kk];
+								rankID[dist_i] = ranksOfPoints[kk];
 								dist_i = N + 1; //break the loop
 							}
 							dist_i++;
+						} else {
+							/*--- Child contains a leaf. Determine the possible minimum distance
+							 squared to that leaf. ---*/
+							su2double posDist = 0.0;
+							for (unsigned short l = 0; l < nDimADT; ++l) {
+								su2double ds = 0.0;
+								if (coor[l] < leaves[kk].xMin[l])
+									ds = (coor[l] - leaves[kk].xMin[l]) / coor[l];
+								else if (coor[l] > leaves[kk].xMax[l])
+									ds = (coor[l] - leaves[kk].xMax[l]) / coor[l];
+
+								posDist += ds * ds;
+							}
+
+							/*--- Check if the possible minimum distance is less than the currently
+							 worst stored minimum distance. If so this leaf must be stored for the
+							 next round. In that case the distance squared to the central node is
+							 determined, which is used to update the currently stored value. ---*/
+							if (posDist < dist[N - 1]) {
+								frontLeavesNew.push_back(kk);
+
+								const unsigned long jj = leaves[kk].centralNodeID;
+
+								coorTarget = coorPoints.data() + nDimADT * jj;
+								su2double distTarget = 0;
+								for (unsigned short l = 0; l < nDimADT; ++l) {
+									const su2double ds = (coor[l] - coorTarget[l]) / coor[l];
+									distTarget += ds * ds;
+								}
+
+								//Generalization of the algorithm to handle as many points as desired.
+								int dist_i = 0;
+								while (dist_i < N) {
+									if (distTarget <= dist[dist_i]) {
+										if (pointID[dist_i] == localPointIDs[jj]) {
+											dist_i = N + 1;
+										} else {
+											for (int dist_j = N - 1; dist_j > dist_i; dist_j--) {
+												dist[dist_j] = dist[dist_j - 1];
+												pointID[dist_j] = pointID[dist_j - 1];
+												rankID[dist_j] = rankID[dist_j - 1];
+											}
+											dist[dist_i] = distTarget;
+											pointID[dist_i] = localPointIDs[jj];
+											rankID[dist_i] = ranksOfPoints[jj];
+											dist_i = N + 1; //break the loop
+										}
+										dist_i++;
+
+									}
+								}
+							}
+
+							/*--- End of the loop over the current front. Copy the data from
+							 frontLeavesNew to frontLeaves for the next round. If the new front
+							 is empty the entire tree has been traversed and a break can be made
+							 from the infinite loop. ---*/
+							frontLeaves = frontLeavesNew;
+							if (frontLeaves.size() == 0)
+								break;
 						}
+
+						/* At the moment the distance squared to the nearest node is stored.
+						 Take the sqrt to obtain the correct value. */
+						for (int i; i < N; i++) {
+							dist[i] = sqrt(dist[i]);
+						}
+
 					}
-				}
-			}
-		}
-
-		/*--- End of the loop over the current front. Copy the data from
-		 frontLeavesNew to frontLeaves for the next round. If the new front
-		 is empty the entire tree has been traversed and a break can be made
-		 from the infinite loop. ---*/
-		frontLeaves = frontLeavesNew;
-		if (frontLeaves.size() == 0)
-			break;
-	}
-
-	/* At the moment the distance squared to the nearest node is stored.
-	 Take the sqrt to obtain the correct value. */
-	for (int i; i < N; i++) {
-		dist[i] = sqrt(dist[i]);
-	}
-
-}
 
