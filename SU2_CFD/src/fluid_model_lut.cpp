@@ -365,8 +365,8 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 	best_dist.resize(16, 0);
 	result_IDs.resize(16, 0);
 	result_ranks.resize(16, 0);
-	query[0] = ThermoTables_Density[1][200];
-	query[1] = ThermoTables_Pressure[1][200];
+	query[0] = ThermoTables_Density[1][4000];
+	query[1] = ThermoTables_Pressure[1][4000];
 	KD_tree->Determine_N_NearestNodes(16, query.data(), best_dist.data(),
 			result_IDs.data(), result_ranks.data());
 
