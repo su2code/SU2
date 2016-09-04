@@ -519,8 +519,8 @@ void CLookUpTable::Compute_Interpolation_Coefficients() {
 				Interpolation_Matrix_Prepare_And_Invert(ThermoTables_Density,
 						ThermoTables_Temperature);
 		hs_Interpolation_Matrix_Inverse[CurrentZone][i] =
-				Interpolation_Matrix_Prepare_And_Invert(ThermoTables_Entropy,
-						ThermoTables_Enthalpy);
+				Interpolation_Matrix_Prepare_And_Invert(ThermoTables_Enthalpy,
+						ThermoTables_Entropy);
 		Ps_Interpolation_Matrix_Inverse[CurrentZone][i] =
 				Interpolation_Matrix_Prepare_And_Invert(ThermoTables_Pressure,
 						ThermoTables_Entropy);
