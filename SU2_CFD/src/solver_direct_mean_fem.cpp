@@ -1535,6 +1535,9 @@ void CFEM_DG_EulerSolver::Set_OldSolution(CGeometry *geometry) {
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
 
+  /* Easier storage whether or not a viscous computation is carried out. */
+  const bool viscous = config->GetViscous();
+
   /* Initialize the minimum and maximum time step. */
   Min_Delta_Time = 1.e25; Max_Delta_Time = 0.0;
 
@@ -1547,11 +1550,13 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
     /*--- Loop over the owned volume elements. ---*/
     for(unsigned long i=0; i<nVolElemOwned; ++i) {
 
-      /*--- Loop over the DOFs of this element and determine the maximum wave speed. ---*/
-      su2double charVel2Max = 0.0;
+      /*--- Loop over the DOFs of this element and determine the maximum wave speed
+            and the maximum value of the kinematic viscosity (if needed). ---*/
+      su2double charVel2Max = 0.0, nuMax = 0.0;
       for(unsigned short j=0; j<volElem[i].nDOFsSol; ++j) {
         const su2double *solDOF = VecSolDOFs.data() + nVar*(volElem[i].offsetDOFsSolLocal + j);
 
+        /* Compute the velocities. */
         su2double velAbs[3];
         const su2double DensityInv = 1.0/solDOF[0];
         su2double Velocity2 = 0.0;
@@ -1561,6 +1566,8 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
           Velocity2 += vel*vel;
         }
 
+        /*--- Compute the maximum value of the wave speed. This is a rather
+              conservative estimate. ---*/
         const su2double StaticEnergy = solDOF[nDim+1]*DensityInv - 0.5*Velocity2;
         FluidModel->SetTDState_rhoe(solDOF[0], StaticEnergy);
         const su2double SoundSpeed2 = FluidModel->GetSoundSpeed2();
@@ -1573,16 +1580,25 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
         }
 
         charVel2Max = max(charVel2Max, charVel2);
+
+        /* Update the kinematic viscosity, if a viscous computation is carried out. */
+        if( viscous ) {
+          const su2double nu = DensityInv*FluidModel->GetLaminarViscosity();
+          nuMax = max(nuMax, nu);
+        }
       }
 
       /*--- Compute the time step for the element and update the minimum and
-            maximum value. Note that in the length scale the plynomial degree
+            maximum value. Note that in the length scale the polynomial degree
             must be taken into account for the high order element. ---*/
       const unsigned short ind = volElem[i].indStandardElement;
       unsigned short nPoly = standardElementsSol[ind].GetNPoly();
       if(nPoly == 0) nPoly = 1;
 
-      VecDeltaTime[i] = CFL*volElem[i].lenScale/(nPoly*sqrt(charVel2Max));
+      const su2double lenScaleInv = nPoly/volElem[i].lenScale;
+      const su2double dtInv       = lenScaleInv*(charVel2Max + nuMax*lenScaleInv);
+
+      VecDeltaTime[i] = CFL/dtInv;
 
       Min_Delta_Time = min(Min_Delta_Time, VecDeltaTime[i]);
       Max_Delta_Time = max(Max_Delta_Time, VecDeltaTime[i]);
@@ -2879,31 +2895,7 @@ void CFEM_DG_NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
-  if (rank == MASTER_NODE) cout << " Computing viscous forces." << endl;
-}
-
-void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) {
-
-    /* Initialize the minimum and maximum time step. */
-  Min_Delta_Time = 1.e25; Max_Delta_Time = 0.0;
-
-  /*--- Loop over the owned volume elements. ---*/
-  for(unsigned long i=0; i<nVolElemOwned; ++i) {
-
-    VecDeltaTime[i] = 0.0;
-
-    Min_Delta_Time = min(Min_Delta_Time, VecDeltaTime[i]);
-    Max_Delta_Time = max(Max_Delta_Time, VecDeltaTime[i]);
-  }
-
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  if (rank == MASTER_NODE) cout << " Computing viscous time step." << endl;
-
+//if (rank == MASTER_NODE) cout << " Computing viscous forces." << endl;
 }
 
 void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
