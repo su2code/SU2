@@ -599,16 +599,16 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
     if (chainruleobj){
       /*-- Hardcoded for primitive variables -> conservative for fluid flow --*/
       nDim = geometry->GetnDim();
-      Solution[0] += direct_solver->node[iPoint]->GetGenAdj_Grad(0);
+      Solution[0] += config-> GetCoeff_ObjChainRule(0);
       V_domain =direct_solver->node[iPoint]->GetPrimitive();
       for (unsigned short iDim=0; iDim<nDim; iDim++){
         Velocity2+=V_domain[iDim+1]*V_domain[iDim+1];
-        Solution[iDim+1] += direct_solver->node[iPoint]->GetGenAdj_Grad(iDim+1)*V_domain[nDim+2];
-        Solution[iDim+1] += direct_solver->node[iPoint]->GetGenAdj_Grad(0)*V_domain[iDim+1];
-        Solution[nDim+1] += direct_solver->node[iPoint]->GetGenAdj_Grad(iDim+1)*V_domain[iDim+1]*V_domain[nDim+2];
+        Solution[iDim+1] += config-> GetCoeff_ObjChainRule(iDim+1)*V_domain[nDim+2];
+        Solution[iDim+1] += config-> GetCoeff_ObjChainRule(0)*V_domain[iDim+1];
+        Solution[nDim+1] += config-> GetCoeff_ObjChainRule(iDim+1)*V_domain[iDim+1]*V_domain[nDim+2];
       }
-      Solution[nDim+1] += direct_solver->node[iPoint]->GetGenAdj_Grad(0)*Velocity2/2.0;
-      Solution[nDim+1] += direct_solver->node[iPoint]->GetGenAdj_Grad(nDim+1)/(config->GetGamma()-1);
+      Solution[nDim+1] += config-> GetCoeff_ObjChainRule(0)*Velocity2/2.0;
+      Solution[nDim+1] += config-> GetCoeff_ObjChainRule(nDim+1)/(config->GetGamma()-1);
     }
     direct_solver->node[iPoint]->SetAdjointSolution(Solution);
   }
