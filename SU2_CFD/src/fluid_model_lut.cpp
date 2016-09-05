@@ -231,7 +231,7 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 	LUT_Debug_Mode = false;
 	rank = MASTER_NODE;
 	CurrentZone = 1;
-	nInterpPoints = 3;
+	nInterpPoints = 9;
 	CurrentPoints.resize(nInterpPoints, 0);
 	LUT_Debug_Mode = config->GetLUT_Debug_Mode();
 	Interpolation_Matrix.resize(nInterpPoints,
@@ -442,9 +442,9 @@ void CLookUpTable::Compute_Interpolation_Coefficients() {
 	KD_tree = new su2_adtPointsOnlyClass(2, PointIDs.size(), coors.data(),
 			PointIDs.data());
 	query.resize(2, 0);
-	best_dist.resize(16, 0);
-	result_IDs.resize(16, 0);
-	result_ranks.resize(16, 0);
+	best_dist.resize(nInterpPoints, 0);
+	result_IDs.resize(nInterpPoints, 0);
+	result_ranks.resize(nInterpPoints, 0);
 	//Allocate the space for all the interpolation coefficients to be stored
 	Rhoe_Interpolation_Matrix_Inverse[CurrentZone].resize(
 			Table_Zone_Triangles[CurrentZone].size(),
@@ -495,14 +495,8 @@ void CLookUpTable::Compute_Interpolation_Coefficients() {
 		KD_tree->Determine_N_NearestNodes(nInterpPoints, query.data(),
 				best_dist.data(), result_IDs.data(), result_ranks.data());
 		//Set the found points as the current points
-		//CurrentPoints = result_IDs;
-		//Interpolation_Points[CurrentZone][i] = result_IDs;
-
-		for (int kk =0; kk<3;kk++)
-		{
-			CurrentPoints[kk] =   (unsigned long) Table_Zone_Triangles[CurrentZone][i][kk];
-			Interpolation_Points[CurrentZone][i][kk] = (unsigned long) Table_Zone_Triangles[CurrentZone][i][kk];
-		}
+		CurrentPoints = result_IDs;
+		Interpolation_Points[CurrentZone][i] = result_IDs;
 
 		//Now use the nearest 16 points to construct an interpolation function
 		//for each search pair option
@@ -775,27 +769,30 @@ vector<su2double> CLookUpTable::Evaluate_Interpolation_Vector(su2double x,
 	interpolation_vector.resize(nInterpPoints, 0);
 	interpolation_vector[0] = 1;
 	interpolation_vector[1] = x;
-	interpolation_vector[2] = x * y;
-//	interpolation_vector[3] = x * y * y;
-//	interpolation_vector[4] = x * y * y * y;
-//	interpolation_vector[5] = y;
+	interpolation_vector[2] = y;
+	interpolation_vector[3] = x * y;
+//	interpolation_vector[4] = x * y * y;
+//	interpolation_vector[5] = x * y * y * y;
 //	interpolation_vector[6] = x * x;
 //	interpolation_vector[7] = x * x * y;
 //	interpolation_vector[8] = x * x * y * y;
-//	interpolation_vector[9] = x * x * y * y * y + x;
+//	interpolation_vector[9] = x * x * y * y * y;
 //	interpolation_vector[10] = y * y;
-//	interpolation_vector[11] = x * x * x + x;
+//	interpolation_vector[11] = x * x * x;
 //	interpolation_vector[12] = x * x * x * y;
 //	interpolation_vector[13] = x * x * x * y * y;
 //	interpolation_vector[14] = x * x * x * y * y * y;
-//	interpolation_vector[15] = y*y*y + y;
+//	interpolation_vector[15] = y * y * y;
 
-//	interpolation_vector[4] = 1 / x;
-//	interpolation_vector[5] = 1 / y;
-//	interpolation_vector[6] = 1 / (x * y);
-//	interpolation_vector[7] = log(x);
+	interpolation_vector[4] = x * x;
+	interpolation_vector[5] = y * y;
+	interpolation_vector[6] = log(y);
+	interpolation_vector[7] = log(x);
+	interpolation_vector[8] = log(x + y);
+
+//	interpolation_vector[8] = exp(x);
+//	interpolation_vector[9] = exp(y);
 //	interpolation_vector[8] = log(y);
-//	interpolation_vector[9] = log(x + y);
 //	interpolation_vector[10] = exp(x);
 //	interpolation_vector[11] = exp(y);
 //	interpolation_vector[12] = exp(x * y);
