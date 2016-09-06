@@ -7743,7 +7743,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
       if (Monitoring_Tag==Marker_Tag)
         iMarker_Monitoring = jMarker_Monitoring;
     }
-    obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
+    /*obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
     switch(config->GetKind_ObjFunc(config->GetMarker_All_Monitoring(iMarker))) {
     case AVG_TOTAL_PRESSURE:
       solver_container->AddTotal_ComboObj(AveragePt*obj_weight);
@@ -7754,7 +7754,7 @@ void COutput::OneDimensionalOutput(CSolver *solver_container, CGeometry *geometr
     case MASS_FLOW_RATE:
       solver_container->AddTotal_ComboObj(MassFlowRate*obj_weight);
       break;
-    }
+    }*/
   }
   
 #ifdef HAVE_MPI
