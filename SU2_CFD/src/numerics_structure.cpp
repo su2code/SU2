@@ -2,7 +2,7 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -146,21 +148,21 @@ CNumerics::~CNumerics(void) {
 	// visc
   if (Proj_Flux_Tensor!=NULL) delete [] Proj_Flux_Tensor;
 
-  if (Flux_Tensor!=NULL){
+  if (Flux_Tensor!=NULL) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       delete [] Flux_Tensor[iVar];
     }
     delete [] Flux_Tensor;
   }
 
-  if (tau != NULL){
+  if (tau != NULL) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       delete [] tau[iDim];
     }
     delete [] tau;
   }
 
-  if (delta != NULL){
+  if (delta != NULL) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       delete [] delta[iDim];
     }
