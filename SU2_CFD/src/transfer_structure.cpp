@@ -432,9 +432,6 @@ void CTransfer::Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_s
     
     long indexPoint_iVertex, Point_Target_Check;
     
-    if(Marker_Target == -1 || Marker_Donor == -1)
-		continue;
-    
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0){
       
@@ -1435,9 +1432,6 @@ void CTransfer::Allgather_InterfaceData(CSolver *donor_solution, CSolver *target
     long indexPoint_iVertex, Point_Target_Check;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
-    
-    if(Marker_Target == -1 || Marker_Donor == -1)
-		continue;
     
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0){
