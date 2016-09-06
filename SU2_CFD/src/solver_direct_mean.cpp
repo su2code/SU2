@@ -14003,7 +14003,15 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   
 #ifdef HAVE_MPI
-  su2double MyAllBound_CD_Visc, MyAllBound_CL_Visc, MyAllBound_CSF_Visc, MyAllBound_CMx_Visc, MyAllBound_CMy_Visc, MyAllBound_CMz_Visc, MyAllBound_CFx_Visc, MyAllBound_CFy_Visc, MyAllBound_CFz_Visc, MyAllBound_CT_Visc, MyAllBound_CQ_Visc, MyAllBound_HF_Visc, MyAllBound_MaxHF_Visc, *MySurface_CL_Visc = NULL, *MySurface_CD_Visc = NULL, *MySurface_CSF_Visc = NULL, *MySurface_CEff_Visc = NULL, *MySurface_CFx_Visc = NULL, *MySurface_CFy_Visc = NULL, *MySurface_CFz_Visc = NULL, *MySurface_CMx_Visc = NULL, *MySurface_CMy_Visc = NULL, *MySurface_CMz_Visc = NULL;
+  su2double MyAllBound_CD_Visc, MyAllBound_CL_Visc,
+  MyAllBound_CSF_Visc, MyAllBound_CMx_Visc, MyAllBound_CMy_Visc,
+  MyAllBound_CMz_Visc, MyAllBound_CFx_Visc, MyAllBound_CFy_Visc,
+  MyAllBound_CFz_Visc, MyAllBound_CT_Visc, MyAllBound_CQ_Visc,
+  MyAllBound_HF_Visc, MyAllBound_MaxHF_Visc, *MySurface_CL_Visc = NULL,
+  *MySurface_CD_Visc = NULL, *MySurface_CSF_Visc = NULL, *MySurface_CEff_Visc = NULL,
+  *MySurface_CFx_Visc = NULL, *MySurface_CFy_Visc = NULL, *MySurface_CFz_Visc = NULL,
+  *MySurface_CMx_Visc = NULL, *MySurface_CMy_Visc = NULL, *MySurface_CMz_Visc = NULL,
+  *MySurface_TotHeatFlux = NULL, *MySurface_MaxHeatFlux;
 #endif
   
   string Marker_Tag, Monitoring_Tag;
@@ -14262,8 +14270,8 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
             Surface_CMx_Visc[iMarker_Monitoring]        += CMx_Visc[iMarker];
             Surface_CMy_Visc[iMarker_Monitoring]        += CMy_Visc[iMarker];
             Surface_CMz_Visc[iMarker_Monitoring]        += CMz_Visc[iMarker];
-            Surface_TotHeatFlux[iMarker_Monitoring]     += Heat_Visc[iMarker];
-            Surface_MaxHeatFlux[iMarker_Monitoring]     += pow(MaxHeatFlux_Visc[iMarker],MaxNorm);
+            Surface_TotHeatFlux[iMarker_Monitoring]     += HF[iMarker];
+            Surface_MaxHeatFlux[iMarker_Monitoring]     += pow(MaxHF_Visc[iMarker],MaxNorm);
           }
         }
         
