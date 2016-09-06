@@ -2,7 +2,7 @@
  * \file transfer_structure.cpp
  * \brief Main subroutines for physics of the information transfer between zones
  * \author R. Sanchez
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -45,13 +47,13 @@ CTransfer_FlowTraction::~CTransfer_FlowTraction(void) {
 
 void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
 		   	   	   	   	   	   	   	   	   	   	   CGeometry *flow_geometry, CGeometry *struct_geometry,
-												   CConfig *flow_config, CConfig *struct_config){
+												   CConfig *flow_config, CConfig *struct_config) {
 
 	unsigned short iVar;
 
 	/*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
-	for (unsigned long iPoint = 0; iPoint < struct_geometry->GetnPoint(); iPoint++){
+	for (unsigned long iPoint = 0; iPoint < struct_geometry->GetnPoint(); iPoint++) {
 		struct_solution->node[iPoint]->Clear_FlowTraction();
 	}
 
@@ -68,7 +70,7 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 
 	Velocity2_Real = 0.0;
 	Velocity2_ND = 0.0;
-    for (iVar = 0; iVar < nVar; iVar++){
+    for (iVar = 0; iVar < nVar; iVar++) {
     	Velocity2_Real += Velocity_Real[iVar]*Velocity_Real[iVar];
     	Velocity2_ND += Velocity_ND[iVar]*Velocity_ND[iVar];
     }
@@ -89,10 +91,10 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 	su2double Sigmoid_K = struct_config->GetSigmoid_K();
 	su2double SigAux = 0.0;
 
-	if (CurrentTime <= Static_Time){ ModAmpl=0.0; }
+	if (CurrentTime <= Static_Time) { ModAmpl=0.0; }
 	else if((CurrentTime > Static_Time) &&
 			(CurrentTime <= (Static_Time + Ramp_Time)) &&
-			(Ramp_Load)){
+			(Ramp_Load)) {
 		ModAmpl = (CurrentTime-Static_Time) / Ramp_Time;
 		ModAmpl = max(ModAmpl,0.0);
 		ModAmpl = min(ModAmpl,1.0);
@@ -100,19 +102,19 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 	}
 	else if((CurrentTime > Static_Time) &&
 			(CurrentTime <= (Static_Time + Sigmoid_Time)) &&
-			(Sigmoid_Load)){
+			(Sigmoid_Load)) {
 		SigAux = (CurrentTime-Static_Time) / Sigmoid_Time;
 		ModAmpl = (1 / (1+exp(-1*Sigmoid_K*(SigAux - 0.5)) ) );
 		ModAmpl = max(ModAmpl,0.0);
 		ModAmpl = min(ModAmpl,1.0);
 		Physical_Constants[1] = ModAmpl;
 	}
-	else{ Physical_Constants[1] = 1.0; }
+	else { Physical_Constants[1] = 1.0; }
 
 }
 
 void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry, CConfig *flow_config,
-					   	   	   	   	   	   	   unsigned long Marker_Flow, unsigned long Vertex_Flow, unsigned long Point_Struct){
+					   	   	   	   	   	   	   unsigned long Marker_Flow, unsigned long Vertex_Flow, unsigned long Point_Struct) {
 
 
 	unsigned short iVar, jVar;
@@ -144,22 +146,22 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 	Normal_Flow = flow_geometry->vertex[Marker_Flow][Vertex_Flow]->GetNormal();
 
 	// Retrieve the values of pressure and viscosity
-	if (incompressible){
+	if (incompressible) {
 
 		Pn = flow_solution->node[Point_Flow]->GetPressureInc();
 
-		if (viscous_flow){
+		if (viscous_flow) {
 
 			Grad_PrimVar = flow_solution->node[Point_Flow]->GetGradient_Primitive();
 			Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosityInc();
 
 		}
 	}
-	else if (compressible){
+	else if (compressible) {
 
 		Pn = flow_solution->node[Point_Flow]->GetPressure();
 
-		if (viscous_flow){
+		if (viscous_flow) {
 
 			Grad_PrimVar = flow_solution->node[Point_Flow]->GetGradient_Primitive();
 			Viscosity = flow_solution->node[Point_Flow]->GetLaminarViscosity();
@@ -174,7 +176,7 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
 	// Calculate tn in the fluid nodes for the viscous term
 
-	if ((incompressible || compressible) && viscous_flow){
+	if ((incompressible || compressible) && viscous_flow) {
 
 		// Divergence of the velocity
 		div_vel = 0.0; for (iVar = 0; iVar < nVar; iVar++) div_vel += Grad_PrimVar[iVar+1][iVar];
@@ -197,7 +199,7 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 	}
 
 	// Redimensionalize and take into account ramp transfer of the loads
-	for (iVar = 0; iVar < nVar; iVar++){
+	for (iVar = 0; iVar < nVar; iVar++) {
 		Donor_Variable[iVar] = Donor_Variable[iVar] * Physical_Constants[0] * Physical_Constants[1];
 	}
 
@@ -205,7 +207,7 @@ void CTransfer_FlowTraction::GetDonor_Variable(CSolver *flow_solution, CGeometry
 
 void CTransfer_FlowTraction::SetTarget_Variable(CSolver *fea_solution, CGeometry *fea_geometry,
 												CConfig *fea_config, unsigned long Marker_Struct,
-												unsigned long Vertex_Struct, unsigned long Point_Struct){
+												unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
 	/*--- Add to the Flow traction ---*/
 	fea_solution->node[Point_Struct]->Add_FlowTraction(Target_Variable);
@@ -229,12 +231,12 @@ CTransfer_StructuralDisplacements::~CTransfer_StructuralDisplacements(void) {
 
 void CTransfer_StructuralDisplacements::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
 		   	   	   	   	   	   	   	   	   	   	   CGeometry *struct_geometry, CGeometry *flow_geometry,
-												   CConfig *struct_config, CConfig *flow_config){
+												   CConfig *struct_config, CConfig *flow_config) {
 
 }
 
 void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry, CConfig *struct_config,
-					   	   	   	   	   	   	   	          unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct){
+					   	   	   	   	   	   	   	          unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
 
 	su2double *DisplacementDonor, *DisplacementDonor_Prev;
@@ -245,7 +247,7 @@ void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_soluti
 
     DisplacementDonor_Prev = struct_solution->node[Point_Struct]->GetSolution_Pred_Old();
 
-	for (iVar = 0; iVar < nVar; iVar++){
+	for (iVar = 0; iVar < nVar; iVar++) {
 		Donor_Variable[iVar] = DisplacementDonor[iVar] - DisplacementDonor_Prev[iVar];
 	}
 
@@ -254,7 +256,7 @@ void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_soluti
 
 void CTransfer_StructuralDisplacements::SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
 														   CConfig *flow_config, unsigned long Marker_Flow,
-														   unsigned long Vertex_Flow, unsigned long Point_Flow){
+														   unsigned long Vertex_Flow, unsigned long Point_Flow) {
 
 	su2double VarCoord[3] = {0.0, 0.0, 0.0};
 	unsigned short iVar;
@@ -281,12 +283,12 @@ CTransfer_StructuralDisplacements_Original::~CTransfer_StructuralDisplacements_O
 
 void CTransfer_StructuralDisplacements_Original::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
 		   	   	   	   	   	   	   	   	   	   	   CGeometry *struct_geometry, CGeometry *flow_geometry,
-												   CConfig *struct_config, CConfig *flow_config){
+												   CConfig *struct_config, CConfig *flow_config) {
 
 }
 
 void CTransfer_StructuralDisplacements_Original::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry, CConfig *struct_config,
-					   	   	   	   	   	   	   	          unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct){
+					   	   	   	   	   	   	   	          unsigned long Marker_Struct, unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
 
 	su2double *Coord_Struct, *Displacement_Struct;
@@ -297,7 +299,7 @@ void CTransfer_StructuralDisplacements_Original::GetDonor_Variable(CSolver *stru
     /*--- The displacements come from the predicted solution ---*/
     Displacement_Struct = struct_solution->node[Point_Struct]->GetSolution_Pred();
 
-	for (iVar = 0; iVar < nVar; iVar++){
+	for (iVar = 0; iVar < nVar; iVar++) {
 		Donor_Variable[iVar] = Coord_Struct[iVar] + Displacement_Struct[iVar];
 	}
 
@@ -305,7 +307,7 @@ void CTransfer_StructuralDisplacements_Original::GetDonor_Variable(CSolver *stru
 
 void CTransfer_StructuralDisplacements_Original::SetTarget_Variable(CSolver *flow_solution, CGeometry *flow_geometry,
 														   CConfig *flow_config, unsigned long Marker_Flow,
-														   unsigned long Vertex_Flow, unsigned long Point_Flow){
+														   unsigned long Vertex_Flow, unsigned long Point_Flow) {
 
 	su2double *Coord, VarCoord[3] = {0.0, 0.0, 0.0};
 	unsigned short iVar;
@@ -337,12 +339,12 @@ CTransfer_ConservativeVars::~CTransfer_ConservativeVars(void) {
 
 void CTransfer_ConservativeVars::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
 		   	   	   	   	   	   	   	   	   	   	       CGeometry *donor_geometry, CGeometry *target_geometry,
-													   CConfig *donor_config, CConfig *target_config){
+													   CConfig *donor_config, CConfig *target_config) {
 
 }
 
 void CTransfer_ConservativeVars::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
-					   	   	   	   	   	   	   	   unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor){
+					   	   	   	   	   	   	   	   unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor) {
 
 	su2double *Solution;
 	unsigned short iVar;
@@ -350,7 +352,7 @@ void CTransfer_ConservativeVars::GetDonor_Variable(CSolver *donor_solution, CGeo
     /*--- Retrieve solution and set it as the donor variable ---*/
 	Solution = donor_solution->node[Point_Donor]->GetSolution();
 
-	for (iVar = 0; iVar < nVar; iVar++){
+	for (iVar = 0; iVar < nVar; iVar++) {
 		Donor_Variable[iVar] = Solution[iVar];
 	}
 
@@ -359,7 +361,7 @@ void CTransfer_ConservativeVars::GetDonor_Variable(CSolver *donor_solution, CGeo
 
 void CTransfer_ConservativeVars::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
 													CConfig *target_config, unsigned long Marker_Target,
-													unsigned long Vertex_Target, unsigned long Point_Target){
+													unsigned long Vertex_Target, unsigned long Point_Target) {
 
 	/*--- Set the target solution with the value of the Target Variable ---*/
 	target_solution->node[Point_Target]->SetSolution(Target_Variable);

@@ -2,7 +2,7 @@
  * \file output_fieldview.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -63,7 +65,7 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   if (Kind_Solver == POISSON_EQUATION)
     filename = config->GetStructure_FileName().c_str();
 
-  if (config->GetKind_SU2() == SU2_DOT){
+  if (config->GetKind_SU2() == SU2_DOT) {
     filename = config->GetVolSens_FileName().c_str();
   }
   

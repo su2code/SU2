@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -49,6 +51,7 @@ int main(int argc, char *argv[]) {
 #endif
   
   /*--- Create a pointer to the main SU2 Driver ---*/
+  
   CDriver *driver = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
@@ -105,16 +108,19 @@ int main(int argc, char *argv[]) {
   config = NULL;
 
   /*--- Launch the main external loop of the solver ---*/
+  
   driver->StartSolver();
 
   /*--- Postprocess all the containers, close history file, exit SU2 ---*/
+  
   driver->Postprocessing();
 
-  if(driver != NULL) delete driver;
+  if (driver != NULL) delete driver;
   driver = NULL;
 
-#ifdef HAVE_MPI
   /*--- Finalize MPI parallelization ---*/
+
+#ifdef HAVE_MPI
   MPI_Buffer_detach(&buffptr, &buffsize);
   free(buffptr);
   MPI_Finalize();

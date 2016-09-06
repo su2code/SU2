@@ -2,7 +2,7 @@
  * \file variable_direct_mean.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -134,7 +136,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
   
-  if(compressible){ 
+  if(compressible) { 
     Limiter_Secondary = new su2double [nSecondaryVarGrad];
     for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
       Limiter_Secondary[iVar] = 0.0;
@@ -220,7 +222,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
-  if (compressible){ 
+  if (compressible) { 
     Secondary = new su2double [nSecondaryVar];
     for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
   }
@@ -237,7 +239,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
 
-  if (compressible){  
+  if (compressible) {  
     Gradient_Secondary = new su2double* [nSecondaryVarGrad];
     for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
       Gradient_Secondary[iVar] = new su2double [nDim];
@@ -316,7 +318,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
  
-  if (compressible){ 
+  if (compressible) { 
     Limiter_Secondary = new su2double [nSecondaryVarGrad];
     for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
       Limiter_Secondary[iVar] = 0.0;
@@ -371,7 +373,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
-  if (compressible){ 
+  if (compressible) { 
     Secondary = new su2double [nSecondaryVar];
     for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
   }
@@ -387,7 +389,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
 
-  if (compressible){  
+  if (compressible) {  
     Gradient_Secondary = new su2double* [nSecondaryVarGrad];
     for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
       Gradient_Secondary[iVar] = new su2double [nDim];
