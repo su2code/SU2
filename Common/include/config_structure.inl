@@ -755,6 +755,8 @@ inline bool CConfig::GetBoolRiemann(void) { return (nMarker_Riemann!=0);}
 
 inline bool CConfig::GetBoolNonUniformBC(void) { return (nMarker_NonUniform !=0);}
 
+inline bool CConfig::GetBoolTurboNonUniformBC(void) { return (nMarker_TurboNonUniform !=0);}
+
 inline unsigned short CConfig::GetnMarker_MixingPlaneInterface(void) { return nMarker_MixingPlaneInterface;}
 
 inline unsigned short CConfig::GetnMarker_Turbomachinery(void) { return nMarker_Turbomachinery;}

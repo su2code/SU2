@@ -293,8 +293,8 @@ void CConfig::SetPointersNull(void) {
   Marker_FlowLoad = NULL;         Marker_Neumann = NULL;
   Marker_All_TagBound = NULL;     Marker_CfgFile_TagBound = NULL;   Marker_All_KindBC = NULL;
   Marker_CfgFile_KindBC = NULL;   Marker_All_SendRecv = NULL;       Marker_All_PerBound = NULL;
-  Marker_FSIinterface = NULL;     Marker_All_FSIinterface=NULL; Marker_Riemann = NULL;
-  Marker_Load = NULL;
+  Marker_FSIinterface = NULL;     Marker_All_FSIinterface=NULL;     Marker_Riemann = NULL;
+  Marker_Load = NULL;             Marker_NonUniform=NULL;           Marker_TurboNonUniform=NULL;
   /*--- Boundary Condition settings ---*/
 
   Dirichlet_Value = NULL;         Exhaust_Temperature_Target = NULL;
@@ -378,6 +378,11 @@ void CConfig::SetPointersNull(void) {
   Kind_Data_Riemann = NULL;
   Riemann_Var1 = NULL;
   Riemann_Var2 = NULL;
+  Kind_Data_NonUniform = NULL;
+  NonUniform_Var1 = NULL;
+  NonUniform_Var2 = NULL;
+  Kind_Data_TurboNonUniform = NULL;
+  TurboNonUniform_Omega = NULL;
   Kind_Data_NRBC = NULL;
   NRBC_Var1 = NULL;
   NRBC_Var2 = NULL;
@@ -667,6 +672,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addNonUniformOption("MARKER_NONUNIFORM", nMarker_NonUniform, Marker_NonUniform, Kind_Data_NonUniform, NonUniform_Map, NonUniform_Var1, NonUniform_Var2, NonUniform_FlowDir);
   /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart flow input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n DEFAULT: solution_flow.dat \ingroup Config */
   addStringOption("NONUNIFORM_BC_FILENAME", NonUniformBC_FileName, string("nonuniform_boundary.dat"));
+  /*!\brief MARKER_TURBONONUNIFORM \n DESCRIPTION: TurboNonUniform boundary marker(s) with the following formats, a unit vector.
+   * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
+  addTurboNonUniformOption("MARKER_TURBONONUNIFORM", nMarker_TurboNonUniform, Marker_TurboNonUniform, Kind_Data_TurboNonUniform, TurboNonUniform_Map, TurboNonUniform_Omega);
   /*!\brief MARKER_NRBC \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. */
   addNRBCOption("MARKER_NRBC", nMarker_NRBC, Marker_NRBC, Kind_Data_NRBC, NRBC_Map, NRBC_Var1, NRBC_Var2, NRBC_FlowDir, RelaxFactorAverage, RelaxFactorFourier);
   /*!\brief MIXING_PROCESS_TYPE \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries.
@@ -2943,7 +2951,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   unsigned short iMarker_All, iMarker_CfgFile, iMarker_Euler, iMarker_Custom,
   iMarker_FarField, iMarker_SymWall, iMarker_Pressure, iMarker_PerBound,
   iMarker_NearFieldBound, iMarker_InterfaceBound, iMarker_Dirichlet,
-  iMarker_Inlet, iMarker_Riemann, iMarker_NRBC, iMarker_NonUniform, iMarker_Outlet, iMarker_Isothermal,
+  iMarker_Inlet, iMarker_Riemann, iMarker_NRBC, iMarker_NonUniform, iMarker_TurboNonUniform, iMarker_Outlet, iMarker_Isothermal,
   iMarker_HeatFlux, iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust,
   iMarker_Displacement, iMarker_Load, iMarker_FlowLoad, iMarker_Neumann,
   iMarker_Monitoring, iMarker_Designing, iMarker_GeoEval, iMarker_Plotting,
@@ -2963,7 +2971,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   nMarker_CfgFile = nMarker_Euler + nMarker_FarField + nMarker_SymWall +
   nMarker_Pressure + nMarker_PerBound + nMarker_NearFieldBound +
   nMarker_InterfaceBound + nMarker_Dirichlet + nMarker_Neumann + nMarker_Inlet + nMarker_Riemann +
-  nMarker_NRBC + nMarker_NonUniform + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
+  nMarker_NRBC + nMarker_NonUniform +nMarker_TurboNonUniform + nMarker_Outlet + nMarker_Isothermal + nMarker_HeatFlux +
   nMarker_EngineInflow + nMarker_EngineBleed + nMarker_EngineExhaust +
   nMarker_Supersonic_Inlet + nMarker_Supersonic_Outlet + nMarker_Displacement + nMarker_Load +
   nMarker_FlowLoad + nMarker_Custom +
@@ -3127,6 +3135,12 @@ void CConfig::SetMarkers(unsigned short val_software) {
   for (iMarker_NonUniform = 0; iMarker_NonUniform < nMarker_NonUniform; iMarker_NonUniform++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_NonUniform[iMarker_NonUniform];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = NONUNIFORM_BOUNDARY;
+    iMarker_CfgFile++;
+  }
+
+  for (iMarker_TurboNonUniform = 0; iMarker_TurboNonUniform < nMarker_TurboNonUniform; iMarker_TurboNonUniform++) {
+    Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_TurboNonUniform[iMarker_TurboNonUniform];
+    Marker_CfgFile_KindBC[iMarker_CfgFile] = TURBO_NONUNIFORM_BOUNDARY;
     iMarker_CfgFile++;
   }
 
@@ -3376,7 +3390,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   unsigned short iMarker_Euler, iMarker_Custom, iMarker_FarField,
   iMarker_SymWall, iMarker_PerBound, iMarker_Pressure, iMarker_NearFieldBound,
-  iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann, iMarker_NonUniform,
+  iMarker_InterfaceBound, iMarker_Dirichlet, iMarker_Inlet, iMarker_Riemann, iMarker_NonUniform, iMarker_TurboNonUniform,
   iMarker_NRBC, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux,
   iMarker_EngineInflow, iMarker_EngineBleed, iMarker_EngineExhaust, iMarker_Displacement,
   iMarker_Load, iMarker_FlowLoad,  iMarker_Neumann, iMarker_Monitoring,
@@ -4476,6 +4490,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
+  if (nMarker_TurboNonUniform != 0) {
+      cout << "TurboNonUniform boundary marker(s): ";
+      for (iMarker_TurboNonUniform = 0; iMarker_TurboNonUniform < nMarker_TurboNonUniform; iMarker_TurboNonUniform++) {
+        cout << Marker_TurboNonUniform[iMarker_TurboNonUniform];
+        if (iMarker_TurboNonUniform < nMarker_TurboNonUniform-1) cout << ", ";
+        else cout <<"."<< endl;
+    }
+  }
+
   if (nMarker_NRBC != 0) {
       cout << "NRBC boundary marker(s): ";
       for (iMarker_NRBC = 0; iMarker_NRBC < nMarker_NRBC; iMarker_NRBC++) {
@@ -5214,12 +5237,19 @@ CConfig::~CConfig(void) {
   if (Kind_Data_Riemann != NULL) delete [] Kind_Data_Riemann;
   if (Riemann_Var1 != NULL) delete [] Riemann_Var1;
   if (Riemann_Var2 != NULL) delete [] Riemann_Var2;
+  if (Kind_Data_NonUniform != NULL) delete [] Kind_Data_NonUniform;
+  if (NonUniform_Var1 != NULL) delete [] NonUniform_Var1;
+  if (NonUniform_Var2 != NULL) delete [] NonUniform_Var2;
+  if (Kind_Data_TurboNonUniform != NULL) delete [] Kind_Data_TurboNonUniform;
+  if (TurboNonUniform_Omega != NULL) delete [] TurboNonUniform_Omega;
   if (Kind_Data_NRBC != NULL) delete [] Kind_Data_NRBC;
   if (NRBC_Var1 != NULL) delete [] NRBC_Var1;
   if (NRBC_Var2 != NULL) delete [] NRBC_Var2;
   if (Marker_TurboBoundIn != NULL) delete [] Marker_TurboBoundIn;
   if (Marker_TurboBoundOut != NULL) delete [] Marker_TurboBoundOut;
   if (Marker_Riemann != NULL) delete [] Marker_Riemann;
+  if (Marker_NonUniform != NULL) delete [] Marker_NonUniform;
+  if (Marker_TurboNonUniform != NULL) delete [] Marker_TurboNonUniform;
   if (Marker_NRBC != NULL) delete [] Marker_NRBC;
  
 }
@@ -5768,6 +5798,19 @@ unsigned short CConfig::GetKind_Data_NonUniform(string val_marker) {
   return Kind_Data_NonUniform[iMarker_NonUniform];
 }
 
+unsigned short CConfig::GetKind_Data_TurboNonUniform(string val_marker) {
+  unsigned short iMarker_TurboNonUniform;
+  for (iMarker_TurboNonUniform = 0; iMarker_TurboNonUniform < nMarker_TurboNonUniform; iMarker_TurboNonUniform++)
+    if (Marker_TurboNonUniform[iMarker_TurboNonUniform] == val_marker) break;
+  return Kind_Data_TurboNonUniform[iMarker_TurboNonUniform];
+}
+
+su2double CConfig::GetTurboNonUniform_Omega(string val_marker) {
+  unsigned short iMarker_TurboNonUniform;
+  for (iMarker_TurboNonUniform = 0; iMarker_TurboNonUniform < nMarker_TurboNonUniform; iMarker_TurboNonUniform++)
+    if (Marker_TurboNonUniform[iMarker_TurboNonUniform] == val_marker) break;
+  return TurboNonUniform_Omega[iMarker_TurboNonUniform];
+}
 
 su2double CConfig::GetNRBC_Var1(string val_marker) {
   unsigned short iMarker_NRBC;

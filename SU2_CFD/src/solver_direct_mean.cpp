@@ -836,6 +836,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   if (config->GetBoolNonUniformBC())
   	SetBC_NonUniform(geometry, config);
 
+  if (config->GetBoolTurboNonUniformBC())
+  	SetBC_NonUniform(geometry, config);
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
 
   if (config->GetFixed_CL_Mode())
@@ -9111,7 +9113,6 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
   delete [] Velocity_b;
   delete [] Velocity_i;
   delete [] FlowDirMix;
-  delete [] Flow_Dir;
 
   delete [] S_boundary;
   delete [] Lambda_i;
@@ -9708,6 +9709,7 @@ void CEulerSolver::BC_TurboNonUniform(CGeometry *geometry, CSolver **solver_cont
   su2double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **DubDu, *dw, *u_e, *u_i, *u_b;
   su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
+  su2double Physical_t, Physical_dt, Pitch;
 
   unsigned short  iZone     = config->GetiZone();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -9718,6 +9720,7 @@ void CEulerSolver::BC_TurboNonUniform(CGeometry *geometry, CSolver **solver_cont
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
       (config->GetKind_Turb_Model() == SST));
+  bool spectral_method = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
 
   su2double *Normal, *turboNormal, *UnitNormal, *FlowDirMix, FlowDirMixMag, *turboVelocity;
   Normal = new su2double[nDim];
@@ -9744,6 +9747,24 @@ void CEulerSolver::BC_TurboNonUniform(CGeometry *geometry, CSolver **solver_cont
     P_Tensor[iVar] = new su2double[nVar];
     invP_Tensor[iVar] = new su2double[nVar];
   }
+
+  /*--- Calculation of Physical time step for unsteady simulation ---*/
+  if (spectral_method) {
+
+  	/*--- time interval using nTimeInstances ---*/
+  	Physical_dt  = (su2double)config->GetSpectralMethod_Period()/(su2double)(config->GetnTimeInstances());
+
+  	/*--- Non-dimensionalization of time step.  ---*/
+  	Physical_dt /= config->GetTime_Ref();
+  	Physical_t  = config->GetiZone()*Physical_dt;
+  }
+  else {
+  	Physical_dt = (su2double)config->GetDelta_UnstTimeND();
+  	Physical_t  = (config->GetExtIter())*Physical_dt;
+  }
+  if (config->GetUnsteady_Simulation() == 0) Physical_t = 0;
+
+  Pitch = *config->GetPeriodicTranslate(0);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iSpan= 0; iSpan < nSpanWiseSections; iSpan++){

@@ -174,6 +174,7 @@ private:
 	nMarker_Inlet,					/*!< \brief Number of inlet flow markers. */
 	nMarker_Riemann,					/*!< \brief Number of Riemann flow markers. */
 	nMarker_NonUniform,					/*!< \brief Number of NonUniform flow markers. */
+	nMarker_TurboNonUniform,  /*!< \brief Number of NonUniform flow markers. */
 	nMarker_NRBC,					/*!< \brief Number of NRBC flow markers. */
 	nRelaxFactor_NRBC,    /*!< \brief Number of relaxation factors for NRBC markers. */
 	nMarker_Supersonic_Inlet,					/*!< \brief Number of supersonic inlet flow markers. */
@@ -214,7 +215,8 @@ private:
 	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
 	*Marker_Riemann,					/*!< \brief Riemann markers. */
-	*Marker_NonUniform,					/*!< \brief Riemann markers. */
+	*Marker_NonUniform,  /*!< \brief NonUniformBC markers. */
+	*Marker_TurboNonUniform,  /*!< \brief TurboNonUniformBC markers. */
 	*Marker_NRBC,					/*!< \brief NRBC markers. */
 	*Marker_Supersonic_Inlet,					/*!< \brief Supersonic inlet flow markers. */
   *Marker_Supersonic_Outlet,					/*!< \brief Supersonic outlet flow markers. */
@@ -241,6 +243,7 @@ private:
 	su2double **Riemann_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
 	su2double *NonUniform_Var1, *NonUniform_Var2;    /*!< \brief Specified values for Riemann boundary. */
 	su2double **NonUniform_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
+	su2double *TurboNonUniform_Omega;    /*!< \brief Specified values for Omega in TurboNonUniform boundary. */
 	su2double *NRBC_Var1, *NRBC_Var2, *RelaxFactorAverage, *RelaxFactorFourier;    /*!< \brief Specified values for NRBC boundary. */
 	su2double **NRBC_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for NRBC boundaries. */
 	su2double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
@@ -405,7 +408,8 @@ private:
   Kind_Struct_Solver;		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
-	Kind_Inlet, *Kind_Data_Riemann, *Kind_Data_NonUniform, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
+	Kind_Inlet, *Kind_Data_Riemann,
+	*Kind_Data_NonUniform, *Kind_Data_TurboNonUniform, *Kind_Data_NRBC;           /*!< \brief Kind of inlet boundary treatment. */
 	su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
 	su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
 	unsigned long Linear_Solver_Iter;		/*!< \brief Max iterations of the linear solver for the implicit formulation. */
@@ -974,6 +978,15 @@ private:
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionNonUniform<Tenum>(name, nMarker_NonUniform, Marker_NonUniform, option_field, enum_map, var1, var2, FlowDir);
+    option_map.insert(pair<string, COptionBase *>(name, val));
+  }
+
+  template <class Tenum>
+  void addTurboNonUniformOption(const string name, unsigned short & nMarker_TurboNonUniform, string * & Marker_TurboNonUniform, unsigned short* & option_field, const map<string, Tenum> & enum_map,
+  		  su2double* & Omega) {
+    assert(option_map.find(name) == option_map.end());
+    all_options.insert(pair<string, bool>(name, true));
+    COptionBase* val = new COptionTurboNonUniform<Tenum>(name, nMarker_TurboNonUniform, Marker_TurboNonUniform, option_field, enum_map, Omega);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -3651,6 +3664,12 @@ public:
 	bool GetBoolNonUniformBC(void);
 
 	/*!
+   * \brief Verify if there is TurboNonUniform Boundary Condition option specified from config file.
+	 * \return boolean.
+	 */
+	bool GetBoolTurboNonUniformBC(void);
+
+	/*!
 	 * \brief number Turbomachinery performance option specified from config file.
 	 * \return number of bound.
 	 */
@@ -5093,6 +5112,20 @@ public:
 	 * \return Kind data
 	 */
 	unsigned short GetKind_Data_NonUniform(string val_marker);
+
+	/*!
+	 * \brief Get the Omega at TurboNonUniform boundary.
+	 * \param[in] val_marker - Index corresponding to the TurboNonUniform boundary.
+	 * \return The Omega
+	 */
+	su2double GetTurboNonUniform_Omega(string val_marker);
+
+	/*!
+	 * \brief Get Kind Data of TurboNonUniform boundary.
+	 * \param[in] val_marker - Index corresponding to the TurboNonUniform boundary.
+	 * \return Kind data
+	 */
+	unsigned short GetKind_Data_TurboNonUniform(string val_marker);
 
 	/*!
 	 * \brief Get the var 1 at NRBC boundary.

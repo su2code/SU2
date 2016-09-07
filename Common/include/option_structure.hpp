@@ -763,6 +763,7 @@ enum BC_TYPE {
   LOAD_SINE_BOUNDARY = 36,		/*!< \brief Sine-waveBoundary Load definition. */
   NRBC_BOUNDARY= 37,   /*!< \brief NRBC Boundary definition. */
   NONUNIFORM_BOUNDARY= 38,   /*!< \brief NonUniform Boundary definition. */
+  TURBO_NONUNIFORM_BOUNDARY= 39,   /*!< \brief NonUniform Boundary definition. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 
@@ -841,6 +842,9 @@ static const map<string, RIEMANN_TYPE> NonUniform_Map = CCreateMap<string, RIEMA
 ("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
 ("STATIC_PRESSURE", STATIC_PRESSURE);
 
+static const map<string, RIEMANN_TYPE> TurboNonUniform_Map = CCreateMap<string, RIEMANN_TYPE>
+("TOTAL_CONDITIONS_PT", TOTAL_CONDITIONS_PT)
+("STATIC_PRESSURE", STATIC_PRESSURE);
 
 /*!
  * \brief types of mixing process for averaging quantities at the boundaries.
@@ -2744,7 +2748,7 @@ public:
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
       this->size = 0;
       this->marker = NULL;
-      this->field = 0;
+      this->field = NULL;
       this->omega = NULL;
       return "";
     }
@@ -2754,6 +2758,7 @@ public:
       newstring.append(this->name);
       newstring.append(": must have a number of entries equal to 3");
       this->size = 0;
+      this->field = NULL;
       this->marker = NULL;
       this->omega = NULL;
       return newstring;
@@ -2761,6 +2766,7 @@ public:
 
     unsigned short nVals = totalVals / 3;
     this->size = nVals;
+    this->field = new unsigned short[nVals];
     this->marker = new string[nVals];
     this->omega = new su2double[nVals];
 
