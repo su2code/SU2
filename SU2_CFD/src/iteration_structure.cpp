@@ -943,11 +943,19 @@ void CWaveIteration::Iterate(COutput *output,
   
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   
   /*--- Set the value of the internal iteration ---*/
-  IntIter = ExtIter;
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
+
+  ExtIter = config_container[val_iZone]->GetExtIter();
+
+  /* --- Setting up iteration values depending on if this is a 
+  steady or an unsteady simulaiton */
+
+  if ( !unsteady ) 
+	IntIter = ExtIter;
+  else
+	IntIter = config_container[val_iZone]->GetIntIter();
   
   /*--- Wave equations ---*/
   config_container[val_iZone]->SetGlobalParam(WAVE_EQUATION, RUNTIME_WAVE_SYS, ExtIter);
@@ -955,17 +963,11 @@ void CWaveIteration::Iterate(COutput *output,
                                                                    config_container, RUNTIME_WAVE_SYS, IntIter, val_iZone);
   
   /*--- Dual time stepping strategy ---*/
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-    
-    for (IntIter = 1; IntIter < config_container[val_iZone]->GetUnst_nIntIter(); IntIter++) {
+  if (unsteady) {
       output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
       config_container[val_iZone]->SetIntIter(IntIter);
       integration_container[val_iZone][WAVE_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                        config_container, RUNTIME_WAVE_SYS, IntIter, val_iZone);
-      if (integration_container[val_iZone][WAVE_SOL]->GetConvergence()) break;
-    }
-    
   }
   
 }
@@ -1029,11 +1031,19 @@ void CHeatIteration::Iterate(COutput *output,
   
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   
   /*--- Set the value of the internal iteration ---*/
-  IntIter = ExtIter;
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
+
+  ExtIter = config_container[val_iZone]->GetExtIter();
+
+  /* --- Setting up iteration values depending on if this is a 
+  steady or an unsteady simulaiton */
+
+  if ( !unsteady ) 
+	IntIter = ExtIter;
+  else
+	IntIter = config_container[val_iZone]->GetIntIter();
   
   /*--- Heat equation ---*/
   config_container[val_iZone]->SetGlobalParam(HEAT_EQUATION, RUNTIME_HEAT_SYS, ExtIter);
@@ -1041,16 +1051,11 @@ void CHeatIteration::Iterate(COutput *output,
                                                                    config_container, RUNTIME_HEAT_SYS, IntIter, val_iZone);
   
   /*--- Dual time stepping strategy ---*/
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-    
-    for (IntIter = 1; IntIter < config_container[val_iZone]->GetUnst_nIntIter(); IntIter++) {
+  if (unsteady) {
       output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
       config_container[val_iZone]->SetIntIter(IntIter);
       integration_container[val_iZone][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                        config_container, RUNTIME_HEAT_SYS, IntIter, val_iZone);
-      if (integration_container[val_iZone][HEAT_SOL]->GetConvergence()) break;
-    }
   }
 }
 
@@ -1574,21 +1579,33 @@ void CAdjMeanFlowIteration::Iterate(COutput *output,
   
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   
   /*--- Set the value of the internal iteration ---*/
-  
-  IntIter = ExtIter;
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-    IntIter = 0;
-  }
-  
-  if (config_container[val_iZone]->GetKind_Solver() == ADJ_EULER)
-    config_container[val_iZone]->SetGlobalParam(ADJ_EULER, RUNTIME_ADJFLOW_SYS, ExtIter);
-  if (config_container[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES)
-    config_container[val_iZone]->SetGlobalParam(ADJ_NAVIER_STOKES, RUNTIME_ADJFLOW_SYS, ExtIter);
-  if (config_container[val_iZone]->GetKind_Solver() == ADJ_RANS)
-    config_container[val_iZone]->SetGlobalParam(ADJ_RANS, RUNTIME_ADJFLOW_SYS, ExtIter);
+
+	ExtIter = config_container[val_iZone]->GetExtIter();
+
+	/* --- Setting up iteration values depending on if this is a 
+	steady or an unsteady simulaiton */
+
+	if ( !unsteady ) 
+		IntIter = ExtIter;
+	else
+		IntIter = config_container[val_iZone]->GetIntIter();
+
+	/*--- Update global parameters ---*/
+
+	switch( config_container[val_iZone]->GetKind_Solver() ) {
+
+		case EULER: case DISC_ADJ_EULER:
+									config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter); break;
+
+		case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
+									config_container[val_iZone]->SetGlobalParam(NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter); break;
+									
+		case RANS: case DISC_ADJ_RANS:
+									config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_FLOW_SYS, ExtIter); break;			    
+	}
   
   /*--- Iteration of the flow adjoint problem ---*/
   
@@ -1607,32 +1624,9 @@ void CAdjMeanFlowIteration::Iterate(COutput *output,
     
   }
   
-  /*--- Dual time stepping strategy ---*/
-  
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-    
-    for (IntIter = 1; IntIter < config_container[val_iZone]->GetUnst_nIntIter(); IntIter++) {
-      
-      /*--- Write the convergence history (only screen output) ---*/
-      
-      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
-      
-      /*--- Set the value of the internal iteration ---*/
-      
-      config_container[val_iZone]->SetIntIter(IntIter);
-      
-      /*--- All zones must be advanced and coupled with each pseudo timestep ---*/
-      
-      integration_container[val_iZone][ADJFLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                         config_container, RUNTIME_ADJFLOW_SYS, IntIter, val_iZone);
-      
-      /*--- Check to see if the convergence criteria has been met ---*/
-      
-      if (integration_container[val_iZone][ADJFLOW_SOL]->GetConvergence()) break;
-    }
-    
-  }
+  if ( unsteady ) 
+	/*--- Write the convergence history (only screen output) ---*/
+	output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone); 
   
 }
 void CAdjMeanFlowIteration::Update(COutput *output,
@@ -1859,15 +1853,6 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
   bool dual_time_2nd = (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   bool dual_time = (dual_time_1st || dual_time_2nd);
 
-
-  config_container[val_iZone]->SetIntIter(IntIter);
-
-  if(dual_time)
-    nIntIter = config_container[val_iZone]->GetUnst_nIntIter();
-
-
-  for(IntIter=0; IntIter< nIntIter; IntIter++) {
-
     /*--- Set the internal iteration ---*/
 
     config_container[val_iZone]->SetIntIter(IntIter);
@@ -1902,16 +1887,10 @@ void CDiscAdjMeanFlowIteration::Iterate(COutput *output,
     integration_container[val_iZone][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[val_iZone][MESH_0],config_container[val_iZone],
                                                                           IntIter,log10(solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
 
-    if(integration_container[val_iZone][ADJFLOW_SOL]->GetConvergence()) {
-      break;
-    }
-
     /*--- Write the convergence history (only screen output) ---*/
 
     if(dual_time && (IntIter != nIntIter-1))
       output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
-
-  }
 
 
   if (dual_time) {
