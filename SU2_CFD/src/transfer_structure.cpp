@@ -850,10 +850,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
         Marker_Target = -1;
       }
     }
-    /*
-    if(Marker_Target == -1 || Marker_Donor == -1)
-		continue;
-        */
+
     Buffer_Send_nVertexDonor[0] = nLocalVertexDonor;							   // Retrieve total number of vertices on Donor marker
     if (rank == MASTER_NODE) Buffer_Recv_nVertexDonor = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
     
@@ -984,8 +981,19 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
     
-    if(Marker_Target == -1 || Marker_Donor == -1)
+    if(Marker_Target == -1 || Marker_Donor == -1){
+		delete [] Buffer_Send_DonorVariables;
+		delete [] Buffer_Send_DonorIndices;
+		delete [] Buffer_Bcast_Variables;
+		delete [] Buffer_Bcast_Indices;
+
+		if (rank == MASTER_NODE) {
+			delete [] Buffer_Recv_nVertexDonor;
+			delete [] Buffer_Recv_DonorVariables;
+			delete [] Buffer_Recv_DonorIndices;
+		}
 		continue;
+	}
         
     /*--- For the target marker we are studying ---*/
     if (Marker_Target >= 0){

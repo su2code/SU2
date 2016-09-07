@@ -1718,7 +1718,7 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 										}
 									}
 									
-									if( check == 0 ){
+									if( check == 0 && ToVisit != NULL){
 										for( jj = 0; jj < nToVisit; jj++ )
 											if( donor_iPoint == ToVisit[jj] ){
 													check = 1; break;
@@ -1833,11 +1833,12 @@ void CSlidingmesh::Set_TransferCoeff(CConfig **config){
 										
 						delete [] tmpVect;				
 
-						nAlreadyVisited += nToVisit;		
+						nAlreadyVisited += nToVisit;	
+						
+						delete [] ToVisit;	
 					}
 				
 					delete [] alreadyVisitedDonor;
-					delete [] ToVisit;
 					
 				// }
 
