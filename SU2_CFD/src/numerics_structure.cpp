@@ -148,21 +148,21 @@ CNumerics::~CNumerics(void) {
 	// visc
   if (Proj_Flux_Tensor!=NULL) delete [] Proj_Flux_Tensor;
 
-  if (Flux_Tensor!=NULL){
+  if (Flux_Tensor!=NULL) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       delete [] Flux_Tensor[iVar];
     }
     delete [] Flux_Tensor;
   }
 
-  if (tau != NULL){
+  if (tau != NULL) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       delete [] tau[iDim];
     }
     delete [] tau;
   }
 
-  if (delta != NULL){
+  if (delta != NULL) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       delete [] delta[iDim];
     }
