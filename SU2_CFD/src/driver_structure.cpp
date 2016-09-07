@@ -3159,9 +3159,20 @@ void CMultiZoneDriver::Run() {
 	/*--- Run a single iteration of a multi-zone problem by looping over all
 	zones and executing the iterations. Note that data transers between zones
 	and other intermediate procedures may be required. ---*/
-
+if(!unsteady)
 	/*--- Zone preprocessing ---*/
-
+  for (iZone = 0; iZone < nZone; iZone++) {
+    
+    iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
+                                           solver_container, numerics_container, config_container,
+                                           surface_movement, grid_movement, FFDBox, iZone);
+    
+    iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
+                                        solver_container, numerics_container, config_container,
+                                        surface_movement, grid_movement, FFDBox, iZone);
+    
+	}
+else{
 	for (iZone = 0; iZone < nZone; iZone++)
 		iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
 
@@ -3215,7 +3226,7 @@ void CMultiZoneDriver::Run() {
 
 		if (checkConvergence == nZone) break;
 	}
-
+}
 
 }
 
