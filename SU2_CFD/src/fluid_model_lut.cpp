@@ -231,7 +231,7 @@ CLookUpTable::CLookUpTable(CConfig *config, bool dimensional) :
 	LUT_Debug_Mode = false;
 	rank = MASTER_NODE;
 	CurrentZone = 1;
-	nInterpPoints = 9;
+	nInterpPoints = 6;
 	CurrentPoints.resize(nInterpPoints, 0);
 	LUT_Debug_Mode = config->GetLUT_Debug_Mode();
 	Interpolation_Matrix.resize(nInterpPoints,
@@ -786,9 +786,9 @@ vector<su2double> CLookUpTable::Evaluate_Interpolation_Vector(su2double x,
 
 	interpolation_vector[4] = x * x;
 	interpolation_vector[5] = y * y;
-	interpolation_vector[6] = log(y);
-	interpolation_vector[7] = log(x);
-	interpolation_vector[8] = log(x + y);
+//	interpolation_vector[6] = log(y);
+//	interpolation_vector[7] = log(x);
+//	interpolation_vector[8] = log(x + y);
 
 //	interpolation_vector[8] = exp(x);
 //	interpolation_vector[9] = exp(y);
