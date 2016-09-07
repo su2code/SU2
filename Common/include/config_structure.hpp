@@ -162,7 +162,7 @@ private:
 	nMarker_MixBound,				/*!< \brief Number of mixing boundary markers. */
 	nMarker_TurboPerf,				/*!< \brief Number of mixing boundary markers. */
 	nMarker_NearFieldBound,				/*!< \brief Number of near field boundary markers. */
-  nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet,
+  nMarker_ActDiskInlet, nMarker_ActDiskOutlet,
 	nMarker_InterfaceBound,				/*!< \brief Number of interface boundary markers. */
 	nMarker_Fluid_InterfaceBound,				/*!< \brief Number of fluid interface markers. */
 	nMarker_Dirichlet,				/*!< \brief Number of interface boundary markers. */
@@ -204,8 +204,8 @@ private:
 	*Marker_NearFieldBound,				/*!< \brief Near Field boundaries markers. */
 	*Marker_InterfaceBound,				/*!< \brief Interface boundaries markers. */
 	*Marker_Fluid_InterfaceBound,				/*!< \brief Fluid interface markers. */
-  *Marker_ActDisk_Inlet,
-  *Marker_ActDisk_Outlet,
+  *Marker_ActDiskInlet,
+  *Marker_ActDiskOutlet,
 	*Marker_Dirichlet,				/*!< \brief Interface boundaries markers. */
 	*Marker_Inlet,					/*!< \brief Inlet flow markers. */
 	*Marker_Riemann,					/*!< \brief Riemann markers. */
@@ -981,7 +981,7 @@ private:
   }
 
   void addMixingPlaneOption(const string & name, unsigned short & nMarker_MixBound,
-                    string* & Marker_MixBound, string* & Marker_MixDonor){
+                    string* & Marker_MixBound, string* & Marker_MixDonor) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionMixingPlane(name, nMarker_MixBound, Marker_MixBound, Marker_MixDonor);
@@ -989,21 +989,21 @@ private:
   }
   template <class Tenum>
   void addTurboPerfOption(const string & name, unsigned short & nMarker_TurboPerf,
-                    string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut,  unsigned short* & Kind_TurboPerformance, const map<string, Tenum> & TurboPerformance_Map){
+                    string* & Marker_TurboBoundIn, string* & Marker_TurboBoundOut,  unsigned short* & Kind_TurboPerformance, const map<string, Tenum> & TurboPerformance_Map) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionTurboPerformance<Tenum>(name, nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut, Kind_TurboPerformance, TurboPerformance_Map );
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
-  void addActuatorDiskOption(const string & name, unsigned short & nMarker_ActDisk_Inlet, unsigned short & nMarker_ActDisk_Outlet,
-                             string* & Marker_ActDisk_Inlet, string* & Marker_ActDisk_Outlet,
+  void addActuatorDiskOption(const string & name, unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet,
+                             string* & Marker_ActDiskInlet, string* & Marker_ActDiskOutlet,
                              su2double** & ActDisk_Origin, su2double* & ActDisk_RootRadius, su2double* & ActDisk_TipRadius,
                              su2double* & ActDisk_PressJump, su2double* & ActDisk_TempJump, su2double* & ActDisk_Omega,
                              unsigned short* & ActDisk_Distribution) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDisk_Inlet, nMarker_ActDisk_Outlet, Marker_ActDisk_Inlet, Marker_ActDisk_Outlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega, ActDisk_Distribution);
+    COptionBase* val = new COptionActuatorDisk(name, nMarker_ActDiskInlet, nMarker_ActDiskOutlet, Marker_ActDiskInlet, Marker_ActDiskOutlet, ActDisk_Origin, ActDisk_RootRadius, ActDisk_TipRadius, ActDisk_PressJump, ActDisk_TempJump, ActDisk_Omega, ActDisk_Distribution);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -2156,13 +2156,13 @@ public:
 	 * \brief Get the total number of boundary markers.
 	 * \return Total number of boundary markers.
 	 */
-	unsigned short GetnMarker_ActDisk_Inlet(void);
+	unsigned short GetnMarker_ActDiskInlet(void);
 
   /*!
 	 * \brief Get the total number of boundary markers.
 	 * \return Total number of boundary markers.
 	 */
-	unsigned short GetnMarker_ActDisk_Outlet(void);
+	unsigned short GetnMarker_ActDiskOutlet(void);
 
   /*!
    * \brief Get the total number of 1D output markers.
@@ -2410,7 +2410,7 @@ public:
    * \return Value of the index that is in the geometry file for the surface that
    *         has the marker <i>val_marker</i>.
    */
-  string GetMarker_ActDisk_Inlet(unsigned short val_marker);
+  string GetMarker_ActDiskInlet_TagBound(unsigned short val_marker);
 
   /*!
    * \brief Get the index of the surface defined in the geometry file.
@@ -2418,7 +2418,7 @@ public:
    * \return Value of the index that is in the geometry file for the surface that
    *         has the marker <i>val_marker</i>.
    */
-  string GetMarker_ActDisk_Outlet(unsigned short val_marker);
+  string GetMarker_ActDiskOutlet_TagBound(unsigned short val_marker);
   
 	/*!
 	 * \brief Get the index of the surface defined in the geometry file.
@@ -2426,7 +2426,7 @@ public:
 	 * \return Value of the index that is in the geometry file for the surface that
 	 *         has the marker <i>val_marker</i>.
 	 */
-	string GetMarker_EngineInflow(unsigned short val_marker);
+	string GetMarker_EngineInflow_TagBound(unsigned short val_marker);
   
   /*!
    * \brief Get the index of the surface defined in the geometry file.
@@ -2434,7 +2434,7 @@ public:
    * \return Value of the index that is in the geometry file for the surface that
    *         has the marker <i>val_marker</i>.
    */
-  string GetMarker_EngineBleed(unsigned short val_marker);
+  string GetMarker_EngineBleed_TagBound(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the index of the surface defined in the geometry file.
@@ -2442,7 +2442,7 @@ public:
 	 * \return Value of the index that is in the geometry file for the surface that
 	 *         has the marker <i>val_marker</i>.
 	 */
-	string GetMarker_EngineExhaust(unsigned short val_marker);
+	string GetMarker_EngineExhaust_TagBound(unsigned short val_marker);
 
   /*!
 	 * \brief Get the name of the surface defined in the geometry file.
@@ -2450,7 +2450,7 @@ public:
 	 * \return Name that is in the geometry file for the surface that
 	 *         has the marker <i>val_marker</i>.
 	 */
-	string GetMarker_Monitoring(unsigned short val_marker);
+	string GetMarker_Monitoring_TagBound(unsigned short val_marker);
 
 	/*!
 	 * \brief Get the tag if the iMarker defined in the geometry file.
@@ -4706,7 +4706,7 @@ public:
 	 * \brief Get Actuator Disk Outlet for boundary <i>val_marker</i> (actuator disk inlet).
 	 * \return Actuator Disk Outlet from the config information for the marker <i>val_marker</i>.
 	 */
-	unsigned short GetMarker_ActDisk_Outlet(string val_marker);
+	unsigned short GetMarker_ActDiskOutlet(string val_marker);
 
   /*!
 	 * \brief Get the internal index for a moving boundary <i>val_marker</i>.
@@ -4720,7 +4720,7 @@ public:
 	 * \return Name that is in the geometry file for the surface that
 	 *         has the marker <i>val_marker</i>.
 	 */
-	string GetMarker_Moving(unsigned short val_marker);
+	string GetMarker_Moving_TagBound(unsigned short val_marker);
 
 	/*!
 	 * \brief Set the total number of SEND_RECEIVE periodic transformations.

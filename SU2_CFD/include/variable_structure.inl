@@ -571,31 +571,31 @@ inline su2double CVariable::GetSolution_Accel_time_n(unsigned short val_var) { r
 
 inline su2double *CVariable::GetSolution_Accel_time_n(void) { return NULL; }
 
-inline void CVariable::SetSolution_Pred(unsigned short val_var, su2double val_solution_pred){  }
+inline void CVariable::SetSolution_Pred(unsigned short val_var, su2double val_solution_pred) {  }
 
-inline void CVariable::SetSolution_Pred(su2double *val_solution_pred){  }
+inline void CVariable::SetSolution_Pred(su2double *val_solution_pred) {  }
 
-inline void CVariable::SetSolution_Pred(void){ }
+inline void CVariable::SetSolution_Pred(void) { }
 
-inline su2double CVariable::GetSolution_Pred(unsigned short val_var){ return 0.0; }
+inline su2double CVariable::GetSolution_Pred(unsigned short val_var) { return 0.0; }
 
-inline su2double *CVariable::GetSolution_Pred(void){ return NULL; }
+inline su2double *CVariable::GetSolution_Pred(void) { return NULL; }
 
-inline void CVariable::SetSolution_Pred_Old(unsigned short val_var, su2double val_solution_pred_old){  }
+inline void CVariable::SetSolution_Pred_Old(unsigned short val_var, su2double val_solution_pred_old) {  }
 
-inline void CVariable::SetSolution_Pred_Old(su2double *val_solution_pred_Old){  }
+inline void CVariable::SetSolution_Pred_Old(su2double *val_solution_pred_Old) {  }
 
-inline void CVariable::SetSolution_Pred_Old(void){ }
+inline void CVariable::SetSolution_Pred_Old(void) { }
 
-inline su2double CVariable::GetSolution_Pred_Old(unsigned short val_var){ return 0.0; }
+inline su2double CVariable::GetSolution_Pred_Old(unsigned short val_var) { return 0.0; }
 
-inline su2double *CVariable::GetSolution_Pred_Old(void){ return NULL; }
+inline su2double *CVariable::GetSolution_Pred_Old(void) { return NULL; }
 
-inline void CVariable::SetPrestretch(unsigned short iVar, su2double val_prestretch){  }
+inline void CVariable::SetPrestretch(unsigned short iVar, su2double val_prestretch) {  }
 
-inline su2double *CVariable::GetPrestretch(void){ return NULL; }
+inline su2double *CVariable::GetPrestretch(void) { return NULL; }
 
-inline su2double CVariable::GetPrestretch(unsigned short iVar){ return 0.0; }
+inline su2double CVariable::GetPrestretch(unsigned short iVar) { return 0.0; }
 
 inline su2double CEulerVariable::GetDensity(void) { return Solution[0]; }
 
@@ -962,19 +962,19 @@ inline void CFEM_ElasVariable::SetSolution_Accel_time_n(su2double *val_solution_
 	for (unsigned short iVar = 0; iVar < nVar; iVar++)	Solution_Accel_time_n[iVar] = val_solution_accel_time_n[iVar];
 }
 
-inline void CFEM_ElasVariable::SetSolution_Pred(unsigned short val_var, su2double val_solution_pred){ Solution_Pred[val_var] = val_solution_pred;  }
+inline void CFEM_ElasVariable::SetSolution_Pred(unsigned short val_var, su2double val_solution_pred) { Solution_Pred[val_var] = val_solution_pred;  }
 
-inline void CFEM_ElasVariable::SetSolution_Pred(su2double *val_solution_pred){ Solution_Pred = val_solution_pred;  }
+inline void CFEM_ElasVariable::SetSolution_Pred(su2double *val_solution_pred) { Solution_Pred = val_solution_pred;  }
 
-inline void CFEM_ElasVariable::SetSolution_Pred(void){
+inline void CFEM_ElasVariable::SetSolution_Pred(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Pred[iVar] = Solution[iVar];
 }
 
-inline void CFEM_ElasVariable::SetSolution_Pred_Old(unsigned short val_var, su2double val_solution_pred_old){ Solution_Pred_Old[val_var] = val_solution_pred_old;  }
+inline void CFEM_ElasVariable::SetSolution_Pred_Old(unsigned short val_var, su2double val_solution_pred_old) { Solution_Pred_Old[val_var] = val_solution_pred_old;  }
 
-inline void CFEM_ElasVariable::SetSolution_Pred_Old(su2double *val_solution_pred_Old){ Solution_Pred_Old = val_solution_pred_Old;  }
+inline void CFEM_ElasVariable::SetSolution_Pred_Old(su2double *val_solution_pred_Old) { Solution_Pred_Old = val_solution_pred_Old;  }
 
-inline void CFEM_ElasVariable::SetSolution_Pred_Old(void){
+inline void CFEM_ElasVariable::SetSolution_Pred_Old(void) {
 	for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Pred_Old[iVar] = Solution_Pred[iVar];
 }
 
@@ -997,23 +997,23 @@ inline su2double *CFEM_ElasVariable::GetSolution_Accel_time_n(void) { return Sol
 
 inline su2double CFEM_ElasVariable::GetSolution_Accel_time_n(unsigned short val_var) { return Solution_Accel_time_n[val_var]; }
 
-inline su2double *CFEM_ElasVariable::GetSolution_Pred(void){ return Solution_Pred; }
+inline su2double *CFEM_ElasVariable::GetSolution_Pred(void) { return Solution_Pred; }
 
-inline su2double CFEM_ElasVariable::GetSolution_Pred(unsigned short val_var){ return Solution_Pred[val_var]; }
+inline su2double CFEM_ElasVariable::GetSolution_Pred(unsigned short val_var) { return Solution_Pred[val_var]; }
 
-inline su2double *CFEM_ElasVariable::GetSolution_Pred_Old(void){ return Solution_Pred_Old; }
+inline su2double *CFEM_ElasVariable::GetSolution_Pred_Old(void) { return Solution_Pred_Old; }
 
-inline su2double CFEM_ElasVariable::GetSolution_Pred_Old(unsigned short val_var){ return Solution_Pred_Old[val_var]; }
+inline su2double CFEM_ElasVariable::GetSolution_Pred_Old(unsigned short val_var) { return Solution_Pred_Old[val_var]; }
 
 inline void CFEM_ElasVariable::SetVonMises_Stress(su2double val_stress) { VonMises_Stress = val_stress; }
 
 inline su2double CFEM_ElasVariable::GetVonMises_Stress(void) { return VonMises_Stress; }
 
-inline void CFEM_ElasVariable::SetPrestretch(unsigned short iVar, su2double val_prestretch){ Prestretch[iVar] = val_prestretch;}
+inline void CFEM_ElasVariable::SetPrestretch(unsigned short iVar, su2double val_prestretch) { Prestretch[iVar] = val_prestretch;}
 
-inline su2double *CFEM_ElasVariable::GetPrestretch(void){ return Prestretch; }
+inline su2double *CFEM_ElasVariable::GetPrestretch(void) { return Prestretch; }
 
-inline su2double CFEM_ElasVariable::GetPrestretch(unsigned short iVar){ return Prestretch[iVar]; }
+inline su2double CFEM_ElasVariable::GetPrestretch(unsigned short iVar) { return Prestretch[iVar]; }
 
 inline void CFEABoundVariable::SetTraction(unsigned short iVar, unsigned short jVar, su2double val_traction) { Traction[iVar][jVar] = val_traction; }
 
@@ -1064,79 +1064,79 @@ inline void CVariable::RegisterSolution(bool input) {
       AD::RegisterOutput(Solution[iVar]);}
 }
 
-inline void CVariable::RegisterSolution_time_n(){
+inline void CVariable::RegisterSolution_time_n() {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     AD::RegisterInput(Solution_time_n[iVar]);
 }
 
-inline void CVariable::RegisterSolution_time_n1(){
+inline void CVariable::RegisterSolution_time_n1() {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     AD::RegisterInput(Solution_time_n1[iVar]);
 }
 
-inline void CVariable::SetAdjointSolution(su2double *adj_sol){
+inline void CVariable::SetAdjointSolution(su2double *adj_sol) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
         SU2_TYPE::SetDerivative(Solution[iVar], SU2_TYPE::GetValue(adj_sol[iVar]));
 }
 
 
-inline void CVariable::GetAdjointSolution(su2double *adj_sol){
-    for (unsigned short iVar = 0; iVar < nVar; iVar++){
+inline void CVariable::GetAdjointSolution(su2double *adj_sol) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution[iVar]);
     }
 }
 
-inline void CVariable::SetAdjointSolution_time_n(su2double *adj_sol){
+inline void CVariable::SetAdjointSolution_time_n(su2double *adj_sol) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
       SU2_TYPE::SetDerivative(Solution_time_n[iVar], SU2_TYPE::GetValue(adj_sol[iVar]));
 }
 
 
-inline void CVariable::GetAdjointSolution_time_n(su2double *adj_sol){
-  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+inline void CVariable::GetAdjointSolution_time_n(su2double *adj_sol) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n[iVar]);
   }
 }
 
-inline void CVariable::SetAdjointSolution_time_n1(su2double *adj_sol){
+inline void CVariable::SetAdjointSolution_time_n1(su2double *adj_sol) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
       SU2_TYPE::SetDerivative(Solution_time_n1[iVar], SU2_TYPE::GetValue(adj_sol[iVar]));
 }
 
 
-inline void CVariable::GetAdjointSolution_time_n1(su2double *adj_sol){
-  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+inline void CVariable::GetAdjointSolution_time_n1(su2double *adj_sol) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
       adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n1[iVar]);
   }
 }
-inline void CVariable::SetDual_Time_Derivative(unsigned short iVar, su2double der){}
+inline void CVariable::SetDual_Time_Derivative(unsigned short iVar, su2double der) {}
 
-inline void CDiscAdjVariable::SetDual_Time_Derivative(unsigned short iVar, su2double der){DualTime_Derivative[iVar] = der;}
+inline void CDiscAdjVariable::SetDual_Time_Derivative(unsigned short iVar, su2double der) {DualTime_Derivative[iVar] = der;}
 
-inline void CVariable::SetDual_Time_Derivative_n(unsigned short iVar, su2double der){}
+inline void CVariable::SetDual_Time_Derivative_n(unsigned short iVar, su2double der) {}
 
-inline void CDiscAdjVariable::SetDual_Time_Derivative_n(unsigned short iVar, su2double der){DualTime_Derivative_n[iVar] = der;}
+inline void CDiscAdjVariable::SetDual_Time_Derivative_n(unsigned short iVar, su2double der) {DualTime_Derivative_n[iVar] = der;}
 
-inline su2double CVariable::GetDual_Time_Derivative(unsigned short iVar){return 0.0;}
+inline su2double CVariable::GetDual_Time_Derivative(unsigned short iVar) {return 0.0;}
 
-inline su2double CDiscAdjVariable::GetDual_Time_Derivative(unsigned short iVar){return DualTime_Derivative[iVar];}
+inline su2double CDiscAdjVariable::GetDual_Time_Derivative(unsigned short iVar) {return DualTime_Derivative[iVar];}
 
-inline su2double CVariable::GetDual_Time_Derivative_n(unsigned short iVar){return 0.0;}
+inline su2double CVariable::GetDual_Time_Derivative_n(unsigned short iVar) {return 0.0;}
 
-inline su2double CDiscAdjVariable::GetDual_Time_Derivative_n(unsigned short iVar){return DualTime_Derivative_n[iVar];}
+inline su2double CDiscAdjVariable::GetDual_Time_Derivative_n(unsigned short iVar) {return DualTime_Derivative_n[iVar];}
 
-inline void CVariable::SetSensitivity(unsigned short iDim, su2double val){}
+inline void CVariable::SetSensitivity(unsigned short iDim, su2double val) {}
 
-inline su2double CVariable::GetSensitivity(unsigned short iDim){ return 0.0; }
+inline su2double CVariable::GetSensitivity(unsigned short iDim) { return 0.0; }
 
-inline void CDiscAdjVariable::SetSensitivity(unsigned short iDim, su2double val){Sensitivity[iDim] = val;}
+inline void CDiscAdjVariable::SetSensitivity(unsigned short iDim, su2double val) {Sensitivity[iDim] = val;}
 
-inline su2double CDiscAdjVariable::GetSensitivity(unsigned short iDim){return Sensitivity[iDim];}
+inline su2double CDiscAdjVariable::GetSensitivity(unsigned short iDim) {return Sensitivity[iDim];}
 
 inline su2double* CDiscAdjVariable::GetSolution_Direct() { return Solution_Direct; }
 
 inline void CDiscAdjVariable::SetSolution_Direct(su2double *val_solution_direct) {
-  for (unsigned short iVar = 0; iVar < nVar; iVar++){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     Solution_Direct[iVar] = val_solution_direct[iVar];
   }
 }

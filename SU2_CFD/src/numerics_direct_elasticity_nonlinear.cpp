@@ -42,7 +42,7 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 	F_Mat = new su2double *[3];
 	b_Mat = new su2double *[3];
 	Stress_Tensor = new su2double *[3];
-	for (iVar = 0; iVar < 3; iVar++){
+	for (iVar = 0; iVar < 3; iVar++) {
 		F_Mat[iVar] = new su2double [3];
 		b_Mat[iVar] = new su2double [3];
 		Stress_Tensor[iVar] = new su2double [3];
@@ -55,11 +55,11 @@ CFEM_NonlinearElasticity::CFEM_NonlinearElasticity(unsigned short val_nDim, unsi
 		KAux_P_ab[iVar] = new su2double[nDim];
 	}
 
-	if (nDim == 2){
+	if (nDim == 2) {
 		currentCoord = new su2double* [4];	/*--- As of now, 4 is the maximum number of nodes for 2D problems ---*/
 		for (iVar = 0; iVar < 4; iVar++) currentCoord[iVar] = new su2double[nDim];
 	}
-	else if (nDim == 3){
+	else if (nDim == 3) {
 		currentCoord = new su2double* [8];	/*--- As of now, 8 is the maximum number of nodes for 3D problems ---*/
 		for (iVar = 0; iVar < 8; iVar++) currentCoord[iVar] = new su2double[nDim];
 	}
@@ -74,23 +74,23 @@ CFEM_NonlinearElasticity::~CFEM_NonlinearElasticity(void) {
 
 	unsigned short iVar;
 
-	for (iVar = 0; iVar < 3; iVar++){
+	for (iVar = 0; iVar < 3; iVar++) {
 		delete [] F_Mat[iVar];
 		delete [] b_Mat[iVar];
 		delete [] Stress_Tensor[iVar];
 	}
 
-	for (iVar = 0; iVar < nDim; iVar++){
+	for (iVar = 0; iVar < nDim; iVar++) {
 		delete [] KAux_P_ab[iVar];
 	}
 
-	if (nDim == 2){
-		for (iVar = 0; iVar < 4; iVar++){
+	if (nDim == 2) {
+		for (iVar = 0; iVar < 4; iVar++) {
 			delete [] currentCoord[iVar];
 		}
 	}
-	else if (nDim == 3){
-		for (iVar = 0; iVar < 8; iVar++){
+	else if (nDim == 3) {
+		for (iVar = 0; iVar < 8; iVar++) {
 			delete [] currentCoord[iVar];
 		}
 	}
@@ -105,7 +105,7 @@ CFEM_NonlinearElasticity::~CFEM_NonlinearElasticity(void) {
 }
 
 
-void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *config){
+void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *config) {
 
 	unsigned short iVar, jVar, kVar;
 	unsigned short iGauss, nGauss;
@@ -124,20 +124,20 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 	if (nDim == 2) bDim = 3;
 	else bDim = 6;
 
-	for (iVar = 0; iVar < bDim; iVar++){
-		for (jVar = 0; jVar < nDim; jVar++){
+	for (iVar = 0; iVar < bDim; iVar++) {
+		for (jVar = 0; jVar < nDim; jVar++) {
 			Ba_Mat[iVar][jVar] = 0.0;
 			Bb_Mat[iVar][jVar] = 0.0;
 		}
 	}
 
-	for (iVar = 0; iVar < 3; iVar++){
-		for (jVar = 0; jVar < 6; jVar++){
+	for (iVar = 0; iVar < 3; iVar++) {
+		for (jVar = 0; jVar < 6; jVar++) {
 			AuxMatrixKc[iVar][jVar] = 0.0;
 		}
 	}
 
-	for (iVar = 0; iVar < 3; iVar++){
+	for (iVar = 0; iVar < 3; iVar++) {
 		AuxMatrixKs[iVar] = 0.0;
 	}
 
@@ -149,15 +149,15 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 
 	/*--- Full integration of the constitutive and stress term ---*/
 
-	for (iGauss = 0; iGauss < nGauss; iGauss++){
+	for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
 		Weight = element->GetWeight(iGauss);
 		Jac_x = element->GetJ_x(iGauss);
 
 		/*--- Initialize the deformation gradient for each Gauss Point ---*/
 
-		for (iVar = 0; iVar < 3; iVar++){
-			for (jVar = 0; jVar < 3; jVar++){
+		for (iVar = 0; iVar < 3; iVar++) {
+			for (jVar = 0; jVar < 3; jVar++) {
 				F_Mat[iVar][jVar] = 0.0;
 				b_Mat[iVar][jVar] = 0.0;
 			}
@@ -166,9 +166,9 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 		/*--- Retrieve the values of the gradients of the shape functions for each node ---*/
 		/*--- This avoids repeated operations ---*/
 
-		for (iNode = 0; iNode < nNode; iNode++){
+		for (iNode = 0; iNode < nNode; iNode++) {
 
-			for (iDim = 0; iDim < nDim; iDim++){
+			for (iDim = 0; iDim < nDim; iDim++) {
 				GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
 				GradNi_Curr_Mat[iNode][iDim] = element->GetGradNi_x(iNode,iGauss,iDim);
 				currentCoord[iNode][iDim] = element->GetCurr_Coord(iNode, iDim);
@@ -176,26 +176,26 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 
 			/*--- Compute the deformation gradient ---*/
 
-			for (iVar = 0; iVar < nDim; iVar++){
-				for (jVar = 0; jVar < nDim; jVar++){
+			for (iVar = 0; iVar < nDim; iVar++) {
+				for (jVar = 0; jVar < nDim; jVar++) {
 					F_Mat[iVar][jVar] += currentCoord[iNode][iVar]*GradNi_Ref_Mat[iNode][jVar];
 				}
 			}
 
 			/*--- This implies plane strain --> Consider the possible implementation for plane stress --*/
-			if (nDim == 2){
+			if (nDim == 2) {
 				F_Mat[2][2] = 1.0;
 			}
 
 		}
 
 		if (nDim == 2) {
-			if (plane_stress){
+			if (plane_stress) {
 				// Compute the value of the term 33 for the deformation gradient
 				Compute_Plane_Stress_Term(element, config);
 				F_Mat[2][2] = f33;
 			}
-			else{
+			else {
 				F_Mat[2][2] = 1.0;
 			}
 		}
@@ -211,9 +211,9 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 
 		/*--- Compute the left Cauchy deformation tensor ---*/
 
-		for (iVar = 0; iVar < 3; iVar++){
-			for (jVar = 0; jVar < 3; jVar++){
-				for (kVar = 0; kVar < 3; kVar++){
+		for (iVar = 0; iVar < 3; iVar++) {
+			for (jVar = 0; jVar < 3; jVar++) {
+				for (kVar = 0; kVar < 3; kVar++) {
 					b_Mat[iVar][jVar] += F_Mat[iVar][kVar]*F_Mat[jVar][kVar];
 				}
 			}
@@ -225,7 +225,7 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 		Compute_Stress_Tensor(element, config);
 
 
-		for (iNode = 0; iNode < nNode; iNode++){
+		for (iNode = 0; iNode < nNode; iNode++) {
 
 			/*--------------------------------------------------------------------------------*/
 			/*---------------------------- NODAL STRESS TERM ---------------------------------*/
@@ -233,9 +233,9 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 		    /*--- Compute the nodal stress term for each gaussian point and for each node, ---*/
 		    /*--- and add it to the element structure to be retrieved from the solver      ---*/
 
-			for (iVar = 0; iVar < nDim; iVar++){
+			for (iVar = 0; iVar < nDim; iVar++) {
 				KAux_t_a[iVar] = 0.0;
-				for (jVar = 0; jVar < nDim; jVar++){
+				for (jVar = 0; jVar < nDim; jVar++) {
 					KAux_t_a[iVar] += Weight * Stress_Tensor[iVar][jVar] * GradNi_Curr_Mat[iNode][jVar] * Jac_x;
 				}
 			}
@@ -246,13 +246,13 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 			/*----------------------- CONSTITUTIVE AND STRESS TERM ---------------------------*/
 			/*--------------------------------------------------------------------------------*/
 
-			if (nDim == 2){
+			if (nDim == 2) {
 				Ba_Mat[0][0] = GradNi_Curr_Mat[iNode][0];
 				Ba_Mat[1][1] = GradNi_Curr_Mat[iNode][1];
 				Ba_Mat[2][0] = GradNi_Curr_Mat[iNode][1];
 				Ba_Mat[2][1] = GradNi_Curr_Mat[iNode][0];
 			}
-			else if (nDim ==3){
+			else if (nDim ==3) {
 				Ba_Mat[0][0] = GradNi_Curr_Mat[iNode][0];
 				Ba_Mat[1][1] = GradNi_Curr_Mat[iNode][1];
 				Ba_Mat[2][2] = GradNi_Curr_Mat[iNode][2];
@@ -266,10 +266,10 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 
 		    /*--- Compute the BT.D Matrix ---*/
 
-			for (iVar = 0; iVar < nDim; iVar++){
-				for (jVar = 0; jVar < bDim; jVar++){
+			for (iVar = 0; iVar < nDim; iVar++) {
+				for (jVar = 0; jVar < bDim; jVar++) {
 					AuxMatrixKc[iVar][jVar] = 0.0;
-					for (kVar = 0; kVar < bDim; kVar++){
+					for (kVar = 0; kVar < bDim; kVar++) {
 						AuxMatrixKc[iVar][jVar] += Ba_Mat[kVar][iVar]*D_Mat[kVar][jVar];
 					}
 				}
@@ -277,22 +277,22 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 
 		    /*--- Compute the BT.D Matrix ---*/
 
-			for (iVar = 0; iVar < nDim; iVar++){
+			for (iVar = 0; iVar < nDim; iVar++) {
 				AuxMatrixKs[iVar] = 0.0;
-				for (jVar = 0; jVar < nDim; jVar++){
+				for (jVar = 0; jVar < nDim; jVar++) {
 					AuxMatrixKs[iVar] += GradNi_Curr_Mat[iNode][jVar]*Stress_Tensor[jVar][iVar]; // DOUBLE CHECK
 				}
 			}
 
 			/*--- Assumming symmetry ---*/
-			for (jNode = iNode; jNode < nNode; jNode++){
-				if (nDim == 2){
+			for (jNode = iNode; jNode < nNode; jNode++) {
+				if (nDim == 2) {
 					Bb_Mat[0][0] = GradNi_Curr_Mat[jNode][0];
 					Bb_Mat[1][1] = GradNi_Curr_Mat[jNode][1];
 					Bb_Mat[2][0] = GradNi_Curr_Mat[jNode][1];
 					Bb_Mat[2][1] = GradNi_Curr_Mat[jNode][0];
 				}
-				else if (nDim ==3){
+				else if (nDim ==3) {
 					Bb_Mat[0][0] = GradNi_Curr_Mat[jNode][0];
 					Bb_Mat[1][1] = GradNi_Curr_Mat[jNode][1];
 					Bb_Mat[2][2] = GradNi_Curr_Mat[jNode][2];
@@ -305,10 +305,10 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 				}
 
 				/*--- KAux_ab is the term for the constitutive part of the tangent matrix ---*/
-				for (iVar = 0; iVar < nDim; iVar++){
-					for (jVar = 0; jVar < nDim; jVar++){
+				for (iVar = 0; iVar < nDim; iVar++) {
+					for (jVar = 0; jVar < nDim; jVar++) {
 						KAux_ab[iVar][jVar] = 0.0;
-						for (kVar = 0; kVar < bDim; kVar++){
+						for (kVar = 0; kVar < bDim; kVar++) {
 							KAux_ab[iVar][jVar] += Weight * AuxMatrixKc[iVar][kVar] * Bb_Mat[kVar][jVar] * Jac_x;
 						}
 					}
@@ -316,14 +316,14 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 
 				/*--- Ks_Aux_ab is the term for the constitutive part of the tangent matrix ---*/
 				Ks_Aux_ab = 0.0;
-				for (iVar = 0; iVar < nDim; iVar++){
+				for (iVar = 0; iVar < nDim; iVar++) {
 					Ks_Aux_ab += Weight * AuxMatrixKs[iVar] * GradNi_Curr_Mat[jNode][iVar] * Jac_x;
 				}
 
 				element->Add_Kab(KAux_ab,iNode, jNode);
 				element->Add_Ks_ab(Ks_Aux_ab,iNode, jNode);
 				/*--- Symmetric terms --*/
-				if (iNode != jNode){
+				if (iNode != jNode) {
 					element->Add_Kab_T(KAux_ab, jNode, iNode);
 					element->Add_Ks_ab(Ks_Aux_ab,jNode, iNode);
 				}
@@ -336,7 +336,7 @@ void CFEM_NonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig
 
 }
 
-void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CConfig *config){
+void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CConfig *config) {
 
 	unsigned short iVar, jVar;
 	unsigned short iGauss, nGauss;
@@ -359,8 +359,8 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
 	nNode = element->GetnNodes();
 
 	/*--- Initialize the Gradient auxiliary Matrix ---*/
-	for (iNode = 0; iNode < nNode; iNode++){
-		for (iDim = 0; iDim < nDim; iDim++){
+	for (iNode = 0; iNode < nNode; iNode++) {
+		for (iDim = 0; iDim < nDim; iDim++) {
 			GradNi_Curr_Mat[iNode][iDim] = 0.0;
 		}
 	}
@@ -372,7 +372,7 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
 	/*-------------------------- INCOMPRESSIBLE TERM ---------------------------------*/
 	/*--------------------------------------------------------------------------------*/
 
-	for (iGauss = 0; iGauss < nGauss; iGauss++){
+	for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
 		Weight = element->GetWeight_P(iGauss);
 		Jac_X = element->GetJ_X_P(iGauss);
@@ -382,8 +382,8 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
 		/*--- This avoids repeated operations ---*/
 
 		/*--- We compute the average gradient ---*/
-		for (iNode = 0; iNode < nNode; iNode++){
-			for (iDim = 0; iDim < nDim; iDim++){
+		for (iNode = 0; iNode < nNode; iNode++) {
+			for (iDim = 0; iDim < nDim; iDim++) {
 				GradNi_Mat_Term = element->GetGradNi_x_P(iNode,iGauss,iDim);
 				GradNi_Curr_Mat[iNode][iDim] += Weight * GradNi_Mat_Term * Jac_x;
 			}
@@ -397,8 +397,8 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
 	if ((Vol_current > 0.0) && (Vol_reference > 0.0)) {
 
 		/*--- It is necessary to divide over the current volume to obtain the averaged gradients ---*/
-		for (iNode = 0; iNode < nNode; iNode++){
-			for (iDim = 0; iDim < nDim; iDim++){
+		for (iNode = 0; iNode < nNode; iNode++) {
+			for (iDim = 0; iDim < nDim; iDim++) {
 				GradNi_Curr_Mat[iNode][iDim] = GradNi_Curr_Mat[iNode][iDim] / Vol_current;
 			}
 		}
@@ -415,13 +415,13 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
 		exit(EXIT_FAILURE);
 	}
 
-	for (iNode = 0; iNode < nNode; iNode++){
+	for (iNode = 0; iNode < nNode; iNode++) {
 
-		for (jNode = 0; jNode < nNode; jNode++){
+		for (jNode = 0; jNode < nNode; jNode++) {
 
 			/*--- KAux_P_ab is the term for the incompressibility part of the tangent matrix ---*/
-			for (iVar = 0; iVar < nDim; iVar++){
-				for (jVar = 0; jVar < nDim; jVar++){
+			for (iVar = 0; iVar < nDim; iVar++) {
+				for (jVar = 0; jVar < nDim; jVar++) {
 					KAux_P_ab[iVar][jVar] = Avg_kappa * Vol_current * GradNi_Curr_Mat[iNode][iVar] * GradNi_Curr_Mat[jNode][jVar];
 				}
 			}
@@ -435,7 +435,7 @@ void CFEM_NonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CC
 }
 
 
-void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfig *config){
+void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfig *config) {
 
 	unsigned short iVar, jVar, kVar;
 	unsigned short iGauss, nGauss;
@@ -452,15 +452,15 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConf
 
 	/*--- Full integration of the nodal stress ---*/
 
-	for (iGauss = 0; iGauss < nGauss; iGauss++){
+	for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
 		Weight = element->GetWeight(iGauss);
 		Jac_x = element->GetJ_x(iGauss);
 
 		/*--- Initialize the deformation gradient for each Gauss Point ---*/
 
-		for (iVar = 0; iVar < 3; iVar++){
-			for (jVar = 0; jVar < 3; jVar++){
+		for (iVar = 0; iVar < 3; iVar++) {
+			for (jVar = 0; jVar < 3; jVar++) {
 				F_Mat[iVar][jVar] = 0.0;
 				b_Mat[iVar][jVar] = 0.0;
 			}
@@ -469,9 +469,9 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConf
 		/*--- Retrieve the values of the gradients of the shape functions for each node ---*/
 		/*--- This avoids repeated operations ---*/
 
-		for (iNode = 0; iNode < nNode; iNode++){
+		for (iNode = 0; iNode < nNode; iNode++) {
 
-			for (iDim = 0; iDim < nDim; iDim++){
+			for (iDim = 0; iDim < nDim; iDim++) {
 				GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
 				GradNi_Curr_Mat[iNode][iDim] = element->GetGradNi_x(iNode,iGauss,iDim);
 				currentCoord[iNode][iDim] = element->GetCurr_Coord(iNode, iDim);
@@ -479,26 +479,26 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConf
 
 			/*--- Compute the deformation gradient ---*/
 
-			for (iVar = 0; iVar < nDim; iVar++){
-				for (jVar = 0; jVar < nDim; jVar++){
+			for (iVar = 0; iVar < nDim; iVar++) {
+				for (jVar = 0; jVar < nDim; jVar++) {
 					F_Mat[iVar][jVar] += currentCoord[iNode][iVar]*GradNi_Ref_Mat[iNode][jVar];
 				}
 			}
 
 			/*--- This implies plane strain --> Consider the possible implementation for plane stress --*/
-			if (nDim == 2){
+			if (nDim == 2) {
 				F_Mat[2][2] = 1.0;
 			}
 
 		}
 
 		if (nDim == 2) {
-			if (plane_stress){
+			if (plane_stress) {
 				// Compute the value of the term 33 for the deformation gradient
 				Compute_Plane_Stress_Term(element, config);
 				F_Mat[2][2] = f33;
 			}
-			else{
+			else {
 				F_Mat[2][2] = 1.0;
 			}
 		}
@@ -514,9 +514,9 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConf
 
 		/*--- Compute the left Cauchy deformation tensor ---*/
 
-		for (iVar = 0; iVar < 3; iVar++){
-			for (jVar = 0; jVar < 3; jVar++){
-				for (kVar = 0; kVar < 3; kVar++){
+		for (iVar = 0; iVar < 3; iVar++) {
+			for (jVar = 0; jVar < 3; jVar++) {
+				for (kVar = 0; kVar < 3; kVar++) {
 					b_Mat[iVar][jVar] += F_Mat[iVar][kVar]*F_Mat[jVar][kVar];
 				}
 			}
@@ -527,14 +527,14 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConf
 		Compute_Stress_Tensor(element, config);
 
 
-		for (iNode = 0; iNode < nNode; iNode++){
+		for (iNode = 0; iNode < nNode; iNode++) {
 
 		    /*--- Compute the nodal stress term for each gaussian point and for each node, ---*/
 		    /*--- and add it to the element structure to be retrieved from the solver      ---*/
 
-			for (iVar = 0; iVar < nDim; iVar++){
+			for (iVar = 0; iVar < nDim; iVar++) {
 				KAux_t_a[iVar] = 0.0;
-				for (jVar = 0; jVar < nDim; jVar++){
+				for (jVar = 0; jVar < nDim; jVar++) {
 					KAux_t_a[iVar] += Weight * Stress_Tensor[iVar][jVar] * GradNi_Curr_Mat[iNode][jVar] * Jac_x;
 				}
 			}
@@ -547,7 +547,7 @@ void CFEM_NonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConf
 
 }
 
-void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConfig *config){
+void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConfig *config) {
 
 	unsigned short iVar, jVar, kVar;
 	unsigned short iGauss, nGauss;
@@ -564,15 +564,15 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, C
 
 	/*--- Computation of the deformation gradient ---*/
 
-	for (iGauss = 0; iGauss < nGauss; iGauss++){
+	for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
 		Weight = element->GetWeight(iGauss);
 		Jac_x = element->GetJ_x(iGauss);
 
 		/*--- Initialize the deformation gradient for each Gauss Point ---*/
 
-		for (iVar = 0; iVar < 3; iVar++){
-			for (jVar = 0; jVar < 3; jVar++){
+		for (iVar = 0; iVar < 3; iVar++) {
+			for (jVar = 0; jVar < 3; jVar++) {
 				F_Mat[iVar][jVar] = 0.0;
 				b_Mat[iVar][jVar] = 0.0;
 			}
@@ -581,9 +581,9 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, C
 		/*--- Retrieve the values of the gradients of the shape functions for each node ---*/
 		/*--- This avoids repeated operations ---*/
 
-		for (iNode = 0; iNode < nNode; iNode++){
+		for (iNode = 0; iNode < nNode; iNode++) {
 
-			for (iDim = 0; iDim < nDim; iDim++){
+			for (iDim = 0; iDim < nDim; iDim++) {
 				GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
 				GradNi_Curr_Mat[iNode][iDim] = element->GetGradNi_x(iNode,iGauss,iDim);
 				currentCoord[iNode][iDim] = element->GetCurr_Coord(iNode, iDim);
@@ -591,26 +591,26 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, C
 
 			/*--- Compute the deformation gradient ---*/
 
-			for (iVar = 0; iVar < nDim; iVar++){
-				for (jVar = 0; jVar < nDim; jVar++){
+			for (iVar = 0; iVar < nDim; iVar++) {
+				for (jVar = 0; jVar < nDim; jVar++) {
 					F_Mat[iVar][jVar] += currentCoord[iNode][iVar]*GradNi_Ref_Mat[iNode][jVar];
 				}
 			}
 
 			/*--- This implies plane strain --> Consider the possible implementation for plane stress --*/
-			if (nDim == 2){
+			if (nDim == 2) {
 				F_Mat[2][2] = 1.0;
 			}
 
 		}
 
 		if (nDim == 2) {
-			if (plane_stress){
+			if (plane_stress) {
 				// Compute the value of the term 33 for the deformation gradient
 				Compute_Plane_Stress_Term(element, config);
 				F_Mat[2][2] = f33;
 			}
-			else{
+			else {
 				F_Mat[2][2] = 1.0;
 			}
 		}
@@ -626,9 +626,9 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, C
 
 		/*--- Compute the left Cauchy deformation tensor ---*/
 
-		for (iVar = 0; iVar < 3; iVar++){
-			for (jVar = 0; jVar < 3; jVar++){
-				for (kVar = 0; kVar < 3; kVar++){
+		for (iVar = 0; iVar < 3; iVar++) {
+			for (jVar = 0; jVar < 3; jVar++) {
+				for (kVar = 0; kVar < 3; kVar++) {
 					b_Mat[iVar][jVar] += F_Mat[iVar][kVar]*F_Mat[jVar][kVar];
 				}
 			}
@@ -638,15 +638,15 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, C
 
 		Compute_Stress_Tensor(element, config);
 
-		for (iNode = 0; iNode < nNode; iNode++){
+		for (iNode = 0; iNode < nNode; iNode++) {
 
 
 		    /*--- Compute the nodal stress term for each gaussian point and for each node, ---*/
 		    /*--- and add it to the element structure to be retrieved from the solver      ---*/
 
-			for (iVar = 0; iVar < nDim; iVar++){
+			for (iVar = 0; iVar < nDim; iVar++) {
 				KAux_t_a[iVar] = 0.0;
-				for (jVar = 0; jVar < nDim; jVar++){
+				for (jVar = 0; jVar < nDim; jVar++) {
 					KAux_t_a[iVar] += Weight * Stress_Tensor[iVar][jVar] * GradNi_Curr_Mat[iNode][jVar] * Jac_x;
 				}
 			}
@@ -658,7 +658,7 @@ void CFEM_NonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, C
 			element->Add_NodalStress(Stress_Tensor[0][0] * element->GetNi_Extrap(iNode, iGauss), iNode, 0);
 			element->Add_NodalStress(Stress_Tensor[1][1] * element->GetNi_Extrap(iNode, iGauss), iNode, 1);
 			element->Add_NodalStress(Stress_Tensor[0][1] * element->GetNi_Extrap(iNode, iGauss), iNode, 2);
-			if (nDim == 3){
+			if (nDim == 3) {
 				element->Add_NodalStress(Stress_Tensor[2][2] * element->GetNi_Extrap(iNode, iGauss), iNode, 3);
 				element->Add_NodalStress(Stress_Tensor[0][2] * element->GetNi_Extrap(iNode, iGauss), iNode, 4);
 				element->Add_NodalStress(Stress_Tensor[1][2] * element->GetNi_Extrap(iNode, iGauss), iNode, 5);
@@ -704,7 +704,7 @@ void CFEM_NeoHookean_Comp::Compute_Plane_Stress_Term(CElement *element, CConfig 
 	// f(f33)  = mu*f33^2 + lambda*ln(f33) + (lambda*ln(j_red)-mu) = 0
 	// f'(f33) = 2*mu*f33 + lambda/f33
 
-	for (iNR = 0; iNR < nNR; iNR++){
+	for (iNR = 0; iNR < nNR; iNR++) {
 		fx  = Mu*pow(xk,2.0) + Lambda*log(xk) + cte;
 		fpx = 2*Mu*xk + (Lambda / xk);
 		xkm1 = xk - fx / fpx;
@@ -721,19 +721,19 @@ void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(CElement *element, CConfi
 	su2double Mu_p = 0.0, Lambda_p = 0.0;
 
 	/*--- This can be done in a better way ---*/
-	if (J_F != 0.0){
+	if (J_F != 0.0) {
 		Mu_p = (Mu - Lambda*log(J_F))/J_F;
 		Lambda_p = Lambda/J_F;
 	}
 
 	/*--- Assuming plane strain ---*/
 
-	if (nDim == 2){
+	if (nDim == 2) {
 	    D_Mat[0][0] = Lambda_p + 2.0 * Mu_p;	D_Mat[0][1] = Lambda_p;					D_Mat[0][2] = 0.0;
 	    D_Mat[1][0] = Lambda_p;					D_Mat[1][1] = Lambda_p + 2.0 * Mu_p;	D_Mat[1][2] = 0.0;
 	    D_Mat[2][0] = 0.0;						D_Mat[2][1] = 0.0;						D_Mat[2][2] = Mu_p;
 	}
-	else if (nDim == 3){
+	else if (nDim == 3) {
 	    D_Mat[0][0] = Lambda_p + 2.0 * Mu_p;	D_Mat[0][1] = Lambda_p;					D_Mat[0][2] = Lambda_p;				D_Mat[0][3] = 0.0;	D_Mat[0][4] = 0.0;	D_Mat[0][5] = 0.0;
 	    D_Mat[1][0] = Lambda_p;					D_Mat[1][1] = Lambda_p + 2.0 * Mu_p;	D_Mat[1][2] = Lambda_p;				D_Mat[1][3] = 0.0;	D_Mat[1][4] = 0.0;	D_Mat[1][5] = 0.0;
 	    D_Mat[2][0] = Lambda_p;					D_Mat[2][1] = Lambda_p;					D_Mat[2][2] = Lambda_p + 2.0 * Mu_p;	D_Mat[2][3] = 0.0;	D_Mat[2][4] = 0.0;	D_Mat[2][5] = 0.0;
@@ -751,13 +751,13 @@ void CFEM_NeoHookean_Comp::Compute_Stress_Tensor(CElement *element, CConfig *con
 	su2double dij = 0.0;
 
 	/*--- This can be done in a better way ---*/
-	if (J_F != 0.0){
+	if (J_F != 0.0) {
 		Mu_J = Mu/J_F;
 		Lambda_J = Lambda/J_F;
 	}
 
-	for (iVar = 0; iVar < 3; iVar++){
-		for (jVar = 0; jVar < 3; jVar++){
+	for (iVar = 0; iVar < 3; iVar++) {
+		for (jVar = 0; jVar < 3; jVar++) {
 			if (iVar == jVar) dij = 1.0;
 			else if (iVar != jVar) dij = 0.0;
 			Stress_Tensor[iVar][jVar] = Mu_J * (b_Mat[iVar][jVar] - dij) + Lambda_J * log(J_F) * dij;
@@ -805,7 +805,7 @@ void CFEM_NeoHookean_Incomp::Compute_Constitutive_Matrix(CElement *element, CCon
 	su2double Ib = 0.0, Jft;
 
 	/*--- First invariant of b -> Ib = tr(b) ---*/
-	for (iVar = 0; iVar < 3; iVar++){
+	for (iVar = 0; iVar < 3; iVar++) {
 		Ib += b_Mat[iVar][iVar];
 	}
 
@@ -816,7 +816,7 @@ void CFEM_NeoHookean_Incomp::Compute_Constitutive_Matrix(CElement *element, CCon
 	/*--- J^(-5/3) ---*/
 	Jft = pow(J_F, -1.666666666666667);
 
-	if (nDim == 2){
+	if (nDim == 2) {
 
 		/*--- Diagonal terms ---*/
 		D_Mat[0][0] = 2.0 * Mu * Jft * ((4.0 / 9.0) * Ib - (2.0 / 3.0) * b_Mat[0][0]) - el_P;
@@ -833,7 +833,7 @@ void CFEM_NeoHookean_Incomp::Compute_Constitutive_Matrix(CElement *element, CCon
 		D_Mat[2][0] = 0.0;
 
 	}
-	else if (nDim == 3){
+	else if (nDim == 3) {
 
 		/*--- Diagonal terms ---*/
 		D_Mat[0][0] = 2.0 * Mu * Jft * ((4.0 / 9.0) * Ib - (2.0 / 3.0) * b_Mat[0][0]) - el_P;
@@ -902,7 +902,7 @@ void CFEM_NeoHookean_Incomp::Compute_Stress_Tensor(CElement *element, CConfig *c
 	su2double Ib = 0.0, Jft;
 
 	/*--- First invariant of b -> Ib = tr(b) ---*/
-	for (iDim = 0; iDim < 3; iDim++){
+	for (iDim = 0; iDim < 3; iDim++) {
 		Ib += b_Mat[iDim][iDim];
 	}
 
@@ -913,8 +913,8 @@ void CFEM_NeoHookean_Incomp::Compute_Stress_Tensor(CElement *element, CConfig *c
 	/*--- J^(-5/3) ---*/
 	Jft = pow(J_F, -1.666666666666667);
 
-	for (iDim = 0; iDim < 3; iDim++){
-		for (jDim = 0; jDim < 3; jDim++){
+	for (iDim = 0; iDim < 3; iDim++) {
+		for (jDim = 0; jDim < 3; jDim++) {
 			if (iDim == jDim) dij = 1.0;
 			else if (iDim != jDim) dij = 0.0;
 			Stress_Tensor[iDim][jDim] = Mu *  Jft * (b_Mat[iDim][jDim] - ((1.0 / 3.0) * Ib * dij )) + el_P * dij;
