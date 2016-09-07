@@ -5082,7 +5082,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
               T_Total /= config->GetTemperature_Ref();
 
             }else{
-              if(config->GetKind_Data_NRBC(Marker_Tag) == TOTAL_CONDITIONS_PT){
+              if(config->GetKind_Data_NRBC(Marker_Tag) == TOTAL_CONDITIONS_PT || config->GetKind_Data_NRBC(Marker_Tag) == GLOBAL_TOTAL_CONDITIONS_PT ){
                 P_Total  = config->GetNRBC_Var1(Marker_Tag);
                 T_Total  = config->GetNRBC_Var2(Marker_Tag);
                 FlowDir = config->GetNRBC_FlowDir(Marker_Tag);
@@ -5513,10 +5513,10 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
                   massFlowIn              = SpanMassFlow[iMarker][iSpan  ]*nBlades;
                   tangMachIn              = AverageTurboMach[iMarker][iSpan  ][1];
                   normalMachIn            = AverageTurboMach[iMarker][iSpan  ][0];
-                  avgTotTempIn            = AverageTotTemperature[iMarker][iSpan  ];
-                  avgTotPresIn            = AverageTotPressure[iMarker][iSpan  ];
-                  densityIn_Mix           = AverageDensity[iMarker][iSpan  ];
-                  pressureIn_Mix          = AveragePressure[iMarker][iSpan  ];
+                  avgTotTempIn            = AverageTotTemperature[iMarker][iSpan ];
+                  avgTotPresIn            = AverageTotPressure[iMarker][iSpan];
+                  densityIn_Mix           = AverageDensity[iMarker][iSpan];
+                  pressureIn_Mix          = AveragePressure[iMarker][iSpan];
                   normalVelocityIn_Mix    = AverageTurboVelocity[iMarker][iSpan  ][0];
                   tangVelocityIn_Mix      = AverageTurboVelocity[iMarker][iSpan  ][1];
                   if (nDim>3){
@@ -10997,6 +10997,56 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       }
       break;
 
+    case GLOBAL_TOTAL_CONDITIONS_PT:
+
+      /*--- Retrieve the specified total conditions for this inlet. ---*/
+      P_Total  = config->GetNRBC_Var1(Marker_Tag);
+      T_Total  = config->GetNRBC_Var2(Marker_Tag);
+      FlowDir = config->GetNRBC_FlowDir(Marker_Tag);
+      alphaIn_BC = atan(FlowDir[1]/FlowDir[0]);
+      //TODO(Vicente) here a new angle should be define for 3D see how is defined
+      gammaIn_BC = 0;
+      if (nDim == 3){
+        // Review definition of angle
+        gammaIn_BC = FlowDir[2]; //atan(FlowDir[2]/FlowDir[0]);
+      }
+
+      /*--- Non-dim. the inputs---*/
+      P_Total /= config->GetPressure_Ref();
+      T_Total /= config->GetTemperature_Ref();
+
+      /* --- Computes the total state --- */
+      FluidModel->SetTDState_PT(P_Total, T_Total);
+      Enthalpy_BC = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
+      Entropy_BC = FluidModel->GetEntropy();
+
+
+      /* --- Computes the inverse matrix R_c --- */
+      conv_numerics->ComputeResJacobianNRBC(FluidModel, AveragePressure[val_marker][iSpan], AverageDensity[val_marker][iSpan], AverageTurboVelocity[val_marker][iSpan], alphaIn_BC, gammaIn_BC, R_c, R_c_inv);
+      avgVel2 = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AverageVelocity[val_marker][iSpan][iDim]*AverageVelocity[val_marker][iSpan][iDim];
+      if (nDim == 2){
+        R[0] = -(AverageEntropy[val_marker][nSpanWiseSections] - Entropy_BC);
+        R[1] = -(AverageTurboVelocity[val_marker][nSpanWiseSections][1] - tan(alphaIn_BC)*AverageTurboVelocity[val_marker][nSpanWiseSections][0]);
+        R[2] = -(AverageEnthalpy[val_marker][nSpanWiseSections] + 0.5*avgVel2 - Enthalpy_BC);
+      }
+      //TODO(Vicente) implement the 3D residual
+      else{
+        R[0] = -(AverageEntropy[val_marker][nSpanWiseSections] - Entropy_BC);
+        R[1] = -(AverageTurboVelocity[val_marker][nSpanWiseSections][1] - tan(alphaIn_BC)*AverageTurboVelocity[val_marker][nSpanWiseSections][0]);
+        R[2] = -(AverageTurboVelocity[val_marker][nSpanWiseSections][2] - tan(gammaIn_BC)*AverageTurboVelocity[val_marker][nSpanWiseSections][0]);
+        R[3] = -(AverageEnthalpy[val_marker][nSpanWiseSections] + 0.5*avgVel2 - Enthalpy_BC);
+
+      }
+      /* --- Compute the avg component  c_avg = R_c^-1 * R --- */
+      for (iVar = 0; iVar < nVar-1; iVar++){
+        c_avg[iVar] = 0.0;
+        for (jVar = 0; jVar < nVar-1; jVar++){
+          c_avg[iVar] += R_c_inv[iVar][jVar]*R[jVar];
+        }
+      }
+      break;
+
     case MIXING_IN: case MIXING_OUT:
 
       /* --- Compute average jump of primitive at the mixing-plane interface--- */
@@ -11137,7 +11187,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
 
 
 
-      case TOTAL_CONDITIONS_PT: case MIXING_IN:
+      case TOTAL_CONDITIONS_PT: case MIXING_IN:case GLOBAL_TOTAL_CONDITIONS_PT:
 
         if (AvgMach < 1.000){
           Beta_inf= I*complex<su2double>(sqrt(1.0 - AvgMach));
