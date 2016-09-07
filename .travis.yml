@@ -13,7 +13,7 @@ notifications:
   
 branches:
     only:
-        - feaure_diver_prototype
+        - feature_driver_prototype
 
 env:
     global:
