@@ -3351,7 +3351,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
 						if (Pitch[count] <= EPS){
 							nBlades[count]= 1.0;
 						}
-						if (Kind_TurboMachinery[count] == AXIAL)
+						if (Kind_TurboMachinery[count] == AXIAL )
 							Pitch[count] = abs(Periodic_Translation[iMarker_PerBound][1]);
 						count++;
 					}

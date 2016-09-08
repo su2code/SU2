@@ -5076,7 +5076,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
           	massFlowIn							= SpanMassFlow[iMarker][nSpanWiseSections]*nBlades/geometry->GetSpanArea(iMarker, nSpanWiseSections);
 
           //TODO(turbo) better location has to be found for this computation, perhaps in the outputstructure file.
-          if(config->GetBoolNRBC() || config->GetBoolRiemann() || config->GetBoolNonUniformBC() ){
+          if((config->GetBoolNRBC() || config->GetBoolRiemann() || config->GetBoolNonUniformBC() ) && false ){
 
             if(config->GetBoolRiemann()){
               P_Total  = config->GetRiemann_Var1(Marker_Tag);
@@ -5120,7 +5120,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
             totalEnthalpyIn_BC= FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
             entropyIn_BC= FluidModel->GetEntropy();
           }else{
-            cout << " Inlet BC convergence can't be checked "<<endl;
+//            cout << " Inlet BC convergence can't be checked "<<endl;
             entropyIn_BC = 0.0;
             totalEnthalpyIn_BC= 0.0;
             alphaIn_BC =0.0;
@@ -5201,7 +5201,7 @@ void CEulerSolver::TurboPerformance(CConfig *config, CGeometry *geometry){
             }
           }
           else{
-            cout << " OUTLET BC convergence can't be checked "<<endl;
+//            cout << " OUTLET BC convergence can't be checked "<<endl;
             pressureOut_BC = 0.0;
           }
 
@@ -5541,7 +5541,7 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
                   absFlowAngleIn          = atan(AverageTurboVelocity[iMarker][iSpan  ][1]/AverageTurboVelocity[iMarker][iSpan  ][0]);
 
                   //TODO(turbo) better location has to be found for this computation, perhaps in the outputstructure file.
-                  if(config->GetBoolNRBC() || config->GetBoolRiemann() || config->GetBoolNonUniformBC()){
+                  if((config->GetBoolNRBC() || config->GetBoolRiemann() || config->GetBoolNonUniformBC()) && false){
 
                     if(config->GetBoolRiemann()){
                       P_Total  = config->GetRiemann_Var1(Marker_Tag);
@@ -5584,7 +5584,7 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
                     totalEnthalpyIn_BC= FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
                     entropyIn_BC= FluidModel->GetEntropy();
                   }else{
-                    cout << " Inlet BC convergence can't be checked "<<endl;
+//                    cout << " Inlet BC convergence can't be checked "<<endl;
                     entropyIn_BC = 0.0;
                     totalEnthalpyIn_BC= 0.0;
                     alphaIn_BC =0.0;
@@ -5649,7 +5649,7 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
                   absFlowAngleOut          = atan(AverageTurboVelocity[iMarker][iSpan  ][1]/AverageTurboVelocity[iMarker][iSpan  ][0]);
 
 
-                  if(config->GetBoolNRBC() || config->GetBoolRiemann() || config->GetBoolNonUniformBC()){
+                  if((config->GetBoolNRBC() || config->GetBoolRiemann() || config->GetBoolNonUniformBC()) && false){
 
                     if(config->GetBoolRiemann()){
                       pressureOut_BC  = config->GetRiemann_Var1(Marker_Tag);
@@ -5667,7 +5667,7 @@ void CEulerSolver::TurboPerformanceSpanwise(CConfig *config, CGeometry *geometry
                     }
                   }
                   else{
-                    cout << " OUTLET BC convergence can't be checked "<<endl;
+//                    cout << " OUTLET BC convergence can't be checked "<<endl;
                     pressureOut_BC = 0.0;
                   }
 

@@ -3838,8 +3838,8 @@ void CSpectralDriver::SetSpectralMethod(unsigned short iZone) {
     for (kZone = 0; kZone < nZone; kZone++) {
       
       /*--- Flow solution coefficients (parallel) ---*/
-    	sbuf_force[0] = 0.; // solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CLift();
-    	sbuf_force[1] = 0.; // solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+    	sbuf_force[0] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CLift();
+    	sbuf_force[1] = solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
     	sbuf_force[2] = 0.; // solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMx();
     	sbuf_force[3] = 0.; // solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMy();
     	sbuf_force[4] = 0.; // solver_container[kZone][MESH_0][FLOW_SOL]->GetTotal_CMz();
