@@ -10,7 +10,7 @@ notifications:
     email:
         recipients:
             - a.rubino@tudelft.nl
-  	    - sravya@stanford.edu
+            - sravya@stanford.edu
   
 branches:
     only:
