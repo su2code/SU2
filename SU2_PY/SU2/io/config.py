@@ -396,7 +396,7 @@ def read_config(filename):
             if case("AoA")                    : pass
             if case("FIN_DIFF_STEP")          : pass
             if case("CFL_NUMBER")             : pass
-            if case("SPECTRALMETHOD_PERIOD")    : pass
+            if case("SPECTRALMETHOD_PERIOD")  : pass
             if case("WRT_SOL_FREQ")           :
                 data_dict[this_param] = float(this_value)
                 break   
@@ -405,13 +405,19 @@ def read_config(filename):
             if case("NUMBER_PART")            : pass
             if case("AVAILABLE_PROC")         : pass
             if case("EXT_ITER")               : pass
-            if case("TIME_INSTANCES")         : pass
+
             if case("UNST_ADJOINT_ITER")      : pass
             if case("ITER_AVERAGE_OBJ")       : pass
             if case("ADAPT_CYCLES")           :
                 data_dict[this_param] = int(this_value)
                 break                
             
+            if case("TIME_INSTANCES")         :
+                print "NZONES from config.py == "
+                print int(this_value)
+                data_dict[this_param] = int(this_value)
+                data_dict["NZONES"] = int(this_value)
+                break
             
             # unitary design variable definition
             if case("DEFINITION_DV"):

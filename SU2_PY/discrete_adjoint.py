@@ -75,7 +75,6 @@ def discrete_adjoint( filename           ,
                         partitions  = 0    , 
                         compute     = True ,
                         step        = 1e-4  ):
-    
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
@@ -98,10 +97,10 @@ def discrete_adjoint( filename           ,
     
     # Direct Solution
     if compute:
-        info = SU2.run.direct(config) 
+        info = SU2.run.direct(config)
         state.update(info)
         SU2.io.restart2solution(config,state)
-    
+
     # Adjoint Solution
     if compute:
         info = SU2.run.adjoint(config)
@@ -128,7 +127,7 @@ def discrete_design( filename           ,
     
     # TODO: 
     # step
-    
+    print "*****In discrete_design"
     # Config
     config = SU2.io.Config(filename)
     config.NUMBER_PART = partitions
