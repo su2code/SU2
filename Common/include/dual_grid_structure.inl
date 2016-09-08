@@ -410,4 +410,15 @@ inline void CTurboVertex::SetOldVertex(unsigned long val_vertex){OldVertex = val
 
 inline unsigned long CTurboVertex::GetOldVertex(void) { return OldVertex; }
 
+//inline void CTurboVertex::SetPitchCoord(su2double pitchCoord){PitchCoord = pitchCoord;}
+//
+//inline su2double CTurboVertex::GetPitchCoord(void) { return PitchCoord; }
+
+inline void CTurboVertex::SetAngularCoord(su2double angCoord){AngularCoord = angCoord;}
+
+inline su2double CTurboVertex::GetAngularCoord(void) { return AngularCoord; }
+
+inline void CTurboVertex::SetDeltaAngularCoord(su2double angCoord){DeltaAngularCoord = angCoord;}
+
+inline su2double CTurboVertex::GetDeltaAngularCoord(void) { return DeltaAngularCoord; }
 
