@@ -514,6 +514,7 @@ private:
   string *PlaneTag;      /*!< \brief Global index for the plane adaptation (upper, lower). */
 	su2double DualVol_Power;			/*!< \brief Power for the dual volume in the grid adaptation sensor. */
 	su2double *nBlades;						/*!< \brief number of blades for turbomachinery computation. */
+	su2double *Pitch;						/*!< \brief pitch for turbomachinery computation. */
 	unsigned short Analytical_Surface;	/*!< \brief Information about the analytical definition of the surface for grid adaptation. */
 	unsigned short Axis_Orientation;	/*!< \brief Axis orientation. */
 	unsigned short Mesh_FileFormat;	/*!< \brief Mesh input format. */
@@ -3639,6 +3640,13 @@ public:
 	 * \return nBlades.
 	 */
 	su2double GetnBlades(unsigned short val_iZone);
+
+	/*!
+	 * \brief  Turbomachinery pitch.
+	 * \return Pitch.
+	 */
+	su2double GetPitch(unsigned short val_iZone);
+
   /*!
    * \brief Verify if there is any Non Reflecting Boundary Condition option specified from config file.
    * \return boolean.

@@ -352,6 +352,10 @@ void CConfig::SetPointersNull(void) {
   /* Harmonic Balance Frequency pointer */
   Omega_HB = NULL;
     
+  /*--- Initialize some turbomachinery arrays to NULL. ---*/
+  nBlades = NULL;
+  Pitch = NULL;
+
   /*--- Initialize some default arrays to NULL. ---*/
   
   default_vel_inf       = NULL;
@@ -3325,28 +3329,30 @@ void CConfig::SetMarkers(unsigned short val_software) {
   if(GetBoolTurbomachinery()){
 		unsigned short count = 0;
 		nBlades = new su2double[nZone];
-		su2double pitch;
+		Pitch   = new su2double[nZone];
+
 		for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
 			unsigned short iMarker_PerBound;
 			for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++)
 				if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_PerBound[iMarker_PerBound]){
 					if (count == 0){
-						pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
-						nBlades[count]= 2*PI_NUMBER/pitch;
-						if (pitch <= EPS){
+						Pitch[count] = abs(Periodic_RotAngles[iMarker_PerBound][2]);
+						nBlades[count]= 2*PI_NUMBER/Pitch[count];
+						if (Pitch[count] <= EPS){
 							nBlades[count]= 1.0;
 						}
-
-//						cout << nBlades[count] <<" in zone "<<  count<<endl;
+						if (Kind_TurboMachinery[count] == AXIAL)
+							Pitch[count] = abs(Periodic_Translation[iMarker_PerBound][1]);
 						count++;
 					}
-					if((pitch != abs(Periodic_RotAngles[iMarker_PerBound][2])  || (pitch <= EPS) ) && (count < nZone)){
-						pitch = abs(Periodic_RotAngles[iMarker_PerBound][2]);
-						nBlades[count]= 2*PI_NUMBER/pitch;
-						if (pitch <= EPS){
+					if((Pitch[count] != abs(Periodic_RotAngles[iMarker_PerBound][2])  || (Pitch[count] <= EPS) ) && (count < nZone)){
+						Pitch[count] = abs(Periodic_RotAngles[iMarker_PerBound][2]);
+						nBlades[count]= 2*PI_NUMBER/Pitch[count];
+						if (Pitch[count] <= EPS){
 							nBlades[count]= 1.0;
 						}
-//						cout << nBlades[count] <<" in zone "<<  count<<endl;
+						if (Kind_TurboMachinery[count] == AXIAL)
+							Pitch[count] = abs(Periodic_Translation[iMarker_PerBound][1]);
 						count++;
 					}
 				}
@@ -5233,6 +5239,10 @@ CConfig::~CConfig(void) {
   if (FFDTag != NULL) delete [] FFDTag;
   if (nDV_Value != NULL) delete [] nDV_Value;
   if (TagFFDBox != NULL) delete [] TagFFDBox;
+
+  /*--- Delete some turbomachinery arrays . ---*/
+  if (nBlades != NULL)  delete [] nBlades;
+  if (Pitch   != NULL)  delete [] Pitch;
   
   if (Kind_Data_Riemann != NULL) delete [] Kind_Data_Riemann;
   if (Riemann_Var1 != NULL) delete [] Riemann_Var1;

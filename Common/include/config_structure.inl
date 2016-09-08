@@ -749,6 +749,8 @@ inline bool CConfig::GetBoolTurbomachinery(void) { return (nMarker_Turbomachiner
 
 inline su2double CConfig::GetnBlades(unsigned short val_iZone) { return nBlades[val_iZone];}
 
+inline su2double CConfig::GetPitch(unsigned short val_iZone) { return Pitch[val_iZone];}
+
 inline bool CConfig::GetBoolNRBC(void) { return (nMarker_NRBC!=0);}
 
 inline bool CConfig::GetBoolRiemann(void) { return (nMarker_Riemann!=0);}
