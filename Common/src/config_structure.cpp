@@ -2141,7 +2141,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   	if (SpectralMethod_Type == HARMONIC_BALANCE)
   	{
   		if (Omega_HB == NULL) {
-  			Omega_HB = new double[nOmega_HB];
+  			Omega_HB = new su2double[nOmega_HB];
   			for (iZone = 0; iZone < nOmega_HB; iZone++ )
   				Omega_HB[iZone] = 0.0;
   		}else {
