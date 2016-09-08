@@ -38,6 +38,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <string>
 #include <cstring>
 #include <vector>
 #include <stdlib.h>
@@ -140,9 +141,11 @@ private:
 	FreeSurface_Damping_Coeff,  /*!< \brief Damping coefficient of the free surface for a free surface problem. */
 	FreeSurface_Damping_Length;  /*!< \brief Damping length of the free surface for a free surface problem. */
 	unsigned short Kind_Adaptation;	/*!< \brief Kind of numerical grid adaptation. */
-    unsigned short SpectralMethod_Type; /*!< \brief Type of Spectral method, TimeSpectral or HarmonicBalance. */
+  unsigned short SpectralMethod_Type; /*!< \brief Type of Spectral method, TimeSpectral or HarmonicBalance. */
 	unsigned short nTimeInstances;  /*!< \brief Number of periodic time instances for Time Spectral integration. */
 	su2double SpectralMethod_Period;		/*!< \brief Period of oscillation to be used with time-spectral computations. */
+	unsigned short SpectralInterpolation_Pts;		/*!< \brief Number of points for spectral interpolation using DFT. */
+	unsigned short Kind_SpectralAverage;		/*!< \brief Kind of spectral average over time instances. */
 	su2double New_Elem_Adapt;			/*!< \brief Elements to adapt in the numerical grid adaptation process. */
 	su2double Delta_UnstTime,			/*!< \brief Time step for unsteady computations. */
 	Delta_UnstTimeND;						/*!< \brief Time step for unsteady computations (non dimensional). */
@@ -2292,6 +2295,18 @@ public:
 	 * \return: Period for Time Spectral.
 	 */
 	su2double GetSpectralMethod_Period(void);
+
+	/*!
+	 * \brief Retrieves the number of points for spectral interpolation using DFT.
+	 * \return: Number of points for DFT intepolation.
+	 */
+	unsigned short GetSpectralInterpolation_Pts(void);
+
+	/*!
+	 * \brief Get the kind of average over the time instances
+	 * \return Kind of average for spectral methods.
+	 */
+	unsigned short GetKind_SpectralAverage(void);
 
 	/*!
 	 * \brief Set the number of external iterations.

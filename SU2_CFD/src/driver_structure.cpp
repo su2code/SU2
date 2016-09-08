@@ -3516,9 +3516,26 @@ CSpectralDriver::CSpectralDriver(char* confFile,
                                  unsigned short val_nZone,
                                  unsigned short val_nDim) : CDriver(confFile,
                                                                     val_nZone,
-                                                                    val_nDim) { }
+                                                                    val_nDim) {
 
-CSpectralDriver::~CSpectralDriver(void) { }
+	nZoneInterp = config_container[ZONE_0]->GetSpectralInterpolation_Pts();
+	TotalPressureLossObj       = new su2double [nZone];
+	TotalPressureLossObjInterp = new su2double [nZoneInterp];
+	EntropyGenObj              = new su2double [nZone];
+	EntropyGenObjInterp        = new su2double [nZoneInterp];
+	KineticEnergyLossObj       = new su2double [nZone];
+	KineticEnergyLossObjInterp = new su2double [nZoneInterp];
+
+}
+
+CSpectralDriver::~CSpectralDriver(void) {
+  if (TotalPressureLossObj       != NULL) delete [] TotalPressureLossObj;
+  if (TotalPressureLossObjInterp != NULL) delete [] TotalPressureLossObjInterp;
+	if (EntropyGenObj              != NULL) delete [] EntropyGenObj;
+	if (EntropyGenObjInterp        != NULL) delete [] EntropyGenObjInterp;
+	if (KineticEnergyLossObj       != NULL) delete [] KineticEnergyLossObj;
+	if (KineticEnergyLossObjInterp != NULL) delete [] KineticEnergyLossObjInterp;
+}
 
 void CSpectralDriver::Run() {
 
@@ -3565,6 +3582,9 @@ void CSpectralDriver::Run() {
 			solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(config_container[iZone], geometry_container[iZone][MESH_0]);
 		}
 	}
+
+	SetSpectralAverage();
+
 }
 
 void CSpectralDriver::Update(){
@@ -4206,24 +4226,232 @@ void CSpectralDriver::SetGeoTurboAvgValues(unsigned short iZone, bool allocate){
 
 }
 
-void CSpectralDriver::SetSpectralTurboPerformanceAvg(unsigned short iZone){
+
+void CSpectralDriver::SetSpectralObjective(){
+
+
+	for (iZone = 0; iZone < nZone; iZone++) {
+		TotalPressureLossObj[iZone] = 	solver_container[iZone][MESH_0][FLOW_SOL]->GetTotalPressureLoss(0);
+		EntropyGenObj[iZone]        = 	solver_container[iZone][MESH_0][FLOW_SOL]->GetEntropyGen(0);
+		KineticEnergyLossObj[iZone] = 	solver_container[iZone][MESH_0][FLOW_SOL]->GetKineticEnergyLoss(0);
+
+	}
+
+  ComputeSpectralInterpolation(TotalPressureLossObj, TotalPressureLossObjInterp);
+  ComputeSpectralInterpolation(EntropyGenObj, EntropyGenObjInterp);
+  ComputeSpectralInterpolation(KineticEnergyLossObj, KineticEnergyLossObjInterp);
+
+}
+
+void CSpectralDriver::ComputeSpectralInterpolation(su2double *Object, su2double *ObjectInterpolated){
+
+	const   complex<su2double> J(0.0,1.0);
+	unsigned short i,k, iZone;
+	complex<su2double> **E             = new complex<su2double>*[nZone];
+	complex<su2double> **I             = new complex<su2double>*[nZone];
+	complex<su2double> **Einv          = new complex<su2double>*[nZone];
+	complex<su2double> **EinvExtended  = new complex<su2double>*[nZone];
+	for (iZone = 0; iZone < nZone; iZone++){
+		E[iZone]    = new complex<su2double>[nZone];
+		I[iZone]    = new complex<su2double>[nZone];
+		Einv[iZone] = new complex<su2double>[nZone];
+		EinvExtended[iZone] = new complex<su2double>[nZoneInterp];
+	}
+
+	su2double *Omega_t                = new su2double[nZone];
+	su2double *tExtended              = new su2double[nZoneInterp];
+	su2double Period                  = config_container[ZONE_0]->GetSpectralMethod_Period();
+	su2double Step;
+
+	Step = Period/(nZoneInterp-1);
+	for (i = 0; i < nZoneInterp; i++ ){
+		tExtended[i] = i* Step;
+	}
+
+	if (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL) {
+		/*--- Compute the omega for time spectral ---*/
+		Omega_t[0] = 0;
+		for (i = 1; i < (nZone-1)/2+1; i++){
+			Omega_t[i]             =  2*PI_NUMBER*i/Period;
+			Omega_t[i+(nZone-1)/2] = -2*PI_NUMBER*i/Period;
+		}
+	}
+	if (config_container[ZONE_0]->GetSpectralMethod_Type() == HARMONIC_BALANCE)
+		/*--- Compute the omega for harmonic balance ---*/
+		for (iZone = 0; iZone < nZone; iZone++){
+			Omega_t[iZone]  = config_container[iZone]->GetOmega_HB()[iZone];
+		}
+
+	/*--- Build the spectral matrices ---*/
+	for (i = 0; i < nZone; i++) {
+		for (k = 0; k < nZone; k++) {
+			Einv[i][k] = complex<su2double>(cos(Omega_t[i]*(k*Period/nZone))) + J*complex<su2double>(sin(Omega_t[i]*(k*Period/nZone)));
+		}
+	}
+
+	for (i = 0; i < nZone; i++) {
+		for (k = 0; k < nZoneInterp; k++) {
+			EinvExtended[i][k] = complex<su2double>(cos(Omega_t[i]*tExtended[k])) + J*complex<su2double>(sin(Omega_t[i]*tExtended[k]));
+		}
+	}
+
+	/*---  Invert Spectral matrix Ein with Gauss elimination ---*/
+
+	/*--  A temporary matrix to hold the inverse, dynamically allocated ---*/
+	complex<su2double> **temp = new complex<su2double>*[nZone];
+	for (int i = 0; i < nZone; i++) {
+		temp[i] = new complex<su2double>[2 * nZone];
+	}
+
+	/*---  Copy the desired matrix into the temporary matrix ---*/
+	for (int i = 0; i < nZone; i++) {
+		for (int j = 0; j < nZone; j++) {
+			temp[i][j] = Einv[i][j];
+			temp[i][nZone + j] = 0;
+		}
+		temp[i][nZone + i] = 1;
+	}
+
+	su2double max_val;
+	int max_idx;
+
+	/*---  Pivot each column such that the largest number possible divides the other rows  ---*/
+	for (int k = 0; k < nZone - 1; k++) {
+		max_idx = k;
+		max_val = abs(temp[k][k]);
+		/*---  Find the largest value (pivot) in the column  ---*/
+		for (int j = k; j < nZone; j++) {
+			if (abs(temp[j][k]) > max_val) {
+				max_idx = j;
+				max_val = abs(temp[j][k]);
+			}
+		}
+		/*---  Move the row with the highest value up  ---*/
+		for (int j = 0; j < (nZone * 2); j++) {
+			complex<su2double> d = temp[k][j];
+			temp[k][j] = temp[max_idx][j];
+			temp[max_idx][j] = d;
+		}
+		/*---  Subtract the moved row from all other rows ---*/
+		for (int i = k + 1; i < nZone; i++) {
+			complex<su2double> c = temp[i][k] / temp[k][k];
+			for (int j = 0; j < (nZone * 2); j++) {
+				temp[i][j] = temp[i][j] - temp[k][j] * c;
+			}
+		}
+	}
+	/*---  Back-substitution  ---*/
+	for (int k = nZone - 1; k > 0; k--) {
+		if (temp[k][k] != complex<su2double>(0.0)) {
+			for (int i = k - 1; i > -1; i--) {
+				complex<su2double> c = temp[i][k] / temp[k][k];
+				for (int j = 0; j < (nZone * 2); j++) {
+					temp[i][j] = temp[i][j] - temp[k][j] * c;
+				}
+			}
+		}
+	}
+	/*---  Normalize the inverse  ---*/
+	for (int i = 0; i < nZone; i++) {
+		complex<su2double> c = temp[i][i];
+		for (int j = 0; j < nZone; j++) {
+			temp[i][j + nZone] = temp[i][j + nZone] / c;
+		}
+	}
+	/*---  Copy the inverse back to the main program flow ---*/
+	for (int i = 0; i < nZone; i++) {
+		for (int j = 0; j < nZone; j++) {
+			E[i][j] = temp[i][j + nZone];
+		}
+	}
+	/*---  Delete dynamic template  ---*/
+	for (int i = 0; i < nZone; i++) {
+		delete[] temp[i];
+	}
+	delete[] temp;
+
+//	for (iZone = 0; iZone < nZone; iZone++) {
+//		Object[iZone] = complex<su2double>(Object[iZone]);
+//	}
+
+	/*---  Temporary array   ---*/
+	complex<su2double> *Itemp = new complex<su2double>[nZone];
+	for (i = 0; i < nZone; i++){
+		for(k = 0; k < nZone; k++){
+			Itemp[i] += complex<su2double>(Object[k]) * E[i][k];
+		}
+	}
+	/*---  Calculate the interpolated array in temporary complex  array  ---*/
+	complex<su2double> *ObjectIntTemp = new complex<su2double>[nZoneInterp];
+	for (i = 0; i < nZoneInterp; i++){
+		for(k = 0; k < nZone; k++){
+			ObjectIntTemp[i] += Itemp[k] * EinvExtended[k][i];
+		}
+	}
+	delete [] Itemp;
+	/*---  Calculate the interpolated  ---*/
+	for (i = 0; i < nZoneInterp; i++){
+		ObjectInterpolated[i] = real(ObjectIntTemp[i]);
+	}
+	delete [] ObjectIntTemp;
+
+
+	/*--- Deallocate dynamic memory ---*/
+	for (iZone = 0; iZone < nZone; iZone++){
+		delete [] I[iZone];
+		delete [] E[iZone];
+		delete [] Einv[iZone];
+		delete [] EinvExtended[iZone];
+	}
+	delete [] I;
+	delete [] E;
+	delete [] Einv;
+	delete [] EinvExtended;
+	delete [] tExtended;
+	delete [] Omega_t;
+}
+
+
+void CSpectralDriver::SetSpectralAverage(){
 
 	unsigned short kZone;
 	su2double TotalPressureLossAvg = 0, EntropyGenAvg = 0, KineticEnergyLossAvg = 0;
 
-	for (kZone = 0; kZone < nZone; kZone++) {
-		TotalPressureLossAvg += 	solver_container[kZone][MESH_0][FLOW_SOL]->GetTotalPressureLoss(0);
-		EntropyGenAvg        += 	solver_container[kZone][MESH_0][FLOW_SOL]->GetEntropyGen(0);
-		KineticEnergyLossAvg += 	solver_container[kZone][MESH_0][FLOW_SOL]->GetKineticEnergyLoss(0);
+	switch (config_container[ZONE_0]->GetKind_SpectralAverage()) {
+	case ARITHMETIC_MEAN:
+		for (kZone = 0; kZone < nZone; kZone++){
+			TotalPressureLossAvg += 	solver_container[kZone][MESH_0][FLOW_SOL]->GetTotalPressureLoss(0);
+			EntropyGenAvg        += 	solver_container[kZone][MESH_0][FLOW_SOL]->GetEntropyGen(0);
+			KineticEnergyLossAvg += 	solver_container[kZone][MESH_0][FLOW_SOL]->GetKineticEnergyLoss(0);
+		}
+		TotalPressureLossAvg /= nZone;
+		EntropyGenAvg        /= nZone;
+		KineticEnergyLossAvg /= nZone;
+		break;
+
+	case INTERPOLATED_MEAN :
+		/*---    ---*/
+		SetSpectralObjective();
+		for (kZone = 0; kZone < nZoneInterp; kZone++ ){
+			if (kZone == 0 || kZone == nZoneInterp-1)
+				TotalPressureLossAvg +=  TotalPressureLossObjInterp[kZone];
+			else
+				TotalPressureLossAvg +=  2.*TotalPressureLossObjInterp[kZone];
+		}
+
+		TotalPressureLossAvg /=  2.*(nZoneInterp-1);
+		break;
+
+	default :
+		cout << "SPECTRAL_AVERAGE_KIND: Type of average not available." << endl; exit(EXIT_FAILURE);
+		break;
 	}
 
-	TotalPressureLossAvg /= nZone;
-	EntropyGenAvg        /= nZone;
-	KineticEnergyLossAvg /= nZone;
 
 	solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetTotalPressureLoss(TotalPressureLossAvg,0);
 	solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetEntropyGen(EntropyGenAvg,0);
 	solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetKineticEnergyLoss(KineticEnergyLossAvg,0);
+
 }
 
 

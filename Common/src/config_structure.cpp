@@ -775,6 +775,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedShortOption("TIME_INSTANCES", nTimeInstances, 1);
   /* DESCRIPTION: Time period for Time Spectral wihtout moving meshes */
   addDoubleOption("SPECTRALMETHOD_PERIOD", SpectralMethod_Period, -1.0);
+  /* DESCRIPTION: Number of points for spectral interpolation using DFT */
+  addUnsignedShortOption("SPECTRALINTERPOLATION_PTS", SpectralInterpolation_Pts, 20);
+  /*!\brief SPECTRAL_AVERAGE \n DESCRIPTION: types of spectral average over the time instances.
+    \n OPTIONS: see \link SpectralAverage_Map \endlink \n DEFAULT: AITHMETIC_MEAN \ingroup Config*/
+  addEnumOption("SPECTRAL_AVERAGE_KIND", Kind_SpectralAverage, SpectralAverage_Map, ARITHMETIC_MEAN);
   /* DESCRIPTION: Iteration number to begin unsteady restarts (dual time method) */
   addLongOption("UNST_RESTART_ITER", Unst_RestartIter, 0);
   /* DESCRIPTION: Starting direct solver iteration for the unsteady adjoint */
