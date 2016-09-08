@@ -9223,6 +9223,7 @@ void CEulerSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container
   su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
   su2double  yCoord, y_0, y_min, y_max, y_perio, yPitch, Physical_dt, Physical_t, t_perio, Period, Boundary_Vel;
+CTAGS:
 
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement        = config->GetGrid_Movement();
@@ -9730,6 +9731,7 @@ void CEulerSolver::BC_TurboNonUniform(CGeometry *geometry, CSolver **solver_cont
   Velocity_b = new su2double[nDim];
   Velocity_e = new su2double[nDim];
   turboVelocity = new su2double[nDim];
+  Flow_Dir = new su2double[nDim];
   FlowDirMix = new su2double[nDim];
   Lambda_i = new su2double[nVar];
   u_i = new su2double[nVar];
@@ -9827,7 +9829,7 @@ void CEulerSolver::BC_TurboNonUniform(CGeometry *geometry, CSolver **solver_cont
 			Period  = Pitch/Boundary_Vel;
 			Period /= config->GetTime_Ref();
 
-//			Coord = geometry->turbovertex[val_marker][iSpan][iVertex]->GetAngularCoord();
+			Coord = geometry->turbovertex[val_marker][iSpan][iVertex]->GetAngularCoord();
 			/*--- Build the external state u_e from boundary data and internal node ---*/
 			switch(config->GetKind_Data_TurboNonUniform(Marker_Tag))
 			{
@@ -10141,6 +10143,7 @@ void CEulerSolver::BC_TurboNonUniform(CGeometry *geometry, CSolver **solver_cont
   delete [] Velocity_b;
   delete [] Velocity_i;
   delete [] FlowDirMix;
+  delete [] Flow_Dir;
 
   delete [] S_boundary;
   delete [] Lambda_i;
@@ -16821,7 +16824,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     }
   }
 
-  if (config->GetBoolNonUniformBC())
+  if (config->GetBoolNonUniformBC() || config->GetBoolTurboNonUniformBC())
   	SetBC_NonUniform(geometry, config);
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
 
