@@ -146,7 +146,6 @@ def read_history( History_filename, nZones = 1):
         Iter and Time(min) headers are mapped to ITERATION and TIME
         respectively.
     """
-    
     # read plot file
     plot_data = read_plot( History_filename )
     
