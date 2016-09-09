@@ -12689,23 +12689,10 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 				/*--- Total properties have been specified at the inlet. ---*/
 
 				case TOTAL_CONDITIONS:
-					//TODO Clean this part and remove it in appropiate BC!
-					if (spectral_method) {
-						/*--- time interval using nTimeInstances ---*/
-						Physical_dt = (su2double)config->GetSpectralMethod_Period()/(su2double)(config->GetnTimeInstances());
-						Physical_t  = config->GetiZone()*Physical_dt;
-					}
-					else {
-						Physical_dt = (su2double)config->GetDelta_UnstTime();
-						Physical_t  = (config->GetExtIter())*Physical_dt;
-					}
 					/*--- Retrieve the specified total conditions for this inlet. ---*/
 
 					if (gravity) P_Total = config->GetInlet_Ptotal(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;
 					else P_Total  = config->GetInlet_Ptotal(Marker_Tag);
-
-//					if (config->GetUnsteady_Simulation() == 0) Physical_t = 0;
-//					P_Total = config->GetInlet_Ptotal(Marker_Tag)*(1+0.1*sin(2*PI_NUMBER/config->GetSpectralMethod_Period()*Physical_t));
 
 					T_Total  = config->GetInlet_Ttotal(Marker_Tag);
 					Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
