@@ -185,7 +185,7 @@ CDriver::CDriver(char* confFile,
 
   fsi = config_container[ZONE_0]->GetFSI_Simulation();
 
-  if(nZone == SINGLE_ZONE) {
+  if(nZone == SINGLE_ZONE && config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY) {
     if (rank == MASTER_NODE) cout << "A single zone driver has been instantiated." << endl;
   }
   else if (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_SPECTRAL) {
