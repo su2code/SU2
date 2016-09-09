@@ -1849,6 +1849,12 @@ public:
 	 */
 	virtual void SetTotal_CDrag(su2double val_Total_CDrag);
     
+        /*!                                                                                                                   
+	 * \brief A virtual member.                                                                                           
+	 * \param[in] val_Total_CDrag - Value of the total drag coefficient.                                                  
+	 */
+        virtual void SetTotal_Avg_CDrag(su2double val_Total_Avg_CDrag);
+
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_Total_CLift - Value of the total lift coefficient.
@@ -2303,6 +2309,12 @@ public:
 	 */
 	virtual su2double GetTotal_CDrag(void);
     
+        /*!                                                                                                                   
+	 * \brief A virtual member.                                                                                           
+	 * \return Value of the averaged drag coefficient over all time instances(inviscid + viscous contribution). 
+	 */
+        virtual su2double GetTotal_Avg_CDrag(void);
+
 	/*!
 	 * \brief A virtual member.
 	 * \return Value of the moment x coefficient (inviscid + viscous contribution).
@@ -3385,6 +3397,7 @@ protected:
   OneD_VelocityRef, /*!< \brief flux average velocity evaluated at an exit */
   Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
   Total_CDrag, /*!< \brief Total drag coefficient for all the boundaries. */
+        Total_Avg_CDrag, /*!< \brief Total averaged drag coefficient for all the boundaries. */ 
 	Total_CLift,		/*!< \brief Total lift coefficient for all the boundaries. */
 	Total_CSideForce,		/*!< \brief Total sideforce coefficient for all the boundaries. */
 	Total_CMx,			/*!< \brief Total x moment coefficient for all the boundaries. */
@@ -5112,6 +5125,12 @@ public:
 	 */
 	su2double GetTotal_CDrag(void);
     
+        /*!                                                                                                                   
+	 * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.                                    
+	 * \return Value of the drag coefficient (inviscid + viscous contribution).                                           
+	 */
+         su2double GetTotal_Avg_CDrag(void);
+
 	/*!
 	 * \brief Provide the total (inviscid + viscous) non dimensional x moment coefficient.
 	 * \return Value of the moment x coefficient (inviscid + viscous contribution).
@@ -5208,6 +5227,12 @@ public:
 	 */
 	void SetTotal_CDrag(su2double val_Total_CDrag);
     
+        /*!                                                                                                                   
+	 * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.                                      
+	 * \param[in] val_Total_CDrag - Value of the total drag coefficient.                                                  
+	 */
+        void SetTotal_Avg_CDrag(su2double val_Total_Avg_CDrag);
+
 	/*!
 	 * \brief Get the inviscid contribution to the lift coefficient.
 	 * \return Value of the lift coefficient (inviscid contribution).

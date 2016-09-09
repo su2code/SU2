@@ -485,6 +485,8 @@ void CMeanFlowIteration::Iterate(COutput *output,
   
   unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
+  nZone = config_container[ZONE_0]->GetnTimeInstances();
+
 #ifdef HAVE_MPI
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -606,6 +608,23 @@ void CMeanFlowIteration::Iterate(COutput *output,
       if (integration_container[val_iZone][FLOW_SOL]->GetConvergence()) break;
       
     }
+
+    /* Set drag coefficeint averaged over multiple zones */
+    su2double avg_CDrag = 0.0;
+    for (unsigned short iZone = 0; iZone < nZone; iZone++)
+      {
+        avg_CDrag += solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+        //cout << "avgCDrag(" << iZone << ") = " << solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();               
+      }
+    avg_CDrag /= nZone;
+    //cout << "avgCDrag_Final = " << avg_CDrag << endl;                                                                        
+    if (val_iZone == 0)
+      {
+        //cout << "avg drag = " << avg_CDrag << endl;                                                                          
+        for (unsigned short iZone = 0; iZone < nZone; iZone++)
+          solver_container[iZone][MESH_0][FLOW_SOL]->SetTotal_Avg_CDrag(avg_CDrag);
+      }
+
 
     output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
     
