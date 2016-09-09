@@ -3197,7 +3197,9 @@ void CMultiZoneDriver::Run() {
 					Transfer_Data(iZone, jZone);
 	
 		for (iZone = 0; iZone < nZone; iZone++) {
-iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+			
+			iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+			
 			config_container[iZone]->SetIntIter(IntIter);
 
 			iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
