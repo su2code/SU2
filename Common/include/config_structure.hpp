@@ -243,7 +243,7 @@ private:
 	su2double **Riemann_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
 	su2double *NonUniform_Var1, *NonUniform_Var2;    /*!< \brief Specified values for Riemann boundary. */
 	su2double **NonUniform_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for Riemann boundaries. */
-	su2double *TurboNonUniform_Omega;    /*!< \brief Specified values for Omega in TurboNonUniform boundary. */
+	su2double *TurboNonUniform_BoundaryVel;    /*!< \brief Specified values for Omega in TurboNonUniform boundary. */
 	su2double *NRBC_Var1, *NRBC_Var2, *RelaxFactorAverage, *RelaxFactorFourier;    /*!< \brief Specified values for NRBC boundary. */
 	su2double **NRBC_FlowDir;  /*!< \brief Specified flow direction vector (unit vector) for NRBC boundaries. */
 	su2double *Inlet_Ptotal;    /*!< \brief Specified total pressures for inlet boundaries. */
@@ -984,10 +984,10 @@ private:
 
   template <class Tenum>
   void addTurboNonUniformOption(const string name, unsigned short & nMarker_TurboNonUniform, string * & Marker_TurboNonUniform, unsigned short* & option_field, const map<string, Tenum> & enum_map,
-  		  su2double* & Omega) {
+  		  su2double* & BoundaryVel) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionTurboNonUniform<Tenum>(name, nMarker_TurboNonUniform, Marker_TurboNonUniform, option_field, enum_map, Omega);
+    COptionBase* val = new COptionTurboNonUniform<Tenum>(name, nMarker_TurboNonUniform, Marker_TurboNonUniform, option_field, enum_map, BoundaryVel);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
 
@@ -5122,11 +5122,11 @@ public:
 	unsigned short GetKind_Data_NonUniform(string val_marker);
 
 	/*!
-	 * \brief Get the Omega at TurboNonUniform boundary.
+	 * \brief Get the boundary velocity for the TurboNonUniform boundary.
 	 * \param[in] val_marker - Index corresponding to the TurboNonUniform boundary.
-	 * \return The Omega
+	 * \return BoundaryVel
 	 */
-	su2double GetTurboNonUniform_Omega(string val_marker);
+	su2double GetTurboNonUniform_BoundaryVel(string val_marker);
 
 	/*!
 	 * \brief Get Kind Data of TurboNonUniform boundary.

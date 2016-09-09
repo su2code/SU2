@@ -9709,7 +9709,7 @@ void CEulerSolver::BC_TurboNonUniform(CGeometry *geometry, CSolver **solver_cont
   su2double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **DubDu, *dw, *u_e, *u_i, *u_b;
   su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
-  su2double Physical_t, Physical_dt, Pitch, Period, Boundary_Vel, t_perio, y_perio, Coord;
+  su2double Physical_t, Physical_dt, Pitch, Period, BoundaryVel, t_perio, y_perio, Coord;
 
   unsigned short  iZone     = config->GetiZone();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -9823,10 +9823,10 @@ void CEulerSolver::BC_TurboNonUniform(CGeometry *geometry, CSolver **solver_cont
 
 			/*--- Retreive the boundary velocity from config file ---*/
 
-			Boundary_Vel = config->GetTurboNonUniform_Omega(Marker_Tag);
-			Boundary_Vel /= config->GetVelocity_Ref();
+			BoundaryVel = config->GetTurboNonUniform_BoundaryVel(Marker_Tag);
+			BoundaryVel /= config->GetVelocity_Ref();
 
-			Period  = Pitch/Boundary_Vel;
+			Period  = Pitch/BoundaryVel;
 			Period /= config->GetTime_Ref();
 
 			Coord = geometry->turbovertex[val_marker][iSpan][iVertex]->GetAngularCoord();
@@ -9834,14 +9834,10 @@ void CEulerSolver::BC_TurboNonUniform(CGeometry *geometry, CSolver **solver_cont
 			switch(config->GetKind_Data_TurboNonUniform(Marker_Tag))
 			{
 			case TOTAL_CONDITIONS_PT:
-				/*--- Retrieve the specified total conditions for this boundary. ---*/
-//				if (gravity) P_Total = config->GetRiemann_Var1(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
-//				else P_Total  = config->GetRiemann_Var1(Marker_Tag);
-//				T_Total  = config->GetRiemann_Var2(Marker_Tag);
-//				Flow_Dir = config->GetRiemann_FlowDir(Marker_Tag);
 
+				/*--- Retrieve the specified total conditions for this boundary. ---*/
       	t_perio = fmod(SU2_TYPE::GetValue(Physical_t), SU2_TYPE::GetValue(Period));
-      	y_perio = fmod(SU2_TYPE::GetValue(Boundary_Vel*t_perio + Coord), SU2_TYPE::GetValue(Pitch));
+      	y_perio = fmod(SU2_TYPE::GetValue(BoundaryVel*t_perio + Coord), SU2_TYPE::GetValue(Pitch));
 
       	/*--- Retrieve the specified total conditions for this boundary. ---*/
         P_Total = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_Var1, NonUniformBC_d2Var1, NonUniformBC_InputPoints, y_perio);

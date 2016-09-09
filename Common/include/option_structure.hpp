@@ -2731,12 +2731,12 @@ protected:
   unsigned short & size;
   string * & marker;
   unsigned short* & field; // Reference to the field name
-  su2double * & omega;
+  su2double * & BoundaryVel;
 
 public:
   COptionTurboNonUniform(string option_field_name, unsigned short & nMarker_TurboNonUniform, string* & Marker_TurboNonUniform,
-  		unsigned short* & option_field, const map<string, Tenum> m, su2double* & omega): size(nMarker_TurboNonUniform),
-			marker(Marker_TurboNonUniform), field(option_field), omega(omega) {
+  		unsigned short* & option_field, const map<string, Tenum> m, su2double* & BoundaryVel): size(nMarker_TurboNonUniform),
+			marker(Marker_TurboNonUniform), field(option_field), BoundaryVel(BoundaryVel) {
     this->name = option_field_name;
     this->m = m;
   }
@@ -2746,10 +2746,10 @@ public:
 
     unsigned short totalVals = option_value.size();
     if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
-      this->size = 0;
-      this->marker = NULL;
-      this->field = NULL;
-      this->omega = NULL;
+      this->size        = 0;
+      this->marker      = NULL;
+      this->field       = NULL;
+      this->BoundaryVel = NULL;
       return "";
     }
 
@@ -2757,18 +2757,18 @@ public:
       string newstring;
       newstring.append(this->name);
       newstring.append(": must have a number of entries equal to 3");
-      this->size = 0;
-      this->field = NULL;
-      this->marker = NULL;
-      this->omega = NULL;
+      this->size        = 0;
+      this->field       = NULL;
+      this->marker      = NULL;
+      this->BoundaryVel = NULL;
       return newstring;
     }
 
     unsigned short nVals = totalVals / 3;
-    this->size = nVals;
-    this->field = new unsigned short[nVals];
-    this->marker = new string[nVals];
-    this->omega = new su2double[nVals];
+    this->size        = nVals;
+    this->field       = new unsigned short[nVals];
+    this->marker      = new string[nVals];
+    this->BoundaryVel = new su2double[nVals];
 
     for (unsigned long i = 0; i < nVals; i++) {
       this->marker[i].assign(option_value[3*i]);
@@ -2785,7 +2785,7 @@ public:
       this->field[i] = val;
 
       istringstream ss_1st(option_value[3*i + 2]);
-      if (!(ss_1st >> this->omega[i])) {
+      if (!(ss_1st >> this->BoundaryVel[i])) {
         return badValue(option_value, "NonUniform", this->name);
       }
     }
@@ -2794,9 +2794,9 @@ public:
   }
 
   void SetDefault() {
-    this->marker = NULL;
-    this->omega = NULL;
-    this->size = 0; // There is no default value for list
+    this->marker      = NULL;
+    this->BoundaryVel = NULL;
+    this->size        = 0; // There is no default value for list
   }
 };
 

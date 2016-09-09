@@ -386,7 +386,7 @@ void CConfig::SetPointersNull(void) {
   NonUniform_Var1 = NULL;
   NonUniform_Var2 = NULL;
   Kind_Data_TurboNonUniform = NULL;
-  TurboNonUniform_Omega = NULL;
+  TurboNonUniform_BoundaryVel = NULL;
   Kind_Data_NRBC = NULL;
   NRBC_Var1 = NULL;
   NRBC_Var2 = NULL;
@@ -678,7 +678,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("NONUNIFORM_BC_FILENAME", NonUniformBC_FileName, string("nonuniform_boundary.dat"));
   /*!\brief MARKER_TURBONONUNIFORM \n DESCRIPTION: TurboNonUniform boundary marker(s) with the following formats, a unit vector.
    * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
-  addTurboNonUniformOption("MARKER_TURBONONUNIFORM", nMarker_TurboNonUniform, Marker_TurboNonUniform, Kind_Data_TurboNonUniform, TurboNonUniform_Map, TurboNonUniform_Omega);
+  addTurboNonUniformOption("MARKER_TURBONONUNIFORM", nMarker_TurboNonUniform, Marker_TurboNonUniform, Kind_Data_TurboNonUniform, TurboNonUniform_Map, TurboNonUniform_BoundaryVel);
   /*!\brief MARKER_NRBC \n DESCRIPTION: Riemann boundary marker(s) with the following formats, a unit vector. */
   addNRBCOption("MARKER_NRBC", nMarker_NRBC, Marker_NRBC, Kind_Data_NRBC, NRBC_Map, NRBC_Var1, NRBC_Var2, NRBC_FlowDir, RelaxFactorAverage, RelaxFactorFourier);
   /*!\brief MIXING_PROCESS_TYPE \n DESCRIPTION: types of mixing process for averaging quantities at the boundaries.
@@ -5251,7 +5251,7 @@ CConfig::~CConfig(void) {
   if (NonUniform_Var1 != NULL) delete [] NonUniform_Var1;
   if (NonUniform_Var2 != NULL) delete [] NonUniform_Var2;
   if (Kind_Data_TurboNonUniform != NULL) delete [] Kind_Data_TurboNonUniform;
-  if (TurboNonUniform_Omega != NULL) delete [] TurboNonUniform_Omega;
+  if (TurboNonUniform_BoundaryVel != NULL) delete [] TurboNonUniform_BoundaryVel;
   if (Kind_Data_NRBC != NULL) delete [] Kind_Data_NRBC;
   if (NRBC_Var1 != NULL) delete [] NRBC_Var1;
   if (NRBC_Var2 != NULL) delete [] NRBC_Var2;
@@ -5815,11 +5815,11 @@ unsigned short CConfig::GetKind_Data_TurboNonUniform(string val_marker) {
   return Kind_Data_TurboNonUniform[iMarker_TurboNonUniform];
 }
 
-su2double CConfig::GetTurboNonUniform_Omega(string val_marker) {
+su2double CConfig::GetTurboNonUniform_BoundaryVel(string val_marker) {
   unsigned short iMarker_TurboNonUniform;
   for (iMarker_TurboNonUniform = 0; iMarker_TurboNonUniform < nMarker_TurboNonUniform; iMarker_TurboNonUniform++)
     if (Marker_TurboNonUniform[iMarker_TurboNonUniform] == val_marker) break;
-  return TurboNonUniform_Omega[iMarker_TurboNonUniform];
+  return TurboNonUniform_BoundaryVel[iMarker_TurboNonUniform];
 }
 
 su2double CConfig::GetNRBC_Var1(string val_marker) {
