@@ -297,8 +297,8 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
   unsigned short iDim;
   unsigned short nDim = donor_geometry->GetnDim();
 
-  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;		// Number of markers on the interface, donor and target side
-  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;		// Variables for iteration over markers
+  unsigned short nMarkerInt;		// Number of markers on the interface
+  unsigned short iMarkerInt;		// Variables for iteration over markers
   
   int markDonor = -1, markTarget = -1;
   int Target_check, Donor_check;
@@ -316,8 +316,6 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
   /*--- Number of markers on the FSI interface ---*/
   nMarkerInt     = (int) (config[donorZone]->GetMarker_n_FSIinterface() /2);
-  nMarkerTarget  = target_geometry->GetnMarker();
-  nMarkerDonor   = donor_geometry->GetnMarker();
 
   su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
 
@@ -492,8 +490,8 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
 
   unsigned short nDim = donor_geometry->GetnDim();
 
-  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;
-  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;
+  unsigned short nMarkerInt;
+  unsigned short iMarkerInt;
 
   int markDonor=0, markTarget=0;
   int Target_check, Donor_check;
@@ -536,9 +534,6 @@ void CIsoparametric::Set_TransferCoeff(CConfig **config) {
 
   /*--- Number of markers on the FSI interface ---*/
   nMarkerInt     = (config[donorZone]->GetMarker_n_FSIinterface())/2;
-  nMarkerTarget  = target_geometry->GetnMarker();
-  nMarkerDonor   = donor_geometry->GetnMarker();
-
 
   /*--- For the number of markers on the interface... ---*/
   for (iMarkerInt=1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
@@ -1090,8 +1085,8 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
   unsigned long iPoint;
   unsigned short iDonor=0, iFace=0, iTarget=0;
 
-  unsigned short nMarkerInt, nMarkerDonor, nMarkerTarget;
-  unsigned short iMarkerInt, iMarkerDonor, iMarkerTarget;
+  unsigned short nMarkerInt;
+  unsigned short iMarkerInt;
 
   int markDonor=0, markTarget=0;
   int Target_check, Donor_check;
@@ -1118,8 +1113,7 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
 
   /*--- Number of markers on the interface ---*/
   nMarkerInt = (config[targetZone]->GetMarker_n_FSIinterface())/2;
-  nMarkerDonor  =  config[donorZone]->GetnMarker_All();
-  nMarkerTarget =  config[targetZone]->GetnMarker_All();
+
   /*--- For the number of markers on the interface... ---*/
   for (iMarkerInt=1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
     /*--- Procedure:
