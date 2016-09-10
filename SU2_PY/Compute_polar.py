@@ -2,7 +2,7 @@
 
 ## \file Compute_polar.py
 #  \brief Python script for performing polar sweep.
-#  \author E Arad
+#  \author E Arad (based on T. Lukaczyk and  F. Palacios script)
 #  \version 4.3.0 "Cardinal"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
