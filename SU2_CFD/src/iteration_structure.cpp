@@ -2691,6 +2691,31 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
 //
 //  }
 
+  // Temporary output only for standalone structural problems
+  if (!config_container[val_iZone]->GetFSI_Simulation()){
+    /*--- Header of the temporary output file ---*/
+    ofstream myfile_res;
+    myfile_res.open ("Results_Reverse_Adjoint.txt");
+
+    myfile_res << scientific << "Young_Mod" << " ";
+    myfile_res << scientific << "Obj_Func" << " ";
+    myfile_res << scientific << "Sens_E" << " ";
+    myfile_res << scientific << "Sens_Nu" << " ";
+
+    myfile_res << endl;
+
+    myfile_res.precision(15);
+
+    myfile_res << scientific << config_container[val_iZone]->GetElasticyMod() << " ";
+    myfile_res << scientific << solver_container[val_iZone][MESH_0][FEA_SOL]->GetTotal_OFRefGeom() << " ";
+    myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E() << " ";
+    myfile_res << scientific << solver_container[val_iZone][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu() << " ";
+
+    myfile_res << endl;
+
+    myfile_res.close();
+  }
+
 }
 
 void CDiscAdjFEAIteration::SetRecording(COutput *output,

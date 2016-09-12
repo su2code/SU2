@@ -1861,6 +1861,12 @@ public:
   virtual void SetSolution_Geometry(su2double *val_solution_geometry);
 
   /*!
+   * \brief A virtual member. Set the value of the mesh solution (adjoint).
+   * \param[in] val_solution - Solution of the problem (acceleration).
+   */
+  virtual void SetSolution_Geometry(unsigned short val_var, su2double val_solution_geometry);
+
+  /*!
    * \brief A virtual member. Get the geometry solution.
    * \param[in] val_var - Index of the variable.
    * \return Value of the solution for the index <i>val_var</i>.
@@ -4590,6 +4596,12 @@ public:
      * \param[in] val_solution - Solution of the problem (acceleration).
      */
     void SetSolution_Geometry(su2double *val_solution_geometry);
+
+    /*!
+     * \brief A virtual member. Set the value of the mesh solution (adjoint).
+     * \param[in] val_solution - Solution of the problem (acceleration).
+     */
+    void SetSolution_Geometry(unsigned short val_var, su2double val_solution_geometry);
 
     /*!
      * \brief A virtual member. Get the geometry solution.

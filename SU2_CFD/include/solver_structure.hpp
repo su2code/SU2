@@ -223,6 +223,24 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	virtual void Set_MPI_RefGeom(CGeometry *geometry, CConfig *config);
+
+	/*!
+	 * \brief Set number of linear solver iterations.
+	 * \param[in] val_iterlinsolver - Number of linear iterations.
+	 */
+	virtual void Set_MPI_CrossTerm(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set number of linear solver iterations.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  virtual void Set_MPI_CrossTerm_Geometry(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set number of linear solver iterations.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  virtual void Set_MPI_Solution_Geometry(CGeometry *geometry, CConfig *config);
     
   /*!
 	 * \brief Impose the send-receive boundary condition.
@@ -8350,6 +8368,31 @@ public:
   ~CDiscAdjSolver(void);
 
   /*!
+   * \brief Impose the send-receive boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set number of linear solver iterations.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void Set_MPI_CrossTerm(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set number of linear solver iterations.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void Set_MPI_CrossTerm_Geometry(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set number of linear solver iterations.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void Set_MPI_Solution_Geometry(CGeometry *geometry, CConfig *config);
+
+  /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
    *        Registers all necessary variables on the tape. Called while tape is active.
    * \param[in] geometry_container - The geometry container holding all grid levels.
@@ -8641,6 +8684,18 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set number of linear solver iterations.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void Set_MPI_CrossTerm(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set number of linear solver iterations.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void Set_MPI_CrossTerm_Geometry(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Performs the preprocessing of the adjoint AD-based solver.
