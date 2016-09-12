@@ -148,7 +148,7 @@ void FEMStandardElementBaseClass::InverseMatrix(unsigned short    n,
 
     /*--- Performing row operations to form required identity matrix out
           of the input matrix.              ---*/
-    for(unsigned i=0; i<n; ++i) {
+    for(unsigned short i=0; i<n; ++i) {
       if(i != j) {
         valMax = augmentedmatrix[i][j]/augmentedmatrix[j][j];
         for(unsigned short k=j; k<2*n; ++k)
