@@ -2003,15 +2003,15 @@ void CFEM_DG_EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) 
   /*--- Allocate the memory for the storage of the solution in the DOFs
         and in the integration points. Note that when the MKL library is used
         a special allocation is used to optimize performance. ---*/
-  su2double *solIntL, *solDOFs;
+  su2double *solInt, *solDOFs;
 
 #ifdef HAVE_MKL
-  solIntL = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  solInt  = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
   solDOFs = (su2double *) mkl_malloc(nDOFsMax*nVar*sizeof(su2double), 64);
 #else
-  vector<su2double> helpSolIntL(nIntegrationMax*nVar);
+  vector<su2double> helpSolInt(nIntegrationMax*nVar);
   vector<su2double> helpSolDOFs(nDOFsMax*nVar);
-  solIntL = helpSolIntL.data();
+  solInt  = helpSolInt.data();
   solDOFs = helpSolDOFs.data();
 #endif
 
@@ -2107,8 +2107,8 @@ void CFEM_DG_EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) 
         /*--- Loop over the faces of this boundary. ---*/
         for(unsigned long l=0; l<nSurfElem; ++l) {
 
-          /* Compute the left states in the integration points of the face. */
-          LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], solDOFs, solIntL);
+          /* Compute the states in the integration points of the face. */
+          LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], solDOFs, solInt);
 
           /*--- Get the number of integration points and the integration
                 weights from the corresponding standard element. ---*/
@@ -2121,7 +2121,7 @@ void CFEM_DG_EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) 
 
             /* Easier storage of the solution, the normals and the coordinates
                for this integration point. */
-            const su2double *sol     = solIntL + i*nVar;
+            const su2double *sol     = solInt + i*nVar;
             const su2double *normals = surfElem[l].metricNormalsFace + i*(nDim+1);
             const su2double *Coord   = surfElem[l].coorIntegrationPoints + i*nDim;
 
@@ -2301,7 +2301,7 @@ void CFEM_DG_EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) 
 
   /*--- If the MKL is used the temporary storage must be released again. ---*/
 #ifdef HAVE_MKL
-  mkl_free(solIntL);
+  mkl_free(solInt);
   mkl_free(solDOFs);
 #endif
 }
@@ -2775,7 +2775,7 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
   Surface_CLift_Visc = NULL; Surface_CDrag_Visc = NULL; Surface_CSideForce_Visc = NULL; Surface_CEff_Visc = NULL;
   Surface_CFx_Visc = NULL;   Surface_CFy_Visc = NULL;   Surface_CFz_Visc = NULL;
   Surface_CMx_Visc = NULL;   Surface_CMy_Visc = NULL;   Surface_CMz_Visc = NULL;
-  
+  MaxHeatFlux_Visc = NULL;   Heat_Visc = NULL;
 }
 
 CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
@@ -2790,6 +2790,7 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
   Surface_CLift_Visc = NULL; Surface_CDrag_Visc = NULL; Surface_CSideForce_Visc = NULL; Surface_CEff_Visc = NULL;
   Surface_CFx_Visc = NULL;   Surface_CFy_Visc = NULL;   Surface_CFz_Visc = NULL;
   Surface_CMx_Visc = NULL;   Surface_CMy_Visc = NULL;   Surface_CMz_Visc = NULL;
+  MaxHeatFlux_Visc = NULL;   Heat_Visc = NULL;
   
   ForceViscous = NULL; MomentViscous = NULL;
   CSkinFriction = NULL;    Cauchy_Serie = NULL;
@@ -2826,6 +2827,9 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
   Surface_CMx_Visc        = new su2double[config->GetnMarker_Monitoring()];
   Surface_CMy_Visc        = new su2double[config->GetnMarker_Monitoring()];
   Surface_CMz_Visc        = new su2double[config->GetnMarker_Monitoring()];
+
+  Heat_Visc        = new su2double[nMarker];
+  MaxHeatFlux_Visc = new su2double[nMarker];
   
   /*--- Init total coefficients ---*/
   
@@ -2869,6 +2873,9 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
   if (Surface_CMx_Visc != NULL)        delete [] Surface_CMx_Visc;
   if (Surface_CMy_Visc != NULL)        delete [] Surface_CMy_Visc;
   if (Surface_CMz_Visc != NULL)        delete [] Surface_CMz_Visc;
+
+  if (Heat_Visc        != NULL)  delete [] Heat_Visc;
+  if (MaxHeatFlux_Visc != NULL)  delete [] MaxHeatFlux_Visc;
   
   if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
   
@@ -2878,7 +2885,6 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
     }
     delete [] CSkinFriction;
   }
-  
 }
 
 void CFEM_DG_NSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -2889,13 +2895,386 @@ void CFEM_DG_NSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CFEM_DG_NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  /* Constant factor present in the heat flux vector. */
+  const su2double factHeatFlux = Gamma/Prandtl_Lam;
+ 
+  /*--- Allocate the memory for the storage of the solution in the DOFs
+        and the solution and its gradients in the integration points.
+        Note that when the MKL library is used a special allocation is used
+        to optimize performance. ---*/
+  su2double *solDOFs, *solInt, *gradSolInt;
+
+#ifdef HAVE_MKL
+  solInt     = (su2double *) mkl_malloc(nIntegrationMax*nVar*sizeof(su2double), 64);
+  gradSolInt = (su2double *) mkl_malloc(nIntegrationMax*nVar*nDim*sizeof(su2double), 64);
+  solDOFs    = (su2double *) mkl_malloc(nDOFsMax*nVar*sizeof(su2double), 64);
+#else
+  vector<su2double> helpSolInt(nIntegrationMax*nVar);
+  vector<su2double> helpGradSolInt(nIntegrationMax*nVar*nDim);
+  vector<su2double> helpSolDOFs(nDOFsMax*nVar);
+  solInt     = helpSolInt.data();
+  gradSolInt = helpGradSolInt.data();
+  solDOFs    = helpSolDOFs.data();
 #endif
 
-//if (rank == MASTER_NODE) cout << " Computing viscous forces." << endl;
+  /*--- Get the information of the angle of attack, reference area, etc. ---*/
+  const su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
+  const su2double Beta            = config->GetAoS()*PI_NUMBER/180.0;
+  const su2double RefAreaCoeff    = config->GetRefAreaCoeff();
+  const su2double RefLengthMoment = config->GetRefLengthMoment();
+  const su2double Gas_Constant    = config->GetGas_ConstantND();
+  const su2double *Origin         = config->GetRefOriginMoment(0);
+  const bool grid_movement        = config->GetGrid_Movement();
+
+  /*--- Evaluate reference values for non-dimensionalization.
+        For dynamic meshes, use the motion Mach number as a reference value
+        for computing the force coefficients. Otherwise, use the freestream
+        values, which is the standard convention. ---*/
+  const su2double RefTemp     = Temperature_Inf;
+  const su2double RefDensity  = Density_Inf;
+
+  su2double RefVel2;
+  if (grid_movement) {
+    const su2double Mach2Vel = sqrt(Gamma*Gas_Constant*RefTemp);
+    const su2double Mach_Motion = config->GetMach_Motion();
+    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+  }
+  else {
+    RefVel2 = 0.0;
+    for(unsigned short iDim=0; iDim<nDim; ++iDim)
+      RefVel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+  }
+
+  const su2double factor = 1.0/(0.5*RefDensity*RefAreaCoeff*RefVel2);
+
+  /*--- Variables initialization ---*/
+  AllBound_CDrag_Visc = 0.0;    AllBound_CLift_Visc = 0.0;       AllBound_CSideForce_Visc = 0.0;
+  AllBound_CMx_Visc = 0.0;      AllBound_CMy_Visc = 0.0;         AllBound_CMz_Visc = 0.0;
+  AllBound_CFx_Visc = 0.0;      AllBound_CFy_Visc = 0.0;         AllBound_CFz_Visc = 0.0;
+  AllBound_HeatFlux_Visc = 0.0; AllBound_MaxHeatFlux_Visc = 0.0; AllBound_CEff_Visc = 0.0;
+
+  for(unsigned short iMarker_Monitoring=0; iMarker_Monitoring<config->GetnMarker_Monitoring(); ++iMarker_Monitoring) {
+    Surface_CLift_Visc[iMarker_Monitoring]      = 0.0; Surface_CDrag_Visc[iMarker_Monitoring] = 0.0;
+    Surface_CSideForce_Visc[iMarker_Monitoring] = 0.0; Surface_CEff_Visc[iMarker_Monitoring]  = 0.0;
+    Surface_CFx_Visc[iMarker_Monitoring]        = 0.0; Surface_CFy_Visc[iMarker_Monitoring]   = 0.0;
+    Surface_CFz_Visc[iMarker_Monitoring]        = 0.0; Surface_CMx_Visc[iMarker_Monitoring]   = 0.0;
+    Surface_CMy_Visc[iMarker_Monitoring]        = 0.0; Surface_CMz_Visc[iMarker_Monitoring]   = 0.0;
+  }
+
+  /*--- Loop over the Navier-Stokes markers ---*/
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+
+    /* Check if this boundary must be monitored. */
+    const unsigned short Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    if(Monitoring == YES) {
+
+      /* Easier storage of the boundary condition. */
+      const unsigned short Boundary = config->GetMarker_All_KindBC(iMarker);
+
+      /*--- Obtain the origin for the moment computation for a particular marker ---*/
+      for(unsigned short iMarker_Monitoring=0; iMarker_Monitoring<config->GetnMarker_Monitoring();
+                       ++iMarker_Monitoring) {
+        string Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+        string Marker_Tag     = config->GetMarker_All_TagBound(iMarker);
+        if (Marker_Tag == Monitoring_Tag)
+          Origin = config->GetRefOriginMoment(iMarker_Monitoring);
+      }
+
+      /* Check for a boundary for which the viscous forces must be computed. */
+      if((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
+
+        /*--- Forces initialization at each Marker ---*/
+        CDrag_Visc[iMarker] = 0.0; CLift_Visc[iMarker]       = 0.0; CSideForce_Visc[iMarker] = 0.0;
+        CMx_Visc[iMarker]   = 0.0; CMy_Visc[iMarker]         = 0.0; CMz_Visc[iMarker]        = 0.0;
+        CFx_Visc[iMarker]   = 0.0; CFy_Visc[iMarker]         = 0.0; CFz_Visc[iMarker]        = 0.0;
+        Heat_Visc[iMarker]  = 0.0; MaxHeatFlux_Visc[iMarker] = 0.0; CEff_Visc[iMarker]       = 0.0;
+
+        su2double ForceViscous[]  = {0.0, 0.0, 0.0};
+        su2double MomentViscous[] = {0.0, 0.0, 0.0};
+
+        /* Easier storage of the boundary faces for this boundary marker. */
+        const unsigned long      nSurfElem = boundaries[iMarker].surfElem.size();
+        const CSurfaceElementFEM *surfElem = boundaries[iMarker].surfElem.data();
+
+        /*--- Loop over the faces of this boundary. ---*/
+        for(unsigned long l=0; l<nSurfElem; ++l) {
+
+          /* Compute the states in the integration points of the face. */
+          LeftStatesIntegrationPointsBoundaryFace(&surfElem[l], solDOFs, solInt);
+
+          /*--- Get the required information from the standard element. ---*/
+          const unsigned short ind          = surfElem[l].indStandardElement;
+          const unsigned short nInt         = standardBoundaryFacesSol[ind].GetNIntegration();
+          const unsigned short nDOFsElem    = standardBoundaryFacesSol[ind].GetNDOFsElem();
+          const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
+          const su2double     *weights      = standardBoundaryFacesSol[ind].GetWeightsIntegration();
+
+          /*--- Store the solution of the DOFs of the adjacent element in contiguous
+                memory such that the function MatrixProduct can be used to compute the
+                gradients solution variables in the integration points of the face. ---*/
+          for(unsigned short i=0; i<nDOFsElem; ++i) {
+            const su2double *solDOFElem = VecSolDOFs.data() + nVar*surfElem[l].DOFsSolElement[i];
+            su2double       *sol        = solDOFs + nVar*i;
+           for(unsigned short j=0; j<nVar; ++j)
+             sol[j] = solDOFElem[j];
+          }
+
+          /* Compute the gradients in the integration points. Call the general function to
+             carry out the matrix product. */
+          MatrixProduct(nInt*nDim, nVar, nDOFsElem, derBasisElem, solDOFs, gradSolInt);
+
+          /* Determine the offset between r- and -s-derivatives, which is also the
+             offset between s- and t-derivatives. */
+          const unsigned short offDeriv = nVar*nInt;
+
+          /* Loop over the integration points of this surface element. */
+          for(unsigned short i=0; i<nInt; ++i) {
+
+            /* Easier storage of the solution, its gradients, the normals, the
+               metric terms and the coordinates for this integration point. */
+            const su2double *sol         = solInt     + i*nVar;
+            const su2double *gradSol     = gradSolInt + nVar*i;
+            const su2double *normals     = surfElem[l].metricNormalsFace + i*(nDim+1);
+            const su2double *metricTerms = surfElem[l].metricCoorDerivFace + i*nDim*nDim;
+            const su2double *Coord       = surfElem[l].coorIntegrationPoints + i*nDim;
+
+            /*--- Compute the Cartesian gradients of the solution. ---*/
+            su2double solGradCart[5][3];
+            for(unsigned short k=0; k<nDim; ++k) {
+              for(unsigned short j=0; j<nVar; ++j) {
+                solGradCart[j][k] = 0.0;
+                for(unsigned short l=0; l<nDim; ++l)
+                  solGradCart[j][k] += gradSol[j+l*offDeriv]*metricTerms[k+l*nDim];
+              }
+            }
+
+            /*--- Compute the velocities and static energy in this integration point. ---*/
+            const su2double DensityInv = 1.0/sol[0];
+            su2double vel[3], Velocity2 = 0.0;
+            for(unsigned short j=0; j<nDim; ++j) {
+              vel[j]     = sol[j+1]*DensityInv;
+              Velocity2 += vel[j]*vel[j];
+            }
+
+            const su2double TotalEnergy  = sol[nDim+1]*DensityInv;
+            const su2double StaticEnergy = TotalEnergy - 0.5*Velocity2;
+
+            /*--- Compute the Cartesian gradients of the velocities and static energy
+                  in this integration point and also the divergence of the velocity. ---*/
+            su2double velGrad[3][3], StaticEnergyGrad[3], divVel = 0.0;
+            for(unsigned short k=0; k<nDim; ++k) {
+              StaticEnergyGrad[k] = DensityInv*(solGradCart[nDim+1][k]
+                                  -             TotalEnergy*solGradCart[0][k]);
+              for(unsigned short j=0; j<nDim; ++j) {
+                velGrad[j][k]        = DensityInv*(solGradCart[j+1][k]
+                                     -      vel[j]*solGradCart[0][k]);
+                StaticEnergyGrad[k] -= vel[j]*velGrad[j][k];
+              }
+              divVel += velGrad[k][k];
+            }
+
+            /*--- Compute the laminar viscosity. ---*/
+            FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
+            const su2double Viscosity = FluidModel->GetLaminarViscosity();
+
+            /*--- Set the value of the second viscosity and compute the divergence
+                  term in the viscous normal stresses. ---*/
+            const su2double lambda     = -2.0*Viscosity/3.0;
+            const su2double lamDivTerm =  lambda*divVel;
+
+            /*--- Compute the viscous stress tensor and the normal flux. Note that
+                  there is a plus sign for the heat flux, because the normal
+                  points into the geometry. ---*/
+            su2double tauVis[3][3], qHeatNorm = 0.0;
+            for(unsigned short k=0; k<nDim; ++k) {
+              tauVis[k][k] = 2.0*Viscosity*velGrad[k][k] + lamDivTerm;    // Normal stress
+              for(unsigned short j=(k+1); j<nDim; ++j) {
+                tauVis[j][k] = Viscosity*(velGrad[j][k] + velGrad[k][j]); // Shear stress
+                tauVis[k][j] = tauVis[j][k];
+              }
+
+              qHeatNorm += Viscosity*factHeatFlux*StaticEnergyGrad[k]*normals[k];
+            }
+
+            /*-- Compute the vector from the reference point to the integration
+                 point and update the viscous force. Note that the normal points
+                 into the geometry, hence the minus sign for the stress. ---*/
+            su2double MomentDist[3], Force[3];
+            const su2double scaleFac = weights[i]*normals[nDim]*factor;
+
+            for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+              Force[iDim] = 0.0;
+              for(unsigned short jDim=0; jDim<nDim; ++jDim) 
+                Force[iDim] -= tauVis[iDim][jDim]*normals[jDim];
+
+              MomentDist[iDim]    = Coord[iDim] - Origin[iDim];
+              Force[iDim]        *= scaleFac;
+              ForceViscous[iDim] += Force[iDim];
+            }
+
+            /*--- Update the viscous moment. ---*/
+            if (nDim == 3) {
+              MomentViscous[0] += (Force[2]*MomentDist[1]-Force[1]*MomentDist[2])/RefLengthMoment;
+              MomentViscous[1] += (Force[0]*MomentDist[2]-Force[2]*MomentDist[0])/RefLengthMoment;
+            }
+            MomentViscous[2] += (Force[1]*MomentDist[0]-Force[0]*MomentDist[1])/RefLengthMoment;
+
+            /* Update the heat flux and maximum heat flux for this marker. */
+            Heat_Visc[iMarker] += qHeatNorm*weights[i]*normals[nDim];
+            MaxHeatFlux_Visc[iMarker] = max(MaxHeatFlux_Visc[iMarker], fabs(qHeatNorm));
+          }
+        }
+
+        /*--- Project forces and store the non-dimensional coefficients ---*/
+        if (nDim == 2) {
+          CDrag_Visc[iMarker] =  ForceViscous[0]*cos(Alpha) + ForceViscous[1]*sin(Alpha);
+          CLift_Visc[iMarker] = -ForceViscous[0]*sin(Alpha) + ForceViscous[1]*cos(Alpha);
+          CEff_Visc[iMarker]  = CLift_Visc[iMarker] / (CDrag_Visc[iMarker]+EPS);
+          CMz_Visc[iMarker]   = MomentViscous[2];
+          CFx_Visc[iMarker]   = ForceViscous[0];
+          CFy_Visc[iMarker]   = ForceViscous[1];
+        }
+        if (nDim == 3) {
+          CDrag_Visc[iMarker]      =  ForceViscous[0]*cos(Alpha)*cos(Beta)
+                                   +  ForceViscous[1]*sin(Beta)
+                                   +  ForceViscous[2]*sin(Alpha)*cos(Beta);
+          CLift_Visc[iMarker]      = -ForceViscous[0]*sin(Alpha) + ForceViscous[2]*cos(Alpha);
+          CSideForce_Visc[iMarker] = -ForceViscous[0]*sin(Beta)*cos(Alpha)
+                                   +  ForceViscous[1]*cos(Beta)
+                                   -  ForceViscous[2]*sin(Beta)*sin(Alpha);
+          CEff_Visc[iMarker]       = CLift_Visc[iMarker]/(CDrag_Visc[iMarker] + EPS);
+          CMx_Visc[iMarker]        = MomentViscous[0];
+          CMy_Visc[iMarker]        = MomentViscous[1];
+          CMz_Visc[iMarker]        = MomentViscous[2];
+          CFx_Visc[iMarker]        = ForceViscous[0];
+          CFy_Visc[iMarker]        = ForceViscous[1];
+          CFz_Visc[iMarker]        = ForceViscous[2];
+        }
+
+        AllBound_CDrag_Visc       += CDrag_Visc[iMarker];
+        AllBound_CLift_Visc       += CLift_Visc[iMarker];
+        AllBound_CSideForce_Visc  += CSideForce_Visc[iMarker];
+        AllBound_CMx_Visc         += CMx_Visc[iMarker];
+        AllBound_CMy_Visc         += CMy_Visc[iMarker];
+        AllBound_CMz_Visc         += CMz_Visc[iMarker];
+        AllBound_CFx_Visc         += CFx_Visc[iMarker];
+        AllBound_CFy_Visc         += CFy_Visc[iMarker];
+        AllBound_CFz_Visc         += CFz_Visc[iMarker];
+        AllBound_HeatFlux_Visc    += Heat_Visc[iMarker];
+        AllBound_MaxHeatFlux_Visc  = max(AllBound_MaxHeatFlux_Visc,
+                                         MaxHeatFlux_Visc[iMarker]);
+
+        /*--- Compute the coefficients per surface ---*/
+        for(unsigned short iMarker_Monitoring=0; iMarker_Monitoring<config->GetnMarker_Monitoring();
+                         ++iMarker_Monitoring) {
+          string Monitoring_Tag = config->GetMarker_Monitoring(iMarker_Monitoring);
+          string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          if (Marker_Tag == Monitoring_Tag) {
+            Surface_CLift_Visc[iMarker_Monitoring]      += CLift_Visc[iMarker];
+            Surface_CDrag_Visc[iMarker_Monitoring]      += CDrag_Visc[iMarker];
+            Surface_CSideForce_Visc[iMarker_Monitoring] += CSideForce_Visc[iMarker];
+            Surface_CEff_Visc[iMarker_Monitoring]       += CEff_Visc[iMarker];
+            Surface_CFx_Visc[iMarker_Monitoring]        += CFx_Visc[iMarker];
+            Surface_CFy_Visc[iMarker_Monitoring]        += CFy_Visc[iMarker];
+            Surface_CFz_Visc[iMarker_Monitoring]        += CFz_Visc[iMarker];
+            Surface_CMx_Visc[iMarker_Monitoring]        += CMx_Visc[iMarker];
+            Surface_CMy_Visc[iMarker_Monitoring]        += CMy_Visc[iMarker];
+            Surface_CMz_Visc[iMarker_Monitoring]        += CMz_Visc[iMarker];
+          }
+        }
+      }
+    }
+  }
+
+#ifdef HAVE_MPI
+
+  /*--- Parallel mode. The data from all ranks must be gathered.
+        Determine the size of the communication buffer. ---*/
+  const unsigned long nCommSize = 9*config->GetnMarker_Monitoring() + 10;
+
+  /*--- Define the communication buffers and store to local data in
+        the local buffer. ---*/
+  vector<su2double> locBuf(nCommSize), globBuf(nCommSize);
+
+  unsigned long ii = 0;
+  locBuf[ii++] = AllBound_CDrag_Visc;      locBuf[ii++] = AllBound_CLift_Visc;
+  locBuf[ii++] = AllBound_CSideForce_Visc; locBuf[ii++] = AllBound_CMx_Visc;
+  locBuf[ii++] = AllBound_CMy_Visc;        locBuf[ii++] = AllBound_CMz_Visc;
+  locBuf[ii++] = AllBound_CFx_Visc;        locBuf[ii++] = AllBound_CFy_Visc;
+  locBuf[ii++] = AllBound_CFz_Visc;        locBuf[ii++] = AllBound_HeatFlux_Visc;
+
+  for(unsigned short i=0; i<config->GetnMarker_Monitoring(); ++i) {
+    locBuf[ii++] = Surface_CLift_Visc[i];      locBuf[ii++] = Surface_CDrag_Visc[i];
+    locBuf[ii++] = Surface_CSideForce_Visc[i]; locBuf[ii++] = Surface_CFx_Visc[i];
+    locBuf[ii++] = Surface_CFy_Visc[i];        locBuf[ii++] = Surface_CFz_Visc[i];
+    locBuf[ii++] = Surface_CMx_Visc[i];        locBuf[ii++] = Surface_CMy_Visc[i];
+    locBuf[ii++] = Surface_CMz_Visc[i];
+  }
+
+  /* Sum up all the data from all ranks. The result will be available on all ranks. */
+  SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
+                     MPI_SUM, MPI_COMM_WORLD);
+
+  /*--- Copy the data back from globBuf into the required variables. ---*/
+  ii = 0;
+  AllBound_CDrag_Visc      = globBuf[ii++]; AllBound_CLift_Visc    = globBuf[ii++];
+  AllBound_CSideForce_Visc = globBuf[ii++]; AllBound_CMx_Visc      = globBuf[ii++];
+  AllBound_CMy_Visc        = globBuf[ii++]; AllBound_CMz_Visc      = globBuf[ii++]; 
+  AllBound_CFx_Visc        = globBuf[ii++]; AllBound_CFy_Visc      = globBuf[ii++];
+  AllBound_CFz_Visc        = globBuf[ii++]; AllBound_HeatFlux_Visc = globBuf[ii++];
+
+  AllBound_CEff_Visc = AllBound_CLift_Visc/(AllBound_CDrag_Visc + EPS);
+
+  for(unsigned short i=0; i<config->GetnMarker_Monitoring(); ++i) {
+    Surface_CLift_Visc[i]      = globBuf[ii++]; Surface_CDrag_Visc[i] = globBuf[ii++];
+    Surface_CSideForce_Visc[i] = globBuf[ii++]; Surface_CFx_Visc[i]   = globBuf[ii++];
+    Surface_CFy_Visc[i]        = globBuf[ii++]; Surface_CFz_Visc[i]   = globBuf[ii++];
+    Surface_CMx_Visc[i]        = globBuf[ii++]; Surface_CMy_Visc[i]   = globBuf[ii++];
+    Surface_CMz_Visc[i]        = globBuf[ii++];
+
+    Surface_CEff_Visc[i] = Surface_CLift_Visc[i]/(Surface_CDrag_Visc[i] + EPS);
+  }
+
+  /* Determine the maximum heat flux over all ranks. */
+  su2double localMax = AllBound_MaxHeatFlux_Visc;
+  SU2_MPI::Allreduce(&localMax, &AllBound_MaxHeatFlux_Visc, 1, MPI_DOUBLE,
+                     MPI_MAX, MPI_COMM_WORLD);
+#endif
+
+  /*--- Update the total coefficients (note that all the nodes have the same value)---*/
+  Total_CDrag       += AllBound_CDrag_Visc;
+  Total_CLift       += AllBound_CLift_Visc;
+  Total_CSideForce  += AllBound_CSideForce_Visc;
+  Total_CEff         = Total_CLift / (Total_CDrag + EPS);
+  Total_CMx         += AllBound_CMx_Visc;
+  Total_CMy         += AllBound_CMy_Visc;
+  Total_CMz         += AllBound_CMz_Visc;
+  Total_CFx         += AllBound_CFx_Visc;
+  Total_CFy         += AllBound_CFy_Visc;
+  Total_CFz         += AllBound_CFz_Visc;
+
+  /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
+  for (unsigned short iMarker_Monitoring=0; iMarker_Monitoring<config->GetnMarker_Monitoring();
+                    ++iMarker_Monitoring) {
+    Surface_CLift[iMarker_Monitoring]      += Surface_CLift_Visc[iMarker_Monitoring];
+    Surface_CDrag[iMarker_Monitoring]      += Surface_CDrag_Visc[iMarker_Monitoring];
+    Surface_CSideForce[iMarker_Monitoring] += Surface_CSideForce_Visc[iMarker_Monitoring];
+    Surface_CEff[iMarker_Monitoring]        = Surface_CLift[iMarker_Monitoring] / (Surface_CDrag[iMarker_Monitoring] + EPS);
+    Surface_CFx[iMarker_Monitoring]        += Surface_CFx_Visc[iMarker_Monitoring];
+    Surface_CFy[iMarker_Monitoring]        += Surface_CFy_Visc[iMarker_Monitoring];
+    Surface_CFz[iMarker_Monitoring]        += Surface_CFz_Visc[iMarker_Monitoring];
+    Surface_CMx[iMarker_Monitoring]        += Surface_CMx_Visc[iMarker_Monitoring];
+    Surface_CMy[iMarker_Monitoring]        += Surface_CMy_Visc[iMarker_Monitoring];
+    Surface_CMz[iMarker_Monitoring]        += Surface_CMz_Visc[iMarker_Monitoring];
+  }
+
+  /*--- If the MKL is used the temporary storage must be released again. ---*/
+#ifdef HAVE_MKL
+  mkl_free(solInt);
+  mkl_free(gradSolInt);
+  mkl_free(solDOFs);
+#endif
 }
 
 void CFEM_DG_NSSolver::Internal_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -4252,12 +4631,12 @@ void CFEM_DG_NSSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container
           customized boundary conditions. ---*/
     for(unsigned short i=0; i<nInt; ++i) {
 
+#ifdef CUSTOM_BC_NSUNITQUAD
+
       /* Easier storage of the right solution for this integration point and
          the coordinates of this integration point. */
       const su2double *coor = surfElem[l].coorIntegrationPoints + i*nDim;
             su2double *UR   = solIntR + i*nVar;
-
-#ifdef CUSTOM_BC_NSUNITQUAD
 
       /*--- Set the exact solution in this integration point. ---*/
       const double xTilde = coor[0]*cosFlowAngle - coor[1]*sinFlowAngle;
