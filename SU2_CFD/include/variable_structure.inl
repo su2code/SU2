@@ -533,6 +533,8 @@ inline su2double CVariable::GetSolution_Geometry(unsigned short val_var) { retur
 
 inline void CVariable::SetSolution_Geometry(su2double *val_solution_geometry) { }
 
+inline void CVariable::SetSolution_Geometry(unsigned short val_var, su2double val_solution_geometry) { }
+
 inline su2double CVariable::GetGeometry_CrossTerm_Derivative(unsigned short val_var) { return 0.0;}
 
 inline void CVariable::SetGeometry_CrossTerm_Derivative(unsigned short iDim, su2double der) { }
@@ -1310,6 +1312,10 @@ inline void CDiscAdjVariable::SetSolution_Geometry(su2double *val_solution_geome
   for (unsigned short iDim = 0; iDim < nDim; iDim++){
     Solution_Geometry[iDim] = val_solution_geometry[iDim];
   }
+}
+
+inline void CDiscAdjVariable::SetSolution_Geometry(unsigned short val_var, su2double val_solution_geometry) {
+    Solution_Geometry[val_var] = val_solution_geometry;
 }
 
 inline void CDiscAdjVariable::Set_OldSolution_Geometry(void) {
