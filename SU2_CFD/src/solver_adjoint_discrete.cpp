@@ -146,7 +146,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     /*--- Restart the solution from file information ---*/
     mesh_filename = config->GetSolution_AdjFileName();
     filename = config->GetObjFunc_Extension(mesh_filename);
-
+    filename = config->GetMultizone_FileName(filename, config->GetiZone());
     restart_file.open(filename.data(), ios::in);
 
     /*--- In case there is no file ---*/
