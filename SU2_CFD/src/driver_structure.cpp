@@ -3161,10 +3161,10 @@ void CMultiZoneDriver::Run() {
 	and other intermediate procedures may be required. ---*/
 
 	/*--- Zone preprocessing ---*/
-/*
+
 	for (iZone = 0; iZone < nZone; iZone++)
 		iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
-*/
+
 	/*--- Updating zone interface communication patterns,
 	 needed only for unsteady simulation since for steady problems
 	 the transfer structure is already created in the 
@@ -3198,7 +3198,7 @@ void CMultiZoneDriver::Run() {
 	
 		for (iZone = 0; iZone < nZone; iZone++) {
 			
-			iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
+			//iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
 			
 			config_container[iZone]->SetIntIter(IntIter);
 

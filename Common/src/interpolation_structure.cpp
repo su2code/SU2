@@ -390,14 +390,10 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 	Target_check = markTarget;	
 	#endif
 	
-	if(Target_check == -1 || Donor_check == -1)
-		continue;
-	
 	nVertexDonor  =  donor_geometry->GetnVertex(markDonor);
 	nVertexTarget = target_geometry->GetnVertex(markTarget);
 	
 	Buffer_Send_nVertex_Donor    = new unsigned long [1];
-    Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
 
 	/* Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor */
 	Determine_ArraySize(false, markDonor, markTarget, nVertexDonor, nDim);
@@ -411,6 +407,16 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 	  /*-- Collect coordinates, global points, and normal vectors ---*/
 	  Collect_VertexInfo(false, markDonor, markTarget, nVertexDonor, nDim);
 	  
+	if(Target_check == -1 || Donor_check == -1){
+	  delete[] Buffer_Send_Coord;
+	  delete[] Buffer_Send_GlobalPoint;
+
+	  delete[] Buffer_Receive_Coord;
+	  delete[] Buffer_Receive_GlobalPoint;
+
+	  delete[] Buffer_Send_nVertex_Donor;
+	  continue;
+	}
 		
 	  /*--- Compute the closest point to a Near-Field boundary point ---*/
 	  maxdist = 0.0;
@@ -463,11 +469,10 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 	  delete[] Buffer_Receive_GlobalPoint;
 
 	  delete[] Buffer_Send_nVertex_Donor;
-	  delete[] Buffer_Receive_nVertex_Donor;
-
 
   }
 
+  delete[] Buffer_Receive_nVertex_Donor;
 }
 
 
