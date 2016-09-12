@@ -9223,7 +9223,6 @@ void CEulerSolver::BC_NonUniform(CGeometry *geometry, CSolver **solver_container
   su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
   su2double  yCoord, y_0, y_min, y_max, y_perio, yPitch, Physical_dt, Physical_t, t_perio, Period, Boundary_Vel;
-CTAGS:
 
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement        = config->GetGrid_Movement();
@@ -9234,13 +9233,12 @@ CTAGS:
                     (config->GetKind_Turb_Model() == SST));
   bool spectral_method = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
 
-  su2double *Normal, *FlowDirMix, TangVelocity, NormalVelocity, ext_flow_angle;
+  su2double *Normal, TangVelocity, NormalVelocity;
   Normal = new su2double[nDim];
 
   Velocity_i = new su2double[nDim];
   Velocity_b = new su2double[nDim];
   Velocity_e = new su2double[nDim];
-  FlowDirMix = new su2double[nDim];
   Flow_Dir    = new su2double[nDim];
   Lambda_i = new su2double[nVar];
   u_i = new su2double[nVar];
@@ -9676,7 +9674,6 @@ CTAGS:
   delete [] Velocity_e;
   delete [] Velocity_b;
   delete [] Velocity_i;
-  delete [] FlowDirMix;
 
   delete [] S_boundary;
   delete [] Lambda_i;
@@ -9709,7 +9706,7 @@ void CEulerSolver::BC_TurboNonUniform(CGeometry *geometry, CSolver **solver_cont
   su2double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **DubDu, *dw, *u_e, *u_i, *u_b;
   su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
-  su2double Physical_t, Physical_dt, Pitch, Period, BoundaryVel, t_perio, y_perio, Coord;
+  su2double Physical_t, Physical_dt, Pitch, Period, BoundaryVel, TimePeriodic, CoordPeriodic, Coord;
 
   unsigned short  iZone     = config->GetiZone();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -9717,12 +9714,11 @@ void CEulerSolver::BC_TurboNonUniform(CGeometry *geometry, CSolver **solver_cont
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(config->GetMarker_All_TurbomachineryFlag(val_marker));
   bool viscous              = config->GetViscous();
-  bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
       (config->GetKind_Turb_Model() == SST));
   bool spectral_method = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
 
-  su2double *Normal, *turboNormal, *UnitNormal, *FlowDirMix, FlowDirMixMag, *turboVelocity;
+  su2double *Normal, *turboNormal, *UnitNormal, *FlowDirMix, *turboVelocity;
   Normal = new su2double[nDim];
   turboNormal 	= new su2double[nDim];
   UnitNormal 	= new su2double[nDim];
@@ -9822,33 +9818,35 @@ void CEulerSolver::BC_TurboNonUniform(CGeometry *geometry, CSolver **solver_cont
 				ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
 
 			/*--- Retreive the boundary velocity from config file ---*/
-
 			BoundaryVel = config->GetTurboNonUniform_BoundaryVel(Marker_Tag);
 			BoundaryVel /= config->GetVelocity_Ref();
 
-			Period  = Pitch/BoundaryVel;
-			Period /= config->GetTime_Ref();
+			/*--- Calculate the period if there is boundary velocity ---*/
+			if (BoundaryVel != 0.0){
+				Period  = Pitch/BoundaryVel;
+				Period /= config->GetTime_Ref();
+			}
+			else
+				Period = 0.0;
 
+			/*--- Retrieve the boundary coordinate ---*/
 			Coord = geometry->turbovertex[val_marker][iSpan][iVertex]->GetAngularCoord();
+
 			/*--- Build the external state u_e from boundary data and internal node ---*/
 			switch(config->GetKind_Data_TurboNonUniform(Marker_Tag))
 			{
 			case TOTAL_CONDITIONS_PT:
 
-				/*--- Retrieve the specified total conditions for this boundary. ---*/
-      	t_perio = fmod(SU2_TYPE::GetValue(Physical_t), SU2_TYPE::GetValue(Period));
-      	y_perio = fmod(SU2_TYPE::GetValue(BoundaryVel*t_perio + Coord), SU2_TYPE::GetValue(Pitch));
+				/*--- Make periodic the boundary coordinates if a velocity is specified at the boundary. ---*/
+      	TimePeriodic  = fmod(SU2_TYPE::GetValue(Physical_t), SU2_TYPE::GetValue(Period));
+      	CoordPeriodic = fmod(SU2_TYPE::GetValue(BoundaryVel*TimePeriodic + Coord), SU2_TYPE::GetValue(Pitch));
 
-      	/*--- Retrieve the specified total conditions for this boundary. ---*/
-        P_Total = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_Var1, NonUniformBC_d2Var1, NonUniformBC_InputPoints, y_perio);
-        if (gravity) {
-        	P_Total -= geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;/// check in which case is true (only freesurface?)
-        }
-
-        T_Total  = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_Var2, NonUniformBC_d2Var2, NonUniformBC_InputPoints, y_perio);
-        Flow_Dir[0] = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_FlowDir_x, NonUniformBC_d2FlowDir_x, NonUniformBC_InputPoints, y_perio);
-        Flow_Dir[1] = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_FlowDir_y, NonUniformBC_d2FlowDir_y, NonUniformBC_InputPoints, y_perio);
-        Flow_Dir[2] = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_FlowDir_z, NonUniformBC_d2FlowDir_z, NonUniformBC_InputPoints, y_perio);
+      	/*--- Retrieve the specified total conditions for this boundary, interpolated from input file with cubic spline. ---*/
+        P_Total     = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_Var1, NonUniformBC_d2Var1, NonUniformBC_InputPoints, CoordPeriodic);
+        T_Total     = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_Var2, NonUniformBC_d2Var2, NonUniformBC_InputPoints, CoordPeriodic);
+        Flow_Dir[0] = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_FlowDir_x, NonUniformBC_d2FlowDir_x, NonUniformBC_InputPoints, CoordPeriodic);
+        Flow_Dir[1] = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_FlowDir_y, NonUniformBC_d2FlowDir_y, NonUniformBC_InputPoints, CoordPeriodic);
+        Flow_Dir[2] = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_FlowDir_z, NonUniformBC_d2FlowDir_z, NonUniformBC_InputPoints, CoordPeriodic);
 
 				/*--- Non-dim. the inputs if necessary. ---*/
 				P_Total /= config->GetPressure_Ref();
@@ -9873,9 +9871,15 @@ void CEulerSolver::BC_TurboNonUniform(CGeometry *geometry, CSolver **solver_cont
 				break;
 
 			case STATIC_PRESSURE:
-				/*--- Retrieve the staic pressure for this boundary. ---*/
-				Pressure_e = config->GetRiemann_Var1(Marker_Tag);
+				/*--- Make periodic the boundary coordinates if a velocity is specified at the boundary. ---*/
+      	TimePeriodic  = fmod(SU2_TYPE::GetValue(Physical_t), SU2_TYPE::GetValue(Period));
+      	CoordPeriodic = fmod(SU2_TYPE::GetValue(BoundaryVel*TimePeriodic + Coord), SU2_TYPE::GetValue(Pitch));
+
+      	/*--- Retrieve the specified static pressure for this boundary, interpolated from input file with cubic spline. ---*/
+        Pressure_e  = geometry->GetSpline(NonUniformBC_Coord, NonUniformBC_Var1, NonUniformBC_d2Var1, NonUniformBC_InputPoints, CoordPeriodic);
+				/*--- Non-dimensionalization if necessary. ---*/
 				Pressure_e /= config->GetPressure_Ref();
+
 				Density_e = Density_i;
 
 				/* --- Compute the boundary state u_e --- */
@@ -12618,10 +12622,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 	Pressure, Density, Energy, *Flow_Dir, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
 	alpha, aa, bb, cc, dd, Area, UnitNormal[3];
 	su2double *V_inlet, *V_domain;
-	su2double Physical_dt, Physical_t;
-
-	//TODO Clean from spectral method hardcoded once fixed the possible bug with scaling the geometry
-
 	bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 	bool grid_movement        = config->GetGrid_Movement();
 	bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -12635,7 +12635,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 	bool gravity = (config->GetGravityForce());
 	bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
 			(config->GetKind_Turb_Model() == SST));
-	bool spectral_method = (config->GetUnsteady_Simulation() == SPECTRAL_METHOD);
 	su2double *Normal = new su2double[nDim];
 
 	/*--- Loop over all the vertices on this boundary marker ---*/
