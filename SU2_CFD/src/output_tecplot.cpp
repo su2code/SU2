@@ -81,7 +81,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     else filename = config->GetStructure_FileName().c_str();
   }
   
-  if (config->GetKind_SU2() == SU2_DOT){
+  if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol) filename = config->GetSurfSens_FileName();
     else filename = config->GetVolSens_FileName();
   }
@@ -215,7 +215,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
           ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
           ( Kind_Solver == DISC_ADJ_RANS               )) {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
-        if (geometry->GetnDim() == 3){
+        if (geometry->GetnDim() == 3) {
           Tecplot_File << ",\"Sensitivity_z\"";
         }
       }
@@ -233,7 +233,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
           //Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
           if (headings == NULL) {
             Tecplot_File << ", \"ExtraOutput_" << iVar+1<<"\"";
-          } else{
+          } else {
             Tecplot_File << ", \""<< headings[iVar] <<"\"";
           }
         }
@@ -419,7 +419,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   
   Tecplot_File.close();
   
-  if (surf_sol){
+  if (surf_sol) {
     delete [] LocalIndex;
     delete[] SurfacePoint;
   }
@@ -516,7 +516,7 @@ void COutput::SetTecplotASCII_LowMemory(CConfig *config, CGeometry *geometry, CS
           ( Kind_Solver == DISC_ADJ_NAVIER_STOKES      ) ||
           ( Kind_Solver == DISC_ADJ_RANS               )) {
         Tecplot_File << ", \"Surface_Sensitivity\", \"Sensitivity_x\", \"Sensitivity_y\"";
-        if (geometry->GetnDim() == 3){
+        if (geometry->GetnDim() == 3) {
           Tecplot_File << ",\"Sensitivity_z\"";
         }
       }

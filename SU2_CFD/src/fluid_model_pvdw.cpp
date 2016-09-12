@@ -138,7 +138,7 @@ void CVanDerWaalsGas::SetTDState_hs (su2double h, su2double s ) {
     	x1 = Zed*v;
     	x2 = v;
 
-    } else{
+    } else {
     	x1 = 0.5*v;
     	x2 = v;
     }
@@ -152,7 +152,7 @@ void CVanDerWaalsGas::SetTDState_hs (su2double h, su2double s ) {
     		if (fabs(fx1) < fabs(fx2)) {
     			x1 += FACTOR*(x1-x2);
     			fx1 = log(x1-b) - s/Gas_Constant + log((h+ 2*a/x1)/Gas_Constant/(1/Gamma_Minus_One+ x1/(x1-b)))/Gamma_Minus_One;
-    		} else{
+    		} else {
     			x2 += FACTOR*(x2-x1);
     			fx2 = log(x2-b) - s/Gas_Constant + log((h+ 2*a/x2)/Gas_Constant/(1/Gamma_Minus_One+ x2/(x2-b)))/Gamma_Minus_One;
     			}
@@ -237,11 +237,11 @@ void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
 	T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
     rho = P/(T*Gas_Constant);
 
-    if(Zed<0.9999){
+    if(Zed<0.9999) {
     	x1 = rho;
     	x2 = rho/Zed;
 
-    }else{
+    }else {
     	x1 = rho;
     	x2 = rho/0.5;
     }
@@ -253,12 +253,12 @@ void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
     // zbrac algorithm NR
 
     for (int j=1;j<=NTRY;j++) {
-    	if (fx1*fx2 > 0.0){
-    		if (fabs(fx1) < fabs(fx2)){
+    	if (fx1*fx2 > 0.0) {
+    		if (fabs(fx1) < fabs(fx2)) {
     			x1 += FACTOR*(x1-x2);
     			T1 = (P+x1*x1*a)*((1-x1*b)/(x1*Gas_Constant));
     			fx1 = Gas_Constant *( log(T1)/Gamma_Minus_One + log(1/x1 - b)) - s;
-    		}else{
+    		}else {
     			x2 += FACTOR*(x2-x1);
     		    T2 = (P+x2*x2*a)*((1-x2*b)/(x2*Gas_Constant));
     		    fx2 = Gas_Constant *( log(T2)/Gamma_Minus_One + log(1/x2 - b)) - s;
@@ -271,7 +271,7 @@ void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
 
 	f=fx1;
 	fmid=fx2;
-	if (f*fmid >= 0.0){
+	if (f*fmid >= 0.0) {
 		cout<< "Root must be bracketed for bisection in rtbis"<< endl;
 		SetTDState_rhoT(Density, Temperature);
 	}
@@ -284,7 +284,7 @@ void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
 		count++;
 		}while(abs(fmid) > toll && count<ITMAX);
 
-		if(count==ITMAX){
+		if(count==ITMAX) {
 			cout <<"Too many bisections in rtbis" << endl;
 		}
 
@@ -296,7 +296,7 @@ void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
 	cons_P= abs((Pressure -P)/P);
 	cons_s= abs((Entropy-s)/s);
 
-	if(cons_P >1e-3 || cons_s >1e-3){
+	if(cons_P >1e-3 || cons_s >1e-3) {
 		cout<< "TD consistency not verified in hs call"<< endl;
 	}
 

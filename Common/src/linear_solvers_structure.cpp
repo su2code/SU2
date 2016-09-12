@@ -615,7 +615,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
 
   bool TapeActive = NO;
 
-  if (config->GetDiscrete_Adjoint()){
+  if (config->GetDiscrete_Adjoint()) {
 #ifdef CODI_REVERSE_TYPE
 
    /*--- Check whether the tape is active, i.e. if it is recording and store the status ---*/
@@ -716,7 +716,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   }
 
 
-  if(TapeActive){
+  if(TapeActive) {
     /*--- Start recording if it was stopped for the linear solver ---*/
 
     AD::StartRecording();
@@ -731,7 +731,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   
 }
 
-void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config){
+void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
 
 #ifdef CODI_REVERSE_TYPE
   
@@ -746,11 +746,11 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
   su2double::GradientData *LinSysRes_Indices = new su2double::GradientData[size];
   su2double::GradientData *LinSysSol_Indices = new su2double::GradientData[size];
 
-  for (i = 0; i < size; i++){
+  for (i = 0; i < size; i++) {
 
     /*--- Register the solution of the linear system (could already be registered when using multigrid) ---*/
 
-    if (!LinSysSol[i].isActive()){
+    if (!LinSysSol[i].isActive()) {
       AD::globalTape.registerInput(LinSysSol[i]);
     }
 
@@ -776,7 +776,7 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
 
   /*--- Build preconditioner for the transposed Jacobian ---*/
 
-  switch(config->GetKind_DiscAdj_Linear_Prec()){
+  switch(config->GetKind_DiscAdj_Linear_Prec()) {
     case ILU:
       Jacobian.BuildILUPreconditioner(true);
       break;

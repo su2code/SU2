@@ -1059,8 +1059,8 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     iPoint_Local = Global2Local[iPoint_Global];
     if (iPoint_Local >= 0) {
       point_line >> index;
-      for (iVar = 0; iVar < skipVars; iVar++){ point_line >> dull_val;}
-      for (iVar = 0; iVar < nVar; iVar++){ point_line >> Solution[iVar];}
+      for (iVar = 0; iVar < skipVars; iVar++) { point_line >> dull_val;}
+      for (iVar = 0; iVar < nVar; iVar++) { point_line >> Solution[iVar];}
       node[iPoint_Local]->SetSolution(Solution);
 
     }

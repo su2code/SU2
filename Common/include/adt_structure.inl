@@ -33,35 +33,36 @@
  
 #pragma once
 
-inline su2_adtComparePointClass::~su2_adtComparePointClass(){}
+inline su2_adtComparePointClass::~su2_adtComparePointClass() {}
 
 inline bool su2_adtComparePointClass::operator()(const unsigned long p0,
                                                  const unsigned long p1) const {
   return pointCoor[nDim*p0+splitDirection] < pointCoor[nDim*p1+splitDirection];
 }
 
-inline su2_BBoxTargetClass::su2_BBoxTargetClass(){}
+inline su2_BBoxTargetClass::su2_BBoxTargetClass() {}
 
-inline su2_BBoxTargetClass::~su2_BBoxTargetClass(){}
+inline su2_BBoxTargetClass::~su2_BBoxTargetClass() {}
 
 inline su2_BBoxTargetClass::su2_BBoxTargetClass(const su2_BBoxTargetClass &other) {Copy(other);}
 
 inline su2_BBoxTargetClass& su2_BBoxTargetClass::operator=(const su2_BBoxTargetClass &other) {Copy(other); return (*this);}
 
-inline su2_adtNodeClass::su2_adtNodeClass(){}
+inline su2_adtNodeClass::su2_adtNodeClass() {}
 
-inline su2_adtNodeClass::~su2_adtNodeClass(){}
+inline su2_adtNodeClass::~su2_adtNodeClass() {}
 
 inline su2_adtNodeClass::su2_adtNodeClass(const su2_adtNodeClass &other) {Copy(other);}
 
 inline su2_adtNodeClass& su2_adtNodeClass::operator=(const su2_adtNodeClass &other) {Copy(other); return (*this);}
 
-inline su2_adtBaseClass::su2_adtBaseClass(){}
+inline su2_adtBaseClass::su2_adtBaseClass() {}
 
-inline su2_adtBaseClass::~su2_adtBaseClass(){}
+inline su2_adtBaseClass::~su2_adtBaseClass() {}
 
 inline bool su2_adtBaseClass::IsEmpty(void) const {return isEmpty;}
 
-inline su2_adtPointsOnlyClass::~su2_adtPointsOnlyClass(){}
+inline su2_adtPointsOnlyClass::~su2_adtPointsOnlyClass() {}
 
-inline su2_adtElemClass::~su2_adtElemClass(){}
+inline su2_adtElemClass::~su2_adtElemClass() {}
+
