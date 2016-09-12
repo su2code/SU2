@@ -199,7 +199,7 @@ void CAuxMPIWrapper::Waitall(int nrequests, MPI_Request *request,
 }
 
 void CAuxMPIWrapper::Waitany(int nrequests, MPI_Request *request,
-                             int *index, MPI_Status *status){
+                             int *index, MPI_Status *status) {
 
   /*--- Wait for any normal request to finish ---*/
 
@@ -446,7 +446,7 @@ void CAuxMPIWrapper::Scatter(void *sendbuf, int sendcnt,
     su2double *SendBuffer =  static_cast< su2double* >(sendbuf);
     su2double *RecvBuffer =  static_cast< su2double* >(recvbuf);
 
-    if (rank == root){
+    if (rank == root) {
       SendValueBuffer = new double[sendcnt];
       SendAuxBuffer    = new double[sendcnt];
 
@@ -468,7 +468,7 @@ void CAuxMPIWrapper::Scatter(void *sendbuf, int sendcnt,
     delete [] RecvValueBuffer;
     delete [] RecvAuxBuffer;
 
-    if (rank == root){
+    if (rank == root) {
       delete [] SendValueBuffer;
       delete [] SendAuxBuffer;
     }

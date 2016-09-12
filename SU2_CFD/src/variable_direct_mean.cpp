@@ -136,7 +136,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
   
-  if(compressible){ 
+  if(compressible) { 
     Limiter_Secondary = new su2double [nSecondaryVarGrad];
     for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
       Limiter_Secondary[iVar] = 0.0;
@@ -222,7 +222,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
-  if (compressible){ 
+  if (compressible) { 
     Secondary = new su2double [nSecondaryVar];
     for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
   }
@@ -239,7 +239,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
 
-  if (compressible){  
+  if (compressible) {  
     Gradient_Secondary = new su2double* [nSecondaryVarGrad];
     for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
       Gradient_Secondary[iVar] = new su2double [nDim];
@@ -318,7 +318,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
     Limiter_Primitive[iVar] = 0.0;
  
-  if (compressible){ 
+  if (compressible) { 
     Limiter_Secondary = new su2double [nSecondaryVarGrad];
     for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
       Limiter_Secondary[iVar] = 0.0;
@@ -373,7 +373,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
-  if (compressible){ 
+  if (compressible) { 
     Secondary = new su2double [nSecondaryVar];
     for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
   }
@@ -389,7 +389,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
 
-  if (compressible){  
+  if (compressible) {  
     Gradient_Secondary = new su2double* [nSecondaryVarGrad];
     for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
       Gradient_Secondary[iVar] = new su2double [nDim];

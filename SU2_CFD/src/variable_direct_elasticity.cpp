@@ -86,13 +86,13 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
     Solution[iVar] = val_fea[iVar];
   }
   
-  if (dynamic_analysis){
+  if (dynamic_analysis) {
     Solution_time_n			=  new su2double [nVar];
     Solution_Vel 			=  new su2double [nVar];
     Solution_Vel_time_n		=  new su2double [nVar];
     Solution_Accel 			=  new su2double [nVar];
     Solution_Accel_time_n	=  new su2double [nVar];
-    for (iVar = 0; iVar < nVar; iVar++){
+    for (iVar = 0; iVar < nVar; iVar++) {
       Solution_time_n[iVar] 		= val_fea[iVar];
       Solution_Vel[iVar] 			= val_fea[iVar+nVar];
       Solution_Vel_time_n[iVar] 	= val_fea[iVar+nVar];
@@ -112,7 +112,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
     FlowTraction 			=  new su2double [nVar];
     Solution_Pred 			=  new su2double [nVar];
     Solution_Pred_Old 		=  new su2double [nVar];
-    for (iVar = 0; iVar < nVar; iVar++){
+    for (iVar = 0; iVar < nVar; iVar++) {
       FlowTraction[iVar] = 0.0;
       Solution_Pred[iVar] = val_fea[iVar];
       Solution_Pred_Old[iVar] = val_fea[iVar];
@@ -126,14 +126,14 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
   FlowTraction_n = NULL;
   
   /*--- If we are going to use incremental analysis, we need a way to store the old solution ---*/
-  if (incremental_load && nonlinear_analysis){
+  if (incremental_load && nonlinear_analysis) {
     Solution_Old 			=  new su2double [nVar];
   }
   
   /*--- If we are going to use a generalized alpha integration method, we need a way to store the old residuals ---*/
   Residual_Ext_Surf_n = NULL;
   FlowTraction_n = NULL;
-  if (gen_alpha){
+  if (gen_alpha) {
     Residual_Ext_Surf_n		= new su2double [nVar];
     
     if (fsi_analysis) FlowTraction_n = new su2double [nVar];
@@ -146,7 +146,7 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
   
   Residual_Ext_Surf = new su2double [nVar];
   
-  for (iVar = 0; iVar < nVar; iVar++){
+  for (iVar = 0; iVar < nVar; iVar++) {
     Residual_Ext_Surf[iVar] = 0.0;
     if (body_forces) Residual_Ext_Body[iVar] = 0.0;
   }
