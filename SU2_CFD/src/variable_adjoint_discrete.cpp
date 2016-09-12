@@ -32,7 +32,7 @@
  */
 #include "../include/variable_structure.hpp"
 
-CDiscAdjVariable::CDiscAdjVariable() : CVariable(){
+CDiscAdjVariable::CDiscAdjVariable() : CVariable() {
 
   /*--- Initialize arrays to NULL ---*/
 
@@ -45,7 +45,7 @@ CDiscAdjVariable::CDiscAdjVariable() : CVariable(){
 }
 
 CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_ndim,
-                               unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config){
+                               unsigned short val_nvar, CConfig *config) : CVariable(val_ndim, val_nvar, config) {
 
   bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
       || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
@@ -58,7 +58,7 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   DualTime_Derivative   = NULL;
   DualTime_Derivative_n = NULL;
 
-  if (dual_time){
+  if (dual_time) {
     DualTime_Derivative = new su2double[nVar];
     DualTime_Derivative_n = new su2double[nVar];
   }
@@ -69,17 +69,17 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
 
   unsigned short iVar,iDim;
 
-  for (iDim = 0; iDim < nDim; iDim++){
+  for (iDim = 0; iDim < nDim; iDim++) {
     Sensitivity[iDim] = 0.0;
   }
 
-  for (iVar = 0; iVar < nVar; iVar++){
+  for (iVar = 0; iVar < nVar; iVar++) {
     Solution[iVar] = val_solution[iVar];
   }
 
 
-  if (dual_time){
-    for (iVar = 0; iVar < nVar; iVar++){
+  if (dual_time) {
+    for (iVar = 0; iVar < nVar; iVar++) {
       Solution_time_n[iVar]  = 0.0;
       Solution_time_n1[iVar] = 0.0;
       DualTime_Derivative[iVar] = 0.0;
@@ -88,7 +88,7 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   }
 }
 
-CDiscAdjVariable::~CDiscAdjVariable(){
+CDiscAdjVariable::~CDiscAdjVariable() {
 
   if (Solution_Direct != NULL) delete [] Solution_Direct;
   if (Sensitivity     != NULL) delete [] Sensitivity;

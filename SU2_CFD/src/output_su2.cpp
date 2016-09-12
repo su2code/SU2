@@ -168,7 +168,7 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry) {
           output_file << "MARKER_TAG= " << Marker_Tag << endl;
           output_file << "MARKER_ELEMS= " << nElem_Bound_<< endl;
           
-          if (Marker_Tag == "SEND_RECEIVE"){
+          if (Marker_Tag == "SEND_RECEIVE") {
             if (config->GetMarker_All_SendRecv(iMarker) > 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
             if (config->GetMarker_All_SendRecv(iMarker) < 0) output_file << "SEND_TO= " << config->GetMarker_All_SendRecv(iMarker) << endl;
           }

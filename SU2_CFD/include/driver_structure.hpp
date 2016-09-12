@@ -99,20 +99,20 @@ public:
   CDriver(char* confFile,
           unsigned short val_nZone,
           unsigned short val_nDim);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  virtual ~CDriver(void);
-  
-  /*!
-   * \brief A virtual member.
-   */
-  virtual void Run(){ };
-  
-  /*!
-   * \brief Construction of the edge-based data structure and the multigrid structure.
-   */
+	
+	/*!
+	 * \brief Destructor of the class.
+	 */
+	virtual ~CDriver(void);
+
+	/*!
+	 * \brief A virtual member.
+	 */  
+  virtual void Run() { };
+
+    /*!
+     * \brief Construction of the edge-based data structure and the multigrid structure.
+     */
   void Geometrical_Preprocessing();
   
   /*!
@@ -194,50 +194,50 @@ public:
    * \param[in] donorZone - zone in which the displacements will be predicted.
    * \param[in] targetZone - zone which receives the predicted displacements.
    */
-  virtual void Predict_Displacements(unsigned short donorZone, unsigned short targetZone){};
-  
+  virtual void Predict_Displacements(unsigned short donorZone, unsigned short targetZone) {};
+
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the tractions will be predicted.
    * \param[in] targetZone - zone which receives the predicted traction.
    */
-  virtual void Predict_Tractions(unsigned short donorZone, unsigned short targetZone){};
-  
+  virtual void Predict_Tractions(unsigned short donorZone, unsigned short targetZone) {};
+
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be transferred.
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
-  virtual void Transfer_Displacements(unsigned short donorZone, unsigned short targetZone){};
-  
+  virtual void Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {};
+
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone from which the tractions will be transferred.
    * \param[in] targetZone - zone which receives the tractions transferred.
    */
-  virtual void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone){};
-  
+  virtual void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {};
+
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - origin of the information.
    * \param[in] targetZone - destination of the information.
    * \param[in] iFSIIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter){};
-  
+  virtual void Relaxation_Displacements(unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter) {};
+
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - origin of the information.
    * \param[in] targetZone - destination of the information.
    * \param[in] iFSIIter - Fluid-Structure Interaction subiteration.
    */
-  virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter){};
-  
+  virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter) {};
+
   /*!
    * \brief A virtual member.
    */
-  virtual void Update(){};
-  
+  virtual void Update() {};
+
   /*!
    * \brief Launch the computation for all zones and all physics.
    */
@@ -246,8 +246,8 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual void ResetConvergence(){ };
-  
+  virtual void ResetConvergence() { };
+
   /*!
    * \brief Perform some pre-processing before an iteration of the physics.
    */
@@ -266,8 +266,8 @@ public:
   /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and update of the multigrid structure.
    */
-  virtual void DynamicMeshUpdate(unsigned long ExtIter){ };
-  
+  virtual void DynamicMeshUpdate(unsigned long ExtIter) { };
+
   /*!
    * \brief Perform a static mesh deformation, without considering grid velocity.
    */
@@ -279,12 +279,13 @@ public:
   virtual void SetInitialMesh() { };
   
   /*--- External communication layer ---*/
+  
   su2double Get_Drag();
   su2double Get_Lift();
   su2double Get_Mz();
   unsigned short GetMovingMarker();
   unsigned long GetNumberVertices(unsigned short iMarker);
-  unsigned int GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex);
+  unsigned long GetVertexGlobalIndex(unsigned short iMarker, unsigned short iVertex);
   su2double GetVertexCoordX(unsigned short iMarker, unsigned short iVertex);
   su2double GetVertexCoordY(unsigned short iMarker, unsigned short iVertex);
   su2double GetVertexCoordZ(unsigned short iMarker, unsigned short iVertex);

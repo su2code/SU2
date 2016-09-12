@@ -61,6 +61,7 @@ int main(int argc, char *argv[]) {
 #endif
   
   /*--- Create a pointer to the main SU2 Driver ---*/
+  
   CDriver *driver = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
@@ -118,9 +119,11 @@ int main(int argc, char *argv[]) {
   config = NULL;
 
   /*--- Launch the main external loop of the solver ---*/
+  
   driver->StartSolver();
 
   /*--- Postprocess all the containers, close history file, exit SU2 ---*/
+  
   driver->Postprocessing();
 
   if (driver != NULL) delete driver;
@@ -130,9 +133,9 @@ int main(int argc, char *argv[]) {
 #ifdef HAVE_LIBXSMM
   libxsmm_finalize();
 #endif
-  
-#ifdef HAVE_MPI
+
   /*--- Finalize MPI parallelization ---*/
+#ifdef HAVE_MPI
   MPI_Buffer_detach(&buffptr, &buffsize);
   free(buffptr);
   MPI_Finalize();

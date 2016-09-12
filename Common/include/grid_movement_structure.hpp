@@ -1108,6 +1108,15 @@ public:
 	void SetHicksHenne(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
   
 	/*! 
+	 * \brief Set a deformation based on a change in the Kulfan parameters for an airfoil.
+	 * \param[in] boundary - Geometry of the boundary.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iDV - Index of the design variable.
+	 * \param[in] ResetDef - Reset the deformation before starting a new one.
+	 */
+	void SetCST(CGeometry *boundary, CConfig *config, unsigned short iDV, bool ResetDef);
+
+	/*! 
 	 * \brief Set a NACA 4 digits airfoil family for airfoil deformation.
 	 * \param[in] boundary - Geometry of the boundary.
 	 * \param[in] config - Definition of the particular problem.

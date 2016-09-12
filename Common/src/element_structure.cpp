@@ -129,14 +129,14 @@ CElement::~CElement(void) {
   }
   
   if (CurrentCoord != NULL) {
-    for (iNode = 0; iNode < nNodes; iNode++){
+    for (iNode = 0; iNode < nNodes; iNode++) {
       delete [] CurrentCoord [iNode];
     }
     delete [] CurrentCoord;
   }
   
   if (RefCoord != NULL) {
-    for (iNode = 0; iNode < nNodes; iNode++){
+    for (iNode = 0; iNode < nNodes; iNode++) {
       delete [] RefCoord [iNode];
     }
     delete [] RefCoord;
@@ -147,22 +147,22 @@ CElement::~CElement(void) {
   }
   
   if (GaussCoord != NULL) {
-    for (iGauss = 0; iGauss < nGaussPoints; iGauss++){
+    for (iGauss = 0; iGauss < nGaussPoints; iGauss++) {
       delete [] GaussCoord[iGauss];
     }
     delete [] GaussCoord;
   }
   
   if (Mab != NULL) {
-    for (iNode = 0; iNode < nNodes; iNode++){
+    for (iNode = 0; iNode < nNodes; iNode++) {
       delete [] Mab[iNode];
     }
     delete [] Mab;
   }
   
   if (Kab != NULL) {
-    for (iNode = 0; iNode < nNodes; iNode++){
-      for (jNode = 0; jNode < nNodes; jNode++){
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      for (jNode = 0; jNode < nNodes; jNode++) {
         delete [] Kab [iNode][jNode];
       }
       delete [] Kab[iNode];
@@ -171,21 +171,21 @@ CElement::~CElement(void) {
   }
   
   if (Ks_ab != NULL) {
-    for (iNode = 0; iNode < nNodes; iNode++){
+    for (iNode = 0; iNode < nNodes; iNode++) {
       delete [] Ks_ab[iNode];
     }
     delete [] Ks_ab;
   }
   
   if (Kt_a != NULL) {
-    for (iNode = 0; iNode < nNodes; iNode++){
+    for (iNode = 0; iNode < nNodes; iNode++) {
       delete [] Kt_a[iNode];
     }
     delete [] Kt_a;
   }
   
   if (FDL_a != NULL) {
-    for (iNode = 0; iNode < nNodes; iNode++){
+    for (iNode = 0; iNode < nNodes; iNode++) {
       delete [] FDL_a[iNode];
     }
     delete [] FDL_a;
@@ -203,15 +203,15 @@ CElement::~CElement(void) {
   }
   
   if (GaussCoordP != NULL)  {
-    for (iGauss = 0; iGauss < nGaussPointsP; iGauss++){
+    for (iGauss = 0; iGauss < nGaussPointsP; iGauss++) {
       delete [] GaussCoordP[iGauss];
     }
     delete [] GaussCoordP;
   }
   
   if (Kk_ab != NULL) {
-    for (iNode = 0; iNode < nNodes; iNode++){
-      for (jNode = 0; jNode < nNodes; jNode++){
+    for (iNode = 0; iNode < nNodes; iNode++) {
+      for (jNode = 0; jNode < nNodes; jNode++) {
         delete [] Kk_ab [iNode][jNode];
       }
       delete [] Kk_ab [iNode];
@@ -221,7 +221,7 @@ CElement::~CElement(void) {
   
 }
 
-void CElement::Add_Kab(su2double **val_Kab, unsigned short nodeA, unsigned short nodeB){
+void CElement::Add_Kab(su2double **val_Kab, unsigned short nodeA, unsigned short nodeB) {
   
   unsigned short iDim, jDim;
   
@@ -232,7 +232,7 @@ void CElement::Add_Kab(su2double **val_Kab, unsigned short nodeA, unsigned short
   }
 }
 
-void CElement::Add_Kab_T(su2double **val_Kab, unsigned short nodeA, unsigned short nodeB){
+void CElement::Add_Kab_T(su2double **val_Kab, unsigned short nodeA, unsigned short nodeB) {
   
   unsigned short iDim, jDim;
   
@@ -243,7 +243,7 @@ void CElement::Add_Kab_T(su2double **val_Kab, unsigned short nodeA, unsigned sho
   }
 }
 
-void CElement::Set_Kk_ab(su2double **val_Kk_ab, unsigned short nodeA, unsigned short nodeB){
+void CElement::Set_Kk_ab(su2double **val_Kk_ab, unsigned short nodeA, unsigned short nodeB) {
   
   unsigned short iDim, jDim;
   
@@ -254,7 +254,7 @@ void CElement::Set_Kk_ab(su2double **val_Kk_ab, unsigned short nodeA, unsigned s
   }
 }
 
-void CElement::Add_Kt_a(su2double *val_Kt_a, unsigned short nodeA){
+void CElement::Add_Kt_a(su2double *val_Kt_a, unsigned short nodeA) {
   
   unsigned short iDim;
   
@@ -264,7 +264,7 @@ void CElement::Add_Kt_a(su2double *val_Kt_a, unsigned short nodeA){
   
 }
 
-void CElement::Add_FDL_a(su2double *val_FDL_a, unsigned short nodeA){
+void CElement::Add_FDL_a(su2double *val_FDL_a, unsigned short nodeA) {
   
   unsigned short iDim;
   
@@ -275,28 +275,28 @@ void CElement::Add_FDL_a(su2double *val_FDL_a, unsigned short nodeA){
 }
 
 
-void CElement::clearElement(void){
+void CElement::clearElement(void) {
   
   unsigned short iNode, jNode, iDim, nDimSq;
   
   nDimSq = nDim*nDim;
   
   for(iNode = 0; iNode < nNodes; iNode++) {
-    for(iDim = 0; iDim < nDim; iDim++){
+    for(iDim = 0; iDim < nDim; iDim++) {
       if (Kt_a != NULL) Kt_a[iNode][iDim] = 0.0;
       if (FDL_a != NULL) FDL_a[iNode][iDim] = 0.0;
     }
     for (jNode = 0; jNode < nNodes; jNode++) {
       if (Ks_ab != NULL) Ks_ab[iNode][jNode] = 0.0;
       if (Mab != NULL) Mab[iNode][jNode] = 0.0;
-      for(iDim = 0; iDim < nDimSq; iDim++){
+      for(iDim = 0; iDim < nDimSq; iDim++) {
         if (Kab != NULL) Kab[iNode][jNode][iDim] = 0.0;
       }
     }
   }
 }
 
-void CElement::clearStress(void){
+void CElement::clearStress(void) {
   
   unsigned short iNode, iStress, nStress;
   
@@ -304,7 +304,7 @@ void CElement::clearStress(void){
   else nStress = 6;
   
   for(iNode = 0; iNode < nNodes; iNode++) {
-    for (iStress = 0; iStress < nStress; iStress++){
+    for (iStress = 0; iStress < nStress; iStress++) {
       NodalStress[iNode][iStress] = 0.0;
     }
   }
