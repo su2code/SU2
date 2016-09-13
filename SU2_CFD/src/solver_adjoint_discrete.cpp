@@ -577,12 +577,13 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
   bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
       config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 
-  unsigned short iVar;
-  unsigned long iPoint;
+  unsigned short iVar, iMarker, iMarker_Monitoring;
+  unsigned long iPoint, iVertex;
   bool chainruleobj = false;
   su2double* V_domain;
   su2double Velocity2 =0.0;
   unsigned short nDim;
+  string Marker_Tag, Monitoring_Tag;
 
   for (unsigned short iobj=0; iobj<config->GetnObj(); iobj++){
     chainruleobj = (chainruleobj || config->GetKind_ObjFunc(iobj)==OUTFLOW_GENERALIZED);
@@ -598,22 +599,55 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
         Solution[iVar] += node[iPoint]->GetDual_Time_Derivative(iVar);
       }
     }
-    if (chainruleobj){
-      /*-- Hardcoded for primitive variables -> conservative for fluid flow --*/
-      nDim = geometry->GetnDim();
-      Solution[0] += config-> GetCoeff_ObjChainRule(0);
-      V_domain =direct_solver->node[iPoint]->GetPrimitive();
-      for (unsigned short iDim=0; iDim<nDim; iDim++){
-        Velocity2+=V_domain[iDim+1]*V_domain[iDim+1];
-        Solution[iDim+1] += config-> GetCoeff_ObjChainRule(iDim+1)*V_domain[nDim+2];
-        Solution[iDim+1] += config-> GetCoeff_ObjChainRule(0)*V_domain[iDim+1];
-        Solution[nDim+1] += config-> GetCoeff_ObjChainRule(iDim+1)*V_domain[iDim+1]*V_domain[nDim+2];
-      }
-      Solution[nDim+1] += config-> GetCoeff_ObjChainRule(0)*Velocity2/2.0;
-      Solution[nDim+1] += config-> GetCoeff_ObjChainRule(nDim+1)/(config->GetGamma()-1);
-    }
+
     direct_solver->node[iPoint]->SetAdjointSolution(Solution);
   }
+  /*--- For a boundary with generalized outflow, set the gradient based on input values ---*/
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    if (Monitoring == YES) {
+      for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        if (Marker_Tag == Monitoring_Tag){
+          if (config->GetKind_ObjFunc(iMarker_Monitoring)==OUTFLOW_GENERALIZED){
+            /*--- Loop over vertices on the marker ---*/
+            for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+
+              iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+              for (iVar = 0; iVar < nVar; iVar++) {
+                Solution[iVar] = node[iPoint]->GetSolution(iVar);
+              }
+              if (dual_time) {
+                for (iVar = 0; iVar < nVar; iVar++) {
+                  Solution[iVar] += node[iPoint]->GetDual_Time_Derivative(iVar);
+                }
+              }
+
+              /*-- Hardcoded for primitive variables -> conservative for fluid flow --*/
+              nDim = geometry->GetnDim();
+              Solution[0] += config-> GetCoeff_ObjChainRule(0);
+              V_domain =direct_solver->node[iPoint]->GetPrimitive();
+              for (unsigned short iDim=0; iDim<nDim; iDim++){
+                Velocity2+=V_domain[iDim+1]*V_domain[iDim+1];
+                Solution[iDim+1] += config-> GetCoeff_ObjChainRule(iDim+1)*V_domain[nDim+2];
+                Solution[iDim+1] += config-> GetCoeff_ObjChainRule(0)*V_domain[iDim+1];
+                Solution[nDim+1] += config-> GetCoeff_ObjChainRule(iDim+1)*V_domain[iDim+1]*V_domain[nDim+2];
+              }
+              Solution[nDim+1] += config-> GetCoeff_ObjChainRule(0)*Velocity2/2.0;
+              Solution[nDim+1] += config-> GetCoeff_ObjChainRule(nDim+1)/(config->GetGamma()-1);
+
+              /*--- Set the adjoint solution ---*/
+              direct_solver->node[iPoint]->SetAdjointSolution(Solution);
+            }
+          }
+        }
+      }
+    }
+  }
+
+
 }
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
