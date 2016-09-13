@@ -751,6 +751,10 @@ inline unsigned short CConfig::GetnMarker_TurboPerformance(void) { return nMarke
 
 inline unsigned short CConfig::Get_nSpanWiseSections_User(void) { return nSpanWiseSections_User;}
 
+inline unsigned short CConfig::GetnSpanWiseSections(void) { return nSpanWiseSections;}
+
+inline void CConfig::SetnSpanWiseSections(unsigned short nSpan) {nSpanWiseSections = nSpan;}
+
 inline string CConfig::GetMarker_TurboPerf_BoundIn(unsigned short index) {return Marker_TurboBoundIn[index];}
 
 inline string CConfig::GetMarker_TurboPerf_BoundOut(unsigned short index) {return Marker_TurboBoundOut[index];}

@@ -469,6 +469,15 @@ public:
 	 */
 	void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
                               CIntegration ***integration, bool DualTime, su2double timeused, unsigned short val_iZone);
+
+	/*!
+	   * \brief Write the output file for spanwise turboperformance.
+	   * \param[in] geometry - Geometrical definition of the problem.
+	   * \param[in] solver_container - Container vector with all the solutions.
+	   * \param[in] config - Definition of the particular problem.
+	   * \param[in] val_nZone - iZone index.
+	   */
+	  void SpanwiseFile(CGeometry ***geometry, CSolver ****solver_container, CConfig **config, unsigned short val_iZone);
   
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.

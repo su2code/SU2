@@ -175,7 +175,7 @@ public:
 	 * \param[in] target_solution - Solution from the target mesh.
 	 * \param[in] donorZone       - counter of the donor solution
 	 */
-	virtual void GetSetTurboPerformance(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone);
+	virtual void GetSetTurboPerformance(CSolver *donor_solution, CSolver *target_solution, CConfig *config, unsigned short donorZone);
 
 
 	/*!
@@ -492,9 +492,11 @@ public:
  * \version 4.0.1 "Cardinal"
  */
 
+
 class CTransfer_MixingPlaneInterface : public CTransfer {
 
 protected:
+	unsigned short nSpanWiseSections;
 
 public:
 
@@ -545,7 +547,7 @@ public:
 	 * \param[in] target_solution - Solution from the target mesh.
 	 * \param[in] donorZone       - counter of the donor solution
 	 */
-	 void GetSetTurboPerformance(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone);
+	 void GetSetTurboPerformance(CSolver *donor_solution, CSolver *target_solution, CConfig *config, unsigned short donorZone);
 
 
 

@@ -2565,8 +2565,21 @@ void CDriver::Output(unsigned long ExtIter){
       }
 
 
+
+
       if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
 
+      /*--- Print in screen values of convergence history for last iteration ---*/
+      int val_iZone=0;
+      bool turbo = config_container[val_iZone]->GetBoolTurbomachinery();
+      for (val_iZone=0; val_iZone<nZone; val_iZone++){
+        output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
+        if (rank == MASTER_NODE) cout << endl << "Writing file with turboperformance spanwise output";
+        if (turbo){
+          /*--- Write file with turboperformance spanwise output ---*/
+          output->SpanwiseFile(geometry_container,solver_container,config_container,val_iZone);
+        }
+      }
       /*--- Execute the routine for writing restart, volume solution,
        surface solution, and surface comma-separated value files. ---*/
 
@@ -2583,6 +2596,7 @@ void CDriver::Output(unsigned long ExtIter){
         output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
                                  geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
       }
+
 
       if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
 
@@ -3504,7 +3518,7 @@ void CDiscAdjMultiZoneDriver::SetRecording(unsigned short kind_recording){
           cout << "  log10[RMS omega]:   " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(1)) << endl;
         }
       }
-      cout << "Entropy Gen: " << solver_container[iZone][MESH_0][FLOW_SOL]->GetEntropyGen(config_container[iZone]->GetnMarker_TurboPerformance() - 1) << endl;
+      cout << "Entropy Gen: " << solver_container[iZone][MESH_0][FLOW_SOL]->GetEntropyGen(config_container[iZone]->GetnMarker_TurboPerformance() - 1, config_container[iZone]->GetnSpanWiseSections()) << endl;
     }
   }
 

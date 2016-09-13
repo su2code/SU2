@@ -1300,9 +1300,8 @@ void CTransfer::Allgather_InterfaceAverage(CSolver *donor_solution, CSolver *tar
 	nMarkerDonor   = donor_geometry->GetnMarker();
 //TODO turbo this approach only works if all the turboamchinery marker of all zones have the same amount of span wise sections.
 //TODO turbo initialization needed for the MPI routine should be place somewhere else.
-	nSpanDonor     = donor_geometry->GetnSpanWiseSections(INFLOW);
-	nSpanTarget		 = target_geometry->GetnSpanWiseSections(INFLOW);
-
+	nSpanDonor     = donor_config->GetnSpanWiseSections();
+	nSpanTarget		 = donor_config->GetnSpanWiseSections();
 	// here the number of span should be already known
 	// so perhaps when this option would be different for boundary markers then this should be done after the loop
 	avgDensityDonor   		   =  new su2double[nSpanDonor];
@@ -1542,7 +1541,7 @@ void CTransfer::StoreTurboPerformance(CSolver *donor_solution, CSolver *target_s
 	/*--- here we made the strong assumption that the mesh zone order follow the same order of the turbomachinery markers ---*/
 
 	if(rank == MASTER_NODE){
-		GetSetTurboPerformance(donor_solution, target_solution, donorZone);
+		GetSetTurboPerformance(donor_solution, target_solution, donor_config, donorZone);
 	}
 }
 

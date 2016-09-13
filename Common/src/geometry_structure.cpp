@@ -8483,6 +8483,8 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
   nSpan_loc = 0;
   if (nDim == 2){
   	nSpanWiseSections[marker_flag-1] = 1;
+//TODO (turbo) make it more genral
+  	if(marker_flag == OUTFLOW)	config->SetnSpanWiseSections(1);
   }
   else{
   	if(SpanWise_Kind == AUTOMATIC){
@@ -8615,7 +8617,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
   		SU2_MPI::Allgather(MyValueSpan, nSpan_max , MPI_DOUBLE, MyTotValueSpan, nSpan_max, MPI_DOUBLE, MPI_COMM_WORLD);
   		SU2_MPI::Allgather(&nSpan_loc, 1 , MPI_INT, My_nSpan_loc, 1, MPI_INT, MPI_COMM_WORLD);
 
-
+  		jSpan = 0;
   		for (iSize = 0; iSize< size; iSize++){
   			for(iSpan = 0; iSpan < My_nSpan_loc[iSize]; iSpan++){
   				valueSpan[jSpan] = MyTotValueSpan[iSize*nSpan_max + iSpan];
@@ -8744,8 +8746,18 @@ void CPhysicalGeometry::ComputeNSpan(CConfig *config, unsigned short val_iZone, 
 //	  		cout << setprecision(16)<<  iSpan +1 << " with a value of " <<SpanWiseValue[marker_flag-1][iSpan]<< " at flag " << marker_flag <<endl;
 //	  	}
 //	  }
-
-
+  	if(marker_flag == OUTFLOW){
+  		if(nSpanWiseSections[INFLOW -1] != nSpanWiseSections[OUTFLOW - 1]){
+  			if(rank == MASTER_NODE){
+  				cout << " At the moment only turbomachinery with the same amount of span-wise section can be simulated" << endl;
+  				cout <<"nSpan inflow "<< nSpanWiseSections[INFLOW] << " nSpan outflow " << nSpanWiseSections[OUTFLOW]<<endl;
+  			}
+  			exit(EXIT_FAILURE);
+  		}
+  		else{
+  			config->SetnSpanWiseSections(nSpanWiseSections[OUTFLOW -1]);
+  		}
+  	}
 
 
 
