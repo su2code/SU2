@@ -607,28 +607,19 @@ void CMeanFlowIteration::Iterate(COutput *output,
       
       if (integration_container[val_iZone][FLOW_SOL]->GetConvergence()) break;
       
-    }
+    }    
+   }
 
-    /* Set drag coefficeint averaged over multiple zones */
-    su2double avg_CDrag = 0.0;
-    for (unsigned short iZone = 0; iZone < nZone; iZone++)
-      {
-        avg_CDrag += solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
-        //cout << "avgCDrag(" << iZone << ") = " << solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();               
-      }
-    avg_CDrag /= nZone;
-    //cout << "avgCDrag_Final = " << avg_CDrag << endl;                                                                        
-    if (val_iZone == 0)
-      {
-        //cout << "avg drag = " << avg_CDrag << endl;                                                                          
-        for (unsigned short iZone = 0; iZone < nZone; iZone++)
-          solver_container[iZone][MESH_0][FLOW_SOL]->SetTotal_Avg_CDrag(avg_CDrag);
-      }
-
-
-    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
-    
-  }
+   /* Set drag coefficeint averaged over multiple zones */
+   su2double avg_CDrag = 0.0;
+   for (unsigned short iZone = 0; iZone < nZone; iZone++)
+     {
+       avg_CDrag += solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+       // cout << "avgCDrag(" << iZone << ") = " << solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CDrag();
+     }
+   avg_CDrag /= nZone;
+   //cout << "avgCDrag_Final = " << avg_CDrag << endl;
+   solver_container[val_iZone][MESH_0][FLOW_SOL]->SetTotal_Avg_CDrag(avg_CDrag);
   
 }
 
