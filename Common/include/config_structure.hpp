@@ -740,7 +740,7 @@ private:
   *default_ea_lim,            /*!< \brief Default equivalent area limit array for the COption class. */
   *default_grid_fix,          /*!< \brief Default fixed grid (non-deforming region) array for the COption class. */
   *default_inc_crit;          /*!< \brief Default incremental criteria array for the COption class. */
-  
+  unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   /*--- all_options is a map containing all of the options. This is used during config file parsing
   to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -3605,12 +3605,23 @@ public:
 	unsigned short GetnMarker_TurboPerformance(void);
 
   /*!
-   * \brief number span-wise sections to compute 3D BC and performance for turbomachinery.
+   * \brief number span-wise sections to compute 3D BC and performance for turbomachinery specified by the user.
    * \return number of span-wise sections.
    */
 	unsigned short Get_nSpanWiseSections_User(void);
 
-    /*!
+	/*!
+	 * \brief number span-wise sections to compute 3D BC and performance for turbomachinery.
+	 * \return number of span-wise sections.
+	 */
+	unsigned short GetnSpanWiseSections(void);
+
+	/*!
+	 * \brief set number span-wise sections to compute 3D BC and performance for turbomachinery.
+	 */
+	void SetnSpanWiseSections(unsigned short nSpan);
+
+  /*!
 	 * \brief get inlet bounds name for Turbomachinery performance calculation.
 	 * \return name of the bound.
 	 */

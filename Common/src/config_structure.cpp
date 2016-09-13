@@ -2021,6 +2021,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   	}
   } else {
     nMarker_TurboPerformance = 0;
+    nSpanWiseSections =1;
   }
 
 
