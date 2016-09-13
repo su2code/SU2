@@ -1935,14 +1935,14 @@ public:
    * \param[in] val_marker - Surface marker where the heat flux is computed.
    * \return Value of the integrated heat flux (viscous contribution) on the surface <i>val_marker</i>.
    */
-	virtual su2double GetSurface_TotalHeatFlux(unsigned short val_marker);
+	virtual su2double GetSurface_HF(unsigned short val_marker);
 
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the heat flux is computed.
    * \return Value of the maximum heat flux (viscous contribution) on the surface <i>val_marker</i>.
    */
-	virtual su2double GetSurface_MaxHeatFlux(unsigned short val_marker);
+	virtual su2double GetSurface_MaxHF(unsigned short val_marker);
 
 	/*!
 	 * \brief A virtual member.
@@ -3364,8 +3364,8 @@ protected:
   *Surface_CMx,            /*!< \brief x Moment coefficient for each monitoring surface. */
   *Surface_CMy,            /*!< \brief y Moment coefficient for each monitoring surface. */
   *Surface_CMz,            /*!< \brief z Moment coefficient for each monitoring surface. */
-  *Surface_TotHeatFlux,   /*!< \brief Total (integrated) heat flux for each monitored surface. */
-  *Surface_MaxHeatFlux;   /*!< \brief Maximum heat flux for each monitored surface. */
+  *Surface_HF,            /*!< \brief Total (integrated) heat flux for each monitored surface. */
+  *Surface_MaxHF;         /*!< \brief Maximum heat flux for each monitored surface. */
 	su2double *iPoint_UndLapl,	/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	*jPoint_UndLapl;			/*!< \brief Auxiliary variable for the undivided Laplacians. */
 	su2double *SecondaryVar_i,	/*!< \brief Auxiliary vector for storing the solution at point i. */
@@ -5431,14 +5431,14 @@ public:
    * \param[in] val_marker - Surface marker where the heat flux is computed.
    * \return Value of the integrated heat flux (viscous contribution) on the surface <i>val_marker</i>.
    */
-  su2double GetSurface_TotalHeatFlux(unsigned short val_marker);
+  su2double GetSurface_HF(unsigned short val_marker);
 
   /*!
    * \brief Get the maximum (per surface) heat flux.
    * \param[in] val_marker - Surface marker where the heat flux is computed.
    * \return Value of the maximum heat flux (viscous contribution) on the surface <i>val_marker</i>.
    */
-  su2double GetSurface_MaxHeatFlux(unsigned short val_marker);
+  su2double GetSurface_MaxHF(unsigned short val_marker);
     
 	/*!
 	 * \brief Get the total non dimensional lift coefficient (viscous contribution).

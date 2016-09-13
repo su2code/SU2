@@ -604,7 +604,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     direct_solver->node[iPoint]->SetAdjointSolution(Solution);
   }
 
-  /*--- For a boundary with generalized outflow, set the gradient based on input values ---*/
+  /*--- For a boundary with generalized outflow, overwrite the solution value based on known input values ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
     if (Monitoring == YES) {
@@ -649,7 +649,6 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
       }
     }
   }
-
 
 }
 
