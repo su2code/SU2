@@ -581,9 +581,10 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
   unsigned long iPoint, iVertex;
   bool chainruleobj = false;
   su2double* V_domain;
-  su2double Velocity2 =0.0;
+  su2double Velocity2 =0.0, obj_weight=1.0;
   unsigned short nDim;
   string Marker_Tag, Monitoring_Tag;
+  bool Monitoring;
 
   for (unsigned short iobj=0; iobj<config->GetnObj(); iobj++){
     chainruleobj = (chainruleobj || config->GetKind_ObjFunc(iobj)==OUTFLOW_GENERALIZED);
@@ -602,6 +603,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
     direct_solver->node[iPoint]->SetAdjointSolution(Solution);
   }
+
   /*--- For a boundary with generalized outflow, set the gradient based on input values ---*/
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
@@ -611,10 +613,11 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag){
           if (config->GetKind_ObjFunc(iMarker_Monitoring)==OUTFLOW_GENERALIZED){
+            obj_weight = config->GetWeight_ObjFunc(iMarker_Monitoring);
             /*--- Loop over vertices on the marker ---*/
-            for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+            for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
-              iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
               for (iVar = 0; iVar < nVar; iVar++) {
                 Solution[iVar] = node[iPoint]->GetSolution(iVar);
@@ -627,16 +630,16 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
               /*-- Hardcoded for primitive variables -> conservative for fluid flow --*/
               nDim = geometry->GetnDim();
-              Solution[0] += config-> GetCoeff_ObjChainRule(0);
+              Solution[0] += config-> GetCoeff_ObjChainRule(0)*obj_weight;
               V_domain =direct_solver->node[iPoint]->GetPrimitive();
               for (unsigned short iDim=0; iDim<nDim; iDim++){
                 Velocity2+=V_domain[iDim+1]*V_domain[iDim+1];
-                Solution[iDim+1] += config-> GetCoeff_ObjChainRule(iDim+1)*V_domain[nDim+2];
-                Solution[iDim+1] += config-> GetCoeff_ObjChainRule(0)*V_domain[iDim+1];
-                Solution[nDim+1] += config-> GetCoeff_ObjChainRule(iDim+1)*V_domain[iDim+1]*V_domain[nDim+2];
+                Solution[iDim+1] += config-> GetCoeff_ObjChainRule(iDim+1)*V_domain[nDim+2]*obj_weight;
+                Solution[iDim+1] += config-> GetCoeff_ObjChainRule(0)*V_domain[iDim+1]*obj_weight;
+                Solution[nDim+1] += config-> GetCoeff_ObjChainRule(iDim+1)*V_domain[iDim+1]*V_domain[nDim+2]*obj_weight;
               }
-              Solution[nDim+1] += config-> GetCoeff_ObjChainRule(0)*Velocity2/2.0;
-              Solution[nDim+1] += config-> GetCoeff_ObjChainRule(nDim+1)/(config->GetGamma()-1);
+              Solution[nDim+1] += config-> GetCoeff_ObjChainRule(0)*Velocity2/2.0*obj_weight;
+              Solution[nDim+1] += config-> GetCoeff_ObjChainRule(nDim+1)/(config->GetGamma()-1)*obj_weight;
 
               /*--- Set the adjoint solution ---*/
               direct_solver->node[iPoint]->SetAdjointSolution(Solution);
