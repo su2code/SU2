@@ -91,7 +91,55 @@ class COutput {
   unsigned short wrote_base_file;
   su2double RhoRes_New, RhoRes_Old;
   int cgns_base, cgns_zone, cgns_base_results, cgns_zone_results;
-  
+  bool turbo;
+  unsigned short   nSpanWiseSections,
+									nMarkerTurboPerf;
+
+  su2double **TotalStaticEfficiency,
+        **TotalTotalEfficiency,
+        **KineticEnergyLoss,
+        **TRadius,
+        **TotalPressureLoss,
+        **MassFlowIn,
+        **MassFlowOut,
+        **FlowAngleIn,
+        **FlowAngleIn_BC,
+        **FlowAngleOut,
+        **EulerianWork,
+        **TotalEnthalpyIn,
+        **TotalEnthalpyIn_BC,
+        **EntropyIn,
+        **EntropyOut,
+        **EntropyIn_BC,
+        **PressureRatio,
+        **TotalPresureIn,
+        **TotalTemperatureIn,
+        **EnthalpyOut,
+        ***MachIn,
+        ***MachOut,
+        **VelocityOutIs,
+        **DensityIn,
+        **PressureIn,
+        ***TurboVelocityIn,
+        **DensityOut,
+        **PressureOut,
+        ***TurboVelocityOut,
+        **EnthalpyOutIs,
+        **EntropyGen,
+        **AbsFlowAngleIn,
+        **TotalEnthalpyOut,
+        **TotalRothalpyIn,
+        **TotalRothalpyOut,
+        **TotalEnthalpyOutIs,
+        **AbsFlowAngleOut,
+        **PressureOut_BC,
+        **TemperatureIn,
+        **TemperatureOut,
+        **TotalPressureIn,
+        **TotalPressureOut,
+        **TotalTemperatureOut,
+        **EnthalpyIn;
+
 protected:
 
 public:
@@ -99,7 +147,7 @@ public:
 	/*! 
 	 * \brief Constructor of the class. 
 	 */
-	COutput(void);
+	COutput(CConfig *congig);
 
 	/*! 
 	 * \brief Destructor of the class. 
@@ -469,15 +517,6 @@ public:
 	 */
 	void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
                               CIntegration ***integration, bool DualTime, su2double timeused, unsigned short val_iZone);
-
-	/*!
-	   * \brief Write the output file for spanwise turboperformance.
-	   * \param[in] geometry - Geometrical definition of the problem.
-	   * \param[in] solver_container - Container vector with all the solutions.
-	   * \param[in] config - Definition of the particular problem.
-	   * \param[in] val_nZone - iZone index.
-	   */
-	  void SpanwiseFile(CGeometry ***geometry, CSolver ****solver_container, CConfig **config, unsigned short val_iZone);
   
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -514,5 +553,30 @@ public:
    * \param[in] val_nZone - Number of Zones.
    */
   void SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone);
+
+  /*!
+	 * \brief Compute .
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] iExtIter - Current external (time) iteration.
+	 */
+  void ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config);
+
+  /*!
+	 * \brief Compute .
+	 * \param[in] config - Definition of the particular problem.
+	 */
+  void WriteTutboPerfConvHistory(CConfig *config);
+
+  /*!
+	 * \brief Write the output file for spanwise turboperformance.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_nZone - iZone index.
+	 */
+  void SpanwiseFile(CGeometry ***geometry, CSolver ****solver_container, CConfig **config, unsigned short val_iZone);
+
 
 };
