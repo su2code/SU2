@@ -971,90 +971,7 @@ public:
 	 */
 	virtual void PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics, unsigned short marker_flag);
 
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - bound marker.
-	 * \return Value of the Average Density on the surface <i>val_marker</i>.
-	 */
-	virtual su2double GetAverageDensity(unsigned short valMarker, unsigned short iSpan);
 
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - bound marker.
-	 * \return Value of the Average Pressure on the surface <i>val_marker</i>.
-	 */
-	virtual su2double GetAveragePressure(unsigned short valMarker, unsigned short iSpan);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - bound marker.
-	 * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
-	 */
-	virtual su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short iSpan);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - bound marker.
-	 * \return Value of the Average Density on the surface <i>val_marker</i>.
-	 */
-	virtual void SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - bound marker.
-	 * \return Value of the Average Pressure on the surface <i>val_marker</i>.
-	 */
-	virtual void SetExtAveragePressure(unsigned short valMarker, unsigned short valSpan, su2double valPressure);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] val_marker - bound marker.
-	 * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
-	 */
-	virtual void SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the inlet density.
-	 */
-  virtual su2double GetDensityIn(unsigned short inMarkerTP, unsigned short valSpan);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of inlet pressure.
-	 */
-  virtual su2double GetPressureIn(unsigned short inMarkerTP, unsigned short valSpan);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the inlet normal velocity.
-	 */
-  virtual su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the outlet density.
-	 */
-  virtual su2double GetDensityOut(unsigned short inMarkerTP, unsigned short valSpan);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the outlet pressure.
-	 */
-  virtual su2double GetPressureOut(unsigned short inMarkerTP, unsigned short valSpan);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the outlet normal velocity.
-	 */
-  virtual su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan);
-    
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -2693,6 +2610,91 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetFreeStream_Solution(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Density on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetAverageDensity(unsigned short valMarker, unsigned short iSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetAveragePressure(unsigned short valMarker, unsigned short iSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
+   */
+  virtual su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short iSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Density on the surface <i>val_marker</i>.
+   */
+  virtual void SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+   */
+  virtual void SetExtAveragePressure(unsigned short valMarker, unsigned short valSpan, su2double valPressure);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
+   */
+  virtual void SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  virtual su2double GetDensityIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of inlet pressure.
+   */
+  virtual su2double GetPressureIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet normal velocity.
+   */
+  virtual su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the outlet density.
+   */
+  virtual su2double GetDensityOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the outlet pressure.
+   */
+  virtual su2double GetPressureOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the outlet normal velocity.
+   */
+  virtual su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan);
+
 };
 
 /*!
@@ -2921,106 +2923,23 @@ protected:
   unsigned long AoA_Counter;
   unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
-  su2double ***AverageVelocity,
-	//	 ***AverageGridVel,
+  su2double *** AverageFlux,
+		***SpanTotalFlux,
+	   ***AverageVelocity,
 		 ***AverageTurboVelocity,
 		 ***ExtAverageTurboVelocity,
-//		 ***AverageTurboMach,
-//  	  	  ***AverageFlux,
-//		  ***SpanTotalFlux,
-//		  **AverageMach,
-//		  **AverageEnthalpy,
 		  **AveragePressure,
 			**RadialEquilibriumPressure,
-//		  **AverageTotTemperature,
-//		  **AverageTotPressure,
 		  **ExtAveragePressure,
-//		  **ExtAverageTotTemperature,
-//		  **ExtAverageTotPressure,
 		  **AverageDensity,
-		  **ExtAverageDensity,
-//		  **AverageSoundSpeed,
-//		  **AverageEntropy,
-		  **SpanMassFlow;
-//		  **SpanFlowAngle;
-  su2double **TotalStaticEfficiency,
-      **TotalTotalEfficiency,
-      **KineticEnergyLoss,
-      **TRadius,
-      **TotalPressureLoss,
-      **MassFlowIn,
-      **MassFlowOut,
-      **FlowAngleIn,
-      **FlowAngleIn_BC,
-      **FlowAngleOut,
-      **EulerianWork,
-      **TotalEnthalpyIn,
-      **TotalEnthalpyIn_BC,
-      **EntropyIn,
-      **EntropyOut,
-      **EntropyIn_BC,
-      **PressureRatio,
-      **TotalPresureIn,
-      **TotalTemperatureIn,
-      **EnthalpyOut,
-      ***MachIn,
-      ***MachOut,
-      **VelocityOutIs,
-      **DensityIn,
+		  **ExtAverageDensity;
+
+  su2double **DensityIn,
       **PressureIn,
       ***TurboVelocityIn,
       **DensityOut,
       **PressureOut,
-      ***TurboVelocityOut,
-      **EnthalpyOutIs,
-      **EntropyGen,
-      **AbsFlowAngleIn,
-      **TotalEnthalpyOut,
-      **TotalRothalpyIn,
-      **TotalRothalpyOut,
-      **TotalEnthalpyOutIs,
-      **AbsFlowAngleOut,
-      **PressureOut_BC,
-      **TemperatureIn,
-      **TemperatureOut,
-      **TotalPressureIn,
-      **TotalPressureOut,
-      **TotalTemperatureOut,
-      **EnthalpyIn;
-
- /*  su2double **TotalPressureLossSpw,
-  **KineticEnergyLossSpw,
-  **EulerianWorkSpw,
-  **TotalEnthalpyInSpw,
-  **TotalEnthalpyOutSpw,
-  **TotalRothalpyInSpw,
-  **TotalRothalpyOutSpw,
-  **TotalEnthalpyOutIsSpw,
-  **EntropyInSpw,
-  **EntropyGenSpw,
-  **AbsFlowAngleInSpw,
-  **AbsFlowAngleOutSpw,
-  **FlowAngleInSpw,
-  **FlowAngleOutSpw,
-  **MassFlowInSpw,
-  **MassFlowOutSpw,
-  **EnthalpyOutSpw,
-  **EnthalpyOutIsSpw,
-  **VelocityOutIsSpw,
-  **TotalPresureInSpw,
-  **TotalTemperatureInSpw,
-  **FlowAngleIn_BCSpw,
-  **EntropyIn_BCSpw,
-  **TotalEnthalpyIn_BCSpw,
-  **DensityInSpw,
-  **PressureInSpw,
-  **DensityOutSpw,
-  **PressureOutSpw,
-  **PressureOut_BCSpw,
-  ***MachInSpw,
-  ***MachOutSpw,
-  ***TurboVelocityInSpw,
-  ***TurboVelocityOutSpw; */
+      ***TurboVelocityOut;
 
   complex<su2double> ***CkInflow,
 										 ***CkOutflow1,
@@ -3717,148 +3636,6 @@ public:
 	 */
 	void MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density);
 
-	/*!
-	 * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
-	 * \param[in] cartesianVelocity - cartesian components of velocity vector.
-	 * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
-	 * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
-	 */
-	void ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity, unsigned short marker_flag, unsigned short marker_kindturb);
-
-	/*!
-	 * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
-	 * \param[in] cartesianVelocity - cartesian components of velocity vector.
-	 * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
-	 * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
-	 */
-	void ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity, unsigned short marker_flag, unsigned short marker_kindturb);
-
-	/*!
-	 * \brief Provide the average density at the boundary of interest.
-	 * \param[in] val_marker - bound marker.
-	 * \return Value of the Average Density on the surface <i>val_marker</i>.
-	 */
-	su2double GetAverageDensity(unsigned short valMarker, unsigned short valSpan);
-
-	/*!
-	 * \brief Provide the average pressure at the boundary of interest.
-	 * \param[in] val_marker - bound marker.
-	 * \return Value of the Average Pressure on the surface <i>val_marker</i>.
-	 */
-	su2double GetAveragePressure(unsigned short valMarker, unsigned short valSpan);
-
-	/*!
-	 * \brief Provide the average turbo velocity average at the boundary of interest.
-	 * \param[in] val_marker - bound marker.
-	 * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
-	 */
-	su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan);
-
-	/*!
-	 * \brief Set the external average density at the boundary of interest.
-	 * \param[in] val_marker - bound marker.
-	 * \return Value of the Average Density on the surface <i>val_marker</i>.
-	 */
-	void SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity);
-
-	/*!
-	 * \brief Set the external the average pressure at the boundary of interest.
-	 * \param[in] val_marker - bound marker.
-	 * \return Value of the Average Pressure on the surface <i>val_marker</i>.
-	 */
-	void SetExtAveragePressure(unsigned short valMarker, unsigned short valSpan, su2double valPressure);
-
-	/*!
-	 * \brief Set the external the average turbo velocity average at the boundary of interest.
-	 * \param[in] val_marker - bound marker.
-	 * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
-	 */
-	void SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity);
-
-	/*!
-	 * \brief Provide the inlet density to check convergence of conservative mixing-plane.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the inlet density.
-	 */
-   su2double GetDensityIn(unsigned short inMarkerTP, unsigned short valSpan);
-
-	/*!
-	 * \brief Provide the inlet pressure to check convergence of conservative mixing-plane.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of inlet pressure.
-	 */
-  su2double GetPressureIn(unsigned short inMarkerTP, unsigned short valSpan);
-
-	/*!
-	 * \brief Provide the inlet normal velocity to check convergence of conservative mixing-plane.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the inlet normal velocity.
-	 */
-  su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan);
-
-	/*!
-	 * \brief Provide the outlet density to check convergence of conservative mixing-plane.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the outlet density.
-	 */
-  su2double GetDensityOut(unsigned short inMarkerTP, unsigned short valSpan);
-
-	/*!
-	 * \brief Provide the outlet pressure to check convergence of conservative mixing-plane.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the outlet pressure.
-	 */
-  su2double GetPressureOut(unsigned short inMarkerTP, unsigned short valSpan);
-
-	/*!
-	 * \brief Provide the outlet normal velocity to check convergence of conservative mixing-plane.
-	 * \param[in] inMarkerTP - bound marker.
-	 * \return Value of the outlet normal velocity.
-	 */
-  su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan);
-
-	/*!
-	 * \brief Set inlet density.
-	 * \param[in] value      - turboperformance value to set.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 */
-  void SetDensityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
-
-	/*!
-	 * \brief Set inlet pressure.
-	 * \param[in] value      - turboperformance value to set.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 */
-  void SetPressureIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
-
-	/*!
-	 * \brief Set inlet normal velocity.
-	 * \param[in] value      - turboperformance value to set.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 */
-  void SetTurboVelocityIn(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
-
-	/*!
-	 * \brief Set outlet density.
-	 * \param[in] value      - turboperformance value to set.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 */
-  void SetDensityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
-
-	/*!
-	 * \brief Set outlet pressure.
-	 * \param[in] value      - turboperformance value to set.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 */
-  void SetPressureOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
-
-	/*!
-	 * \brief Set outlet normal velocity.
-	 * \param[in] value      - turboperformance value to set.
-	 * \param[in] inMarkerTP - turboperformance marker.
-	 */
-  void SetTurboVelocityOut(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
-
   /*!
 	 * \brief Update the solution using a Runge-Kutta scheme.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -3868,8 +3645,8 @@ public:
 	 */
 	void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                               unsigned short iRKStep);
-    
-    /*!
+
+	/*!
 	 * \brief Compute the Fan face Mach number.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solution - Container vector with all the solutions.
@@ -3919,19 +3696,6 @@ public:
 	 */
 	void Inviscid_Forces(CGeometry *geometry, CConfig *config);
 
-	/*!
-	 * \brief Compute single blade turbomachinery performance quantities.
-	 * \param[in] config - contains config file information.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 */
-	void PreprocessTurboPerformance(CConfig *config, CGeometry *geometry);
-
-	/*!
-	 * \brief Compute multi-stage turbomachinery performance quantities.
-	 * \param[in] config - contains config file information.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 */
-	void TurboPerformance(CConfig *config);
 	/*!
 	 * \brief Provide the non dimensional lift coefficient (inviscid contribution).
 	 * \param val_marker Surface where the coefficient is going to be computed.
@@ -4572,7 +4336,6 @@ public:
 	 */
 	void SetFreeSurface_Distance(CGeometry *geometry, CConfig *config);
   
-
   /*!
    * \brief Set the freestream pressure.
    * \param[in] Value of freestream pressure.
@@ -4590,6 +4353,149 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_Solution(CConfig *config);
+
+  /*!
+   * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
+   * \param[in] cartesianVelocity - cartesian components of velocity vector.
+   * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
+   * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
+   */
+  void ComputeTurboVelocity(su2double *cartesianVelocity, su2double *turboNormal, su2double *turboVelocity, unsigned short marker_flag, unsigned short marker_kindturb);
+
+  /*!
+   * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.
+   * \param[in] cartesianVelocity - cartesian components of velocity vector.
+   * \param[in] turboNormal - normal vector in the turbomachinery frame of reference.
+   * \param[in] turboVelocity - velocity vector in the turbomachinery frame of reference.
+   */
+  void ComputeBackVelocity(su2double *turboVelocity, su2double *turboNormal, su2double *cartesianVelocity, unsigned short marker_flag, unsigned short marker_kindturb);
+
+  /*!
+   * \brief Provide the average density at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Density on the surface <i>val_marker</i>.
+   */
+  su2double GetAverageDensity(unsigned short valMarker, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the average pressure at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+   */
+  su2double GetAveragePressure(unsigned short valMarker, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the average turbo velocity average at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
+   */
+  su2double* GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan);
+
+  /*!
+   * \brief Set the external average density at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Density on the surface <i>val_marker</i>.
+   */
+  void SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity);
+
+  /*!
+   * \brief Set the external the average pressure at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+   */
+  void SetExtAveragePressure(unsigned short valMarker, unsigned short valSpan, su2double valPressure);
+
+  /*!
+   * \brief Set the external the average turbo velocity average at the boundary of interest.
+   * \param[in] val_marker - bound marker.
+   * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
+   */
+  void SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity);
+
+  /*!
+   * \brief Provide the inlet density to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet density.
+   */
+  su2double GetDensityIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the inlet pressure to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of inlet pressure.
+   */
+  su2double GetPressureIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the inlet normal velocity to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the inlet normal velocity.
+   */
+  su2double* GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the outlet density to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the outlet density.
+   */
+  su2double GetDensityOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the outlet pressure to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the outlet pressure.
+   */
+  su2double GetPressureOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide the outlet normal velocity to check convergence of conservative mixing-plane.
+   * \param[in] inMarkerTP - bound marker.
+   * \return Value of the outlet normal velocity.
+   */
+  su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set inlet density.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetDensityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set inlet pressure.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetPressureIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set inlet normal velocity.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetTurboVelocityIn(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set outlet density.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetDensityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set outlet pressure.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetPressureOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Set outlet normal velocity.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  void SetTurboVelocityOut(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
+
 };
 
 /*!

@@ -348,7 +348,7 @@ CDriver::CDriver(char* confFile,
    surface comma-separated value, and convergence history files (both in serial
    and in parallel). ---*/
 
-  output = new COutput();
+  output = new COutput(config_container[ZONE_0]);
 
   /*--- Open the convergence history file ---*/
 
@@ -3022,7 +3022,7 @@ void CSingleZoneDriver::Run() {
 		solver_container[ZONE_0][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
 		solver_container[ZONE_0][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],INFLOW);
 		solver_container[ZONE_0][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
-		output->TurboPerformance(solver_container[ZONE_0][MESH_0][FLOW_SOL], config_container[ZONE_0], geometry_container[ZONE_0][MESH_0]);
+		output->ComputeTurboPerformance(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
 	}
 
 }
