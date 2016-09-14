@@ -407,8 +407,8 @@ void CTransfer_MixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, 
 
 	Donor_Variable[0] = donor_solution->GetAverageDensity(Marker_Donor, iSpan);
 	Donor_Variable[1]	= donor_solution->GetAveragePressure(Marker_Donor, iSpan);
-	Donor_Variable[2] = donor_solution->GetAverageTotPressure(Marker_Donor, iSpan);
- 	Donor_Variable[3] = donor_solution->GetAverageTotTemperature(Marker_Donor, iSpan);
+//	Donor_Variable[2] = donor_solution->GetAverageTotPressure(Marker_Donor, iSpan);
+// 	Donor_Variable[3] = donor_solution->GetAverageTotTemperature(Marker_Donor, iSpan);
  	Donor_Variable[4] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[0];
  	Donor_Variable[5] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[1];
 
@@ -427,8 +427,8 @@ void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution
 
 	target_solution->SetExtAverageDensity(Marker_Target, iSpan, Target_Variable[0]);
 	target_solution->SetExtAveragePressure(Marker_Target, iSpan, Target_Variable[1]);
-	target_solution->SetExtAverageTotPressure(Marker_Target, iSpan, Target_Variable[2]);
-  target_solution->SetExtAverageTotTemperature(Marker_Target, iSpan, Target_Variable[3]);
+//	target_solution->SetExtAverageTotPressure(Marker_Target, iSpan, Target_Variable[2]);
+//  target_solution->SetExtAverageTotTemperature(Marker_Target, iSpan, Target_Variable[3]);
 	target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 0, Target_Variable[4]);
 	target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 1, Target_Variable[5]);
 
@@ -441,13 +441,15 @@ void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution
 }
 
 void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *target_solution, CConfig *config, unsigned short donorZone){
+  unsigned short iSpan;
 
-  target_solution->SetDensityIn         (donor_solution->GetDensityIn         (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetPressureIn        (donor_solution->GetPressureIn        (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetTurboVelocityIn   (donor_solution->GetTurboVelocityIn   (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetDensityOut        (donor_solution->GetDensityOut        (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetPressureOut       (donor_solution->GetPressureOut       (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetTurboVelocityOut  (donor_solution->GetTurboVelocityOut  (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-
+	for(iSpan = 0; iSpan<nSpanWiseSections +1; iSpan++){
+		target_solution->SetDensityIn(donor_solution->GetDensityIn(donorZone, iSpan), donorZone, iSpan);
+		target_solution->SetPressureIn(donor_solution->GetPressureIn(donorZone, iSpan), donorZone, iSpan);
+		target_solution->SetTurboVelocityIn(donor_solution->GetTurboVelocityIn(donorZone, iSpan), donorZone, iSpan);
+		target_solution->SetDensityOut(donor_solution->GetDensityOut(donorZone, iSpan), donorZone, iSpan);
+		target_solution->SetPressureOut(donor_solution->GetPressureOut(donorZone, iSpan), donorZone, iSpan);
+		target_solution->SetTurboVelocityOut(donor_solution->GetTurboVelocityOut(donorZone, iSpan), donorZone, iSpan);
+	}
 }
 

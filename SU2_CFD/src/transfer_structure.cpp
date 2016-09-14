@@ -1535,7 +1535,7 @@ void CTransfer::GatherAverageValues(CSolver *donor_solution, CSolver *target_sol
 
 
 	/*--- here we made the strong assumption that the mesh zone order follow the same order of the turbomachinery markers ---*/
-		SetAvergeValues(donor_solution, target_solution, donor_config, donorZone);
+		SetAverageValues(donor_solution, target_solution, donor_config, donorZone);
 
 }
 

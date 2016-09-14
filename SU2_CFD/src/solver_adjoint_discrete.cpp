@@ -426,36 +426,36 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config){
     ObjFunc_Value = direct_solver->GetOneD_MassFlowRate();
     break;
 //TODO (turbo) All the quantities need to be generilized for multi-stage.
-  case TOTAL_EFFICIENCY:
-		ObjFunc_Value = direct_solver->GetTotalTotalEfficiency(config->GetnMarker_TurboPerformance() - 1, nSpanWiseSections);
-		break;
-	case TOTAL_PRESSURE_LOSS:
-		ObjFunc_Value = direct_solver->GetTotalPressureLoss(config->GetnMarker_TurboPerformance() - 1, nSpanWiseSections);
-		break;
-	case KINETIC_ENERGY_LOSS:
-		ObjFunc_Value = direct_solver->GetKineticEnergyLoss(config->GetnMarker_TurboPerformance() - 1 , nSpanWiseSections);
-		break;
-	case TOTAL_STATIC_EFFICIENCY:
-		ObjFunc_Value = direct_solver->GetTotalStaticEfficiency(config->GetnMarker_TurboPerformance() - 1, nSpanWiseSections);
-		break;
-	case ENTROPY_GENERATION:
-		ObjFunc_Value = direct_solver->GetEntropyGen(config->GetnMarker_TurboPerformance() -1, nSpanWiseSections);
-		break;
-	case EULERIAN_WORK:
-		ObjFunc_Value = direct_solver->GetEulerianWork(config->GetnMarker_TurboPerformance() -1, nSpanWiseSections);
-		break;
-	case FLOW_ANGLE_IN:
-		ObjFunc_Value = 180.0/PI_NUMBER*direct_solver->GetFlowAngleIn(0, nSpanWiseSections);
-		break;
-	case FLOW_ANGLE_OUT:
-		ObjFunc_Value = 180.0/PI_NUMBER*direct_solver->GetFlowAngleOut(0, nSpanWiseSections);
-		break;
-	case MASS_FLOW_IN:
-		ObjFunc_Value = direct_solver->GetMassFlowIn(config->GetnMarker_TurboPerformance() -1, nSpanWiseSections);
-		break;
-	case MASS_FLOW_OUT:
-		ObjFunc_Value = direct_solver->GetMassFlowOut(config->GetnMarker_TurboPerformance() -1, nSpanWiseSections);
-		break;
+//  case TOTAL_EFFICIENCY:
+//		ObjFunc_Value = direct_solver->GetTotalTotalEfficiency(config->GetnMarker_TurboPerformance() - 1, nSpanWiseSections);
+//		break;
+//	case TOTAL_PRESSURE_LOSS:
+//		ObjFunc_Value = direct_solver->GetTotalPressureLoss(config->GetnMarker_TurboPerformance() - 1, nSpanWiseSections);
+//		break;
+//	case KINETIC_ENERGY_LOSS:
+//		ObjFunc_Value = direct_solver->GetKineticEnergyLoss(config->GetnMarker_TurboPerformance() - 1 , nSpanWiseSections);
+//		break;
+//	case TOTAL_STATIC_EFFICIENCY:
+//		ObjFunc_Value = direct_solver->GetTotalStaticEfficiency(config->GetnMarker_TurboPerformance() - 1, nSpanWiseSections);
+//		break;
+//	case ENTROPY_GENERATION:
+//		ObjFunc_Value = direct_solver->GetEntropyGen(config->GetnMarker_TurboPerformance() -1, nSpanWiseSections);
+//		break;
+//	case EULERIAN_WORK:
+//		ObjFunc_Value = direct_solver->GetEulerianWork(config->GetnMarker_TurboPerformance() -1, nSpanWiseSections);
+//		break;
+//	case FLOW_ANGLE_IN:
+//		ObjFunc_Value = 180.0/PI_NUMBER*direct_solver->GetFlowAngleIn(0, nSpanWiseSections);
+//		break;
+//	case FLOW_ANGLE_OUT:
+//		ObjFunc_Value = 180.0/PI_NUMBER*direct_solver->GetFlowAngleOut(0, nSpanWiseSections);
+//		break;
+//	case MASS_FLOW_IN:
+//		ObjFunc_Value = direct_solver->GetMassFlowIn(config->GetnMarker_TurboPerformance() -1, nSpanWiseSections);
+//		break;
+//	case MASS_FLOW_OUT:
+//		ObjFunc_Value = direct_solver->GetMassFlowOut(config->GetnMarker_TurboPerformance() -1, nSpanWiseSections);
+//		break;
  /*--- Template for new objective functions where TemplateObjFunction()
   *  is the routine that returns the obj. function value. The computation
   * must be done while the tape is active, i.e. between AD::StartRecording() and
