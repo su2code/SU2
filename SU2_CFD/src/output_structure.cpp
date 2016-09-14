@@ -6144,7 +6144,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     }
   }
 }
+void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
 
+}
 
 void COutput::SpanwiseFile(CGeometry ***geometry,
                            CSolver ****solver_container,

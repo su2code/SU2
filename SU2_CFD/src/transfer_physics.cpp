@@ -440,54 +440,14 @@ void CTransfer_MixingPlaneInterface::SetTarget_Variable(CSolver *target_solution
 
 }
 
-void CTransfer_MixingPlaneInterface::GetSetTurboPerformance(CSolver *donor_solution, CSolver *target_solution, CConfig *config, unsigned short donorZone){
+void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *target_solution, CConfig *config, unsigned short donorZone){
 
-	/*--- Loop over the nMarker of turboperformance and get the desired values ---*/
-//	TotalStaticEfficiency[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalStaticEfficiency(iMarker_Monitoring);
-//	TotalTotalEfficiency[iMarker_Monitoring]  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotalTotalEfficiency(iMarker_Monitoring);
-
-
-  target_solution->SetKineticEnergyLoss (donor_solution->GetKineticEnergyLoss (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetTotalPressureLoss (donor_solution->GetTotalPressureLoss (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetMassFlowIn        (donor_solution->GetMassFlowIn        (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetMassFlowOut       (donor_solution->GetMassFlowOut       (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetFlowAngleIn       (donor_solution->GetFlowAngleIn       (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetFlowAngleOut      (donor_solution->GetFlowAngleOut      (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetEulerianWork      (donor_solution->GetEulerianWork      (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetTotalEnthalpyIn   (donor_solution->GetTotalEnthalpyIn   (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetPressureRatio     (donor_solution->GetPressureRatio     (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetEnthalpyOut       (donor_solution->GetEnthalpyOut       (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetMachIn            (donor_solution->GetMachIn            (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetMachOut           (donor_solution->GetMachOut           (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetVelocityOutIs     (donor_solution->GetVelocityOutIs     (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetTotalPresureIn    (donor_solution->GetTotalPresureIn    (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetTotalTemperatureIn(donor_solution->GetTotalTemperatureIn(donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetFlowAngleIn_BC    (donor_solution->GetFlowAngleIn_BC    (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetEntropyIn         (donor_solution->GetEntropyIn         (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetEntropyOut        (donor_solution->GetEntropyOut        (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetEntropyIn_BC      (donor_solution->GetEntropyIn_BC      (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetTotalEnthalpyIn_BC(donor_solution->GetTotalEnthalpyIn_BC(donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
   target_solution->SetDensityIn         (donor_solution->GetDensityIn         (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
   target_solution->SetPressureIn        (donor_solution->GetPressureIn        (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
   target_solution->SetTurboVelocityIn   (donor_solution->GetTurboVelocityIn   (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
   target_solution->SetDensityOut        (donor_solution->GetDensityOut        (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
   target_solution->SetPressureOut       (donor_solution->GetPressureOut       (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
   target_solution->SetTurboVelocityOut  (donor_solution->GetTurboVelocityOut  (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetEnthalpyOutIs     (donor_solution->GetEnthalpyOutIs     (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetEntropyGen        (donor_solution->GetEntropyGen        (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetAbsFlowAngleIn    (donor_solution->GetAbsFlowAngleIn    (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetTotalEnthalpyOut  (donor_solution->GetTotalEnthalpyOut  (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetTotalEnthalpyOutIs(donor_solution->GetTotalEnthalpyOutIs(donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetTotalRothalpyIn   (donor_solution->GetTotalRothalpyIn   (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetTotalRothalpyOut  (donor_solution->GetTotalRothalpyOut  (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetAbsFlowAngleOut   (donor_solution->GetAbsFlowAngleOut   (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetPressureOut_BC    (donor_solution->GetPressureOut_BC    (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetPressureOut       (donor_solution->GetPressureOut       (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetTemperatureIn      (donor_solution->GetTemperatureIn      (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetTemperatureOut     (donor_solution->GetTemperatureOut     (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetTotalPressureIn    (donor_solution->GetTotalPressureIn    (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetTotalPressureOut   (donor_solution->GetTotalPressureOut   (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetTotalTemperatureOut(donor_solution->GetTotalTemperatureOut(donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
-  target_solution->SetEnthalpyIn         (donor_solution->GetEnthalpyIn         (donorZone, nSpanWiseSections), donorZone, nSpanWiseSections);
+
 }
 
