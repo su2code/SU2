@@ -434,33 +434,25 @@ inline su2double CSolver::GetAverageDensity(unsigned short valMarker, unsigned s
 
 inline su2double CSolver::GetAveragePressure(unsigned short valMarker, unsigned short valSpan){return 0.0;}
 
-inline su2double CSolver::GetAverageTotTemperature(unsigned short valMarker, unsigned short valSpan){return 0.0;}
-
-inline su2double CSolver::GetAverageTotPressure(unsigned short valMarker, unsigned short valSpan){return 0.0;}
-
 inline su2double* CSolver::GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan){return NULL;}
 
 inline void CSolver::SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity){ }
 
 inline void CSolver::SetExtAveragePressure(unsigned short valMarker, unsigned short valSpan, su2double valPressure){ }
 
-inline void CSolver::SetExtAverageTotTemperature(unsigned short valMarker, unsigned short valSpan, su2double valTotTemperature){ }
-
-inline void CSolver::SetExtAverageTotPressure(unsigned short valMarker, unsigned short valSpan, su2double valTotPressure){ }
-
 inline void CSolver::SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity){ }
 
-inline su2double CSolver::GetDensityIn            (unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+inline su2double CSolver::GetDensityIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
 
-inline su2double CSolver::GetPressureIn           (unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+inline su2double CSolver::GetPressureIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
 
-inline su2double* CSolver::GetTurboVelocityIn     (unsigned short inMarkerTP, unsigned short valSpan){return NULL;}
+inline su2double* CSolver::GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan){return NULL;}
 
-inline su2double CSolver::GetDensityOut           (unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+inline su2double CSolver::GetDensityOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
 
-inline su2double CSolver::GetPressureOut          (unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+inline su2double CSolver::GetPressureOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
 
-inline su2double* CSolver::GetTurboVelocityOut    (unsigned short inMarkerTP, unsigned short valSpan){return NULL;}
+inline su2double* CSolver::GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan){return NULL;}
 
 inline void CSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, 
 									 unsigned short val_marker) { }
@@ -597,10 +589,6 @@ inline void CSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) { }
 inline void CSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::TurboPerformance(CConfig *config, CGeometry *geometry){ }
-
-inline void CSolver::TurboPerformance2nd(CConfig *config){ }
 
 inline void CSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) { }
 
@@ -924,10 +912,6 @@ inline su2double CEulerSolver::GetAverageDensity(unsigned short valMarker, unsig
 
 inline su2double CEulerSolver::GetAveragePressure(unsigned short valMarker, unsigned short valSpan){return AveragePressure[valMarker][valSpan];}
 
-inline su2double CEulerSolver::GetAverageTotTemperature(unsigned short valMarker, unsigned short valSpan){return AverageTotTemperature[valMarker][valSpan];}
-
-inline su2double CEulerSolver::GetAverageTotPressure(unsigned short valMarker, unsigned short valSpan){return AverageTotPressure[valMarker][valSpan];}
-
 inline su2double* CEulerSolver::GetAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan){return AverageTurboVelocity[valMarker][valSpan];}
 
 inline void CEulerSolver::SetExtAverageDensity(unsigned short valMarker, unsigned short valSpan, su2double valDensity){ExtAverageDensity[valMarker][valSpan] = valDensity;}
@@ -936,23 +920,23 @@ inline void CEulerSolver::SetExtAveragePressure(unsigned short valMarker, unsign
 
 inline void CEulerSolver::SetExtAverageTurboVelocity(unsigned short valMarker, unsigned short valSpan, unsigned short valIndex, su2double valTurboVelocity){ExtAverageTurboVelocity[valMarker][valSpan][valIndex] = valTurboVelocity;}
 
-inline su2double  CEulerSolver::GetDensityIn            (unsigned short inMarkerTP, unsigned short valSpan){return DensityIn[inMarkerTP][valSpan];}
+inline su2double  CEulerSolver::GetDensityIn(unsigned short inMarkerTP, unsigned short valSpan){return DensityIn[inMarkerTP][valSpan];}
 
-inline su2double  CEulerSolver::GetPressureIn           (unsigned short inMarkerTP, unsigned short valSpan){return PressureIn[inMarkerTP][valSpan];}
+inline su2double  CEulerSolver::GetPressureIn(unsigned short inMarkerTP, unsigned short valSpan){return PressureIn[inMarkerTP][valSpan];}
 
-inline su2double* CEulerSolver::GetTurboVelocityIn      (unsigned short inMarkerTP, unsigned short valSpan){return TurboVelocityIn[inMarkerTP][valSpan];}
+inline su2double* CEulerSolver::GetTurboVelocityIn(unsigned short inMarkerTP, unsigned short valSpan){return TurboVelocityIn[inMarkerTP][valSpan];}
 
-inline su2double  CEulerSolver::GetDensityOut           (unsigned short inMarkerTP, unsigned short valSpan){return DensityOut[inMarkerTP][valSpan];}
+inline su2double  CEulerSolver::GetDensityOut(unsigned short inMarkerTP, unsigned short valSpan){return DensityOut[inMarkerTP][valSpan];}
 
-inline su2double  CEulerSolver::GetPressureOut          (unsigned short inMarkerTP, unsigned short valSpan){return PressureOut[inMarkerTP][valSpan];}
+inline su2double  CEulerSolver::GetPressureOut(unsigned short inMarkerTP, unsigned short valSpan){return PressureOut[inMarkerTP][valSpan];}
 
-inline su2double* CEulerSolver::GetTurboVelocityOut     (unsigned short inMarkerTP, unsigned short valSpan){return TurboVelocityOut[inMarkerTP][valSpan];}
+inline su2double* CEulerSolver::GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan){return TurboVelocityOut[inMarkerTP][valSpan];}
 
-inline void CEulerSolver::SetDensityIn            (su2double value, unsigned short inMarkerTP, unsigned short valSpan){DensityIn[inMarkerTP][valSpan] = value;}
+inline void CEulerSolver::SetDensityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){DensityIn[inMarkerTP][valSpan] = value;}
 
-inline void CEulerSolver::SetPressureIn           (su2double value, unsigned short inMarkerTP, unsigned short valSpan){PressureIn[inMarkerTP][valSpan] = value;}
+inline void CEulerSolver::SetPressureIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){PressureIn[inMarkerTP][valSpan] = value;}
 
-inline void CEulerSolver::SetTurboVelocityIn      (su2double *value, unsigned short inMarkerTP, unsigned short valSpan){
+inline void CEulerSolver::SetTurboVelocityIn(su2double *value, unsigned short inMarkerTP, unsigned short valSpan){
 	unsigned short iDim;
 
 	for(iDim = 0; iDim < nDim; iDim++)

@@ -170,6 +170,19 @@ public:
 									unsigned long Vertex_Target, unsigned long Point_Target);
 
 	/*!
+	 * \brief A virtual member.
+	 * \param[in] target_solution - Solution from the target mesh.
+	 * \param[in] target_geometry - Geometry of the target mesh.
+	 * \param[in] target_config - Definition of the problem at the target mesh.
+	 * \param[in] Marker_Target - Index of the target marker.
+	 * \param[in] Vertex_Target - Index of the target vertex.
+	 * \param[in] Point_Target - Index of the target point.
+	 */
+	virtual void SetAverageValues(CSolver *donor_solution, CSolver *target_solution, CConfig *config, unsigned short donorZone);
+
+
+
+	/*!
 	 * \brief Interpolate data and scatter it into different processors, for matching meshes.
 	 * \param[in] donor_solution - Solution from the donor mesh.
 	 * \param[in] target_solution - Solution from the target mesh.
@@ -537,7 +550,7 @@ public:
 	 * \param[in] target_solution - Solution from the target mesh.
 	 * \param[in] donorZone       - counter of the donor solution
 	 */
-	 void SetAvergeValues(CSolver *donor_solution, CSolver *target_solution, CConfig *config, unsigned short donorZone);
+	void SetAverageValues(CSolver *donor_solution, CSolver *target_solution, CConfig *config, unsigned short donorZone);
 
 
 
