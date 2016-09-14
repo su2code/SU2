@@ -2432,10 +2432,10 @@ for (targetZone = 0; targetZone < nZone; targetZone++){
 	
 	
 	
-	
+	#ifdef HAVE_MPI
 	if (rank == MASTER_NODE) 
 		delete [] Buffer_Recv_mark;
-	
+	#endif
 	
 
 			
