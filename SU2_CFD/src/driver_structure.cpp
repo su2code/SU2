@@ -2206,9 +2206,6 @@ void CDriver::Interface_Preprocessing() {
 
 	bool matching_mesh;
 
-	fluid_donor   = false;  structural_donor   = false;
-	fluid_target  = false;  structural_target  = false;
-
 
 #ifdef HAVE_MPI
   int *Buffer_Recv_mark, iRank;
@@ -2220,7 +2217,7 @@ void CDriver::Interface_Preprocessing() {
 	Buffer_Recv_mark = new int[nProcessor];
 #endif
 
-if (config_container[ZONE_0]->GetFSI_Simulation() && nZone != 2){
+if (config_container[ZONE_0]->GetFSI_Simulation() && nZone != 2 && rank == MASTER_NODE){
 		cout << "Error, cannot run the FSI solver on more than 2 zones!" << endl;exit(EXIT_FAILURE);
 
 		/// Not sure about this, it also may work 
@@ -2319,7 +2316,12 @@ for (targetZone = 0; targetZone < nZone; targetZone++){
 			if(Target_check == -1 || Donor_check == -1)
 				continue;
 
-
+			fluid_target      = false; 
+			structural_target = false;
+			
+			fluid_donor       = false; 
+			structural_donor  = false;
+			
 			switch ( config_container[targetZone]->GetKind_Solver() ) {
 
 			case EULER : case NAVIER_STOKES: case RANS: 
@@ -2343,7 +2345,9 @@ for (targetZone = 0; targetZone < nZone; targetZone++){
 												break;
 			}
 			
-										/*--- Retrieve the number of conservative variables (for problems not involving structural analysis ---*/
+			matching_mesh = config_container[donorZone]->GetMatchingMesh();
+			
+							/*--- Retrieve the number of conservative variables (for problems not involving structural analysis ---*/
 							if (!structural_donor && !structural_target)
 								nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnVar();
 							else
@@ -2421,6 +2425,8 @@ for (targetZone = 0; targetZone < nZone; targetZone++){
 								if (rank == MASTER_NODE) cout << "generic conservative variables. " << endl;	
 							}
 
+
+					break;
 				}
 			
 			

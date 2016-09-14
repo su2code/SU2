@@ -32,7 +32,7 @@
  */
 
 #include "../include/iteration_structure.hpp"
-//a
+
 CIteration::CIteration(CConfig *config) { }
 CIteration::~CIteration(void) { }
 
