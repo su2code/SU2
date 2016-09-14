@@ -2190,7 +2190,7 @@ void CDriver::Iteration_Preprocessing() {
 
 void CDriver::Interface_Preprocessing() {
 
-	int rank = MASTER_NODE;
+	int rank = MASTER_NODE, nProcessor = 1;
 	unsigned short donorZone, targetZone;
 	unsigned short nVar, nVarTransfer;
 	unsigned short nInterface;
@@ -2201,6 +2201,8 @@ void CDriver::Interface_Preprocessing() {
 	/*--- Initialize some useful booleans ---*/
 	bool fluid_donor, structural_donor;
 	bool fluid_target, structural_target;
+	
+	int markDonor, markTarget, Donor_check, Target_check, iMarkerInt, nMarkerInt;
 
 	bool matching_mesh;
 
@@ -2209,7 +2211,13 @@ void CDriver::Interface_Preprocessing() {
 
 
 #ifdef HAVE_MPI
+  int *Buffer_Recv_mark, iRank;
+  
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  
+  if (rank == MASTER_NODE) 
+	Buffer_Recv_mark = new int[nProcessor];
 #endif
 
 if (config_container[ZONE_0]->GetFSI_Simulation() && nZone != 2){
@@ -2223,71 +2231,119 @@ if (config_container[ZONE_0]->GetFSI_Simulation() && nZone != 2){
 
 for (targetZone = 0; targetZone < nZone; targetZone++){
 	
-	
-	nMarkerTarget  = geometry_container[targetZone][MESH_0]->GetnMarker();
-	
-	for( iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
-			
-		FSI_interface_marker = config_container[targetZone]->GetMarker_FSIinterface( config_container[targetZone]->GetMarker_All_TagBound( iMarkerTarget ) );
+	for (donorZone = 0; donorZone < nZone; donorZone++){
+		
+		if ( donorZone == targetZone )
+			continue;
+		
+		nMarkerInt     = (int) (config_container[donorZone]->GetMarker_n_FSIinterface() / 2 );
+		
+  
+		  // For the markers on the interface
+		  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
 
-		if(	FSI_interface_marker != 0 ){
+			markDonor  = -1;
+			markTarget = -1;
 			
+			/*--- On the donor side ---*/
+			nMarkerDonor = config_container[donorZone]->GetnMarker_All();
+	
+			for (iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+				
+				  /*--- If the tag GetMarker_All_FSIinterface(iMarker) equals the index we are looping at ---*/
+				  if ( config_container[donorZone]->GetMarker_All_FSIinterface(iMarkerDonor) == iMarkerInt ){
+					  
+					  /*--- We have identified the identifier for the interface marker ---*/
+					  markDonor = iMarkerDonor;
+					  break;
+				  }
+			}
+	
 			
-			/*--- Initialize target booleans ---*/
-			fluid_target  = false;  structural_target  = false;
+			/*--- On the target side ---*/
+			nMarkerTarget = config_container[targetZone]->GetnMarker_All();
+	
+			for (iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+				
+				  /*--- If the tag GetMarker_All_FSIinterface(iMarker) equals the index we are looping at ---*/
+				  if ( config_container[targetZone]->GetMarker_All_FSIinterface(iMarkerTarget) == iMarkerInt ){
+					  
+					  /*--- We have identified the identifier for the interface marker ---*/
+					  markTarget = iMarkerTarget;
+					  break;
+				  }
+			}
 
-			/*--- Set the target boolean: as of now, only Fluid-Structure Interaction considered ---*/
+			#ifdef HAVE_MPI
+			
+			Donor_check  = -1;
+			Target_check = -1;
+				
+			/*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it ---*/
+			
+			SU2_MPI::Gather(&markDonor , 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+			
+			if (rank == MASTER_NODE){
+				for (iRank = 0; iRank < nProcessor; iRank++){
+					if( Buffer_Recv_mark[iRank] != -1 ){
+						Donor_check = Buffer_Recv_mark[iRank];
+						break;
+					}
+					
+				}
+			}
+			
+			SU2_MPI::Bcast(&Donor_check , 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+			
+			
+			SU2_MPI::Gather(&markTarget, 1, MPI_INT, Buffer_Recv_mark, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+			
+			if (rank == MASTER_NODE){
+				for (iRank = 0; iRank < nProcessor; iRank++){
+					if( Buffer_Recv_mark[iRank] != -1 ){
+						Target_check = Buffer_Recv_mark[iRank];
+						break;
+					}
+					
+				}
+			}
+
+			SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
+				
+			#else
+			Donor_check  = markDonor;
+			Target_check = markTarget;	
+			#endif
+			
+			
+			if(Target_check == -1 || Donor_check == -1)
+				continue;
+
 
 			switch ( config_container[targetZone]->GetKind_Solver() ) {
 
 			case EULER : case NAVIER_STOKES: case RANS: 
-			
-												fluid_target  = true;     
-												
+												fluid_target  = true;     		
 												break;
 
 			case FEM_ELASTICITY:            
 												structural_target = true;   
-			
 												break;
 			}
 
-			for (donorZone = 0; donorZone < nZone; donorZone++){
+
+			switch ( config_container[donorZone]->GetKind_Solver() ) {
 				
-				if(donorZone == targetZone) continue;
-				
-				nMarkerDonor  = geometry_container[donorZone][MESH_0]->GetnMarker();
-				
-				for( iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
-				
-						FSI_interface_marker_compare = config_container[donorZone]->GetMarker_FSIinterface( config_container[donorZone]->GetMarker_All_TagBound( iMarkerDonor) );
+				case EULER : case NAVIER_STOKES: case RANS: 
+												fluid_donor  = true;    
+												break;
 
-						if( FSI_interface_marker_compare != 0 && FSI_interface_marker == FSI_interface_marker_compare &&  transfer_container[donorZone][targetZone] == NULL){
-
-							/*--- Initialize donor booleans ---*/
-
-							fluid_donor  = false;  structural_donor  = false;
-
-							matching_mesh = config_container[donorZone]->GetMatchingMesh();
-
-							/*--- Set the donor boolean: as of now, only Fluid-Structure Interaction considered ---*/
-
-							switch ( config_container[donorZone]->GetKind_Solver() ) {
-								
-								case EULER : case NAVIER_STOKES: case RANS: 
-								
-																	fluid_donor  = true;    
-																	
-																	break;
-
-								case FEM_ELASTICITY:            
-																	structural_donor = true;  
-																	
-																	break;
-							}
-
-
-							/*--- Retrieve the number of conservative variables (for problems not involving structural analysis ---*/
+				case FEM_ELASTICITY:            
+												structural_donor = true;  
+												break;
+			}
+			
+										/*--- Retrieve the number of conservative variables (for problems not involving structural analysis ---*/
 							if (!structural_donor && !structural_target)
 								nVar = solver_container[donorZone][MESH_0][FLOW_SOL]->GetnVar();
 							else
@@ -2365,14 +2421,44 @@ for (targetZone = 0; targetZone < nZone; targetZone++){
 								if (rank == MASTER_NODE) cout << "generic conservative variables. " << endl;	
 							}
 
-						}
-
-
 				}
-			}
+			
+			
+			
 		}
+		
 	}
-}
+	
+	
+	
+	
+	
+	if (rank == MASTER_NODE) 
+		delete [] Buffer_Recv_mark;
+	
+	
+
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+
 
 }
 

@@ -203,7 +203,7 @@ void CInterpolator::Collect_VertexInfo(bool faces, int markDonor, int markTarget
   su2double  *Normal;
 
 #ifdef HAVE_MPI
-  int rank = MASTER_NODE;
+  int rank;
   int nProcessor = SINGLE_NODE;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
@@ -323,17 +323,19 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
 #ifdef HAVE_MPI
   int rank = MASTER_NODE;
+  int *Buffer_Recv_mark, iRank;
+  
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+  
+  if (rank == MASTER_NODE) 
+	Buffer_Recv_mark = new int[nProcessor];
 #endif
 
   Buffer_Receive_nVertex_Donor = new unsigned long [nProcessor];
-
+  
   // For the markers on the interface
   for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
-
-	nVertexDonor = 0;
-	nVertexTarget= 0;
 
 	/*--- On the donor side ---*/
 	markDonor  = Find_InterfaceMarker(config[donorZone],  iMarkerInt);
@@ -342,14 +344,9 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 	markTarget = Find_InterfaceMarker(config[targetZone], iMarkerInt);
 
 	#ifdef HAVE_MPI
-
-	int *Buffer_Recv_mark, iRank;
 	
 	Donor_check  = -1;
 	Target_check = -1;
-
-	if (rank == MASTER_NODE) 
-		Buffer_Recv_mark = new int[nProcessor];
 		
 	/*--- We gather a vector in MASTER_NODE that determines if the boundary is not on the processor because of the partition or because the zone does not include it ---*/
 	
@@ -381,17 +378,24 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 	}
 
 	SU2_MPI::Bcast(&Target_check, 1, MPI_INT, MASTER_NODE, MPI_COMM_WORLD);
-	
-	if (rank == MASTER_NODE) 
-		delete [] Buffer_Recv_mark;
 		
 	#else
 	Donor_check  = markDonor;
 	Target_check = markTarget;	
 	#endif
 	
-	nVertexDonor  =  donor_geometry->GetnVertex(markDonor);
-	nVertexTarget = target_geometry->GetnVertex(markTarget);
+	if(Target_check == -1 || Donor_check == -1)
+	  continue;
+
+	if(markDonor != -1)
+		nVertexDonor  =  donor_geometry->GetnVertex(markDonor);
+	else
+		nVertexDonor  = 0;
+	
+	if(markTarget != -1)
+		nVertexTarget = target_geometry->GetnVertex(markTarget);
+	else
+		nVertexTarget  = 0;
 	
 	Buffer_Send_nVertex_Donor    = new unsigned long [1];
 
@@ -406,17 +410,6 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
 	  /*-- Collect coordinates, global points, and normal vectors ---*/
 	  Collect_VertexInfo(false, markDonor, markTarget, nVertexDonor, nDim);
-	  
-	if(Target_check == -1 || Donor_check == -1){
-	  delete[] Buffer_Send_Coord;
-	  delete[] Buffer_Send_GlobalPoint;
-
-	  delete[] Buffer_Receive_Coord;
-	  delete[] Buffer_Receive_GlobalPoint;
-
-	  delete[] Buffer_Send_nVertex_Donor;
-	  continue;
-	}
 		
 	  /*--- Compute the closest point to a Near-Field boundary point ---*/
 	  maxdist = 0.0;
@@ -427,7 +420,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 		  if ( target_geometry->node[Point_Target]->GetDomain() ) {
 
 			  target_geometry->vertex[markTarget][iVertexTarget]->SetnDonorPoints(1);
-			  target_geometry->vertex[markTarget][iVertexTarget]->Allocate_DonorInfo();
+			  target_geometry->vertex[markTarget][iVertexTarget]->Allocate_DonorInfo(); // Possible meme leak?
 
 			  /*--- Coordinates of the boundary point ---*/
 			  Coord_i = target_geometry->node[Point_Target]->GetCoord();
@@ -473,6 +466,11 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
   }
 
   delete[] Buffer_Receive_nVertex_Donor;
+  
+  #ifdef HAVE_MPI
+  if (rank == MASTER_NODE) 
+	delete [] Buffer_Recv_mark;
+  #endif
 }
 
 
