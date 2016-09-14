@@ -648,14 +648,16 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 	  
 		if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
 			
-			SlidingState[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+			SlidingState[iMarker] = new su2double* [geometry->GetnVertex(iMarker)];
 			
-			for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++)
+			for (iPoint = 0; iPoint < geometry->nVertex[iMarker]; iPoint++){
 					SlidingState[iMarker][iPoint] = new su2double[nPrimVar];
-
+					for (iVar = 0; iVar < nVar; iVar++)
+						SlidingState[iMarker][iPoint][iVar] = -1;
+			}
 		}
 		else
-			SlidingState[iMarker] =NULL;
+			SlidingState[iMarker] = NULL;
   }
  
   /*--- Initializate quantities for the mixing process ---*/
@@ -10862,9 +10864,9 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 
 					for (iVar = 0; iVar < nPrimVar; iVar++) {
 						PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
-						PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);
+						PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar);//cout << PrimVar_j[iVar] << "  ";
 					}
-
+//cout << endl;
 					/*--- Set primitive variables ---*/
 
 					numerics->SetPrimitive(PrimVar_i, PrimVar_j);
@@ -10892,8 +10894,9 @@ void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_cont
 				}
 			}
 		}
+		  //getchar();
 	}
-  
+	
 	/*--- Free locally allocated memory ---*/
 
 	delete [] Normal;
