@@ -259,7 +259,9 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
   VecSolDOFs.resize(nVar*nDOFsLocTot);
   VecSolDOFsOld.resize(nVar*nDOFsLocOwned);
-
+  if(config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT)
+    VecSolDOFsNew.resize(nVar*nDOFsLocOwned);
+  
   /*--- Determine the global number of DOFs. ---*/
 
 #ifdef HAVE_MPI
@@ -1532,6 +1534,11 @@ void CFEM_DG_EulerSolver::Set_OldSolution(CGeometry *geometry) {
   memcpy(VecSolDOFsOld.data(), VecSolDOFs.data(), VecSolDOFsOld.size()*sizeof(su2double));
 }
 
+void CFEM_DG_EulerSolver::Set_NewSolution(CGeometry *geometry) {
+  
+  memcpy(VecSolDOFsNew.data(), VecSolDOFs.data(), VecSolDOFsNew.size()*sizeof(su2double));
+}
+
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
 
@@ -2384,6 +2391,98 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
     SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/nDOFsGlobal)));
   }
 
+#endif
+}
+
+void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                               CConfig *config, unsigned short iRKStep) {
+  
+  /*--- Hard-coded classical RK4 coefficients. Will be added to config. ---*/
+  su2double RK_TimeCoeff[4] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
+  su2double RK_FuncCoeff[4] = {0.5, 0.5, 1.0, 1.0};
+  
+  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+    SetRes_RMS(iVar, 0.0);
+    SetRes_Max(iVar, 0.0, 0);
+  }
+  
+  /*--- Update the solution by looping over the owned volume elements. ---*/
+  for(unsigned long l=0; l<nVolElemOwned; ++l) {
+    
+    /* Store the coordinate of the first vertex of this element to give an
+     indication for the location of the maximum residual. */
+    const unsigned long ind = volElem[l].nodeIDsGrid[0];
+    const su2double *coor   = meshPoints[ind].coor;
+    
+    /* Set the pointers for the residual and solution for this element. */
+    const unsigned long offset  = nVar*volElem[l].offsetDOFsSolLocal;
+    const su2double *res        = VecResDOFs.data()    + offset;
+    const su2double *solDOFSOld = VecSolDOFsOld.data() + offset;
+    su2double *solDOFSNew       = VecSolDOFsNew.data() + offset;
+    su2double *solDOFs          = VecSolDOFs.data()    + offset;
+    
+    /* Loop over the DOFs for this element and update the solution and the L2 norm. */
+    const su2double tmp_time = -1.0*RK_TimeCoeff[iRKStep]*VecDeltaTime[l];
+    const su2double tmp_func = -1.0*RK_FuncCoeff[iRKStep]*VecDeltaTime[l];
+    
+    unsigned int i = 0;
+    for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
+      const unsigned long globalIndex = volElem[l].offsetDOFsSolGlobal + j;
+      for(unsigned short iVar=0; iVar<nVar; ++iVar, ++i) {
+        
+        if (iRKStep < 3) {
+          solDOFSNew[i] += tmp_func*res[i];
+          solDOFs[i]     = solDOFSOld[i] + tmp_time*res[i];
+        } else {
+          solDOFs[i]     = solDOFSNew[i] + tmp_func*res[i];
+        }
+        
+        AddRes_RMS(iVar, res[i]*res[i]);
+        AddRes_Max(iVar, fabs(res[i]), globalIndex, coor);
+      }
+    }
+    
+  }
+  
+  /*--- Compute the root mean square residual. Note that the SetResidual_RMS
+   function cannot be used, because that is for the FV solver.    ---*/
+  
+#ifdef HAVE_MPI
+  /*--- Parallel mode. The local L2 norms must be added to obtain the
+   global value. Also check for divergence. ---*/
+  int nProc, rank;
+  MPI_Comm_size(MPI_COMM_WORLD, &nProc);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  
+  vector<su2double> rbuf(nVar);
+  SU2_MPI::Allreduce(Residual_RMS, rbuf.data(), nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  
+  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+    
+    if (rbuf[iVar] != rbuf[iVar]) {
+      if (rank == MASTER_NODE)
+        cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+      MPI_Abort(MPI_COMM_WORLD,1);
+    }
+    
+    SetRes_RMS(iVar, max(EPS*EPS, sqrt(rbuf[iVar]/nDOFsGlobal)));
+  }
+  
+  /*--- Communicate the information about the maximum residual. ---*/
+  
+#else
+  /*--- Sequential mode. Check for a divergence of the solver and compute
+   the L2-norm of the residuals. ---*/
+  for(unsigned short iVar=0; iVar<nVar; ++iVar) {
+    
+    if(GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
+      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
+      exit(EXIT_FAILURE);
+    }
+    
+    SetRes_RMS(iVar, max(EPS*EPS, sqrt(GetRes_RMS(iVar)/nDOFsGlobal)));
+  }
+  
 #endif
 }
 

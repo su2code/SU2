@@ -961,10 +961,12 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ***geometry,
   
   iMesh = FinestMesh;
   
-  /*--- Check for the number of RK stages. ---*/
+  /*--- Check for the number of RK stages. Note that we are currently
+   hard-coding the classical RK4 scheme. ---*/
   
   switch (config[iZone]->GetKind_TimeIntScheme()) {
     case RUNGE_KUTTA_EXPLICIT: iRKLimit = config[iZone]->GetnRKStep(); break;
+    case CLASSICAL_RK4_EXPLICIT: iRKLimit = 4; break;
     case EULER_EXPLICIT: case EULER_IMPLICIT: iRKLimit = 1; break; }
   
   /*--- Time and space integration ---*/
@@ -972,6 +974,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ***geometry,
   for (iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
     
     /*--- Preprocessing ---*/
+    
     config[ZONE_0]->Tick(&tick);
     solver_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, iRKStep, RunTime_EqSystem, false);
     config[ZONE_0]->Tock(tick,"Preprocessing",2);
@@ -1036,6 +1039,12 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
     config->Tick(&tick);
     solver_container[MainSolver]->Set_OldSolution(geometry);
     config->Tock(tick,"Set_OldSolution",3);
+    
+    if (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT) {
+      config->Tick(&tick);
+      solver_container[MainSolver]->Set_NewSolution(geometry);
+      config->Tock(tick,"Set_NewSolution",3);
+    }
     
     config->Tick(&tick);
     solver_container[MainSolver]->SetTime_Step(geometry, solver_container, config, iMesh, Iteration);
@@ -1119,6 +1128,11 @@ void CFEM_DG_Integration::Time_Integration(CGeometry *geometry, CSolver **solver
         config->Tick(&tick);
         solver_container[MainSolver]->ExplicitRK_Iteration(geometry, solver_container, config, iRKStep);
         config->Tock(tick,"ExplicitRK_Iteration",3);
+        break;
+      case (CLASSICAL_RK4_EXPLICIT):
+        config->Tick(&tick);
+        solver_container[MainSolver]->ClassicalRK4_Iteration(geometry, solver_container, config, iRKStep);
+        config->Tock(tick,"CLASSICAL_RK4_EXPLICIT",3);
         break;
       default:
         cout << "Time integration scheme not implemented." << endl;

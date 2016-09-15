@@ -732,6 +732,9 @@ inline void CSolver::Wave_Strength(CGeometry *geometry, CConfig *config) { }
 inline void CSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, 
 											CConfig *config, unsigned short iRKStep) { }
 
+inline void CSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
+                                            CConfig *config, unsigned short iRKStep) { }
+
 inline void CSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
@@ -784,6 +787,8 @@ inline void CSolver::Set_OldSolution(CGeometry *geometry) {
                                      //  to guarantee that the boundaries are
                                      //  well updated
 }
+
+inline void CSolver::Set_NewSolution(CGeometry *geometry) { }
 
 inline unsigned short CSolver::GetnVar(void) { return nVar; }
 
