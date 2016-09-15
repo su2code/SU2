@@ -2738,7 +2738,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   delete [] tmp_smooth;
  
-  /*--- Make sure that implicit time integration is disable
+  /*--- Make sure that implicit time integration is disabled
         for the FEM fluid solver (numerics). ---*/
   if ((Kind_Solver == FEM_EULER) ||
       (Kind_Solver == FEM_NAVIER_STOKES) || 
@@ -3899,6 +3899,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
             cout << "\t" << RK_Alpha_Step[iRKStep];
           }
           cout << endl;
+          break;
+        case CLASSICAL_RK4_EXPLICIT:
+          cout << "Classical RK4 explicit method for the flow equations." << endl;
+          cout << "Number of steps: " << 4 << endl;
+          cout << "Time coefficients: {0.5, 0.5, 1, 1}" << endl;
+          cout << "Function coefficients: {1/6, 1/3, 1/3, 1/6}" << endl;
           break;
       }
     }

@@ -456,6 +456,12 @@ public:
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 */
 	virtual void Set_OldSolution(CGeometry *geometry);
+  
+  /*!
+   * \brief Set the new solution variables to the current solution value for classical RK.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  virtual void Set_NewSolution(CGeometry *geometry);
 
 	/*!
 	 * \brief Load the geometries at the previous time states n and nM1.
@@ -1238,7 +1244,17 @@ public:
 	 */
 	virtual void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                       unsigned short iRKStep);
-    
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  virtual void ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                                     unsigned short iRKStep);
+  
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
@@ -5702,6 +5718,7 @@ protected:
 
   vector<su2double> VecSolDOFs;    /*!< \brief Vector, which stores the solution variables in all the DOFs. */
   vector<su2double> VecSolDOFsOld; /*!< \brief Vector, which stores the old solution variables in the owned DOFs. */
+  vector<su2double> VecSolDOFsNew; /*!< \brief Vector, which stores the new solution variables in the owned DOFs (needed for classical RK4 scheme). */
   vector<su2double> VecDeltaTime;  /*!< \brief Vector, which stores the time steps of the owned volume elements. */
 
   vector<su2double> VecResDOFs;    /*!< \brief Vector, which stores the residuals in the owned DOFs. */
@@ -5852,6 +5869,12 @@ public:
   void Set_OldSolution(CGeometry *geometry);
   
   /*!
+   * \brief Set the new solution variables to the current solution value for classical RK.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void Set_NewSolution(CGeometry *geometry);
+  
+  /*!
    * \brief Compute the time step for solving the Euler or Navier-Stokes equations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -5961,6 +5984,16 @@ public:
    */
   void ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep);
+  
+  /*!
+   * \brief Update the solution using the classical fourth-order Runge-Kutta scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                             unsigned short iRKStep);
   
   /*!
    * \brief Compute the pressure forces and all the adimensional coefficients.
