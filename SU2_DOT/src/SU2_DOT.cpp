@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
    if (config_container[ZONE_0]->GetDiscrete_Adjoint()){
      if (rank == MASTER_NODE)
        cout << endl <<"------------------------ Mesh sensitivity Output ------------------------" << endl;
-     COutput *output = new COutput();
+     COutput *output = new COutput(config_container[ZONE_0]);
      output->SetSensitivity_Files(geometry_container, config_container, nZone);
    }
 

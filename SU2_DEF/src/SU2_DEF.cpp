@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
   geometry_container = new CGeometry*[nZone];
   surface_movement   = new CSurfaceMovement*[nZone];
   grid_movement      = new CVolumetricMovement*[nZone];
-  output             = new COutput();
+
 
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
@@ -170,6 +170,11 @@ int main(int argc, char *argv[]) {
     geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
   
   }
+
+  /*--- initialization of output structure  ---*/
+
+  output  = new COutput(config_container[ZONE_0]);
+
   /*--- Output original grid for visualization, if requested (surface and volumetric) ---*/
   
   if (config_container[ZONE_0]->GetVisualize_Deformation()) {
@@ -260,7 +265,7 @@ int main(int argc, char *argv[]) {
   /*--- Output deformed grid for visualization, if requested (surface and volumetric), in parallel 
    requires to move all the data to the master node---*/
   
-  output = new COutput();
+  output = new COutput(config_container[ZONE_0]);
   
   output->SetMesh_Files(geometry_container, config_container, nZone, false, true);
   

@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
     cout << endl <<"------------------------- Solution Postprocessing -----------------------" << endl;
   
 	/*--- Definition of the output class (one for all the zones) ---*/
-	output = new COutput();
+	output = new COutput(config_container[ZONE_0]);
   
   /*---  Check whether this is an FSI, fluid unsteady, time spectral or structural dynamic simulation and call the
    solution merging routines accordingly.---*/

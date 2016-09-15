@@ -1072,20 +1072,6 @@ public:
 
 	/*!
 	 * \brief A virtual member.
-	 * \param[in] config - contains config file information.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 */
-	virtual void PreprocessTurboPerformance(CConfig *config, CGeometry *geometry);
-
-	/*!
-	 * \brief A virtual member.
-	 * \param[in] config - contains config file information.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 */
-	virtual void TurboPerformance(CConfig *config);
-
-	/*!
-	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
 	 * \param[in] config - Definition of the particular problem.
@@ -2702,6 +2688,48 @@ public:
    * \return Value of the outlet normal velocity.
    */
   virtual su2double* GetTurboVelocityOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetDensityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetPressureIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetTurboVelocityIn(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetDensityOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetPressureOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] value      - turboperformance value to set.
+   * \param[in] inMarkerTP - turboperformance marker.
+   */
+  virtual void SetTurboVelocityOut(su2double* value, unsigned short inMarkerTP, unsigned short valSpan);
 
 };
 
