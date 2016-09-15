@@ -9388,13 +9388,13 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
             if (rank == MASTER_NODE){
             	if (marker_flag == INFLOW){
                  DensityIn[iMarkerTP -1][iSpan]         = AverageDensity[iMarker][iSpan];
-                 PressureIn[iMarkerTP -1][iSpan]        = AverageDensity[iMarker][iSpan];
+                 PressureIn[iMarkerTP -1][iSpan]        = AveragePressure[iMarker][iSpan];
                  for (iDim = 0;iDim< nDim; iDim++){
                 	 TurboVelocityIn[iMarkerTP -1][iSpan][iDim]   = AverageTurboVelocity[iMarker][iSpan][iDim];
                  }
             	}else{
             		DensityOut[iMarkerTP -1][iSpan]         = AverageDensity[iMarker][iSpan];
-            		PressureOut[iMarkerTP -1][iSpan]        = AverageDensity[iMarker][iSpan];
+            		PressureOut[iMarkerTP -1][iSpan]        = AveragePressure[iMarker][iSpan];
             		for (iDim = 0;iDim< nDim; iDim++){
             			TurboVelocityOut[iMarkerTP -1][iSpan][iDim]  = AverageTurboVelocity[iMarker][iSpan][iDim];
             		}
@@ -9787,14 +9787,14 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
 
           if (rank == MASTER_NODE){
           	if (marker_flag == INFLOW){
-               DensityIn         [iMarkerTP -1][nSpanWiseSections]         = AverageDensity[iMarker][nSpanWiseSections];
-               PressureIn         [iMarkerTP -1][nSpanWiseSections]        = AverageDensity[iMarker][nSpanWiseSections];
+               DensityIn[iMarkerTP -1][nSpanWiseSections] = AverageDensity[iMarker][nSpanWiseSections];
+               PressureIn[iMarkerTP -1][nSpanWiseSections] = AveragePressure[iMarker][nSpanWiseSections];
                for (iDim = 0;iDim< nDim; iDim++){
-              	 TurboVelocityIn   [iMarkerTP -1][nSpanWiseSections][iDim]   = AverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
+              	 TurboVelocityIn[iMarkerTP -1][nSpanWiseSections][iDim] = AverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
                }
           	}else{
-          		DensityOut        [iMarkerTP -1][nSpanWiseSections]         = AverageDensity[iMarker][nSpanWiseSections];
-          		PressureOut         [iMarkerTP -1][nSpanWiseSections]       = AverageDensity[iMarker][nSpanWiseSections];
+          		DensityOut[iMarkerTP -1][nSpanWiseSections] = AverageDensity[iMarker][nSpanWiseSections];
+          		PressureOut[iMarkerTP -1][nSpanWiseSections] = AveragePressure[iMarker][nSpanWiseSections];
           		for (iDim = 0;iDim< nDim; iDim++){
           			TurboVelocityOut[iMarkerTP -1][nSpanWiseSections][iDim]  = AverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
           		}
