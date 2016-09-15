@@ -8621,7 +8621,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 	unsigned short iMarkerTP, iSpan;
 	unsigned short nMarkerTP = config->GetnMarker_Turbomachinery();
 	unsigned short nSpanWiseSection = config->GetnSpanWiseSections();
-
+  FluidModel = solver_container->GetFluidModel();
 
 	/*--- Compute performance for each blade ---*/
 	for(iMarkerTP = 0; iMarkerTP < nMarkerTP; iMarkerTP++ ){
@@ -8640,8 +8640,8 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 
 			/*--- Retrieve Outflow primitive quintities ---*/
 			DensityOut[iMarkerTP][iSpan]         = solver_container->GetDensityOut(iMarkerTP, iSpan);
-			PressureIn[iMarkerTP][iSpan]         = solver_container->GetPressureOut(iMarkerTP, iSpan);
-			TurboVelocityIn[iMarkerTP][iSpan]    = solver_container->GetTurboVelocityOut(iMarkerTP, iSpan);
+			PressureOut[iMarkerTP][iSpan]         = solver_container->GetPressureOut(iMarkerTP, iSpan);
+			TurboVelocityOut[iMarkerTP][iSpan]    = solver_container->GetTurboVelocityOut(iMarkerTP, iSpan);
 
 			/*--- Compute all the Outflow quintities ---*/
 			FluidModel->SetTDState_Prho(PressureOut[iMarkerTP][iSpan], DensityOut[iMarkerTP][iSpan]);
