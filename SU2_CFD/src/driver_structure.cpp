@@ -2992,6 +2992,12 @@ CSingleZoneDriver::~CSingleZoneDriver(void) { }
 
 void CSingleZoneDriver::Run() {
 
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
 	unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
 	/*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
@@ -3022,7 +3028,9 @@ void CSingleZoneDriver::Run() {
 		solver_container[ZONE_0][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
 		solver_container[ZONE_0][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],INFLOW);
 		solver_container[ZONE_0][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
-		output->ComputeTurboPerformance(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+		if(rank == MASTER_NODE){
+			output->ComputeTurboPerformance(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
+		}
 	}
 
 }
@@ -3190,7 +3198,6 @@ void CMultiZoneDriver::Run() {
 			solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
   		solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
   		solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
-//  		solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(config_container[iZone], geometry_container[iZone][MESH_0]);
   	}
 	  SetTurboPerformance(ZONE_0);
   }
@@ -3320,6 +3327,12 @@ void CMultiZoneDriver::SetMixingPlane(unsigned short donorZone){
 
 void CMultiZoneDriver::SetTurboPerformance(unsigned short targetZone){
 
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   unsigned short donorZone;
   //IMPORTANT this approach of multi-zone performances rely upon the fact that turbomachinery markers follow the natural (stator-rotor) development of the real machine.
   /* --- transfer the local turboperfomance quantities (for each blade)  from all the donorZones to the targetZone (ZONE_0) ---*/
@@ -3330,7 +3343,10 @@ void CMultiZoneDriver::SetTurboPerformance(unsigned short targetZone){
   }
 
   /* --- compute turboperformance for each stage and the global machine ---*/
-  output_container[targetZone][MESH_0][FLOW_SOL]->TurboPerformance(config_container[targetZone]);
+  if (rank == MASTER_NODE){
+  	output->ComputeTurboPerformance(solver_container[targetZone][MESH_0][FLOW_SOL], geometry_container[targetZone][MESH_0],
+  																	          config_container[targetZone]);
+  }
 }
 
 CDiscAdjMultiZoneDriver::CDiscAdjMultiZoneDriver(char* confFile,
@@ -3374,6 +3390,8 @@ void CDiscAdjMultiZoneDriver::Run() {
     for (iZone = 0; iZone < nZone; iZone++){
       solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
       solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
       if (mixingplane){
         SetMixingPlane(iZone); 
       }
@@ -3471,6 +3489,8 @@ void CDiscAdjMultiZoneDriver::SetRecording(unsigned short kind_recording){
     for (iZone = 0; iZone < nZone; iZone++){
       solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
       solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+			solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
       if (mixingplane){
         SetMixingPlane(iZone); 
       }
@@ -3500,12 +3520,12 @@ void CDiscAdjMultiZoneDriver::SetRecording(unsigned short kind_recording){
   /* --- Set turboperformance for multi-zone ---*/
   if(config_container[ZONE_0]->GetBoolTurbomachinery()){
     for (iZone = 0; iZone < nZone ; iZone++){
-      solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+    	solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+			solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+    	solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
       solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
-      solver_container[iZone][MESH_0][FLOW_SOL]->TurboPerformance(config_container[iZone], geometry_container[iZone][MESH_0]);
     }
-    if (mixingplane)
-      SetTurboPerformance(ZONE_0);
+    SetTurboPerformance(ZONE_0);
   }
 
   RecordingState = kind_recording;
@@ -3527,7 +3547,7 @@ void CDiscAdjMultiZoneDriver::SetRecording(unsigned short kind_recording){
           cout << "  log10[RMS omega]:   " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(1)) << endl;
         }
       }
-      cout << "Entropy Gen: " << solver_container[iZone][MESH_0][FLOW_SOL]->GetEntropyGen(config_container[iZone]->GetnMarker_TurboPerformance() - 1, config_container[iZone]->GetnSpanWiseSections()) << endl;
+//      cout << "Entropy Gen: " << solver_container[iZone][MESH_0][FLOW_SOL]->GetEntropyGen(config_container[iZone]->GetnMarker_TurboPerformance() - 1, config_container[iZone]->GetnSpanWiseSections()) << endl;
     }
   }
 

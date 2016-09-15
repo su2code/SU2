@@ -8612,7 +8612,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   su2double **P_Tensor, **invP_Tensor, *Lambda_i, **Jacobian_b, **DubDu, *dw, *u_e, *u_i, *u_b;
   su2double *gridVel;
   su2double *V_boundary, *V_domain, *S_boundary, *S_domain;
-  su2double AverageEnthalpy, AverageEntropy, avgVel2;
+  su2double AverageEnthalpy, AverageEntropy;
   unsigned short  iZone     = config->GetiZone();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement        = config->GetGrid_Movement();
@@ -8743,14 +8743,9 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 			case MIXING_IN:
 
 			  /* --- compute total averaged quantities ---*/
-
-				for (iDim = 0; iDim < nDim; iDim++) avgVel2 += AverageVelocity[val_marker][iSpan][iDim]*AverageVelocity[val_marker][iSpan][iDim];
-
-				AverageEnthalpy
-				AverageEntropy
-				FluidModel->SetTDState_hs(AverageEnthalpy + 0.5*avgVel2, AverageEntropy);
-				T_Total 		= FluidModel->GetTemperature();
-				P_Total 		= FluidModel->GetPressure();
+				FluidModel->SetTDState_Prho(ExtAveragePressure[val_marker][iSpan], ExtAverageDensity[val_marker][iSpan]);
+				AverageEnthalpy = FluidModel->GetStaticEnergy() + ExtAveragePressure[val_marker][iSpan]/ExtAverageDensity[val_marker][iSpan];
+				AverageEntropy  = FluidModel->GetEntropy();
 
 				FlowDirMixMag = 0;
 				for (iDim = 0; iDim < nDim; iDim++)
@@ -8758,10 +8753,11 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 				for (iDim = 0; iDim < nDim; iDim++){
 					FlowDirMix[iDim] = ExtAverageTurboVelocity[val_marker][iSpan][iDim]/sqrt(FlowDirMixMag);
 				}
+
+
 				/* --- Computes the total state --- */
-				FluidModel->SetTDState_PT(P_Total, T_Total);
-				Enthalpy_e = FluidModel->GetStaticEnergy()+ FluidModel->GetPressure()/FluidModel->GetDensity();
-				Entropy_e = FluidModel->GetEntropy();
+				Enthalpy_e = AverageEnthalpy;
+				Entropy_e = AverageEntropy;
 
 				/* --- Compute the boundary state u_e --- */
 				Velocity2_e = Velocity2_i;
@@ -8776,7 +8772,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 				Density_e = FluidModel->GetDensity();
 				StaticEnergy_e = FluidModel->GetStaticEnergy();
 				Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
-				if (tkeNeeded) Energy_e += GetTke_Inf();
+//				if (tkeNeeded) Energy_e += GetTke_Inf();
 				break;
 
 
@@ -9393,13 +9389,13 @@ void CEulerSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsi
             	if (marker_flag == INFLOW){
                  DensityIn[iMarkerTP -1][iSpan]         = AverageDensity[iMarker][iSpan];
                  PressureIn[iMarkerTP -1][iSpan]        = AverageDensity[iMarker][iSpan];
-                 for (iDim = 0;iDim< nDim; iDim){
+                 for (iDim = 0;iDim< nDim; iDim++){
                 	 TurboVelocityIn[iMarkerTP -1][iSpan][iDim]   = AverageTurboVelocity[iMarker][iSpan][iDim];
                  }
             	}else{
             		DensityOut[iMarkerTP -1][iSpan]         = AverageDensity[iMarker][iSpan];
             		PressureOut[iMarkerTP -1][iSpan]        = AverageDensity[iMarker][iSpan];
-            		for (iDim = 0;iDim< nDim; iDim){
+            		for (iDim = 0;iDim< nDim; iDim++){
             			TurboVelocityOut[iMarkerTP -1][iSpan][iDim]  = AverageTurboVelocity[iMarker][iSpan][iDim];
             		}
             	}
@@ -9793,13 +9789,13 @@ void CEulerSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigne
           	if (marker_flag == INFLOW){
                DensityIn         [iMarkerTP -1][nSpanWiseSections]         = AverageDensity[iMarker][nSpanWiseSections];
                PressureIn         [iMarkerTP -1][nSpanWiseSections]        = AverageDensity[iMarker][nSpanWiseSections];
-               for (iDim = 0;iDim< nDim; iDim){
+               for (iDim = 0;iDim< nDim; iDim++){
               	 TurboVelocityIn   [iMarkerTP -1][nSpanWiseSections][iDim]   = AverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
                }
           	}else{
           		DensityOut        [iMarkerTP -1][nSpanWiseSections]         = AverageDensity[iMarker][nSpanWiseSections];
           		PressureOut         [iMarkerTP -1][nSpanWiseSections]       = AverageDensity[iMarker][nSpanWiseSections];
-          		for (iDim = 0;iDim< nDim; iDim){
+          		for (iDim = 0;iDim< nDim; iDim++){
           			TurboVelocityOut[iMarkerTP -1][nSpanWiseSections][iDim]  = AverageTurboVelocity[iMarker][nSpanWiseSections][iDim];
           		}
           	}
@@ -10211,7 +10207,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
     nVert = geometry->GetnTotVertexSpan(val_marker,iSpan);
     kend = geometry->GetnFreqSpan(val_marker, iSpan);
 
-    conv_numerics->GetRMatrix(AverageSoundSpeed[val_marker][iSpan], AverageDensity[val_marker][iSpan], R_Matrix);
+    conv_numerics->GetRMatrix(AverageSoundSpeed, AverageDensity[val_marker][iSpan], R_Matrix);
 
     switch(config->GetKind_Data_NRBC(Marker_Tag)){
 
@@ -10581,7 +10577,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
           delta_c[4] = relfacAvg*c_avg[4] + relfacFou*dcjs[4];
         }
 
-        if (abs(AverageTurboMach[val_marker][iSpan][0]) >= 1.0000){
+        if (abs(AverageTurboMach[0]) >= 1.0000){
   				delta_c[0] = 0.0;
   				delta_c[1] = 0.0;
   				delta_c[2] = 0.0;
@@ -10590,15 +10586,6 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
         }
 
         break;
-      case SUPERSONIC_OUTFLOW:
-				delta_c[0] = 0.0;
-				delta_c[1] = 0.0;
-				delta_c[2] = 0.0;
-				delta_c[2] = 0.0;
-				if (nDim == 3)delta_c[4] = 0.0;
-				break;
-
-
 
       default:
         cout << "Warning! Invalid NRBC input!" << endl;
@@ -10661,7 +10648,7 @@ void CEulerSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_contai
       Enthalpy_b = Energy_b + Pressure_b/Density_b;
       Kappa_b = FluidModel->GetdPde_rho() / Density_b;
       Chi_b = FluidModel->GetdPdrho_e() - Kappa_b * StaticEnergy_b;
-      if (config->GetKind_Data_NRBC(Marker_Tag) == SUPERSONIC_OUTFLOW  || abs(AverageTurboMach[val_marker][iSpan][0]) >= 1.0000){
+      if (abs(AverageTurboMach[0]) >= 1.0000){
       	Pressure_b = Pressure_i;
 				Density_b = Density_i;
 				for (iDim = 0; iDim < nDim; iDim++) {
