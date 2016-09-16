@@ -3547,7 +3547,7 @@ void CSpectralDriver::Run() {
 		if (config_container[ZONE_0]->GetGrid_Movement() && (config_container[ZONE_0]->GetSpectralMethod_Type() == TIME_SPECTRAL))
 			SetTimeSpectral_Velocities();
 		for (iZone = 0; iZone < nZone; iZone++)
-			SetSpectralMethod((iZone+1)%nZone);
+			SetSpectralMethod(iZone);
 	}
 
 	/*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
@@ -3593,7 +3593,7 @@ void CSpectralDriver::Update(){
 
     /*--- Update the spectral source terms across all zones ---*/
 
-    SetSpectralMethod((iZone+1)%nZone);
+    SetSpectralMethod(iZone);
 
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
                                        solver_container, numerics_container, config_container,
@@ -4586,7 +4586,7 @@ void CDiscAdjSpectralDriver::SetRecording(unsigned short kind_recording){
   }
 
   for (iZone = 0; iZone < nZone; iZone++)
-  	SetSpectralMethod((iZone+1)%nZone);
+  	SetSpectralMethod(iZone);
 
   for (iZone = 0; iZone < nZone; iZone++) {
 

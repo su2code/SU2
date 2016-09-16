@@ -339,18 +339,18 @@ def main():
     contadj_incomp_cylinder.tol       = 0.00001
     test_list.append(contadj_incomp_cylinder)
 
-#    ######################################
-#    ### Spectral Method                ###
-#    ######################################
-#    spectral           = TestCase('spectral')
-#    spectral.cfg_dir   = "spectral_method"
-#    spectral.cfg_file  = "spectral.cfg"
-#    spectral.test_iter = 25
-#    spectral.test_vals = [-1.621870,3.852164,0.007465,0.084358]
-#    spectral.su2_exec  = "SU2_CFD"
-#    spectral.timeout   = 1600
-#    spectral.tol       = 0.00001
-#    test_list.append(spectral)
+    ######################################
+    ### Spectral Method                ###
+    ######################################
+    spectral           = TestCase('spectral')
+    spectral.cfg_dir   = "spectral_method"
+    spectral.cfg_file  = "spectral.cfg"
+    spectral.test_iter = 25
+    spectral.test_vals = [-1.569571,3.941897,0.008780,0.079776]
+    spectral.su2_exec  = "SU2_CFD"
+    spectral.timeout   = 1600
+    spectral.tol       = 0.00001
+    test_list.append(spectral)
 
     ######################################
     ### Moving Wall                    ###
