@@ -14,7 +14,7 @@ notifications:
   
 branches:
     only:
-        - feature_tHB_AD
+        - develop
 
 env:
     global:
