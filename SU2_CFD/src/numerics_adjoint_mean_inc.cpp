@@ -2,7 +2,7 @@
  * \file numerics_adjoint_mean_inc.cpp
  * \brief This file contains the numerical methods for adjoint incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

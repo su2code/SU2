@@ -2,7 +2,7 @@
  * \file output_paraview.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -82,7 +84,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   if (Kind_Solver == HEAT_EQUATION)
 		filename = config->GetHeat_FileName().c_str();
   
-  if (config->GetKind_SU2() == SU2_DOT){
+  if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol)
       filename = config->GetSurfSens_FileName();
     else
@@ -738,7 +740,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       }
       VarCounter++;
 
-      if (nDim == 3){
+      if (nDim == 3) {
         Paraview_File << "\nSCALARS Sensitivity_z float 1\n";
         Paraview_File << "LOOKUP_TABLE default\n";
 
@@ -775,7 +777,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
            }
          VarCounter++;
 
-         if (nDim == 3){
+         if (nDim == 3) {
 
      			Paraview_File << "\nSCALARS Velocity_3 float 1\n";
      			Paraview_File << "LOOKUP_TABLE default\n";
@@ -808,7 +810,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
            }
          VarCounter++;
 
-         if (nDim == 3){
+         if (nDim == 3) {
 
    			Paraview_File << "\nSCALARS Acceleration_3 float 1\n";
    			Paraview_File << "LOOKUP_TABLE default\n";
@@ -853,7 +855,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       }
     VarCounter++;
 
-    if (nDim == 3){
+    if (nDim == 3) {
 
 			Paraview_File << "\nSCALARS Szz float 1\n";
 			Paraview_File << "LOOKUP_TABLE default\n";
@@ -946,18 +948,18 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     else
       filename = config->GetFlow_FileName();
   }
-  if (config->GetKind_SU2()==SU2_DEF){
-    if (new_file){
+  if (config->GetKind_SU2()==SU2_DEF) {
+    if (new_file) {
       if (surf_sol) filename = "surface_grid";
       else filename = "volumetric_grid";
     }
-    else{
+    else {
       if (surf_sol) filename = "surface_deformed_grid";
       else filename = "volumetric_deformed_grid";
     }
   }
   
-	if (Kind_Solver == FEM_ELASTICITY){
+	if (Kind_Solver == FEM_ELASTICITY) {
 		if (surf_sol)
 			filename = config->GetSurfStructure_FileName().c_str();
 		else
@@ -1262,7 +1264,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     
   }
   
-  else if (config->GetKind_SU2()!=SU2_DEF){
+  else if (config->GetKind_SU2()!=SU2_DEF) {
     
     for (iVar = 0; iVar < nVar_Consv; iVar++) {
 
@@ -1587,7 +1589,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
             }
           VarCounter++;
 
-          if (nDim == 3){
+          if (nDim == 3) {
 
       			Paraview_File << "\nSCALARS Velocity_3 float 1\n";
       			Paraview_File << "LOOKUP_TABLE default\n";
@@ -1620,7 +1622,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
             }
           VarCounter++;
 
-          if (nDim == 3){
+          if (nDim == 3) {
 
     			Paraview_File << "\nSCALARS Acceleration_3 float 1\n";
     			Paraview_File << "LOOKUP_TABLE default\n";
@@ -1665,7 +1667,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
        }
      VarCounter++;
 
-     if (nDim == 3){
+     if (nDim == 3) {
 
  			Paraview_File << "\nSCALARS Szz float 1\n";
  			Paraview_File << "LOOKUP_TABLE default\n";

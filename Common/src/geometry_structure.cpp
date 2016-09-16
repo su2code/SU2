@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -12,6 +12,8 @@
  *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
  *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
  *                 Prof. Rafael Palacios' group at Imperial College London.
+ *                 Prof. Edwin van der Weide's group at the University of Twente.
+ *                 Prof. Vincent Terrapon's group at the University of Liege.
  *
  * Copyright (C) 2012-2016 SU2, the open-source CFD code.
  *
@@ -491,7 +493,7 @@ bool CGeometry::RayIntersectsTriangle(su2double orig[3], su2double dir[3],
   
 }
 
-bool CGeometry::SegmentIntersectsLine(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]){
+bool CGeometry::SegmentIntersectsLine(su2double point0[2], su2double point1[2], su2double vert0[2], su2double vert1[2]) {
 
   su2double det, diff0_A, diff0_B, diff1_A, diff1_B, intersect[2];
 
@@ -527,7 +529,7 @@ bool CGeometry::SegmentIntersectsLine(su2double point0[2], su2double point1[2], 
   length = diff0_A*diff0_A
           +diff1_A*diff1_A;
 
-  if ( (dist0 > length) || (dist1 > length) ){
+  if ( (dist0 > length) || (dist1 > length) ) {
     return false;
   }
 
@@ -875,18 +877,18 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 }
 
 
-void CGeometry::RegisterCoordinates(CConfig *config){
+void CGeometry::RegisterCoordinates(CConfig *config) {
   unsigned short iDim;
   unsigned long iPoint;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iDim = 0; iDim < nDim; iDim++){
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
       AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
     }
   }
 }
 
-void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config){
+void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) {
 
     unsigned short iMesh;
     geometry_container[MESH_0]->Set_MPI_Coord(config);
@@ -895,7 +897,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config){
     geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
     geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
 
-    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++){
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
         /*--- Update the control volume structures ---*/
 
         geometry_container[iMesh]->SetControlVolume(config,geometry_container[iMesh-1], UPDATE);
@@ -1415,7 +1417,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
             boundary_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
 
-          if (bound[iMarker][iElem_Bound]->GetVTK_Type() == VERTEX){
+          if (bound[iMarker][iElem_Bound]->GetVTK_Type() == VERTEX) {
             boundary_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
           }
           boundary_file	<< iElem_Bound << endl;
@@ -1428,7 +1430,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
           for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
             boundary_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
 
-          if (bound[iMarker][iElem_Bound]->GetVTK_Type() == VERTEX){
+          if (bound[iMarker][iElem_Bound]->GetVTK_Type() == VERTEX) {
             boundary_file << bound[iMarker][iElem_Bound]->GetRotation_Type() << "\t";
           }
           boundary_file	<< iElem_Bound << endl;
@@ -2685,7 +2687,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
           }
           
           
-        } else{
+        } else {
           
           index=temp_node_count_ghost;
           Local_to_Global_Point[index] = Buffer_Receive_GlobalPointIndex_loc[iPoint];
@@ -6432,7 +6434,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 printf("\n\n   !!! Error !!!\n" );
                 printf(" HEXA-20 element type not supported\n");
                 printf(" Section %d, npe=%d\n", s, npe);
-                printf(" startE %d, endE %d\n", startE, endE);
+                printf(" startE %d, endE %d\n", (int)startE, (int)endE);
                 printf(" Now exiting...\n\n");
               }
 #ifndef HAVE_MPI
@@ -6447,7 +6449,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 printf("\n\n   !!! Error !!!\n" );
                 printf(" Unknown elem: (type %d, npe=%d)\n", elemType, npe);
                 printf(" Section %d\n", s);
-                printf(" startE %d, endE %d\n", startE, endE);
+                printf(" startE %d, endE %d\n", (int)startE, (int)endE);
                 printf(" Now exiting...\n\n");
               }
 #ifndef HAVE_MPI
@@ -6594,7 +6596,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 printf( "\n\n   !!! Error !!!\n" );
                 printf( " HEXA-20 element type not supported\n");
                 printf(" Section %d, npe=%d\n", s, npe);
-                printf(" startE %d, endE %d\n", startE, endE);
+                printf(" startE %d, endE %d\n", (int)startE, (int)endE);
                 printf( " Now exiting...\n\n");
 #ifndef HAVE_MPI
                 exit(EXIT_FAILURE);
@@ -6611,7 +6613,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 printf( "\n\n   !!! Error !!!\n" );
                 printf( " Unknown elem: (type %d, npe=%d)\n", elemType, npe);
                 printf(" Section %d\n", s);
-                printf(" startE %d, endE %d\n", startE, endE);
+                printf(" startE %d, endE %d\n", (int)startE, (int)endE);
                 printf( " Now exiting...\n\n");
 #ifndef HAVE_MPI
                 exit(EXIT_FAILURE);
@@ -8949,9 +8951,9 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
   int rank, nProcessor;
   unsigned short Beneficiary = 0, Donor = 0, iBC;
   
-  unsigned short nMarker_ActDisk_Inlet = config->GetnMarker_ActDisk_Inlet();
+  unsigned short nMarker_ActDiskInlet = config->GetnMarker_ActDiskInlet();
   
-  if (nMarker_ActDisk_Inlet != 0) {
+  if (nMarker_ActDiskInlet != 0) {
     
     for (iBC = 0; iBC < 2; iBC++) {
       
@@ -10959,7 +10961,7 @@ void CPhysicalGeometry::Set_MPI_OldCoord(CConfig *config) {
   /*--- We repeat the process for the coordinate n-1, in the case that the simulation is 2nd order ---*/
   /*--------------------------------------------------------------------------------------------------*/
 
-  if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND){
+  if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
 
 	  su2double *Buffer_Receive_Coord_n1 = NULL, *Buffer_Send_Coord_n1 = NULL, *Coord_n1 = NULL, *newCoord_n1 = NULL;
 	  newCoord_n1 = new su2double[nDim];
@@ -11706,7 +11708,7 @@ void CPhysicalGeometry::SetBoundSensitivity(CConfig *config) {
   
 }
 
-void CPhysicalGeometry::SetSensitivity(CConfig *config){
+void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   ifstream restart_file;
   string filename = config->GetSolution_AdjFileName();
@@ -11715,15 +11717,16 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
   bool sst = config->GetKind_Turb_Model() == SST;
   bool sa = config->GetKind_Turb_Model() == SA;
   bool grid_movement = config->GetGrid_Movement();
+  bool wrt_residuals = config->GetWrt_Residuals();
   su2double Sens, dull_val;
   unsigned short nExtIter, iDim;
   unsigned long iPoint, index;
 
   Sensitivity = new su2double[nPoint*nDim];
 
-  if (config->GetUnsteady_Simulation()){
+  if (config->GetUnsteady_Simulation()) {
     nExtIter = config->GetnExtIter();
-  }else{
+  }else {
     nExtIter = 1;
   }
     int rank = MASTER_NODE;
@@ -11731,14 +11734,14 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
-  unsigned short skipVar = nDim;
-  
-  if (incompressible) { skipVar += nDim+1; }
-  if (compressible)   { skipVar += nDim+2; }
-  if (sst) 			{ skipVar += 2;}
-  if (sa)				{ skipVar += 1;}
-  
-  if (grid_movement) {skipVar += nDim;}
+  unsigned short skipVar = nDim, skipMult = 1;
+
+  if (wrt_residuals) { skipMult = 2; }
+  if (incompressible) { skipVar += skipMult*(nDim+1); }
+  if (compressible)   { skipVar += skipMult*(nDim+2); }
+  if (sst)            { skipVar += skipMult*2;}
+  if (sa)             { skipVar += skipMult*1;}
+  if (grid_movement)  { skipVar += nDim;}
   
   /*--- Sensitivity in normal direction ---*/
   
@@ -11760,8 +11763,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
   
   
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iDim = 0; iDim < nDim; iDim++){
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
       Sensitivity[iPoint*nDim+iDim] = 0.0;
     }
   }
@@ -11773,7 +11776,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
 
   filename = config->GetObjFunc_Extension(filename);
 
-  if (config->GetUnsteady_Simulation()){
+  if (config->GetUnsteady_Simulation()) {
     filename = config->GetUnsteady_FileName(filename, nExtIter-1);
   }
 
@@ -11797,10 +11800,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config){
              will be returned and used to instantiate the vars. ---*/
     iPoint_Local = Global2Local[iPoint_Global];
 
-    if (iPoint_Local >= 0){
+    if (iPoint_Local >= 0) {
       point_line >> index;
-      for (iDim = 0; iDim < skipVar; iDim++){ point_line >> dull_val;}
-      for (iDim = 0; iDim < nDim; iDim++){
+      for (iDim = 0; iDim < skipVar; iDim++) { point_line >> dull_val;}
+      for (iDim = 0; iDim < nDim; iDim++) {
         point_line >> Sens;
         Sensitivity[iPoint_Local*nDim+iDim] = Sens;
       }
