@@ -2004,7 +2004,7 @@ void CSpectralDriver::Run(CIteration **iteration_container,
       }
     
     for (iZone = 0; iZone < nZone; iZone++)
-      SetSpectralMethod(geometry_container, solver_container, config_container, nZone, (iZone+1)%nZone);
+      SetSpectralMethod(geometry_container, solver_container, config_container, nZone, iZone);
   }
   
   /*--- Run a single iteration of a spectral method problem. Preprocess all
@@ -2023,7 +2023,7 @@ void CSpectralDriver::Run(CIteration **iteration_container,
     
     /*--- Update the spectral source terms across all zones ---*/
     
-    SetSpectralMethod(geometry_container, solver_container, config_container, nZone, (iZone+1)%nZone);
+    SetSpectralMethod(geometry_container, solver_container, config_container, nZone, iZone);
     
     iteration_container[iZone]->Update(output, integration_container, geometry_container,
                                        solver_container, numerics_container, config_container,
