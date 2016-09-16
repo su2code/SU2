@@ -2,7 +2,7 @@
  * \file solution_adjoint_mean_inc.cpp
  * \brief Main subrotuines for solving adjoint incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 4.3.0 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -1068,8 +1068,8 @@ void CAdjIncEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solv
   
   /*--- Compute coefficients needed for objective function evaluation. ---*/
   
-  CD = solver_container[FLOW_SOL]->GetTotal_CDrag();
-  CL = solver_container[FLOW_SOL]->GetTotal_CLift();
+  CD = solver_container[FLOW_SOL]->GetTotal_CD();
+  CL = solver_container[FLOW_SOL]->GetTotal_CL();
   CT = solver_container[FLOW_SOL]->GetTotal_CT();
   CQ = solver_container[FLOW_SOL]->GetTotal_CQ();
   invCD  = 1.0/CD; CLCD2  = CL/(CD*CD);
