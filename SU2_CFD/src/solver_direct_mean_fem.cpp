@@ -2398,8 +2398,8 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
                                                CConfig *config, unsigned short iRKStep) {
   
   /*--- Hard-coded classical RK4 coefficients. Will be added to config. ---*/
-  su2double RK_TimeCoeff[4] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
-  su2double RK_FuncCoeff[4] = {0.5, 0.5, 1.0, 1.0};
+  su2double RK_FuncCoeff[4] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
+  su2double RK_TimeCoeff[4] = {0.5, 0.5, 1.0, 1.0};
   
   for(unsigned short iVar=0; iVar<nVar; ++iVar) {
     SetRes_RMS(iVar, 0.0);
