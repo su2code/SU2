@@ -58,6 +58,7 @@
 #include "../../Common/include/linear_solvers_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 
+
 using namespace std;
 
 /*!
@@ -819,6 +820,15 @@ public:
 	                            CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
 	/*!
+	 * \brief It computes Fourier transformation for the needed quantities along the pitch for each span in turbomachinery analysis.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] marker_flag - Surface marker flag where the function is applied.
+	 */
+	virtual void PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics, unsigned short marker_flag);
+
+	/*!
 	 * \brief A virtual member.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -943,33 +953,6 @@ public:
 	 */
 	virtual void BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                               CConfig *config, unsigned short val_marker);
-
-	/*!
-	 * \brief It performs the average value along a boundary.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the average is evaluated.
-	 */
-	virtual void TurboMixingProcess(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
-
-	/*!
-	 * \brief It performs the average value along a boundary.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] config - Definition of the particular problem.
-	 * \param[in] val_marker - Surface marker where the average is evaluated.
-	 */
-	virtual void MixingProcess1D(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
-
-	/*!
-	 * \brief It computes Fourier transformation for the needed quantities along the pitch for each span in turbomachinery analysis.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] marker_flag - Surface marker flag where the function is applied.
-	 */
-	virtual void PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics, unsigned short marker_flag);
 
 	/*!
 	 * \brief A virtual member.
@@ -2605,6 +2588,31 @@ public:
    */
   virtual void SetFreeStream_Solution(CConfig *config);
 
+	/*!
+	 * \brief virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+     * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the average is evaluated.
+	 */
+	virtual void SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+
+	/*!
+	 * \brief virtual member.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+     * \param[in] config - Definition of the particular problem.
+	 * \param[in] val_marker - Surface marker where the average is evaluated.
+	 */
+	virtual void AverageProcess1D(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+
+	/*!
+	 * \brief virtual member.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 */
+	virtual void GatherInOutAverageValues(CConfig *config, CGeometry *geometry);
+
   /*!
    * \brief A virtual member.
    * \param[in] val_marker - bound marker.
@@ -3419,6 +3427,15 @@ public:
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 
 	/*!
+	 * \brief It computes Fourier transformation for the needed quantities along the pitch for each span in turbomachinery analysis.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 * \param[in] solver_container - Container vector with all the solutions.
+     * \param[in] config - Definition of the particular problem.
+	 * \param[in] marker_flag - Surface marker flag where the function is applied.
+	 */
+	void PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics,  unsigned short marker_flag);
+
+	/*!
 	 * \brief Impose the boundary condition using characteristic recostruction.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] solver_container - Container vector with all the solutions.
@@ -3429,107 +3446,6 @@ public:
 	 */
 	void BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
-	/*!
-	 * \brief compute the Jacobian needed for NRBC inflow .
-	 * \param[in] val_marker - Surface marker where the boundary condition is applied.
-	 * \param[in]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 		 - span section where is applied.
-	 * \param[in] alphaInBC  - angle input of the BC.
-	 * \param[out] R_c       - Jacobian of the residuals with respect to the characteristic variables.
-	 */
-	void ComputeResJacobianNRBC(su2double pressure, su2double density, su2double vn, su2double vt, su2double alphaInBC, su2double **R_c, su2double **R_c_inv);
-
 
 	/*!
 	 * \brief Impose a subsonic inlet boundary condition.
@@ -3625,52 +3541,6 @@ public:
 	 */
 	void BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                            CConfig *config, unsigned short val_marker);
-
-	/*!
-	 * \brief It computes average quantities along the span for turbomachinery analysis.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] config - Definition of the particular problem.
-	 * \param[in] marker_flag - Surface marker flag where the function is applied.
-	 */
-	void TurboMixingProcess(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
-
-	/*!
-	 * \brief It computes average quantities along the span for turbomachinery analysis.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] config - Definition of the particular problem.
-	 * \param[in] marker_flag - Surface marker flag where the function is applied.
-	 */
-	void MixingProcess1D(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
-
-	/*!
-	 * \brief It computes Fourier transformation for the needed quantities along the pitch for each span in turbomachinery analysis.
-	 * \param[in] geometry - Geometrical definition of the problem.
-	 * \param[in] solver_container - Container vector with all the solutions.
-     * \param[in] config - Definition of the particular problem.
-	 * \param[in] marker_flag - Surface marker flag where the function is applied.
-	 */
-	void PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics,  unsigned short marker_flag);
-	/*!
-	 * \brief it performs a mixed out average of the nodes of a boundary.
-	 * \param[in] val_init_pressure -  initial pressure value
-	 * \param[in] val_Averaged_Flux - flux averaged values.
-     * \param[in] val_normal - normal vector.
-     * \param[in] pressure_mix - value of the mixed-out avaraged pressure.
-	 * \param[in] density_miz - value of the mixed-out avaraged density.
-	 */
-	void MixedOut_Average (su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *pressure_mix, su2double *density_mix);
-
-	/*!
-	 * \brief it finds the root of an implicit equation that relates pressure and density.
-	 * \param[in] pressure - pressure value
-	 * \param[in] val_Averaged_Flux - flux averaged values.
-   * \param[in] val_normal - normal vector.
-   * \param[in] valfunc - Description of the numerical method.
-	 * \param[in] density - value of the mixed-out avaraged density.
-	 */
-	void MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density);
 
   /*!
 	 * \brief Update the solution using a Runge-Kutta scheme.
@@ -4389,6 +4259,51 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_Solution(CConfig *config);
+
+  /*!
+   * \brief It computes average quantities along the span for turbomachinery analysis.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] marker_flag - Surface marker flag where the function is applied.
+   */
+  void SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+
+  /*!
+   * \brief It computes average quantities along the span for turbomachinery analysis.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] marker_flag - Surface marker flag where the function is applied.
+   */
+  void AverageProcess1D(CGeometry *geometry, CConfig *config, unsigned short marker_flag);
+
+	/*!
+	 * \brief it performs a mixed out average of the nodes of a boundary.
+	 * \param[in] val_init_pressure -  initial pressure value
+	 * \param[in] val_Averaged_Flux - flux averaged values.
+     * \param[in] val_normal - normal vector.
+     * \param[in] pressure_mix - value of the mixed-out avaraged pressure.
+	 * \param[in] density_miz - value of the mixed-out avaraged density.
+	 */
+	void MixedOut_Average (su2double val_init_pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *pressure_mix, su2double *density_mix);
+
+	/*!
+	 * \brief it finds the root of an implicit equation that relates pressure and density.
+	 * \param[in] pressure - pressure value
+	 * \param[in] val_Averaged_Flux - flux averaged values.
+   * \param[in] val_normal - normal vector.
+   * \param[in] valfunc - Description of the numerical method.
+	 * \param[in] density - value of the mixed-out avaraged density.
+	 */
+	void MixedOut_Root_Function(su2double *pressure, su2double *val_Averaged_Flux, su2double *val_normal, su2double *valfunc, su2double *density);
+
+	/*!
+	 * \brief It gathers into the master node average quantities at inflow and outflow needed for turbomachinery analysis.
+	 * \param[in] config - Definition of the particular problem.
+	 * \param[in] geometry - Geometrical definition of the problem.
+	 */
+	void GatherInOutAverageValues(CConfig *config, CGeometry *geometry);
 
   /*!
    * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.

@@ -843,21 +843,19 @@ static const map<string, RIEMANN_TYPE> NRBC_Map = CCreateMap<string, RIEMANN_TYP
 /*!
  * \brief types of mixing process for averaging quantities at the boundaries.
  */
-enum MIXINGPROCESS_TYPE {
-  ALGEBRAIC_AVERAGE = 1,		/*!< \brief an algebraic average is computed at the boundary of interest. */
-  AREA_AVERAGE = 2,           /*!< \brief an area average is computed at the boundary of interest. */
-  MIXEDOUT_AVERAGE = 3,		 /*!< \brief an mixed-out average is computed at the boundary of interest. */
-	MIXEDOUT_AVERAGE_CYL = 4,		 /*!< \brief an mixed-out average is computed at the boundary of interest. */
-  MASSFLOW_AVERAGE = 5           /*!< \brief a mass flow average is computed at the boundary of interest. */
+enum AVERAGEPROCESS_TYPE {
+  ALGEBRAIC = 1,		/*!< \brief an algebraic average is computed at the boundary of interest. */
+  AREA = 2,           /*!< \brief an area average is computed at the boundary of interest. */
+  MIXEDOUT = 3,		 /*!< \brief an mixed-out average is computed at the boundary of interest. */
+	MASSFLOW = 4           /*!< \brief a mass flow average is computed at the boundary of interest. */
 
 };
 
-static const map<string, MIXINGPROCESS_TYPE> MixingProcess_Map = CCreateMap<string, MIXINGPROCESS_TYPE>
-("ALGEBRAIC_AVERAGE", ALGEBRAIC_AVERAGE)
-("AREA_AVERAGE", AREA_AVERAGE)
-("MIXEDOUT_AVERAGE",  MIXEDOUT_AVERAGE)
-("MIXEDOUT_AVERAGE_CYL",  MIXEDOUT_AVERAGE_CYL)
-("MASSFLOW_AVERAGE", MASSFLOW_AVERAGE);
+static const map<string, AVERAGEPROCESS_TYPE> AverageProcess_Map = CCreateMap<string, AVERAGEPROCESS_TYPE>
+("ALGEBRAIC", ALGEBRAIC)
+("AREA", AREA)
+("MIXEDOUT",  MIXEDOUT)
+("MASSFLOW", MASSFLOW);
 
 
 /*!

@@ -8627,23 +8627,23 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 	for(iMarkerTP = 0; iMarkerTP < nMarkerTP; iMarkerTP++ ){
 		for(iSpan = 0; iSpan < nSpanWiseSection +1; iSpan++){
 
-			/*--- Retrieve Inflow primitive quintities ---*/
+			/*--- Retrieve Inflow primitive quantities ---*/
 			DensityIn[iMarkerTP][iSpan]          = solver_container->GetDensityIn(iMarkerTP, iSpan);
 			PressureIn[iMarkerTP][iSpan]         = solver_container->GetPressureIn(iMarkerTP, iSpan);
 			TurboVelocityIn[iMarkerTP][iSpan]    = solver_container->GetTurboVelocityIn(iMarkerTP, iSpan);
 
-			/*--- Compute all the Inflow quintities ---*/
+			/*--- Compute all the Inflow quantities ---*/
 			FluidModel->SetTDState_Prho(PressureIn[iMarkerTP][iSpan], DensityIn[iMarkerTP][iSpan]);
 			EntropyIn[iMarkerTP][iSpan]					 = FluidModel->GetEntropy();
 
 
 
-			/*--- Retrieve Outflow primitive quintities ---*/
+			/*--- Retrieve Outflow primitive quantities ---*/
 			DensityOut[iMarkerTP][iSpan]         = solver_container->GetDensityOut(iMarkerTP, iSpan);
 			PressureOut[iMarkerTP][iSpan]         = solver_container->GetPressureOut(iMarkerTP, iSpan);
 			TurboVelocityOut[iMarkerTP][iSpan]    = solver_container->GetTurboVelocityOut(iMarkerTP, iSpan);
 
-			/*--- Compute all the Outflow quintities ---*/
+			/*--- Compute all the Outflow quantities ---*/
 			FluidModel->SetTDState_Prho(PressureOut[iMarkerTP][iSpan], DensityOut[iMarkerTP][iSpan]);
 			EntropyOut[iMarkerTP][iSpan]				 = FluidModel->GetEntropy();
 
@@ -8654,7 +8654,6 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 		}
 	}
 }
-
 
 void COutput::WriteTutboPerfConvHistory(CConfig *config){
 
@@ -9037,5 +9036,11 @@ void COutput::SpanwiseFile(CGeometry ***geometry,
       }
     }
   }
-
 }
+
+
+su2double COutput::GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan){return EntropyGen[iMarkerTP][iSpan];}
+
+
+
+
