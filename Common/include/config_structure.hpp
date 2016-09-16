@@ -66,7 +66,7 @@ class CConfig {
 private:
 	unsigned short Kind_SU2; /*!< \brief Kind of SU2 software component.*/
   unsigned short Ref_NonDim; /*!< \brief Kind of non dimensionalization.*/
-  unsigned short Kind_MixingProcess; /*!< \brief Kind of mixing process.*/
+  unsigned short Kind_AverageProcess; /*!< \brief Kind of mixing process.*/
   unsigned short Kind_SpanWise; /*!< \brief Kind of span-wise section computation.*/
   unsigned short *Kind_TurboMachinery;  /*!< \brief Kind of turbomachynery architecture.*/
   unsigned short iZone, nZone; /*!< \brief Number of zones in the mesh. */
@@ -3543,7 +3543,7 @@ public:
 	 * \brief Get the kind of mixing process for averaging quantities at the boundaries.
 	 * \return Kind of mixing process.
 	 */
-	unsigned short GetKind_MixingProcess(void);
+	unsigned short GetKind_AverageProcess(void);
 
 	/*!
 	 * \brief Get the kind of turbomachinery architecture.

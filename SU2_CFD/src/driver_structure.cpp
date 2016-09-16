@@ -3005,10 +3005,10 @@ void CSingleZoneDriver::Run() {
 		if(ExtIter == 0){
 			SetGeoTurboAvgValues(ZONE_0, true);
 		}
-		solver_container[ZONE_0][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],INFLOW);
-		solver_container[ZONE_0][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
-		solver_container[ZONE_0][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],INFLOW);
-		solver_container[ZONE_0][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->SpanWiseAverageProcess(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],INFLOW);
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->SpanWiseAverageProcess(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->AverageProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],INFLOW);
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->AverageProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
 	}
 
 
@@ -3024,10 +3024,11 @@ void CSingleZoneDriver::Run() {
                                        surface_movement, grid_movement, FFDBox, ZONE_0);
   
 	if(config_container[ZONE_0]->GetBoolTurbomachinery()){
-		solver_container[ZONE_0][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],INFLOW);
-		solver_container[ZONE_0][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
-		solver_container[ZONE_0][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],INFLOW);
-		solver_container[ZONE_0][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->SpanWiseAverageProcess(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],INFLOW);
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->SpanWiseAverageProcess(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->AverageProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],INFLOW);
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->AverageProcess1D(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0],OUTFLOW);
+		solver_container[ZONE_0][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config_container[ZONE_0],geometry_container[ZONE_0][MESH_0]);
 		if(rank == MASTER_NODE){
 			output->ComputeTurboPerformance(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
 		}
@@ -3155,6 +3156,11 @@ void CMultiZoneDriver::Run() {
   unsigned short iZone =0;
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
 
+  int rank = MASTER_NODE;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
   if(ExtIter == 0){
   	/*--- set-rotating frame and geometric average quantities for Turbomachinery computation ---*/
@@ -3168,10 +3174,10 @@ void CMultiZoneDriver::Run() {
   /* --- Set the mixing-plane interface ---*/
   if (mixingplane){
 		for (iZone = 0; iZone < nZone; iZone++) {
-			solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-			solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
-			solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-		  solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+			solver_container[iZone][MESH_0][FLOW_SOL]->SpanWiseAverageProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+			solver_container[iZone][MESH_0][FLOW_SOL]->SpanWiseAverageProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+			solver_container[iZone][MESH_0][FLOW_SOL]->AverageProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+		  solver_container[iZone][MESH_0][FLOW_SOL]->AverageProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
 			SetMixingPlane(iZone);
 		}
   }
@@ -3194,12 +3200,15 @@ void CMultiZoneDriver::Run() {
   /* --- Set turboperformance for multi-zone ---*/
   if (mixingplane){
   	for (iZone = 0; iZone < nZone ; iZone++){
-			solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-			solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
-  		solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-  		solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+			solver_container[iZone][MESH_0][FLOW_SOL]->SpanWiseAverageProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+			solver_container[iZone][MESH_0][FLOW_SOL]->SpanWiseAverageProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+  		solver_container[iZone][MESH_0][FLOW_SOL]->AverageProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+  		solver_container[iZone][MESH_0][FLOW_SOL]->AverageProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+  		solver_container[iZone][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config_container[iZone], geometry_container[iZone][MESH_0]);
   	}
-	  SetTurboPerformance(ZONE_0);
+  	if (rank == MASTER_NODE){
+  		SetTurboPerformance(ZONE_0);
+  	}
   }
 
 }
@@ -3327,26 +3336,19 @@ void CMultiZoneDriver::SetMixingPlane(unsigned short donorZone){
 
 void CMultiZoneDriver::SetTurboPerformance(unsigned short targetZone){
 
-  int rank = MASTER_NODE;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   unsigned short donorZone;
   //IMPORTANT this approach of multi-zone performances rely upon the fact that turbomachinery markers follow the natural (stator-rotor) development of the real machine.
   /* --- transfer the local turboperfomance quantities (for each blade)  from all the donorZones to the targetZone (ZONE_0) ---*/
   for (donorZone = 1; donorZone < nZone; donorZone++) {
       transfer_container[donorZone][targetZone]->GatherAverageValues(solver_container[donorZone][MESH_0][FLOW_SOL],solver_container[targetZone][MESH_0][FLOW_SOL],
-                                                                    geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
-                                                                    config_container[donorZone], config_container[targetZone], donorZone);
+                                                                     geometry_container[donorZone][MESH_0],geometry_container[targetZone][MESH_0],
+                                                                     config_container[donorZone], config_container[targetZone], donorZone);
   }
 
   /* --- compute turboperformance for each stage and the global machine ---*/
-  if (rank == MASTER_NODE){
-  	output->ComputeTurboPerformance(solver_container[targetZone][MESH_0][FLOW_SOL], geometry_container[targetZone][MESH_0],
-  																	          config_container[targetZone]);
-  }
+
+  output->ComputeTurboPerformance(solver_container[targetZone][MESH_0][FLOW_SOL], geometry_container[targetZone][MESH_0], config_container[targetZone]);
+
 }
 
 CDiscAdjMultiZoneDriver::CDiscAdjMultiZoneDriver(char* confFile,
@@ -3388,10 +3390,10 @@ void CDiscAdjMultiZoneDriver::Run() {
       }
     }
     for (iZone = 0; iZone < nZone; iZone++){
-      solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-      solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
-      solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-      solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->SpanWiseAverageProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->SpanWiseAverageProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->AverageProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->AverageProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
       if (mixingplane){
         SetMixingPlane(iZone); 
       }
@@ -3487,10 +3489,10 @@ void CDiscAdjMultiZoneDriver::SetRecording(unsigned short kind_recording){
       SetGeoTurboAvgValues(iZone, true);
     }
     for (iZone = 0; iZone < nZone; iZone++){
-      solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-      solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
-      solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-			solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->SpanWiseAverageProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->SpanWiseAverageProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->AverageProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+			solver_container[iZone][MESH_0][FLOW_SOL]->AverageProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
       if (mixingplane){
         SetMixingPlane(iZone); 
       }
@@ -3520,12 +3522,15 @@ void CDiscAdjMultiZoneDriver::SetRecording(unsigned short kind_recording){
   /* --- Set turboperformance for multi-zone ---*/
   if(config_container[ZONE_0]->GetBoolTurbomachinery()){
     for (iZone = 0; iZone < nZone ; iZone++){
-    	solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-			solver_container[iZone][MESH_0][FLOW_SOL]->TurboMixingProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
-    	solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
-      solver_container[iZone][MESH_0][FLOW_SOL]->MixingProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+    	solver_container[iZone][MESH_0][FLOW_SOL]->SpanWiseAverageProcess(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+			solver_container[iZone][MESH_0][FLOW_SOL]->SpanWiseAverageProcess(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+    	solver_container[iZone][MESH_0][FLOW_SOL]->AverageProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],INFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->AverageProcess1D(geometry_container[iZone][MESH_0],config_container[iZone],OUTFLOW);
+      solver_container[iZone][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config_container[iZone],geometry_container[iZone][MESH_0]);
     }
-    SetTurboPerformance(ZONE_0);
+    if (rank == MASTER_NODE){
+    	SetTurboPerformance(ZONE_0);
+    }
   }
 
   RecordingState = kind_recording;
@@ -3552,7 +3557,7 @@ void CDiscAdjMultiZoneDriver::SetRecording(unsigned short kind_recording){
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    iteration_container[iZone]->RegisterOutput(solver_container, geometry_container, config_container, iZone);
+    iteration_container[iZone]->RegisterOutput(solver_container, geometry_container, config_container, output, iZone);
   }
 
 

@@ -485,6 +485,9 @@ inline void CSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 inline void CSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
 										 CConfig *config, unsigned short val_marker) { }
 
+inline void CSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config,
+																								CNumerics *conv_numerics,unsigned short marker_flag){}
+
 inline void CSolver::BC_NonReflecting(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){ }
 
@@ -517,12 +520,6 @@ inline void CSolver::BC_Dielec(CGeometry *geometry, CSolver **solver_container, 
 									 										  
 inline void CSolver::BC_Electrode(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, 
 									CConfig *config, unsigned short val_marker) { }
-
-inline void CSolver::TurboMixingProcess(CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
-
-inline void CSolver::MixingProcess1D(CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
-
-inline void CSolver::PreprocessBC_NonReflecting(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics,unsigned short marker_flag){}
 
 inline void CSolver::GetEngine_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
@@ -671,16 +668,13 @@ inline void CSolver::Initialize_SystemMatrix(CGeometry *geometry, CSolver **solv
 
 inline void CSolver::Compute_IntegrationConstants(CConfig *config) { }					  
 										  
-inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
-
-inline su2double CEulerSolver::GetModVelocity_Inf(void) { 
-	su2double Vel2 = 0; 
-	for (unsigned short iDim = 0; iDim < nDim; iDim++) 
-		Vel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim]; 
-	return sqrt(Vel2);
-}
-
 inline void CSolver::SetFSI_ConvValue(unsigned short val_index, su2double val_criteria) { };
+
+inline void CSolver::SpanWiseAverageProcess(CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
+
+inline void CSolver::AverageProcess1D(CGeometry *geometry, CConfig *config, unsigned short marker_flag){}
+
+inline void CSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry){ }
 
 inline su2double CSolver::GetAverageDensity(unsigned short valMarker, unsigned short valSpan){return 0.0;}
 
@@ -719,6 +713,15 @@ inline void CSolver::SetPressureOut(su2double value, unsigned short inMarkerTP, 
 inline void CSolver::SetTurboVelocityOut(su2double *value, unsigned short inMarkerTP, unsigned short valSpan){ }
 
 inline su2double CSolver::GetFSI_ConvValue(unsigned short val_index) { return 0.0; }
+
+inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
+
+inline su2double CEulerSolver::GetModVelocity_Inf(void) {
+	su2double Vel2 = 0;
+	for (unsigned short iDim = 0; iDim < nDim; iDim++)
+		Vel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+	return sqrt(Vel2);
+}
 
 inline su2double CEulerSolver::GetDensity_Energy_Inf(void) { return Density_Inf*Energy_Inf; }
 

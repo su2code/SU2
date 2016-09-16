@@ -178,6 +178,7 @@ public:
   virtual void RegisterOutput(CSolver ****solver_container,
                               CGeometry*** geometry_container,
                               CConfig** config_container,
+															COutput* output,
                               unsigned short iZone){}
 
 
@@ -906,6 +907,7 @@ public:
   void RegisterOutput(CSolver ****solver_container,
                       CGeometry*** geometry_container,
                       CConfig** config_container,
+											COutput* output,
                       unsigned short iZone);
   /*!
    * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions

@@ -45,7 +45,7 @@
 #include <time.h>
 #include <fstream>
 
-#include "solver_structure.hpp"
+//#include "solver_structure.hpp"
 #include "integration_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
@@ -578,5 +578,11 @@ public:
 	 */
   void SpanwiseFile(CGeometry ***geometry, CSolver ****solver_container, CConfig **config, unsigned short val_iZone);
 
+  /*!
+   * \brief Give the Entropy Generation performance parameters for turbomachinery.
+   * \param[in] iMarkerTP - Marker turbo-performance.
+   * \param[in] iSpan - span section.
+   */
+  su2double GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan);
 
 };
