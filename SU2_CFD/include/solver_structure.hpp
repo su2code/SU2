@@ -2966,6 +2966,8 @@ protected:
   su2double AoA_old;  /*!< \brief Old value of the angle of attack (monitored). */
   unsigned long AoA_Counter;
   unsigned short nSpanWiseSections;  /*!< \brief Number of span-wise sections. */
+  unsigned short nMarkerTurboPerf;  /*!< \brief Number of turbo performance. */
+
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   su2double *** AverageFlux,
 		***SpanTotalFlux,
