@@ -784,10 +784,10 @@ vector<su2double> CLookUpTable::Evaluate_Interpolation_Vector(su2double x,
 //	interpolation_vector[14] = x * x * x * y * y * y;
 //	interpolation_vector[15] = y * y * y;
 
-	interpolation_vector[4] = x * x;
-	interpolation_vector[5] = y * y;
-//	interpolation_vector[6] = log(y);
-//	interpolation_vector[7] = log(x);
+//interpolation_vector[4] = x * x;
+//	interpolation_vector[5] = y * y;
+	interpolation_vector[4] = log(y);
+	interpolation_vector[5] = log(x);
 //	interpolation_vector[8] = log(x + y);
 
 //	interpolation_vector[8] = exp(x);
