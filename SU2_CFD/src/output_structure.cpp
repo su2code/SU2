@@ -8622,6 +8622,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 	unsigned short nMarkerTP = config->GetnMarker_Turbomachinery();
 	unsigned short nSpanWiseSection = config->GetnSpanWiseSections();
   FluidModel = solver_container->GetFluidModel();
+  su2double area;
 
 	/*--- Compute performance for each blade ---*/
 	for(iMarkerTP = 0; iMarkerTP < nMarkerTP; iMarkerTP++ ){
@@ -8631,10 +8632,14 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 			DensityIn[iMarkerTP][iSpan]          = solver_container->GetDensityIn(iMarkerTP, iSpan);
 			PressureIn[iMarkerTP][iSpan]         = solver_container->GetPressureIn(iMarkerTP, iSpan);
 			TurboVelocityIn[iMarkerTP][iSpan]    = solver_container->GetTurboVelocityIn(iMarkerTP, iSpan);
+			TRadius[iMarkerTP][iSpan]            = geometry->GetTurboRadiusIn(iMarkerTP, iSpan);
+      area																 = geometry->GetSpanAreaIn(iMarkerTP, iSpan);
 
 			/*--- Compute all the Inflow quantities ---*/
 			FluidModel->SetTDState_Prho(PressureIn[iMarkerTP][iSpan], DensityIn[iMarkerTP][iSpan]);
 			EntropyIn[iMarkerTP][iSpan]					 = FluidModel->GetEntropy();
+			MassFlowIn[iMarkerTP][iSpan]         = DensityIn[iMarkerTP][iSpan]*TurboVelocityIn[iMarkerTP][iSpan][0]*area;
+
 
 
 
@@ -8642,10 +8647,16 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 			DensityOut[iMarkerTP][iSpan]         = solver_container->GetDensityOut(iMarkerTP, iSpan);
 			PressureOut[iMarkerTP][iSpan]         = solver_container->GetPressureOut(iMarkerTP, iSpan);
 			TurboVelocityOut[iMarkerTP][iSpan]    = solver_container->GetTurboVelocityOut(iMarkerTP, iSpan);
+//			TRadius[iMarkerTP][iSpan]            = geometry->GetTurboRadiusIn(iMarkerTP, iSpan);
+			area																 = geometry->GetSpanAreaIn(iMarkerTP, iSpan);
+
 
 			/*--- Compute all the Outflow quantities ---*/
 			FluidModel->SetTDState_Prho(PressureOut[iMarkerTP][iSpan], DensityOut[iMarkerTP][iSpan]);
 			EntropyOut[iMarkerTP][iSpan]				 = FluidModel->GetEntropy();
+			MassFlowOut[iMarkerTP][iSpan]         = DensityOut[iMarkerTP][iSpan]*TurboVelocityOut[iMarkerTP][iSpan][0]*area;
+
+
 
 
 			/*--- Compute turbo-performance ---*/

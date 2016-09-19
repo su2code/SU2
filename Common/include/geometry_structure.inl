@@ -191,6 +191,30 @@ inline su2double CGeometry::GetSpanArea(unsigned short val_marker, unsigned shor
 
 inline su2double CGeometry::GetTurboRadius(unsigned short val_marker, unsigned short val_span){return 0.0;}
 
+inline su2double CGeometry::GetTangGridVelIn(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double CGeometry::GetTangGridVelOut(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double CGeometry::GetSpanAreaIn(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double CGeometry::GetSpanAreaOut(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double CGeometry::GetTurboRadiusIn(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline su2double CGeometry::GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span){return 0.0;}
+
+inline void CGeometry::SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span){ }
+
+inline void CGeometry::SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span){ }
+
+inline void CGeometry::SetSpanAreaIn(su2double value, unsigned short val_marker, unsigned short val_span){ }
+
+inline void CGeometry::SetSpanAreaOut(su2double value, unsigned short val_marker, unsigned short val_span){ }
+
+inline void CGeometry::SetTurboRadiusIn(su2double value, unsigned short val_marker, unsigned short val_span){ }
+
+inline void CGeometry::SetTurboRadiusOut(su2double value, unsigned short val_marker, unsigned short val_span){ }
+
 inline unsigned long CGeometry::GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span){return 0;}
 
 inline void CGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) { }
@@ -344,6 +368,30 @@ inline su2double* CPhysicalGeometry::GetAverageNormal(unsigned short val_marker,
 inline su2double CPhysicalGeometry::GetSpanArea(unsigned short val_marker, unsigned short val_span){return SpanArea[val_marker][val_span];}
 
 inline su2double CPhysicalGeometry::GetTurboRadius(unsigned short val_marker, unsigned short val_span){return TurboRadius[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetTangGridVelIn(unsigned short val_marker, unsigned short val_span){return TangGridVelIn[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetTangGridVelOut(unsigned short val_marker, unsigned short val_span){return TangGridVelOut[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetSpanAreaIn(unsigned short val_marker, unsigned short val_span){return SpanAreaIn[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetSpanAreaOut(unsigned short val_marker, unsigned short val_span){return SpanAreaOut[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetTurboRadiusIn(unsigned short val_marker, unsigned short val_span){return TurboRadiusIn[val_marker][val_span];}
+
+inline su2double CPhysicalGeometry::GetTurboRadiusOut(unsigned short val_marker, unsigned short val_span){return TurboRadiusOut[val_marker][val_span];}
+
+inline void CPhysicalGeometry::SetTangGridVelIn(su2double value, unsigned short val_marker, unsigned short val_span){TangGridVelIn[val_marker][val_span] = value;}
+
+inline void CPhysicalGeometry::SetTangGridVelOut(su2double value, unsigned short val_marker, unsigned short val_span){TangGridVelOut[val_marker][val_span] = value;}
+
+inline void CPhysicalGeometry::SetSpanAreaIn(su2double value, unsigned short val_marker, unsigned short val_span){SpanAreaIn[val_marker][val_span] = value;}
+
+inline void CPhysicalGeometry::SetSpanAreaOut(su2double value, unsigned short val_marker, unsigned short val_span){SpanAreaOut[val_marker][val_span] = value;}
+
+inline void CPhysicalGeometry::SetTurboRadiusIn(su2double value, unsigned short val_marker, unsigned short val_span){ TurboRadiusIn[val_marker][val_span] = value;}
+
+inline void CPhysicalGeometry::SetTurboRadiusOut(su2double value, unsigned short val_marker, unsigned short val_span){TurboRadiusOut[val_marker][val_span] = value;}
 
 inline unsigned long CPhysicalGeometry::GetnTotVertexSpan(unsigned short val_marker, unsigned short val_span){return nTotVertexSpan[val_marker][val_span];}
 
